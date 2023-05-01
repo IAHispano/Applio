@@ -4,7 +4,6 @@ import sys
 import torch
 from multiprocessing import cpu_count
 
-
 class Config:
     def __init__(self):
         self.device = "cuda:0"
@@ -18,7 +17,10 @@ class Config:
             self.iscolab,
             self.noparallel,
             self.noautoopen,
+            self.use_gfloat,
         ) = self.arg_parse()
+        
+        if self.use_gfloat: self.is_half = False
         self.x_pad, self.x_query, self.x_center, self.x_max = self.device_config()
 
     def arg_parse(self) -> tuple:
@@ -36,6 +38,9 @@ class Config:
             action="store_true",
             help="Do not open in browser automatically",
         )
+        parser.add_argument( # this argument (if set to false) allows windows users to avoid the "slow_conv2d_cpu not implemented for 'Half'" exception
+            "--use_gfloat", action="store_true", help="Will use g_float instead of g_half during voice conversion."
+        ) 
         cmd_opts = parser.parse_args()
 
         cmd_opts.port = cmd_opts.port if 0 <= cmd_opts.port <= 65535 else 7865
@@ -46,6 +51,7 @@ class Config:
             cmd_opts.colab,
             cmd_opts.noparallel,
             cmd_opts.noautoopen,
+            cmd_opts.use_gfloat,
         )
 
     def device_config(self) -> tuple:
