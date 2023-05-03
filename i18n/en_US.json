@@ -17,6 +17,7 @@
     "变调(整数, 半音数量, 升八度12降八度-12)": "transpose(integer, number of semitones, octave sharp 12 octave flat -12)",
     "输入待处理音频文件路径(默认是正确格式示例)": "Enter the path of the audio file to be processed (the default is the correct format example)",
     "选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比": "Select the algorithm for pitch extraction. Use 'pm' to speed up for singing voices, or use 'harvest' for better low-pitched voices, but it is extremely slow.",
+    "crepe_hop_length": "Crepe Hop Length (Only applies to crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.",
     "特征检索库文件路径": "Feature search database file path",
     "特征文件路径": "Feature file path",
     "检索特征占比": "Search feature ratio",

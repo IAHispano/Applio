@@ -17,6 +17,7 @@
     "变调(整数, 半音数量, 升八度12降八度-12)": "ピッチ変更(整数、半音数、上下オクターブ12-12)",
     "输入待处理音频文件路径(默认是正确格式示例)": "処理対象音声ファイルのパスを入力してください(デフォルトは正しいフォーマットの例です)",
     "选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比": "ピッチ抽出アルゴリズムを選択してください。歌声の場合は、pmを使用して速度を上げることができます。低音が重要な場合は、harvestを使用できますが、非常に遅くなります。",
+    "crepe_hop_length": "Crepe Hop Length (Only applies to crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.",
     "特征检索库文件路径": "特徴量検索データベースのファイルパス",
     "特征文件路径": "特徴量ファイルのパス",
     "检索特征占比": "検索特徴率",

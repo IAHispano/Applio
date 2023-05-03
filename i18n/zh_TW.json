@@ -17,6 +17,7 @@
     "变调(整数, 半音数量, 升八度12降八度-12)": "變調(整數、半音數量、升八度12降八度-12)",
     "输入待处理音频文件路径(默认是正确格式示例)": "輸入待處理音頻檔案路徑（預設是正確格式示例）",
     "选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比": "選擇音高提取演算法，輸入歌聲可用 pm 提速，harvest 低音好但巨慢無比",
+    "crepe_hop_length": "Crepe Hop Length (Only applies to crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.",
     "特征检索库文件路径": "特徵檢索庫檔案路徑",
     "特征文件路径": "特徵檔案路徑",
     "检索特征占比": "檢索特徵佔比",

@@ -133,6 +133,7 @@ def vc_single(
     file_index,
     # file_big_npy,
     index_rate,
+    crepe_hop_length,
 ):  # spk_item, input_audio0, vc_transform0,f0_file,f0method0
     global tgt_sr, net_g, vc, hubert_model
     if input_audio is None:
@@ -167,6 +168,7 @@ def vc_single(
             # file_big_npy,
             index_rate,
             if_f0,
+            crepe_hop_length,
             f0_file=f0_file,
         )
         print(
@@ -1064,9 +1066,17 @@ with gr.Blocks() as app:
                         )
                         f0method0 = gr.Radio(
                             label=i18n("选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比"),
-                            choices=["pm", "harvest"],
+                            choices=["pm", "harvest", "dio", "crepe"], # Fork Feature. Add the crepe radio button for crepe INFERENCE
                             value="pm",
                             interactive=True,
+                        )
+                        crepe_hop_length = gr.Slider(
+                            minimum=32,
+                            maximum=512,
+                            step=32,
+                            label=i18n("crepe_hop_length"),
+                            value=128,
+                            interactive=True
                         )
                     with gr.Column():
                         file_index1 = gr.Textbox(
@@ -1102,6 +1112,7 @@ with gr.Blocks() as app:
                             file_index1,
                             # file_big_npy1,
                             index_rate1,
+                            crepe_hop_length
                         ],
                         [vc_output1, vc_output2],
                     )

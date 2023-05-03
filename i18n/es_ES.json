@@ -17,6 +17,7 @@
     "变调(整数, 半音数量, 升八度12降八度-12)": "Cambio de tono (entero, número de semitonos, subir una octava +12 o bajar una octava -12)",
     "输入待处理音频文件路径(默认是正确格式示例)": "Ingrese la ruta del archivo del audio que se procesará (el formato predeterminado es el ejemplo correcto)",
     "选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比": "Seleccione el algoritmo para la extracción de tono. Use 'pm' para acelerar las voces cantadas, o use 'harvest' para mejorar las voces bajas, pero es extremadamente lento.",
+    "crepe_hop_length": "Crepe Hop Length (Only applies to crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.",
     "特征检索库文件路径": "Ruta del archivo de la base de datos de búsqueda de características",
     "特征文件路径": "Ruta del archivo de características",
     "检索特征占比": "Proporción de función de búsqueda",
