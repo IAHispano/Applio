@@ -80,19 +80,7 @@ class VC(object):
         f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
         f0 = signal.medfilt(f0, 3) 
         return f0
-
-    # Fork Feature: Resize f0 for f0 retrieved from torchcrepe Tensor prediction
-    def resize_f0(self, x, target_len):
-        source = np.array(x)
-        source[source < 0.001] = np.nan
-        target = np.interp(
-            np.arange(0, len(source) * target_len, len(source)) / target_len,
-            np.arange(0, len(source)),
-            source,
-        )
-        resized = np.nan_to_num(target)
-        return resized
-
+    
     # Fork Feature: Get the f0 via the crepe algorithm from torchcrepe
     def get_f0_crepe_computation(
             self, 
@@ -108,11 +96,9 @@ class VC(object):
         torch_device = self.get_optimal_torch_device()
         audio = torch.from_numpy(x).to(torch_device, copy=True)
         audio = torch.unsqueeze(audio, dim=0)
-
         if audio.ndim == 2 and audio.shape[0] > 1:
             audio = torch.mean(audio, dim=0, keepdim=True).detach()
         audio = audio.detach()
-
         print("Initiating prediction with a crepe_hop_length of: " + str(hop_length))
         pitch: Tensor = torchcrepe.predict(
             audio,
@@ -125,11 +111,17 @@ class VC(object):
             device=torch_device,
             pad=True
         )
-
-        f0 = pitch.squeeze(0).cpu().float().numpy()
         p_len = p_len or x.shape[0] // hop_length
-        f0 = self.resize_f0(f0, p_len)
-        return f0
+        # Resize the pitch for final f0
+        source = np.array(pitch.squeeze(0).cpu().float().numpy())
+        source[source < 0.001] = np.nan
+        target = np.interp(
+            np.arange(0, len(source) * p_len, len(source)) / p_len,
+            np.arange(0, len(source)),
+            source
+        )
+        f0 = np.nan_to_num(target)
+        return f0 # Resized f0
     
     #endregion
 

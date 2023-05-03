@@ -21,7 +21,9 @@ class Config:
             self.use_gfloat,
         ) = self.arg_parse()
         
-        if self.use_gfloat: self.is_half = False
+        if self.use_gfloat: 
+            print("Using g_float instead of g_half")
+            self.is_half = False
         self.x_pad, self.x_query, self.x_center, self.x_max = self.device_config()
 
     def arg_parse(self) -> tuple:
@@ -96,7 +98,8 @@ class Config:
         else:
             print("没有发现支持的N卡, 使用CPU进行推理")
             self.device = "cpu"
-            self.is_half = True
+            if not self.use_gfloat: # Fork Feature: Force g_float (is_half = False) if --use_gfloat arg is used. 
+                self.is_half = True
 
         if self.n_cpu == 0:
             self.n_cpu = cpu_count()
