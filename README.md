@@ -4,7 +4,7 @@
 A fork of an easy-to-use SVC framework based on VITS with top1 retrieval. <br><br>
 <b> 
 
-> Please support the original [RVC repository](https://www.bilibili.com/video/BV1pm4y1z7Gm/). Without it, obviously this fork wouldn't have been possible. The Mangio-RVC-Fork aims to essentially enhance the features that the original RVC repo has in my own way. Please note that this fork is NOT STABLE and was forked with the intention of experimentation. Do not use this Fork thinking it is a "better" version of the original repo. Think of it more like another "version" of the original repo.
+> Please support the original [RVC repository](https://www.bilibili.com/video/BV1pm4y1z7Gm/). Without it, obviously this fork wouldn't have been possible. The Mangio-RVC-Fork aims to essentially enhance the features that the original RVC repo has in my own way. Please note that this fork is NOT STABLE and was forked with the intention of experimentation. Do not use this Fork thinking it is a "better" version of the original repo. Think of it more like another "version" of the original repo. Please note that this doesn't have a google colab. If you want to use google colab, go to the original repository.
 </b>
 
 [![madewithlove](https://forthebadge.com/images/badges/built-with-love.svg)](https://github.com/liujing04/Retrieval-based-Voice-Conversion-WebUI)
@@ -32,7 +32,7 @@ A fork of an easy-to-use SVC framework based on VITS with top1 retrieval. <br><b
 + Local inference with the conv2d 'Half' exception fix. apply the argument --use_gfloat to infer-web.py to use this fix.
 + f0 Inference algorithm overhaul:
   + Added pyworld dio f0 method.
-  + Added torchcrepe crepe f0 method.
+  + Added torchcrepe crepe f0 method. (Increases pitch accuracy and stability ALOT)
   + Modifiable crepe_hop_length for the crepe algorithm via the web_gui
 
 ## This repository has the following features too:
@@ -42,6 +42,13 @@ A fork of an easy-to-use SVC framework based on VITS with top1 retrieval. <br><b
 + Supporting model fusion to change timbres (using ckpt processing tab->ckpt merge);
 + Easy-to-use Webui interface;
 + Use the UVR5 model to quickly separate vocals and instruments.
+
+## Features planned to be added during the fork's development
++ Integration with paperspace/non-local systems without the GUI
+  + A CLI tool for training
+  + A CLI tool for inference
++ f0 crepe pitch estimation on training.
++ Improved GUI (More convenience)
 
 # Installing the Dependencies
 Using pip (python3.9.8 is stable with this fork)
