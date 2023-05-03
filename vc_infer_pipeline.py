@@ -107,7 +107,7 @@ class VC(object):
             f0_min,
             f0_max,
             model,
-            batch_size=hop_length * 2, 
+            batch_size=hop_length * 2,
             device=torch_device,
             pad=True
         )

@@ -44,11 +44,10 @@ A fork of an easy-to-use SVC framework based on VITS with top1 retrieval. <br><b
 + Use the UVR5 model to quickly separate vocals and instruments.
 
 ## Features planned to be added during the fork's development
-+ Integration with paperspace/non-local systems without the GUI
-  + A CLI tool for training
-  + A CLI tool for inference
 + f0 crepe pitch estimation on training.
-+ Improved GUI (More convenience)
++ Improved GUI (More convenience).
++ Makefile for paperspace users.
++ Google colab notebook for this fork.
 
 # Installing the Dependencies
 Using pip (python3.9.8 is stable with this fork)
