@@ -1023,7 +1023,8 @@ def export_onnx(ModelPath, ExportedPath, MoeVS=True):
     return "Finished"
 
 
-with gr.Blocks() as app:
+with gr.Blocks(theme=gr.themes.Soft()) as app:
+    gr.HTML("<h1> The Mangio-RVC-Fork 💻 </h1>")
     gr.Markdown(
         value=i18n(
             "本软件以MIT协议开源, 作者不对软件具备任何控制力, 使用软件者、传播软件导出的声音者自负全责. <br>如不认可该条款, 则不能使用或引用软件包内任何代码和文件. 详见根目录<b>使用需遵守的协议-LICENSE.txt</b>."

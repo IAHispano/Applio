@@ -34,4 +34,4 @@ base: ## Download base files
 	aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/hubert_base.pt -d ./ -o hubert_base.pt
 
 run: ## Run the python GUI
-	python infer-web.py --colab --pycmd python
+	python infer-web.py --paperspace --pycmd python
