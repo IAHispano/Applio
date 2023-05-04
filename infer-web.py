@@ -698,7 +698,9 @@ def train_index(exp_dir1):
     # faiss.write_index(index, '%s/trained_IVF%s_Flat_FastScan.index'%(exp_dir,n_ivf))
     infos.append("adding")
     yield "\n".join(infos)
-    index.add(big_npy)
+    batch_size_add=8192
+    for i in range(0,big_npy.shape[0],batch_size_add):
+        index.add(big_npy[i:i+batch_size_add])
     faiss.write_index(
         index,
         "%s/added_IVF%s_Flat_nprobe_%s.index" % (exp_dir, n_ivf, index_ivf.nprobe),
@@ -917,7 +919,9 @@ def train1key(
         "%s/trained_IVF%s_Flat_nprobe_%s.index" % (exp_dir, n_ivf, index_ivf.nprobe),
     )
     yield get_info_str("adding index")
-    index.add(big_npy)
+    batch_size_add=8192
+    for i in range(0,big_npy.shape[0],batch_size_add):
+        index.add(big_npy[i:i+batch_size_add])
     faiss.write_index(
         index,
         "%s/added_IVF%s_Flat_nprobe_%s.index" % (exp_dir, n_ivf, index_ivf.nprobe),
@@ -1206,7 +1210,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             minimum=0,
                             maximum=20,
                             step=1,
-                            label=i18n("人声提取激进程度"),
+                            label="人声提取激进程度",
                             value=10,
                             interactive=True,
                             visible=False,  # 先不开放调整
