@@ -674,6 +674,9 @@ def train_index(exp_dir1):
         phone = np.load("%s/%s" % (feature_dir, name))
         npys.append(phone)
     big_npy = np.concatenate(npys, 0)
+    big_npy_idx = np.arange(big_npy.shape[0])
+    np.random.shuffle(big_npy_idx)
+    big_npy = big_npy[big_npy_idx]
     np.save("%s/total_fea.npy" % exp_dir, big_npy)
     # n_ivf =  big_npy.shape[0] // 39
     n_ivf = min(int(16 * np.sqrt(big_npy.shape[0])), big_npy.shape[0] // 39)
@@ -896,6 +899,9 @@ def train1key(
         phone = np.load("%s/%s" % (feature_dir, name))
         npys.append(phone)
     big_npy = np.concatenate(npys, 0)
+    big_npy_idx = np.arange(big_npy.shape[0])
+    np.random.shuffle(big_npy_idx)
+    big_npy = big_npy[big_npy_idx]
     np.save("%s/total_fea.npy" % exp_dir, big_npy)
     # n_ivf =  big_npy.shape[0] // 39
     n_ivf = min(int(16 * np.sqrt(big_npy.shape[0])), big_npy.shape[0] // 39)
@@ -1320,7 +1326,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                         interactive=True,
                     )
                     batch_size12 = gr.Slider(
-                        minimum=0,
+                        minimum=1,
                         maximum=40,
                         step=1,
                         label=i18n("每张显卡的batch_size"),
