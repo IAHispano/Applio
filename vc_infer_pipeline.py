@@ -33,7 +33,7 @@ class VC(object):
     def get_optimal_torch_device(index: int = 0) -> torch.device:
         # Get cuda device
         if torch.cuda.is_available():
-            return torch.device(f"cuda:{index % torch.cuda.device_count()}")
+            return torch.device("cuda:" + str(index)) # Very fast
         elif torch.backends.mps.is_available():
             return torch.device("mps")
         # Insert an else here to grab "xla" devices if available. TO DO later. Requires the torch_xla.core.xla_model library

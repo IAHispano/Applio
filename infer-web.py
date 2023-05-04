@@ -1072,7 +1072,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             interactive=True,
                         )
                         crepe_hop_length = gr.Slider(
-                            minimum=32,
+                            minimum=1,
                             maximum=512,
                             step=32,
                             label=i18n("crepe_hop_length"),
