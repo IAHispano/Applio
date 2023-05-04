@@ -35,3 +35,7 @@ base: ## Download base files (Do only once after cloning the fork)
 
 run: ## Run the python GUI
 	python infer-web.py --paperspace --pycmd python
+
+tensorboard: ## Start the tensorboard (Run on separate terminal)
+	echo https://tensorboard-$$(hostname).clg07azjl.paperspacegradient.com
+	tensorboard --logdir logs --bind_all

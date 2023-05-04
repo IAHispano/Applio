@@ -1319,7 +1319,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                     )
                     total_epoch11 = gr.Slider(
                         minimum=0,
-                        maximum=1000,
+                        maximum=10000,
                         step=1,
                         label=i18n("总训练轮数total_epoch"),
                         value=20,

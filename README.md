@@ -37,6 +37,8 @@ A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. <
 + Paperspace integration
   + Paperspace argument on infer-web.py (--paperspace) that shares a gradio link
   + Make file for paperspace users
++ Tensorboard access via Makefile (make tensorboard)
++ Total epoch slider for the training now limited to 10,000 not just 1000.
 
 ## This repository has the following features too:
 + Reduce tone leakage by replacing source feature to training-set feature using top1 retrieval;
@@ -89,13 +91,24 @@ hubert_base.pt
 #If you are using Windows, you may also need this dictionary, skip if FFmpeg is installed
 ffmpeg.exe
 ```
-# Running the Web GUI to Infer & Train
+# Running the Web GUI to Infer & Train 💪
 
 ## For paperspace users:
 ```bash
 cd Mangio-RVC-Fork
 make run
 ```
+Then click the gradio link it provides.
+
+# Running the Tensorboard 📉
+```bash
+cd Mangio-RVC-Fork
+make tensorboard
+```
+Then click the tensorboard link it provides and refresh the data.
+
+# Other 
+
 If you are using Windows, you can download and extract `RVC-beta.7z` to use RVC directly and use `go-web.bat` to start Webui.
 
 There's also a tutorial on RVC in Chinese and you can check it out if needed.
