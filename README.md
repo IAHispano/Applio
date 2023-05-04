@@ -28,13 +28,14 @@ A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. <
 
 > High quality licensed song datasets will be added to training-set one after another for your use, without worrying about copyright infringement.
 # Summary 📘
-## Features that this fork (Mangio-RVC-Fork) includes that the original repo doesn't ☑️
+## Features that this fork (Mangio-RVC-Fork) has that the original repo doesn't ☑️
 + Local inference with the conv2d 'Half' exception fix. apply the argument --use_gfloat to infer-web.py to use this fix.
-+ f0 Inference algorithm overhaul:
++ f0 Inference algorithm overhaul: 🌟
   + Added pyworld dio f0 method.
   + Added torchcrepe crepe f0 method. (Increases pitch accuracy and stability ALOT)
   + Modifiable crepe_hop_length for the crepe algorithm via the web_gui
-+ Paperspace integration
++ f0 Crepe Pitch Extraction for training. 🌟 (EXPERIMENTAL)
++ Paperspace integration 🌟
   + Paperspace argument on infer-web.py (--paperspace) that shares a gradio link
   + Make file for paperspace users
 + Tensorboard access via Makefile (make tensorboard)
@@ -49,9 +50,9 @@ A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. <
 + Use the UVR5 model to quickly separate vocals and instruments.
 
 ## Features planned to be added during the fork's development ▶️
-+ f0 crepe pitch estimation on training.
 + Improved GUI (More convenience).
 + Google colab notebook for this fork.
++ Automatic removal of old generations to save space.
 
 # Installing the Dependencies 🖥️
 Using pip (python3.9.8 is stable with this fork)

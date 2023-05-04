@@ -3,6 +3,9 @@ import librosa
 import pyworld
 from scipy.io import wavfile
 import numpy as np, logging
+import torchcrepe # Fork Feature. Crepe algo for training and preprocess
+import torch
+from torch import Tensor # Fork Feature. Used for pitch prediction for torch crepe.
 
 logging.getLogger("numba").setLevel(logging.WARNING)
 from multiprocessing import Process
@@ -19,6 +22,7 @@ def printt(strr):
 
 n_p = int(sys.argv[2])
 f0method = sys.argv[3]
+extraction_crepe_hop_length = int(sys.argv[4])
 
 
 class FeatureInput(object):
@@ -32,16 +36,16 @@ class FeatureInput(object):
         self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
 
-    def compute_f0(self, path, f0_method):
+    def compute_f0(self, path, f0_method, crepe_hop_length):
         # default resample type of librosa.resample is "soxr_hq".
         # Quality: soxr_vhq > soxr_hq
         x, sr = librosa.load(path, self.fs)  # , res_type='soxr_vhq'
         p_len = x.shape[0] // self.hop
+        f0_min = 50
+        f0_max = 1100
         assert sr == self.fs
         if f0_method == "pm":
             time_step = 160 / 16000 * 1000
-            f0_min = 50
-            f0_max = 1100
             f0 = (
                 parselmouth.Sound(x, sr)
                 .to_pitch_ac(
@@ -75,6 +79,48 @@ class FeatureInput(object):
                 frame_period=1000 * self.hop / sr,
             )
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
+        elif f0_method == "crepe": # Fork Feature: Added crepe f0 for f0 feature extraction
+            x = x.astype(np.float32)
+            x /= np.quantile(np.abs(x), 0.999)
+            torch_device_index = 0
+            torch_device = None
+            if torch.cuda.is_available():
+                torch_device = torch.device(f"cuda:{torch_device_index % torch.cuda.device_count()}")
+            elif torch.backends.mps.is_available():
+                torch_device = torch.device("mps")
+            else:
+                torch_device = torch.device("cpu")
+            audio = torch.from_numpy(x).to(torch_device, copy=True)
+            audio = torch.unsqueeze(audio, dim=0)
+            if audio.ndim == 2 and audio.shape[0] > 1:
+                audio = torch.mean(audio, dim=0, keepdim=True).detach()
+            audio = audio.detach()
+            print(
+                "Initiating f0 Crepe Feature Extraction with an extraction_crepe_hop_length of: " +
+                str(crepe_hop_length)
+            )
+            # Pitch prediction for pitch extraction
+            pitch: Tensor = torchcrepe.predict(
+                audio,
+                sr,
+                crepe_hop_length,
+                f0_min,
+                f0_max,
+                "full",
+                batch_size=crepe_hop_length * 2,
+                device=torch_device,
+                pad=True                
+            )
+            p_len = p_len or x.shape[0] // crepe_hop_length
+            # Resize the pitch
+            source = np.array(pitch.squeeze(0).cpu().float().numpy())
+            source[source < 0.001] = np.nan
+            target = np.interp(
+                np.arange(0, len(source) * p_len, len(source)) / p_len,
+                np.arange(0, len(source)),
+                source
+            )
+            f0 = np.nan_to_num(target)
         return f0
 
     def coarse_f0(self, f0):
@@ -93,7 +139,7 @@ class FeatureInput(object):
         )
         return f0_coarse
 
-    def go(self, paths, f0_method):
+    def go(self, paths, f0_method, crepe_hop_length):
         if len(paths) == 0:
             printt("no-f0-todo")
         else:
@@ -108,7 +154,7 @@ class FeatureInput(object):
                         and os.path.exists(opt_path2 + ".npy") == True
                     ):
                         continue
-                    featur_pit = self.compute_f0(inp_path, f0_method)
+                    featur_pit = self.compute_f0(inp_path, f0_method, crepe_hop_length)
                     np.save(
                         opt_path2,
                         featur_pit,
@@ -152,6 +198,7 @@ if __name__ == "__main__":
             args=(
                 paths[i::n_p],
                 f0method,
+                extraction_crepe_hop_length,
             ),
         )
         p.start()

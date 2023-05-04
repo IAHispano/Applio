@@ -462,6 +462,7 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir):
             exp_dir,
             n_p,
             f0method,
+            extraction_crepe_hop_length,
         )
         print(cmd)
         p = Popen(cmd, shell=True, cwd=now_dir)  # , stdin=PIPE, stdout=PIPE,stderr=PIPE
@@ -1299,9 +1300,17 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             label=i18n(
                                 "选择音高提取算法:输入歌声可用pm提速,高质量语音但CPU差可用dio提速,harvest质量更好但慢"
                             ),
-                            choices=["pm", "harvest", "dio"],
+                            choices=["pm", "harvest", "dio", "crepe"], # Fork feature: Crepe on f0 extraction for training.
                             value="harvest",
                             interactive=True,
+                        )
+                        extraction_crepe_hop_length = gr.Slider(
+                            minimum=1,
+                            maximum=512,
+                            step=1,
+                            label=i18n("crepe_hop_length"),
+                            value=64,
+                            interactive=True
                         )
                     but2 = gr.Button(i18n("特征提取"), variant="primary")
                     info2 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8)
