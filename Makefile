@@ -4,7 +4,7 @@
 help: ## Show this help and exit
 	@grep -hE '^[A-Za-z0-9_ \-]*?:.*##.*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-install: ## Install dependencies
+install: ## Install dependencies (Do everytime you start up a paperspace machine)
 	apt-get -y install build-essential python3-dev ffmpeg
 	pip install --upgrade setuptools wheel
 	pip install --upgrade pip
@@ -14,7 +14,7 @@ install: ## Install dependencies
 	apt-get update
 	apt -y install -qq aria2
 
-base: ## Download base files
+base: ## Download base files (Do only once after cloning the fork)
 	mkdir -p pretrained uvr5_weights
 	git pull
 	aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/D32k.pth -d pretrained -o D32k.pth

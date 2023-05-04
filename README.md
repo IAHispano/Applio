@@ -1,10 +1,10 @@
 <div align="center">
 
-<h1>Mangio-RVC-Fork (Retrieval-based-Voice-Conversion) </h1>
-A fork of an easy-to-use SVC framework based on VITS with top1 retrieval. <br><br>
+<h1>Mangio-RVC-Fork (Retrieval-based-Voice-Conversion) 💻 </h1>
+A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. <br><br>
 <b> 
 
-> Please support the original [RVC repository](https://www.bilibili.com/video/BV1pm4y1z7Gm/). Without it, obviously this fork wouldn't have been possible. The Mangio-RVC-Fork aims to essentially enhance the features that the original RVC repo has in my own way. Please note that this fork is NOT STABLE and was forked with the intention of experimentation. Do not use this Fork thinking it is a "better" version of the original repo. Think of it more like another "version" of the original repo. Please note that this doesn't have a google colab. If you want to use google colab, go to the original repository.
+> 💓 Please support the original [RVC repository](https://www.bilibili.com/video/BV1pm4y1z7Gm/). Without it, obviously this fork wouldn't have been possible. The Mangio-RVC-Fork aims to essentially enhance the features that the original RVC repo has in my own way. Please note that this fork is NOT STABLE and was forked with the intention of experimentation. Do not use this Fork thinking it is a "better" version of the original repo. Think of it more like another "version" of the original repo. Please note that this doesn't have a google colab. If you want to use google colab, go to the original repository.
 </b>
 
 [![madewithlove](https://forthebadge.com/images/badges/built-with-love.svg)](https://github.com/liujing04/Retrieval-based-Voice-Conversion-WebUI)
@@ -27,13 +27,16 @@ A fork of an easy-to-use SVC framework based on VITS with top1 retrieval. <br><b
 > The dataset for the pre-training model uses nearly 50 hours of high quality VCTK open source dataset.
 
 > High quality licensed song datasets will be added to training-set one after another for your use, without worrying about copyright infringement.
-# Summary
-## Features that this fork (Mangio-RVC-Fork) includes that the original repo doesn't:
+# Summary 📘
+## Features that this fork (Mangio-RVC-Fork) includes that the original repo doesn't ☑️
 + Local inference with the conv2d 'Half' exception fix. apply the argument --use_gfloat to infer-web.py to use this fix.
 + f0 Inference algorithm overhaul:
   + Added pyworld dio f0 method.
   + Added torchcrepe crepe f0 method. (Increases pitch accuracy and stability ALOT)
   + Modifiable crepe_hop_length for the crepe algorithm via the web_gui
++ Paperspace integration
+  + Paperspace argument on infer-web.py (--paperspace) that shares a gradio link
+  + Make file for paperspace users
 
 ## This repository has the following features too:
 + Reduce tone leakage by replacing source feature to training-set feature using top1 retrieval;
@@ -43,24 +46,36 @@ A fork of an easy-to-use SVC framework based on VITS with top1 retrieval. <br><b
 + Easy-to-use Webui interface;
 + Use the UVR5 model to quickly separate vocals and instruments.
 
-## Features planned to be added during the fork's development
+## Features planned to be added during the fork's development ▶️
 + f0 crepe pitch estimation on training.
 + Improved GUI (More convenience).
-+ Makefile for paperspace users.
 + Google colab notebook for this fork.
 
-# Installing the Dependencies
+# Installing the Dependencies 🖥️
 Using pip (python3.9.8 is stable with this fork)
 
+## Paperspace Users:
+```bash
+cd Mangio-RVC-Fork
+make install # Do this everytime you start your paperspace machine
+```
+
+## Windows/MacOS
 **Notice**: `faiss 1.7.2` will raise Segmentation Fault: 11 under `MacOS`, please use `pip install faiss-cpu==1.7.0` if you use pip to install it manually.
 
 ```bash
 pip install -r requirements.txt
 ```
 
-# Preparation of other Pre-models
-RVC requires other pre-models to infer and train.
+# Preparation of other Pre-models ⬇️
+## Paperspace Users:
+```bash
+cd Mangio-RVC-Fork
+make base # Do only once after cloning this fork (No need to do it again unless pre-models change on hugging face)
+```
 
+## Local Users
+RVC requires other pre-models to infer and train.
 You need to download them from our [Huggingface space](https://huggingface.co/lj1995/VoiceConversionWebUI/tree/main/).
 
 Here's a list of Pre-models and other files that RVC needs:
@@ -74,9 +89,12 @@ hubert_base.pt
 #If you are using Windows, you may also need this dictionary, skip if FFmpeg is installed
 ffmpeg.exe
 ```
-Then use this command to start Webui:
+# Running the Web GUI to Infer & Train
+
+## For paperspace users:
 ```bash
-python infer-web.py
+cd Mangio-RVC-Fork
+make run
 ```
 If you are using Windows, you can download and extract `RVC-beta.7z` to use RVC directly and use `go-web.bat` to start Webui.
 

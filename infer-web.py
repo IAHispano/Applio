@@ -450,7 +450,9 @@ def preprocess_dataset(trainset_dir, exp_dir, sr, n_p=ncpu):
 
 # but2.click(extract_f0,[gpus6,np7,f0method8,if_f0_3,trainset_dir4],[info2])
 def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir):
+    print("Proceeding with f0 Feature Extraction")
     gpus = gpus.split("-")
+    print("GPU Card Slot Numbers: " + str(gpus))
     os.makedirs("%s/logs/%s" % (now_dir, exp_dir), exist_ok=True)
     f = open("%s/logs/%s/extract_f0_feature.log" % (now_dir, exp_dir), "w")
     f.close()
