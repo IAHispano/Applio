@@ -1,6 +1,4 @@
 import argparse
-import glob
-import sys
 import torch
 from multiprocessing import cpu_count
 
@@ -27,7 +25,8 @@ class Config:
             self.is_half = False
         self.x_pad, self.x_query, self.x_center, self.x_max = self.device_config()
 
-    def arg_parse(self) -> tuple:
+    @staticmethod
+    def arg_parse() -> tuple:
         parser = argparse.ArgumentParser()
         parser.add_argument("--port", type=int, default=7865, help="Listen port")
         parser.add_argument(
