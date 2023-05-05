@@ -23,8 +23,8 @@ def printt(strr):
 n_p = int(sys.argv[2])
 f0method = sys.argv[3]
 extraction_crepe_hop_length = int(sys.argv[4])
-print("EXTRACTION CREPE HOP LENGTH: " + extraction_crepe_hop_length)
-print("EXTRACTION CREPE HOP LENGTH TYPE: " + type(extraction_crepe_hop_length))
+print("EXTRACTION CREPE HOP LENGTH: " + str(extraction_crepe_hop_length))
+print("EXTRACTION CREPE HOP LENGTH TYPE: " + str(type(extraction_crepe_hop_length)))
 
 
 class FeatureInput(object):
