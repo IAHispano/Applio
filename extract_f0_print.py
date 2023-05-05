@@ -80,6 +80,7 @@ class FeatureInput(object):
             )
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
         elif f0_method == "crepe": # Fork Feature: Added crepe f0 for f0 feature extraction
+            print("Performing crepe pitch extraction. (EXPERIMENTAL)")
             x = x.astype(np.float32)
             x /= np.quantile(np.abs(x), 0.999)
             torch_device_index = 0
