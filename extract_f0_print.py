@@ -23,6 +23,8 @@ def printt(strr):
 n_p = int(sys.argv[2])
 f0method = sys.argv[3]
 extraction_crepe_hop_length = int(sys.argv[4])
+print("EXTRACTION CREPE HOP LENGTH: " + extraction_crepe_hop_length)
+print("EXTRACTION CREPE HOP LENGTH TYPE: " + type(extraction_crepe_hop_length))
 
 
 class FeatureInput(object):
@@ -81,6 +83,7 @@ class FeatureInput(object):
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
         elif f0_method == "crepe": # Fork Feature: Added crepe f0 for f0 feature extraction
             print("Performing crepe pitch extraction. (EXPERIMENTAL)")
+            print("CREPE PITCH EXTRACTION HOP LENGTH: " + str(crepe_hop_length))
             x = x.astype(np.float32)
             x /= np.quantile(np.abs(x), 0.999)
             torch_device_index = 0

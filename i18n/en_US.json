@@ -62,7 +62,7 @@
     "加载预训练底模D路径": "Load pre-trained base model D path.",
     "训练模型": "Train model.",
     "训练特征索引": "Train feature index.",
-    "一键训练": "One-click training.",
+    "一键训练": "One-click training. (Not working on this fork)",
     "ckpt处理": "ckpt processing.",
     "模型融合, 可用于测试音色融合": "Model Fusion, which can be used to test sound fusion",
     "A模型路径": "A model path.",

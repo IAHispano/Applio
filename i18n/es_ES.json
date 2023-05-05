@@ -62,7 +62,7 @@
     "加载预训练底模D路径": "Cargue la ruta del modelo D base preentrenada.",
     "训练模型": "Entrenar Modelo",
     "训练特征索引": "Índice de características del Entrenamiento",
-    "一键训练": "Entrenamiento con un clic.",
+    "一键训练": "One-click training. (Not working on this fork)",
     "ckpt处理": "Procesamiento de recibos",
     "模型融合, 可用于测试音色融合": "Fusión de modelos, se puede utilizar para fusionar diferentes voces",
     "A模型路径": "Modelo A ruta.",

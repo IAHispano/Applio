@@ -449,7 +449,7 @@ def preprocess_dataset(trainset_dir, exp_dir, sr, n_p=ncpu):
 
 
 # but2.click(extract_f0,[gpus6,np7,f0method8,if_f0_3,trainset_dir4],[info2])
-def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir):
+def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, echl):
     print("Proceeding with f0 Feature Extraction")
     gpus = gpus.split("-")
     print("GPU Card Slot Numbers: " + str(gpus))
@@ -457,12 +457,12 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir):
     f = open("%s/logs/%s/extract_f0_feature.log" % (now_dir, exp_dir), "w")
     f.close()
     if if_f0 == i18n("是"):
-        cmd = config.python_cmd + " extract_f0_print.py %s/logs/%s %s %s" % (
+        cmd = config.python_cmd + " extract_f0_print.py %s/logs/%s %s %s %s" % (
             now_dir,
             exp_dir,
             n_p,
             f0method,
-            extraction_crepe_hop_length,
+            echl,
         )
         print(cmd)
         p = Popen(cmd, shell=True, cwd=now_dir)  # , stdin=PIPE, stdout=PIPE,stderr=PIPE
@@ -1316,7 +1316,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                     info2 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8)
                     but2.click(
                         extract_f0_feature,
-                        [gpus6, np7, f0method8, if_f0_3, exp_dir1],
+                        [gpus6, np7, f0method8, if_f0_3, exp_dir1, extraction_crepe_hop_length],
                         [info2],
                     )
             with gr.Group():
