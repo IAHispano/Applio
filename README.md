@@ -56,6 +56,10 @@ I am able to communicate with you here and there.
 + Improved GUI (More convenience).
 + Google colab notebook for this fork.
 + Automatic removal of old generations to save space.
++ Potentially a pyin f0 method or a hybrid f0 crepe method.
+
+# About this fork's crepe training: 
+Crepe training is still incredibly instable and there's been report of a memory leak. This will be fixed in the future, however it works quite well on paperspace machines. Please note that crepe training adds a little bit of difference against a harvest trained model. Crepe sounds clearer on some parts, but sounds more robotic on some parts too. Both I would say are equally good to train with, but I still think crepe on INFERENCE is not only quicker, but more pitch stable (especially with vocal layers). Right now, its quite stable to train with a harvest model and infer it with crepe. If you are training with crepe however (f0 feature extraction), please make sure your datasets are as dry as possible to reduce artifacts and unwanted harmonics as I assume the crepe pitch estimation latches on to reverb more.
 
 # Installing the Dependencies 🖥️
 Using pip (python3.9.8 is stable with this fork)
