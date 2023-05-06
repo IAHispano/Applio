@@ -139,7 +139,8 @@ class VC(object):
             f0 = self.get_f0_pyworld_computation(x, f0_min, f0_max, "dio")
         elif f0_method == "crepe": # Fork Feature: Adding a new f0 algorithm called crepe
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
-        # Add crepe-tiny method here
+        elif f0_method == "crepe-tiny": # For Feature add crepe-tiny model
+            f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length, "tiny")
 
         print("Using the following f0 method: " + f0_method)
         f0 *= pow(2, f0_up_key / 12)

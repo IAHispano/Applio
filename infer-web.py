@@ -1083,7 +1083,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                         )
                         f0method0 = gr.Radio(
                             label=i18n("选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比"),
-                            choices=["pm", "harvest", "dio", "crepe"], # Fork Feature. Add the crepe radio button for crepe INFERENCE
+                            choices=["pm", "harvest", "dio", "crepe", "crepe-tiny"], # Fork Feature. Add the crepe radio button for crepe INFERENCE
                             value="pm",
                             interactive=True,
                         )
