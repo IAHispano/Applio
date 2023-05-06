@@ -37,7 +37,7 @@ I am able to communicate with you here and there.
   + Added pyworld dio f0 method.
   + Added torchcrepe crepe f0 method. (Increases pitch accuracy and stability ALOT)
   + Modifiable crepe_hop_length for the crepe algorithm via the web_gui
-+ f0 Crepe Pitch Extraction for training. 🌟 (EXPERIMENTAL)
++ f0 Crepe Pitch Extraction for training. 🌟 (EXPERIMENTAL) Works on paperspace machines but not local mac/windows machines. Potential memory leak. Watch out.
 + Paperspace integration 🌟
   + Paperspace argument on infer-web.py (--paperspace) that shares a gradio link
   + Make file for paperspace users
