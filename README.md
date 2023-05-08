@@ -80,8 +80,13 @@ make install # Do this everytime you start your paperspace machine
 ```
 
 ## Windows/MacOS
-**Notice**: `faiss 1.7.2` will raise Segmentation Fault: 11 under `MacOS`, please use `pip install faiss-cpu==1.7.0` if you use pip to install it manually.
+**Notice**: `faiss 1.7.2` will raise Segmentation Fault: 11 under `MacOS`, please use `pip install faiss-cpu==1.7.0` if you use pip to install it manually.  `Swig` can be installed via `brew` under `MacOS`
+ 
+ ```bash
+ brew install swig
+ ```
 
+Install requirements:
 ```bash
 pip install -r requirements.txt
 ```
