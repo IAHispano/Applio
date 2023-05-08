@@ -24,18 +24,13 @@ resampy>=0.4.2
 scikit-learn
 starlette>=0.25.0
 tensorboard
-<<<<<<< HEAD
 tensorboard-data-server
 tensorboard-plugin-wit
 torchgen>=0.0.1
 torch==2.0.0
 torchcrepe==0.0.18
-tqdm>=4.65.0
-tornado>=6.2
-=======
 tqdm>=4.63.1
 tornado>=6.1
->>>>>>> upstream/main
 Werkzeug>=2.2.3
 uc-micro-py>=1.0.1
 sympy>=1.11.1
