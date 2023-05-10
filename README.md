@@ -180,7 +180,7 @@ python train_nsf_sim_cache_sid_load_pretrain.py -e mi-test -sr 40k -f0 1 -bs 8 -
 python train-index-cli.py mi-test
 ```
 
-## Extract Model from checkpoint with the GUI
+## Extract Model from checkpoint without the GUI
 
 ```bash
 # + Mangio-RVC-Fork Feature. Extract Small Model from checkpoint from the CLI.
