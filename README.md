@@ -124,6 +124,53 @@ make run
 ```
 Then click the gradio link it provides.
 
+# Inference & Training with CLI 💪 🔠
+
+## Pre-processing the Dataset without the GUI
+```bash
+# arg 1 = Dataset Path
+# arg 2 = Sample Rate
+# arg 3 = Number of Threads
+# arg 4 = Export Directory (logs/*YOUR DATASET FOLDER NAME*)
+# arg 5 = No parallel: True or False
+python trainset_preprocess_pipeline_print.py /INSERTDATASETNAMEHERE 40000 8 logs/mi-test True 
+```
+
+## f0 Feature Extraction without the GUI
+```bash
+# arg 1 = Path of model logs (logs/*YOUR MODEL NAME*)
+# arg 2 = Number of threads to use
+# arg 3 = f0 method: pm, harvest, dio, crepe
+# arg 4 = Crepe Hop Length (Value is used if using crepe method)
+python extract_f0_print.py logs/mi-test 4 harvest 128
+# arg 1 = device
+# arg 2 = n_part
+# arg 3 = i_part
+# arg 4 = GPU Device number ("0")
+# arg 5 = Export Directory logs/*MODEL NAME*
+python extract_feature_print.py cpu 1 0 0 logs/mi-test
+```
+
+## Training without the GUI
+
+```bash
+# Arguments
+# -e = Name of model
+# -sr = Sample Rate
+# -f0 = Model has pitch guidance? 1 for yes. 0 for no.
+# -bs = Batch size
+# -g = GPU card slot
+# -te = Total Epochs
+# -se = Save epoch interval
+# -pg = Pretrained Generator Model Path
+# -pd = Pretrained Discriminator Model Path
+# -l = Save only latest model? 1 for yes 0 for no
+# -c = Cache data in gpu? 1 for yes 0 for no
+python train_nsf_sim_cache_sid_load_pretrain.py -e mi-test -sr 40k -f0 1 -bs 8 -g 0 -te 10000 -se 50 -pg pretrained/f0G40k.pth -pd pretrained/f0D40k.pth -l 0 -c 0
+```
+
+
+
 # Running the Tensorboard 📉
 ```bash
 cd Mangio-RVC-Fork
