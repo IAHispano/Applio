@@ -1,3 +1,5 @@
+# Fork Feature Mangio RVC Fork. Extract the small model from a checkpoint with CLI.
+
 import sys
 from train.process_ckpt import extract_small_model
 

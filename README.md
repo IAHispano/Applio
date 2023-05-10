@@ -52,6 +52,7 @@ Special thanks to discord user @kalomaze#2983 for creating a temporary colab not
 + Added CLI functionality
   + added train-index-cli.py to train the feature index without the GUI
   + added extract-small-model.py to extract the small model without the GUI
+  + added infer-cli.py to do inference without the GUI.
 
 ## This repository has the following features too:
 + Reduce tone leakage by replacing source feature to training-set feature using top1 retrieval;
@@ -191,6 +192,22 @@ python train-index-cli.py mi-test
 # arg4 = Has Pitch guidance (f0)? Either 1 for yes or 0 for no
 # arg5 = Model Information. (OPTIONAL). 
 python extract-small-model-cli.py logs/G_99750.pth MyModel 40k 1 "This is a cool model."
+```
+
+## Inference without the GUI (Voice Conversion)
+```bash
+# + Mangio-RVC-Fork Feature. Infer audio with just the CLI
+# Arguments
+# arg1 = model name in weights folder. (mi-test.pth)
+# arg2 = source file path (.wav)
+# arg3 = output file name to be placed in ./audio-outputs (myoutput.wav).
+# arg4 = feature index file path. (E:\added_IVF3042_Flat_nprobe_1.index)
+# arg5 = speaker ID (0)
+# arg6 = transposition. (12 = 12 semitones up)
+# arg7 = f0 method. (harvest, pm, crepe, dio, crepe-tiny)
+# arg8 = crepe hop length. Use 128. (applies to crepe f0 method only)
+# arg9 = feature index ratio (0.78)
+python infer-cli.py mi-test.pth E:\my-source-file.wav conversion_output.wav E:\added_IVF3042_Flat_nprobe_1.index 0 -2 pm 128 0.78
 ```
 
 # Running the Tensorboard 📉
