@@ -50,6 +50,9 @@ Special thanks to discord user @kalomaze#2983 for creating a temporary colab not
   + Make file for paperspace users
 + Tensorboard access via Makefile (make tensorboard)
 + Total epoch slider for the training now limited to 10,000 not just 1000.
++ Added CLI functionality
+  + added train-index-cli.py to train the feature index without the GUI
+  + added extract-small-model.py to extract the small model without the GUI
 
 ## This repository has the following features too:
 + Reduce tone leakage by replacing source feature to training-set feature using top1 retrieval;
@@ -169,7 +172,27 @@ python extract_feature_print.py cpu 1 0 0 logs/mi-test
 python train_nsf_sim_cache_sid_load_pretrain.py -e mi-test -sr 40k -f0 1 -bs 8 -g 0 -te 10000 -se 50 -pg pretrained/f0G40k.pth -pd pretrained/f0D40k.pth -l 0 -c 0
 ```
 
+## Training the Feature Index without the GUI
 
+```bash
+# + Mangio-RVC-Fork Feature. Train the index with the CLI
+# arg1 = Model Name (name of the model folder in logs) 
+python train-index-cli.py mi-test
+```
+
+## Extract Model from checkpoint with the GUI
+
+```bash
+# + Mangio-RVC-Fork Feature. Extract Small Model from checkpoint from the CLI.
+# The small model refers to the model that can be used for inference
+# Arguments:
+# arg1 = Path of the model checkpoint (g file path)
+# arg2 = Model Save Name
+# arg3 = Sample Rate: "32k" "40k" or "48k"
+# arg4 = Has Pitch guidance (f0)? Either 1 for yes or 0 for no
+# arg5 = Model Information. (OPTIONAL). 
+python extract-small-model-cli.py logs/G_99750.pth MyModel 40k 1 "This is a cool model."
+```
 
 # Running the Tensorboard 📉
 ```bash
