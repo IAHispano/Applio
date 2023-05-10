@@ -332,6 +332,8 @@ class VC(object):
             pitch, pitchf = self.get_f0(audio_pad, p_len, f0_up_key, f0_method, crepe_hop_length, inp_f0)
             pitch = pitch[:p_len]
             pitchf = pitchf[:p_len]
+            if self.device == "mps":
+                pitchf = pitchf.astype(np.float32)
             pitch = torch.tensor(pitch, device=self.device).unsqueeze(0).long()
             pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
         t2 = ttime()

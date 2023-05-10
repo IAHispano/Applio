@@ -38,7 +38,6 @@ Special thanks to discord user @kalomaze#2983 for creating a temporary colab not
 > High quality licensed song datasets will be added to training-set one after another for your use, without worrying about copyright infringement.
 # Summary 📘
 ## Features that this fork (Mangio-RVC-Fork) has that the original repo doesn't ☑️
-+ Local inference with the conv2d 'Half' exception fix. apply the argument --use_gfloat to infer-web.py to use this fix.
 + f0 Inference algorithm overhaul: 🌟
   + Added pyworld dio f0 method.
   + Added torchcrepe crepe f0 method. (Increases pitch accuracy and stability ALOT)

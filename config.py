@@ -16,13 +16,9 @@ class Config:
             self.iscolab,
             self.noparallel,
             self.noautoopen,
-            self.use_gfloat,
             self.paperspace,
         ) = self.arg_parse()
         
-        if self.use_gfloat: 
-            print("Using g_float instead of g_half")
-            self.is_half = False
         self.x_pad, self.x_query, self.x_center, self.x_max = self.device_config()
 
     @staticmethod
@@ -41,9 +37,6 @@ class Config:
             action="store_true",
             help="Do not open in browser automatically",
         )
-        parser.add_argument( # this argument (if set to false) allows windows users to avoid the "slow_conv2d_cpu not implemented for 'Half'" exception
-            "--use_gfloat", action="store_true", help="Will use g_float instead of g_half during voice conversion."
-        )
         parser.add_argument( # Fork Feature. Paperspace integration for web UI
             "--paperspace", action="store_true", help="Note that this argument just shares a gradio link for the web UI. Thus can be used on other non-local CLI systems."
         )
@@ -57,7 +50,6 @@ class Config:
             cmd_opts.colab,
             cmd_opts.noparallel,
             cmd_opts.noautoopen,
-            cmd_opts.use_gfloat,
             cmd_opts.paperspace,
         )
 
@@ -100,11 +92,11 @@ class Config:
         elif torch.backends.mps.is_available():
             print("没有发现支持的N卡, 使用MPS进行推理")
             self.device = "mps"
+            self.is_half = False
         else:
             print("没有发现支持的N卡, 使用CPU进行推理")
             self.device = "cpu"
-            if not self.use_gfloat: # Fork Feature: Force g_float (is_half = False) if --use_gfloat arg is used. 
-                self.is_half = True
+            self.is_half = False
 
         if self.n_cpu == 0:
             self.n_cpu = cpu_count()
