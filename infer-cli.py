@@ -40,15 +40,14 @@ def get_hubert():
 
 def get_vc(sid):
     global n_spk, tgt_sr, net_g, vc, cpt
-    if sid == []:
+    if sid == "":
         global hubert_model
-        if hubert_model != None:  # 考虑到轮询, 需要加个判断看是否 sid 是由有模型切换到无模型的
+        if hubert_model != None:
             print("clean_empty_cache")
             del net_g, n_spk, vc, hubert_model, tgt_sr  # ,cpt
             hubert_model = net_g = n_spk = vc = hubert_model = tgt_sr = None
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-            ###楼下不这么折腾清理不干净
             if_f0 = cpt.get("f0", 1)
             if if_f0 == 1:
                 net_g = SynthesizerTrnMs256NSFsid(
@@ -72,7 +71,7 @@ def get_vc(sid):
     else:
         net_g = SynthesizerTrnMs256NSFsid_nono(*cpt["config"])
     del net_g.enc_q
-    print(net_g.load_state_dict(cpt["weight"], strict=False))  # 不加这一行清不干净, 真奇葩
+    print(net_g.load_state_dict(cpt["weight"], strict=False)) 
     net_g.eval().to(config.device)
     if config.is_half:
         net_g = net_g.half()
@@ -90,10 +89,9 @@ def vc_single(
     f0_file,
     f0_method,
     file_index,
-    # file_big_npy,
     index_rate,
     crepe_hop_length,
-):  # spk_item, input_audio0, vc_transform0,f0_file,f0method0
+):
     global tgt_sr, net_g, vc, hubert_model, cpt
     if input_audio is None:
         return "You need to upload an audio", None
@@ -111,10 +109,7 @@ def vc_single(
             .strip('"')
             .strip(" ")
             .replace("trained", "added")
-        )  # 防止小白写错，自动帮他替换掉
-        # file_big_npy = (
-        #     file_big_npy.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        # )
+        )
         audio_opt = vc.pipeline(
             hubert_model,
             net_g,
@@ -124,7 +119,6 @@ def vc_single(
             f0_up_key,
             f0_method,
             file_index,
-            # file_big_npy,
             index_rate,
             if_f0,
             crepe_hop_length,

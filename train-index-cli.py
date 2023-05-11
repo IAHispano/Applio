@@ -37,21 +37,17 @@ def train_index(exp_dir1):
     np.random.shuffle(big_npy_idx)
     big_npy = big_npy[big_npy_idx]
     np.save("%s/total_fea.npy" % exp_dir, big_npy)
-    # n_ivf =  big_npy.shape[0] // 39
     n_ivf = min(int(16 * np.sqrt(big_npy.shape[0])), big_npy.shape[0] // 39)
     yield "%s,%s" % (big_npy.shape, n_ivf)
     index = faiss.index_factory(256, "IVF%s,Flat" % n_ivf)
-    # index = faiss.index_factory(256, "IVF%s,PQ128x4fs,RFlat"%n_ivf)
     yield "training the index..."
     index_ivf = faiss.extract_index_ivf(index)  #
-    # index_ivf.nprobe = int(np.power(n_ivf,0.3))
     index_ivf.nprobe = 1
     index.train(big_npy)
     faiss.write_index(
         index,
         "%s/trained_IVF%s_Flat_nprobe_%s.index" % (exp_dir, n_ivf, index_ivf.nprobe),
     )
-    # faiss.write_index(index, '%s/trained_IVF%s_Flat_FastScan.index'%(exp_dir,n_ivf))
     yield "adding the index..."
     batch_size_add = 8192
     for i in range(0, big_npy.shape[0], batch_size_add):
@@ -60,8 +56,6 @@ def train_index(exp_dir1):
         index,
         "%s/added_IVF%s_Flat_nprobe_%s.index" % (exp_dir, n_ivf, index_ivf.nprobe),
     )
-    # faiss.write_index(index, '%s/added_IVF%s_Flat_FastScan.index'%(exp_dir,n_ivf))
-    # infos.append("成功构建索引，added_IVF%s_Flat_FastScan.index"%(n_ivf))
     yield "Done! added_IVF%s_Flat_nprobe_%s.index" % (n_ivf, index_ivf.nprobe)
 
 train_output = train_index(model_name)
