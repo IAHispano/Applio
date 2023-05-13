@@ -45,6 +45,17 @@ class VC(object):
         self.t_max = self.sr * self.x_max  # 免查询时长阈值
         self.device = config.device
 
+    # Fork Feature: Get the best torch device to use for f0 algorithms that require a torch device. Will return the type (torch.device)
+    def get_optimal_torch_device(self, index: int = 0) -> torch.device:
+        # Get cuda device
+        if torch.cuda.is_available():
+            return torch.device(f"cuda:{index % torch.cuda.device_count()}") # Very fast
+        elif torch.backends.mps.is_available():
+            return torch.device("mps")
+        # Insert an else here to grab "xla" devices if available. TO DO later. Requires the torch_xla.core.xla_model library
+        # Else wise return the "cpu" as a torch device, 
+        return torch.device("cpu")
+
     def get_f0_crepe_computation(
             self, 
             x, 
