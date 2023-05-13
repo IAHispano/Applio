@@ -2,12 +2,29 @@ import numpy as np, parselmouth, torch, pdb
 from time import time as ttime
 import torch.nn.functional as F
 import torchcrepe # Fork feature. Use the crepe f0 algorithm. New dependency (pip install torchcrepe)
+from torch import Tensor
 import scipy.signal as signal
-import pyworld, os, traceback, faiss
+import pyworld, os, traceback, faiss, librosa
 from scipy import signal
-from torch import Tensor # Fork Feature. Used for pitch prediction for the torchcrepe f0 inference computation
+from functools import lru_cache
 
 bh, ah = signal.butter(N=5, Wn=48, btype="high", fs=16000)
+
+input_audio_path2wav = {}
+
+@lru_cache
+def cache_harvest_f0(input_audio_path, fs, f0max, f0min, frame_period):
+    audio = input_audio_path2wav[input_audio_path]
+    f0, t = pyworld.harvest(
+        audio,
+        fs=fs,
+        f0_ceil=f0max,
+        f0_floor=f0min,
+        frame_period=frame_period,
+    )
+    f0 = pyworld.stonemask(audio, f0, t, fs)
+    return f0
+
 
 class VC(object):
     def __init__(self, tgt_sr, config):
@@ -28,60 +45,6 @@ class VC(object):
         self.t_max = self.sr * self.x_max  # 免查询时长阈值
         self.device = config.device
 
-    #region f0 Overhaul Region
-    # Fork Feature: Get the best torch device to use for f0 algorithms that require a torch device. Will return the type (torch.device)
-    def get_optimal_torch_device(self, index: int = 0) -> torch.device:
-        # Get cuda device
-        if torch.cuda.is_available():
-            return torch.device(f"cuda:{index % torch.cuda.device_count()}") # Very fast
-        elif torch.backends.mps.is_available():
-            return torch.device("mps")
-        # Insert an else here to grab "xla" devices if available. TO DO later. Requires the torch_xla.core.xla_model library
-        # Else wise return the "cpu" as a torch device, 
-        return torch.device("cpu")
-
-    # Get the f0 via parselmouth computation
-    def get_f0_pm_computation(self, x, time_step, f0_min, f0_max, p_len):
-        f0 = (
-            parselmouth.Sound(x, self.sr)
-            .to_pitch_ac(
-                time_step=time_step / 1000,
-                voicing_threshold=0.6,
-                pitch_floor=f0_min,
-                pitch_ceiling=f0_max,
-            )
-            .selected_array["frequency"]
-        )
-        pad_size = (p_len - len(f0) + 1) // 2
-        if pad_size > 0 or p_len - len(f0) - pad_size > 0:
-            f0 = np.pad(
-                f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
-            )
-        return f0
-
-    # Get the f0 via the pyworld computation. Fork Feature +dio along with harvest
-    def get_f0_pyworld_computation(self, x, f0_min, f0_max, f0_type):
-        if f0_type == "harvest":
-            f0, t = pyworld.harvest(
-                x.astype(np.double),
-                fs=self.sr,
-                f0_ceil=f0_max,
-                f0_floor=f0_min,
-                frame_period=10,
-            )
-        elif f0_type == "dio":
-            f0, t = pyworld.dio(
-                x.astype(np.double),
-                fs=self.sr,
-                f0_ceil=f0_max,
-                f0_floor=f0_min,
-                frame_period=10,
-            )
-        f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
-        f0 = signal.medfilt(f0, 3) 
-        return f0
-    
-    # Fork Feature: Get the f0 via the crepe algorithm from torchcrepe
     def get_f0_crepe_computation(
             self, 
             x, 
@@ -122,27 +85,50 @@ class VC(object):
         )
         f0 = np.nan_to_num(target)
         return f0 # Resized f0
-    
-    #endregion
 
-    def get_f0(self, x, p_len, f0_up_key, f0_method, crepe_hop_length, inp_f0=None):
+    def get_f0(
+        self,
+        input_audio_path,
+        x,
+        p_len,
+        f0_up_key,
+        f0_method,
+        filter_radius,
+        crepe_hop_length,
+        inp_f0=None,
+    ):
+        global input_audio_path2wav
         time_step = self.window / self.sr * 1000
         f0_min = 50
         f0_max = 1100
         f0_mel_min = 1127 * np.log(1 + f0_min / 700)
         f0_mel_max = 1127 * np.log(1 + f0_max / 700)
         if f0_method == "pm":
-            f0 = self.get_f0_pm_computation(x, time_step, f0_min, f0_max, p_len)
+            f0 = (
+                parselmouth.Sound(x, self.sr)
+                .to_pitch_ac(
+                    time_step=time_step / 1000,
+                    voicing_threshold=0.6,
+                    pitch_floor=f0_min,
+                    pitch_ceiling=f0_max,
+                )
+                .selected_array["frequency"]
+            )
+            pad_size = (p_len - len(f0) + 1) // 2
+            if pad_size > 0 or p_len - len(f0) - pad_size > 0:
+                f0 = np.pad(
+                    f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
+                )
         elif f0_method == "harvest":
-            f0 = self.get_f0_pyworld_computation(x, f0_min, f0_max, "harvest")
-        elif f0_method == "dio": # Fork Feature
-            f0 = self.get_f0_pyworld_computation(x, f0_min, f0_max, "dio")
+            input_audio_path2wav[input_audio_path] = x.astype(np.double)
+            f0 = cache_harvest_f0(input_audio_path, self.sr, f0_max, f0_min, 10)
+            if filter_radius > 2:
+                f0 = signal.medfilt(f0, 3)
         elif f0_method == "crepe": # Fork Feature: Adding a new f0 algorithm called crepe
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
         elif f0_method == "crepe-tiny": # For Feature add crepe-tiny model
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length, "tiny")
 
-        print("Using the following f0 method: " + f0_method)
         f0 *= pow(2, f0_up_key / 12)
         # with open("test.txt","w")as f:f.write("\n".join([str(i)for i in f0.tolist()]))
         tf0 = self.sr // self.window  # 每秒f0点数
@@ -243,7 +229,6 @@ class VC(object):
                     .data.cpu()
                     .float()
                     .numpy()
-                    .astype(np.int16)
                 )
             else:
                 audio1 = (
@@ -251,7 +236,6 @@ class VC(object):
                     .data.cpu()
                     .float()
                     .numpy()
-                    .astype(np.int16)
                 )
         del feats, p_len, padding_mask
         if torch.cuda.is_available():
@@ -267,6 +251,7 @@ class VC(object):
         net_g,
         sid,
         audio,
+        input_audio_path,
         times,
         f0_up_key,
         f0_method,
@@ -274,6 +259,9 @@ class VC(object):
         # file_big_npy,
         index_rate,
         if_f0,
+        filter_radius,
+        tgt_sr,
+        resample_sr,
         crepe_hop_length,
         f0_file=None,
     ):
@@ -329,7 +317,16 @@ class VC(object):
         sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
         pitch, pitchf = None, None
         if if_f0 == 1:
-            pitch, pitchf = self.get_f0(audio_pad, p_len, f0_up_key, f0_method, crepe_hop_length, inp_f0)
+            pitch, pitchf = self.get_f0(
+                input_audio_path,
+                audio_pad,
+                p_len,
+                f0_up_key,
+                f0_method,
+                filter_radius,
+                crepe_hop_length,
+                inp_f0,
+            )
             pitch = pitch[:p_len]
             pitchf = pitchf[:p_len]
             if self.device == "mps":
@@ -402,6 +399,11 @@ class VC(object):
                 )[self.t_pad_tgt : -self.t_pad_tgt]
             )
         audio_opt = np.concatenate(audio_opt)
+        if resample_sr >= 16000 and tgt_sr != resample_sr:
+            audio_opt = librosa.resample(
+                audio_opt, orig_sr=tgt_sr, target_sr=resample_sr
+            )
+        audio_opt = audio_opt.astype(np.int16)
         del pitch, pitchf, sid
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
