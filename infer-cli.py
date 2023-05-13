@@ -7,9 +7,10 @@ from fairseq import checkpoint_utils
 from vc_infer_pipeline import VC
 from config import Config
 from my_utils import load_audio
+from mangio_utils.inference_batcher import Batcher
 
 # Fork Feature. Write an audio file
-from scipy.io.wavfile import write
+from scipy.io import wavfile
 
 config = Config(is_gui=False)
 
@@ -148,28 +149,37 @@ def start_inference():
     crepe_hop_length = int(sys.argv[8]) # 128
     feature_ratio = float(sys.argv[9]) # 0.78
 
+    # Batch parameters
+    batch_interval_seconds = 0
+    if(len(sys.argv) == 11): # Using batcher
+        batch_interval_seconds = int(sys.argv[10])
+
     # Get VC first. set global vc to VC from pipeline script
     print("Mangio-RVC-Fork Infer-CLI: Starting the inference...")
     vc_data = get_vc(model_name)
     print(vc_data)
     print("Mangio-RVC-Fork Infer-CLI: Performing inference...")
-    conversion_data = vc_single(
-        speaker_id,
-        source_audio_path,
-        transposition,
-        f0_file,
-        f0_method,
-        feature_index_path,
-        feature_ratio,
-        crepe_hop_length
-    )
-    if(conversion_data[0] == "Success"):
-        print("Mangio-RVC-Fork Infer-CLI: Inference succeeded. Writing to %s/%s..." % ('audio-outputs', output_file_name))
-        # Go ahead with output
-        write('%s/%s' % ('audio-outputs', output_file_name), conversion_data[1][0], conversion_data[1][1])
-        print("Mangio-RVC-Fork Infer-CLI: Finished! Saved output to %s/%s" % ('audio-outputs', output_file_name))
-    else:
-        print("Mangio-RVC-Fork Infer-CLI: Inference failed. Here's the traceback: ")
-        print(conversion_data[0])
+    if(batch_interval_seconds > 0): # Using batcher here
+        print("Mangio-RVC-Fork Infer-CLI: Starting the batching system...")
+        # Not working yet
+    else: # Not using batcher here. Perform normal inference...
+        conversion_data = vc_single(
+            speaker_id,
+            source_audio_path,
+            transposition,
+            f0_file,
+            f0_method,
+            feature_index_path,
+            feature_ratio,
+            crepe_hop_length
+        )
+        if(conversion_data[0] == "Success"):
+            print("Mangio-RVC-Fork Infer-CLI: Inference succeeded. Writing to %s/%s..." % ('audio-outputs', output_file_name))
+            # Go ahead with output
+            wavfile.write('%s/%s' % ('audio-outputs', output_file_name), conversion_data[1][0], conversion_data[1][1])
+            print("Mangio-RVC-Fork Infer-CLI: Finished! Saved output to %s/%s" % ('audio-outputs', output_file_name))
+        else:
+            print("Mangio-RVC-Fork Infer-CLI: Inference failed. Here's the traceback: ")
+            print(conversion_data[0])
 
 start_inference()
