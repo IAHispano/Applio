@@ -97,6 +97,8 @@ Install requirements:
 pip install -r requirements.txt
 ```
 
+If you're experiencing httpx invalid port errors please insteall httpx==0.23.0
+
 # Preparation of other Pre-models ⬇️
 ## Paperspace Users:
 ```bash
