@@ -1,5 +1,8 @@
 import os, traceback, sys, parselmouth
-import librosa
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+from my_utils import load_audio
 import pyworld
 from scipy.io import wavfile
 import numpy as np, logging
@@ -39,22 +42,17 @@ class FeatureInput(object):
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
 
     def compute_f0(self, path, f0_method, crepe_hop_length):
-        # default resample type of librosa.resample is "soxr_hq".
-        # Quality: soxr_vhq > soxr_hq
-        x, sr = librosa.load(path, self.fs)  # , res_type='soxr_vhq'
+        x = load_audio(path, self.fs)
         p_len = x.shape[0] // self.hop
-        f0_min = 50
-        f0_max = 1100
-        assert sr == self.fs
         if f0_method == "pm":
             time_step = 160 / 16000 * 1000
             f0 = (
-                parselmouth.Sound(x, sr)
+                parselmouth.Sound(x, self.fs)
                 .to_pitch_ac(
                     time_step=time_step / 1000,
                     voicing_threshold=0.6,
-                    pitch_floor=f0_min,
-                    pitch_ceiling=f0_max,
+                    pitch_floor=self.f0_min,
+                    pitch_ceiling=self.f0_max,
                 )
                 .selected_array["frequency"]
             )
@@ -66,19 +64,19 @@ class FeatureInput(object):
         elif f0_method == "harvest":
             f0, t = pyworld.harvest(
                 x.astype(np.double),
-                fs=sr,
+                fs=self.fs,
                 f0_ceil=self.f0_max,
                 f0_floor=self.f0_min,
-                frame_period=1000 * self.hop / sr,
+                frame_period=1000 * self.hop / self.fs,
             )
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
         elif f0_method == "dio":
             f0, t = pyworld.dio(
                 x.astype(np.double),
-                fs=sr,
+                fs=self.fs,
                 f0_ceil=self.f0_max,
                 f0_floor=self.f0_min,
-                frame_period=1000 * self.hop / sr,
+                frame_period=1000 * self.hop / self.fs,
             )
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
         elif f0_method == "crepe": # Fork Feature: Added crepe f0 for f0 feature extraction
@@ -106,10 +104,10 @@ class FeatureInput(object):
             # Pitch prediction for pitch extraction
             pitch: Tensor = torchcrepe.predict(
                 audio,
-                sr,
+                self.fs,
                 crepe_hop_length,
-                f0_min,
-                f0_max,
+                self.f0_min,
+                self.f0_max,
                 "full",
                 batch_size=crepe_hop_length * 2,
                 device=torch_device,

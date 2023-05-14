@@ -116,8 +116,15 @@ hubert_base.pt
 
 ./uvr5_weights
 
-#If you are using Windows, you may also need this dictionary, skip if FFmpeg is installed
-ffmpeg.exe
+
+If you want to test the v2 version model (the v2 version model changes the feature from the 256-dimensional input of 9-layer hubert+final_proj to the 768-dimensional input of 12-layer hubert, and adds 3 cycle discriminators), an additional download is required
+
+./pretrained_v2 
+
+#If you are using Windows, you may need this file, skip if ffmpeg and ffprobe are installed; ubuntu/debian users can install these two libraries through apt install ffmpeg
+./ffmpeg
+
+./ffprobe
 ```
 # Running the Web GUI to Infer & Train 💪
 
