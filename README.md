@@ -1,11 +1,13 @@
 <div align="center">
 
-<h1>Mangio-RVC-Fork (Retrieval-based-Voice-Conversion) 💻 </h1>
+<h1>Mangio-RVC-Fork with v2 Support! 💻 </h1>
 A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. <br><br>
 <b> 
 
 > 💓 Please support the original [RVC repository](https://www.bilibili.com/video/BV1pm4y1z7Gm/). Without it, obviously this fork wouldn't have been possible. The Mangio-RVC-Fork aims to essentially enhance the features that the original RVC repo has in my own way. Please note that this fork is NOT STABLE and was forked with the intention of experimentation. Do not use this Fork thinking it is a "better" version of the original repo. Think of it more like another "version" of the original repo. Please note that this doesn't have a google colab. If you want to use google colab, go to the original repository. This fork is intended to be used with paperspace and local machines for now.
 </b>
+
+<b> Now supports version 2 pre-trained models! </b>
 
 ## Add me on discord: Funky Town#2048
 I am able to communicate with you here and there.
@@ -50,9 +52,7 @@ Special thanks to discord user @kalomaze#2983 for creating a temporary colab not
 + Tensorboard access via Makefile (make tensorboard)
 + Total epoch slider for the training now limited to 10,000 not just 1000.
 + Added CLI functionality
-  + added train-index-cli.py to train the feature index without the GUI
-  + added extract-small-model.py to extract the small model without the GUI
-  + added infer-cli.py to do inference without the GUI.
+  + added --is_cli flag on infer-web.py to use the CLI system.
 
 ## This repository has the following features too:
 + Reduce tone leakage by replacing source feature to training-set feature using top1 retrieval;
@@ -75,6 +75,11 @@ Crepe training is still incredibly instable and there's been report of a memory 
 
 ## If you get CUDA issues with crepe training, or pm and harvest etc.
 This is due to the number of processes (n_p) being too high. Make sure to cut the number of threads down. Please lower the value of the "Number of CPU Threads to use" slider on the feature extraction GUI.  
+
+# Version Notes
+Welcome to RVC version 2!
+
+Please note that version 2 pre-trained models only support 40k model sample rates. If you want to use 32k or 48k however, please use version 1 pre-trained models.
 
 # Installing the Dependencies 🖥️
 Using pip (python3.9.8 is stable with this fork)
@@ -103,7 +108,10 @@ If you're experiencing httpx invalid port errors please insteall httpx==0.23.0
 ## Paperspace Users:
 ```bash
 cd Mangio-RVC-Fork
-make base # Do only once after cloning this fork (No need to do it again unless pre-models change on hugging face)
+# Do only once after cloning this fork (No need to do it again unless pre-models change on hugging face)
+make basev1 
+# or if using version 2 pre-trained models.
+make basev2
 ```
 
 ## Local Users
@@ -133,91 +141,68 @@ If you want to test the v2 version model (the v2 version model changes the featu
 ## For paperspace users:
 ```bash
 cd Mangio-RVC-Fork
-make run
+make run-ui
 ```
 Then click the gradio link it provides.
 
+## Or manually
+
+```bash
+# use --paperspace or --colab if on cloud system
+python infer-web.py --pycmd python --port 3000
+```
+
 # Inference & Training with CLI 💪 🔠
-
-## Pre-processing the Dataset without the GUI
+## Paperspace users
 ```bash
-# arg 1 = Dataset Path
-# arg 2 = Sample Rate
-# arg 3 = Number of Threads
-# arg 4 = Export Directory (logs/*YOUR DATASET FOLDER NAME*)
-# arg 5 = No parallel: True or False
-python trainset_preprocess_pipeline_print.py /INSERTDATASETNAMEHERE 40000 8 logs/mi-test True 
+cd Mangio-RVC-Fork
+make run-cli
+```
+## Or Manually
+```bash
+python infer-web.py --pycmd python --is_cli
+```
+## Usage
+```bash
+Mangio-RVC-Fork v2 CLI App!
+
+Welcome to the CLI version of RVC. Please read the documentation on https://github.com/Mangio621/Mangio-RVC-Fork (README.MD) to understand how to use this app.
+
+You are currently in 'HOME':
+    go home            : Takes you back to home with a navigation list.
+    go infer           : Takes you to inference command execution.
+
+    go pre-process     : Takes you to training step.1) pre-process command execution.
+    go extract-feature : Takes you to training step.2) extract-feature command execution.
+    go train           : Takes you to training step.3) being or continue training command execution.
+    go train-feature   : Takes you to the train feature index command execution.
+
+    go extract-model   : Takes you to the extract small model command execution.
+
+HOME:
 ```
 
-## f0 Feature Extraction without the GUI
-```bash
-# arg 1 = Path of model logs (logs/*YOUR MODEL NAME*)
-# arg 2 = Number of threads to use
-# arg 3 = f0 method: pm, harvest, dio, crepe
-# arg 4 = Crepe Hop Length (Value is used if using crepe method)
-python extract_f0_print.py logs/mi-test 4 harvest 128
-# arg 1 = device
-# arg 2 = n_part
-# arg 3 = i_part
-# arg 4 = GPU Device number ("0")
-# arg 5 = Export Directory logs/*MODEL NAME*
-python extract_feature_print.py cpu 1 0 0 logs/mi-test
-```
-
-## Training without the GUI
+Typing 'go infer' for example will take you to the infer page where you can then enter in your arguments that you wish to use for that specific page. For example typing 'go infer' will take you here:
 
 ```bash
-# Arguments
-# -e = Name of model
-# -sr = Sample Rate
-# -f0 = Model has pitch guidance? 1 for yes. 0 for no.
-# -bs = Batch size
-# -g = GPU card slot
-# -te = Total Epochs
-# -se = Save epoch interval
-# -pg = Pretrained Generator Model Path
-# -pd = Pretrained Discriminator Model Path
-# -l = Save only latest model? 1 for yes 0 for no
-# -c = Cache data in gpu? 1 for yes 0 for no
-python train_nsf_sim_cache_sid_load_pretrain.py -e mi-test -sr 40k -f0 1 -bs 8 -g 0 -te 10000 -se 50 -pg pretrained/f0G40k.pth -pd pretrained/f0D40k.pth -l 0 -c 0
-```
+HOME: go infer
+You are currently in 'INFER':
+    arg 1) model name with .pth in ./weights: mi-test.pth
+    arg 2) source audio path: myFolder\MySource.wav
+    arg 3) output file name to be placed in './audio-outputs': MyTest.wav
+    arg 4) feature index file path: logs/mi-test/added_IVF3042_Flat_nprobe_1.index
+    arg 5) speaker id: 0
+    arg 6) transposition: 0
+    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny)
+    arg 8) crepe hop length: 128
+    arg 9) harvest median filter radius: 3 (0-7)
+    arg 10) post resample rate: 0
+    arg 11) mix volume envelope: 1
+    arg 12) feature index ratio: 0.78 (0-1)
 
-## Training the Feature Index without the GUI
+Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 128 3 0 1 0.95
 
-```bash
-# + Mangio-RVC-Fork Feature. Train the index with the CLI
-# arg1 = Model Name (name of the model folder in logs) 
-python train-index-cli.py mi-test
-```
-
-## Extract Model from checkpoint without the GUI
-
-```bash
-# + Mangio-RVC-Fork Feature. Extract Small Model from checkpoint from the CLI.
-# The small model refers to the model that can be used for inference
-# Arguments:
-# arg1 = Path of the model checkpoint (g file path)
-# arg2 = Model Save Name
-# arg3 = Sample Rate: "32k" "40k" or "48k"
-# arg4 = Has Pitch guidance (f0)? Either 1 for yes or 0 for no
-# arg5 = Model Information. (OPTIONAL). 
-python extract-small-model-cli.py logs/G_99750.pth MyModel 40k 1 "This is a cool model."
-```
-
-## Inference without the GUI (Voice Conversion)
-```bash
-# + Mangio-RVC-Fork Feature. Infer audio with just the CLI
-# Arguments
-# arg1 = model name in weights folder. (mi-test.pth)
-# arg2 = source file path (.wav)
-# arg3 = output file name to be placed in ./audio-outputs (myoutput.wav).
-# arg4 = feature index file path. (E:\added_IVF3042_Flat_nprobe_1.index)
-# arg5 = speaker ID (0)
-# arg6 = transposition. (12 = 12 semitones up)
-# arg7 = f0 method. (harvest, pm, crepe, dio, crepe-tiny)
-# arg8 = crepe hop length. Use 128. (applies to crepe f0 method only)
-# arg9 = feature index ratio (0.78)
-python infer-cli.py mi-test.pth E:\my-source-file.wav conversion_output.wav E:\added_IVF3042_Flat_nprobe_1.index 0 -2 pm 128 0.78
+INFER: <INSERT ARGUMENTS HERE OR COPY AND PASTE THE EXAMPLE>
 ```
 
 # Running the Tensorboard 📉
