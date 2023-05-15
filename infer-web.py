@@ -1165,6 +1165,9 @@ def cli_split_command(com):
     split_array = [group[0] if group[0] else group[1] for group in split_array]
     return split_array
 
+def execute_generator_function(genObject):
+    for _ in genObject: pass
+
 def cli_infer(com):
     # get VC first
     com = cli_split_command(com)
@@ -1217,13 +1220,14 @@ def cli_pre_process(com):
     sample_rate = com[2]
     num_processes = int(com[3])
 
-    print("Mangio-RVC-Fork Pre-process: Started")
-    preprocess_dataset(
+    print("Mangio-RVC-Fork Pre-process: Starting...")
+    generator = preprocess_dataset(
         trainset_directory, 
         model_name, 
         sample_rate, 
         num_processes
     )
+    execute_generator_function(generator)
     print("Mangio-RVC-Fork Pre-process: Finished")
 
 def cli_extract_feature(com):
@@ -1239,7 +1243,7 @@ def cli_extract_feature(com):
     print("Mangio-RVC-CLI: Extract Feature Has Pitch: " + str(has_pitch_guidance))
     print("Mangio-RVC-CLI: Extract Feature Version: " + str(version))
     print("Mangio-RVC-Fork Feature Extraction: Starting...")
-    extract_f0_feature(
+    generator = extract_f0_feature(
         gpus, 
         num_processes, 
         f0_method, 
@@ -1248,6 +1252,7 @@ def cli_extract_feature(com):
         version, 
         crepe_hop_length
     )
+    execute_generator_function(generator)
     print("Mangio-RVC-Fork Feature Extraction: Finished")
 
 def cli_train(com):
@@ -1293,11 +1298,11 @@ def cli_train_feature(com):
     model_name = com[0]
     version = com[1]
     print("Mangio-RVC-Fork Train Feature Index-CLI: Training... Please wait")
-    train_feature_process = train_index(
+    generator = train_index(
         model_name,
         version
     )
-    print(str(train_feature_process))
+    execute_generator_function(generator)
     print("Mangio-RVC-Fork Train Feature Index-CLI: Done!")
 
 def cli_extract_model(com):
@@ -1349,12 +1354,12 @@ def print_page_details():
         print("    arg 1) Model folder name in ./logs: mi-test")
         print("    arg 2) Trainset directory: mydataset (or) E:\\my-data-set")
         print("    arg 3) Sample rate: 40k (32k, 40k, 48k)")
-        print("    arg 4) Number of CPU threads to use: 24 (1-24)\n")
+        print("    arg 4) Number of CPU threads to use: 8 \n")
         print("Example: mi-test mydataset 40k 24")
     elif cli_current_page == "EXTRACT-FEATURE":
         print("    arg 1) Model folder name in ./logs: mi-test")
         print("    arg 2) Gpu card slot: 0 (0-1-2 if using 3 GPUs)")
-        print("    arg 3) Number of CPU threads to use: 24 (1-24)")
+        print("    arg 3) Number of CPU threads to use: 8")
         print("    arg 4) Has Pitch Guidance?: 1 (0 for no, 1 for yes)")
         print("    arg 5) f0 Method: harvest (pm, harvest, dio, crepe)")
         print("    arg 6) Crepe hop length: 128")
@@ -1431,7 +1436,10 @@ def cli_navigation_loop():
         print("You are currently in '%s':" % cli_current_page)
         print_page_details()
         command = input("%s: " % cli_current_page)
-        execute_command(command)
+        try:
+            execute_command(command)
+        except:
+            print(traceback.format_exc())
 
 if(config.is_cli):
     print("\n\nMangio-RVC-Fork v2 CLI App!\n")
