@@ -4,21 +4,21 @@ from multiprocessing import cpu_count
 
 
 class Config:
-    def __init__(self, is_gui=True):
+    def __init__(self):
         self.device = "cuda:0"
         self.is_half = True
         self.n_cpu = 0
         self.gpu_name = None
         self.gpu_mem = None
-        if(is_gui):
-            (
-                self.python_cmd,
-                self.listen_port,
-                self.iscolab,
-                self.noparallel,
-                self.noautoopen,
-                self.paperspace,
-            ) = self.arg_parse()
+        (
+            self.python_cmd,
+            self.listen_port,
+            self.iscolab,
+            self.noparallel,
+            self.noautoopen,
+            self.paperspace,
+            self.is_cli,
+        ) = self.arg_parse()
         
         self.x_pad, self.x_query, self.x_center, self.x_max = self.device_config()
 
@@ -41,6 +41,9 @@ class Config:
         parser.add_argument( # Fork Feature. Paperspace integration for web UI
             "--paperspace", action="store_true", help="Note that this argument just shares a gradio link for the web UI. Thus can be used on other non-local CLI systems."
         )
+        parser.add_argument( # Fork Feature. Embed a CLI into the infer-web.py
+            "--is_cli", action="store_true", help="Use the CLI instead of setting up a gradio UI. This flag will launch an RVC text interface where you can execute functions from infer-web.py!"
+        )
         cmd_opts = parser.parse_args()
 
         cmd_opts.port = cmd_opts.port if 0 <= cmd_opts.port <= 65535 else 7865
@@ -52,6 +55,7 @@ class Config:
             cmd_opts.noparallel,
             cmd_opts.noautoopen,
             cmd_opts.paperspace,
+            cmd_opts.is_cli,
         )
 
     def device_config(self) -> tuple:

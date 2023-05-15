@@ -14,7 +14,7 @@ install: ## Install dependencies (Do everytime you start up a paperspace machine
 	apt-get update
 	apt -y install -qq aria2
 
-base: ## Download base files (Do only once after cloning the fork)
+baseV1: ## Download version 1 pre-trained models (Do only once after cloning the fork)
 	mkdir -p pretrained uvr5_weights
 	git pull
 	aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained/D32k.pth -d pretrained -o D32k.pth
@@ -33,8 +33,11 @@ base: ## Download base files (Do only once after cloning the fork)
 	aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/HP5-主旋律人声vocals+其他instrumentals.pth -d uvr5_weights -o HP5-主旋律人声vocals+其他instrumentals.pth
 	aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/hubert_base.pt -d ./ -o hubert_base.pt
 
-run: ## Run the python GUI
+run-ui: ## Run the python GUI
 	python infer-web.py --paperspace --pycmd python
+
+run-cli: ## Run the python CLI
+	python infer-web.py --pycmd python --is_cli
 
 tensorboard: ## Start the tensorboard (Run on separate terminal)
 	echo https://tensorboard-$$(hostname).clg07azjl.paperspacegradient.com

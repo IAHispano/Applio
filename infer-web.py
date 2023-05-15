@@ -1154,6 +1154,294 @@ def export_onnx(ModelPath, ExportedPath, MoeVS=True):
     return "Finished"
 
 
+#region Mangio-RVC-Fork CLI App
+import re as regex
+
+cli_current_page = "HOME"
+
+def cli_split_command(com):
+    exp = r'(?:(?<=\s)|^)"(.*?)"(?=\s|$)|(\S+)'
+    split_array = regex.findall(exp, com)
+    split_array = [group[0] if group[0] else group[1] for group in split_array]
+    return split_array
+
+def cli_infer(com):
+    # get VC first
+    com = cli_split_command(com)
+    model_name = com[0]
+    source_audio_path = com[1]
+    output_file_name = com[2]
+    feature_index_path = com[3]
+    f0_file = None # Not Implemented Yet
+
+    # Get parameters for inference
+    speaker_id = int(com[4])
+    transposition = float(com[5])
+    f0_method = com[6]
+    crepe_hop_length = int(com[7])
+    harvest_median_filter = int(com[8])
+    resample = int(com[9])
+    mix = float(com[10])
+    feature_ratio = float(com[11])
+
+    print("Mangio-RVC-Fork Infer-CLI: Starting the inference...")
+    vc_data = get_vc(model_name)
+    print(vc_data)
+    print("Mangio-RVC-Fork Infer-CLI: Performing inference...")
+    conversion_data = vc_single(
+        speaker_id,
+        source_audio_path,
+        transposition,
+        f0_file,
+        f0_method,
+        feature_index_path,
+        feature_index_path,
+        feature_ratio,
+        harvest_median_filter,
+        resample,
+        mix,
+        crepe_hop_length,        
+    )
+    if "Success." in conversion_data[0]:
+        print("Mangio-RVC-Fork Infer-CLI: Inference succeeded. Writing to %s/%s..." % ('audio-outputs', output_file_name))
+        wavfile.write('%s/%s' % ('audio-outputs', output_file_name), conversion_data[1][0], conversion_data[1][1])
+        print("Mangio-RVC-Fork Infer-CLI: Finished! Saved output to %s/%s" % ('audio-outputs', output_file_name))
+    else:
+        print("Mangio-RVC-Fork Infer-CLI: Inference failed. Here's the traceback: ")
+        print(conversion_data[0])
+
+def cli_pre_process(com):
+    com = cli_split_command(com)
+    model_name = com[0]
+    trainset_directory = com[1]
+    sample_rate = com[2]
+    num_processes = int(com[3])
+
+    print("Mangio-RVC-Fork Pre-process: Started")
+    preprocess_dataset(
+        trainset_directory, 
+        model_name, 
+        sample_rate, 
+        num_processes
+    )
+    print("Mangio-RVC-Fork Pre-process: Finished")
+
+def cli_extract_feature(com):
+    com = cli_split_command(com)
+    model_name = com[0]
+    gpus = com[1]
+    num_processes = int(com[2])
+    has_pitch_guidance = True if (int(com[3]) == 1) else False
+    f0_method = com[4]
+    crepe_hop_length = int(com[5])
+    version = com[6] # v1 or v2
+    
+    print("Mangio-RVC-CLI: Extract Feature Has Pitch: " + str(has_pitch_guidance))
+    print("Mangio-RVC-CLI: Extract Feature Version: " + str(version))
+    print("Mangio-RVC-Fork Feature Extraction: Starting...")
+    extract_f0_feature(
+        gpus, 
+        num_processes, 
+        f0_method, 
+        has_pitch_guidance, 
+        model_name, 
+        version, 
+        crepe_hop_length
+    )
+    print("Mangio-RVC-Fork Feature Extraction: Finished")
+
+def cli_train(com):
+    com = cli_split_command(com)
+    model_name = com[0]
+    sample_rate = com[1]
+    has_pitch_guidance = True if (int(com[2]) == 1) else False
+    speaker_id = int(com[3])
+    save_epoch_iteration = int(com[4])
+    total_epoch = int(com[5]) # 10000
+    batch_size = int(com[6])
+    gpu_card_slot_numbers = com[7]
+    if_save_latest = i18n("是") if (int(com[8]) == 1) else i18n("否")
+    if_cache_gpu = i18n("是") if (int(com[9]) == 1) else i18n("否")
+    if_save_every_weight = i18n("是") if (int(com[10]) == 1) else i18n("否")
+    version = com[11]
+
+    pretrained_base = "pretrained/" if version == "v1" else "pretrained_v2/" 
+    
+    g_pretrained_path = "%sf0G%s.pth" % (pretrained_base, sample_rate)
+    d_pretrained_path = "%sf0D%s.pth" % (pretrained_base, sample_rate)
+
+    print("Mangio-RVC-Fork Train-CLI: Training...")
+    click_train(
+        model_name,
+        sample_rate,
+        has_pitch_guidance,
+        speaker_id,
+        save_epoch_iteration,
+        total_epoch,
+        batch_size,
+        if_save_latest,
+        g_pretrained_path,
+        d_pretrained_path,
+        gpu_card_slot_numbers,
+        if_cache_gpu,
+        if_save_every_weight,
+        version
+    )
+
+def cli_train_feature(com):
+    com = cli_split_command(com)
+    model_name = com[0]
+    version = com[1]
+    print("Mangio-RVC-Fork Train Feature Index-CLI: Training... Please wait")
+    train_feature_process = train_index(
+        model_name,
+        version
+    )
+    print(str(train_feature_process))
+    print("Mangio-RVC-Fork Train Feature Index-CLI: Done!")
+
+def cli_extract_model(com):
+    com = cli_split_command(com)
+    model_path = com[0]
+    save_name = com[1]
+    sample_rate = com[2]
+    has_pitch_guidance = com[3]
+    info = com[4]
+    version = com[5]
+    extract_small_model_process = extract_small_model(
+        model_path,
+        save_name,
+        sample_rate,
+        has_pitch_guidance,
+        info,
+        version
+    )
+    if extract_small_model_process == "Success.":
+        print("Mangio-RVC-Fork Extract Small Model: Success!")
+    else:
+        print(str(extract_small_model_process))        
+        print("Mangio-RVC-Fork Extract Small Model: Failed!")
+
+def print_page_details():
+    if cli_current_page == "HOME":
+        print("    go home            : Takes you back to home with a navigation list.")
+        print("    go infer           : Takes you to inference command execution.\n")
+        print("    go pre-process     : Takes you to training step.1) pre-process command execution.")
+        print("    go extract-feature : Takes you to training step.2) extract-feature command execution.")
+        print("    go train           : Takes you to training step.3) being or continue training command execution.")
+        print("    go train-feature   : Takes you to the train feature index command execution.\n")
+        print("    go extract-model   : Takes you to the extract small model command execution.")
+    elif cli_current_page == "INFER":
+        print("    arg 1) model name with .pth in ./weights: mi-test.pth")
+        print("    arg 2) source audio path: myFolder\\MySource.wav")
+        print("    arg 3) output file name to be placed in './audio-outputs': MyTest.wav")
+        print("    arg 4) feature index file path: logs/mi-test/added_IVF3042_Flat_nprobe_1.index")
+        print("    arg 5) speaker id: 0")
+        print("    arg 6) transposition: 0")
+        print("    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny)")
+        print("    arg 8) crepe hop length: 128")
+        print("    arg 9) harvest median filter radius: 3 (0-7)")
+        print("    arg 10) post resample rate: 0")
+        print("    arg 11) mix volume envelope: 1")
+        print("    arg 12) feature index ratio: 0.78 (0-1)\n")
+        print("Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 128 3 0 1 0.95")
+    elif cli_current_page == "PRE-PROCESS":
+        print("    arg 1) Model folder name in ./logs: mi-test")
+        print("    arg 2) Trainset directory: mydataset (or) E:\\my-data-set")
+        print("    arg 3) Sample rate: 40k (32k, 40k, 48k)")
+        print("    arg 4) Number of CPU threads to use: 24 (1-24)\n")
+        print("Example: mi-test mydataset 40k 24")
+    elif cli_current_page == "EXTRACT-FEATURE":
+        print("    arg 1) Model folder name in ./logs: mi-test")
+        print("    arg 2) Gpu card slot: 0 (0-1-2 if using 3 GPUs)")
+        print("    arg 3) Number of CPU threads to use: 24 (1-24)")
+        print("    arg 4) Has Pitch Guidance?: 1 (0 for no, 1 for yes)")
+        print("    arg 5) f0 Method: harvest (pm, harvest, dio, crepe)")
+        print("    arg 6) Crepe hop length: 128")
+        print("    arg 7) Version for pre-trained models: v2 (use either v1 or v2)\n")
+        print("Example: mi-test 0 24 1 harvest 128 v2")
+    elif cli_current_page == "TRAIN":
+        print("    arg 1) Model folder name in ./logs: mi-test")
+        print("    arg 2) Sample rate: 40k (32k, 40k, 48k)")
+        print("    arg 3) Has Pitch Guidance?: 1 (0 for no, 1 for yes)")
+        print("    arg 4) speaker id: 0")
+        print("    arg 5) Save epoch iteration: 50")
+        print("    arg 6) Total epochs: 10000")
+        print("    arg 7) Batch size: 8")
+        print("    arg 8) Gpu card slot: 0 (0-1-2 if using 3 GPUs)")
+        print("    arg 9) Save only the latest checkpoint: 0 (0 for no, 1 for yes)")
+        print("    arg 10) Whether to cache training set to vram: 0 (0 for no, 1 for yes)")
+        print("    arg 11) Save extracted small model every generation?: 0 (0 for no, 1 for yes)")
+        print("    arg 12) Model architecture version: v2 (use either v1 or v2)\n")
+        print("Example: mi-test 40k 1 0 50 10000 8 0 0 0 0 v2")
+    elif cli_current_page == "TRAIN-FEATURE":
+        print("    arg 1) Model folder name in ./logs: mi-test")
+        print("    arg 2) Model architecture version: v2 (use either v1 or v2)\n")
+        print("Example: mi-test v2")
+    elif cli_current_page == "EXTRACT-MODEL":
+        print("    arg 1) Model Path: logs/mi-test/G_168000.pth")
+        print("    arg 2) Model save name: MyModel")
+        print("    arg 3) Sample rate: 40k (32k, 40k, 48k)")
+        print("    arg 4) Has Pitch Guidance?: 1 (0 for no, 1 for yes)")
+        print('    arg 5) Model information: "My Model"')
+        print("    arg 6) Model architecture version: v2 (use either v1 or v2)\n")
+        print('Example: logs/mi-test/G_168000.pth MyModel 40k 1 "Created by Cole Mangio" v2')
+    print("")
+
+def change_page(page):
+    global cli_current_page
+    cli_current_page = page
+    return 0
+
+def execute_command(com):
+    if com == "go home":
+        return change_page("HOME")
+    elif com == "go infer":
+        return change_page("INFER")
+    elif com == "go pre-process":
+        return change_page("PRE-PROCESS")
+    elif com == "go extract-feature":
+        return change_page("EXTRACT-FEATURE")
+    elif com == "go train":
+        return change_page("TRAIN")
+    elif com == "go train-feature":
+        return change_page("TRAIN-FEATURE")
+    elif com == "go extract-model":
+        return change_page("EXTRACT-MODEL")
+    else:
+        if com[:3] == "go ":
+            print("page '%s' does not exist!" % com[3:])
+            return 0
+    
+    if cli_current_page == "INFER":
+        cli_infer(com)
+    elif cli_current_page == "PRE-PROCESS":
+        cli_pre_process(com)
+    elif cli_current_page == "EXTRACT-FEATURE":
+        cli_extract_feature(com)
+    elif cli_current_page == "TRAIN":
+        cli_train(com)
+    elif cli_current_page == "TRAIN-FEATURE":
+        cli_train_feature(com)
+    elif cli_current_page == "EXTRACT-MODEL":
+        cli_extract_model(com)
+
+def cli_navigation_loop():
+    while True:
+        print("You are currently in '%s':" % cli_current_page)
+        print_page_details()
+        command = input("%s: " % cli_current_page)
+        execute_command(command)
+
+if(config.is_cli):
+    print("\n\nMangio-RVC-Fork v2 CLI App!\n")
+    print("Welcome to the CLI version of RVC. Please read the documentation on https://github.com/Mangio621/Mangio-RVC-Fork (README.MD) to understand how to use this app.\n")
+    cli_navigation_loop()
+
+#endregion
+
+#region RVC WebUI App
+
 with gr.Blocks(theme=gr.themes.Soft()) as app:
     gr.HTML("<h1> The Mangio-RVC-Fork 💻 </h1>")
     gr.Markdown(
@@ -1811,3 +2099,5 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
             server_port=config.listen_port,
             quiet=True,
         )
+
+#endregion
