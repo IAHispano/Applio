@@ -4,6 +4,7 @@ now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
 sys.path.append(os.path.join(now_dir, "train"))
 import utils
+import datetime
 
 hps = utils.get_hparams()
 os.environ["CUDA_VISIBLE_DEVICES"] = hps.gpus.replace("-", ",")
@@ -49,6 +50,19 @@ from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from process_ckpt import savee
 
 global_step = 0
+
+
+class EpochRecorder:
+    def __init__(self):
+        self.last_time = ttime()
+
+    def record(self):
+        now_time = ttime()
+        elapsed_time = now_time - self.last_time
+        self.last_time = now_time
+        elapsed_time_str = str(datetime.timedelta(seconds=elapsed_time))
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return f"[{current_time}] | ({elapsed_time_str})"
 
 
 def main():
@@ -323,6 +337,7 @@ def train_and_evaluate(
         data_iterator = enumerate(train_loader)
 
     # Run steps
+    epoch_recorder = EpochRecorder()
     for batch_idx, info in data_iterator:
         # Data
         ## Unpack
@@ -542,7 +557,7 @@ def train_and_evaluate(
             )
 
     if rank == 0:
-        logger.info("====> Epoch: {}".format(epoch))
+        logger.info("====> Epoch: {} {}".format(epoch, epoch_recorder.record()))
     if epoch >= hps.total_epoch and rank == 0:
         logger.info("Training is done. The program is closed.")
 

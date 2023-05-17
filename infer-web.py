@@ -1,4 +1,5 @@
 import torch, os, traceback, sys, warnings, shutil, numpy as np
+
 os.environ["no_proxy"] = "localhost, 127.0.0.1, ::1"
 
 from multiprocessing import cpu_count
@@ -429,6 +430,7 @@ def change_choices():
 
 def clean():
     return {"value": "", "__type__": "update"}
+
 
 sr_dict = {
     "32k": 32000,
@@ -1984,7 +1986,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                         ckpt_b,
                         alpha_a,
                         sr_,
-                        if_f0_,
+                        1 if if_f0_ == i18n("是") else 0,
                         info__,
                         name_to_save0,
                         version_2,
