@@ -1,7 +1,6 @@
 import torch, os, traceback, sys, warnings, shutil, numpy as np
 
 os.environ["no_proxy"] = "localhost, 127.0.0.1, ::1"
-
 from multiprocessing import cpu_count
 import threading
 from time import sleep
@@ -1986,7 +1985,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                         ckpt_b,
                         alpha_a,
                         sr_,
-                        1 if if_f0_ == i18n("是") else 0,
+                        if_f0_,
                         info__,
                         name_to_save0,
                         version_2,
