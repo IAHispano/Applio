@@ -78,6 +78,7 @@ class VC(object):
         # Else wise return the "cpu" as a torch device, 
         return torch.device("cpu")
 
+    # Fork Feature: Compute f0 with the crepe method
     def get_f0_crepe_computation(
             self, 
             x, 
@@ -119,6 +120,16 @@ class VC(object):
         f0 = np.nan_to_num(target)
         return f0 # Resized f0
 
+    # Fork Feature: Compute pYIN computation from librosa
+    def get_pyin_computation(self, x, f0_min, f0_max):
+        # Not Finished
+        f0, _, _ = librosa.pyin(
+            x,
+            fmin=f0_min,
+            fmax=f0_max
+        )
+        return librosa.times_like(f0)
+
     def get_f0(
         self,
         input_audio_path,
@@ -159,8 +170,10 @@ class VC(object):
                 f0 = signal.medfilt(f0, 3)
         elif f0_method == "crepe": # Fork Feature: Adding a new f0 algorithm called crepe
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
-        elif f0_method == "crepe-tiny": # For Feature add crepe-tiny model
+        elif f0_method == "crepe-tiny": # Fork Feature add crepe-tiny model
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length, "tiny")
+        elif f0_method == "pyin": # Fork feature. add pyin method
+            f0 = self.get_pyin_computation(f0_min, f0_max)
 
         f0 *= pow(2, f0_up_key / 12)
         # with open("test.txt","w")as f:f.write("\n".join([str(i)for i in f0.tolist()]))
