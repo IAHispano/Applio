@@ -120,15 +120,15 @@ class VC(object):
         f0 = np.nan_to_num(target)
         return f0 # Resized f0
 
-    # Fork Feature: Compute pYIN computation from librosa
-    def get_pyin_computation(self, x, f0_min, f0_max):
-        # Not Finished
-        f0, _, _ = librosa.pyin(
-            x,
+    # Pyin Fork Feature Not Working Yet
+    def get_f0_pyin(self, f0_min, f0_max):
+        y, sr = librosa.load('saudio/Sidney.wav', sr=self.sr)
+        f0, voiced_flag, voiced_probs = librosa.pyin(
+            y,
             fmin=f0_min,
             fmax=f0_max
         )
-        return librosa.times_like(f0)
+        return f0
 
     def get_f0(
         self,
@@ -173,7 +173,7 @@ class VC(object):
         elif f0_method == "crepe-tiny": # Fork Feature add crepe-tiny model
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length, "tiny")
         elif f0_method == "pyin": # Fork feature. add pyin method
-            f0 = self.get_pyin_computation(f0_min, f0_max)
+            f0 = self.get_f0_pyin(f0_min, f0_max)
 
         f0 *= pow(2, f0_up_key / 12)
         # with open("test.txt","w")as f:f.write("\n".join([str(i)for i in f0.tolist()]))

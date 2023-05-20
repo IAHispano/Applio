@@ -1745,10 +1745,10 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                 )
                 np7 = gr.Slider(
                     minimum=0,
-                    maximum=ncpu,
+                    maximum=config.n_cpu,
                     step=1,
                     label=i18n("提取音高和处理数据使用的CPU进程数"),
-                    value=ncpu,
+                    value=config.n_cpu,
                     interactive=True,
                 )
             with gr.Group():  # 暂时单人的, 后面支持最多4人的#数据处理
