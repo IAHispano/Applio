@@ -170,9 +170,13 @@ class VC(object):
                 f0 = cache_harvest_f0(input_audio_path, self.sr, f0_max, f0_min, 10)
                 if filter_radius > 2:
                     f0 = signal.medfilt(f0, 3)
+                f0 = f0[1:] # Get rid of first frame.
             # Push method to the stack
             f0_computation_stack.append(f0)
         
+        for fc in f0_computation_stack:
+            print(len(fc))
+
         print("Calculating hybrid median f0 from the stack of: %s" % str(methods))
         f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
         return f0_median_hybrid

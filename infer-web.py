@@ -1345,7 +1345,7 @@ def print_page_details():
         print("    arg 4) feature index file path: logs/mi-test/added_IVF3042_Flat_nprobe_1.index")
         print("    arg 5) speaker id: 0")
         print("    arg 6) transposition: 0")
-        print("    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny)")
+        print("    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x])")
         print("    arg 8) crepe hop length: 128")
         print("    arg 9) harvest median filter radius: 3 (0-7)")
         print("    arg 10) post resample rate: 0")
