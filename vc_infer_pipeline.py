@@ -119,16 +119,63 @@ class VC(object):
         )
         f0 = np.nan_to_num(target)
         return f0 # Resized f0
+    
+    # Fork Feature: Acquire median hybrid f0 estimation calculation
+    def get_f0_hybrid_computation(
+        self, 
+        methods_str, 
+        input_audio_path,
+        x,
+        f0_min,
+        f0_max,
+        p_len,
+        filter_radius,
+        crepe_hop_length,
+        time_step,
+    ):
+        # Get various f0 methods from input to use in the computation stack
+        s = methods_str
+        s = s.split('hybrid')[1]
+        s = s.replace('[', '').replace(']', '')
+        methods = s.split('+')
+        f0_computation_stack = []
 
-    # Pyin Fork Feature Not Working Yet
-    def get_f0_pyin(self, f0_min, f0_max):
-        y, sr = librosa.load('saudio/Sidney.wav', sr=self.sr)
-        f0, voiced_flag, voiced_probs = librosa.pyin(
-            y,
-            fmin=f0_min,
-            fmax=f0_max
-        )
-        return f0
+        print("Calculating f0 pitch estimations for methods: %s" % str(methods))
+        x = x.astype(np.float32)
+        x /= np.quantile(np.abs(x), 0.999)
+        # Get f0 calculations for all methods specified
+        for method in methods:
+            f0 = None
+            if method == "pm":
+                f0 = (
+                    parselmouth.Sound(x, self.sr)
+                    .to_pitch_ac(
+                        time_step=time_step / 1000,
+                        voicing_threshold=0.6,
+                        pitch_floor=f0_min,
+                        pitch_ceiling=f0_max,
+                    )
+                    .selected_array["frequency"]
+                )
+                pad_size = (p_len - len(f0) + 1) // 2
+                if pad_size > 0 or p_len - len(f0) - pad_size > 0:
+                    f0 = np.pad(
+                        f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
+                    )
+            elif method == "crepe":
+                f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
+            elif method == "crepe-tiny":
+                f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length, "tiny")
+            elif method == "harvest":
+                f0 = cache_harvest_f0(input_audio_path, self.sr, f0_max, f0_min, 10)
+                if filter_radius > 2:
+                    f0 = signal.medfilt(f0, 3)
+            # Push method to the stack
+            f0_computation_stack.append(f0)
+        
+        print("Calculating hybrid median f0 from the stack of: %s" % str(methods))
+        f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
+        return f0_median_hybrid
 
     def get_f0(
         self,
@@ -172,8 +219,20 @@ class VC(object):
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
         elif f0_method == "crepe-tiny": # Fork Feature add crepe-tiny model
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length, "tiny")
-        elif f0_method == "pyin": # Fork feature. add pyin method
-            f0 = self.get_f0_pyin(f0_min, f0_max)
+        elif "hybrid" in f0_method:
+            # Perform hybrid median pitch estimation
+            input_audio_path2wav[input_audio_path] = x.astype(np.double)
+            f0 = self.get_f0_hybrid_computation(
+                f0_method, 
+                input_audio_path,
+                x,
+                f0_min,
+                f0_max,
+                p_len,
+                filter_radius,
+                crepe_hop_length,
+                time_step
+            )
 
         f0 *= pow(2, f0_up_key / 12)
         # with open("test.txt","w")as f:f.write("\n".join([str(i)for i in f0.tolist()]))

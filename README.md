@@ -1,7 +1,7 @@
 <div align="center">
 
 <h1>Mangio-RVC-Fork with v2 Support! 💻 </h1>
-A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. <br><br>
+A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. In general, this fork provides a CLI interface in addition. And also gives you more f0 methods to use, as well as a personlized 'hybrid' f0 estimation method using nanmedian. <br><br>
 <b> 
 
 > 💓 Please support the original [RVC repository](https://www.bilibili.com/video/BV1pm4y1z7Gm/). Without it, obviously this fork wouldn't have been possible. The Mangio-RVC-Fork aims to essentially enhance the features that the original RVC repo has in my own way. Please note that this fork is NOT STABLE and was forked with the intention of experimentation. Do not use this Fork thinking it is a "better" version of the original repo. Think of it more like another "version" of the original repo. Please note that this doesn't have a google colab. If you want to use google colab, go to the original repository. This fork is intended to be used with paperspace and local machines for now.
@@ -53,6 +53,7 @@ Special thanks to discord user @kalomaze#2983 for creating a temporary colab not
 + Total epoch slider for the training now limited to 10,000 not just 1000.
 + Added CLI functionality
   + added --is_cli flag on infer-web.py to use the CLI system.
++ f0 hybrid (median) estimation method by calculating nanmedian for a specified array of f0 methods to get the best of all worlds for all specified f0 methods. Only for CLI right now. Soon to be implemented into GUI 🌟
 
 ## This repository has the following features too:
 + Reduce tone leakage by replacing source feature to training-set feature using top1 retrieval;
@@ -68,8 +69,24 @@ Special thanks to discord user @kalomaze#2983 for creating a temporary colab not
 + Improved GUI (More convenience).
 + Automatic removal of old generations to save space.
 + More Optimized training on paperspace machines 
-+ A pyin f0 method
-+ A median f0 hybrid method where you can select a variety f0 methods to calculate a median f0 plot. (Get the best of all worlds, and allows for more customizability)
+
+# About this fork's f0 Hybrid feature on inference
+Right now, the hybrid f0 method is only available on CLI, not GUI yet. But basically during inference, we can specify an array of f0 methods, E.G ["pm", "harvest", "crepe"], get f0 calculations of all of them and 'combine' them with nanmedian to get a hybrid f0 signal to get the 'best of all worlds' of the f0 methods provided.
+
+Here's how we would infer with the hybrid f0 method in cli:
+```bash
+MyModel.pth saudio/Source.wav Output.wav logs/mi-test/added.index 0 -2 hybrid[pm+crepe] 128 3 0 1 0.95
+```
+Notice that the method is "hybrid[pm+crepe]" instead of a singular method like "harvest".
+
+```bash
+hybrid[pm+harvest+crepe]
+# the crepe calculation will be at the 'end' of the computational stack.
+# the parselmouth calculation will be at the 'start' of the computational stack.
+# the 'hybrid' method will calculate the nanmedian of both pm, harvest and crepe
+```
+
+Many f0 methods may be used. But are to be split with a delimiter of the '+' character. Keep in mind that inference will take much longer as we are calculating f0 X more times.
 
 # About this fork's crepe training: 
 Crepe training is still incredibly instable and there's been report of a memory leak. This will be fixed in the future, however it works quite well on paperspace machines. Please note that crepe training adds a little bit of difference against a harvest trained model. Crepe sounds clearer on some parts, but sounds more robotic on some parts too. Both I would say are equally good to train with, but I still think crepe on INFERENCE is not only quicker, but more pitch stable (especially with vocal layers). Right now, its quite stable to train with a harvest model and infer it with crepe. If you are training with crepe however (f0 feature extraction), please make sure your datasets are as dry as possible to reduce artifacts and unwanted harmonics as I assume the crepe pitch estimation latches on to reverb more.
