@@ -199,7 +199,7 @@ class VC(object):
 
         print("Calculating hybrid median f0 from the stack of: %s" % str(methods))
         f0_median_hybrid = None
-        if len(f0_computation_stack) > 1:
+        if len(f0_computation_stack) == 1:
             f0_median_hybrid = f0_computation_stack[0]
         else:
             f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
