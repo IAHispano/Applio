@@ -178,6 +178,17 @@ class VC(object):
                 if filter_radius > 2:
                     f0 = signal.medfilt(f0, 3)
                 f0 = f0[1:] # Get rid of first frame.
+            elif method == "dio": # Potentially buggy?
+                f0, t = pyworld.dio(
+                    x.astype(np.double),
+                    fs=self.sr,
+                    f0_ceil=f0_max,
+                    f0_floor=f0_min,
+                    frame_period=10
+                )
+                f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
+                f0 = signal.medfilt(f0, 3)
+                f0 = f0[1:]
             #elif method == "pyin": Not Working just yet
             #    f0 = self.get_f0_pyin_computation(x, f0_min, f0_max)
             # Push method to the stack
@@ -187,7 +198,11 @@ class VC(object):
             print(len(fc))
 
         print("Calculating hybrid median f0 from the stack of: %s" % str(methods))
-        f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
+        f0_median_hybrid = None
+        if len(f0_computation_stack) > 1:
+            f0_median_hybrid = f0_computation_stack[0]
+        else:
+            f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
         return f0_median_hybrid
 
     def get_f0(
@@ -228,6 +243,16 @@ class VC(object):
             f0 = cache_harvest_f0(input_audio_path, self.sr, f0_max, f0_min, 10)
             if filter_radius > 2:
                 f0 = signal.medfilt(f0, 3)
+        elif f0_method == "dio": # Potentially Buggy?
+            f0, t = pyworld.dio(
+                x.astype(np.double),
+                fs=self.sr,
+                f0_ceil=f0_max,
+                f0_floor=f0_min,
+                frame_period=10
+            )
+            f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
+            f0 = signal.medfilt(f0, 3)
         elif f0_method == "crepe": # Fork Feature: Adding a new f0 algorithm called crepe
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
         elif f0_method == "crepe-tiny": # Fork Feature add crepe-tiny model

@@ -54,6 +54,7 @@ Special thanks to discord user @kalomaze#2983 for creating a temporary colab not
 + Added CLI functionality
   + added --is_cli flag on infer-web.py to use the CLI system.
 + f0 hybrid (median) estimation method by calculating nanmedian for a specified array of f0 methods to get the best of all worlds for all specified f0 methods. Only for CLI right now. Soon to be implemented into GUI 🌟
++ f0 hybrid (median) estimation method on f0 feature extraction (training). (VERY EXPERIMENTAL PROBABLY EXTREMELY BUGGY). Feature extraction with the hybrid method will take MUCH longer.
 
 ## This repository has the following features too:
 + Reduce tone leakage by replacing source feature to training-set feature using top1 retrieval;
@@ -88,8 +89,12 @@ hybrid[pm+harvest+crepe]
 
 Many f0 methods may be used. But are to be split with a delimiter of the '+' character. Keep in mind that inference will take much longer as we are calculating f0 X more times.
 
-# About this fork's crepe training: 
+# About this fork's f0 training additional features.
+## Crepe f0 feature extraction
 Crepe training is still incredibly instable and there's been report of a memory leak. This will be fixed in the future, however it works quite well on paperspace machines. Please note that crepe training adds a little bit of difference against a harvest trained model. Crepe sounds clearer on some parts, but sounds more robotic on some parts too. Both I would say are equally good to train with, but I still think crepe on INFERENCE is not only quicker, but more pitch stable (especially with vocal layers). Right now, its quite stable to train with a harvest model and infer it with crepe. If you are training with crepe however (f0 feature extraction), please make sure your datasets are as dry as possible to reduce artifacts and unwanted harmonics as I assume the crepe pitch estimation latches on to reverb more.
+
+## Hybrid f0 feature extraction
+Only for CLI (not implemented in GUI yet). Basically the same as usage described in this readme's f0 hybrid on inference section. Instead of stating "harvest" into your arguments in the f0 feature extraction page, you would use "hybrid[harvest+dio+pm+crepe]" for example. This f0 nanmedian hybrid method will take very long during feature extraction. Please, if you're willing to use hybrid f0, be patient.
 
 ## If you get CUDA issues with crepe training, or pm and harvest etc.
 This is due to the number of processes (n_p) being too high. Make sure to cut the number of threads down. Please lower the value of the "Number of CPU Threads to use" slider on the feature extraction GUI.  
