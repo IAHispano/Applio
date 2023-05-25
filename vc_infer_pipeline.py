@@ -120,6 +120,13 @@ class VC(object):
         f0 = np.nan_to_num(target)
         return f0 # Resized f0
     
+    # Fork Feature: Compute pYIN f0 method
+    def get_f0_pyin_computation(self, x, f0_min, f0_max):
+        y, sr = librosa.load('saudio/Sidney.wav', self.sr, mono=True)
+        f0, _, _ = librosa.pyin(y, sr=self.sr, fmin=f0_min, fmax=f0_max)
+        f0 = f0[1:] # Get rid of extra first frame
+        return f0
+
     # Fork Feature: Acquire median hybrid f0 estimation calculation
     def get_f0_hybrid_computation(
         self, 
@@ -171,6 +178,8 @@ class VC(object):
                 if filter_radius > 2:
                     f0 = signal.medfilt(f0, 3)
                 f0 = f0[1:] # Get rid of first frame.
+            #elif method == "pyin": Not Working just yet
+            #    f0 = self.get_f0_pyin_computation(x, f0_min, f0_max)
             # Push method to the stack
             f0_computation_stack.append(f0)
         
