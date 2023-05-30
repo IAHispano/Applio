@@ -80,6 +80,7 @@ MyModel.pth saudio/Source.wav Output.wav logs/mi-test/added.index 0 -2 hybrid[pm
 ```
 Notice that the method is "hybrid[pm+crepe]" instead of a singular method like "harvest".
 
+
 ```bash
 hybrid[pm+harvest+crepe]
 # the crepe calculation will be at the 'end' of the computational stack.
@@ -88,6 +89,11 @@ hybrid[pm+harvest+crepe]
 ```
 
 Many f0 methods may be used. But are to be split with a delimiter of the '+' character. Keep in mind that inference will take much longer as we are calculating f0 X more times.
+
+# About the original repo's crepe method, compared to this forks crepe method (mangio-crepe)
+The original repos crepe f0 computation method is slightly different to mine. Its arguable that in some areas, my crepe implementation sounds more stable in some parts. However, the orginal repo's crepe implementation gets rid of noise and artifacts much better. In this fork, i've also modified the original crepe computation to use the customizable crepe_hop_length feature on both the GUI and the CLI. Please let it be known, that each implementation sounds slightly different, and there isn't a clear "better" or "worse". It all depends on the context!
+
+If one must be chosen, I highly recommend using the original crepe implementation (not this fork's) as the developers of RVC have more control on fixing issues than I have.
 
 # About this fork's f0 training additional features.
 ## Crepe f0 feature extraction
