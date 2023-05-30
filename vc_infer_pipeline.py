@@ -125,19 +125,20 @@ class VC(object):
             x,
             f0_min,
             f0_max,
-            hop_length=160,
             model="full",
     ):
+        # Pick a batch size that doesn't cause memory errors on your gpu
+        batch_size = 512
         # Compute pitch using first gpu
         audio = torch.tensor(np.copy(x))[None].float()
         f0, pd = torchcrepe.predict(
             audio,
             self.sr,
-            hop_length,
+            self.window,
             f0_min,
             f0_max,
             model,
-            batch_size=hop_length * 2,
+            batch_size=batch_size,
             device=self.device,
             return_periodicity=True,
         )
@@ -197,9 +198,9 @@ class VC(object):
                         f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
                     )
             elif method == "crepe":
-                f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, crepe_hop_length)
+                f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max)
             elif method == "crepe-tiny":
-                f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, crepe_hop_length, "tiny")
+                f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, "tiny")
             elif method == "mangio-crepe":
                 f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
             elif method == "mangio-crepe-tiny":
