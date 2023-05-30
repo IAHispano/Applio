@@ -147,6 +147,7 @@ class VC(object):
         f0 = torchcrepe.filter.mean(f0, 3)
         f0[pd < 0.1] = 0
         f0 = f0[0].cpu().numpy()
+        return f0
 
     # Fork Feature: Compute pYIN f0 method
     def get_f0_pyin_computation(self, x, f0_min, f0_max):
