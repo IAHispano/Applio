@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torchcrepe # Fork feature. Use the crepe f0 algorithm. New dependency (pip install torchcrepe)
 from torch import Tensor
 import scipy.signal as signal
-import pyworld, os, traceback, faiss, librosa
+import pyworld, os, traceback, faiss, librosa, torchcrepe
 from scipy import signal
 from functools import lru_cache
 
@@ -85,7 +85,7 @@ class VC(object):
             f0_min,
             f0_max,
             p_len,
-            hop_length=128, # 512 before. Hop length changes the speed that the voice jumps to a different dramatic pitch. Lower hop lengths means more pitch accuracy but longer inference time.
+            hop_length=160, # 512 before. Hop length changes the speed that the voice jumps to a different dramatic pitch. Lower hop lengths means more pitch accuracy but longer inference time.
             model="full", # Either use crepe-tiny "tiny" or crepe "full". Default is full
     ):
         x = x.astype(np.float32) # fixes the F.conv2D exception. We needed to convert double to float.
@@ -120,6 +120,34 @@ class VC(object):
         f0 = np.nan_to_num(target)
         return f0 # Resized f0
     
+    def get_f0_official_crepe_computation(
+            self,
+            x,
+            f0_min,
+            f0_max,
+            hop_length=160,
+            model="full",
+    ):
+        # Pick a batch size that doesn't cause memory errors on your gpu
+        batch_size = 512
+        # Compute pitch using first gpu
+        audio = torch.tensor(np.copy(x))[None].float()
+        f0, pd = torchcrepe.predict(
+            audio,
+            self.sr,
+            hop_length,
+            f0_min,
+            f0_max,
+            model,
+            batch_size=batch_size,
+            device=self.device,
+            return_periodicity=True,
+        )
+        pd = torchcrepe.filter.median(pd, 3)
+        f0 = torchcrepe.filter.mean(f0, 3)
+        f0[pd < 0.1] = 0
+        f0 = f0[0].cpu().numpy()
+
     # Fork Feature: Compute pYIN f0 method
     def get_f0_pyin_computation(self, x, f0_min, f0_max):
         y, sr = librosa.load('saudio/Sidney.wav', self.sr, mono=True)
@@ -170,8 +198,12 @@ class VC(object):
                         f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
                     )
             elif method == "crepe":
-                f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
+                f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, crepe_hop_length)
             elif method == "crepe-tiny":
+                f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, crepe_hop_length, "tiny")
+            elif method == "mangio-crepe":
+                f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
+            elif method == "mangio-crepe-tiny":
                 f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length, "tiny")
             elif method == "harvest":
                 f0 = cache_harvest_f0(input_audio_path, self.sr, f0_max, f0_min, 10)
@@ -253,9 +285,13 @@ class VC(object):
             )
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
             f0 = signal.medfilt(f0, 3)
-        elif f0_method == "crepe": # Fork Feature: Adding a new f0 algorithm called crepe
+        elif f0_method == "crepe":
+            f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, crepe_hop_length)
+        elif f0_method == "crepe-tiny":
+            f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, crepe_hop_length, "tiny")
+        elif f0_method == "mangio-crepe":
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
-        elif f0_method == "crepe-tiny": # Fork Feature add crepe-tiny model
+        elif f0_method == "mangio-crepe-tiny":
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length, "tiny")
         elif "hybrid" in f0_method:
             # Perform hybrid median pitch estimation
@@ -311,6 +347,7 @@ class VC(object):
         big_npy,
         index_rate,
         version,
+        protect,
     ):  # ,file_index,file_big_npy
         feats = torch.from_numpy(audio0)
         if self.is_half:
@@ -332,7 +369,8 @@ class VC(object):
         with torch.no_grad():
             logits = model.extract_features(**inputs)
             feats = model.final_proj(logits[0]) if version == "v1" else logits[0]
-
+        if protect < 0.5:
+            feats0 = feats.clone()
         if (
             isinstance(index, type(None)) == False
             and isinstance(big_npy, type(None)) == False
@@ -358,6 +396,10 @@ class VC(object):
             )
 
         feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)
+        if protect < 0.5:
+            feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
+                0, 2, 1
+            )
         t1 = ttime()
         p_len = audio0.shape[0] // self.window
         if feats.shape[1] < p_len:
@@ -365,6 +407,14 @@ class VC(object):
             if pitch != None and pitchf != None:
                 pitch = pitch[:, :p_len]
                 pitchf = pitchf[:, :p_len]
+
+        if protect < 0.5:
+            pitchff = pitchf.clone()
+            pitchff[pitchf > 0] = 1
+            pitchff[pitchf < 1] = protect
+            pitchff = pitchff.unsqueeze(-1)
+            feats = feats * pitchff + feats0 * (1 - pitchff)
+            feats = feats.to(feats0.dtype)
         p_len = torch.tensor([p_len], device=self.device).long()
         with torch.no_grad():
             if pitch != None and pitchf != None:
@@ -405,6 +455,7 @@ class VC(object):
         resample_sr,
         rms_mix_rate,
         version,
+        protect,
         crepe_hop_length,
         f0_file=None,
     ):
@@ -494,6 +545,7 @@ class VC(object):
                         big_npy,
                         index_rate,
                         version,
+                        protect,
                     )[self.t_pad_tgt : -self.t_pad_tgt]
                 )
             else:
@@ -510,6 +562,7 @@ class VC(object):
                         big_npy,
                         index_rate,
                         version,
+                        protect,
                     )[self.t_pad_tgt : -self.t_pad_tgt]
                 )
             s = t
@@ -527,6 +580,7 @@ class VC(object):
                     big_npy,
                     index_rate,
                     version,
+                    protect,
                 )[self.t_pad_tgt : -self.t_pad_tgt]
             )
         else:
@@ -543,6 +597,7 @@ class VC(object):
                     big_npy,
                     index_rate,
                     version,
+                    protect,
                 )[self.t_pad_tgt : -self.t_pad_tgt]
             )
         audio_opt = np.concatenate(audio_opt)

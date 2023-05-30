@@ -42,7 +42,7 @@ Special thanks to discord user @kalomaze#2983 for creating a temporary colab not
 ## Features that this fork (Mangio-RVC-Fork) has that the original repo doesn't ☑️
 + f0 Inference algorithm overhaul: 🌟
   + Added pyworld dio f0 method.
-  + Added torchcrepe crepe f0 method. (Increases pitch accuracy and stability ALOT)
+  + Added another way of calculating crepe f0 method. (mangio-crepe)
   + Added torchcrepe crepe-tiny model. (Faster on inference, but probably worse quality than normal full crepe)
   + Modifiable crepe_hop_length for the crepe algorithm via the web_gui
 + f0 Crepe Pitch Extraction for training. 🌟 (EXPERIMENTAL) Works on paperspace machines but not local mac/windows machines. Potential memory leak. Watch out.

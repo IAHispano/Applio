@@ -83,6 +83,35 @@ class FeatureInput(object):
                         f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
                     )
             elif method == "crepe":
+                # Pick a batch size that doesn't cause memory errors on your gpu
+                torch_device_index = 0
+                torch_device = None
+                if torch.cuda.is_available():
+                    torch_device = torch.device(f"cuda:{torch_device_index % torch.cuda.device_count()}")
+                elif torch.backends.mps.is_available():
+                    torch_device = torch.device("mps")
+                else:
+                    torch_device = torch.device("cpu")
+                model = "full"
+                batch_size = 512
+                # Compute pitch using first gpu
+                audio = torch.tensor(np.copy(x))[None].float()
+                f0, pd = torchcrepe.predict(
+                    audio,
+                    self.fs,
+                    crepe_hop_length,
+                    self.f0_min,
+                    self.f0_max,
+                    model,
+                    batch_size=batch_size,
+                    device=torch_device,
+                    return_periodicity=True,
+                )
+                pd = torchcrepe.filter.median(pd, 3)
+                f0 = torchcrepe.filter.mean(f0, 3)
+                f0[pd < 0.1] = 0
+                f0 = f0[0].cpu().numpy()
+            elif method == "mangio-crepe":
                 print("Performing crepe pitch extraction. (EXPERIMENTAL)")
                 print("CREPE PITCH EXTRACTION HOP LENGTH: " + str(crepe_hop_length))
                 x = x.astype(np.float32)
@@ -201,6 +230,35 @@ class FeatureInput(object):
             )
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
         elif f0_method == "crepe": # Fork Feature: Added crepe f0 for f0 feature extraction
+            # Pick a batch size that doesn't cause memory errors on your gpu
+            torch_device_index = 0
+            torch_device = None
+            if torch.cuda.is_available():
+                torch_device = torch.device(f"cuda:{torch_device_index % torch.cuda.device_count()}")
+            elif torch.backends.mps.is_available():
+                torch_device = torch.device("mps")
+            else:
+                torch_device = torch.device("cpu")
+            model = "full"
+            batch_size = 512
+            # Compute pitch using first gpu
+            audio = torch.tensor(np.copy(x))[None].float()
+            f0, pd = torchcrepe.predict(
+                audio,
+                self.fs,
+                crepe_hop_length,
+                self.f0_min,
+                self.f0_max,
+                model,
+                batch_size=batch_size,
+                device=torch_device,
+                return_periodicity=True,
+            )
+            pd = torchcrepe.filter.median(pd, 3)
+            f0 = torchcrepe.filter.mean(f0, 3)
+            f0[pd < 0.1] = 0
+            f0 = f0[0].cpu().numpy()
+        elif f0_method == "mangio-crepe":
             print("Performing crepe pitch extraction. (EXPERIMENTAL)")
             print("CREPE PITCH EXTRACTION HOP LENGTH: " + str(crepe_hop_length))
             x = x.astype(np.float32)
