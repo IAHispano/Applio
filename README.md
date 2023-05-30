@@ -222,8 +222,9 @@ You are currently in 'INFER':
     arg 10) post resample rate: 0
     arg 11) mix volume envelope: 1
     arg 12) feature index ratio: 0.78 (0-1)
+    arg 13) Voiceless Consonant Protection (Less Artifact): 0.33 (Smaller number = more protection. 0.50 means Dont Use.)
 
-Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 128 3 0 1 0.95
+Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 128 3 0 1 0.95 0.33
 
 INFER: <INSERT ARGUMENTS HERE OR COPY AND PASTE THE EXAMPLE>
 ```

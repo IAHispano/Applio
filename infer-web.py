@@ -1177,6 +1177,7 @@ def cli_infer(com):
     resample = int(com[9])
     mix = float(com[10])
     feature_ratio = float(com[11])
+    protection_amnt = float(com[12])
 
     print("Mangio-RVC-Fork Infer-CLI: Starting the inference...")
     vc_data = get_vc(model_name)
@@ -1194,6 +1195,7 @@ def cli_infer(com):
         harvest_median_filter,
         resample,
         mix,
+        protection_amnt,
         crepe_hop_length,        
     )
     if "Success." in conversion_data[0]:
@@ -1334,13 +1336,14 @@ def print_page_details():
         print("    arg 4) feature index file path: logs/mi-test/added_IVF3042_Flat_nprobe_1.index")
         print("    arg 5) speaker id: 0")
         print("    arg 6) transposition: 0")
-        print("    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x])")
+        print("    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x], mangio-crepe, mangio-crepe-tiny)")
         print("    arg 8) crepe hop length: 128")
         print("    arg 9) harvest median filter radius: 3 (0-7)")
         print("    arg 10) post resample rate: 0")
         print("    arg 11) mix volume envelope: 1")
         print("    arg 12) feature index ratio: 0.78 (0-1)\n")
-        print("Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 128 3 0 1 0.95")
+        print("    arg 13) Voiceless Consonant Protection (Less Artifact): 0.33 (Smaller number = more protection. 0.50 means Dont Use.)")
+        print("Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 128 3 0 1 0.95 0.33")
     elif cli_current_page == "PRE-PROCESS":
         print("    arg 1) Model folder name in ./logs: mi-test")
         print("    arg 2) Trainset directory: mydataset (or) E:\\my-data-set")
