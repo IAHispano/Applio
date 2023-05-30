@@ -1146,6 +1146,7 @@ def export_onnx(ModelPath, ExportedPath, MoeVS=True):
 
 #region Mangio-RVC-Fork CLI App
 import re as regex
+import scipy.io.wavfile as wavfile
 
 cli_current_page = "HOME"
 
