@@ -44,7 +44,7 @@ Special thanks to discord user @kalomaze#2983 for creating a temporary colab not
   + Added pyworld dio f0 method.
   + Added another way of calculating crepe f0 method. (mangio-crepe)
   + Added torchcrepe crepe-tiny model. (Faster on inference, but probably worse quality than normal full crepe)
-  + Modifiable crepe_hop_length for the crepe algorithm via the web_gui
+  + Modifiable crepe_hop_length for the crepe algorithm via the web_gui and CLI. 
 + f0 Crepe Pitch Extraction for training. 🌟 (EXPERIMENTAL) Works on paperspace machines but not local mac/windows machines. Potential memory leak. Watch out.
 + Paperspace integration 🌟
   + Paperspace argument on infer-web.py (--paperspace) that shares a gradio link
@@ -217,14 +217,14 @@ You are currently in 'INFER':
     arg 5) speaker id: 0
     arg 6) transposition: 0
     arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny)
-    arg 8) crepe hop length: 128
+    arg 8) crepe hop length: 160
     arg 9) harvest median filter radius: 3 (0-7)
     arg 10) post resample rate: 0
     arg 11) mix volume envelope: 1
     arg 12) feature index ratio: 0.78 (0-1)
     arg 13) Voiceless Consonant Protection (Less Artifact): 0.33 (Smaller number = more protection. 0.50 means Dont Use.)
 
-Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 128 3 0 1 0.95 0.33
+Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 160 3 0 1 0.95 0.33
 
 INFER: <INSERT ARGUMENTS HERE OR COPY AND PASTE THE EXAMPLE>
 ```

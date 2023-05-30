@@ -93,7 +93,6 @@ class FeatureInput(object):
                 else:
                     torch_device = torch.device("cpu")
                 model = "full"
-                batch_size = 512
                 # Compute pitch using first gpu
                 audio = torch.tensor(np.copy(x))[None].float()
                 f0, pd = torchcrepe.predict(
@@ -103,7 +102,7 @@ class FeatureInput(object):
                     self.f0_min,
                     self.f0_max,
                     model,
-                    batch_size=batch_size,
+                    batch_size=crepe_hop_length * 2,
                     device=torch_device,
                     return_periodicity=True,
                 )
@@ -240,7 +239,6 @@ class FeatureInput(object):
             else:
                 torch_device = torch.device("cpu")
             model = "full"
-            batch_size = 512
             # Compute pitch using first gpu
             audio = torch.tensor(np.copy(x))[None].float()
             f0, pd = torchcrepe.predict(
@@ -250,7 +248,7 @@ class FeatureInput(object):
                 self.f0_min,
                 self.f0_max,
                 model,
-                batch_size=batch_size,
+                batch_size=crepe_hop_length * 2,
                 device=torch_device,
                 return_periodicity=True,
             )
