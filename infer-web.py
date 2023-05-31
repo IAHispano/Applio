@@ -239,6 +239,7 @@ def vc_multi(
     rms_mix_rate,
     protect,
     format1,
+    crepe_hop_length,
 ):
     try:
         dir_path = (
@@ -270,6 +271,7 @@ def vc_multi(
                 resample_sr,
                 rms_mix_rate,
                 protect,
+                crepe_hop_length
             )
             if "Success" in info:
                 try:
@@ -1701,6 +1703,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             rms_mix_rate1,
                             protect1,
                             format1,
+                            crepe_hop_length,
                         ],
                         [vc_output3],
                     )
