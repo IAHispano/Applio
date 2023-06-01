@@ -27,7 +27,6 @@ tensorboard-data-server
 tensorboard-plugin-wit
 torchgen>=0.0.1
 torch==2.0.0
-torchcrepe==0.0.18
 tqdm>=4.63.1
 tornado>=6.1
 Werkzeug>=2.2.3
@@ -45,4 +44,4 @@ colorama>=0.4.5
 pyworld>=0.3.2
 httpx==0.23.0
 onnxruntime-gpu
-torchcrepe
+torchcrepe==0.0.18
