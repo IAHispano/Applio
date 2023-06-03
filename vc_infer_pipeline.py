@@ -199,8 +199,10 @@ class VC(object):
                     )
             elif method == "crepe":
                 f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max)
+                f0 = f0[1:] # Get rid of extra first frame
             elif method == "crepe-tiny":
                 f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, "tiny")
+                f0 = f0[1:] # Get rid of extra first frame
             elif method == "mangio-crepe":
                 f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
             elif method == "mangio-crepe-tiny":

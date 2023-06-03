@@ -111,6 +111,7 @@ class FeatureInput(object):
                 f0 = torchcrepe.filter.mean(f0, 3)
                 f0[pd < 0.1] = 0
                 f0 = f0[0].cpu().numpy()
+                f0 = f0[1:] # Get rid of extra first frame
             elif method == "mangio-crepe":
                 print("Performing crepe pitch extraction. (EXPERIMENTAL)")
                 print("CREPE PITCH EXTRACTION HOP LENGTH: " + str(crepe_hop_length))
