@@ -68,7 +68,7 @@ class FeatureInput(object):
             f0 = None
             if method == "pm":
                 f0 = (
-                    parselmouth.Sound(x, self.sr)
+                    parselmouth.Sound(x, self.fs)
                     .to_pitch_ac(
                         time_step=time_step / 1000,
                         voicing_threshold=0.6,
