@@ -1,5 +1,7 @@
 <div align="center">
 
+<h1> !!-- On going improvements/upstream merges have been postponed for a bit, as I'm working on a potential new Voice Conversion tool. --!! </h1>
+  
 <h1>Mangio-RVC-Fork with v2 Support! 💻 </h1>
 A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. In general, this fork provides a CLI interface in addition. And also gives you more f0 methods to use, as well as a personlized 'hybrid' f0 estimation method using nanmedian. <br><br>
 <b> 
