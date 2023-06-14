@@ -4,6 +4,10 @@
 A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. In general, this fork provides a CLI interface in addition. And also gives you more f0 methods to use, as well as a personlized 'hybrid' f0 estimation method using nanmedian. <br><br>
 <b> 
 
+<b>Im developing alone. Help support me in the rapid development of open-source A.I Deep NN audio tools and frameworks. By donating, you making a commitment to the improvement of audio A.I as a whole. You should donate if you merely want to "support" me, not because you are then expecting a finished product. There are no guarantees. Thank you</b>
+<br>
+<a href="https://www.paypal.com/donate/?business=HEW6P8R79NFFN&no_recurring=0&item_name=I+have+an+altruistic+drive+to+develop+open-source+A.I+frameworks+and+tools.+Support+me+in+improving+A.I+audio+entirely.&currency_code=AUD"><img src="./mangio_utils/donate.png" height="42"></a>
+
 > 💓 Please support the original [RVC repository](https://www.bilibili.com/video/BV1pm4y1z7Gm/). Without it, obviously this fork wouldn't have been possible. The Mangio-RVC-Fork aims to essentially enhance the features that the original RVC repo has in my own way. Please note that this fork is NOT STABLE and was forked with the intention of experimentation. Do not use this Fork thinking it is a "better" version of the original repo. Think of it more like another "version" of the original repo. Please note that this doesn't have a google colab. If you want to use google colab, go to the original repository. This fork is intended to be used with paperspace and local machines for now.
 </b>
 
