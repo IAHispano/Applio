@@ -870,6 +870,7 @@ def train1key(
     if_cache_gpu17,
     if_save_every_weights18,
     version19,
+    echl
 ):
     infos = []
 
@@ -906,10 +907,11 @@ def train1key(
     open(extract_f0_feature_log_path, "w")
     if if_f0_3:
         yield get_info_str("step2a:正在提取音高")
-        cmd = config.python_cmd + " extract_f0_print.py %s %s %s" % (
+        cmd = config.python_cmd + " extract_f0_print.py %s %s %s %s" % (
             model_log_dir,
             np7,
             f0method8,
+            echl
         )
         yield get_info_str(cmd)
         p = Popen(cmd, shell=True, cwd=now_dir)
@@ -2001,6 +2003,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             if_cache_gpu17,
                             if_save_every_weights18,
                             version19,
+                            extraction_crepe_hop_length
                         ],
                         info3,
                     )
