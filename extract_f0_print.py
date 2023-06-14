@@ -26,7 +26,13 @@ def printt(strr):
 
 n_p = int(sys.argv[2])
 f0method = sys.argv[3]
-extraction_crepe_hop_length = int(sys.argv[4])
+extraction_crepe_hop_length = 0 
+try:
+    extraction_crepe_hop_length = int(sys.argv[4])
+except:
+    print("Temp Issue. echl is not being passed with argument!")
+    extraction_crepe_hop_length = 128
+
 print("EXTRACTION CREPE HOP LENGTH: " + str(extraction_crepe_hop_length))
 print("EXTRACTION CREPE HOP LENGTH TYPE: " + str(type(extraction_crepe_hop_length)))
 
