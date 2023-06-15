@@ -37,7 +37,13 @@ Special thanks to discord user @kalomaze#2983 for creating a temporary colab not
 
 > The original RVC [Demo Video](https://www.bilibili.com/video/BV1pm4y1z7Gm/) here!
 
+<<<<<<< HEAD
 > Realtime Voice Conversion Software using RVC : [w-okada/voice-changer](https://github.com/w-okada/voice-changer)
+=======
+:fire: 使用了RVC变声器训练的人声转木吉他模型在线demo:fire: ：https://huggingface.co/spaces/lj1995/vocal2guitar
+
+:fire: RVC人声转吉他效果展示视频:fire: ：https://www.bilibili.com/video/BV19W4y1D7tT/
+>>>>>>> upstream/main
 
 > The dataset for the pre-training model uses nearly 50 hours of high quality VCTK open source dataset.
 
