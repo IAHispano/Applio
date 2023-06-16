@@ -6,6 +6,7 @@ from time import sleep
 from subprocess import Popen
 import faiss
 from random import shuffle
+import json
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -1476,6 +1477,16 @@ if(config.is_cli):
 
 #region RVC WebUI App
 
+def get_presets():
+    data = None
+    with open('../inference-presets.json', 'r') as file:
+        data = json.load(file)
+    preset_names = []
+    for preset in data['presets']:
+        preset_names.append(preset['name'])
+    
+    return preset_names
+
 with gr.Blocks(theme=gr.themes.Soft()) as app:
     gr.HTML("<h1> The Mangio-RVC-Fork 💻 </h1>")
     gr.Markdown(
@@ -1485,6 +1496,15 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
     )
     with gr.Tabs():
         with gr.TabItem(i18n("模型推理")):
+            # Inference Preset Row
+            # with gr.Row():
+            #     mangio_preset = gr.Dropdown(label="Inference Preset", choices=sorted(get_presets()))
+            #     mangio_preset_name_save = gr.Textbox(
+            #         label="Your preset name"
+            #     )
+            #     mangio_preset_save_btn = gr.Button('Save Preset', variant="primary")
+
+            # Other RVC stuff
             with gr.Row():
                 sid0 = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names))
                 refresh_button = gr.Button(i18n("刷新音色列表和索引路径"), variant="primary")
@@ -2181,6 +2201,128 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                 gr.Markdown(value=info)
             except:
                 gr.Markdown(traceback.format_exc())
+
+
+    #region Mangio Preset Handler Region
+    def save_preset(
+        preset_name,
+        sid0,
+        vc_transform,
+        input_audio,
+        f0method,
+        crepe_hop_length,
+        filter_radius,
+        file_index1,
+        file_index2,
+        index_rate,
+        resample_sr,
+        rms_mix_rate,
+        protect,
+        f0_file
+    ):
+        data = None
+        with open('../inference-presets.json', 'r') as file:
+            data = json.load(file)
+        preset_json = {
+            'name': preset_name,
+            'model': sid0,
+            'transpose': vc_transform,
+            'audio_file': input_audio,
+            'f0_method': f0method,
+            'crepe_hop_length': crepe_hop_length,
+            'median_filtering': filter_radius,
+            'feature_path': file_index1,
+            'auto_feature_path': file_index2,
+            'search_feature_ratio': index_rate,
+            'resample': resample_sr,
+            'volume_envelope': rms_mix_rate,
+            'protect_voiceless': protect,
+            'f0_file_path': f0_file
+        }
+        data['presets'].append(preset_json)
+        with open('../inference-presets.json', 'w') as file:
+            json.dump(data, file)
+            file.flush()
+        print("Saved Preset %s into inference-presets.json!" % preset_name)
+
+
+    def on_preset_changed(preset_name):
+        print("Changed Preset to %s!" % preset_name)
+        data = None
+        with open('../inference-presets.json', 'r') as file:
+            data = json.load(file)
+
+        print("Searching for " + preset_name)
+        returning_preset = None
+        for preset in data['presets']:
+            if(preset['name'] == preset_name):
+                print("Found a preset")
+                returning_preset = preset
+        # return all new input values
+        return (
+            # returning_preset['model'],
+            # returning_preset['transpose'],
+            # returning_preset['audio_file'],
+            # returning_preset['f0_method'],
+            # returning_preset['crepe_hop_length'],
+            # returning_preset['median_filtering'],
+            # returning_preset['feature_path'],
+            # returning_preset['auto_feature_path'],
+            # returning_preset['search_feature_ratio'],
+            # returning_preset['resample'],
+            # returning_preset['volume_envelope'],
+            # returning_preset['protect_voiceless'],
+            # returning_preset['f0_file_path']
+        )
+
+    # Preset State Changes                
+    
+    # This click calls save_preset that saves the preset into inference-presets.json with the preset name
+    # mangio_preset_save_btn.click(
+    #     fn=save_preset, 
+    #     inputs=[
+    #         mangio_preset_name_save,
+    #         sid0,
+    #         vc_transform0,
+    #         input_audio0,
+    #         f0method0,
+    #         crepe_hop_length,
+    #         filter_radius0,
+    #         file_index1,
+    #         file_index2,
+    #         index_rate1,
+    #         resample_sr0,
+    #         rms_mix_rate0,
+    #         protect0,
+    #         f0_file
+    #     ], 
+    #     outputs=[]
+    # )
+
+    # mangio_preset.change(
+    #     on_preset_changed, 
+    #     inputs=[
+    #         # Pass inputs here
+    #         mangio_preset
+    #     ], 
+    #     outputs=[
+    #         # Pass Outputs here. These refer to the gradio elements that we want to directly change
+    #         # sid0,
+    #         # vc_transform0,
+    #         # input_audio0,
+    #         # f0method0,
+    #         # crepe_hop_length,
+    #         # filter_radius0,
+    #         # file_index1,
+    #         # file_index2,
+    #         # index_rate1,
+    #         # resample_sr0,
+    #         # rms_mix_rate0,
+    #         # protect0,
+    #         # f0_file
+    #     ]
+    # )
+    #endregion
 
         # with gr.TabItem(i18n("招募音高曲线前端编辑器")):
         #     gr.Markdown(value=i18n("加开发群联系我xxxxx"))
