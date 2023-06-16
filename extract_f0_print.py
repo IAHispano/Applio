@@ -34,8 +34,8 @@ except:
     print("Temp Issue. echl is not being passed with argument!")
     extraction_crepe_hop_length = 128
 
-print("EXTRACTION CREPE HOP LENGTH: " + str(extraction_crepe_hop_length))
-print("EXTRACTION CREPE HOP LENGTH TYPE: " + str(type(extraction_crepe_hop_length)))
+# print("EXTRACTION CREPE HOP LENGTH: " + str(extraction_crepe_hop_length))
+# print("EXTRACTION CREPE HOP LENGTH TYPE: " + str(type(extraction_crepe_hop_length)))
 
 
 class FeatureInput(object):
@@ -346,16 +346,11 @@ class FeatureInput(object):
         if len(paths) == 0:
             printt("no-f0-todo")
         else:
-            printt("todo-f0-%s" % len(paths))
-            n = max(len(paths) // 5, 1)  # 每个进程最多打印5条
-            print("Using f0 method: " + f0_method)
             with tqdm.tqdm(total=len(paths), leave=True, position=thread_n) as pbar:
                 for idx, (inp_path, opt_path1, opt_path2) in enumerate(paths):
-            # for idx, (inp_path, opt_path1, opt_path2) in tqdm.tqdm(enumerate(paths), total=len(paths)):
                     try:
-                        if idx % n == 0:
-                            # printt("f0ing,now-%s,all-%s,-%s" % (idx, len(paths), inp_path))
-                            pbar.set_description("f0ing,now-%s,all-%s,-%s" % (idx, len(paths), inp_path))
+                        pbar.set_description("thread:%s, f0ing, Hop-Length:%s" % (thread_n, crepe_hop_length))
+                        pbar.update(1)
                         if (
                             os.path.exists(opt_path1 + ".npy") == True
                             and os.path.exists(opt_path2 + ".npy") == True
@@ -373,7 +368,6 @@ class FeatureInput(object):
                             coarse_pit,
                             allow_pickle=False,
                         )  # ori
-                        pbar.update(1)
                     except:
                         printt("f0fail-%s-%s-%s" % (idx, inp_path, traceback.format_exc()))
 
@@ -400,6 +394,7 @@ if __name__ == "__main__":
         paths.append([inp_path, opt_path1, opt_path2])
 
     ps = []
+    print("Using f0 method: " + f0method)
     for i in range(n_p):
         p = Process(
             target=featureInput.go,
