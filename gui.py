@@ -707,6 +707,7 @@ class GUI:
         total_time = time.perf_counter() - start_time
         self.window["infer_time"].update(int(total_time * 1000))
         print("infer time:" + str(total_time))
+        print("f0_method: " + str(self.config.f0_method))
 
     def get_devices(self, update: bool = True):
         """获取设备列表"""
