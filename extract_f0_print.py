@@ -10,6 +10,7 @@ import torchcrepe # Fork Feature. Crepe algo for training and preprocess
 import torch
 from torch import Tensor # Fork Feature. Used for pitch prediction for torch crepe.
 import scipy.signal as signal # Fork Feature hybrid inference
+import tqdm
 
 logging.getLogger("numba").setLevel(logging.WARNING)
 from multiprocessing import Process
@@ -33,8 +34,8 @@ except:
     print("Temp Issue. echl is not being passed with argument!")
     extraction_crepe_hop_length = 128
 
-print("EXTRACTION CREPE HOP LENGTH: " + str(extraction_crepe_hop_length))
-print("EXTRACTION CREPE HOP LENGTH TYPE: " + str(type(extraction_crepe_hop_length)))
+# print("EXTRACTION CREPE HOP LENGTH: " + str(extraction_crepe_hop_length))
+# print("EXTRACTION CREPE HOP LENGTH TYPE: " + str(type(extraction_crepe_hop_length)))
 
 
 class FeatureInput(object):
@@ -119,8 +120,8 @@ class FeatureInput(object):
                 f0 = f0[0].cpu().numpy()
                 f0 = f0[1:] # Get rid of extra first frame
             elif method == "mangio-crepe":
-                print("Performing crepe pitch extraction. (EXPERIMENTAL)")
-                print("CREPE PITCH EXTRACTION HOP LENGTH: " + str(crepe_hop_length))
+                # print("Performing crepe pitch extraction. (EXPERIMENTAL)")
+                # print("CREPE PITCH EXTRACTION HOP LENGTH: " + str(crepe_hop_length))
                 x = x.astype(np.float32)
                 x /= np.quantile(np.abs(x), 0.999)
                 torch_device_index = 0
@@ -136,10 +137,10 @@ class FeatureInput(object):
                 if audio.ndim == 2 and audio.shape[0] > 1:
                     audio = torch.mean(audio, dim=0, keepdim=True).detach()
                 audio = audio.detach()
-                print(
-                    "Initiating f0 Crepe Feature Extraction with an extraction_crepe_hop_length of: " +
-                    str(crepe_hop_length)
-                )
+                # print(
+                #     "Initiating f0 Crepe Feature Extraction with an extraction_crepe_hop_length of: " +
+                #     str(crepe_hop_length)
+                # )
                 # Pitch prediction for pitch extraction
                 pitch: Tensor = torchcrepe.predict(
                     audio,
@@ -189,7 +190,7 @@ class FeatureInput(object):
         for fc in f0_computation_stack:
             print(len(fc))
 
-        print("Calculating hybrid median f0 from the stack of: %s" % str(methods))
+        # print("Calculating hybrid median f0 from the stack of: %s" % str(methods))
         
         f0_median_hybrid = None
         if len(f0_computation_stack) == 1:
@@ -266,8 +267,8 @@ class FeatureInput(object):
             f0[pd < 0.1] = 0
             f0 = f0[0].cpu().numpy()
         elif f0_method == "mangio-crepe":
-            print("Performing crepe pitch extraction. (EXPERIMENTAL)")
-            print("CREPE PITCH EXTRACTION HOP LENGTH: " + str(crepe_hop_length))
+            # print("Performing crepe pitch extraction. (EXPERIMENTAL)")
+            # print("CREPE PITCH EXTRACTION HOP LENGTH: " + str(crepe_hop_length))
             x = x.astype(np.float32)
             x /= np.quantile(np.abs(x), 0.999)
             torch_device_index = 0
@@ -283,10 +284,10 @@ class FeatureInput(object):
             if audio.ndim == 2 and audio.shape[0] > 1:
                 audio = torch.mean(audio, dim=0, keepdim=True).detach()
             audio = audio.detach()
-            print(
-                "Initiating f0 Crepe Feature Extraction with an extraction_crepe_hop_length of: " +
-                str(crepe_hop_length)
-            )
+            # print(
+            #     "Initiating f0 Crepe Feature Extraction with an extraction_crepe_hop_length of: " +
+            #     str(crepe_hop_length)
+            # )
             # Pitch prediction for pitch extraction
             pitch: Tensor = torchcrepe.predict(
                 audio,
@@ -341,35 +342,34 @@ class FeatureInput(object):
         )
         return f0_coarse
 
-    def go(self, paths, f0_method, crepe_hop_length):
+    def go(self, paths, f0_method, crepe_hop_length, thread_n):
         if len(paths) == 0:
             printt("no-f0-todo")
         else:
-            printt("todo-f0-%s" % len(paths))
-            n = max(len(paths) // 5, 1)  # 每个进程最多打印5条
-            for idx, (inp_path, opt_path1, opt_path2) in enumerate(paths):
-                try:
-                    if idx % n == 0:
-                        printt("f0ing,now-%s,all-%s,-%s" % (idx, len(paths), inp_path))
-                    if (
-                        os.path.exists(opt_path1 + ".npy") == True
-                        and os.path.exists(opt_path2 + ".npy") == True
-                    ):
-                        continue
-                    featur_pit = self.compute_f0(inp_path, f0_method, crepe_hop_length)
-                    np.save(
-                        opt_path2,
-                        featur_pit,
-                        allow_pickle=False,
-                    )  # nsf
-                    coarse_pit = self.coarse_f0(featur_pit)
-                    np.save(
-                        opt_path1,
-                        coarse_pit,
-                        allow_pickle=False,
-                    )  # ori
-                except:
-                    printt("f0fail-%s-%s-%s" % (idx, inp_path, traceback.format_exc()))
+            with tqdm.tqdm(total=len(paths), leave=True, position=thread_n) as pbar:
+                for idx, (inp_path, opt_path1, opt_path2) in enumerate(paths):
+                    try:
+                        pbar.set_description("thread:%s, f0ing, Hop-Length:%s" % (thread_n, crepe_hop_length))
+                        pbar.update(1)
+                        if (
+                            os.path.exists(opt_path1 + ".npy") == True
+                            and os.path.exists(opt_path2 + ".npy") == True
+                        ):
+                            continue
+                        featur_pit = self.compute_f0(inp_path, f0_method, crepe_hop_length)
+                        np.save(
+                            opt_path2,
+                            featur_pit,
+                            allow_pickle=False,
+                        )  # nsf
+                        coarse_pit = self.coarse_f0(featur_pit)
+                        np.save(
+                            opt_path1,
+                            coarse_pit,
+                            allow_pickle=False,
+                        )  # ori
+                    except:
+                        printt("f0fail-%s-%s-%s" % (idx, inp_path, traceback.format_exc()))
 
 
 if __name__ == "__main__":
@@ -394,6 +394,7 @@ if __name__ == "__main__":
         paths.append([inp_path, opt_path1, opt_path2])
 
     ps = []
+    print("Using f0 method: " + f0method)
     for i in range(n_p):
         p = Process(
             target=featureInput.go,
@@ -401,6 +402,7 @@ if __name__ == "__main__":
                 paths[i::n_p],
                 f0method,
                 extraction_crepe_hop_length,
+                i
             ),
         )
         ps.append(p)
