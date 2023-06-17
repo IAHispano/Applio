@@ -151,6 +151,7 @@ class RVC:
         )
         f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
         f0 = signal.medfilt(f0, 3)
+        return f0
 
     def get_f0(self, x, f0_up_key, inp_f0=None):
         # Calculate Padding and f0 details here
