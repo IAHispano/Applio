@@ -28,6 +28,8 @@ import librosa, torch, pyworld, faiss, time, threading
 import torch.nn.functional as F
 import torchaudio.transforms as tat
 import scipy.signal as signal
+import torchcrepe
+import torch
 
 
 # import matplotlib.pyplot as plt
@@ -46,7 +48,7 @@ current_dir = os.getcwd()
 
 class RVC:
     def __init__(
-        self, key, hubert_path, pth_path, index_path, npy_path, index_rate
+        self, key, f0_method, hubert_path, pth_path, index_path, npy_path, index_rate
     ) -> None:
         """
         初始化
@@ -58,8 +60,18 @@ class RVC:
             self.f0_max = 1100
             self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
             self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
+            self.f0_method = f0_method
             self.sr = 16000
             self.window = 160
+
+            # Get Torch Device
+            if(torch.cuda.is_available()):
+                self.torch_device = torch.device(f"cuda:{0 % torch.cuda.device_count()}")
+            elif torch.backends.mps.is_available():
+                self.torch_device = torch.device("mps")
+            else:
+                self.torch_device = torch.device("cpu")
+
             if index_rate != 0:
                 self.index = faiss.read_index(index_path)
                 # self.big_npy = np.load(npy_path)
@@ -108,12 +120,28 @@ class RVC:
         except:
             print(traceback.format_exc())
 
-    def get_f0(self, x, f0_up_key, inp_f0=None):
-        x_pad = 1
-        f0_min = 50
-        f0_max = 1100
-        f0_mel_min = 1127 * np.log(1 + f0_min / 700)
-        f0_mel_max = 1127 * np.log(1 + f0_max / 700)
+    def get_regular_crepe_computation(self, x, f0_min, f0_max, model="full"):
+        batch_size = 512
+        # Compute pitch using first gpu
+        audio = torch.tensor(np.copy(x))[None].float()
+        f0, pd = torchcrepe.predict(
+            audio,
+            self.sr,
+            self.window,
+            f0_min,
+            f0_max,
+            model,
+            batch_size=batch_size,
+            device=self.torch_device,
+            return_periodicity=True,
+        )
+        pd = torchcrepe.filter.median(pd, 3)
+        f0 = torchcrepe.filter.mean(f0, 3)
+        f0[pd < 0.1] = 0
+        f0 = f0[0].cpu().numpy()
+        return f0
+
+    def get_harvest_computation(self, x, f0_min, f0_max):
         f0, t = pyworld.harvest(
             x.astype(np.double),
             fs=self.sr,
@@ -123,6 +151,25 @@ class RVC:
         )
         f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
         f0 = signal.medfilt(f0, 3)
+
+    def get_f0(self, x, f0_up_key, inp_f0=None):
+        # Calculate Padding and f0 details here
+        p_len = x.shape[0] // 512 # For Now This probs doesn't work
+        x_pad = 1
+        f0_min = 50
+        f0_max = 1100
+        f0_mel_min = 1127 * np.log(1 + f0_min / 700)
+        f0_mel_max = 1127 * np.log(1 + f0_max / 700)
+
+        # Here, check f0_methods and get their computations
+        if(self.f0_method == 'harvest'):
+            f0 = self.get_harvest_computation(x, f0_min, f0_max)
+        elif(self.f0_method == 'reg-crepe'):
+            f0 = self.get_regular_crepe_computation(x, f0_min, f0_max)
+        elif(self.f0_method == 'reg-crepe-tiny'):
+            f0 = self.get_regular_crepe_computation(x, f0_min, f0_max, "tiny")
+
+        # Calculate f0_course and f0_bak here
         f0 *= pow(2, f0_up_key / 12)
         # with open("test.txt","w")as f:f.write("\n".join([str(i)for i in f0.tolist()]))
         tf0 = self.sr // self.window  # 每秒f0点数
@@ -234,6 +281,7 @@ class GUIConfig:
         self.pth_path: str = ""
         self.index_path: str = ""
         self.npy_path: str = ""
+        self.f0_method: str = ""
         self.pitch: int = 12
         self.samplerate: int = 44100
         self.block_time: float = 1.0  # s
@@ -259,6 +307,7 @@ class GUI:
             with open("values1.json", "r") as j:
                 data = json.load(j)
         except:
+            # Injecting f0_method into the json data 
             with open("values1.json", "w") as j:
                 data = {
                     "pth_path": " ",
@@ -276,7 +325,7 @@ class GUI:
 
     def launcher(self):
         data = self.load()
-        sg.theme("LightBlue3")
+        sg.theme("DarkTeal12")
         input_devices, output_devices, _, _ = self.get_devices()
         layout = [
             [
@@ -330,6 +379,19 @@ class GUI:
                             ),
                         ],
                     ],
+                )
+            ],
+            [
+                # Mangio f0 Selection frame Here
+                sg.Frame(
+                    layout=[
+                        [
+                            sg.Radio("Harvest", "f0_method", key="harvest", default=True),
+                            sg.Radio("Reg Crepe", "f0_method", key="reg-crepe"),
+                            sg.Radio("Reg Crepe Tiny", "f0_method", key="reg-crepe-tiny"),
+                        ]
+                    ],
+                    title="Select an f0 Method",
                 )
             ],
             [
@@ -454,6 +516,7 @@ class GUI:
                 settings = {
                     "pth_path": values["pth_path"],
                     "index_path": values["index_path"],
+                    "f0_method": values["f0_method"],
                     "sg_input_device": values["sg_input_device"],
                     "sg_output_device": values["sg_output_device"],
                     "threhold": values["threhold"],
@@ -468,12 +531,29 @@ class GUI:
             if event == "stop_vc" and self.flag_vc == True:
                 self.flag_vc = False
 
+    # Function that returns the used f0 method in string format "harvest" 
+    def get_f0_method_from_radios(self, values):
+        f0_array = [
+            {"name": "harvest", "val": values['harvest']},
+            {"name": "reg-crepe", "val": values['reg-crepe']},
+            {"name": "reg-crepe-tiny", "val": values['reg-crepe-tiny']},
+        ]
+        # Filter through to find a true value
+        used_f0 = ""
+        for f0 in f0_array:
+            if(f0['val'] == True):
+                used_f0 = f0['name']
+                break
+        if(used_f0 == ""): used_f0 = "harvest" # Default Harvest if used_f0 is empty somehow
+        return used_f0
+
     def set_values(self, values):
         self.set_devices(values["sg_input_device"], values["sg_output_device"])
         self.config.hubert_path = os.path.join(current_dir, "hubert_base.pt")
         self.config.pth_path = values["pth_path"]
         self.config.index_path = values["index_path"]
         self.config.npy_path = values["npy_path"]
+        self.config.f0_method = self.get_f0_method_from_radios(values)
         self.config.threhold = values["threhold"]
         self.config.pitch = values["pitch"]
         self.config.block_time = values["block_time"]
@@ -494,6 +574,7 @@ class GUI:
         self.rvc = None
         self.rvc = RVC(
             self.config.pitch,
+            self.config.f0_method,
             self.config.hubert_path,
             self.config.pth_path,
             self.config.index_path,

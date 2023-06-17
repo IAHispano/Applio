@@ -26,3 +26,5 @@ PySimpleGUI
 sounddevice
 gradio
 noisereduce
+torchcrepe==0.0.20
+torch==2.0.0
