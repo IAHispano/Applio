@@ -29,8 +29,6 @@ import torch.nn.functional as F
 import torchaudio.transforms as tat
 import scipy.signal as signal
 import torchcrepe
-import torch
-
 
 # import matplotlib.pyplot as plt
 from infer_pack.models import (
