@@ -517,7 +517,7 @@ class GUI:
                 settings = {
                     "pth_path": values["pth_path"],
                     "index_path": values["index_path"],
-                    "f0_method": values["f0_method"],
+                    "f0_method": self.get_f0_method_from_radios(values),
                     "sg_input_device": values["sg_input_device"],
                     "sg_output_device": values["sg_output_device"],
                     "threhold": values["threhold"],
