@@ -161,6 +161,7 @@ class RVC:
         f0_mel_min = 1127 * np.log(1 + f0_min / 700)
         f0_mel_max = 1127 * np.log(1 + f0_max / 700)
 
+        f0 = 0
         # Here, check f0_methods and get their computations
         if(self.f0_method == 'harvest'):
             f0 = self.get_harvest_computation(x, f0_min, f0_max)
