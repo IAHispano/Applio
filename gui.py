@@ -332,6 +332,14 @@ class GUI:
         layout = [
             [
                 sg.Frame(
+                    title="Proudly forked by Mangio621",
+                    layout=[
+                        [
+                            sg.Image('./mangio_utils/lol.png')
+                        ]
+                    ]
+                ),
+                sg.Frame(
                     title=i18n("加载模型"),
                     layout=[
                         [
@@ -389,8 +397,8 @@ class GUI:
                     layout=[
                         [
                             sg.Radio("Harvest", "f0_method", key="harvest", default=True),
-                            sg.Radio("Reg Crepe", "f0_method", key="reg-crepe"),
-                            sg.Radio("Reg Crepe Tiny", "f0_method", key="reg-crepe-tiny"),
+                            sg.Radio("Crepe", "f0_method", key="reg-crepe"),
+                            sg.Radio("Crepe Tiny", "f0_method", key="reg-crepe-tiny"),
                         ]
                     ],
                     title="Select an f0 Method",
