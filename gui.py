@@ -518,32 +518,13 @@ class GUI:
                 self.flag_vc = False
                 exit()
             if event == "start_vc" and self.flag_vc == False:
-<<<<<<< HEAD
-                self.set_values(values)
-                print("using_cuda:" + str(torch.cuda.is_available()))
-                self.start_vc()
-                settings = {
-                    "pth_path": values["pth_path"],
-                    "index_path": values["index_path"],
-                    "f0_method": self.get_f0_method_from_radios(values),
-                    "sg_input_device": values["sg_input_device"],
-                    "sg_output_device": values["sg_output_device"],
-                    "threhold": values["threhold"],
-                    "pitch": values["pitch"],
-                    "index_rate": values["index_rate"],
-                    "block_time": values["block_time"],
-                    "crossfade_length": values["crossfade_length"],
-                    "extra_time": values["extra_time"],
-                }
-                with open("values1.json", "w") as j:
-                    json.dump(settings, j)
-=======
                 if self.set_values(values) == True:
                     print("using_cuda:" + str(torch.cuda.is_available()))
                     self.start_vc()
                     settings = {
                         "pth_path": values["pth_path"],
                         "index_path": values["index_path"],
+                        "f0_method": self.get_f0_method_from_radios(values),
                         "sg_input_device": values["sg_input_device"],
                         "sg_output_device": values["sg_output_device"],
                         "threhold": values["threhold"],
@@ -555,7 +536,6 @@ class GUI:
                     }
                     with open("values1.json", "w") as j:
                         json.dump(settings, j)
->>>>>>> upstream/main
             if event == "stop_vc" and self.flag_vc == True:
                 self.flag_vc = False
 
