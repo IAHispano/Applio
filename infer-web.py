@@ -666,12 +666,12 @@ def change_sr2(sr2, if_f0_3, version19):
     if_pretrained_discriminator_exist = os.access(
         "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2), os.F_OK
     )
-    if if_pretrained_generator_exist is not False:
+    if not if_pretrained_generator_exist:
         print(
             "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2),
             "not exist, will not use pretrained model",
         )
-    if if_pretrained_discriminator_exist is not False:
+    if not if_pretrained_discriminator_exist:
         print(
             "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2),
             "not exist, will not use pretrained model",
@@ -683,7 +683,6 @@ def change_sr2(sr2, if_f0_3, version19):
         "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2)
         if if_pretrained_discriminator_exist
         else "",
-        {"visible": True, "__type__": "update"},
     )
 
 
@@ -692,9 +691,9 @@ def change_version19(sr2, if_f0_3, version19):
     if sr2 == "32k" and version19 == "v1":
         sr2 = "40k"
     to_return_sr2 = (
-        {"choices": ["40k", "48k"], "__type__": "update"}
+        {"choices": ["40k", "48k"], "__type__": "update", "value": sr2}
         if version19 == "v1"
-        else {"choices": ["32k", "40k", "48k"], "__type__": "update"}
+        else {"choices": ["40k", "48k", "32k"], "__type__": "update", "value": sr2}
     )
     f0_str = "f0" if if_f0_3 else ""
     if_pretrained_generator_exist = os.access(
@@ -2106,7 +2105,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                     sr2.change(
                         change_sr2,
                         [sr2, if_f0_3, version19],
-                        [pretrained_G14, pretrained_D15, version19],
+                        [pretrained_G14, pretrained_D15],
                     )
                     version19.change(
                         change_version19,
@@ -2289,7 +2288,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                     version_1 = gr.Radio(
                         label=i18n("模型版本型号"),
                         choices=["v1", "v2"],
-                        value="v1",
+                        value="v2",
                         interactive=True,
                     )
                     info___ = gr.Textbox(
