@@ -1,15 +1,48 @@
-import torch, os, traceback, sys, warnings, shutil, numpy as np
+import os
+import shutil
+import sys
 
-os.environ["no_proxy"] = "localhost, 127.0.0.1, ::1"
-import threading
-from time import sleep
-from subprocess import Popen
-import faiss
-from random import shuffle
-import json
+import json # Mangio fork using json for preset saving
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
+import traceback, pdb
+import warnings
+
+import numpy as np
+import torch
+
+os.environ["no_proxy"] = "localhost, 127.0.0.1, ::1"
+import logging
+import threading
+from random import shuffle
+from subprocess import Popen
+from time import sleep
+
+import faiss
+import ffmpeg
+import gradio as gr
+import soundfile as sf
+from config import Config
+from fairseq import checkpoint_utils
+from i18n import I18nAuto
+from infer_pack.models import (
+    SynthesizerTrnMs256NSFsid,
+    SynthesizerTrnMs256NSFsid_nono,
+    SynthesizerTrnMs768NSFsid,
+    SynthesizerTrnMs768NSFsid_nono,
+)
+from infer_pack.models_onnx import SynthesizerTrnMsNSFsidM
+from infer_uvr5 import _audio_pre_, _audio_pre_new
+from MDXNet import MDXNetDereverb
+from my_utils import load_audio
+from train.process_ckpt import change_info, extract_small_model, merge, show_info
+from vc_infer_pipeline import VC
+from sklearn.cluster import MiniBatchKMeans
+
+logging.getLogger("numba").setLevel(logging.WARNING)
+
+
 tmp = os.path.join(now_dir, "TEMP")
 shutil.rmtree(tmp, ignore_errors=True)
 shutil.rmtree("%s/runtime/Lib/site-packages/infer_pack" % (now_dir), ignore_errors=True)
@@ -20,41 +53,44 @@ os.makedirs(os.path.join(now_dir, "weights"), exist_ok=True)
 os.environ["TEMP"] = tmp
 warnings.filterwarnings("ignore")
 torch.manual_seed(114514)
-from i18n import I18nAuto
-import ffmpeg
-from MDXNet import MDXNetDereverb
 
+
+config = Config()
 i18n = I18nAuto()
 i18n.print()
 # 判断是否有能用来训练和加速推理的N卡
 ngpu = torch.cuda.device_count()
 gpu_infos = []
 mem = []
-if (not torch.cuda.is_available()) or ngpu == 0:
-    if_gpu_ok = False
-else:
-    if_gpu_ok = False
+if_gpu_ok = False
+
+if torch.cuda.is_available() or ngpu != 0:
     for i in range(ngpu):
         gpu_name = torch.cuda.get_device_name(i)
-        if (
-            "10" in gpu_name
-            or "16" in gpu_name
-            or "20" in gpu_name
-            or "30" in gpu_name
-            or "40" in gpu_name
-            or "A2" in gpu_name.upper()
-            or "A3" in gpu_name.upper()
-            or "A4" in gpu_name.upper()
-            or "P4" in gpu_name.upper()
-            or "A50" in gpu_name.upper()
-            or "A60" in gpu_name.upper()
-            or "70" in gpu_name
-            or "80" in gpu_name
-            or "90" in gpu_name
-            or "M4" in gpu_name.upper()
-            or "T4" in gpu_name.upper()
-            or "TITAN" in gpu_name.upper()
-        ):  # A10#A100#V100#A40#P40#M40#K80#A4500
+        if any(
+            value in gpu_name.upper()
+            for value in [
+                "10",
+                "16",
+                "20",
+                "30",
+                "40",
+                "A2",
+                "A3",
+                "A4",
+                "P4",
+                "A50",
+                "500",
+                "A60",
+                "70",
+                "80",
+                "90",
+                "M4",
+                "T4",
+                "TITAN",
+            ]
+        ):
+            # A10#A100#V100#A40#P40#M40#K80#A4500
             if_gpu_ok = True  # 至少有一张能用的N卡
             gpu_infos.append("%s\t%s" % (i, gpu_name))
             mem.append(
@@ -66,32 +102,13 @@ else:
                     + 0.4
                 )
             )
-if if_gpu_ok == True and len(gpu_infos) > 0:
+if if_gpu_ok and len(gpu_infos) > 0:
     gpu_info = "\n".join(gpu_infos)
     default_batch_size = min(mem) // 2
 else:
     gpu_info = i18n("很遗憾您这没有能用的显卡来支持您训练")
     default_batch_size = 1
 gpus = "-".join([i[0] for i in gpu_infos])
-from infer_pack.models import (
-    SynthesizerTrnMs256NSFsid,
-    SynthesizerTrnMs256NSFsid_nono,
-    SynthesizerTrnMs768NSFsid,
-    SynthesizerTrnMs768NSFsid_nono,
-)
-import soundfile as sf
-from fairseq import checkpoint_utils
-import gradio as gr
-import logging
-from vc_infer_pipeline import VC
-from config import Config
-from infer_uvr5 import _audio_pre_, _audio_pre_new
-from my_utils import load_audio
-from train.process_ckpt import show_info, change_info, merge, extract_small_model
-
-config = Config()
-# from trainset_preprocess_pipeline import PreProcess
-logging.getLogger("numba").setLevel(logging.WARNING)
 
 
 class ToolButton(gr.Button, gr.components.FormComponent):
@@ -166,7 +183,7 @@ def vc_single(
         if audio_max > 1:
             audio /= audio_max
         times = [0, 0, 0]
-        if hubert_model == None:
+        if not hubert_model:
             load_hubert()
         if_f0 = cpt.get("f0", 1)
         file_index = (
@@ -206,7 +223,7 @@ def vc_single(
             crepe_hop_length,
             f0_file=f0_file,
         )
-        if resample_sr >= 16000 and tgt_sr != resample_sr:
+        if tgt_sr != resample_sr >= 16000:
             tgt_sr = resample_sr
         index_info = (
             "Using index:%s." % file_index
@@ -386,11 +403,11 @@ def uvr(model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format
 
 
 # 一个选项卡全局只能有一个音色
-def get_vc(sid):
+def get_vc(sid, to_return_protect0, to_return_protect1):
     global n_spk, tgt_sr, net_g, vc, cpt, version
     if sid == "" or sid == []:
         global hubert_model
-        if hubert_model != None:  # 考虑到轮询, 需要加个判断看是否 sid 是由有模型切换到无模型的
+        if hubert_model is not None:  # 考虑到轮询, 需要加个判断看是否 sid 是由有模型切换到无模型的
             print("clean_empty_cache")
             del net_g, n_spk, vc, hubert_model, tgt_sr  # ,cpt
             hubert_model = net_g = n_spk = vc = hubert_model = tgt_sr = None
@@ -424,6 +441,23 @@ def get_vc(sid):
     tgt_sr = cpt["config"][-1]
     cpt["config"][-3] = cpt["weight"]["emb_g.weight"].shape[0]  # n_spk
     if_f0 = cpt.get("f0", 1)
+    if if_f0 == 0:
+        to_return_protect0 = to_return_protect1 = {
+            "visible": False,
+            "value": 0.5,
+            "__type__": "update",
+        }
+    else:
+        to_return_protect0 = {
+            "visible": True,
+            "value": to_return_protect0,
+            "__type__": "update",
+        }
+        to_return_protect1 = {
+            "visible": True,
+            "value": to_return_protect1,
+            "__type__": "update",
+        }
     version = cpt.get("version", "v1")
     if version == "v1":
         if if_f0 == 1:
@@ -444,7 +478,11 @@ def get_vc(sid):
         net_g = net_g.float()
     vc = VC(tgt_sr, config)
     n_spk = cpt["config"][-3]
-    return {"visible": True, "maximum": n_spk, "__type__": "update"}
+    return (
+        {"visible": True, "maximum": n_spk, "__type__": "update"},
+        to_return_protect0,
+        to_return_protect1,
+    )
 
 
 def change_choices():
@@ -476,7 +514,7 @@ sr_dict = {
 
 def if_done(done, p):
     while 1:
-        if p.poll() == None:
+        if p.poll() is None:
             sleep(0.5)
         else:
             break
@@ -489,7 +527,7 @@ def if_done_multi(done, ps):
         # 只要有一个进程未结束都不停
         flag = 1
         for p in ps:
-            if p.poll() == None:
+            if p.poll() is None:
                 flag = 0
                 sleep(0.5)
                 break
@@ -524,7 +562,7 @@ def preprocess_dataset(trainset_dir, exp_dir, sr, n_p):
         with open("%s/logs/%s/preprocess.log" % (now_dir, exp_dir), "r") as f:
             yield (f.read())
         sleep(1)
-        if done[0] == True:
+        if done[0]:
             break
     with open("%s/logs/%s/preprocess.log" % (now_dir, exp_dir), "r") as f:
         log = f.read()
@@ -563,7 +601,7 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, echl):
             ) as f:
                 yield (f.read())
             sleep(1)
-            if done[0] == True:
+            if done[0]:
                 break
         with open("%s/logs/%s/extract_f0_feature.log" % (now_dir, exp_dir), "r") as f:
             log = f.read()
@@ -611,7 +649,7 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, echl):
         with open("%s/logs/%s/extract_f0_feature.log" % (now_dir, exp_dir), "r") as f:
             yield (f.read())
         sleep(1)
-        if done[0] == True:
+        if done[0]:
             break
     with open("%s/logs/%s/extract_f0_feature.log" % (now_dir, exp_dir), "r") as f:
         log = f.read()
@@ -622,51 +660,106 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, echl):
 def change_sr2(sr2, if_f0_3, version19):
     path_str = "" if version19 == "v1" else "_v2"
     f0_str = "f0" if if_f0_3 else ""
-    if_pretrained_generator_exist = os.access("pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2), os.F_OK)
-    if_pretrained_discriminator_exist = os.access("pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2), os.F_OK)
-    if (if_pretrained_generator_exist == False):
-        print("pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2), "not exist, will not use pretrained model")
-    if (if_pretrained_discriminator_exist == False):
-        print("pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2), "not exist, will not use pretrained model")
-    return (
-        ("pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2)) if if_pretrained_generator_exist else "",
-        ("pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2)) if if_pretrained_discriminator_exist else "",
-        {"visible": True, "__type__": "update"}
+    if_pretrained_generator_exist = os.access(
+        "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2), os.F_OK
     )
+    if_pretrained_discriminator_exist = os.access(
+        "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2), os.F_OK
+    )
+    if if_pretrained_generator_exist is not False:
+        print(
+            "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2),
+            "not exist, will not use pretrained model",
+        )
+    if if_pretrained_discriminator_exist is not False:
+        print(
+            "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2),
+            "not exist, will not use pretrained model",
+        )
+    return (
+        "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2)
+        if if_pretrained_generator_exist
+        else "",
+        "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2)
+        if if_pretrained_discriminator_exist
+        else "",
+        {"visible": True, "__type__": "update"},
+    )
+
 
 def change_version19(sr2, if_f0_3, version19):
     path_str = "" if version19 == "v1" else "_v2"
+    if sr2 == "32k" and version19 == "v1":
+        sr2 = "40k"
+    to_return_sr2 = (
+        {"choices": ["40k", "48k"], "__type__": "update"}
+        if version19 == "v1"
+        else {"choices": ["32k", "40k", "48k"], "__type__": "update"}
+    )
     f0_str = "f0" if if_f0_3 else ""
-    if_pretrained_generator_exist = os.access("pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2), os.F_OK)
-    if_pretrained_discriminator_exist = os.access("pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2), os.F_OK)
-    if (if_pretrained_generator_exist == False):
-        print("pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2), "not exist, will not use pretrained model")
-    if (if_pretrained_discriminator_exist == False):
-        print("pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2), "not exist, will not use pretrained model")
+    if_pretrained_generator_exist = os.access(
+        "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2), os.F_OK
+    )
+    if_pretrained_discriminator_exist = os.access(
+        "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2), os.F_OK
+    )
+    if not if_pretrained_generator_exist:
+        print(
+            "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2),
+            "not exist, will not use pretrained model",
+        )
+    if not if_pretrained_discriminator_exist:
+        print(
+            "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2),
+            "not exist, will not use pretrained model",
+        )
     return (
-        ("pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2)) if if_pretrained_generator_exist else "",
-        ("pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2)) if if_pretrained_discriminator_exist else "",
+        "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2)
+        if if_pretrained_generator_exist
+        else "",
+        "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2)
+        if if_pretrained_discriminator_exist
+        else "",
+        to_return_sr2,
     )
 
 
 def change_f0(if_f0_3, sr2, version19):  # f0method8,pretrained_G14,pretrained_D15
     path_str = "" if version19 == "v1" else "_v2"
-    if_pretrained_generator_exist = os.access("pretrained%s/f0G%s.pth" % (path_str, sr2), os.F_OK)
-    if_pretrained_discriminator_exist = os.access("pretrained%s/f0D%s.pth" % (path_str, sr2), os.F_OK)
-    if (if_pretrained_generator_exist == False):
-        print("pretrained%s/f0G%s.pth" % (path_str, sr2), "not exist, will not use pretrained model")
-    if (if_pretrained_discriminator_exist == False):
-        print("pretrained%s/f0D%s.pth" % (path_str, sr2), "not exist, will not use pretrained model")
+    if_pretrained_generator_exist = os.access(
+        "pretrained%s/f0G%s.pth" % (path_str, sr2), os.F_OK
+    )
+    if_pretrained_discriminator_exist = os.access(
+        "pretrained%s/f0D%s.pth" % (path_str, sr2), os.F_OK
+    )
+    if not if_pretrained_generator_exist:
+        print(
+            "pretrained%s/f0G%s.pth" % (path_str, sr2),
+            "not exist, will not use pretrained model",
+        )
+    if not if_pretrained_discriminator_exist:
+        print(
+            "pretrained%s/f0D%s.pth" % (path_str, sr2),
+            "not exist, will not use pretrained model",
+        )
     if if_f0_3:
         return (
             {"visible": True, "__type__": "update"},
-            "pretrained%s/f0G%s.pth" % (path_str, sr2) if if_pretrained_generator_exist else "",
-            "pretrained%s/f0D%s.pth" % (path_str, sr2) if if_pretrained_discriminator_exist else "",
+            "pretrained%s/f0G%s.pth" % (path_str, sr2)
+            if if_pretrained_generator_exist
+            else "",
+            "pretrained%s/f0D%s.pth" % (path_str, sr2)
+            if if_pretrained_discriminator_exist
+            else "",
         )
     return (
         {"visible": False, "__type__": "update"},
-        ("pretrained%s/G%s.pth" % (path_str, sr2)) if if_pretrained_generator_exist else "",
-        ("pretrained%s/D%s.pth" % (path_str, sr2)) if if_pretrained_discriminator_exist else "",
+        ("pretrained%s/G%s.pth" % (path_str, sr2))
+        if if_pretrained_generator_exist
+        else "",
+        ("pretrained%s/D%s.pth" % (path_str, sr2))
+        if if_pretrained_discriminator_exist
+        else "",
     )
 
 
@@ -773,8 +866,8 @@ def click_train(
                 gpus16,
                 total_epoch11,
                 save_epoch10,
-                ("-pg %s" % pretrained_G14) if pretrained_G14 != "" else "",
-                ("-pd %s" % pretrained_D15) if pretrained_D15 != "" else "",
+                "-pg %s" % pretrained_G14 if pretrained_G14 != "" else "",
+                "-pd %s" % pretrained_D15 if pretrained_D15 != "" else "",
                 1 if if_save_latest13 == i18n("是") else 0,
                 1 if if_cache_gpu17 == i18n("是") else 0,
                 1 if if_save_every_weights18 == i18n("是") else 0,
@@ -792,8 +885,8 @@ def click_train(
                 batch_size12,
                 total_epoch11,
                 save_epoch10,
-                ("-pg %s" % pretrained_G14) if pretrained_G14 != "" else "\b",
-                ("-pd %s" % pretrained_D15) if pretrained_D15 != "" else "\b",
+                "-pg %s" % pretrained_G14 if pretrained_G14 != "" else "\b",
+                "-pd %s" % pretrained_D15 if pretrained_D15 != "" else "\b",
                 1 if if_save_latest13 == i18n("是") else 0,
                 1 if if_cache_gpu17 == i18n("是") else 0,
                 1 if if_save_every_weights18 == i18n("是") else 0,
@@ -815,11 +908,12 @@ def train_index(exp_dir1, version19):
         if version19 == "v1"
         else "%s/3_feature768" % (exp_dir)
     )
-    if os.path.exists(feature_dir) == False:
+    if not os.path.exists(feature_dir):
         return "请先进行特征提取!"
     listdir_res = list(os.listdir(feature_dir))
     if len(listdir_res) == 0:
         return "请先进行特征提取！"
+    infos = []
     npys = []
     for name in sorted(listdir_res):
         phone = np.load("%s/%s" % (feature_dir, name))
@@ -828,10 +922,30 @@ def train_index(exp_dir1, version19):
     big_npy_idx = np.arange(big_npy.shape[0])
     np.random.shuffle(big_npy_idx)
     big_npy = big_npy[big_npy_idx]
+    if big_npy.shape[0] > 2e5:
+        # if(1):
+        infos.append("Trying doing kmeans %s shape to 10k centers." % big_npy.shape[0])
+        yield "\n".join(infos)
+        try:
+            big_npy = (
+                MiniBatchKMeans(
+                    n_clusters=10000,
+                    verbose=True,
+                    batch_size=256 * config.n_cpu,
+                    compute_labels=False,
+                    init="random",
+                )
+                .fit(big_npy)
+                .cluster_centers_
+            )
+        except:
+            info = traceback.format_exc()
+            print(info)
+            infos.append(info)
+            yield "\n".join(infos)
+
     np.save("%s/total_fea.npy" % exp_dir, big_npy)
-    # n_ivf =  big_npy.shape[0] // 39
     n_ivf = min(int(16 * np.sqrt(big_npy.shape[0])), big_npy.shape[0] // 39)
-    infos = []
     infos.append("%s,%s" % (big_npy.shape, n_ivf))
     yield "\n".join(infos)
     index = faiss.index_factory(256 if version19 == "v1" else 768, "IVF%s,Flat" % n_ivf)
@@ -1022,7 +1136,7 @@ def train1key(
     if gpus16:
         cmd = (
             config.python_cmd
-            +" train_nsf_sim_cache_sid_load_pretrain.py -e %s -sr %s -f0 %s -bs %s -g %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s"
+            + " train_nsf_sim_cache_sid_load_pretrain.py -e %s -sr %s -f0 %s -bs %s -g %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s"
             % (
                 exp_dir1,
                 sr2,
@@ -1031,8 +1145,8 @@ def train1key(
                 gpus16,
                 total_epoch11,
                 save_epoch10,
-                ("-pg %s" % pretrained_G14) if pretrained_G14 != "" else "",
-                ("-pd %s" % pretrained_D15) if pretrained_D15 != "" else "",
+                "-pg %s" % pretrained_G14 if pretrained_G14 != "" else "",
+                "-pd %s" % pretrained_D15 if pretrained_D15 != "" else "",
                 1 if if_save_latest13 == i18n("是") else 0,
                 1 if if_cache_gpu17 == i18n("是") else 0,
                 1 if if_save_every_weights18 == i18n("是") else 0,
@@ -1050,8 +1164,8 @@ def train1key(
                 batch_size12,
                 total_epoch11,
                 save_epoch10,
-                ("-pg %s" % pretrained_G14) if pretrained_G14 != "" else "",
-                ("-pd %s" % pretrained_D15) if pretrained_D15 != "" else "",
+                "-pg %s" % pretrained_G14 if pretrained_G14 != "" else "",
+                "-pd %s" % pretrained_D15 if pretrained_D15 != "" else "",
                 1 if if_save_latest13 == i18n("是") else 0,
                 1 if if_cache_gpu17 == i18n("是") else 0,
                 1 if if_save_every_weights18 == i18n("是") else 0,
@@ -1073,6 +1187,29 @@ def train1key(
     big_npy_idx = np.arange(big_npy.shape[0])
     np.random.shuffle(big_npy_idx)
     big_npy = big_npy[big_npy_idx]
+
+    if big_npy.shape[0] > 2e5:
+        # if(1):
+        info = "Trying doing kmeans %s shape to 10k centers." % big_npy.shape[0]
+        print(info)
+        yield get_info_str(info)
+        try:
+            big_npy = (
+                MiniBatchKMeans(
+                    n_clusters=10000,
+                    verbose=True,
+                    batch_size=256 * config.n_cpu,
+                    compute_labels=False,
+                    init="random",
+                )
+                .fit(big_npy)
+                .cluster_centers_
+            )
+        except:
+            info = traceback.format_exc()
+            print(info)
+            yield get_info_str(info)
+
     np.save("%s/total_fea.npy" % model_log_dir, big_npy)
 
     # n_ivf =  big_npy.shape[0] // 39
@@ -1106,10 +1243,7 @@ def train1key(
 
 #                    ckpt_path2.change(change_info_,[ckpt_path2],[sr__,if_f0__])
 def change_info_(ckpt_path):
-    if (
-        os.path.exists(ckpt_path.replace(os.path.basename(ckpt_path), "train.log"))
-        == False
-    ):
+    if not os.path.exists(ckpt_path.replace(os.path.basename(ckpt_path), "train.log")):
         return {"__type__": "update"}, {"__type__": "update"}, {"__type__": "update"}
     try:
         with open(
@@ -1124,15 +1258,12 @@ def change_info_(ckpt_path):
         return {"__type__": "update"}, {"__type__": "update"}, {"__type__": "update"}
 
 
-from infer_pack.models_onnx import SynthesizerTrnMsNSFsidM
-
-
-def export_onnx(ModelPath, ExportedPath, MoeVS=True):
+def export_onnx(ModelPath, ExportedPath):
     cpt = torch.load(ModelPath, map_location="cpu")
-    cpt["config"][-3] = cpt["weight"]["emb_g.weight"].shape[0]  # n_spk
-    hidden_channels = 256 if cpt.get("version","v1")=="v1"else 768#cpt["config"][-2]  # hidden_channels，为768Vec做准备
+    cpt["config"][-3] = cpt["weight"]["emb_g.weight"].shape[0]
+    vec_channels = 256 if cpt.get("version", "v1") == "v1" else 768
 
-    test_phone = torch.rand(1, 200, hidden_channels)  # hidden unit
+    test_phone = torch.rand(1, 200, vec_channels)  # hidden unit
     test_phone_lengths = torch.tensor([200]).long()  # hidden unit 长度（貌似没啥用）
     test_pitch = torch.randint(size=(1, 200), low=5, high=255)  # 基频（单位赫兹）
     test_pitchf = torch.rand(1, 200)  # nsf基频
@@ -1143,7 +1274,7 @@ def export_onnx(ModelPath, ExportedPath, MoeVS=True):
 
 
     net_g = SynthesizerTrnMsNSFsidM(
-        *cpt["config"], is_half=False,version=cpt.get("version","v1")
+        *cpt["config"], is_half=False, version=cpt.get("version", "v1")
     )  # fp32导出（C++要支持fp16必须手动将内存重新排列所以暂时不用fp16）
     net_g.load_state_dict(cpt["weight"], strict=False)
     input_names = ["phone", "phone_lengths", "pitch", "pitchf", "ds", "rnd"]
@@ -1169,7 +1300,7 @@ def export_onnx(ModelPath, ExportedPath, MoeVS=True):
             "rnd": [2],
         },
         do_constant_folding=False,
-        opset_version=16,
+        opset_version=13,
         verbose=False,
         input_names=input_names,
         output_names=output_names,
@@ -1519,11 +1650,6 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                     interactive=True,
                 )
                 clean_button.click(fn=clean, inputs=[], outputs=[sid0])
-                sid0.change(
-                    fn=get_vc,
-                    inputs=[sid0],
-                    outputs=[spk_item],
-                )
             with gr.Group():
                 gr.Markdown(
                     value=i18n("男转女推荐+12key, 女转男推荐-12key, 如果音域爆炸导致音色失真也可以自己调整到合适音域. ")
@@ -1757,6 +1883,11 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                         ],
                         [vc_output3],
                     )
+            sid0.change(
+                fn=get_vc,
+                inputs=[sid0, protect0, protect1],
+                outputs=[spk_item, protect0, protect1],
+            )
         with gr.TabItem(i18n("伴奏人声分离&去混响&去回声")):
             with gr.Group():
                 gr.Markdown(
@@ -1843,7 +1974,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                     interactive=True,
                 )
                 version19 = gr.Radio(
-                    label=i18n("版本(目前仅40k支持了v2)"),
+                    label=i18n("版本"),
                     choices=["v1", "v2"],
                     value="v1",
                     interactive=True,
@@ -1854,7 +1985,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                     maximum=config.n_cpu,
                     step=1,
                     label=i18n("提取音高和处理数据使用的CPU进程数"),
-                    value=config.n_cpu,
+                    value=int(np.ceil(config.n_cpu / 1.5)),
                     interactive=True,
                 )
             with gr.Group():  # 暂时单人的, 后面支持最多4人的#数据处理
@@ -1980,7 +2111,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                     version19.change(
                         change_version19,
                         [sr2, if_f0_3, version19],
-                        [pretrained_G14, pretrained_D15],
+                        [pretrained_G14, pretrained_D15, sr2],
                     )
                     if_f0_3.change(
                         change_f0,
@@ -2058,7 +2189,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                 with gr.Row():
                     sr_ = gr.Radio(
                         label=i18n("目标采样率"),
-                        choices=["32k", "40k", "48k"],
+                        choices=["40k", "48k"],
                         value="40k",
                         interactive=True,
                     )
@@ -2174,7 +2305,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                     [ckpt_path2, save_name, sr__, if_f0__, info___, version_1],
                     info7,
                 )
-                
+
         with gr.TabItem(i18n("Onnx导出")):
             with gr.Row():
                 ckpt_dir = gr.Textbox(label=i18n("RVC模型路径"), value="", interactive=True)
@@ -2183,11 +2314,10 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                     label=i18n("Onnx输出路径"), value="", interactive=True
                 )
             with gr.Row():
-                moevs = gr.Checkbox(label=i18n("MoeVS模型"), value=False,visible=False)
                 infoOnnx = gr.Label(label="info")
             with gr.Row():
                 butOnnx = gr.Button(i18n("导出Onnx模型"), variant="primary")
-            butOnnx.click(export_onnx, [ckpt_dir, onnx_dir, moevs], infoOnnx)
+            butOnnx.click(export_onnx, [ckpt_dir, onnx_dir], infoOnnx)
 
         tab_faq = i18n("常见问题解答")
         with gr.TabItem(tab_faq):
