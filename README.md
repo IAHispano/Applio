@@ -1,8 +1,9 @@
 <div align="center">
-  
 <h1>Mangio-RVC-Fork with v2 Support! 💻 </h1>
 A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. In general, this fork provides a CLI interface in addition. And also gives you more f0 methods to use, as well as a personlized 'hybrid' f0 estimation method using nanmedian. <br><br>
 <b> 
+
+<h1> !! Feature implementations have been post-poned -- working on other related improvements !! </h1>
 
 <b>Im developing alone. Help support me in the rapid development of open-source A.I Deep NN audio tools and frameworks. By donating, you making a commitment to the improvement of audio A.I as a whole. You should donate if you merely want to "support" me, not because you are then expecting a finished product. There are no guarantees. Thank you</b>
 <br>
