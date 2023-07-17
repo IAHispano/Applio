@@ -26,13 +26,13 @@ import soundfile as sf
 from config import Config
 from fairseq import checkpoint_utils
 from i18n import I18nAuto
-from infer_pack.models import (
+from lib.infer_pack.models import (
     SynthesizerTrnMs256NSFsid,
     SynthesizerTrnMs256NSFsid_nono,
     SynthesizerTrnMs768NSFsid,
     SynthesizerTrnMs768NSFsid_nono,
 )
-from infer_pack.models_onnx import SynthesizerTrnMsNSFsidM
+from lib.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM
 from infer_uvr5 import _audio_pre_, _audio_pre_new
 from MDXNet import MDXNetDereverb
 from my_utils import load_audio
