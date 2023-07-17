@@ -1,9 +1,10 @@
 import argparse
+import sys
 import torch
 from multiprocessing import cpu_count
 
 
-def config_file_change_fp32():
+def use_fp32_config():
     for config_file in ["32k.json", "40k.json", "48k.json"]:
         with open(f"configs/{config_file}", "r") as f:
             strr = f.read().replace("true", "false")
@@ -36,11 +37,10 @@ class Config:
 
     @staticmethod
     def arg_parse() -> tuple:
+        exe = sys.executable or "python"
         parser = argparse.ArgumentParser()
         parser.add_argument("--port", type=int, default=7865, help="Listen port")
-        parser.add_argument(
-            "--pycmd", type=str, default="python", help="Python command"
-        )
+        parser.add_argument("--pycmd", type=str, default=exe, help="Python command")
         parser.add_argument("--colab", action="store_true", help="Launch in colab")
         parser.add_argument(
             "--noparallel", action="store_true", help="Disable parallel processing"
@@ -70,6 +70,18 @@ class Config:
             cmd_opts.is_cli,
         )
 
+    # has_mps is only available in nightly pytorch (for now) and MasOS 12.3+.
+    # check `getattr` and try it for compatibility
+    @staticmethod
+    def has_mps() -> bool:
+        if not torch.backends.mps.is_available():
+            return False
+        try:
+            torch.zeros(1).to(torch.device("mps"))
+            return True
+        except Exception:
+            return False
+
     def device_config(self) -> tuple:
         if torch.cuda.is_available():
             i_device = int(self.device.split(":")[-1])
@@ -81,11 +93,11 @@ class Config:
                 or "1070" in self.gpu_name
                 or "1080" in self.gpu_name
             ):
-                print("16系/10系显卡和P40强制单精度")
+                print("Found GPU", self.gpu_name, ", force to fp32")
                 self.is_half = False
-                config_file_change_fp32()
+                use_fp32_config()
             else:
-                self.gpu_name = None
+                print("Found GPU", self.gpu_name)
             self.gpu_mem = int(
                 torch.cuda.get_device_properties(i_device).total_memory
                 / 1024
@@ -98,16 +110,16 @@ class Config:
                     strr = f.read().replace("3.7", "3.0")
                 with open("trainset_preprocess_pipeline_print.py", "w") as f:
                     f.write(strr)
-        elif torch.backends.mps.is_available():
-            print("没有发现支持的N卡, 使用MPS进行推理")
+        elif self.has_mps():
+            print("No supported Nvidia GPU found, use MPS instead")
             self.device = "mps"
             self.is_half = False
-            config_file_change_fp32()
+            use_fp32_config()
         else:
-            print("没有发现支持的N卡, 使用CPU进行推理")
+            print("No supported Nvidia GPU found, use CPU instead")
             self.device = "cpu"
             self.is_half = False
-            config_file_change_fp32()
+            use_fp32_config()
 
         if self.n_cpu == 0:
             self.n_cpu = cpu_count()

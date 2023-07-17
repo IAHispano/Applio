@@ -21,7 +21,6 @@ praat-parselmouth>=0.4.2
 Pillow>=9.1.1
 resampy>=0.4.2
 scikit-learn
-starlette>=0.25.0
 tensorboard
 tensorboard-data-server
 tensorboard-plugin-wit
@@ -43,5 +42,6 @@ uvicorn>=0.21.1
 colorama>=0.4.5
 pyworld>=0.3.2
 httpx==0.23.0
-onnxruntime-gpu
+#onnxruntime-gpu
 torchcrepe==0.0.20
+fastapi==0.88
