@@ -1,4 +1,4 @@
-import numpy as np, parselmouth, torch, pdb
+import numpy as np, parselmouth, torch, pdb, sys, os
 from time import time as ttime
 import torch.nn.functional as F
 import torchcrepe # Fork feature. Use the crepe f0 algorithm. New dependency (pip install torchcrepe)
@@ -7,6 +7,9 @@ import scipy.signal as signal
 import pyworld, os, traceback, faiss, librosa, torchcrepe
 from scipy import signal
 from functools import lru_cache
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 
 bh, ah = signal.butter(N=5, Wn=48, btype="high", fs=16000)
 
@@ -295,6 +298,15 @@ class VC(object):
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
         elif f0_method == "mangio-crepe-tiny":
             f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length, "tiny")
+        elif f0_method == "rmvpe":
+            if hasattr(self, "model_rmvpe") == False:
+                from rmvpe import RMVPE
+                print("loading rmvpe model")
+                self.model_rmvpe = RMVPE(
+                    "rmvpe.pt", is_half=self.is_half, device=self.device
+                )
+            f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
+
         elif "hybrid" in f0_method:
             # Perform hybrid median pitch estimation
             input_audio_path2wav[input_audio_path] = x.astype(np.double)

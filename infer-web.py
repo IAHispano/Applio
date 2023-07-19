@@ -12,6 +12,7 @@ import warnings
 import numpy as np
 import torch
 
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["no_proxy"] = "localhost, 127.0.0.1, ::1"
 import logging
 import threading
@@ -26,13 +27,13 @@ import soundfile as sf
 from config import Config
 from fairseq import checkpoint_utils
 from i18n import I18nAuto
-from infer_pack.models import (
+from lib.infer_pack.models import (
     SynthesizerTrnMs256NSFsid,
     SynthesizerTrnMs256NSFsid_nono,
     SynthesizerTrnMs768NSFsid,
     SynthesizerTrnMs768NSFsid_nono,
 )
-from infer_pack.models_onnx import SynthesizerTrnMsNSFsidM
+from lib.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM
 from infer_uvr5 import _audio_pre_, _audio_pre_new
 from MDXNet import MDXNetDereverb
 from my_utils import load_audio
@@ -1666,7 +1667,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             label=i18n(
                                 "选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比,crepe效果好但吃GPU"
                             ),
-                            choices=["pm", "harvest", "dio", "crepe", "crepe-tiny", "mangio-crepe", "mangio-crepe-tiny"], # Fork Feature. Add Crepe-Tiny
+                            choices=["pm", "harvest", "dio", "crepe", "crepe-tiny", "mangio-crepe", "mangio-crepe-tiny", "rmvpe"], # Fork Feature. Add Crepe-Tiny
                             value="pm",
                             interactive=True,
                         )
@@ -1675,7 +1676,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             maximum=512,
                             step=1,
                             label=i18n("crepe_hop_length"),
-                            value=160,
+                            value=120,
                             interactive=True
                         )
                         filter_radius0 = gr.Slider(
@@ -1709,7 +1710,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             minimum=0,
                             maximum=1,
                             label=i18n("检索特征占比"),
-                            value=0.88,
+                            value=0.75,
                             interactive=True,
                         )
                     with gr.Column():
@@ -1725,7 +1726,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             minimum=0,
                             maximum=1,
                             label=i18n("输入源音量包络替换输出音量包络融合比例，越靠近1越使用输出包络"),
-                            value=1,
+                            value=0.25,
                             interactive=True,
                         )
                         protect0 = gr.Slider(
@@ -1777,7 +1778,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             label=i18n(
                                 "选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比,crepe效果好但吃GPU"
                             ),
-                            choices=["pm", "harvest", "crepe"],
+                            choices=["pm", "harvest", "crepe", "rmvpe"],
                             value="pm",
                             interactive=True,
                         )
