@@ -518,7 +518,7 @@ def get_vc(sid, to_return_protect0, to_return_protect1):
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
             cpt = None
-        return {"visible": False, "__type__": "update"}
+        return ({"visible": False, "__type__": "update"}, {"visible": False, "__type__": "update"}, {"visible": False, "__type__": "update"})
     person = "%s/%s" % (weight_root, sid)
     print("loading %s" % person)
     cpt = torch.load(person, map_location="cpu")
