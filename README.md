@@ -11,27 +11,6 @@ os.path.abspath(os.getcwd())
 - Auto-open TensorBoard localhost URL when `tensor-launch.py` is executed 
 - RMVPE implemented in both inferencing and training (the one in `Training` tab doesn't work properly though, requires some additional work to do) 
 
-# Known bugs:
-
-- `Unload voice to save GPU memory` button causes a Traceback:
-
-```python
-Traceback (most recent call last):
-  File "D:\RVC-beta-v2-0618\runtime\lib\site-packages\gradio\routes.py", line 437, in run_predict
-    output = await app.get_blocks().process_api(
-  File "D:\RVC-beta-v2-0618\runtime\lib\site-packages\gradio\blocks.py", line 1349, in process_api
-    data = self.postprocess_data(fn_index, result["prediction"], state)
-  File "D:\RVC-beta-v2-0618\runtime\lib\site-packages\gradio\blocks.py", line 1252, in postprocess_data
-    self.validate_outputs(fn_index, predictions)  # type: ignore
-  File "D:\RVC-beta-v2-0618\runtime\lib\site-packages\gradio\blocks.py", line 1227, in validate_outputs
-    raise ValueError(
-ValueError: An event handler (get_vc) didn't receive enough output values (needed: 3, received: 1).
-Wanted outputs:
-    [slider, slider, slider]
-Received outputs:
-    [{'visible': False, '__type__': 'update'}]
-```
-
 ## Installation:
 
 1. Simply either extract directly or use git clone
@@ -68,7 +47,7 @@ Received outputs:
     
 ### Current Todo-list:
 
-- [ ] Fix `Unload voice to save GPU memory` button Traceback 
+- [x] Fix `Unload voice to save GPU memory` button Traceback 
 - [ ] Add Accordions so people with Firefox browser get a much more compact GUI rather than [This](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/assets/79400603/67e0cc08-82a2-4dc3-86cf-e23d1dcad9f8). 
 - [ ] Fix weird way Median Filtering value inputted in a slider is utilized
 - [ ] Replace regular refresh buttons with these tiny ones from [AUTOMATIC'S1111 Stable DIffusion](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
