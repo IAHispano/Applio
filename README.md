@@ -56,6 +56,43 @@ os.path.abspath(os.getcwd())
 ![image](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/assets/79400603/7b93e167-564a-41d3-9a76-ded20063cdc3)
 - [ ] Implement Praat in the GUI for f0 curve file manipulation and easier usage
 
+
+# Screenshots:
+
+- ## Inference Tab:
+
+![image](https://github.com/Mangio621/Mangio-RVC-Fork/assets/79400603/107aa15a-4e8d-4f77-a327-45f35a235fcf)
+
+- ## UVR Tab:
+
+![image](https://github.com/Mangio621/Mangio-RVC-Fork/assets/79400603/7e57242a-4950-40c8-bf2a-8f77e992af26)
+
+- ## Training Tab:
+
+![image](https://github.com/Mangio621/Mangio-RVC-Fork/assets/79400603/a19ce156-5532-4761-aa06-8a537f80c368)
+
+- ## Ckpt-Processing Tab:
+
+![image](https://github.com/Mangio621/Mangio-RVC-Fork/assets/79400603/0cdc285e-a184-48f3-92a7-65f6120caf2f)
+
+The rest of the tabs are left untouched code-wise.
+
+
+
+# Formant Shift:
+
+![image](https://github.com/Mangio621/Mangio-RVC-Fork/assets/79400603/300ebce2-36c7-4761-b1dd-b31403ad2cd1)
+
+- ### Click `Apply` button every time you change the values for inferencing.
+
+- ### As the name implies, you can only use `wav` files so far, also it is very slow, so be patient.
+
+- ### If you added a new `preset.txt` in the `\formantshiftcfg\` folder, click button with refresh emoji
+
+- ### If the preset you selected somehow got edited, by pressing refresh emoji button you'll update values, by grabbing them from the file
+
+
+
 <div align="center">
 <h1>Mangio-RVC-Fork with v2 Support! 💻 </h1>
 A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. In general, this fork provides a CLI interface in addition. And also gives you more f0 methods to use, as well as a personlized 'hybrid' f0 estimation method using nanmedian. <br><br>
