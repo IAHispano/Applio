@@ -568,7 +568,28 @@ def train_and_evaluate(
                     ),
                 )
             )
-
+    
+    with open("stop.txt", "r+") as tostop:
+        content = tostop.read()
+        if 'stop' in content:
+            logger.info("Stop Button was pressed. The program is closed.")
+            if hasattr(net_g, "module"):
+                ckpt = net_g.module.state_dict()
+            else:
+                ckpt = net_g.state_dict()
+            logger.info(
+                "saving final ckpt:%s"
+                % (
+                    savee(
+                        ckpt, hps.sample_rate, hps.if_f0, hps.name, epoch, hps.version, hps
+                    )
+                )
+            )
+            
+            tostop.truncate(0)
+            tostop.writelines("not")
+            os._exit(2333333)
+    
     if rank == 0:
         logger.info("====> Epoch: {} {}".format(epoch, epoch_recorder.record()))
     if epoch >= hps.total_epoch and rank == 0:

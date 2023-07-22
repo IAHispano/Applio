@@ -3,6 +3,8 @@ import shutil
 import sys
 import json # Mangio fork using json for preset saving
 
+import signal
+
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 import traceback, pdb
@@ -72,6 +74,8 @@ ngpu = torch.cuda.device_count()
 gpu_infos = []
 mem = []
 if_gpu_ok = False
+
+isinterrupted = 0
 
 if torch.cuda.is_available() or ngpu != 0:
     for i in range(ngpu):
@@ -587,7 +591,7 @@ def change_choices():
 
 
 def clean():
-    return {"value": "", "__type__": "update"}
+    return ({"value": "", "__type__": "update"})
     
 
 sr_dict = {
@@ -1048,7 +1052,11 @@ def click_train(
             )
         )
     print(cmd)
+    global p
     p = Popen(cmd, shell=True, cwd=now_dir)
+    global PID
+    PID = p.pid
+
     p.wait()
     return "训练结束, 您可查看控制台训练日志或实验文件夹下的train.log"
 
@@ -1838,6 +1846,24 @@ def choveraudio():
     return ''
 
 
+def stoptraining(mim): 
+    if int(mim) == 1:
+        
+        with open("stop.txt", "w+") as tostops:
+
+            
+            tostops.writelines('stop')
+        #p.terminate()
+        #p.kill()
+        os.kill(PID, signal.SIGTERM)
+    else:
+        pass
+    
+    return (
+        {"visible": False, "__type__": "update"}, 
+        {"visible": True, "__type__": "update"},
+    )
+    
 #Default-GUI
 with gr.Blocks(theme='HaleyCH/HaleyCH_Theme') as app:
     gr.HTML("<h1> The Mangio-RVC-Fork 💻 </h1>")
@@ -2415,10 +2441,20 @@ with gr.Blocks(theme='HaleyCH/HaleyCH_Theme') as app:
                         value=gpus,
                         interactive=True,
                     )
-                    but3 = gr.Button(i18n("训练模型"), variant="primary")
+                    butstop = gr.Button(
+                            "Stop Training",
+                            variant='primary',
+                            visible=False,
+                    )
+                    but3 = gr.Button(i18n("训练模型"), variant="primary", visible=True)
+                    but3.click(fn=stoptraining, inputs=[gr.Number(value=0, visible=False)], outputs=[but3, butstop])
+                    butstop.click(fn=stoptraining, inputs=[gr.Number(value=1, visible=False)], outputs=[butstop, but3])
+                    
+                    
                     but4 = gr.Button(i18n("训练特征索引"), variant="primary")
                     #but5 = gr.Button(i18n("一键训练"), variant="primary")
                     info3 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=10)
+                    
                     but3.click(
                         click_train,
                         [
@@ -2437,9 +2473,13 @@ with gr.Blocks(theme='HaleyCH/HaleyCH_Theme') as app:
                             if_save_every_weights18,
                             version19,
                         ],
-                        info3,
+                        [info3],
                     )
+                        
                     but4.click(train_index, [exp_dir1, version19], info3)
+                    
+                    
+                    
                     #but5.click(
                     #    train1key,
                     #    [
@@ -2464,7 +2504,7 @@ with gr.Blocks(theme='HaleyCH/HaleyCH_Theme') as app:
                     #    ],
                     #    info3,
                     #)
-
+                
         with gr.TabItem(i18n("ckpt处理")):
             with gr.Group():
                 gr.Markdown(value=i18n("模型融合, 可用于测试音色融合"))
@@ -2761,7 +2801,7 @@ with gr.Blocks(theme='HaleyCH/HaleyCH_Theme') as app:
             server_name="0.0.0.0",
             inbrowser=not config.noautoopen,
             server_port=config.listen_port,
-            quiet=True,
+            quiet=False,
         )
 
 #endregion
