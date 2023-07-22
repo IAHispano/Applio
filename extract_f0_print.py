@@ -17,6 +17,12 @@ from multiprocessing import Process
 exp_dir = sys.argv[1]
 f = open("%s/extract_f0_feature.log" % exp_dir, "a+")
 
+DoFormant = False
+
+with open('formanting.txt', 'r') as fvf:
+    content = fvf.readlines()              
+    Quefrency, Timbre = content[1].split('\n')[0], content[2].split('\n')[0]
+
 
 def printt(strr):
     print(strr)
@@ -199,7 +205,7 @@ class FeatureInput(object):
         return f0_median_hybrid
 
     def compute_f0(self, path, f0_method, crepe_hop_length):
-        x = load_audio(path, self.fs)
+        x = load_audio(path, self.fs, DoFormant, Quefrency, Timbre)
         p_len = x.shape[0] // self.hop
         if f0_method == "pm":
             time_step = 160 / 16000 * 1000
@@ -227,6 +233,14 @@ class FeatureInput(object):
                 frame_period=1000 * self.hop / self.fs,
             )
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.fs)
+        elif f0_method == "rmvpe":
+            if hasattr(self, "model_rmvpe") == False:
+                from rmvpe import RMVPE
+                print("loading rmvpe model")
+                self.model_rmvpe = RMVPE(
+                    "rmvpe.pt", is_half=False, device="cuda:0"
+                )
+            f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
         elif f0_method == "dio":
             f0, t = pyworld.dio(
                 x.astype(np.double),

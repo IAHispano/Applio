@@ -1,3 +1,99 @@
+# Features:
+- Experimental Formant Shift using StftPitchShift(tried using praat with praatio but to no avail)
+- Added `Stop Training` button when training, no need to restart RVC every time you want to stop the training of a model!
+- Auto-detect Index path for models selected + Auto-detect paths, no more default values like this: `E:\codes\py39\vits_vc_gpu_train\logs\mi-test-1key\total_fea.npy`, We're getting Root Dir and subfolders using 
+```python 
+os.path.abspath(os.getcwd())
+``` 
+- Audio files dropdown by autodetecting files in `/audios/` folder 
+- More stable version of Gradio(3.34.0) with support of Themes
+- Removed `One Click Training` button in `Training` Tab, since it was glitchy and has confused a lot of users. 
+- Changed default training settings to be more optimal for newer users. 
+- Auto-open TensorBoard localhost URL when `tensor-launch.py` is executed 
+- RMVPE implemented in both inferencing and training (the one in `Training` tab doesn't work properly though, requires some additional work to do) 
+
+## Installation:
+
+1. Simply either extract directly or use git clone
+
+2. Run `installstft.bat`. It'll automatically: 
+    - Upgrade/Downgrade Gradio if its version isn't 3.34.0;
+    - Install `rmvpe.pt` if it hasn't been already installed;
+    - Install `StftPitchShift` if it hasn't been already installed;
+
+
+
+3. Done! You're good to go and use the RVC-WebUI Tweaked by me for you to use :)
+
+## Change Gradio Theme:
+
+- [OPTIONAL] Change Gradio's theme:
+    1. Open `infer-web.py` in any code/text editing software (e.g. `notepad++`, `notepad`, `vscode`, etc)
+  
+    2a. Press Ctrl+F and search for `with gr.Blocks(`, select the one that's not fully commented
+  
+    2b. Go to line `1842`, you'll see the `with gr.Blocks(theme='HaleyCH/HaleyCH_Theme') as app:`
+  
+    3. Go to [Gradio Theme Gallery](https://huggingface.co/spaces/gradio/theme-gallery):
+       
+    3.1 Select any theme you like (e.g. [this one](https://huggingface.co/spaces/freddyaboulton/dracula_revamped))
+  
+    3.2 Look at the top of the page
+  
+    ![image](https://github.com/alexlnkp/Mangio-RVC-Tweaks/assets/79400603/59e3e6a9-bdda-4ede-8161-00ee957c1715)
+
+    3.3 Copy theme variable(in this case, it's `theme='freddyaboulton/dracula_revamped'`)
+  
+    4. Replace `theme='HaleyCH/HaleyCH_Theme'` in `infer-web.py` with any value of a theme from [Gradio Theme Gallery](https://huggingface.co/spaces/gradio/theme-gallery)
+    
+### Current Todo-list:
+
+- [x] Fix `Unload voice to save GPU memory` button Traceback 
+- [ ] Add Accordions so people with Firefox browser get a much more compact GUI rather than [This](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/assets/79400603/67e0cc08-82a2-4dc3-86cf-e23d1dcad9f8). 
+- [ ] Fix weird way Median Filtering value inputted in a slider is utilized
+- [ ] Replace regular refresh buttons with these tiny ones from [AUTOMATIC'S1111 Stable DIffusion](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
+![image](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/assets/79400603/fe37051e-4c95-4d30-9254-87d44436bb9e)
+- [ ] Add a way to change the Gradio's theme from WebUI itself, like in [AUTOMATIC'S1111 Stable DIffusion](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
+![image](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/assets/79400603/7b93e167-564a-41d3-9a76-ded20063cdc3)
+- [ ] Implement Praat in the GUI for f0 curve file manipulation and easier usage
+
+
+# Screenshots:
+
+- ## Inference Tab:
+
+![image](https://github.com/Mangio621/Mangio-RVC-Fork/assets/79400603/107aa15a-4e8d-4f77-a327-45f35a235fcf)
+
+- ## UVR Tab:
+
+![image](https://github.com/Mangio621/Mangio-RVC-Fork/assets/79400603/7e57242a-4950-40c8-bf2a-8f77e992af26)
+
+- ## Training Tab:
+
+![image](https://github.com/Mangio621/Mangio-RVC-Fork/assets/79400603/a19ce156-5532-4761-aa06-8a537f80c368)
+
+- ## Ckpt-Processing Tab:
+
+![image](https://github.com/Mangio621/Mangio-RVC-Fork/assets/79400603/0cdc285e-a184-48f3-92a7-65f6120caf2f)
+
+The rest of the tabs are left untouched code-wise.
+
+
+
+# Formant Shift:
+
+![image](https://github.com/Mangio621/Mangio-RVC-Fork/assets/79400603/300ebce2-36c7-4761-b1dd-b31403ad2cd1)
+
+- ### Click `Apply` button every time you change the values for inferencing.
+
+- ### As the name implies, you can only use `wav` files so far, also it is very slow, so be patient.
+
+- ### If you added a new `preset.txt` in the `\formantshiftcfg\` folder, click button with refresh emoji
+
+- ### If the preset you selected somehow got edited, by pressing refresh emoji button you'll update values, by grabbing them from the file
+
+
+
 <div align="center">
 <h1>Mangio-RVC-Fork with v2 Support! 💻 </h1>
 A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. In general, this fork provides a CLI interface in addition. And also gives you more f0 methods to use, as well as a personlized 'hybrid' f0 estimation method using nanmedian. <br><br>
