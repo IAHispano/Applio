@@ -46,4 +46,3 @@ httpx==0.23.0
 torchcrepe==0.0.20
 fastapi==0.88
 stftpitchshift==1.5.1
-gradio==3.34.0
