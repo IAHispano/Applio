@@ -1,5 +1,6 @@
 # Features:
 - Experimental Formant Shift using StftPitchShift(tried using praat with praatio but to no avail)
+- Added `Stop Training` button when training, no need to restart RVC every time you want to stop the training of a model!
 - Auto-detect Index path for models selected + Auto-detect paths, no more default values like this: `E:\codes\py39\vits_vc_gpu_train\logs\mi-test-1key\total_fea.npy`, We're getting Root Dir and subfolders using 
 ```python 
 os.path.abspath(os.getcwd())
