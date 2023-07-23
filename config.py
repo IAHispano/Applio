@@ -7,6 +7,7 @@ from multiprocessing import cpu_count
 global usefp16
 usefp16 = False
 
+
 def use_fp32_config():
     usefp16 = False
     device_capability = 0
@@ -24,15 +25,19 @@ def use_fp32_config():
 
                 with open(f"configs/{config_file}", "w") as d:
                     json.dump(data, d, indent=4)
-                
+
                 print(f"Set fp16_run to true in {config_file}")
-            
-            with open("trainset_preprocess_pipeline_print.py", "r", encoding="utf-8") as f:
+
+            with open(
+                "trainset_preprocess_pipeline_print.py", "r", encoding="utf-8"
+            ) as f:
                 strr = f.read()
-            
+
             strr = strr.replace("3.0", "3.7")
-            
-            with open("trainset_preprocess_pipeline_print.py", "w", encoding="utf-8") as f:
+
+            with open(
+                "trainset_preprocess_pipeline_print.py", "w", encoding="utf-8"
+            ) as f:
                 f.write(strr)
         else:
             for config_file in ["32k.json", "40k.json", "48k.json"]:
@@ -41,22 +46,29 @@ def use_fp32_config():
 
                 if "train" in data and "fp16_run" in data["train"]:
                     data["train"]["fp16_run"] = False
-                
+
                 with open(f"configs/{config_file}", "w") as d:
                     json.dump(data, d, indent=4)
-                
+
                 print(f"Set fp16_run to false in {config_file}")
-            
-            with open("trainset_preprocess_pipeline_print.py", "r", encoding="utf-8") as f:
+
+            with open(
+                "trainset_preprocess_pipeline_print.py", "r", encoding="utf-8"
+            ) as f:
                 strr = f.read()
-            
+
             strr = strr.replace("3.7", "3.0")
-            
-            with open("trainset_preprocess_pipeline_print.py", "w", encoding="utf-8") as f:
+
+            with open(
+                "trainset_preprocess_pipeline_print.py", "w", encoding="utf-8"
+            ) as f:
                 f.write(strr)
     else:
-        print("CUDA is not available. Make sure you have an NVIDIA GPU and CUDA installed.")
+        print(
+            "CUDA is not available. Make sure you have an NVIDIA GPU and CUDA installed."
+        )
     return (usefp16, device_capability)
+
 
 class Config:
     def __init__(self):
@@ -74,7 +86,7 @@ class Config:
             self.paperspace,
             self.is_cli,
         ) = self.arg_parse()
-        
+
         self.x_pad, self.x_query, self.x_center, self.x_max = self.device_config()
 
     @staticmethod
@@ -92,11 +104,15 @@ class Config:
             action="store_true",
             help="Do not open in browser automatically",
         )
-        parser.add_argument( # Fork Feature. Paperspace integration for web UI
-            "--paperspace", action="store_true", help="Note that this argument just shares a gradio link for the web UI. Thus can be used on other non-local CLI systems."
+        parser.add_argument(  # Fork Feature. Paperspace integration for web UI
+            "--paperspace",
+            action="store_true",
+            help="Note that this argument just shares a gradio link for the web UI. Thus can be used on other non-local CLI systems.",
         )
-        parser.add_argument( # Fork Feature. Embed a CLI into the infer-web.py
-            "--is_cli", action="store_true", help="Use the CLI instead of setting up a gradio UI. This flag will launch an RVC text interface where you can execute functions from infer-web.py!"
+        parser.add_argument(  # Fork Feature. Embed a CLI into the infer-web.py
+            "--is_cli",
+            action="store_true",
+            help="Use the CLI instead of setting up a gradio UI. This flag will launch an RVC text interface where you can execute functions from infer-web.py!",
         )
         cmd_opts = parser.parse_args()
 

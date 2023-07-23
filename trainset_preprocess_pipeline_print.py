@@ -24,9 +24,10 @@ Timbre = 0.0
 mutex = multiprocessing.Lock()
 f = open("%s/preprocess.log" % exp_dir, "a+")
 
-with open('formanting.txt', 'r') as fvf:
-    content = fvf.readlines()              
-    Quefrency, Timbre = content[1].split('\n')[0], content[2].split('\n')[0]
+with open("formanting.txt", "r") as fvf:
+    content = fvf.readlines()
+    Quefrency, Timbre = content[1].split("\n")[0], content[2].split("\n")[0]
+
 
 def println(strr):
     mutex.acquire()
@@ -104,12 +105,14 @@ class PreProcess:
                         idx1 += 1
                         break
                 self.norm_write(tmp_audio, idx0, idx1)
-            #println("%s->Suc." % path)
+            # println("%s->Suc." % path)
         except:
             println("%s->%s" % (path, traceback.format_exc()))
 
     def pipeline_mp(self, infos, thread_n):
-        for path, idx0 in tqdm.tqdm(infos, position=thread_n, leave=True, desc="thread:%s" % thread_n):
+        for path, idx0 in tqdm.tqdm(
+            infos, position=thread_n, leave=True, desc="thread:%s" % thread_n
+        ):
             self.pipeline(path, idx0)
 
     def pipeline_mp_inp_dir(self, inp_root, n_p):

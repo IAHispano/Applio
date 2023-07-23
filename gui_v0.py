@@ -51,8 +51,10 @@ class RVC:
             self.window = 160
 
             # Get Torch Device
-            if(torch.cuda.is_available()):
-                self.torch_device = torch.device(f"cuda:{0 % torch.cuda.device_count()}")
+            if torch.cuda.is_available():
+                self.torch_device = torch.device(
+                    f"cuda:{0 % torch.cuda.device_count()}"
+                )
             elif torch.backends.mps.is_available():
                 self.torch_device = torch.device("mps")
             else:
@@ -141,7 +143,7 @@ class RVC:
 
     def get_f0(self, x, f0_up_key, inp_f0=None):
         # Calculate Padding and f0 details here
-        p_len = x.shape[0] // 512 # For Now This probs doesn't work
+        p_len = x.shape[0] // 512  # For Now This probs doesn't work
         x_pad = 1
         f0_min = 50
         f0_max = 1100
@@ -150,11 +152,11 @@ class RVC:
 
         f0 = 0
         # Here, check f0_methods and get their computations
-        if(self.f0_method == 'harvest'):
+        if self.f0_method == "harvest":
             f0 = self.get_harvest_computation(x, f0_min, f0_max)
-        elif(self.f0_method == 'reg-crepe'):
+        elif self.f0_method == "reg-crepe":
             f0 = self.get_regular_crepe_computation(x, f0_min, f0_max)
-        elif(self.f0_method == 'reg-crepe-tiny'):
+        elif self.f0_method == "reg-crepe-tiny":
             f0 = self.get_regular_crepe_computation(x, f0_min, f0_max, "tiny")
 
         # Calculate f0_course and f0_bak here
@@ -300,7 +302,7 @@ class GUI:
             with open("values1.json", "r") as j:
                 data = json.load(j)
         except:
-            # Injecting f0_method into the json data 
+            # Injecting f0_method into the json data
             with open("values1.json", "w") as j:
                 data = {
                     "pth_path": "",
@@ -328,11 +330,7 @@ class GUI:
             [
                 sg.Frame(
                     title="Proudly forked by Mangio621",
-                    layout=[
-                        [
-                            sg.Image('./mangio_utils/lol.png')
-                        ]
-                    ]
+                    layout=[[sg.Image("./mangio_utils/lol.png")]],
                 ),
                 sg.Frame(
                     title=i18n("加载模型"),
@@ -384,14 +382,16 @@ class GUI:
                             ),
                         ],
                     ],
-                )
+                ),
             ],
             [
                 # Mangio f0 Selection frame Here
                 sg.Frame(
                     layout=[
                         [
-                            sg.Radio("Harvest", "f0_method", key="harvest", default=True),
+                            sg.Radio(
+                                "Harvest", "f0_method", key="harvest", default=True
+                            ),
                             sg.Radio("Crepe", "f0_method", key="reg-crepe"),
                             sg.Radio("Crepe Tiny", "f0_method", key="reg-crepe-tiny"),
                         ]
@@ -536,20 +536,21 @@ class GUI:
             if event == "stop_vc" and self.flag_vc == True:
                 self.flag_vc = False
 
-    # Function that returns the used f0 method in string format "harvest" 
+    # Function that returns the used f0 method in string format "harvest"
     def get_f0_method_from_radios(self, values):
         f0_array = [
-            {"name": "harvest", "val": values['harvest']},
-            {"name": "reg-crepe", "val": values['reg-crepe']},
-            {"name": "reg-crepe-tiny", "val": values['reg-crepe-tiny']},
+            {"name": "harvest", "val": values["harvest"]},
+            {"name": "reg-crepe", "val": values["reg-crepe"]},
+            {"name": "reg-crepe-tiny", "val": values["reg-crepe-tiny"]},
         ]
         # Filter through to find a true value
         used_f0 = ""
         for f0 in f0_array:
-            if(f0['val'] == True):
-                used_f0 = f0['name']
+            if f0["val"] == True:
+                used_f0 = f0["name"]
                 break
-        if(used_f0 == ""): used_f0 = "harvest" # Default Harvest if used_f0 is empty somehow
+        if used_f0 == "":
+            used_f0 = "harvest"  # Default Harvest if used_f0 is empty somehow
         return used_f0
 
     def set_values(self, values):
