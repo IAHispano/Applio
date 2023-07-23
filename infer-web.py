@@ -948,6 +948,8 @@ def set_log_interval(exp_dir, batch_size12):
         if wav_files:
             sample_size = len(wav_files)
             log_interval = math.ceil(sample_size / batch_size12)
+            if log_interval > 1:
+                log_interval += 1
 
     return log_interval
 
