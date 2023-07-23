@@ -1919,7 +1919,7 @@ def whethercrepeornah(radio):
 
 
 #Change your Gradio Theme here. 👇 👇 👇 👇
-with gr.Blocks(theme='HaleyCH/HaleyCH_Theme') as app: 
+with gr.Blocks(theme=gr.themes.Soft()) as app: 
     gr.HTML("<h1> The Mangio-RVC-Fork 💻 </h1>")
     gr.Markdown(
         value=i18n(
