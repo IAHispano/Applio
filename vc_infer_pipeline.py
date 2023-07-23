@@ -1,7 +1,7 @@
 import numpy as np, parselmouth, torch, pdb, sys, os
 from time import time as ttime
 import torch.nn.functional as F
-import torchcrepe # Fork feature. Use the crepe f0 algorithm. New dependency (pip install torchcrepe)
+import torchcrepe  # Fork feature. Use the crepe f0 algorithm. New dependency (pip install torchcrepe)
 from torch import Tensor
 import scipy.signal as signal
 import pyworld, os, traceback, faiss, librosa, torchcrepe
@@ -14,6 +14,7 @@ sys.path.append(now_dir)
 bh, ah = signal.butter(N=5, Wn=48, btype="high", fs=16000)
 
 input_audio_path2wav = {}
+
 
 @lru_cache
 def cache_harvest_f0(input_audio_path, fs, f0max, f0min, frame_period):
@@ -74,24 +75,28 @@ class VC(object):
     def get_optimal_torch_device(self, index: int = 0) -> torch.device:
         # Get cuda device
         if torch.cuda.is_available():
-            return torch.device(f"cuda:{index % torch.cuda.device_count()}") # Very fast
+            return torch.device(
+                f"cuda:{index % torch.cuda.device_count()}"
+            )  # Very fast
         elif torch.backends.mps.is_available():
             return torch.device("mps")
         # Insert an else here to grab "xla" devices if available. TO DO later. Requires the torch_xla.core.xla_model library
-        # Else wise return the "cpu" as a torch device, 
+        # Else wise return the "cpu" as a torch device,
         return torch.device("cpu")
 
     # Fork Feature: Compute f0 with the crepe method
     def get_f0_crepe_computation(
-            self, 
-            x, 
-            f0_min,
-            f0_max,
-            p_len,
-            hop_length=160, # 512 before. Hop length changes the speed that the voice jumps to a different dramatic pitch. Lower hop lengths means more pitch accuracy but longer inference time.
-            model="full", # Either use crepe-tiny "tiny" or crepe "full". Default is full
+        self,
+        x,
+        f0_min,
+        f0_max,
+        p_len,
+        hop_length=160,  # 512 before. Hop length changes the speed that the voice jumps to a different dramatic pitch. Lower hop lengths means more pitch accuracy but longer inference time.
+        model="full",  # Either use crepe-tiny "tiny" or crepe "full". Default is full
     ):
-        x = x.astype(np.float32) # fixes the F.conv2D exception. We needed to convert double to float.
+        x = x.astype(
+            np.float32
+        )  # fixes the F.conv2D exception. We needed to convert double to float.
         x /= np.quantile(np.abs(x), 0.999)
         torch_device = self.get_optimal_torch_device()
         audio = torch.from_numpy(x).to(torch_device, copy=True)
@@ -109,7 +114,7 @@ class VC(object):
             model,
             batch_size=hop_length * 2,
             device=torch_device,
-            pad=True
+            pad=True,
         )
         p_len = p_len or x.shape[0] // hop_length
         # Resize the pitch for final f0
@@ -118,17 +123,17 @@ class VC(object):
         target = np.interp(
             np.arange(0, len(source) * p_len, len(source)) / p_len,
             np.arange(0, len(source)),
-            source
+            source,
         )
         f0 = np.nan_to_num(target)
-        return f0 # Resized f0
-    
+        return f0  # Resized f0
+
     def get_f0_official_crepe_computation(
-            self,
-            x,
-            f0_min,
-            f0_max,
-            model="full",
+        self,
+        x,
+        f0_min,
+        f0_max,
+        model="full",
     ):
         # Pick a batch size that doesn't cause memory errors on your gpu
         batch_size = 512
@@ -153,15 +158,15 @@ class VC(object):
 
     # Fork Feature: Compute pYIN f0 method
     def get_f0_pyin_computation(self, x, f0_min, f0_max):
-        y, sr = librosa.load('saudio/Sidney.wav', self.sr, mono=True)
+        y, sr = librosa.load("saudio/Sidney.wav", self.sr, mono=True)
         f0, _, _ = librosa.pyin(y, sr=self.sr, fmin=f0_min, fmax=f0_max)
-        f0 = f0[1:] # Get rid of extra first frame
+        f0 = f0[1:]  # Get rid of extra first frame
         return f0
 
     # Fork Feature: Acquire median hybrid f0 estimation calculation
     def get_f0_hybrid_computation(
-        self, 
-        methods_str, 
+        self,
+        methods_str,
         input_audio_path,
         x,
         f0_min,
@@ -173,9 +178,9 @@ class VC(object):
     ):
         # Get various f0 methods from input to use in the computation stack
         s = methods_str
-        s = s.split('hybrid')[1]
-        s = s.replace('[', '').replace(']', '')
-        methods = s.split('+')
+        s = s.split("hybrid")[1]
+        s = s.replace("[", "").replace("]", "")
+        methods = s.split("+")
         f0_computation_stack = []
 
         print("Calculating f0 pitch estimations for methods: %s" % str(methods))
@@ -202,35 +207,39 @@ class VC(object):
                     )
             elif method == "crepe":
                 f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max)
-                f0 = f0[1:] # Get rid of extra first frame
+                f0 = f0[1:]  # Get rid of extra first frame
             elif method == "crepe-tiny":
                 f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, "tiny")
-                f0 = f0[1:] # Get rid of extra first frame
+                f0 = f0[1:]  # Get rid of extra first frame
             elif method == "mangio-crepe":
-                f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
+                f0 = self.get_f0_crepe_computation(
+                    x, f0_min, f0_max, p_len, crepe_hop_length
+                )
             elif method == "mangio-crepe-tiny":
-                f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length, "tiny")
+                f0 = self.get_f0_crepe_computation(
+                    x, f0_min, f0_max, p_len, crepe_hop_length, "tiny"
+                )
             elif method == "harvest":
                 f0 = cache_harvest_f0(input_audio_path, self.sr, f0_max, f0_min, 10)
                 if filter_radius > 2:
                     f0 = signal.medfilt(f0, 3)
-                f0 = f0[1:] # Get rid of first frame.
-            elif method == "dio": # Potentially buggy?
+                f0 = f0[1:]  # Get rid of first frame.
+            elif method == "dio":  # Potentially buggy?
                 f0, t = pyworld.dio(
                     x.astype(np.double),
                     fs=self.sr,
                     f0_ceil=f0_max,
                     f0_floor=f0_min,
-                    frame_period=10
+                    frame_period=10,
                 )
                 f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
                 f0 = signal.medfilt(f0, 3)
                 f0 = f0[1:]
-            #elif method == "pyin": Not Working just yet
+            # elif method == "pyin": Not Working just yet
             #    f0 = self.get_f0_pyin_computation(x, f0_min, f0_max)
             # Push method to the stack
             f0_computation_stack.append(f0)
-        
+
         for fc in f0_computation_stack:
             print(len(fc))
 
@@ -280,13 +289,13 @@ class VC(object):
             f0 = cache_harvest_f0(input_audio_path, self.sr, f0_max, f0_min, 10)
             if filter_radius > 2:
                 f0 = signal.medfilt(f0, 3)
-        elif f0_method == "dio": # Potentially Buggy?
+        elif f0_method == "dio":  # Potentially Buggy?
             f0, t = pyworld.dio(
                 x.astype(np.double),
                 fs=self.sr,
                 f0_ceil=f0_max,
                 f0_floor=f0_min,
-                frame_period=10
+                frame_period=10,
             )
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
             f0 = signal.medfilt(f0, 3)
@@ -295,12 +304,17 @@ class VC(object):
         elif f0_method == "crepe-tiny":
             f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, "tiny")
         elif f0_method == "mangio-crepe":
-            f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length)
+            f0 = self.get_f0_crepe_computation(
+                x, f0_min, f0_max, p_len, crepe_hop_length
+            )
         elif f0_method == "mangio-crepe-tiny":
-            f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, crepe_hop_length, "tiny")
+            f0 = self.get_f0_crepe_computation(
+                x, f0_min, f0_max, p_len, crepe_hop_length, "tiny"
+            )
         elif f0_method == "rmvpe":
             if hasattr(self, "model_rmvpe") == False:
                 from rmvpe import RMVPE
+
                 print("loading rmvpe model")
                 self.model_rmvpe = RMVPE(
                     "rmvpe.pt", is_half=self.is_half, device=self.device
@@ -311,7 +325,7 @@ class VC(object):
             # Perform hybrid median pitch estimation
             input_audio_path2wav[input_audio_path] = x.astype(np.double)
             f0 = self.get_f0_hybrid_computation(
-                f0_method, 
+                f0_method,
                 input_audio_path,
                 x,
                 f0_min,
@@ -319,7 +333,7 @@ class VC(object):
                 p_len,
                 filter_radius,
                 crepe_hop_length,
-                time_step
+                time_step,
             )
 
         f0 *= pow(2, f0_up_key / 12)
