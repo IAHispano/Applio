@@ -18,7 +18,7 @@ os.path.abspath(os.getcwd())
 - Removed `One Click Training` button in `Training` Tab, since it was glitchy and has confused a lot of users. 
 - Changed default training settings to be more optimal for newer users. 
 - Auto-open TensorBoard localhost URL when `tensor-launch.py` is executed 
-- RMVPE implemented in both inferencing and training (the one in `Training` tab doesn't work properly though, requires some additional work to do) 
+- RMVPE implemented in both inferencing and training
 
 
 <div align="center">
