@@ -352,6 +352,9 @@ def get_hparams(init=True):
         required=True,
         help="if caching the dataset in GPU memory, 1 or 0",
     )
+    parser.add_argument(
+        "-li", "--log_interval", type=int, required=True, help="log interval"
+    )
 
     args = parser.parse_args()
     name = args.experiment_dir
@@ -391,6 +394,16 @@ def get_hparams(init=True):
     hparams.save_every_weights = args.save_every_weights
     hparams.if_cache_data_in_gpu = args.if_cache_data_in_gpu
     hparams.data.training_files = "%s/filelist.txt" % experiment_dir
+
+    hparams.train.log_interval = args.log_interval
+
+    # Update log_interval in the 'train' section of the config dictionary
+    config["train"]["log_interval"] = args.log_interval
+
+    # Save the updated config back to the config_save_path
+    with open(config_save_path, "w") as f:
+        json.dump(config, f, indent=4)
+
     return hparams
 
 
