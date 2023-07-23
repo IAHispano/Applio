@@ -1155,9 +1155,9 @@ def train_index(exp_dir1, version19):
     # infos.append("成功构建索引，added_IVF%s_Flat_FastScan_%s.index"%(n_ivf,version19))
     yield "\n".join(infos)
 
-def setBoolean(status):
-    status = not status
-    return status
+#def setBoolean(status): #true to false and vice versa / not implemented yet, dont touch!!!!!!!
+#    status = not status
+#    return status
     
 # but5.click(train1key, [exp_dir1, sr2, if_f0_3, trainset_dir4, spk_id5, gpus6, np7, f0method8, save_epoch10, total_epoch11, batch_size12, if_save_latest13, pretrained_G14, pretrained_D15, gpus16, if_cache_gpu17], info3)
 def train1key(
@@ -1811,6 +1811,9 @@ def get_presets():
     
     return preset_names
 
+def stepdisplay(if_save_every_weights):
+    return ({"visible": if_save_every_weights, "__type__": "update"})
+
 def match_index(sid0):
     picked = False
     #folder = sid0.split('.')[0]
@@ -2405,6 +2408,7 @@ with gr.Blocks(theme='HaleyCH/HaleyCH_Theme') as app:
                         label=i18n("保存频率save_every_epoch"),
                         value=5,
                         interactive=True,
+                        visible=True,
                     )
                     total_epoch11 = gr.Slider(
                         minimum=1,
@@ -2423,20 +2427,18 @@ with gr.Blocks(theme='HaleyCH/HaleyCH_Theme') as app:
                         interactive=True,
                     )
                     if_save_latest13 = gr.Checkbox(
-                        label=i18n("是否仅保存最新的ckpt文件以节省硬盘空间"),
+                        label="Whether to save only the latest .ckpt file to save hard disk space",
                         
                         value=True,
                         interactive=True,
                     )
                     if_cache_gpu17 = gr.Checkbox(
-                        label=i18n(
-                            "是否缓存所有训练集至显存. 10min以下小数据可缓存以加速训练, 大数据缓存会炸显存也加不了多少速"
-                        ),
+                        label="Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training, but caching large datasets will consume a lot of GPU memory and may not provide much speed improvement",
                         value=False,
                         interactive=True,
                     )
                     if_save_every_weights18 = gr.Checkbox(
-                        label=i18n("是否在每次保存时间点将最终小模型保存至weights文件夹"),
+                        label="Save a small final model to the 'weights' folder at each save point",
                         value=True,
                         interactive=True,
                     )
@@ -2488,6 +2490,8 @@ with gr.Blocks(theme='HaleyCH/HaleyCH_Theme') as app:
                     but4 = gr.Button(i18n("训练特征索引"), variant="primary")
                     #but5 = gr.Button(i18n("一键训练"), variant="primary")
                     info3 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=10)
+                    
+                    if_save_every_weights18.change(fn=stepdisplay, inputs=[if_save_every_weights18], outputs=[save_epoch10])
                     
                     but3.click(
                         click_train,
