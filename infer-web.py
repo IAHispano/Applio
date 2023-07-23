@@ -943,20 +943,23 @@ def change_f0(if_f0_3, sr2, version19):  # f0method8,pretrained_G14,pretrained_D
         else "",
     )
 
+
 global log_interval
+
 
 def set_log_interval(exp_dir, batch_size12):
     log_interval = 1
-    
+
     folder_path = os.path.join(exp_dir, "1_16k_wavs")
-    
+
     if os.path.exists(folder_path) and os.path.isdir(folder_path):
-        wav_files = [f for f in os.listdir(folder_path) if f.endswith('.wav')]
+        wav_files = [f for f in os.listdir(folder_path) if f.endswith(".wav")]
         if wav_files:
             sample_size = len(wav_files)
             log_interval = math.ceil(sample_size / batch_size12)
-    
+
     return log_interval
+
 
 # but3.click(click_train,[exp_dir1,sr2,if_f0_3,save_epoch10,total_epoch11,batch_size12,if_save_latest13,pretrained_G14,pretrained_D15,gpus16])
 def click_train(

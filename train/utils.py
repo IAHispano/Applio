@@ -353,11 +353,7 @@ def get_hparams(init=True):
         help="if caching the dataset in GPU memory, 1 or 0",
     )
     parser.add_argument(
-        "-li",
-        "--log_interval",
-        type=int,
-        required=True,
-        help="log interval"
+        "-li", "--log_interval", type=int, required=True, help="log interval"
     )
 
     args = parser.parse_args()
@@ -402,10 +398,10 @@ def get_hparams(init=True):
     hparams.train.log_interval = args.log_interval
 
     # Update log_interval in the 'train' section of the config dictionary
-    config['train']['log_interval'] = args.log_interval
+    config["train"]["log_interval"] = args.log_interval
 
     # Save the updated config back to the config_save_path
-    with open(config_save_path, 'w') as f:
+    with open(config_save_path, "w") as f:
         json.dump(config, f, indent=4)
 
     return hparams
