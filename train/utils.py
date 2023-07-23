@@ -403,7 +403,6 @@ def get_hparams(init=True):
 
     # Update log_interval in the 'train' section of the config dictionary
     config['train']['log_interval'] = args.log_interval
-    print("Updated log interval.")
 
     # Save the updated config back to the config_save_path
     with open(config_save_path, 'w') as f:
