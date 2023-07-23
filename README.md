@@ -1,3 +1,11 @@
+# 7/23 Changelog:
+- Fp16 detection now works how it did before the last RVC beta; no more training slowdowns compared to how it was before then
+- Logging on TensorBoard is now done per epoch. It logs every X steps in an epoch; therefore each point on the graph is now represented per-epoch.
+- Updated UI to include placeholders.
+- Certain sliders now appear only when needed.
+- Step 2b (feature extract) is hidden if pitch guidance is disabled.
+- Unnecessary radios have been replaced with checkboxes.
+
 # 7/22 Changelog:
 - Experimental Formant Shift using StftPitchShift(tried using praat with praatio but to no avail)
 - Added `Stop Training` button when training, no need to restart RVC every time you want to stop the training of a model!
