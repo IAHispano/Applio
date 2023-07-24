@@ -33,10 +33,19 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
         if DoFormant:
             # os.system(f"stftpitchshift -i {file} -q {Quefrency} -t {Timbre} -o {file_formanted}")
             # print('stftpitchshift -i "%s" -p 1.0 --rms -w 128 -v 8 -q %s -t %s -o "%s"' % (file, Quefrency, Timbre, file_formanted))
+            
+            if not file.endswith(".wav"):
+                converting = (
+                    ffmpeg.input(file, threads = 0)
+                    .output(f"{file_formanted}.wav")
+                    .run(
+                        cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True
+                    )
+                )
             print("formanting...")
             os.system(
                 'runtime\Scripts\stftpitchshift.exe -i "%s" -q %s -t %s -o "%sFORMANTED"'
-                % (file, Quefrency, Timbre, file_formanted)
+                % (file_formanted, Quefrency, Timbre, file_formanted)
             )
             print("formanted!")
             # filepraat = (os.path.abspath(os.getcwd()) + '\\' + file).replace('/','\\')
@@ -51,6 +60,7 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
             )
 
             os.remove("%sFORMANTED%s" % (file_formanted, ".wav"))
+            os.remove(f"{file_formanted}.wav")
         else:
             out, _ = (
                 ffmpeg.input(file, threads=0)

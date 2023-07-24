@@ -2093,7 +2093,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                         )
                         formanting = gr.Checkbox(
                             value=DoFormant,
-                            label="[EXPERIMENTAL, WAV ONLY] Formant shift inference audio",
+                            label="[EXPERIMENTAL] Formant shift inference audio",
                             info="Used for male to female and vice-versa conversions",
                             interactive=True,
                             visible=True,
