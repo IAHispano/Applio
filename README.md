@@ -1,6 +1,6 @@
 # 7/25 Changelog:
 - Fixed the cli inferencing traceback.
-- SQL Databases implemented for formanting training stop.
+- SQL Databases implemented for formanting and training stop button.
 - Gradio browser tab renamed to `Mangio-RVC-Web 💻`.
 - Rudimentary functions from `infer-web.py` removed.
 - Formanting now accepts any audio format, as long as it is supported by FFmpeg.
