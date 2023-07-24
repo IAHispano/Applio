@@ -948,6 +948,8 @@ def set_log_interval(exp_dir, batch_size12):
         if wav_files:
             sample_size = len(wav_files)
             log_interval = math.ceil(sample_size / batch_size12)
+            if log_interval > 1:
+                log_interval += 1
 
     return log_interval
 
@@ -1544,10 +1546,25 @@ def cli_infer(com):
     mix = float(com[10])
     feature_ratio = float(com[11])
     protection_amnt = float(com[12])
-    #####
+    protect1 = 0.0
+    
+    if com[14] == 'False' or com[14] == 'false':
+        DoFormant = False
+        Quefrency = 0.0
+        Timbre = 0.0
+        with open('formanting.txt', 'w') as fxxxf:
+            fxxxf.truncate(0)
+            fxxxf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
+    else:
+        DoFormant = True
+        Quefrency = float(com[15])
+        Timbre = float(com[16])
+        with open('formanting.txt', 'w') as fxxxf:
+            fxxxf.truncate(0)
+            fxxxf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
     
     print("Mangio-RVC-Fork Infer-CLI: Starting the inference...")
-    vc_data = get_vc(model_name)
+    vc_data = get_vc(model_name, protection_amnt, protect1)
     print(vc_data)
     print("Mangio-RVC-Fork Infer-CLI: Performing inference...")
     conversion_data = vc_single(
@@ -1716,14 +1733,17 @@ def print_page_details():
         print("    arg 4) feature index file path: logs/mi-test/added_IVF3042_Flat_nprobe_1.index")
         print("    arg 5) speaker id: 0")
         print("    arg 6) transposition: 0")
-        print("    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x], mangio-crepe, mangio-crepe-tiny)")
+        print("    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x], mangio-crepe, mangio-crepe-tiny, rmvpe)")
         print("    arg 8) crepe hop length: 160")
         print("    arg 9) harvest median filter radius: 3 (0-7)")
         print("    arg 10) post resample rate: 0")
         print("    arg 11) mix volume envelope: 1")
         print("    arg 12) feature index ratio: 0.78 (0-1)")
-        print("    arg 13) Voiceless Consonant Protection (Less Artifact): 0.33 (Smaller number = more protection. 0.50 means Dont Use.) \n")
-        print("Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 160 3 0 1 0.95 0.33")
+        print("    arg 13) Voiceless Consonant Protection (Less Artifact): 0.33 (Smaller number = more protection. 0.50 means Dont Use.)")
+        print("    arg 14) Whether to formant shift the inference audio before conversion: False (if set to false, you can ignore setting the quefrency and timbre values for formanting)")
+        print("    arg 15)* Quefrency for formanting: 8.0 (no need to set if arg14 is False/false)")
+        print("    arg 16)* Timbre for formanting: 1.2 (no need to set if arg14 is False/false) \n")
+        print("Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 160 3 0 1 0.95 0.33 0.45 True 8.0 1.2")
     elif cli_current_page == "PRE-PROCESS":
         print("    arg 1) Model folder name in ./logs: mi-test")
         print("    arg 2) Trainset directory: mydataset (or) E:\\my-data-set")
@@ -1918,7 +1938,7 @@ def whethercrepeornah(radio):
     return ({"visible": mango, "__type__": "update"})
 
 
-#Change your Gradio Theme here. 👇 👇 👇 👇
+#Change your Gradio Theme here. 👇 👇 👇 👇 Example: " theme='HaleyCH/HaleyCH_Theme' "
 with gr.Blocks(theme='HaleyCH/HaleyCH_Theme') as app: 
     gr.HTML("<h1> The Mangio-RVC-Fork 💻 </h1>")
     gr.Markdown(
@@ -2415,7 +2435,7 @@ with gr.Blocks(theme='HaleyCH/HaleyCH_Theme') as app:
                         
                         f0method8.change(fn=whethercrepeornah, inputs=[f0method8], outputs=[extraction_crepe_hop_length])
                     but2 = gr.Button(i18n("特征提取"), variant="primary")
-                    info2 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8)
+                    info2 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8, interactive=False)
                     but2.click(
                         extract_f0_feature,
                         [gpus6, np7, f0method8, if_f0_3, exp_dir1, version19, extraction_crepe_hop_length],
