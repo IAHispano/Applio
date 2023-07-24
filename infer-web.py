@@ -2085,7 +2085,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             interactive=True,
                         )
                         formanting = gr.Checkbox(
-                            value=False,
+                            value=DoFormant,
                             label="[EXPERIMENTAL, WAV ONLY] Formant shift inference audio",
                             info="Used for male to female and vice-versa conversions",
                             interactive=True,
@@ -2096,9 +2096,13 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             value='',
                             choices=get_fshift_presets(),
                             label="browse presets for formanting",
-                            visible=False,
+                            visible=DoFormant,
                         )
-                        formant_refresh_button = gr.Button(value='\U0001f504', visible=False,variant='primary')
+                        formant_refresh_button = gr.Button(
+                            value='\U0001f504',
+                            visible=DoFormant,
+                            variant='primary',
+                        )
                         #formant_refresh_button = ToolButton( elem_id='1')
                         #create_refresh_button(formant_preset, lambda: {"choices": formant_preset}, "refresh_list_shiftpresets")
                         
@@ -2108,7 +2112,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                                 minimum=-16.0,
                                 maximum=16.0,
                                 step=0.1,
-                                visible=False,
+                                visible=DoFormant,
                                 interactive=True,
                             )
                         tmbre = gr.Slider(
@@ -2117,7 +2121,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             minimum=-16.0,
                             maximum=16.0,
                             step=0.1,
-                            visible=False,
+                            visible=DoFormant,
                             interactive=True,
                         )
                         
