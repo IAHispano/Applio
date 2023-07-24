@@ -34,15 +34,14 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
             # os.system(f"stftpitchshift -i {file} -q {Quefrency} -t {Timbre} -o {file_formanted}")
             # print('stftpitchshift -i "%s" -p 1.0 --rms -w 128 -v 8 -q %s -t %s -o "%s"' % (file, Quefrency, Timbre, file_formanted))
             print("formanting...")
-
             os.system(
-                'stftpitchshift -i "%s" -q %s -t %s -o "%sFORMANTED"'
+                'runtime\Scripts\stftpitchshift.exe -i "%s" -q %s -t %s -o "%sFORMANTED"'
                 % (file, Quefrency, Timbre, file_formanted)
             )
             print("formanted!")
             # filepraat = (os.path.abspath(os.getcwd()) + '\\' + file).replace('/','\\')
             # file_formantedpraat = ('"' + os.path.abspath(os.getcwd()) + '/' + 'formanted'.join(file_formanted) + '"').replace('/','\\')
-
+            
             out, _ = (
                 ffmpeg.input("%sFORMANTED%s" % (file_formanted, ".wav"), threads=0)
                 .output("-", format="f32le", acodec="pcm_f32le", ac=1, ar=sr)

@@ -57,14 +57,21 @@ os.environ["TEMP"] = tmp
 warnings.filterwarnings("ignore")
 torch.manual_seed(114514)
 
-DoFormant = False
-Quefrency = 8.0
-Timbre = 1.2
+global DoFormant, Quefrency, Timbre
 
-with open('formanting.txt', 'w+') as fsf:
-    fsf.truncate(0)
 
-    fsf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
+try:
+    with open('formanting.txt', 'r') as psx:
+        content = psx.readlines()
+        Quefrency, Timbre = content[1].split('\n')[0], content[2].split('\n')[0]
+        DoFormant = True if content[0].split('\n')[0] == 'True' else False
+    
+except Exception:
+    with open('formanting.txt', 'w+') as fsf:
+        fsf.truncate(0)
+        DoFormant = False
+        Quefrency, Timbre = 8.0, 1.2
+        fsf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
     
 
 config = Config()
@@ -2126,7 +2133,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                         )
                         
                         formant_preset.change(fn=preset_apply, inputs=[formant_preset, qfrency, tmbre], outputs=[qfrency, tmbre])
-                        frmntbut = gr.Button("Apply", variant="primary", visible=False)
+                        frmntbut = gr.Button("Apply", variant="primary", visible=DoFormant)
                         formanting.change(fn=formant_enabled,inputs=[formanting,qfrency,tmbre,frmntbut,formant_preset,formant_refresh_button],outputs=[formanting,qfrency,tmbre,frmntbut,formant_preset,formant_refresh_button])
                         frmntbut.click(fn=formant_apply,inputs=[qfrency, tmbre], outputs=[qfrency, tmbre])
                         formant_refresh_button.click(fn=update_fshift_presets,inputs=[formant_preset, qfrency, tmbre],outputs=[formant_preset, qfrency, tmbre])
