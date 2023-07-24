@@ -1,3 +1,11 @@
+# 7/25 Changelog:
+- Fixed the cli inferencing traceback.
+- SQL Databases implemented for formanting training stop.
+- Gradio browser tab renamed to `Mangio-RVC-Web 💻`.
+- Rudimentary functions from `infer-web.py` removed.
+- Formanting now accepts any audio format, as long as it is supported by FFmpeg.
+
+
 # 7/23 Changelog:
 - Fp16 detection now works how it did before the last RVC beta; no more training slowdowns compared to how it was before then
 - Logging on TensorBoard is now done per epoch. It logs every X steps in an epoch; therefore each point on the graph is now represented per-epoch.
