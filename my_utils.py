@@ -5,13 +5,17 @@ import numpy as np
 # import praatio.praat_scripts
 import os
 
-# from os.path import join
+import sqlite3
+
+
 
 # praatEXE = join('.',os.path.abspath(os.getcwd()) + r"\Praat.exe")
 
 
 def load_audio(file, sr, DoFormant, Quefrency, Timbre):
     try:
+        conn = sqlite3.connect('TEMP/db:cachedb?mode=memory&cache=shared', check_same_thread=False)
+        cursor = conn.cursor()
         # https://github.com/openai/whisper/blob/main/whisper/audio.py#L26
         # This launches a subprocess to decode audio while down-mixing and resampling as necessary.
         # Requires the ffmpeg CLI and `ffmpeg-python` package to be installed.
@@ -19,18 +23,10 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
             file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
         )  # 防止小白拷路径头尾带了空格和"和回车
         file_formanted = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        with open("formanting.txt", "r") as fvf:
-            content = fvf.readlines()
-            if "True" in content[0].split("\n")[0]:
-                # print("true")
-                DoFormant = True
-                Quefrency, Timbre = content[1].split("\n")[0], content[2].split("\n")[0]
-
-            else:
-                # print("not true")
-                DoFormant = False
-
-        if DoFormant:
+        cursor.execute("SELECT Quefrency, Timbre, DoFormant FROM formant_data")
+        Quefrency, Timbre, DoFormant = cursor.fetchone()
+        print(f"dofor={bool(DoFormant)} timbr={Timbre} quef={Quefrency}\n")
+        if bool(DoFormant):
             # os.system(f"stftpitchshift -i {file} -q {Quefrency} -t {Timbre} -o {file_formanted}")
             # print('stftpitchshift -i "%s" -p 1.0 --rms -w 128 -v 8 -q %s -t %s -o "%s"' % (file, Quefrency, Timbre, file_formanted))
             
@@ -61,6 +57,7 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
 
             os.remove("%sFORMANTED%s" % (file_formanted, ".wav"))
             os.remove(f"{file_formanted}.wav")
+            
         else:
             out, _ = (
                 ffmpeg.input(file, threads=0)
@@ -71,5 +68,6 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
             )
     except Exception as e:
         raise RuntimeError(f"Failed to load audio: {e}")
-
+    
+    conn.close()
     return np.frombuffer(out, np.float32).flatten()

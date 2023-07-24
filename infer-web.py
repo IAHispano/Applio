@@ -43,8 +43,44 @@ from train.process_ckpt import change_info, extract_small_model, merge, show_inf
 from vc_infer_pipeline import VC
 from sklearn.cluster import MiniBatchKMeans
 
+import sqlite3
+
+def clear_sql(signal, frame):
+    cursor.execute("DELETE FROM formant_data")
+    cursor.execute("DELETE FROM stop_train")
+    conn.commit()
+    conn.close()
+    print("Clearing SQL database...")
+    sys.exit(0)
+
+if sys.platform == 'win32':
+    signal.signal(signal.SIGBREAK, clear_sql)
+
+signal.signal(signal.SIGINT, clear_sql)
+signal.signal(signal.SIGTERM, clear_sql)
+
+
+
 logging.getLogger("numba").setLevel(logging.WARNING)
 
+conn = sqlite3.connect('TEMP/db:cachedb?mode=memory&cache=shared', check_same_thread=False)
+cursor = conn.cursor()
+
+
+
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS formant_data (
+        Quefrency FLOAT,
+        Timbre FLOAT,
+        DoFormant INTEGER
+    )
+""")
+
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS stop_train (
+        stop BOOL
+    )
+""")
 
 tmp = os.path.join(now_dir, "TEMP")
 shutil.rmtree(tmp, ignore_errors=True)
@@ -52,6 +88,8 @@ shutil.rmtree("%s/runtime/Lib/site-packages/infer_pack" % (now_dir), ignore_erro
 shutil.rmtree("%s/runtime/Lib/site-packages/uvr5_pack" % (now_dir), ignore_errors=True)
 os.makedirs(tmp, exist_ok=True)
 os.makedirs(os.path.join(now_dir, "logs"), exist_ok=True)
+os.makedirs(os.path.join(now_dir, "audios"), exist_ok=True)
+os.makedirs(os.path.join(now_dir, "datasets"), exist_ok=True)
 os.makedirs(os.path.join(now_dir, "weights"), exist_ok=True)
 os.environ["TEMP"] = tmp
 warnings.filterwarnings("ignore")
@@ -61,19 +99,18 @@ global DoFormant, Quefrency, Timbre
 
 
 try:
-    with open('formanting.txt', 'r') as psx:
-        content = psx.readlines()
-        Quefrency, Timbre = content[1].split('\n')[0], content[2].split('\n')[0]
-        DoFormant = True if content[0].split('\n')[0] == 'True' else False
+    cursor.execute("SELECT Quefrency, Timbre, DoFormant FROM formant_data")
+    Quefrency, Timbre, DoFormant = cursor.fetchone()
     
 except Exception:
-    with open('formanting.txt', 'w+') as fsf:
-        fsf.truncate(0)
-        DoFormant = False
-        Quefrency, Timbre = 8.0, 1.2
-        fsf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
+    Quefrency = 8.0
+    Timbre = 1.2
+    DoFormant = False
+    cursor.execute("DELETE FROM formant_data")
+    cursor.execute("DELETE FROM stop_train")
+    cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (Quefrency, Timbre, 0))
+    conn.commit()
     
-
 config = Config()
 i18n = I18nAuto()
 i18n.print()
@@ -132,6 +169,8 @@ else:
 gpus = "-".join([i[0] for i in gpu_infos])
 
 hubert_model = None
+
+
 
 def load_hubert():
     global hubert_model
@@ -607,14 +646,13 @@ def if_done_multi(done, ps):
     done[0] = True
 
 def formant_enabled(cbox, qfrency, tmbre, frmntapply, formantpreset, formant_refresh_button):
-    
     if (cbox):
 
         DoFormant = True
-        with open('formanting.txt', 'w') as fxxf:
-            fxxf.truncate(0)
-
-            fxxf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
+        cursor.execute("DELETE FROM formant_data")
+        cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (qfrency, tmbre, 1))
+        conn.commit()
+        
         #print(f"is checked? - {cbox}\ngot {DoFormant}")
         
         return (
@@ -630,10 +668,10 @@ def formant_enabled(cbox, qfrency, tmbre, frmntapply, formantpreset, formant_ref
     else:
         
         DoFormant = False
-        with open('formanting.txt', 'w') as fxf:
-            fxf.truncate(0)
-
-            fxf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
+        cursor.execute("DELETE FROM formant_data")
+        cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (qfrency, tmbre, int(DoFormant)))
+        conn.commit()
+        
         #print(f"is checked? - {cbox}\ngot {DoFormant}")
         return (
             {"value": False, "__type__": "update"},
@@ -650,11 +688,10 @@ def formant_apply(qfrency, tmbre):
     Quefrency = qfrency
     Timbre = tmbre
     DoFormant = True
-    
-    with open('formanting.txt', 'w') as fxxxf:
-        fxxxf.truncate(0)
+    cursor.execute("DELETE FROM formant_data")
+    cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (qfrency, tmbre, 1))
+    conn.commit()
 
-        fxxxf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
     return ({"value": Quefrency, "__type__": "update"}, {"value": Timbre, "__type__": "update"})
 
 def update_fshift_presets(preset, qfrency, tmbre):
@@ -952,6 +989,8 @@ def click_train(
     if_save_every_weights18,
     version19,
 ):
+    cursor.execute("DELETE FROM stop_train")
+    conn.commit()
     # 生成filelist
     exp_dir = "%s/logs/%s" % (now_dir, exp_dir1)
     os.makedirs(exp_dir, exist_ok=True)
@@ -1533,16 +1572,17 @@ def cli_infer(com):
         DoFormant = False
         Quefrency = 0.0
         Timbre = 0.0
-        with open('formanting.txt', 'w') as fxxxf:
-            fxxxf.truncate(0)
-            fxxxf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
+        cursor.execute("DELETE FROM formant_data")
+        cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (Quefrency, Timbre, 0))
+        conn.commit()
+        
     else:
         DoFormant = True
         Quefrency = float(com[15])
         Timbre = float(com[16])
-        with open('formanting.txt', 'w') as fxxxf:
-            fxxxf.truncate(0)
-            fxxxf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
+        cursor.execute("DELETE FROM formant_data")
+        cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (Quefrency, Timbre, 1))
+        conn.commit()
     
     print("Mangio-RVC-Fork Infer-CLI: Starting the inference...")
     vc_data = get_vc(model_name, protection_amnt, protect1)
@@ -1901,10 +1941,8 @@ def match_index(sid0):
 def stoptraining(mim): 
     if int(mim) == 1:
         
-        with open("stop.txt", "w+") as tostops:
-
-            
-            tostops.writelines('stop')
+        cursor.execute("INSERT INTO stop_train (stop) VALUES (?)", (True,))
+        conn.commit()
         #p.terminate()
         #p.kill()
         try:
@@ -2074,7 +2112,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             interactive=True,
                         )
                         formanting = gr.Checkbox(
-                            value=DoFormant,
+                            value=bool(DoFormant),
                             label="[EXPERIMENTAL] Formant shift inference audio",
                             info="Used for male to female and vice-versa conversions",
                             interactive=True,
@@ -2085,12 +2123,12 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             value='',
                             choices=get_fshift_presets(),
                             label="browse presets for formanting",
-                            visible=DoFormant,
+                            visible=bool(DoFormant),
                         )
                         
                         formant_refresh_button = gr.Button(
                             value='\U0001f504',
-                            visible=DoFormant,
+                            visible=bool(DoFormant),
                             variant='primary',
                         )
                         
@@ -2100,7 +2138,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                                 minimum=-16.0,
                                 maximum=16.0,
                                 step=0.1,
-                                visible=DoFormant,
+                                visible=bool(DoFormant),
                                 interactive=True,
                         )
                             
@@ -2110,12 +2148,12 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             minimum=-16.0,
                             maximum=16.0,
                             step=0.1,
-                            visible=DoFormant,
+                            visible=bool(DoFormant),
                             interactive=True,
                         )
                         
                         formant_preset.change(fn=preset_apply, inputs=[formant_preset, qfrency, tmbre], outputs=[qfrency, tmbre])
-                        frmntbut = gr.Button("Apply", variant="primary", visible=DoFormant)
+                        frmntbut = gr.Button("Apply", variant="primary", visible=bool(DoFormant))
                         formanting.change(fn=formant_enabled,inputs=[formanting,qfrency,tmbre,frmntbut,formant_preset,formant_refresh_button],outputs=[formanting,qfrency,tmbre,frmntbut,formant_preset,formant_refresh_button])
                         frmntbut.click(fn=formant_apply,inputs=[qfrency, tmbre], outputs=[qfrency, tmbre])
                         formant_refresh_button.click(fn=update_fshift_presets,inputs=[formant_preset, qfrency, tmbre],outputs=[formant_preset, qfrency, tmbre])
@@ -2463,8 +2501,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                         interactive=True,
                     )
                     if_save_latest13 = gr.Checkbox(
-                        label="Whether to save only the latest .ckpt file to save hard disk space",
-                        
+                        label="Whether to save only the latest .ckpt file to save hard drive space",
                         value=True,
                         interactive=True,
                     )
