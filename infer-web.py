@@ -1546,7 +1546,7 @@ def cli_infer(com):
     mix = float(com[10])
     feature_ratio = float(com[11])
     protection_amnt = float(com[12])
-    protect1 = 0.0
+    protect1 = 0.5
     
     if com[14] == 'False' or com[14] == 'false':
         DoFormant = False
