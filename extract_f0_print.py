@@ -19,8 +19,10 @@ f = open("%s/extract_f0_feature.log" % exp_dir, "a+")
 
 DoFormant = False
 
-Quefrency = 0.0
-Timbre = 0.0
+with open("formanting.txt", "r") as fvf:
+    content = fvf.readlines()
+    Quefrency, Timbre = content[1].split("\n")[0], content[2].split("\n")[0]
+
 
 def printt(strr):
     print(strr)
