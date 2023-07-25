@@ -388,6 +388,7 @@ def vc_multi(
             info, opt = vc_single(
                 sid,
                 path,
+                None,
                 f0_up_key,
                 None,
                 f0_method,
@@ -2134,8 +2135,9 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                         
                         qfrency = gr.Slider(
                                 value=Quefrency,
+                                info="Default value is 1.0",
                                 label="Quefrency for formant shifting",
-                                minimum=-16.0,
+                                minimum=0.0,
                                 maximum=16.0,
                                 step=0.1,
                                 visible=bool(DoFormant),
@@ -2144,8 +2146,9 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             
                         tmbre = gr.Slider(
                             value=Timbre,
+                            info="Default value is 1.0",
                             label="Timbre for formant shifting",
-                            minimum=-16.0,
+                            minimum=0.0,
                             maximum=16.0,
                             step=0.1,
                             visible=bool(DoFormant),
