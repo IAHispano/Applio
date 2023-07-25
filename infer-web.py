@@ -124,6 +124,17 @@ else:
     default_batch_size = 1
 gpus = "-".join([i[0] for i in gpu_infos])
 
+
+class ToolButton(gr.Button, gr.components.FormComponent):
+    """Small button with single emoji as text, fits inside gradio forms"""
+
+    def __init__(self, **kwargs):
+        super().__init__(variant="tool", **kwargs)
+
+    def get_block_name(self):
+        return "button"
+
+
 hubert_model = None
 
 
@@ -215,6 +226,19 @@ def get_fshift_presets():
         return fshift_presets_list
     else:
         return ''
+
+
+def get_audios():
+    if check_for_name() != '':
+        audios_path= '"' + os.path.abspath(os.getcwd()) + '/audios/'
+        if os.path.exists(audios_path):
+            for file in os.listdir(audios_path):
+                print(audios_path.join(file) + '"')
+                return os.path.join(audios_path, file + '"')
+            return ''
+        else:
+            return ''
+
 
 def vc_single(
     sid,
@@ -805,12 +829,12 @@ def change_sr2(sr2, if_f0_3, version19):
     if not if_pretrained_generator_exist:
         print(
             "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2),
-            "doesn't exist, will not use pretrained model",
+            "not exist, will not use pretrained model",
         )
     if not if_pretrained_discriminator_exist:
         print(
             "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2),
-            "doesn't exist, will not use pretrained model",
+            "not exist, will not use pretrained model",
         )
     return (
         "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2)
@@ -841,12 +865,12 @@ def change_version19(sr2, if_f0_3, version19):
     if not if_pretrained_generator_exist:
         print(
             "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2),
-            "doesn't exist, will not use pretrained model",
+            "not exist, will not use pretrained model",
         )
     if not if_pretrained_discriminator_exist:
         print(
             "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2),
-            "doesn't exist, will not use pretrained model",
+            "not exist, will not use pretrained model",
         )
     return (
         "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2)
@@ -1523,25 +1547,10 @@ def cli_infer(com):
     mix = float(com[10])
     feature_ratio = float(com[11])
     protection_amnt = float(com[12])
-    protect1 = 0.5
-
-    if com[14] == 'False' or com[14] == 'false':
-        DoFormant = False
-        Quefrency = 0.0
-        Timbre = 0.0
-        with open('formanting.txt', 'w') as fxxxf:
-            fxxxf.truncate(0)
-            fxxxf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
-    else:
-        DoFormant = True
-        Quefrency = float(com[15])
-        Timbre = float(com[16])
-        with open('formanting.txt', 'w') as fxxxf:
-            fxxxf.truncate(0)
-            fxxxf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
+    #####
     
     print("Mangio-RVC-Fork Infer-CLI: Starting the inference...")
-    vc_data = get_vc(model_name, protection_amnt, protect1)
+    vc_data = get_vc(model_name)
     print(vc_data)
     print("Mangio-RVC-Fork Infer-CLI: Performing inference...")
     conversion_data = vc_single(
@@ -1696,86 +1705,70 @@ def preset_apply(preset, qfer, tmbr):
 
 def print_page_details():
     if cli_current_page == "HOME":
-        print(
-            "\n    go home            : Takes you back to home with a navigation list."
-            "\n    go infer           : Takes you to inference command execution."
-            "\n    go pre-process     : Takes you to training step.1) pre-process command execution."
-            "\n    go extract-feature : Takes you to training step.2) extract-feature command execution."
-            "\n    go train           : Takes you to training step.3) being or continue training command execution."
-            "\n    go train-feature   : Takes you to the train feature index command execution."
-            "\n    go extract-model   : Takes you to the extract small model command execution."
-        )
+        print("    go home            : Takes you back to home with a navigation list.")
+        print("    go infer           : Takes you to inference command execution.\n")
+        print("    go pre-process     : Takes you to training step.1) pre-process command execution.")
+        print("    go extract-feature : Takes you to training step.2) extract-feature command execution.")
+        print("    go train           : Takes you to training step.3) being or continue training command execution.")
+        print("    go train-feature   : Takes you to the train feature index command execution.\n")
+        print("    go extract-model   : Takes you to the extract small model command execution.")
     elif cli_current_page == "INFER":
-        print(
-            "\n    arg 1) model name with .pth in ./weights: mi-test.pth"
-            "\n    arg 2) source audio path: myFolder\\MySource.wav"
-            "\n    arg 3) output file name to be placed in './audio-outputs': MyTest.wav"
-            "\n    arg 4) feature index file path: logs/mi-test/added_IVF3042_Flat_nprobe_1.index"
-            "\n    arg 5) speaker id: 0"
-            "\n    arg 6) transposition: 0"
-            "\n    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x], mangio-crepe, mangio-crepe-tiny, rmvpe)"
-            "\n    arg 8) crepe hop length: 160"
-            "\n    arg 9) harvest median filter radius: 3 (0-7)"
-            "\n    arg 10) post resample rate: 0"
-            "\n    arg 11) mix volume envelope: 1"
-            "\n    arg 12) feature index ratio: 0.78 (0-1)"
-            "\n    arg 13) Voiceless Consonant Protection (Less Artifact): 0.33 (Smaller number = more protection. 0.50 means Dont Use.)"
-            "\n    arg 14) Whether to formant shift the inference audio before conversion: False (if set to false, you can ignore setting the quefrency and timbre values for formanting)"
-            "\n    arg 15)* Quefrency for formanting: 8.0 (no need to set if arg14 is False/false)"
-            "\n    arg 16)* Timbre for formanting: 1.2 (no need to set if arg14 is False/false) \n"
-            "\nExample: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 160 3 0 1 0.95 0.33 0.45 True 8.0 1.2"
-        )
+        print("    arg 1) model name with .pth in ./weights: mi-test.pth")
+        print("    arg 2) source audio path: myFolder\\MySource.wav")
+        print("    arg 3) output file name to be placed in './audio-outputs': MyTest.wav")
+        print("    arg 4) feature index file path: logs/mi-test/added_IVF3042_Flat_nprobe_1.index")
+        print("    arg 5) speaker id: 0")
+        print("    arg 6) transposition: 0")
+        print("    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x], mangio-crepe, mangio-crepe-tiny)")
+        print("    arg 8) crepe hop length: 160")
+        print("    arg 9) harvest median filter radius: 3 (0-7)")
+        print("    arg 10) post resample rate: 0")
+        print("    arg 11) mix volume envelope: 1")
+        print("    arg 12) feature index ratio: 0.78 (0-1)")
+        print("    arg 13) Voiceless Consonant Protection (Less Artifact): 0.33 (Smaller number = more protection. 0.50 means Dont Use.) \n")
+        print("Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 160 3 0 1 0.95 0.33")
     elif cli_current_page == "PRE-PROCESS":
-        print(
-            "\n    arg 1) Model folder name in ./logs: mi-test"
-            "\n    arg 2) Trainset directory: mydataset (or) E:\\my-data-set"
-            "\n    arg 3) Sample rate: 40k (32k, 40k, 48k)"
-            "\n    arg 4) Number of CPU threads to use: 8 \n"
-            "\nExample: mi-test mydataset 40k 24"
-        )
+        print("    arg 1) Model folder name in ./logs: mi-test")
+        print("    arg 2) Trainset directory: mydataset (or) E:\\my-data-set")
+        print("    arg 3) Sample rate: 40k (32k, 40k, 48k)")
+        print("    arg 4) Number of CPU threads to use: 8 \n")
+        print("Example: mi-test mydataset 40k 24")
     elif cli_current_page == "EXTRACT-FEATURE":
-        print(
-            "\n    arg 1) Model folder name in ./logs: mi-test"
-            "\n    arg 2) Gpu card slot: 0 (0-1-2 if using 3 GPUs)"
-            "\n    arg 3) Number of CPU threads to use: 8"
-            "\n    arg 4) Has Pitch Guidance?: 1 (0 for no, 1 for yes)"
-            "\n    arg 5) f0 Method: harvest (pm, harvest, dio, crepe)"
-            "\n    arg 6) Crepe hop length: 128"
-            "\n    arg 7) Version for pre-trained models: v2 (use either v1 or v2)\n"
-            "\nExample: mi-test 0 24 1 harvest 128 v2"
-        )
+        print("    arg 1) Model folder name in ./logs: mi-test")
+        print("    arg 2) Gpu card slot: 0 (0-1-2 if using 3 GPUs)")
+        print("    arg 3) Number of CPU threads to use: 8")
+        print("    arg 4) Has Pitch Guidance?: 1 (0 for no, 1 for yes)")
+        print("    arg 5) f0 Method: harvest (pm, harvest, dio, crepe)")
+        print("    arg 6) Crepe hop length: 128")
+        print("    arg 7) Version for pre-trained models: v2 (use either v1 or v2)\n")
+        print("Example: mi-test 0 24 1 harvest 128 v2")
     elif cli_current_page == "TRAIN":
-        print(
-            "\n    arg 1) Model folder name in ./logs: mi-test"
-            "\n    arg 2) Sample rate: 40k (32k, 40k, 48k)"
-            "\n    arg 3) Has Pitch Guidance?: 1 (0 for no, 1 for yes)"
-            "\n    arg 4) speaker id: 0"
-            "\n    arg 5) Save epoch iteration: 50"
-            "\n    arg 6) Total epochs: 10000"
-            "\n    arg 7) Batch size: 8"
-            "\n    arg 8) Gpu card slot: 0 (0-1-2 if using 3 GPUs)"
-            "\n    arg 9) Save only the latest checkpoint: 0 (0 for no, 1 for yes)"
-            "\n    arg 10) Whether to cache training set to vram: 0 (0 for no, 1 for yes)"
-            "\n    arg 11) Save extracted small model every generation?: 0 (0 for no, 1 for yes)"
-            "\n    arg 12) Model architecture version: v2 (use either v1 or v2)\n"
-            "\nExample: mi-test 40k 1 0 50 10000 8 0 0 0 0 v2"
-        )
+        print("    arg 1) Model folder name in ./logs: mi-test")
+        print("    arg 2) Sample rate: 40k (32k, 40k, 48k)")
+        print("    arg 3) Has Pitch Guidance?: 1 (0 for no, 1 for yes)")
+        print("    arg 4) speaker id: 0")
+        print("    arg 5) Save epoch iteration: 50")
+        print("    arg 6) Total epochs: 10000")
+        print("    arg 7) Batch size: 8")
+        print("    arg 8) Gpu card slot: 0 (0-1-2 if using 3 GPUs)")
+        print("    arg 9) Save only the latest checkpoint: 0 (0 for no, 1 for yes)")
+        print("    arg 10) Whether to cache training set to vram: 0 (0 for no, 1 for yes)")
+        print("    arg 11) Save extracted small model every generation?: 0 (0 for no, 1 for yes)")
+        print("    arg 12) Model architecture version: v2 (use either v1 or v2)\n")
+        print("Example: mi-test 40k 1 0 50 10000 8 0 0 0 0 v2")
     elif cli_current_page == "TRAIN-FEATURE":
-        print(
-            "\n    arg 1) Model folder name in ./logs: mi-test"
-            "\n    arg 2) Model architecture version: v2 (use either v1 or v2)\n"
-            "\nExample: mi-test v2"
-        )
+        print("    arg 1) Model folder name in ./logs: mi-test")
+        print("    arg 2) Model architecture version: v2 (use either v1 or v2)\n")
+        print("Example: mi-test v2")
     elif cli_current_page == "EXTRACT-MODEL":
-        print(
-            "\n    arg 1) Model Path: logs/mi-test/G_168000.pth"
-            "\n    arg 2) Model save name: MyModel"
-            "\n    arg 3) Sample rate: 40k (32k, 40k, 48k)"
-            "\n    arg 4) Has Pitch Guidance?: 1 (0 for no, 1 for yes)"
-            '\n    arg 5) Model information: "My Model"'
-            "\n    arg 6) Model architecture version: v2 (use either v1 or v2)\n"
-            '\nExample: logs/mi-test/G_168000.pth MyModel 40k 1 "Created by Cole Mangio" v2'
-        )
+        print("    arg 1) Model Path: logs/mi-test/G_168000.pth")
+        print("    arg 2) Model save name: MyModel")
+        print("    arg 3) Sample rate: 40k (32k, 40k, 48k)")
+        print("    arg 4) Has Pitch Guidance?: 1 (0 for no, 1 for yes)")
+        print('    arg 5) Model information: "My Model"')
+        print("    arg 6) Model architecture version: v2 (use either v1 or v2)\n")
+        print('Example: logs/mi-test/G_168000.pth MyModel 40k 1 "Created by Cole Mangio" v2')
+    print("")
 
 def change_page(page):
     global cli_current_page
@@ -1817,7 +1810,7 @@ def execute_command(com):
 
 def cli_navigation_loop():
     while True:
-        print("\nYou are currently in '%s':" % cli_current_page)
+        print("You are currently in '%s':" % cli_current_page)
         print_page_details()
         command = input("%s: " % cli_current_page)
         try:
@@ -1862,11 +1855,11 @@ def match_index(sid0):
             if filename.endswith(".index"):
                 for i in range(len(indexes_list)):
                     if indexes_list[i] == (os.path.join(("./logs/" + folder), filename).replace('\\','/')):
-                        #print('regular index found')
+                        print('regular index found')
                         break
                     else:
                         if indexes_list[i] == (os.path.join(("./logs/" + folder.lower()), filename).replace('\\','/')):
-                            #print('lowered index found')
+                            print('lowered index found')
                             parent_dir = "./logs/" + folder.lower()
                             break
                         #elif (indexes_list[i]).casefold() == ((os.path.join(("./logs/" + folder), filename).replace('\\','/')).casefold()):
@@ -1894,6 +1887,10 @@ def match_index(sid0):
     else:
         #print('nothing found')
         return ('', '')
+
+def choveraudio():
+    return ''
+
 
 def stoptraining(mim): 
     if int(mim) == 1:
@@ -1980,10 +1977,10 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                         input_audio1 = gr.Dropdown(
                             label=i18n("Auto detect audio path and select from the dropdown:"),
                             choices=sorted(audio_paths),
-                            value='',
+                            value=get_audios(),
                             interactive=True,
                         )
-                        input_audio1.change(fn=lambda:'',inputs=[],outputs=[input_audio0])
+                        input_audio1.change(fn=choveraudio,inputs=[],outputs=[input_audio0])
                         f0method0 = gr.Radio(
                             label=i18n(
                                 "选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比,crepe效果好但吃GPU"
@@ -2085,7 +2082,9 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                             visible=False,
                         )
                         formant_refresh_button = gr.Button(value='\U0001f504', visible=False,variant='primary')
-
+                        #formant_refresh_button = ToolButton( elem_id='1')
+                        #create_refresh_button(formant_preset, lambda: {"choices": formant_preset}, "refresh_list_shiftpresets")
+                        
                         qfrency = gr.Slider(
                                 value=Quefrency,
                                 label="Quefrency for formant shifting",
@@ -2419,7 +2418,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                         
                         f0method8.change(fn=whethercrepeornah, inputs=[f0method8], outputs=[extraction_crepe_hop_length])
                     but2 = gr.Button(i18n("特征提取"), variant="primary")
-                    info2 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8, interactive=False)
+                    info2 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8)
                     but2.click(
                         extract_f0_feature,
                         [gpus6, np7, f0method8, if_f0_3, exp_dir1, version19, extraction_crepe_hop_length],
