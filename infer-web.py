@@ -344,6 +344,7 @@ def vc_multi(
             info, opt = vc_single(
                 sid,
                 path,
+                None,
                 f0_up_key,
                 None,
                 f0_method,
@@ -2240,7 +2241,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as app:
                     but1.click(
                         vc_multi,
                         [
-                            spk_item,
+                            sid0,
                             dir_input,
                             opt_input,
                             inputs,
