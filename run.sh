@@ -119,5 +119,23 @@ fi
 echo "Installing onnxruntime..."
 python3.8 -m pip install onnxruntime
 
+download_if_not_exists() {
+  local filename=$1
+  local url=$2
+  if [ ! -f "$filename" ]; then
+    echo "$filename does not exist, downloading..."
+    curl -# -L -o "$filename" "$url"
+    echo "Download finished."
+  else
+    echo "$filename already exists."
+  fi
+}
+
+# Check and download hubert_base.pt
+download_if_not_exists "hubert_base.pt" "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/hubert_base.pt"
+
+# Check and download rmvpe.pt
+download_if_not_exists "rmvpe.pt" "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/rmvpe.pt"
+
 # Run the main script
 python3.8 infer-web.py --pycmd python3.8
