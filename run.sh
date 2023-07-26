@@ -43,16 +43,24 @@ add_to_path() {
 
     # Source the shell profile file
     source "$shell_profile"
+
+    # Verify that the new PATH includes Homebrew
+    if ! command -v brew &> /dev/null; then
+      echo "Failed to add Homebrew to the PATH."
+    fi
   fi
 }
 
 # Check if Homebrew is in PATH
-if ! command -v brew &> /dev/null; then
+if command -v brew &> /dev/null; then
+  echo "Homebrew is already in your PATH."
+else
   # If not, check common paths for Homebrew
   echo "Homebrew not found in PATH. Checking common paths..."
   for path in "${BREW_PATHS[@]}"; do
     if [[ -x "$path/brew" ]]; then
       add_to_path "$path"
+      break
     fi
   done
 fi
@@ -60,7 +68,7 @@ fi
 # Check again if Homebrew is in PATH
 if ! command -v brew &> /dev/null; then
   echo "Homebrew still not found. Attempting to install..."
-  INSTALL_OUTPUT=$(/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)")
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 
 # Verifying if Homebrew has been installed successfully
@@ -69,29 +77,6 @@ if command -v brew &> /dev/null; then
 else
   echo "Homebrew installation failed."
   exit 1
-fi
-
-# Extracting the commands to add Homebrew to the PATH
-PATH_COMMANDS=$(echo "$INSTALL_OUTPUT" | awk '/Next steps:/,/Further documentation:/' | grep 'eval')
-
-echo "Extracted commands to add Homebrew to the PATH:"
-
-IFS=$'\n' # Set the Internal Field Separator to a new line
-for cmd in $PATH_COMMANDS
-do
-    echo "$cmd"
-done
-
-# Asking the user if they want to execute them
-echo "Do you want to automatically add Homebrew to your PATH by executing the commands above? (y/n)"
-read -p "Are you sure you want to run these commands? (y/n) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-  IFS=$'\n' # Set the Internal Field Separator to a new line
-  for cmd in $PATH_COMMANDS
-  do
-    eval "$cmd"
-  done
 fi
 
 # Installing ffmpeg with Homebrew
@@ -116,7 +101,7 @@ fi
 
 # Check if required packages are installed and install them if not
 if [ -f "${requirements_file}" ]; then
-  installed_packages=$(python3.8 -m pip freeze)
+  installed_packages=$(python3.8 -m pip list --format=freeze)
   while IFS= read -r package; do
     [[ "${package}" =~ ^#.* ]] && continue
     package_name=$(echo "${package}" | sed 's/[<>=!].*//')
@@ -129,6 +114,10 @@ else
   echo "${requirements_file} not found. Please ensure the requirements file with required packages exists."
   exit 1
 fi
+
+# Install onnxruntime package
+echo "Installing onnxruntime..."
+python3.8 -m pip install onnxruntime
 
 # Run the main script
 python3.8 infer-web.py --pycmd python3.8
