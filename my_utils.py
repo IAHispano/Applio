@@ -14,6 +14,7 @@ import sqlite3
 
 
 def load_audio(file, sr, DoFormant, Quefrency, Timbre):
+    converted = False
     try:
         conn = sqlite3.connect('TEMP/db:cachedb?mode=memory&cache=shared', check_same_thread=False)
         cursor = conn.cursor()
@@ -35,6 +36,7 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
             if not file.endswith(".wav"):
                 
                 if not os.path.isfile(f"{file_formanted}.wav"):
+                    converted = True
                     #print(f"\nfile = {file}\n")
                     #print(f"\nfile_formanted = {file_formanted}\n")
                     converting = (
@@ -94,9 +96,12 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
         raise RuntimeError(f"Failed to load audio: {e}")
     
     try: os.remove("%sFORMANTED_%s.wav" % (file_formanted, str(numerator)))
-    except OSError: pass; print("couldn't remove formanted type of file")
-    try: os.remove(file_formanted)
-    except OSError: pass; print("couldn't remove converted type of file")
+    except Exception: pass; print("couldn't remove formanted type of file")
+    
+    if converted:
+        try: os.remove(file_formanted)
+        except Exception: pass; print("couldn't remove converted type of file")
+        converted = False
     
     conn.close()
     return np.frombuffer(out, np.float32).flatten()
