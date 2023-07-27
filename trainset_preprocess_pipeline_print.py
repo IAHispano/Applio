@@ -24,10 +24,6 @@ Timbre = 0.0
 mutex = multiprocessing.Lock()
 f = open("%s/preprocess.log" % exp_dir, "a+")
 
-with open("formanting.txt", "r") as fvf:
-    content = fvf.readlines()
-    Quefrency, Timbre = content[1].split("\n")[0], content[2].split("\n")[0]
-
 
 def println(strr):
     mutex.acquire()
