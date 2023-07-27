@@ -43,6 +43,19 @@ from train.process_ckpt import change_info, extract_small_model, merge, show_inf
 from vc_infer_pipeline import VC
 from sklearn.cluster import MiniBatchKMeans
 
+tmp = os.path.join(now_dir, "TEMP")
+shutil.rmtree(tmp, ignore_errors=True)
+shutil.rmtree("%s/runtime/Lib/site-packages/infer_pack" % (now_dir), ignore_errors=True)
+shutil.rmtree("%s/runtime/Lib/site-packages/uvr5_pack" % (now_dir), ignore_errors=True)
+os.makedirs(tmp, exist_ok=True)
+os.makedirs(os.path.join(now_dir, "logs"), exist_ok=True)
+os.makedirs(os.path.join(now_dir, "audios"), exist_ok=True)
+os.makedirs(os.path.join(now_dir, "datasets"), exist_ok=True)
+os.makedirs(os.path.join(now_dir, "weights"), exist_ok=True)
+os.environ["TEMP"] = tmp
+warnings.filterwarnings("ignore")
+torch.manual_seed(114514)
+
 import sqlite3
 
 def clear_sql(signal, frame):
@@ -82,27 +95,17 @@ cursor.execute("""
     )
 """)
 
-tmp = os.path.join(now_dir, "TEMP")
-shutil.rmtree(tmp, ignore_errors=True)
-shutil.rmtree("%s/runtime/Lib/site-packages/infer_pack" % (now_dir), ignore_errors=True)
-shutil.rmtree("%s/runtime/Lib/site-packages/uvr5_pack" % (now_dir), ignore_errors=True)
-os.makedirs(tmp, exist_ok=True)
-os.makedirs(os.path.join(now_dir, "logs"), exist_ok=True)
-os.makedirs(os.path.join(now_dir, "audios"), exist_ok=True)
-os.makedirs(os.path.join(now_dir, "datasets"), exist_ok=True)
-os.makedirs(os.path.join(now_dir, "weights"), exist_ok=True)
-os.environ["TEMP"] = tmp
-warnings.filterwarnings("ignore")
-torch.manual_seed(114514)
-
 global DoFormant, Quefrency, Timbre
-
 
 try:
     cursor.execute("SELECT Quefrency, Timbre, DoFormant FROM formant_data")
-    Quefrency, Timbre, DoFormant = cursor.fetchone()
+    row = cursor.fetchone()
+    if row is not None:
+        Quefrency, Timbre, DoFormant = row
+    else:
+        raise ValueError("No data")
     
-except Exception:
+except (ValueError, TypeError):
     Quefrency = 8.0
     Timbre = 1.2
     DoFormant = False
