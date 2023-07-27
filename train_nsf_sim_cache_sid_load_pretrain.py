@@ -33,8 +33,6 @@ from data_utils import (
     DistributedBucketSampler,
 )
 
-import sqlite3
-
 if hps.version == "v1":
     from lib.infer_pack.models import (
         SynthesizerTrnMs256NSFsid as RVC_Model_f0,
@@ -256,7 +254,6 @@ def run(rank, n_gpus, hps):
 def train_and_evaluate(
     rank, epoch, hps, nets, optims, schedulers, scaler, loaders, logger, writers, cache
 ):
-    
     net_g, net_d = nets
     optim_g, optim_d = optims
     train_loader, eval_loader = loaders
@@ -353,10 +350,6 @@ def train_and_evaluate(
 
     # Run steps
     epoch_recorder = EpochRecorder()
-    
-    conn = sqlite3.connect('TEMP/db:cachedb?mode=memory&cache=shared', check_same_thread=False)
-    cursor = conn.cursor()
-    
     for batch_idx, info in data_iterator:
         # Data
         ## Unpack
@@ -575,33 +568,33 @@ def train_and_evaluate(
                     ),
                 )
             )
-    
-    cursor.execute("SELECT stop FROM stop_train LIMIT 1")
-    if bool(cursor.fetchone()) == True:
-        logger.info("Stop Button was pressed. The program is closed.")
-        if hasattr(net_g, "module"):
-            ckpt = net_g.module.state_dict()
-        else:
-            ckpt = net_g.state_dict()
-        logger.info(
-            "saving final ckpt:%s"
-            % (
-                savee(
-                    ckpt,
-                    hps.sample_rate,
-                    hps.if_f0,
-                    hps.name,
-                    epoch,
-                    hps.version,
-                    hps,
+
+    with open("stop.txt", "r+") as tostop:
+        content = tostop.read()
+        if "stop" in content:
+            logger.info("Stop Button was pressed. The program is closed.")
+            if hasattr(net_g, "module"):
+                ckpt = net_g.module.state_dict()
+            else:
+                ckpt = net_g.state_dict()
+            logger.info(
+                "saving final ckpt:%s"
+                % (
+                    savee(
+                        ckpt,
+                        hps.sample_rate,
+                        hps.if_f0,
+                        hps.name,
+                        epoch,
+                        hps.version,
+                        hps,
+                    )
                 )
             )
-        )
-        sleep(1)
-        cursor.execute("DELETE FROM stop_train")
-        conn.commit()
-        conn.close()
-        os._exit(2333333)
+
+            tostop.truncate(0)
+            tostop.writelines("not")
+            os._exit(2333333)
 
     if rank == 0:
         logger.info("====> Epoch: {} {}".format(epoch, epoch_recorder.record()))
@@ -621,11 +614,7 @@ def train_and_evaluate(
             )
         )
         sleep(1)
-        cursor.execute("DELETE FROM stop_train")
-        conn.commit()
-        conn.close()
         os._exit(2333333)
-        
 
 
 if __name__ == "__main__":

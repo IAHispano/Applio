@@ -43,44 +43,8 @@ from train.process_ckpt import change_info, extract_small_model, merge, show_inf
 from vc_infer_pipeline import VC
 from sklearn.cluster import MiniBatchKMeans
 
-import sqlite3
-
-def clear_sql(signal, frame):
-    cursor.execute("DELETE FROM formant_data")
-    cursor.execute("DELETE FROM stop_train")
-    conn.commit()
-    conn.close()
-    print("Clearing SQL database...")
-    sys.exit(0)
-
-if sys.platform == 'win32':
-    signal.signal(signal.SIGBREAK, clear_sql)
-
-signal.signal(signal.SIGINT, clear_sql)
-signal.signal(signal.SIGTERM, clear_sql)
-
-
-
 logging.getLogger("numba").setLevel(logging.WARNING)
 
-conn = sqlite3.connect('TEMP/db:cachedb?mode=memory&cache=shared', check_same_thread=False)
-cursor = conn.cursor()
-
-
-
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS formant_data (
-        Quefrency FLOAT,
-        Timbre FLOAT,
-        DoFormant INTEGER
-    )
-""")
-
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS stop_train (
-        stop BOOL
-    )
-""")
 
 tmp = os.path.join(now_dir, "TEMP")
 shutil.rmtree(tmp, ignore_errors=True)
@@ -88,29 +52,21 @@ shutil.rmtree("%s/runtime/Lib/site-packages/infer_pack" % (now_dir), ignore_erro
 shutil.rmtree("%s/runtime/Lib/site-packages/uvr5_pack" % (now_dir), ignore_errors=True)
 os.makedirs(tmp, exist_ok=True)
 os.makedirs(os.path.join(now_dir, "logs"), exist_ok=True)
-os.makedirs(os.path.join(now_dir, "audios"), exist_ok=True)
-os.makedirs(os.path.join(now_dir, "datasets"), exist_ok=True)
 os.makedirs(os.path.join(now_dir, "weights"), exist_ok=True)
 os.environ["TEMP"] = tmp
 warnings.filterwarnings("ignore")
 torch.manual_seed(114514)
 
-global DoFormant, Quefrency, Timbre
+DoFormant = False
+Quefrency = 8.0
+Timbre = 1.2
 
+with open('formanting.txt', 'w+') as fsf:
+    fsf.truncate(0)
 
-try:
-    cursor.execute("SELECT Quefrency, Timbre, DoFormant FROM formant_data")
-    Quefrency, Timbre, DoFormant = cursor.fetchone()
+    fsf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
     
-except Exception:
-    Quefrency = 8.0
-    Timbre = 1.2
-    DoFormant = False
-    cursor.execute("DELETE FROM formant_data")
-    cursor.execute("DELETE FROM stop_train")
-    cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (Quefrency, Timbre, 0))
-    conn.commit()
-    
+
 config = Config()
 i18n = I18nAuto()
 i18n.print()
@@ -168,8 +124,18 @@ else:
     default_batch_size = 1
 gpus = "-".join([i[0] for i in gpu_infos])
 
-hubert_model = None
 
+class ToolButton(gr.Button, gr.components.FormComponent):
+    """Small button with single emoji as text, fits inside gradio forms"""
+
+    def __init__(self, **kwargs):
+        super().__init__(variant="tool", **kwargs)
+
+    def get_block_name(self):
+        return "button"
+
+
+hubert_model = None
 
 
 def load_hubert():
@@ -190,7 +156,10 @@ def load_hubert():
 weight_root = "weights"
 weight_uvr5_root = "uvr5_weights"
 index_root = "./logs/"
+global audio_root
 audio_root = "audios"
+global input_audio_path0
+global input_audio_path1                                        
 names = []
 for name in os.listdir(weight_root):
     if name.endswith(".pth"):
@@ -258,6 +227,17 @@ def get_fshift_presets():
     else:
         return ''
 
+
+def get_audios():
+    if check_for_name() != '':
+        audios_path= '"' + os.path.abspath(os.getcwd()) + '/audios/'
+        if os.path.exists(audios_path):
+            for file in os.listdir(audios_path):
+                print(audios_path.join(file) + '"')
+                return os.path.join(audios_path, file + '"')
+            return ''
+        else:
+            return ''
 
 
 def vc_single(
@@ -647,13 +627,14 @@ def if_done_multi(done, ps):
     done[0] = True
 
 def formant_enabled(cbox, qfrency, tmbre, frmntapply, formantpreset, formant_refresh_button):
+    
     if (cbox):
 
         DoFormant = True
-        cursor.execute("DELETE FROM formant_data")
-        cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (qfrency, tmbre, 1))
-        conn.commit()
-        
+        with open('formanting.txt', 'w') as fxxf:
+            fxxf.truncate(0)
+
+            fxxf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
         #print(f"is checked? - {cbox}\ngot {DoFormant}")
         
         return (
@@ -669,10 +650,10 @@ def formant_enabled(cbox, qfrency, tmbre, frmntapply, formantpreset, formant_ref
     else:
         
         DoFormant = False
-        cursor.execute("DELETE FROM formant_data")
-        cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (qfrency, tmbre, int(DoFormant)))
-        conn.commit()
-        
+        with open('formanting.txt', 'w') as fxf:
+            fxf.truncate(0)
+
+            fxf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
         #print(f"is checked? - {cbox}\ngot {DoFormant}")
         return (
             {"value": False, "__type__": "update"},
@@ -689,10 +670,11 @@ def formant_apply(qfrency, tmbre):
     Quefrency = qfrency
     Timbre = tmbre
     DoFormant = True
-    cursor.execute("DELETE FROM formant_data")
-    cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (qfrency, tmbre, 1))
-    conn.commit()
+    
+    with open('formanting.txt', 'w') as fxxxf:
+        fxxxf.truncate(0)
 
+        fxxxf.writelines([str(DoFormant) + '\n', str(Quefrency) + '\n', str(Timbre) + '\n'])
     return ({"value": Quefrency, "__type__": "update"}, {"value": Timbre, "__type__": "update"})
 
 def update_fshift_presets(preset, qfrency, tmbre):
@@ -847,12 +829,12 @@ def change_sr2(sr2, if_f0_3, version19):
     if not if_pretrained_generator_exist:
         print(
             "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2),
-            "doesn't exist, will not use pretrained model",
+            "not exist, will not use pretrained model",
         )
     if not if_pretrained_discriminator_exist:
         print(
             "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2),
-            "doesn't exist, will not use pretrained model",
+            "not exist, will not use pretrained model",
         )
     return (
         "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2)
@@ -883,12 +865,12 @@ def change_version19(sr2, if_f0_3, version19):
     if not if_pretrained_generator_exist:
         print(
             "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2),
-            "doesn't exist, will not use pretrained model",
+            "not exist, will not use pretrained model",
         )
     if not if_pretrained_discriminator_exist:
         print(
             "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2),
-            "doesn't exist, will not use pretrained model",
+            "not exist, will not use pretrained model",
         )
     return (
         "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2)
@@ -990,8 +972,6 @@ def click_train(
     if_save_every_weights18,
     version19,
 ):
-    cursor.execute("DELETE FROM stop_train")
-    conn.commit()
     # 生成filelist
     exp_dir = "%s/logs/%s" % (now_dir, exp_dir1)
     os.makedirs(exp_dir, exist_ok=True)
@@ -1567,26 +1547,10 @@ def cli_infer(com):
     mix = float(com[10])
     feature_ratio = float(com[11])
     protection_amnt = float(com[12])
-    protect1 = 0.5
-    
-    if com[14] == 'False' or com[14] == 'false':
-        DoFormant = False
-        Quefrency = 0.0
-        Timbre = 0.0
-        cursor.execute("DELETE FROM formant_data")
-        cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (Quefrency, Timbre, 0))
-        conn.commit()
-        
-    else:
-        DoFormant = True
-        Quefrency = float(com[15])
-        Timbre = float(com[16])
-        cursor.execute("DELETE FROM formant_data")
-        cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (Quefrency, Timbre, 1))
-        conn.commit()
+    #####
     
     print("Mangio-RVC-Fork Infer-CLI: Starting the inference...")
-    vc_data = get_vc(model_name, protection_amnt, protect1)
+    vc_data = get_vc(model_name)
     print(vc_data)
     print("Mangio-RVC-Fork Infer-CLI: Performing inference...")
     conversion_data = vc_single(
@@ -1733,6 +1697,7 @@ def preset_apply(preset, qfer, tmbr):
         with open(str(preset), 'r') as p:
             content = p.readlines()
             qfer, tmbr = content[0].split('\n')[0], content[1]
+            
             formant_apply(qfer, tmbr)
     else:
         pass
@@ -1740,86 +1705,70 @@ def preset_apply(preset, qfer, tmbr):
 
 def print_page_details():
     if cli_current_page == "HOME":
-        print(
-            "\n    go home            : Takes you back to home with a navigation list."
-            "\n    go infer           : Takes you to inference command execution."
-            "\n    go pre-process     : Takes you to training step.1) pre-process command execution."
-            "\n    go extract-feature : Takes you to training step.2) extract-feature command execution."
-            "\n    go train           : Takes you to training step.3) being or continue training command execution."
-            "\n    go train-feature   : Takes you to the train feature index command execution."
-            "\n    go extract-model   : Takes you to the extract small model command execution."
-        )
+        print("    go home            : Takes you back to home with a navigation list.")
+        print("    go infer           : Takes you to inference command execution.\n")
+        print("    go pre-process     : Takes you to training step.1) pre-process command execution.")
+        print("    go extract-feature : Takes you to training step.2) extract-feature command execution.")
+        print("    go train           : Takes you to training step.3) being or continue training command execution.")
+        print("    go train-feature   : Takes you to the train feature index command execution.\n")
+        print("    go extract-model   : Takes you to the extract small model command execution.")
     elif cli_current_page == "INFER":
-        print(
-            "\n    arg 1) model name with .pth in ./weights: mi-test.pth"
-            "\n    arg 2) source audio path: myFolder\\MySource.wav"
-            "\n    arg 3) output file name to be placed in './audio-outputs': MyTest.wav"
-            "\n    arg 4) feature index file path: logs/mi-test/added_IVF3042_Flat_nprobe_1.index"
-            "\n    arg 5) speaker id: 0"
-            "\n    arg 6) transposition: 0"
-            "\n    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x], mangio-crepe, mangio-crepe-tiny, rmvpe)"
-            "\n    arg 8) crepe hop length: 160"
-            "\n    arg 9) harvest median filter radius: 3 (0-7)"
-            "\n    arg 10) post resample rate: 0"
-            "\n    arg 11) mix volume envelope: 1"
-            "\n    arg 12) feature index ratio: 0.78 (0-1)"
-            "\n    arg 13) Voiceless Consonant Protection (Less Artifact): 0.33 (Smaller number = more protection. 0.50 means Dont Use.)"
-            "\n    arg 14) Whether to formant shift the inference audio before conversion: False (if set to false, you can ignore setting the quefrency and timbre values for formanting)"
-            "\n    arg 15)* Quefrency for formanting: 8.0 (no need to set if arg14 is False/false)"
-            "\n    arg 16)* Timbre for formanting: 1.2 (no need to set if arg14 is False/false) \n"
-            "\nExample: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 160 3 0 1 0.95 0.33 0.45 True 8.0 1.2"
-        )
+        print("    arg 1) model name with .pth in ./weights: mi-test.pth")
+        print("    arg 2) source audio path: myFolder\\MySource.wav")
+        print("    arg 3) output file name to be placed in './audio-outputs': MyTest.wav")
+        print("    arg 4) feature index file path: logs/mi-test/added_IVF3042_Flat_nprobe_1.index")
+        print("    arg 5) speaker id: 0")
+        print("    arg 6) transposition: 0")
+        print("    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x], mangio-crepe, mangio-crepe-tiny)")
+        print("    arg 8) crepe hop length: 160")
+        print("    arg 9) harvest median filter radius: 3 (0-7)")
+        print("    arg 10) post resample rate: 0")
+        print("    arg 11) mix volume envelope: 1")
+        print("    arg 12) feature index ratio: 0.78 (0-1)")
+        print("    arg 13) Voiceless Consonant Protection (Less Artifact): 0.33 (Smaller number = more protection. 0.50 means Dont Use.) \n")
+        print("Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 160 3 0 1 0.95 0.33")
     elif cli_current_page == "PRE-PROCESS":
-        print(
-            "\n    arg 1) Model folder name in ./logs: mi-test"
-            "\n    arg 2) Trainset directory: mydataset (or) E:\\my-data-set"
-            "\n    arg 3) Sample rate: 40k (32k, 40k, 48k)"
-            "\n    arg 4) Number of CPU threads to use: 8 \n"
-            "\nExample: mi-test mydataset 40k 24"
-        )
+        print("    arg 1) Model folder name in ./logs: mi-test")
+        print("    arg 2) Trainset directory: mydataset (or) E:\\my-data-set")
+        print("    arg 3) Sample rate: 40k (32k, 40k, 48k)")
+        print("    arg 4) Number of CPU threads to use: 8 \n")
+        print("Example: mi-test mydataset 40k 24")
     elif cli_current_page == "EXTRACT-FEATURE":
-        print(
-            "\n    arg 1) Model folder name in ./logs: mi-test"
-            "\n    arg 2) Gpu card slot: 0 (0-1-2 if using 3 GPUs)"
-            "\n    arg 3) Number of CPU threads to use: 8"
-            "\n    arg 4) Has Pitch Guidance?: 1 (0 for no, 1 for yes)"
-            "\n    arg 5) f0 Method: harvest (pm, harvest, dio, crepe)"
-            "\n    arg 6) Crepe hop length: 128"
-            "\n    arg 7) Version for pre-trained models: v2 (use either v1 or v2)\n"
-            "\nExample: mi-test 0 24 1 harvest 128 v2"
-        )
+        print("    arg 1) Model folder name in ./logs: mi-test")
+        print("    arg 2) Gpu card slot: 0 (0-1-2 if using 3 GPUs)")
+        print("    arg 3) Number of CPU threads to use: 8")
+        print("    arg 4) Has Pitch Guidance?: 1 (0 for no, 1 for yes)")
+        print("    arg 5) f0 Method: harvest (pm, harvest, dio, crepe)")
+        print("    arg 6) Crepe hop length: 128")
+        print("    arg 7) Version for pre-trained models: v2 (use either v1 or v2)\n")
+        print("Example: mi-test 0 24 1 harvest 128 v2")
     elif cli_current_page == "TRAIN":
-        print(
-            "\n    arg 1) Model folder name in ./logs: mi-test"
-            "\n    arg 2) Sample rate: 40k (32k, 40k, 48k)"
-            "\n    arg 3) Has Pitch Guidance?: 1 (0 for no, 1 for yes)"
-            "\n    arg 4) speaker id: 0"
-            "\n    arg 5) Save epoch iteration: 50"
-            "\n    arg 6) Total epochs: 10000"
-            "\n    arg 7) Batch size: 8"
-            "\n    arg 8) Gpu card slot: 0 (0-1-2 if using 3 GPUs)"
-            "\n    arg 9) Save only the latest checkpoint: 0 (0 for no, 1 for yes)"
-            "\n    arg 10) Whether to cache training set to vram: 0 (0 for no, 1 for yes)"
-            "\n    arg 11) Save extracted small model every generation?: 0 (0 for no, 1 for yes)"
-            "\n    arg 12) Model architecture version: v2 (use either v1 or v2)\n"
-            "\nExample: mi-test 40k 1 0 50 10000 8 0 0 0 0 v2"
-        )
+        print("    arg 1) Model folder name in ./logs: mi-test")
+        print("    arg 2) Sample rate: 40k (32k, 40k, 48k)")
+        print("    arg 3) Has Pitch Guidance?: 1 (0 for no, 1 for yes)")
+        print("    arg 4) speaker id: 0")
+        print("    arg 5) Save epoch iteration: 50")
+        print("    arg 6) Total epochs: 10000")
+        print("    arg 7) Batch size: 8")
+        print("    arg 8) Gpu card slot: 0 (0-1-2 if using 3 GPUs)")
+        print("    arg 9) Save only the latest checkpoint: 0 (0 for no, 1 for yes)")
+        print("    arg 10) Whether to cache training set to vram: 0 (0 for no, 1 for yes)")
+        print("    arg 11) Save extracted small model every generation?: 0 (0 for no, 1 for yes)")
+        print("    arg 12) Model architecture version: v2 (use either v1 or v2)\n")
+        print("Example: mi-test 40k 1 0 50 10000 8 0 0 0 0 v2")
     elif cli_current_page == "TRAIN-FEATURE":
-        print(
-            "\n    arg 1) Model folder name in ./logs: mi-test"
-            "\n    arg 2) Model architecture version: v2 (use either v1 or v2)\n"
-            "\nExample: mi-test v2"
-        )
+        print("    arg 1) Model folder name in ./logs: mi-test")
+        print("    arg 2) Model architecture version: v2 (use either v1 or v2)\n")
+        print("Example: mi-test v2")
     elif cli_current_page == "EXTRACT-MODEL":
-        print(
-            "\n    arg 1) Model Path: logs/mi-test/G_168000.pth"
-            "\n    arg 2) Model save name: MyModel"
-            "\n    arg 3) Sample rate: 40k (32k, 40k, 48k)"
-            "\n    arg 4) Has Pitch Guidance?: 1 (0 for no, 1 for yes)"
-            '\n    arg 5) Model information: "My Model"'
-            "\n    arg 6) Model architecture version: v2 (use either v1 or v2)\n"
-            '\nExample: logs/mi-test/G_168000.pth MyModel 40k 1 "Created by Cole Mangio" v2'
-        )
+        print("    arg 1) Model Path: logs/mi-test/G_168000.pth")
+        print("    arg 2) Model save name: MyModel")
+        print("    arg 3) Sample rate: 40k (32k, 40k, 48k)")
+        print("    arg 4) Has Pitch Guidance?: 1 (0 for no, 1 for yes)")
+        print('    arg 5) Model information: "My Model"')
+        print("    arg 6) Model architecture version: v2 (use either v1 or v2)\n")
+        print('Example: logs/mi-test/G_168000.pth MyModel 40k 1 "Created by Cole Mangio" v2')
+    print("")
 
 def change_page(page):
     global cli_current_page
@@ -1861,7 +1810,7 @@ def execute_command(com):
 
 def cli_navigation_loop():
     while True:
-        print("\nYou are currently in '%s':" % cli_current_page)
+        print("You are currently in '%s':" % cli_current_page)
         print_page_details()
         command = input("%s: " % cli_current_page)
         try:
@@ -1906,11 +1855,11 @@ def match_index(sid0):
             if filename.endswith(".index"):
                 for i in range(len(indexes_list)):
                     if indexes_list[i] == (os.path.join(("./logs/" + folder), filename).replace('\\','/')):
-                        #print('regular index found')
+                        print('regular index found')
                         break
                     else:
                         if indexes_list[i] == (os.path.join(("./logs/" + folder.lower()), filename).replace('\\','/')):
-                            #print('lowered index found')
+                            print('lowered index found')
                             parent_dir = "./logs/" + folder.lower()
                             break
                         #elif (indexes_list[i]).casefold() == ((os.path.join(("./logs/" + folder), filename).replace('\\','/')).casefold()):
@@ -1939,11 +1888,17 @@ def match_index(sid0):
         #print('nothing found')
         return ('', '')
 
+def choveraudio():
+    return ''
+
+
 def stoptraining(mim): 
     if int(mim) == 1:
         
-        cursor.execute("INSERT INTO stop_train (stop) VALUES (?)", (True,))
-        conn.commit()
+        with open("stop.txt", "w+") as tostops:
+
+            
+            tostops.writelines('stop')
         #p.terminate()
         #p.kill()
         try:
@@ -1966,7 +1921,7 @@ def whethercrepeornah(radio):
     return ({"visible": mango, "__type__": "update"})
 
 
-#Change your Gradio Theme here. 👇 👇 👇 👇 Example: " theme='HaleyCH/HaleyCH_Theme' "
+#Change your Gradio Theme here. 👇 👇 👇 👇
 with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
     gr.HTML("<h1> The Mangio-RVC-Fork 💻 </h1>")
     gr.Markdown(
@@ -2022,10 +1977,10 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                         input_audio1 = gr.Dropdown(
                             label=i18n("Auto detect audio path and select from the dropdown:"),
                             choices=sorted(audio_paths),
-                            value='',
+                            value=get_audios(),
                             interactive=True,
                         )
-                        input_audio1.change(fn=lambda:'',inputs=[],outputs=[input_audio0])
+                        input_audio1.change(fn=choveraudio,inputs=[],outputs=[input_audio0])
                         f0method0 = gr.Radio(
                             label=i18n(
                                 "选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比,crepe效果好但吃GPU"
@@ -2113,8 +2068,8 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             interactive=True,
                         )
                         formanting = gr.Checkbox(
-                            value=bool(DoFormant),
-                            label="[EXPERIMENTAL] Formant shift inference audio",
+                            value=False,
+                            label="[EXPERIMENTAL, WAV ONLY] Formant shift inference audio",
                             info="Used for male to female and vice-versa conversions",
                             interactive=True,
                             visible=True,
@@ -2124,14 +2079,11 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             value='',
                             choices=get_fshift_presets(),
                             label="browse presets for formanting",
-                            visible=bool(DoFormant),
+                            visible=False,
                         )
-                        
-                        formant_refresh_button = gr.Button(
-                            value='\U0001f504',
-                            visible=bool(DoFormant),
-                            variant='primary',
-                        )
+                        formant_refresh_button = gr.Button(value='\U0001f504', visible=False,variant='primary')
+                        #formant_refresh_button = ToolButton( elem_id='1')
+                        #create_refresh_button(formant_preset, lambda: {"choices": formant_preset}, "refresh_list_shiftpresets")
                         
                         qfrency = gr.Slider(
                                 value=Quefrency,
@@ -2140,10 +2092,9 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                                 minimum=0.0,
                                 maximum=16.0,
                                 step=0.1,
-                                visible=bool(DoFormant),
+                                visible=False,
                                 interactive=True,
-                        )
-                            
+                            )
                         tmbre = gr.Slider(
                             value=Timbre,
                             info="Default value is 1.0",
@@ -2151,12 +2102,12 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             minimum=0.0,
                             maximum=16.0,
                             step=0.1,
-                            visible=bool(DoFormant),
+                            visible=False,
                             interactive=True,
                         )
                         
                         formant_preset.change(fn=preset_apply, inputs=[formant_preset, qfrency, tmbre], outputs=[qfrency, tmbre])
-                        frmntbut = gr.Button("Apply", variant="primary", visible=bool(DoFormant))
+                        frmntbut = gr.Button("Apply", variant="primary", visible=False)
                         formanting.change(fn=formant_enabled,inputs=[formanting,qfrency,tmbre,frmntbut,formant_preset,formant_refresh_button],outputs=[formanting,qfrency,tmbre,frmntbut,formant_preset,formant_refresh_button])
                         frmntbut.click(fn=formant_apply,inputs=[qfrency, tmbre], outputs=[qfrency, tmbre])
                         formant_refresh_button.click(fn=update_fshift_presets,inputs=[formant_preset, qfrency, tmbre],outputs=[formant_preset, qfrency, tmbre])
@@ -2291,7 +2242,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                     but1.click(
                         vc_multi,
                         [
-                            spk_item,
+                            sid0,
                             dir_input,
                             opt_input,
                             inputs,
@@ -2469,7 +2420,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                         
                         f0method8.change(fn=whethercrepeornah, inputs=[f0method8], outputs=[extraction_crepe_hop_length])
                     but2 = gr.Button(i18n("特征提取"), variant="primary")
-                    info2 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8, interactive=False)
+                    info2 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8)
                     but2.click(
                         extract_f0_feature,
                         [gpus6, np7, f0method8, if_f0_3, exp_dir1, version19, extraction_crepe_hop_length],
@@ -2504,7 +2455,8 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                         interactive=True,
                     )
                     if_save_latest13 = gr.Checkbox(
-                        label="Whether to save only the latest .ckpt file to save hard drive space",
+                        label="Whether to save only the latest .ckpt file to save hard disk space",
+                        
                         value=True,
                         interactive=True,
                     )
