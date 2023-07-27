@@ -1,3 +1,10 @@
+# 7/26 Changelog:
+- Fixed the cli inferencing traceback.
+- SQL Databases implemented for formanting training stop.
+- Gradio browser tab renamed to `Mangio-RVC-Web 💻`.
+- Rudimentary functions from `infer-web.py` removed.
+- Formanting now accepts any audio format, as long as it is supported by FFmpeg.
+
 # 7/25 Changelog:
 - Better MacOS installation script. For inference, all that needs to be done is running the `run.sh` from the extracted zip folder, where it will install Python 3.8, Homebrew, and other dependencies for you automatically. M1 Macs are natively supported for GPU acceleration, and training should work if you choose to download the pretrained models.
 
