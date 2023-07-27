@@ -4,12 +4,19 @@ import numpy as np
 # import praatio
 # import praatio.praat_scripts
 import os
+import sys
+
 import random
 
 import sqlite3
 
+platform_stft_mapping = {
+    'linux': 'stftpitchshift',
+    'darwin': 'stftpitchshift',
+    'win32': 'stftpitchshift.exe',
+}
 
-
+stft = platform_stft_mapping.get(sys.platform)
 # praatEXE = join('.',os.path.abspath(os.getcwd()) + r"\Praat.exe")
 
 
@@ -60,8 +67,8 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
             
             
             os.system(
-                'stftpitchshift.exe -i "%s" -q "%s" -t "%s" -o "%sFORMANTED_%s.wav"'
-                % (file_formanted, Quefrency, Timbre, file_formanted, str(numerator))
+                '%s -i "%s" -q "%s" -t "%s" -o "%sFORMANTED_%s.wav"'
+                % (stft, file_formanted, Quefrency, Timbre, file_formanted, str(numerator))
             )
             
             
