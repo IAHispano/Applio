@@ -95,8 +95,9 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
     except Exception as e:
         raise RuntimeError(f"Failed to load audio: {e}")
     
-    try: os.remove("%sFORMANTED_%s.wav" % (file_formanted, str(numerator)))
-    except Exception: pass; print("couldn't remove formanted type of file")
+    if DoFormant:
+        try: os.remove("%sFORMANTED_%s.wav" % (file_formanted, str(numerator)))
+        except Exception: pass; print("couldn't remove formanted type of file")
     
     if converted:
         try: os.remove(file_formanted)
