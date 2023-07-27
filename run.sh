@@ -69,6 +69,18 @@ fi
 if ! command -v brew &> /dev/null; then
   echo "Homebrew still not found. Attempting to install..."
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  
+  # Check again if Homebrew is in PATH
+  if ! command -v brew &> /dev/null; then
+    echo "Homebrew not found in PATH even after installation. Checking common paths again..."
+    for path in "${BREW_PATHS[@]}"; do
+      if [[ -x "$path/brew" ]]; then
+        echo "Found post-install homebrew, adding to PATH...."
+        add_to_path "$path"
+        break
+      fi
+    done
+  fi
 fi
 
 # Verifying if Homebrew has been installed successfully
