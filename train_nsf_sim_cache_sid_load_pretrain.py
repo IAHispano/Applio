@@ -33,7 +33,7 @@ from data_utils import (
     DistributedBucketSampler,
 )
 
-import sqlite3
+import csv
 
 if hps.version == "v1":
     from lib.infer_pack.models import (
@@ -354,9 +354,6 @@ def train_and_evaluate(
     # Run steps
     epoch_recorder = EpochRecorder()
     
-    conn = sqlite3.connect('TEMP/db:cachedb?mode=memory&cache=shared', check_same_thread=False)
-    cursor = conn.cursor()
-    
     for batch_idx, info in data_iterator:
         # Data
         ## Unpack
@@ -576,8 +573,15 @@ def train_and_evaluate(
                 )
             )
     
-    cursor.execute("SELECT stop FROM stop_train LIMIT 1")
-    if bool(cursor.fetchone()) == True:
+    try:
+        with open('csvdb/stop.csv') as CSVStop:
+            csv_reader = list(csv.reader(CSVStop))
+            stopbtn = csv_reader[0][0] if csv_reader is not None else (lambda: exec('raise ValueError("No data")'))()
+            stopbtn = (lambda stopbtn: True if stopbtn.lower() == 'true' else (False if stopbtn.lower() == 'false' else stopbtn))(stopbtn)
+    except (ValueError, TypeError, IndexError):
+        stopbtn = False
+            
+    if stopbtn:
         logger.info("Stop Button was pressed. The program is closed.")
         if hasattr(net_g, "module"):
             ckpt = net_g.module.state_dict()
@@ -598,9 +602,9 @@ def train_and_evaluate(
             )
         )
         sleep(1)
-        cursor.execute("DELETE FROM stop_train")
-        conn.commit()
-        conn.close()
+        with open('csvdb/stop.csv', 'w+', newline='') as STOPCSVwrite:
+            csv_writer = csv.writer(STOPCSVwrite, delimiter=',')
+            csv_writer.writerow(['False'])
         os._exit(2333333)
 
     if rank == 0:
@@ -621,9 +625,9 @@ def train_and_evaluate(
             )
         )
         sleep(1)
-        cursor.execute("DELETE FROM stop_train")
-        conn.commit()
-        conn.close()
+        with open('csvdb/stop.csv', 'w+', newline='') as STOPCSVwrite:
+            csv_writer = csv.writer(STOPCSVwrite, delimiter=',')
+            csv_writer.writerow(['False'])
         os._exit(2333333)
         
 

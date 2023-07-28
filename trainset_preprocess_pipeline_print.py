@@ -18,8 +18,8 @@ from my_utils import load_audio
 import tqdm
 
 DoFormant = False
-Quefrency = 0.0
-Timbre = 0.0
+Quefrency = 1.0
+Timbre = 1.0
 
 mutex = multiprocessing.Lock()
 f = open("%s/preprocess.log" % exp_dir, "a+")
@@ -45,7 +45,7 @@ class PreProcess:
         )
         self.sr = sr
         self.bh, self.ah = signal.butter(N=5, Wn=48, btype="high", fs=self.sr)
-        self.per = 3.0
+        self.per = 3.7
         self.overlap = 0.3
         self.tail = self.per + self.overlap
         self.max = 0.9
