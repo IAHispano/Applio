@@ -22,6 +22,7 @@ DoFormant = False
 Quefrency = 0.0
 Timbre = 0.0
 
+
 def printt(strr):
     print(strr)
     f.write("%s\n" % strr)
