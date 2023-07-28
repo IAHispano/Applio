@@ -256,7 +256,6 @@ def run(rank, n_gpus, hps):
 def train_and_evaluate(
     rank, epoch, hps, nets, optims, schedulers, scaler, loaders, logger, writers, cache
 ):
-    
     net_g, net_d = nets
     optim_g, optim_d = optims
     train_loader, eval_loader = loaders
@@ -353,7 +352,7 @@ def train_and_evaluate(
 
     # Run steps
     epoch_recorder = EpochRecorder()
-    
+
     for batch_idx, info in data_iterator:
         # Data
         ## Unpack
@@ -572,15 +571,23 @@ def train_and_evaluate(
                     ),
                 )
             )
-    
+
     try:
-        with open('csvdb/stop.csv') as CSVStop:
+        with open("csvdb/stop.csv") as CSVStop:
             csv_reader = list(csv.reader(CSVStop))
-            stopbtn = csv_reader[0][0] if csv_reader is not None else (lambda: exec('raise ValueError("No data")'))()
-            stopbtn = (lambda stopbtn: True if stopbtn.lower() == 'true' else (False if stopbtn.lower() == 'false' else stopbtn))(stopbtn)
+            stopbtn = (
+                csv_reader[0][0]
+                if csv_reader is not None
+                else (lambda: exec('raise ValueError("No data")'))()
+            )
+            stopbtn = (
+                lambda stopbtn: True
+                if stopbtn.lower() == "true"
+                else (False if stopbtn.lower() == "false" else stopbtn)
+            )(stopbtn)
     except (ValueError, TypeError, IndexError):
         stopbtn = False
-            
+
     if stopbtn:
         logger.info("Stop Button was pressed. The program is closed.")
         if hasattr(net_g, "module"):
@@ -602,9 +609,9 @@ def train_and_evaluate(
             )
         )
         sleep(1)
-        with open('csvdb/stop.csv', 'w+', newline='') as STOPCSVwrite:
-            csv_writer = csv.writer(STOPCSVwrite, delimiter=',')
-            csv_writer.writerow(['False'])
+        with open("csvdb/stop.csv", "w+", newline="") as STOPCSVwrite:
+            csv_writer = csv.writer(STOPCSVwrite, delimiter=",")
+            csv_writer.writerow(["False"])
         os._exit(2333333)
 
     if rank == 0:
@@ -625,11 +632,10 @@ def train_and_evaluate(
             )
         )
         sleep(1)
-        with open('csvdb/stop.csv', 'w+', newline='') as STOPCSVwrite:
-            csv_writer = csv.writer(STOPCSVwrite, delimiter=',')
-            csv_writer.writerow(['False'])
+        with open("csvdb/stop.csv", "w+", newline="") as STOPCSVwrite:
+            csv_writer = csv.writer(STOPCSVwrite, delimiter=",")
+            csv_writer.writerow(["False"])
         os._exit(2333333)
-        
 
 
 if __name__ == "__main__":

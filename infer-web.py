@@ -14,6 +14,7 @@ import warnings
 import numpy as np
 import torch
 import re
+
 os.environ["OPENBLAS_NUM_THREADS"] = "1"
 os.environ["no_proxy"] = "localhost, 127.0.0.1, ::1"
 import logging
@@ -60,23 +61,25 @@ logging.getLogger("numba").setLevel(logging.WARNING)
 
 import csv
 
-if not os.path.isdir('csvdb/'):
-    os.makedirs('csvdb')
-    frmnt, stp = open("csvdb/formanting.csv", 'w'), open("csvdb/stop.csv", 'w')
+if not os.path.isdir("csvdb/"):
+    os.makedirs("csvdb")
+    frmnt, stp = open("csvdb/formanting.csv", "w"), open("csvdb/stop.csv", "w")
     frmnt.close()
     stp.close()
 
 global DoFormant, Quefrency, Timbre
 
 try:
-    DoFormant, Quefrency, Timbre = CSVutil('csvdb/formanting.csv', 'r', 'formanting')
+    DoFormant, Quefrency, Timbre = CSVutil("csvdb/formanting.csv", "r", "formanting")
     DoFormant = (
-        lambda DoFormant: True if DoFormant.lower() == 'true' else (False if DoFormant.lower() == 'false' else DoFormant)
+        lambda DoFormant: True
+        if DoFormant.lower() == "true"
+        else (False if DoFormant.lower() == "false" else DoFormant)
     )(DoFormant)
 except (ValueError, TypeError, IndexError):
     DoFormant, Quefrency, Timbre = False, 1.0, 1.0
-    CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, Quefrency, Timbre)
-    
+    CSVutil("csvdb/formanting.csv", "w+", "formanting", DoFormant, Quefrency, Timbre)
+
 config = Config()
 i18n = I18nAuto()
 i18n.print()
@@ -137,7 +140,6 @@ gpus = "-".join([i[0] for i in gpu_infos])
 hubert_model = None
 
 
-
 def load_hubert():
     global hubert_model
     models, _, _ = checkpoint_utils.load_model_ensemble_and_task(
@@ -164,66 +166,71 @@ for name in os.listdir(weight_root):
 index_paths = []
 
 global indexes_list
-indexes_list=[]
+indexes_list = []
 
 audio_paths = []
 for root, dirs, files in os.walk(index_root, topdown=False):
     for name in files:
         if name.endswith(".index") and "trained" not in name:
             index_paths.append("%s\\%s" % (root, name))
-            
+
 for root, dirs, files in os.walk(audio_root, topdown=False):
     for name in files:
-        
         audio_paths.append("%s/%s" % (root, name))
-            
+
 uvr5_names = []
 for name in os.listdir(weight_uvr5_root):
     if name.endswith(".pth") or "onnx" in name:
         uvr5_names.append(name.replace(".pth", ""))
 
+
 def check_for_name():
     if len(names) > 0:
         return sorted(names)[0]
     else:
-        return ''
+        return ""
+
 
 def get_index():
-    if check_for_name() != '':
-        chosen_model=sorted(names)[0].split(".")[0]
-        logs_path="./logs/"+chosen_model
+    if check_for_name() != "":
+        chosen_model = sorted(names)[0].split(".")[0]
+        logs_path = "./logs/" + chosen_model
         if os.path.exists(logs_path):
             for file in os.listdir(logs_path):
                 if file.endswith(".index"):
-                    return os.path.join(logs_path, file).replace('\\','/')
-            return ''
+                    return os.path.join(logs_path, file).replace("\\", "/")
+            return ""
         else:
-            return ''
+            return ""
+
 
 def get_indexes():
     for dirpath, dirnames, filenames in os.walk("./logs/"):
         for filename in filenames:
             if filename.endswith(".index") and "trained" not in filename:
-                indexes_list.append(os.path.join(dirpath,filename).replace('\\','/'))
+                indexes_list.append(os.path.join(dirpath, filename).replace("\\", "/"))
     if len(indexes_list) > 0:
         return indexes_list
     else:
-        return ''
+        return ""
+
 
 fshift_presets_list = []
+
 
 def get_fshift_presets():
     fshift_presets_list = []
     for dirpath, dirnames, filenames in os.walk("./formantshiftcfg/"):
         for filename in filenames:
             if filename.endswith(".txt"):
-                fshift_presets_list.append(os.path.join(dirpath,filename).replace('\\','/'))
-                
+                fshift_presets_list.append(
+                    os.path.join(dirpath, filename).replace("\\", "/")
+                )
+
     if len(fshift_presets_list) > 0:
         return fshift_presets_list
     else:
-        return ''
-
+        return ""
 
 
 def vc_single(
@@ -248,12 +255,12 @@ def vc_single(
         return "You need to upload an audio", None
     f0_up_key = int(f0_up_key)
     try:
-        if input_audio_path0 == '':
+        if input_audio_path0 == "":
             audio = load_audio(input_audio_path1, 16000, DoFormant, Quefrency, Timbre)
-            
+
         else:
             audio = load_audio(input_audio_path0, 16000, DoFormant, Quefrency, Timbre)
-            
+
         audio_max = np.abs(audio).max() / 0.95
         if audio_max > 1:
             audio /= audio_max
@@ -366,7 +373,7 @@ def vc_multi(
                 resample_sr,
                 rms_mix_rate,
                 protect,
-                crepe_hop_length
+                crepe_hop_length,
             )
             if "Success" in info:
                 try:
@@ -510,7 +517,11 @@ def get_vc(sid, to_return_protect0, to_return_protect1):
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
             cpt = None
-        return ({"visible": False, "__type__": "update"}, {"visible": False, "__type__": "update"}, {"visible": False, "__type__": "update"})
+        return (
+            {"visible": False, "__type__": "update"},
+            {"visible": False, "__type__": "update"},
+            {"visible": False, "__type__": "update"},
+        )
     person = "%s/%s" % (weight_root, sid)
     print("loading %s" % person)
     cpt = torch.load(person, map_location="cpu")
@@ -568,19 +579,23 @@ def change_choices():
             names.append(name)
     index_paths = []
     audio_paths = []
-    audios_path=os.path.abspath(os.getcwd()) + "/audios/"
+    audios_path = os.path.abspath(os.getcwd()) + "/audios/"
     for root, dirs, files in os.walk(index_root, topdown=False):
         for name in files:
             if name.endswith(".index") and "trained" not in name:
                 index_paths.append("%s/%s" % (root, name))
     for file in os.listdir(audios_path):
-                audio_paths.append("%s/%s" % (audio_root, file))
-    return {"choices": sorted(names), "__type__": "update"}, {"choices": sorted(index_paths), "__type__": "update"}, {"choices": sorted(audio_paths), "__type__": "update"}
+        audio_paths.append("%s/%s" % (audio_root, file))
+    return (
+        {"choices": sorted(names), "__type__": "update"},
+        {"choices": sorted(index_paths), "__type__": "update"},
+        {"choices": sorted(audio_paths), "__type__": "update"},
+    )
 
 
 def clean():
-    return ({"value": "", "__type__": "update"})
-    
+    return {"value": "", "__type__": "update"}
+
 
 sr_dict = {
     "32k": 32000,
@@ -612,14 +627,16 @@ def if_done_multi(done, ps):
             break
     done[0] = True
 
-def formant_enabled(cbox, qfrency, tmbre, frmntapply, formantpreset, formant_refresh_button):
-    if (cbox):
 
+def formant_enabled(
+    cbox, qfrency, tmbre, frmntapply, formantpreset, formant_refresh_button
+):
+    if cbox:
         DoFormant = True
-        CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, qfrency, tmbre)
-        
-        #print(f"is checked? - {cbox}\ngot {DoFormant}")
-        
+        CSVutil("csvdb/formanting.csv", "w+", "formanting", DoFormant, qfrency, tmbre)
+
+        # print(f"is checked? - {cbox}\ngot {DoFormant}")
+
         return (
             {"value": True, "__type__": "update"},
             {"visible": True, "__type__": "update"},
@@ -628,14 +645,12 @@ def formant_enabled(cbox, qfrency, tmbre, frmntapply, formantpreset, formant_ref
             {"visible": True, "__type__": "update"},
             {"visible": True, "__type__": "update"},
         )
-        
-        
+
     else:
-        
         DoFormant = False
-        CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, qfrency, tmbre)
-        
-        #print(f"is checked? - {cbox}\ngot {DoFormant}")
+        CSVutil("csvdb/formanting.csv", "w+", "formanting", DoFormant, qfrency, tmbre)
+
+        # print(f"is checked? - {cbox}\ngot {DoFormant}")
         return (
             {"value": False, "__type__": "update"},
             {"visible": False, "__type__": "update"},
@@ -645,25 +660,28 @@ def formant_enabled(cbox, qfrency, tmbre, frmntapply, formantpreset, formant_ref
             {"visible": False, "__type__": "update"},
             {"visible": False, "__type__": "update"},
         )
-        
+
 
 def formant_apply(qfrency, tmbre):
     Quefrency = qfrency
     Timbre = tmbre
     DoFormant = True
-    CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, qfrency, tmbre)
+    CSVutil("csvdb/formanting.csv", "w+", "formanting", DoFormant, qfrency, tmbre)
 
-    return ({"value": Quefrency, "__type__": "update"}, {"value": Timbre, "__type__": "update"})
+    return (
+        {"value": Quefrency, "__type__": "update"},
+        {"value": Timbre, "__type__": "update"},
+    )
+
 
 def update_fshift_presets(preset, qfrency, tmbre):
-    
     qfrency, tmbre = preset_apply(preset, qfrency, tmbre)
-    
-    if (str(preset) != ''):
-        with open(str(preset), 'r') as p:
+
+    if str(preset) != "":
+        with open(str(preset), "r") as p:
             content = p.readlines()
-            qfrency, tmbre = content[0].split('\n')[0], content[1]
-            
+            qfrency, tmbre = content[0].split("\n")[0], content[1]
+
             formant_apply(qfrency, tmbre)
     else:
         pass
@@ -861,7 +879,17 @@ def change_version19(sr2, if_f0_3, version19):
     )
 
 
-def change_f0(if_f0_3, sr2, version19, step2b, gpus6, gpu_info9, extraction_crepe_hop_length, but2, info2):  # f0method8,pretrained_G14,pretrained_D15
+def change_f0(
+    if_f0_3,
+    sr2,
+    version19,
+    step2b,
+    gpus6,
+    gpu_info9,
+    extraction_crepe_hop_length,
+    but2,
+    info2,
+):  # f0method8,pretrained_G14,pretrained_D15
     path_str = "" if version19 == "v1" else "_v2"
     if_pretrained_generator_exist = os.access(
         "pretrained%s/f0G%s.pth" % (path_str, sr2), os.F_OK
@@ -879,7 +907,7 @@ def change_f0(if_f0_3, sr2, version19, step2b, gpus6, gpu_info9, extraction_crep
             "pretrained%s/f0D%s.pth" % (path_str, sr2),
             "not exist, will not use pretrained model",
         )
-    
+
     if if_f0_3:
         return (
             {"visible": True, "__type__": "update"},
@@ -896,7 +924,7 @@ def change_f0(if_f0_3, sr2, version19, step2b, gpus6, gpu_info9, extraction_crep
             {"visible": True, "__type__": "update"},
             {"visible": True, "__type__": "update"},
         )
-        
+
     return (
         {"visible": False, "__type__": "update"},
         ("pretrained%s/G%s.pth" % (path_str, sr2))
@@ -950,7 +978,7 @@ def click_train(
     if_save_every_weights18,
     version19,
 ):
-    CSVutil('csvdb/stop.csv', 'w+', 'formanting', False)
+    CSVutil("csvdb/stop.csv", "w+", "formanting", False)
     # 生成filelist
     exp_dir = "%s/logs/%s" % (now_dir, exp_dir1)
     os.makedirs(exp_dir, exist_ok=True)
@@ -1077,7 +1105,11 @@ def click_train(
     PID = p.pid
 
     p.wait()
-    return ("训练结束, 您可查看控制台训练日志或实验文件夹下的train.log", {"visible": False, "__type__": "update"}, {"visible": True, "__type__": "update"})
+    return (
+        "训练结束, 您可查看控制台训练日志或实验文件夹下的train.log",
+        {"visible": False, "__type__": "update"},
+        {"visible": True, "__type__": "update"},
+    )
 
 
 # but4.click(train_index, [exp_dir1], info3)
@@ -1160,10 +1192,12 @@ def train_index(exp_dir1, version19):
     # infos.append("成功构建索引，added_IVF%s_Flat_FastScan_%s.index"%(n_ivf,version19))
     yield "\n".join(infos)
 
-#def setBoolean(status): #true to false and vice versa / not implemented yet, dont touch!!!!!!!
+
+# def setBoolean(status): #true to false and vice versa / not implemented yet, dont touch!!!!!!!
 #    status = not status
 #    return status
-    
+
+
 # but5.click(train1key, [exp_dir1, sr2, if_f0_3, trainset_dir4, spk_id5, gpus6, np7, f0method8, save_epoch10, total_epoch11, batch_size12, if_save_latest13, pretrained_G14, pretrained_D15, gpus16, if_cache_gpu17], info3)
 def train1key(
     exp_dir1,
@@ -1183,7 +1217,7 @@ def train1key(
     if_cache_gpu17,
     if_save_every_weights18,
     version19,
-    echl
+    echl,
 ):
     infos = []
 
@@ -1224,7 +1258,7 @@ def train1key(
             model_log_dir,
             np7,
             f0method8,
-            echl
+            echl,
         )
         yield get_info_str(cmd)
         p = Popen(cmd, shell=True, cwd=now_dir)
@@ -1456,7 +1490,6 @@ def export_onnx(ModelPath, ExportedPath):
 
     device = "cpu"  # 导出时设备（不影响使用模型）
 
-
     net_g = SynthesizerTrnMsNSFsidM(
         *cpt["config"], is_half=False, version=cpt.get("version", "v1")
     )  # fp32导出（C++要支持fp16必须手动将内存重新排列所以暂时不用fp16）
@@ -1492,11 +1525,12 @@ def export_onnx(ModelPath, ExportedPath):
     return "Finished"
 
 
-#region Mangio-RVC-Fork CLI App
+# region Mangio-RVC-Fork CLI App
 import re as regex
 import scipy.io.wavfile as wavfile
 
 cli_current_page = "HOME"
+
 
 def cli_split_command(com):
     exp = r'(?:(?<=\s)|^)"(.*?)"(?=\s|$)|(\S+)'
@@ -1504,8 +1538,11 @@ def cli_split_command(com):
     split_array = [group[0] if group[0] else group[1] for group in split_array]
     return split_array
 
+
 def execute_generator_function(genObject):
-    for _ in genObject: pass
+    for _ in genObject:
+        pass
+
 
 def cli_infer(com):
     # get VC first
@@ -1514,7 +1551,7 @@ def cli_infer(com):
     source_audio_path = com[1]
     output_file_name = com[2]
     feature_index_path = com[3]
-    f0_file = None # Not Implemented Yet
+    f0_file = None  # Not Implemented Yet
 
     # Get parameters for inference
     speaker_id = int(com[4])
@@ -1527,19 +1564,23 @@ def cli_infer(com):
     feature_ratio = float(com[11])
     protection_amnt = float(com[12])
     protect1 = 0.5
-    
-    if com[14] == 'False' or com[14] == 'false':
+
+    if com[14] == "False" or com[14] == "false":
         DoFormant = False
         Quefrency = 0.0
         Timbre = 0.0
-        CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, Quefrency, Timbre)
-        
+        CSVutil(
+            "csvdb/formanting.csv", "w+", "formanting", DoFormant, Quefrency, Timbre
+        )
+
     else:
         DoFormant = True
         Quefrency = float(com[15])
         Timbre = float(com[16])
-        CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, Quefrency, Timbre)
-        
+        CSVutil(
+            "csvdb/formanting.csv", "w+", "formanting", DoFormant, Quefrency, Timbre
+        )
+
     print("Mangio-RVC-Fork Infer-CLI: Starting the inference...")
     vc_data = get_vc(model_name, protection_amnt, protect1)
     print(vc_data)
@@ -1558,15 +1599,26 @@ def cli_infer(com):
         resample,
         mix,
         protection_amnt,
-        crepe_hop_length,        
+        crepe_hop_length,
     )
     if "Success." in conversion_data[0]:
-        print("Mangio-RVC-Fork Infer-CLI: Inference succeeded. Writing to %s/%s..." % ('audio-outputs', output_file_name))
-        wavfile.write('%s/%s' % ('audio-outputs', output_file_name), conversion_data[1][0], conversion_data[1][1])
-        print("Mangio-RVC-Fork Infer-CLI: Finished! Saved output to %s/%s" % ('audio-outputs', output_file_name))
+        print(
+            "Mangio-RVC-Fork Infer-CLI: Inference succeeded. Writing to %s/%s..."
+            % ("audio-outputs", output_file_name)
+        )
+        wavfile.write(
+            "%s/%s" % ("audio-outputs", output_file_name),
+            conversion_data[1][0],
+            conversion_data[1][1],
+        )
+        print(
+            "Mangio-RVC-Fork Infer-CLI: Finished! Saved output to %s/%s"
+            % ("audio-outputs", output_file_name)
+        )
     else:
         print("Mangio-RVC-Fork Infer-CLI: Inference failed. Here's the traceback: ")
         print(conversion_data[0])
+
 
 def cli_pre_process(com):
     com = cli_split_command(com)
@@ -1577,13 +1629,11 @@ def cli_pre_process(com):
 
     print("Mangio-RVC-Fork Pre-process: Starting...")
     generator = preprocess_dataset(
-        trainset_directory, 
-        model_name, 
-        sample_rate, 
-        num_processes
+        trainset_directory, model_name, sample_rate, num_processes
     )
     execute_generator_function(generator)
     print("Mangio-RVC-Fork Pre-process: Finished")
+
 
 def cli_extract_feature(com):
     com = cli_split_command(com)
@@ -1593,22 +1643,23 @@ def cli_extract_feature(com):
     has_pitch_guidance = True if (int(com[3]) == 1) else False
     f0_method = com[4]
     crepe_hop_length = int(com[5])
-    version = com[6] # v1 or v2
-    
+    version = com[6]  # v1 or v2
+
     print("Mangio-RVC-CLI: Extract Feature Has Pitch: " + str(has_pitch_guidance))
     print("Mangio-RVC-CLI: Extract Feature Version: " + str(version))
     print("Mangio-RVC-Fork Feature Extraction: Starting...")
     generator = extract_f0_feature(
-        gpus, 
-        num_processes, 
-        f0_method, 
-        has_pitch_guidance, 
-        model_name, 
-        version, 
-        crepe_hop_length
+        gpus,
+        num_processes,
+        f0_method,
+        has_pitch_guidance,
+        model_name,
+        version,
+        crepe_hop_length,
     )
     execute_generator_function(generator)
     print("Mangio-RVC-Fork Feature Extraction: Finished")
+
 
 def cli_train(com):
     com = cli_split_command(com)
@@ -1617,7 +1668,7 @@ def cli_train(com):
     has_pitch_guidance = True if (int(com[2]) == 1) else False
     speaker_id = int(com[3])
     save_epoch_iteration = int(com[4])
-    total_epoch = int(com[5]) # 10000
+    total_epoch = int(com[5])  # 10000
     batch_size = int(com[6])
     gpu_card_slot_numbers = com[7]
     if_save_latest = True if (int(com[8]) == 1) else False
@@ -1625,8 +1676,8 @@ def cli_train(com):
     if_save_every_weight = True if (int(com[10]) == 1) else False
     version = com[11]
 
-    pretrained_base = "pretrained/" if version == "v1" else "pretrained_v2/" 
-    
+    pretrained_base = "pretrained/" if version == "v1" else "pretrained_v2/"
+
     g_pretrained_path = "%sf0G%s.pth" % (pretrained_base, sample_rate)
     d_pretrained_path = "%sf0D%s.pth" % (pretrained_base, sample_rate)
 
@@ -1645,20 +1696,19 @@ def cli_train(com):
         gpu_card_slot_numbers,
         if_cache_gpu,
         if_save_every_weight,
-        version
+        version,
     )
+
 
 def cli_train_feature(com):
     com = cli_split_command(com)
     model_name = com[0]
     version = com[1]
     print("Mangio-RVC-Fork Train Feature Index-CLI: Training... Please wait")
-    generator = train_index(
-        model_name,
-        version
-    )
+    generator = train_index(model_name, version)
     execute_generator_function(generator)
     print("Mangio-RVC-Fork Train Feature Index-CLI: Done!")
+
 
 def cli_extract_model(com):
     com = cli_split_command(com)
@@ -1669,29 +1719,28 @@ def cli_extract_model(com):
     info = com[4]
     version = com[5]
     extract_small_model_process = extract_small_model(
-        model_path,
-        save_name,
-        sample_rate,
-        has_pitch_guidance,
-        info,
-        version
+        model_path, save_name, sample_rate, has_pitch_guidance, info, version
     )
     if extract_small_model_process == "Success.":
         print("Mangio-RVC-Fork Extract Small Model: Success!")
     else:
-        print(str(extract_small_model_process))        
+        print(str(extract_small_model_process))
         print("Mangio-RVC-Fork Extract Small Model: Failed!")
 
 
 def preset_apply(preset, qfer, tmbr):
-    if str(preset) != '':
-        with open(str(preset), 'r') as p:
+    if str(preset) != "":
+        with open(str(preset), "r") as p:
             content = p.readlines()
-            qfer, tmbr = content[0].split('\n')[0], content[1]
+            qfer, tmbr = content[0].split("\n")[0], content[1]
             formant_apply(qfer, tmbr)
     else:
         pass
-    return ({"value": qfer, "__type__": "update"}, {"value": tmbr, "__type__": "update"})
+    return (
+        {"value": qfer, "__type__": "update"},
+        {"value": tmbr, "__type__": "update"},
+    )
+
 
 def print_page_details():
     if cli_current_page == "HOME":
@@ -1776,10 +1825,12 @@ def print_page_details():
             '\nExample: logs/mi-test/G_168000.pth MyModel 40k 1 "Created by Cole Mangio" v2'
         )
 
+
 def change_page(page):
     global cli_current_page
     cli_current_page = page
     return 0
+
 
 def execute_command(com):
     if com == "go home":
@@ -1800,7 +1851,7 @@ def execute_command(com):
         if com[:3] == "go ":
             print("page '%s' does not exist!" % com[3:])
             return 0
-    
+
     if cli_current_page == "INFER":
         cli_infer(com)
     elif cli_current_page == "PRE-PROCESS":
@@ -1814,6 +1865,7 @@ def execute_command(com):
     elif cli_current_page == "EXTRACT-MODEL":
         cli_extract_model(com)
 
+
 def cli_navigation_loop():
     while True:
         print("\nYou are currently in '%s':" % cli_current_page)
@@ -1824,82 +1876,95 @@ def cli_navigation_loop():
         except:
             print(traceback.format_exc())
 
-if(config.is_cli):
+
+if config.is_cli:
     print("\n\nMangio-RVC-Fork v2 CLI App!\n")
-    print("Welcome to the CLI version of RVC. Please read the documentation on https://github.com/Mangio621/Mangio-RVC-Fork (README.MD) to understand how to use this app.\n")
+    print(
+        "Welcome to the CLI version of RVC. Please read the documentation on https://github.com/Mangio621/Mangio-RVC-Fork (README.MD) to understand how to use this app.\n"
+    )
     cli_navigation_loop()
 
-#endregion
+# endregion
 
-#region RVC WebUI App
+# region RVC WebUI App
+
 
 def get_presets():
     data = None
-    with open('../inference-presets.json', 'r') as file:
+    with open("../inference-presets.json", "r") as file:
         data = json.load(file)
     preset_names = []
-    for preset in data['presets']:
-        preset_names.append(preset['name'])
-    
+    for preset in data["presets"]:
+        preset_names.append(preset["name"])
+
     return preset_names
 
+
 def stepdisplay(if_save_every_weights):
-    return ({"visible": if_save_every_weights, "__type__": "update"})
+    return {"visible": if_save_every_weights, "__type__": "update"}
+
 
 def match_index(sid0):
     picked = False
-    #folder = sid0.split('.')[0]
-    
-    #folder = re.split(r'. |_', sid0)[0]
-    folder = sid0.split('.')[0].split('_')[0]
-    #folder_test = sid0.split('.')[0].split('_')[0].split('-')[0]
+    # folder = sid0.split('.')[0]
+
+    # folder = re.split(r'. |_', sid0)[0]
+    folder = sid0.split(".")[0].split("_")[0]
+    # folder_test = sid0.split('.')[0].split('_')[0].split('-')[0]
     parent_dir = "./logs/" + folder
-    #print(parent_dir)
+    # print(parent_dir)
     if os.path.exists(parent_dir):
-        #print('path exists')
-        for filename in os.listdir(parent_dir.replace('\\','/')):
+        # print('path exists')
+        for filename in os.listdir(parent_dir.replace("\\", "/")):
             if filename.endswith(".index"):
                 for i in range(len(indexes_list)):
-                    if indexes_list[i] == (os.path.join(("./logs/" + folder), filename).replace('\\','/')):
-                        #print('regular index found')
+                    if indexes_list[i] == (
+                        os.path.join(("./logs/" + folder), filename).replace("\\", "/")
+                    ):
+                        # print('regular index found')
                         break
                     else:
-                        if indexes_list[i] == (os.path.join(("./logs/" + folder.lower()), filename).replace('\\','/')):
-                            #print('lowered index found')
+                        if indexes_list[i] == (
+                            os.path.join(
+                                ("./logs/" + folder.lower()), filename
+                            ).replace("\\", "/")
+                        ):
+                            # print('lowered index found')
                             parent_dir = "./logs/" + folder.lower()
                             break
-                        #elif (indexes_list[i]).casefold() == ((os.path.join(("./logs/" + folder), filename).replace('\\','/')).casefold()):
+                        # elif (indexes_list[i]).casefold() == ((os.path.join(("./logs/" + folder), filename).replace('\\','/')).casefold()):
                         #    print('8')
                         #    parent_dir = "./logs/" + folder.casefold()
                         #    break
-                        #elif (indexes_list[i]) == ((os.path.join(("./logs/" + folder_test), filename).replace('\\','/'))):
+                        # elif (indexes_list[i]) == ((os.path.join(("./logs/" + folder_test), filename).replace('\\','/'))):
                         #    parent_dir = "./logs/" + folder_test
                         #    print(parent_dir)
                         #    break
-                        #elif (indexes_list[i]) == (os.path.join(("./logs/" + folder_test.lower()), filename).replace('\\','/')):
+                        # elif (indexes_list[i]) == (os.path.join(("./logs/" + folder_test.lower()), filename).replace('\\','/')):
                         #    parent_dir = "./logs/" + folder_test
                         #    print(parent_dir)
                         #    break
-                        #else:
+                        # else:
                         #    #print('couldnt find index')
                         #    continue
-                    
-                #print('all done')
-                index_path=os.path.join(parent_dir.replace('\\','/'), filename.replace('\\','/')).replace('\\','/')
-                #print(index_path)
+
+                # print('all done')
+                index_path = os.path.join(
+                    parent_dir.replace("\\", "/"), filename.replace("\\", "/")
+                ).replace("\\", "/")
+                # print(index_path)
                 return (index_path, index_path)
-                
 
     else:
-        #print('nothing found')
-        return ('', '')
+        # print('nothing found')
+        return ("", "")
 
-def stoptraining(mim): 
+
+def stoptraining(mim):
     if int(mim) == 1:
-        
-        CSVutil('csvdb/stop.csv', 'w+', 'stop', 'True')
-        #p.terminate()
-        #p.kill()
+        CSVutil("csvdb/stop.csv", "w+", "stop", "True")
+        # p.terminate()
+        # p.kill()
         try:
             os.kill(PID, signal.SIGTERM)
         except Exception as e:
@@ -1907,21 +1972,21 @@ def stoptraining(mim):
             pass
     else:
         pass
-    
+
     return (
-        {"visible": False, "__type__": "update"}, 
+        {"visible": False, "__type__": "update"},
         {"visible": True, "__type__": "update"},
     )
 
 
 def whethercrepeornah(radio):
-    mango = True if radio == 'mangio-crepe' or radio == 'mangio-crepe-tiny' else False
-    
-    return ({"visible": mango, "__type__": "update"})
+    mango = True if radio == "mangio-crepe" or radio == "mangio-crepe-tiny" else False
+
+    return {"visible": mango, "__type__": "update"}
 
 
-#Change your Gradio Theme here. 👇 👇 👇 👇 Example: " theme='HaleyCH/HaleyCH_Theme' "
-with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
+# Change your Gradio Theme here. 👇 👇 👇 👇 Example: " theme='HaleyCH/HaleyCH_Theme' "
+with gr.Blocks(theme=gr.themes.Soft(), title="Mangio-RVC-Web 💻") as app:
     gr.HTML("<h1> The Mangio-RVC-Fork 💻 </h1>")
     gr.Markdown(
         value=i18n(
@@ -1929,7 +1994,6 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
         )
     )
     with gr.Tabs():
-        
         with gr.TabItem(i18n("模型推理")):
             # Inference Preset Row
             # with gr.Row():
@@ -1941,13 +2005,14 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
 
             # Other RVC stuff
             with gr.Row():
-                
-                #sid0 = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names), value=check_for_name())
-                sid0 = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names), value='')
-                #input_audio_path2
-                
-                
-                refresh_button = gr.Button(i18n("Refresh voice list, index path and audio files"), variant="primary")
+                # sid0 = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names), value=check_for_name())
+                sid0 = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names), value="")
+                # input_audio_path2
+
+                refresh_button = gr.Button(
+                    i18n("Refresh voice list, index path and audio files"),
+                    variant="primary",
+                )
                 clean_button = gr.Button(i18n("卸载音色省显存"), variant="primary")
                 spk_item = gr.Slider(
                     minimum=0,
@@ -1970,21 +2035,38 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             label=i18n("变调(整数, 半音数量, 升八度12降八度-12)"), value=0
                         )
                         input_audio0 = gr.Textbox(
-                            label=i18n("Add audio's name to the path to the audio file to be processed (default is the correct format example) Remove the path to use an audio from the dropdown list:"),
-                            value=os.path.abspath(os.getcwd()).replace('\\', '/') + "/audios/" + "audio.wav",
+                            label=i18n(
+                                "Add audio's name to the path to the audio file to be processed (default is the correct format example) Remove the path to use an audio from the dropdown list:"
+                            ),
+                            value=os.path.abspath(os.getcwd()).replace("\\", "/")
+                            + "/audios/"
+                            + "audio.wav",
                         )
                         input_audio1 = gr.Dropdown(
-                            label=i18n("Auto detect audio path and select from the dropdown:"),
+                            label=i18n(
+                                "Auto detect audio path and select from the dropdown:"
+                            ),
                             choices=sorted(audio_paths),
-                            value='',
+                            value="",
                             interactive=True,
                         )
-                        input_audio1.change(fn=lambda:'',inputs=[],outputs=[input_audio0])
+                        input_audio1.change(
+                            fn=lambda: "", inputs=[], outputs=[input_audio0]
+                        )
                         f0method0 = gr.Radio(
                             label=i18n(
                                 "选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比,crepe效果好但吃GPU"
                             ),
-                            choices=["pm", "harvest", "dio", "crepe", "crepe-tiny", "mangio-crepe", "mangio-crepe-tiny", "rmvpe"], # Fork Feature. Add Crepe-Tiny
+                            choices=[
+                                "pm",
+                                "harvest",
+                                "dio",
+                                "crepe",
+                                "crepe-tiny",
+                                "mangio-crepe",
+                                "mangio-crepe-tiny",
+                                "rmvpe",
+                            ],  # Fork Feature. Add Crepe-Tiny
                             value="rmvpe",
                             interactive=True,
                         )
@@ -1997,7 +2079,11 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             interactive=True,
                             visible=False,
                         )
-                        f0method0.change(fn=whethercrepeornah, inputs=[f0method0], outputs=[crepe_hop_length])
+                        f0method0.change(
+                            fn=whethercrepeornah,
+                            inputs=[f0method0],
+                            outputs=[crepe_hop_length],
+                        )
                         filter_radius0 = gr.Slider(
                             minimum=0,
                             maximum=7,
@@ -2012,22 +2098,21 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             value="",
                             interactive=True,
                         )
-                        
+
                         file_index2 = gr.Dropdown(
                             label="3. Path to your added.index file (if it didn't automatically find it.)",
                             choices=get_indexes(),
                             value=get_index(),
                             interactive=True,
                             allow_custom_value=True,
-                            )
-                        #sid0.select(fn=match_index, inputs=sid0, outputs=file_index2)
-                        
-                        
+                        )
+                        # sid0.select(fn=match_index, inputs=sid0, outputs=file_index2)
 
-                          
                         refresh_button.click(
-                            fn=change_choices, inputs=[], outputs=[sid0, file_index2, input_audio1]
-                            )
+                            fn=change_choices,
+                            inputs=[],
+                            outputs=[sid0, file_index2, input_audio1],
+                        )
                         # file_big_npy1 = gr.Textbox(
                         #     label=i18n("特征文件路径"),
                         #     value="E:\\codes\py39\\vits_vc_gpu_train\\logs\\mi-test-1key\\total_fea.npy",
@@ -2073,31 +2158,31 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             interactive=True,
                             visible=True,
                         )
-                        
+
                         formant_preset = gr.Dropdown(
-                            value='',
+                            value="",
                             choices=get_fshift_presets(),
                             label="browse presets for formanting",
                             visible=bool(DoFormant),
                         )
-                        
+
                         formant_refresh_button = gr.Button(
-                            value='\U0001f504',
+                            value="\U0001f504",
                             visible=bool(DoFormant),
-                            variant='primary',
+                            variant="primary",
                         )
-                        
+
                         qfrency = gr.Slider(
-                                value=Quefrency,
-                                info="Default value is 1.0",
-                                label="Quefrency for formant shifting",
-                                minimum=0.0,
-                                maximum=16.0,
-                                step=0.1,
-                                visible=bool(DoFormant),
-                                interactive=True,
+                            value=Quefrency,
+                            info="Default value is 1.0",
+                            label="Quefrency for formant shifting",
+                            minimum=0.0,
+                            maximum=16.0,
+                            step=0.1,
+                            visible=bool(DoFormant),
+                            interactive=True,
                         )
-                            
+
                         tmbre = gr.Slider(
                             value=Timbre,
                             info="Default value is 1.0",
@@ -2108,12 +2193,44 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             visible=bool(DoFormant),
                             interactive=True,
                         )
-                        
-                        formant_preset.change(fn=preset_apply, inputs=[formant_preset, qfrency, tmbre], outputs=[qfrency, tmbre])
-                        frmntbut = gr.Button("Apply", variant="primary", visible=bool(DoFormant))
-                        formanting.change(fn=formant_enabled,inputs=[formanting,qfrency,tmbre,frmntbut,formant_preset,formant_refresh_button],outputs=[formanting,qfrency,tmbre,frmntbut,formant_preset,formant_refresh_button])
-                        frmntbut.click(fn=formant_apply,inputs=[qfrency, tmbre], outputs=[qfrency, tmbre])
-                        formant_refresh_button.click(fn=update_fshift_presets,inputs=[formant_preset, qfrency, tmbre],outputs=[formant_preset, qfrency, tmbre])
+
+                        formant_preset.change(
+                            fn=preset_apply,
+                            inputs=[formant_preset, qfrency, tmbre],
+                            outputs=[qfrency, tmbre],
+                        )
+                        frmntbut = gr.Button(
+                            "Apply", variant="primary", visible=bool(DoFormant)
+                        )
+                        formanting.change(
+                            fn=formant_enabled,
+                            inputs=[
+                                formanting,
+                                qfrency,
+                                tmbre,
+                                frmntbut,
+                                formant_preset,
+                                formant_refresh_button,
+                            ],
+                            outputs=[
+                                formanting,
+                                qfrency,
+                                tmbre,
+                                frmntbut,
+                                formant_preset,
+                                formant_refresh_button,
+                            ],
+                        )
+                        frmntbut.click(
+                            fn=formant_apply,
+                            inputs=[qfrency, tmbre],
+                            outputs=[qfrency, tmbre],
+                        )
+                        formant_refresh_button.click(
+                            fn=update_fshift_presets,
+                            inputs=[formant_preset, qfrency, tmbre],
+                            outputs=[formant_preset, qfrency, tmbre],
+                        )
                         ##formant_refresh_button.click(fn=preset_apply, inputs=[formant_preset, qfrency, tmbre], outputs=[formant_preset, qfrency, tmbre])
                         ##formant_refresh_button.click(fn=update_fshift_presets, inputs=[formant_preset, qfrency, tmbre], outputs=[formant_preset, qfrency, tmbre])
                     f0_file = gr.File(label=i18n("F0曲线文件, 可选, 一行一个音高, 代替默认F0及升降调"))
@@ -2138,7 +2255,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             resample_sr0,
                             rms_mix_rate0,
                             protect0,
-                            crepe_hop_length
+                            crepe_hop_length,
                         ],
                         [vc_output1, vc_output2],
                     )
@@ -2160,7 +2277,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             value="rmvpe",
                             interactive=True,
                         )
-                        
+
                         filter_radius1 = gr.Slider(
                             minimum=0,
                             maximum=7,
@@ -2175,13 +2292,17 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             value="",
                             interactive=True,
                         )
-                        file_index4 = gr.Dropdown( #file index dropdown for batch
+                        file_index4 = gr.Dropdown(  # file index dropdown for batch
                             label=i18n("自动检测index路径,下拉式选择(dropdown)"),
                             choices=get_indexes(),
                             value=get_index(),
                             interactive=True,
                         )
-                        sid0.select(fn=match_index, inputs=[sid0], outputs=[file_index2, file_index4])
+                        sid0.select(
+                            fn=match_index,
+                            inputs=[sid0],
+                            outputs=[file_index2, file_index4],
+                        )
                         refresh_button.click(
                             fn=lambda: change_choices()[1],
                             inputs=[],
@@ -2228,7 +2349,8 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                     with gr.Column():
                         dir_input = gr.Textbox(
                             label=i18n("输入待处理音频文件夹路径(去文件管理器地址栏拷就行了)"),
-                            value=os.path.abspath(os.getcwd()).replace('\\', '/') + "/audios/",
+                            value=os.path.abspath(os.getcwd()).replace("\\", "/")
+                            + "/audios/",
                         )
                         inputs = gr.File(
                             file_count="multiple", label=i18n("也可批量输入音频文件, 二选一, 优先读文件夹")
@@ -2291,11 +2413,11 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                     with gr.Column():
                         dir_wav_input = gr.Textbox(
                             label=i18n("输入待处理音频文件夹路径"),
-                            value=((os.getcwd()).replace('\\', '/') + "/audios/")
+                            value=((os.getcwd()).replace("\\", "/") + "/audios/"),
                         )
                         wav_inputs = gr.File(
                             file_count="multiple", label=i18n("也可批量输入音频文件, 二选一, 优先读文件夹")
-                        ) #####
+                        )  #####
                     with gr.Column():
                         model_choose = gr.Dropdown(label=i18n("模型"), choices=uvr5_names)
                         agg = gr.Slider(
@@ -2376,7 +2498,8 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                 )
                 with gr.Row():
                     trainset_dir4 = gr.Textbox(
-                        label=i18n("输入训练文件夹路径"), value=os.path.abspath(os.getcwd()) + "\\datasets\\"
+                        label=i18n("输入训练文件夹路径"),
+                        value=os.path.abspath(os.getcwd()) + "\\datasets\\",
                     )
                     spk_id5 = gr.Slider(
                         minimum=0,
@@ -2392,7 +2515,9 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                         preprocess_dataset, [trainset_dir4, exp_dir1, sr2, np7], [info1]
                     )
             with gr.Group():
-                step2b = gr.Markdown(value=i18n("step2b: 使用CPU提取音高(如果模型带音高), 使用GPU提取特征(选择卡号)"))
+                step2b = gr.Markdown(
+                    value=i18n("step2b: 使用CPU提取音高(如果模型带音高), 使用GPU提取特征(选择卡号)")
+                )
                 with gr.Row():
                     with gr.Column():
                         gpus6 = gr.Textbox(
@@ -2406,11 +2531,18 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             label=i18n(
                                 "选择音高提取算法:输入歌声可用pm提速,高质量语音但CPU差可用dio提速,harvest质量更好但慢"
                             ),
-                            choices=["pm", "harvest", "dio", "crepe", "mangio-crepe", "rmvpe"], # Fork feature: Crepe on f0 extraction for training.
+                            choices=[
+                                "pm",
+                                "harvest",
+                                "dio",
+                                "crepe",
+                                "mangio-crepe",
+                                "rmvpe",
+                            ],  # Fork feature: Crepe on f0 extraction for training.
                             value="rmvpe",
                             interactive=True,
                         )
-                        
+
                         extraction_crepe_hop_length = gr.Slider(
                             minimum=1,
                             maximum=512,
@@ -2420,13 +2552,27 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                             interactive=True,
                             visible=False,
                         )
-                        
-                        f0method8.change(fn=whethercrepeornah, inputs=[f0method8], outputs=[extraction_crepe_hop_length])
+
+                        f0method8.change(
+                            fn=whethercrepeornah,
+                            inputs=[f0method8],
+                            outputs=[extraction_crepe_hop_length],
+                        )
                     but2 = gr.Button(i18n("特征提取"), variant="primary")
-                    info2 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8, interactive=False)
+                    info2 = gr.Textbox(
+                        label=i18n("输出信息"), value="", max_lines=8, interactive=False
+                    )
                     but2.click(
                         extract_f0_feature,
-                        [gpus6, np7, f0method8, if_f0_3, exp_dir1, version19, extraction_crepe_hop_length],
+                        [
+                            gpus6,
+                            np7,
+                            f0method8,
+                            if_f0_3,
+                            exp_dir1,
+                            version19,
+                            extraction_crepe_hop_length,
+                        ],
                         [info2],
                     )
             with gr.Group():
@@ -2497,32 +2643,67 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                     )
                     ### if f0_3 put here
                     if_f0_3.change(
-                            fn=change_f0,
-                            inputs=[if_f0_3, sr2, version19, step2b, gpus6, gpu_info9, extraction_crepe_hop_length, but2, info2],
-                            outputs=[f0method8, pretrained_G14, pretrained_D15, step2b, gpus6, gpu_info9, extraction_crepe_hop_length, but2, info2],
+                        fn=change_f0,
+                        inputs=[
+                            if_f0_3,
+                            sr2,
+                            version19,
+                            step2b,
+                            gpus6,
+                            gpu_info9,
+                            extraction_crepe_hop_length,
+                            but2,
+                            info2,
+                        ],
+                        outputs=[
+                            f0method8,
+                            pretrained_G14,
+                            pretrained_D15,
+                            step2b,
+                            gpus6,
+                            gpu_info9,
+                            extraction_crepe_hop_length,
+                            but2,
+                            info2,
+                        ],
                     )
-                    if_f0_3.change(fn=whethercrepeornah, inputs=[f0method8], outputs=[extraction_crepe_hop_length])
+                    if_f0_3.change(
+                        fn=whethercrepeornah,
+                        inputs=[f0method8],
+                        outputs=[extraction_crepe_hop_length],
+                    )
                     gpus16 = gr.Textbox(
                         label=i18n("以-分隔输入使用的卡号, 例如   0-1-2   使用卡0和卡1和卡2"),
                         value=gpus,
                         interactive=True,
                     )
                     butstop = gr.Button(
-                            "Stop Training",
-                            variant='primary',
-                            visible=False,
+                        "Stop Training",
+                        variant="primary",
+                        visible=False,
                     )
                     but3 = gr.Button(i18n("训练模型"), variant="primary", visible=True)
-                    but3.click(fn=stoptraining, inputs=[gr.Number(value=0, visible=False)], outputs=[but3, butstop])
-                    butstop.click(fn=stoptraining, inputs=[gr.Number(value=1, visible=False)], outputs=[butstop, but3])
-                    
-                    
+                    but3.click(
+                        fn=stoptraining,
+                        inputs=[gr.Number(value=0, visible=False)],
+                        outputs=[but3, butstop],
+                    )
+                    butstop.click(
+                        fn=stoptraining,
+                        inputs=[gr.Number(value=1, visible=False)],
+                        outputs=[butstop, but3],
+                    )
+
                     but4 = gr.Button(i18n("训练特征索引"), variant="primary")
-                    #but5 = gr.Button(i18n("一键训练"), variant="primary")
+                    # but5 = gr.Button(i18n("一键训练"), variant="primary")
                     info3 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=10)
-                    
-                    if_save_every_weights18.change(fn=stepdisplay, inputs=[if_save_every_weights18], outputs=[save_epoch10])
-                    
+
+                    if_save_every_weights18.change(
+                        fn=stepdisplay,
+                        inputs=[if_save_every_weights18],
+                        outputs=[save_epoch10],
+                    )
+
                     but3.click(
                         click_train,
                         [
@@ -2543,12 +2724,10 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                         ],
                         [info3, butstop, but3],
                     )
-                        
+
                     but4.click(train_index, [exp_dir1, version19], info3)
-                    
-                    
-                    
-                    #but5.click(
+
+                    # but5.click(
                     #    train1key,
                     #    [
                     #        exp_dir1,
@@ -2571,14 +2750,24 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                     #        extraction_crepe_hop_length
                     #    ],
                     #    info3,
-                    #)
-                
+                    # )
+
         with gr.TabItem(i18n("ckpt处理")):
             with gr.Group():
                 gr.Markdown(value=i18n("模型融合, 可用于测试音色融合"))
                 with gr.Row():
-                    ckpt_a = gr.Textbox(label=i18n("A模型路径"), value="", interactive=True, placeholder="Path to your model A.")
-                    ckpt_b = gr.Textbox(label=i18n("B模型路径"), value="", interactive=True, placeholder="Path to your model B.")
+                    ckpt_a = gr.Textbox(
+                        label=i18n("A模型路径"),
+                        value="",
+                        interactive=True,
+                        placeholder="Path to your model A.",
+                    )
+                    ckpt_b = gr.Textbox(
+                        label=i18n("B模型路径"),
+                        value="",
+                        interactive=True,
+                        placeholder="Path to your model B.",
+                    )
                     alpha_a = gr.Slider(
                         minimum=0,
                         maximum=1,
@@ -2599,7 +2788,11 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                         interactive=True,
                     )
                     info__ = gr.Textbox(
-                        label=i18n("要置入的模型信息"), value="", max_lines=8, interactive=True, placeholder="Model information to be placed."
+                        label=i18n("要置入的模型信息"),
+                        value="",
+                        max_lines=8,
+                        interactive=True,
+                        placeholder="Model information to be placed.",
                     )
                     name_to_save0 = gr.Textbox(
                         label=i18n("保存的模型名不带后缀"),
@@ -2633,12 +2826,19 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                 )  # def merge(path1,path2,alpha1,sr,f0,info):
             with gr.Group():
                 gr.Markdown(value=i18n("修改模型信息(仅支持weights文件夹下提取的小模型文件)"))
-                with gr.Row(): ######
+                with gr.Row():  ######
                     ckpt_path0 = gr.Textbox(
-                        label=i18n("模型路径"), placeholder="Path to your Model.", value="", interactive=True
+                        label=i18n("模型路径"),
+                        placeholder="Path to your Model.",
+                        value="",
+                        interactive=True,
                     )
                     info_ = gr.Textbox(
-                        label=i18n("要改的模型信息"), value="", max_lines=8, interactive=True, placeholder="Model information to be changed."
+                        label=i18n("要改的模型信息"),
+                        value="",
+                        max_lines=8,
+                        interactive=True,
+                        placeholder="Model information to be changed.",
                     )
                     name_to_save1 = gr.Textbox(
                         label=i18n("保存的文件名, 默认空为和源文件同名"),
@@ -2655,7 +2855,10 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                 gr.Markdown(value=i18n("查看模型信息(仅支持weights文件夹下提取的小模型文件)"))
                 with gr.Row():
                     ckpt_path1 = gr.Textbox(
-                        label=i18n("模型路径"), value="", interactive=True, placeholder="Model path here."
+                        label=i18n("模型路径"),
+                        value="",
+                        interactive=True,
+                        placeholder="Model path here.",
                     )
                     but8 = gr.Button(i18n("查看"), variant="primary")
                     info6 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8)
@@ -2670,11 +2873,14 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                     ckpt_path2 = gr.Textbox(
                         lines=3,
                         label=i18n("模型路径"),
-                        value=os.path.abspath(os.getcwd()).replace('\\', '/') + "/logs/[YOUR_MODEL]/G_23333.pth",
+                        value=os.path.abspath(os.getcwd()).replace("\\", "/")
+                        + "/logs/[YOUR_MODEL]/G_23333.pth",
                         interactive=True,
                     )
                     save_name = gr.Textbox(
-                        label=i18n("保存名"), value="", interactive=True,
+                        label=i18n("保存名"),
+                        value="",
+                        interactive=True,
                         placeholder="Your filename here.",
                     )
                     sr__ = gr.Radio(
@@ -2695,7 +2901,11 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
                         interactive=True,
                     )
                     info___ = gr.Textbox(
-                        label=i18n("要置入的模型信息"), value="", max_lines=8, interactive=True, placeholder="Model info here."
+                        label=i18n("要置入的模型信息"),
+                        value="",
+                        max_lines=8,
+                        interactive=True,
+                        placeholder="Model info here.",
                     )
                     but9 = gr.Button(i18n("提取"), variant="primary")
                     info7 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8)
@@ -2710,10 +2920,18 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
 
         with gr.TabItem(i18n("Onnx导出")):
             with gr.Row():
-                ckpt_dir = gr.Textbox(label=i18n("RVC模型路径"), value="", interactive=True, placeholder="RVC model path.")
+                ckpt_dir = gr.Textbox(
+                    label=i18n("RVC模型路径"),
+                    value="",
+                    interactive=True,
+                    placeholder="RVC model path.",
+                )
             with gr.Row():
                 onnx_dir = gr.Textbox(
-                    label=i18n("Onnx输出路径"), value="", interactive=True, placeholder="Onnx model output path."
+                    label=i18n("Onnx输出路径"),
+                    value="",
+                    interactive=True,
+                    placeholder="Onnx model output path.",
                 )
             with gr.Row():
                 infoOnnx = gr.Label(label="info")
@@ -2734,8 +2952,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
             except:
                 gr.Markdown(traceback.format_exc())
 
-
-    #region Mangio Preset Handler Region
+    # region Mangio Preset Handler Region
     def save_preset(
         preset_name,
         sid0,
@@ -2751,45 +2968,44 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
         resample_sr,
         rms_mix_rate,
         protect,
-        f0_file
+        f0_file,
     ):
         data = None
-        with open('../inference-presets.json', 'r') as file:
+        with open("../inference-presets.json", "r") as file:
             data = json.load(file)
         preset_json = {
-            'name': preset_name,
-            'model': sid0,
-            'transpose': vc_transform,
-            'audio_file': input_audio0,
-            'auto_audio_file': input_audio1,
-            'f0_method': f0method,
-            'crepe_hop_length': crepe_hop_length,
-            'median_filtering': filter_radius,
-            'feature_path': file_index1,
-            'auto_feature_path': file_index2,
-            'search_feature_ratio': index_rate,
-            'resample': resample_sr,
-            'volume_envelope': rms_mix_rate,
-            'protect_voiceless': protect,
-            'f0_file_path': f0_file
+            "name": preset_name,
+            "model": sid0,
+            "transpose": vc_transform,
+            "audio_file": input_audio0,
+            "auto_audio_file": input_audio1,
+            "f0_method": f0method,
+            "crepe_hop_length": crepe_hop_length,
+            "median_filtering": filter_radius,
+            "feature_path": file_index1,
+            "auto_feature_path": file_index2,
+            "search_feature_ratio": index_rate,
+            "resample": resample_sr,
+            "volume_envelope": rms_mix_rate,
+            "protect_voiceless": protect,
+            "f0_file_path": f0_file,
         }
-        data['presets'].append(preset_json)
-        with open('../inference-presets.json', 'w') as file:
+        data["presets"].append(preset_json)
+        with open("../inference-presets.json", "w") as file:
             json.dump(data, file)
             file.flush()
         print("Saved Preset %s into inference-presets.json!" % preset_name)
 
-
     def on_preset_changed(preset_name):
         print("Changed Preset to %s!" % preset_name)
         data = None
-        with open('../inference-presets.json', 'r') as file:
+        with open("../inference-presets.json", "r") as file:
             data = json.load(file)
 
         print("Searching for " + preset_name)
         returning_preset = None
-        for preset in data['presets']:
-            if(preset['name'] == preset_name):
+        for preset in data["presets"]:
+            if preset["name"] == preset_name:
                 print("Found a preset")
                 returning_preset = preset
         # return all new input values
@@ -2809,11 +3025,11 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
             # returning_preset['f0_file_path']
         )
 
-    # Preset State Changes                
-    
+    # Preset State Changes
+
     # This click calls save_preset that saves the preset into inference-presets.json with the preset name
     # mangio_preset_save_btn.click(
-    #     fn=save_preset, 
+    #     fn=save_preset,
     #     inputs=[
     #         mangio_preset_name_save,
     #         sid0,
@@ -2829,16 +3045,16 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
     #         rms_mix_rate0,
     #         protect0,
     #         f0_file
-    #     ], 
+    #     ],
     #     outputs=[]
     # )
 
     # mangio_preset.change(
-    #     on_preset_changed, 
+    #     on_preset_changed,
     #     inputs=[
     #         # Pass inputs here
     #         mangio_preset
-    #     ], 
+    #     ],
     #     outputs=[
     #         # Pass Outputs here. These refer to the gradio elements that we want to directly change
     #         # sid0,
@@ -2856,14 +3072,16 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
     #         # f0_file
     #     ]
     # )
-    #endregion
+    # endregion
 
-        # with gr.TabItem(i18n("招募音高曲线前端编辑器")):
-        #     gr.Markdown(value=i18n("加开发群联系我xxxxx"))
-        # with gr.TabItem(i18n("点击查看交流、问题反馈群号")):
-        #     gr.Markdown(value=i18n("xxxxx"))
+    # with gr.TabItem(i18n("招募音高曲线前端编辑器")):
+    #     gr.Markdown(value=i18n("加开发群联系我xxxxx"))
+    # with gr.TabItem(i18n("点击查看交流、问题反馈群号")):
+    #     gr.Markdown(value=i18n("xxxxx"))
 
-    if config.iscolab or config.paperspace: # Share gradio link for colab and paperspace (FORK FEATURE)
+    if (
+        config.iscolab or config.paperspace
+    ):  # Share gradio link for colab and paperspace (FORK FEATURE)
         app.queue(concurrency_count=511, max_size=1022).launch(share=True)
     else:
         app.queue(concurrency_count=511, max_size=1022).launch(
@@ -2873,4 +3091,4 @@ with gr.Blocks(theme=gr.themes.Soft(), title='Mangio-RVC-Web 💻') as app:
             quiet=False,
         )
 
-#endregion
+# endregion
