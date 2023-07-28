@@ -8,7 +8,7 @@ import sys
 
 import random
 
-import sqlite3
+import csv
 
 platform_stft_mapping = {
     'linux': 'stftpitchshift',
@@ -19,12 +19,34 @@ platform_stft_mapping = {
 stft = platform_stft_mapping.get(sys.platform)
 # praatEXE = join('.',os.path.abspath(os.getcwd()) + r"\Praat.exe")
 
+def CSVutil(file, rw, type, *args):
+    if type == 'formanting':
+        if rw == 'r':
+            with open(file) as fileCSVread:
+                csv_reader = list(csv.reader(fileCSVread))
+                return (
+                    csv_reader[0][0], csv_reader[0][1], csv_reader[0][2]
+                ) if csv_reader is not None else (lambda: exec('raise ValueError("No data")'))()
+        else:
+            if args:
+                doformnt = args[0]
+            else:
+                doformnt = False
+            qfr = args[1] if len(args) > 1 else 1.0
+            tmb = args[2] if len(args) > 2 else 1.0
+            with open(file, rw, newline='') as fileCSVwrite:
+                csv_writer = csv.writer(fileCSVwrite, delimiter=',')
+                csv_writer.writerow([doformnt, qfr, tmb])
+    elif type == 'stop':
+        stop = args[0] if args else False
+        with open(file, rw, newline='') as fileCSVwrite:
+            csv_writer = csv.writer(fileCSVwrite, delimiter=',')
+            csv_writer.writerow([stop])
 
 def load_audio(file, sr, DoFormant, Quefrency, Timbre):
     converted = False
+    DoFormant, Quefrency, Timbre = CSVutil('csvdb/formanting.csv', 'r', 'formanting')    
     try:
-        conn = sqlite3.connect('TEMP/db:cachedb?mode=memory&cache=shared', check_same_thread=False)
-        cursor = conn.cursor()
         # https://github.com/openai/whisper/blob/main/whisper/audio.py#L26
         # This launches a subprocess to decode audio while down-mixing and resampling as necessary.
         # Requires the ffmpeg CLI and `ffmpeg-python` package to be installed.
@@ -32,10 +54,10 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
             file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
         )  # 防止小白拷路径头尾带了空格和"和回车
         file_formanted = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        cursor.execute("SELECT Quefrency, Timbre, DoFormant FROM formant_data")
-        Quefrency, Timbre, DoFormant = cursor.fetchone()
+        
         #print(f"dofor={bool(DoFormant)} timbr={Timbre} quef={Quefrency}\n")
-        if bool(DoFormant):
+        
+        if (lambda DoFormant: True if DoFormant.lower() == 'true' else (False if DoFormant.lower() == 'false' else DoFormant))(DoFormant):
             numerator = round(random.uniform(1,4), 4)
             # os.system(f"stftpitchshift -i {file} -q {Quefrency} -t {Timbre} -o {file_formanted}")
             # print('stftpitchshift -i "%s" -p 1.0 --rms -w 128 -v 8 -q %s -t %s -o "%s"' % (file, Quefrency, Timbre, file_formanted))
@@ -89,7 +111,8 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
                 )
             )
 
-            
+            try: os.remove("%sFORMANTED_%s.wav" % (file_formanted, str(numerator)))
+            except Exception: pass; print("couldn't remove formanted type of file")
             
         else:
             out, _ = (
@@ -102,14 +125,9 @@ def load_audio(file, sr, DoFormant, Quefrency, Timbre):
     except Exception as e:
         raise RuntimeError(f"Failed to load audio: {e}")
     
-    if DoFormant:
-        try: os.remove("%sFORMANTED_%s.wav" % (file_formanted, str(numerator)))
-        except Exception: pass; print("couldn't remove formanted type of file")
-    
     if converted:
         try: os.remove(file_formanted)
         except Exception: pass; print("couldn't remove converted type of file")
         converted = False
     
-    conn.close()
     return np.frombuffer(out, np.float32).flatten()

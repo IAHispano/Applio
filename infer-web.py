@@ -38,7 +38,7 @@ from lib.infer_pack.models import (
 from lib.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM
 from infer_uvr5 import _audio_pre_, _audio_pre_new
 from MDXNet import MDXNetDereverb
-from my_utils import load_audio
+from my_utils import load_audio, CSVutil
 from train.process_ckpt import change_info, extract_small_model, merge, show_info
 from vc_infer_pipeline import VC
 from sklearn.cluster import MiniBatchKMeans
@@ -56,63 +56,26 @@ os.environ["TEMP"] = tmp
 warnings.filterwarnings("ignore")
 torch.manual_seed(114514)
 
-import sqlite3
-
-def clear_sql(signal, frame):
-    cursor.execute("DELETE FROM formant_data")
-    cursor.execute("DELETE FROM stop_train")
-    conn.commit()
-    conn.close()
-    print("Clearing SQL database...")
-    sys.exit(0)
-
-if sys.platform == 'win32':
-    signal.signal(signal.SIGBREAK, clear_sql)
-
-signal.signal(signal.SIGINT, clear_sql)
-signal.signal(signal.SIGTERM, clear_sql)
-
-
-
 logging.getLogger("numba").setLevel(logging.WARNING)
 
-conn = sqlite3.connect('TEMP/db:cachedb?mode=memory&cache=shared', check_same_thread=False)
-cursor = conn.cursor()
+import csv
 
-
-
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS formant_data (
-        Quefrency FLOAT,
-        Timbre FLOAT,
-        DoFormant INTEGER
-    )
-""")
-
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS stop_train (
-        stop BOOL
-    )
-""")
+if not os.path.isdir('csvdb/'):
+    os.makedirs('csvdb')
+    frmnt, stp = open("csvdb/formanting.csv", 'w'), open("csvdb/stop.csv", 'w')
+    frmnt.close()
+    stp.close()
 
 global DoFormant, Quefrency, Timbre
 
 try:
-    cursor.execute("SELECT Quefrency, Timbre, DoFormant FROM formant_data")
-    row = cursor.fetchone()
-    if row is not None:
-        Quefrency, Timbre, DoFormant = row
-    else:
-        raise ValueError("No data")
-    
-except (ValueError, TypeError):
-    Quefrency = 8.0
-    Timbre = 1.2
-    DoFormant = False
-    cursor.execute("DELETE FROM formant_data")
-    cursor.execute("DELETE FROM stop_train")
-    cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (Quefrency, Timbre, 0))
-    conn.commit()
+    DoFormant, Quefrency, Timbre = CSVutil('csvdb/formanting.csv', 'r', 'formanting')
+    DoFormant = (
+        lambda DoFormant: True if DoFormant.lower() == 'true' else (False if DoFormant.lower() == 'false' else DoFormant)
+    )(DoFormant)
+except (ValueError, TypeError, IndexError):
+    DoFormant, Quefrency, Timbre = False, 1.0, 1.0
+    CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, Quefrency, Timbre)
     
 config = Config()
 i18n = I18nAuto()
@@ -653,9 +616,7 @@ def formant_enabled(cbox, qfrency, tmbre, frmntapply, formantpreset, formant_ref
     if (cbox):
 
         DoFormant = True
-        cursor.execute("DELETE FROM formant_data")
-        cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (qfrency, tmbre, 1))
-        conn.commit()
+        CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, qfrency, tmbre)
         
         #print(f"is checked? - {cbox}\ngot {DoFormant}")
         
@@ -672,9 +633,7 @@ def formant_enabled(cbox, qfrency, tmbre, frmntapply, formantpreset, formant_ref
     else:
         
         DoFormant = False
-        cursor.execute("DELETE FROM formant_data")
-        cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (qfrency, tmbre, int(DoFormant)))
-        conn.commit()
+        CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, qfrency, tmbre)
         
         #print(f"is checked? - {cbox}\ngot {DoFormant}")
         return (
@@ -692,9 +651,7 @@ def formant_apply(qfrency, tmbre):
     Quefrency = qfrency
     Timbre = tmbre
     DoFormant = True
-    cursor.execute("DELETE FROM formant_data")
-    cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (qfrency, tmbre, 1))
-    conn.commit()
+    CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, qfrency, tmbre)
 
     return ({"value": Quefrency, "__type__": "update"}, {"value": Timbre, "__type__": "update"})
 
@@ -993,8 +950,7 @@ def click_train(
     if_save_every_weights18,
     version19,
 ):
-    cursor.execute("DELETE FROM stop_train")
-    conn.commit()
+    CSVutil('csvdb/stop.csv', 'w+', 'formanting', False)
     # 生成filelist
     exp_dir = "%s/logs/%s" % (now_dir, exp_dir1)
     os.makedirs(exp_dir, exist_ok=True)
@@ -1576,18 +1532,14 @@ def cli_infer(com):
         DoFormant = False
         Quefrency = 0.0
         Timbre = 0.0
-        cursor.execute("DELETE FROM formant_data")
-        cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (Quefrency, Timbre, 0))
-        conn.commit()
+        CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, Quefrency, Timbre)
         
     else:
         DoFormant = True
         Quefrency = float(com[15])
         Timbre = float(com[16])
-        cursor.execute("DELETE FROM formant_data")
-        cursor.execute("INSERT INTO formant_data (Quefrency, Timbre, DoFormant) VALUES (?, ?, ?)", (Quefrency, Timbre, 1))
-        conn.commit()
-    
+        CSVutil('csvdb/formanting.csv', 'w+', 'formanting', DoFormant, Quefrency, Timbre)
+        
     print("Mangio-RVC-Fork Infer-CLI: Starting the inference...")
     vc_data = get_vc(model_name, protection_amnt, protect1)
     print(vc_data)
@@ -1945,8 +1897,7 @@ def match_index(sid0):
 def stoptraining(mim): 
     if int(mim) == 1:
         
-        cursor.execute("INSERT INTO stop_train (stop) VALUES (?)", (True,))
-        conn.commit()
+        CSVutil('csvdb/stop.csv', 'w+', 'stop', 'True')
         #p.terminate()
         #p.kill()
         try:
