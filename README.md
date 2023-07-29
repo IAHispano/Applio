@@ -1,3 +1,7 @@
+# 7/28 Changelog:
+- Undo SQL change for the sake of stability, uses csv now
+- Merging checkpoints bug has been resolved
+
 # 7/26 Changelog:
 - Fixed the cli inferencing traceback.
 - SQL Databases implemented for formanting training stop.
