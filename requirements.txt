@@ -146,7 +146,7 @@ tensorboard-plugin-wit==1.8.1
 tensorboardX==2.6.1
 threadpoolctl==3.1.0
 toolz==0.12.0
-torch @ https://download.pytorch.org/whl/cu118/torch-2.0.0%2Bcu118-cp39-cp39-win_amd64.whl
+torch==2.0.0
 torchaudio==2.0.1
 torchcrepe==0.0.19
 torchgen==0.0.1
