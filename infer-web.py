@@ -22,6 +22,7 @@ import threading
 from random import shuffle
 from subprocess import Popen
 from time import sleep
+import easy_infer
 
 import faiss
 import ffmpeg
@@ -2693,8 +2694,14 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Mangio-RVC-Web 💻") as app:
                         inputs=[gr.Number(value=1, visible=False)],
                         outputs=[butstop, but3],
                     )
-
-                    but4 = gr.Button(i18n("训练特征索引"), variant="primary")
+                    with gr.Column(scale=0):
+                        gr.Markdown(value="<br>")
+                        gr.Markdown(value="### Genere el indice antes de guardar.")
+                        but4 = gr.Button(i18n("训练特征索引"), variant="primary")
+                        gr.Markdown(value="### Guarde su modelo una vez el entrenamiento termina.")
+                        save_action = gr.Dropdown(label="Tipo de guardado", choices=["Guardar todo","Guardar D y G", "Guardar voz"], value="Guardar todo", interactive=True)
+                        but7 = gr.Button("Guardar modelo", variant="primary")
+                    
                     # but5 = gr.Button(i18n("一键训练"), variant="primary")
                     info3 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=10)
 
@@ -2726,6 +2733,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Mangio-RVC-Web 💻") as app:
                     )
 
                     but4.click(train_index, [exp_dir1, version19], info3)
+                    but7.click(easy_infer.save_model, [exp_dir1, save_action], info3)
 
                     # but5.click(
                     #    train1key,
@@ -2951,6 +2959,12 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Mangio-RVC-Web 💻") as app:
                 gr.Markdown(value=info)
             except:
                 gr.Markdown(traceback.format_exc())
+        with gr.TabItem("Recursos"):
+            
+            easy_infer.download_model()
+            easy_infer.download_dataset(trainset_dir4) 
+            easy_infer.search_model()
+            easy_infer.publish_models()
 
     # region Mangio Preset Handler Region
     def save_preset(
