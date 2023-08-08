@@ -421,24 +421,68 @@ def save_model(modelname, save_action):
             
         yield "\n".join(infos)
     
-def load_dowloaded_backup(url):
+def load_downloaded_backup(url):
     parent_path = find_folder_parent(".", "pretrained_v2")
-    logs_path = os.path.join(parent_path, 'logs')
-    infos = []
-    print("Descargando en...")
-    infos.append(f"\nDescargando en {logs_path}")
-    yield "\n".join(infos)
     try:
-        os.chdir(logs_path)
-        filename = gdown.download_folder(url=url,quiet=True, remaining_ok=True)
-        infos.append(f"\nBackup cargado: {filename}")
-        yield "\n".join(infos)
+        infos = []
+        logs_folders = ['0_gt_wavs','1_16k_wavs','2a_f0','2b-f0nsf','3_feature256','3_feature768']
+        zips_path = os.path.join(parent_path, 'zips')
+        unzips_path = os.path.join(parent_path, 'unzips')
+        weights_path = os.path.join(parent_path, 'weights')
+        logs_dir = ""
+        
+        if os.path.exists(zips_path):
+            shutil.rmtree(zips_path)
+        if os.path.exists(unzips_path):
+            shutil.rmtree(unzips_path)
+
+        os.mkdir(zips_path)
+        os.mkdir(unzips_path)
+        
+        download_file = download_from_url(url)
+        if not download_file:
+            print("No se ha podido descargar el modelo.")
+            infos.append("No se ha podido descargar el modelo.")
+            yield "\n".join(infos)
+        elif download_file == "downloaded":
+            print("Modelo descargado correctamente. Procediendo con la extracción...")
+            infos.append("Modelo descargado correctamente. Procediendo con la extracción...")
+            yield "\n".join(infos)
+        elif download_file == "demasiado uso":
+            raise Exception("demasiado uso")
+        elif download_file == "link privado":
+            raise Exception("link privado")
+        
+        # Descomprimir archivos descargados
+        for filename in os.listdir(zips_path):
+            if filename.endswith(".zip"):
+                zipfile_path = os.path.join(zips_path,filename)
+                zip_dir_name = os.path.splitext(filename)[0]
+                unzip_dir = os.path.join("/content/Retrieval-based-Voice-Conversion-WebUI/logs", zip_dir_name)
+                shutil.unpack_archive(zipfile_path, unzip_dir, 'zip')
+                print("Modelo descomprimido correctamente. Copiando a logs...")
+                infos.append("Modelo descomprimido correctamente. Copiando a logs...")
+                yield "\n".join(infos)
+            else:
+                print("Error al descomprimir el modelo.")
+                infos.append("Error al descomprimir el modelo.")
+                yield "\n".join(infos)
+                
+        result = ""
+        
+        os.chdir(parent_path)    
+        return result
     except Exception as e:
-        print("********")
-        print(e)
-        print("********")
-        infos.append("\nOcurrió un error al descargar")
-        yield "\n".join(infos)
+        os.chdir(parent_path)
+        if "demasiado uso" in str(e):
+            print("Demasiados usuarios han visto o descargado este archivo recientemente. Por favor, intenta acceder al archivo nuevamente más tarde. Si el archivo al que estás intentando acceder es especialmente grande o está compartido con muchas personas, puede tomar hasta 24 horas para poder ver o descargar el archivo. Si aún no puedes acceder al archivo después de 24 horas, ponte en contacto con el administrador de tu dominio.")
+            yield "El enlace llegó al limite de uso, intenta nuevamente más tarde o usa otro enlace."
+        elif "link privado" in str(e):
+            print("El enlace que has proporcionado tiene el acceso privado, asegurate de compartirlo para 'cualquiera con el enlace'")
+            yield "El enlace que has proporcionado tiene el acceso privado, asegurate de compartirlo para 'cualquiera con el enlace'" 
+        else:
+            print(e)
+            yield "Ocurrio un error descargando el modelo"
     finally:
         os.chdir(parent_path)
 
@@ -1028,6 +1072,16 @@ def download_model():
     with gr.Row():
         download_model_status_bar=gr.Textbox(label="status")
         download_button.click(fn=load_downloaded_model, inputs=[model_url], outputs=[download_model_status_bar])
+
+def download_backup():
+    gr.Markdown(value="# Descargar un backup")
+    with gr.Row():
+        model_url=gr.Textbox(label="Url del backup:")
+    with gr.Row():
+        download_button=gr.Button("Descargar backup")
+    with gr.Row():
+        download_model_status_bar=gr.Textbox(label="status")
+        download_button.click(fn=load_downloaded_backup, inputs=[model_url], outputs=[download_model_status_bar])
 
 def update_dataset_list(name):
     new_datasets = []
