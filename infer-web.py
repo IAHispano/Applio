@@ -1763,7 +1763,7 @@ def print_page_details():
             "\n    arg 5) speaker id: 0"
             "\n    arg 6) transposition: 0"
             "\n    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x], mangio-crepe, mangio-crepe-tiny, rmvpe)"
-            "\n    arg 8) crepe hop length: 160"
+            "\n    arg 8) crepe hop length: 128"
             "\n    arg 9) harvest median filter radius: 3 (0-7)"
             "\n    arg 10) post resample rate: 0"
             "\n    arg 11) mix volume envelope: 1"
@@ -2334,7 +2334,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Mangio-RVC-Web 💻") as app:
                             minimum=0,
                             maximum=1,
                             label=i18n("输入源音量包络替换输出音量包络融合比例，越靠近1越使用输出包络"),
-                            value=1,
+                            value=0.25,
                             interactive=True,
                         )
                         protect1 = gr.Slider(
@@ -2593,7 +2593,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Mangio-RVC-Web 💻") as app:
                         maximum=10000,
                         step=1,
                         label=i18n("总训练轮数total_epoch"),
-                        value=20,
+                        value=500,
                         interactive=True,
                     )
                     batch_size12 = gr.Slider(
@@ -2962,6 +2962,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Mangio-RVC-Web 💻") as app:
         with gr.TabItem("Recursos"):
             
             easy_infer.download_model()
+            easy_infer.download_backup()
             easy_infer.download_dataset(trainset_dir4) 
             easy_infer.search_model()
             easy_infer.publish_models()
