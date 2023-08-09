@@ -332,10 +332,10 @@ def save_model(modelname, save_action):
         # Si no existe el folder RVC para guardar los modelos
         if not os.path.exists(save_folder):
             os.mkdir(save_folder)
-        if not os.path.exists(save_folder + '\\ManualTrainingBackup'):
-            os.mkdir(save_folder + '\\ManualTrainingBackup')
-        if not os.path.exists(save_folder + '\\Finished'):
-            os.mkdir(save_folder + '\\Finished')
+        if not os.path.exists(os.path.join(save_folder, 'ManualTrainingBackup')):
+            os.mkdir(os.path.join(save_folder, 'ManualTrainingBackup'))
+        if not os.path.exists(os.path.join(save_folder, 'Finished')):
+            os.mkdir(os.path.join(save_folder, 'Finished'))
 
         # Si ya existe el folders zips borro su contenido por si acaso
         if os.path.exists(zips_path):
@@ -348,7 +348,7 @@ def save_model(modelname, save_action):
         
         if save_action == i18n("保存所有"):
             print(i18n("保存所有"))
-            save_folder = save_folder + '\\ManualTrainingBackup'
+            save_folder = os.path.join(save_folder, 'ManualTrainingBackup')
             shutil.copytree(logs_path, dst)
         else:
             # Si no existe el folder donde se va a comprimir el modelo
@@ -357,7 +357,7 @@ def save_model(modelname, save_action):
             
         if save_action == i18n("保存 D 和 G"):
             print(i18n("保存 D 和 G"))
-            save_folder = save_folder + '\\ManualTrainingBackup'
+            save_folder = os.path.join(save_folder, 'ManualTrainingBackup')
             if len(d_file) > 0:
                 shutil.copy(d_file[0], dst)
             if len(g_file) > 0:
@@ -370,7 +370,7 @@ def save_model(modelname, save_action):
                 
         if save_action == i18n("保存声音"):
             print(i18n("保存声音"))
-            save_folder = save_folder + '\\Finished'
+            save_folder = os.path.join(save_folder, 'Finished')
             if len(added_file) > 0:
                 shutil.copy(added_file[0], dst)
             else:
