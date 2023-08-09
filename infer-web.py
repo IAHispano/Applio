@@ -1902,7 +1902,7 @@ def get_presets():
 
 # Inference easy-infer datasets
 datasets=[]
-for foldername in os.listdir(os.path.abspath(os.getcwd()) + "\\datasets\\"):
+for foldername in os.listdir("./datasets"):
     if "." not in foldername:
         datasets.append(os.path.join(easy_infer.find_folder_parent(".","pretrained"),"datasets",foldername))
         
