@@ -126,17 +126,17 @@ def load_downloaded_model(url):
         
         download_file = download_from_url(url)
         if not download_file:
-            print("No se ha podido descargar el modelo.")
-            infos.append("No se ha podido descargar el modelo.")
+            print(i18n("无法下载模型。"))
+            infos.append(i18n("无法下载模型。"))
             yield "\n".join(infos)
         elif download_file == "downloaded":
-            print("Modelo descargado correctamente. Procediendo con la extracción...")
-            infos.append("Modelo descargado correctamente. Procediendo con la extracción...")
+            print(i18n("模型下载成功。继续提取..."))
+            infos.append(i18n("模型下载成功。继续提取..."))
             yield "\n".join(infos)
         elif download_file == "demasiado uso":
             raise Exception(i18n("最近查看或下载此文件的用户过多"))
         elif download_file == "link privado":
-            raise Exception("link privado")
+            raise Exception(i18n("无法从该私人链接获取文件"))
         
         # Descomprimir archivos descargados
         for filename in os.listdir(zips_path):
@@ -145,12 +145,12 @@ def load_downloaded_model(url):
                 shutil.unpack_archive(zipfile_path, unzips_path, 'zip')
                 model_name = os.path.basename(zipfile_path)
                 logs_dir = os.path.join(parent_path,'logs', os.path.normpath(str(model_name).replace(".zip","")))
-                print("Modelo descomprimido correctamente. Copiando a logs...")
-                infos.append("Modelo descomprimido correctamente. Copiando a logs...")
+                print(i18n("模型下载成功。继续提取..."))
+                infos.append(i18n("模型下载成功。继续提取..."))
                 yield "\n".join(infos)
             else:
-                print("Error al descomprimir el modelo.")
-                infos.append("Error al descomprimir el modelo.")
+                print(i18n("解压缩出错。"))
+                infos.append(i18n("解压缩出错。"))
                 yield "\n".join(infos)
         
         index_file = False
@@ -198,17 +198,17 @@ def load_downloaded_model(url):
         result = ""
         if model_file:
             if index_file:
-                print("El modelo funciona para inferencia, y tiene el archivo .index.")
-                infos.append("\nEl modelo funciona para inferencia, y tiene el archivo .index.")
+                print(i18n("该模型可用于推理，并有 .index 文件。"))
+                infos.append("\n" + i18n("该模型可用于推理，并有 .index 文件。"))
                 yield "\n".join(infos)
             else:
-                print("El modelo funciona para inferencia, pero no tiene el archivo .index.")
-                infos.append("\nEl modelo funciona para inferencia, pero no tiene el archivo .index.")
+                print(i18n("该模型可用于推理，但没有 .index 文件。"))
+                infos.append("\n" + i18n("该模型可用于推理，但没有 .index 文件。"))
                 yield "\n".join(infos)
         
         if not index_file and not model_file:
-            print("No se encontró ningún archivo relevante para cargar.")
-            infos.append("No se encontró ningún archivo relevante para cargar.")
+            print(i18n("未找到可上传的相关文件"))
+            infos.append(i18n("未找到可上传的相关文件"))
             yield "\n".join(infos)
         
         if os.path.exists(zips_path):
@@ -227,7 +227,7 @@ def load_downloaded_model(url):
             yield i18n("无法从该私人链接获取文件")
         else:
             print(e)
-            yield "Ocurrio un error descargando el modelo"
+            yield i18n("下载模型时发生错误。")
     finally:
         os.chdir(parent_path)
       
@@ -253,13 +253,13 @@ def load_dowloaded_dataset(url):
         download_file = download_from_url(url)
         
         if not download_file:
-            print("No se ha podido descargar el dataset.")
-            infos.append("No se ha podido descargar el dataset.")
+            print(i18n("下载模型时发生错误。"))
+            infos.append(i18n("下载模型时发生错误。"))
             yield "\n".join(infos)
-            raise Exception("Hubo un problema descargando el dataset...")
+            raise Exception(i18n("下载模型时发生错误。"))
         elif download_file == "downloaded":
-            print("Dataset descargado. Procediendo con la extracción...")
-            infos.append("Dataset descargado. Procediendo con la extracción...")
+            print(i18n("数据集下载成功。继续提取..."))
+            infos.append(i18n("数据集下载成功。继续提取..."))
             yield "\n".join(infos)
         elif download_file == "demasiado uso":
             raise Exception(i18n("最近查看或下载此文件的用户过多"))
@@ -271,7 +271,7 @@ def load_dowloaded_dataset(url):
         for file in zip_path:
             if file.endswith('.zip'):
                 file_path = os.path.join(zips_path, file)
-                print("Intentando proceder con la extracción....")
+                print("....")
                 foldername = file.replace(".zip","").replace(" ","").replace("-","_")
                 dataset_path = os.path.join(datasets_path, foldername)
                 shutil.unpack_archive(file_path, unzips_path, 'zip')
@@ -291,7 +291,7 @@ def load_dowloaded_dataset(url):
         if os.path.exists(unzips_path):
             shutil.rmtree(unzips_path)
             
-        infos.append(f"Dataset cargado correctamente.")
+        infos.append(i18n("数据集加载成功。"))
         yield "\n".join(infos)
     except Exception as e:
         os.chdir(parent_path)
@@ -322,17 +322,21 @@ def save_model(modelname, save_action):
             raise Exception("No model found.")
         
         if not 'content' in parent_path:
-            save_folder = os.path.join(parent_path, 'RVC')
+            save_folder = os.path.join(parent_path, 'RVC_Backup')
         else:
-            save_folder = '/content/drive/MyDrive/RVC_Backup/Finished'
+            save_folder = '/content/drive/MyDrive/RVC_Backup'
         
-        infos.append(f"Guardando modelo en: {save_folder}")
+        infos.append(i18n("保存模型..."))
         yield "\n".join(infos)
         
         # Si no existe el folder RVC para guardar los modelos
         if not os.path.exists(save_folder):
             os.mkdir(save_folder)
-        
+        if not os.path.exists(save_folder + '\\ManualTrainingBackup'):
+            os.mkdir(save_folder + '\\ManualTrainingBackup')
+        if not os.path.exists(save_folder + '\\Finished'):
+            os.mkdir(save_folder + '\\Finished')
+
         # Si ya existe el folders zips borro su contenido por si acaso
         if os.path.exists(zips_path):
             shutil.rmtree(zips_path)
@@ -342,18 +346,18 @@ def save_model(modelname, save_action):
         d_file = glob.glob(os.path.join(logs_path, "D_*.pth"))
         g_file = glob.glob(os.path.join(logs_path, "G_*.pth"))
         
-        if save_action == "Guardar todo":
-            print("Guardar todo")
-            save_folder = '/content/drive/MyDrive/RVC_Backup/ManualTrainingBackup'
+        if save_action == i18n("保存所有"):
+            print(i18n("保存所有"))
+            save_folder = save_folder + '\\ManualTrainingBackup'
             shutil.copytree(logs_path, dst)
         else:
             # Si no existe el folder donde se va a comprimir el modelo
             if not os.path.exists(dst):
                 os.mkdir(dst)
             
-        if save_action == "Guardar D y G":
-            print("Guardar D y G")
-            save_folder = '/content/drive/MyDrive/RVC_Backup/ManualTrainingBackup'
+        if save_action == i18n("保存 D 和 G"):
+            print(i18n("保存 D 和 G"))
+            save_folder = save_folder + '\\ManualTrainingBackup'
             if len(d_file) > 0:
                 shutil.copy(d_file[0], dst)
             if len(g_file) > 0:
@@ -362,27 +366,27 @@ def save_model(modelname, save_action):
             if len(added_file) > 0:
                 shutil.copy(added_file[0], dst)
             else:
-                infos.append("Guardando sin indice...")
+                infos.append(i18n("保存时未编制索引..."))
                 
-        if save_action == "Guardar voz":
-            print("Guardar Voz")
-            save_folder = '/content/drive/MyDrive/RVC_Backup/Finished'
+        if save_action == i18n("保存声音"):
+            print(i18n("保存声音"))
+            save_folder = save_folder + '\\Finished'
             if len(added_file) > 0:
                 shutil.copy(added_file[0], dst)
             else:
-                infos.append("Guardando sin indice...")
+                infos.append(i18n("保存时未编制索引..."))
                 #raise gr.Error("¡No ha generado el archivo added_*.index!")
         
         yield "\n".join(infos)
         # Si no existe el archivo del modelo no copiarlo
         if not os.path.exists(weights_path):
-            infos.append("Guardando sin modelo pequeño...")
+            infos.append(i18n("无模型保存（PTH）"))
             #raise gr.Error("¡No ha generado el modelo pequeño!")
         else:
             shutil.copy(weights_path, dst)
         
         yield "\n".join(infos)
-        infos.append("\nEsto puede tomar unos minutos, por favor espere...")
+        infos.append("\n" + i18n("这可能需要几分钟时间，请稍候..."))
         yield "\n".join(infos)
         
         shutil.make_archive(os.path.join(zips_path,f"{modelname}"), 'zip', zips_path)
@@ -391,7 +395,7 @@ def save_model(modelname, save_action):
         shutil.rmtree(zips_path)
         #shutil.rmtree(zips_path)
         
-        infos.append("\n¡Modelo guardado!")
+        infos.append("\n" + i18n("正确存储模型"))
         yield "\n".join(infos)
         
     except Exception as e:
@@ -422,12 +426,12 @@ def load_downloaded_backup(url):
         
         download_file = download_from_url(url)
         if not download_file:
-            print("No se ha podido descargar el modelo.")
-            infos.append("No se ha podido descargar el modelo.")
+            print(i18n("无法下载模型。"))
+            infos.append(i18n("无法下载模型。"))
             yield "\n".join(infos)
         elif download_file == "downloaded":
-            print("Modelo descargado correctamente. Procediendo con la extracción...")
-            infos.append("Modelo descargado correctamente. Procediendo con la extracción...")
+            print(i18n("模型下载成功。继续提取..."))
+            infos.append(i18n("模型下载成功。继续提取..."))
             yield "\n".join(infos)
         elif download_file == "demasiado uso":
             raise Exception(i18n("最近查看或下载此文件的用户过多"))
@@ -441,12 +445,12 @@ def load_downloaded_backup(url):
                 zip_dir_name = os.path.splitext(filename)[0]
                 unzip_dir = os.path.join(parent_path,'logs', zip_dir_name)
                 shutil.unpack_archive(zipfile_path, unzip_dir, 'zip')
-                print("Modelo descomprimido correctamente. Copiando a logs...")
-                infos.append("Modelo descomprimido correctamente. Copiando a logs...")
+                print(i18n("模型下载成功。继续提取..."))
+                infos.append(i18n("模型下载成功。继续提取..."))
                 yield "\n".join(infos)
             else:
-                print("Error al descomprimir el modelo.")
-                infos.append("Error al descomprimir el modelo.")
+                print(i18n("解压缩出错。"))
+                infos.append(i18n("解压缩出错。"))
                 yield "\n".join(infos)
                 
         result = ""
@@ -454,6 +458,8 @@ def load_downloaded_backup(url):
             shutil.rmtree(zips_path)
         if os.path.exists(unzips_path):
             shutil.rmtree(unzips_path)
+        print(i18n("模型已正确加载。"))
+        infos.append("\n" + i18n("模型已正确加载。"))
         os.chdir(parent_path)    
         return result
     except Exception as e:
@@ -822,7 +828,7 @@ def descargar_desde_mega(url, name):
       return None
 
   except Exception as e:
-    print("Ocurrio un error**")
+    print("Error**")
     print(e)
     return None
 
@@ -1048,21 +1054,21 @@ def publish_models():
         publish_model_button.click(fn=publish_model_clicked, inputs=[model_name, url, moder_version, model_creator], outputs=results)
 
 def download_model():
-    gr.Markdown(value="# Descargar un modelo")
+    gr.Markdown(value="# " + i18n("下载模型"))
     with gr.Row():
-        model_url=gr.Textbox(label="Url del modelo:")
+        model_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():
-        download_button=gr.Button("Descargar modelo")
+        download_button=gr.Button(i18n("下载"))
     with gr.Row():
         download_model_status_bar=gr.Textbox(label="status")
         download_button.click(fn=load_downloaded_model, inputs=[model_url], outputs=[download_model_status_bar])
 
 def download_backup():
-    gr.Markdown(value="# Descargar un backup")
+    gr.Markdown(value="# " + i18n("下载备份"))
     with gr.Row():
-        model_url=gr.Textbox(label="Url del backup:")
+        model_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():
-        download_button=gr.Button("Descargar backup")
+        download_button=gr.Button(i18n("下载"))
     with gr.Row():
         download_model_status_bar=gr.Textbox(label="status")
         download_button.click(fn=load_downloaded_backup, inputs=[model_url], outputs=[download_model_status_bar])
@@ -1075,11 +1081,11 @@ def update_dataset_list(name):
     return gr.Dropdown.update(choices=new_datasets)
 
 def download_dataset(trainset_dir4):
-    gr.Markdown(value="# Cargar un dataset")
+    gr.Markdown(value="# " + i18n("下载数据集"))
     with gr.Row():
-        dataset_url=gr.Textbox(label="Url del dataset:")
+        dataset_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():
-        load_dataset_button=gr.Button("Cargar dataset")
+        load_dataset_button=gr.Button(i18n("下载"))
     with gr.Row():
         load_dataset_status_bar=gr.Textbox(label="status")
         load_dataset_button.click(fn=load_dowloaded_dataset, inputs=[dataset_url], outputs=[load_dataset_status_bar])
