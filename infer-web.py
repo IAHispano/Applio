@@ -1987,8 +1987,8 @@ def whethercrepeornah(radio):
 
 
 # Change your Gradio Theme here. 👇 👇 👇 👇 Example: " theme='HaleyCH/HaleyCH_Theme' "
-with gr.Blocks(theme=gr.themes.Soft(), title="Mangio-RVC-Web 💻") as app:
-    gr.HTML("<h1> The Mangio-RVC-Fork 💻 </h1>")
+with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Mangio-RVC-Web 💻") as app:
+    gr.HTML("<h1> The Mangio-RVC-Fork - IA Hispano - V 💻 </h1>")
     gr.Markdown(
         value=i18n(
             "本软件以MIT协议开源, 作者不对软件具备任何控制力, 使用软件者、传播软件导出的声音者自负全责. <br>如不认可该条款, 则不能使用或引用软件包内任何代码和文件. 详见根目录<b>使用需遵守的协议-LICENSE.txt</b>."
@@ -2011,7 +2011,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Mangio-RVC-Web 💻") as app:
                 # input_audio_path2
 
                 refresh_button = gr.Button(
-                    i18n("Refresh voice list, index path and audio files"),
+                    i18n("刷新音色列表和索引路径"),
                     variant="primary",
                 )
                 clean_button = gr.Button(i18n("卸载音色省显存"), variant="primary")
@@ -2696,11 +2696,11 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Mangio-RVC-Web 💻") as app:
                     )
                     with gr.Column(scale=0):
                         gr.Markdown(value="<br>")
-                        gr.Markdown(value="### Genere el indice antes de guardar.")
+                        gr.Markdown(value="### " + i18n("保存前构建索引。"))
                         but4 = gr.Button(i18n("训练特征索引"), variant="primary")
-                        gr.Markdown(value="### Guarde su modelo una vez el entrenamiento termina.")
-                        save_action = gr.Dropdown(label="Tipo de guardado", choices=["Guardar todo","Guardar D y G", "Guardar voz"], value="Guardar todo", interactive=True)
-                        but7 = gr.Button("Guardar modelo", variant="primary")
+                        gr.Markdown(value="### " + i18n("训练结束后保存您的模型。"))
+                        save_action = gr.Dropdown(label=i18n("存储类型"), choices=[i18n("保存所有"),i18n("保存 D 和 G"),i18n("保存声音")], value=i18n("保存模型"), interactive=True)
+                        but7 = gr.Button(i18n("保存模型"), variant="primary")
                     
                     # but5 = gr.Button(i18n("一键训练"), variant="primary")
                     info3 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=10)
@@ -2959,13 +2959,13 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Mangio-RVC-Web 💻") as app:
                 gr.Markdown(value=info)
             except:
                 gr.Markdown(traceback.format_exc())
-        with gr.TabItem("Recursos"):
+        with gr.TabItem(i18n("资源")):
             
             easy_infer.download_model()
             easy_infer.download_backup()
             easy_infer.download_dataset(trainset_dir4) 
-            easy_infer.search_model()
-            easy_infer.publish_models()
+            #easy_infer.search_model()
+            #easy_infer.publish_models()
 
     # region Mangio Preset Handler Region
     def save_preset(

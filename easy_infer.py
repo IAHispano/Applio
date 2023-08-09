@@ -17,6 +17,8 @@ import re
 import time
 from huggingface_hub import HfApi, list_models
 from huggingface_hub import login
+from i18n import I18nAuto
+i18n = I18nAuto()
 
 def calculate_md5(file_path):
     hash_md5 = hashlib.md5()
@@ -61,7 +63,7 @@ def download_from_url(url):
     zips_path = os.path.join(parent_path, 'zips')
     
     if url != '':
-        print(f"Descargando archivo: {url}")
+        print(i18n("下载文件：") + f"{url}")
         if "drive.google.com" in url:
             if "file/d/" in url:
                 file_id = url.split("file/d/")[1].split("/")[0]
@@ -94,7 +96,7 @@ def download_from_url(url):
             wget.download(url)
             
         os.chdir(parent_path)
-        print("Descarga completa.")
+        print(i18n("完整下载"))
         return "downloaded"
     else:
         return None
@@ -132,7 +134,7 @@ def load_downloaded_model(url):
             infos.append("Modelo descargado correctamente. Procediendo con la extracción...")
             yield "\n".join(infos)
         elif download_file == "demasiado uso":
-            raise Exception("demasiado uso")
+            raise Exception(i18n("最近查看或下载此文件的用户过多"))
         elif download_file == "link privado":
             raise Exception("link privado")
         
@@ -176,7 +178,7 @@ def load_downloaded_model(url):
         
         if not model_file and not os.path.exists(logs_dir):
             os.mkdir(logs_dir)
-        # Copiar index, D y G
+        # Copiar index
         for path, subdirs, files in os.walk(unzips_path):
             for item in files:
                 item_path = os.path.join(path, item)
@@ -186,30 +188,12 @@ def load_downloaded_model(url):
                         if os.path.exists(os.path.join(logs_dir, item)):
                             os.remove(os.path.join(logs_dir, item))
                         shutil.move(item_path, logs_dir)
-                if 'D_' in item and item.endswith('.pth'):
-                    D_file = True
-                    if os.path.exists(item_path):
-                        if os.path.exists(os.path.join(logs_dir, item)):
-                            os.remove(os.path.join(logs_dir, item))
-                        shutil.move(item_path, logs_dir)
-                if 'G_' in item and item.endswith('.pth'):
-                    G_file = True
-                    if os.path.exists(item_path):
-                        if os.path.exists(os.path.join(logs_dir, item)):
-                            os.remove(os.path.join(logs_dir, item))
-                        shutil.move(item_path, logs_dir)
                 if item.startswith('total_fea.npy') or item.startswith('events.'):
                     if os.path.exists(item_path):
                         if os.path.exists(os.path.join(logs_dir, item)):
                             os.remove(os.path.join(logs_dir, item))
                         shutil.move(item_path, logs_dir)
-                
-        # Mover todos los folders excepto 'eval'
-        for path, subdirs, files in os.walk(unzips_path):
-            for folder in subdirs:
-                if folder in logs_folders:
-                    item_path = os.path.join(path, folder)
-                    shutil.move(item_path, logs_dir)
+        
                 
         result = ""
         if model_file:
@@ -221,28 +205,26 @@ def load_downloaded_model(url):
                 print("El modelo funciona para inferencia, pero no tiene el archivo .index.")
                 infos.append("\nEl modelo funciona para inferencia, pero no tiene el archivo .index.")
                 yield "\n".join(infos)
-        if D_file and G_file:
-            if result:
-                result += "\n"
-            print("El modelo puede ser reentrenado.")
-            infos.append("El modelo puede ser reentrenado.")
-            yield "\n".join(infos)
         
-        if not index_file and not model_file and not D_file and not G_file:
+        if not index_file and not model_file:
             print("No se encontró ningún archivo relevante para cargar.")
             infos.append("No se encontró ningún archivo relevante para cargar.")
             yield "\n".join(infos)
         
+        if os.path.exists(zips_path):
+            shutil.rmtree(zips_path)
+        if os.path.exists(unzips_path):
+            shutil.rmtree(unzips_path)
         os.chdir(parent_path)    
         return result
     except Exception as e:
         os.chdir(parent_path)
         if "demasiado uso" in str(e):
-            print("Demasiados usuarios han visto o descargado este archivo recientemente. Por favor, intenta acceder al archivo nuevamente más tarde. Si el archivo al que estás intentando acceder es especialmente grande o está compartido con muchas personas, puede tomar hasta 24 horas para poder ver o descargar el archivo. Si aún no puedes acceder al archivo después de 24 horas, ponte en contacto con el administrador de tu dominio.")
-            yield "El enlace llegó al limite de uso, intenta nuevamente más tarde o usa otro enlace."
+            print(i18n("最近查看或下载此文件的用户过多"))
+            yield i18n("最近查看或下载此文件的用户过多")
         elif "link privado" in str(e):
-            print("El enlace que has proporcionado tiene el acceso privado, asegurate de compartirlo para 'cualquiera con el enlace'")
-            yield "El enlace que has proporcionado tiene el acceso privado, asegurate de compartirlo para 'cualquiera con el enlace'" 
+            print(i18n("无法从该私人链接获取文件"))
+            yield i18n("无法从该私人链接获取文件")
         else:
             print(e)
             yield "Ocurrio un error descargando el modelo"
@@ -280,9 +262,9 @@ def load_dowloaded_dataset(url):
             infos.append("Dataset descargado. Procediendo con la extracción...")
             yield "\n".join(infos)
         elif download_file == "demasiado uso":
-            raise Exception("demasiado uso")
+            raise Exception(i18n("最近查看或下载此文件的用户过多"))
         elif download_file == "link privado":
-            raise Exception("link privado")
+            raise Exception(i18n("无法从该私人链接获取文件"))
   
         zip_path = os.listdir(zips_path)
         foldername = ""
@@ -314,14 +296,14 @@ def load_dowloaded_dataset(url):
     except Exception as e:
         os.chdir(parent_path)
         if "demasiado uso" in str(e):
-            print("Demasiados usuarios han visto o descargado este archivo recientemente. Por favor, intenta acceder al archivo nuevamente más tarde. Si el archivo al que estás intentando acceder es especialmente grande o está compartido con muchas personas, puede tomar hasta 24 horas para poder ver o descargar el archivo. Si aún no puedes acceder al archivo después de 24 horas, ponte en contacto con el administrador de tu dominio.")
-            yield "El enlace llegó al limite de uso, intenta nuevamente más tarde o usa otro enlace."    
+            print(i18n("最近查看或下载此文件的用户过多"))
+            yield i18n("最近查看或下载此文件的用户过多")   
         elif "link privado" in str(e):
-            print("El enlace que has proporcionado tiene el acceso privado, asegurate de compartirlo para 'cualquiera con el enlace'")
-            yield "El enlace que has proporcionado tiene el acceso privado, asegurate de compartirlo para 'cualquiera con el enlace'" 
+            print(i18n("无法从该私人链接获取文件"))
+            yield i18n("无法从该私人链接获取文件")
         else:
             print(e)
-            yield "Ocurrio un error descargando el dataset"
+            yield i18n("下载模型时发生错误。")
     finally:
         os.chdir(parent_path)
 
@@ -415,9 +397,9 @@ def save_model(modelname, save_action):
     except Exception as e:
         print(e)
         if "No model found." in str(e):
-            infos.append("El modelo que intenta guardar no existe, asegurese de escribir el nombre correctamente.")
+            infos.append(i18n("您要保存的模型不存在，请确保输入的名称正确。"))
         else:
-            infos.append("Ocurrio un error guardando el modelo")
+            infos.append(i18n("保存模型时发生错误"))
             
         yield "\n".join(infos)
     
@@ -437,7 +419,6 @@ def load_downloaded_backup(url):
             shutil.rmtree(unzips_path)
 
         os.mkdir(zips_path)
-        os.mkdir(unzips_path)
         
         download_file = download_from_url(url)
         if not download_file:
@@ -449,16 +430,16 @@ def load_downloaded_backup(url):
             infos.append("Modelo descargado correctamente. Procediendo con la extracción...")
             yield "\n".join(infos)
         elif download_file == "demasiado uso":
-            raise Exception("demasiado uso")
+            raise Exception(i18n("最近查看或下载此文件的用户过多"))
         elif download_file == "link privado":
-            raise Exception("link privado")
+            raise Exception(i18n("无法从该私人链接获取文件"))
         
         # Descomprimir archivos descargados
         for filename in os.listdir(zips_path):
             if filename.endswith(".zip"):
                 zipfile_path = os.path.join(zips_path,filename)
                 zip_dir_name = os.path.splitext(filename)[0]
-                unzip_dir = os.path.join("/content/Retrieval-based-Voice-Conversion-WebUI/logs", zip_dir_name)
+                unzip_dir = os.path.join(parent_path,'logs', zip_dir_name)
                 shutil.unpack_archive(zipfile_path, unzip_dir, 'zip')
                 print("Modelo descomprimido correctamente. Copiando a logs...")
                 infos.append("Modelo descomprimido correctamente. Copiando a logs...")
@@ -469,20 +450,23 @@ def load_downloaded_backup(url):
                 yield "\n".join(infos)
                 
         result = ""
-        
+        if os.path.exists(zips_path):
+            shutil.rmtree(zips_path)
+        if os.path.exists(unzips_path):
+            shutil.rmtree(unzips_path)
         os.chdir(parent_path)    
         return result
     except Exception as e:
         os.chdir(parent_path)
         if "demasiado uso" in str(e):
-            print("Demasiados usuarios han visto o descargado este archivo recientemente. Por favor, intenta acceder al archivo nuevamente más tarde. Si el archivo al que estás intentando acceder es especialmente grande o está compartido con muchas personas, puede tomar hasta 24 horas para poder ver o descargar el archivo. Si aún no puedes acceder al archivo después de 24 horas, ponte en contacto con el administrador de tu dominio.")
-            yield "El enlace llegó al limite de uso, intenta nuevamente más tarde o usa otro enlace."
+            print(i18n("最近查看或下载此文件的用户过多"))
+            yield i18n("最近查看或下载此文件的用户过多")
         elif "link privado" in str(e):
-            print("El enlace que has proporcionado tiene el acceso privado, asegurate de compartirlo para 'cualquiera con el enlace'")
-            yield "El enlace que has proporcionado tiene el acceso privado, asegurate de compartirlo para 'cualquiera con el enlace'" 
+            print(i18n("无法从该私人链接获取文件"))
+            yield i18n("无法从该私人链接获取文件") 
         else:
             print(e)
-            yield "Ocurrio un error descargando el modelo"
+            yield i18n("下载模型时发生错误。")
     finally:
         os.chdir(parent_path)
 
