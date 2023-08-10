@@ -2047,13 +2047,13 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             label=i18n("变调(整数, 半音数量, 升八度12降八度-12)"), value=0
                         )
                         with gr.Row():
-                            dropbox = gr.File(label="Drag your audio here and hit the refresh button")
+                            dropbox = gr.File(label=i18n("将音频拖到此处，然后点击刷新按钮"))
                         with gr.Row():
-                            record_button=gr.Audio(source="microphone", label="Or record an audio.", type="filepath")
+                            record_button=gr.Audio(source="microphone", label=i18n("或录制音频。"), type="filepath")
                         
                         input_audio0 = gr.Textbox(
                             label=i18n(
-                                "Add audio's name to the path to the audio file to be processed (default is the correct format example) Remove the path to use an audio from the dropdown list:"
+                                "在要处理的音频文件路径中添加音频名称（默认为正确格式示例），从下拉列表中移除使用音频的路径："
                             ),
                             value=os.path.abspath(os.getcwd()).replace("\\", "/")
                             + "/audios/"
