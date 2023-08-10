@@ -2062,7 +2062,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         )
                         input_audio1 = gr.Dropdown(
                             label=i18n(
-                                "Auto detect audio path and select from the dropdown:"
+                                "自动检测音频路径并从下拉菜单中选择："
                             ),
                             choices=sorted(audio_paths),
                             value="",
@@ -2154,7 +2154,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                     scale="-0.5",
                     visible=True
                     )
-                    with gr.Accordion("Advanced Settings", open=False):
+                    with gr.Accordion(i18n("高级设置"), open=False):
                         resample_sr0 = gr.Slider(
                             minimum=0,
                             maximum=48000,
