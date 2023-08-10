@@ -1058,20 +1058,20 @@ def download_model():
     with gr.Row():
         model_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():
-        download_button=gr.Button(i18n("下载"))
-    with gr.Row():
         download_model_status_bar=gr.Textbox(label=i18n("地位"))
         download_button.click(fn=load_downloaded_model, inputs=[model_url], outputs=[download_model_status_bar])
+    with gr.Row():
+        download_button=gr.Button(i18n("下载"))
 
 def download_backup():
     gr.Markdown(value="# " + i18n("下载备份"))
     with gr.Row():
         model_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():
-        download_button=gr.Button(i18n("下载"))
-    with gr.Row():
         download_model_status_bar=gr.Textbox(label=i18n("地位"))
         download_button.click(fn=load_downloaded_backup, inputs=[model_url], outputs=[download_model_status_bar])
+    with gr.Row():
+        download_button=gr.Button(i18n("下载"))
 
 def update_dataset_list(name):
     new_datasets = []
@@ -1085,8 +1085,8 @@ def download_dataset(trainset_dir4):
     with gr.Row():
         dataset_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():
-        load_dataset_button=gr.Button(i18n("下载"))
-    with gr.Row():
         load_dataset_status_bar=gr.Textbox(label=i18n("地位"))
         load_dataset_button.click(fn=load_dowloaded_dataset, inputs=[dataset_url], outputs=[load_dataset_status_bar])
         load_dataset_status_bar.change(update_dataset_list, dataset_url, trainset_dir4)
+    with gr.Row():
+        load_dataset_button=gr.Button(i18n("下载"))
