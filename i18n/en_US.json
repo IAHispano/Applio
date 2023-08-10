@@ -8,12 +8,12 @@
     "网址": "Url:",
     "保存前构建索引。": "Build the index before saving.",
     "训练结束后保存您的模型。": "Save your model once the training ends.",
-    "存储类型": "save type",
+    "存储类型": "Save type",
     "保存模型": "Save model",
     "选择模型保存方法": "Choose the method",
     "保存所有": "Save all",
     "保存 D 和 G": "Save D and G",
-    "保存声音": "save voice",
+    "保存声音": "Save voice",
     "下载文件：": "Downloading the file: ",
     "最近查看或下载此文件的用户过多": "Too many users have recently viewed or downloaded this file",
     "无法从该私人链接获取文件": "Cannot get file from this private link",
@@ -163,6 +163,6 @@
     "hubert模型路径不可包含中文": "The hubert model path must not contain Chinese characters",
     "pth文件路径不可包含中文": "The pth file path must not contain Chinese characters.",
     "index文件路径不可包含中文": "The index file path must not contain Chinese characters.",
-    "音高算法": "step algorithm",
+    "音高算法": "Step algorithm",
     "harvest进程数": "Number of epoch processes"
   }

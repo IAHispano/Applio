@@ -1999,7 +1999,7 @@ def whethercrepeornah(radio):
 
 # Change your Gradio Theme here. 👇 👇 👇 👇 Example: " theme='HaleyCH/HaleyCH_Theme' "
 with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Mangio-RVC-Web 💻") as app:
-    gr.HTML("<h1> The Mangio-RVC-Fork - IA Hispano - V 💻 </h1>")
+    gr.HTML("<h1> 🍏 Applio (RVC Fork) </h1>")
     gr.Markdown(
         value=i18n(
             "本软件以MIT协议开源, 作者不对软件具备任何控制力, 使用软件者、传播软件导出的声音者自负全责. <br>如不认可该条款, 则不能使用或引用软件包内任何代码和文件. 详见根目录<b>使用需遵守的协议-LICENSE.txt</b>."
@@ -2025,7 +2025,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Mangio-RVC-Web �
                     i18n("刷新音色列表和索引路径"),
                     variant="primary",
                 )
-                clean_button = gr.Button(i18n("卸载音色省显存"), variant="primary")
+                clean_button = gr.Button(i18n("卸载音色省显存"), variant="primary",visible=False)
                 spk_item = gr.Slider(
                     minimum=0,
                     maximum=2333,
@@ -2058,6 +2058,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Mangio-RVC-Web �
                             value=os.path.abspath(os.getcwd()).replace("\\", "/")
                             + "/audios/"
                             + "audio.wav",
+                            visible=False
                         )
                         input_audio1 = gr.Dropdown(
                             label=i18n(
@@ -2071,6 +2072,40 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Mangio-RVC-Web �
                         record_button.change(fn=easy_infer.save_to_wav, inputs=[record_button], outputs=[input_audio1])
                         input_audio1.change(
                             fn=lambda: "", inputs=[], outputs=[input_audio0]
+                        )
+                        
+                    with gr.Column():
+                        file_index1 = gr.Textbox(
+                            label=i18n("特征检索库文件路径,为空则使用下拉的选择结果"),
+                            value="",
+                            interactive=True,
+                        )
+
+                        file_index2 = gr.Dropdown(
+                            label="3. Path to your added.index file (if it didn't automatically find it.)",
+                            choices=get_indexes(),
+                            value=get_index(),
+                            interactive=True,
+                            allow_custom_value=True,
+                        )
+                        # sid0.select(fn=match_index, inputs=sid0, outputs=file_index2)
+
+                        refresh_button.click(
+                            fn=change_choices,
+                            inputs=[],
+                            outputs=[sid0, file_index2, input_audio1],
+                        )
+                        # file_big_npy1 = gr.Textbox(
+                        #     label=i18n("特征文件路径"),
+                        #     value="E:\\codes\py39\\vits_vc_gpu_train\\logs\\mi-test-1key\\total_fea.npy",
+                        #     interactive=True,
+                        # )
+                        index_rate1 = gr.Slider(
+                            minimum=0,
+                            maximum=1,
+                            label=i18n("检索特征占比"),
+                            value=0.75,
+                            interactive=True,
                         )
                         f0method0 = gr.Radio(
                             label=i18n(
@@ -2111,40 +2146,15 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Mangio-RVC-Web �
                             step=1,
                             interactive=True,
                         )
-                    with gr.Column():
-                        file_index1 = gr.Textbox(
-                            label=i18n("特征检索库文件路径,为空则使用下拉的选择结果"),
-                            value="",
-                            interactive=True,
-                        )
-
-                        file_index2 = gr.Dropdown(
-                            label="3. Path to your added.index file (if it didn't automatically find it.)",
-                            choices=get_indexes(),
-                            value=get_index(),
-                            interactive=True,
-                            allow_custom_value=True,
-                        )
-                        # sid0.select(fn=match_index, inputs=sid0, outputs=file_index2)
-
-                        refresh_button.click(
-                            fn=change_choices,
-                            inputs=[],
-                            outputs=[sid0, file_index2, input_audio1],
-                        )
-                        # file_big_npy1 = gr.Textbox(
-                        #     label=i18n("特征文件路径"),
-                        #     value="E:\\codes\py39\\vits_vc_gpu_train\\logs\\mi-test-1key\\total_fea.npy",
-                        #     interactive=True,
-                        # )
-                        index_rate1 = gr.Slider(
-                            minimum=0,
-                            maximum=1,
-                            label=i18n("检索特征占比"),
-                            value=0.75,
-                            interactive=True,
-                        )
-                    with gr.Column():
+                        
+                        
+                with gr.Column():
+                    gr.Markdown(
+                    value="",
+                    scale="-0.5",
+                    visible=True
+                    )
+                    with gr.Accordion("Advanced Settings", open=False):
                         resample_sr0 = gr.Slider(
                             minimum=0,
                             maximum=48000,
@@ -2252,11 +2262,19 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Mangio-RVC-Web �
                         )
                         ##formant_refresh_button.click(fn=preset_apply, inputs=[formant_preset, qfrency, tmbre], outputs=[formant_preset, qfrency, tmbre])
                         ##formant_refresh_button.click(fn=update_fshift_presets, inputs=[formant_preset, qfrency, tmbre], outputs=[formant_preset, qfrency, tmbre])
+                    gr.Markdown(
+                    value="",
+                    scale="-0.5",
+                    visible=True
+                    )
+                    
+                
+                with gr.Row():
                     f0_file = gr.File(label=i18n("F0曲线文件, 可选, 一行一个音高, 代替默认F0及升降调"),visible=False)
                     but0 = gr.Button(i18n("转换"), variant="primary")
-                    with gr.Row():
-                        vc_output1 = gr.Textbox(label=i18n("输出信息"))
-                        vc_output2 = gr.Audio(label=i18n("输出音频(右下角三个点,点了可以下载)"))
+                    vc_output1 = gr.Textbox(label=i18n("输出信息"))
+                    vc_output2 = gr.Audio(label=i18n("输出音频(右下角三个点,点了可以下载)"))
+
                     but0.click(
                         vc_single,
                         [
