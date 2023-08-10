@@ -3009,7 +3009,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Mangio-RVC-Web ðŸ’
     if (
         config.iscolab or config.paperspace
     ):  # Share gradio link for colab and paperspace (FORK FEATURE)
-        app.queue(concurrency_count=511, max_size=1022).launch(share=True,favicon_path=".\icon.png")
+        app.queue(concurrency_count=511, max_size=1022).launch(share=True,favicon_path="./icon.png")
     else:
         app.queue(concurrency_count=511, max_size=1022).launch(
             server_name="0.0.0.0",
