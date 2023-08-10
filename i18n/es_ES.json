@@ -29,7 +29,7 @@
   "解压缩出错。": "Error al descomprimir.",
   "模型下载成功。继续提取...": "Modelo descargado correctamente. Procediendo con la extracción...",
   "数据集下载成功。继续提取...": "Modelo descargado correctamente. Procediendo con la extracción...",
-  "数据集加载成功。": "El ataset se ha cargado correctamente.",
+  "数据集加载成功。": "El dataset se ha cargado correctamente.",
   "模型已正确加载。": "El modelo se ha cargado correctamente.",
   "未找到可上传的相关文件。": "No se encontró ningún archivo relevante para cargar.",
   "该模型可用于推理，并有 .index 文件。": "El modelo funciona para inferencia, y tiene el archivo .index.",
