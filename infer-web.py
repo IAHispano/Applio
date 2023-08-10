@@ -2496,7 +2496,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         maximum=50,
                         step=1,
                         label=i18n("保存频率save_every_epoch"),
-                        value=5,
+                        value=10,
                         interactive=True,
                         visible=True,
                     )
@@ -2505,7 +2505,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         maximum=10000,
                         step=1,
                         label=i18n("总训练轮数total_epoch"),
-                        value=500,
+                        value=1000,
                         interactive=True,
                     )
                     batch_size12 = gr.Slider(
@@ -2517,17 +2517,17 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         interactive=True,
                     )
                     if_save_latest13 = gr.Checkbox(
-                        label="是否只保存最新的 .ckpt 文件以节省硬盘空间",
+                        label=i18n("是否只保存最新的 .ckpt 文件以节省硬盘空间"),
                         value=True,
                         interactive=True,
                     )
                     if_cache_gpu17 = gr.Checkbox(
-                        label="将所有训练集缓存到 GPU 内存中。缓存小型数据集（少于 10 分钟）可以加快训练速度，但缓存大型数据集会消耗大量 GPU 内存，可能无法显著提高速度",
+                        label=i18n("将所有训练集缓存到 GPU 内存中。缓存小型数据集（少于 10 分钟）可以加快训练速度，但缓存大型数据集会消耗大量 GPU 内存，可能无法显著提高速度"),
                         value=False,
                         interactive=True,
                     )
                     if_save_every_weights18 = gr.Checkbox(
-                        label="在每个保存点将一个小的最终模型保存到 权重 文件夹中",
+                        label=i18n("在每个保存点将一个小的最终模型保存到 权重 文件夹中"),
                         value=True,
                         interactive=True,
                     )
@@ -2585,11 +2585,6 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         inputs=[f0method8],
                         outputs=[extraction_crepe_hop_length],
                     )
-                    gpus16 = gr.Textbox(
-                        label=i18n("以-分隔输入使用的卡号, 例如   0-1-2   使用卡0和卡1和卡2"),
-                        value=gpus,
-                        interactive=True,
-                    )
                     butstop = gr.Button(
                         "Stop Training",
                         variant="primary",
@@ -2636,7 +2631,6 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             if_save_latest13,
                             pretrained_G14,
                             pretrained_D15,
-                            gpus16,
                             if_cache_gpu17,
                             if_save_every_weights18,
                             version19,
