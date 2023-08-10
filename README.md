@@ -1,11 +1,11 @@
 ![Applio Image](https://cdn.discordapp.com/attachments/1101509263257514105/1139013642759704717/applio.png)
 
-
 💓 Please support the original [RVC repository](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) and [Mangio-RVC-Fork repository](https://github.com/Mangio621/Applio-RVC-Fork). Without it, obviously this fork wouldn't have been possible. The Applio-RVC-Fork aims to essentially enhance the features that the original RVC repo has in my own way. Please note that this fork is NOT STABLE and was forked with the intention of experimentation. Do not use this Fork thinking it is a "better" version of the original repo. Think of it more like another "version" of the original repo. Please note that this doesn't have a google colab. If you want to use google colab, go to the original repository. This fork is intended to be used with paperspace and local machines for now.
+
 > </b>
 
-
 ## Features that this fork has that the original repo doesn't ☑️
+
 - f0 Inference algorithm overhaul: 🌟
   - Added pyworld dio f0 method.
   - Added another way of calculating crepe f0 method. (mangio-crepe)
@@ -236,7 +236,6 @@ make tensorboard
 ```
 
 Then click the tensorboard link it provides and refresh the data.
-
 
 ## Credits
 

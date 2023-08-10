@@ -2082,7 +2082,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         )
 
                         file_index2 = gr.Dropdown(
-                            label="3. Path to your added.index file (if it didn't automatically find it.)",
+                            label=i18n("added.index 文件的路径（如果它没有自动找到该文件)"),
                             choices=get_indexes(),
                             value=get_index(),
                             interactive=True,
@@ -2368,22 +2368,22 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                 )
             )
             with gr.Row():
-                exp_dir1 = gr.Textbox(label=i18n("输入实验名"), value="mi-test")
+                exp_dir1 = gr.Textbox(label=i18n("输入实验名"), value=i18n("模型名称"))
                 sr2 = gr.Radio(
                     label=i18n("目标采样率"),
                     choices=["40k", "48k"],
-                    value="40k",
+                    value="48k",
                     interactive=True,
                 )
                 if_f0_3 = gr.Checkbox(
-                    label="Whether the model has pitch guidance.",
+                    label=i18n("模型是否具有俯仰引导功能"),
                     value=True,
                     interactive=True,
                 )
                 version19 = gr.Radio(
                     label=i18n("版本"),
                     choices=["v1", "v2"],
-                    value="v1",
+                    value="v2",
                     interactive=True,
                     visible=True,
                 )
@@ -2517,17 +2517,17 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         interactive=True,
                     )
                     if_save_latest13 = gr.Checkbox(
-                        label="Whether to save only the latest .ckpt file to save hard drive space",
+                        label="是否只保存最新的 .ckpt 文件以节省硬盘空间",
                         value=True,
                         interactive=True,
                     )
                     if_cache_gpu17 = gr.Checkbox(
-                        label="Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training, but caching large datasets will consume a lot of GPU memory and may not provide much speed improvement",
+                        label="将所有训练集缓存到 GPU 内存中。缓存小型数据集（少于 10 分钟）可以加快训练速度，但缓存大型数据集会消耗大量 GPU 内存，可能无法显著提高速度",
                         value=False,
                         interactive=True,
                     )
                     if_save_every_weights18 = gr.Checkbox(
-                        label="Save a small final model to the 'weights' folder at each save point",
+                        label="在每个保存点将一个小的最终模型保存到 权重 文件夹中",
                         value=True,
                         interactive=True,
                     )
