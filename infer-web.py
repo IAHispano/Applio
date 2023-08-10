@@ -2018,7 +2018,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="🍏 Applio-RVC-Fo
             # Other RVC stuff
             with gr.Row():
                 # sid0 = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names), value=check_for_name())
-                sid0 = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names), value="")
+                sid0 = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names), value="",interactive=True)
                 # input_audio_path2
 
                 refresh_button = gr.Button(
