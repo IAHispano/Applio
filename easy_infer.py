@@ -490,13 +490,13 @@ def save_to_wav2(dropbox):
     file_path=dropbox.name
     shutil.move(file_path,'./audios')
     return os.path.basename(file_path)
-
+audio_root = "audios"
 def change_choices2():
-    audio_files=[]
+    audio_paths = []
     for filename in os.listdir("./audios"):
         if filename.endswith(('.wav','.mp3')):
-            audio_files.append(filename)
-    return {"choices": sorted(audio_files), "__type__": "update"}
+            audio_paths.append(filename)
+    return {"choices": sorted(audio_paths), "__type__": "update"}
 
 def get_models_by_name(modelname):
     url = "https://script.google.com/macros/s/AKfycbzyrdLZzUww9qbjxnbnI08budD4yxbmRPHkWbp3UEJ9h3Id5cnNNVg0UtfFAnqqX5Rr/exec"
@@ -1060,7 +1060,7 @@ def download_model():
     with gr.Row():
         download_button=gr.Button(i18n("下载"))
     with gr.Row():
-        download_model_status_bar=gr.Textbox(label="status")
+        download_model_status_bar=gr.Textbox(label=i18n("地位"))
         download_button.click(fn=load_downloaded_model, inputs=[model_url], outputs=[download_model_status_bar])
 
 def download_backup():
@@ -1070,7 +1070,7 @@ def download_backup():
     with gr.Row():
         download_button=gr.Button(i18n("下载"))
     with gr.Row():
-        download_model_status_bar=gr.Textbox(label="status")
+        download_model_status_bar=gr.Textbox(label=i18n("地位"))
         download_button.click(fn=load_downloaded_backup, inputs=[model_url], outputs=[download_model_status_bar])
 
 def update_dataset_list(name):
@@ -1087,6 +1087,6 @@ def download_dataset(trainset_dir4):
     with gr.Row():
         load_dataset_button=gr.Button(i18n("下载"))
     with gr.Row():
-        load_dataset_status_bar=gr.Textbox(label="status")
+        load_dataset_status_bar=gr.Textbox(label=i18n("地位"))
         load_dataset_button.click(fn=load_dowloaded_dataset, inputs=[dataset_url], outputs=[load_dataset_status_bar])
         load_dataset_status_bar.change(update_dataset_list, dataset_url, trainset_dir4)

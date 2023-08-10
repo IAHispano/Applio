@@ -542,7 +542,7 @@ def get_vc(sid, to_return_protect0, to_return_protect1):
             "__type__": "update",
         }
         to_return_protect1 = {
-            "visible": True,
+            "visible": False,
             "value": to_return_protect1,
             "__type__": "update",
         }
@@ -1763,7 +1763,7 @@ def print_page_details():
             "\n    arg 5) speaker id: 0"
             "\n    arg 6) transposition: 0"
             "\n    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x], mangio-crepe, mangio-crepe-tiny, rmvpe)"
-            "\n    arg 8) crepe hop length: 128"
+            "\n    arg 8) crepe hop length: 160"
             "\n    arg 9) harvest median filter radius: 3 (0-7)"
             "\n    arg 10) post resample rate: 0"
             "\n    arg 11) mix volume envelope: 1"
@@ -1900,17 +1900,6 @@ def get_presets():
 
     return preset_names
 
-# Inference easy-infer datasets
-datasets=[]
-for foldername in os.listdir("./datasets"):
-    if "." not in foldername:
-        datasets.append(os.path.join(easy_infer.find_folder_parent(".","pretrained"),"datasets",foldername))
-        
-def get_dataset():
-    if len(datasets) > 0:
-        return sorted(datasets)[0]
-    else:
-        return ''
 
 def stepdisplay(if_save_every_weights):
     return {"visible": if_save_every_weights, "__type__": "update"}
@@ -2018,14 +2007,14 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
             # Other RVC stuff
             with gr.Row():
                 # sid0 = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names), value=check_for_name())
-                sid0 = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names), value="",interactive=True)
+                sid0 = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names), value="")
                 # input_audio_path2
 
                 refresh_button = gr.Button(
-                    i18n("刷新音色列表和索引路径"),
+                    i18n("Refresh voice list, index path and audio files"),
                     variant="primary",
                 )
-                clean_button = gr.Button(i18n("卸载音色省显存"), variant="primary",visible=False)
+                clean_button = gr.Button(i18n("卸载音色省显存"), variant="primary")
                 spk_item = gr.Slider(
                     minimum=0,
                     maximum=2333,
@@ -2047,10 +2036,9 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             label=i18n("变调(整数, 半音数量, 升八度12降八度-12)"), value=0
                         )
                         with gr.Row():
-                            dropbox = gr.File(label="Drag your audio here and hit the refresh button")
+                            dropbox = gr.File(label=i18n("将音频拖到此处，然后点击刷新按钮"))
                         with gr.Row():
-                            record_button=gr.Audio(source="microphone", label="Or record an audio.", type="filepath")
-                        
+                            record_button=gr.Audio(source="microphone", label=i18n("或录制音频。"), type="filepath")
                         input_audio0 = gr.Textbox(
                             label=i18n(
                                 "Add audio's name to the path to the audio file to be processed (default is the correct format example) Remove the path to use an audio from the dropdown list:"
@@ -2069,7 +2057,9 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             interactive=True,
                         )
                         dropbox.upload(fn=easy_infer.save_to_wav2, inputs=[dropbox], outputs=[input_audio1])
+                        dropbox.upload(fn=easy_infer.change_choices2, inputs=[], outputs=[input_audio1])
                         record_button.change(fn=easy_infer.save_to_wav, inputs=[record_button], outputs=[input_audio1])
+                        record_button.change(fn=easy_infer.change_choices2, inputs=[], outputs=[input_audio1])
                         input_audio1.change(
                             fn=lambda: "", inputs=[], outputs=[input_audio0]
                         )
@@ -2146,15 +2136,13 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             step=1,
                             interactive=True,
                         )
-                        
-                        
                 with gr.Column():
                     gr.Markdown(
                     value="",
                     scale="-0.5",
                     visible=True
                     )
-                    with gr.Accordion("Advanced Settings", open=False):
+                    with gr.Accordion(i18n("高级设置"), open=False):
                         resample_sr0 = gr.Slider(
                             minimum=0,
                             maximum=48000,
@@ -2267,14 +2255,12 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                     scale="-0.5",
                     visible=True
                     )
-                    
-                
                 with gr.Row():
                     f0_file = gr.File(label=i18n("F0曲线文件, 可选, 一行一个音高, 代替默认F0及升降调"),visible=False)
                     but0 = gr.Button(i18n("转换"), variant="primary")
+                  # with gr.Row():
                     vc_output1 = gr.Textbox(label=i18n("输出信息"))
                     vc_output2 = gr.Audio(label=i18n("输出音频(右下角三个点,点了可以下载)"))
-
                     but0.click(
                         vc_single,
                         [
@@ -2296,6 +2282,148 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         ],
                         [vc_output1, vc_output2],
                     )
+            with gr.Group():
+                gr.Markdown(
+                    value=i18n("批量转换, 输入待转换音频文件夹, 或上传多个音频文件, 在指定文件夹(默认opt)下输出转换的音频. "), visible=False
+                )
+                with gr.Row():
+                    with gr.Column():
+                        vc_transform1 = gr.Number(
+                            label=i18n("变调(整数, 半音数量, 升八度12降八度-12)"), value=0, visible=False
+                        )
+                        opt_input = gr.Textbox(label=i18n("指定输出文件夹"), value="opt", visible=False)
+                        f0method1 = gr.Radio(
+                            label=i18n(
+                                "选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比,crepe效果好但吃GPU"
+                            ),
+                            choices=["pm", "harvest", "crepe", "rmvpe"],
+                            value="rmvpe",
+                            interactive=True,
+                            visible=False
+                        )
+
+                        filter_radius1 = gr.Slider(
+                            minimum=0,
+                            maximum=7,
+                            label=i18n(">=3则使用对harvest音高识别的结果使用中值滤波，数值为滤波半径，使用可以削弱哑音"),
+                            value=3,
+                            step=1,
+                            interactive=True,
+                            visible=False
+                        )
+                    with gr.Column():
+                        file_index3 = gr.Textbox(
+                            label=i18n("特征检索库文件路径,为空则使用下拉的选择结果"),
+                            value="",
+                            interactive=True,
+                            visible=False
+                        )
+                        file_index4 = gr.Dropdown(  # file index dropdown for batch
+                            label=i18n("自动检测index路径,下拉式选择(dropdown)"),
+                            choices=get_indexes(),
+                            value=get_index(),
+                            interactive=True,
+                            visible=False
+                        )
+                        sid0.select(
+                            fn=match_index,
+                            inputs=[sid0],
+                            outputs=[file_index2, file_index4],
+                        )
+                        refresh_button.click(
+                            fn=lambda: change_choices()[1],
+                            inputs=[],
+                            outputs=file_index4,
+                        )
+                        # file_big_npy2 = gr.Textbox(
+                        #     label=i18n("特征文件路径"),
+                        #     value="E:\\codes\\py39\\vits_vc_gpu_train\\logs\\mi-test-1key\\total_fea.npy",
+                        #     interactive=True,
+                        # )
+                        index_rate2 = gr.Slider(
+                            minimum=0,
+                            maximum=1,
+                            label=i18n("检索特征占比"),
+                            value=1,
+                            interactive=True,
+                            visible=False
+                        )
+                    with gr.Column():
+                        resample_sr1 = gr.Slider(
+                            minimum=0,
+                            maximum=48000,
+                            label=i18n("后处理重采样至最终采样率，0为不进行重采样"),
+                            value=0,
+                            step=1,
+                            interactive=True,
+                            visible=False
+                        )
+                        rms_mix_rate1 = gr.Slider(
+                            minimum=0,
+                            maximum=1,
+                            label=i18n("输入源音量包络替换输出音量包络融合比例，越靠近1越使用输出包络"),
+                            value=1,
+                            interactive=True,
+                            visible=False
+                        )
+                        protect1 = gr.Slider(
+                            minimum=0,
+                            maximum=0.5,
+                            label=i18n(
+                                "保护清辅音和呼吸声，防止电音撕裂等artifact，拉满0.5不开启，调低加大保护力度但可能降低索引效果"
+                            ),
+                            value=0.33,
+                            step=0.01,
+                            interactive=True,
+                            visible=False
+                        )
+                    with gr.Column():
+                        dir_input = gr.Textbox(
+                            label=i18n("输入待处理音频文件夹路径(去文件管理器地址栏拷就行了)"),
+                            value=os.path.abspath(os.getcwd()).replace("\\", "/")
+                            + "/audios/",
+                            visible=False
+                        )
+                        inputs = gr.File(
+                            file_count="multiple", label=i18n("也可批量输入音频文件, 二选一, 优先读文件夹"), visible=False
+                        )
+                    with gr.Row():
+                        format1 = gr.Radio(
+                            label=i18n("导出文件格式"),
+                            choices=["wav", "flac", "mp3", "m4a"],
+                            value="flac",
+                            interactive=True,
+                            visible=False
+                        )
+                        but1 = gr.Button(i18n("转换"), variant="primary",visible=False)
+                        vc_output3 = gr.Textbox(label=i18n("输出信息"),visible=False)
+                    but1.click(
+                        vc_multi,
+                        [
+                            spk_item,
+                            dir_input,
+                            opt_input,
+                            inputs,
+                            vc_transform1,
+                            f0method1,
+                            file_index3,
+                            file_index4,
+                            # file_big_npy2,
+                            index_rate2,
+                            filter_radius1,
+                            resample_sr1,
+                            rms_mix_rate1,
+                            protect1,
+                            format1,
+                            crepe_hop_length,
+                        ],
+                        [vc_output3],
+                    )
+            sid0.change(
+                fn=get_vc,
+                inputs=[sid0, protect0, protect1],
+                outputs=[spk_item, protect0, protect1],
+            )
         with gr.TabItem(i18n("伴奏人声分离&去混响&去回声")):
             with gr.Group():
                 gr.Markdown(
@@ -2406,9 +2534,6 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         label=i18n("输入训练文件夹路径"),
                         value=os.path.abspath(os.getcwd()) + "\\datasets\\",
                     )
-                    #trainset_dir4 = gr.Dropdown(choices=sorted(datasets), label="Selecciona tu dataset.", value=get_dataset())
-                    #btn_update_dataset_list = gr.Button("Actualizar listado", variant="primary")
-
                     spk_id5 = gr.Slider(
                         minimum=0,
                         maximum=4,
@@ -2417,11 +2542,6 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         value=0,
                         interactive=True,
                     )
-
-                    #btn_update_dataset_list.click(
-                        #easy_infer.update_dataset_list, [spk_id5], trainset_dir4
-                    #)
-                    
                     but1 = gr.Button(i18n("处理数据"), variant="primary")
                     info1 = gr.Textbox(label=i18n("输出信息"), value="")
                     but1.click(
@@ -2505,7 +2625,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         maximum=10000,
                         step=1,
                         label=i18n("总训练轮数total_epoch"),
-                        value=500,
+                        value=20,
                         interactive=True,
                     )
                     batch_size12 = gr.Slider(
@@ -2606,14 +2726,8 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         inputs=[gr.Number(value=1, visible=False)],
                         outputs=[butstop, but3],
                     )
-                    with gr.Column(scale=0):
-                        gr.Markdown(value="<br>")
-                        gr.Markdown(value="### " + i18n("保存前构建索引。"))
-                        but4 = gr.Button(i18n("训练特征索引"), variant="primary")
-                        gr.Markdown(value="### " + i18n("训练结束后保存您的模型。"))
-                        save_action = gr.Dropdown(label=i18n("存储类型"), choices=[i18n("保存所有"),i18n("保存 D 和 G"),i18n("保存声音")], value=i18n("选择模型保存方法"), interactive=True)
-                        but7 = gr.Button(i18n("保存模型"), variant="primary")
-                    
+
+                    but4 = gr.Button(i18n("训练特征索引"), variant="primary")
                     # but5 = gr.Button(i18n("一键训练"), variant="primary")
                     info3 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=10)
 
@@ -2645,7 +2759,6 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                     )
 
                     but4.click(train_index, [exp_dir1, version19], info3)
-                    but7.click(easy_infer.save_model, [exp_dir1, save_action], info3)
 
                     # but5.click(
                     #    train1key,
@@ -2838,47 +2951,44 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                     info7,
                 )
 
-        #with gr.TabItem(i18n("Onnx导出")):
-            #with gr.Row():
-                #ckpt_dir = gr.Textbox(
-                    #label=i18n("RVC模型路径"),
-                    #value="",
-                    #interactive=True,
-                    #placeholder="RVC model path.",
-                #)
-            #with gr.Row():
-                #onnx_dir = gr.Textbox(
-                    #label=i18n("Onnx输出路径"),
-                    #value="",
-                    #interactive=True,
-                    #placeholder="Onnx model output path.",
-                #)
-            #with gr.Row():
-                #infoOnnx = gr.Label(label="info")
-            #with gr.Row():
-                #butOnnx = gr.Button(i18n("导出Onnx模型"), variant="primary")
-            #butOnnx.click(export_onnx, [ckpt_dir, onnx_dir], infoOnnx)
+      # with gr.TabItem(i18n("Onnx导出")):
+        #   with gr.Row():
+        #       ckpt_dir = gr.Textbox(
+        #           label=i18n("RVC模型路径"),
+        #           value="",
+        #           interactive=True,
+        #           placeholder="RVC model path.",
+        #       )
+        #   with gr.Row():
+        #       onnx_dir = gr.Textbox(
+        #           label=i18n("Onnx输出路径"),
+        #           value="",
+        #           interactive=True,
+        #           placeholder="Onnx model output path.",
+        #       )
+        #   with gr.Row():
+        #       infoOnnx = gr.Label(label="info")
+        #   with gr.Row():
+        #       butOnnx = gr.Button(i18n("导出Onnx模型"), variant="primary")
+        #   butOnnx.click(export_onnx, [ckpt_dir, onnx_dir], infoOnnx)
 
-        #tab_faq = i18n("常见问题解答")
-        #with gr.TabItem(tab_faq):
-            #try:
-                #if tab_faq == "常见问题解答":
-                    #with open("docs/faq.md", "r", encoding="utf8") as f:
-                        #info = f.read()
-                #else:
-                    #with open("docs/faq_en.md", "r", encoding="utf8") as f:
-                        #info = f.read()
-                #gr.Markdown(value=info)
-            #except:
-                #gr.Markdown(traceback.format_exc())
+        # tab_faq = i18n("常见问题解答")
+        # with gr.TabItem(tab_faq):
+        #     try:
+        #         if tab_faq == "常见问题解答":
+        #             with open("docs/faq.md", "r", encoding="utf8") as f:
+        #                 info = f.read()
+        #         else:
+        #             with open("docs/faq_en.md", "r", encoding="utf8") as f:
+        #                 info = f.read()
+        #         gr.Markdown(value=info)
+        #     except:
+        #         gr.Markdown(traceback.format_exc())
         with gr.TabItem(i18n("资源")):
             
             easy_infer.download_model()
             easy_infer.download_backup()
             easy_infer.download_dataset(trainset_dir4) 
-            #easy_infer.search_model()
-            #easy_infer.publish_models()
-
     # region Mangio Preset Handler Region
     def save_preset(
         preset_name,
