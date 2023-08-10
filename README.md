@@ -1,12 +1,11 @@
 <div align="center">
-<h1>🍏 Applio-RVC-Fork</h1>
-<h2></h2>
-A fork of an easy-to-use SVC framework based on VITS with top1 retrieval 💯. In general, this fork provides a CLI interface in addition. And also gives you more f0 methods to use, as well as a personlized 'hybrid' f0 estimation method using nanmedian. <br><br>
-<b>
+  <h1>🍏 Applio-RVC-Fork</h1>
+</div>
 
 
 
-> 💓 Please support the original [RVC repository](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) and [Applio-RVC-Fork repository](https://github.com/Mangio621/Applio-RVC-Fork). Without it, obviously this fork wouldn't have been possible. The Applio-RVC-Fork aims to essentially enhance the features that the original RVC repo has in my own way. Please note that this fork is NOT STABLE and was forked with the intention of experimentation. Do not use this Fork thinking it is a "better" version of the original repo. Think of it more like another "version" of the original repo. Please note that this doesn't have a google colab. If you want to use google colab, go to the original repository. This fork is intended to be used with paperspace and local machines for now.
+
+> 💓 Please support the original [RVC repository](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) and [Mangio-RVC-Fork repository](https://github.com/Mangio621/Applio-RVC-Fork). Without it, obviously this fork wouldn't have been possible. The Applio-RVC-Fork aims to essentially enhance the features that the original RVC repo has in my own way. Please note that this fork is NOT STABLE and was forked with the intention of experimentation. Do not use this Fork thinking it is a "better" version of the original repo. Think of it more like another "version" of the original repo. Please note that this doesn't have a google colab. If you want to use google colab, go to the original repository. This fork is intended to be used with paperspace and local machines for now.
 > </b>
 
 # Summary 📘
