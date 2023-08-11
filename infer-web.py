@@ -2039,10 +2039,9 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             dropbox = gr.File(label=i18n("将音频拖到此处，然后点击刷新按钮"))
                         with gr.Row():
                             record_button=gr.Audio(source="microphone", label=i18n("或录制音频"), type="filepath")
-                        
                         input_audio0 = gr.Textbox(
                             label=i18n(
-                                "在要处理的音频文件路径中添加音频名称（默认为正确格式示例），从下拉列表中移除使用音频的路径："
+                                "Add audio's name to the path to the audio file to be processed (default is the correct format example) Remove the path to use an audio from the dropdown list:"
                             ),
                             value=os.path.abspath(os.getcwd()).replace("\\", "/")
                             + "/audios/"
@@ -2051,7 +2050,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         )
                         input_audio1 = gr.Dropdown(
                             label=i18n(
-                                "自动检测音频路径并从下拉菜单中选择："
+                                "Auto detect audio path and select from the dropdown:"
                             ),
                             choices=sorted(audio_paths),
                             value="",
@@ -2073,7 +2072,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         )
 
                         file_index2 = gr.Dropdown(
-                            label=i18n("added.index 文件的路径（如果它没有自动找到该文件)"),
+                            label="3. Path to your added.index file (if it didn't automatically find it.)",
                             choices=get_indexes(),
                             value=get_index(),
                             interactive=True,
@@ -2497,22 +2496,22 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                 )
             )
             with gr.Row():
-                exp_dir1 = gr.Textbox(label=i18n("输入实验名"), value=i18n("模型名称"))
+                exp_dir1 = gr.Textbox(label=i18n("输入实验名"), value="mi-test")
                 sr2 = gr.Radio(
                     label=i18n("目标采样率"),
                     choices=["40k", "48k"],
-                    value="48k",
+                    value="40k",
                     interactive=True,
                 )
                 if_f0_3 = gr.Checkbox(
-                    label=i18n("模型是否具有俯仰引导功能"),
+                    label="Whether the model has pitch guidance.",
                     value=True,
                     interactive=True,
                 )
                 version19 = gr.Radio(
                     label=i18n("版本"),
                     choices=["v1", "v2"],
-                    value="v2",
+                    value="v1",
                     interactive=True,
                     visible=True,
                 )
@@ -2617,7 +2616,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         maximum=50,
                         step=1,
                         label=i18n("保存频率save_every_epoch"),
-                        value=10,
+                        value=5,
                         interactive=True,
                         visible=True,
                     )
@@ -2626,7 +2625,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         maximum=10000,
                         step=1,
                         label=i18n("总训练轮数total_epoch"),
-                        value=750,
+                        value=200,
                         interactive=True,
                     )
                     batch_size12 = gr.Slider(
@@ -2638,17 +2637,17 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         interactive=True,
                     )
                     if_save_latest13 = gr.Checkbox(
-                        label=i18n("是否只保存最新的 .ckpt 文件以节省硬盘空间"),
+                        label="Whether to save only the latest .ckpt file to save hard drive space",
                         value=True,
                         interactive=True,
                     )
                     if_cache_gpu17 = gr.Checkbox(
-                        label=i18n("将所有训练集缓存到 GPU 内存中。缓存小型数据集（少于 10 分钟）可以加快训练速度，但缓存大型数据集会消耗大量 GPU 内存，可能无法显著提高速度"),
+                        label="Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training, but caching large datasets will consume a lot of GPU memory and may not provide much speed improvement",
                         value=False,
                         interactive=True,
                     )
                     if_save_every_weights18 = gr.Checkbox(
-                        label=i18n("在每个保存点将一个小的最终模型保存到 权重 文件夹中"),
+                        label="Save a small final model to the 'weights' folder at each save point",
                         value=True,
                         interactive=True,
                     )
@@ -2706,6 +2705,11 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         inputs=[f0method8],
                         outputs=[extraction_crepe_hop_length],
                     )
+                    gpus16 = gr.Textbox(
+                        label=i18n("以-分隔输入使用的卡号, 例如   0-1-2   使用卡0和卡1和卡2"),
+                        value=gpus,
+                        interactive=True,
+                    )
                     butstop = gr.Button(
                         "Stop Training",
                         variant="primary",
@@ -2746,6 +2750,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             if_save_latest13,
                             pretrained_G14,
                             pretrained_D15,
+                            gpus16,
                             if_cache_gpu17,
                             if_save_every_weights18,
                             version19,
