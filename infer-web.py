@@ -2038,7 +2038,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         with gr.Row():
                             dropbox = gr.File(label=i18n("将音频拖到此处，然后点击刷新按钮"))
                         with gr.Row():
-                            record_button=gr.Audio(source="microphone", label=i18n("或录制音频。"), type="filepath")
+                            record_button=gr.Audio(source="microphone", label=i18n("或录制音频"), type="filepath")
                         
                         input_audio0 = gr.Textbox(
                             label=i18n(
@@ -2171,8 +2171,8 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         )
                         formanting = gr.Checkbox(
                             value=bool(DoFormant),
-                            label="[EXPERIMENTAL] Formant shift inference audio",
-                            info="Used for male to female and vice-versa conversions",
+                            label=i18n("[实验] 共振声移动推理音频"),
+                            info=i18n("用于将男性转换为女性，反之亦然"),
                             interactive=True,
                             visible=True,
                         )
@@ -2626,7 +2626,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         maximum=10000,
                         step=1,
                         label=i18n("总训练轮数total_epoch"),
-                        value=500,
+                        value=750,
                         interactive=True,
                     )
                     batch_size12 = gr.Slider(
