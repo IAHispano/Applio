@@ -2038,7 +2038,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         with gr.Row():
                             dropbox = gr.File(label=i18n("将音频拖到此处，然后点击刷新按钮"))
                         with gr.Row():
-                            record_button=gr.Audio(source="microphone", label="Or record an audio.", type="filepath")
+                            record_button=gr.Audio(source="microphone", label=i18n("或录制音频。"), type="filepath")
                         
                         input_audio0 = gr.Textbox(
                             label=i18n(
