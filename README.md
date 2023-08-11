@@ -39,7 +39,7 @@
 - Automatic removal of old generations to save space.
 - More Optimized training on paperspace machines
 
-# About this fork's f0 Hybrid feature on inference
+## About this fork's f0 Hybrid feature on inference
 
 Right now, the hybrid f0 method is only available on CLI, not GUI yet. But basically during inference, we can specify an array of f0 methods, E.G ["pm", "harvest", "crepe"], get f0 calculations of all of them and 'combine' them with nanmedian to get a hybrid f0 signal to get the 'best of all worlds' of the f0 methods provided.
 
@@ -60,7 +60,7 @@ hybrid[pm+harvest+crepe]
 
 Many f0 methods may be used. But are to be split with a delimiter of the '+' character. Keep in mind that inference will take much longer as we are calculating f0 X more times.
 
-# About the original repo's crepe method, compared to this forks crepe method (mangio-crepe)
+## About the original repo's crepe method, compared to this forks crepe method (mangio-crepe)
 
 The original repos crepe f0 computation method is slightly different to mine. Its arguable that in some areas, my crepe implementation sounds more stable in some parts. However, the orginal repo's crepe implementation gets rid of noise and artifacts much better. In this fork, my own crepe implementation (mangio-crepe) uses a customizable crepe_hop_length feature on both the GUI and the CLI which the original crepe doesnt have. Please let it be known, that each implementation sounds slightly different, and there isn't a clear "better" or "worse". It all depends on the context!
 
@@ -240,7 +240,7 @@ Then click the tensorboard link it provides and refresh the data.
 ## Credits
 
 - [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI)
-- [Applio-RVC-Fork](https://github.com/Mangio621/Applio-RVC-Fork).
+- [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork)
 - [ContentVec](https://github.com/auspicious3000/contentvec/)
 - [VITS](https://github.com/jaywalnut310/vits)
 - [HIFIGAN](https://github.com/jik876/hifi-gan)
