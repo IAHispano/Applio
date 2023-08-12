@@ -23,7 +23,6 @@ from random import shuffle
 from subprocess import Popen
 from time import sleep
 import easy_infer
-
 import faiss
 import ffmpeg
 import gradio as gr
@@ -2011,7 +2010,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                 # input_audio_path2
 
                 refresh_button = gr.Button(
-                    i18n("Refresh voice list, index path and audio files"),
+                    i18n(i18n("刷新音色列表和索引路径")),
                     variant="primary",
                 )
                 clean_button = gr.Button(i18n("卸载音色省显存"), variant="primary")
@@ -2027,6 +2026,9 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                 clean_button.click(fn=clean, inputs=[], outputs=[sid0])
 
             with gr.Group():
+              # gr.Markdown(
+              #     value=i18n("男转女推荐+12key, 女转男推荐-12key, 如果音域爆炸导致音色失真也可以自己调整到合适音域. ")
+              # )
                 with gr.Row():
                     with gr.Column():
                         vc_transform0 = gr.Number(
@@ -2047,7 +2049,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         )
                         input_audio1 = gr.Dropdown(
                             label=i18n(
-                                "Auto detect audio path and select from the dropdown:"
+                                "自动检测音频路径并从下拉菜单中选择："
                             ),
                             choices=sorted(audio_paths),
                             value="",
@@ -2069,7 +2071,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         )
 
                         file_index2 = gr.Dropdown(
-                            label="3. Path to your added.index file (if it didn't automatically find it.)",
+                            label=i18n("自动检测index路径,下拉式选择(dropdown)"),
                             choices=get_indexes(),
                             value=get_index(),
                             interactive=True,
@@ -2295,8 +2297,8 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             ),
                             choices=["pm", "harvest", "crepe", "rmvpe"],
                             value="rmvpe",
+                            visible=False,
                             interactive=True,
-                            visible=False
                         )
 
                         filter_radius1 = gr.Slider(
@@ -2305,22 +2307,22 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             label=i18n(">=3则使用对harvest音高识别的结果使用中值滤波，数值为滤波半径，使用可以削弱哑音"),
                             value=3,
                             step=1,
+                            visible=False,
                             interactive=True,
-                            visible=False
                         )
                     with gr.Column():
                         file_index3 = gr.Textbox(
                             label=i18n("特征检索库文件路径,为空则使用下拉的选择结果"),
                             value="",
+                            visible=False,
                             interactive=True,
-                            visible=False
                         )
                         file_index4 = gr.Dropdown(  # file index dropdown for batch
                             label=i18n("自动检测index路径,下拉式选择(dropdown)"),
                             choices=get_indexes(),
                             value=get_index(),
+                            visible=False,
                             interactive=True,
-                            visible=False
                         )
                         sid0.select(
                             fn=match_index,
@@ -2342,8 +2344,8 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             maximum=1,
                             label=i18n("检索特征占比"),
                             value=1,
+                            visible=False,
                             interactive=True,
-                            visible=False
                         )
                     with gr.Column():
                         resample_sr1 = gr.Slider(
@@ -2352,16 +2354,16 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             label=i18n("后处理重采样至最终采样率，0为不进行重采样"),
                             value=0,
                             step=1,
+                            visible=False,
                             interactive=True,
-                            visible=False
                         )
                         rms_mix_rate1 = gr.Slider(
                             minimum=0,
                             maximum=1,
                             label=i18n("输入源音量包络替换输出音量包络融合比例，越靠近1越使用输出包络"),
                             value=1,
+                            visible=False,
                             interactive=True,
-                            visible=False
                         )
                         protect1 = gr.Slider(
                             minimum=0,
@@ -2371,15 +2373,15 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             ),
                             value=0.33,
                             step=0.01,
+                            visible=False,
                             interactive=True,
-                            visible=False
                         )
                     with gr.Column():
                         dir_input = gr.Textbox(
                             label=i18n("输入待处理音频文件夹路径(去文件管理器地址栏拷就行了)"),
                             value=os.path.abspath(os.getcwd()).replace("\\", "/")
                             + "/audios/",
-                            visible=False
+                            visible=False,
                         )
                         inputs = gr.File(
                             file_count="multiple", label=i18n("也可批量输入音频文件, 二选一, 优先读文件夹"), visible=False
@@ -2389,8 +2391,8 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                             label=i18n("导出文件格式"),
                             choices=["wav", "flac", "mp3", "m4a"],
                             value="flac",
+                            visible=False,
                             interactive=True,
-                            visible=False
                         )
                         but1 = gr.Button(i18n("转换"), variant="primary",visible=False)
                         vc_output3 = gr.Textbox(label=i18n("输出信息"),visible=False)
@@ -2421,6 +2423,71 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                 inputs=[sid0, protect0, protect1],
                 outputs=[spk_item, protect0, protect1],
             )
+        with gr.TabItem(i18n("伴奏人声分离&去混响&去回声")):
+            with gr.Group():
+                gr.Markdown(
+                    value=i18n(
+                        "人声伴奏分离批量处理， 使用UVR5模型。 <br>"
+                        "合格的文件夹路径格式举例： E:\\codes\\py39\\vits_vc_gpu\\白鹭霜华测试样例(去文件管理器地址栏拷就行了)。 <br>"
+                        "模型分为三类： <br>"
+                        "1、保留人声：不带和声的音频选这个，对主人声保留比HP5更好。内置HP2和HP3两个模型，HP3可能轻微漏伴奏但对主人声保留比HP2稍微好一丁点； <br>"
+                        "2、仅保留主人声：带和声的音频选这个，对主人声可能有削弱。内置HP5一个模型； <br> "
+                        "3、去混响、去延迟模型（by FoxJoy）：<br>"
+                        "  (1)MDX-Net(onnx_dereverb):对于双通道混响是最好的选择，不能去除单通道混响；<br>"
+                        "&emsp;(234)DeEcho:去除延迟效果。Aggressive比Normal去除得更彻底，DeReverb额外去除混响，可去除单声道混响，但是对高频重的板式混响去不干净。<br>"
+                        "去混响/去延迟，附：<br>"
+                        "1、DeEcho-DeReverb模型的耗时是另外2个DeEcho模型的接近2倍；<br>"
+                        "2、MDX-Net-Dereverb模型挺慢的；<br>"
+                        "3、个人推荐的最干净的配置是先MDX-Net再DeEcho-Aggressive。"
+                    )
+                )
+                with gr.Row():
+                    with gr.Column():
+                        dir_wav_input = gr.Textbox(
+                            label=i18n("输入待处理音频文件夹路径"),
+                            value=((os.getcwd()).replace("\\", "/") + "/audios/"),
+                        )
+                        wav_inputs = gr.File(
+                            file_count="multiple", label=i18n("也可批量输入音频文件, 二选一, 优先读文件夹")
+                        )  #####
+                    with gr.Column():
+                        model_choose = gr.Dropdown(label=i18n("模型"), choices=uvr5_names)
+                        agg = gr.Slider(
+                            minimum=0,
+                            maximum=20,
+                            step=1,
+                            label="人声提取激进程度",
+                            value=10,
+                            interactive=True,
+                            visible=False,  # 先不开放调整
+                        )
+                        opt_vocal_root = gr.Textbox(
+                            label=i18n("指定输出主人声文件夹"), value="opt"
+                        )
+                        opt_ins_root = gr.Textbox(
+                            label=i18n("指定输出非主人声文件夹"), value="opt"
+                        )
+                        format0 = gr.Radio(
+                            label=i18n("导出文件格式"),
+                            choices=["wav", "flac", "mp3", "m4a"],
+                            value="flac",
+                            interactive=True,
+                        )
+                    but2 = gr.Button(i18n("转换"), variant="primary")
+                    vc_output4 = gr.Textbox(label=i18n("输出信息"))
+                    but2.click(
+                        uvr,
+                        [
+                            model_choose,
+                            dir_wav_input,
+                            opt_vocal_root,
+                            wav_inputs,
+                            opt_ins_root,
+                            agg,
+                            format0,
+                        ],
+                        [vc_output4],
+                    )
         with gr.TabItem(i18n("训练")):
             gr.Markdown(
                 value=i18n(
@@ -2436,7 +2503,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                     interactive=True,
                 )
                 if_f0_3 = gr.Checkbox(
-                    label="Whether the model has pitch guidance.",
+                    label=i18n("模型是否具有俯仰引导功能"),
                     value=True,
                     interactive=True,
                 )
@@ -2464,7 +2531,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                 with gr.Row():
                     trainset_dir4 = gr.Textbox(
                         label=i18n("输入训练文件夹路径"),
-                        value=os.path.abspath(os.getcwd()) + "\\datasets\\",
+                        value=os.path.abspath(os.getcwd()) + "\\datasets\\" + i18n("数据集名"),
                     )
                     spk_id5 = gr.Slider(
                         minimum=0,
@@ -2557,7 +2624,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         maximum=10000,
                         step=1,
                         label=i18n("总训练轮数total_epoch"),
-                        value=200,
+                        value=20,
                         interactive=True,
                     )
                     batch_size12 = gr.Slider(
@@ -2569,17 +2636,17 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         interactive=True,
                     )
                     if_save_latest13 = gr.Checkbox(
-                        label="Whether to save only the latest .ckpt file to save hard drive space",
+                        label=i18n("是否只保存最新的 .ckpt 文件以节省硬盘空间"),
                         value=True,
                         interactive=True,
                     )
                     if_cache_gpu17 = gr.Checkbox(
-                        label="Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training, but caching large datasets will consume a lot of GPU memory and may not provide much speed improvement",
+                        label=i18n("将所有训练集缓存到 GPU 内存中。缓存小型数据集（少于 10 分钟）可以加快训练速度，但缓存大型数据集会消耗大量 GPU 内存，可能无法显著提高速度"),
                         value=False,
                         interactive=True,
                     )
                     if_save_every_weights18 = gr.Checkbox(
-                        label="Save a small final model to the 'weights' folder at each save point",
+                        label=i18n("在每个保存点将一个小的最终模型保存到 权重 文件夹中"),
                         value=True,
                         interactive=True,
                     )
@@ -2641,6 +2708,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         label=i18n("以-分隔输入使用的卡号, 例如   0-1-2   使用卡0和卡1和卡2"),
                         value=gpus,
                         interactive=True,
+                        visible=False,
                     )
                     butstop = gr.Button(
                         "Stop Training",
@@ -2659,7 +2727,14 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                         outputs=[butstop, but3],
                     )
 
-                    but4 = gr.Button(i18n("训练特征索引"), variant="primary")
+                    with gr.Column(scale=0):
+                        gr.Markdown(value="<br>")
+                        gr.Markdown(value="### " + i18n("保存前构建索引。"))
+                        but4 = gr.Button(i18n("训练特征索引"), variant="primary")
+                        gr.Markdown(value="### " + i18n("训练结束后保存您的模型。"))
+                        save_action = gr.Dropdown(label=i18n("存储类型"), choices=[i18n("保存所有"),i18n("保存 D 和 G"),i18n("保存声音")], value=i18n("选择模型保存方法"), interactive=True)
+                        but7 = gr.Button(i18n("保存模型"), variant="primary")
+                    
                     # but5 = gr.Button(i18n("一键训练"), variant="primary")
                     info3 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=10)
 
@@ -2691,6 +2766,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                     )
 
                     but4.click(train_index, [exp_dir1, version19], info3)
+                    but7.click(easy_infer.save_model, [exp_dir1, save_action], info3)
 
                     # but5.click(
                     #    train1key,
@@ -2717,272 +2793,201 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") 
                     #    info3,
                     # )
 
-        with gr.TabItem(i18n("ckpt处理")):
-            with gr.Group():
-                gr.Markdown(value=i18n("模型融合, 可用于测试音色融合"))
-                with gr.Row():
-                    ckpt_a = gr.Textbox(
-                        label=i18n("A模型路径"),
-                        value="",
-                        interactive=True,
-                        placeholder="Path to your model A.",
-                    )
-                    ckpt_b = gr.Textbox(
-                        label=i18n("B模型路径"),
-                        value="",
-                        interactive=True,
-                        placeholder="Path to your model B.",
-                    )
-                    alpha_a = gr.Slider(
-                        minimum=0,
-                        maximum=1,
-                        label=i18n("A模型权重"),
-                        value=0.5,
-                        interactive=True,
-                    )
-                with gr.Row():
-                    sr_ = gr.Radio(
-                        label=i18n("目标采样率"),
-                        choices=["40k", "48k"],
-                        value="40k",
-                        interactive=True,
-                    )
-                    if_f0_ = gr.Checkbox(
-                        label="Whether the model has pitch guidance.",
-                        value=True,
-                        interactive=True,
-                    )
-                    info__ = gr.Textbox(
-                        label=i18n("要置入的模型信息"),
-                        value="",
-                        max_lines=8,
-                        interactive=True,
-                        placeholder="Model information to be placed.",
-                    )
-                    name_to_save0 = gr.Textbox(
-                        label=i18n("保存的模型名不带后缀"),
-                        value="",
-                        placeholder="Name for saving.",
-                        max_lines=1,
-                        interactive=True,
-                    )
-                    version_2 = gr.Radio(
-                        label=i18n("模型版本型号"),
-                        choices=["v1", "v2"],
-                        value="v1",
-                        interactive=True,
-                    )
-                with gr.Row():
-                    but6 = gr.Button(i18n("融合"), variant="primary")
-                    info4 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8)
-                but6.click(
-                    merge,
-                    [
-                        ckpt_a,
-                        ckpt_b,
-                        alpha_a,
-                        sr_,
-                        if_f0_,
-                        info__,
-                        name_to_save0,
-                        version_2,
-                    ],
-                    info4,
-                )  # def merge(path1,path2,alpha1,sr,f0,info):
-            with gr.Group():
-                gr.Markdown(value=i18n("修改模型信息(仅支持weights文件夹下提取的小模型文件)"))
-                with gr.Row():  ######
-                    ckpt_path0 = gr.Textbox(
-                        label=i18n("模型路径"),
-                        placeholder="Path to your Model.",
-                        value="",
-                        interactive=True,
-                    )
-                    info_ = gr.Textbox(
-                        label=i18n("要改的模型信息"),
-                        value="",
-                        max_lines=8,
-                        interactive=True,
-                        placeholder="Model information to be changed.",
-                    )
-                    name_to_save1 = gr.Textbox(
-                        label=i18n("保存的文件名, 默认空为和源文件同名"),
-                        placeholder="Either leave empty or put in the Name of the Model to be saved.",
-                        value="",
-                        max_lines=8,
-                        interactive=True,
-                    )
-                with gr.Row():
-                    but7 = gr.Button(i18n("修改"), variant="primary")
-                    info5 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8)
-                but7.click(change_info, [ckpt_path0, info_, name_to_save1], info5)
-            with gr.Group():
-                gr.Markdown(value=i18n("查看模型信息(仅支持weights文件夹下提取的小模型文件)"))
-                with gr.Row():
-                    ckpt_path1 = gr.Textbox(
-                        label=i18n("模型路径"),
-                        value="",
-                        interactive=True,
-                        placeholder="Model path here.",
-                    )
-                    but8 = gr.Button(i18n("查看"), variant="primary")
-                    info6 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8)
-                but8.click(show_info, [ckpt_path1], info6)
-            with gr.Group():
-                gr.Markdown(
-                    value=i18n(
-                        "模型提取(输入logs文件夹下大文件模型路径),适用于训一半不想训了模型没有自动提取保存小文件模型,或者想测试中间模型的情况"
-                    )
-                )
-                with gr.Row():
-                    ckpt_path2 = gr.Textbox(
-                        lines=3,
-                        label=i18n("模型路径"),
-                        value=os.path.abspath(os.getcwd()).replace("\\", "/")
-                        + "/logs/[YOUR_MODEL]/G_23333.pth",
-                        interactive=True,
-                    )
-                    save_name = gr.Textbox(
-                        label=i18n("保存名"),
-                        value="",
-                        interactive=True,
-                        placeholder="Your filename here.",
-                    )
-                    sr__ = gr.Radio(
-                        label=i18n("目标采样率"),
-                        choices=["32k", "40k", "48k"],
-                        value="40k",
-                        interactive=True,
-                    )
-                    if_f0__ = gr.Checkbox(
-                        label="Whether the model has pitch guidance.",
-                        value=True,
-                        interactive=True,
-                    )
-                    version_1 = gr.Radio(
-                        label=i18n("模型版本型号"),
-                        choices=["v1", "v2"],
-                        value="v2",
-                        interactive=True,
-                    )
-                    info___ = gr.Textbox(
-                        label=i18n("要置入的模型信息"),
-                        value="",
-                        max_lines=8,
-                        interactive=True,
-                        placeholder="Model info here.",
-                    )
-                    but9 = gr.Button(i18n("提取"), variant="primary")
-                    info7 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8)
-                    ckpt_path2.change(
-                        change_info_, [ckpt_path2], [sr__, if_f0__, version_1]
-                    )
-                but9.click(
-                    extract_small_model,
-                    [ckpt_path2, save_name, sr__, if_f0__, info___, version_1],
-                    info7,
-                )
+      # with gr.TabItem(i18n("ckpt处理"),visible=False):
+      #     with gr.Group():
+      #         gr.Markdown(value=i18n("模型融合, 可用于测试音色融合"),visible=False)
+      #         with gr.Row():
+      #             ckpt_a = gr.Textbox(
+      #                 label=i18n("A模型路径"),
+      #                 value="",
+      #                 interactive=True,
+      #                 placeholder="Path to your model A.",
+      #                 visible=False,
+      #             )
+      #             ckpt_b = gr.Textbox(
+      #                 label=i18n("B模型路径"),
+      #                 value="",
+      #                 interactive=True,
+      #                 placeholder="Path to your model B.",
+      #                 visible=False,
+      #             )
+      #             alpha_a = gr.Slider(
+      #                 minimum=0,
+      #                 maximum=1,
+      #                 label=i18n("A模型权重"),
+      #                 value=0.5,
+      #                 interactive=True,
+      #                 visible=False,
+      #             )
+      #         with gr.Row():
+      #             sr_ = gr.Radio(
+      #                 label=i18n("目标采样率"),
+      #                 choices=["40k", "48k"],
+      #                 value="40k",
+      #                 interactive=True,
+      #                 visible=False,
+      #             )
+      #             if_f0_ = gr.Checkbox(
+      #                 label="Whether the model has pitch guidance.",
+      #                 value=True,
+      #                 interactive=True,
+      #                 visible=False,
+      #             )
+      #             info__ = gr.Textbox(
+      #                 label=i18n("要置入的模型信息"),
+      #                 value="",
+      #                 max_lines=8,
+      #                 interactive=True,
+      #                 placeholder="Model information to be placed.",
+      #                 visible=False,
+      #             )
+      #             name_to_save0 = gr.Textbox(
+      #                 label=i18n("保存的模型名不带后缀"),
+      #                 value="",
+      #                 placeholder="Name for saving.",
+      #                 max_lines=1,
+      #                 interactive=True,
+      #                 visible=False,
+      #             )
+      #              version_2 = gr.Radio(
+      #                 label=i18n("模型版本型号"),
+      #                 choices=["v1", "v2"],
+      #                 value="v1",
+      #                 interactive=True,
+      #                 visible=False,
+      #             )
+      #         with gr.Row():
+      #             but6 = gr.Button(i18n("融合"), variant="primary",visible=False)
+      #             info4 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8,visible=False)
+      #         but6.click(
+      #             merge,
+      #             [
+      #                 ckpt_a,
+      #                 ckpt_b,
+      #                 alpha_a,
+      #                 sr_,
+      #                 if_f0_,
+      #                 info__,
+      #                 name_to_save0,
+      #                 version_2,
+      #             ],
+      #             info4,
+      #         )  # def merge(path1,path2,alpha1,sr,f0,info):
+      #     with gr.Group():
+      #         gr.Markdown(value=i18n("修改模型信息(仅支持weights文件夹下提取的小模型文件)"),visible=False)
+      #         with gr.Row():  ######
+      #             ckpt_path0 = gr.Textbox(
+      #                 label=i18n("模型路径"),
+      #                 placeholder="Path to your Model.",
+      #                 value="",
+      #                 interactive=True,
+      #                 visible=False,
+      #             )
+      #             info_ = gr.Textbox(
+      #                 label=i18n("要改的模型信息"),
+      #                 value="",
+      #                 max_lines=8,
+      #                 interactive=True,
+      #                 placeholder="Model information to be changed.",
+      #                 visible=False,
+      #             )
+      #             name_to_save1 = gr.Textbox(
+      #                 label=i18n("保存的文件名, 默认空为和源文件同名"),
+      #                 placeholder="Either leave empty or put in the Name of the Model to be saved.",
+      #                 value="",
+      #                 max_lines=8,
+      #                 interactive=True,
+      #                 visible=False,
+      #             )
+      #         with gr.Row():
+      #             but7 = gr.Button(i18n("修改"), variant="primary",visible=False)
+      #             info5 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8,visible=False)
+      #         but7.click(change_info, [ckpt_path0, info_, name_to_save1], info5)
+      #     with gr.Group():
+      #         gr.Markdown(value=i18n("查看模型信息(仅支持weights文件夹下提取的小模型文件)"),visible=False)
+      #         with gr.Row():
+      #             ckpt_path1 = gr.Textbox(
+      #                 label=i18n("模型路径"),
+      #                 value="",
+      #                 interactive=True,
+      #                 placeholder="Model path here.",
+      #                 visible=False,
+      #             )
+      #             but8 = gr.Button(i18n("查看"), variant="primary",visible=False)
+      #             info6 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8,visible=False)
+      #         but8.click(show_info, [ckpt_path1], info6)
+      #     with gr.Group():
+      #         gr.Markdown(
+      #             value=i18n(
+      #                 "模型提取(输入logs文件夹下大文件模型路径),适用于训一半不想训了模型没有自动提取保存小文件模型,或者想测试中间模型的情况"
+      #             ),
+      #             visible=False
+      #         )
+      #         with gr.Row():
+      #             ckpt_path2 = gr.Textbox(
+      #                 lines=3,
+      #                 label=i18n("模型路径"),
+      #                 value=os.path.abspath(os.getcwd()).replace("\\", "/")
+      #                 + "/logs/[YOUR_MODEL]/G_23333.pth",
+      #                 interactive=True,
+      #                 visible=False,
+      #             )
+      #             save_name = gr.Textbox(
+      #                 label=i18n("保存名"),
+      #                 value="",
+      #                 interactive=True,
+      #                 placeholder="Your filename here.",
+      #                 visible=False,
+      #             )
+      #              sr__ = gr.Radio(
+      #                 label=i18n("目标采样率"),
+      #                 choices=["32k", "40k", "48k"],
+      #             but9 = gr.Button(i18n("提取"), variant="primary",visible=False)
+      #             info7 = gr.Textbox(label=i18n("输出信息"), value="", max_lines=8,visible=False)
+      #             ckpt_path2.change(
+      #                 change_info_, [ckpt_path2], [sr__, if_f0__, version_1]
+      #             )
+      #         but9.click(
+      #             extract_small_model,
+      #             [ckpt_path2, save_name, sr__, if_f0__, info___, version_1],
+      #             info7,
+      #         )
 
-      # with gr.TabItem(i18n("Onnx导出")):
-        #   with gr.Row():
-        #       ckpt_dir = gr.Textbox(
-        #           label=i18n("RVC模型路径"),
-        #           value="",
-        #           interactive=True,
-        #           placeholder="RVC model path.",
-        #       )
-        #   with gr.Row():
-        #       onnx_dir = gr.Textbox(
-        #           label=i18n("Onnx输出路径"),
-        #           value="",
-        #           interactive=True,
-        #           placeholder="Onnx model output path.",
-        #       )
-        #   with gr.Row():
-        #       infoOnnx = gr.Label(label="info")
-        #   with gr.Row():
-        #       butOnnx = gr.Button(i18n("导出Onnx模型"), variant="primary")
-        #   butOnnx.click(export_onnx, [ckpt_dir, onnx_dir], infoOnnx)
+      # with gr.TabItem(i18n("Onnx导出"),visible=False):
+      #     with gr.Row():
+      #         ckpt_dir = gr.Textbox(
+      #             label=i18n("RVC模型路径"),
+      #             value="",
+      #             interactive=True,
+      #             placeholder="RVC model path.",
+      #             visible=False,
+      #         )
+      #     with gr.Row():
+      #         onnx_dir = gr.Textbox(
+      #             label=i18n("Onnx输出路径"),
+      #             value="",
+      #             interactive=True,
+      #             placeholder="Onnx model output path.",
+      #             visible=False,
+      #         )
+      #     with gr.Row():
+      #         infoOnnx = gr.Label(label="info",visible=False)
+      #     with gr.Row():
+      #         butOnnx = gr.Button(i18n("导出Onnx模型"), variant="primary",visible=False)
+      #     butOnnx.click(export_onnx, [ckpt_dir, onnx_dir], infoOnnx)
 
-        # tab_faq = i18n("常见问题解答")
-        # with gr.TabItem(tab_faq):
-        #     try:
-        #         if tab_faq == "常见问题解答":
-        #             with open("docs/faq.md", "r", encoding="utf8") as f:
-        #                 info = f.read()
-        #         else:
-        #             with open("docs/faq_en.md", "r", encoding="utf8") as f:
-        #                 info = f.read()
-        #         gr.Markdown(value=info)
-        #     except:
-        #         gr.Markdown(traceback.format_exc())
-        
-        with gr.TabItem(i18n("伴奏人声分离&去混响&去回声")):
-            with gr.Group():
-                gr.Markdown(
-                    value=i18n(
-                        "人声伴奏分离批量处理， 使用UVR5模型。 <br>"
-                        "合格的文件夹路径格式举例： E:\\codes\\py39\\vits_vc_gpu\\白鹭霜华测试样例(去文件管理器地址栏拷就行了)。 <br>"
-                        "模型分为三类： <br>"
-                        "1、保留人声：不带和声的音频选这个，对主人声保留比HP5更好。内置HP2和HP3两个模型，HP3可能轻微漏伴奏但对主人声保留比HP2稍微好一丁点； <br>"
-                        "2、仅保留主人声：带和声的音频选这个，对主人声可能有削弱。内置HP5一个模型； <br> "
-                        "3、去混响、去延迟模型（by FoxJoy）：<br>"
-                        "  (1)MDX-Net(onnx_dereverb):对于双通道混响是最好的选择，不能去除单通道混响；<br>"
-                        "&emsp;(234)DeEcho:去除延迟效果。Aggressive比Normal去除得更彻底，DeReverb额外去除混响，可去除单声道混响，但是对高频重的板式混响去不干净。<br>"
-                        "去混响/去延迟，附：<br>"
-                        "1、DeEcho-DeReverb模型的耗时是另外2个DeEcho模型的接近2倍；<br>"
-                        "2、MDX-Net-Dereverb模型挺慢的；<br>"
-                        "3、个人推荐的最干净的配置是先MDX-Net再DeEcho-Aggressive。"
-                    )
-                )
-                with gr.Row():
-                    with gr.Column():
-                        dir_wav_input = gr.Textbox(
-                            label=i18n("输入待处理音频文件夹路径"),
-                            value=((os.getcwd()).replace("\\", "/") + "/audios/"),
-                        )
-                        wav_inputs = gr.File(
-                            file_count="multiple", label=i18n("也可批量输入音频文件, 二选一, 优先读文件夹")
-                        )  #####
-                    with gr.Column():
-                        model_choose = gr.Dropdown(label=i18n("模型"), choices=uvr5_names)
-                        agg = gr.Slider(
-                            minimum=0,
-                            maximum=20,
-                            step=1,
-                            label="人声提取激进程度",
-                            value=10,
-                            interactive=True,
-                            visible=False,  # 先不开放调整
-                        )
-                        opt_vocal_root = gr.Textbox(
-                            label=i18n("指定输出主人声文件夹"), value="opt"
-                        )
-                        opt_ins_root = gr.Textbox(
-                            label=i18n("指定输出非主人声文件夹"), value="opt"
-                        )
-                        format0 = gr.Radio(
-                            label=i18n("导出文件格式"),
-                            choices=["wav", "flac", "mp3", "m4a"],
-                            value="flac",
-                            interactive=True,
-                        )
-                    but2 = gr.Button(i18n("转换"), variant="primary")
-                    vc_output4 = gr.Textbox(label=i18n("输出信息"))
-                    but2.click(
-                        uvr,
-                        [
-                            model_choose,
-                            dir_wav_input,
-                            opt_vocal_root,
-                            wav_inputs,
-                            opt_ins_root,
-                            agg,
-                            format0,
-                        ],
-                        [vc_output4],
-                    )
-
+      # tab_faq = i18n("常见问题解答")
+      # with gr.TabItem(tab_faq):
+      #     try:
+      #         if tab_faq == "常见问题解答":
+      #             with open("docs/faq.md", "r", encoding="utf8") as f:
+      #                 info = f.read()
+      #         else:
+      #             with open("docs/faq_en.md", "r", encoding="utf8") as f:
+      #                 info = f.read()
+      #         gr.Markdown(value=info)
+      #     except:
+      #         gr.Markdown(traceback.format_exc())
         with gr.TabItem(i18n("资源")):
             
             easy_infer.download_model()

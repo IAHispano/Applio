@@ -230,7 +230,9 @@ with app:
                 inputs=[sid],
                 outputs=[spk_item],
             )
-        
+          # gr.Markdown(
+          #     value=i18n("男转女推荐+12key, 女转男推荐-12key, 如果音域爆炸导致音色失真也可以自己调整到合适音域. ")
+          # )
             vc_input3 = gr.Audio(label="上传音频（长度小于90秒）")
             vc_transform0 = gr.Number(label=i18n("变调(整数, 半音数量, 升八度12降八度-12)"), value=0)
             f0method0 = gr.Radio(

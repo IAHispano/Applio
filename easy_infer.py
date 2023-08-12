@@ -238,6 +238,7 @@ def load_dowloaded_dataset(url):
         zips_path = os.path.join(parent_path, 'zips')
         unzips_path = os.path.join(parent_path, 'unzips')
         datasets_path = os.path.join(parent_path, 'datasets')
+        audio_extenions =["flac","wav"]
         
         if os.path.exists(zips_path):
             shutil.rmtree(zips_path)
@@ -283,7 +284,7 @@ def load_dowloaded_dataset(url):
                 for root, subfolders, songs in os.walk(unzips_path):
                     for song in songs:
                         song_path = os.path.join(root, song)
-                        if song.endswith(".wav"):
+                        if song.endswith(tuple(audio_extenions)):
                             shutil.move(song_path, dataset_path)
 
         if os.path.exists(zips_path):

@@ -26,7 +26,7 @@ def use_fp32_config():
                 with open(f"configs/{config_file}", "w") as d:
                     json.dump(data, d, indent=4)
 
-                #print(f"Set fp16_run to true in {config_file}")
+              # print(f"Set fp16_run to true in {config_file}")
 
             with open(
                 "trainset_preprocess_pipeline_print.py", "r", encoding="utf-8"
@@ -151,10 +151,10 @@ class Config:
                 or "1070" in self.gpu_name
                 or "1080" in self.gpu_name
             ):
-                #print("Found GPU", self.gpu_name, ", force to fp32")
+              # print("Found GPU", self.gpu_name, ", force to fp32")
                 self.is_half = False
             else:
-                #print("Found GPU", self.gpu_name)
+              # print("Found GPU", self.gpu_name)
                 use_fp32_config()
             self.gpu_mem = int(
                 torch.cuda.get_device_properties(i_device).total_memory
