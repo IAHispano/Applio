@@ -1986,8 +1986,8 @@ def whethercrepeornah(radio):
 
 
 # Change your Gradio Theme here. 👇 👇 👇 👇 Example: " theme='HaleyCH/HaleyCH_Theme' "
-with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio-RVC-Fork") as app:
-    gr.HTML("<h1> 🍏 Applio (RVC Fork) </h1>")
+with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio") as app:
+    gr.HTML("<h1> 🍏 Applio (Mangio-RVC-Fork) </h1>")
     gr.Markdown(
         value=i18n(
             "本软件以MIT协议开源, 作者不对软件具备任何控制力, 使用软件者、传播软件导出的声音者自负全责. <br>如不认可该条款, 则不能使用或引用软件包内任何代码和文件. 详见根目录<b>使用需遵守的协议-LICENSE.txt</b>."
