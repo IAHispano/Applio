@@ -88,7 +88,7 @@
   "输入实验名": "Ingrese el nombre del modelo",
   "目标采样率": "Tasa de muestreo objetivo",
   "模型名称": "Nombre_Modelo",
-  "数据集名": "Nombre_Modelo",
+  "数据集名": "Nombre_Dataset",
   "是否只保存最新的 .ckpt 文件以节省硬盘空间": "Si desea guardar sólo el último archivo G y D para ahorrar espacio en el disco duro.",
   "将所有训练集缓存到 GPU 内存中。缓存小型数据集（少于 10 分钟）可以加快训练速度，但缓存大型数据集会消耗大量 GPU 内存，可能无法显著提高速度": "Almacena en caché conjuntos pequeños de entrenamiento en la memoria de la GPU puede acelerar el entrenamiento (menos de 10 minutos); en grandes, esto puede provocar problemas de memoria en la GPU sin aportar un aumento significativo en la velocidad.",
   

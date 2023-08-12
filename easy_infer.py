@@ -19,7 +19,7 @@ from huggingface_hub import HfApi, list_models
 from huggingface_hub import login
 from i18n import I18nAuto
 i18n = I18nAuto()
-
+from bs4 import BeautifulSoup
 def calculate_md5(file_path):
     hash_md5 = hashlib.md5()
     with open(file_path, "rb") as f:
@@ -81,6 +81,11 @@ def download_from_url(url):
                     return "link privado"
                 print(result.stderr)
                 
+        elif "/blob/" in url:
+            os.chdir('./zips')
+            url = url.replace("blob", "resolve")
+          # print("Resolved URL:", url)  # Print the resolved URL
+            wget.download(url)
         elif "mega.nz" in url:
             if "#!" in url:
                 file_id = url.split("#!")[1].split("!")[0]
@@ -91,6 +96,27 @@ def download_from_url(url):
             if file_id:
                 m = Mega()
                 m.download_url(url, zips_path)
+        elif "/tree/main" in url:
+           response = requests.get(url)
+           soup = BeautifulSoup(response.content, 'html.parser')
+           temp_url = ''
+           for link in soup.find_all('a', href=True):
+               if link['href'].endswith('.zip'):
+                  temp_url = link['href']
+                  break
+           if temp_url:
+              url = temp_url
+          # print("Updated URL:", url)  # Print the updated URL
+              url = url.replace("blob", "resolve")
+          # print("Resolved URL:", url)  # Print the resolved URL
+
+              if "huggingface.co" not in url:
+                 url = "https://huggingface.co" + url
+
+                 wget.download(url)
+           else:
+                 print("No .zip file found on the page.")
+            # Handle the case when no .zip file is found
         else:
             os.chdir('./zips')
             wget.download(url)
