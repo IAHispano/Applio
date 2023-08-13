@@ -46,7 +46,7 @@
   "模型推理": "Inferencia",
   "推理音色": "Inferencia de voz",
   "added.index 文件的路径（如果它没有自动找到该文件)": "Autodetección del archivo added.index (Si no lo ha encontrado automáticamente utiliza la casilla de arriba)",
-  "刷新音色列表和索引路径": "Actualizar la lista de timbres e índice de rutas",
+  "刷新音色列表和索引路径": "Actualizar lista de modelos, audios y índex",
   "卸载音色省显存": "Descargue la voz para ahorrar memoria GPU",
   "请选择说话人id": "Seleccione una identificación de altavoz",
   "将音频拖到此处，然后点击刷新按钮": "Arrastra tu audio aquí y pulsa el botón de actualizar",

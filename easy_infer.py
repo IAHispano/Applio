@@ -516,14 +516,14 @@ def save_to_wav(record_button):
 def save_to_wav2(dropbox):
     file_path=dropbox.name
     shutil.move(file_path,'./audios')
-    return os.path.basename(file_path)
-audio_root = "audios"
+    return os.path.join('./audios',os.path.basename(file_path))
+
 def change_choices2():
-    audio_paths = []
+    audio_paths=[]
     for filename in os.listdir("./audios"):
-        if filename.endswith(('.wav','.mp3')):
-            audio_paths.append(filename)
-    return {"choices": sorted(audio_paths), "__type__": "update"}
+        if filename.endswith(('.wav','.mp3','.ogg','.flac','.m4a','.aac','.mp4')):
+            audio_paths.append(os.path.join('./audios',filename).replace('\\', '/'))
+    return {"choices": sorted(audio_paths), "__type__": "update"}, {"__type__": "update"}
 
 def get_models_by_name(modelname):
     url = "https://script.google.com/macros/s/AKfycbzyrdLZzUww9qbjxnbnI08budD4yxbmRPHkWbp3UEJ9h3Id5cnNNVg0UtfFAnqqX5Rr/exec"
