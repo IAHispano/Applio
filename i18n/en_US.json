@@ -22,6 +22,7 @@
   "正确存储模型": "model saved successfully",
   "保存模型...": "Saving the model...",
   "保存时未编制索引...": "Saved without index...",
+  "宓模型": "model_name",
   "无模型保存（PTH）": "Saved without inference model...",
   "保存模型时发生错误": "An error occurred saving the model",
   "您要保存的模型不存在，请确保输入的名称正确。": "The model you want to save does not exist, be sure to enter the correct name.",

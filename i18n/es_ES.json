@@ -21,6 +21,7 @@
   "下载模型时发生错误。": "Ocurrio un error descargando",
   "正确存储模型": "Modelo guardado correctamente",
   "保存模型...": "Guardando el modelo...",
+  "宓模型": "nombre_modelo",
   "保存时未编制索引...": "Guardado sin index...",
   "无模型保存（PTH）": "Guardado sin modelo de inferencia...",
   "保存模型时发生错误": "Ocurrio un error guardando el modelo",
