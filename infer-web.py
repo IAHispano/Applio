@@ -161,27 +161,30 @@ index_root = "./logs/"
 audio_root = "audios"
 names = []
 for name in os.listdir(weight_root):
-    if name.endswith(".pth"):
+    if name.endswith((".pth", ".onnx")):
         names.append(name)
 index_paths = []
 
 global indexes_list
 indexes_list = []
 
-audio_paths = []
+sup_audioext = {'wav', 'mp3', 'flac', 'ogg', 'opus',
+                'm4a', 'mp4', 'aac', 'alac', 'wma',
+                'aiff', 'webm', 'ac3'}
+
 for root, dirs, files in os.walk(index_root, topdown=False):
     for name in files:
         if name.endswith(".index") and "trained" not in name:
             index_paths.append("%s\\%s" % (root, name))
 
-for root, dirs, files in os.walk(audio_root, topdown=False):
-    for name in files:
-        audio_paths.append("%s/%s" % (root, name))
+audio_paths  = [os.path.join(root, name)
+               for root, _, files in os.walk(audio_root, topdown=False) 
+               for name in files
+               if name.endswith(tuple(sup_audioext))]
 
-uvr5_names = []
-for name in os.listdir(weight_uvr5_root):
-    if name.endswith(".pth") or "onnx" in name:
-        uvr5_names.append(name.replace(".pth", ""))
+uvr5_names  = [name.replace(".pth", "") 
+              for name in os.listdir(weight_uvr5_root) 
+              if name.endswith(".pth") or "onnx" in name]
 
 
 def check_for_name():
@@ -573,23 +576,17 @@ def get_vc(sid, to_return_protect0, to_return_protect1):
 
 
 def change_choices():
-    names = []
-    for name in os.listdir(weight_root):
-        if name.endswith(".pth"):
-            names.append(name)
-    index_paths = []
-    audio_paths = []
-    audios_path = os.path.abspath(os.getcwd()) + "/audios/"
-    for root, dirs, files in os.walk(index_root, topdown=False):
-        for name in files:
-            if name.endswith(".index") and "trained" not in name:
-                index_paths.append("%s/%s" % (root, name))
-    for file in os.listdir(audios_path):
-        audio_paths.append("%s/%s" % (audio_root, file))
+    names        = [os.path.join(root, file)
+                   for root, _, files in os.walk(weight_root)
+                   for file in files
+                   if file.endswith((".pth", ".onnx"))]
+    indexes_list = [os.path.join(root, name) for root, _, files in os.walk(index_root, topdown=False) for name in files if name.endswith(".index") and "trained" not in name]
+    audio_paths  = [os.path.join(audio_root, file) for file in os.listdir(os.path.join(now_dir, "audios"))]
+
     return (
-        {"choices": sorted(names), "__type__": "update"},
-        {"choices": sorted(index_paths), "__type__": "update"},
-        {"choices": sorted(audio_paths), "__type__": "update"},
+        {"choices": sorted(names), "__type__": "update"}, 
+        {"choices": sorted(indexes_list), "__type__": "update"}, 
+        {"choices": sorted(audio_paths), "__type__": "update"}
     )
 
 
@@ -816,129 +813,57 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, echl):
 def change_sr2(sr2, if_f0_3, version19):
     path_str = "" if version19 == "v1" else "_v2"
     f0_str = "f0" if if_f0_3 else ""
-    if_pretrained_generator_exist = os.access(
-        "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2), os.F_OK
-    )
-    if_pretrained_discriminator_exist = os.access(
-        "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2), os.F_OK
-    )
-    if not if_pretrained_generator_exist:
-        print(
-            "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2),
-            "doesn't exist, will not use pretrained model",
-        )
-    if not if_pretrained_discriminator_exist:
-        print(
-            "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2),
-            "doesn't exist, will not use pretrained model",
-        )
-    return (
-        "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2)
-        if if_pretrained_generator_exist
-        else "",
-        "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2)
-        if if_pretrained_discriminator_exist
-        else "",
-    )
+    model_paths = {"G": "", "D": ""}
+
+    for model_type in model_paths:
+        file_path = f"pretrained{path_str}/{f0_str}{model_type}{sr2}.pth"
+        if os.access(file_path, os.F_OK):
+            model_paths[model_type] = file_path
+        else:
+            print(f"{file_path} doesn't exist, will not use pretrained model.")
+    
+    return (model_paths["G"], model_paths["D"])
 
 
 def change_version19(sr2, if_f0_3, version19):
     path_str = "" if version19 == "v1" else "_v2"
-    if sr2 == "32k" and version19 == "v1":
-        sr2 = "40k"
-    to_return_sr2 = (
-        {"choices": ["40k", "48k"], "__type__": "update", "value": sr2}
-        if version19 == "v1"
-        else {"choices": ["40k", "48k", "32k"], "__type__": "update", "value": sr2}
-    )
+    sr2 = "40k" if (sr2 == "32k" and version19 == "v1") else sr2
+    choices_update = {
+        "choices": ["40k", "48k"], "__type__": "update", "value": sr2
+        } if version19 == "v1" else {
+            "choices": ["40k", "48k", "32k"], "__type__": "update", "value": sr2}
+
     f0_str = "f0" if if_f0_3 else ""
-    if_pretrained_generator_exist = os.access(
-        "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2), os.F_OK
-    )
-    if_pretrained_discriminator_exist = os.access(
-        "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2), os.F_OK
-    )
-    if not if_pretrained_generator_exist:
-        print(
-            "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2),
-            "doesn't exist, will not use pretrained model",
-        )
-    if not if_pretrained_discriminator_exist:
-        print(
-            "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2),
-            "doesn't exist, will not use pretrained model",
-        )
-    return (
-        "pretrained%s/%sG%s.pth" % (path_str, f0_str, sr2)
-        if if_pretrained_generator_exist
-        else "",
-        "pretrained%s/%sD%s.pth" % (path_str, f0_str, sr2)
-        if if_pretrained_discriminator_exist
-        else "",
-        to_return_sr2,
-    )
+    model_paths = {"G": "", "D": ""}
+
+    for model_type in model_paths:
+        file_path = f"pretrained{path_str}/{f0_str}{model_type}{sr2}.pth"
+        if os.access(file_path, os.F_OK):
+            model_paths[model_type] = file_path
+        else:
+            print(f"{file_path} doesn't exist, will not use pretrained model.")
+
+    return (model_paths["G"], model_paths["D"], choices_update)
 
 
-def change_f0(
-    if_f0_3,
-    sr2,
-    version19,
-    step2b,
-    gpus6,
-    gpu_info9,
-    extraction_crepe_hop_length,
-    but2,
-    info2,
-):  # f0method8,pretrained_G14,pretrained_D15
+def change_f0(if_f0_3, sr2, version19):  # f0method8,pretrained_G14,pretrained_D15
     path_str = "" if version19 == "v1" else "_v2"
-    if_pretrained_generator_exist = os.access(
-        "pretrained%s/f0G%s.pth" % (path_str, sr2), os.F_OK
-    )
-    if_pretrained_discriminator_exist = os.access(
-        "pretrained%s/f0D%s.pth" % (path_str, sr2), os.F_OK
-    )
-    if not if_pretrained_generator_exist:
-        print(
-            "pretrained%s/f0G%s.pth" % (path_str, sr2),
-            "not exist, will not use pretrained model",
-        )
-    if not if_pretrained_discriminator_exist:
-        print(
-            "pretrained%s/f0D%s.pth" % (path_str, sr2),
-            "not exist, will not use pretrained model",
-        )
-
-    if if_f0_3:
-        return (
-            {"visible": True, "__type__": "update"},
-            "pretrained%s/f0G%s.pth" % (path_str, sr2)
-            if if_pretrained_generator_exist
-            else "",
-            "pretrained%s/f0D%s.pth" % (path_str, sr2)
-            if if_pretrained_discriminator_exist
-            else "",
-            {"visible": True, "__type__": "update"},
-            {"visible": True, "__type__": "update"},
-            {"visible": True, "__type__": "update"},
-            {"visible": True, "__type__": "update"},
-            {"visible": True, "__type__": "update"},
-            {"visible": True, "__type__": "update"},
-        )
+    
+    pth_format = "pretrained%s/f0%s%s.pth"
+    model_desc = { "G": "", "D": "" }
+    
+    for model_type in model_desc:
+        file_path = pth_format % (path_str, model_type, sr2)
+        if os.access(file_path, os.F_OK):
+            model_desc[model_type] = file_path
+        else:
+            print(file_path, "doesn't exist, will not use pretrained model")
 
     return (
-        {"visible": False, "__type__": "update"},
-        ("pretrained%s/G%s.pth" % (path_str, sr2))
-        if if_pretrained_generator_exist
-        else "",
-        ("pretrained%s/D%s.pth" % (path_str, sr2))
-        if if_pretrained_discriminator_exist
-        else "",
-        {"visible": False, "__type__": "update"},
-        {"visible": False, "__type__": "update"},
-        {"visible": False, "__type__": "update"},
-        {"visible": False, "__type__": "update"},
-        {"visible": False, "__type__": "update"},
-        {"visible": False, "__type__": "update"},
+        {"visible": if_f0_3, "__type__": "update"},
+        model_desc["G"],
+        model_desc["D"],
+        {"visible": if_f0_3, "__type__": "update"}
     )
 
 
@@ -2055,13 +1980,15 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio") as app:
                             value="",
                             interactive=True,
                         )
-                        dropbox.upload(fn=easy_infer.save_to_wav2, inputs=[dropbox], outputs=[input_audio1])
+                        input_audio1.select(fn=lambda:'',inputs=[],outputs=[input_audio0])
+                        input_audio0.input(fn=lambda:'',inputs=[],outputs=[input_audio1])
+                        dropbox.upload(fn=easy_infer.save_to_wav2, inputs=[dropbox], outputs=[input_audio0])
                         dropbox.upload(fn=easy_infer.change_choices2, inputs=[], outputs=[input_audio1])
-                        record_button.change(fn=easy_infer.save_to_wav, inputs=[record_button], outputs=[input_audio1])
+                        record_button.change(fn=easy_infer.save_to_wav, inputs=[record_button], outputs=[input_audio0])
                         record_button.change(fn=easy_infer.change_choices2, inputs=[], outputs=[input_audio1])
-                        input_audio1.change(
-                            fn=lambda: "", inputs=[], outputs=[input_audio0]
-                        )
+                      # input_audio1.change(
+                      #     fn=lambda: "", inputs=[], outputs=[input_audio0]
+                      # )
                         
                     with gr.Column():
                         file_index1 = gr.Textbox(
@@ -2431,11 +2358,11 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio") as app:
                 )
             )
             with gr.Row():
-                exp_dir1 = gr.Textbox(label=i18n("输入实验名"), value=i18n("宓模型"))
+                exp_dir1 = gr.Textbox(label=i18n("输入实验名"), value="mi-test")
                 sr2 = gr.Radio(
                     label=i18n("目标采样率"),
-                    choices=["40k", "48k"],
-                    value="48k",
+                    choices=["40k", "48k", "32k"],
+                    value="40k",
                     interactive=True,
                 )
                 if_f0_3 = gr.Checkbox(

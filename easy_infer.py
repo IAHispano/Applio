@@ -517,14 +517,22 @@ def save_to_wav(record_button):
         return new_name
 
 def save_to_wav2(dropbox):
-    file_path=dropbox.name
-    shutil.move(file_path,'./audios')
-    return os.path.join('./audios',os.path.basename(file_path))
+    file_path = dropbox.name
+    target_path = os.path.join('./audios', os.path.basename(file_path))
+
+    if os.path.exists(target_path):
+        os.remove(target_path)
+      # print('Replacing old dropdown file...')
+
+    shutil.move(file_path, target_path)
+    return target_path
 
 def change_choices2():
     audio_paths=[]
     for filename in os.listdir("./audios"):
-        if filename.endswith(('.wav','.mp3','.ogg','.flac','.m4a','.aac','.mp4')):
+        if filename.endswith(('wav', 'mp3', 'flac', 'ogg', 'opus',
+                'm4a', 'mp4', 'aac', 'alac', 'wma',
+                'aiff', 'webm', 'ac3')):
             audio_paths.append(os.path.join('./audios',filename).replace('\\', '/'))
     return {"choices": sorted(audio_paths), "__type__": "update"}, {"__type__": "update"}
 
