@@ -373,6 +373,9 @@ def save_model(modelname, save_action):
         d_file = glob.glob(os.path.join(logs_path, "D_*.pth"))
         g_file = glob.glob(os.path.join(logs_path, "G_*.pth"))
         
+        if save_action == i18n("选择模型保存方法"):
+            raise Exception("No method choosen.")
+        
         if save_action == i18n("保存所有"):
             print(i18n("保存所有"))
             save_folder = os.path.join(save_folder, 'ManualTrainingBackup')
@@ -468,10 +471,10 @@ def load_downloaded_backup(url):
         # Descomprimir archivos descargados
         for filename in os.listdir(zips_path):
             if filename.endswith(".zip"):
-                zipfile_path = os.path.join(zips_path,filename)
+                # zipfile_path = os.path.join(zips_path,filename)
                 zip_dir_name = os.path.splitext(filename)[0]
                 unzip_dir = os.path.join(parent_path,'logs', zip_dir_name)
-                shutil.unpack_archive(zipfile_path, unzip_dir, 'zip')
+                shutil.unpack_archive(zips_path, unzip_dir, 'zip')
                 print(i18n("模型下载成功。继续提取..."))
                 infos.append(i18n("模型下载成功。继续提取..."))
                 yield "\n".join(infos)
