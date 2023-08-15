@@ -2431,11 +2431,11 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio") as app:
                 )
             )
             with gr.Row():
-                exp_dir1 = gr.Textbox(label=i18n("输入实验名"), value="mi-test")
+                exp_dir1 = gr.Textbox(label=i18n("输入实验名"), value=i18n("宓模型"))
                 sr2 = gr.Radio(
                     label=i18n("目标采样率"),
                     choices=["40k", "48k"],
-                    value="40k",
+                    value="48k",
                     interactive=True,
                 )
                 if_f0_3 = gr.Checkbox(
@@ -2446,7 +2446,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio") as app:
                 version19 = gr.Radio(
                     label=i18n("版本"),
                     choices=["v1", "v2"],
-                    value="v1",
+                    value="v2",
                     interactive=True,
                     visible=True,
                 )
