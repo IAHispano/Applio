@@ -2358,7 +2358,7 @@ with gr.Blocks(theme='JohnSmith9982/small_and_pretty', title="Applio") as app:
                 )
             )
             with gr.Row():
-                exp_dir1 = gr.Textbox(label=i18n("输入实验名"), value=i18n("宓模型")))
+                exp_dir1 = gr.Textbox(label=i18n("输入实验名"), value=i18n("宓模型"))
                 sr2 = gr.Radio(
                     label=i18n("目标采样率"),
                     choices=["40k", "48k", "32k"],
