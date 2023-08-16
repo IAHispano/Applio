@@ -471,10 +471,10 @@ def load_downloaded_backup(url):
         # Descomprimir archivos descargados
         for filename in os.listdir(zips_path):
             if filename.endswith(".zip"):
-                # zipfile_path = os.path.join(zips_path,filename)
-                zip_dir_name = os.path.splitext(filename)[0]
-                unzip_dir = os.path.join(parent_path,'logs', zip_dir_name)
-                shutil.unpack_archive(zips_path, unzip_dir, 'zip')
+                zipfile_path = os.path.join(zips_path,filename)
+              # zip_dir_name = os.path.splitext(filename)[0]
+                unzip_dir = os.path.join(parent_path,'logs')
+                shutil.unpack_archive(zipfile_path, unzip_dir, 'zip')
                 print(i18n("模型下载成功。继续提取..."))
                 infos.append(i18n("模型下载成功。继续提取..."))
                 yield "\n".join(infos)
@@ -1096,9 +1096,9 @@ def download_model():
     with gr.Row():
         model_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():
-        download_button=gr.Button(i18n("下载"))
-    with gr.Row():
         download_model_status_bar=gr.Textbox(label=i18n("地位"))
+    with gr.Row():
+        download_button=gr.Button(i18n("下载"))
         download_button.click(fn=load_downloaded_model, inputs=[model_url], outputs=[download_model_status_bar])
 
 def download_backup():
@@ -1106,9 +1106,9 @@ def download_backup():
     with gr.Row():
         model_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():
-        download_button=gr.Button(i18n("下载"))
-    with gr.Row():
         download_model_status_bar=gr.Textbox(label=i18n("地位"))
+    with gr.Row():
+        download_button=gr.Button(i18n("下载"))
         download_button.click(fn=load_downloaded_backup, inputs=[model_url], outputs=[download_model_status_bar])
 
 def update_dataset_list(name):
@@ -1123,8 +1123,8 @@ def download_dataset(trainset_dir4):
     with gr.Row():
         dataset_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():
-        load_dataset_button=gr.Button(i18n("下载"))
-    with gr.Row():
         load_dataset_status_bar=gr.Textbox(label=i18n("地位"))
+    with gr.Row():
+        load_dataset_button=gr.Button(i18n("下载"))
         load_dataset_button.click(fn=load_dowloaded_dataset, inputs=[dataset_url], outputs=[load_dataset_status_bar])
         load_dataset_status_bar.change(update_dataset_list, dataset_url, trainset_dir4)
