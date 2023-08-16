@@ -156,8 +156,8 @@ def load_downloaded_model(url):
             infos.append(i18n("无法下载模型。"))
             yield "\n".join(infos)
         elif download_file == "downloaded":
-            print(i18n("模型下载成功。继续提取..."))
-            infos.append(i18n("模型下载成功。继续提取..."))
+            print(i18n("模型下载成功。"))
+            infos.append(i18n("模型下载成功。"))
             yield "\n".join(infos)
         elif download_file == "demasiado uso":
             raise Exception(i18n("最近查看或下载此文件的用户过多"))
@@ -168,11 +168,11 @@ def load_downloaded_model(url):
         for filename in os.listdir(zips_path):
             if filename.endswith(".zip"):
                 zipfile_path = os.path.join(zips_path,filename)
+                print(i18n("继续提取..."))
+                infos.append(i18n("继续提取..."))
                 shutil.unpack_archive(zipfile_path, unzips_path, 'zip')
                 model_name = os.path.basename(zipfile_path)
                 logs_dir = os.path.join(parent_path,'logs', os.path.normpath(str(model_name).replace(".zip","")))
-                print(i18n("模型下载成功。继续提取..."))
-                infos.append(i18n("模型下载成功。继续提取..."))
                 yield "\n".join(infos)
             else:
                 print(i18n("解压缩出错。"))
@@ -285,8 +285,8 @@ def load_dowloaded_dataset(url):
             yield "\n".join(infos)
             raise Exception(i18n("下载模型时发生错误。"))
         elif download_file == "downloaded":
-            print(i18n("数据集下载成功。继续提取..."))
-            infos.append(i18n("数据集下载成功。继续提取..."))
+            print(i18n("模型下载成功。"))
+            infos.append(i18n("模型下载成功。"))
             yield "\n".join(infos)
         elif download_file == "demasiado uso":
             raise Exception(i18n("最近查看或下载此文件的用户过多"))
@@ -301,6 +301,9 @@ def load_dowloaded_dataset(url):
                 print("....")
                 foldername = file.replace(".zip","").replace(" ","").replace("-","_")
                 dataset_path = os.path.join(datasets_path, foldername)
+                print(i18n("继续提取..."))
+                infos.append(i18n("继续提取..."))
+                yield "\n".join(infos)
                 shutil.unpack_archive(file_path, unzips_path, 'zip')
                 if os.path.exists(dataset_path):
                     shutil.rmtree(dataset_path)
@@ -312,12 +315,19 @@ def load_dowloaded_dataset(url):
                         song_path = os.path.join(root, song)
                         if song.endswith(tuple(audio_extenions)):
                             shutil.move(song_path, dataset_path)
+            else:
+                print(i18n("解压缩出错。"))
+                infos.append(i18n("解压缩出错。"))
+                yield "\n".join(infos)
+                
+                
 
         if os.path.exists(zips_path):
             shutil.rmtree(zips_path)
         if os.path.exists(unzips_path):
             shutil.rmtree(unzips_path)
             
+        print(i18n("数据集加载成功。"))
         infos.append(i18n("数据集加载成功。"))
         yield "\n".join(infos)
     except Exception as e:
@@ -443,14 +453,12 @@ def load_downloaded_backup(url):
         infos = []
         logs_folders = ['0_gt_wavs','1_16k_wavs','2a_f0','2b-f0nsf','3_feature256','3_feature768']
         zips_path = os.path.join(parent_path, 'zips')
-        unzips_path = os.path.join(parent_path, 'unzips')
+        unzips_path = os.path.join(parent_path, 'logs')
         weights_path = os.path.join(parent_path, 'weights')
         logs_dir = ""
         
         if os.path.exists(zips_path):
             shutil.rmtree(zips_path)
-        if os.path.exists(unzips_path):
-            shutil.rmtree(unzips_path)
 
         os.mkdir(zips_path)
         
@@ -460,8 +468,8 @@ def load_downloaded_backup(url):
             infos.append(i18n("无法下载模型。"))
             yield "\n".join(infos)
         elif download_file == "downloaded":
-            print(i18n("模型下载成功。继续提取..."))
-            infos.append(i18n("模型下载成功。继续提取..."))
+            print(i18n("模型下载成功。"))
+            infos.append(i18n("模型下载成功。"))
             yield "\n".join(infos)
         elif download_file == "demasiado uso":
             raise Exception(i18n("最近查看或下载此文件的用户过多"))
@@ -473,10 +481,10 @@ def load_downloaded_backup(url):
             if filename.endswith(".zip"):
                 zipfile_path = os.path.join(zips_path,filename)
               # zip_dir_name = os.path.splitext(filename)[0]
-                unzip_dir = os.path.join(parent_path,'logs')
-                shutil.unpack_archive(zipfile_path, unzip_dir, 'zip')
-                print(i18n("模型下载成功。继续提取..."))
-                infos.append(i18n("模型下载成功。继续提取..."))
+              # unzip_dir = os.path.join(parent_path,'logs')
+                print(i18n("继续提取..."))
+                infos.append(i18n("继续提取..."))
+                shutil.unpack_archive(zipfile_path, unzips_path, 'zip')
                 yield "\n".join(infos)
             else:
                 print(i18n("解压缩出错。"))
@@ -484,12 +492,15 @@ def load_downloaded_backup(url):
                 yield "\n".join(infos)
                 
         result = ""
+        for filename in os.listdir(unzips_path):
+            if filename.endswith(".zip"):
+                os.remove(filename)
+        
         if os.path.exists(zips_path):
             shutil.rmtree(zips_path)
-        if os.path.exists(unzips_path):
-            shutil.rmtree(unzips_path)
-        print(i18n("模型已正确加载。"))
-        infos.append("\n" + i18n("模型已正确加载。"))
+        print(i18n("备份已成功上传。"))
+        infos.append("\n" + i18n("备份已成功上传。"))
+        yield "\n".join(infos)
         os.chdir(parent_path)    
         return result
     except Exception as e:
@@ -1093,6 +1104,7 @@ def publish_models():
 
 def download_model():
     gr.Markdown(value="# " + i18n("下载模型"))
+    gr.Markdown(value=i18n("它用于下载您的推理模型。"))
     with gr.Row():
         model_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():
@@ -1103,6 +1115,7 @@ def download_model():
 
 def download_backup():
     gr.Markdown(value="# " + i18n("下载备份"))
+    gr.Markdown(value=i18n("它用于下载您的训练备份。"))
     with gr.Row():
         model_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():
@@ -1120,6 +1133,7 @@ def update_dataset_list(name):
 
 def download_dataset(trainset_dir4):
     gr.Markdown(value="# " + i18n("下载数据集"))
+    gr.Markdown(value=i18n("它用于下载您的数据集。"))
     with gr.Row():
         dataset_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():
