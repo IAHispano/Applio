@@ -2062,6 +2062,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 if_save_latest13,
                                 pretrained_G14,
                                 pretrained_D15,
+                                gpus16,
                                 if_cache_gpu17,
                                 if_save_every_weights18,
                                 version19,
