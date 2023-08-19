@@ -1960,7 +1960,8 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                             maximum=40,
                             step=1,
                             label=i18n("每张显卡的batch_size"),
-                            value=default_batch_size,
+                            #value=default_batch_size,
+                            value=20,
                             interactive=True,
                         )
                         if_save_latest13 = gr.Checkbox(

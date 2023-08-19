@@ -96,7 +96,7 @@
   "模型名称": "Nombre_Modelo",
   "数据集名": "Nombre_Dataset",
   "是否只保存最新的 .ckpt 文件以节省硬盘空间": "Si desea guardar sólo el último archivo G y D para ahorrar espacio en el disco duro.",
-  "将所有训练集缓存到 GPU 内存中。缓存小型数据集（少于 10 分钟）可以加快训练速度，但缓存大型数据集会消耗大量 GPU 内存，可能无法显著提高速度": "Almacena en caché bloques de entrenamiento pequeños en la GPU para acelerar el proceso (menos de 10 minutos). En caso de conjuntos grandes, puede haber problemas de memoria sin mejora considerable en la velocidad.",
+  "将所有训练集缓存到 GPU 内存中。缓存小型数据集（少于 10 分钟）可以加快训练速度，但缓存大型数据集会消耗大量 GPU 内存，可能无法显著提高速度": "Almacena en caché bloques de entrenamiento pequeños en la GPU para acelerar el proceso (menos de 10 minutos).",
   "模型是否具有俯仰引导功能": "Si el modelo dispone de guía de tono.",
   "模型是否带音高指导(唱歌一定要, 语音可以不要)": "Si el modelo tiene guía de tono (necesaria para cantar, pero no para hablar)",
   "版本": "Versión",
