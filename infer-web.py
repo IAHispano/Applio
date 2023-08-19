@@ -2392,9 +2392,7 @@ def GradioRun(app):
 #endregion
 
 if __name__ == "__main__":
-    print("\n--Mangio-RVC-Fork--")
     if os.name == 'nt': # Weird Windows async error when replacing a file.
         print("Any ConnectionResetErrors post-conversion are irrelevant and purely visual; they can be ignored\n")
-    print("-------------------")
     app = GradioSetup(UTheme=config.grtheme)
     GradioRun(app)
