@@ -1,0 +1,20 @@
+{
+    "presets": [
+        {
+            "name": "Default Preset",
+            "model": "",
+            "transpose": 0,
+            "audio_file": "",
+            "f0_method": "pm",
+            "crepe_hop_length": 160,
+            "median_filtering": 3,
+            "feature_path": "",
+            "auto_feature_path": "",
+            "search_feature_ratio": 0.88,
+            "resample": 0,
+            "volume_envelope": 1,
+            "protect_voiceless": 0.33,
+            "f0_file_path": ""
+        }
+    ]
+}
