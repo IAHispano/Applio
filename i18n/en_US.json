@@ -13,6 +13,7 @@
   "选择模型保存方法": "Choose the method",
   "保存所有": "Save all",
   "保存 D 和 G": "Save D and G",
+  "数据集名称": "dataset_name",
   "保存声音": "Save voice",
   "下载文件：": "Downloading the file: ",
   "停止培训": "Stop training",

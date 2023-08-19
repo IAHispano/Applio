@@ -120,7 +120,8 @@ def load_hubert():
 
     hubert_model.eval()
 
-datasets_root = "datasets"
+datasets_root = "datasets/"
+datasets_name = i18n("数据集名称")
 weight_root = "weights"
 weight_uvr5_root = "uvr5_weights"
 index_root = "logs"
@@ -1871,9 +1872,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         )
                     )
                     with gr.Row():
-                        trainset_dir4 = gr.Textbox(
-                            label=i18n("输入训练文件夹路径"), value=os.path.join(now_dir, datasets_root)
-                        )
+                        trainset_dir4 = gr.Textbox(label=i18n("输入训练文件夹路径"), value=os.path.join(now_dir, datasets_root, datasets_name))
                         spk_id5 = gr.Slider(
                             minimum=0,
                             maximum=4,
