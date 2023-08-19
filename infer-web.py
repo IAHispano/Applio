@@ -718,6 +718,7 @@ def click_train(
     if_save_latest13,
     pretrained_G14,
     pretrained_D15,
+    gpus16,
     if_cache_gpu17,
     if_save_every_weights18,
     version19,
@@ -2012,6 +2013,11 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                         "__type__": "update"
                                     }
                                 ), inputs=[f0method8], outputs=[extraction_crepe_hop_length])
+                        gpus16 = gr.Textbox(
+                            label=i18n("以-分隔输入使用的卡号, 例如   0-1-2   使用卡0和卡1和卡2"),
+                            value=gpus,
+                            interactive=True,
+                        )
                         butstop = gr.Button(i18n("停止培训"),
                                 variant='primary',
                                 visible=False,
