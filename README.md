@@ -1,8 +1,10 @@
 ## Applio
 Applio is a slightly modified version of Mangio, aiming to provide a simpler interface, particularly tailored for new users.
 
+## Links
+
 - Repo link: https://github.com/IAHispano/Applio-RVC-Fork
-- External code: https://github.com/DeiantV/externalcolabcode
+- External code: https://github.com/IAHispano/externalcolabcode
 
 ## Credits
 
