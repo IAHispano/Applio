@@ -486,11 +486,11 @@ def load_downloaded_backup(url):
         for filename in os.listdir(zips_path):
             if filename.endswith(".zip"):
                 zipfile_path = os.path.join(zips_path,filename)
-              # zip_dir_name = os.path.splitext(filename)[0]
-              # unzip_dir = os.path.join(parent_path,'logs')
+                zip_dir_name = os.path.splitext(filename)[0]
+                unzip_dir = os.path.join(parent_path,'logs', zip_dir_name)
                 print(i18n("继续提取..."))
                 infos.append(i18n("继续提取..."))
-                shutil.unpack_archive(zipfile_path, unzips_path, 'zip')
+                shutil.unpack_archive(zipfile_path, unzip_dir, 'zip')
                 yield "\n".join(infos)
             else:
                 print(i18n("解压缩出错。"))
