@@ -120,8 +120,7 @@ def load_hubert():
 
     hubert_model.eval()
 
-datasets_root = "datasets/"
-datasets_name = i18n("数据集名称")
+datasets_root = "datasets"
 weight_root = "weights"
 weight_uvr5_root = "uvr5_weights"
 index_root = "logs"
@@ -152,6 +151,24 @@ uvr5_names  = [name.replace(".pth", "")
               if name.endswith(".pth") or "onnx" in name]
 
 check_for_name = lambda: sorted(names)[0] if names else ''
+
+datasets=[]
+for foldername in os.listdir(os.path.join(now_dir, datasets_root)):
+    if "." not in foldername:
+        datasets.append(os.path.join(easy_infer.find_folder_parent(".","pretrained"),"datasets",foldername))
+
+def get_dataset():
+    if len(datasets) > 0:
+        return sorted(datasets)[0]
+    else:
+        return ''
+    
+def update_dataset_list(name):
+    new_datasets = []
+    for foldername in os.listdir(os.path.join(now_dir, datasets_root)):
+        if "." not in foldername:
+            new_datasets.append(os.path.join(easy_infer.find_folder_parent(".","pretrained"),"datasets",foldername))
+    return gr.Dropdown.update(choices=new_datasets)
 
 def get_indexes():
     indexes_list = [
@@ -1872,7 +1889,11 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         )
                     )
                     with gr.Row():
-                        trainset_dir4 = gr.Textbox(label=i18n("输入训练文件夹路径"), value=os.path.join(now_dir, datasets_root, datasets_name))
+                     #  trainset_dir4 = gr.Textbox(
+                     #      label=i18n("输入训练文件夹路径"), value=os.path.join(now_dir, datasets_root)
+                     #  )
+                        trainset_dir4 = gr.Dropdown(choices=sorted(datasets), label=i18n("选择你的数据集。"), value=get_dataset())
+                        btn_update_dataset_list = gr.Button(i18n("更新清单。"), variant="primary")
                         spk_id5 = gr.Slider(
                             minimum=0,
                             maximum=4,
@@ -1880,6 +1901,9 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                             label=i18n("请指定说话人id"),
                             value=0,
                             interactive=True,
+                        )
+                        btn_update_dataset_list.click(
+                        easy_infer.update_dataset_list, [spk_id5], trainset_dir4
                         )
                         but1 = gr.Button(i18n("处理数据"), variant="primary")
                         info1 = gr.Textbox(label=i18n("输出信息"), value="")

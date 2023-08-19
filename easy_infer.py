@@ -1,5 +1,6 @@
 import subprocess
 import os
+import errno
 import shutil
 from mega import Mega
 import datetime
@@ -27,7 +28,12 @@ def calculate_md5(file_path):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
-
+def silentremove(filename):
+    try:
+        os.remove(filename)
+    except OSError as e: # this would be "except OSError, e:" before Python 2.6
+        if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
+            raise # re-raise exception if a different error occurred
 def get_md5(temp_folder):
   for root, subfolders, files in os.walk(temp_folder):
     for file in files:
@@ -492,9 +498,10 @@ def load_downloaded_backup(url):
                 yield "\n".join(infos)
                 
         result = ""
+        
         for filename in os.listdir(unzips_path):
             if filename.endswith(".zip"):
-                os.remove(filename)
+                silentremove(filename)
         
         if os.path.exists(zips_path):
             shutil.rmtree(zips_path)
@@ -1133,7 +1140,7 @@ def update_dataset_list(name):
 
 def download_dataset(trainset_dir4):
     gr.Markdown(value="# " + i18n("下载数据集"))
-    gr.Markdown(value=i18n("它用于下载您的数据集。"))
+    gr.Markdown(value=i18n("下载兼容格式（.wav/.flac）的音频数据集以训练模型。"))
     with gr.Row():
         dataset_url=gr.Textbox(label=i18n("网址"))
     with gr.Row():

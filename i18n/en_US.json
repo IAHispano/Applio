@@ -1,6 +1,8 @@
 {
   "很遗憾您这没有能用的显卡来支持您训练": "Unfortunately, there is no compatible GPU available to support your training.",
   "是": "Yes",
+  "选择你的数据集。": "Select your dataset.",
+  "更新清单。": "Update list.",
   "下载模型": "Download Model",
   "下载备份": "Download Backup",
   "下载数据集": "Download Dataset",
@@ -38,7 +40,7 @@
   "模型已正确加载。": "The Model has been loaded successfully.",
   "它用于下载您的推理模型。": "It is used to download your inference models.",
   "它用于下载您的训练备份。": "It is used to download your training backups.",
-  "它用于下载您的数据集。": "It is used to download your dataset.",
+  "下载兼容格式（.wav/.flac）的音频数据集以训练模型。": "Download the dataset with the audios in a compatible format (.wav/.flac) to train your model.",
   "未找到可上传的相关文件": "No relevant file was found to upload.",
   "该模型可用于推理，并有 .index 文件。": "The model works for inference, and has the .index file.",
   "该模型可用于推理，但没有 .index 文件。": "The model works for inference, but it doesn't have the .index file.",
