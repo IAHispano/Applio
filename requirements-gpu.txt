@@ -8,6 +8,7 @@ fairseq==0.12.2
 tensorboardX
 faiss_cpu==1.7.3
 ffmpeg_python==0.2.0
+ffmpy==0.3.1
 websockets>=10.0
 gradio==3.34.0
 librosa==0.9.1
