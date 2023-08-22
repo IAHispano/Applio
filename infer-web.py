@@ -2362,6 +2362,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                 easy_infer.download_model()
                 easy_infer.download_backup()
                 easy_infer.download_dataset(trainset_dir4)
+                easy_infer.youtube_separator()
             
             with gr.TabItem(i18n("设置")):
                 with gr.Row():
