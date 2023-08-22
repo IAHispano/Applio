@@ -33,6 +33,7 @@ requests==2.31.0
 resampy==0.4.2
 scikit_learn==1.3.0
 scipy==1.11.1
+yt_dlp==2023.7.6
 pyngrok==4.1.12
 sounddevice==0.4.6
 soundfile==0.12.1
