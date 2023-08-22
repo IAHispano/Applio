@@ -1397,12 +1397,12 @@ def youtube_separator():
             input_url = gr.inputs.Textbox(label=i18n("粘贴 YouTube 链接"))
             output_path = gr.Textbox(
                 label=i18n("输入待处理音频文件夹路径(去文件管理器地址栏拷就行了)"),
-                value=os.path.abspath(os.getcwd()).replace('\\', '/') + "yt_downloads",
+                value=os.path.abspath(os.getcwd()).replace('\\', '/') + "/yt_downloads",
                 visible=False,
                 )
             save_root_ins = gr.Textbox(
                 label=i18n("输入待处理音频文件夹路径"),
-                value=((os.getcwd()).replace('\\', '/') + "yt_downloads"),
+                value=((os.getcwd()).replace('\\', '/') + "/yt_downloads"),
                 visible=False,
                 )
             model_choose = gr.Textbox(
