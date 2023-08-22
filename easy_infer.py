@@ -1260,7 +1260,10 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
                 shutil.rmtree(ruta_archivo)  # Eliminar subcarpetas recursivamente
       
     def format_title(title):
-     formatted_title = title.replace(" ", "_")
+     # Eliminar caracteres no alfanuméricos excepto espacios y guiones bajos
+     formatted_title = re.sub(r'[^\w\s-]', '', title)
+     # Reemplazar espacios por guiones bajos
+     formatted_title = formatted_title.replace(" ", "_")
      return formatted_title
 
     ydl_opts = {
@@ -1279,6 +1282,7 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
      ydl.download([input_url])
     
     infos = []
+    pre_fun = None
     try:
         inp_root, save_root_vocal, save_root_ins = [x.strip(" ").strip('"').strip("\n").strip('"').strip(" ") if isinstance(x, str) else x for x in [inp_root, save_root_vocal, save_root_ins]]     
         if model_name == "onnx_dereverb_By_FoxJoy":
@@ -1337,12 +1341,13 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
         yield "\n".join(infos)
     finally:
         try:
-            if model_name == "onnx_dereverb_By_FoxJoy":
-                del pre_fun.pred.model
-                del pre_fun.pred.model_
-            else:
-                del pre_fun.model
-                del pre_fun
+            if pre_fun is not None:  # Verificar si pre_fun existe antes de eliminarlo
+                if model_name == "onnx_dereverb_By_FoxJoy":
+                    del pre_fun.pred.model
+                    del pre_fun.pred.model_
+                else:
+                    del pre_fun.model
+                    del pre_fun
         except:
             traceback.print_exc()
         print("clean_empty_cache")
