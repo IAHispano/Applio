@@ -211,5 +211,14 @@
   "用于共振峰变换的音色": "Timbre para cambio de formantes",
   "应用": "Aplicar",
   "单个": "Individual",
-  "批处理": "Por Lotes"
+  "批处理": "Por Lotes",
+  "单独的 YouTube 曲目": "Separar pistas de YouTube",
+  "下载 YouTube 视频的音频并自动分离声音和伴奏轨道": "Descargar audio de un video de YouTube y separar automáticamente las pistas vocal e instrumental",
+  "额外": "Adicional",
+  "将生成的音频与其他音频（伴奏）合并，还可以用它来创建视频": "Combinar tus audios generados con otro audio (instrumental) [Beta]",
+  "选择您的伴奏": "Elige tu instrumental",
+  "选择生成的音频": "Elige el audio generado",
+  "合并": "Combinar",
+  "下载并分离": "Descargar y Separar",
+  "粘贴 YouTube 链接": "Introduce el enlace de youtube"
 }

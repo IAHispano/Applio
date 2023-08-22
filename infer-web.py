@@ -6,6 +6,7 @@ import datetime
 import unicodedata
 from glob import glob1
 from signal import SIGTERM
+import librosa
 import os
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -126,6 +127,7 @@ weight_uvr5_root = "uvr5_weights"
 index_root = "logs"
 fshift_root = "formantshiftcfg"
 audio_root = "audios"
+audio_others_root = "audio-others"
 
 sup_audioext = {'wav', 'mp3', 'flac', 'ogg', 'opus',
                 'm4a', 'mp4', 'aac', 'alac', 'wma',
@@ -143,6 +145,11 @@ indexes_list = [os.path.join(root, name)
 
 audio_paths  = [os.path.join(root, name)
                for root, _, files in os.walk(audio_root, topdown=False) 
+               for name in files
+               if name.endswith(tuple(sup_audioext))]
+
+audio_others_paths  = [os.path.join(root, name)
+               for root, _, files in os.walk(audio_others_root, topdown=False) 
                for name in files
                if name.endswith(tuple(sup_audioext))]
 
@@ -189,6 +196,57 @@ def get_fshift_presets():
     ]
     
     return fshift_presets_list if fshift_presets_list else ''
+
+# Define función de conversión llamada por el botón
+import soundfile as sf
+
+def generate_output_path(output_folder, base_name, extension):
+    # Generar un nombre único para el archivo de salida
+    index = 1
+    while True:
+        output_path = os.path.join(output_folder, f"{base_name}_{index}.{extension}")
+        if not os.path.exists(output_path):
+            return output_path
+        index += 1
+
+def combine_and_save_audios(audio1_path, audio2_path, output_path):
+    audio1, sr1 = librosa.load(audio1_path, sr=None)
+    audio2, sr2 = librosa.load(audio2_path, sr=None)
+
+    # Alinear las tasas de muestreo
+    if sr1 != sr2:
+        if sr1 > sr2:
+            audio2 = librosa.resample(audio2, orig_sr=sr2, target_sr=sr1)
+        else:
+            audio1 = librosa.resample(audio1, orig_sr=sr1, target_sr=sr2)
+
+    # Ajustar los audios para que tengan la misma longitud
+    target_length = min(len(audio1), len(audio2))
+    audio1 = librosa.util.fix_length(audio1, target_length)
+    audio2 = librosa.util.fix_length(audio2, target_length)
+
+    # Combinar los audios
+    combined_audio = audio1 + audio2
+
+    sf.write(output_path, combined_audio, sr1)
+
+# Resto de tu código...
+
+
+# Define función de conversión llamada por el botón
+def audio_combined(audio1_path, audio2_path):
+    output_folder = os.path.join(now_dir, "audio-others")
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Generar nombres únicos para los archivos de salida
+    base_name = "combined_audio"
+    extension = "wav"
+    output_path = generate_output_path(output_folder, base_name, extension)
+
+    combine_and_save_audios(audio1_path, audio2_path, output_path)
+    
+    return "¡Conversión completa!", output_path
+
 
 def vc_single(
     sid:               str,
@@ -493,10 +551,21 @@ def change_choices():
                    if file.endswith((".pth", ".onnx"))]
     indexes_list = [os.path.join(root, name) for root, _, files in os.walk(index_root, topdown=False) for name in files if name.endswith(".index") and "trained" not in name]
     audio_paths  = [os.path.join(audio_root, file) for file in os.listdir(os.path.join(now_dir, "audios"))]
+    
 
     return (
         {"choices": sorted(names), "__type__": "update"}, 
         {"choices": sorted(indexes_list), "__type__": "update"}, 
+        {"choices": sorted(audio_paths), "__type__": "update"}
+    )
+def change_choices3():
+    
+    audio_paths  = [os.path.join(audio_root, file) for file in os.listdir(os.path.join(now_dir, "audios"))]
+    audio_others_paths  = [os.path.join(audio_others_root, file) for file in os.listdir(os.path.join(now_dir, "audio-others"))]
+    
+
+    return (
+        {"choices": sorted(audio_others_paths), "__type__": "update"},
         {"choices": sorted(audio_paths), "__type__": "update"}
     )
 
@@ -955,7 +1024,7 @@ def cli_infer(com):
     rvc_globals.Timbre = Timbre
 
     output_message = 'Mangio-RVC-Fork Infer-CLI:'
-    output_path = f'audio-outputs/{output_file_name}'
+    output_path = f'audio-others/{output_file_name}'
     
     print(f"{output_message} Starting the inference...")
     vc_data = get_vc(model_name, protection_amnt, protection_amnt)
@@ -1084,7 +1153,7 @@ def print_page_details():
         , 'INFER': 
             "\n    arg 1) model name with .pth in ./weights: mi-test.pth"
             "\n    arg 2) source audio path: myFolder\\MySource.wav"
-            "\n    arg 3) output file name to be placed in './audio-outputs': MyTest.wav"
+            "\n    arg 3) output file name to be placed in './audio-others': MyTest.wav"
             "\n    arg 4) feature index file path: logs/mi-test/added_IVF3042_Flat_nprobe_1.index"
             "\n    arg 5) speaker id: 0"
             "\n    arg 6) transposition: 0"
@@ -1592,7 +1661,8 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         fn=toggle_advanced_settings,
                         inputs=[advanced_settings_checkbox],
                         outputs=[advanced_settings]
-                    )                           
+                    )
+                                               
                     
                     but0 = gr.Button(i18n("转换"), variant="primary").style(full_width=True)
                     
@@ -1626,7 +1696,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                             )
                            
                     
-                with gr.TabItem(i18n("批处理")):
+                with gr.TabItem(i18n("批处理")): # Dont Change
                     with gr.Group(): # Markdown explanation of batch inference
                         gr.Markdown(
                             value=i18n("批量转换, 输入待转换音频文件夹, 或上传多个音频文件, 在指定文件夹(默认opt)下输出转换的音频. ")
@@ -1782,6 +1852,59 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         inputs=[advanced_settings_batch_checkbox],
                         outputs=[advanced_settings_batch]
                     )                           
+                    
+                with gr.TabItem(i18n("额外")):
+                    with gr.Group(): # Defines whole single inference option section
+                        gr.Markdown(
+                            value=i18n("将生成的音频与其他音频（伴奏）合并，还可以用它来创建视频")
+                        )
+                        with gr.Row():
+                            with gr.Column(): # First column for audio-related inputs
+                                dropbox = gr.File(label=i18n("将音频拖到此处，然后点击刷新按钮"))
+                                input_audio1 = gr.Dropdown(
+                                    label=i18n("选择您的伴奏"),
+                                    choices=sorted(audio_others_paths),
+                                    value='',
+                                    interactive=True,
+                                )
+                                input_audio3 = gr.Dropdown(
+                                    label=i18n("选择生成的音频"),
+                                    choices=sorted(audio_paths),
+                                    value='',
+                                    interactive=True,
+                                )
+
+                                butnone = gr.Button(i18n("合并"), variant="primary").style(full_width=True)
+                                
+                                vc_output1 = gr.Textbox(label=i18n("输出信息"))
+                                vc_output2 = gr.Audio(label=i18n("输出音频(右下角三个点,点了可以下载)"), type='filepath')
+                                
+                                dropbox.upload(fn=save_to_wav2, inputs=[dropbox], outputs=[input_audio1])
+                                dropbox.upload(fn=change_choices2, inputs=[], outputs=[input_audio1])
+
+                                refresh_button.click(
+                                    fn=lambda: change_choices3(),
+                                    inputs=[],
+                                    outputs=[input_audio1, input_audio3],
+                                )
+                                
+                                butnone.click(
+                                    fn=audio_combined,
+                                    inputs=[input_audio1, input_audio3], 
+                                    outputs=[vc_output1, vc_output2]
+                                    )
+                                    
+
+                                
+
+                            
+
+                          # with gr.Column(): # Second column for pitch shift and other options
+                                
+                                
+                                
+        
+                                               
                     
           # with gr.TabItem(i18n("伴奏人声分离&去混响&去回声")): # UVR section 
           #     with gr.Group():
@@ -2362,6 +2485,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                 easy_infer.download_model()
                 easy_infer.download_backup()
                 easy_infer.download_dataset(trainset_dir4)
+                easy_infer.youtube_separator()
             
             with gr.TabItem(i18n("设置")):
                 with gr.Row():

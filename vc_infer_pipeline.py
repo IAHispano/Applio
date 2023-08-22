@@ -1,3 +1,4 @@
+from scipy.io import wavfile
 import numpy as np, parselmouth, torch, pdb, sys, os
 from time import time as ttime
 import torch.nn.functional as F
@@ -575,5 +576,19 @@ class VC(object):
 
         print("Returning completed audio...")
         print("-------------------")
+
+        output_folder = "audio-outputs"  
+        output_filename = "generated_audio_{}.wav"
+        output_count = 1
+        while True:
+            current_output_path = os.path.join(output_folder, output_filename.format(output_count))
+            if not os.path.exists(current_output_path):
+                break
+            output_count += 1
+        
+        # Guardar el audio generado como archivo WAV
+        wavfile.write(current_output_path, tgt_sr, audio_opt)
+
+        print(f"Generated audio saved to: {current_output_path}")
         
         return audio_opt

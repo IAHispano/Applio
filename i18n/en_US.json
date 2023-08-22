@@ -212,5 +212,14 @@
   "用于共振峰变换的音色": "Timbre for formant shifting",
   "应用": "Apply",
   "单个": "Single",
-  "批处理": "Batch"
+  "批处理": "Batch",
+  "单独的 YouTube 曲目": "Separate YouTube tracks",
+  "下载 YouTube 视频的音频并自动分离声音和伴奏轨道": "Download audio from a YouTube video and automatically separate the vocal and instrumental tracks",
+  "额外": "Extra",
+  "将生成的音频与其他音频（伴奏）合并，还可以用它来创建视频": "Merge your generated audios with other audio (instrumental) [Beta]",
+  "选择您的伴奏": "Choose your instrumental",
+  "选择生成的音频": "Choose the generated audio",
+  "合并": "Combine",
+  "下载并分离": "Download and Separate",
+  "粘贴 YouTube 链接": "Enter the youtube link"
 }

@@ -1,26 +1,78 @@
 import subprocess
 import os
+import sys
 import errno
 import shutil
+import yt_dlp
 from mega import Mega
 import datetime
 import unicodedata
+import torch
 import glob
 import gradio as gr
 import gdown
 import zipfile
+import traceback
 import json
 import requests
 import wget
+import ffmpeg
 import hashlib
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 from unidecode import unidecode
 import re
 import time
+from lib.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM
+from vc_infer_pipeline import VC
+from lib.infer_pack.models import (
+    SynthesizerTrnMs256NSFsid,
+    SynthesizerTrnMs256NSFsid_nono,
+    SynthesizerTrnMs768NSFsid,
+    SynthesizerTrnMs768NSFsid_nono,
+)
+from MDXNet import MDXNetDereverb
+from config import Config
+from infer_uvr5 import _audio_pre_, _audio_pre_new
 from huggingface_hub import HfApi, list_models
 from huggingface_hub import login
 from i18n import I18nAuto
 i18n = I18nAuto()
 from bs4 import BeautifulSoup
+from sklearn.cluster import MiniBatchKMeans
+
+config = Config()
+tmp = os.path.join(now_dir, "TEMP")
+shutil.rmtree(tmp, ignore_errors=True)
+os.environ["TEMP"] = tmp
+weight_root = "weights"
+weight_uvr5_root = "uvr5_weights"
+index_root = "./logs/"
+audio_root = "audios"
+names = []
+for name in os.listdir(weight_root):
+    if name.endswith(".pth"):
+        names.append(name)
+index_paths = []
+
+global indexes_list
+indexes_list = []
+
+audio_paths = []
+for root, dirs, files in os.walk(index_root, topdown=False):
+    for name in files:
+        if name.endswith(".index") and "trained" not in name:
+            index_paths.append("%s\\%s" % (root, name))
+
+for root, dirs, files in os.walk(audio_root, topdown=False):
+    for name in files:
+        audio_paths.append("%s/%s" % (root, name))
+
+uvr5_names = []
+for name in os.listdir(weight_uvr5_root):
+    if name.endswith(".pth") or "onnx" in name:
+        uvr5_names.append(name.replace(".pth", ""))
+
 def calculate_md5(file_path):
     hash_md5 = hashlib.md5()
     with open(file_path, "rb") as f:
@@ -137,6 +189,92 @@ class error_message(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         super().__init__(mensaje)
+
+# 一个选项卡全局只能有一个音色
+def get_vc(sid, to_return_protect0, to_return_protect1):
+    global n_spk, tgt_sr, net_g, vc, cpt, version
+    if sid == "" or sid == []:
+        global hubert_model
+        if hubert_model is not None:  # 考虑到轮询, 需要加个判断看是否 sid 是由有模型切换到无模型的
+            print("clean_empty_cache")
+            del net_g, n_spk, vc, hubert_model, tgt_sr  # ,cpt
+            hubert_model = net_g = n_spk = vc = hubert_model = tgt_sr = None
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            ###楼下不这么折腾清理不干净
+            if_f0 = cpt.get("f0", 1)
+            version = cpt.get("version", "v1")
+            if version == "v1":
+                if if_f0 == 1:
+                    net_g = SynthesizerTrnMs256NSFsid(
+                        *cpt["config"], is_half=config.is_half
+                    )
+                else:
+                    net_g = SynthesizerTrnMs256NSFsid_nono(*cpt["config"])
+            elif version == "v2":
+                if if_f0 == 1:
+                    net_g = SynthesizerTrnMs768NSFsid(
+                        *cpt["config"], is_half=config.is_half
+                    )
+                else:
+                    net_g = SynthesizerTrnMs768NSFsid_nono(*cpt["config"])
+            del net_g, cpt
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            cpt = None
+        return (
+            {"visible": False, "__type__": "update"},
+            {"visible": False, "__type__": "update"},
+            {"visible": False, "__type__": "update"},
+        )
+    person = "%s/%s" % (weight_root, sid)
+    print("loading %s" % person)
+    cpt = torch.load(person, map_location="cpu")
+    tgt_sr = cpt["config"][-1]
+    cpt["config"][-3] = cpt["weight"]["emb_g.weight"].shape[0]  # n_spk
+    if_f0 = cpt.get("f0", 1)
+    if if_f0 == 0:
+        to_return_protect0 = to_return_protect1 = {
+            "visible": False,
+            "value": 0.5,
+            "__type__": "update",
+        }
+    else:
+        to_return_protect0 = {
+            "visible": True,
+            "value": to_return_protect0,
+            "__type__": "update",
+        }
+        to_return_protect1 = {
+            "visible": True,
+            "value": to_return_protect1,
+            "__type__": "update",
+        }
+    version = cpt.get("version", "v1")
+    if version == "v1":
+        if if_f0 == 1:
+            net_g = SynthesizerTrnMs256NSFsid(*cpt["config"], is_half=config.is_half)
+        else:
+            net_g = SynthesizerTrnMs256NSFsid_nono(*cpt["config"])
+    elif version == "v2":
+        if if_f0 == 1:
+            net_g = SynthesizerTrnMs768NSFsid(*cpt["config"], is_half=config.is_half)
+        else:
+            net_g = SynthesizerTrnMs768NSFsid_nono(*cpt["config"])
+    del net_g.enc_q
+    print(net_g.load_state_dict(cpt["weight"], strict=False))
+    net_g.eval().to(config.device)
+    if config.is_half:
+        net_g = net_g.half()
+    else:
+        net_g = net_g.float()
+    vc = VC(tgt_sr, config)
+    n_spk = cpt["config"][-3]
+    return (
+        {"visible": True, "maximum": n_spk, "__type__": "update"},
+        to_return_protect0,
+        to_return_protect1,
+    )
         
 def load_downloaded_model(url):
     parent_path = find_folder_parent(".", "pretrained_v2")
@@ -459,14 +597,17 @@ def load_downloaded_backup(url):
         infos = []
         logs_folders = ['0_gt_wavs','1_16k_wavs','2a_f0','2b-f0nsf','3_feature256','3_feature768']
         zips_path = os.path.join(parent_path, 'zips')
-        unzips_path = os.path.join(parent_path, 'logs')
+        unzips_path = os.path.join(parent_path, 'unzips')
         weights_path = os.path.join(parent_path, 'weights')
-        logs_dir = ""
+        logs_dir = os.path.join(parent_path, 'logs')
         
         if os.path.exists(zips_path):
             shutil.rmtree(zips_path)
+        if os.path.exists(unzips_path):
+            shutil.rmtree(unzips_path)
 
         os.mkdir(zips_path)
+        os.mkdir(unzips_path)
         
         download_file = download_from_url(url)
         if not download_file:
@@ -487,10 +628,25 @@ def load_downloaded_backup(url):
             if filename.endswith(".zip"):
                 zipfile_path = os.path.join(zips_path,filename)
                 zip_dir_name = os.path.splitext(filename)[0]
-                unzip_dir = os.path.join(parent_path,'logs', zip_dir_name)
+                unzip_dir = unzips_path
                 print(i18n("继续提取..."))
                 infos.append(i18n("继续提取..."))
                 shutil.unpack_archive(zipfile_path, unzip_dir, 'zip')
+                
+                if os.path.exists(os.path.join(unzip_dir, zip_dir_name)):
+                    # Move the inner directory with the same name
+                    shutil.move(os.path.join(unzip_dir, zip_dir_name), logs_dir)
+                else:
+                    # Create a folder with the same name and move files
+                    new_folder_path = os.path.join(logs_dir, zip_dir_name)
+                    os.mkdir(new_folder_path)
+                    for item_name in os.listdir(unzip_dir):
+                        item_path = os.path.join(unzip_dir, item_name)
+                        if os.path.isfile(item_path):
+                            shutil.move(item_path, new_folder_path)
+                        elif os.path.isdir(item_path):
+                            shutil.move(item_path, new_folder_path)
+                    
                 yield "\n".join(infos)
             else:
                 print(i18n("解压缩出错。"))
@@ -505,6 +661,8 @@ def load_downloaded_backup(url):
         
         if os.path.exists(zips_path):
             shutil.rmtree(zips_path)
+        if os.path.exists(os.path.join(parent_path, 'unzips')):
+            shutil.rmtree(os.path.join(parent_path, 'unzips'))
         print(i18n("备份已成功上传。"))
         infos.append("\n" + i18n("备份已成功上传。"))
         yield "\n".join(infos)
@@ -1089,6 +1247,108 @@ def publish_model_clicked(model_name, model_url, model_version, model_creator):
         # Eliminar folder donde se comprimio el modelo para enviarse a huggingface
         if os.path.exists(zips_path):
             shutil.rmtree(zips_path)
+
+def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format0):
+    carpeta_a_eliminar = "yt_downloads"
+    if os.path.exists(carpeta_a_eliminar) and os.path.isdir(carpeta_a_eliminar):
+        # Eliminar todos los archivos en la carpeta
+        for archivo in os.listdir(carpeta_a_eliminar):
+            ruta_archivo = os.path.join(carpeta_a_eliminar, archivo)
+            if os.path.isfile(ruta_archivo):
+                os.remove(ruta_archivo)
+            elif os.path.isdir(ruta_archivo):
+                shutil.rmtree(ruta_archivo)  # Eliminar subcarpetas recursivamente
+      
+    def format_title(title):
+     formatted_title = title.replace(" ", "_")
+     return formatted_title
+
+    ydl_opts = {
+     'no-windows-filenames': True,
+     'restrict-filenames': True,
+     'extract_audio': True,
+     'format': 'bestaudio',
+     }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+     info_dict = ydl.extract_info(input_url, download=False)
+     formatted_title = format_title(info_dict.get('title', 'default_title'))
+     formatted_outtmpl = output_path + '/' + formatted_title + '.wav'
+     ydl_opts['outtmpl'] = formatted_outtmpl
+     ydl = yt_dlp.YoutubeDL(ydl_opts)
+     ydl.download([input_url])
+    
+    infos = []
+    try:
+        inp_root, save_root_vocal, save_root_ins = [x.strip(" ").strip('"').strip("\n").strip('"').strip(" ") if isinstance(x, str) else x for x in [inp_root, save_root_vocal, save_root_ins]]     
+        if model_name == "onnx_dereverb_By_FoxJoy":
+            pre_fun = MDXNetDereverb(15)
+        else:
+            func = _audio_pre_ if "DeEcho" not in model_name else _audio_pre_new
+            pre_fun = func(
+                agg=10,
+                model_path=os.path.join(weight_uvr5_root, model_name + ".pth"),
+                device=config.device,
+                is_half=config.is_half,
+            )
+        if inp_root != "":
+            paths = [os.path.join(inp_root, name) for name in os.listdir(inp_root)]
+        else:
+            paths = [path.name for path in paths]
+        for path in paths:
+            inp_path = os.path.join(inp_root, path)
+            need_reformat = 1
+            done = 0
+            try:
+                info = ffmpeg.probe(inp_path, cmd="ffprobe")
+                if (
+                    info["streams"][0]["channels"] == 2
+                    and info["streams"][0]["sample_rate"] == "44100"
+                ):
+                    need_reformat = 0
+                    pre_fun._path_audio_(
+                        inp_path, save_root_ins, save_root_vocal, format0
+                    )
+                    done = 1
+            except:
+                need_reformat = 1
+                traceback.print_exc()
+            if need_reformat == 1:
+                tmp_path = "%s/%s.reformatted.wav" % (tmp, os.path.basename(inp_path))
+                os.system(
+                    "ffmpeg -i %s -vn -acodec pcm_s16le -ac 2 -ar 44100 %s -y"
+                    % (inp_path, tmp_path)
+                )
+                inp_path = tmp_path
+            try:
+                if done == 0:
+                    pre_fun._path_audio_(
+                        inp_path, save_root_ins, save_root_vocal, format0
+                    )
+                infos.append("%s->Success" % (os.path.basename(inp_path)))
+                yield "\n".join(infos)
+            except:
+                infos.append(
+                    "%s->%s" % (os.path.basename(inp_path), traceback.format_exc())
+                )
+                yield "\n".join(infos)
+    except:
+        infos.append(traceback.format_exc())
+        yield "\n".join(infos)
+    finally:
+        try:
+            if model_name == "onnx_dereverb_By_FoxJoy":
+                del pre_fun.pred.model
+                del pre_fun.pred.model_
+            else:
+                del pre_fun.model
+                del pre_fun
+        except:
+            traceback.print_exc()
+        print("clean_empty_cache")
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    yield "\n".join(infos)
             
 def publish_models():
     with gr.Column():
@@ -1149,3 +1409,55 @@ def download_dataset(trainset_dir4):
         load_dataset_button=gr.Button(i18n("下载"))
         load_dataset_button.click(fn=load_dowloaded_dataset, inputs=[dataset_url], outputs=[load_dataset_status_bar])
         load_dataset_status_bar.change(update_dataset_list, dataset_url, trainset_dir4)
+    
+def youtube_separator():
+        gr.Markdown(value="# " + i18n("单独的 YouTube 曲目"))
+        gr.Markdown(value=i18n("下载 YouTube 视频的音频并自动分离声音和伴奏轨道"))
+        with gr.Row():
+            input_url = gr.inputs.Textbox(label=i18n("粘贴 YouTube 链接"))
+            output_path = gr.Textbox(
+                label=i18n("输入待处理音频文件夹路径(去文件管理器地址栏拷就行了)"),
+                value=os.path.abspath(os.getcwd()).replace('\\', '/') + "/yt_downloads",
+                visible=False,
+                )
+            save_root_ins = gr.Textbox(
+                label=i18n("输入待处理音频文件夹路径"),
+                value=((os.getcwd()).replace('\\', '/') + "/yt_downloads"),
+                visible=False,
+                )
+            model_choose = gr.Textbox(
+                value=os.path.abspath(os.getcwd()).replace('\\', '/') + "/uvr5_weights/HP5_only_main_vocal",
+                visible=False,
+                )
+            save_root_vocal = gr.Textbox(
+                label=i18n("指定输出主人声文件夹"), value="audios",
+                visible=False,
+                )
+            opt_ins_root = gr.Textbox(
+                label=i18n("指定输出非主人声文件夹"), value="opt",
+                visible=False,
+                )
+            format0 = gr.Radio(
+                label=i18n("导出文件格式"),
+                choices=["wav", "flac", "mp3", "m4a"],
+                value="wav",
+                interactive=True,
+                visible=False,
+                )
+        with gr.Row():
+            vc_output4 = gr.Textbox(label=i18n("地位"))
+        with gr.Row():
+            but2 = gr.Button(i18n("下载并分离"))
+            but2.click(
+                uvr,
+                    [
+                    input_url, 
+                    output_path,
+                    model_choose,
+                    save_root_ins,
+                    save_root_vocal,
+                    opt_ins_root,
+                    format0,
+                            ],
+                    [vc_output4],
+                )
