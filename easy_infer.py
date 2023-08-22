@@ -1229,6 +1229,16 @@ def publish_model_clicked(model_name, model_url, model_version, model_creator):
             shutil.rmtree(zips_path)
 
 def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format0):
+    carpeta_a_eliminar = "yt_downloads"
+    if os.path.exists(carpeta_a_eliminar) and os.path.isdir(carpeta_a_eliminar):
+        # Eliminar todos los archivos en la carpeta
+        for archivo in os.listdir(carpeta_a_eliminar):
+            ruta_archivo = os.path.join(carpeta_a_eliminar, archivo)
+            if os.path.isfile(ruta_archivo):
+                os.remove(ruta_archivo)
+            elif os.path.isdir(ruta_archivo):
+                shutil.rmtree(ruta_archivo)  # Eliminar subcarpetas recursivamente
+      
     def format_title(title):
      formatted_title = title.replace(" ", "_")
      return formatted_title
@@ -1319,7 +1329,6 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
     yield "\n".join(infos)
-
             
 def publish_models():
     with gr.Column():
@@ -1388,12 +1397,12 @@ def youtube_separator():
             input_url = gr.inputs.Textbox(label=i18n("粘贴 YouTube 链接"))
             output_path = gr.Textbox(
                 label=i18n("输入待处理音频文件夹路径(去文件管理器地址栏拷就行了)"),
-                value=os.path.abspath(os.getcwd()).replace('\\', '/') + "yt_downloads",
+                value=os.path.abspath(os.getcwd()).replace('\\', '/') + "/yt_downloads",
                 visible=False,
                 )
             save_root_ins = gr.Textbox(
                 label=i18n("输入待处理音频文件夹路径"),
-                value=((os.getcwd()).replace('\\', '/') + "yt_downloads"),
+                value=((os.getcwd()).replace('\\', '/') + "/yt_downloads"),
                 visible=False,
                 )
             model_choose = gr.Textbox(
