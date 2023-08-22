@@ -24,7 +24,7 @@ def insert_new_line(file_name, line_to_find, text_to_insert):
             if lines[i].strip() == line_to_find:
                 # If next line exists and starts with sys.path.append, skip
                 if i+1 < len(lines) and lines[i+1].strip().startswith("sys.path.append"):
-                    print('Already fixed! Skipped adding a line...')
+                    print('¡Ya estaba arreglado! Se salta añadir una línea...')
                     already_exists = True
                     break
                 else:
@@ -59,9 +59,9 @@ if __name__ == "__main__":
 
     success_1 = insert_new_line(file_name, line_to_find, text_to_insert)
     if success_1:
-        print('The first operation was successful!')
+        print('¡La primera operación fue un éxito!')
     else:
-        print('Skipped first operation as it was already fixed!')
+        print('¡Se saltó la primera operación porque ya estaba arreglada!')
 
     file_name = 'infer-web.py'
     old_text = 'with gr.Blocks(theme=gr.themes.Soft()) as app:'
@@ -69,15 +69,12 @@ if __name__ == "__main__":
 
     success_2 = replace_in_file(file_name, old_text, new_text)
     if success_2:
-        print('The second operation was successful!')
+        print('¡La segunda operación fue un éxito!')
     else:
-        print('The second operation was skipped due to being fixed already!')
+        print('¡La segunda operación se omitió porque ya estaba arreglada!')
 
-    if success_1 and success_2:
-        print('Local fixes successful! You should now be able to infer and train locally on Mangio RVC.')
-    else:
-        print("Local fixes didn't apply? You shouldn't be seeing this if you ran it in the correct Fixes folder. \nOtherwise, contact @kalomaze or @hobqueer in AI HUB")
-
+    print('¡Correcciones locales exitosas! Ahora debería poder inferir y entrenar localmente en Mangio RVC.')
+    
     time.sleep(5)
 
 def find_torchcrepe_directory(directory):
