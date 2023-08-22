@@ -79,8 +79,8 @@ if __name__ == "__main__":
 
 def find_torchcrepe_directory(directory):
     """
-    Recursively searches for the highest hierarchy folder named 'torchcrepe' within a directory.
-    Returns the path of the found directory or None if not found.
+    Busca recursivamente la carpeta de mayor jerarquía denominada 'torchcrepe' dentro de un directorio.
+    Devuelve la ruta del directorio encontrado o Ninguno si no se encuentra.
     """
     for root, dirs, files in os.walk(directory):
         if 'torchcrepe' in dirs:
@@ -96,40 +96,40 @@ def download_and_extract_torchcrepe():
         torchcrepe_dir_path = os.path.join(destination_dir, 'torchcrepe')
 
         if os.path.exists(torchcrepe_dir_path):
-            print("Skipping torchcrepe download. Folder already exists.")
+            print("Saltando la descarga de torchcrepe. La carpeta ya existe.")
             return
 
         # Download the file
-        print("Starting torchcrepe download...")
+        print("Iniciando la descarga de torchcrepe...")
         response = requests.get(url)
 
         # Raise an error if the GET request was unsuccessful
         response.raise_for_status()
-        print("Download finished.")
+        print("Descarga finalizada.")
 
         # Save the downloaded file
         zip_file_path = os.path.join(temp_dir, 'master.zip')
         os.makedirs(temp_dir, exist_ok=True)
         with open(zip_file_path, 'wb') as file:
             file.write(response.content)
-        print(f"Saved zip file to {zip_file_path}")
+        print(f"Archivo zip guardado en {zip_file_path}")
 
         # Extract the zip file
-        print("Extracting contents...")
+        print("Extrayendo contenidos...")
         with zipfile.ZipFile(zip_file_path, 'r') as zip_file:
             zip_file.extractall(temp_dir)
-        print("Extraction finished.")
+        print("Extracción finalizada.")
 
         # Locate the torchcrepe folder and move it to the destination directory
         torchcrepe_dir = find_torchcrepe_directory(temp_dir)
         if torchcrepe_dir:
             shutil.move(torchcrepe_dir, destination_dir)
-            print(f"Moved torchcrepe directory to {destination_dir}!")
+            print(f"Se movió el directorio torchcrepe a {destination_dir}!")
         else:
-            print("Could not locate the torchcrepe directory.")
+            print("No se pudo localizar el directorio de torchcrepe.")
 
     except Exception as e:
-        print("Torchcrepe not downloaded successfully?", e)
+        print("Torchcrepe no descargado con éxito?", e)
 
     # Clean up temporary directory
     if os.path.exists(temp_dir):
