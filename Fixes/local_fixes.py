@@ -73,7 +73,7 @@ if __name__ == "__main__":
     else:
         print('¡La segunda operación se omitió porque ya estaba arreglada!')
 
-    print('¡Correcciones locales exitosas! Ahora debería poder inferir y entrenar localmente en Mangio RVC.')
+    print('¡Correcciones locales exitosas! Ahora debería poder inferir y entrenar localmente en Applio RVC Fork.')
     
     time.sleep(5)
 
