@@ -2307,7 +2307,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                 easy_infer.youtube_separator()
             with gr.TabItem(i18n("额外")):
                 gr.Markdown(
-                            value=i18n("此部分包含一些额外的实用工具，通常可能处于实验阶段") + "<br> " + i18n("即将有更多")
+                            value=i18n("此部分包含一些额外的实用工具，通常可能处于实验阶段")
                 )
                 with gr.TabItem(i18n("合并音频")):
                     with gr.Group(): # Defines whole single inference option section
