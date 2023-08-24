@@ -6,7 +6,7 @@
 </div>
 
 <div align="center">
-  <h2>🔗 Links</h2>
+  <h2>Links</h2>
 </div>
 
 <div align="center">
@@ -18,7 +18,7 @@
 </div>
 
 <div align="center">
-  <h2>🙌 Credits</h2>
+  <h2>Credits</h2>
 </div>
 
 <div align="center">
@@ -42,7 +42,7 @@
 </div>
 
 <div align="center">
-  <h2>👨‍💻 All Contributors</h2>
+  <h2>Contributors</h2>
 </div>
 
 <div align="center">
