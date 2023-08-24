@@ -2243,7 +2243,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                     minimum=0,
                                     maximum=10,
                                     label=i18n("Volume"),
-                                    value=10.00,
+                                    value=1.00,
                                     interactive=True,
                                 )
                                 reverb_ = gr.Checkbox(
