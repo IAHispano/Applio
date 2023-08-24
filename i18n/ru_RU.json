@@ -97,7 +97,7 @@
   "Target sample rate:": "Целевая частота дискретизации:",
   "Whether the model has pitch guidance (required for singing, optional for speech):": "Имеет ли модель управление высотой тона (обязательно для пения, необязательно для речи):",
   "Version": "Версия",
-  "Number of CPU processes used for pitch extraction and data processing:": "Количество процессов ЦП, используемых для извлечения высоты звука и обработки данных:",
+  "Number of CPU processes:": "Количество процессов ЦП, используемых для извлечения высоты звука и обработки данных:",
   "Enter the path of the training folder:": "Введите путь к папке обучения:",
   "Specify the model ID:": "Пожалуйста, укажите идентификатор модели:",
   "Auto detect audio path and select from the dropdown:": "Автоматическое определение пути аудио и выбор из раскрывающегося списка:",

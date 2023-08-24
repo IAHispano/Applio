@@ -97,7 +97,7 @@
   "Target sample rate:": "ہدف نمونہ کی شرح:",
   "Whether the model has pitch guidance (required for singing, optional for speech):": "آیا ماڈل میں پچ گائیڈنس ہے (گانے کے لیے ضروری، تقریر کے لیے اختیاری):",
   "Version": "ورژن",
-  "Number of CPU processes used for pitch extraction and data processing:": "پچ نکالنے اور ڈیٹا پروسیسنگ کے لیے استعمال ہونے والے CPU عملوں کی تعداد:",
+  "Number of CPU processes:": "پچ نکالنے اور ڈیٹا پروسیسنگ کے لیے استعمال ہونے والے CPU عملوں کی تعداد:",
   "Enter the path of the training folder:": "ٹریننگ فولڈر کا راستہ درج کریں:",
   "Specify the model ID:": "براہ کرم ماڈل ID کی وضاحت کریں:",
   "Auto detect audio path and select from the dropdown:": "آڈیو پاتھ کا خود بخود پتہ لگائیں اور ڈراپ ڈاؤن سے منتخب کریں:",

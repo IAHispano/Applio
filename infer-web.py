@@ -1884,7 +1884,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         minimum=0,
                         maximum=config.n_cpu,
                         step=1,
-                        label=i18n("Number of CPU processes used for pitch extraction and data processing:"),
+                        label=i18n("Number of CPU processes:"),
                         value=int(np.ceil(config.n_cpu / 1.5)),
                         interactive=True,
                     )

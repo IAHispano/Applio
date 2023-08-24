@@ -97,7 +97,7 @@
   "Target sample rate:": "Tingkat sampel target:",
   "Whether the model has pitch guidance (required for singing, optional for speech):": "Apakah model memiliki panduan nada (wajib untuk bernyanyi, opsional untuk berbicara):",
   "Version": "Versi: kapan",
-  "Number of CPU processes used for pitch extraction and data processing:": "Jumlah proses CPU yang digunakan untuk ekstraksi nada dan pemrosesan data:",
+  "Number of CPU processes:": "Jumlah proses CPU yang digunakan untuk ekstraksi nada dan pemrosesan data:",
   "Enter the path of the training folder:": "Masukkan jalur folder pelatihan:",
   "Specify the model ID:": "Silakan tentukan ID model:",
   "Auto detect audio path and select from the dropdown:": "Deteksi otomatis jalur audio dan pilih dari dropdown:",

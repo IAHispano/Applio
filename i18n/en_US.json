@@ -97,7 +97,7 @@
   "Target sample rate:": "Target sample rate:",
   "Whether the model has pitch guidance (required for singing, optional for speech):": "Whether the model has pitch guidance (required for singing, optional for speech):",
   "Version": "Version",
-  "Number of CPU processes used for pitch extraction and data processing:": "Number of CPU processes used for pitch extraction and data processing:",
+  "Number of CPU processes:": "Number of CPU processes:",
   "Enter the path of the training folder:": "Enter the path of the training folder:",
   "Specify the model ID:": "Specify the model ID:",
   "Auto detect audio path and select from the dropdown:": "Auto detect audio path and select from the dropdown:",

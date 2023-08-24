@@ -97,7 +97,7 @@
   "Target sample rate:": "目标采样率：",
   "Whether the model has pitch guidance (required for singing, optional for speech):": "模型是否有音调引导（唱歌时需要，语音时可选）：",
   "Version": "版本",
-  "Number of CPU processes used for pitch extraction and data processing:": "用于音高提取和数据处理的CPU进程数：",
+  "Number of CPU processes:": "用于音高提取和数据处理的CPU进程数：",
   "Enter the path of the training folder:": "输入训练文件夹的路径：",
   "Specify the model ID:": "请指定型号 ID：",
   "Auto detect audio path and select from the dropdown:": "自动检测音频路径并从下拉列表中选择：",

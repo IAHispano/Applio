@@ -97,7 +97,7 @@
   "Target sample rate:": "معدل العينة المستهدف:",
   "Whether the model has pitch guidance (required for singing, optional for speech):": "ما إذا كان النموذج يحتوي على إرشادات لطبقة الصوت (مطلوبة للغناء، واختيارية للكلام):",
   "Version": "إصدار",
-  "Number of CPU processes used for pitch extraction and data processing:": "عدد عمليات وحدة المعالجة المركزية المستخدمة لاستخراج الملعب ومعالجة البيانات:",
+  "Number of CPU processes:": "عدد عمليات وحدة المعالجة المركزية المستخدمة لاستخراج الملعب ومعالجة البيانات:",
   "Enter the path of the training folder:": "أدخل مسار مجلد التدريب:",
   "Specify the model ID:": "يرجى تحديد معرف النموذج:",
   "Auto detect audio path and select from the dropdown:": "الكشف التلقائي عن مسار الصوت والاختيار من القائمة المنسدلة:",
