@@ -137,8 +137,7 @@ def download_from_url(url):
                     return "demasiado uso"
                 if "Cannot retrieve the public link of the file." in str(result.stderr):
                     return "link privado"
-                print(result.stderr)
-                
+                print(result.stderr)                
         elif "/blob/" in url:
             os.chdir('./zips')
             url = url.replace("blob", "resolve")
@@ -175,6 +174,14 @@ def download_from_url(url):
            else:
                  print("No .zip file found on the page.")
             # Handle the case when no .zip file is found
+        elif "cdn.discordapp.com" in url:
+            file = requests.get(url)
+            if file.status_code == 200:
+                name = url.split('/')
+                with open(os.path.join(zips_path, name[len(name)-1]), "wb") as newfile:
+                    newfile.write(file.content)
+            else:
+                return None
         else:
             os.chdir('./zips')
             wget.download(url)
@@ -1066,7 +1073,7 @@ def is_valid_model(name):
 
   for root, subfolders, files in os.walk(file_path):
     for file in files:
-      current_file_path = os.path.join(root, file)
+      #current_file_path = os.path.join(root, file)
       if not file.startswith("G_") and not file.startswith("D_") and file.endswith(".pth") and not "_G_" in file and not "_D_" in file:
         has_model = True
       if file.startswith('added_') and file.endswith('.index'):
