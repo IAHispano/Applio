@@ -1271,19 +1271,36 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
      'restrict-filenames': True,
      'extract_audio': True,
      'format': 'bestaudio',
+     'quiet': True,
+     'no-warnings': True,
      }
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-     info_dict = ydl.extract_info(input_url, download=False)
-     formatted_title = format_title(info_dict.get('title', 'default_title'))
-     formatted_outtmpl = output_path + '/' + formatted_title + '.wav'
-     ydl_opts['outtmpl'] = formatted_outtmpl
-     ydl = yt_dlp.YoutubeDL(ydl_opts)
-     ydl.download([input_url])
     
+    try:
+        print("Descargando audio del video...")
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+         info_dict = ydl.extract_info(input_url, download=False)
+         formatted_title = format_title(info_dict.get('title', 'default_title'))
+         formatted_outtmpl = output_path + '/' + formatted_title + '.wav'
+         ydl_opts['outtmpl'] = formatted_outtmpl
+         ydl = yt_dlp.YoutubeDL(ydl_opts)
+         ydl.download([input_url])
+        print("Audio descargado!")
+    except Exception as error:
+        print("Ocurrió un error:", error)
+
+    # Variables necesarias hechas para ser editables
+    actual_directory = os.path.dirname(__file__) # Ruta de destino del instrumental y su ruta definitiva
+    instrumental_source_directory = os.path.join(actual_directory, "wav")
+    instrumental_directory = os.path.join(actual_directory, "audio-others")
+    instrumental_formatted = f"instrument_{formatted_title}.wav.reformatted.wav_10.wav"  # Resultado del instrumental al hacer la separación
+    instrumental_audio_path = os.path.join(instrumental_directory, instrumental_formatted) # Ruta de destino del instrumental y su ruta definitiva
+    old_instrumental_audio_path = os.path.join(instrumental_source_directory, instrumental_formatted) # Ruta anerior de destino del instrumental      
+    format0 = "wav"
+
     infos = []
     pre_fun = None
     try:
+        print("Separando audio...")
         inp_root, save_root_vocal, save_root_ins = [x.strip(" ").strip('"').strip("\n").strip('"').strip(" ") if isinstance(x, str) else x for x in [inp_root, save_root_vocal, save_root_ins]]     
         if model_name == "onnx_dereverb_By_FoxJoy":
             pre_fun = MDXNetDereverb(15)
@@ -1320,7 +1337,7 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
             if need_reformat == 1:
                 tmp_path = "%s/%s.reformatted.wav" % (tmp, os.path.basename(inp_path))
                 os.system(
-                    "ffmpeg -i %s -vn -acodec pcm_s16le -ac 2 -ar 44100 %s -y"
+                    "ffmpeg -loglevel fatal -i %s -vn -acodec pcm_s16le -ac 2 -ar 44100 %s -y"
                     % (inp_path, tmp_path)
                 )
                 inp_path = tmp_path
@@ -1354,7 +1371,25 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
     yield "\n".join(infos)
-            
+
+    try:
+        # Verificar si el archivo de origen existe
+        if os.path.exists(old_instrumental_audio_path):
+            # Verificar si el directorio de destino existe, si no, crearlo
+            if not os.path.exists(instrumental_directory):
+                os.makedirs(instrumental_directory)
+
+            # Mover el archivo al directorio destino
+            shutil.move(old_instrumental_audio_path, instrumental_audio_path)
+            print("Archivo movido exitosamente.")
+            print("Terminado!")
+        else:
+            print("El archivo de origen no existe.")
+    except Exception as e:
+        print("Error al mover el archivo:", e)
+    
+    
+    
 def publish_models():
     with gr.Column():
         gr.Markdown("# Publicar un modelo en la comunidad")
@@ -1414,7 +1449,7 @@ def download_dataset(trainset_dir4):
         load_dataset_button=gr.Button(i18n("下载"))
         load_dataset_button.click(fn=load_dowloaded_dataset, inputs=[dataset_url], outputs=[load_dataset_status_bar])
         load_dataset_status_bar.change(update_dataset_list, dataset_url, trainset_dir4)
-    
+
 def youtube_separator():
         gr.Markdown(value="# " + i18n("单独的 YouTube 曲目"))
         gr.Markdown(value=i18n("下载 YouTube 视频的音频并自动分离声音和伴奏轨道"))
@@ -1463,6 +1498,6 @@ def youtube_separator():
                     save_root_vocal,
                     opt_ins_root,
                     format0,
-                            ],
+                    ],
                     [vc_output4],
                 )
