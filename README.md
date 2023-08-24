@@ -21,5 +21,5 @@ Applio is a slightly modified version of Mangio, aiming to provide a simpler int
 ## Thanks to all contributors for their efforts
 
 <a href="https://github.com/liujing04/Retrieval-based-Voice-Conversion-WebUI/graphs/contributors" target="_blank">
-  <img src="https://contrib.rocks/image?repo=liujing04/Retrieval-based-Voice-Conversion-WebUI" />
+  <img src="https://contrib.rocks/image?repo=liujing04/Retrieval-based-Voice-Conversion-WebUI" /> <img src="https://contrib.rocks/image?repo=IAHispano/Applio-RVC-Fork" />
 </a>
