@@ -4,7 +4,8 @@ import sys
 import os
 now_dir = os.getcwd()
 sys.path.append(now_dir)
-import i18n
+from i18n import I18nAuto
+i18n = I18nAuto()
 from pydub import AudioSegment
 import numpy as np
 import soundfile as sf
@@ -31,6 +32,6 @@ def process_audio(input_path, output_path, reverb_enabled, compressor_enabled, n
                 effected = board(chunk, f.samplerate, reset=False)
                 o.write(effected)
 
-
-    print(i18n("Processed audio saved at: "), output_path)
+    result = i18n("Processed audio saved at: ") +  output_path
+    print(result)
     return output_path
