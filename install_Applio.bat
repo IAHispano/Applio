@@ -35,7 +35,7 @@ cls
 
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 echo.
-pause
+
 echo Verificando si Git está instalado...
 git --version > nul 2>&1
 if %errorlevel% equ 0 (
