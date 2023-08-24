@@ -38,7 +38,6 @@ yt_dlp==2023.7.6
 pyngrok==4.1.12
 sounddevice==0.4.6
 soundfile==0.12.1
-pandas==0.25
 tensorboard==2.13.0
 tb_nightly==2.14.0a20230803
 torch==2.0.0
