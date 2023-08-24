@@ -1405,7 +1405,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                 with gr.Row():
                     sid0 = gr.Dropdown(label=i18n("Inferencing voice:"), choices=sorted(names), value=default_weight)
                     refresh_button = gr.Button(i18n("Refresh voice list, index path and audio files"), variant="primary")
-                    clean_button = gr.Button(i18n("Unload voice to save GPU memory:"), variant="primary")
+                    clean_button = gr.Button(i18n("Unload voice to save GPU memory"), variant="primary")
                     clean_button.click(fn=lambda: ({"value": "", "__type__": "update"}), inputs=[], outputs=[sid0])
 
                 
@@ -1425,7 +1425,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                     with gr.Group(): 
                         with gr.Row():
                             with gr.Column(): # First column for audio-related inputs
-                                dropbox = gr.File(label=i18n("Enter the path of the training folder:"))
+                                dropbox = gr.File(label=i18n("Drag your audio here"))
                                 record_button=gr.Audio(source="microphone", label=i18n("Or record an audio."), type="filepath")
                                 input_audio0 = gr.Textbox(
                                     label=i18n("Manual path to the audio file to be processed"),
@@ -1861,7 +1861,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                     )
                 )
                 with gr.Row():
-                    exp_dir1 = gr.Textbox(label=i18n("Enter the model name:"), value=i18n("model_name"))
+                    exp_dir1 = gr.Textbox(label=i18n("Enter the model name:"), value=i18n("Model_Name"))
                     sr2 = gr.Radio(
                         label=i18n("Target sample rate:"),
                         choices=["40k", "48k", "32k"],
@@ -1904,7 +1904,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                             minimum=0,
                             maximum=4,
                             step=1,
-                            label=i18n("Please specify the model ID:"),
+                            label=i18n("Specify the model ID:"),
                             value=0,
                             interactive=True,
                         )
@@ -2219,7 +2219,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         gr.Markdown(value="",scale="-0.5",visible=True)
                         with gr.Row():
                             with gr.Column():
-                                dropbox = gr.File(label=i18n("Drag the audio here and click the Refresh button"))
+                                dropbox = gr.File(label=i18n("Drag your audio here"))
                                 input_audio1 = gr.Dropdown(
                                     label=i18n("Choose your instrumental"),
                                     choices=sorted(audio_others_paths),
