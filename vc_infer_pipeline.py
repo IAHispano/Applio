@@ -577,7 +577,8 @@ class VC(object):
         print("Returning completed audio...")
         print("-------------------")
 
-        output_folder = "audio-outputs"  
+        output_folder = "audio-outputs"
+        os.makedirs(output_folder, exist_ok=True)  
         output_filename = "generated_audio_{}.wav"
         output_count = 1
         while True:
