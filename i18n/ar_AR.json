@@ -235,5 +235,8 @@
   "Noise Gate": "بوابة الضجيج",
   "Volume": "مقدار",
   "Drag the audio here and click the Refresh button": "اسحب الصوت هنا وانقر على زر التحديث",
-  "Select the generated audio": "حدد الصوت الذي تم إنشاؤه"
+  "Select the generated audio": "حدد الصوت الذي تم إنشاؤه",
+  "Volume of the instrumental audio": "حجم الصوت الآلي",
+  "Volume of the generated audio":"حجم الصوت الذي تم إنشاؤه",
+  "### Add the effects": "### أضف التأثيرات"
 }
