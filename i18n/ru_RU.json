@@ -235,5 +235,8 @@
   "Noise Gate": "Шумовые ворота",
   "Volume": "Объем",
   "Drag the audio here and click the Refresh button": "Перетащите аудио сюда и нажмите кнопку «Обновить».",
-  "Select the generated audio": "Выберите сгенерированный звук"
+  "Select the generated audio": "Выберите сгенерированный звук",
+  "Volume of the instrumental audio": "Громкость инструментального звука",
+  "Volume of the generated audio": "Громкость сгенерированного звука",
+  "### Add the effects": "### Добавьте эффекты"
 }
