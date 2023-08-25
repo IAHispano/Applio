@@ -2230,7 +2230,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 input_audio1_scale = gr.Slider(
                                     minimum=0,
                                     maximum=10,
-                                    label=i18n("Volume"),
+                                    label=i18n("Volume of the instrumental audio"),
                                     value=1.00,
                                     interactive=True,
                                 )
@@ -2240,13 +2240,16 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                     value='',
                                     interactive=True,
                                 )
-                                input_audio3_scale = gr.Slider(
-                                    minimum=0,
-                                    maximum=10,
-                                    label=i18n("Volume"),
-                                    value=1.00,
-                                    interactive=True,
-                                )
+                                with gr.Row():
+                                    input_audio3_scale = gr.Slider(
+                                        minimum=0,
+                                        maximum=10,
+                                        label=i18n("Volume of the generated audio"),
+                                        value=1.00,
+                                        interactive=True,
+                                    )
+
+                                gr.Markdown(value=i18n("### Add the effects"))
                                 reverb_ = gr.Checkbox(
                                 label=i18n("Reverb"),
                                 value=False,
