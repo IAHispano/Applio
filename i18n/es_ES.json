@@ -235,5 +235,8 @@
   "Noise Gate": "Puerta de ruido",
   "Volume": "Volumen",
   "Drag the audio here and click the Refresh button": "Arrastre el audio aquí y haga clic en el botón Actualizar",
-  "Select the generated audio": "Selecciona el audio generado"
+  "Select the generated audio": "Selecciona el audio generado",
+  "Volume of the instrumental audio": "Volumen del audio instrumental",
+  "Volume of the generated audio": "Volumen del audio generado",
+  "### Add the effects": "### Añade los efectos"
 }
