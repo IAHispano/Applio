@@ -235,5 +235,8 @@
   "Noise Gate": "شور گیٹ",
   "Volume": "حجم",
   "Drag the audio here and click the Refresh button": "آڈیو کو یہاں گھسیٹیں اور ریفریش بٹن پر کلک کریں۔",
-  "Select the generated audio": "تیار کردہ آڈیو کو منتخب کریں۔"
+  "Select the generated audio": "تیار کردہ آڈیو کو منتخب کریں۔",
+  "Volume of the instrumental audio": "آلہ ساز آڈیو کا حجم",
+  "Volume of the generated audio": "تیار کردہ آڈیو کا حجم",
+  "### Add the effects": "### اثرات شامل کریں۔"
 }
