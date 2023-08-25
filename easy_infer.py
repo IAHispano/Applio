@@ -486,8 +486,8 @@ def load_dowloaded_dataset(url):
         if os.path.exists(unzips_path):
             shutil.rmtree(unzips_path)
             
-        print(i18n("The Dataset has been loaded successfully"))
-        infos.append(i18n("The Dataset has been loaded successfully"))
+        print(i18n("The Dataset has been loaded successfully."))
+        infos.append(i18n("The Dataset has been loaded successfully."))
         yield "\n".join(infos)
     except Exception as e:
         os.chdir(parent_path)
