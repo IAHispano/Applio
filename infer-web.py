@@ -307,8 +307,8 @@ def vc_single(
     if rvc_globals.NotesOrHertz and f0_method != 'rmvpe':
         f0_min = note_to_hz(note_min) if note_min else 50
         f0_max = note_to_hz(note_max) if note_max else 1100
-        print(f"Converted min pitch freq - {f0_min}\n"
-              f"Converted max pitch freq - {f0_max}")
+        print(f"Converted Min pitch: freq - {f0_min}\n"
+              f"Converted Max pitch: freq - {f0_max}")
     else:
         f0_min = f0_min or 50
         f0_max = f0_max or 1100
@@ -411,8 +411,8 @@ def vc_multi(
     if rvc_globals.NotesOrHertz and f0_method != 'rmvpe':
         f0_min = note_to_hz(note_min) if note_min else 50
         f0_max = note_to_hz(note_max) if note_max else 1100
-        print(f"Converted min pitch freq - {f0_min}\n"
-              f"Converted max pitch freq - {f0_max}")
+        print(f"Converted Min pitch: freq - {f0_min}\n"
+              f"Converted Max pitch: freq - {f0_max}")
     else:
         f0_min = f0_min or 50
         f0_max = f0_max or 1100
@@ -1425,8 +1425,8 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                     with gr.Group(): 
                         with gr.Row():
                             with gr.Column(): # First column for audio-related inputs
-                                dropbox = gr.File(label=i18n("Drag your audio here"))
-                                record_button=gr.Audio(source="microphone", label=i18n("Or record an audio."), type="filepath")
+                                dropbox = gr.File(label=i18n("Drag your audio here:"))
+                                record_button=gr.Audio(source="microphone", label=i18n("Or record an audio"), type="filepath")
                                 input_audio0 = gr.Textbox(
                                     label=i18n("Manual path to the audio file to be processed"),
                                     value=os.path.join(now_dir, "audios", "someguy.mp3"),
@@ -1451,7 +1451,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
 
                             with gr.Column(): # Second column for pitch shift and other options
                                 file_index2 = gr.Dropdown(
-                                    label=i18n("Auto-detect index path and select from the dropdown"),
+                                    label=i18n("Auto-detect index path and select from the dropdown:"),
                                     choices=get_indexes(),
                                     value=best_match_index_path1,
                                     interactive=True,
@@ -1510,7 +1510,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 )    
 
                                 minpitch_slider = gr.Slider(
-                                    label       = i18n("Min pitch"),
+                                    label       = i18n("Min pitch:"),
                                     info        = i18n("Specify minimal pitch for inference [HZ]"),
                                     step        = 0.1,
                                     minimum     = 1,
@@ -1521,7 +1521,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                     visible     = (not rvc_globals.NotesOrHertz) and (f0method0.value != 'rmvpe'),
                                 )
                                 minpitch_txtbox = gr.Textbox(
-                                    label       = i18n("Min pitch"),
+                                    label       = i18n("Min pitch:"),
                                     info        = i18n("Specify minimal pitch for inference [NOTE][OCTAVE]"),
                                     placeholder = "C5",
                                     visible     = (rvc_globals.NotesOrHertz) and (f0method0.value != 'rmvpe'),
@@ -1529,7 +1529,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 )
 
                                 maxpitch_slider = gr.Slider(
-                                    label       = i18n("Max pitch"),
+                                    label       = i18n("Max pitch:"),
                                     info        = i18n("Specify max pitch for inference [HZ]"),
                                     step        = 0.1,
                                     minimum     = 1,
@@ -1540,7 +1540,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                     visible     = (not rvc_globals.NotesOrHertz) and (f0method0.value != 'rmvpe'),
                                 )
                                 maxpitch_txtbox = gr.Textbox(
-                                    label       = i18n("Max pitch"),
+                                    label       = i18n("Max pitch:"),
                                     info        = i18n("Specify max pitch for inference [NOTE][OCTAVE]"),
                                     placeholder = "C6",
                                     visible     = (rvc_globals.NotesOrHertz) and (f0method0.value != 'rmvpe'),
@@ -1549,7 +1549,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
 
                             with gr.Column():
                                 file_index1 = gr.Textbox(
-                                    label=i18n("Feature search database file path"),
+                                    label=i18n("Feature search database file path:"),
                                     value="",
                                     interactive=True,
                                 )
@@ -1667,7 +1667,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                     but0 = gr.Button(i18n("Convert"), variant="primary").style(full_width=True)
                     
                     with gr.Row(): # Defines output info + output audio download after conversion
-                        vc_output1 = gr.Textbox(label=i18n("Output information"))
+                        vc_output1 = gr.Textbox(label=i18n("Output information:"))
                         vc_output2 = gr.Audio(label=i18n("Export audio (click on the three dots in the lower right corner to download)"))
 
                     with gr.Group(): # I think this defines the big convert button
@@ -1709,7 +1709,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 opt_input = gr.Textbox(label=i18n("Specify output folder:"), value="opt")
                             with gr.Column():
                                 file_index4 = gr.Dropdown(
-                                    label=i18n("Auto-detect index path and select from the dropdown"),
+                                    label=i18n("Auto-detect index path and select from the dropdown:"),
                                     choices=get_indexes(),
                                     value=best_match_index_path1,
                                     interactive=True,
@@ -1751,7 +1751,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                     with gr.Row(label = i18n("Advanced Settings"), open = False):
                                         with gr.Column():
                                             file_index3 = gr.Textbox(
-                                                label=i18n("Feature search database file path"),
+                                                label=i18n("Feature search database file path:"),
                                                 value="",
                                                 interactive=True,
                                             )
@@ -1808,7 +1808,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                             step=0.01,
                                             interactive=True,
                                         )
-                                vc_output3 = gr.Textbox(label=i18n("Output information")) 
+                                vc_output3 = gr.Textbox(label=i18n("Output information:")) 
                                 but1 = gr.Button(i18n("Convert"), variant="primary")
                                 but1.click(
                                     vc_multi,
@@ -1912,7 +1912,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         easy_infer.update_dataset_list, [spk_id5], trainset_dir4
                         )
                         but1 = gr.Button(i18n("Process data"), variant="primary")
-                        info1 = gr.Textbox(label=i18n("Output information"), value="")
+                        info1 = gr.Textbox(label=i18n("Output information:"), value="")
                         but1.click(
                             preprocess_dataset, [trainset_dir4, exp_dir1, sr2, np7], [info1]
                         )
@@ -1958,7 +1958,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 outputs=[extraction_crepe_hop_length]
                             )
                         but2 = gr.Button(i18n("Feature extraction"), variant="primary")
-                        info2 = gr.Textbox(label=i18n("Output information"), value="", max_lines=8, interactive=False)
+                        info2 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8, interactive=False)
                         but2.click(
                             extract_f0_feature,
                             [gpus6, np7, f0method8, if_f0_3, exp_dir1, version19, extraction_crepe_hop_length],
@@ -2065,7 +2065,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         
                     
                       # but4 = gr.Button(i18n("Train feature index"), variant="primary")
-                        info3 = gr.Textbox(label=i18n("Output information"), value="", max_lines=10)
+                        info3 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=10)
                         
                         if_save_every_weights18.change(
                             fn=lambda if_save_every_weights: (
@@ -2134,7 +2134,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 ) #####
                                 
                             with gr.Row():
-                                infolpex = gr.Textbox(label=i18n("Output information"), value="", max_lines=10)
+                                infolpex = gr.Textbox(label=i18n("Output information:"), value="", max_lines=10)
                                 mdlbl = gr.Dataframe(label=i18n('Stats of selected models'), datatype='number', type='pandas')
                             
                             lpexport.click(
@@ -2185,7 +2185,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 interactive=True,
                             )
                         but2 = gr.Button(i18n("Convert"), variant="primary")
-                        vc_output4 = gr.Textbox(label=i18n("Output information"))
+                        vc_output4 = gr.Textbox(label=i18n("Output information:"))
                         but2.click(
                             uvr,
                             [
@@ -2220,9 +2220,10 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         gr.Markdown(value="",scale="-0.5",visible=True)
                         with gr.Row():
                             with gr.Column():
-                                dropbox = gr.File(label=i18n("Drag your audio here"))
+                                dropbox = gr.File(label=i18n("Drag your audio here:"))
+                                gr.Markdown(value=i18n("### Instrumental settings:"))
                                 input_audio1 = gr.Dropdown(
-                                    label=i18n("Choose your instrumental"),
+                                    label=i18n("Choose your instrumental:"),
                                     choices=sorted(audio_others_paths),
                                     value='',
                                     interactive=True,
@@ -2230,10 +2231,11 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 input_audio1_scale = gr.Slider(
                                     minimum=0,
                                     maximum=10,
-                                    label=i18n("Volume of the instrumental audio"),
+                                    label=i18n("Volume of the instrumental audio:"),
                                     value=1.00,
                                     interactive=True,
                                 )
+                                gr.Markdown(value=i18n("### Audio settings:"))
                                 input_audio3 = gr.Dropdown(
                                     label=i18n("Select the generated audio"),
                                     choices=sorted(audio_paths),
@@ -2244,12 +2246,12 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                     input_audio3_scale = gr.Slider(
                                         minimum=0,
                                         maximum=10,
-                                        label=i18n("Volume of the generated audio"),
+                                        label=i18n("Volume of the generated audio:"),
                                         value=1.00,
                                         interactive=True,
                                     )
 
-                                gr.Markdown(value=i18n("### Add the effects"))
+                                gr.Markdown(value=i18n("### Add the effects:"))
                                 reverb_ = gr.Checkbox(
                                 label=i18n("Reverb"),
                                 value=False,
@@ -2268,7 +2270,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
 
                                 butnone = gr.Button(i18n("Merge"), variant="primary").style(full_width=True)
                                 
-                                vc_output1 = gr.Textbox(label=i18n("Output information"))
+                                vc_output1 = gr.Textbox(label=i18n("Output information:"))
                                 vc_output2 = gr.Audio(label=i18n("Export audio (click on the three dots in the lower right corner to download)"), type='filepath')
                                 
                                 dropbox.upload(fn=save_to_wav2, inputs=[dropbox], outputs=[input_audio1])
@@ -2330,7 +2332,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                             )
                         with gr.Row():
                             but6 = gr.Button(i18n("Fusion"), variant="primary")
-                            info4 = gr.Textbox(label=i18n("Output information"), value="", max_lines=8)
+                            info4 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)
                         but6.click(
                             merge,
                             [
@@ -2363,7 +2365,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                             )
                         with gr.Row():
                             but7 = gr.Button(i18n("Modify"), variant="primary")
-                            info5 = gr.Textbox(label=i18n("Output information"), value="", max_lines=8)
+                            info5 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)
                         but7.click(change_info, [ckpt_path0, info_, name_to_save1], info5)
                     with gr.Group():
                         gr.Markdown(value=i18n("View model information"))
@@ -2372,7 +2374,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 label=i18n("Path to Model:"), value="", interactive=True, placeholder="Model path here."
                             )
                             but8 = gr.Button(i18n("View"), variant="primary")
-                            info6 = gr.Textbox(label=i18n("Output information"), value="", max_lines=8)
+                            info6 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)
                         but8.click(show_info, [ckpt_path1], info6)
                     with gr.Group():
                         gr.Markdown(
@@ -2412,7 +2414,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 label=i18n("Model information to be placed:"), value="", max_lines=8, interactive=True, placeholder="Model info here."
                             )
                             but9 = gr.Button(i18n("Extract"), variant="primary")
-                            info7 = gr.Textbox(label=i18n("Output information"), value="", max_lines=8)
+                            info7 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)
                             ckpt_path2.change(
                                 change_info_, [ckpt_path2], [sr__, if_f0__, version_1]
                             )

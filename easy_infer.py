@@ -994,7 +994,7 @@ def download_model():
     with gr.Row():
         model_url=gr.Textbox(label=i18n("Url:"))
     with gr.Row():
-        download_model_status_bar=gr.Textbox(label=i18n("Status"))
+        download_model_status_bar=gr.Textbox(label=i18n("Status:"))
     with gr.Row():
         download_button=gr.Button(i18n("Download"))
         download_button.click(fn=load_downloaded_model, inputs=[model_url], outputs=[download_model_status_bar])
@@ -1005,7 +1005,7 @@ def download_backup():
     with gr.Row():
         model_url=gr.Textbox(label=i18n("Url:"))
     with gr.Row():
-        download_model_status_bar=gr.Textbox(label=i18n("Status"))
+        download_model_status_bar=gr.Textbox(label=i18n("Status:"))
     with gr.Row():
         download_button=gr.Button(i18n("Download"))
         download_button.click(fn=load_downloaded_backup, inputs=[model_url], outputs=[download_model_status_bar])
@@ -1023,7 +1023,7 @@ def download_dataset(trainset_dir4):
     with gr.Row():
         dataset_url=gr.Textbox(label=i18n("Url:"))
     with gr.Row():
-        load_dataset_status_bar=gr.Textbox(label=i18n("Status"))
+        load_dataset_status_bar=gr.Textbox(label=i18n("Status:"))
     with gr.Row():
         load_dataset_button=gr.Button(i18n("Download"))
         load_dataset_button.click(fn=load_dowloaded_dataset, inputs=[dataset_url], outputs=[load_dataset_status_bar])
@@ -1035,7 +1035,7 @@ def download_audio():
     with gr.Row():
         audio_url=gr.Textbox(label=i18n("Url:"))
     with gr.Row():
-        download_audio_status_bar=gr.Textbox(label=i18n("Status"))
+        download_audio_status_bar=gr.Textbox(label=i18n("Status:"))
     with gr.Row():
         download_button2=gr.Button(i18n("Download"))
         download_button2.click(fn=load_downloaded_audio, inputs=[audio_url], outputs=[download_audio_status_bar])
@@ -1075,7 +1075,7 @@ def youtube_separator():
                 visible=False,
                 )
         with gr.Row():
-            vc_output4 = gr.Textbox(label=i18n("Status"))
+            vc_output4 = gr.Textbox(label=i18n("Status:"))
         with gr.Row():
             but2 = gr.Button(i18n("Download and Separate"))
             but2.click(

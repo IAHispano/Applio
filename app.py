@@ -249,7 +249,7 @@ with app:
                     visible=False,
                 )
             file_index2 = gr.Dropdown(
-                label=i18n("Auto-detect index path and select from the dropdown"),
+                label=i18n("Auto-detect index path and select from the dropdown:"),
                 choices=sorted(index_paths),
                 interactive=True,
             )
@@ -285,7 +285,7 @@ with app:
             )
             f0_file = gr.File(label=i18n("F0 curve file (optional). One pitch per line. Replaces the default F0 and pitch modulation:"))
             but0 = gr.Button(i18n("Convert"), variant="primary")
-            vc_output1 = gr.Textbox(label=i18n("Output information"))
+            vc_output1 = gr.Textbox(label=i18n("Output information:"))
             vc_output2 = gr.Audio(label=i18n("Export audio (click on the three dots in the lower right corner to download)"))
             but0.click(
                 vc_single,
