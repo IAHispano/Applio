@@ -1031,7 +1031,7 @@ def download_dataset(trainset_dir4):
 
 def download_audio():
     gr.Markdown(value="# " + i18n("Download Audio"))
-    gr.Markdown(value=i18n("Download audios of any format for use in inference (recommended for mobile users)"))
+    gr.Markdown(value=i18n("Download audios of any format for use in inference (recommended for mobile users)."))
     with gr.Row():
         audio_url=gr.Textbox(label=i18n("Url:"))
     with gr.Row():
@@ -1044,7 +1044,7 @@ def youtube_separator():
         gr.Markdown(value="# " + i18n("Separate YouTube tracks"))
         gr.Markdown(value=i18n("Download audio from a YouTube video and automatically separate the vocal and instrumental tracks"))
         with gr.Row():
-            input_url = gr.inputs.Textbox(label=i18n("Enter the youtube link"))
+            input_url = gr.inputs.Textbox(label=i18n("Enter the YouTube link:"))
             output_path = gr.Textbox(
                 label=i18n("Enter the path of the audio folder to be processed (copy it from the address bar of the file manager):"),
                 value=os.path.abspath(os.getcwd()).replace('\\', '/') + "/yt_downloads",

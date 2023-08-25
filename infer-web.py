@@ -1840,7 +1840,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         outputs=[spk_item, protect0, protect1],
                     )
 
-                    spk_item, protect0, protect1 = get_vc(sid0.value, protect0, protect1) # Set VC parameters for the preloaded model
+                    spk_item, protect0, protect1 = get_vc(sid0.value, protect0, protect1) 
 
                     # Function to toggle advanced settings
                     def toggle_advanced_settings_batch(checkbox):
@@ -1874,7 +1874,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         interactive=True,
                     )
                     version19 = gr.Radio(
-                        label=i18n("Version"),
+                        label=i18n("Version:"),
                         choices=["v1", "v2"],
                         value="v2",
                         interactive=True,
@@ -1898,7 +1898,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                      #  trainset_dir4 = gr.Textbox(
                      #      label=i18n("Enter the path of the training folder:"), value=os.path.join(now_dir, datasets_root)
                      #  )
-                        trainset_dir4 = gr.Dropdown(choices=sorted(datasets), label=i18n("Select your dataset."), value=get_dataset())
+                        trainset_dir4 = gr.Dropdown(choices=sorted(datasets), label=i18n("Select your dataset:"), value=get_dataset())
                         btn_update_dataset_list = gr.Button(i18n("Update list."), variant="primary")
                         spk_id5 = gr.Slider(
                             minimum=0,
@@ -1925,7 +1925,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 value=gpus,
                                 interactive=True,
                             )
-                            gr.Textbox(label=i18n("GPU Information"), value=gpu_info)
+                            gr.Textbox(label=i18n("GPU Information:"), value=gpu_info)
                         with gr.Column():
                             f0method8 = gr.Radio(
                                 label=i18n(
@@ -2162,7 +2162,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 file_count="multiple", label=i18n("You can also input audio files in batches. Choose one of the two options. Priority is given to reading from the folder.")
                             )
                         with gr.Column():
-                            model_choose = gr.Dropdown(label=i18n("Model"), choices=uvr5_names)
+                            model_choose = gr.Dropdown(label=i18n("Model:"), choices=uvr5_names)
                             agg = gr.Slider(
                                 minimum=0,
                                 maximum=20,
@@ -2179,7 +2179,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 label=i18n("Specify the output folder for accompaniment:"), value="opt"
                             )
                             format0 = gr.Radio(
-                                label=i18n("Export file format"),
+                                label=i18n("Export file format:"),
                                 choices=["wav", "flac", "mp3", "m4a"],
                                 value="flac",
                                 interactive=True,
@@ -2293,8 +2293,8 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                     with gr.Group():
                         gr.Markdown(value=i18n("Model fusion, can be used to test timbre fusion"))
                         with gr.Row():
-                            ckpt_a = gr.Textbox(label=i18n("Path to Model A:"), value="", interactive=True, placeholder="Path to your model A.")
-                            ckpt_b = gr.Textbox(label=i18n("Path to Model B:"), value="", interactive=True, placeholder="Path to your model B.")
+                            ckpt_a = gr.Textbox(label=i18n("Path to Model A:"), value="", interactive=True)
+                            ckpt_b = gr.Textbox(label=i18n("Path to Model B:"), value="", interactive=True)
                             alpha_a = gr.Slider(
                                 minimum=0,
                                 maximum=1,
@@ -2315,12 +2315,11 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 interactive=True,
                             )
                             info__ = gr.Textbox(
-                                label=i18n("Model information to be placed:"), value="", max_lines=8, interactive=True, placeholder="Model information to be placed."
+                                label=i18n("Model information to be placed:"), value="", max_lines=8, interactive=True
                             )
                             name_to_save0 = gr.Textbox(
                                 label=i18n("Saved model name (without extension):"),
                                 value="",
-                                placeholder="Name for saving.",
                                 max_lines=1,
                                 interactive=True,
                             )
@@ -2351,14 +2350,13 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         gr.Markdown(value=i18n("Modify model information"))
                         with gr.Row(): ######
                             ckpt_path0 = gr.Textbox(
-                                label=i18n("Path to Model:"), placeholder="Path to your Model.", value="", interactive=True
+                                label=i18n("Path to Model:"), value="", interactive=True
                             )
                             info_ = gr.Textbox(
-                                label=i18n("Model information to be modified:"), value="", max_lines=8, interactive=True, placeholder="Model information to be changed."
+                                label=i18n("Model information to be modified:"), value="", max_lines=8, interactive=True
                             )
                             name_to_save1 = gr.Textbox(
                                 label=i18n("Save file name:"),
-                                placeholder="Either leave empty or put in the Name of the Model to be saved.",
                                 value="",
                                 max_lines=8,
                                 interactive=True,
@@ -2371,7 +2369,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         gr.Markdown(value=i18n("View model information"))
                         with gr.Row():
                             ckpt_path1 = gr.Textbox(
-                                label=i18n("Path to Model:"), value="", interactive=True, placeholder="Model path here."
+                                label=i18n("Path to Model:"), value="", interactive=True
                             )
                             but8 = gr.Button(i18n("View"), variant="primary")
                             info6 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)
@@ -2391,7 +2389,6 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                             )
                             save_name = gr.Textbox(
                                 label=i18n("Save name:"), value="", interactive=True,
-                                placeholder="Your filename here.",
                             )
                             sr__ = gr.Radio(
                                 label=i18n("Target sample rate:"),
@@ -2411,7 +2408,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 interactive=True,
                             )
                             info___ = gr.Textbox(
-                                label=i18n("Model information to be placed:"), value="", max_lines=8, interactive=True, placeholder="Model info here."
+                                label=i18n("Model information to be placed:"), value="", max_lines=8, interactive=True
                             )
                             but9 = gr.Button(i18n("Extract"), variant="primary")
                             info7 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)
