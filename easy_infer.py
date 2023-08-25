@@ -851,6 +851,7 @@ def load_downloaded_audio(url):
     try:
         infos = []
         audios_path = os.path.join(parent_path, 'audios')
+        zips_path = os.path.join(parent_path, 'zips')
 
         if not os.path.exists(audios_path):
             os.mkdir(audios_path)
@@ -869,8 +870,8 @@ def load_downloaded_audio(url):
         elif download_file == "private link":
             raise Exception(i18n("Cannot get file from this private link"))
         
-        for filename in os.listdir(audios_path):
-            item_path = os.path.join(audios_path, filename)
+        for filename in os.listdir(zips_path):
+            item_path = os.path.join(zips_path, filename)
             if item_path.split('.')[-1] in sup_audioext:
                 if os.path.exists(item_path):
                     shutil.move(item_path, audios_path)
