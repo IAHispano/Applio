@@ -235,5 +235,8 @@
   "Noise Gate": "Noise Gate",
   "Volume": "Volume",
   "Drag the audio here and click the Refresh button": "Drag the audio here and click the Refresh button",
-  "Select the generated audio": "Select the generated audio"
+  "Select the generated audio": "Select the generated audio",
+  "Volume of the instrumental audio": "Volume of the instrumental audio",
+  "Volume of the generated audio": "Volume of the generated audio",
+  "### Add the effects": "### Add the effects"
 }
