@@ -235,5 +235,8 @@
   "Noise Gate": "噪声门",
   "Volume": "体积",
   "Drag the audio here and click the Refresh button": "将音频拖至此处并单击刷新按钮",
-  "Select the generated audio": "选择生成的音频"
+  "Select the generated audio": "选择生成的音频",
+  "Volume of the instrumental audio": "乐器音频的音量",
+  "Volume of the generated audio": "生成音频的音量",
+  "### Add the effects": "### 添加效果"
 }
