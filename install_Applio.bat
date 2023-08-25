@@ -81,6 +81,10 @@ echo Clonando el repositorio...
 git clone "%repoUrl%" .
 echo.
 
+echo Instalando dependencias para ejecutar el archivo Fixes
+pip install requests
+echo.
+
 echo Verificando si el archivo local_fixes.py existe en la carpeta Fixes...
 if exist "%fixesFolder%\%localFixesPy%" (
     echo Ejecutando el archivo...
