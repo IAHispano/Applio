@@ -173,26 +173,23 @@ def download_from_url(url):
                 return None
         elif "pixeldrain.com" in url:
             try:
-                file_id = url.split("pixeldrain.com/")[1]
+                file_id = url.split("pixeldrain.com/u/")[1]
                 os.chdir('./zips')
+                print(file_id)
                 response = requests.get(f"https://pixeldrain.com/api/file/{file_id}")
                 if response.status_code == 200:
-                    file_data = response.json()
-                    download_url = file_data.get("item").get("file")
-                    file_name = file_data.get("name")
-                    with open(file_name, "wb") as newfile:
-                        file_response = requests.get(download_url)
-                        if file_response.status_code == 200:
-                            newfile.write(file_response.content)
-                            os.chdir(parent_path)
-                            return "downloaded"
-                        else:
-                            os.chdir(parent_path)
-                            return None
+                    file_name = response.headers.get("Content-Disposition").split('filename=')[-1].strip('";')
+                    if not os.path.exists(zips_path):
+                        os.makedirs(zips_path)
+                    with open(os.path.join(zips_path, file_name), "wb") as newfile:
+                        newfile.write(response.content)
+                        os.chdir(parent_path)
+                        return "downloaded"
                 else:
                     os.chdir(parent_path)
                     return None
             except Exception as e:
+                print(e)
                 os.chdir(parent_path)
                 return None
         else:
