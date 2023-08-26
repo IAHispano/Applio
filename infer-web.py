@@ -225,8 +225,10 @@ def combine_and_save_audios(audio1_path, audio2_path, output_path, volume_factor
     audio2 = librosa.util.fix_length(audio2, target_length)
 
     # Ajustar el volumen de los audios multiplicando por el factor de ganancia
-    audio1 *= volume_factor_audio1
-    audio2 *= volume_factor_audio2
+    if volume_factor_audio1 != 1.0:
+        audio1 *= volume_factor_audio1
+    if volume_factor_audio2 != 1.0:
+        audio2 *= volume_factor_audio2
 
     # Combinar los audios
     combined_audio = audio1 + audio2
