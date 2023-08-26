@@ -2,7 +2,6 @@
 Title Instalador de Applio
 chcp 65001 > nul
 setlocal
-color 0a
 
 :::
 :::                       _ _
@@ -25,51 +24,16 @@ set "URL_BASE=https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
 echo.
 cls
 
-echo AVISO: Recuerda instalar las Microsoft C++ Build Tools y El Redistributable antes de continuar.
+echo AVISO: Recuerda instalar las Microsoft C++ Build Tools, El Redistributable, Python y Git antes de continuar.
 echo.
-echo Enlace 1: https://aka.ms/vs/17/release/vs_BuildTools.exe
-echo Enlace 2: https://aka.ms/vs/17/release/vc_redist.x64.exe
+echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
+echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
+echo Git: https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.1/Git-2.42.0-64-bit.exe
+echo Python: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
 echo.
 pause
 cls
 
-for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
-echo.
-
-echo Verificando si Git está instalado...
-git --version > nul 2>&1
-if %errorlevel% equ 0 (
-    echo Git está instalado. Continuando...
-) else (
-    echo Git no está instalado. Saliendo.
-    echo Presiona Enter para cerrar el script e ir a la página de descarga.
-    pause
-    start https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.1/Git-2.42.0-64-bit.exe
-    exit
-)
-
-echo.
-
-echo Verificando si Python 3.9.8 está instalado...
-for /f %%A in ('python -c "import sys; print(sys.version)" 2^>^&1') do (
-    set "py_version=%%A"
-)
-
-echo %py_version% | find "3.9.8" > nul
-if %errorlevel% equ 0 (
-    echo Python 3.9.8 está instalado. Continuando...
-) else (
-    echo Python 3.9.8 no está instalado. Saliendo.
-    echo Presiona Enter para cerrar el script e ir a la página de descarga.
-    pause
-    start https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
-    exit
-)
-
-echo.
-cls
-
-echo Requisitos satisfechos, continuando...
 echo.
 
 echo Creando carpeta para el repositorio...
@@ -83,8 +47,8 @@ echo.
 
 echo Instalando dependencias para ejecutar el archivo Fixes
 pip install requests
-echo.
 
+echo.
 echo Verificando si el archivo local_fixes.py existe en la carpeta Fixes...
 if exist "%fixesFolder%\%localFixesPy%" (
     echo Ejecutando el archivo...
@@ -96,9 +60,7 @@ if exist "%fixesFolder%\%localFixesPy%" (
 echo Pasando a descargar los modelos...
 echo.
 
-echo AVISO
-echo En este punto, se recomienda desactivar el antivirus o el firewall, ya que existe la posibilidad de que ocurran errores al descargar los modelos preentrenados.
-echo Si has desactivado el antivirus o el firewall, presiona la tecla "Enter".
+echo AVISO: En este punto, se recomienda desactivar el antivirus o el firewall, ya que existe la posibilidad de que ocurran errores al descargar los modelos preentrenados.
 pause
 cls
 
@@ -175,7 +137,6 @@ set /p op=Escribe "Si" o "No":
 if "%op%"=="Si" goto gpu
 if "%op%"=="No" goto non_gpu
 
-
 :gpu
 echo Se ha seleccionado GPU, continuando...
 echo.
@@ -192,8 +153,8 @@ echo.
 cls
 echo ¡Applio ha sido descargado!
 echo.
-echo Presiona Enter para salir.
 pause
+color 07
 exit
 
 :non_gpu
@@ -207,4 +168,5 @@ echo ¡Applio ha sido descargado!
 endlocal
 echo.
 pause
+color 07
 exit
