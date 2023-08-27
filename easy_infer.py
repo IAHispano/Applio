@@ -80,6 +80,11 @@ def calculate_md5(file_path):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
+def format_title(title):
+     formatted_title = re.sub(r'[^\w\s-]', '', title)
+     formatted_title = formatted_title.replace(" ", "_")
+     return formatted_title
+
 def silentremove(filename):
     try:
         os.remove(filename)
@@ -470,7 +475,9 @@ def load_dowloaded_dataset(url):
                     for song in songs:
                         song_path = os.path.join(root, song)
                         if song.endswith(tuple(audio_extenions)):
-                            shutil.move(song_path, dataset_path)
+                            formatted_song_name = format_title(song)
+                            new_song_path = os.path.join(dataset_path, formatted_song_name)
+                            shutil.move(song_path, new_song_path)
             else:
                 print(i18n("Unzip error."))
                 infos.append(i18n("Unzip error."))
@@ -717,10 +724,7 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
             elif os.path.isdir(ruta_archivo):
                 shutil.rmtree(ruta_archivo) 
       
-    def format_title(title):
-     formatted_title = re.sub(r'[^\w\s-]', '', title)
-     formatted_title = formatted_title.replace(" ", "_")
-     return formatted_title
+    
 
     ydl_opts = {
      'no-windows-filenames': True,
