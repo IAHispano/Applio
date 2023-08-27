@@ -475,8 +475,9 @@ def load_dowloaded_dataset(url):
                     for song in songs:
                         song_path = os.path.join(root, song)
                         if song.endswith(tuple(audio_extenions)):
-                            formatted_song_name = format_title(song)
-                            new_song_path = os.path.join(dataset_path, formatted_song_name)
+                            formatted_song_name = format_title(os.path.splitext(song)[0])
+                            extension = os.path.splitext(song)[1]
+                            new_song_path = os.path.join(dataset_path, f"{formatted_song_name}{extension}")
                             shutil.move(song_path, new_song_path)
             else:
                 print(i18n("Unzip error."))
