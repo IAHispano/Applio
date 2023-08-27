@@ -1857,259 +1857,252 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                     
                 
             with gr.TabItem(i18n("Train")):
-                gr.Markdown(
-                    value=i18n(
-                        "Step 1: Processing data"
-                    )
-                )
-                with gr.Row():
-                    exp_dir1 = gr.Textbox(label=i18n("Enter the model name:"), value=i18n("Model_Name"))
-                    sr2 = gr.Radio(
-                        label=i18n("Target sample rate:"),
-                        choices=["40k", "48k", "32k"],
-                        value="40k",
-                        interactive=True,
-                    )
-                    if_f0_3 = gr.Checkbox(
-                        label=i18n("Whether the model has pitch guidance."),
-                        value=True,
-                        interactive=True,
-                    )
-                    version19 = gr.Radio(
-                        label=i18n("Version:"),
-                        choices=["v1", "v2"],
-                        value="v2",
-                        interactive=True,
-                        visible=True,
-                    )
-                    np7 = gr.Slider(
-                        minimum=0,
-                        maximum=config.n_cpu,
-                        step=1,
-                        label=i18n("Number of CPU processes:"),
-                        value=int(np.ceil(config.n_cpu / 1.5)),
-                        interactive=True,
-                    )
-                with gr.Group():
-                    gr.Markdown(
-                        value=i18n(
-                            "Step 2a: Skipping pitch extraction"
-                        )
-                    )
+                with gr.Accordion(label=i18n("Step 1: Processing data")):
                     with gr.Row():
-                     #  trainset_dir4 = gr.Textbox(
-                     #      label=i18n("Enter the path of the training folder:"), value=os.path.join(now_dir, datasets_root)
-                     #  )
-                        trainset_dir4 = gr.Dropdown(choices=sorted(datasets), label=i18n("Select your dataset:"), value=get_dataset())
-                        btn_update_dataset_list = gr.Button(i18n("Update list."), variant="primary")
-                        spk_id5 = gr.Slider(
-                            minimum=0,
-                            maximum=4,
-                            step=1,
-                            label=i18n("Specify the model ID:"),
-                            value=0,
+                        exp_dir1 = gr.Textbox(label=i18n("Enter the model name:"), value=i18n("Model_Name"))
+                        sr2 = gr.Radio(
+                            label=i18n("Target sample rate:"),
+                            choices=["40k", "48k", "32k"],
+                            value="40k",
                             interactive=True,
                         )
-                        btn_update_dataset_list.click(
-                        easy_infer.update_dataset_list, [spk_id5], trainset_dir4
+                        if_f0_3 = gr.Checkbox(
+                            label=i18n("Whether the model has pitch guidance."),
+                            value=True,
+                            interactive=True,
                         )
-                        but1 = gr.Button(i18n("Process data"), variant="primary")
-                        info1 = gr.Textbox(label=i18n("Output information:"), value="")
-                        but1.click(
-                            preprocess_dataset, [trainset_dir4, exp_dir1, sr2, np7], [info1]
-                        )
-                with gr.Group():
-                    gr.Markdown(value=i18n("Step 2b: Extracting features"))
-                    with gr.Row():
-                        with gr.Column():
-                            gpus6 = gr.Textbox(
-                                label=i18n("Provide the GPU index(es) separated by '-', like 0-1-2 for using GPUs 0, 1, and 2:"),
-                                value=gpus,
-                                interactive=True,
-                            )
-                            gr.Textbox(label=i18n("GPU Information:"), value=gpu_info)
-                        with gr.Column():
-                            f0method8 = gr.Radio(
-                                label=i18n(
-                                    "Select the pitch extraction algorithm:"
-                                ),
-                                choices=["pm", "harvest", "dio", "crepe", "mangio-crepe", "rmvpe"],
-                                # [ MANGIO ]: Fork feature: Crepe on f0 extraction for training.
-                                value="rmvpe",
-                                interactive=True,
-                            )
-                            
-                            extraction_crepe_hop_length = gr.Slider(
-                                minimum=1,
-                                maximum=512,
-                                step=1,
-                                label=i18n("Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate."),
-                                value=64,
-                                interactive=True,
-                                visible=False,
-                            )
-                            
-                            f0method8.change(
-                                fn=lambda radio: (
-                                    {
-                                        "visible": radio in ['mangio-crepe', 'mangio-crepe-tiny'],
-                                        "__type__": "update"
-                                    }
-                                ),
-                                inputs=[f0method8],
-                                outputs=[extraction_crepe_hop_length]
-                            )
-                        but2 = gr.Button(i18n("Feature extraction"), variant="primary")
-                        info2 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8, interactive=False)
-                        but2.click(
-                            extract_f0_feature,
-                            [gpus6, np7, f0method8, if_f0_3, exp_dir1, version19, extraction_crepe_hop_length],
-                            [info2],
-                        )
-                with gr.Group():
-                    gr.Markdown(value=i18n("Step 3a: Model training started"))
-                    with gr.Row():
-                        save_epoch10 = gr.Slider(
-                            minimum=1,
-                            maximum=50,
-                            step=1,
-                            label=i18n("Save frequency:"),
-                            value=10,
+                        version19 = gr.Radio(
+                            label=i18n("Version:"),
+                            choices=["v1", "v2"],
+                            value="v2",
                             interactive=True,
                             visible=True,
                         )
-                        total_epoch11 = gr.Slider(
-                            minimum=1,
-                            maximum=10000,
-                            step=2,
-                            label=i18n("Training epochs:"),
-                            value=750,
-                            interactive=True,
-                        )
-                        batch_size12 = gr.Slider(
-                            minimum=1,
-                            maximum=40,
+                        np7 = gr.Slider(
+                            minimum=0,
+                            maximum=config.n_cpu,
                             step=1,
-                            label=i18n("Batch size per GPU:"),
-                            #value=default_batch_size,
-                            value=20,
+                            label=i18n("Number of CPU processes:"),
+                            value=int(np.ceil(config.n_cpu / 1.5)),
                             interactive=True,
                         )
-                        if_save_latest13 = gr.Checkbox(
-                            label=i18n("Whether to save only the latest .ckpt file to save hard drive space"),
-                            value=True,
-                            interactive=True,
-                        )
-                        if_cache_gpu17 = gr.Checkbox(
-                            label=i18n("Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training"),
-                            value=False,
-                            interactive=True,
-                        )
-                        if_save_every_weights18 = gr.Checkbox(
-                            label=i18n("Save a small final model to the 'weights' folder at each save point"),
-                            value=True,
-                            interactive=True,
-                        )
-                    with gr.Row():
-                        pretrained_G14 = gr.Textbox(
-                            lines=2,
-                            label=i18n("Load pre-trained base model G path:"),
-                            value="pretrained_v2/f0G40k.pth",
-                            interactive=True,
-                        )
-                        pretrained_D15 = gr.Textbox(
-                            lines=2,
-                            label=i18n("Load pre-trained base model D path:"),
-                            value="pretrained_v2/f0D40k.pth",
-                            interactive=True,
-                        )
-                        sr2.change(
-                            change_sr2,
-                            [sr2, if_f0_3, version19],
-                            [pretrained_G14, pretrained_D15],
-                        )
-                        version19.change(
-                            change_version19,
-                            [sr2, if_f0_3, version19],
-                            [pretrained_G14, pretrained_D15, sr2],
-                        )
-                        if_f0_3.change(
-                                fn=change_f0,
-                                inputs=[if_f0_3, sr2, version19],
-                                outputs=[f0method8, pretrained_G14, pretrained_D15],
-                        )
-                        if_f0_3.change(fn=lambda radio: (
-                                    {
-                                        "visible": radio in ['mangio-crepe', 'mangio-crepe-tiny'],
-                                        "__type__": "update"
-                                    }
-                                ), inputs=[f0method8], outputs=[extraction_crepe_hop_length])
-                        gpus16 = gr.Textbox(
-                            label=i18n("Provide the GPU index(es) separated by '-', like 0-1-2 for using GPUs 0, 1, and 2:"),
-                            value=gpus,
-                            interactive=True,
-                        )
-                        butstop = gr.Button(i18n("Stop training"),
-                                variant='primary',
-                                visible=False,
-                        )
-                        but3 = gr.Button(i18n("Train model"), variant="primary", visible=True)
-                        but3.click(fn=stoptraining, inputs=[gr.Number(value=0, visible=False)], outputs=[but3, butstop])
-                        butstop.click(fn=stoptraining, inputs=[gr.Number(value=1, visible=False)], outputs=[but3, butstop])
-                        
-                        with gr.Column(scale=0):
-                            gr.Markdown(value="<br>")
-                            gr.Markdown(value="### " + i18n("Build the index before saving."))
-                            but4 = gr.Button(i18n("Train feature index"), variant="primary")
-                            gr.Markdown(value="### " + i18n("Save your model once the training ends."))
-                            save_action = gr.Dropdown(label=i18n("Save type"), choices=[i18n("Save all"),i18n("Save D and G"),i18n("Save voice")], value=i18n("Choose the method"), interactive=True)
-                            but7 = gr.Button(i18n("Save model"), variant="primary")
-                        
-                    
-                      # but4 = gr.Button(i18n("Train feature index"), variant="primary")
-                        info3 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=10)
-                        
-                        if_save_every_weights18.change(
-                            fn=lambda if_save_every_weights: (
-                                {
-                                    "visible": if_save_every_weights,
-                                    "__type__": "update"
-                                }
-                            ),
-                            inputs=[if_save_every_weights18],
-                            outputs=[save_epoch10]
-                        )
-                        
-                        but3.click(
-                            click_train,
-                            [
-                                exp_dir1,
-                                sr2,
-                                if_f0_3,
-                                spk_id5,
-                                save_epoch10,
-                                total_epoch11,
-                                batch_size12,
-                                if_save_latest13,
-                                pretrained_G14,
-                                pretrained_D15,
-                                gpus16,
-                                if_cache_gpu17,
-                                if_save_every_weights18,
-                                version19,
-                            ],
-                            [info3, butstop, but3],
-                        )
-                            
-                        but4.click(train_index, [exp_dir1, version19], info3)
-                        but7.click(easy_infer.save_model, [exp_dir1, save_action], info3)
                 with gr.Group():
-                    gr.Markdown(value=i18n(
-                        'Step 4: Export lowest points on a graph of the model')
-                    )
-                    
+                    with gr.Accordion(label=i18n("Step 2: Skipping pitch extraction")):
+               
+                        with gr.Row():
+                        #  trainset_dir4 = gr.Textbox(
+                        #      label=i18n("Enter the path of the training folder:"), value=os.path.join(now_dir, datasets_root)
+                        #  )
+                            trainset_dir4 = gr.Dropdown(choices=sorted(datasets), label=i18n("Select your dataset:"), value=get_dataset())
+                            btn_update_dataset_list = gr.Button(i18n("Update list."), variant="primary")
+                            spk_id5 = gr.Slider(
+                                minimum=0,
+                                maximum=4,
+                                step=1,
+                                label=i18n("Specify the model ID:"),
+                                value=0,
+                                interactive=True,
+                            )
+                            btn_update_dataset_list.click(
+                            easy_infer.update_dataset_list, [spk_id5], trainset_dir4
+                            )
+                            but1 = gr.Button(i18n("Process data"), variant="primary")
+                            info1 = gr.Textbox(label=i18n("Output information:"), value="")
+                            but1.click(
+                                preprocess_dataset, [trainset_dir4, exp_dir1, sr2, np7], [info1]
+                            )
+                with gr.Group():
+                    with gr.Accordion(label=i18n("Step 3: Extracting features")):
+                        with gr.Row():
+                            with gr.Column():
+                                gpus6 = gr.Textbox(
+                                    label=i18n("Provide the GPU index(es) separated by '-', like 0-1-2 for using GPUs 0, 1, and 2:"),
+                                    value=gpus,
+                                    interactive=True,
+                                )
+                                gr.Textbox(label=i18n("GPU Information:"), value=gpu_info)
+                            with gr.Column():
+                                f0method8 = gr.Radio(
+                                    label=i18n(
+                                        "Select the pitch extraction algorithm:"
+                                    ),
+                                    choices=["pm", "harvest", "dio", "crepe", "mangio-crepe", "rmvpe"],
+                                    # [ MANGIO ]: Fork feature: Crepe on f0 extraction for training.
+                                    value="rmvpe",
+                                    interactive=True,
+                                )
+                                
+                                extraction_crepe_hop_length = gr.Slider(
+                                    minimum=1,
+                                    maximum=512,
+                                    step=1,
+                                    label=i18n("Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate."),
+                                    value=64,
+                                    interactive=True,
+                                    visible=False,
+                                )
+                                
+                                f0method8.change(
+                                    fn=lambda radio: (
+                                        {
+                                            "visible": radio in ['mangio-crepe', 'mangio-crepe-tiny'],
+                                            "__type__": "update"
+                                        }
+                                    ),
+                                    inputs=[f0method8],
+                                    outputs=[extraction_crepe_hop_length]
+                                )
+                            but2 = gr.Button(i18n("Feature extraction"), variant="primary")
+                            info2 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8, interactive=False)
+                            but2.click(
+                                extract_f0_feature,
+                                [gpus6, np7, f0method8, if_f0_3, exp_dir1, version19, extraction_crepe_hop_length],
+                                [info2],
+                            )
+                with gr.Group():
                     with gr.Row():
-                        with gr.Accordion(label=i18n("Lowest points export")):
+                        with gr.Accordion(label=i18n("Step 4: Model training started")):
+                            with gr.Row():
+                                save_epoch10 = gr.Slider(
+                                    minimum=1,
+                                    maximum=100,
+                                    step=1,
+                                    label=i18n("Save frequency:"),
+                                    value=10,
+                                    interactive=True,
+                                    visible=True,
+                                )
+                                total_epoch11 = gr.Slider(
+                                    minimum=1,
+                                    maximum=10000,
+                                    step=2,
+                                    label=i18n("Training epochs:"),
+                                    value=750,
+                                    interactive=True,
+                                )
+                                batch_size12 = gr.Slider(
+                                    minimum=1,
+                                    maximum=50,
+                                    step=1,
+                                    label=i18n("Batch size per GPU:"),
+                                    #value=default_batch_size,
+                                    value=20,
+                                    interactive=True,
+                                )
+                        
+               
+                            with gr.Row():    
+                         
+                                pretrained_G14 = gr.Textbox(
+                                    lines=4,
+                                    label=i18n("Load pre-trained base model G path:"),
+                                    value="pretrained_v2/f0G40k.pth",
+                                    interactive=True,
+                                )
+                                pretrained_D15 = gr.Textbox(
+                                    lines=4,
+                                    label=i18n("Load pre-trained base model D path:"),
+                                    value="pretrained_v2/f0D40k.pth",
+                                    interactive=True,
+                                )
+                                gpus16 = gr.Textbox(
+                                    label=i18n("Provide the GPU index(es) separated by '-', like 0-1-2 for using GPUs 0, 1, and 2:"),
+                                    value=gpus,
+                                    interactive=True,
+                                )  
+                                sr2.change(
+                                    change_sr2,
+                                    [sr2, if_f0_3, version19],
+                                    [pretrained_G14, pretrained_D15],
+                                )
+                                version19.change(
+                                    change_version19,
+                                    [sr2, if_f0_3, version19],
+                                    [pretrained_G14, pretrained_D15, sr2],
+                                )
+                                if_f0_3.change(
+                                        fn=change_f0,
+                                        inputs=[if_f0_3, sr2, version19],
+                                        outputs=[f0method8, pretrained_G14, pretrained_D15],
+                                )
+                                if_f0_3.change(fn=lambda radio: (
+                                            {
+                                                "visible": radio in ['mangio-crepe', 'mangio-crepe-tiny'],
+                                                "__type__": "update"
+                                            }
+                                        ), inputs=[f0method8], outputs=[extraction_crepe_hop_length])
+                                
+                                butstop = gr.Button(i18n("Stop training"),
+                                            variant='primary',
+                                            visible=False,
+                                        )
+                                but3 = gr.Button(i18n("Train model"), variant="primary", visible=True)
+                                but3.click(fn=stoptraining, inputs=[gr.Number(value=0, visible=False)], outputs=[but3, butstop])
+                                butstop.click(fn=stoptraining, inputs=[gr.Number(value=1, visible=False)], outputs=[but3, butstop])
+                                
+                                
+                                with gr.Column():
+                                        info3 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=4)
+                                        save_action = gr.Dropdown(label=i18n("Save type"), choices=[i18n("Save all"),i18n("Save D and G"),i18n("Save voice")], value=i18n("Choose the method"), interactive=True)
+                                        
+                                        but7 = gr.Button(i18n("Save model"), variant="primary")
+                                        but4 = gr.Button(i18n("Train feature index"), variant="primary")
+                             
+                            with gr.Row(): 
+                          
+                                    if_save_latest13 = gr.Checkbox(
+                                        label=i18n("Whether to save only the latest .ckpt file to save hard drive space"),
+                                        value=True,
+                                        interactive=True,
+                                    )
+                                    if_cache_gpu17 = gr.Checkbox(
+                                        label=i18n("Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training"),
+                                        value=False,
+                                        interactive=True,
+                                    )
+                                    if_save_every_weights18 = gr.Checkbox(
+                                        label=i18n("Save a small final model to the 'weights' folder at each save point"),
+                                        value=True,
+                                        interactive=True,
+                                    )
+                                    
+                                    if_save_every_weights18.change(
+                                        fn=lambda if_save_every_weights: (
+                                            {
+                                                "visible": if_save_every_weights,
+                                                "__type__": "update"
+                                            }
+                                        ),
+                                        inputs=[if_save_every_weights18],
+                                        outputs=[save_epoch10]
+                                    )
+                            
+                            but3.click(
+                                click_train,
+                                [
+                                    exp_dir1,
+                                    sr2,
+                                    if_f0_3,
+                                    spk_id5,
+                                    save_epoch10,
+                                    total_epoch11,
+                                    batch_size12,
+                                    if_save_latest13,
+                                    pretrained_G14,
+                                    pretrained_D15,
+                                    gpus16,
+                                    if_cache_gpu17,
+                                    if_save_every_weights18,
+                                    version19,
+                                ],
+                                [info3, butstop, but3],
+                            )
+                                
+                            but4.click(train_index, [exp_dir1, version19], info3)
+                            but7.click(easy_infer.save_model, [exp_dir1, save_action], info3)
+                with gr.Group():
+                    with gr.Row():
+                        with gr.Accordion(label=i18n("Step 5: Export lowest points on a graph of the model")):
                         
                             lowestval_weight_dir = gr.Textbox(visible=False)
                             ds = gr.Textbox(visible=False)
