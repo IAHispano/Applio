@@ -1428,7 +1428,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         with gr.Row():
                             with gr.Column(): # First column for audio-related inputs
                                 dropbox = gr.File(label=i18n("Drag your audio here:"))
-                                record_button=gr.Audio(source="microphone", label=i18n("Or record an audio"), type="filepath")
+                                record_button=gr.Audio(source="microphone", label=i18n("Or record an audio:"), type="filepath")
                                 input_audio0 = gr.Textbox(
                                     label=i18n("Manual path to the audio file to be processed"),
                                     value=os.path.join(now_dir, "audios", "someguy.mp3"),
@@ -2113,7 +2113,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 amntlastmdls = gr.Slider(
                                     minimum=1,
                                     maximum=25,
-                                    label=i18n('How many lowest points to save'),
+                                    label=i18n('How many lowest points to save:'),
                                     value=3,
                                     step=1,
                                     interactive=True,
@@ -2124,13 +2124,13 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 )
                                 lw_mdls = gr.File(
                                     file_count="multiple",
-                                    label=i18n("Output models"),
+                                    label=i18n("Output models:"),
                                     interactive=False,
                                 ) #####
                                 
                             with gr.Row():
                                 infolpex = gr.Textbox(label=i18n("Output information:"), value="", max_lines=10)
-                                mdlbl = gr.Dataframe(label=i18n('Stats of selected models'), datatype='number', type='pandas')
+                                mdlbl = gr.Dataframe(label=i18n('Stats of selected models:'), datatype='number', type='pandas')
                             
                             lpexport.click(
                                 lambda model_name: os.path.join("logs", model_name, "lowestvals"),

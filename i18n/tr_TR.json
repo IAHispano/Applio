@@ -107,7 +107,7 @@
   "Status:": "Durum:",
   "Process data": "Veriyi işle",
   "Drag your audio here:": "Sesinizi buraya sürükleyin:",
-  "Or record an audio": "Veya bir ses kaydedin",
+  "Or record an audio:": "Veya bir ses kaydedin",
   "Formant shift inference audio": "Formant kaydırma çıkarsama sesi",
   "Used for male to female and vice-versa conversions": "Erkekten kadına ve tam tersine dönüşümler için kullanılır",
   "Provide the GPU index(es) separated by '-', like 0-1-2 for using GPUs 0, 1, and 2:": "GPU dizinini '-' ile ayırarak belirtin, örneğin 0-1-2; GPU'ları 0, 1 ve 2 kullanmak için:",
@@ -180,10 +180,10 @@
   "Step algorithm": "Adım algoritması",
   "Number of epoch processes": "Dönem işlem sayısı",
   "Lowest points export": "En düşük noktaları dışa aktar",
-  "How many lowest points to save": "Kaç en düşük noktanın kaydedileceği",
+  "How many lowest points to save:": "Kaç en düşük noktanın kaydedileceği",
   "Export lowest points of a model": "Bir modelin en düşük noktalarını dışa aktar",
-  "Output models": "Modelleri dışa aktar",
-  "Stats of selected models": "Seçilen modellerin istatistikleri",
+  "Output models:": "Modelleri dışa aktar",
+  "Stats of selected models:": "Seçilen modellerin istatistikleri",
   "Custom f0 [Root pitch] File": "Özel f0 [Kök ton] Dosyası",
   "Min pitch:": "Minimum ton yüksekliği:",
   "Specify minimal pitch for inference [HZ]": "Çıkarsama için minimum ton yüksekliğini belirt [HZ]",
@@ -242,4 +242,3 @@
   "### Instrumental settings:": "### Enstrümantal ayarları:",
   "### Add the effects:": "### Efektleri ekle:"
 }
-
