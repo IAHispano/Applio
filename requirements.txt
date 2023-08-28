@@ -1,12 +1,12 @@
 tornado>=6.1
 setuptools
 pydantic
+fairseq==0.12.2
 wheel
 google-auth-oauthlib
 pedalboard
 pydub==0.25.1
 httpx==0.23.0
-fairseq==0.12.2
 tensorboardX
 faiss_cpu==1.7.3
 ffmpeg_python==0.2.0
