@@ -26,6 +26,7 @@ cls
 
 echo AVISO: Recuerda instalar las Microsoft C++ Build Tools, El Redistributable, Python y Git antes de continuar.
 echo.
+echo Paso a paso: https://rentry.org/appliolocal
 echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
 echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
 echo Git: https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.1/Git-2.42.0-64-bit.exe
