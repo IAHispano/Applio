@@ -130,7 +130,7 @@
   "Weight for Model A:": "Peso para el modelo A:",
   "Whether the model has pitch guidance:": "Si el modelo tiene guía de tono:",
   "Model information to be placed:": "Información del modelo a colocar:",
-  "Saved model name (without extension):": "Nombre de modelo guardado (sin extensión):",
+  "Name:": "Nombre:",
   "Model architecture version:": "Versión de la arquitectura del modelo:",
   "Fusion": "Fusión",
   "Modify model information": "Modificar información del modelo",
@@ -140,8 +140,7 @@
   "Modify": "Modificar",
   "View model information": "Información del modelo",
   "View": "Ver",
-  "Model extraction (enter the path of the large file model under the 'logs' folder). This is useful if you want to stop training halfway and manually extract and save a small model file, or if you want to test an intermediate model:": "Extracción del modelo (introduzca la ruta del modelo de archivo grande en la carpeta 'logs'). Esto es útil si desea dejar de entrenar a mitad de camino y extraer y guardar manualmente un archivo de modelo pequeño, o si desea probar un modelo intermedio:",
-  "Save name:": "Guardar Nombre",
+  "Model extraction": "Extracción del modelo",
   "Whether the model has pitch guidance (1: yes, 0: no):": "Si el modelo tiene guía de tono (1: sí, 0: no):",
   "Extract": "Extraer",
   "Export Onnx": "Exportar Onnx",
@@ -240,5 +239,8 @@
   "Volume of the generated audio:": "Volumen del audio generado:",
   "### Audio settings:": "### Audio generado:",
   "### Instrumental settings:": "### Audio de instrumental:",
-  "### Add the effects:": "### Añade los efectos:"
+  "### Add the effects:": "### Añade los efectos:",
+  "Name for saving": "Nombre de guardado",
+  "Path to model": "Ruta al modelo",
+  "Model information to be placed": "Información del modelo a modificar"
 }

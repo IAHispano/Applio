@@ -2286,135 +2286,153 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         
                 with gr.TabItem(i18n("Processing")):
                     with gr.Group():
-                        gr.Markdown(value=i18n("Model fusion, can be used to test timbre fusion"))
-                        with gr.Row():
-                            ckpt_a = gr.Textbox(label=i18n("Path to Model A:"), value="", interactive=True)
-                            ckpt_b = gr.Textbox(label=i18n("Path to Model B:"), value="", interactive=True)
-                            alpha_a = gr.Slider(
-                                minimum=0,
-                                maximum=1,
-                                label=i18n("Weight for Model A:"),
-                                value=0.5,
-                                interactive=True,
-                            )
-                        with gr.Row():
-                            sr_ = gr.Radio(
-                                label=i18n("Target sample rate:"),
-                                choices=["40k", "48k"],
-                                value="40k",
-                                interactive=True,
-                            )
-                            if_f0_ = gr.Checkbox(
-                                label="Whether the model has pitch guidance.",
-                                value=True,
-                                interactive=True,
-                            )
-                            info__ = gr.Textbox(
-                                label=i18n("Model information to be placed:"), value="", max_lines=8, interactive=True
-                            )
-                            name_to_save0 = gr.Textbox(
-                                label=i18n("Saved model name (without extension):"),
-                                value="",
-                                max_lines=1,
-                                interactive=True,
-                            )
-                            version_2 = gr.Radio(
-                                label=i18n("Model architecture version:"),
-                                choices=["v1", "v2"],
-                                value="v1",
-                                interactive=True,
-                            )
-                        with gr.Row():
+                      
+                        with gr.Accordion(label=i18n("Model fusion, can be used to test timbre fusion")):
+                            with gr.Row():
+                                with gr.Column():
+                                    name_to_save0 = gr.Textbox(
+                                        label=i18n("Name:"),
+                                        value="",
+                                        max_lines=1,
+                                        interactive=True,
+                                        placeholder=i18n("Name for saving")
+                                    )
+                                    alpha_a = gr.Slider(
+                                        minimum=0,
+                                        maximum=1,
+                                        label=i18n("Weight for Model A:"),
+                                        value=0.5,
+                                        interactive=True,
+                                    )
+                                    if_f0_ = gr.Checkbox(
+                                    label=i18n("Whether the model has pitch guidance."),
+                                    value=True,
+                                    interactive=True,
+                                    )
+                                    version_2 = gr.Radio(
+                                    label=i18n("Model architecture version:"),
+                                    choices=["v1", "v2"],
+                                    value="v2",
+                                    interactive=True,
+                                )
+                                    sr_ = gr.Radio(
+                                    label=i18n("Target sample rate:"),
+                                    choices=["40k", "48k"],
+                                    value="40k",
+                                    interactive=True,
+                                )
+                                
+                
+                                with gr.Column():
+                                    ckpt_a = gr.Textbox(label=i18n("Path to Model A:"), value="", interactive=True, placeholder=i18n("Path to model"))
+                                
+                                    ckpt_b = gr.Textbox(label=i18n("Path to Model B:"), value="", interactive=True, placeholder=i18n("Path to model"))
+                                
+                                    info__ = gr.Textbox(
+                                        label=i18n("Model information to be placed:"), value="", max_lines=8, interactive=True, placeholder=i18n("Model information to be placed")
+                                    )
+                                    info4 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)                               
+                                
+                           
                             but6 = gr.Button(i18n("Fusion"), variant="primary")
-                            info4 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)
-                        but6.click(
-                            merge,
-                            [
-                                ckpt_a,
-                                ckpt_b,
-                                alpha_a,
-                                sr_,
-                                if_f0_,
-                                info__,
-                                name_to_save0,
-                                version_2,
-                            ],
-                            info4,
-                        )  # def merge(path1,path2,alpha1,sr,f0,info):
+                                
+                            but6.click(
+                                merge,
+                                [
+                                    ckpt_a,
+                                    ckpt_b,
+                                    alpha_a,
+                                    sr_,
+                                    if_f0_,
+                                    info__,
+                                    name_to_save0,
+                                    version_2,
+                                ],
+                                info4,
+                            )  # def merge(path1,path2,alpha1,sr,f0,info):
                     with gr.Group():
-                        gr.Markdown(value=i18n("Modify model information"))
-                        with gr.Row(): ######
-                            ckpt_path0 = gr.Textbox(
-                                label=i18n("Path to Model:"), value="", interactive=True
-                            )
-                            info_ = gr.Textbox(
-                                label=i18n("Model information to be modified:"), value="", max_lines=8, interactive=True
-                            )
-                            name_to_save1 = gr.Textbox(
-                                label=i18n("Save file name:"),
-                                value="",
-                                max_lines=8,
-                                interactive=True,
-                            )
-                        with gr.Row():
-                            but7 = gr.Button(i18n("Modify"), variant="primary")
-                            info5 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)
-                        but7.click(change_info, [ckpt_path0, info_, name_to_save1], info5)
+                        with gr.Accordion(label=i18n("Modify model information")):
+                            with gr.Row(): ######
+                                with gr.Column():
+                                    ckpt_path0 = gr.Textbox(
+                                        label=i18n("Path to Model:"), value="", interactive=True, placeholder=i18n("Path to model")
+                                    )
+                                    info_ = gr.Textbox(
+                                        label=i18n("Model information to be modified:"), value="", max_lines=8, interactive=True,  placeholder=i18n("Model information to be placed")
+                                    )
+                                
+                                with gr.Column():
+                                    name_to_save1 = gr.Textbox(
+                                        label=i18n("Save file name:"),
+                                        placeholder=i18n("Name for saving"),
+                                        value="",
+                                        max_lines=8,
+                                        interactive=True,
+                                        
+                                    )
+                                    
+                                    info5 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)
+                            but7 = gr.Button(i18n("Modify"), variant="primary")        
+                            but7.click(change_info, [ckpt_path0, info_, name_to_save1], info5)
                     with gr.Group():
-                        gr.Markdown(value=i18n("View model information"))
-                        with gr.Row():
-                            ckpt_path1 = gr.Textbox(
-                                label=i18n("Path to Model:"), value="", interactive=True
-                            )
-                            but8 = gr.Button(i18n("View"), variant="primary")
-                            info6 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)
-                        but8.click(show_info, [ckpt_path1], info6)
+                        with gr.Accordion(label=i18n("View model information")):
+                            with gr.Row():
+                                with gr.Column():
+                                    ckpt_path1 = gr.Textbox(
+                                        label=i18n("Path to Model:"), value="", interactive=True, placeholder=i18n("Path to model")
+                                    )
+                                    
+                                    info6 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)
+                                    but8 = gr.Button(i18n("View"), variant="primary")
+                            but8.click(show_info, [ckpt_path1], info6)
                     with gr.Group():
-                        gr.Markdown(
-                            value=i18n(
-                                "Model extraction (enter the path of the large file model under the 'logs' folder). This is useful if you want to stop training halfway and manually extract and save a small model file, or if you want to test an intermediate model:"
+                        with gr.Accordion(label=i18n("Model extraction")):
+                            with gr.Row():
+                               with gr.Column():
+                                       save_name = gr.Textbox(
+                                        label=i18n("Name:"), value="", interactive=True, placeholder=i18n("Name for saving")
+                                    )
+                                       if_f0__ = gr.Checkbox(
+                                            label=i18n("Whether the model has pitch guidance."),
+                                            value=True,
+                                            interactive=True,
+                                        )
+                                       version_1 = gr.Radio(
+                                            label=i18n("Model architecture version:"),
+                                            choices=["v1", "v2"],
+                                            value="v2",
+                                            interactive=True,
+                                        )
+                                       sr__ = gr.Radio(
+                                            label=i18n("Target sample rate:"),
+                                            choices=["32k", "40k", "48k"],
+                                            value="40k",
+                                            interactive=True,
+                                        )
+                                   
+                               with gr.Column():    
+                                      ckpt_path2 = gr.Textbox(
+                                       
+                                        label=i18n("Path to Model:"),
+                                        placeholder=i18n("Path to model"),
+                                        interactive=True,
+                                    )
+                                      info___ = gr.Textbox(
+                                        label=i18n("Model information to be placed:"), value="", max_lines=8, interactive=True, placeholder=i18n("Model information to be placed")
+                                    )
+                                      info7 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)   
+                    
+                            with gr.Row():
+                                    
+                                    but9 = gr.Button(i18n("Extract"), variant="primary")
+                                    ckpt_path2.change(
+                                        change_info_, [ckpt_path2], [sr__, if_f0__, version_1]
+                                    )
+                            but9.click(
+                                extract_small_model,
+                                [ckpt_path2, save_name, sr__, if_f0__, info___, version_1],
+                                info7,
                             )
-                        )
-                        with gr.Row():
-                            ckpt_path2 = gr.Textbox(
-                                lines=3,
-                                label=i18n("Path to Model:"),
-                                value=os.path.join(now_dir, "logs", "[YOUR_MODEL]", "G_23333.pth"),
-                                interactive=True,
-                            )
-                            save_name = gr.Textbox(
-                                label=i18n("Save name:"), value="", interactive=True,
-                            )
-                            sr__ = gr.Radio(
-                                label=i18n("Target sample rate:"),
-                                choices=["32k", "40k", "48k"],
-                                value="40k",
-                                interactive=True,
-                            )
-                            if_f0__ = gr.Checkbox(
-                                label="Whether the model has pitch guidance.",
-                                value=True,
-                                interactive=True,
-                            )
-                            version_1 = gr.Radio(
-                                label=i18n("Model architecture version:"),
-                                choices=["v1", "v2"],
-                                value="v2",
-                                interactive=True,
-                            )
-                            info___ = gr.Textbox(
-                                label=i18n("Model information to be placed:"), value="", max_lines=8, interactive=True
-                            )
-                            but9 = gr.Button(i18n("Extract"), variant="primary")
-                            info7 = gr.Textbox(label=i18n("Output information:"), value="", max_lines=8)
-                            ckpt_path2.change(
-                                change_info_, [ckpt_path2], [sr__, if_f0__, version_1]
-                            )
-                        but9.click(
-                            extract_small_model,
-                            [ckpt_path2, save_name, sr__, if_f0__, info___, version_1],
-                            info7,
-                        )
 
             with gr.TabItem(i18n("Settings")):
                 with gr.Row():

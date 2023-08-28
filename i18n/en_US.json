@@ -131,7 +131,6 @@
   "Weight for Model A:": "Weight for Model A:",
   "Whether the model has pitch guidance:": "Whether the model has pitch guidance:",
   "Model information to be placed:": "Model information to be placed:",
-  "Saved model name (without extension):": "Saved model name (without extension):",
   "Model architecture version:": "Model architecture version:",
   "Fusion": "Fusion",
   "Modify model information": "Modify model information",
@@ -141,8 +140,8 @@
   "Modify": "Modify",
   "View model information": "View model information",
   "View": "View",
-  "Model extraction (enter the path of the large file model under the 'logs' folder). This is useful if you want to stop training halfway and manually extract and save a small model file, or if you want to test an intermediate model:": "Model extraction (enter the path of the large file model under the 'logs' folder). This is useful if you want to stop training halfway and manually extract and save a small model file, or if you want to test an intermediate model:",
-  "Save name:": "Save name:",
+  "Model extraction": "Model extraction",
+  "Name:": "Name:",
   "Whether the model has pitch guidance (1: yes, 0: no):": "Whether the model has pitch guidance (1: yes, 0: no):",
   "Extract": "Extract",
   "Export Onnx": "Export Onnx",
@@ -240,5 +239,8 @@
   "Volume of the generated audio:": "Volume of the generated audio:",
   "### Audio settings:": "### Audio settings:",
   "### Instrumental settings:": "### Instrumental settings:",
-  "### Add the effects:": "### Add the effects:"
+  "### Add the effects:": "### Add the effects:",
+  "Name for saving": "Name for saving",
+  "Path to model": "Path to model",
+  "Model information to be placed": "Model information to be placed"
 }
