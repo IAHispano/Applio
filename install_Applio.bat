@@ -16,11 +16,13 @@ setlocal
 ::: Versión 1.0.0 - Desarrollado por Aitron
 ::: 
 
-set "repoUrl=https://github.com/IAHispano/Applio-RVC-Fork"
+set "repoUrl=https://github.com/IAHispano/Applio-RVC-Fork/archive/refs/heads/main.zip"
 set "repoFolder=Applio-RVC-Fork"
 set "fixesFolder=Fixes"
 set "localFixesPy=local_fixes.py"
+set "principal=%cd%\%repoFolder%"
 set "URL_BASE=https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
+set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
 echo.
 cls
 
@@ -29,22 +31,36 @@ echo.
 echo Paso a paso: https://rentry.org/appliolocal
 echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
 echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
-echo Git: https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.1/Git-2.42.0-64-bit.exe
 echo Python: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
 echo.
 pause
 cls
-
-echo.
 
 echo Creando carpeta para el repositorio...
 mkdir "%repoFolder%"
 cd "%repoFolder%"
 echo.
 
-echo Clonando el repositorio...
-git clone "%repoUrl%" .
+echo Descargando el archivo ZIP...
+powershell -command "& { Invoke-WebRequest -Uri '%repoUrl%' -OutFile '%principal%\repo.zip' }"
 echo.
+
+echo Extrayendo archivo ZIP...
+powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('%principal%\repo.zip', '%principal%') }"
+echo.
+
+echo Copiando estructura de carpetas y archivos desde el subdirectorio al directorio principal...
+robocopy "%principal%\Applio-RVC-Fork-main" "%principal%" /E
+echo.
+
+echo Eliminando el contenido del subdirectorio (archivos y carpetas)...
+rmdir "%principal%\Applio-RVC-Fork-main" /S /Q
+echo.
+
+echo Limpiando...
+del "%principal%\repo.zip"
+echo.
+cls
 
 echo Instalando dependencias para ejecutar el archivo Fixes
 pip install requests
@@ -118,6 +134,11 @@ curl -LJO "%URL_BASE%/rmvpe.pt"
 echo.
 cls
 
+echo Descargando el archivo hubert_base.pt...
+curl -LJO "%URL_BASE%/hubert_base.pt"
+echo.
+cls
+
 echo Descargando el archivo ffmpeg.exe...
 curl -LJO "%URL_BASE%/ffmpeg.exe"
 echo.
@@ -126,7 +147,19 @@ cls
 echo Descargando el archivo ffprobe.exe...
 curl -LJO "%URL_BASE%/ffprobe.exe"
 echo.
-echo Descargas completadas. Procediendo con las dependencias.
+cls
+
+echo Descargando el archivo runtime.zip...
+curl -LJO "%URL_EXTRA%/runtime.zip"
+echo.
+cls
+echo Descomprimiendo el archivo runtime.zip, esto puede tardar un poco...
+powershell -Command "Expand-Archive -Path 'runtime.zip' -DestinationPath '.'"
+del runtime.zip
+echo.
+cls
+
+echo Descargas completadas, procediendo con las dependencias...
 cls
 
 echo ¿Tienes una GPU?
