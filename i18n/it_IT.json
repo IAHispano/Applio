@@ -78,7 +78,7 @@
   "Protect voiceless consonants and breath sounds to prevent artifacts such as tearing in electronic music. Set to 0.5 to disable. Decrease the value to increase protection, but it may reduce indexing accuracy:": "Proteggi le consonanti sorde e i suoni del respiro per evitare artefatti come la lacerazione nella musica elettronica. Impostare su 0.5 per disattivare. Diminuire il valore per aumentare la protezione, ma può ridurre la precisione dell'indicizzazione:",
   "F0 curve file (optional). One pitch per line. Replaces the default F0 and pitch modulation:": "File curva F0 (opzionale). Un passo per riga. Sostituisce la modulazione di passo e F0 di default:",
   "Convert": "Conversione",
-  "Output information:": "dato di uscita",
+  "Output information:": "Informazioni in uscita",
   "Export audio (click on the three dots in the lower right corner to download)": "Esporta audio (clicca sui tre puntini nell'angolo in basso a destra per scaricare)",
   "Batch conversion. Enter the folder containing the audio files to be converted or upload multiple audio files. The converted audio will be output in the specified folder (default: 'opt').": "Conversione batch. Inserire la cartella contenente i file audio da convertire o caricare più file audio. L'audio convertito verrà emesso nella cartella specificata (default: 'opt').",
   "Specify output folder:": "Specifica cartella di output:",
