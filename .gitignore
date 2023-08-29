@@ -40,3 +40,8 @@ run_easiergui.bat
 tensor-launch.py
 values1.json
 使用需遵守的协议-LICENSE.txt
+!logs/
+
+logs/*
+logs/mute/0_gt_wavs/mute40k.spec.pt
+!logs/mute/
