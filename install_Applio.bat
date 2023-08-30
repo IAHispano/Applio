@@ -27,8 +27,7 @@ set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
 echo.
 cls
 
-echo AVISO: Es importante no ejecutar este instalador como administrador ya que podría dar problemas.
-echo AVISO: Recuerda instalar las Microsoft C++ Build Tools, El Redistributable, Python y Git antes de continuar.
+echo AVISO: Recuerda instalar las Microsoft C++ Build Tools, El Redistributable, Python y Git antes de continuar (Es importante no ejecutar este instalador como administrador ya que podría dar problemas)
 echo.
 echo Paso a paso: https://rentry.org/appliolocal
 echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
