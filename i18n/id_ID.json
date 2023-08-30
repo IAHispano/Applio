@@ -238,5 +238,6 @@
   "Select the generated audio": "Pilih audio yang dihasilkan",
   "Volume of the instrumental audio:": "Volume audio instrumental",
   "Volume of the generated audio:": "Volume audio yang dihasilkan",
-  "### Add the effects": "### Tambahkan efeknya"
+  "### Add the effects": "### Tambahkan efeknya",
+  "Starting audio conversion... (This might take a moment)" :  "Memulai konversi audio... (Ini mungkin memerlukan waktu sebentar)"
 }

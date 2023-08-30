@@ -468,6 +468,10 @@ def uvr(model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format
     if architecture == "VR":
        try:
            inp_root, save_root_vocal, save_root_ins = [x.strip(" ").strip('"').strip("\n").strip('"').strip(" ") for x in [inp_root, save_root_vocal, save_root_ins]]
+           usable_files = [os.path.join(inp_root, file) 
+                          for file in os.listdir(inp_root) 
+                          if file.endswith(tuple(sup_audioext))]    
+           
         
            pre_fun = MDXNetDereverb(15) if model_name == "onnx_dereverb_By_FoxJoy" else (_audio_pre_ if "DeEcho" not in model_name else _audio_pre_new)(
                        agg=int(agg),
@@ -476,8 +480,16 @@ def uvr(model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format
                        is_half=config.is_half,
                    )
                 
-           paths = [os.path.join(inp_root, name) for name in os.listdir(inp_root)] if inp_root else [path.name for path in paths]
-
+           try:
+              if paths != None:
+                paths = [path.name for path in paths]
+              else:
+                paths = usable_files
+                
+           except:
+                traceback.print_exc()
+                paths = usable_files
+           print(paths) 
            for path in paths:
                inp_path = os.path.join(inp_root, path)
                need_reformat, done = 1, 0
@@ -525,8 +537,7 @@ def uvr(model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format
        yield "\n".join(infos)
     elif architecture == "MDX":
        try:
-           infos = []
-           infos.append("Starting.... Pls Wait")
+           infos.append(i18n("Starting audio conversion... (This might take a moment)"))
            yield "\n".join(infos)
            inp_root, save_root_vocal, save_root_ins = [x.strip(" ").strip('"').strip("\n").strip('"').strip(" ") for x in [inp_root, save_root_vocal, save_root_ins]]
         

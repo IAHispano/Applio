@@ -242,5 +242,6 @@
   "### Add the effects:": "### Aggiungi gli effetti:",
   "Name for saving": "Nome salvataggio",
   "Path to model": "Percorso al modello",
-  "Model information to be placed": "Informazioni sul modello da modificare"
+  "Model information to be placed": "Informazioni sul modello da modificare",
+  "Starting audio conversion... (This might take a moment)" : "Avvio della conversione audio... (Questo potrebbe richiedere un po' di tempo)"
 }

@@ -237,5 +237,6 @@
   "Select the generated audio": "Выберите сгенерированный звук",
   "Volume of the instrumental audio:": "Громкость инструментального звука",
   "Volume of the generated audio:": "Громкость сгенерированного звука",
-  "### Add the effects": "### Добавьте эффекты"
+  "### Add the effects": "### Добавьте эффекты",
+  "Starting audio conversion... (This might take a moment)" : "Начинается конвертация аудио... (Это может занять некоторое время)"
 }
