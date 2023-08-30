@@ -526,8 +526,23 @@ def uvr(model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format
     elif architecture == "MDX":
        try:
            infos = []
-           infos.append("Starting....")
+           infos.append("Starting.... Pls Wait")
            yield "\n".join(infos)
+           inp_root, save_root_vocal, save_root_ins = [x.strip(" ").strip('"').strip("\n").strip('"').strip(" ") for x in [inp_root, save_root_vocal, save_root_ins]]
+        
+           usable_files = [os.path.join(inp_root, file) 
+                          for file in os.listdir(inp_root) 
+                          if file.endswith(tuple(sup_audioext))]    
+           try:
+              if paths != None:
+                paths = [path.name for path in paths]
+              else:
+                paths = usable_files
+                
+           except:
+                traceback.print_exc()
+                paths = usable_files
+           print(paths) 
            invert=True
            denoise=True
            use_custom_parameter=True
@@ -542,14 +557,13 @@ def uvr(model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format
            onnx = id_to_ptm(model_name)
            compensation = compensation if use_custom_compensation or use_custom_parameter else None
            mdx_model = prepare_mdx(onnx,use_custom_parameter, dim_f, dim_t, n_fft, compensation=compensation)
-           usable_files = [os.path.join(audio_root, file) 
-                           for file in os.listdir(inp_root) 
-                           if file.endswith(tuple(sup_audioext))]
+           
        
-           for filename in usable_files:
-              suffix_naming = suffix if use_custom_parameter else None
-              diff_suffix_naming = suffix_invert if use_custom_parameter else None
-              run_mdx(onnx, mdx_model, filename, format0, diff=invert,suffix=suffix_naming,diff_suffix=diff_suffix_naming,denoise=denoise)
+           for path in paths:
+               #inp_path = os.path.join(inp_root, path)
+               suffix_naming = suffix if use_custom_parameter else None
+               diff_suffix_naming = suffix_invert if use_custom_parameter else None
+               run_mdx(onnx, mdx_model, path, format0, diff=invert,suffix=suffix_naming,diff_suffix=diff_suffix_naming,denoise=denoise)
     
            if print_settings:
                print()
@@ -564,7 +578,7 @@ def uvr(model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format
                print()
                print('[Input file]')
                print('filename(s): ')
-               for filename in usable_files:
+               for filename in paths:
                    print(f'    -{filename}')
                    infos.append(f"{os.path.basename(filename)}->Success")
                    yield "\n".join(infos)
@@ -1451,7 +1465,19 @@ def save_to_wav(record_button):
         new_path='./audios/'+new_name
         shutil.move(path_to_file,new_path)
         return new_name
-        
+def save_to_wav2_edited(dropbox):
+    if dropbox is None:
+        pass
+    else:
+        file_path = dropbox.name
+        target_path = os.path.join('audios', os.path.basename(file_path))
+
+        if os.path.exists(target_path):
+            os.remove(target_path)
+            print('Replacing old dropdown file...')
+
+        shutil.move(file_path, target_path)
+    return       
 def save_to_wav2(dropbox):
     file_path = dropbox.name
     target_path = os.path.join('audios', os.path.basename(file_path))
@@ -2263,6 +2289,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 )
                         but2 = gr.Button(i18n("Convert"), variant="primary")
                         vc_output4 = gr.Textbox(label=i18n("Output information:"))
+                        #wav_inputs.upload(fn=save_to_wav2_edited, inputs=[wav_inputs], outputs=[])
                         but2.click(
                             uvr,
                             [
