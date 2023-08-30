@@ -20,6 +20,7 @@ set "repoUrl=https://github.com/IAHispano/Applio-RVC-Fork/archive/refs/heads/mai
 set "repoFolder=Applio-RVC-Fork"
 set "fixesFolder=Fixes"
 set "localFixesPy=local_fixes.py"
+set "colabmdx=colab_for_mdx.py"
 set "principal=%cd%\%repoFolder%"
 set "URL_BASE=https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
 set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
@@ -62,6 +63,7 @@ echo Limpiando...
 del "%principal%\repo.zip"
 echo.
 cls
+pause
 
 echo Instalando dependencias para ejecutar el archivo Fixes
 pip install requests
@@ -74,6 +76,7 @@ if exist "%fixesFolder%\%localFixesPy%" (
 ) else (
     echo El archivo "%localFixesBat%" no se encontró en la carpeta "Fixes".
 )
+echo.
 
 echo Pasando a descargar los modelos...
 echo.
@@ -183,6 +186,17 @@ echo.
 echo NOTA: El ordenador puede experimentar lentitud durante este proceso; no te preocupes.
 echo.
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+echo Ejecutando el archivo "%colabmdx%"
+echo Verificando si el archivo "%colabmdx%" existe...
+if exist "%principal%\%colabmdx%" (
+    echo Ejecutando el archivo...
+    python "%principal%\%colabmdx%"
+) else (
+    echo El archivo "%colabmdx%" no se encontró.
+)
+echo.
+
 endlocal
 echo.
 cls
@@ -199,6 +213,17 @@ echo Descargando las dependencias...
 echo.
 pip install -r requirements.txt
 echo.
+
+echo Ejecutando el archivo "%colabmdx%"
+echo Verificando si el archivo "%colabmdx%" existe...
+if exist "%principal%\%colabmdx%" (
+    echo Ejecutando el archivo...
+    python "%principal%\%colabmdx%"
+) else (
+    echo El archivo "%colabmdx%" no se encontró.
+)
+echo.
+
 echo ¡Applio ha sido descargado!
 endlocal
 echo.
