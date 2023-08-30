@@ -37,6 +37,9 @@ echo.
 pause
 cls
 
+for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
+echo.
+
 echo Creating folder for the repository...
 mkdir "%repoFolder%"
 cd "%repoFolder%"
