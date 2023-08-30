@@ -246,5 +246,6 @@
   "Error no reformatted.wav found:": "Error no se encontró el archivo reformatted.wav:",
   "Error at separating audio:": "Error al separar el audio:",
   "Vocal": "Vocal",
-  "Instrumental": "Instrumental"
+  "Instrumental": "Instrumental",
+  "Finished": "Terminado"
 }
