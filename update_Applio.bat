@@ -17,10 +17,11 @@ setlocal
 ::: 
 
 set "repoUrl=https://github.com/IAHispano/Applio-RVC-Fork/archive/refs/heads/main.zip"
+set "principal=%cd%"
 set "fixesFolder=Fixes"
 set "localFixesPy=local_fixes.py"
 set "subdir=temp_udpate"
-set "principal=%cd%"
+set "colabmdx=colab_for_mdx.py"
 echo.
 cls
 
@@ -51,6 +52,15 @@ if exist "%fixesFolder%\%localFixesPy%" (
     python "%fixesFolder%\%localFixesPy%"
 ) else (
     echo El archivo "%localFixesBat%" no se encontró en la carpeta "Fixes".
+)
+
+echo Ejecutando el archivo "%colabmdx%"
+echo Verificando si el archivo "%colabmdx%" existe...
+if exist "%principal%\%colabmdx%" (
+    echo Ejecutando el archivo...
+    python "%principal%\%colabmdx%"
+) else (
+    echo El archivo "%colabmdx%" no se encontró.
 )
 
 echo Applio ha sido actualizado!
