@@ -158,7 +158,6 @@ def download_from_url(url):
                 m = Mega()
                 m.download_url(url, zips_path)
         elif "/tree/main" in url:
-           print("/tree/main")
            response = requests.get(url)
            soup = BeautifulSoup(response.content, 'html.parser')
            temp_url = ''
