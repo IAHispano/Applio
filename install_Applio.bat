@@ -1,6 +1,5 @@
 @echo off
 Title Instalador de Applio
-chcp 65001 > nul
 setlocal
 
 :::
@@ -27,7 +26,8 @@ set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
 echo.
 cls
 
-echo AVISO: Recuerda instalar las Microsoft C++ Build Tools, El Redistributable, Python y Git antes de continuar (Es importante no ejecutar este instalador como administrador ya que podría dar problemas)
+echo AVISO: Es importante no ejecutar este instalador como administrador ya que podría dar problemas.
+echo AVISO: Recuerda instalar las Microsoft C++ Build Tools, El Redistributable, Python y Git antes de continuar.
 echo.
 echo Paso a paso: https://rentry.org/appliolocal
 echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
@@ -36,6 +36,9 @@ echo Python: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
 echo.
 pause
 cls
+
+for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
+echo.
 
 echo Creando carpeta para el repositorio...
 mkdir "%repoFolder%"
@@ -185,19 +188,8 @@ echo.
 echo NOTA: El ordenador puede experimentar lentitud durante este proceso; no te preocupes.
 echo.
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
-echo Ejecutando el archivo "%colabmdx%"
-echo Verificando si el archivo "%colabmdx%" existe...
-if exist "%principal%\%colabmdx%" (
-    echo Ejecutando el archivo...
-    python "%principal%\%colabmdx%"
-) else (
-    echo El archivo "%colabmdx%" no se encontró.
-)
 echo.
-
 endlocal
-echo.
 cls
 echo ¡Applio ha sido descargado!
 echo.
@@ -212,17 +204,6 @@ echo Descargando las dependencias...
 echo.
 pip install -r requirements.txt
 echo.
-
-echo Ejecutando el archivo "%colabmdx%"
-echo Verificando si el archivo "%colabmdx%" existe...
-if exist "%principal%\%colabmdx%" (
-    echo Ejecutando el archivo...
-    python "%principal%\%colabmdx%"
-) else (
-    echo El archivo "%colabmdx%" no se encontró.
-)
-echo.
-
 echo ¡Applio ha sido descargado!
 endlocal
 echo.
