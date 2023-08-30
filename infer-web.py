@@ -12,9 +12,15 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 import lib.globals.globals as rvc_globals
 from LazyImport import lazyload
-
+import mdx_processing_script
+import mdx
+from deezer import Deezer
+from deezer import TrackFormats
+import deemix
+from deemix.settings import load as loadSettings
+from deemix.downloader import Downloader
+from deemix import generateDownloadObject
 math = lazyload('math')
-
 import traceback
 import warnings
 tensorlowest = lazyload('tensorlowest')
@@ -157,6 +163,7 @@ uvr5_names  = [name.replace(".pth", "")
               for name in os.listdir(weight_uvr5_root) 
               if name.endswith(".pth") or "onnx" in name]
 
+
 check_for_name = lambda: sorted(names)[0] if names else ''
 
 datasets=[]
@@ -169,6 +176,14 @@ def get_dataset():
         return sorted(datasets)[0]
     else:
         return ''
+    
+def update_model_choices(select_value):
+    model_ids = mdx_processing_script.get_model_list()
+    model_ids_list = list(model_ids)
+    if select_value == "VR":
+        return {"choices": uvr5_names, "__type__": "update"}
+    elif select_value == "MDX":
+        return {"choices": model_ids_list, "__type__": "update"}
     
 def update_dataset_list(name):
     new_datasets = []
@@ -451,67 +466,123 @@ def vc_multi(
         yield "\n".join(infos)
     except:
         yield traceback.format_exc()
-
-
-def uvr(model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format0):
-    infos = []
-    try:
-        inp_root, save_root_vocal, save_root_ins = [x.strip(" ").strip('"').strip("\n").strip('"').strip(" ") for x in [inp_root, save_root_vocal, save_root_ins]]
         
-        pre_fun = MDXNetDereverb(15) if model_name == "onnx_dereverb_By_FoxJoy" else (_audio_pre_ if "DeEcho" not in model_name else _audio_pre_new)(
-                    agg=int(agg),
-                    model_path=os.path.join(weight_uvr5_root, model_name + ".pth"),
-                    device=config.device,
-                    is_half=config.is_half,
-                )
+
+
+def uvr(model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format0,architecture):
+    infos = []
+    if architecture == "VR":
+       try:
+           inp_root, save_root_vocal, save_root_ins = [x.strip(" ").strip('"').strip("\n").strip('"').strip(" ") for x in [inp_root, save_root_vocal, save_root_ins]]
+        
+           pre_fun = MDXNetDereverb(15) if model_name == "onnx_dereverb_By_FoxJoy" else (_audio_pre_ if "DeEcho" not in model_name else _audio_pre_new)(
+                       agg=int(agg),
+                       model_path=os.path.join(weight_uvr5_root, model_name + ".pth"),
+                       device=config.device,
+                       is_half=config.is_half,
+                   )
                 
-        paths = [os.path.join(inp_root, name) for name in os.listdir(inp_root)] if inp_root else [path.name for path in paths]
+           paths = [os.path.join(inp_root, name) for name in os.listdir(inp_root)] if inp_root else [path.name for path in paths]
 
-        for path in paths:
-            inp_path = os.path.join(inp_root, path)
-            need_reformat, done = 1, 0
+           for path in paths:
+               inp_path = os.path.join(inp_root, path)
+               need_reformat, done = 1, 0
 
-            try:
-                info = ffmpeg.probe(inp_path, cmd="ffprobe")
-                if info["streams"][0]["channels"] == 2 and info["streams"][0]["sample_rate"] == "44100":
-                    need_reformat = 0
-                    pre_fun._path_audio_(inp_path, save_root_ins, save_root_vocal, format0)
-                    done = 1
-            except:
-                traceback.print_exc()
+               try:
+                   info = ffmpeg.probe(inp_path, cmd="ffprobe")
+                   if info["streams"][0]["channels"] == 2 and info["streams"][0]["sample_rate"] == "44100":
+                       need_reformat = 0
+                       pre_fun._path_audio_(inp_path, save_root_ins, save_root_vocal, format0)
+                       done = 1
+               except:
+                   traceback.print_exc()
 
-            if need_reformat:
-                tmp_path = f"{tmp}/{os.path.basename(RQuote(inp_path))}.reformatted.wav"
-                os.system(f"ffmpeg -i {RQuote(inp_path)} -vn -acodec pcm_s16le -ac 2 -ar 44100 {RQuote(tmp_path)} -y")
-                inp_path = tmp_path
+               if need_reformat:
+                   tmp_path = f"{tmp}/{os.path.basename(RQuote(inp_path))}.reformatted.wav"
+                   os.system(f"ffmpeg -i {RQuote(inp_path)} -vn -acodec pcm_s16le -ac 2 -ar 44100 {RQuote(tmp_path)} -y")
+                   inp_path = tmp_path
 
-            try:
-                if not done:
-                    pre_fun._path_audio_(inp_path, save_root_ins, save_root_vocal, format0)
-                infos.append(f"{os.path.basename(inp_path)}->Success")
-                yield "\n".join(infos)
-            except:
-                infos.append(f"{os.path.basename(inp_path)}->{traceback.format_exc()}")
-                yield "\n".join(infos)
-    except:
-        infos.append(traceback.format_exc())
-        yield "\n".join(infos)
-    finally:
-        try:
-            if model_name == "onnx_dereverb_By_FoxJoy":
-                del pre_fun.pred.model
-                del pre_fun.pred.model_
-            else:
-                del pre_fun.model
+               try:
+                   if not done:
+                       pre_fun._path_audio_(inp_path, save_root_ins, save_root_vocal, format0)
+                   infos.append(f"{os.path.basename(inp_path)}->Success")
+                   yield "\n".join(infos)
+               except:
+                   infos.append(f"{os.path.basename(inp_path)}->{traceback.format_exc()}")
+                   yield "\n".join(infos)
+       except:
+           infos.append(traceback.format_exc())
+           yield "\n".join(infos)
+       finally:
+           try:
+               if model_name == "onnx_dereverb_By_FoxJoy":
+                   del pre_fun.pred.model
+                   del pre_fun.pred.model_
+               else:
+                   del pre_fun.model
 
-            del pre_fun
-        except: traceback.print_exc()
+               del pre_fun
+           except: traceback.print_exc()
 
-        print("clean_empty_cache")
+           print("clean_empty_cache")
 
-        if torch.cuda.is_available(): torch.cuda.empty_cache()
+           if torch.cuda.is_available(): torch.cuda.empty_cache()
 
-    yield "\n".join(infos)
+       yield "\n".join(infos)
+    elif architecture == "MDX":
+       infos = []
+       infos.append("Starting....")
+       yield "\n".join(infos)
+       invert=True
+       denoise=True
+       m_threads=8
+       use_custom_parameter=True
+       dim_f=3072
+       dim_t=256
+       n_fft=7680
+       use_custom_compensation=True
+       compensation=1.025
+
+    
+       suffix = "Vocals_custom" #@param ["Vocals", "Drums", "Bass", "Other"]{allow-input: true}
+       suffix_invert = "Instrumental_custom" #@param ["Instrumental", "Drumless", "Bassless", "Instruments"]{allow-input: true}
+       print_settings = True  # @param{type:"boolean"}
+
+
+
+       onnx = mdx_processing_script.id_to_ptm(model_name)
+       compensation = compensation if use_custom_compensation or use_custom_parameter else None
+       mdx_model = mdx_processing_script.prepare_mdx(onnx,use_custom_parameter, dim_f, dim_t, n_fft, compensation=compensation)
+       print(mdx_model)
+       usable_files = audio_paths
+       for filename in usable_files:
+          suffix_naming = suffix if use_custom_parameter else None
+          diff_suffix_naming = suffix_invert if use_custom_parameter else None
+          mdx_processing_script.run_mdx(onnx, mdx_model, filename, format0, diff=invert,suffix=suffix_naming,diff_suffix=diff_suffix_naming,denoise=denoise)
+    
+       if print_settings:
+           print()
+           print('[MDX-Net_Colab settings used]')
+           print(f'Model used: {onnx}')
+           print(f'Model MD5: {mdx.MDX.get_hash(onnx)}')
+           print(f'Model parameters:')
+           print(f'    -dim_f: {mdx_model.dim_f}')
+           print(f'    -dim_t: {mdx_model.dim_t}')
+           print(f'    -n_fft: {mdx_model.n_fft}')
+           print(f'    -compensation: {mdx_model.compensation}')
+           print()
+           print('[Input file]')
+           print('filename(s): ')
+           for filename in usable_files:
+               print(f'    -{filename}')
+               infos.append(f"{os.path.basename(filename)}->Success")
+               yield "\n".join(infos)
+            
+    
+       del mdx_model
+
+
+
 
 def get_vc(sid, to_return_protect0, to_return_protect1):
     global n_spk, tgt_sr, net_g, vc, cpt, version, hubert_model
@@ -2149,6 +2220,12 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                 with gr.Group():
                     with gr.Row():
                         with gr.Column():
+                            model_select = gr.Radio(
+                                label=i18n("Model Architecture:"),
+                                choices=["VR", "MDX"],
+                                value="VR",
+                                interactive=True,
+                            )
                             dir_wav_input = gr.Textbox(
                                 label=i18n("Enter the path of the audio folder to be processed:"),
                                 value=os.path.join(now_dir, "audios")
@@ -2156,6 +2233,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                             wav_inputs = gr.File(
                                 file_count="multiple", label=i18n("You can also input audio files in batches. Choose one of the two options. Priority is given to reading from the folder.")
                             )
+                            
                         with gr.Column():
                             model_choose = gr.Dropdown(label=i18n("Model:"), choices=uvr5_names)
                             agg = gr.Slider(
@@ -2179,6 +2257,11 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 value="flac",
                                 interactive=True,
                             )
+                        model_select.change(
+                                fn=update_model_choices,
+                                inputs=model_select,
+                                outputs=model_choose,
+                                )
                         but2 = gr.Button(i18n("Convert"), variant="primary")
                         vc_output4 = gr.Textbox(label=i18n("Output information:"))
                         but2.click(
@@ -2191,6 +2274,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 opt_ins_root,
                                 agg,
                                 format0,
+                                model_select
                             ],
                             [vc_output4],
                         )    
