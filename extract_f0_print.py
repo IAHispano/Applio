@@ -159,8 +159,6 @@ class FeatureInput(object):
             self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cuda:0")
 
         return self.model_rmvpe.infer_from_audio(x, thred=0.03)
-    def get_rmvpe_dml(self, x):
-        ...
 
     def get_f0_method_dict(self):
         return {

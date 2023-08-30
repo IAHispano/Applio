@@ -3,7 +3,6 @@ import sys
 import torch
 import json
 from multiprocessing import cpu_count
-import os
 
 global usefp16
 usefp16 = False
@@ -86,9 +85,7 @@ class Config:
             self.paperspace,
             self.is_cli,
             self.grtheme,
-            self.dml,
         ) = self.arg_parse()
-        self.instead = ""
 
         self.x_pad, self.x_query, self.x_center, self.x_max = self.device_config()
 
@@ -125,12 +122,6 @@ class Config:
             default = "JohnSmith9982/small_and_pretty",
             type    = str
         )
-
-        parser.add_argument(
-            "--dml",
-            action="store_true",
-            help="Use DirectML backend instead of CUDA."
-        )
         
         cmd_opts = parser.parse_args()
 
@@ -145,7 +136,6 @@ class Config:
             cmd_opts.paperspace,
             cmd_opts.is_cli,
             cmd_opts.theme,
-            cmd_opts.dml,
         )
 
     @staticmethod
@@ -187,13 +177,11 @@ class Config:
         elif self.has_mps():
             print("No supported Nvidia GPU found, using MPS instead")
             self.device = "mps"
-            self.device = self.instead = "mps"
             self.is_half = False
             decide_fp_config()
         else:
             print("No supported Nvidia GPU found, using CPU instead")
             self.device = "cpu"
-            self.device = self.instead = "cpu"
             self.is_half = False
             decide_fp_config()
 
@@ -216,32 +204,5 @@ class Config:
             x_query = 5
             x_center = 30
             x_max = 32
-        
-        if self.dml:
-            print("use DirectML instead")
-            try:
-                os.rename("runtime\Lib\site-packages\onnxruntime","runtime\Lib\site-packages\onnxruntime-cuda")
-            except:
-                pass
-            try:
-                os.rename("runtime\Lib\site-packages\onnxruntime-dml","runtime\Lib\site-packages\onnxruntime")
-            except:
-                pass
-            import torch_directml
-
-            self.device = torch_directml.device(torch_directml.default_device())
-            print(self.device)
-            self.is_half = False
-        else:
-            if self.instead:
-                print(f"use {self.instead} instead")
-            try:
-                os.rename("runtime\Lib\site-packages\onnxruntime","runtime\Lib\site-packages\onnxruntime-dml")
-            except:
-                pass
-            try:
-                os.rename("runtime\Lib\site-packages\onnxruntime-cuda","runtime\Lib\site-packages\onnxruntime")
-            except:
-                pass
 
         return x_pad, x_query, x_center, x_max

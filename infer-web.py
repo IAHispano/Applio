@@ -36,7 +36,7 @@ gr = lazyload("gradio")
 SF = lazyload("soundfile")
 SFWrite = SF.write
 from config import Config
-import fairseq
+from fairseq import checkpoint_utils
 from i18n import I18nAuto
 from lib.infer_pack.models import (
     SynthesizerTrnMs256NSFsid,
@@ -87,12 +87,6 @@ Quefrency = rvc_globals.Quefrency
 Timbre = rvc_globals.Timbre
 
 config = Config()
-if(config.dml==True):
-    def forward_dml(ctx, x, scale):
-        ctx.scale = scale
-        res = x.clone().detach()
-        return res
-    fairseq.modules.grad_multiply.GradMultiply.forward=forward_dml
 i18n = I18nAuto()
 i18n.print()
 ngpu = torch.cuda.device_count()
@@ -119,7 +113,7 @@ hubert_model = None
 
 def load_hubert():
     global hubert_model
-    models, _, _ = fairseq.checkpoint_utils.load_model_ensemble_and_task(["hubert_base.pt"], suffix="")
+    models, _, _ = checkpoint_utils.load_model_ensemble_and_task(["hubert_base.pt"], suffix="")
     hubert_model = models[0].to(config.device)
     
     if config.is_half:
@@ -304,13 +298,11 @@ def vc_single(
     note_min:          str,
     f0_max:            int,
     note_max:          str,
-    f0_autotune:       bool,
 ):
     global total_time
     total_time = 0
     start_time = time.time()
     global tgt_sr, net_g, vc, hubert_model, version
-    rmvpe_onnx = True if f0_method == "rmvpe_onnx" else False
     if not input_audio_path0 and not input_audio_path1:
         return "You need to upload an audio", None
 
@@ -332,7 +324,6 @@ def vc_single(
         f0_min = f0_min or 50
         f0_max = f0_max or 1100
     try:
-        input_audio_path1 = input_audio_path1 or input_audio_path0
         print(f"Attempting to load {input_audio_path1}....")
         audio = load_audio(input_audio_path1,
                            16000,
@@ -380,8 +371,6 @@ def vc_single(
                 version,
                 protect,
                 crepe_hop_length,
-                f0_autotune,
-                rmvpe_onnx,
                 f0_file=f0_file,
                 f0_min=f0_min,
                 f0_max=f0_max
@@ -1607,13 +1596,9 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                     label=i18n(
                                         "Select the pitch extraction algorithm:"
                                     ),
-                                    choices=["pm", "harvest", "dio", "crepe", "crepe-tiny", "mangio-crepe", "mangio-crepe-tiny", "rmvpe", "rmvpe_onnx", "rmvpe+"], 
+                                    choices=["pm", "harvest", "dio", "crepe", "crepe-tiny", "mangio-crepe", "mangio-crepe-tiny", "rmvpe", "rmvpe+"], 
                                     value="rmvpe+",
                                     interactive=True,
-                                )
-                                f0_autotune = gr.Checkbox(
-                                    label="Enable autotune",
-                                    interactive=True
                                 )
                                 crepe_hop_length = gr.Slider(
                                     minimum=1,
@@ -1815,7 +1800,6 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                     crepe_hop_length,
                                     minpitch_slider, minpitch_txtbox,
                                     maxpitch_slider, maxpitch_txtbox,
-                                    f0_autotune
                                 ],
                                 [vc_output1, vc_output2],
                             )

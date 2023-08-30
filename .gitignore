@@ -36,7 +36,6 @@ onnx_inference_demo.py
 Praat.exe
 requirementsNEW.txt
 rmvpe.pt
-rmvpe.onnx
 run_easiergui.bat
 tensor-launch.py
 values1.json
