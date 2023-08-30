@@ -243,5 +243,10 @@
   "Name for saving": "Name for saving",
   "Path to model": "Path to model",
   "Model information to be placed": "Model information to be placed",
-  "Starting audio conversion... (This might take a moment)" : "Starting audio conversion... (This might take a moment)"
+  "Starting audio conversion... (This might take a moment)" : "Starting audio conversion... (This might take a moment)",
+  "Error no reformatted.wav found:": "Error no reformatted.wav found:",
+  "Error at separating audio:": "Error at separating audio:",
+  "Vocal": "Vocal",
+  "Instrumental": "Instrumental",
+  "Finished": "Finished"
 }
