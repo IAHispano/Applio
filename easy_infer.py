@@ -140,7 +140,13 @@ def download_from_url(url):
         elif "/blob/" in url:
             os.chdir('./zips')
             url = url.replace("blob", "resolve")
-            wget.download(url)
+            response = requests.get(url)
+            if response.status_code == 200:
+                file_name = url.split('/')[-1]
+                with open(os.path.join(zips_path, file_name), "wb") as newfile:
+                    newfile.write(response.content)
+            else:
+                    os.chdir(parent_path)
         elif "mega.nz" in url:
             if "#!" in url:
                 file_id = url.split("#!")[1].split("!")[0]
@@ -152,6 +158,7 @@ def download_from_url(url):
                 m = Mega()
                 m.download_url(url, zips_path)
         elif "/tree/main" in url:
+           print("/tree/main")
            response = requests.get(url)
            soup = BeautifulSoup(response.content, 'html.parser')
            temp_url = ''
