@@ -1,5 +1,5 @@
 @echo off
-Title Instalador de Applio
+Title Applio Installer
 setlocal
 
 :::
@@ -8,12 +8,12 @@ setlocal
 :::    /  \   _ __  _ __ | |_  ___
 :::   / /\ \ | '_ \| '_ \| | |/ _ \
 :::  / ____ \| |_) | |_) | | | (_) |
-::: /_/    \_\ .__/| .__/|_|_|\___/ 
-:::          | |   | |                                                                
-:::          |_|   |_|                                                                
+::: /_/    \_\ .__/| .__/|_|_|\___/
+:::          | |   | |
+:::          |_|   |_|
 :::
-::: Versión 1.0.0 - Desarrollado por Aitron
-::: 
+::: Version 1.0.0 - Developed by Aitron
+:::
 
 set "repoUrl=https://github.com/IAHispano/Applio-RVC-Fork/archive/refs/heads/main.zip"
 set "repoFolder=Applio-RVC-Fork"
@@ -26,10 +26,10 @@ set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
 echo.
 cls
 
-echo AVISO: Es importante no ejecutar este instalador como administrador ya que podría dar problemas.
-echo AVISO: Recuerda instalar las Microsoft C++ Build Tools, El Redistributable, Python y Git antes de continuar.
+echo WARNING: It's important not to run this installer as an administrator as it might cause issues.
+echo WARNING: Remember to install Microsoft C++ Build Tools, Redistributable, Python, and Git before continuing.
 echo.
-echo Paso a paso: https://rentry.org/appliolocal
+echo Step-by-step guide: https://rentry.org/appliolocal
 echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
 echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
 echo Python: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
@@ -37,57 +37,54 @@ echo.
 pause
 cls
 
-for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
-echo.
-
-echo Creando carpeta para el repositorio...
+echo Creating folder for the repository...
 mkdir "%repoFolder%"
 cd "%repoFolder%"
 echo.
 
-echo Descargando el archivo ZIP...
+echo Downloading ZIP file...
 powershell -command "& { Invoke-WebRequest -Uri '%repoUrl%' -OutFile '%principal%\repo.zip' }"
 echo.
 
-echo Extrayendo archivo ZIP...
+echo Extracting ZIP file...
 powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('%principal%\repo.zip', '%principal%') }"
 echo.
 
-echo Copiando estructura de carpetas y archivos desde el subdirectorio al directorio principal...
+echo Copying folder and file structure from subdirectory to main directory...
 robocopy "%principal%\Applio-RVC-Fork-main" "%principal%" /E
 echo.
 
-echo Eliminando el contenido del subdirectorio (archivos y carpetas)...
+echo Deleting contents of subdirectory (files and folders)...
 rmdir "%principal%\Applio-RVC-Fork-main" /S /Q
 echo.
 
-echo Limpiando...
+echo Cleaning up...
 del "%principal%\repo.zip"
 echo.
 cls
 pause
 
-echo Instalando dependencias para ejecutar el archivo Fixes
+echo Installing dependencies to run the Fixes file
 pip install requests
 
 echo.
-echo Verificando si el archivo local_fixes.py existe en la carpeta Fixes...
+echo Checking if the local_fixes.py file exists in the Fixes folder...
 if exist "%fixesFolder%\%localFixesPy%" (
-    echo Ejecutando el archivo...
+    echo Running the file...
     python "%fixesFolder%\%localFixesPy%"
 ) else (
-    echo El archivo "%localFixesBat%" no se encontró en la carpeta "Fixes".
+    echo The "%localFixesBat%" file was not found in the "Fixes" folder.
 )
 echo.
 
-echo Pasando a descargar los modelos...
+echo Proceeding to download the models...
 echo.
 
-echo AVISO: En este punto, se recomienda desactivar el antivirus o el firewall, ya que existe la posibilidad de que ocurran errores al descargar los modelos preentrenados.
+echo WARNING: At this point, it's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
 pause
 cls
 
-echo Descargando la carpeta "pretrained"...
+echo Downloading the "pretrained" folder...
 cd "pretrained"
 curl -LJO "%URL_BASE%/pretrained/D32k.pth"
 curl -LJO "%URL_BASE%/pretrained/D40k.pth"
@@ -105,7 +102,7 @@ cd ".."
 echo.
 cls
 
-echo Descargando la carpeta "pretrained_v2"...
+echo Downloading the "pretrained_v2" folder...
 cd "pretrained_v2"
 curl -LJO "%URL_BASE%/pretrained_v2/D32k.pth"
 curl -LJO "%URL_BASE%/pretrained_v2/D40k.pth"
@@ -123,7 +120,7 @@ cd ".."
 echo.
 cls
 
-echo Descargando la carpeta "uvr5_weights"...
+echo Downloading the "uvr5_weights" folder...
 cd "uvr5_weights"
 curl -LJO "%URL_BASE%/uvr5_weights/HP2_all_vocals.pth"
 curl -LJO "%URL_BASE%/uvr5_weights/HP3_all_vocals.pth"
@@ -135,78 +132,78 @@ cd ".."
 echo.
 cls
 
-echo Descargando el archivo rmvpe.pt...
+echo Downloading the rmvpe.pt file...
 curl -LJO "%URL_BASE%/rmvpe.pt"
 echo.
 cls
 
-echo Descargando el archivo hubert_base.pt...
+echo Downloading the hubert_base.pt file...
 curl -LJO "%URL_BASE%/hubert_base.pt"
 echo.
 cls
 
-echo Descargando el archivo ffmpeg.exe...
+echo Downloading the ffmpeg.exe file...
 curl -LJO "%URL_BASE%/ffmpeg.exe"
 echo.
 cls
 
-echo Descargando el archivo ffprobe.exe...
+echo Downloading the ffprobe.exe file...
 curl -LJO "%URL_BASE%/ffprobe.exe"
 echo.
 cls
 
-echo Descargando el archivo runtime.zip...
+echo Downloading the runtime.zip file...
 curl -LJO "%URL_EXTRA%/runtime.zip"
 echo.
 cls
-echo Descomprimiendo el archivo runtime.zip, esto puede tardar un poco...
+echo Extracting the runtime.zip file, this might take a while...
 powershell -Command "Expand-Archive -Path 'runtime.zip' -DestinationPath '.'"
 del runtime.zip
 echo.
 cls
 
-echo Descargas completadas, procediendo con las dependencias...
+echo Downloads completed, proceeding with dependencies...
 cls
 
-echo ¿Tienes una GPU?
-echo Esto determinará si se descargan dependencias ligeras (sin GPU) o pesadas (con GPU).
+echo Do you have a GPU?
+echo This will determine whether to download light dependencies (without GPU) or heavy dependencies (with GPU).
 echo.
 
-
-set /p op=Escribe "Si" o "No": 
-if "%op%"=="Si" goto gpu
+set /p op=Enter "Yes" or "No":
+if "%op%"=="Yes" goto gpu
 if "%op%"=="No" goto non_gpu
 
 :gpu
-echo Se ha seleccionado GPU, continuando...
+echo GPU has been selected, proceeding...
 echo.
-echo Descargando las dependencias...
+echo Downloading dependencies...
 echo.
 pip install -r requirements-gpu.txt
 pip uninstall torch torchvision torchaudio -y
 echo.
-echo NOTA: El ordenador puede experimentar lentitud durante este proceso; no te preocupes.
+echo NOTE: Your computer might experience slowness during this process; don't worry.
 echo.
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-echo.
 endlocal
+echo.
 cls
-echo ¡Applio ha sido descargado!
+echo Applio has been downloaded!
 echo.
 pause
 color 07
 exit
 
 :non_gpu
-echo No se ha seleccionado GPU, continuando...
+echo GPU has not been selected, proceeding...
 echo.
-echo Descargando las dependencias...
+echo Downloading dependencies...
 echo.
 pip install -r requirements.txt
 echo.
-echo ¡Applio ha sido descargado!
+echo Applio has been downloaded!
 endlocal
 echo.
 pause
 color 07
 exit
+
