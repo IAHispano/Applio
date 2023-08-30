@@ -1,24 +1,17 @@
-import json
-import os
 import gc
-import psutil
 import requests
 import subprocess
-import time
-import glob
 import logging
 import sys
 from bs4 import BeautifulSoup
-import librosa
-import torch
+import torch, pdb, os, warnings, librosa
 import soundfile as sf
+from tqdm import tqdm
 import numpy as np
-import yt_dlp
-import deemix
-import shutil
+import torch
 now_dir = os.getcwd()
 sys.path.append(now_dir)
-
+import mdx
 branch = "https://github.com/NaJeongMo/Colab-for-MDX_B"
 
 model_params = "https://raw.githubusercontent.com/TRvlvr/application_data/main/mdx_model_data/model_data.json"
@@ -34,16 +27,18 @@ model_ids = model_ids["mdx_download_list"].values()
 model_params = requests.get(model_params).json()
 stem_naming = requests.get(stem_naming).json()
 
-import mdx
-from deezer import Deezer
-from deezer import TrackFormats
-import deemix
-from deemix.settings import load as loadSettings
-from deemix.downloader import Downloader
-from deemix import generateDownloadObject
 
-logger = logging.getLogger("yt_dlp")
-logger.setLevel(logging.ERROR)
+
+warnings.filterwarnings("ignore")
+cpu = torch.device("cpu")
+if torch.cuda.is_available():
+    device = torch.device("cuda:0")
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+else:
+    device = torch.device("cpu")
+
+
 def get_model_list():
     return model_ids
 
@@ -90,7 +85,7 @@ def prepare_mdx(onnx,custom_param=False, dim_f=None, dim_t=None, n_fft=None, ste
             )
     return mdx_model
 
-def run_mdx(onnx, mdx_model,filename, output_format='wav',diff=False,suffix=None,diff_suffix=None, denoise=False, m_threads=1):
+def run_mdx(onnx, mdx_model,filename, output_format='wav',diff=False,suffix=None,diff_suffix=None, denoise=False, m_threads=2):
     mdx_sess = mdx.MDX(onnx,mdx_model)
     print(f"Processing: {filename}")
     if filename.lower().endswith('.wav'):
@@ -147,3 +142,5 @@ def run_mdx(onnx, mdx_model,filename, output_format='wav',diff=False,suffix=None
     del mdx_sess, wave_processed, wave
     gc.collect()
 
+if __name__ == "__main__":
+    print()

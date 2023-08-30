@@ -12,14 +12,8 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 import lib.globals.globals as rvc_globals
 from LazyImport import lazyload
-import mdx_processing_script
 import mdx
-from deezer import Deezer
-from deezer import TrackFormats
-import deemix
-from deemix.settings import load as loadSettings
-from deemix.downloader import Downloader
-from deemix import generateDownloadObject
+from mdx_processing_script import get_model_list,id_to_ptm,prepare_mdx,run_mdx
 math = lazyload('math')
 import traceback
 import warnings
@@ -178,7 +172,7 @@ def get_dataset():
         return ''
     
 def update_model_choices(select_value):
-    model_ids = mdx_processing_script.get_model_list()
+    model_ids = get_model_list()
     model_ids_list = list(model_ids)
     if select_value == "VR":
         return {"choices": uvr5_names, "__type__": "update"}
@@ -530,56 +524,61 @@ def uvr(model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format
 
        yield "\n".join(infos)
     elif architecture == "MDX":
-       infos = []
-       infos.append("Starting....")
-       yield "\n".join(infos)
-       invert=True
-       denoise=True
-       m_threads=8
-       use_custom_parameter=True
-       dim_f=3072
-       dim_t=256
-       n_fft=7680
-       use_custom_compensation=True
-       compensation=1.025
-
-    
-       suffix = "Vocals_custom" #@param ["Vocals", "Drums", "Bass", "Other"]{allow-input: true}
-       suffix_invert = "Instrumental_custom" #@param ["Instrumental", "Drumless", "Bassless", "Instruments"]{allow-input: true}
-       print_settings = True  # @param{type:"boolean"}
-
-
-
-       onnx = mdx_processing_script.id_to_ptm(model_name)
-       compensation = compensation if use_custom_compensation or use_custom_parameter else None
-       mdx_model = mdx_processing_script.prepare_mdx(onnx,use_custom_parameter, dim_f, dim_t, n_fft, compensation=compensation)
-       print(mdx_model)
-       usable_files = audio_paths
-       for filename in usable_files:
-          suffix_naming = suffix if use_custom_parameter else None
-          diff_suffix_naming = suffix_invert if use_custom_parameter else None
-          mdx_processing_script.run_mdx(onnx, mdx_model, filename, format0, diff=invert,suffix=suffix_naming,diff_suffix=diff_suffix_naming,denoise=denoise)
-    
-       if print_settings:
-           print()
-           print('[MDX-Net_Colab settings used]')
-           print(f'Model used: {onnx}')
-           print(f'Model MD5: {mdx.MDX.get_hash(onnx)}')
-           print(f'Model parameters:')
-           print(f'    -dim_f: {mdx_model.dim_f}')
-           print(f'    -dim_t: {mdx_model.dim_t}')
-           print(f'    -n_fft: {mdx_model.n_fft}')
-           print(f'    -compensation: {mdx_model.compensation}')
-           print()
-           print('[Input file]')
-           print('filename(s): ')
+       try:
+           infos = []
+           infos.append("Starting....")
+           yield "\n".join(infos)
+           invert=True
+           denoise=True
+           use_custom_parameter=True
+           dim_f=3072
+           dim_t=256
+           n_fft=7680
+           use_custom_compensation=True
+           compensation=1.025
+           suffix = "Vocals_custom" #@param ["Vocals", "Drums", "Bass", "Other"]{allow-input: true}
+           suffix_invert = "Instrumental_custom" #@param ["Instrumental", "Drumless", "Bassless", "Instruments"]{allow-input: true}
+           print_settings = True  # @param{type:"boolean"}
+           onnx = id_to_ptm(model_name)
+           compensation = compensation if use_custom_compensation or use_custom_parameter else None
+           mdx_model = prepare_mdx(onnx,use_custom_parameter, dim_f, dim_t, n_fft, compensation=compensation)
+           usable_files = [os.path.join(audio_root, file) 
+                           for file in os.listdir(inp_root) 
+                           if file.endswith(tuple(sup_audioext))]
+       
            for filename in usable_files:
-               print(f'    -{filename}')
-               infos.append(f"{os.path.basename(filename)}->Success")
-               yield "\n".join(infos)
-            
+              suffix_naming = suffix if use_custom_parameter else None
+              diff_suffix_naming = suffix_invert if use_custom_parameter else None
+              run_mdx(onnx, mdx_model, filename, format0, diff=invert,suffix=suffix_naming,diff_suffix=diff_suffix_naming,denoise=denoise)
     
-       del mdx_model
+           if print_settings:
+               print()
+               print('[MDX-Net_Colab settings used]')
+               print(f'Model used: {onnx}')
+               print(f'Model MD5: {mdx.MDX.get_hash(onnx)}')
+               print(f'Model parameters:')
+               print(f'    -dim_f: {mdx_model.dim_f}')
+               print(f'    -dim_t: {mdx_model.dim_t}')
+               print(f'    -n_fft: {mdx_model.n_fft}')
+               print(f'    -compensation: {mdx_model.compensation}')
+               print()
+               print('[Input file]')
+               print('filename(s): ')
+               for filename in usable_files:
+                   print(f'    -{filename}')
+                   infos.append(f"{os.path.basename(filename)}->Success")
+                   yield "\n".join(infos)
+       except:
+           infos.append(traceback.format_exc())
+           yield "\n".join(infos)
+       finally:
+           try:
+               del mdx_model
+           except: traceback.print_exc()
+
+           print("clean_empty_cache")
+
+           if torch.cuda.is_available(): torch.cuda.empty_cache()
 
 
 
