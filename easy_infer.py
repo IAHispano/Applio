@@ -758,6 +758,9 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
     actual_directory = os.path.dirname(__file__)
     instrumental_source_directory = os.path.join(actual_directory, "wav")
     instrumental_directory = os.path.join(actual_directory, "audio-others")
+    vocal_directory = os.path.join(actual_directory, "audios")
+    vocal_formatted = f"vocal_{formatted_title}.wav.reformatted.wav_10.wav"
+    vocal_audio_path = os.path.join(vocal_directory, vocal_formatted)
     instrumental_formatted = f"instrument_{formatted_title}.wav.reformatted.wav_10.wav"  
     instrumental_audio_path = os.path.join(instrumental_directory, instrumental_formatted)
     old_instrumental_audio_path = os.path.join(instrumental_source_directory, instrumental_formatted) 
@@ -812,16 +815,11 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
                     pre_fun._path_audio_(
                         inp_path, save_root_ins, save_root_vocal, format0
                     )
-                infos.append("%s->Success" % (os.path.basename(inp_path)))
-                yield "\n".join(infos)
-            except:
-                infos.append(
-                    "%s->%s" % (os.path.basename(inp_path), traceback.format_exc())
-                )
-                yield "\n".join(infos)
-    except:
-        infos.append(traceback.format_exc())
-        yield "\n".join(infos)
+
+            except Exception as e:
+                print(i18n("Error no reformatted.wav found:", e))
+    except Exception as e:
+        print(i18n("Error at separating audio:", e))
     finally:
         try:
             if pre_fun is not None:  
@@ -835,7 +833,6 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
             traceback.print_exc()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-    yield "\n".join(infos)
 
     try:
         if os.path.exists(old_instrumental_audio_path):
@@ -844,7 +841,8 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
 
             shutil.move(old_instrumental_audio_path, instrumental_audio_path)
             print(i18n("File moved successfully."))
-            print(i18n("Finished!"))
+            print(i18n("Finished"))
+            return i18n("Finished"), vocal_audio_path, instrumental_audio_path
         else:
             print(i18n("The source file does not exist."))
     except Exception as e:
@@ -1084,6 +1082,8 @@ def youtube_separator():
                 )
         with gr.Row():
             vc_output4 = gr.Textbox(label=i18n("Status:"))
+            vc_output5 = gr.Audio(label=i18n("Vocal"), type='filepath')
+            vc_output6 = gr.Audio(label=i18n("Instrumental"), type='filepath')
         with gr.Row():
             but2 = gr.Button(i18n("Download and Separate"))
             but2.click(
@@ -1097,5 +1097,5 @@ def youtube_separator():
                     opt_ins_root,
                     format0,
                     ],
-                    [vc_output4],
+                    [vc_output4, vc_output5, vc_output6],
                 )
