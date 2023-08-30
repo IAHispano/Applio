@@ -242,5 +242,7 @@
   "### Add the effects:": "### Add the effects:",
   "Name for saving": "Name for saving",
   "Path to model": "Path to model",
-  "Model information to be placed": "Model information to be placed"
+  "Model information to be placed": "Model information to be placed",
+  "Error no reformatted.wav found:": "Error no reformatted.wav found:",
+  "Error at separating audio:": "Error at separating audio:"
 }
