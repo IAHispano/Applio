@@ -244,5 +244,7 @@
   "Path to model": "Ruta al modelo",
   "Model information to be placed": "Información del modelo a modificar",
   "Error no reformatted.wav found:": "Error no se encontró el archivo reformatted.wav:",
-  "Error at separating audio:": "Error al separar el audio:"
+  "Error at separating audio:": "Error al separar el audio:",
+  "Vocal": "Vocal",
+  "Instrumental": "Instrumental"
 }
