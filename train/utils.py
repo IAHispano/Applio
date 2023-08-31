@@ -11,7 +11,7 @@ import torch
 
 MATPLOTLIB_FLAG = False
 
-logging.basicConfig(stream=sys.stdout, level=logging.ERROR)
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logger = logging
 
 
@@ -216,7 +216,7 @@ def plot_spectrogram_to_numpy(spectrogram):
         matplotlib.use("Agg")
         MATPLOTLIB_FLAG = True
         mpl_logger = logging.getLogger("matplotlib")
-        mpl_logger.setLevel(logging.WARNING)
+        mpl_logger.setLevel(logging.DEBUG)
     import matplotlib.pylab as plt
     import numpy as np
 
@@ -242,7 +242,7 @@ def plot_alignment_to_numpy(alignment, info=None):
         matplotlib.use("Agg")
         MATPLOTLIB_FLAG = True
         mpl_logger = logging.getLogger("matplotlib")
-        mpl_logger.setLevel(logging.WARNING)
+        mpl_logger.setLevel(logging.DEBUG)
     import matplotlib.pylab as plt
     import numpy as np
 
@@ -456,13 +456,13 @@ def check_git_hash(model_dir):
 def get_logger(model_dir, filename="train.log"):
     global logger
     logger = logging.getLogger(os.path.basename(model_dir))
-    logger.setLevel(logging.ERROR)
+    logger.setLevel(logging.DEBUG)
 
     formatter = logging.Formatter("%(asctime)s\t%(name)s\t%(levelname)s\t%(message)s")
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
     h = logging.FileHandler(os.path.join(model_dir, filename))
-    h.setLevel(logging.ERROR)
+    h.setLevel(logging.DEBUG)
     h.setFormatter(formatter)
     logger.addHandler(h)
     return logger
