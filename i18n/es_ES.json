@@ -224,7 +224,7 @@
   "Error downloading the file: {str(e)}": "Error al descargar el archivo: {str(e)}",
   "Downloading {name} from mega": "Descargando {name} de mega",
   "Downloading {name} from basic url": "Descargando {name} desde la URL básica",
-  "Download Audio": "Descargar Audio",
+  "Download Audio": "Descargar audio",
   "Download audios of any format for use in inference (recommended for mobile users).": "Descargar audios de cualquier formato para su uso en inferencia (recomendado para usuarios móviles).",
   "Any ConnectionResetErrors post-conversion are irrelevant and purely visual; they can be ignored.\n": "Cualquier posconversión de ConnectionResetErrors es irrelevante y puramente visual; se puede ignorar.\n",
   "Processed audio saved at: ": "Audio procesado guardado en:",
