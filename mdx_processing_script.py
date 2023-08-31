@@ -27,7 +27,7 @@ model_ids = model_ids["mdx_download_list"].values()
 model_params = requests.get(model_params).json()
 stem_naming = requests.get(stem_naming).json()
 
-
+os.makedirs("tmp_models", exist_ok=True)
 
 warnings.filterwarnings("ignore")
 cpu = torch.device("cpu")
