@@ -65,7 +65,6 @@ echo Cleaning up...
 del "%principal%\repo.zip"
 echo.
 cls
-pause
 
 echo Installing dependencies to run the Fixes file
 pip install requests
