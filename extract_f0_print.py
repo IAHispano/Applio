@@ -156,9 +156,11 @@ class FeatureInput(object):
     def get_rmvpe(self, x):
         if not hasattr(self, "model_rmvpe"):
             from rmvpe import RMVPE
-            self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cuda:0")
+            self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cuda:0",onnx=False)
 
         return self.model_rmvpe.infer_from_audio(x, thred=0.03)
+    def get_rmvpe_dml(self, x):
+        ...
 
     def get_f0_method_dict(self):
         return {
