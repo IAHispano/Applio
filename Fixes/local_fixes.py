@@ -11,7 +11,7 @@ pause"""
 
 with open(file_name2, 'w') as archivo:
         archivo.write(text_to_insert2)
-print(f"Se ha modificado el contenido de '{file_name2}'.")
+print(f"The content of '{file_name2}' was modified.")
 
 def insert_new_line(file_name, line_to_find, text_to_insert):
     lines = []
@@ -24,7 +24,7 @@ def insert_new_line(file_name, line_to_find, text_to_insert):
             if lines[i].strip() == line_to_find:
                 # If next line exists and starts with sys.path.append, skip
                 if i+1 < len(lines) and lines[i+1].strip().startswith("sys.path.append"):
-                    print('¡Ya estaba arreglado! Se salta añadir una línea...')
+                    print('It was already fixed! Skip adding a line...')
                     already_exists = True
                     break
                 else:
@@ -59,9 +59,9 @@ if __name__ == "__main__":
 
     success_1 = insert_new_line(file_name, line_to_find, text_to_insert)
     if success_1:
-        print('¡La primera operación fue un éxito!')
+        print('The first operation was successful!')
     else:
-        print('¡Se saltó la primera operación porque ya estaba arreglada!')
+        print('He skipped the first operation because it was already fixed!')
 
     file_name = 'infer-web.py'
     old_text = 'with gr.Blocks(theme=gr.themes.Soft()) as app:'
@@ -69,18 +69,18 @@ if __name__ == "__main__":
 
     success_2 = replace_in_file(file_name, old_text, new_text)
     if success_2:
-        print('¡La segunda operación fue un éxito!')
+        print('The second operation was successful!')
     else:
-        print('¡La segunda operación se omitió porque ya estaba arreglada!')
+        print('The second operation was omitted because it was already fixed!')
 
-    print('¡Correcciones locales exitosas! Ahora debería poder inferir y entrenar localmente en Applio RVC Fork.')
+    print('Local corrections successful! You should now be able to infer and train locally in Applio RVC Fork.')
     
     time.sleep(5)
 
 def find_torchcrepe_directory(directory):
     """
-    Busca recursivamente la carpeta de mayor jerarquía denominada 'torchcrepe' dentro de un directorio.
-    Devuelve la ruta del directorio encontrado o Ninguno si no se encuentra.
+    Recursively searches for the topmost folder named 'torchcrepe' within a directory.
+    Returns the path of the directory found or None if none is found.
     """
     for root, dirs, files in os.walk(directory):
         if 'torchcrepe' in dirs:
@@ -96,40 +96,40 @@ def download_and_extract_torchcrepe():
         torchcrepe_dir_path = os.path.join(destination_dir, 'torchcrepe')
 
         if os.path.exists(torchcrepe_dir_path):
-            print("Saltando la descarga de torchcrepe. La carpeta ya existe.")
+            print("Skipping the torchcrepe download. The folder already exists.")
             return
 
         # Download the file
-        print("Iniciando la descarga de torchcrepe...")
+        print("Starting torchcrepe download...")
         response = requests.get(url)
 
         # Raise an error if the GET request was unsuccessful
         response.raise_for_status()
-        print("Descarga finalizada.")
+        print("Download completed.")
 
         # Save the downloaded file
         zip_file_path = os.path.join(temp_dir, 'master.zip')
         os.makedirs(temp_dir, exist_ok=True)
         with open(zip_file_path, 'wb') as file:
             file.write(response.content)
-        print(f"Archivo zip guardado en {zip_file_path}")
+        print(f"Zip file saved to {zip_file_path}")
 
         # Extract the zip file
-        print("Extrayendo contenidos...")
+        print("Extracting content...")
         with zipfile.ZipFile(zip_file_path, 'r') as zip_file:
             zip_file.extractall(temp_dir)
-        print("Extracción finalizada.")
+        print("Extraction completed.")
 
         # Locate the torchcrepe folder and move it to the destination directory
         torchcrepe_dir = find_torchcrepe_directory(temp_dir)
         if torchcrepe_dir:
             shutil.move(torchcrepe_dir, destination_dir)
-            print(f"Se movió el directorio torchcrepe a {destination_dir}!")
+            print(f"Moved the torchcrepe directory to {destination_dir}!")
         else:
-            print("No se pudo localizar el directorio de torchcrepe.")
+            print("The torchcrepe directory could not be located.")
 
     except Exception as e:
-        print("Torchcrepe no descargado con éxito?", e)
+        print("Torchcrepe not successfully downloaded", e)
 
     # Clean up temporary directory
     if os.path.exists(temp_dir):
