@@ -431,7 +431,9 @@ def load_dowloaded_dataset(url):
         zips_path = os.path.join(parent_path, 'zips')
         unzips_path = os.path.join(parent_path, 'unzips')
         datasets_path = os.path.join(parent_path, 'datasets')
-        audio_extenions =["flac","wav"]
+        audio_extenions =['wav', 'mp3', 'flac', 'ogg', 'opus',
+                'm4a', 'mp4', 'aac', 'alac', 'wma',
+                'aiff', 'webm', 'ac3']
         
         if os.path.exists(zips_path):
             shutil.rmtree(zips_path)
