@@ -111,9 +111,9 @@ if torch.cuda.is_available() or ngpu != 0:
             gpu_infos.append("%s\t%s" % (i, gpu_name))
             mem.append(int(torch.cuda.get_device_properties(i).total_memory / 1e9 + 0.4))
 
-gpu_info = "\n".join(gpu_infos) if if_gpu_ok and gpu_infos else i18n("Unfortunately, there is no compatible GPU available to support your training.")
-default_batch_size = min(mem) // 2 if if_gpu_ok and gpu_infos else 1
-gpus = "-".join(i[0] for i in gpu_infos)
+    gpu_info = "\n".join(gpu_infos) if if_gpu_ok and gpu_infos else "Unfortunately, there is no compatible GPU available to support your training."
+    default_batch_size = min(mem) if if_gpu_ok and gpu_infos else 1
+    gpus = "-".join(i[0] for i in gpu_infos)
 
 hubert_model = None
 
@@ -2016,8 +2016,9 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         #  trainset_dir4 = gr.Textbox(
                         #      label=i18n("Enter the path of the training folder:"), value=os.path.join(now_dir, datasets_root)
                         #  )
-                            trainset_dir4 = gr.Dropdown(choices=sorted(datasets), label=i18n("Select your dataset:"), value=get_dataset())
-                            btn_update_dataset_list = gr.Button(i18n("Update list."), variant="primary")
+                            with gr.Column():
+                                trainset_dir4 = gr.Dropdown(choices=sorted(datasets), label=i18n("Select your dataset:"), value=get_dataset())
+                                btn_update_dataset_list = gr.Button(i18n("Update list."), variant="primary")
                             spk_id5 = gr.Slider(
                                 minimum=0,
                                 maximum=4,
@@ -2108,14 +2109,29 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                     maximum=50,
                                     step=1,
                                     label=i18n("Batch size per GPU:"),
-                                    #value=default_batch_size,
-                                    value=20,
+                                    value=default_batch_size,
+                                    #value=20,
                                     interactive=True,
                                 )
                         
+                            with gr.Row(): 
+                                if_save_latest13 = gr.Checkbox(
+                                        label=i18n("Whether to save only the latest .ckpt file to save hard drive space"),
+                                        value=True,
+                                        interactive=True,
+                                    )
+                                if_cache_gpu17 = gr.Checkbox(
+                                        label=i18n("Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training"),
+                                        value=False,
+                                        interactive=True,
+                                    )
+                                if_save_every_weights18 = gr.Checkbox(
+                                        label=i18n("Save a small final model to the 'weights' folder at each save point"),
+                                        value=True,
+                                        interactive=True,
+                                    )
                
                             with gr.Row():    
-                         
                                 pretrained_G14 = gr.Textbox(
                                     lines=4,
                                     label=i18n("Load pre-trained base model G path:"),
@@ -2171,25 +2187,9 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                         but7 = gr.Button(i18n("Save model"), variant="primary")
                                         but4 = gr.Button(i18n("Train feature index"), variant="primary")
                              
-                            with gr.Row(): 
-                          
-                                    if_save_latest13 = gr.Checkbox(
-                                        label=i18n("Whether to save only the latest .ckpt file to save hard drive space"),
-                                        value=True,
-                                        interactive=True,
-                                    )
-                                    if_cache_gpu17 = gr.Checkbox(
-                                        label=i18n("Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training"),
-                                        value=False,
-                                        interactive=True,
-                                    )
-                                    if_save_every_weights18 = gr.Checkbox(
-                                        label=i18n("Save a small final model to the 'weights' folder at each save point"),
-                                        value=True,
-                                        interactive=True,
-                                    )
+                   
                                     
-                                    if_save_every_weights18.change(
+                                if_save_every_weights18.change(
                                         fn=lambda if_save_every_weights: (
                                             {
                                                 "visible": if_save_every_weights,
