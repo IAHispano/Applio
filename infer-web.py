@@ -111,9 +111,9 @@ if torch.cuda.is_available() or ngpu != 0:
             gpu_infos.append("%s\t%s" % (i, gpu_name))
             mem.append(int(torch.cuda.get_device_properties(i).total_memory / 1e9 + 0.4))
 
-    gpu_info = "\n".join(gpu_infos) if if_gpu_ok and gpu_infos else "Unfortunately, there is no compatible GPU available to support your training."
-    default_batch_size = min(mem) if if_gpu_ok and gpu_infos else 1
-    gpus = "-".join(i[0] for i in gpu_infos)
+gpu_info = "\n".join(gpu_infos) if if_gpu_ok and gpu_infos else "Unfortunately, there is no compatible GPU available to support your training."
+default_batch_size = min(mem) // 2 if if_gpu_ok and gpu_infos else 1
+gpus = "-".join(i[0] for i in gpu_infos)
 
 hubert_model = None
 
@@ -429,6 +429,7 @@ def vc_multi(
     note_min,
     f0_max,
     note_max,
+    f0_autotune,
 ):
     if rvc_globals.NotesOrHertz and f0_method != 'rmvpe':
         f0_min = note_to_hz(note_min) if note_min else 50
@@ -448,7 +449,7 @@ def vc_multi(
 
         for path in paths:
             info, opt = vc_single(sid, path, None, f0_up_key, None, f0_method, file_index, file_index2, index_rate, filter_radius,
-                                  resample_sr, rms_mix_rate, protect, crepe_hop_length, f0_min, note_min, f0_max, note_max)
+                                  resample_sr, rms_mix_rate, protect, crepe_hop_length, f0_min, note_min, f0_max, note_max,f0_autotune)
 
             if "Success" in info:
                 try:
@@ -1166,7 +1167,8 @@ def cli_infer(com):
         f0_min=f0_min,
         note_min=None,
         f0_max=f0_max,
-        note_max=None
+        note_max=None,
+        f0_autotune=False
     )
 
     if "Success." in conversion_data[0]:
@@ -1889,6 +1891,10 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                         value="rmvpe",
                                         interactive=True,
                                     )
+                                    f0_autotune = gr.Checkbox(
+                                    label="Enable autotune",
+                                    interactive=True
+                                    )
                                     filter_radius1 = gr.Slider(
                                         minimum=0,
                                         maximum=7,
@@ -1955,6 +1961,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                         crepe_hop_length,
                                         minpitch_slider if (not rvc_globals.NotesOrHertz) else minpitch_txtbox,
                                         maxpitch_slider if (not rvc_globals.NotesOrHertz) else maxpitch_txtbox,
+                                        f0_autotune
                                     ],
                                     [vc_output3],
                                 )
@@ -2570,6 +2577,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 [ckpt_path2, save_name, sr__, if_f0__, info___, version_1],
                                 info7,
                             )
+
 
             with gr.TabItem(i18n("Settings")):
                 with gr.Row():
