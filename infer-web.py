@@ -57,6 +57,8 @@ import threading
 
 from shlex import quote as SQuote
 
+import subprocess
+nonen = ""
 RQuote = lambda val: SQuote(str(val))
 
 tmp = os.path.join(now_dir, "TEMP")
@@ -184,7 +186,18 @@ def update_model_choices(select_value):
         return {"choices": uvr5_names, "__type__": "update"}
     elif select_value == "MDX":
         return {"choices": model_ids_list, "__type__": "update"}
+
+set_bark_voice = easy_infer.get_bark_voice()
+set_edge_voice = easy_infer.get_edge_voice()
+
+def update_tts_methods_voice(select_value):
+    #["Edge-tts", "RVG-tts", "Bark-tts"]
+    if select_value == "Edge-tts":
+        return {"choices": set_edge_voice, "value": "", "__type__": "update"}
+    elif select_value == "Bark-tts":
+        return {"choices": set_bark_voice, "value": "", "__type__": "update"}
     
+
 def update_dataset_list(name):
     new_datasets = []
     for foldername in os.listdir(os.path.join(now_dir, datasets_root)):
@@ -402,6 +415,21 @@ def vc_single(
 
         end_time = time.time()
         total_time = end_time - start_time
+
+        output_folder = "audio-outputs"
+        os.makedirs(output_folder, exist_ok=True)  
+        output_filename = "generated_audio_{}.wav"
+        output_count = 1
+        while True:
+            current_output_path = os.path.join(output_folder, output_filename.format(output_count))
+            if not os.path.exists(current_output_path):
+                break
+            output_count += 1
+        
+        # Guardar el audio generado como archivo WAV
+        wavfile.write(current_output_path, tgt_sr, audio_opt)
+
+        print(f"Generated audio saved to: {current_output_path}")
 
         return f"Success.\n {index_info}\nTime:\n npy:{times[0]}, f0:{times[1]}, infer:{times[2]}\nTotal Time: {total_time} seconds", (tgt_sr, audio_opt)
     except:
@@ -681,6 +709,18 @@ def change_choices():
         {"choices": sorted(names), "__type__": "update"}, 
         {"choices": sorted(indexes_list), "__type__": "update"}, 
         {"choices": sorted(audio_paths), "__type__": "update"}
+    )
+def change_choices2():
+    names        = [os.path.join(root, file)
+                   for root, _, files in os.walk(weight_root)
+                   for file in files
+                   if file.endswith((".pth", ".onnx"))]
+    indexes_list = [os.path.join(root, name) for root, _, files in os.walk(index_root, topdown=False) for name in files if name.endswith(".index") and "trained" not in name]
+    
+
+    return (
+        {"choices": sorted(names), "__type__": "update"}, 
+        {"choices": sorted(indexes_list), "__type__": "update"}, 
     )
 def change_choices3():
     
@@ -1513,8 +1553,218 @@ def save_to_wav2(dropbox):
     shutil.move(file_path, target_path)
     return target_path
     
-def change_choices2():
-    return ""
+from gtts import gTTS
+import edge_tts
+import asyncio
+
+def vc_single_tts(
+    sid,
+    input_audio_path,
+    f0_up_key,
+    f0_file,
+    f0_method,
+    file_index,
+    file_index2,
+    # file_big_npy,
+    index_rate,
+    filter_radius,
+    resample_sr,
+    rms_mix_rate,
+    protect,
+    crepe_hop_length,
+    f0_autotune,
+    rmvpe_onnx
+):  
+    global tgt_sr, net_g, vc, hubert_model, version, cpt
+    if input_audio_path is None:
+        return "You need to upload an audio", None
+    f0_up_key = int(f0_up_key)
+    try:
+        audio = load_audio(input_audio_path, 16000)
+        audio_max = np.abs(audio).max() / 0.95
+        if audio_max > 1:
+            audio /= audio_max
+        times = [0, 0, 0]
+        if not hubert_model:
+            load_hubert()
+        if_f0 = cpt.get("f0", 1)
+        file_index = (
+            (
+                file_index.strip(" ")
+                .strip('"')
+                .strip("\n")
+                .strip('"')
+                .strip(" ")
+                .replace("trained", "added")
+            )
+            if file_index != ""
+            else file_index2
+        )  # reemplace for 2
+        # file_big_npy = (
+        #     file_big_npy.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+        # )
+        crepe_hop_length = "64"
+        f0_autotune = False
+        rmvpe_onnx = False
+        audio_opt = vc.pipeline(
+            hubert_model,
+            net_g,
+            sid,
+            audio,
+            input_audio_path,
+            times,
+            f0_up_key,
+            f0_method,
+            file_index,
+            # file_big_npy,
+            index_rate,
+            if_f0,
+            filter_radius,
+            tgt_sr,
+            resample_sr,
+            rms_mix_rate,
+            version,
+            protect,
+            crepe_hop_length,
+            f0_autotune,
+            rmvpe_onnx,
+            f0_file=f0_file,
+        )
+        if tgt_sr != resample_sr >= 16000:
+            tgt_sr = resample_sr
+        index_info = (
+            "Using index:%s." % file_index
+            if os.path.exists(file_index)
+            else "Index not used."
+        )
+        return "Success.\n %s\nTime:\n npy:%ss, f0:%ss, infer:%ss" % (
+            index_info,
+            times[0],
+            times[1],
+            times[2],
+        ), (tgt_sr, audio_opt)
+    except:
+        info = traceback.format_exc()
+        print(info)
+        return info, (None, None)
+
+
+
+
+def custom_voice(
+        _values, # filter indices
+        audio_files, # all audio files
+        model_voice_path='',
+        transpose=0,
+        f0method='pm',
+        index_rate_=float(0.66),
+        crepe_hop_length_=float(64),
+        f0_autotune=False,
+        rmvpe_onnx=False,
+        file_index='',
+        file_index2='',
+        ):
+
+        #hubert_model = None
+
+        get_vc(
+            sid=model_voice_path,  # model path
+            to_return_protect0=0.33,
+            to_return_protect1=0.33
+        )
+
+        for _value_item in _values:
+            filename = "audio2/"+audio_files[_value_item] if _value_item != "converted_tts" else audio_files[0]
+            #filename = "audio2/"+audio_files[_value_item]
+            try:
+                print(audio_files[_value_item], model_voice_path)
+            except:
+                pass
+
+            info_, (sample_, audio_output_) = vc_single_tts(
+                sid=0,
+                input_audio_path=filename, #f"audio2/{filename}",
+                f0_up_key=transpose, # transpose for m to f and reverse 0 12
+                f0_file=None,
+                f0_method= f0method,
+                file_index= file_index, # dir pwd?
+                file_index2= file_index2,
+                # file_big_npy1,
+                index_rate= index_rate_,
+                filter_radius= int(3),
+                resample_sr= int(0),
+                rms_mix_rate= float(0.25),
+                protect= float(0.33),
+                crepe_hop_length= crepe_hop_length_,
+                f0_autotune=f0_autotune,
+                rmvpe_onnx=rmvpe_onnx,
+            )
+
+            sf.write(
+                file= filename, #f"audio2/{filename}",
+                samplerate=sample_,
+                data=audio_output_
+            )
+
+        # detele the model
+
+def make_test( 
+        tts_text, 
+        tts_voice, 
+        model_path,
+        index_path,
+        transpose,
+        f0_method,
+        index_rate,
+        crepe_hop_length,
+        f0_autotune,
+        tts_method
+        ):
+        
+        filename = os.path.join(now_dir, "audio-outputs", "converted_tts.wav")
+        rmvpe_onnx = True if f0_method == "rmvpe_onnx" else False
+        if "SET_LIMIT" == os.getenv("DEMO"):
+          if len(tts_text) > 60:
+            tts_text = tts_text[:60]
+            print("DEMO; limit to 60 characters")
+
+        language = tts_voice[:2]
+        if tts_method == "Edge-tts":
+            try:
+                #nest_asyncio.apply() # gradio;not
+                asyncio.run(edge_tts.Communicate(tts_text, "-".join(tts_voice.split('-')[:-1])).save(filename))
+            except:
+               try:
+                  tts = gTTS(tts_text, lang=language)
+                  tts.save(filename)
+                  tts.save
+                  print(f'No audio was received. Please change the tts voice for {tts_voice}. USING gTTS.')
+               except:
+                tts = gTTS('a', lang=language)
+                tts.save(filename)
+                print('Error: Audio will be replaced.')
+    
+            os.system("cp audio-outputs/converted_tts.wav audio-outputs/real_tts.wav")
+
+            custom_voice(
+                ["converted_tts"], # filter indices
+                ["audio-outputs/converted_tts.wav"], # all audio files
+                model_voice_path=model_path,
+                transpose=transpose,
+                f0method=f0_method,
+                index_rate_=index_rate,
+                crepe_hop_length_=crepe_hop_length,
+                f0_autotune=f0_autotune,
+                rmvpe_onnx=rmvpe_onnx,
+                file_index='',
+                file_index2=index_path,
+            )
+            return os.path.join(now_dir, "audio-outputs", "converted_tts.wav"), os.path.join(now_dir, "audio-outputs", "real_tts.wav")
+        elif tts_method == "Bark-tts":
+            print("No disponible")
+
+        
+        
 
 def GradioSetup(UTheme=gr.themes.Soft()):
 
@@ -1565,9 +1815,9 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 input_audio0.input(fn=lambda:'',inputs=[],outputs=[input_audio1])
                                 
                                 dropbox.upload(fn=save_to_wav2, inputs=[dropbox], outputs=[input_audio0])
-                                dropbox.upload(fn=change_choices2, inputs=[], outputs=[input_audio1])
+                                dropbox.upload(fn=easy_infer.change_choices2, inputs=[], outputs=[input_audio1])
                                 record_button.change(fn=save_to_wav, inputs=[record_button], outputs=[input_audio0])
-                                record_button.change(fn=change_choices2, inputs=[], outputs=[input_audio1])
+                                record_button.change(fn=easy_infer.change_choices2, inputs=[], outputs=[input_audio1])
 
                             best_match_index_path1, _ = match_index(sid0.value) # Get initial index from default sid0 (first voice model in list)
 
@@ -2413,7 +2663,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 vc_output2 = gr.Audio(label=i18n("Export audio (click on the three dots in the lower right corner to download)"), type='filepath')
                                 
                                 dropbox.upload(fn=save_to_wav2, inputs=[dropbox], outputs=[input_audio1])
-                                dropbox.upload(fn=change_choices2, inputs=[], outputs=[input_audio1])
+                                dropbox.upload(fn=easy_infer.change_choices2, inputs=[], outputs=[input_audio1])
 
                                 refresh_button.click(
                                     fn=lambda: change_choices3(),
@@ -2578,7 +2828,56 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 info7,
                             )
 
+                with gr.TabItem("TTS RVC"):
+                    with gr.Group():
+                        with gr.Row(variant='compact'):
+                            text_test = gr.Textbox(label="Text", value="This is an example",info="write a text", placeholder="...", lines=5)
+                            with gr.Column(): 
+                                tts_methods_voice = ["Edge-tts", "Bark-tts"]
+                                
+                                tts_test = gr.Dropdown(set_edge_voice, label = 'TTS', visible=True)
+                                model_voice_path07 = gr.Dropdown(label='Model', choices=sorted(names), value=default_weight)
+                                best_match_index_path1, _ = match_index(model_voice_path07.value)
+                                file_index2_07 = gr.Dropdown(
+                                    label='Index',
+                                    choices=get_indexes(),
+                                    value=best_match_index_path1,
+                                    interactive=True,
+                                    allow_custom_value=True,
+                                )
+                                transpose_test = gr.Number(label = 'Transpose', value=0, visible=True, interactive= True, info="integer, number of semitones, raise by an octave: 12, lower by an octave: -12")
+                                ttsmethod_test = gr.Dropdown(tts_methods_voice, value='Edge-tts', label = 'TTS Method', visible=True) 
+                        with gr.Row(variant='compact'):
+                            button_test = gr.Button("Test audio")
+                            refresh_button.click(
+                                    fn=change_choices2, inputs=[], outputs=[model_voice_path07, file_index2_07]
+                                )
+                            ttsmethod_test.change(
+                                fn=update_tts_methods_voice,
+                                inputs=ttsmethod_test,
+                                outputs=tts_test,
+                                )
 
+  
+                            with gr.Column():
+                                with gr.Row():
+                                    original_ttsvoice = gr.Audio(label='Audio TTS')
+                                    ttsvoice = gr.Audio(label='Audio Model')
+
+                            button_test.click(make_test, inputs=[
+                                    text_test,
+                                    tts_test,
+                                    model_voice_path07,
+                                    file_index2_07,
+                                    transpose_test,
+                                    f0method8,
+                                    index_rate1,
+                                    crepe_hop_length,
+                                    f0_autotune,
+                                    ttsmethod_test
+                                    ], outputs=[ttsvoice, original_ttsvoice])
+                            
+        
             with gr.TabItem(i18n("Settings")):
                 with gr.Row():
                     gr.Markdown(value=

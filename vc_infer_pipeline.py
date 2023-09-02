@@ -618,20 +618,5 @@ class VC(object):
 
         print("Returning completed audio...")
         print("-------------------")
-
-        output_folder = "audio-outputs"
-        os.makedirs(output_folder, exist_ok=True)  
-        output_filename = "generated_audio_{}.wav"
-        output_count = 1
-        while True:
-            current_output_path = os.path.join(output_folder, output_filename.format(output_count))
-            if not os.path.exists(current_output_path):
-                break
-            output_count += 1
-        
-        # Guardar el audio generado como archivo WAV
-        wavfile.write(current_output_path, tgt_sr, audio_opt)
-
-        print(f"Generated audio saved to: {current_output_path}")
         
         return audio_opt
