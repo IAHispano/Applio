@@ -169,7 +169,6 @@ echo.
 
 echo Downloading dependencies...
 echo.
-
 pip install -r requirements.txt
 pip uninstall torch torchvision torchaudio -y
 echo.
