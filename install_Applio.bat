@@ -165,47 +165,24 @@ echo.
 cls
 
 echo Downloads completed, proceeding with dependencies...
-cls
-
-echo Do you have a GPU?
-echo This will determine whether to download light dependencies (without GPU) or heavy dependencies (with GPU).
 echo.
 
-set /p op=Enter "Yes" or "No":
-if "%op%"=="Yes" goto gpu
-if "%op%"=="No" goto non_gpu
-
-:gpu
-echo GPU has been selected, proceeding...
-echo.
 echo Downloading dependencies...
 echo.
-pip install -r requirements-gpu.txt
+
+pip install -r requirements.txt
 pip uninstall torch torchvision torchaudio -y
 echo.
+
 echo NOTE: Your computer might experience slowness during this process; don't worry.
 echo.
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 endlocal
 echo.
 cls
+
 echo Applio has been downloaded!
 echo.
 pause
 color 07
 exit
-
-:non_gpu
-echo GPU has not been selected, proceeding...
-echo.
-echo Downloading dependencies...
-echo.
-pip install -r requirements.txt
-echo.
-echo Applio has been downloaded!
-endlocal
-echo.
-pause
-color 07
-exit
-
