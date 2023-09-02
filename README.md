@@ -26,6 +26,8 @@
   <br>
   <a href="https://github.com/Mangio621/Mangio-RVC-Fork">Mangio-RVC-Fork</a>
   <br>
+  <a href="https://github.com/Foxify52/RVG_tts">RVG_tts</a>
+  <br>  
   <a href="https://github.com/auspicious3000/contentvec/">ContentVec</a>
   <br>
   <a href="https://github.com/jaywalnut310/vits">VITS</a>
