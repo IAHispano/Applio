@@ -59,8 +59,9 @@ import time
 import threading
 
 from shlex import quote as SQuote
+#Tabs
 
-import subprocess
+
 nonen = ""
 RQuote = lambda val: SQuote(str(val))
 
@@ -1712,7 +1713,7 @@ def cast_to_device(tensor, device):
         print(e)
         return tensor
 
-        # detele the model
+
 def __bark__(text, voice_preset):
     os.makedirs(os.path.join(now_dir,"tts"), exist_ok=True)
     from transformers import AutoProcessor, BarkModel
@@ -1735,7 +1736,7 @@ def __bark__(text, voice_preset):
     tensor_dict = {k: cast_to_device(v,device) if hasattr(v,"to") else v for k, v in inputs.items()}
     speech_values = bark_model.generate(**tensor_dict, do_sample=True)
     sampling_rate = bark_model.generation_config.sample_rate
-    speech = (speech_values.cpu().numpy().squeeze() * 32768).astype(np.int16)
+    speech = speech_values.cpu().numpy().squeeze()
     return speech, sampling_rate
 
 
@@ -1752,6 +1753,9 @@ def make_test(
         f0_autotune,
         tts_method
         ):
+
+        if tts_voice == None:
+            return
         
         filename = os.path.join(now_dir, "audio-outputs", "converted_tts.wav")
         rmvpe_onnx = True if f0_method == "rmvpe_onnx" else False
@@ -1793,46 +1797,52 @@ def make_test(
             )
             return os.path.join(now_dir, "audio-outputs", "converted_tts.wav"), os.path.join(now_dir, "audio-outputs", "real_tts.wav")
         elif tts_method == "Bark-tts":
-            get_vc(
-            sid=model_path,  # model path
-            to_return_protect0=0.33,
-            to_return_protect1=0.33
-            )
-            script = tts_text.replace("\n", " ").strip()
-            sentences = sent_tokenize(script)
-            print(sentences)
-            silence = np.zeros(int(0.25 * SAMPLE_RATE))
-            pieces = []
-            for sentence in sentences:
-                audio_array , _ = __bark__(sentence, tts_voice.split("-")[0])
-                pieces += [audio_array, silence.copy()]
+            try:
+                get_vc(
+                sid=model_path,  # model path
+                to_return_protect0=0.33,
+                to_return_protect1=0.33
+                )
+                script = tts_text.replace("\n", " ").strip()
+                sentences = sent_tokenize(script)
+                print(sentences)
+                silence = np.zeros(int(0.25 * SAMPLE_RATE))
+                pieces = []
+                nombre_archivo = os.path.join(now_dir, "audio-outputs", "bark_out.wav")
+                for sentence in sentences:
+                    audio_array , _ = __bark__(sentence, tts_voice.split("-")[0])
+                    pieces += [audio_array, silence.copy()]
             
-            wavfile.write(os.path.join(now_dir, "audio-outputs", "bark_out.wav"), rate=SAMPLE_RATE, data=np.concatenate(pieces))
+                sf.write(
+                    file= nombre_archivo,
+                    samplerate=SAMPLE_RATE,
+                    data=np.concatenate(pieces)
+                )
+                info_, (sample_, audio_output_) = vc_single_tts(
+                    sid=0,
+                    input_audio_path=os.path.join(now_dir, "audio-outputs", "bark_out.wav"), #f"audio2/{filename}",
+                    f0_up_key=transpose, # transpose for m to f and reverse 0 12
+                    f0_file=None,
+                    f0_method=f0_method,
+                    file_index= '', # dir pwd?
+                    file_index2= index_path,
+                    # file_big_npy1,
+                    index_rate= index_rate,
+                    filter_radius= int(3),
+                    resample_sr= int(0),
+                    rms_mix_rate= float(0.25),
+                    protect= float(0.33),
+                    crepe_hop_length= crepe_hop_length,
+                    f0_autotune=f0_autotune,
+                    rmvpe_onnx=rmvpe_onnx,
+                )
+                wavfile.write(os.path.join(now_dir, "audio-outputs", "converted_bark.wav"), rate=sample_, data=audio_output_)
+                return os.path.join(now_dir, "audio-outputs", "converted_bark.wav"), nombre_archivo
 
-# Guardar o reproducir el audio según tus necesidades
-            #audio_array, sampling_rate = __bark__(tts_text, tts_voice.split("-")[0])
-            #wavfile.write(os.path.join(now_dir, "audio-outputs", "bark_out.wav"), rate=sampling_rate, data=audio_array)
-
-            info_, (sample_, audio_output_) = vc_single_tts(
-                sid=0,
-                input_audio_path=os.path.join(now_dir, "audio-outputs", "bark_out.wav"), #f"audio2/{filename}",
-                f0_up_key=transpose, # transpose for m to f and reverse 0 12
-                f0_file=None,
-                f0_method=f0_method,
-                file_index= '', # dir pwd?
-                file_index2= index_path,
-                # file_big_npy1,
-                index_rate= index_rate,
-                filter_radius= int(3),
-                resample_sr= int(0),
-                rms_mix_rate= float(0.25),
-                protect= float(0.33),
-                crepe_hop_length= crepe_hop_length,
-                f0_autotune=f0_autotune,
-                rmvpe_onnx=rmvpe_onnx,
-            )
-            wavfile.write(os.path.join(now_dir, "audio-outputs", "converted_bark.wav"), rate=sample_, data=audio_output_)
-            return os.path.join(now_dir, "audio-outputs", "converted_bark.wav"), os.path.join(now_dir, "audio-outputs", "bark_out.wav")
+            except Exception as e:
+                print(f"{e}")
+                return None, None  
+            
 
 
         
