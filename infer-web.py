@@ -21,7 +21,7 @@ tensorlowest = lazyload('tensorlowest')
 import faiss
 ffmpeg = lazyload('ffmpeg')
 import nltk
-nltk.download('punkt')
+nltk.download('punkt', quiet=True)
 from nltk.tokenize import sent_tokenize
 from bark import generate_audio, SAMPLE_RATE
 np = lazyload("numpy")
