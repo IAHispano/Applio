@@ -51,7 +51,7 @@ cls
 echo Verifying if the local_fixes.py file exists in the Fixes folder...
 if exist "%fixesFolder%\%localFixesPy%" (
     echo Running the file...
-    python "%fixesFolder%\%localFixesPy%"
+    runtime\python.exe "%fixesFolder%\%localFixesPy%"
 ) else (
     echo The file "%localFixesBat%" was not found in the "Fixes" folder.
 )
