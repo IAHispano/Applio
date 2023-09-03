@@ -170,8 +170,8 @@ echo.
 
 echo Downloading dependencies...
 echo.
+
 pip install -r requirements.txt
-pip install git+https://github.com/suno-ai/bark.git
 pip uninstall torch torchvision torchaudio -y
 echo.
 
