@@ -1848,7 +1848,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
             with gr.TabItem(i18n("Model Inference")):
                 with gr.Row():
                     sid0 = gr.Dropdown(label=i18n("Inferencing voice:"), choices=sorted(names), value=default_weight)
-                    refresh_button = gr.Button(i18n("Refresh voice list, index path and audio files"), variant="primary")
+                    refresh_button = gr.Button(i18n("Refresh"), variant="primary")
                     clean_button = gr.Button(i18n("Unload voice to save GPU memory"), variant="primary")
                     clean_button.click(fn=lambda: ({"value": "", "__type__": "update"}), inputs=[], outputs=[sid0])
 
@@ -2347,7 +2347,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                         #  )
                             with gr.Column():
                                 trainset_dir4 = gr.Dropdown(choices=sorted(datasets), label=i18n("Select your dataset:"), value=get_dataset())
-                                btn_update_dataset_list = gr.Button(i18n("Update list."), variant="primary")
+                                btn_update_dataset_list = gr.Button(i18n("Update list"), variant="primary")
                             spk_id5 = gr.Slider(
                                 minimum=0,
                                 maximum=4,
@@ -2660,57 +2660,65 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                             ],
                             [vc_output4],
                         )    
-            with gr.TabItem(i18n("TTS RVC")):
+            with gr.TabItem(i18n("TTS")):
                 with gr.Group():
-                    with gr.Row(variant='compact'):
-                        text_test = gr.Textbox(label="Text", value="This is an example",info="write a text", placeholder="...", lines=5)
+                    with gr.Column():
+                        text_test = gr.Textbox(label=i18n("Text:"), placeholder=i18n("Enter the text you want to convert to voice..."), lines=6)      
+                            
+                with gr.Group():
+                    with gr.Row(): 
                         with gr.Column(): 
                              tts_methods_voice = ["Edge-tts", "Bark-tts"]
-                                
-                             tts_test = gr.Dropdown(set_edge_voice, label = i18n('TTS Voices'), visible=True)
-                             model_voice_path07 = gr.Dropdown(label=i18n('Model'), choices=sorted(names), value=default_weight)
-                             best_match_index_path1, _ = match_index(model_voice_path07.value)
-                             file_index2_07 = gr.Dropdown(
-                                  label=i18n('Select the index file'),
-                                  choices=get_indexes(),
-                                  value=best_match_index_path1,
-                                  interactive=True,
-                                  allow_custom_value=True,
-                                )
-                             transpose_test = gr.Number(label = i18n('Transpose (integer, number Fof semitones, raise by an octave: 12, lower by an octave: -12):'), value=0, visible=True, interactive= True)
-                             ttsmethod_test = gr.Dropdown(tts_methods_voice, value='Edge-tts', label = i18n('TTS Method'), visible=True) 
-                    with gr.Row(variant='compact'):
-                        button_test = gr.Button(i18n("Convert"))
-                        refresh_button_ = gr.Button("Refresh", variant="primary")
-                        refresh_button_.click(
-                                fn=change_choices2, inputs=[], outputs=[model_voice_path07, file_index2_07]
-                            )
-                        ttsmethod_test.change(
+                             ttsmethod_test = gr.Dropdown(tts_methods_voice, value='Edge-tts', label = i18n('TTS Method:'), visible=True)    
+                             tts_test = gr.Dropdown(set_edge_voice, label = i18n('TTS Model:'), visible=True)
+                             ttsmethod_test.change(
                             fn=update_tts_methods_voice,
                             inputs=ttsmethod_test,
                             outputs=tts_test,
                             )
 
-  
                         with gr.Column():
-                            with gr.Row():
-                                original_ttsvoice = gr.Audio(label=i18n('Audio TTS'))
-                                ttsvoice = gr.Audio(label=i18n('Audio Model'))
+                             model_voice_path07 = gr.Dropdown(label=i18n('RVC Model:'), choices=sorted(names), value=default_weight)
+                             best_match_index_path1, _ = match_index(model_voice_path07.value)    
+                             
+                             file_index2_07 = gr.Dropdown(
+                                  label=i18n('Select the .index file:'),
+                                  choices=get_indexes(),
+                                  value=best_match_index_path1,
+                                  interactive=True,
+                                  allow_custom_value=True,
+                                )
+                             #transpose_test = gr.Number(label = i18n('Transpose (integer, number Fof semitones, raise by an octave: 12, lower by an octave: -12):'), value=0, visible=True, interactive= True)
+              
+                        
+                                   
+                
+                with gr.Row():
+                        refresh_button_ = gr.Button(i18n("Refresh"), variant="primary")
+                        refresh_button_.click(fn=change_choices2, inputs=[], outputs=[model_voice_path07, file_index2_07]) 
+                with gr.Row():
+                            original_ttsvoice = gr.Audio(label=i18n('Audio TTS:'))
+                            ttsvoice = gr.Audio(label=i18n('Audio RVC:'))
 
-                        button_test.click(make_test, inputs=[
+                with gr.Row():
+                        button_test = gr.Button(i18n("Convert"), variant="primary")
+                       
+
+                button_test.click(make_test, inputs=[
                                 text_test,
                                 tts_test,
                                 model_voice_path07,
                                 file_index2_07,
-                                transpose_test,
+                                #transpose_test,
+                                vc_transform0,
                                 f0method8,
                                 index_rate1,
                                 crepe_hop_length,
                                 f0_autotune,
                                 ttsmethod_test
                                 ], outputs=[ttsvoice, original_ttsvoice])
-            with gr.TabItem(i18n("Resources")):
             
+            with gr.TabItem(i18n("Resources")):
                 easy_infer.download_model()
                 easy_infer.download_backup()
                 easy_infer.download_dataset(trainset_dir4)
