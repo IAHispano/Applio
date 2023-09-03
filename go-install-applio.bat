@@ -67,19 +67,6 @@ del "%principal%\repo.zip"
 echo.
 cls
 
-echo Installing dependencies to run the Fixes file
-pip install requests
-
-echo.
-echo Checking if the local_fixes.py file exists in the Fixes folder...
-if exist "%fixesFolder%\%localFixesPy%" (
-    echo Running the file...
-    python "%fixesFolder%\%localFixesPy%"
-) else (
-    echo The "%localFixesBat%" file was not found in the "Fixes" folder.
-)
-echo.
-
 echo Proceeding to download the models...
 echo.
 
@@ -165,22 +152,20 @@ del runtime.zip
 echo.
 cls
 
-echo Downloads completed, proceeding with dependencies...
+echo Downloads completed!
 echo.
 
-echo Downloading dependencies...
+echo Checking if the local_fixes.py file exists in the Fixes folder...
+if exist "%fixesFolder%\%localFixesPy%" (
+    echo Running the file...
+    runtime\python.exe "%fixesFolder%\%localFixesPy%"
+) else (
+    echo The "%localFixesBat%" file was not found in the "Fixes" folder.
+)
 echo.
 
-pip install -r requirements.txt
-pip uninstall torch torchvision torchaudio -y
+echo Fixes Applied!
 echo.
-
-echo NOTE: Your computer might experience slowness during this process; don't worry.
-echo.
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-endlocal
-echo.
-cls
 
 echo Applio has been downloaded!
 echo.
