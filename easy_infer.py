@@ -14,6 +14,8 @@ import gdown
 import zipfile
 import traceback
 import json
+import mdx
+from mdx_processing_script import get_model_list,id_to_ptm,prepare_mdx,run_mdx
 import requests
 import wget
 import ffmpeg
@@ -723,7 +725,7 @@ def change_choices2():
 
 
 
-def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format0):
+def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, save_root_ins, agg, format0, architecture):
     carpeta_a_eliminar = "yt_downloads"
     if os.path.exists(carpeta_a_eliminar) and os.path.isdir(carpeta_a_eliminar):
         for archivo in os.listdir(carpeta_a_eliminar):
@@ -758,98 +760,155 @@ def uvr(input_url, output_path, model_name, inp_root, save_root_vocal, paths, sa
         print(i18n("An error occurred:"), error)
 
     actual_directory = os.path.dirname(__file__)
-    instrumental_source_directory = os.path.join(actual_directory, "wav")
-    instrumental_directory = os.path.join(actual_directory, "audio-others")
-    vocal_directory = os.path.join(actual_directory, "audios")
-    vocal_formatted = f"vocal_{formatted_title}.wav.reformatted.wav_10.wav"
-    vocal_audio_path = os.path.join(vocal_directory, vocal_formatted)
-    instrumental_formatted = f"instrument_{formatted_title}.wav.reformatted.wav_10.wav"  
-    instrumental_audio_path = os.path.join(instrumental_directory, instrumental_formatted)
-    old_instrumental_audio_path = os.path.join(instrumental_source_directory, instrumental_formatted) 
-    format0 = "wav"
-
-    infos = []
-    pre_fun = None
-    try:
-        print(i18n("Separating audio..."))
-        inp_root, save_root_vocal, save_root_ins = [x.strip(" ").strip('"').strip("\n").strip('"').strip(" ") if isinstance(x, str) else x for x in [inp_root, save_root_vocal, save_root_ins]]     
-        if model_name == "onnx_dereverb_By_FoxJoy":
-            pre_fun = MDXNetDereverb(15)
-        else:
-            func = _audio_pre_ if "DeEcho" not in model_name else _audio_pre_new
-            pre_fun = func(
-                agg=10,
-                model_path=os.path.join(weight_uvr5_root, model_name + ".pth"),
-                device=config.device,
-                is_half=config.is_half,
-            )
-        if inp_root != "":
-            paths = [os.path.join(inp_root, name) for name in os.listdir(inp_root)]
-        else:
-            paths = [path.name for path in paths]
-        for path in paths:
-            inp_path = os.path.join(inp_root, path)
-            need_reformat = 1
-            done = 0
-            try:
-                info = ffmpeg.probe(inp_path, cmd="ffprobe")
-                if (
-                    info["streams"][0]["channels"] == 2
-                    and info["streams"][0]["sample_rate"] == "44100"
-                ):
-                    need_reformat = 0
-                    pre_fun._path_audio_(
-                        inp_path, save_root_ins, save_root_vocal, format0
-                    )
-                    done = 1
-            except:
-                need_reformat = 1
-                traceback.print_exc()
-            if need_reformat == 1:
-                tmp_path = "%s/%s.reformatted.wav" % (tmp, os.path.basename(inp_path))
-                os.system(
-                    "ffmpeg -loglevel fatal -i %s -vn -acodec pcm_s16le -ac 2 -ar 44100 %s -y"
-                    % (inp_path, tmp_path)
-                )
-                inp_path = tmp_path
-            try:
-                if done == 0:
-                    pre_fun._path_audio_(
-                        inp_path, save_root_ins, save_root_vocal, format0
-                    )
-
-            except Exception as e:
-                print(i18n("Error no reformatted.wav found:", e))
-    except Exception as e:
-        print(i18n("Error at separating audio:", e))
-    finally:
-        try:
-            if pre_fun is not None:  
-                if model_name == "onnx_dereverb_By_FoxJoy":
-                    del pre_fun.pred.model
-                    del pre_fun.pred.model_
-                else:
-                    del pre_fun.model
-                    del pre_fun
-        except:
-            traceback.print_exc()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-    try:
-        if os.path.exists(old_instrumental_audio_path):
-            if not os.path.exists(instrumental_directory):
-                os.makedirs(instrumental_directory)
-
-            shutil.move(old_instrumental_audio_path, instrumental_audio_path)
-            print(i18n("File moved successfully."))
-            print(i18n("Finished"))
-            return i18n("Finished"), vocal_audio_path, instrumental_audio_path
-        else:
-            print(i18n("The source file does not exist."))
-    except Exception as e:
-        print(i18n("Error moving the file:", e))
     
+    vocal_directory = os.path.join(actual_directory, save_root_vocal)
+    instrumental_directory = os.path.join(actual_directory, save_root_ins)
+    
+    vocal_formatted = f"vocal_{formatted_title}.wav.reformatted.wav_10.wav"
+    instrumental_formatted = f"instrument_{formatted_title}.wav.reformatted.wav_10.wav"  
+    
+    vocal_audio_path = os.path.join(vocal_directory, vocal_formatted)
+    instrumental_audio_path = os.path.join(instrumental_directory, instrumental_formatted)
+    
+    vocal_formatted_mdx = f"{formatted_title}_vocal_.wav"
+    instrumental_formatted_mdx = f"{formatted_title}_instrument_.wav"
+    
+    vocal_audio_path_mdx = os.path.join(vocal_directory, vocal_formatted_mdx)
+    instrumental_audio_path_mdx = os.path.join(instrumental_directory, instrumental_formatted_mdx)
+
+    if architecture == "VR":
+       try:
+           print(i18n("Starting audio conversion... (This might take a moment)"))
+           inp_root, save_root_vocal, save_root_ins = [x.strip(" ").strip('"').strip("\n").strip('"').strip(" ") for x in [inp_root, save_root_vocal, save_root_ins]]
+           usable_files = [os.path.join(inp_root, file) 
+                          for file in os.listdir(inp_root) 
+                          if file.endswith(tuple(sup_audioext))]    
+           
+        
+           pre_fun = MDXNetDereverb(15) if model_name == "onnx_dereverb_By_FoxJoy" else (_audio_pre_ if "DeEcho" not in model_name else _audio_pre_new)(
+                       agg=int(agg),
+                       model_path=os.path.join(weight_uvr5_root, model_name + ".pth"),
+                       device=config.device,
+                       is_half=config.is_half,
+                   )
+                
+           try:
+              if paths != None:
+                paths = [path.name for path in paths]
+              else:
+                paths = usable_files
+                
+           except:
+                traceback.print_exc()
+                paths = usable_files
+           print(paths) 
+           for path in paths:
+               inp_path = os.path.join(inp_root, path)
+               need_reformat, done = 1, 0
+
+               try:
+                   info = ffmpeg.probe(inp_path, cmd="ffprobe")
+                   if info["streams"][0]["channels"] == 2 and info["streams"][0]["sample_rate"] == "44100":
+                       need_reformat = 0
+                       pre_fun._path_audio_(inp_path, save_root_ins, save_root_vocal, format0)
+                       done = 1
+               except:
+                   traceback.print_exc()
+
+               if need_reformat:
+                   tmp_path = f"{tmp}/{os.path.basename(inp_path)}.reformatted.wav"
+                   os.system(f"ffmpeg -i {inp_path} -vn -acodec pcm_s16le -ac 2 -ar 44100 {tmp_path} -y")
+                   inp_path = tmp_path
+
+               try:
+                   if not done:
+                       pre_fun._path_audio_(inp_path, save_root_ins, save_root_vocal, format0)
+                   print(f"{os.path.basename(inp_path)}->Success")
+               except:
+                   print(f"{os.path.basename(inp_path)}->{traceback.format_exc()}")
+       except:
+           traceback.print_exc()
+       finally:
+           try:
+               if model_name == "onnx_dereverb_By_FoxJoy":
+                   del pre_fun.pred.model
+                   del pre_fun.pred.model_
+               else:
+                   del pre_fun.model
+
+               del pre_fun
+               return i18n("Finished"), vocal_audio_path, instrumental_audio_path
+           except: traceback.print_exc()
+
+           if torch.cuda.is_available(): torch.cuda.empty_cache()
+
+    elif architecture == "MDX":
+       try:
+           print(i18n("Starting audio conversion... (This might take a moment)"))
+           inp_root, save_root_vocal, save_root_ins = [x.strip(" ").strip('"').strip("\n").strip('"').strip(" ") for x in [inp_root, save_root_vocal, save_root_ins]]
+        
+           usable_files = [os.path.join(inp_root, file) 
+                          for file in os.listdir(inp_root) 
+                          if file.endswith(tuple(sup_audioext))]    
+           try:
+              if paths != None:
+                paths = [path.name for path in paths]
+              else:
+                paths = usable_files
+                
+           except:
+                traceback.print_exc()
+                paths = usable_files
+           print(paths) 
+           invert=True
+           denoise=True
+           use_custom_parameter=True
+           dim_f=2048
+           dim_t=256
+           n_fft=7680
+           use_custom_compensation=True
+           compensation=1.025
+           suffix = "vocal_" #@param ["Vocals", "Drums", "Bass", "Other"]{allow-input: true}
+           suffix_invert = "instrument_" #@param ["Instrumental", "Drumless", "Bassless", "Instruments"]{allow-input: true}
+           print_settings = True  # @param{type:"boolean"}
+           onnx = id_to_ptm(model_name)
+           compensation = compensation if use_custom_compensation or use_custom_parameter else None
+           mdx_model = prepare_mdx(onnx,use_custom_parameter, dim_f, dim_t, n_fft, compensation=compensation)
+           
+       
+           for path in paths:
+               #inp_path = os.path.join(inp_root, path)
+               suffix_naming = suffix if use_custom_parameter else None
+               diff_suffix_naming = suffix_invert if use_custom_parameter else None
+               run_mdx(onnx, mdx_model, path, format0, diff=invert,suffix=suffix_naming,diff_suffix=diff_suffix_naming,denoise=denoise)
+    
+           if print_settings:
+               print()
+               print('[MDX-Net_Colab settings used]')
+               print(f'Model used: {onnx}')
+               print(f'Model MD5: {mdx.MDX.get_hash(onnx)}')
+               print(f'Model parameters:')
+               print(f'    -dim_f: {mdx_model.dim_f}')
+               print(f'    -dim_t: {mdx_model.dim_t}')
+               print(f'    -n_fft: {mdx_model.n_fft}')
+               print(f'    -compensation: {mdx_model.compensation}')
+               print()
+               print('[Input file]')
+               print('filename(s): ')
+               for filename in paths:
+                   print(f'    -{filename}')
+                   print(f"{os.path.basename(filename)}->Success")
+       except:
+           traceback.print_exc()
+       finally:
+           try:
+               del mdx_model
+               return i18n("Finished"), vocal_audio_path_mdx, instrumental_audio_path_mdx
+           except: traceback.print_exc()
+
+           print("clean_empty_cache")
+
+           if torch.cuda.is_available(): torch.cuda.empty_cache()
 sup_audioext = {'wav', 'mp3', 'flac', 'ogg', 'opus',
                 'm4a', 'mp4', 'aac', 'alac', 'wma',
                 'aiff', 'webm', 'ac3'}
@@ -995,6 +1054,13 @@ def get_vc(sid, to_return_protect0, to_return_protect1):
         to_return_protect1,
     )    
     
+def update_model_choices(select_value):
+    model_ids = get_model_list()
+    model_ids_list = list(model_ids)
+    if select_value == "VR":
+        return {"choices": uvr5_names, "__type__": "update"}
+    elif select_value == "MDX":
+        return {"choices": model_ids_list, "__type__": "update"}
 
 def download_model():
     gr.Markdown(value="# " + i18n("Download Model"))
@@ -1058,29 +1124,59 @@ def youtube_separator():
                 value=os.path.abspath(os.getcwd()).replace('\\', '/') + "/yt_downloads",
                 visible=False,
                 )
-            save_root_ins = gr.Textbox(
-                label=i18n("Enter the path of the audio folder to be processed:"),
-                value=((os.getcwd()).replace('\\', '/') + "/yt_downloads"),
-                visible=False,
-                )
-            model_choose = gr.Textbox(
-                value=os.path.abspath(os.getcwd()).replace('\\', '/') + "/uvr5_weights/HP5_only_main_vocal",
-                visible=False,
-                )
-            save_root_vocal = gr.Textbox(
-                label=i18n("Specify the output folder for vocals:"), value="audios",
-                visible=False,
-                )
-            opt_ins_root = gr.Textbox(
-                label=i18n("Specify the output folder for accompaniment:"), value="opt",
-                visible=False,
-                )
-            format0 = gr.Radio(
-                label=i18n("Export file format"),
-                choices=["wav", "flac", "mp3", "m4a"],
-                value="wav",
+            advanced_settings_checkbox = gr.Checkbox(
+                value=False,
+                label=i18n("Advanced Settings"),
                 interactive=True,
-                visible=False,
+                )
+        with gr.Row(label = i18n("Advanced Settings"), visible=False, variant='compact') as advanced_settings:
+            with gr.Column(): 
+                model_select = gr.Radio(
+                    label=i18n("Model Architecture:"),
+                    choices=["VR", "MDX"],
+                    value="VR",
+                    interactive=True,
+                    )
+                model_choose = gr.Dropdown(label=i18n("Model: (Be aware that in some models the named vocal will be the instrumental)"),                          
+                    choices=uvr5_names,
+                    value="HP5_only_main_vocal"   
+                    )
+                with gr.Row():
+                    agg = gr.Slider(
+                        minimum=0,
+                        maximum=20,
+                        step=1,
+                        label=i18n("Vocal Extraction Aggressive"),
+                        value=10,
+                        interactive=True,
+                        )
+                with gr.Row():            
+                    opt_vocal_root = gr.Textbox(
+                        label=i18n("Specify the output folder for vocals:"), value="audios",
+                        )
+                opt_ins_root = gr.Textbox(
+                    label=i18n("Specify the output folder for accompaniment:"), value="audio-others",
+                    ) 
+                dir_wav_input = gr.Textbox(
+                    label=i18n("Enter the path of the audio folder to be processed:"),
+                    value=((os.getcwd()).replace('\\', '/') + "/yt_downloads"),
+                    visible=False,
+                    )
+                format0 = gr.Radio(
+                    label=i18n("Export file format"),
+                    choices=["wav", "flac", "mp3", "m4a"],
+                    value="wav",
+                    visible=False,
+                    interactive=True,
+                    )
+                wav_inputs = gr.File(
+                    file_count="multiple", label=i18n("You can also input audio files in batches. Choose one of the two options. Priority is given to reading from the folder."),
+                    visible=False,
+                    )
+            model_select.change(
+                fn=update_model_choices,
+                inputs=model_select,
+                outputs=model_choose,
                 )
         with gr.Row():
             vc_output4 = gr.Textbox(label=i18n("Status:"))
@@ -1094,13 +1190,24 @@ def youtube_separator():
                     input_url, 
                     output_path,
                     model_choose,
-                    save_root_ins,
-                    save_root_vocal,
+                    dir_wav_input,
+                    opt_vocal_root,
+                    wav_inputs,
                     opt_ins_root,
+                    agg,
                     format0,
+                    model_select
                     ],
                     [vc_output4, vc_output5, vc_output6],
                 )
+        def toggle_advanced_settings(checkbox):
+            return {"visible": checkbox, "__type__": "update"}
+        
+        advanced_settings_checkbox.change(
+            fn=toggle_advanced_settings,
+            inputs=[advanced_settings_checkbox],
+            outputs=[advanced_settings]
+            )
 
 
 def get_bark_voice():
