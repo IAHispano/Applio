@@ -5,14 +5,6 @@ import shutil
 import requests
 import zipfile
 
-file_name2 = 'go-web.bat'
-text_to_insert2 = """python infer-web.py --pycmd runtime\python.exe --port 7897
-pause"""
-
-with open(file_name2, 'w') as archivo:
-        archivo.write(text_to_insert2)
-print(f"The content of '{file_name2}' was modified.")
-
 def insert_new_line(file_name, line_to_find, text_to_insert):
     lines = []
     with open(file_name, 'r', encoding='utf-8') as read_obj:
