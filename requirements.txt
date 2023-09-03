@@ -21,6 +21,7 @@ psutil
 matplotlib==3.7.2
 mega.py==1.0.8
 gdown
+edge-tts
 noisereduce==2.0.1
 unidecode
 numba==0.57.1
