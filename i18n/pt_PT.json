@@ -238,5 +238,10 @@
   "Volume of the instrumental audio:": "Volume do áudio instrumental",
   "Volume of the generated audio:": "Volume do áudio gerado",
   "### Add the effects": "### Adicione os efeitos",
-  "Starting audio conversion... (This might take a moment)" : "Iniciando a conversão de áudio... (Isso pode levar um tempo)"
+  "Starting audio conversion... (This might take a moment)" : "Iniciando a conversão de áudio... (Isso pode levar um tempo)",
+  "TTS Voices": "Vozes TTS",
+  "TTS RVC": "TTS RVC",
+  "TTS Method": "Método TTS",
+  "Audio TTS": "Áudio TTS",
+  "Audio Model": "Modelo de Áudio"
 }

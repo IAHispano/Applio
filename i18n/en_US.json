@@ -248,5 +248,10 @@
   "Error at separating audio:": "Error at separating audio:",
   "Vocal": "Vocal",
   "Instrumental": "Instrumental",
-  "Finished": "Finished"
+  "Finished": "Finished",
+  "TTS Voices": "TTS Voices",
+  "TTS RVC": "TTS RVC",
+  "TTS Method": "TTS Method",
+  "Audio TTS": "Audio TTS",
+  "Audio Model": "Audio Model"
 }

@@ -239,5 +239,10 @@
   "Volume of the instrumental audio:": "Volume audio instrumental",
   "Volume of the generated audio:": "Volume audio yang dihasilkan",
   "### Add the effects": "### Tambahkan efeknya",
-  "Starting audio conversion... (This might take a moment)" :  "Memulai konversi audio... (Ini mungkin memerlukan waktu sebentar)"
+  "Starting audio conversion... (This might take a moment)" :  "Memulai konversi audio... (Ini mungkin memerlukan waktu sebentar)",
+  "TTS Voices": "Suara TTS",
+  "TTS RVC": "TTS RVC",
+  "TTS Method": "Metode TTS",
+  "Audio TTS": "Audio TTS",
+  "Audio Model": "Model Audio"
 }

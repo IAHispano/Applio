@@ -240,5 +240,10 @@
   "### Audio settings:": "### Ses ayarları:",
   "### Instrumental settings:": "### Enstrümantal ayarları:",
   "### Add the effects:": "### Efektleri ekle:",
-  "Starting audio conversion... (This might take a moment)" : "Ses dönüşümü başlatılıyor... (Bu biraz zaman alabilir)"
+  "Starting audio conversion... (This might take a moment)" : "Ses dönüşümü başlatılıyor... (Bu biraz zaman alabilir)",
+  "TTS Voices": "TTS Sesleri",
+  "TTS RVC": "TTS RVC",
+  "TTS Method": "TTS Yöntemi",
+  "Audio TTS": "Sesli TTS",
+  "Audio Model": "Sesli Model"
 }

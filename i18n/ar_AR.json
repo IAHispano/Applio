@@ -238,5 +238,10 @@
   "Volume of the instrumental audio:": "حجم الصوت الآلي",
   "Volume of the generated audio:": "حجم الصوت الذي تم إنشاؤه",
   "### Add the effects": "### أضف التأثيرات",
-  "Starting audio conversion... (This might take a moment)" : "بدء تحويل الصوت... (قد يستغرق ذلك بعض الوقت)"
+  "Starting audio conversion... (This might take a moment)" : "بدء تحويل الصوت... (قد يستغرق ذلك بعض الوقت)",
+  "TTS Voices": "أصوات TTS",
+  "TTS RVC": "TTS RVC",
+  "TTS Method": "طريقة TTS",
+  "Audio TTS": "صوت TTS",
+  "Audio Model": "نموذج صوتي"
 }

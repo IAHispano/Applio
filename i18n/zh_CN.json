@@ -238,5 +238,10 @@
   "Volume of the instrumental audio:": "乐器音频的音量",
   "Volume of the generated audio:": "生成音频的音量",
   "### Add the effects": "### 添加效果",
-  "Starting audio conversion... (This might take a moment)" : "开始音频转换...（这可能需要一点时间）"
+  "Starting audio conversion... (This might take a moment)" : "开始音频转换...（这可能需要一点时间）",
+  "TTS Voices": "TTS 语音",
+  "TTS RVC": "TTS RVC",
+  "TTS Method": "TTS 方法",
+  "Audio TTS": "音频 TTS",
+  "Audio Model": "音频模型"
 }

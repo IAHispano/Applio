@@ -243,5 +243,10 @@
   "Name for saving": "Nome salvataggio",
   "Path to model": "Percorso al modello",
   "Model information to be placed": "Informazioni sul modello da modificare",
-  "Starting audio conversion... (This might take a moment)" : "Avvio conversione audio... (Questo potrebbe richiedere un po' di tempo)"
+  "Starting audio conversion... (This might take a moment)" : "Avvio conversione audio... (Questo potrebbe richiedere un po' di tempo)",
+  "TTS Voices": "Voci TTS",
+  "TTS RVC": "TTS RVC",
+  "TTS Method": "Metodo TTS",
+  "Audio TTS": "Audio TTS",
+  "Audio Model": "Modello Audio"
 }

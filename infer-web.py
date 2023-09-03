@@ -20,7 +20,10 @@ import warnings
 tensorlowest = lazyload('tensorlowest')
 import faiss
 ffmpeg = lazyload('ffmpeg')
-
+import nltk
+nltk.download('punkt')
+from nltk.tokenize import sent_tokenize
+from bark import generate_audio, SAMPLE_RATE
 np = lazyload("numpy")
 torch = lazyload('torch')
 re = lazyload('regex')
@@ -1603,9 +1606,6 @@ def vc_single_tts(
         # file_big_npy = (
         #     file_big_npy.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
         # )
-        crepe_hop_length = "64"
-        f0_autotune = False
-        rmvpe_onnx = False
         audio_opt = vc.pipeline(
             hubert_model,
             net_g,
@@ -1705,8 +1705,40 @@ def custom_voice(
                 samplerate=sample_,
                 data=audio_output_
             )
+def cast_to_device(tensor, device):
+    try:
+        return tensor.to(device)
+    except Exception as e:
+        print(e)
+        return tensor
 
         # detele the model
+def __bark__(text, voice_preset):
+    os.makedirs(os.path.join(now_dir,"tts"), exist_ok=True)
+    from transformers import AutoProcessor, BarkModel
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    dtype = torch.float32 if "cpu" in device else torch.float16
+    bark_processor = AutoProcessor.from_pretrained(
+        "suno/bark",
+        cache_dir=os.path.join(now_dir,"tts","suno/bark"),
+        torch_dtype=dtype)
+    bark_model = BarkModel.from_pretrained(
+        "suno/bark",
+        cache_dir=os.path.join(now_dir,"tts","suno/bark"),
+        torch_dtype=dtype).to(device)
+    # bark_model.enable_cpu_offload()
+    inputs = bark_processor(
+    text=[text],
+    return_tensors="pt",
+    voice_preset=voice_preset
+    )
+    tensor_dict = {k: cast_to_device(v,device) if hasattr(v,"to") else v for k, v in inputs.items()}
+    speech_values = bark_model.generate(**tensor_dict, do_sample=True)
+    sampling_rate = bark_model.generation_config.sample_rate
+    speech = (speech_values.cpu().numpy().squeeze() * 32768).astype(np.int16)
+    return speech, sampling_rate
+
+
 
 def make_test( 
         tts_text, 
@@ -1761,7 +1793,47 @@ def make_test(
             )
             return os.path.join(now_dir, "audio-outputs", "converted_tts.wav"), os.path.join(now_dir, "audio-outputs", "real_tts.wav")
         elif tts_method == "Bark-tts":
-            print("No disponible")
+            get_vc(
+            sid=model_path,  # model path
+            to_return_protect0=0.33,
+            to_return_protect1=0.33
+            )
+            script = tts_text.replace("\n", " ").strip()
+            sentences = sent_tokenize(script)
+            print(sentences)
+            silence = np.zeros(int(0.25 * SAMPLE_RATE))
+            pieces = []
+            for sentence in sentences:
+                audio_array , _ = __bark__(sentence, tts_voice.split("-")[0])
+                pieces += [audio_array, silence.copy()]
+            
+            wavfile.write(os.path.join(now_dir, "audio-outputs", "bark_out.wav"), rate=SAMPLE_RATE, data=np.concatenate(pieces))
+
+# Guardar o reproducir el audio según tus necesidades
+            #audio_array, sampling_rate = __bark__(tts_text, tts_voice.split("-")[0])
+            #wavfile.write(os.path.join(now_dir, "audio-outputs", "bark_out.wav"), rate=sampling_rate, data=audio_array)
+
+            info_, (sample_, audio_output_) = vc_single_tts(
+                sid=0,
+                input_audio_path=os.path.join(now_dir, "audio-outputs", "bark_out.wav"), #f"audio2/{filename}",
+                f0_up_key=transpose, # transpose for m to f and reverse 0 12
+                f0_file=None,
+                f0_method=f0_method,
+                file_index= '', # dir pwd?
+                file_index2= index_path,
+                # file_big_npy1,
+                index_rate= index_rate,
+                filter_radius= int(3),
+                resample_sr= int(0),
+                rms_mix_rate= float(0.25),
+                protect= float(0.33),
+                crepe_hop_length= crepe_hop_length,
+                f0_autotune=f0_autotune,
+                rmvpe_onnx=rmvpe_onnx,
+            )
+            wavfile.write(os.path.join(now_dir, "audio-outputs", "converted_bark.wav"), rate=sample_, data=audio_output_)
+            return os.path.join(now_dir, "audio-outputs", "converted_bark.wav"), os.path.join(now_dir, "audio-outputs", "bark_out.wav")
+
 
         
         
@@ -2588,7 +2660,55 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                             ],
                             [vc_output4],
                         )    
-    
+            with gr.TabItem(i18n("TTS RVC")):
+                with gr.Group():
+                    with gr.Row(variant='compact'):
+                        text_test = gr.Textbox(label="Text", value="This is an example",info="write a text", placeholder="...", lines=5)
+                        with gr.Column(): 
+                             tts_methods_voice = ["Edge-tts", "Bark-tts"]
+                                
+                             tts_test = gr.Dropdown(set_edge_voice, label = i18n('TTS Voices'), visible=True)
+                             model_voice_path07 = gr.Dropdown(label=i18n('Model'), choices=sorted(names), value=default_weight)
+                             best_match_index_path1, _ = match_index(model_voice_path07.value)
+                             file_index2_07 = gr.Dropdown(
+                                  label=i18n('Select the index file'),
+                                  choices=get_indexes(),
+                                  value=best_match_index_path1,
+                                  interactive=True,
+                                  allow_custom_value=True,
+                                )
+                             transpose_test = gr.Number(label = i18n('Transpose (integer, number Fof semitones, raise by an octave: 12, lower by an octave: -12):'), value=0, visible=True, interactive= True)
+                             ttsmethod_test = gr.Dropdown(tts_methods_voice, value='Edge-tts', label = i18n('TTS Method'), visible=True) 
+                    with gr.Row(variant='compact'):
+                        button_test = gr.Button(i18n("Convert"))
+                        refresh_button_ = gr.Button("Refresh", variant="primary")
+                        refresh_button_.click(
+                                fn=change_choices2, inputs=[], outputs=[model_voice_path07, file_index2_07]
+                            )
+                        ttsmethod_test.change(
+                            fn=update_tts_methods_voice,
+                            inputs=ttsmethod_test,
+                            outputs=tts_test,
+                            )
+
+  
+                        with gr.Column():
+                            with gr.Row():
+                                original_ttsvoice = gr.Audio(label=i18n('Audio TTS'))
+                                ttsvoice = gr.Audio(label=i18n('Audio Model'))
+
+                        button_test.click(make_test, inputs=[
+                                text_test,
+                                tts_test,
+                                model_voice_path07,
+                                file_index2_07,
+                                transpose_test,
+                                f0method8,
+                                index_rate1,
+                                crepe_hop_length,
+                                f0_autotune,
+                                ttsmethod_test
+                                ], outputs=[ttsvoice, original_ttsvoice])
             with gr.TabItem(i18n("Resources")):
             
                 easy_infer.download_model()
@@ -2828,54 +2948,7 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                 info7,
                             )
 
-                with gr.TabItem("TTS RVC"):
-                    with gr.Group():
-                        with gr.Row(variant='compact'):
-                            text_test = gr.Textbox(label="Text", value="This is an example",info="write a text", placeholder="...", lines=5)
-                            with gr.Column(): 
-                                tts_methods_voice = ["Edge-tts", "Bark-tts"]
-                                
-                                tts_test = gr.Dropdown(set_edge_voice, label = 'TTS', visible=True)
-                                model_voice_path07 = gr.Dropdown(label='Model', choices=sorted(names), value=default_weight)
-                                best_match_index_path1, _ = match_index(model_voice_path07.value)
-                                file_index2_07 = gr.Dropdown(
-                                    label='Index',
-                                    choices=get_indexes(),
-                                    value=best_match_index_path1,
-                                    interactive=True,
-                                    allow_custom_value=True,
-                                )
-                                transpose_test = gr.Number(label = 'Transpose', value=0, visible=True, interactive= True, info="integer, number of semitones, raise by an octave: 12, lower by an octave: -12")
-                                ttsmethod_test = gr.Dropdown(tts_methods_voice, value='Edge-tts', label = 'TTS Method', visible=True) 
-                        with gr.Row(variant='compact'):
-                            button_test = gr.Button("Test audio")
-                            refresh_button.click(
-                                    fn=change_choices2, inputs=[], outputs=[model_voice_path07, file_index2_07]
-                                )
-                            ttsmethod_test.change(
-                                fn=update_tts_methods_voice,
-                                inputs=ttsmethod_test,
-                                outputs=tts_test,
-                                )
-
-  
-                            with gr.Column():
-                                with gr.Row():
-                                    original_ttsvoice = gr.Audio(label='Audio TTS')
-                                    ttsvoice = gr.Audio(label='Audio Model')
-
-                            button_test.click(make_test, inputs=[
-                                    text_test,
-                                    tts_test,
-                                    model_voice_path07,
-                                    file_index2_07,
-                                    transpose_test,
-                                    f0method8,
-                                    index_rate1,
-                                    crepe_hop_length,
-                                    f0_autotune,
-                                    ttsmethod_test
-                                    ], outputs=[ttsvoice, original_ttsvoice])
+                
                             
         
             with gr.TabItem(i18n("Settings")):
