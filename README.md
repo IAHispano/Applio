@@ -15,6 +15,8 @@
   <a href="https://github.com/IAHispano/externalcolabcode">External Code</a>
   <br>
    <a href="https://colab.research.google.com/drive/157pUQep6txJOYModYFqvz_5OJajeh7Ii?usp=sharing">Google Colab</a>
+  <br>
+   <a href="https://discord.gg/IAHispano">Support server</a>
 </div>
 
 <div align="center">
