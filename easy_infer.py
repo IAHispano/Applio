@@ -922,6 +922,9 @@ def load_downloaded_audio(url):
 
         if not os.path.exists(audios_path):
             os.mkdir(audios_path)
+
+        if not os.path.exists(zips_path):
+            os.mkdir(zips_path)
         
         download_file = download_from_url(url)
         if not download_file:
