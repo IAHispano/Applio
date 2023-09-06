@@ -4,15 +4,15 @@ Applio is a user-friendly fork of Mangio-RVC-Fork/RVC, designed to provide an in
 [![Discord](https://img.shields.io/badge/SUPPORT_DISCORD-37a779?style=for-the-badge)](https://discord.gg/IAHispano)
 [![Google Colab](https://img.shields.io/badge/GOOGLE_COLAB-37a779?style=for-the-badge)](https://colab.research.google.com/drive/157pUQep6txJOYModYFqvz_5OJajeh7Ii)
 
-# 📚 Table of Contents
-1. [Improvements of Applio Over RVC](#-improvements-of-applio-over-rvc)
-2. [Additional Features of This Repository](#️-additional-features-of-this-repository)
-3. [Planned Features for Future Development](#️-planned-features-for-future-development)
-4. [Installation](#-installation)
-5. [Running the Web GUI (Inference & Train)](#-running-the-web-gui-inference--train)
-6. [Running the CLI (Inference & Train)](#-running-the-cli-inference--train)
-7. [Credits](#credits)
-8. [Thanks to all RVC and Mangio contributors](#thanks-to-all-rvc-and-mangio-contributors)
+## 📚 Table of Contents
+  1. [Improvements of Applio Over RVC](#-improvements-of-applio-over-rvc)
+  2. [Additional Features of This Repository](#️-additional-features-of-this-repository)
+  3. [Planned Features for Future Development](#️-planned-features-for-future-development)
+  4. [Installation](#-installation)
+  5. [Running the Web GUI (Inference & Train)](#-running-the-web-gui-inference--train)
+  6. [Running the CLI (Inference & Train)](#-running-the-cli-inference--train)
+  7. [Credits](#credits)
+  8. [Thanks to all RVC and Mangio contributors](#thanks-to-all-rvc-and-mangio-contributors)
 
 
 ## 🎯 Improvements of Applio Over RVC
