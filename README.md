@@ -24,6 +24,7 @@ Applio is a user-friendly fork of Mangio-RVC-Fork/RVC, designed to provide an in
   - Customizable crepe_hop_length for the crepe algorithm via both the web GUI and CLI.
 
 ### f0 Crepe Pitch Extraction for Training
+- Works on paperspace machines but not local Mac OS/Windows machines (Potential memory leak).
 
 ### Paperspace Integration
 - Applio seamlessly integrates with Paperspace, providing the following features:
