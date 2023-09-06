@@ -1,6 +1,7 @@
 # 🍏 Applio-RVC-Fork
 Applio is a user-friendly fork of Mangio-RVC-Fork/RVC, designed to provide an intuitive interface, especially for newcomers.
 
+## 📎 Links
 [![Discord](https://img.shields.io/badge/SUPPORT_DISCORD-37a779?style=for-the-badge)](https://discord.gg/IAHispano)
 [![Google Colab](https://img.shields.io/badge/GOOGLE_COLAB-37a779?style=for-the-badge)](https://colab.research.google.com/drive/157pUQep6txJOYModYFqvz_5OJajeh7Ii)
 
@@ -172,9 +173,11 @@ Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index
 
 INFER: <INSERT ARGUMENTS HERE OR COPY AND PASTE THE EXAMPLE>
 ```
-
-
 ## Credits
+Applio owes its existence to the collaborative efforts of various repositories, including Mangio-RVC-Fork, and all the other credited contributors. Without their contributions, Applio would not have been possible. Therefore, we kindly request that if you appreciate the work we've accomplished, you consider exploring the projects mentioned in our credits.
+
+Our goal is not to supplant RVC or Mangio; rather, we aim to provide a contemporary and up-to-date alternative for the entire community.
+
 + [Retrieval-based-Voice-Conversion-WebUI](Retrieval-based-Voice-Conversion-WebUI)
 + [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork)
 + [RVG_tts](https://github.com/Foxify52/RVG_tts)
@@ -187,11 +190,15 @@ INFER: <INSERT ARGUMENTS HERE OR COPY AND PASTE THE EXAMPLE>
 + [audio-slicer](https://github.com/openvpi/audio-slicer)
 
 
-## Thanks to all RVC and Mangio contributors
+## Thanks to all RVC, Mangio and Applio contributors
 <a href="https://github.com/liujing04/Retrieval-based-Voice-Conversion-WebUI/graphs/contributors" target="_blank">
   <img src="https://contrib.rocks/image?repo=liujing04/Retrieval-based-Voice-Conversion-WebUI" />
 </a>
 
-<a href="https://github.com/liujing04/Retrieval-based-Voice-Conversion-WebUI/graphs/contributors" target="_blank">
+<a href="https://github.com/Mangio621/Mangio-RVC-Fork/graphs/contributors" target="_blank">
   <img src="https://contrib.rocks/image?repo=Mangio621/Mangio-RVC-Fork" />
+</a>
+
+<a href="https://github.com/IAHispano/Applio-RVC-Fork/graphs/contributors" target="_blank">
+  <img src="https://contrib.rocks/image?repo=IAHispano/Applio-RVC-Fork" />
 </a>
