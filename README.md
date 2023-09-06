@@ -24,7 +24,7 @@ Applio is a user-friendly fork of Mangio-RVC-Fork/RVC, designed to provide an in
   - Customizable crepe_hop_length for the crepe algorithm via both the web GUI and CLI.
 
 ### f0 Crepe Pitch Extraction for Training
-- Works on paperspace machines but not local Mac OS/Windows machines (Potential memory leak).
+- Works on paperspace machines but not local MacOS/Windows machines (Potential memory leak).
 
 ### Paperspace Integration
 - Applio seamlessly integrates with Paperspace, providing the following features:
@@ -94,10 +94,10 @@ As part of the ongoing development of this fork, the following features are plan
 
 ## ✨ Installation
 
-## Automatic installation (Windows):
+### Automatic installation (Windows):
 To quickly and effortlessly install Applio along with all the necessary models and configurations on Windows, you can use the [install_Applio.bat](https://github.com/IAHispano/Applio-RVC-Fork/releases) script available in the releases section.
 
-## Manual installation (Windows/MacOS):
+### Manual installation (Windows/MacOS):
 **Note for MacOS Users**: When using `faiss 1.7.2` under MacOS, you may encounter a Segmentation Fault: 11 error. To resolve this issue, install `faiss-cpu 1.7.0` using the following command if you're installing it manually with pip: 
  ```bash
 pip install faiss-cpu==1.7.0
@@ -113,7 +113,7 @@ Install requirements:
 pip install -r requirements.txt
 ```
 
-## Manual installation (Paperspace):
+### Manual installation (Paperspace):
 ```bash
 cd Applio-RVC-Fork
 make install # Do this everytime you start your paperspace machine
