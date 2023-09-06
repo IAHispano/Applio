@@ -173,7 +173,7 @@ Example: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index
 
 INFER: <INSERT ARGUMENTS HERE OR COPY AND PASTE THE EXAMPLE>
 ```
-## Credits
+## 🏆 Credits
 Applio owes its existence to the collaborative efforts of various repositories, including Mangio-RVC-Fork, and all the other credited contributors. Without their contributions, Applio would not have been possible. Therefore, we kindly request that if you appreciate the work we've accomplished, you consider exploring the projects mentioned in our credits.
 
 Our goal is not to supplant RVC or Mangio; rather, we aim to provide a contemporary and up-to-date alternative for the entire community.
@@ -190,7 +190,7 @@ Our goal is not to supplant RVC or Mangio; rather, we aim to provide a contempor
 + [audio-slicer](https://github.com/openvpi/audio-slicer)
 
 
-## Thanks to all RVC, Mangio and Applio contributors
+## 🙏 Thanks to all RVC, Mangio and Applio contributors
 <a href="https://github.com/liujing04/Retrieval-based-Voice-Conversion-WebUI/graphs/contributors" target="_blank">
   <img src="https://contrib.rocks/image?repo=liujing04/Retrieval-based-Voice-Conversion-WebUI" />
 </a>
