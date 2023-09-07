@@ -121,7 +121,7 @@
   "Save a small final model to the 'weights' folder at each save point:": "Salve um pequeno modelo final na pasta 'pesos' em cada ponto de salvamento:",
   "Load pre-trained base model G path:": "Carregar caminho G do modelo base pré-treinado:",
   "Load pre-trained base model D path:": "Carregar caminho D do modelo base pré-treinado:",
-  "Train model": "Modelo de treino",
+  "Train model": "Treinar modelo",
   "Train feature index": "Index de recursos de treino",
   "One-click training": "Treinamento com um clique",
   "Processing": "Em processamento",
