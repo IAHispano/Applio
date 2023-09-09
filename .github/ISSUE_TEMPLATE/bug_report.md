@@ -23,15 +23,11 @@ A clear and concise description of what you expected to happen.
 **Screenshots / Video**
 If applicable, add screenshots/videos to help explain your problem.
 
-**Desktop (please complete the following information):**
+**Device (please complete the following information):**
  - OS: [e.g. Windows 11]
- - Browser [e.g. chrome]
+ - Browser [e.g. chrome] (if it is google colab)
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - Browser [e.g. stock browser, safari]
-
-**Platform(please complete the following information):**
+**Platform (please complete the following information):**
  - Applio Local / Applio Google Colab
 
 **Additional context**
