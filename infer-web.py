@@ -80,7 +80,8 @@ directories = ["logs", "audios", "datasets", "weights"]
 rmtree(tmp, ignore_errors=True)
 rmtree(os.path.join(runtime_dir, "infer_pack"), ignore_errors=True)
 rmtree(os.path.join(runtime_dir, "uvr5_pack"), ignore_errors=True)
-
+os.makedirs(os.path.join(now_dir, "audio-outputs"), exist_ok=True)
+os.makedirs(os.path.join(now_dir, "audio-others"), exist_ok=True)
 os.makedirs(tmp, exist_ok=True)
 for folder in directories:
     os.makedirs(os.path.join(now_dir, folder), exist_ok=True)
