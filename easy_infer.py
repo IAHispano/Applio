@@ -208,7 +208,17 @@ def download_from_url(url):
         else:
             os.chdir('./zips')
             wget.download(url)
-            
+
+        # Fix points in the zips
+        for currentPath, _, zipFiles in os.walk(zips_path):
+            for Files in zipFiles:
+                filePart = Files.split('.')
+                extensionFile = filePart[len(filePart)-1]
+                filePart.pop()
+                nameFile = "_".join(filePart)
+                realPath = os.path.join(currentPath, Files)
+                os.rename(realPath, nameFile + '.' + extensionFile)
+
         os.chdir(parent_path)
         print(i18n("Full download"))
         return "downloaded"
