@@ -1,2 +1,2 @@
-python Fixes/tensor-launch.py
+python fixes/tensor-launch.py
 pause
