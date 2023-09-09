@@ -178,6 +178,7 @@ Applio owes its existence to the collaborative efforts of various repositories, 
 
 Our goal is not to supplant RVC or Mangio; rather, we aim to provide a contemporary and up-to-date alternative for the entire community.
 
+### Repositories
 + [Retrieval-based-Voice-Conversion-WebUI](Retrieval-based-Voice-Conversion-WebUI)
 + [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork)
 + [RVG_tts](https://github.com/Foxify52/RVG_tts)
@@ -188,6 +189,11 @@ Our goal is not to supplant RVC or Mangio; rather, we aim to provide a contempor
 + [FFmpeg](https://github.com/FFmpeg/FFmpeg)
 + [Ultimate Vocal Remover](https://github.com/Anjok07/ultimatevocalremovergui)
 + [audio-slicer](https://github.com/openvpi/audio-slicer)
+
+### Main developers
++ [Vidal](https://github.com/TheUserNil)
++ [Aitron](https://github.com/aitronssesin)
++ [Blaise](https://github.com/blaise-tk)
 
 
 ## 🙏 Thanks to all RVC, Mangio and Applio contributors
