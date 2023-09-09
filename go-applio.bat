@@ -12,7 +12,6 @@ title Start Applio
 :::          | |   | |
 :::          |_|   |_|
 :::
-::: Version 3.0.0 - Developed by Aitron
 :::
 
 :menu

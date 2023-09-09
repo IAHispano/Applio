@@ -11,7 +11,6 @@ title Applio Manager
 :::          | |   | |
 :::          |_|   |_|
 :::
-::: Version 3.0.0 - Developed by Aitron
 :::
 
 setlocal
