@@ -17,7 +17,7 @@ setlocal
 set "branch=main"
 set "runtime=runtime"
 set "repoUrl=https://github.com/IAHispano/Applio-RVC-Fork/archive/refs/heads/%branch%.zip"
-set "fixesFolder=Fixes"
+set "fixesFolder=fixes"
 set "localFixesPy=local_fixes.py"
 set "principal=%cd%"
 set "URL_BASE=https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
