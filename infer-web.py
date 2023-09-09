@@ -3181,13 +3181,13 @@ def GradioSetup(UTheme=gr.themes.Soft()):
                                         value=i18n("Choose the method"),
                                         interactive=True,
                                     )
-
+                                    but4 = gr.Button(
+                                        i18n("Train feature index"), variant="primary"
+                                    )                                    
                                     but7 = gr.Button(
                                         i18n("Save model"), variant="primary"
                                     )
-                                    but4 = gr.Button(
-                                        i18n("Train feature index"), variant="primary"
-                                    )
+
 
                                 if_save_every_weights18.change(
                                     fn=lambda if_save_every_weights: (
