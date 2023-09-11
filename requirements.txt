@@ -59,6 +59,12 @@ flask_cors
 gin
 gin_config
 local_attention
-matplotlib
-PyYAML
-scipy
+mega.py==1.0.8
+wget
+gradio==3.34.0
+torch==2.0.0
+torchaudio==2.0.1
+torchvision==0.15.1
+fastapi==0.95.2
+tensorflow
+protobuf==3.20.0
