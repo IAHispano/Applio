@@ -1,5 +1,25 @@
 @echo off
-Title Applio Dependencies
+Title Applio No Runtime
+
+echo Making the existing folder to a git repository
+git init
+echo.
+
+echo Setting the repository to applio
+git remote add origin https://github.com/IAHispano/Applio-RVC-Fork.git
+echo.
+
+echo Feching the origin
+git fetch origin
+echo.
+
+echo Reseting the folder
+git reset --hard origin/main
+echo.
+
+echo Trying to pullthe latest changes
+git pull origin main
+echo.
 
 echo Installing dependencies...
 pip install -r requirments.txt
