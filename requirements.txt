@@ -31,6 +31,7 @@ onnxruntime
 onnxruntime_gpu==1.15.1
 opencv_python==4.8.0.74
 opencv_python_headless==4.8.0.74
+omegaconf==2.0.5
 pandas==2.0.3
 praat-parselmouth==0.4.2
 PySimpleGUI==4.60.5
