@@ -82,7 +82,7 @@ echo Step-by-step guide: https://rentry.org/appliolocal
 echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
 echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
 echo Git: https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe
-echo Python: Add this route to the windows enviroment variables the user path variable: %principal%\runtime\Scripts
+echo Python: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
 echo.
 pause
 cls
