@@ -1,6 +1,9 @@
 @echo off
 Title Applio No Runtime
 
+rmdir .git
+rmdir .github
+
 echo Making the existing folder to a git repository
 git init
 echo.
