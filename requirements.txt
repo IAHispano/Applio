@@ -26,7 +26,7 @@ nltk
 noisereduce==2.0.1
 unidecode
 numba==0.57.1
-numpy>=1.16.5,<1.23.0
+numpy==1.23.0
 onnxruntime
 onnxruntime_gpu==1.15.1
 opencv_python==4.8.0.74
