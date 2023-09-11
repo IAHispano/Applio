@@ -16,7 +16,7 @@ title Applio Manager
 setlocal
 set "branch=main"
 set "runtime=runtime"
-set "repoUrl=https://github.com/IAHispano/Applio-RVC-Fork/archive/refs/heads/%branch%.zip"
+set "repoUrl=https://github.com/IAHispano/Applio-RVC-Fork.git"
 set "fixesFolder=fixes"
 set "localFixesPy=local_fixes.py"
 set "principal=%cd%"
@@ -28,7 +28,7 @@ for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 
 echo [1] Reinstall Applio
 echo [2] Update Applio
-echo [3] Update Applio + Runtime
+echo [3] Update Applio + Dependencies
 echo.
 
 set /p choice=Select an option: 
@@ -57,9 +57,9 @@ if "%choice%"=="2" (
 
 if "%choice%"=="3" (
     cls
-    echo Updating Applio + Runtime...
+    echo Updating Applio + Dependencies...
     echo.
-    goto updaterRuntime
+    goto updaterDependencies
     pause
     cls
     goto menu
@@ -87,26 +87,20 @@ echo.
 pause
 cls
 
-echo Downloading ZIP file...
-powershell -command "& { Invoke-WebRequest -Uri '%repoUrl%' -OutFile '%principal%\repo.zip' }"
-echo.
+echo %py_version% | findstr /C:"3.9.8" >nul
+if %errorlevel% equ 0 (
+    echo Python 3.9.8 is installed, continuing...
+) else (
+    echo Python 3.9.8 is not installed or not added to the path, exiting.
+    echo Press Enter to exit
+    pause
+    exit
+)
 
-echo Extracting ZIP file...
-powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('%principal%\repo.zip', '%principal%') }"
+echo Cloning the repository...
+git pull
+cd %repoFolder%
 echo.
-
-echo Copying folder and file structure from subdirectory to main directory...
-robocopy "%principal%\Applio-RVC-Fork-%branch%" "%principal%" /E
-echo.
-
-echo Deleting contents of subdirectory (files and folders)...
-rmdir "%principal%\Applio-RVC-Fork-%branch%" /S /Q
-echo.
-
-echo Cleaning up...
-del "%principal%\repo.zip"
-echo.
-cls
 
 echo Proceeding to download the models...
 echo.
@@ -218,26 +212,9 @@ goto menu
 
 :updater
 
-echo Downloading the ZIP file...
-powershell -command "& { Invoke-WebRequest -Uri '%repoUrl%' -OutFile '%principal%\repo.zip' }"
+echo Updating the repo...
+git pull
 echo.
-
-echo Extracting ZIP file...
-powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('%principal%\repo.zip', '%principal%') }"
-echo.
-
-echo Copying folder and file structure from subdirectory to main directory...
-robocopy "%principal%\Applio-RVC-Fork-%branch%" "%principal%" /E
-echo.
-
-echo Deleting contents of the subdirectory (files and folders)...
-rmdir "%principal%\Applio-RVC-Fork-%branch%" /S /Q
-echo.
-
-echo Cleaning up...
-del "%principal%\repo.zip"
-echo.
-cls
 
 echo Verifying if the local_fixes.py file exists in the Fixes folder...
 if exist "%fixesFolder%\%localFixesPy%" (
@@ -256,38 +233,24 @@ cls
 goto menu
 
 
-:updaterRuntime
+:updaterDependencies
 
-echo Downloading the ZIP file...
-powershell -command "& { Invoke-WebRequest -Uri '%repoUrl%' -OutFile '%principal%\repo.zip' }"
+echo Updating the repo...
+git pull
 echo.
 
-echo Extracting ZIP file...
-powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('%principal%\repo.zip', '%principal%') }"
+echo Installing dependencies...
+pip install -r requirments.txt
 echo.
-
-echo Copying folder and file structure from subdirectory to main directory...
-robocopy "%principal%\Applio-RVC-Fork-%branch%" "%principal%" /E
+pip uninstall torch torchvision torchaudio -y
 echo.
-
-echo Deleting contents of the subdirectory (files and folders)...
-rmdir "%principal%\Applio-RVC-Fork-%branch%" /S /Q
+pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
 echo.
-
-echo Cleaning up...
-del "%principal%\repo.zip"
+pip install git+https://github.com/suno-ai/bark.git
 echo.
 cls
-
-echo Downloading the runtime.zip file...
-curl -LJO "%URL_EXTRA%/%runtime%.zip"
+echo Dependencies installed!
 echo.
-cls
-echo Extracting the runtime.zip file, this might take a while...
-powershell -Command "Expand-Archive -Path '%runtime%.zip' -DestinationPath '.'"
-del runtime.zip
-echo.
-cls
 
 echo Verifying if the local_fixes.py file exists in the Fixes folder...
 if exist "%fixesFolder%\%localFixesPy%" (
