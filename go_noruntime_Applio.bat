@@ -14,7 +14,7 @@ cls
 echo Dependencies installed!
 echo.
 
-echo Applio has been downloaded!
+echo Applio has been installed with no runtime!
 echo.
 pause
 color 07
