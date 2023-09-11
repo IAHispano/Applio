@@ -25,7 +25,7 @@ git pull origin main
 echo.
 
 echo Installing dependencies...
-pip install -r requirments.txt
+pip install -r requirements.txt
 echo.
 pip uninstall torch torchvision torchaudio -y
 echo.
