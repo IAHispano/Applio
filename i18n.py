@@ -1,4 +1,5 @@
 import json
+import locale
 
 def load_language_list(language):
     try:
@@ -21,9 +22,12 @@ class I18nAuto:
     Using Language: en_US
     """
     def __init__(self, language=None):
-        from locale import getdefaultlocale
-        language = language or getdefaultlocale()[0]
-        if not self._language_exists(language):
+        language = locale.getdefaultlocale()[0]
+        if language.startswith("es"):
+            language = "es_ES"
+        elif language.startswith("en"):
+            language = "en_US"
+        elif not self._language_exists(language):
             language = "en_US"
 
         self.language_map = load_language_list(language)
@@ -41,3 +45,4 @@ class I18nAuto:
     def print(self):
         """Prints the language currently in use."""
         print(f"Using Language: {self.language}") 
+        
