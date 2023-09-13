@@ -1,5 +1,4 @@
 import json
-import locale
 
 def load_language_list(language):
     try:
@@ -17,21 +16,38 @@ class I18nAuto:
 
     Examples
     --------
-    >>> i18n = I18nAuto('en_US')
-    >>> i18n.print()
+i18n = I18nAuto()
+i18n.print()
     Using Language: en_US
     """
     def __init__(self, language=None):
-        language = locale.getdefaultlocale()[0]
-        if language.startswith("es"):
-            language = "es_ES"
-        elif language.startswith("en"):
-            language = "en_US"
-        elif not self._language_exists(language):
-            language = "en_US"
+        from locale import getdefaultlocale
+        language = language or getdefaultlocale()[0]
 
-        self.language_map = load_language_list(language)
-        self.language = language
+        # Check if a specific language variant exists, e.g., 'es_ES'
+        if self._language_exists(language):
+            self.language = language
+        else:
+            # If not, check if there is a language with the first two characters
+            # matching, e.g., 'es_' for 'es_ES'.
+            lang_prefix = language[:2]
+            for available_language in self._get_available_languages():
+                if available_language.startswith(lang_prefix):
+                    self.language = available_language
+                    break
+            else:
+                # If no match found, default to 'en_US'.
+                self.language = 'en_US'
+
+        self.language_map = load_language_list(self.language)
+
+    @staticmethod
+    def _get_available_languages():
+        from os import listdir
+        from os.path import isfile, join
+
+        language_files = [f for f in listdir("./i18n/") if isfile(join("./i18n/", f))]
+        return [lang.replace(".json", "") for lang in language_files]
 
     @staticmethod
     def _language_exists(language):
@@ -44,5 +60,4 @@ class I18nAuto:
 
     def print(self):
         """Prints the language currently in use."""
-        print(f"Using Language: {self.language}") 
-        
+        print(f"Using Language: {self.language}")
