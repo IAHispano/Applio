@@ -67,5 +67,4 @@ torch==2.0.0
 torchaudio==2.0.1
 torchvision==0.15.1
 fastapi==0.95.2
-tensorflow==2.13.0
 protobuf==3.20.0
