@@ -7,7 +7,7 @@ google-auth-oauthlib
 pedalboard
 pydub==0.25.1
 httpx==0.23.0
-tensorboardX
+tensorboardX==2.6.2.1
 faiss_cpu==1.7.3
 ffmpeg_python==0.2.0
 ffmpy==0.3.1
