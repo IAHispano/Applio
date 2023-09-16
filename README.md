@@ -1,3 +1,5 @@
+> ⚠️ We are working on a new update with many improvements focused on local, we hope to release it soon.
+
 # 🍏 Applio-RVC-Fork
 Applio is a user-friendly fork of Mangio-RVC-Fork/RVC, designed to provide an intuitive interface, especially for newcomers.
 
