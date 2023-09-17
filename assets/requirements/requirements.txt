@@ -54,7 +54,7 @@ tqdm==4.65.0
 python-dotenv>=1.0.0
 av
 fastapi==0.95.2
-protobuf==3.20.0
+protobuf==3.20.2
 tensorboardX==2.6.2.1
 gin
 gin_config
