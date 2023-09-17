@@ -372,11 +372,7 @@ def uvr(
             save_root_ins = (
                 save_root_ins.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
             )
-            usable_files = [
-                os.path.join(inp_root, file)
-                for file in os.listdir(inp_root)
-                if file.endswith(tuple(sup_audioext))
-            ]
+            
             if model_name == "onnx_dereverb_By_FoxJoy":
                 pre_fun = MDXNetDereverb(15, config.device)
             else:
@@ -390,7 +386,12 @@ def uvr(
                     is_half=config.is_half,
                 )
             if inp_root != "":
-                paths = usable_files
+                paths = [
+                        os.path.join(inp_root, name)
+                        for root, _, files in os.walk(inp_root, topdown=False)
+                        for name in files
+                        if name.endswith(tuple(sup_audioext)) and root == inp_root
+                        ]
             else:
                 paths = [path.name for path in paths]
             for path in paths:
@@ -470,20 +471,15 @@ def uvr(
                 for x in [inp_root, save_root_vocal, save_root_ins]
             ]
 
-            usable_files = [
-                os.path.join(inp_root, file)
-                for file in os.listdir(inp_root)
-                if file.endswith(tuple(sup_audioext))
-            ]
-            try:
-                if paths != None:
-                    paths = [path.name for path in paths]
-                else:
-                    paths = usable_files
-
-            except:
-                traceback.print_exc()
-                paths = usable_files
+            if inp_root != "":
+                paths = [
+                    os.path.join(inp_root, name)
+                    for root, _, files in os.walk(inp_root, topdown=False)
+                    for name in files
+                    if name.endswith(tuple(sup_audioext)) and root == inp_root
+                    ]
+            else:
+                paths = [path.name for path in paths]
             print(paths)
             invert = True
             denoise = True
@@ -2228,11 +2224,6 @@ def GradioSetup():
                                                 value="",
                                                 interactive=True,
                                             )
-
-                                            f0_autotune = gr.Checkbox(
-                                                label="Enable autotune",
-                                                interactive=True,
-                                            )
                                             f0method1 = gr.Radio(
                                                 label=i18n(
                                                     "Select the pitch extraction algorithm:"
@@ -2343,12 +2334,10 @@ def GradioSetup():
                                         protect1,
                                         format1,
                                         crepe_hop_length,
-                                        minpitch_slider
-                                        if (not rvc_globals.NotesOrHertz)
-                                        else minpitch_txtbox,
-                                        maxpitch_slider
-                                        if (not rvc_globals.NotesOrHertz)
-                                        else maxpitch_txtbox,
+                                        minpitch_slider,
+                                        minpitch_txtbox,
+                                        maxpitch_slider,
+                                        maxpitch_txtbox,
                                         f0_autotune,
                                     ],
                                     [vc_output3],

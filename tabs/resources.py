@@ -369,6 +369,7 @@ def get_vc(sid, to_return_protect0, to_return_protect1):
     )
 import zipfile
 from tqdm import tqdm
+
 def extract_and_show_progress(zipfile_path, unzips_path):
     try:
         with zipfile.ZipFile(zipfile_path, 'r') as zip_ref:
@@ -387,14 +388,6 @@ def load_downloaded_model(url):
     parent_path = find_folder_parent(".", "pretrained_v2")
     try:
         infos = []
-        logs_folders = [
-            "0_gt_wavs",
-            "1_16k_wavs",
-            "2a_f0",
-            "2b-f0nsf",
-            "3_feature256",
-            "3_feature768",
-        ]
         zips_path = os.path.join(parent_path, "zips")
         unzips_path = os.path.join(parent_path, "unzips")
         weights_path = os.path.join(now_dir, "logs/weights")
@@ -452,7 +445,6 @@ def load_downloaded_model(url):
 
         index_file = False
         model_file = False
-
 
         for path, subdirs, files in os.walk(unzips_path):
             for item in files:
