@@ -241,7 +241,7 @@ set choice=%choice: =%
 
 if "%choice%"=="1" (
 cls
-pip install -r requirements/requirements.txt
+pip install -r assets/requirements/requirements.txt
 echo.
 pip uninstall torch torchvision torchaudio -y
 echo.
@@ -256,7 +256,7 @@ goto dependenciesFinished
 
 if "%choice%"=="2" (
 cls
-pip install -r requirements/requirements-dml.txt
+pip install -r assets/requirements/requirements-dml.txt
 echo.
 echo.
 cls
