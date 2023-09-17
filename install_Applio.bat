@@ -14,7 +14,7 @@ setlocal
 :::
 :::
 
-set "repoUrl=https://github.com/IAHispano/Applio-RVC-Fork/archive/refs/heads/applio-recode.zip"
+set "repoUrl=https://github.com/IAHispano/Applio-RVC-Fork.git"
 set "repoFolder=Applio-RVC-Fork"
 set "fixesFolder=lib/fixes"
 set "localFixesPy=local_fixes.py"
