@@ -49,6 +49,7 @@ echo Cloning the repository...
 git clone %repoUrl% %repoFolder%
 cd %repoFolder%
 echo.
+cls
 
 echo Proceeding to download the models...
 echo.
