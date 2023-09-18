@@ -123,7 +123,6 @@ curl -LJO "%URL_BASE%/ffprobe.exe"
 
 echo.
 cls
-cd assets
 
 echo Installing dependencies...
 
