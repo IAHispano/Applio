@@ -121,7 +121,25 @@ echo Downloading the ffmpeg.exe and ffprobe.exe file...
 curl -LJO "%URL_BASE%/ffmpeg.exe"
 curl -LJO "%URL_BASE%/ffprobe.exe"
 
+@echo off
+setlocal
+
+echo Downloading torchcrepe
+mkdir temp_torchcrepe
 echo.
+
+echo Clone the GitHub repository to the temporary directory
+git clone --depth 1 https://github.com/maxrmorrison/torchcrepe.git temp_torchcrepe
+
+echo Copy the "torchcrepe" folder and its contents to the current directory
+robocopy "temp_torchcrepe\torchcrepe" ".\torchcrepe" /E
+echo.
+
+echo Remove the temporary directory
+rmdir /s /q temp_torchcrepe
+echo.
+
+echo Torchcrepe downloaded successfully!
 cls
 
 echo Installing dependencies...
@@ -168,19 +186,8 @@ goto dependenciesFinished
 )
 
 :dependenciesFinished
-cls
-cd ".."
-echo Checking if the local_fixes.py file exists in the Fixes folder...
-if exist "%fixesFolder%\%localFixesPy%" (
-    echo Running the file...
-    python "%fixesFolder%\%localFixesPy%"
-) else (
-    echo The "%localFixesPy%" file was not found in the "Fixes" folder.
-)
-echo.
-
 cls 
-echo The fixes were successfully applied and Applio has been successfully downloaded, run the file go-applio.bat to run the web interface!
+echo Applio has been successfully downloaded, run the file go-applio.bat to run the web interface!
 echo.
 pause
 exit
