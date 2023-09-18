@@ -241,6 +241,8 @@ set choice=%choice: =%
 
 if "%choice%"=="1" (
 cls
+pip uninstall tb-nightly tensorboardX tensorboard
+echo.
 pip install -r assets/requirements/requirements.txt
 echo.
 pip uninstall torch torchvision torchaudio -y
@@ -256,6 +258,8 @@ goto dependenciesFinished
 
 if "%choice%"=="2" (
 cls
+pip uninstall tb-nightly tensorboardX tensorboard
+echo.
 pip install -r assets/requirements/requirements-dml.txt
 echo.
 echo.
