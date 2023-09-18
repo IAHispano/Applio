@@ -187,10 +187,9 @@ curl -LJO "%URL_EXTRA%/runtime.zip"
 echo.
 echo Extracting the runtime.zip file...
 powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime.zip', '%principal%') }"
-pause
 echo.
 cls
-echo Dependencies installed! Please add this folder to the system's path: "%runtime_scripts%" before continuing.
+echo INFO: Dependencies installed! Please add this folder to the system's path: "%runtime_scripts%" before continuing.
 pause
 echo.
 goto dependenciesFinished
