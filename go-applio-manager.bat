@@ -179,19 +179,22 @@ curl -LJO "%URL_BASE%/ffprobe.exe"
 echo.
 cls
 
+echo Downloading torchcrepe
+mkdir temp_torchcrepe
+echo.
+
+echo Clone the GitHub repository to the temporary directory
+git clone --depth 1 https://github.com/maxrmorrison/torchcrepe.git temp_torchcrepe
+
+echo Copy the "torchcrepe" folder and its contents to the current directory
+robocopy "temp_torchcrepe\torchcrepe" ".\torchcrepe" /E
+echo.
+
+echo Remove the temporary directory
+rmdir /s /q temp_torchcrepe
+echo.
+
 echo Downloads completed!
-echo.
-
-echo Checking if the local_fixes.py file exists in the Fixes folder...
-if exist "%fixesFolder%\%localFixesPy%" (
-    echo Running the file...
-    runtime\python.exe "%fixesFolder%\%localFixesPy%"
-) else (
-    echo The "%localFixesPy%" file was not found in the "Fixes" folder.
-)
-echo.
-
-echo Fixes Applied!
 echo.
 
 echo Applio has been reinstalled!
