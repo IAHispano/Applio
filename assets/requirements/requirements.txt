@@ -60,4 +60,3 @@ gin
 gin_config
 flask_cors
 flask
-zipfile
