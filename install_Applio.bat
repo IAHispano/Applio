@@ -2,6 +2,7 @@
 Title Applio - Installer
 setlocal
 
+
 :::
 :::                       _ _
 :::     /\               | (_)
@@ -16,9 +17,8 @@ setlocal
 
 set "repoUrl=https://github.com/IAHispano/Applio-RVC-Fork.git"
 set "repoFolder=Applio-RVC-Fork"
-set "fixesFolder=lib/fixes"
-set "localFixesPy=local_fixes.py"
 set "principal=%cd%\%repoFolder%"
+set "runtime_scripts=%cd%\%repoFolder%\runtime\Scripts"
 set "URL_BASE=https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
 set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
 
@@ -146,7 +146,8 @@ echo Installing dependencies...
 
 echo [1] Nvidia graphics cards
 echo [2] AMD / Intel graphics cards
-echo [3] I have already installed the dependencies
+echo [3] Runtime
+echo [4] I have already installed the dependencies
 echo.
 
 set /p choice=Select the option according to your GPU: 
@@ -180,6 +181,22 @@ goto dependenciesFinished
 )
 
 if "%choice%"=="3" (
+cls
+cd %repoFolder%
+curl -LJO "%URL_EXTRA%/runtime.zip"
+echo.
+echo Extracting the runtime.zip file...
+powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime.zip', '%principal%') }"
+pause
+echo.
+cls
+echo Dependencies installed! Please add this folder to the system's path: "%runtime_scripts%" before continuing.
+pause
+echo.
+goto dependenciesFinished
+)
+
+if "%choice%"=="4" (
 echo Dependencies installed!
 echo.
 goto dependenciesFinished
