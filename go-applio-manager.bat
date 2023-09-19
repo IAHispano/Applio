@@ -29,6 +29,7 @@ for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 echo [1] Reinstall Applio
 echo [2] Update Applio
 echo [3] Update Applio + Dependencies
+echo [4] Fix Tensorboard
 echo.
 
 set /p choice=Select an option: 
@@ -57,6 +58,20 @@ if "%choice%"=="3" (
     cls
     echo.
     goto updaterDependencies
+    pause
+    cls
+    goto menu
+
+)
+
+if "%choice%"=="4" (
+    cls
+    echo.
+    pip uninstall tb-nightly tensorboardX tensorboard
+    pip install tensorboard
+    cls
+    echo Tensorboard re-installed correctly!
+    echo.	
     pause
     cls
     goto menu
