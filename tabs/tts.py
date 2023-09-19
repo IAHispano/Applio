@@ -32,7 +32,7 @@ from bark import SAMPLE_RATE
 import tabs.resources as resources
 
 set_bark_voice = resources.get_bark_voice()
-set_edge_voice = ## resources.get_edge_voice() [fix_me]
+set_edge_voice = []## resources.get_edge_voice() [fix_me]
 
 
 def update_tts_methods_voice(select_value):

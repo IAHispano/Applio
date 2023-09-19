@@ -13,6 +13,3 @@ This package implements different quantization strategies:
 
 Also, do check `diffq.base.BaseQuantizer` for the common methods of all Quantizers.
 """
-
-from .uniform import UniformQuantizer
-from .diffq import DiffQuantizer

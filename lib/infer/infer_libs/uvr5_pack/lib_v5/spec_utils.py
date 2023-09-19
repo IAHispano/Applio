@@ -524,7 +524,6 @@ def istft(spec, hl):
 
 if __name__ == "__main__":
     import argparse
-    import sys
     import time
 
     import cv2
