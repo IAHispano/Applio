@@ -183,7 +183,8 @@ goto dependenciesFinished
 if "%choice%"=="3" (
 cls
 cd %repoFolder%
-curl -LJO "%URL_EXTRA%/runtime.zip"
+::curl -LJO "%URL_EXTRA%/runtime.zip" editame lol
+curl -LJO "https://huggingface.co/iroaK/0xF3AC33/resolve/main/runtime.zip"
 echo.
 echo Extracting the runtime.zip file...
 powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime.zip', '%principal%') }"
