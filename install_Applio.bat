@@ -180,6 +180,7 @@ echo.
 echo Extracting the runtime.zip file...
 powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime.zip', '%principal%') }"
 echo.
+del runtime.zip
 cls
 echo.
 goto dependenciesFinished
