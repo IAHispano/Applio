@@ -13,7 +13,9 @@ import librosa
 import numpy as np
 import parselmouth
 import pyworld
+import torch
 import torch.nn.functional as F
+import torchcrepe
 from scipy import signal
 from tqdm import tqdm
 

@@ -1,6 +1,7 @@
 import onnxruntime
 import librosa
 import numpy as np
+import soundfile
 
 
 class ContentVec:

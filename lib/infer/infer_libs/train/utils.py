@@ -5,6 +5,7 @@ import logging
 import os
 import subprocess
 import sys
+import shutil
 
 import numpy as np
 import torch

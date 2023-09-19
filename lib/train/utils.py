@@ -1,4 +1,4 @@
-import os
+import os, traceback
 import glob
 import sys
 import argparse

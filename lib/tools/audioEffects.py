@@ -6,6 +6,10 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 from assets.i18n.i18n import I18nAuto
 i18n = I18nAuto()
+from pydub import AudioSegment
+import numpy as np
+import soundfile as sf
+from pydub.playback import play
 
 def process_audio(input_path, output_path, reverb_enabled, compressor_enabled, noise_gate_enabled, ):
     print(reverb_enabled)

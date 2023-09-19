@@ -3,6 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 
 import layers
+from . import spec_utils
 
 
 class BaseASPPNet(nn.Module):

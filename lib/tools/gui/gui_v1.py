@@ -42,10 +42,13 @@ class Harvest(multiprocessing.Process):
 
 if __name__ == "__main__":
     import json
+    import multiprocessing
     import re
     import threading
     import time
+    import traceback
     from multiprocessing import Queue, cpu_count
+    from queue import Empty
 
     import librosa
     from tools.torchgate import TorchGate

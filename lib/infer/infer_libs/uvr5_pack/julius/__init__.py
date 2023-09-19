@@ -32,3 +32,10 @@ This package is named in this honor of
 whose books and website were a gold mine of information for me to learn about DSP. Go checkout his website if you want
 to learn more about DSP.
 """
+
+from .bands import SplitBands, split_bands
+from .fftconv import fft_conv1d, FFTConv1d
+from .filters import bandpass_filter, BandPassFilter
+from .filters import highpass_filter, highpass_filters, HighPassFilter, HighPassFilters
+from .lowpass import lowpass_filter, lowpass_filters, LowPassFilters, LowPassFilter
+from .resample import resample_frac, ResampleFrac
