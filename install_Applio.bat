@@ -174,7 +174,6 @@ goto dependenciesFinished
 
 if "%choice%"=="3" (
 cls
-cd %repoFolder%
 curl -LJO "%URL_EXTRA%/runtime.zip"
 echo.
 echo Extracting the runtime.zip file...
