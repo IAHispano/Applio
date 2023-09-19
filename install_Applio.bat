@@ -135,11 +135,14 @@ echo.
 cls
 
 echo Installing dependencies...
-
+echo,
+echo Only recommended for experienced users:
 echo [1] Nvidia graphics cards
 echo [2] AMD / Intel graphics cards
-echo [3] Download Runtime (pre-installed dependencies)
-echo [4] I have already installed the dependencies
+echo [3] I have already installed the dependencies
+echo.
+echo Most recommended for the majority of users: 
+echo [4] Download Runtime (pre-installed dependencies)
 echo.
 
 set /p choice=Select the option according to your GPU: 
@@ -173,6 +176,12 @@ goto dependenciesFinished
 )
 
 if "%choice%"=="3" (
+echo Dependencies successfully installed!
+echo.
+goto dependenciesFinished
+)
+
+if "%choice%"=="4" (
 cls
 curl -LJO "%URL_EXTRA%/runtime.zip"
 echo.
@@ -181,12 +190,6 @@ powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem
 echo.
 del runtime.zip
 cls
-echo.
-goto dependenciesFinished
-)
-
-if "%choice%"=="4" (
-echo Dependencies successfully installed!
 echo.
 goto dependenciesFinished
 )
