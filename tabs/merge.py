@@ -251,9 +251,6 @@ def merge_audios():
                 dropbox.upload(
                     fn=save_to_wav2, inputs=[dropbox], outputs=[input_audio1]
                 )
-                dropbox.upload(
-                    fn=resources.change_choices2, inputs=[], outputs=[input_audio1]
-                )
 
                 refresh_button.click(
                     fn=lambda: change_choices3(),

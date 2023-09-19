@@ -69,8 +69,6 @@ import tabs.merge as mergeaudios
 import tabs.processing as processing
 
 from lib.infer.infer_libs.csvutil import CSVutil
-from lib.infer.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM
-from sklearn.cluster import MiniBatchKMeans
 import time
 import csv
 from shlex import quote as SQuote
@@ -1820,21 +1818,11 @@ def GradioSetup():
                                 dropbox.upload(
                                     fn=save_to_wav2,
                                     inputs=[dropbox],
-                                    outputs=[],
-                                )
-                                dropbox.upload(
-                                    fn=resources.change_choices2,
-                                    inputs=[],
                                     outputs=[input_audio1],
                                 )
                                 record_button.change(
                                     fn=save_to_wav,
                                     inputs=[record_button],
-                                    outputs=[],
-                                )
-                                record_button.change(
-                                    fn=resources.change_choices2,
-                                    inputs=[],
                                     outputs=[input_audio1],
                                 )
                                 refresh_button.click(
