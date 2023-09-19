@@ -272,7 +272,7 @@ class RVC:
                 # "rmvpe.pt", is_half=self.is_half if self.device.type!="privateuseone" else False, device=self.device if self.device.type!="privateuseone"else "cpu"####dml时强制对rmvpe用cpu跑
                 #  "rmvpe.pt", is_half=False, device=self.device####dml配置
                 # "rmvpe.pt", is_half=False, device="cpu"####锁定cpu配置
-                "assets/rmvpe/rmvpe.pt",
+                "%s/rmvpe.pt" % os.environ["rmvpe_root"],
                 is_half=self.is_half,
                 device=self.device,  ####正常逻辑
             )

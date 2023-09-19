@@ -22,6 +22,21 @@ from lib.infer.modules.vc.utils import *
 import time
 import scipy.io.wavfile as wavfile
 
+sup_audioext = {
+    "wav",
+    "mp3",
+    "flac",
+    "ogg",
+    "opus",
+    "m4a",
+    "mp4",
+    "aac",
+    "alac",
+    "wma",
+    "aiff",
+    "webm",
+    "ac3",
+}
 def note_to_hz(note_name):
         SEMITONES = {'C': -9, 'C#': -8, 'D': -7, 'D#': -6, 'E': -5, 'F': -4, 'F#': -3, 'G': -2, 'G#': -1, 'A': 0, 'A#': 1, 'B': 2}
         pitch_class, octave = note_name[:-1], int(note_name[-1])
@@ -480,14 +495,18 @@ class VC:
             try:
                 if dir_path != "":
                     paths = [
-                        os.path.join(dir_path, name) for name in os.listdir(dir_path)
-                    ]
+                        os.path.join(root, name)
+                        for root, _, files in os.walk(dir_path, topdown=False)
+                        for name in files
+                        if name.endswith(tuple(sup_audioext)) and root == dir_path
+                        ]
                 else:
                     paths = [path.name for path in paths]
             except:
                 traceback.print_exc()
                 paths = [path.name for path in paths]
             infos = []
+            print(paths)
             for path in paths:
                 info, opt = self.vc_single(
                     sid,
@@ -503,6 +522,12 @@ class VC:
                     resample_sr,
                     rms_mix_rate,
                     protect,
+                    crepe_hop_length, 
+                    f0_min, 
+                    note_min, 
+                    f0_max, 
+                    note_max,
+                    f0_autotune,
                 )
                 if "Success" in info:
                     try:

@@ -5,7 +5,7 @@ import torch
 from tqdm import tqdm
 
 
-def load_data(file_name: str = "./infer/lib/uvr5_pack/name_params.json") -> dict:
+def load_data(file_name: str = "./lib/infer/infer_libs/uvr5_pack/name_params.json") -> dict:
     with open(file_name, "r") as f:
         data = json.load(f)
 

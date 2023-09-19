@@ -2930,7 +2930,7 @@ def GradioRun(app):
 
 if __name__ == "__main__":
     if os.name == "nt":
-        print(
+        logger.info(
             i18n(
                 "Any ConnectionResetErrors post-conversion are irrelevant and purely visual; they can be ignored.\n"
             )

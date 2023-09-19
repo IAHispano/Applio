@@ -1,5 +1,6 @@
 import argparse
 import os
+import getpass
 import sys
 sys.path.append('..')
 import json
@@ -23,7 +24,8 @@ import os
 import sys
 
 # Nombre de usuario actual
-current_user = os.getlogin()
+current_user = os.getlogin() or getpass.getuser()
+logger.info("Current user: %s" % current_user)
 # Ruta de Python 3.9 para el usuario actual
 python_version = "39"
 #C:\Users\USUARIO\AppData\Local\Programs\Python\Python39
@@ -219,10 +221,17 @@ class Config:
             x_max = 41
 
         if self.gpu_mem is not None and self.gpu_mem <= 4:
-            x_pad = 1
-            x_query = 5
-            x_center = 30
-            x_max = 32
+            if self.gpu_mem == 4:
+                x_pad = 1
+                x_query = 5
+                x_center = 30
+                x_max = 32
+            elif self.gpu_mem <= 3:
+                x_pad = 1
+                x_query = 2
+                x_center = 16
+                x_max = 18
+        
         if self.dml:
             logger.info("Use DirectML instead")
             directml_dll_path = os.path.join(python_path, "Lib", "site-packages", "onnxruntime", "capi", "DirectML.dll")

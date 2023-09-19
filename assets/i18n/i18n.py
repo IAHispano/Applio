@@ -2,7 +2,9 @@ import json
 import sys
 sys.path.append('..')
 import sys
+import logging
 
+logger = logging.getLogger(__name__)
 def load_language_list(language):
     try:
         with open(f"./assets/i18n/langs/{language}.json", "r", encoding="utf-8") as f:
@@ -63,4 +65,4 @@ class I18nAuto:
 
     def print(self):
         """Prints the language currently in use."""
-        print(f"Using Language: {self.language}")
+        logger.info(f"Using Language: {self.language}")
