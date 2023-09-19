@@ -51,9 +51,6 @@ cd %repoFolder%
 echo.
 cls
 
-echo Proceeding to download the models...
-echo.
-
 echo Downloading the "pretrained" folder...
 cd "assets/pretrained/"
 curl -LJO "%URL_BASE%/pretrained/D32k.pth"
@@ -120,6 +117,7 @@ cd ".."
 echo Downloading the ffmpeg.exe and ffprobe.exe file...
 curl -LJO "%URL_BASE%/ffmpeg.exe"
 curl -LJO "%URL_BASE%/ffprobe.exe"
+cls
 
 @echo off
 setlocal
@@ -127,26 +125,20 @@ setlocal
 echo Downloading torchcrepe
 mkdir temp_torchcrepe
 echo.
+cls
 
-echo Clone the GitHub repository to the temporary directory
+echo Cloning the GitHub repository into the temporary directory...
 git clone --depth 1 https://github.com/maxrmorrison/torchcrepe.git temp_torchcrepe
-
-echo Copy the "torchcrepe" folder and its contents to the current directory
 robocopy "temp_torchcrepe\torchcrepe" ".\torchcrepe" /E
-echo.
-
-echo Remove the temporary directory
 rmdir /s /q temp_torchcrepe
 echo.
-
-echo Torchcrepe downloaded successfully!
 cls
 
 echo Installing dependencies...
 
 echo [1] Nvidia graphics cards
 echo [2] AMD / Intel graphics cards
-echo [3] Runtime
+echo [3] Download Runtime (pre-installed dependencies)
 echo [4] I have already installed the dependencies
 echo.
 
@@ -163,7 +155,7 @@ pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https
 echo.
 echo.
 cls
-echo Dependencies installed!
+echo Dependencies successfully installed!
 echo.
 goto dependenciesFinished
 )
@@ -175,7 +167,7 @@ pip install -r assets/requirements/requirements-dml.txt
 echo.
 echo.
 cls
-echo Dependencies installed!
+echo Dependencies successfully installed!
 echo.
 goto dependenciesFinished
 )
@@ -189,14 +181,12 @@ echo Extracting the runtime.zip file...
 powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime.zip', '%principal%') }"
 echo.
 cls
-echo INFO: Dependencies installed! Please add this folder to the system's path: "%runtime_scripts%" before continuing.
-pause
 echo.
 goto dependenciesFinished
 )
 
 if "%choice%"=="4" (
-echo Dependencies installed!
+echo Dependencies successfully installed!
 echo.
 goto dependenciesFinished
 )
