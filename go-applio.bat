@@ -17,9 +17,10 @@ title Applio - Start
 :menu
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 
-echo [1] Start Applio (Mostly recommended)
+echo [1] Start Applio : If you have installed the dependencies
 echo [2] Start Applio (DML)
-echo [3] Start Applio (Runtime)
+echo.
+echo [3] Start Applio (Runtime) : If you have used runtime
 echo [4] Start Applio (Runtime DML)
 echo.
 
