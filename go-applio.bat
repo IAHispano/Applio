@@ -23,6 +23,8 @@ echo.
 echo [3] Start Applio (Runtime) : If you have used runtime
 echo [4] Start Applio (Runtime DML)
 echo.
+echo If you don't know which one to use, try 1 or 3 and the one that doesn't give you errors is the correct one.
+echo.
 
 set /p choice=Select an option: 
 set choice=%choice: =%
