@@ -50,7 +50,7 @@ if "%choice%"=="3" (
     cls
     echo WARNING: At this point, it's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
     echo.
-    python.exe infer-web.py --pycmd runtime/python.exe --port 7897
+    "runtime/python.exe" infer-web.py --pycmd "runtime/python.exe" --port 7897
     pause
     cls
     goto menu
@@ -60,7 +60,7 @@ if "%choice%"=="4" (
     cls
     echo WARNING: At this point, it's recommended to disable antivirus or firewall.
     echo.
-    python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --dml
+    "runtime/python.exe" infer-web.py --pycmd "runtime/python.exe" --port 7897 --dml
     pause
     cls
     goto menu
