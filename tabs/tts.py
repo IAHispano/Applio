@@ -59,7 +59,7 @@ def custom_voice(
 
     for _value_item in _values:
         filename = (
-            "audio2/" + audio_files[_value_item]
+            "assets/audios/audio_outputs" + audio_files[_value_item]
             if _value_item != "converted_tts"
             else audio_files[0]
         )
@@ -177,7 +177,7 @@ def use_tts(
                 tts.save(filename)
                 print("Error: Audio will be replaced.")
 
-        os.system("cp assets/audios/audio-outputs/converted_tts.wav assets/audios/audio-outputs/real_tts.wav")
+        os.system("copy assets\\audios\\audio-outputs\\converted_tts.wav assets\\audios\\audio-outputs\\real_tts.wav")
 
         custom_voice(
             ["converted_tts"],  # filter indices
