@@ -56,6 +56,7 @@
   "Inferencing voice:": "اندازہ لگانے والی آواز:",
   "Model_Name": "ماڈل_نام",
   "Dataset_Name": "ڈیٹا سیٹ_نام",
+  "Or add your dataset path:": "یا اپنے ڈیٹاسیٹ کا راستہ درج کریں:",
   "Whether the model has pitch guidance.": "آیا ماڈل میں پچ گائیڈنس ہے۔",
   "Whether to save only the latest .ckpt file to save hard drive space": "آیا ہارڈ ڈرائیو کی جگہ بچانے کے لیے صرف تازہ ترین .ckpt فائل کو محفوظ کرنا ہے۔",
   "Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training": "تمام تربیتی سیٹوں کو GPU میموری میں کیش کریں۔ چھوٹے ڈیٹا سیٹس (10 منٹ سے کم) کیشنگ ٹریننگ کو تیز کر سکتی ہے۔",

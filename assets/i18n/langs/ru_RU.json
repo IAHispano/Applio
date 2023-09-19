@@ -56,6 +56,7 @@
   "Inferencing voice:": "Выводящий голос:",
   "Model_Name": "Название модели",
   "Dataset_Name": "Имя_набора данных",
+  "Or add your dataset path:": "Или введите путь к набору данных:",
   "Whether the model has pitch guidance.": "Имеет ли модель наведение по тангажу.",
   "Whether to save only the latest .ckpt file to save hard drive space": "Сохранять ли только последний файл .ckpt для экономии места на жестком диске",
   "Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training": "Кэшируйте все обучающие наборы в память графического процессора. Кэширование небольших наборов данных (менее 10 минут) может ускорить обучение.",

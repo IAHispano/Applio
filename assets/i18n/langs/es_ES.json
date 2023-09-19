@@ -55,6 +55,7 @@
   "Inferencing voice:": "Modelo de voz:",
   "Model_Name": "Nombre_Modelo",
   "Dataset_Name": "Nombre_Dataset",
+  "Or add your dataset path:": "O introduce la ruta de tu dataset:",
   "Whether the model has pitch guidance.": "Si el modelo tiene guía de tono.",
   "Whether to save only the latest .ckpt file to save hard drive space": "Si guardar solo el último archivo .ckpt para ahorrar espacio en el disco duro",
   "Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training": "El almacenamiento en caché de pequeños conjuntos de datos (menos de 10 minutos) puede acelerar el entrenamiento",
