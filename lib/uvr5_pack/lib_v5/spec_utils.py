@@ -520,7 +520,6 @@ def istft(spec, hl):
 
 if __name__ == "__main__":
     import cv2
-    import sys
     import time
     import argparse
     from model_param_init import ModelParameters

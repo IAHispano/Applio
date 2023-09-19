@@ -1,12 +1,4 @@
 
-import numpy as np
-
-# import praatio
-# import praatio.praat_scripts
-import os
-import sys
-
-import random
 
 import csv
 

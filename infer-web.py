@@ -8,7 +8,6 @@ os.environ["no_proxy"] = "localhost, 127.0.0.1, ::1"
 import logging
 import shutil
 import threading
-import lib.globals.globals as rvc_globals
 import lib.infer.infer_libs.uvr5_pack.mdx as mdx
 from lib.infer.modules.uvr5.mdxprocess import (
     get_model_list,
@@ -38,21 +37,16 @@ import soundfile as SF
 
 SFWrite = SF.write
 from dotenv import load_dotenv
-from sklearn.cluster import MiniBatchKMeans
 import datetime
 
 
 from glob import glob1
 import signal
-from signal import SIGTERM
 
 from assets.configs.config import Config
 from assets.i18n.i18n import I18nAuto
 from lib.infer.infer_libs.train.process_ckpt import (
-    change_info,
-    extract_small_model,
-    merge,
-    show_info,
+    extract_small_model
 )
 from lib.infer.modules.uvr5.mdxnet import MDXNetDereverb
 from lib.infer.modules.uvr5.preprocess import AudioPre, AudioPreDeEcho
@@ -69,10 +63,7 @@ import tabs.merge as mergeaudios
 import tabs.processing as processing
 
 from lib.infer.infer_libs.csvutil import CSVutil
-from lib.infer.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM
 from sklearn.cluster import MiniBatchKMeans
-import time
-import csv
 from shlex import quote as SQuote
 
 RQuote = lambda val: SQuote(str(val))
