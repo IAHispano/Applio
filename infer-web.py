@@ -709,7 +709,9 @@ def update_fshift_presets(preset, qfrency, tmbre):
     )
 
 
-def preprocess_dataset(trainset_dir, exp_dir, sr, n_p):
+def preprocess_dataset(trainset_dir, exp_dir, sr, n_p, dataset_path):
+    if not dataset_path.strip() == "":
+        trainset_dir = dataset_path
     sr = sr_dict[sr]
     os.makedirs("%s/logs/%s" % (now_dir, exp_dir), exist_ok=True)
     f = open("%s/logs/%s/preprocess.log" % (now_dir, exp_dir), "w")
@@ -2414,6 +2416,11 @@ def GradioSetup():
                                 btn_update_dataset_list = gr.Button(
                                     i18n("Update list"), variant="primary"
                                 )
+                            with gr.Column():
+                                dataset_path = gr.Textbox(
+                                    label=i18n("Or add your dataset path:"),
+                                    interactive=True,
+                            )
                             spk_id5 = gr.Slider(
                                 minimum=0,
                                 maximum=4,
@@ -2431,7 +2438,7 @@ def GradioSetup():
                             )
                             but1.click(
                                 preprocess_dataset,
-                                [trainset_dir4, exp_dir1, sr2, np7],
+                                [trainset_dir4, exp_dir1, sr2, np7, dataset_path],
                                 [info1],
                             )
                 with gr.Group():
