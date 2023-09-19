@@ -224,10 +224,11 @@ def download_from_url(url):
                 print("No .zip file found on the page.")
         elif "cdn.discordapp.com" in url:
             file = requests.get(url)
+            os.chdir("./assets/zips")
             if file.status_code == 200:
                 name = url.split("/")
                 with open(
-                    os.path.join(zips_path, name[len(name) - 1]), "wb"
+                    os.path.join(name[-1]), "wb"
                 ) as newfile:
                     newfile.write(file.content)
             else:
