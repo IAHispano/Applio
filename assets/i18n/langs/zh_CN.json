@@ -56,6 +56,7 @@
   "Inferencing voice:": "推理语音：",
   "Model_Name": "型号名称",
   "Dataset_Name": "数据集_名称",
+  "Or add your dataset path:": "或输入数据集的路径：",
   "Whether the model has pitch guidance.": "模型是否有俯仰引导。",
   "Whether to save only the latest .ckpt file to save hard drive space": "是否仅保存最新的.ckpt文件以节省硬盘空间",
   "Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training": "将所有训练集缓存到 GPU 内存。缓存小数据集（少于 10 分钟）可以加快训练速度",

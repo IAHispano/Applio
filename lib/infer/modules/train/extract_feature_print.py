@@ -1,7 +1,7 @@
 import os
 import sys
 import traceback
-
+import tqdm
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
 
@@ -101,37 +101,40 @@ if len(todo) == 0:
     printt("no-feature-todo")
 else:
     printt("all-feature-%s" % len(todo))
-    for idx, file in enumerate(todo):
-        try:
-            if file.endswith(".wav"):
-                wav_path = "%s/%s" % (wavPath, file)
-                out_path = "%s/%s" % (outPath, file.replace("wav", "npy"))
+    with tqdm.tqdm(total=len(todo)) as pbar:
+        for idx, file in enumerate(todo):
+            try:
+                if file.endswith(".wav"):
+                    wav_path = "%s/%s" % (wavPath, file)
+                    out_path = "%s/%s" % (outPath, file.replace("wav", "npy"))
 
-                if os.path.exists(out_path):
-                    continue
+                    if os.path.exists(out_path):
+                        continue
 
-                feats = readwave(wav_path, normalize=saved_cfg.task.normalize)
-                padding_mask = torch.BoolTensor(feats.shape).fill_(False)
-                inputs = {
-                    "source": feats.half().to(device)
-                    if device not in ["mps", "cpu"]
-                    else feats.to(device),
-                    "padding_mask": padding_mask.to(device),
-                    "output_layer": 9 if version == "v1" else 12,  # layer 9
-                }
-                with torch.no_grad():
-                    logits = model.extract_features(**inputs)
-                    feats = (
-                        model.final_proj(logits[0]) if version == "v1" else logits[0]
-                    )
+                    feats = readwave(wav_path, normalize=saved_cfg.task.normalize)
+                    padding_mask = torch.BoolTensor(feats.shape).fill_(False)
+                    inputs = {
+                        "source": feats.half().to(device)
+                        if device not in ["mps", "cpu"]
+                        else feats.to(device),
+                        "padding_mask": padding_mask.to(device),
+                        "output_layer": 9 if version == "v1" else 12,  # layer 9
+                    }
+                    with torch.no_grad():
+                        logits = model.extract_features(**inputs)
+                        feats = (
+                            model.final_proj(logits[0]) if version == "v1" else logits[0]
+                        )
 
-                feats = feats.squeeze(0).float().cpu().numpy()
-                if np.isnan(feats).sum() == 0:
-                    np.save(out_path, feats, allow_pickle=False)
-                else:
-                    printt("%s-contains nan" % file)
-                if idx % n == 0:
-                    printt("now-%s,all-%s,%s,%s" % (len(todo), idx, file, feats.shape))
-        except:
-            printt(traceback.format_exc())
+                    feats = feats.squeeze(0).float().cpu().numpy()
+                    if np.isnan(feats).sum() == 0:
+                        np.save(out_path, feats, allow_pickle=False)
+                    else:
+                        printt("%s-contains nan" % file)
+                    # if idx % n == 0:
+                    #     printt("now-%s,all-%s,%s,%s" % (idx, len(todo), file, feats.shape))
+                    pbar.set_description(f"Processing: %s - Shape: %s" % (file, feats.shape))
+            except:
+                printt(traceback.format_exc())
+            pbar.update(1)
     printt("all-feature-done")
