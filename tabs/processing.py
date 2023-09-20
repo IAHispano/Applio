@@ -35,7 +35,7 @@ def change_info_(ckpt_path):
 
 
 def processing_():
-    with gr.Group():
+
         with gr.Accordion(
             label=i18n("Model fusion, can be used to test timbre fusion")
         ):
@@ -112,7 +112,7 @@ def processing_():
                 ],
                 info4,
             )  # def merge(path1,path2,alpha1,sr,f0,info):
-    with gr.Group():
+
         with gr.Accordion(label=i18n("Modify model information")):
             with gr.Row():  ######
                 with gr.Column():
@@ -144,7 +144,7 @@ def processing_():
                     )
             but7 = gr.Button(i18n("Modify"), variant="primary")
             but7.click(change_info, [ckpt_path0, info_, name_to_save1], info5)
-    with gr.Group():
+
         with gr.Accordion(label=i18n("View model information")):
             with gr.Row():
                 with gr.Column():
@@ -160,7 +160,7 @@ def processing_():
                     )
                     but8 = gr.Button(i18n("View"), variant="primary")
             but8.click(show_info, [ckpt_path1], info6)
-    with gr.Group():
+
         with gr.Accordion(label=i18n("Model extraction")):
             with gr.Row():
                 with gr.Column():

@@ -177,12 +177,9 @@ def audio_combined(
 
 
 def merge_audios():
-    with gr.Group():
         gr.Markdown(
             value="## " + i18n("Merge your generated audios with the instrumental")
         )
-        gr.Markdown(value="", visible=True)
-        gr.Markdown(value="", visible=True)
         with gr.Row():
             with gr.Column():
                 dropbox = gr.File(label=i18n("Drag your audio here:"))

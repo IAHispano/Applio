@@ -1774,63 +1774,61 @@ def GradioSetup():
                             visible=False,
                             interactive=True,
                         )
+                    with gr.Row():
+                        with gr.Column():  # First column for audio-related inputs
+                            dropbox = gr.File(label=i18n("Drag your audio here:"))
+                            record_button = gr.Audio(
+                                source="microphone",
+                                label=i18n("Or record an audio:"),
+                                type="filepath",
+                            )
 
-                    with gr.Group():
-                        with gr.Row():
-                            with gr.Column():  # First column for audio-related inputs
-                                dropbox = gr.File(label=i18n("Drag your audio here:"))
-                                record_button = gr.Audio(
-                                    source="microphone",
-                                    label=i18n("Or record an audio:"),
-                                    type="filepath",
-                                )
+                        best_match_index_path1, _ = match_index(
+                            sid0.value
+                        )  # Get initial index from default sid0 (first voice model in list)
 
-                            best_match_index_path1, _ = match_index(
-                                sid0.value
-                            )  # Get initial index from default sid0 (first voice model in list)
+                        with gr.Column():  # Second column for pitch shift and other options
+                            file_index2 = gr.Dropdown(
+                                label=i18n(
+                                    "Auto-detect index path and select from the dropdown:"
+                                ),
+                                choices=get_indexes(),
+                                value=best_match_index_path1,
+                                interactive=True,
+                                allow_custom_value=True,
+                            )
 
-                            with gr.Column():  # Second column for pitch shift and other options
-                                file_index2 = gr.Dropdown(
+                            with gr.Column():
+                                input_audio1 = gr.Dropdown(
                                     label=i18n(
-                                        "Auto-detect index path and select from the dropdown:"
+                                        "Auto detect audio path and select from the dropdown:"
                                     ),
-                                    choices=get_indexes(),
-                                    value=best_match_index_path1,
+                                    choices=sorted(audio_paths),
+                                    value="",
                                     interactive=True,
-                                    allow_custom_value=True,
+                                    )
+                                vc_transform0 = gr.Number(
+                                    label=i18n(
+                                        "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):"
+                                    ),
+                                    value=0,
                                 )
 
-                                with gr.Column():
-                                    input_audio1 = gr.Dropdown(
-                                        label=i18n(
-                                            "Auto detect audio path and select from the dropdown:"
-                                        ),
-                                        choices=sorted(audio_paths),
-                                        value="",
-                                        interactive=True,
-                                    )
-                                    vc_transform0 = gr.Number(
-                                        label=i18n(
-                                            "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):"
-                                        ),
-                                        value=0,
-                                    )
-
-                                dropbox.upload(
-                                    fn=save_to_wav2,
-                                    inputs=[dropbox],
-                                    outputs=[input_audio1],
-                                )
-                                record_button.change(
-                                    fn=save_to_wav,
-                                    inputs=[record_button],
-                                    outputs=[input_audio1],
-                                )
-                                refresh_button.click(
-                                    fn=change_choices,
-                                    inputs=[],
-                                    outputs=[sid0, file_index2, input_audio1],
-                                )
+                            dropbox.upload(
+                                fn=save_to_wav2,
+                                inputs=[dropbox],
+                                outputs=[input_audio1],
+                            )
+                            record_button.change(
+                                fn=save_to_wav,
+                                inputs=[record_button],
+                                outputs=[input_audio1],
+                            )
+                            refresh_button.click(
+                                fn=change_choices,
+                                inputs=[],
+                                outputs=[sid0, file_index2, input_audio1],
+                            )
                     # Create a checkbox for advanced settings
                     advanced_settings_checkbox = gr.Checkbox(
                         value=False,
@@ -2144,195 +2142,193 @@ def GradioSetup():
                             )
 
                 with gr.TabItem(i18n("Batch")):  # Dont Change
-                    with gr.Group():  # Markdown explanation of batch inference
-                        with gr.Row():
-                            with gr.Column():
-                                vc_transform1 = gr.Number(
-                                    label=i18n(
-                                        "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):"
-                                    ),
-                                    value=0,
-                                )
-                                opt_input = gr.Textbox(
-                                    label=i18n("Specify output folder:"), value="opt"
-                                )
-                            with gr.Column():
-                                file_index4 = gr.Dropdown(
-                                    label=i18n(
-                                        "Auto-detect index path and select from the dropdown:"
-                                    ),
-                                    choices=get_indexes(),
-                                    value=best_match_index_path1,
-                                    interactive=True,
-                                )
-                                dir_input = gr.Textbox(
-                                    label=i18n(
-                                        "Enter the path of the audio folder to be processed (copy it from the address bar of the file manager):"
-                                    ),
-                                    value=os.path.join(now_dir, "assets", "audios"),
-                                )
-                                sid0.select(
-                                    fn=match_index,
-                                    inputs=[sid0],
-                                    outputs=[file_index2, file_index4],
-                                )
+                    with gr.Row():
+                        with gr.Column():
+                            vc_transform1 = gr.Number(
+                                label=i18n(
+                                    "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):"
+                                ),
+                                value=0,
+                            )
+                            opt_input = gr.Textbox(
+                                label=i18n("Specify output folder:"), value="opt"
+                            )
+                        with gr.Column():
+                            file_index4 = gr.Dropdown(
+                                label=i18n(
+                                    "Auto-detect index path and select from the dropdown:"
+                                ),
+                                choices=get_indexes(),
+                                value=best_match_index_path1,
+                                interactive=True,
+                            )
+                            dir_input = gr.Textbox(
+                                label=i18n(
+                                    "Enter the path of the audio folder to be processed (copy it from the address bar of the file manager):"
+                                ),
+                                value=os.path.join(now_dir, "assets", "audios"),
+                            )
+                            sid0.select(
+                                fn=match_index,
+                                inputs=[sid0],
+                                outputs=[file_index2, file_index4],
+                            )
 
-                                refresh_button.click(
-                                    fn=lambda: change_choices()[1],
-                                    inputs=[],
-                                    outputs=file_index4,
-                                )
+                            refresh_button.click(
+                                fn=lambda: change_choices()[1],
+                                inputs=[],
+                                outputs=file_index4,
+                            )
 
-                            with gr.Column():
-                                inputs = gr.File(
-                                    file_count="multiple",
-                                    label=i18n(
-                                        "You can also input audio files in batches. Choose one of the two options. Priority is given to reading from the folder."
-                                    ),
-                                )
-                    with gr.Group():
-                        with gr.Row():
-                            with gr.Column():
-                                # Create a checkbox for advanced batch settings
-                                advanced_settings_batch_checkbox = gr.Checkbox(
-                                    value=False,
-                                    label=i18n("Advanced Settings"),
-                                    interactive=True,
-                                )
+                        with gr.Column():
+                            inputs = gr.File(
+                                file_count="multiple",
+                                label=i18n(
+                                    "You can also input audio files in batches. Choose one of the two options. Priority is given to reading from the folder."
+                                ),
+                            )
+                    with gr.Row():
+                        with gr.Column():
+                            # Create a checkbox for advanced batch settings
+                            advanced_settings_batch_checkbox = gr.Checkbox(
+                                value=False,
+                                label=i18n("Advanced Settings"),
+                                interactive=True,
+                            )
 
-                                # Advanced batch settings container
+                            # Advanced batch settings container
+                            with gr.Row(
+                                visible=False
+                            ) as advanced_settings_batch:  # Initially hidden
                                 with gr.Row(
-                                    visible=False
-                                ) as advanced_settings_batch:  # Initially hidden
-                                    with gr.Row(
-                                        label=i18n("Advanced Settings"), open=False
-                                    ):
-                                        with gr.Column():
-                                            file_index3 = gr.Textbox(
-                                                label=i18n(
-                                                    "Feature search database file path:"
-                                                ),
-                                                value="",
-                                                interactive=True,
-                                            )
-                                            f0method1 = gr.Radio(
-                                                label=i18n(
-                                                    "Select the pitch extraction algorithm:"
-                                                ),
-                                                choices=[
-                                                    "pm",
-                                                    "harvest",
-                                                    "dio",
-                                                    "crepe",
-                                                    "crepe-tiny",
-                                                    "mangio-crepe",
-                                                    "mangio-crepe-tiny",
-                                                    "rmvpe",
-                                                ],
-                                                value="rmvpe",
-                                                interactive=True,
-                                            )
-
-                                            format1 = gr.Radio(
-                                                label=i18n("Export file format:"),
-                                                choices=["wav", "flac", "mp3", "m4a"],
-                                                value="wav",
-                                                interactive=True,
-                                            )
-
+                                    label=i18n("Advanced Settings"), open=False
+                                ):
                                     with gr.Column():
-                                        resample_sr1 = gr.Slider(
-                                            minimum=0,
-                                            maximum=48000,
+                                        file_index3 = gr.Textbox(
                                             label=i18n(
-                                                "Resample the output audio in post-processing to the final sample rate. Set to 0 for no resampling:"
+                                                "Feature search database file path:"
                                             ),
-                                            value=0,
-                                            step=1,
+                                            value="",
                                             interactive=True,
                                         )
-                                        rms_mix_rate1 = gr.Slider(
-                                            minimum=0,
-                                            maximum=1,
+                                        f0method1 = gr.Radio(
                                             label=i18n(
-                                                "Use the volume envelope of the input to replace or mix with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is used:"
+                                                "Select the pitch extraction algorithm:"
                                             ),
-                                            value=1,
-                                            interactive=True,
-                                        )
-                                        protect1 = gr.Slider(
-                                            minimum=0,
-                                            maximum=0.5,
-                                            label=i18n(
-                                                "Protect voiceless consonants and breath sounds to prevent artifacts such as tearing in electronic music. Set to 0.5 to disable. Decrease the value to increase protection, but it may reduce indexing accuracy:"
-                                            ),
-                                            value=0.33,
-                                            step=0.01,
-                                            interactive=True,
-                                        )
-                                        filter_radius1 = gr.Slider(
-                                            minimum=0,
-                                            maximum=7,
-                                            label=i18n(
-                                                "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness."
-                                            ),
-                                            value=3,
-                                            step=1,
+                                            choices=[
+                                                "pm",
+                                                "harvest",
+                                                "dio",
+                                                "crepe",
+                                                "crepe-tiny",
+                                                "mangio-crepe",
+                                                "mangio-crepe-tiny",
+                                                "rmvpe",
+                                            ],
+                                            value="rmvpe",
                                             interactive=True,
                                         )
 
-                                        index_rate2 = gr.Slider(
-                                            minimum=0,
-                                            maximum=1,
-                                            label=i18n("Search feature ratio:"),
-                                            value=0.75,
+                                        format1 = gr.Radio(
+                                            label=i18n("Export file format:"),
+                                            choices=["wav", "flac", "mp3", "m4a"],
+                                            value="wav",
                                             interactive=True,
-                                        )
-                                        f0_autotune = gr.Checkbox(
-                                            label="Enable autotune", interactive=True
-                                        )
-                                        crepe_hop_length = gr.Slider(
-                                            minimum=1,
-                                            maximum=512,
-                                            step=1,
-                                            label=i18n(
-                                                "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate."
-                                            ),
-                                            value=120,
-                                            interactive=True,
-                                            visible=False,
                                         )
 
-                                but1 = gr.Button(i18n("Convert"), variant="primary")
-                                vc_output3 = gr.Textbox(
-                                    label=i18n("Output information:")
-                                )
-                                but1.click(
-                                    vc.vc_multi,
-                                    [
-                                        spk_item,
-                                        dir_input,
-                                        opt_input,
-                                        inputs,
-                                        vc_transform1,
-                                        f0method1,
-                                        file_index3,
-                                        file_index4,
-                                        index_rate2,
-                                        filter_radius1,
-                                        resample_sr1,
-                                        rms_mix_rate1,
-                                        protect1,
-                                        format1,
-                                        crepe_hop_length,
-                                        minpitch_slider,
-                                        minpitch_txtbox,
-                                        maxpitch_slider,
-                                        maxpitch_txtbox,
-                                        f0_autotune,
-                                    ],
-                                    [vc_output3],
-                                )
+                                with gr.Column():
+                                    resample_sr1 = gr.Slider(
+                                        minimum=0,
+                                        maximum=48000,
+                                        label=i18n(
+                                            "Resample the output audio in post-processing to the final sample rate. Set to 0 for no resampling:"
+                                        ),
+                                        value=0,
+                                        step=1,
+                                        interactive=True,
+                                    )
+                                    rms_mix_rate1 = gr.Slider(
+                                        minimum=0,
+                                        maximum=1,
+                                        label=i18n(
+                                            "Use the volume envelope of the input to replace or mix with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is used:"
+                                        ),
+                                        value=1,
+                                        interactive=True,
+                                    )
+                                    protect1 = gr.Slider(
+                                        minimum=0,
+                                        maximum=0.5,
+                                        label=i18n(
+                                            "Protect voiceless consonants and breath sounds to prevent artifacts such as tearing in electronic music. Set to 0.5 to disable. Decrease the value to increase protection, but it may reduce indexing accuracy:"
+                                        ),
+                                        value=0.33,
+                                        step=0.01,
+                                        interactive=True,
+                                    )
+                                    filter_radius1 = gr.Slider(
+                                        minimum=0,
+                                        maximum=7,
+                                        label=i18n(
+                                            "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness."
+                                        ),
+                                        value=3,
+                                        step=1,
+                                        interactive=True,
+                                    )
+
+                                    index_rate2 = gr.Slider(
+                                        minimum=0,
+                                        maximum=1,
+                                        label=i18n("Search feature ratio:"),
+                                        value=0.75,
+                                        interactive=True,
+                                    )
+                                    f0_autotune = gr.Checkbox(
+                                        label="Enable autotune", interactive=True
+                                    )
+                                    crepe_hop_length = gr.Slider(
+                                        minimum=1,
+                                        maximum=512,
+                                        step=1,
+                                        label=i18n(
+                                            "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate."
+                                        ),
+                                        value=120,
+                                        interactive=True,
+                                        visible=False,
+                                    )
+
+                            but1 = gr.Button(i18n("Convert"), variant="primary")
+                            vc_output3 = gr.Textbox(
+                                label=i18n("Output information:")
+                            )
+                            but1.click(
+                                vc.vc_multi,
+                                [
+                                    spk_item,
+                                    dir_input,
+                                    opt_input,
+                                    inputs,
+                                    vc_transform1,
+                                    f0method1,
+                                    file_index3,
+                                    file_index4,
+                                    index_rate2,
+                                    filter_radius1,
+                                    resample_sr1,
+                                    rms_mix_rate1,
+                                    protect1,
+                                    format1,
+                                    crepe_hop_length,
+                                    minpitch_slider,
+                                    minpitch_txtbox,
+                                    maxpitch_slider,
+                                    maxpitch_txtbox,
+                                    f0_autotune,
+                                ],
+                                [vc_output3],
+                            )
 
                     sid0.change(
                         fn=vc.get_vc,
@@ -2390,431 +2386,432 @@ def GradioSetup():
                             value=config.n_cpu,
                             interactive=True,
                         )
-                with gr.Group():
-                    with gr.Accordion(label=i18n("Step 2: Skipping pitch extraction")):
-                        with gr.Row():
-                            #  trainset_dir4 = gr.Textbox(
-                            #      label=i18n("Enter the path of the training folder:"), value=os.path.join(now_dir, datasets_root)
-                            #  )
-                            with gr.Column():
-                                trainset_dir4 = gr.Dropdown(
-                                    choices=sorted(datasets),
-                                    label=i18n("Select your dataset:"),
-                                    value=get_dataset(),
-                                )
-                                btn_update_dataset_list = gr.Button(
-                                    i18n("Update list"), variant="primary"
-                                )
-                            with gr.Column():
-                                dataset_path = gr.Textbox(
-                                    label=i18n("Or add your dataset path:"),
-                                    interactive=True,
+                with gr.Accordion(label=i18n("Step 2: Skipping pitch extraction")):
+                    with gr.Row():
+                        #  trainset_dir4 = gr.Textbox(
+                        #      label=i18n("Enter the path of the training folder:"), value=os.path.join(now_dir, datasets_root)
+                        #  )
+                        with gr.Column():
+                            trainset_dir4 = gr.Dropdown(
+                                choices=sorted(datasets),
+                                label=i18n("Select your dataset:"),
+                                value=get_dataset(),
                             )
-                            spk_id5 = gr.Slider(
-                                minimum=0,
-                                maximum=4,
-                                step=1,
-                                label=i18n("Specify the model ID:"),
-                                value=0,
+                            btn_update_dataset_list = gr.Button(
+                                i18n("Update list"), 
+                                variant="primary"
+                            )
+                        with gr.Column():
+                            dataset_path = gr.Textbox(
+                                label=i18n("Or add your dataset path:"),
+                                interactive=True,
+                        )
+                        spk_id5 = gr.Slider(
+                            minimum=0,
+                            maximum=4,
+                            step=1,
+                            label=i18n("Specify the model ID:"),
+                            value=0,
+                            interactive=True,
+                        )
+                        btn_update_dataset_list.click(
+                            resources.update_dataset_list, [spk_id5], trainset_dir4
+                        )
+                        but1 = gr.Button(i18n("Process data"), variant="primary")
+                        info1 = gr.Textbox(
+                            label=i18n("Output information:"), value=""
+                        )
+                        but1.click(
+                            preprocess_dataset,
+                            [trainset_dir4, exp_dir1, sr2, np7, dataset_path],
+                            [info1],
+                        )
+
+                with gr.Accordion(label=i18n("Step 3: Extracting features")):
+                    with gr.Row():
+                        with gr.Column():
+                            gpus6 = gr.Textbox(
+                                label=i18n(
+                                    "Provide the GPU index(es) separated by '-', like 0-1-2 for using GPUs 0, 1, and 2:"
+                                ),
+                                value=gpus,
                                 interactive=True,
                             )
-                            btn_update_dataset_list.click(
-                                resources.update_dataset_list, [spk_id5], trainset_dir4
+                            gpu_info9 = gr.Textbox(
+                                label=i18n("GPU Information:"),
+                                value=gpu_info,
+                                visible=F0GPUVisible,
                             )
-                            but1 = gr.Button(i18n("Process data"), variant="primary")
-                            info1 = gr.Textbox(
-                                label=i18n("Output information:"), value=""
-                            )
-                            but1.click(
-                                preprocess_dataset,
-                                [trainset_dir4, exp_dir1, sr2, np7, dataset_path],
-                                [info1],
-                            )
-                with gr.Group():
-                    with gr.Accordion(label=i18n("Step 3: Extracting features")):
-                        with gr.Row():
-                            with gr.Column():
-                                gpus6 = gr.Textbox(
-                                    label=i18n(
-                                        "Provide the GPU index(es) separated by '-', like 0-1-2 for using GPUs 0, 1, and 2:"
-                                    ),
-                                    value=gpus,
-                                    interactive=True,
-                                )
-                                gpu_info9 = gr.Textbox(
-                                    label=i18n("GPU Information:"),
-                                    value=gpu_info,
-                                    visible=F0GPUVisible,
-                                )
-                            with gr.Column():
-                                f0method8 = gr.Radio(
-                                    label=i18n(
-                                        "Select the pitch extraction algorithm:"
-                                    ),
-                                    choices=[
-                                        "pm",
-                                        "harvest",
-                                        "dio",
-                                        "crepe",
-                                        "mangio-crepe",
-                                        "rmvpe",
-                                        "rmvpe_gpu",
-                                    ],
-                                    # [ MANGIO ]: Fork feature: Crepe on f0 extraction for training.
-                                    value="rmvpe",
-                                    interactive=True,
-                                )
-                                
-
-                                extraction_crepe_hop_length = gr.Slider(
-                                    minimum=1,
-                                    maximum=512,
-                                    step=1,
-                                    label=i18n(
-                                        "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate."
-                                    ),
-                                    value=64,
-                                    interactive=True,
-                                    visible=False,
-                                )
-
-                                f0method8.change(
-                                    fn=lambda radio: (
-                                        {
-                                            "visible": radio
-                                            in ["mangio-crepe", "mangio-crepe-tiny"],
-                                            "__type__": "update",
-                                        }
-                                    ),
-                                    inputs=[f0method8],
-                                    outputs=[extraction_crepe_hop_length],
-                                )
-                            but2 = gr.Button(
-                                i18n("Feature extraction"), variant="primary"
-                            )
-                            info2 = gr.Textbox(
-                                label=i18n("Output information:"),
-                                value="",
-                                max_lines=8,
-                                interactive=False,
+                        with gr.Column():
+                            f0method8 = gr.Radio(
+                                label=i18n(
+                                    "Select the pitch extraction algorithm:"
+                                ),
+                                choices=[
+                                    "pm",
+                                    "harvest",
+                                    "dio",
+                                    "crepe",
+                                    "mangio-crepe",
+                                    "rmvpe",
+                                    "rmvpe_gpu",
+                                ],
+                                # [ MANGIO ]: Fork feature: Crepe on f0 extraction for training.
+                                value="rmvpe",
+                                interactive=True,
                             )
                             
-                            but2.click(
-                                extract_f0_feature,
-                                [
-                                    gpus6,
-                                    np7,
-                                    f0method8,
-                                    if_f0_3,
-                                    exp_dir1,
-                                    version19,
-                                    extraction_crepe_hop_length,
-                                ],
-                                [info2],
-                            )
-                with gr.Group():
-                    with gr.Row():
-                        with gr.Accordion(label=i18n("Step 4: Model training started")):
-                            with gr.Row():
-                                save_epoch10 = gr.Slider(
-                                    minimum=1,
-                                    maximum=100,
-                                    step=1,
-                                    label=i18n("Save frequency:"),
-                                    value=10,
-                                    interactive=True,
-                                    visible=True,
-                                )
-                                total_epoch11 = gr.Slider(
-                                    minimum=1,
-                                    maximum=10000,
-                                    step=2,
-                                    label=i18n("Training epochs:"),
-                                    value=750,
-                                    interactive=True,
-                                )
-                                batch_size12 = gr.Slider(
-                                    minimum=1,
-                                    maximum=50,
-                                    step=1,
-                                    label=i18n("Batch size per GPU:"),
-                                    value=default_batch_size,
-                                    # value=20,
-                                    interactive=True,
-                                )
 
-                            with gr.Row():
-                                if_save_latest13 = gr.Checkbox(
-                                    label=i18n(
-                                        "Whether to save only the latest .ckpt file to save hard drive space"
-                                    ),
-                                    value=True,
-                                    interactive=True,
-                                )
-                                if_cache_gpu17 = gr.Checkbox(
-                                    label=i18n(
-                                        "Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training"
-                                    ),
-                                    value=False,
-                                    interactive=True,
-                                )
-                                if_save_every_weights18 = gr.Checkbox(
-                                    label=i18n(
-                                        "Save a small final model to the 'weights' folder at each save point"
-                                    ),
-                                    value=True,
-                                    interactive=True,
-                                )
-
-                            with gr.Row():
-                                pretrained_G14 = gr.Textbox(
-                                    lines=4,
-                                    label=i18n("Load pre-trained base model G path:"),
-                                    value="assets/pretrained_v2/f0G40k.pth",
-                                    interactive=True,
-                                )
-                                pretrained_D15 = gr.Textbox(
-                                    lines=4,
-                                    label=i18n("Load pre-trained base model D path:"),
-                                    value="assets/pretrained_v2/f0D40k.pth",
-                                    interactive=True,
-                                )
-                                gpus16 = gr.Textbox(
-                                    label=i18n(
-                                        "Provide the GPU index(es) separated by '-', like 0-1-2 for using GPUs 0, 1, and 2:"
-                                    ),
-                                    value=gpus,
-                                    interactive=True,
-                                )
-                                sr2.change(
-                                    change_sr2,
-                                    [sr2, if_f0_3, version19],
-                                    [pretrained_G14, pretrained_D15],
-                                )
-                                version19.change(
-                                    change_version19,
-                                    [sr2, if_f0_3, version19],
-                                    [pretrained_G14, pretrained_D15, sr2],
-                                )
-                                if_f0_3.change(
-                                    fn=change_f0,
-                                    inputs=[if_f0_3, sr2, version19],
-                                    outputs=[f0method8, pretrained_G14, pretrained_D15],
-                                )
-                                if_f0_3.change(
-                                    fn=lambda radio: (
-                                        {
-                                            "visible": radio
-                                            in ["mangio-crepe", "mangio-crepe-tiny"],
-                                            "__type__": "update",
-                                        }
-                                    ),
-                                    inputs=[f0method8],
-                                    outputs=[extraction_crepe_hop_length],
-                                )
-
-                                butstop = gr.Button(
-                                    i18n("Stop training"),
-                                    variant="primary",
-                                    visible=False,
-                                )
-                                but3 = gr.Button(
-                                    i18n("Train model"), variant="primary", visible=True
-                                )
-                                but3.click(
-                                    fn=stoptraining,
-                                    inputs=[gr.Number(value=0, visible=False)],
-                                    outputs=[but3, butstop],
-                                )
-                                butstop.click(
-                                    fn=stoptraining,
-                                    inputs=[gr.Number(value=1, visible=False)],
-                                    outputs=[but3, butstop],
-                                )
-
-                                with gr.Column():
-                                    info3 = gr.Textbox(
-                                        label=i18n("Output information:"),
-                                        value="",
-                                        max_lines=4,
-                                    )
-                                    save_action = gr.Dropdown(
-                                        label=i18n("Save type"),
-                                        choices=[
-                                            i18n("Save all"),
-                                            i18n("Save D and G"),
-                                            i18n("Save voice"),
-                                        ],
-                                        value=i18n("Choose the method"),
-                                        interactive=True,
-                                    )
-
-                                    but7 = gr.Button(
-                                        i18n("Save model"), variant="primary"
-                                    )
-                                    but4 = gr.Button(
-                                        i18n("Train feature index"), variant="primary"
-                                    )
-
-                                if_save_every_weights18.change(
-                                    fn=lambda if_save_every_weights: (
-                                        {
-                                            "visible": if_save_every_weights,
-                                            "__type__": "update",
-                                        }
-                                    ),
-                                    inputs=[if_save_every_weights18],
-                                    outputs=[save_epoch10],
-                                )
-
-                            but3.click(
-                                click_train,
-                                [
-                                    exp_dir1,
-                                    sr2,
-                                    if_f0_3,
-                                    spk_id5,
-                                    save_epoch10,
-                                    total_epoch11,
-                                    batch_size12,
-                                    if_save_latest13,
-                                    pretrained_G14,
-                                    pretrained_D15,
-                                    gpus16,
-                                    if_cache_gpu17,
-                                    if_save_every_weights18,
-                                    version19,
-                                ],
-                                [info3, butstop, but3],
-                            )
-
-                            but4.click(train_index, [exp_dir1, version19], info3)
-                            but7.click(
-                                resources.save_model, [exp_dir1, save_action], info3
-                            )
-            with gr.TabItem(i18n("UVR5")):  # UVR section
-                with gr.Group():
-                    with gr.Row():
-                        with gr.Column():
-                            model_select = gr.Radio(
-                                label=i18n("Model Architecture:"),
-                                choices=["VR", "MDX"],
-                                value="VR",
-                                interactive=True,
-                            )
-                            dir_wav_input = gr.Textbox(
-                                label=i18n(
-                                    "Enter the path of the audio folder to be processed:"
-                                ),
-                                value=os.path.join(now_dir, "assets", "audios"),
-                            )
-                            wav_inputs = gr.File(
-                                file_count="multiple",
-                                label=i18n(
-                                    "You can also input audio files in batches. Choose one of the two options. Priority is given to reading from the folder."
-                                ),
-                            )
-
-                        with gr.Column():
-                            model_choose = gr.Dropdown(
-                                label=i18n("Model:"), choices=uvr5_names
-                            )
-                            agg = gr.Slider(
-                                minimum=0,
-                                maximum=20,
+                            extraction_crepe_hop_length = gr.Slider(
+                                minimum=1,
+                                maximum=512,
                                 step=1,
-                                label="Vocal Extraction Aggressive",
-                                value=10,
+                                label=i18n(
+                                    "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate."
+                                ),
+                                value=64,
                                 interactive=True,
                                 visible=False,
                             )
-                            opt_vocal_root = gr.Textbox(
-                                label=i18n("Specify the output folder for vocals:"),
-                                value="assets/audios",
-                            )
-                            opt_ins_root = gr.Textbox(
-                                label=i18n(
-                                    "Specify the output folder for accompaniment:"
+
+                            f0method8.change(
+                                fn=lambda radio: (
+                                    {
+                                        "visible": radio
+                                        in ["mangio-crepe", "mangio-crepe-tiny"],
+                                        "__type__": "update",
+                                    }
                                 ),
-                                value="assets/audios/audio-others",
+                                inputs=[f0method8],
+                                outputs=[extraction_crepe_hop_length],
                             )
-                            format0 = gr.Radio(
-                                label=i18n("Export file format:"),
-                                choices=["wav", "flac", "mp3", "m4a"],
-                                value="flac",
-                                interactive=True,
-                            )
-                        model_select.change(
-                            fn=update_model_choices,
-                            inputs=model_select,
-                            outputs=model_choose,
+                        but2 = gr.Button(
+                            i18n("Feature extraction"), variant="primary"
                         )
-                        but2 = gr.Button(i18n("Convert"), variant="primary")
-                        vc_output4 = gr.Textbox(label=i18n("Output information:"))
-                        # wav_inputs.upload(fn=save_to_wav2_edited, inputs=[wav_inputs], outputs=[])
+                        info2 = gr.Textbox(
+                            label=i18n("Output information:"),
+                            value="",
+                            max_lines=8,
+                            interactive=False,
+                        )
+                        
                         but2.click(
-                            uvr,
+                            extract_f0_feature,
                             [
-                                model_choose,
-                                dir_wav_input,
-                                opt_vocal_root,
-                                wav_inputs,
-                                opt_ins_root,
-                                agg,
-                                format0,
-                                model_select,
+                                gpus6,
+                                np7,
+                                f0method8,
+                                if_f0_3,
+                                exp_dir1,
+                                version19,
+                                extraction_crepe_hop_length,
                             ],
-                            [vc_output4],
-                        )
-            with gr.TabItem(i18n("TTS")):
-                with gr.Group():
-                    with gr.Column():
-                        text_test = gr.Textbox(
-                            label=i18n("Text:"),
-                            placeholder=i18n(
-                                "Enter the text you want to convert to voice..."
-                            ),
-                            lines=6,
+                            [info2],
                         )
 
-                with gr.Group():
-                    with gr.Row():
-                        with gr.Column():
-                            tts_methods_voice = ["Edge-tts", "Bark-tts"]
-                            ttsmethod_test = gr.Dropdown(
-                                tts_methods_voice,
-                                value="Edge-tts",
-                                label=i18n("TTS Method:"),
-                                visible=True,
-                            )
-                            tts_test = gr.Dropdown(
-                                tts.set_edge_voice,
-                                label=i18n("TTS Model:"),
-                                visible=True,
-                            )
-                            ttsmethod_test.change(
-                                fn=tts.update_tts_methods_voice,
-                                inputs=ttsmethod_test,
-                                outputs=tts_test,
-                            )
-
-                        with gr.Column():
-                            model_voice_path07 = gr.Dropdown(
-                                label=i18n("RVC Model:"),
-                                choices=sorted(names),
-                                value=default_weight,
-                            )
-                            best_match_index_path1, _ = match_index(
-                                model_voice_path07.value
-                            )
-
-                            file_index2_07 = gr.Dropdown(
-                                label=i18n("Select the .index file:"),
-                                choices=get_indexes(),
-                                value=best_match_index_path1,
+                with gr.Row():
+                    with gr.Accordion(label=i18n("Step 4: Model training started")):
+                        with gr.Row():
+                            save_epoch10 = gr.Slider(
+                                minimum=1,
+                                maximum=100,
+                                step=1,
+                                label=i18n("Save frequency:"),
+                                value=10,
                                 interactive=True,
-                                allow_custom_value=True,
+                                visible=True,
                             )
+                            total_epoch11 = gr.Slider(
+                                minimum=1,
+                                maximum=10000,
+                                step=2,
+                                label=i18n("Training epochs:"),
+                                value=750,
+                                interactive=True,
+                            )
+                            batch_size12 = gr.Slider(
+                                minimum=1,
+                                maximum=50,
+                                step=1,
+                                label=i18n("Batch size per GPU:"),
+                                value=default_batch_size,
+                                # value=20,
+                                interactive=True,
+                            )
+
+                        with gr.Row():
+                            if_save_latest13 = gr.Checkbox(
+                                label=i18n(
+                                    "Whether to save only the latest .ckpt file to save hard drive space"
+                                ),
+                                value=True,
+                                interactive=True,
+                            )
+                            if_cache_gpu17 = gr.Checkbox(
+                                label=i18n(
+                                    "Cache all training sets to GPU memory. Caching small datasets (less than 10 minutes) can speed up training"
+                                ),
+                                value=False,
+                                interactive=True,
+                            )
+                            if_save_every_weights18 = gr.Checkbox(
+                                label=i18n(
+                                    "Save a small final model to the 'weights' folder at each save point"
+                                ),
+                                value=True,
+                                interactive=True,
+                            )
+
+                        with gr.Row():
+                            pretrained_G14 = gr.Textbox(
+                                lines=4,
+                                label=i18n("Load pre-trained base model G path:"),
+                                value="assets/pretrained_v2/f0G40k.pth",
+                                interactive=True,
+                            )
+                            pretrained_D15 = gr.Textbox(
+                                lines=4,
+                                label=i18n("Load pre-trained base model D path:"),
+                                value="assets/pretrained_v2/f0D40k.pth",
+                                interactive=True,
+                            )
+                            gpus16 = gr.Textbox(
+                                label=i18n(
+                                    "Provide the GPU index(es) separated by '-', like 0-1-2 for using GPUs 0, 1, and 2:"
+                                ),
+                                value=gpus,
+                                interactive=True,
+                            )
+                            sr2.change(
+                                change_sr2,
+                                [sr2, if_f0_3, version19],
+                                [pretrained_G14, pretrained_D15],
+                            )
+                            version19.change(
+                                change_version19,
+                                [sr2, if_f0_3, version19],
+                                [pretrained_G14, pretrained_D15, sr2],
+                            )
+                            if_f0_3.change(
+                                fn=change_f0,
+                                inputs=[if_f0_3, sr2, version19],
+                                outputs=[f0method8, pretrained_G14, pretrained_D15],
+                            )
+                            if_f0_3.change(
+                                fn=lambda radio: (
+                                    {
+                                    "visible": radio
+                                            in ["mangio-crepe", "mangio-crepe-tiny"],
+                                        "__type__": "update",
+                                    }
+                                ),
+                                inputs=[f0method8],
+                                outputs=[extraction_crepe_hop_length],
+                            )
+
+                            butstop = gr.Button(
+                                i18n("Stop training"),
+                                variant="primary",
+                                visible=False,
+                            )
+                            but3 = gr.Button(
+                                i18n("Train model"), variant="primary", visible=True
+                            )
+                            but3.click(
+                                fn=stoptraining,
+                                inputs=[gr.Number(value=0, visible=False)],
+                                outputs=[but3, butstop],
+                            )
+                            butstop.click(
+                                fn=stoptraining,
+                                inputs=[gr.Number(value=1, visible=False)],
+                                outputs=[but3, butstop],
+                            )
+
+                            with gr.Column():
+                                info3 = gr.Textbox(
+                                    label=i18n("Output information:"),
+                                    value="",
+                                    max_lines=4,
+                                )
+                                save_action = gr.Dropdown(
+                                    label=i18n("Save type"),
+                                    choices=[
+                                        i18n("Save all"),
+                                        i18n("Save D and G"),
+                                        i18n("Save voice"),
+                                    ],
+                                    value=i18n("Choose the method"),
+                                    interactive=True,
+                                )
+
+                                but7 = gr.Button(
+                                    i18n("Save model"), variant="primary"
+                                )
+                                but4 = gr.Button(
+                                    i18n("Train feature index"), variant="primary"
+                                )
+
+                            if_save_every_weights18.change(
+                                fn=lambda if_save_every_weights: (
+                                    {
+                                        "visible": if_save_every_weights,
+                                        "__type__": "update",
+                                    }
+                                ),
+                                inputs=[if_save_every_weights18],
+                                outputs=[save_epoch10],
+                            )
+
+                        but3.click(
+                            click_train,
+                            [
+                                exp_dir1,
+                                sr2,
+                                if_f0_3,
+                                spk_id5,
+                                save_epoch10,
+                                total_epoch11,
+                                batch_size12,
+                                if_save_latest13,
+                                pretrained_G14,
+                                pretrained_D15,
+                                gpus16,
+                                if_cache_gpu17,
+                                if_save_every_weights18,
+                                version19,
+                            ],
+                            [info3, butstop, but3],
+                        )
+
+                        but4.click(train_index, [exp_dir1, version19], info3)
+                        but7.click(
+                            resources.save_model, [exp_dir1, save_action], info3
+                        )
+
+            with gr.TabItem(i18n("UVR5")):  # UVR section
+
+                with gr.Row():
+                    with gr.Column():
+                        model_select = gr.Radio(
+                            label=i18n("Model Architecture:"),
+                            choices=["VR", "MDX"],
+                            value="VR",
+                            interactive=True,
+                        )
+                        dir_wav_input = gr.Textbox(
+                            label=i18n(
+                                "Enter the path of the audio folder to be processed:"
+                            ),
+                            value=os.path.join(now_dir, "assets", "audios"),
+                        )
+                        wav_inputs = gr.File(
+                            file_count="multiple",
+                            label=i18n(
+                                "You can also input audio files in batches. Choose one of the two options. Priority is given to reading from the folder."
+                            ),
+                        )
+
+                    with gr.Column():
+                        model_choose = gr.Dropdown(
+                            label=i18n("Model:"), choices=uvr5_names
+                        )
+                        agg = gr.Slider(
+                            minimum=0,
+                            maximum=20,
+                            step=1,
+                            label="Vocal Extraction Aggressive",
+                            value=10,
+                            interactive=True,
+                            visible=False,
+                        )
+                        opt_vocal_root = gr.Textbox(
+                            label=i18n("Specify the output folder for vocals:"),
+                            value="assets/audios",
+                        )
+                        opt_ins_root = gr.Textbox(
+                            label=i18n(
+                                "Specify the output folder for accompaniment:"
+                            ),
+                            value="assets/audios/audio-others",
+                        )
+                        format0 = gr.Radio(
+                            label=i18n("Export file format:"),
+                            choices=["wav", "flac", "mp3", "m4a"],
+                            value="flac",
+                            interactive=True,
+                        )
+                    model_select.change(
+                        fn=update_model_choices,
+                        inputs=model_select,
+                        outputs=model_choose,
+                    )
+                    but2 = gr.Button(i18n("Convert"), variant="primary")
+                    vc_output4 = gr.Textbox(label=i18n("Output information:"))
+                    # wav_inputs.upload(fn=save_to_wav2_edited, inputs=[wav_inputs], outputs=[])
+                    but2.click(
+                        uvr,
+                        [
+                            model_choose,
+                            dir_wav_input,
+                            opt_vocal_root,
+                            wav_inputs,
+                            opt_ins_root,
+                            agg,
+                            format0,
+                            model_select,
+                        ],
+                        [vc_output4],
+                    )
+            with gr.TabItem(i18n("TTS")):
+
+                with gr.Column():
+                    text_test = gr.Textbox(
+                        label=i18n("Text:"),
+                        placeholder=i18n(
+                            "Enter the text you want to convert to voice..."
+                        ),
+                        lines=6,
+                    )
+
+
+                with gr.Row():
+                    with gr.Column():
+                        tts_methods_voice = ["Edge-tts", "Bark-tts"]
+                        ttsmethod_test = gr.Dropdown(
+                            tts_methods_voice,
+                            value="Edge-tts",
+                            label=i18n("TTS Method:"),
+                            visible=True,
+                        )
+                        tts_test = gr.Dropdown(
+                            tts.set_edge_voice,
+                            label=i18n("TTS Model:"),
+                            visible=True,
+                        )
+                        ttsmethod_test.change(
+                            fn=tts.update_tts_methods_voice,
+                            inputs=ttsmethod_test,
+                            outputs=tts_test,
+                        )
+
+                    with gr.Column():
+                        model_voice_path07 = gr.Dropdown(
+                            label=i18n("RVC Model:"),
+                            choices=sorted(names),
+                            value=default_weight,
+                        )
+                        best_match_index_path1, _ = match_index(
+                            model_voice_path07.value
+                        )
+
+                        file_index2_07 = gr.Dropdown(
+                            label=i18n("Select the .index file:"),
+                            choices=get_indexes(),
+                            value=best_match_index_path1,
+                            interactive=True,
+                            allow_custom_value=True,
+                        )
                 with gr.Row():
                     refresh_button_ = gr.Button(i18n("Refresh"), variant="primary")
                     refresh_button_.click(
