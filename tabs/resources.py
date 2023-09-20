@@ -154,9 +154,11 @@ def find_folder_parent(search_dir, folder_name):
 
 
 def download_from_url(url):
+    os.chdir(now_dir)
     parent_path = find_folder_parent(".", "pretrained_v2")
     zips_path = os.path.join(parent_path, "zips")
-
+    if not os.path.exists(zips_path):
+        os.makedirs(zips_path)
     if url != "":
         print(i18n("Downloading the file: ") + f"{url}")
         if "drive.google.com" in url:
