@@ -1,7 +1,6 @@
 import json
 import sys
 sys.path.append('..')
-import sys
 import logging
 
 logger = logging.getLogger(__name__)

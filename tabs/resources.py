@@ -8,14 +8,10 @@ import shutil
 import yt_dlp
 from mega import Mega
 import datetime
-import unicodedata
 import torch
 import glob
 import gradio as gr
-import gdown
-import zipfile
 import traceback
-import json
 import lib.infer.infer_libs.uvr5_pack.mdx as mdx
 from lib.infer.modules.uvr5.mdxprocess import (
     get_model_list,
@@ -29,10 +25,7 @@ import ffmpeg
 import hashlib
 now_dir = os.getcwd()
 sys.path.append(now_dir)
-from unidecode import unidecode
 import re
-import time
-from lib.infer.infer_pack.models_onnx import SynthesizerTrnMsNSFsidM
 from lib.infer.modules.vc.pipeline import Pipeline
 
 VC = Pipeline
@@ -46,13 +39,10 @@ from lib.infer.infer_pack.models import (
 from assets.configs.config import Config
 from lib.infer.modules.uvr5.mdxnet import MDXNetDereverb
 from lib.infer.modules.uvr5.preprocess import AudioPre, AudioPreDeEcho
-from huggingface_hub import HfApi, list_models
-from huggingface_hub import login
 from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
 from bs4 import BeautifulSoup
-from sklearn.cluster import MiniBatchKMeans
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -225,10 +215,11 @@ def download_from_url(url):
                 print("No .zip file found on the page.")
         elif "cdn.discordapp.com" in url:
             file = requests.get(url)
+            os.chdir("./assets/zips")
             if file.status_code == 200:
                 name = url.split("/")
                 with open(
-                    os.path.join(zips_path, name[len(name) - 1]), "wb"
+                    os.path.join(name[-1]), "wb"
                 ) as newfile:
                     newfile.write(file.content)
             else:
