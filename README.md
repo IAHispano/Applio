@@ -198,7 +198,7 @@ Our goal is not to supplant RVC or Mangio; rather, we aim to provide a contempor
 + [FFmpeg](https://github.com/FFmpeg/FFmpeg)
 + [Ultimate Vocal Remover](https://github.com/Anjok07/ultimatevocalremovergui)
 + [audio-slicer](https://github.com/openvpi/audio-slicer)
-+ [Vocal pitch extraction:RMVPE](https://github.com/Dream-High/RMVPE)
++ [RMVPE](https://github.com/Dream-High/RMVPE)
 
 
 ## 🙏 Thanks to all RVC, Mangio and Applio contributors
