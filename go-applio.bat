@@ -17,16 +17,16 @@ title Applio - Start
 :menu
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 
-echo [1] Start Applio (Nvidea Support)
+echo [1] Start Applio (Nvidia Support)
 echo [2] Start Applio (AMD Support)
 if exist "runtime\python.exe" (
-    echo ^[3^] Start Applio ^(Runtime Nvidea Support^)
-    echo ^[4^] Start Applio ^(Runtime AMD Support^)
+    echo.
+    echo ^[3^] Start Applio with Runtime ^(Nvidia Support^)
+    echo ^[4^] Start Applio with Runtime ^(AMD Support^)
 )
+echo.
 echo [5] Exit
 echo.
-::echo If you don't know which one to use, try 1 or 3 and the one that doesn't give you errors is the correct one.
-::echo.
 
 set /p choice=Select an option: 
 set choice=%choice: =%
@@ -35,16 +35,12 @@ if "%choice%"=="5" (
     goto finish
 ) else if "%choice%"=="1" (
     cls
-    echo WARNING: At this point, it's recommended to disable antivirus or firewall.
-    echo.
     python infer-web.py --pycmd python --port 7897
     pause
     cls
     goto menu
 ) else if "%choice%"=="2" (
     cls
-    echo WARNING: At this point, it's recommended to disable antivirus or firewall.
-    echo.
     python infer-web.py --pycmd python --port 7897 --dml
     pause
     cls
@@ -52,16 +48,12 @@ if "%choice%"=="5" (
 ) else if exist "runtime/python.exe" (
     if "%choice%"=="3" (
         cls
-        echo WARNING: At this point, it's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
-        echo.
         runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897
         pause
         cls
         goto menu
     ) else if "%choice%"=="4" (
         cls
-        echo WARNING: At this point, it's recommended to disable antivirus or firewall.
-        echo.
         runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --dml
         pause
         cls

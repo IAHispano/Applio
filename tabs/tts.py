@@ -13,7 +13,7 @@ load_dotenv()
 config = Config()
 vc = VC(config)
 
-
+import shutil
 import numpy as np
 import torch
 
@@ -28,12 +28,233 @@ nltk.download("punkt", quiet=True)
 from nltk.tokenize import sent_tokenize
 from bark import SAMPLE_RATE
 
+import json
+import ssl
+from typing import Any, Dict, List, Optional
+import asyncio
+import aiohttp
+import certifi
 
-import tabs.resources as resources
+VOICE_LIST = (
+    "https://speech.platform.bing.com/consumer/speech/synthesize/"
+    + "readaloud/voices/list?trustedclienttoken="
+    + "6A5AA1D4EAFF4E9FB37E23D68491D6F4"
+)
+def get_bark_voice():
+    mensaje = """
+v2/en_speaker_0	English	Male
+v2/en_speaker_1	English	Male
+v2/en_speaker_2	English	Male
+v2/en_speaker_3	English	Male
+v2/en_speaker_4	English	Male
+v2/en_speaker_5	English	Male
+v2/en_speaker_6	English	Male
+v2/en_speaker_7	English	Male
+v2/en_speaker_8	English	Male
+v2/en_speaker_9	English	Female
+v2/zh_speaker_0	Chinese (Simplified)	Male
+v2/zh_speaker_1	Chinese (Simplified)	Male
+v2/zh_speaker_2	Chinese (Simplified)	Male
+v2/zh_speaker_3	Chinese (Simplified)	Male
+v2/zh_speaker_4	Chinese (Simplified)	Female
+v2/zh_speaker_5	Chinese (Simplified)	Male
+v2/zh_speaker_6	Chinese (Simplified)	Female
+v2/zh_speaker_7	Chinese (Simplified)	Female
+v2/zh_speaker_8	Chinese (Simplified)	Male
+v2/zh_speaker_9	Chinese (Simplified)	Female
+v2/fr_speaker_0	French	Male
+v2/fr_speaker_1	French	Female
+v2/fr_speaker_2	French	Female
+v2/fr_speaker_3	French	Male
+v2/fr_speaker_4	French	Male
+v2/fr_speaker_5	French	Female
+v2/fr_speaker_6	French	Male
+v2/fr_speaker_7	French	Male
+v2/fr_speaker_8	French	Male
+v2/fr_speaker_9	French	Male
+v2/de_speaker_0	German	Male
+v2/de_speaker_1	German	Male
+v2/de_speaker_2	German	Male
+v2/de_speaker_3	German	Female
+v2/de_speaker_4	German	Male
+v2/de_speaker_5	German	Male
+v2/de_speaker_6	German	Male
+v2/de_speaker_7	German	Male
+v2/de_speaker_8	German	Female
+v2/de_speaker_9	German	Male
+v2/hi_speaker_0	Hindi	Female
+v2/hi_speaker_1	Hindi	Female
+v2/hi_speaker_2	Hindi	Male
+v2/hi_speaker_3	Hindi	Female
+v2/hi_speaker_4	Hindi	Female
+v2/hi_speaker_5	Hindi	Male
+v2/hi_speaker_6	Hindi	Male
+v2/hi_speaker_7	Hindi	Male
+v2/hi_speaker_8	Hindi	Male
+v2/hi_speaker_9	Hindi	Female
+v2/it_speaker_0	Italian	Male
+v2/it_speaker_1	Italian	Male
+v2/it_speaker_2	Italian	Female
+v2/it_speaker_3	Italian	Male
+v2/it_speaker_4	Italian	Male
+v2/it_speaker_5	Italian	Male
+v2/it_speaker_6	Italian	Male
+v2/it_speaker_7	Italian	Female
+v2/it_speaker_8	Italian	Male
+v2/it_speaker_9	Italian	Female
+v2/ja_speaker_0	Japanese	Female
+v2/ja_speaker_1	Japanese	Female
+v2/ja_speaker_2	Japanese	Male
+v2/ja_speaker_3	Japanese	Female
+v2/ja_speaker_4	Japanese	Female
+v2/ja_speaker_5	Japanese	Female
+v2/ja_speaker_6	Japanese	Male
+v2/ja_speaker_7	Japanese	Female
+v2/ja_speaker_8	Japanese	Female
+v2/ja_speaker_9	Japanese	Female
+v2/ko_speaker_0	Korean	Female
+v2/ko_speaker_1	Korean	Male
+v2/ko_speaker_2	Korean	Male
+v2/ko_speaker_3	Korean	Male
+v2/ko_speaker_4	Korean	Male
+v2/ko_speaker_5	Korean	Male
+v2/ko_speaker_6	Korean	Male
+v2/ko_speaker_7	Korean	Male
+v2/ko_speaker_8	Korean	Male
+v2/ko_speaker_9	Korean	Male
+v2/pl_speaker_0	Polish	Male
+v2/pl_speaker_1	Polish	Male
+v2/pl_speaker_2	Polish	Male
+v2/pl_speaker_3	Polish	Male
+v2/pl_speaker_4	Polish	Female
+v2/pl_speaker_5	Polish	Male
+v2/pl_speaker_6	Polish	Female
+v2/pl_speaker_7	Polish	Male
+v2/pl_speaker_8	Polish	Male
+v2/pl_speaker_9	Polish	Female
+v2/pt_speaker_0	Portuguese	Male
+v2/pt_speaker_1	Portuguese	Male
+v2/pt_speaker_2	Portuguese	Male
+v2/pt_speaker_3	Portuguese	Male
+v2/pt_speaker_4	Portuguese	Male
+v2/pt_speaker_5	Portuguese	Male
+v2/pt_speaker_6	Portuguese	Male
+v2/pt_speaker_7	Portuguese	Male
+v2/pt_speaker_8	Portuguese	Male
+v2/pt_speaker_9	Portuguese	Male
+v2/ru_speaker_0	Russian	Male
+v2/ru_speaker_1	Russian	Male
+v2/ru_speaker_2	Russian	Male
+v2/ru_speaker_3	Russian	Male
+v2/ru_speaker_4	Russian	Male
+v2/ru_speaker_5	Russian	Female
+v2/ru_speaker_6	Russian	Female
+v2/ru_speaker_7	Russian	Male
+v2/ru_speaker_8	Russian	Male
+v2/ru_speaker_9	Russian	Female
+v2/es_speaker_0	Spanish	Male
+v2/es_speaker_1	Spanish	Male
+v2/es_speaker_2	Spanish	Male
+v2/es_speaker_3	Spanish	Male
+v2/es_speaker_4	Spanish	Male
+v2/es_speaker_5	Spanish	Male
+v2/es_speaker_6	Spanish	Male
+v2/es_speaker_7	Spanish	Male
+v2/es_speaker_8	Spanish	Female
+v2/es_speaker_9	Spanish	Female
+v2/tr_speaker_0	Turkish	Male
+v2/tr_speaker_1	Turkish	Male
+v2/tr_speaker_2	Turkish	Male
+v2/tr_speaker_3	Turkish	Male
+v2/tr_speaker_4	Turkish	Female
+v2/tr_speaker_5	Turkish	Female
+v2/tr_speaker_6	Turkish	Male
+v2/tr_speaker_7	Turkish	Male
+v2/tr_speaker_8	Turkish	Male
+v2/tr_speaker_9	Turkish	Male
+    """
+    # Dividir el mensaje en líneas
+    lineas = mensaje.split("\n")
+    datos_deseados = []
+    for linea in lineas:
+        partes = linea.split("\t")
+        if len(partes) == 3:
+            clave, _, genero = partes
+            datos_deseados.append(f"{clave}-{genero}")
 
-set_bark_voice = resources.get_bark_voice()
-set_edge_voice = []## resources.get_edge_voice() [fix_me]
+    return datos_deseados
 
+# ||-----------------------------------------------------------------------------------||
+# ||                         Obtained from dependency edge_tts                         ||
+# ||-----------------------------------------------------------------------------------||
+
+async def list_voices(*, proxy: Optional[str] = None) -> Any:
+    """
+    List all available voices and their attributes.
+
+    This pulls data from the URL used by Microsoft Edge to return a list of
+    all available voices.
+
+    Returns:
+        dict: A dictionary of voice attributes.
+    """
+    ssl_ctx = ssl.create_default_context(cafile=certifi.where())
+    async with aiohttp.ClientSession(trust_env=True) as session:
+        async with session.get(
+            VOICE_LIST,
+            headers={
+                "Authority": "speech.platform.bing.com",
+                "Sec-CH-UA": '" Not;A Brand";v="99", "Microsoft Edge";v="91", "Chromium";v="91"',
+                "Sec-CH-UA-Mobile": "?0",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36 Edg/91.0.864.41",
+                "Accept": "*/*",
+                "Sec-Fetch-Site": "none",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Dest": "empty",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
+            proxy=proxy,
+            ssl=ssl_ctx,
+        ) as url:
+            data = json.loads(await url.text())
+    return data
+async def create(custom_voices: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+    """
+    Creates a list of voices with all available voices and their attributes.
+    """
+    voices = await list_voices() if custom_voices is None else custom_voices
+    voices = [
+        {**voice, **{"Language": voice["Locale"].split("-")[0]}}
+        for voice in voices
+    ]
+    simplified_voices = [
+        {'ShortName': voice['ShortName'], 'Gender': voice['Gender']}
+        for voice in voices
+    ]
+    return simplified_voices
+
+async def loop_main():
+    voices = await create()
+    voices_json = json.dumps(voices)
+    return voices_json
+
+def get_edge_voice():
+    loop = asyncio.get_event_loop()
+    voices_json = loop.run_until_complete(loop_main())
+    voices = json.loads(voices_json)
+    tts_voice = []
+    for voice in voices:
+        short_name = voice['ShortName']
+        gender = voice['Gender']
+        formatted_entry = f"{short_name}-{gender}"
+        tts_voice.append(formatted_entry)
+       # print(f"{short_name}-{gender}")
+    return tts_voice
+
+set_bark_voice = get_bark_voice()
+set_edge_voice = get_edge_voice()
 
 def update_tts_methods_voice(select_value):
     # ["Edge-tts", "RVG-tts", "Bark-tts"]
@@ -59,7 +280,7 @@ def custom_voice(
 
     for _value_item in _values:
         filename = (
-            "audio2/" + audio_files[_value_item]
+            "assets/audios/audio_outputs" + audio_files[_value_item]
             if _value_item != "converted_tts"
             else audio_files[0]
         )
@@ -176,8 +397,10 @@ def use_tts(
                 tts = gTTS("a", lang=language)
                 tts.save(filename)
                 print("Error: Audio will be replaced.")
-
-        os.system("cp assets/audios/audio-outputs/converted_tts.wav assets/audios/audio-outputs/real_tts.wav")
+        
+        source_path = os.path.join(now_dir, "assets", "audios", "audio-outputs", "converted_tts.wav")
+        destination_path = os.path.join(now_dir, "assets", "audios", "audio-outputs", "real_tts.wav")
+        shutil.copy(source_path, destination_path)
 
         custom_voice(
             ["converted_tts"],  # filter indices

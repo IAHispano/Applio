@@ -8,6 +8,7 @@ os.environ["no_proxy"] = "localhost, 127.0.0.1, ::1"
 import logging
 import shutil
 import threading
+import lib.globals.globals as rvc_globals
 import lib.infer.infer_libs.uvr5_pack.mdx as mdx
 from lib.infer.modules.uvr5.mdxprocess import (
     get_model_list,
@@ -37,16 +38,21 @@ import soundfile as SF
 
 SFWrite = SF.write
 from dotenv import load_dotenv
+from sklearn.cluster import MiniBatchKMeans
 import datetime
 
 
 from glob import glob1
 import signal
+from signal import SIGTERM
 
 from assets.configs.config import Config
 from assets.i18n.i18n import I18nAuto
 from lib.infer.infer_libs.train.process_ckpt import (
-    extract_small_model
+    change_info,
+    extract_small_model,
+    merge,
+    show_info,
 )
 from lib.infer.modules.uvr5.mdxnet import MDXNetDereverb
 from lib.infer.modules.uvr5.preprocess import AudioPre, AudioPreDeEcho
@@ -63,7 +69,8 @@ import tabs.merge as mergeaudios
 import tabs.processing as processing
 
 from lib.infer.infer_libs.csvutil import CSVutil
-from sklearn.cluster import MiniBatchKMeans
+import time
+import csv
 from shlex import quote as SQuote
 
 RQuote = lambda val: SQuote(str(val))
@@ -700,7 +707,9 @@ def update_fshift_presets(preset, qfrency, tmbre):
     )
 
 
-def preprocess_dataset(trainset_dir, exp_dir, sr, n_p):
+def preprocess_dataset(trainset_dir, exp_dir, sr, n_p, dataset_path):
+    if not dataset_path.strip() == "":
+        trainset_dir = dataset_path
     sr = sr_dict[sr]
     os.makedirs("%s/logs/%s" % (now_dir, exp_dir), exist_ok=True)
     f = open("%s/logs/%s/preprocess.log" % (now_dir, exp_dir), "w")
@@ -1696,9 +1705,10 @@ def save_to_wav(record_button):
     else:
         path_to_file = record_button
         new_name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".wav"
-        new_path = ".assets/audios/" + new_name
-        shutil.move(path_to_file, new_path)
-        return new_name
+        #new_path = ".assets/audios/" + new_name
+        target_path = os.path.join("assets", "audios", new_name)
+        shutil.move(path_to_file, target_path)
+        return target_path
 
 
 def save_to_wav2_edited(dropbox):
@@ -1809,21 +1819,11 @@ def GradioSetup():
                                 dropbox.upload(
                                     fn=save_to_wav2,
                                     inputs=[dropbox],
-                                    outputs=[],
-                                )
-                                dropbox.upload(
-                                    fn=resources.change_choices2,
-                                    inputs=[],
                                     outputs=[input_audio1],
                                 )
                                 record_button.change(
                                     fn=save_to_wav,
                                     inputs=[record_button],
-                                    outputs=[],
-                                )
-                                record_button.change(
-                                    fn=resources.change_choices2,
-                                    inputs=[],
                                     outputs=[input_audio1],
                                 )
                                 refresh_button.click(
@@ -2405,6 +2405,11 @@ def GradioSetup():
                                 btn_update_dataset_list = gr.Button(
                                     i18n("Update list"), variant="primary"
                                 )
+                            with gr.Column():
+                                dataset_path = gr.Textbox(
+                                    label=i18n("Or add your dataset path:"),
+                                    interactive=True,
+                            )
                             spk_id5 = gr.Slider(
                                 minimum=0,
                                 maximum=4,
@@ -2422,7 +2427,7 @@ def GradioSetup():
                             )
                             but1.click(
                                 preprocess_dataset,
-                                [trainset_dir4, exp_dir1, sr2, np7],
+                                [trainset_dir4, exp_dir1, sr2, np7, dataset_path],
                                 [info1],
                             )
                 with gr.Group():
