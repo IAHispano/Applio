@@ -1705,9 +1705,10 @@ def save_to_wav(record_button):
     else:
         path_to_file = record_button
         new_name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".wav"
-        new_path = ".assets/audios/" + new_name
-        shutil.move(path_to_file, new_path)
-        return new_name
+        #new_path = ".assets/audios/" + new_name
+        target_path = os.path.join("assets", "audios", new_name)
+        shutil.move(path_to_file, target_path)
+        return target_path
 
 
 def save_to_wav2_edited(dropbox):
