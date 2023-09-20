@@ -47,9 +47,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 config = Config()
-tmp = os.path.join(now_dir, "temp")
-shutil.rmtree(tmp, ignore_errors=True)
-os.environ["temp"] = tmp
+
 weight_root = os.getenv("weight_root")
 weight_uvr5_root = os.getenv("weight_uvr5_root")
 index_root = os.getenv("index_root")
@@ -142,11 +140,15 @@ def find_folder_parent(search_dir, folder_name):
             return os.path.abspath(dirpath)
     return None
 
+file_path = find_folder_parent(".", "assets")
+tmp = os.path.join(file_path, "temp")
+shutil.rmtree(tmp, ignore_errors=True)
+os.environ["temp"] = tmp
 
 def download_from_url(url):
-    os.chdir(now_dir)
-    parent_path = find_folder_parent(".", "pretrained_v2")
-    zips_path = os.path.join(parent_path, "zips")
+    file_path = find_folder_parent(".", "assets")
+    print(file_path)
+    zips_path = os.path.join(file_path, "assets", "zips")
     if not os.path.exists(zips_path):
         os.makedirs(zips_path)
     if url != "":
@@ -160,7 +162,7 @@ def download_from_url(url):
                 return None
 
             if file_id:
-                os.chdir("./assets/zips")
+                os.chdir(zips_path)
                 result = subprocess.run(
                     ["gdown", f"https://drive.google.com/uc?id={file_id}", "--fuzzy"],
                     capture_output=True,
@@ -177,7 +179,7 @@ def download_from_url(url):
                 print(result.stderr)
 
         elif "/blob/" in url:
-            os.chdir("./assets/zips")
+            os.chdir(zips_path)
             url = url.replace("blob", "resolve")
             response = requests.get(url)
             if response.status_code == 200:
@@ -185,7 +187,7 @@ def download_from_url(url):
                 with open(os.path.join(zips_path, file_name), "wb") as newfile:
                     newfile.write(response.content)
             else:
-                os.chdir(now_dir)
+                os.chdir(file_path)
         elif "mega.nz" in url:
             if "#!" in url:
                 file_id = url.split("#!")[1].split("!")[0]
@@ -227,7 +229,7 @@ def download_from_url(url):
         elif "pixeldrain.com" in url:
             try:
                 file_id = url.split("pixeldrain.com/u/")[1]
-                os.chdir("./assets/zips")
+                os.chdir(zips_path)
                 print(file_id)
                 response = requests.get(f"https://pixeldrain.com/api/file/{file_id}")
                 if response.status_code == 200:
@@ -240,17 +242,17 @@ def download_from_url(url):
                         os.makedirs(zips_path)
                     with open(os.path.join(zips_path, file_name), "wb") as newfile:
                         newfile.write(response.content)
-                        os.chdir(now_dir)
+                        os.chdir(file_path)
                         return "downloaded"
                 else:
-                    os.chdir(now_dir)
+                    os.chdir(file_path)
                     return None
             except Exception as e:
                 print(e)
-                os.chdir(now_dir)
+                os.chdir(file_path)
                 return None
         else:
-            os.chdir("./assets/zips")
+            os.chdir(zips_path)
             wget.download(url)
 
         # Fix points in the zips
@@ -263,7 +265,7 @@ def download_from_url(url):
                 realPath = os.path.join(currentPath, Files)
                 os.rename(realPath, nameFile + "." + extensionFile)
 
-        os.chdir(now_dir)
+        os.chdir(file_path)
         print(i18n("Full download"))
         return "downloaded"
     else:
@@ -377,12 +379,12 @@ def extract_and_show_progress(zipfile_path, unzips_path):
     
 
 def load_downloaded_model(url):
-    parent_path = find_folder_parent(".", "pretrained_v2")
+    parent_path = find_folder_parent(".", "assets")
     try:
         infos = []
-        zips_path = os.path.join(parent_path, "zips")
-        unzips_path = os.path.join(parent_path, "unzips")
-        weights_path = os.path.join(now_dir, "logs/weights")
+        zips_path = os.path.join(parent_path, "assets", "zips")
+        unzips_path = os.path.join(parent_path, "assets", "unzips")
+        weights_path = os.path.join(parent_path, "logs", "weights")
         logs_dir = ""
 
         if os.path.exists(zips_path):
@@ -417,7 +419,7 @@ def load_downloaded_model(url):
                 #shutil.unpack_archive(zipfile_path, unzips_path, "zip")
                 model_name = os.path.basename(zipfile_path)
                 logs_dir = os.path.join(
-                    now_dir,
+                    parent_path,
                     "logs",
                     os.path.normpath(str(model_name).replace(".zip", "")),
                 )
@@ -444,7 +446,7 @@ def load_downloaded_model(url):
                 if not "G_" in item and not "D_" in item and item.endswith(".pth"):
                     model_file = True
                     model_name = item.replace(".pth", "")
-                    logs_dir = os.path.join(now_dir, "logs", model_name)
+                    logs_dir = os.path.join(parent_path, "logs", model_name)
                     if os.path.exists(logs_dir):
                         shutil.rmtree(logs_dir)
                     os.mkdir(logs_dir)
@@ -505,10 +507,10 @@ def load_downloaded_model(url):
             shutil.rmtree(zips_path)
         if os.path.exists(unzips_path):
             shutil.rmtree(unzips_path)
-        os.chdir(now_dir)
+        os.chdir(parent_path)
         return result
     except Exception as e:
-        os.chdir(now_dir)
+        os.chdir(parent_path)
         if "too much use" in str(e):
             print(i18n("Too many users have recently viewed or downloaded this file"))
             yield i18n("Too many users have recently viewed or downloaded this file")
@@ -519,16 +521,16 @@ def load_downloaded_model(url):
             print(e)
             yield i18n("An error occurred downloading")
     finally:
-        os.chdir(now_dir)
+        os.chdir(parent_path)
 
 
 def load_dowloaded_dataset(url):
-    parent_path = find_folder_parent(".", "pretrained_v2")
+    parent_path = find_folder_parent(".", "assets")
     infos = []
     try:
-        zips_path = os.path.join(parent_path, "zips")
-        unzips_path = os.path.join(parent_path, "unzips")
-        datasets_path = os.path.join(now_dir, "datasets")
+        zips_path = os.path.join(parent_path, "assets", "zips")
+        unzips_path = os.path.join(parent_path, "assets", "unzips")
+        datasets_path = os.path.join(parent_path, "datasets")
         audio_extenions = [
             "wav",
             "mp3",
@@ -617,7 +619,7 @@ def load_dowloaded_dataset(url):
         infos.append(i18n("The Dataset has been loaded successfully."))
         yield "\n".join(infos)
     except Exception as e:
-        os.chdir(now_dir)
+        os.chdir(parent_path)
         if "too much use" in str(e):
             print(i18n("Too many users have recently viewed or downloaded this file"))
             yield i18n("Too many users have recently viewed or downloaded this file")
@@ -628,7 +630,7 @@ def load_dowloaded_dataset(url):
             print(e)
             yield i18n("An error occurred downloading")
     finally:
-        os.chdir(now_dir)
+        os.chdir(parent_path)
 
 
 SAVE_ACTION_CONFIG = {
@@ -652,20 +654,20 @@ SAVE_ACTION_CONFIG = {
 }
 
 def save_model(modelname, save_action):
-    parent_path = find_folder_parent(".", "pretrained_v2")
-    zips_path = os.path.join(parent_path, "zips")
+    parent_path = find_folder_parent(".", "assets")
+    zips_path = os.path.join(parent_path, "assets", "zips")
     dst = os.path.join(zips_path, modelname)
-    logs_path = os.path.join(now_dir, "logs", modelname)
-    weights_path = os.path.join(now_dir, "logs/weights", f"{modelname}.pth")
-    save_folder = now_dir
+    logs_path = os.path.join(parent_path, "logs", modelname)
+    weights_path = os.path.join(parent_path, "logs", "weights", f"{modelname}.pth")
+    save_folder = parent_path
     infos = []
 
     try:
         if not os.path.exists(logs_path):
             raise Exception("No model found.")
 
-        if not "content" in now_dir:
-            save_folder = os.path.join("./logs/")
+        if not "content" in parent_path:
+            save_folder = os.path.join(parent_path, "logs")
         else:
             save_folder = "/content/drive/MyDrive/RVC_Backup"
 
@@ -764,7 +766,7 @@ def save_model(modelname, save_action):
 
 
 def load_downloaded_backup(url):
-    parent_path = find_folder_parent(".", "pretrained_v2")
+    parent_path = find_folder_parent(".", "assets")
     try:
         infos = []
         logs_folders = [
@@ -775,10 +777,10 @@ def load_downloaded_backup(url):
             "3_feature256",
             "3_feature768",
         ]
-        zips_path = os.path.join(parent_path, "zips")
-        unzips_path = os.path.join(parent_path, "unzips")
-        weights_path = os.path.join(now_dir, "logs/weights")
-        logs_dir = os.path.join(now_dir, "logs")
+        zips_path = os.path.join(parent_path, "assets", "zips")
+        unzips_path = os.path.join(parent_path, "assets", "unzips")
+        weights_path = os.path.join(parent_path, "assets", "logs", "weights")
+        logs_dir = os.path.join(parent_path, "logs")
 
         if os.path.exists(zips_path):
             shutil.rmtree(zips_path)
@@ -839,15 +841,15 @@ def load_downloaded_backup(url):
 
         if os.path.exists(zips_path):
             shutil.rmtree(zips_path)
-        if os.path.exists(os.path.join(now_dir, "unzips")):
-            shutil.rmtree(os.path.join(now_dir, "unzips"))
+        if os.path.exists(os.path.join(parent_path, "assets", "unzips")):
+            shutil.rmtree(os.path.join(parent_path, "assets", "unzips"))
         print(i18n("The Backup has been uploaded successfully."))
         infos.append("\n" + i18n("The Backup has been uploaded successfully."))
         yield "\n".join(infos)
-        os.chdir(now_dir)
+        os.chdir(parent_path)
         return result
     except Exception as e:
-        os.chdir(now_dir)
+        os.chdir(parent_path)
         if "too much use" in str(e):
             print(i18n("Too many users have recently viewed or downloaded this file"))
             yield i18n("Too many users have recently viewed or downloaded this file")
@@ -858,7 +860,7 @@ def load_downloaded_backup(url):
             print(e)
             yield i18n("An error occurred downloading")
     finally:
-        os.chdir(now_dir)
+        os.chdir(parent_path)
 
 
 def save_to_wav(record_button):
@@ -1142,11 +1144,11 @@ def uvr(
 
 
 def load_downloaded_audio(url):
-    parent_path = find_folder_parent(".", "pretrained_v2")
+    parent_path = find_folder_parent(".", "assets")
     try:
         infos = []
-        audios_path = os.path.join(now_dir, "assets", "audios")
-        zips_path = os.path.join(now_dir, "zips")
+        audios_path = os.path.join(parent_path, "assets", "audios")
+        zips_path = os.path.join(parent_path, "assets", "zips")
 
         if not os.path.exists(audios_path):
             os.mkdir(audios_path)
@@ -1178,10 +1180,10 @@ def load_downloaded_audio(url):
         infos.append(i18n("Audio files have been moved to the 'audios' folder."))
         yield "\n".join(infos)
 
-        os.chdir(now_dir)
+        os.chdir(parent_path)
         return result
     except Exception as e:
-        os.chdir(now_dir)
+        os.chdir(parent_path)
         if "too much use" in str(e):
             print(i18n("Too many users have recently viewed or downloaded this file"))
             yield i18n("Too many users have recently viewed or downloaded this file")
@@ -1192,7 +1194,7 @@ def load_downloaded_audio(url):
             print(e)
             yield i18n("An error occurred downloading")
     finally:
-        os.chdir(now_dir)
+        os.chdir(parent_path)
 
 
 class error_message(Exception):
@@ -1329,11 +1331,12 @@ def download_backup():
 
 def update_dataset_list(name):
     new_datasets = []
+    file_path = find_folder_parent(".", "assets")
     for foldername in os.listdir("./datasets"):
         if "." not in foldername:
             new_datasets.append(
                 os.path.join(
-                    now_dir, "datasets", foldername
+                    file_path, "datasets", foldername
                 )
             )
     return gr.Dropdown.update(choices=new_datasets)
