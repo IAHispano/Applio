@@ -17,13 +17,29 @@ title Applio - Start
 :menu
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 
-echo [1] Start Applio (Nvidia Support)
-echo [2] Start Applio (AMD Support)
+
+
+set foundOption=false
+python -c "import torch" 2>nul
+
+if not errorlevel 1 (
+    set foundOption=true
+    echo ^[1^] Start Applio ^(Nvidia Support^)
+    echo ^[2^] Start Applio ^(AMD Support^)
+)
+
 if exist "runtime\python.exe" (
     echo.
+    set foundOption=true
     echo ^[3^] Start Applio with Runtime ^(Nvidia Support^)
     echo ^[4^] Start Applio with Runtime ^(AMD Support^)
 )
+
+if "%foundOption%"=="false" (
+    echo This seems a bit uncomfortable, it appears that you haven't installed Applio correctly.
+    echo Please run the "install_Applio.bat" and reinstall it properly.
+)
+
 echo.
 echo [5] Exit
 echo.
