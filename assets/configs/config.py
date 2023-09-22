@@ -41,6 +41,7 @@ def find_python_executable():
             output_lines = result.stdout.strip().split('\n')
             if output_lines:
                 python_path = output_lines[0]
+                python_path = os.path.dirname(python_path)
                 current_user = os.getlogin() or getpass.getuser()
                 logger.info("Current user: %s" % current_user)
                 return python_path
