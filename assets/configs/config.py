@@ -26,28 +26,39 @@ import platform
 syspf = platform.system()
 python_version = "39"
 
+def find_python_executable():
+    if syspf == "Linux":
+        try:
+            result = subprocess.run(["which", "python"], capture_output=True, text=True, check=True)
+            python_path = result.stdout.strip()
+            logger.info("Current user: Linux")
+            return python_path
+        except subprocess.CalledProcessError:
+            raise Exception("Could not find the Python path on Linux.")
+    elif syspf == "Windows":
+        try:
+            result = subprocess.run(["where", "python"], capture_output=True, text=True, check=True)
+            output_lines = result.stdout.strip().split('\n')
+            if output_lines:
+                python_path = output_lines[0]
+                current_user = os.getlogin() or getpass.getuser()
+                logger.info("Current user: %s" % current_user)
+                return python_path
+            raise Exception("Python executable not found in the PATH.")
+        except subprocess.CalledProcessError:
+            raise Exception("Could not find the Python path on Windows.")
+    elif syspf == "Darwin":
+        try:
+            result = subprocess.run(["which", "python"], capture_output=True, text=True, check=True)
+            python_path = result.stdout.strip()
+            logger.info("Current user: Darwin")
+            return python_path
+        except subprocess.CalledProcessError:
+            raise Exception("Could not find the Python path on macOS.")
+    else:
+        raise Exception("Operating system not compatible: {syspf}".format(syspf=syspf))
 
-if syspf == "Linux":
-    try:
-        result = subprocess.run(["which", "python"], capture_output=True, text=True, check=True)
-        python_path = result.stdout.strip()
-        logger.info("Current user: Linux")
-    except subprocess.CalledProcessError:
-        raise Exception("Could not find the Python path on Linux.")
-elif syspf == "Windows":
-    current_user = os.getlogin() or getpass.getuser()
-    python_path = "C:\\Users\\{username}\\AppData\\Local\\Programs\\Python\\Python{version}".format(username=current_user, version=python_version)
-    logger.info("Current user: %s" % current_user)
-elif syspf == "Darwin":
-    try:
-        result = subprocess.run(["which", "python"], capture_output=True, text=True, check=True)
-        python_path = result.stdout.strip()
-        logger.info("Current user: Darwin")
-    except subprocess.CalledProcessError:
-        raise Exception("Could not find the Python path on macOS.")
-else:
-    raise Exception("Operating system not compatible: {syspf}".format(syspf=syspf))
-
+python_path = find_python_executable()
 
 
 version_config_list = [
