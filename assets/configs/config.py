@@ -21,14 +21,33 @@ logger = logging.getLogger(__name__)
 
 import os
 import sys
-
-# Nombre de usuario actual
-current_user = os.getlogin() or getpass.getuser()
-logger.info("Current user: %s" % current_user)
-# Ruta de Python 3.9 para el usuario actual
+import subprocess
+import platform
+syspf = platform.system()
 python_version = "39"
-#C:\Users\USUARIO\AppData\Local\Programs\Python\Python39
-python_path = os.path.join("C:\\Users", current_user, "AppData", "Local", "Programs", "Python", f"Python{python_version}")
+
+
+if syspf == "Linux":
+    try:
+        result = subprocess.run(["which", "python"], capture_output=True, text=True, check=True)
+        python_path = result.stdout.strip()
+        logger.info("Current user: Linux")
+    except subprocess.CalledProcessError:
+        raise Exception("Could not find the Python path on Linux.")
+elif syspf == "Windows":
+    current_user = os.getlogin() or getpass.getuser()
+    python_path = "C:\\Users\\{username}\\AppData\\Local\\Programs\\Python\\Python{version}".format(username=current_user, version=python_version)
+    logger.info("Current user: %s" % current_user)
+elif syspf == "Darwin":
+    try:
+        result = subprocess.run(["which", "python"], capture_output=True, text=True, check=True)
+        python_path = result.stdout.strip()
+        logger.info("Current user: Darwin")
+    except subprocess.CalledProcessError:
+        raise Exception("Could not find the Python path on macOS.")
+else:
+    raise Exception("Operating system not compatible: {syspf}".format(syspf=syspf))
+
 
 
 version_config_list = [
