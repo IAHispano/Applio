@@ -26,7 +26,7 @@ Applio is a user-friendly fork of Mangio-RVC-Fork/RVC, designed to provide an in
 ### f0 Crepe Pitch Extraction for Training
 - Works on paperspace machines but not local MacOS/Windows machines (Potential memory leak).
 
-### Paperspace Integration
+### Paperspace Integration (Under maintenance, so it cannot be used for the moment.)
 - Applio seamlessly integrates with Paperspace, providing the following features:
   - Paperspace argument on infer-web.py (--paperspace) for sharing a Gradio link.
   - A dedicated make file tailored for Paperspace users.
