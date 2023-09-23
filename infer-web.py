@@ -763,13 +763,14 @@ def extract_f0_feature(
     if if_f0:
         if f0method != "rmvpe_gpu":
             cmd = (
-                '"%s" lib/infer/modules/train/extract/extract_f0_print.py "%s/logs/%s" %s %s'
+                '"%s" lib/infer/modules/train/extract/extract_f0_print.py "%s/logs/%s" %s %s %s'
                 % (
                     config.python_cmd,
                     now_dir,
                     exp_dir,
                     n_p,
                     f0method,
+                    RQuote(echl)
                 )
             )
             logger.info(cmd)
@@ -1135,8 +1136,8 @@ def click_train(
 
 
 def train_index(exp_dir1, version19):
-    # exp_dir = "%s/logs/%s" % (now_dir, exp_dir1)
-    exp_dir = "logs/%s" % (exp_dir1)
+    exp_dir = os.path.join(now_dir, 'logs', exp_dir1)
+    #exp_dir = "logs/%s" % (exp_dir1)
     os.makedirs(exp_dir, exist_ok=True)
     feature_dir = (
         "%s/3_feature256" % (exp_dir)
