@@ -189,16 +189,32 @@ def download_from_url(url):
                     return "private link"
                 print(result.stderr)
 
-        elif "/blob/" in url:
+        elif "/blob/" in url or "/resolve/" in url:
             os.chdir(zips_path)
-            url = url.replace("blob", "resolve")
-            response = requests.get(url)
+            if "/blob/" in url:
+                url = url.replace("/blob/", "/resolve/")
+            
+            response = requests.get(url, stream=True)
             if response.status_code == 200:
                 file_name = url.split("/")[-1]
-                with open(os.path.join(zips_path, file_name), "wb") as newfile:
-                    newfile.write(response.content)
+                file_name = file_name.replace("%20", "_")
+                total_size_in_bytes = int(response.headers.get('content-length', 0))
+                block_size = 1024  # 1 Kibibyte
+                progress_bar_length = 50
+                progress = 0
+                with open(os.path.join(zips_path, file_name), 'wb') as file:
+                    for data in response.iter_content(block_size):
+                        file.write(data)
+                        progress += len(data)
+                        progress_percent = int((progress / total_size_in_bytes) * 100)
+                        num_dots = int((progress / total_size_in_bytes) * progress_bar_length)
+                        progress_bar = "[" + "." * num_dots + " " * (progress_bar_length - num_dots) + "]"
+                        print(f"{progress_percent}% {progress_bar} {progress}/{total_size_in_bytes}  ", end="\r")
+                        if progress_percent == 100:
+                            print("\n")
             else:
                 os.chdir(file_path)
+                return None
         elif "mega.nz" in url:
             if "#!" in url:
                 file_id = url.split("#!")[1].split("!")[0]
