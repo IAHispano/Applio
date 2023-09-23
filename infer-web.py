@@ -1739,12 +1739,15 @@ def save_to_wav2(dropbox):
     shutil.move(file_path, target_path)
     return target_path
 
+from assets.themes.black import Applio
 
+# Crear una instancia de Applio
+mi_applio = Applio()
 def GradioSetup():
     default_weight = names[0] if names else ""
 
     with gr.Blocks(
-        theme="JohnSmith9982/small_and_pretty", title="Applio-RVC-Fork"
+        theme=mi_applio, title="Applio-RVC-Fork"
     ) as app:
         gr.HTML("<h1> 🍏 Applio-RVC-Fork </h1>")
         with gr.Tabs():
