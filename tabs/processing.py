@@ -68,7 +68,7 @@ def processing_():
                     )
                     sr_ = gr.Radio(
                         label=i18n("Target sample rate:"),
-                        choices=["40k", "48k"],
+                        choices=["40k", "48k", "32k"],
                         value="40k",
                         interactive=True,
                     )
