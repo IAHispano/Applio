@@ -6,6 +6,7 @@ import os, warnings, librosa
 import soundfile as sf
 import numpy as np
 import torch
+import json
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 import lib.infer.infer_libs.uvr5_pack.mdx as mdx
@@ -22,7 +23,23 @@ model_ids = requests.get(_models).json()
 model_ids = model_ids["mdx_download_list"].values()
 #print(model_ids)
 model_params = requests.get(model_params).json()
-stem_naming = requests.get(stem_naming).json()
+#Try to fix simplejson.errors.JSONDecodeError
+stem_naming = requests.get(stem_naming)
+
+try:
+    stem_naming.raise_for_status()  
+    content = stem_naming.content.decode('utf-8') 
+    stem_naming = json.loads(content)
+except requests.exceptions.HTTPError as http_err:
+    print(f"HTTP Error: {http_err}")
+    try:
+        stem_naming = json.loads(content)
+    except json.JSONDecodeError as json_err:
+        print(f"Error decoding JSON: {json_err}")
+except json.JSONDecodeError as json_err:
+    print(f"Error decoding JSON: {json_err}")
+except Exception as err:
+    print(f"Unhandled Error: {err}")
 
 os.makedirs(f"{now_dir}/assets/uvr5_weights/MDX", exist_ok=True)
 
