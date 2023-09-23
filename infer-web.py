@@ -16,6 +16,7 @@ from lib.infer.modules.uvr5.mdxprocess import (
     prepare_mdx,
     run_mdx,
 )
+import lib.tools.model_fetcher as model_fetcher
 import math as math
 import ffmpeg as ffmpeg
 import traceback
