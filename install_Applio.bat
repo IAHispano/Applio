@@ -52,13 +52,17 @@ cls
 
 echo Installing dependencies...
 echo,
-echo Most recommended for the majority of users: 
+echo Recommended for Nvidia GPU users: 
 echo [1] Download Runtime (pre-installed dependencies)
 echo.
+echo Recommended for AMD/Intel GPU users: 
+echo [2] Download DML Runtime (pre-installed dependencies)
+echo.
 echo Only recommended for experienced users:
-echo [2] Nvidia graphics cards
-echo [3] AMD / Intel graphics cards
-echo [4] I have already installed the dependencies
+echo [3] Nvidia graphics cards
+echo [4] AMD / Intel graphics cards
+echo.
+echo [5] I have already installed the dependencies
 echo.
 set /p choice=Select the option according to your GPU: 
 set choice=%choice: =%
@@ -78,6 +82,19 @@ goto dependenciesFinished
 
 if "%choice%"=="2" (
 cls
+curl -LJO "%URL_EXTRA%/runtime_dml.zip"
+echo.
+echo Extracting the runtime_dml.zip file...
+powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime_dml.zip', '%principal%') }"
+echo.
+del runtime_dml.zip
+cls
+echo.
+goto dependenciesFinished
+)
+
+if "%choice%"=="3" (
+cls
 pip install -r assets/requirements/requirements.txt
 echo.
 pip uninstall torch torchvision torchaudio -y
@@ -91,7 +108,7 @@ echo.
 goto dependenciesFinished
 )
 
-if "%choice%"=="3" (
+if "%choice%"=="4" (
 cls
 pip install -r assets/requirements/requirements.txt
 pip install -r assets/requirements/requirements-dml.txt
@@ -103,7 +120,7 @@ echo.
 goto dependenciesFinished
 )
 
-if "%choice%"=="4" (
+if "%choice%"=="5" (
 echo Dependencies successfully installed!
 echo.
 goto dependenciesFinished
