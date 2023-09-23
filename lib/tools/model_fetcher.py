@@ -91,5 +91,6 @@ for file_name, local_folder in individual_files:
     if not os.path.exists(destination_path):
         print(f"Downloading {url} to {destination_path}...")
         download_file_with_progress(url, destination_path)  # Utiliza la función con tqdm
-
+        
+os.system('cls' if os.name == 'nt' else 'clear')
 logger.info("Applio is Download suscessfully continuing...")
