@@ -145,6 +145,17 @@ tmp = os.path.join(file_path, "temp")
 shutil.rmtree(tmp, ignore_errors=True)
 os.environ["temp"] = tmp
 
+def get_mediafire_download_link(url):
+    response = requests.get(url)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, 'html.parser')
+    download_button = soup.find('a', {'class': 'input popsok', 'aria-label': 'Download file'})
+    if download_button:
+        download_link = download_button.get('href')
+        return download_link
+    else:
+        return None
+
 def download_from_url(url):
     file_path = find_folder_parent(".", "assets")
     print(file_path)
@@ -250,6 +261,13 @@ def download_from_url(url):
             except Exception as e:
                 print(e)
                 os.chdir(file_path)
+                return None
+        elif "mediafire.com" in url:
+            download_link = get_mediafire_download_link(url)
+            if download_link:
+                os.chdir(zips_path)
+                wget.download(download_link)
+            else:
                 return None
         else:
             os.chdir(zips_path)
