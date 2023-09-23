@@ -23,19 +23,15 @@ model_ids = requests.get(_models).json()
 model_ids = model_ids["mdx_download_list"].values()
 #print(model_ids)
 model_params = requests.get(model_params).json()
-#Try to fix simplejson.errors.JSONDecodeError
-stem_naming = requests.get(stem_naming)
+#Remove request for stem_naming
+stem_naming = {
+    "Vocals": "Instrumental",
+    "Other": "Instruments",
+    "Instrumental": "Vocals",
+    "Drums": "Drumless",
+    "Bass": "Bassless"
+}
 
-try:
-    stem_naming.raise_for_status()  
-    content = stem_naming.content.decode('utf-8') 
-    stem_naming = json.loads(content)
-except requests.exceptions.HTTPError as http_err:
-    print(f"HTTP Error: {http_err}")
-except json.JSONDecodeError as json_err:
-    print(f"Error decoding JSON: {json_err}")
-except Exception as err:
-    print(f"Unhandled Error: {err}")
 
 os.makedirs(f"{now_dir}/assets/uvr5_weights/MDX", exist_ok=True)
 
