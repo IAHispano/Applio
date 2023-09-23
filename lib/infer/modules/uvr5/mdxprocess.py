@@ -32,10 +32,6 @@ try:
     stem_naming = json.loads(content)
 except requests.exceptions.HTTPError as http_err:
     print(f"HTTP Error: {http_err}")
-    try:
-        stem_naming = json.loads(content)
-    except json.JSONDecodeError as json_err:
-        print(f"Error decoding JSON: {json_err}")
 except json.JSONDecodeError as json_err:
     print(f"Error decoding JSON: {json_err}")
 except Exception as err:
