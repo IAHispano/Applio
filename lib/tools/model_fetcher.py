@@ -82,7 +82,7 @@ for remote_folder, file_list in models_download:
         url = f"{URL_BASE}/{remote_folder}{file}"
         if not os.path.exists(destination_path):
             print(f"Downloading {url} to {destination_path}...")
-            download_file_with_progress(url, destination_path)  # Utiliza la función con tqdm
+            download_file_with_progress(url, destination_path)  # Use the function tdqm
 
 # Download individual files
 for file_name, local_folder in individual_files:
@@ -90,7 +90,7 @@ for file_name, local_folder in individual_files:
     url = f"{URL_BASE}/{file_name}"
     if not os.path.exists(destination_path):
         print(f"Downloading {url} to {destination_path}...")
-        download_file_with_progress(url, destination_path)  # Utiliza la función con tqdm
+        download_file_with_progress(url, destination_path)  # Use the function tdqm
         
 os.system('cls' if os.name == 'nt' else 'clear')
 logger.info("Applio is Download suscessfully continuing...")
