@@ -2,7 +2,6 @@ import subprocess
 import os
 import sys
 
-sys.path.append("..")
 import errno
 import shutil
 import yt_dlp
@@ -23,7 +22,9 @@ import requests
 import wget
 import ffmpeg
 import hashlib
-now_dir = os.getcwd()
+current_script_path = os.path.abspath(__file__)
+script_parent_directory = os.path.dirname(current_script_path)
+now_dir = os.path.dirname(script_parent_directory)
 sys.path.append(now_dir)
 import re
 from lib.infer.modules.vc.pipeline import Pipeline
@@ -140,7 +141,7 @@ def find_folder_parent(search_dir, folder_name):
             return os.path.abspath(dirpath)
     return None
 
-file_path = find_folder_parent(".", "assets")
+file_path = find_folder_parent(now_dir, "assets")
 tmp = os.path.join(file_path, "temp")
 shutil.rmtree(tmp, ignore_errors=True)
 os.environ["temp"] = tmp
@@ -157,11 +158,11 @@ def get_mediafire_download_link(url):
         return None
 
 def download_from_url(url):
-    file_path = find_folder_parent(".", "assets")
+    file_path = find_folder_parent(now_dir, "assets")
     print(file_path)
     zips_path = os.path.join(file_path, "assets", "zips")
-    if not os.path.exists(zips_path):
-        os.makedirs(zips_path)
+    print(zips_path)
+    os.makedirs(zips_path, exist_ok=True)
     if url != "":
         print(i18n("Downloading the file: ") + f"{url}")
         if "drive.google.com" in url:
@@ -265,8 +266,7 @@ def download_from_url(url):
                         .split("filename=")[-1]
                         .strip('";')
                     )
-                    if not os.path.exists(zips_path):
-                        os.makedirs(zips_path)
+                    os.makedirs(zips_path, exist_ok=True)
                     with open(os.path.join(zips_path, file_name), "wb") as newfile:
                         newfile.write(response.content)
                         os.chdir(file_path)
@@ -413,7 +413,7 @@ def extract_and_show_progress(zipfile_path, unzips_path):
     
 
 def load_downloaded_model(url):
-    parent_path = find_folder_parent(".", "assets")
+    parent_path = find_folder_parent(now_dir, "assets")
     try:
         infos = []
         zips_path = os.path.join(parent_path, "assets", "zips")
@@ -559,7 +559,7 @@ def load_downloaded_model(url):
 
 
 def load_dowloaded_dataset(url):
-    parent_path = find_folder_parent(".", "assets")
+    parent_path = find_folder_parent(now_dir, "assets")
     infos = []
     try:
         zips_path = os.path.join(parent_path, "assets", "zips")
@@ -688,7 +688,7 @@ SAVE_ACTION_CONFIG = {
 }
 
 def save_model(modelname, save_action):
-    parent_path = find_folder_parent(".", "assets")
+    parent_path = find_folder_parent(now_dir, "assets")
     zips_path = os.path.join(parent_path, "assets", "zips")
     dst = os.path.join(zips_path, modelname)
     logs_path = os.path.join(parent_path, "logs", modelname)
@@ -800,7 +800,7 @@ def save_model(modelname, save_action):
 
 
 def load_downloaded_backup(url):
-    parent_path = find_folder_parent(".", "assets")
+    parent_path = find_folder_parent(now_dir, "assets")
     try:
         infos = []
         logs_folders = [
@@ -1178,7 +1178,7 @@ def uvr(
 
 
 def load_downloaded_audio(url):
-    parent_path = find_folder_parent(".", "assets")
+    parent_path = find_folder_parent(now_dir, "assets")
     try:
         infos = []
         audios_path = os.path.join(parent_path, "assets", "audios")
@@ -1365,7 +1365,7 @@ def download_backup():
 
 def update_dataset_list(name):
     new_datasets = []
-    file_path = find_folder_parent(".", "assets")
+    file_path = find_folder_parent(now_dir, "assets")
     for foldername in os.listdir("./datasets"):
         if "." not in foldername:
             new_datasets.append(
