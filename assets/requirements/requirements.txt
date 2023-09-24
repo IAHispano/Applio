@@ -34,7 +34,7 @@ opencv_python_headless==4.8.0.74
 pandas==2.0.3
 praat-parselmouth==0.4.2
 PySimpleGUI==4.60.5
-pyworld==0.3.3
+pyworld==0.3.4
 requests==2.31.0
 resampy==0.4.2
 scikit_learn==1.3.0
