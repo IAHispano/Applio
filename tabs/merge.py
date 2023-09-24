@@ -13,7 +13,8 @@ from assets.i18n.i18n import I18nAuto
 i18n = I18nAuto()
 import gradio as gr
 import tabs.resources as resources
-
+import numpy as np
+from scipy.signal import resample
 
 def save_to_wav2(dropbox):
     file_path = dropbox.name
@@ -87,24 +88,33 @@ def generate_output_path(output_folder, base_name, extension):
             return output_path
         index += 1
 
+from pydub import AudioSegment
 
 def combine_and_save_audios(
     audio1_path, audio2_path, output_path, volume_factor_audio1, volume_factor_audio2
 ):
-    audio1, sr1 = librosa.load(audio1_path, sr=None)
-    audio2, sr2 = librosa.load(audio2_path, sr=None)
+    audio1 = AudioSegment.from_file(audio1_path)
+    audio2 = AudioSegment.from_file(audio2_path)
+    
+    # Verificar cuál audio tiene mayor longitud
+    if len(audio1) > len(audio2):
+        # Calcular la diferencia en duración en segundos
+        diff_duration_seconds = (len(audio1) - len(audio2)) / 1000.0  # Convertir a segundos
+        print(f"diff_duration_seconds: {diff_duration_seconds} seconds")
+        # Crear el segmento de silencio en Pydub
+        silence = AudioSegment.silent(duration=int(diff_duration_seconds))  # Convertir a milisegundos
 
-    # Alinear las tasas de muestreo
-    if sr1 != sr2:
-        if sr1 > sr2:
-            audio2 = librosa.resample(audio2, orig_sr=sr2, target_sr=sr1)
-        else:
-            audio1 = librosa.resample(audio1, orig_sr=sr1, target_sr=sr2)
+        # Agregar el silencio al audio2 para igualar la duración
+        audio2 = audio2 + silence
+    else:
+        # Calcular la diferencia en duración en segundos
+        diff_duration_seconds = (len(audio2) - len(audio1)) / 1000.0  # Convertir a segundos
+        print(f"diff_duration_seconds: {diff_duration_seconds} seconds")
+        # Crear el segmento de silencio en Pydub
+        silence = AudioSegment.silent(duration=int(diff_duration_seconds))  # Convertir a milisegundos
 
-    # Ajustar los audios para que tengan la misma longitud
-    target_length = min(len(audio1), len(audio2))
-    audio1 = librosa.util.fix_length(audio1, target_length)
-    audio2 = librosa.util.fix_length(audio2, target_length)
+        # Agregar el silencio al audio1 para igualar la duración
+        audio1 = audio1 + silence
 
     # Ajustar el volumen de los audios multiplicando por el factor de ganancia
     if volume_factor_audio1 != 1.0:
@@ -113,9 +123,10 @@ def combine_and_save_audios(
         audio2 *= volume_factor_audio2
 
     # Combinar los audios
-    combined_audio = audio1 + audio2
+    combined_audio = audio1.overlay(audio2)
 
-    sf.write(output_path, combined_audio, sr1)
+    # Guardar el audio combinado en el archivo de salida
+    combined_audio.export(output_path, format="wav")
 
 
 def audio_combined(

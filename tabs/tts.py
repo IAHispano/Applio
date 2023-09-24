@@ -370,7 +370,19 @@ def use_tts(
     if tts_voice == None:
         return
 
-    filename = os.path.join(now_dir, "assets", "audios", "audio-outputs", "converted_tts.wav")
+    output_folder = "assets/audios/audio-outputs"
+    os.makedirs(output_folder, exist_ok=True)
+    output_count = 1  # Contador para nombres de archivo únicos
+
+    while True:
+        converted_tts_filename = os.path.join(output_folder, f"tts_out_{output_count}.wav")
+        bark_out_filename = os.path.join(output_folder, f"bark_out_{output_count}.wav")
+        
+        if not os.path.exists(converted_tts_filename) and not os.path.exists(bark_out_filename):
+            break
+        output_count += 1
+    
+    
     if "SET_LIMIT" == os.getenv("DEMO"):
         if len(tts_text) > 60:
             tts_text = tts_text[:60]
@@ -383,40 +395,60 @@ def use_tts(
             asyncio.run(
                 edge_tts.Communicate(
                     tts_text, "-".join(tts_voice.split("-")[:-1])
-                ).save(filename)
+                ).save(converted_tts_filename)
             )
         except:
             try:
                 tts = gTTS(tts_text, lang=language)
-                tts.save(filename)
+                tts.save(converted_tts_filename)
                 tts.save
                 print(
                     f"No audio was received. Please change the tts voice for {tts_voice}. USING gTTS."
                 )
             except:
                 tts = gTTS("a", lang=language)
-                tts.save(filename)
+                tts.save(converted_tts_filename)
                 print("Error: Audio will be replaced.")
         
-        source_path = os.path.join(now_dir, "assets", "audios", "audio-outputs", "converted_tts.wav")
-        destination_path = os.path.join(now_dir, "assets", "audios", "audio-outputs", "real_tts.wav")
-        shutil.copy(source_path, destination_path)
+        try:
+            vc.get_vc(model_path)
+            info_, (sample_, audio_output_) = vc.vc_single_dont_save(
+                sid=0,
+                input_audio_path0=converted_tts_filename,
+                input_audio_path1=converted_tts_filename,
+                f0_up_key=transpose,
+                f0_file=None,
+                f0_method=f0_method,
+                file_index="",
+                file_index2=index_path,
+                index_rate=index_rate,
+                filter_radius=int(3),
+                resample_sr=int(0),
+                rms_mix_rate=float(0.25),
+                protect=float(0.33),
+                crepe_hop_length=crepe_hop_length,
+                f0_autotune=f0_autotune,
+                f0_min=50,
+                note_min=50,
+                f0_max=1100,
+                note_max=1100,
+            )
 
-        custom_voice(
-            ["converted_tts"],  # filter indices
-            ["assets/audios/audio-outputs/converted_tts.wav"],  # all audio files
-            model_voice_path=model_path,
-            transpose=transpose,
-            f0method=f0_method,
-            index_rate_=index_rate,
-            crepe_hop_length_=crepe_hop_length,
-            f0_autotune=f0_autotune,
-            file_index="",
-            file_index2=index_path,
-        )
-        return os.path.join(
-            now_dir, "assets", "audios", "audio-outputs", "converted_tts.wav"
-        ), os.path.join(now_dir, "assets", "audios", "audio-outputs", "real_tts.wav")
+            # Genera un nombre de archivo único para el archivo procesado por vc.vc_single_dont_save
+            vc_output_filename = os.path.join(output_folder, f"converted_tts_{output_count}.wav")
+            
+            # Guarda el archivo de audio procesado por vc.vc_single_dont_save
+            wavfile.write(
+                vc_output_filename,
+                rate=sample_,
+                data=audio_output_,
+            )
+
+            return vc_output_filename,converted_tts_filename
+        except Exception as e:
+            print(f"{e}")
+            return None, None
+
     elif tts_method == "Bark-tts":
         try:
             script = tts_text.replace("\n", " ").strip()
@@ -424,13 +456,12 @@ def use_tts(
             print(sentences)
             silence = np.zeros(int(0.25 * SAMPLE_RATE))
             pieces = []
-            nombre_archivo = os.path.join(now_dir, "assets", "audios", "audio-outputs", "bark_out.wav")
             for sentence in sentences:
                 audio_array, _ = __bark__(sentence, tts_voice.split("-")[0])
                 pieces += [audio_array, silence.copy()]
 
             sf.write(
-                file=nombre_archivo, samplerate=SAMPLE_RATE, data=np.concatenate(pieces)
+                file=bark_out_filename, samplerate=SAMPLE_RATE, data=np.concatenate(pieces)
             )
             vc.get_vc(model_path)
             info_, (sample_, audio_output_) = vc.vc_single_dont_save(
@@ -459,15 +490,17 @@ def use_tts(
                 f0_max=1100,
                 note_max=1100,
             )
+            
+            vc_output_filename = os.path.join(output_folder, f"converted_bark_{output_count}.wav")
+            
+            # Guarda el archivo de audio procesado por vc.vc_single_dont_save
             wavfile.write(
-                os.path.join(now_dir, "assets", "audios", "audio-outputs", "converted_bark.wav"),
+                vc_output_filename,
                 rate=sample_,
                 data=audio_output_,
             )
-            return (
-                os.path.join(now_dir, "assets", "audios", "audio-outputs", "converted_bark.wav"),
-                nombre_archivo,
-            )
+
+            return vc_output_filename, bark_out_filename
 
         except Exception as e:
             print(f"{e}")
