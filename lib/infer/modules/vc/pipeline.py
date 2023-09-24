@@ -275,10 +275,9 @@ class Pipeline(object):
         time_step,
     ):
         # Get various f0 methods from input to use in the computation stack
-        s = methods_str
-        s = s.split("hybrid")[1]
-        s = s.replace("[", "").replace("]", "")
-        methods = s.split("+")
+        methods_str = re.search('hybrid\[(.+)\]', methods_str)
+        if methods_str:  # Ensure a match was found
+            methods = [method.strip() for method in methods_str.group(1).split('+')]
         f0_computation_stack = []
 
         print("Calculating f0 pitch estimations for methods: %s" % str(methods))
@@ -287,23 +286,7 @@ class Pipeline(object):
         # Get f0 calculations for all methods specified
         for method in methods:
             f0 = None
-            if method == "pm":
-                f0 = (
-                    parselmouth.Sound(x, self.sr)
-                    .to_pitch_ac(
-                        time_step=time_step / 1000,
-                        voicing_threshold=0.6,
-                        pitch_floor=f0_min,
-                        pitch_ceiling=f0_max,
-                    )
-                    .selected_array["frequency"]
-                )
-                pad_size = (p_len - len(f0) + 1) // 2
-                if pad_size > 0 or p_len - len(f0) - pad_size > 0:
-                    f0 = np.pad(
-                        f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
-                    )
-            elif method == "crepe-tiny":
+            if method == "crepe-tiny":
                 f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, "tiny")
                 f0 = f0[1:]  # Get rid of extra first frame
             elif method == "mangio-crepe":
@@ -314,22 +297,6 @@ class Pipeline(object):
                 f0 = self.get_f0_crepe_computation(
                     x, f0_min, f0_max, p_len, crepe_hop_length, "tiny"
                 )
-            elif method == "harvest":
-                f0 = cache_harvest_f0(input_audio_path, self.sr, f0_max, f0_min, 10)
-                if filter_radius > 2:
-                    f0 = signal.medfilt(f0, 3)
-                f0 = f0[1:]  # Get rid of first frame.
-            elif method == "dio":  # Potentially buggy?
-                f0, t = pyworld.dio(
-                    x.astype(np.double),
-                    fs=self.sr,
-                    f0_ceil=f0_max,
-                    f0_floor=f0_min,
-                    frame_period=10,
-                )
-                f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
-                f0 = signal.medfilt(f0, 3)
-                f0 = f0[1:]
             # elif method == "pyin": Not Working just yet
             #    f0 = self.get_f0_pyin_computation(x, f0_min, f0_max)
             # Push method to the stack
@@ -338,12 +305,8 @@ class Pipeline(object):
         for fc in f0_computation_stack:
             print(len(fc))
 
-        print("Calculating hybrid median f0 from the stack of: %s" % str(methods))
-        f0_median_hybrid = None
-        if len(f0_computation_stack) == 1:
-            f0_median_hybrid = f0_computation_stack[0]
-        else:
-            f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
+        print(f"Calculating hybrid median f0 from the stack of: {str(methods)}")
+        f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
         return f0_median_hybrid
     
     def get_f0(
@@ -457,7 +420,7 @@ class Pipeline(object):
             # Perform hybrid median pitch estimation
             input_audio_path2wav[input_audio_path] = x.astype(np.double)
             f0 = self.get_f0_hybrid_computation(
-                f0_method,
+                f0_method,+
                 input_audio_path,
                 x,
                 f0_min,
