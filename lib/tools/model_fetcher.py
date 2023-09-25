@@ -99,5 +99,5 @@ for file_name, local_folder in individual_files:
         download_file_with_progress(url, destination_path)  # Use the function tdqm
         
 os.system('cls' if os.name == 'nt' else 'clear')
-logger.info("Applio is Download suscessfully continuing...")
+logger.info("Applio download suscessfully continuing...")
 
