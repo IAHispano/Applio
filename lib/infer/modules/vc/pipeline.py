@@ -679,7 +679,7 @@ class Pipeline(object):
             )
             pitch = pitch[:p_len]
             pitchf = pitchf[:p_len]
-            if self.device == "mps" or "xpu" in self.device:
+            if "mps" not in str(self.device) or "xpu" not in str(self.device):
                 pitchf = pitchf.astype(np.float32)
             pitch = torch.tensor(pitch, device=self.device).unsqueeze(0).long()
             pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
