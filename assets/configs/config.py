@@ -27,7 +27,11 @@ syspf = platform.system()
 python_version = "39"
 
 def find_python_executable():
-    if syspf == "Linux":
+    runtime_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'runtime'))
+    if os.path.exists(runtime_path):
+        logger.info("Current user: Runtime")
+        return runtime_path
+    elif syspf == "Linux":
         try:
             result = subprocess.run(["which", "python"], capture_output=True, text=True, check=True)
             python_path = result.stdout.strip()
