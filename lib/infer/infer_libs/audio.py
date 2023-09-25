@@ -73,94 +73,49 @@ def load_audion(file, sr):
 
 
 def load_audio(file, sr, DoFormant=False, Quefrency=1.0, Timbre=1.0):
-    converted = False
     DoFormant, Quefrency, Timbre = CSVutil("lib/csvdb/formanting.csv", "r", "formanting")
     try:
-        file = (
-            file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        )
-        file_formanted = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-
-        if (
-            lambda DoFormant: True
-            if DoFormant.lower() == "true"
-            else (False if DoFormant.lower() == "false" else DoFormant)
-        )(DoFormant):
-            numerator = round(random.uniform(1, 4), 4)
-
-            if not file.endswith(".wav"):
-                if not os.path.isfile(f"{file_formanted}.wav"):
-                    converted = True
-                    converting = (
-                        ffmpeg.input(file_formanted, threads=0)
-                        .output(f"{file_formanted}.wav")
-                        .run(
-                            cmd=["ffmpeg", "-nostdin"],
-                            capture_stdout=True,
-                            capture_stderr=True,
-                        )
-                    )
-                else:
-                    pass
-
-            file_formanted = (
-                f"{file_formanted}.wav"
-                if not file_formanted.endswith(".wav")
-                else file_formanted
-            )
-
-            print(f" · Formanting {file_formanted}...\n")
-
-            os.system(
-                '%s -i "%s" -q "%s" -t "%s" -o "%sFORMANTED_%s.wav"'
-                % (
-                    stft,
-                    file_formanted,
-                    Quefrency,
-                    Timbre,
-                    file_formanted,
-                    str(numerator),
-                )
-            )
-
-            print(f" · Formanted {file_formanted}!\n")
-
-            out, _ = (
-                ffmpeg.input(
-                    "%sFORMANTED_%s.wav" % (file_formanted, str(numerator)), threads=0
-                )
-                .output("-", format="f32le", acodec="pcm_f32le", ac=1, ar=sr)
-                .run(
-                    cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True
-                )
-            )
-
-            try:
-                os.remove("%sFORMANTED_%s.wav" % (file_formanted, str(numerator)))
-            except Exception:
-                pass
-                print("couldn't remove formanted type of file")
-
-        else:
-            out, _ = (
+        file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+        
+        if not file.endswith(".wav"):
+            converted = True
+            # Conversión de formato usando ffmpeg
+            converting = (
                 ffmpeg.input(file, threads=0)
-                .output("-", format="f32le", acodec="pcm_f32le", ac=1, ar=sr)
-                .run(
-                    cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True
-                )
+                .output(f"{file}.wav")
+                .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
             )
+            file = f"{file}.wav"
+            print(f" · File converted to Wav format: {file}\n")
+
+        if DoFormant:
+            # Procesamiento de formantes usando stftpitchshift
+            command = (
+                f'{stft} -i "{file}" -q "{Quefrency}" '
+                f'-t "{Timbre}" -o "{file}FORMANTED.wav"'
+            )
+            os.system(command)
+            file = f"{file}FORMANTED.wav"
+            print(f" · Formanted {file}!\n")
+
+        with open(file, "rb") as f:
+            with BytesIO() as out:
+                audio2(f, out, "f32le", sr)
+                audio_data = np.frombuffer(out.getvalue(), np.float32).flatten()
+
+        if converted:
+            try: os.remove(file)
+            except Exception as e: pass; print(f"Couldn't remove converted type of file due to {e}")
+            converted = False
+
+        return audio_data
+    except AttributeError:
+        audio = file[1] / 32768.0
+        if len(audio.shape) == 2:
+            audio = np.mean(audio, -1)
+        return librosa.resample(audio, orig_sr=file[0], target_sr=16000)
     except Exception as e:
         raise RuntimeError(f"Failed to load audio: {e}")
-
-    if converted:
-        try:
-            os.remove(file_formanted)
-        except Exception:
-            pass
-            print("couldn't remove converted type of file")
-        converted = False
-
-    return np.frombuffer(out, np.float32).flatten()
 
 
 def check_audio_duration(file):
