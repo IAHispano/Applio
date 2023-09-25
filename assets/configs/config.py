@@ -205,7 +205,7 @@ class Config:
                 self.is_half = True
             i_device = int(self.device.split(":")[-1])
             self.gpu_name = torch.cuda.get_device_name(i_device)
-            if float(cuda_version) < 3.7:
+            if 1 < float(cuda_version) < 3.7:
                 logger.info("No supported CUDA version found")
                 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
                 self.device = self.instead = "cpu"
