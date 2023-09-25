@@ -2,7 +2,8 @@
 Applio is a user-friendly fork of Mangio-RVC-Fork/RVC, designed to provide an intuitive interface, especially for newcomers.
 <br>
 
-[![Discord](https://img.shields.io/badge/SUPPORT_DISCORD-37a779?style=for-the-badge)](https://discord.gg/IAHispano)
+[![Discord](https://img.shields.io/badge/SUPPORT_DISCORD-37a779?style=for-the-badge)](https://discord.gg/IAHispano) [![Docs](https://img.shields.io/badge/DOCS-37a779?style=for-the-badge)](https://docs.applio.org)
+
 
 ## 📚 Table of Contents
   1. [Improvements of Applio Over RVC](#-improvements-of-applio-over-rvc)
