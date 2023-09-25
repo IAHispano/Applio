@@ -13,11 +13,11 @@ echo " :::          |_|   |_| "
 echo " ::: "
 echo " ::: "
   if ! command -v git &> /dev/null; then
-  echo "Please install git before run installer_Applio.sh"
+  echo "Please install git before run install_Applio.sh"
   exit 1
   fi
   if ! command -v python3.9 &> /dev/null; then
-  echo "Please install python3.9 before run installer_Applio.sh"
+  echo "Please install python3.9 before run install_Applio.sh"
   exit 1
   fi
 # Clone the repo for make this script usable with curl
