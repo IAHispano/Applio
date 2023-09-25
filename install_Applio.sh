@@ -26,7 +26,8 @@ git clone https://github.com/IAHispano/Applio-RVC-Fork
 cd Applio-RVC-Fork
 # It just works with python3.9 so
 python3.9 -m ensurepip
-
+menu() {
+  while true; do
 echo
 echo "Only recommended for experienced users:"
 echo "[1] Nvidia graphics cards"
@@ -54,7 +55,7 @@ case $choice in
         echo "Dependencies successfully installed!"
         ;;
     3)
-        echo "Exiting..."
+        finish
         ;;
     *)
         echo "Invalid option. Please enter a number from 1 to 3."
@@ -62,6 +63,15 @@ case $choice in
         read -p "Press Enter to access the main menu..."
         ;;
 esac
+done
+}
+
+finish() {
+  clear
+  echo "Dependencies successfully installed!..."
+  exit 0
+}
+menu
 # Finish installation
 echo
 echo "Applio has been successfully downloaded, run the file go-applio.sh to run the web interface!"
