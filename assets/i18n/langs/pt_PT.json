@@ -65,7 +65,7 @@
   "Unload voice to save GPU memory": "Descarregue a voz para economizar memória da GPU:",
   "Select Speaker/Singer ID:": "Selecione o ID do palestrante/cantor:",
   "Recommended +12 key for male to female conversion, and -12 key for female to male conversion. If the sound range goes too far and the voice is distorted, you can also adjust it to the appropriate range by yourself.": "Chave recomendada +12 para conversão de homem para mulher e chave -12 para conversão de mulher para homem. Se o alcance do som for muito longe e a voz estiver distorcida, você também poderá ajustá-lo para o alcance apropriado.",
-  "Transpose (integer, number Fof semitones, raise by an octave: 12, lower by an octave: -12):": "Transpor (inteiro, número de semitons, aumentar uma oitava: 12, diminuir uma oitava: -12):",
+  "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):": "Transpor (inteiro, número de semitons, aumentar uma oitava: 12, diminuir uma oitava: -12):",
   "Enter the path of the audio file to be processed (default is the correct format example):": "Digite o caminho do arquivo de áudio a ser processado (o padrão é o exemplo de formato correto):",
   "Select the pitch extraction algorithm:": "Selecione o algoritmo de extração de pitch:",
   "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.": "Comprimento do salto do Mangio-Crepe (aplica-se apenas ao mangio-crepe): A duração do salto refere-se ao tempo que leva para o locutor saltar para um tom dramático. Comprimentos de salto mais baixos levam mais tempo para serem inferidos, mas são mais precisos no tom.",

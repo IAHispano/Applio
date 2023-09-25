@@ -64,7 +64,7 @@
   "Unload voice to save GPU memory": "Odłączenie głosu, aby zaoszczędzić pamięć GPU",
   "Select Speaker/Singer ID:": "Wybierz ID Głośnika/Piosenkarza:",
   "Recommended +12 key for male to female conversion, and -12 key for female to male conversion. If the sound range goes too far and the voice is distorted, you can also adjust it to the appropriate range by yourself.": "Zalecane +12 przy konwersji z mężczyzny na kobietę i -12 przy konwersji z kobiety na mężczyznę. Jeśli zakres dźwięku jest zbyt szeroki i głos jest zniekształcony, można samodzielnie dostosować go do odpowiedniego zakresu.",
-  "Transpose (integer, number Fof semitones, raise by an octave: 12, lower by an octave: -12):": "Transpozycja (liczba całkowita, liczba półtonów, podniesienie o oktawę: 12, obniżenie o oktawę: -12):",
+  "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):": "Transpozycja (liczba całkowita, liczba półtonów, podniesienie o oktawę: 12, obniżenie o oktawę: -12):",
   "Feature search database file path:": "Ścieżka do pliku bazy wyszukiwania funkcji:",
   "Enter the path of the audio file to be processed (default is the correct format example):": "Wprowadź ścieżkę do pliku audio, który ma zostać poddany konwersji (domyślnie jest to przykład poprawnego formatu):",
   "Select the pitch extraction algorithm:": "Wybierz algorytm ekstrakcji pitchu:",

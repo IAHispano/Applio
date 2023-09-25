@@ -65,7 +65,7 @@
   "Unload voice to save GPU memory": "Bongkar suara untuk menghemat memori GPU:",
   "Select Speaker/Singer ID:": "Pilih ID Pembicara/Penyanyi:",
   "Recommended +12 key for male to female conversion, and -12 key for female to male conversion. If the sound range goes too far and the voice is distorted, you can also adjust it to the appropriate range by yourself.": "Direkomendasikan kunci +12 untuk konversi pria ke wanita, dan -12 kunci untuk konversi wanita ke pria. Jika rentang suara terlalu jauh dan suaranya terdistorsi, Anda juga dapat menyesuaikannya sendiri ke rentang yang sesuai.",
-  "Transpose (integer, number Fof semitones, raise by an octave: 12, lower by an octave: -12):": "Transpos (bilangan bulat, jumlah seminada, dinaikkan satu oktaf: 12, diturunkan satu oktaf: -12):",
+  "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):": "Transpos (bilangan bulat, jumlah seminada, dinaikkan satu oktaf: 12, diturunkan satu oktaf: -12):",
   "Enter the path of the audio file to be processed (default is the correct format example):": "Masukkan jalur file audio yang akan diproses (defaultnya adalah contoh format yang benar):",
   "Select the pitch extraction algorithm:": "Pilih algoritma ekstraksi nada:",
   "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.": "Panjang Hop Mangio-Crepe (Hanya berlaku untuk mangio-crepe): Panjang hop mengacu pada waktu yang dibutuhkan pembicara untuk melompat ke nada dramatis. Panjang lompatan yang lebih rendah membutuhkan lebih banyak waktu untuk menyimpulkan tetapi nadanya lebih akurat.",

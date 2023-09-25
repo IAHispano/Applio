@@ -65,7 +65,7 @@
   "Unload voice to save GPU memory": "卸载语音以节省 GPU 内存：",
   "Select Speaker/Singer ID:": "选择演讲者/歌手 ID：",
   "Recommended +12 key for male to female conversion, and -12 key for female to male conversion. If the sound range goes too far and the voice is distorted, you can also adjust it to the appropriate range by yourself.": "建议+12键用于男性到女性的转换，-12键用于女性到男性的转换。如果音域走得太远，声音失真，也可以自行调整到合适的音域。",
-  "Transpose (integer, number Fof semitones, raise by an octave: 12, lower by an octave: -12):": "移调（整数，半音数，升高八度：12，降低八度：-12）：",
+  "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):": "移调（整数，半音数，升高八度：12，降低八度：-12）：",
   "Enter the path of the audio file to be processed (default is the correct format example):": "输入要处理的音频文件的路径（默认为正确格式示例）：",
   "Select the pitch extraction algorithm:": "选择音高提取算法：",
   "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.": "Mangio-Crepe 跳跃长度（仅适用于 mangio-crepe）：跳跃长度是指说话者跳跃到戏剧性音高所需的时间。较短的跳跃长度需要更多的时间来推断，但音高更准确。",

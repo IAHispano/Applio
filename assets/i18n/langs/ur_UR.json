@@ -65,7 +65,7 @@
   "Unload voice to save GPU memory": "GPU میموری کو بچانے کے لیے آواز اتاریں:",
   "Select Speaker/Singer ID:": "اسپیکر/گلوکار کی شناخت منتخب کریں:",
   "Recommended +12 key for male to female conversion, and -12 key for female to male conversion. If the sound range goes too far and the voice is distorted, you can also adjust it to the appropriate range by yourself.": "مرد سے خاتون کی تبدیلی کے لیے تجویز کردہ +12 کلید، اور عورت سے مرد کی تبدیلی کے لیے -12 کلید۔ اگر آواز کی حد بہت دور جاتی ہے اور آواز بگڑ جاتی ہے، تو آپ اسے خود بھی مناسب رینج میں ایڈجسٹ کر سکتے ہیں۔",
-  "Transpose (integer, number Fof semitones, raise by an octave: 12, lower by an octave: -12):": "ٹرانسپوز (انٹیجر، سیمیٹونز کی تعداد، ایک آکٹیو سے بڑھائیں: 12، ایک آکٹیو سے کم: -12):",
+  "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):": "ٹرانسپوز (انٹیجر، سیمیٹونز کی تعداد، ایک آکٹیو سے بڑھائیں: 12، ایک آکٹیو سے کم: -12):",
   "Enter the path of the audio file to be processed (default is the correct format example):": "کارروائی کی جانے والی آڈیو فائل کا راستہ درج کریں (پہلے سے طے شدہ فارمیٹ کی صحیح مثال ہے):",
   "Select the pitch extraction algorithm:": "پچ نکالنے کا الگورتھم منتخب کریں:",
   "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.": "Mangio-Crepe Hop Length (صرف mangio-crepe پر لاگو ہوتا ہے): ہاپ کی لمبائی سے مراد وہ وقت ہوتا ہے جو اسپیکر کو ڈرامائی انداز میں چھلانگ لگانے میں لگتا ہے۔ نچلی ہاپ کی لمبائی کا اندازہ لگانے میں زیادہ وقت لگتا ہے لیکن پچ زیادہ درست ہوتی ہے۔",

@@ -64,7 +64,7 @@
   "Unload voice to save GPU memory": "Unload voice to save GPU memory",
   "Select Speaker/Singer ID:": "Select Speaker/Singer ID:",
   "Recommended +12 key for male to female conversion, and -12 key for female to male conversion. If the sound range goes too far and the voice is distorted, you can also adjust it to the appropriate range by yourself.": "Recommended +12 key for male to female conversion, and -12 key for female to male conversion. If the sound range goes too far and the voice is distorted, you can also adjust it to the appropriate range by yourself.",
-  "Transpose (integer, number Fof semitones, raise by an octave: 12, lower by an octave: -12):": "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):",
+  "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):": "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):",
   "Feature search database file path:": "Feature search database file path:",
   "Enter the path of the audio file to be processed (default is the correct format example):": "Enter the path of the audio file to be processed (default is the correct format example):",
   "Select the pitch extraction algorithm:": "Select the pitch extraction algorithm:",
