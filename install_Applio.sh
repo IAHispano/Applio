@@ -1,5 +1,5 @@
 #!/bin/bash
-echo -e "\033]0;Applio - Installert\007"
+echo -e "\033]0;Applio - Installer\007"
 clear
 echo " :::"
 echo " :::                       _ _ "
