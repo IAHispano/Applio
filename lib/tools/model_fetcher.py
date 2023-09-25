@@ -3,6 +3,7 @@ import requests
 from tqdm import tqdm
 import subprocess
 import shutil
+import platform
 import logging
 logger = logging.getLogger(__name__)
 
@@ -60,8 +61,9 @@ def download_file_with_progress(url, destination_path):
             file.write(data)
             bar.update(len(data))
 
-
+# Download torch crepe if not exists
 if not os.path.exists("torchcrepe"):
+    os_name = platform.system()
     # Cloning the GitHub repository into the temporary directory
     print("Cloning the GitHub repository into the temporary directory...")
     subprocess.run(["git", "clone", "https://github.com/maxrmorrison/torchcrepe.git", "temp_torchcrepe"])
@@ -72,7 +74,11 @@ if not os.path.exists("torchcrepe"):
 
     # Removing the temporary directory
     print("Removing the temporary directory...")
-    subprocess.run("rmdir /s /q temp_torchcrepe", shell=True)
+    print(os_name)
+    if os_name == "Windows":
+        subprocess.run("rmdir /s /q temp_torchcrepe", shell=True)
+    if os_name == "Linux":
+        shutil.rmtree("temp_torchcrepe")
 
 # Download files that do not exist
 for remote_folder, file_list in models_download:
@@ -94,3 +100,4 @@ for file_name, local_folder in individual_files:
         
 os.system('cls' if os.name == 'nt' else 'clear')
 logger.info("Applio is Download suscessfully continuing...")
+
