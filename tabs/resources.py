@@ -96,11 +96,13 @@ def calculate_md5(file_path):
         for chunk in iter(lambda: f.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
-
+import unicodedata
 
 def format_title(title):
-    formatted_title = re.sub(r"[^\w\s-]", "", title)
-    formatted_title = formatted_title.replace(" ", "_")
+    formatted_title = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('utf-8')
+    formatted_title = re.sub(r'[\u2500-\u257F]+', '', title)
+    formatted_title = re.sub(r'[^\w\s-]', '', title)
+    formatted_title = re.sub(r'\s+', '_', formatted_title)
     return formatted_title
 
 
