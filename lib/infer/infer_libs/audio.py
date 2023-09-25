@@ -75,23 +75,23 @@ def load_audion(file, sr):
 def load_audio(file, sr, DoFormant=False, Quefrency=1.0, Timbre=1.0):
     converted = False
     DoFormant, Quefrency, Timbre = CSVutil("lib/csvdb/formanting.csv", "r", "formanting")
+    DoFormant, Quefrency, Timbre = bool(DoFormant), float(Quefrency), float(Timbre)
+    
     try:
-        file = (
-            file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        )  # 防止小白拷路径头尾带了空格和"和回车
+        file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
         
-       #if not file.endswith(".wav"):
-       #    converted = True
-       #    # Conversión de formato usando ffmpeg
-       #    converting = (
-       #        ffmpeg.input(file, threads=0)
-       #        .output(f"{file}.wav")
-       #        .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
-       #    )
-       #    file = f"{file}.wav"
-       #    print(f" · File converted to Wav format: {file}\n")
+        if not file.endswith(".wav"):
+            converted = True
+            # Conversión de formato usando ffmpeg
+            converting = (
+                ffmpeg.input(file, threads=0)
+                .output(f"{file}.wav")
+                .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
+            )
+            file = f"{file}.wav"
+            print(f" · File converted to Wav format: {file}\n")
 
-        if DoFormant:
+        if DoFormant == False:
             # Procesamiento de formantes usando stftpitchshift
             command = (
                 f'{stft} -i "{file}" -q "{Quefrency}" '
@@ -106,10 +106,10 @@ def load_audio(file, sr, DoFormant=False, Quefrency=1.0, Timbre=1.0):
                 audio2(f, out, "f32le", sr)
                 audio_data = np.frombuffer(out.getvalue(), np.float32).flatten()
 
-       #if converted:
-       #    try: os.remove(file)
-       #    except Exception as e: pass; print(f"Couldn't remove converted type of file due to {e}")
-       #    converted = False
+        if converted:
+            try: os.remove(file)
+            except Exception as e: pass; print(f"Couldn't remove converted type of file due to {e}")
+            converted = False
 
         return audio_data
     except AttributeError:
