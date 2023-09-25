@@ -27,6 +27,7 @@ cd Applio-RVC-Fork
 python3.9 -m ensurepip
 menu() {
   while true; do
+  clear
 echo
 echo "Only recommended for experienced users:"
 echo "[1] Nvidia graphics cards"
