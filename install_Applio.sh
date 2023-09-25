@@ -25,6 +25,9 @@ git clone https://github.com/IAHispano/Applio-RVC-Fork
 cd Applio-RVC-Fork
 # It just works with python3.9 so
 chmod +x stftpitchshift
+chmod +x *.sh
+# maybe is needed idk
+chmod +x ./lib/infer/infer_libs/stftpitchshift
 python3.9 -m ensurepip
 clear
 menu() {
