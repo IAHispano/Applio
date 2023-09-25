@@ -73,6 +73,7 @@ def load_audion(file, sr):
 
 
 def load_audio(file, sr, DoFormant=False, Quefrency=1.0, Timbre=1.0):
+    converted = False
     DoFormant, Quefrency, Timbre = CSVutil("lib/csvdb/formanting.csv", "r", "formanting")
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
