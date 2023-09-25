@@ -76,7 +76,9 @@ def load_audio(file, sr, DoFormant=False, Quefrency=1.0, Timbre=1.0):
     converted = False
     DoFormant, Quefrency, Timbre = CSVutil("lib/csvdb/formanting.csv", "r", "formanting")
     try:
-        file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+        file = (
+            file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+        )  # 防止小白拷路径头尾带了空格和"和回车
         
        #if not file.endswith(".wav"):
        #    converted = True
