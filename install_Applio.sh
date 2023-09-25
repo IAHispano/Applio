@@ -45,14 +45,14 @@ case $choice in
         echo
         python3.9 -m pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
         echo
-        echo "Dependencies successfully installed!"
+        finish
         ;;
     2)
         echo
         python3.9 -m pip install -r assets/requirements/requirements.txt
         python3.9 -m pip install -r assets/requirements/requirements-dml.txt
         echo
-        echo "Dependencies successfully installed!"
+        finish
         ;;
     3)
         finish
