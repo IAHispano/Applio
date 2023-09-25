@@ -704,18 +704,18 @@ def load_dowloaded_dataset(url):
 SAVE_ACTION_CONFIG = {
     i18n("Save all"): {
         'destination_folder': "manual_backup",
-        'copy_files': True,  # "Save all" copia todos los archivos y carpetas
+        'copy_files': True,  # "Save all" Copy all files and folders
         'include_weights': False
     },
     i18n("Save D and G"): {
         'destination_folder': "manual_backup",
-        'copy_files': False,  # "Save D and G" no copia todo, solo archivos específicos
+        'copy_files': False,  # "Save D and G" Do not copy everything, only specific files
         'files_to_copy': ["D_*.pth", "G_*.pth", "added_*.index"],
         'include_weights': True,
     },
     i18n("Save voice"): {
         'destination_folder': "Finished",
-        'copy_files': False,  # "Save voice" no copia todo, solo archivos específicos
+        'copy_files': False,  # "Save voice" Do not copy everything, only specific files
         'files_to_copy': ["added_*.index"],
         'include_weights': True,
     },
@@ -753,50 +753,62 @@ def save_model(modelname, save_action):
             shutil.rmtree(zips_path)
 
         os.mkdir(zips_path)
-        added_file = glob.glob(os.path.join(logs_path, "added_*.index"))
-        d_file = glob.glob(os.path.join(logs_path, "D_*.pth"))
-        g_file = glob.glob(os.path.join(logs_path, "G_*.pth"))
 
         if save_action == i18n("Choose the method"):
             raise Exception("No method chosen.")
 
-        # Obtener la configuración para la acción de guardado seleccionada
+       # Obtain the configuration for selected save action
         save_action_config = SAVE_ACTION_CONFIG.get(save_action)
 
         if save_action_config is None:
             raise Exception("Invalid save action.")
 
-        # Definir el destino y los archivos a copiar según la configuración
+        # Define the destination and the files to be copied according to the configuration
         destination_folder = save_action_config['destination_folder']
         copy_files = save_action_config['copy_files']
         files_to_copy = save_action_config.get('files_to_copy', [])
 
         if copy_files:
-            # Utilizar shutil.copytree para copiar todo el contenido recursivamente
+           # Use shutil.copytree to copy all the content recursively
             shutil.copytree(logs_path, dst)
         else:
             save_folder = os.path.join(save_folder, destination_folder)
 
         yield "\n".join(infos)
 
-        # Manejo de archivos de pesos según la configuración
+       # Weight file management according to configuration
         if save_action_config['include_weights']:
             if not os.path.exists(weights_path):
                 infos.append(i18n("Saved without inference model..."))
             else:
-                if copy_files:
-                    shutil.copy(weights_path, dst)
+                pth_files = [file for file in os.listdir(weights_path) if file.endswith('.pth')]
+                if not pth_files:
+                    infos.append(i18n("Saved without inference model..."))
                 else:
-                    with zipfile.ZipFile(os.path.join(zips_path, f"{modelname}.zip"), 'a', zipfile.ZIP_DEFLATED) as zipf:
-                        zipf.write(weights_path, os.path.basename(weights_path))
+                    if copy_files:
+                        shutil.copy(weights_path, dst)
+                    else:
+                        skipped_files = set()  # Keep track of base names of skipped files
+                        for pth_file in pth_files:
+                            match = re.search(r'(.*)_s\d+.pth$', pth_file)
+                            if match:  # Skip if file ends with _s followed by a number
+                                base_name = match.group(1)  # Get the base file name (before the `_s<number>` suffix)
+                                if base_name not in skipped_files:
+                                    print(f'Skipping autosave epoch files for {base_name}.')
+                                    skipped_files.add(base_name)
+                                continue
+
+                            print(f'Processing file: {pth_file}')
+                            with zipfile.ZipFile(os.path.join(zips_path, f"{modelname}.zip"), 'a', zipfile.ZIP_DEFLATED) as zipf:
+                                zipf.write(os.path.join(weights_path, pth_file), arcname=os.path.basename(pth_file))
 
         yield "\n".join(infos)
         infos.append("\n" + i18n("This may take a few minutes, please wait..."))
         yield "\n".join(infos)
 
-        # Crear un archivo ZIP directamente en zips_path
+        # Create a zip file directly at Zips_Path
         with zipfile.ZipFile(os.path.join(zips_path, f"{modelname}.zip"), 'w', zipfile.ZIP_DEFLATED) as zipf:
-            # Agregar los archivos que deseas incluir en el ZIP al archivo ZIP
+            # Add the files you want to include the ZIP file in the zip
             if copy_files:
                 for root, dirs, files in os.walk(dst):
                     for file in files:
@@ -808,7 +820,7 @@ def save_model(modelname, save_action):
                     for file_path in matching_files:
                         zipf.write(file_path, os.path.basename(file_path))
 
-        # Mover el archivo ZIP creado al directorio save_folder
+       # Move the ZIP file created to the Save_Folder directory
         shutil.move(
             os.path.join(zips_path, f"{modelname}.zip"),
             os.path.join(save_folder, f"{modelname}.zip"),
