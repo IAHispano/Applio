@@ -1,6 +1,5 @@
 #!/bin/bash
-
-# Title: Applio - Installer
+echo -e "\033]0;Applio - Installert\007"
 clear
 echo " :::"
 echo " :::                       _ _ "
