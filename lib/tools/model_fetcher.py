@@ -72,7 +72,7 @@ if not os.path.exists("torchcrepe"):
 
     # Removing the temporary directory
     print("Removing the temporary directory...")
-    shutil.rmtree("temp_torchcrepe")
+    subprocess.run("rmdir /s /q temp_torchcrepe", shell=True)
 
 # Download files that do not exist
 for remote_folder, file_list in models_download:
