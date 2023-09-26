@@ -1144,11 +1144,12 @@ def train_index(exp_dir1, version19):
 
     np.save("%s/total_fea.npy" % exp_dir, big_npy)
     n_ivf = min(int(16 * np.sqrt(big_npy.shape[0])), big_npy.shape[0] // 39)
-    infos.append("%s,%s" % (big_npy.shape, n_ivf))
+    #infos.append("%s,%s" % (big_npy.shape, n_ivf))
     yield "\n".join(infos)
     index = faiss.index_factory(256 if version19 == "v1" else 768, "IVF%s,Flat" % n_ivf)
     # index = faiss.index_factory(256if version19=="v1"else 768, "IVF%s,PQ128x4fs,RFlat"%n_ivf)
-    infos.append("training")
+    infos.append("Generating training file...")
+    print("Generating training file...")
     yield "\n".join(infos)
     index_ivf = faiss.extract_index_ivf(index)  #
     index_ivf.nprobe = 1
@@ -1159,7 +1160,8 @@ def train_index(exp_dir1, version19):
         % (exp_dir, n_ivf, index_ivf.nprobe, exp_dir1, version19),
     )
 
-    infos.append("adding")
+    infos.append("Generating adding file...")
+    print("Generating adding file...")
     yield "\n".join(infos)
     batch_size_add = 8192
     for i in range(0, big_npy.shape[0], batch_size_add):
@@ -1169,11 +1171,8 @@ def train_index(exp_dir1, version19):
         "%s/added_IVF%s_Flat_nprobe_%s_%s_%s.index"
         % (exp_dir, n_ivf, index_ivf.nprobe, exp_dir1, version19),
     )
-    infos.append(
-        "Successful Index Construction，added_IVF%s_Flat_nprobe_%s_%s_%s.index"
-        % (n_ivf, index_ivf.nprobe, exp_dir1, version19)
-    )
-    yield "\n".join(infos)
+    infos.append("Files generated successfully!")
+    print("Files generated successfully!")
 
 
 def change_info_(ckpt_path):
