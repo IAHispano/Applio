@@ -68,7 +68,6 @@
   "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):": "تبديل الموضع (عدد صحيح، عدد نصف النغمات، رفع بمقدار أوكتاف: 12، خفض بمقدار أوكتاف: -12):",
   "Enter the path of the audio file to be processed (default is the correct format example):": "أدخل مسار الملف الصوتي المراد معالجته (الافتراضي هو مثال التنسيق الصحيح):",
   "Select the pitch extraction algorithm:": "حدد خوارزمية استخراج الملعب:",
-  "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.": "طول قفزة المانجيو-كريب (ينطبق فقط على كريب المانجيو): يشير طول القفزة إلى الوقت الذي يستغرقه المتحدث للانتقال إلى طبقة الصوت الدرامية. يستغرق استنتاج أطوال القفزات المنخفضة وقتًا أطول ولكنها أكثر دقة في درجة الصوت.",
   "Feature search dataset file path": "مسار ملف مجموعة بيانات البحث عن المعالم",
   "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness.": "إذا كان > = 3: قم بتطبيق التصفية المتوسطة على نتائج العرض التقديمي المحصودة. تمثل القيمة نصف قطر المرشح ويمكن أن تقلل من التنفس.",
   "Path to the feature index file. Leave blank to use the selected result from the dropdown:": "المسار إلى ملف فهرس الميزات. اتركه فارغًا لاستخدام النتيجة المحددة من القائمة المنسدلة:",

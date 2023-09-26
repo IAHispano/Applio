@@ -68,7 +68,6 @@
   "Feature search database file path:": "Özellik arama veritabanı dosya yolu:",
   "Enter the path of the audio file to be processed (default is the correct format example):": "İşlenecek ses dosyasının yolunu girin (varsayılan olarak doğru format örneğidir):",
   "Select the pitch extraction algorithm:": "Pitch çıkarma algoritmasını seçin:",
-  "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.": "Mangio-Crepe Hop Uzunluğu (Sadece mangio-crepe için geçerlidir): Hop uzunluğu, konuşmacının dramatik bir pitch'e atlama süresini belirtir. Daha düşük hop uzunlukları daha fazla çıkarım süresi alır, ancak daha doğru pitch verir.",
   "Feature search dataset file path": "Özellik arama veri seti dosya yolu",
   "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness.": "Eğer >=3 ise: elde edilen pitch sonuçlarına medyan filtreleme uygulayın. Değer, filtre yarıçapını temsil eder ve nefes sesini azaltabilir.",
   "Path to the feature index file. Leave blank to use the selected result from the dropdown:": "Özellik dizin dosyasının yolu. Seçilen sonucu kullanmak için boş bırakın:",

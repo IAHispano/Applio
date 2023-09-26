@@ -68,7 +68,6 @@
   "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):": "Транспонирование (целое число, количество полутонов, повышение на октаву: 12, понижение на октаву: -12):",
   "Enter the path of the audio file to be processed (default is the correct format example):": "Введите путь к аудиофайлу, который необходимо обработать (по умолчанию — правильный пример формата):",
   "Select the pitch extraction algorithm:": "Выберите алгоритм извлечения высоты звука:",
-  "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.": "Длина прыжка с манжио-крепом (применяется только к крепу с манжио): длина прыжка означает время, необходимое говорящему, чтобы перейти на драматический тон. Для определения более низкой длины скачка требуется больше времени, но они более точны по высоте.",
   "Feature search dataset file path": "Путь к файлу набора данных поиска объектов",
   "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness.": "Если >=3: применить медианную фильтрацию к собранным результатам высоты тона. Значение представляет собой радиус фильтра и может уменьшить одышку.",
   "Path to the feature index file. Leave blank to use the selected result from the dropdown:": "Путь к индексному файлу объекта. Оставьте поле пустым, чтобы использовать выбранный результат из раскрывающегося списка:",

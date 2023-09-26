@@ -68,7 +68,6 @@
   "Feature search database file path:": "Dateipfad der Funktionssuchdatenbank:",
   "Enter the path of the audio file to be processed (default is the correct format example):": "Geben Sie den Pfad der zu verarbeitenden Audiodatei ein (Standard ist das richtige Formatbeispiel):",
   "Select the pitch extraction algorithm:": "Wählen Sie den Pitch-Extraktionsalgorithmus:",
-  "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.": "Mangio-Crepe Hopfenlänge (Gilt nur für Mangio-Crepe): Die Hopfenlänge bezieht sich auf die Zeit, die der Sprecher benötigt, um zu einer dramatischen Tonhöhe zu springen. Niedrigere Hopfenlängen benötigen mehr Zeit zur Inferenz, sind aber genauer.",
   "Feature search dataset file path": "Dateipfad für Feature-Suche-Datensatz",
   "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness.": "Wenn >=3: Wendet es die Medianfilterung auf die geernteten Pitch-Ergebnisse an. Der Wert stellt den Filterradius dar und kann die Atmungsaktivität reduzieren.",
   "Path to the feature index file. Leave blank to use the selected result from the dropdown:": "Pfad zur Feature-Indexdatei. Leer lassen, um das ausgewählte Ergebnis aus der Dropdown-Liste zu verwenden:",

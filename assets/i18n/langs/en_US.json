@@ -68,7 +68,7 @@
   "Feature search database file path:": "Feature search database file path:",
   "Enter the path of the audio file to be processed (default is the correct format example):": "Enter the path of the audio file to be processed (default is the correct format example):",
   "Select the pitch extraction algorithm:": "Select the pitch extraction algorithm:",
-  "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.": "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.",
+  "Hop Length (lower hop lengths take more time to infer but are more pitch accurate):": "Hop Length (lower hop lengths take more time to infer but are more pitch accurate):",
   "Feature search dataset file path": "Feature search dataset file path",
   "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness.": "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness.",
   "Path to the feature index file. Leave blank to use the selected result from the dropdown:": "Path to the feature index file. Leave blank to use the selected result from the dropdown:",

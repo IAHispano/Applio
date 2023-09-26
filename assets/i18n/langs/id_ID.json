@@ -68,7 +68,6 @@
   "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):": "Transpos (bilangan bulat, jumlah seminada, dinaikkan satu oktaf: 12, diturunkan satu oktaf: -12):",
   "Enter the path of the audio file to be processed (default is the correct format example):": "Masukkan jalur file audio yang akan diproses (defaultnya adalah contoh format yang benar):",
   "Select the pitch extraction algorithm:": "Pilih algoritma ekstraksi nada:",
-  "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.": "Panjang Hop Mangio-Crepe (Hanya berlaku untuk mangio-crepe): Panjang hop mengacu pada waktu yang dibutuhkan pembicara untuk melompat ke nada dramatis. Panjang lompatan yang lebih rendah membutuhkan lebih banyak waktu untuk menyimpulkan tetapi nadanya lebih akurat.",
   "Feature search dataset file path": "Jalur file kumpulan data pencarian fitur",
   "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness.": "Jika >=3: terapkan pemfilteran median pada hasil pitch yang dipanen. Nilai tersebut mewakili radius filter dan dapat mengurangi sesak napas.",
   "Path to the feature index file. Leave blank to use the selected result from the dropdown:": "Jalur ke file indeks fitur. Biarkan kosong untuk menggunakan hasil yang dipilih dari dropdown:",

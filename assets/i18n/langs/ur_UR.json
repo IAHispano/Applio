@@ -68,7 +68,6 @@
   "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):": "ٹرانسپوز (انٹیجر، سیمیٹونز کی تعداد، ایک آکٹیو سے بڑھائیں: 12، ایک آکٹیو سے کم: -12):",
   "Enter the path of the audio file to be processed (default is the correct format example):": "کارروائی کی جانے والی آڈیو فائل کا راستہ درج کریں (پہلے سے طے شدہ فارمیٹ کی صحیح مثال ہے):",
   "Select the pitch extraction algorithm:": "پچ نکالنے کا الگورتھم منتخب کریں:",
-  "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.": "Mangio-Crepe Hop Length (صرف mangio-crepe پر لاگو ہوتا ہے): ہاپ کی لمبائی سے مراد وہ وقت ہوتا ہے جو اسپیکر کو ڈرامائی انداز میں چھلانگ لگانے میں لگتا ہے۔ نچلی ہاپ کی لمبائی کا اندازہ لگانے میں زیادہ وقت لگتا ہے لیکن پچ زیادہ درست ہوتی ہے۔",
   "Feature search dataset file path": "فیچر سرچ ڈیٹاسیٹ فائل پاتھ",
   "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness.": "اگر >=3: کٹائی ہوئی پچ کے نتائج پر میڈین فلٹرنگ لگائیں۔ قدر فلٹر کے رداس کی نمائندگی کرتی ہے اور سانس لینے میں کمی کر سکتی ہے۔",
   "Path to the feature index file. Leave blank to use the selected result from the dropdown:": "فیچر انڈیکس فائل کا راستہ۔ ڈراپ ڈاؤن سے منتخب کردہ نتیجہ کو استعمال کرنے کے لیے خالی چھوڑ دیں:",

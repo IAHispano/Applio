@@ -176,10 +176,7 @@ if torch.cuda.is_available() or ngpu != 0:
         gpu_infos.append("%s\t%s" % (i, gpu_name))
         mem.append(
             int(
-                torch.cuda.get_device_properties(i).total_memory
-                / 1024
-                / 1024
-                / 1024
+                torch.cuda.get_device_properties(i).total_memory / 1024 / 1024 / 1024
                 + 0.4
             )
         )
@@ -346,7 +343,7 @@ def uvr(
             save_root_ins = (
                 save_root_ins.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
             )
-            
+
             if model_name == "onnx_dereverb_By_FoxJoy":
                 pre_fun = MDXNetDereverb(15, config.device)
             else:
@@ -361,11 +358,11 @@ def uvr(
                 )
             if inp_root != "":
                 paths = [
-                        os.path.join(inp_root, name)
-                        for root, _, files in os.walk(inp_root, topdown=False)
-                        for name in files
-                        if name.endswith(tuple(sup_audioext)) and root == inp_root
-                        ]
+                    os.path.join(inp_root, name)
+                    for root, _, files in os.walk(inp_root, topdown=False)
+                    for name in files
+                    if name.endswith(tuple(sup_audioext)) and root == inp_root
+                ]
             else:
                 paths = [path.name for path in paths]
             for path in paths:
@@ -451,7 +448,7 @@ def uvr(
                     for root, _, files in os.walk(inp_root, topdown=False)
                     for name in files
                     if name.endswith(tuple(sup_audioext)) and root == inp_root
-                    ]
+                ]
             else:
                 paths = [path.name for path in paths]
             print(paths)
@@ -727,9 +724,7 @@ def preprocess_dataset(trainset_dir, exp_dir, sr, n_p, dataset_path):
     yield log
 
 
-def extract_f0_feature(
-    gpus, n_p, f0method, if_f0, exp_dir, version19, echl
-):   
+def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, echl):
     gpus_rmvpe = gpus
     gpus = gpus.split("-")
     os.makedirs("%s/logs/%s" % (now_dir, exp_dir), exist_ok=True)
@@ -739,14 +734,7 @@ def extract_f0_feature(
         if f0method != "rmvpe_gpu":
             cmd = (
                 '"%s" lib/infer/modules/train/extract/extract_f0_print.py "%s/logs/%s" %s %s %s'
-                % (
-                    config.python_cmd,
-                    now_dir,
-                    exp_dir,
-                    n_p,
-                    f0method,
-                    RQuote(echl)
-                )
+                % (config.python_cmd, now_dir, exp_dir, n_p, f0method, RQuote(echl))
             )
             logger.info(cmd)
             p = Popen(
@@ -1111,8 +1099,8 @@ def click_train(
 
 
 def train_index(exp_dir1, version19):
-    exp_dir = os.path.join(now_dir, 'logs', exp_dir1)
-    #exp_dir = "logs/%s" % (exp_dir1)
+    exp_dir = os.path.join(now_dir, "logs", exp_dir1)
+    # exp_dir = "logs/%s" % (exp_dir1)
     os.makedirs(exp_dir, exist_ok=True)
     feature_dir = (
         "%s/3_feature256" % (exp_dir)
@@ -1714,16 +1702,17 @@ def save_to_wav2(dropbox):
     shutil.move(file_path, target_path)
     return target_path
 
+
 from assets.themes.black import Applio
 
 # Crear una instancia de Applio
 mi_applio = Applio()
+
+
 def GradioSetup():
     default_weight = names[0] if names else ""
 
-    with gr.Blocks(
-        theme=mi_applio, title="Applio-RVC-Fork"
-    ) as app:
+    with gr.Blocks(theme=mi_applio, title="Applio-RVC-Fork") as app:
         gr.HTML("<h1> 🍏 Applio-RVC-Fork </h1>")
         with gr.Tabs():
             with gr.TabItem(i18n("Model Inference")):
@@ -1786,7 +1775,7 @@ def GradioSetup():
                                     choices=sorted(audio_paths),
                                     value="",
                                     interactive=True,
-                                    )
+                                )
                                 vc_transform0 = gr.Number(
                                     label=i18n(
                                         "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):"
@@ -2267,12 +2256,12 @@ def GradioSetup():
                                     f0_autotune = gr.Checkbox(
                                         label="Enable autotune", interactive=True
                                     )
-                                    crepe_hop_length = gr.Slider(
+                                    hop_length = gr.Slider(
                                         minimum=1,
                                         maximum=512,
                                         step=1,
                                         label=i18n(
-                                            "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate."
+                                            "Hop Length (lower hop lengths take more time to infer but are more pitch accurate):"
                                         ),
                                         value=120,
                                         interactive=True,
@@ -2280,9 +2269,7 @@ def GradioSetup():
                                     )
 
                             but1 = gr.Button(i18n("Convert"), variant="primary")
-                            vc_output3 = gr.Textbox(
-                                label=i18n("Output information:")
-                            )
+                            vc_output3 = gr.Textbox(label=i18n("Output information:"))
                             but1.click(
                                 vc.vc_multi,
                                 [
@@ -2300,7 +2287,7 @@ def GradioSetup():
                                     rms_mix_rate1,
                                     protect1,
                                     format1,
-                                    crepe_hop_length,
+                                    hop_length,
                                     minpitch_slider,
                                     minpitch_txtbox,
                                     maxpitch_slider,
@@ -2378,14 +2365,13 @@ def GradioSetup():
                                 value=get_dataset(),
                             )
                             btn_update_dataset_list = gr.Button(
-                                i18n("Update list"), 
-                                variant="primary"
+                                i18n("Update list"), variant="primary"
                             )
                         with gr.Column():
                             dataset_path = gr.Textbox(
                                 label=i18n("Or add your dataset path:"),
                                 interactive=True,
-                        )
+                            )
                         spk_id5 = gr.Slider(
                             minimum=0,
                             maximum=4,
@@ -2398,9 +2384,7 @@ def GradioSetup():
                             resources.update_dataset_list, [spk_id5], trainset_dir4
                         )
                         but1 = gr.Button(i18n("Process data"), variant="primary")
-                        info1 = gr.Textbox(
-                            label=i18n("Output information:"), value=""
-                        )
+                        info1 = gr.Textbox(label=i18n("Output information:"), value="")
                         but1.click(
                             preprocess_dataset,
                             [trainset_dir4, exp_dir1, sr2, np7, dataset_path],
@@ -2424,9 +2408,7 @@ def GradioSetup():
                             )
                         with gr.Column():
                             f0method8 = gr.Radio(
-                                label=i18n(
-                                    "Select the pitch extraction algorithm:"
-                                ),
+                                label=i18n("Select the pitch extraction algorithm:"),
                                 choices=[
                                     "pm",
                                     "harvest",
@@ -2436,45 +2418,30 @@ def GradioSetup():
                                     "rmvpe",
                                     "rmvpe_gpu",
                                 ],
-                                # [ MANGIO ]: Fork feature: Crepe on f0 extraction for training.
                                 value="rmvpe",
                                 interactive=True,
                             )
-                            
 
-                            extraction_crepe_hop_length = gr.Slider(
+                            hop_length = gr.Slider(
                                 minimum=1,
                                 maximum=512,
                                 step=1,
                                 label=i18n(
-                                    "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate."
+                                    "Hop Length (lower hop lengths take more time to infer but are more pitch accurate):"
                                 ),
                                 value=64,
                                 interactive=True,
-                                visible=False,
+                                
                             )
 
-                            f0method8.change(
-                                fn=lambda radio: (
-                                    {
-                                        "visible": radio
-                                        in ["mangio-crepe", "mangio-crepe-tiny"],
-                                        "__type__": "update",
-                                    }
-                                ),
-                                inputs=[f0method8],
-                                outputs=[extraction_crepe_hop_length],
-                            )
-                        but2 = gr.Button(
-                            i18n("Feature extraction"), variant="primary"
-                        )
+                        but2 = gr.Button(i18n("Feature extraction"), variant="primary")
                         info2 = gr.Textbox(
                             label=i18n("Output information:"),
                             value="",
                             max_lines=8,
                             interactive=False,
                         )
-                        
+
                         but2.click(
                             extract_f0_feature,
                             [
@@ -2484,7 +2451,7 @@ def GradioSetup():
                                 if_f0_3,
                                 exp_dir1,
                                 version19,
-                                extraction_crepe_hop_length,
+                                hop_length,
                             ],
                             [info2],
                         )
@@ -2577,17 +2544,6 @@ def GradioSetup():
                                 inputs=[if_f0_3, sr2, version19],
                                 outputs=[f0method8, pretrained_G14, pretrained_D15],
                             )
-                            if_f0_3.change(
-                                fn=lambda radio: (
-                                    {
-                                    "visible": radio
-                                            in ["mangio-crepe", "mangio-crepe-tiny"],
-                                        "__type__": "update",
-                                    }
-                                ),
-                                inputs=[f0method8],
-                                outputs=[extraction_crepe_hop_length],
-                            )
 
                             butstop = gr.Button(
                                 i18n("Stop training"),
@@ -2625,9 +2581,7 @@ def GradioSetup():
                                     interactive=True,
                                 )
 
-                                but7 = gr.Button(
-                                    i18n("Save model"), variant="primary"
-                                )
+                                but7 = gr.Button(i18n("Save model"), variant="primary")
                                 but4 = gr.Button(
                                     i18n("Train feature index"), variant="primary"
                                 )
@@ -2665,12 +2619,9 @@ def GradioSetup():
                         )
 
                         but4.click(train_index, [exp_dir1, version19], info3)
-                        but7.click(
-                            resources.save_model, [exp_dir1, save_action], info3
-                        )
+                        but7.click(resources.save_model, [exp_dir1, save_action], info3)
 
             with gr.TabItem(i18n("UVR5")):  # UVR section
-
                 with gr.Row():
                     with gr.Column():
                         model_select = gr.Radio(
@@ -2710,9 +2661,7 @@ def GradioSetup():
                             value="assets/audios",
                         )
                         opt_ins_root = gr.Textbox(
-                            label=i18n(
-                                "Specify the output folder for accompaniment:"
-                            ),
+                            label=i18n("Specify the output folder for accompaniment:"),
                             value="assets/audios/audio-others",
                         )
                         format0 = gr.Radio(
@@ -2744,7 +2693,6 @@ def GradioSetup():
                         [vc_output4],
                     )
             with gr.TabItem(i18n("TTS")):
-
                 with gr.Column():
                     text_test = gr.Textbox(
                         label=i18n("Text:"),
@@ -2753,7 +2701,6 @@ def GradioSetup():
                         ),
                         lines=6,
                     )
-
 
                 with gr.Row():
                     with gr.Column():

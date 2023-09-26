@@ -68,7 +68,6 @@
   "Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12):": "移调（整数，半音数，升高八度：12，降低八度：-12）：",
   "Enter the path of the audio file to be processed (default is the correct format example):": "输入要处理的音频文件的路径（默认为正确格式示例）：",
   "Select the pitch extraction algorithm:": "选择音高提取算法：",
-  "Mangio-Crepe Hop Length (Only applies to mangio-crepe): Hop length refers to the time it takes for the speaker to jump to a dramatic pitch. Lower hop lengths take more time to infer but are more pitch accurate.": "Mangio-Crepe 跳跃长度（仅适用于 mangio-crepe）：跳跃长度是指说话者跳跃到戏剧性音高所需的时间。较短的跳跃长度需要更多的时间来推断，但音高更准确。",
   "Feature search dataset file path": "特征搜索数据集文件路径",
   "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness.": "如果 >=3：对收获的音高结果应用中值滤波。该值代表过滤半径，可以减少呼吸味。",
   "Path to the feature index file. Leave blank to use the selected result from the dropdown:": "功能索引文件的路径。留空以使用下拉列表中选定的结果：",
