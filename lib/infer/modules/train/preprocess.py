@@ -136,7 +136,8 @@ class PreProcess:
 
 def preprocess_trainset(inp_root, sr, n_p, exp_dir, per):
     pp = PreProcess(sr, exp_dir, per)
-    println("\n\nStarting preprocessing...\n")
+    os.system('cls' if os.name == 'nt' else 'clear')
+    println("Starting preprocessing...\n")
     println(sys.argv)
     pp.pipeline_mp_inp_dir(inp_root, n_p)
     println("\nPreprocessing completed!\n\n")

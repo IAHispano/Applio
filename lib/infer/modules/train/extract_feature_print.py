@@ -76,7 +76,9 @@ def readwave(wav_path, normalize=False):
 
 
 # HuBERT model
-printt("load model(s) from {}".format(model_path))
+os.system('cls' if os.name == 'nt' else 'clear')
+print("Starting feature extraction...\n")
+printt("Loaded model {}".format(model_path))
 # if hubert model is exist
 if os.access(model_path, os.F_OK) == False:
     printt(
@@ -90,7 +92,7 @@ models, saved_cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task(
 )
 model = models[0]
 model = model.to(device)
-printt("move model to %s" % device)
+printt("Using %s" % device)
 if device not in ["mps", "cpu"]:
     model = model.half()
 model.eval()
@@ -98,9 +100,10 @@ model.eval()
 todo = sorted(list(os.listdir(wavPath)))[i_part::n_part]
 n = max(1, len(todo) // 10)  # 最多打印十条
 if len(todo) == 0:
-    printt("no-feature-todo")
+    os.system('cls' if os.name == 'nt' else 'clear')
+    printt("An error occurred in the feature extraction, make sure you have provided the audios correctly.")
 else:
-    printt("all-feature-%s" % len(todo))
+    printt("- %s" % len(todo))
     with tqdm.tqdm(total=len(todo)) as pbar:
         for idx, file in enumerate(todo):
             try:
@@ -137,4 +140,4 @@ else:
             except:
                 printt(traceback.format_exc())
             pbar.update(1)
-    printt("all-feature-done")
+    printt("\nFeature extraction completed successfully!")

@@ -233,6 +233,7 @@ class FeatureInput(object):
         return f0_coarse
 
     def go(self, paths, f0_method, crepe_hop_length, thread_n):
+        os.system('cls' if os.name == 'nt' else 'clear')
         if len(paths) == 0:
             printt("no-f0-todo")
             return

@@ -278,12 +278,12 @@ def run(rank, n_gpus, hps):
         # epoch_str = 1
         # global_step = 0
     except:  # 如果首次不能加载，加载pretrain
-        # traceback.print_exc()
+        os.system('cls' if os.name == 'nt' else 'clear')
         epoch_str = 1
         global_step = 0
         if hps.pretrainG != "":
             if rank == 0:
-                logger.info("loaded pretrained %s" % (hps.pretrainG))
+                logger.info("Loaded pretrained %s" % (hps.pretrainG))
             if hasattr(net_g, "module"):
                 logger.info(
                     net_g.module.load_state_dict(
@@ -298,7 +298,7 @@ def run(rank, n_gpus, hps):
                 )  ##测试不加载优化器
         if hps.pretrainD != "":
             if rank == 0:
-                logger.info("loaded pretrained %s" % (hps.pretrainD))
+                logger.info("Loaded pretrained %s" % (hps.pretrainD))
             if hasattr(net_d, "module"):
                 logger.info(
                     net_d.module.load_state_dict(
