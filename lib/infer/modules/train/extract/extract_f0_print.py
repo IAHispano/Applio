@@ -237,7 +237,7 @@ class FeatureInput(object):
             printt("no-f0-todo")
             return
         with tqdm.tqdm(total=len(paths), leave=True, position=thread_n) as pbar:
-            description = f"thread:{thread_n}, f0ing, Hop-Length:{crepe_hop_length}"
+            description = f"Thread {thread_n} | Hop-Length: {crepe_hop_length}"
             pbar.set_description(description)
                 
             for idx, (inp_path, opt_path1, opt_path2) in enumerate(paths):
