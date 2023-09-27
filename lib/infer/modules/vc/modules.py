@@ -528,7 +528,7 @@ class VC:
             infos = []
             print(paths)
             for path in paths:
-                info, opt = self.vc_single(
+                info, opt = self.vc_single_dont_save(
                     sid,
                     path,
                     f0_up_key,
