@@ -17,13 +17,13 @@ title Applio - Start
 :menu
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 
-echo [1] Start Applio (Nvidia Support)
-echo [2] Start Applio (AMD Support)
-if exist "runtime\python.exe" (
-    echo.
-    echo ^[3^] Start Applio with Runtime ^(Nvidia Support^)
-    echo ^[4^] Start Applio with Runtime ^(AMD Support^)
-)
+echo Recommended for regular users:
+echo [1] Start Applio with Runtime (Nvidia Support)
+echo [2] Start Applio with Runtime (AMD Support)
+echo.
+echo Only recommended for experienced users:
+echo [3] Start Applio (Nvidia Support)
+echo [4] Start Applio (AMD Support)
 echo.
 echo [5] Exit
 echo.
@@ -33,7 +33,13 @@ set choice=%choice: =%
 
 if "%choice%"=="5" (
     goto finish
-) else if "%choice%"=="1" (
+) else if "%choice%"=="4" (
+    cls
+    python infer-web.py --pycmd python --port 7897 --dml --theme dark
+    pause
+    cls
+    goto menu
+) else if "%choice%"=="3" (
     cls
     python infer-web.py --pycmd python --port 7897 --theme dark
     pause
@@ -41,28 +47,20 @@ if "%choice%"=="5" (
     goto menu
 ) else if "%choice%"=="2" (
     cls
-    python infer-web.py --pycmd python --port 7897 --dml --theme dark
+    runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --dml --theme dark
     pause
     cls
     goto menu
-) else if exist "runtime/python.exe" (
-    if "%choice%"=="3" (
-        cls
-        runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --theme dark
-        pause
-        cls
-        goto menu
-    ) else if "%choice%"=="4" (
-        cls
-        runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --dml --theme dark
-        pause
-        cls
-        goto menu
-    )
+) else if "%choice%"=="1" (
+    cls
+    runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --theme dark
+    pause
+    cls
+    goto menu
 )
 
 cls
-echo Invalid option. Please enter a number from 1 to 4.
+echo Invalid option. Please enter a number from 1 to 5.
 echo.
 echo Press 'Enter' to access the main menu...
 pause>nul
