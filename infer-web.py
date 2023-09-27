@@ -966,6 +966,8 @@ def click_train(
         if version19 == "v1"
         else "%s/3_feature768" % (exp_dir)
     )
+    log_interval = set_log_interval(exp_dir, batch_size12)
+    
     if if_f0_3:
         f0_dir = "%s/2a_f0" % (exp_dir)
         f0nsf_dir = "%s/2b-f0nsf" % (exp_dir)
@@ -1046,7 +1048,7 @@ def click_train(
             f.write("\n")
     if gpus16:
         cmd = (
-            '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -g %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s'
+            '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -g %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s -li %s'
             % (
                 config.python_cmd,
                 exp_dir1,
@@ -1062,11 +1064,12 @@ def click_train(
                 1 if if_cache_gpu17 == True else 0,
                 1 if if_save_every_weights18 == True else 0,
                 version19,
+                log_interval,
             )
         )
     else:
         cmd = (
-            '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s'
+            '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s -li %s'
             % (
                 config.python_cmd,
                 exp_dir1,
@@ -1081,6 +1084,7 @@ def click_train(
                 1 if if_cache_gpu17 == True else 0,
                 1 if if_save_every_weights18 == True else 0,
                 version19,
+                log_interval,
             )
         )
     logger.info(cmd)

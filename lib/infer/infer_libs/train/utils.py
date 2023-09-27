@@ -357,14 +357,30 @@ def get_hparams(init=True):
         required=True,
         help="if caching the dataset in GPU memory, 1 or 0",
     )
+    parser.add_argument(
+        "-li", "--log_interval", type=int, required=True, help="log interval"
+    )
 
     args = parser.parse_args()
     name = args.experiment_dir
     experiment_dir = os.path.join("./logs", args.experiment_dir)
+    if not os.path.exists(experiment_dir):
+        os.makedirs(experiment_dir)
 
+    if args.version == "v1" or args.sample_rate == "40k":
+        config_path = "configs/%s.json" % args.sample_rate
+    else:
+        config_path = "configs/%s_v2.json" % args.sample_rate
     config_save_path = os.path.join(experiment_dir, "config.json")
-    with open(config_save_path, "r") as f:
-        config = json.load(f)
+    if init:
+        with open(config_path, "r") as f:
+            data = f.read()
+        with open(config_save_path, "w") as f:
+            f.write(data)
+    else:
+        with open(config_save_path, "r") as f:
+            data = f.read()
+    config = json.loads(data)
 
     hparams = HParams(**config)
     hparams.model_dir = hparams.experiment_dir = experiment_dir
@@ -382,6 +398,12 @@ def get_hparams(init=True):
     hparams.save_every_weights = args.save_every_weights
     hparams.if_cache_data_in_gpu = args.if_cache_data_in_gpu
     hparams.data.training_files = "%s/filelist.txt" % experiment_dir
+    hparams.train.log_interval = args.log_interval
+    # Update log_interval in the 'train' section of the config dictionary
+    config["train"]["log_interval"] = args.log_interval
+    # Save the updated config back to the config_save_path
+    with open(config_save_path, "w") as f:
+        json.dump(config, f, indent=4)
     return hparams
 
 
