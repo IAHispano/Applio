@@ -14,10 +14,24 @@ title Applio - Start
 :::
 :::
 
+for /f "usebackq delims=" %%i in ("version.txt") do (
+    set "localVersion=%%i"
+)
+for /f %%i in ('powershell -command "(Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/IAHispano/Applio-RVC-Fork/main/assets/configs/version.txt').Content"') do set "onlineVersion=%%i"
+
 :menu
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
+powershell -command "if ('%localVersion%' -lt '%onlineVersion%') { exit 1 } else { exit 0 }"
+if %errorlevel% equ 1 (
+    echo Warning, you are using an outdated version %localVersion%! The version %onlineVersion% is now available.
+    echo.
+    goto continue
+) else (
+    goto continue
+)
 
-echo Recommended for regular users (Runtime):
+:continue
+echo Recommended for regular users:
 echo [1] Start Applio with Runtime (Nvidia Support)
 echo [2] Start Applio with Runtime (AMD Support)
 echo.
