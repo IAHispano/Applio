@@ -17,7 +17,7 @@ title Applio - Start
 :menu
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 
-echo Recommended for regular users:
+echo Recommended for regular users (Runtime):
 echo [1] Start Applio with Runtime (Nvidia Support)
 echo [2] Start Applio with Runtime (AMD Support)
 echo.
