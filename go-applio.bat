@@ -14,7 +14,7 @@ title Applio - Start
 :::
 :::
 
-for /f "usebackq delims=" %%i in ("version.txt") do (
+for /f "usebackq delims=" %%i in ("%cd%\assets\configs\version.txt") do (
     set "localVersion=%%i"
 )
 for /f %%i in ('powershell -command "(Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/IAHispano/Applio-RVC-Fork/main/assets/configs/version.txt').Content"') do set "onlineVersion=%%i"
