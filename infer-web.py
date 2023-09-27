@@ -1831,6 +1831,13 @@ def GradioSetup():
                                 f0_autotune = gr.Checkbox(
                                     label="Enable autotune", interactive=True
                                 )
+                                format1_ = gr.Radio(
+                                    label=i18n("Export file format:"),
+                                    choices=["wav", "flac", "mp3", "m4a"],
+                                    value="wav",
+                                    interactive=True,
+                                )
+                                
                                 crepe_hop_length = gr.Slider(
                                     minimum=1,
                                     maximum=512,
@@ -2099,6 +2106,7 @@ def GradioSetup():
                                     resample_sr0,
                                     rms_mix_rate0,
                                     protect0,
+                                    format1_,
                                     crepe_hop_length,
                                     minpitch_slider,
                                     minpitch_txtbox,

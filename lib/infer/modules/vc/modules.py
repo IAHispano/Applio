@@ -187,6 +187,7 @@ class VC:
         resample_sr,
         rms_mix_rate,
         protect,
+        format1,
         crepe_hop_length,
         f0_min,
         note_min,
@@ -295,20 +296,39 @@ class VC:
             )
             end_time = time.time()
             total_time = end_time - start_time
-
-            output_folder = "assets/audios/audio-outputs"
-            os.makedirs(output_folder, exist_ok=True)  
-            output_filename = "generated_audio_{}.wav"
+            opt_root = "assets/audios/audio-outputs"
+            os.makedirs(opt_root, exist_ok=True)
+            opt_filename = "generated_audio_{}"
             output_count = 1
             while True:
-                current_output_path = os.path.join(output_folder, output_filename.format(output_count))
+                current_output_path = os.path.join(opt_root, opt_filename.format(output_count))
                 if not os.path.exists(current_output_path):
                     break
                 output_count += 1
-            
-            wavfile.write(current_output_path, self.tgt_sr, audio_opt)
-            print(f"Generated audio saved to: {current_output_path}")
-            
+            try:
+                if format1 in ["wav", "flac"]:
+                    sf.write(
+                        "%s.%s"
+                        % (current_output_path, format1),
+                        audio_opt,
+                        self.tgt_sr,
+                    )
+                    print(f"💾 Generated audio saved to: {current_output_path}")
+                else:
+                    path = "%s.%s" % (current_output_path, format1)
+                    with BytesIO() as wavf:
+                        sf.write(
+                            wavf,
+                            audio_opt,
+                            self.tgt_sr,
+                            format="wav"
+                        )
+                        wavf.seek(0, 0)
+                        with open(path, "wb") as outf:
+                                wav2(wavf, outf, format1)
+                    print(f"💾 Generated audio saved to: {current_output_path}")
+            except:
+                info = traceback.format_exc()
             return (
                 "Success.\n%s\nTime:\nnpy: %.2fs, f0: %.2fs, infer: %.2fs."
                 % (index_info, *times),
