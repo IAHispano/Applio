@@ -23,7 +23,7 @@ for /f %%i in ('powershell -command "(Invoke-WebRequest -Uri 'https://raw.github
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 powershell -command "if ('%localVersion%' -lt '%onlineVersion%') { exit 1 } else { exit 0 }"
 if %errorlevel% equ 1 (
-    echo Warning, you are using an outdated version %localVersion%! The version %onlineVersion% is now available.
+    echo INFO: You are using an outdated version %localVersion%! The version %onlineVersion% is now available.
     echo.
     goto continue
 ) else (
