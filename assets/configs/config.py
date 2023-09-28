@@ -23,9 +23,7 @@ import os
 import sys
 import subprocess
 import platform
-current_device = torch.cuda.current_device()
-major, minor = torch.cuda.get_device_capability(current_device)
-cuda_version = f"{major}.{minor}"
+
 syspf = platform.system()
 python_version = "39"
 
@@ -200,6 +198,9 @@ class Config:
 
     def device_config(self) -> tuple:
         if torch.cuda.is_available():
+            current_device = torch.cuda.current_device()
+            major, minor = torch.cuda.get_device_capability(current_device)
+            cuda_version = f"{major}.{minor}"
             if self.has_xpu():
                 self.device = self.instead = "xpu:0"
                 self.is_half = True
