@@ -35,12 +35,12 @@ def printt(strr):
 
 n_p = int(sys.argv[2])
 f0method = sys.argv[3]
-hop_lenghts = 0
+crepe_hop_length = 0
 try:
-    hop_length = int(sys.argv[4])
+    crepe_hop_length = int(sys.argv[4])
 except:
     print("Temp Issue. echl is not being passed with argument!")
-    hop_length = 128
+    crepe_hop_length = 128
 
 class FeatureInput(object):
     def __init__(self, samplerate=16000, hop_size=160):
@@ -55,7 +55,7 @@ class FeatureInput(object):
         self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
 
-    def mncrepe(self, method, x, p_len, hop_length):
+    def mncrepe(self, method, x, p_len, crepe_hop_length):
         f0 = None
         torch_device_index = 0
         torch_device = torch.device(
@@ -293,7 +293,7 @@ if __name__ == "__main__":
     for i in range(n_p):
         p = Process(
             target=featureInput.go,
-            args=(paths[i::n_p], f0method, hop_length, i),
+            args=(paths[i::n_p], f0method, crepe_hop_length, i),
         )
         ps.append(p)
         p.start()
