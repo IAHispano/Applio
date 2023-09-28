@@ -18,8 +18,8 @@ if [[ "$(uname)" == "Darwin" ]]; then
   export PYTORCH_ENABLE_MPS_FALLBACK=1
   export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
 elif [[ "$(uname)" != "Linux" ]]; then
-  echo "Unsupported operating system. Are you using windows or something?"
-  echo "If yes use the batch (.bat) file insted this one"
+  echo "Unsupported operating system. Are you using Windows...?"
+  echo "If yes use the batch (.bat) file insted this one!"
   exit 1
 fi
 
@@ -27,7 +27,7 @@ if [ -d ".venv" ]; then
   echo "Activate venv..."
   source .venv/bin/activate
 else
-  echo "Create venv..."
+  echo "Creating venv..."
   requirements_file="assets/requirements/requirements.txt"
   # Check if Python is installed
   if ! command -v python3 &> /dev/null; then
@@ -46,7 +46,7 @@ else
 
 # Clone the repo for make this script usable with echo 1 | curl blabla https://script.sh
 git clone https://github.com/IAHispano/Applio-RVC-Fork
-cd Applio-RVC-Forko
+cd Applio-RVC-Fork
 python3 -m venv .venv
 source .venv/bin/activate
 chmod +x stftpitchshift
@@ -83,7 +83,7 @@ echo
 echo "Only recommended for experienced users:"
 echo "[1] Nvidia graphics cards"
 echo "[2] AMD graphics cards"
-echo "[2] Intel ARC graphics cards"
+echo "[3] Intel ARC graphics cards"
 echo
 read -p "Select the option according to your GPU: " choice
 
