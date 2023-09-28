@@ -23,6 +23,9 @@ import os
 import sys
 import subprocess
 import platform
+current_device = torch.cuda.current_device()
+major, minor = torch.cuda.get_device_capability(current_device)
+cuda_version = f"{major}.{minor}"
 syspf = platform.system()
 python_version = "39"
 
@@ -202,6 +205,12 @@ class Config:
                 self.is_half = True
             i_device = int(self.device.split(":")[-1])
             self.gpu_name = torch.cuda.get_device_name(i_device)
+            if 1 < float(cuda_version) < 3.7:
+                logger.info("No supported CUDA version found, using CPU...")
+                os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+                self.device = self.instead = "cpu"
+                self.is_half = False
+                self.use_fp32_config()
             if (
                 ("16" in self.gpu_name and "V100" not in self.gpu_name.upper())
                 or "P40" in self.gpu_name.upper()
@@ -237,7 +246,6 @@ class Config:
             self.device = self.instead = "cpu"
             self.is_half = False
             self.use_fp32_config()
-
         if self.n_cpu == 0:
             self.n_cpu = cpu_count()
 
