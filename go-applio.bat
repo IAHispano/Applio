@@ -66,14 +66,14 @@ if "%choice%"=="5" (
     goto menu
 ) else if "%choice%"=="2" (
     cls
-    echo Starting Applio with runtime for AMD support (you must have it installed)...
+    echo Starting Applio with runtime for AMD support ^(you must have it installed^)...
     runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --dml --theme dark
     pause
     cls
     goto menu
 ) else if "%choice%"=="1" (
     cls
-    echo Starting Applio with runtime for Nvidia support (you must have it installed)...
+    echo Starting Applio with runtime for Nvidia support ^(you must have it installed^)...
     runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --theme dark
     pause
     cls
