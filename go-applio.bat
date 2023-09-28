@@ -31,11 +31,11 @@ if %errorlevel% equ 1 (
 )
 
 :continue
-echo Recommended for regular users:
-echo [1] Start Applio with Runtime (Nvidia Support)
-echo [2] Start Applio with Runtime (AMD Support)
+echo Runtime: Recommended for regular users
+echo [1] Start Applio - Runtime (Nvidia Support)
+echo [2] Start Applio - Runtime (AMD Support)
 echo.
-echo Only recommended for experienced users:
+echo Dependencies: Only recommended for experienced users
 echo [3] Start Applio (Nvidia Support)
 echo [4] Start Applio (AMD Support)
 echo.
