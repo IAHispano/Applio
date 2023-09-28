@@ -967,7 +967,7 @@ def click_train(
         else "%s/3_feature768" % (exp_dir)
     )
     log_interval = set_log_interval(exp_dir, batch_size12)
-    
+
     if if_f0_3:
         f0_dir = "%s/2a_f0" % (exp_dir)
         f0nsf_dir = "%s/2b-f0nsf" % (exp_dir)
@@ -1148,7 +1148,7 @@ def train_index(exp_dir1, version19):
 
     np.save("%s/total_fea.npy" % exp_dir, big_npy)
     n_ivf = min(int(16 * np.sqrt(big_npy.shape[0])), big_npy.shape[0] // 39)
-    #infos.append("%s,%s" % (big_npy.shape, n_ivf))
+    # infos.append("%s,%s" % (big_npy.shape, n_ivf))
     yield "\n".join(infos)
     index = faiss.index_factory(256 if version19 == "v1" else 768, "IVF%s,Flat" % n_ivf)
     # index = faiss.index_factory(256if version19=="v1"else 768, "IVF%s,PQ128x4fs,RFlat"%n_ivf)
@@ -1841,7 +1841,7 @@ def GradioSetup():
                                     value="wav",
                                     interactive=True,
                                 )
-                                
+
                                 crepe_hop_length = gr.Slider(
                                     minimum=1,
                                     maximum=512,
@@ -2334,19 +2334,20 @@ def GradioSetup():
             with gr.TabItem(i18n("Train")):
                 with gr.Accordion(label=i18n("Step 1: Processing data")):
                     with gr.Row():
-                        exp_dir1 = gr.Textbox(
-                            label=i18n("Enter the model name:"),
-                            value=i18n("Model_Name"),
-                        )
+                        with gr.Column():
+                            exp_dir1 = gr.Textbox(
+                                label=i18n("Enter the model name:"),
+                                value=i18n("Model_Name"),
+                            )
+                            if_f0_3 = gr.Checkbox(
+                                label=i18n("Whether the model has pitch guidance."),
+                                value=True,
+                                interactive=True,
+                            )
                         sr2 = gr.Radio(
                             label=i18n("Target sample rate:"),
                             choices=["40k", "48k", "32k"],
                             value="40k",
-                            interactive=True,
-                        )
-                        if_f0_3 = gr.Checkbox(
-                            label=i18n("Whether the model has pitch guidance."),
-                            value=True,
                             interactive=True,
                         )
                         version19 = gr.Radio(
@@ -2356,41 +2357,41 @@ def GradioSetup():
                             interactive=True,
                             visible=True,
                         )
-                        np7 = gr.Slider(
-                            minimum=1,
-                            maximum=config.n_cpu,
-                            step=1,
-                            label=i18n("Number of CPU processes:"),
-                            value=config.n_cpu,
-                            interactive=True,
-                        )
-                with gr.Accordion(label=i18n("Step 2: Skipping pitch extraction")):
+
+                        with gr.Column():
+                            np7 = gr.Slider(
+                                minimum=1,
+                                maximum=config.n_cpu,
+                                step=1,
+                                label=i18n("Number of CPU processes:"),
+                                value=config.n_cpu,
+                                interactive=True,
+                            )
+                            spk_id5 = gr.Slider(
+                                minimum=0,
+                                maximum=4,
+                                step=1,
+                                label=i18n("Specify the model ID:"),
+                                value=0,
+                                interactive=True,
+                            )
+
                     with gr.Row():
-                        #  trainset_dir4 = gr.Textbox(
-                        #      label=i18n("Enter the path of the training folder:"), value=os.path.join(now_dir, datasets_root)
-                        #  )
                         with gr.Column():
                             trainset_dir4 = gr.Dropdown(
                                 choices=sorted(datasets),
                                 label=i18n("Select your dataset:"),
                                 value=get_dataset(),
                             )
-                            btn_update_dataset_list = gr.Button(
-                                i18n("Update list"), variant="primary"
-                            )
-                        with gr.Column():
+
                             dataset_path = gr.Textbox(
                                 label=i18n("Or add your dataset path:"),
                                 interactive=True,
                             )
-                        spk_id5 = gr.Slider(
-                            minimum=0,
-                            maximum=4,
-                            step=1,
-                            label=i18n("Specify the model ID:"),
-                            value=0,
-                            interactive=True,
-                        )
+                            btn_update_dataset_list = gr.Button(
+                                i18n("Update list"), variant="primary"
+                            )
+
                         btn_update_dataset_list.click(
                             resources.update_dataset_list, [spk_id5], trainset_dir4
                         )
@@ -2402,7 +2403,7 @@ def GradioSetup():
                             [info1],
                         )
 
-                with gr.Accordion(label=i18n("Step 3: Extracting features")):
+                with gr.Accordion(label=i18n("Step 2: Extracting features")):
                     with gr.Row():
                         with gr.Column():
                             gpus6 = gr.Textbox(
@@ -2432,7 +2433,6 @@ def GradioSetup():
                                 value="rmvpe",
                                 interactive=True,
                             )
-
                             hop_length = gr.Slider(
                                 minimum=1,
                                 maximum=512,
@@ -2442,9 +2442,9 @@ def GradioSetup():
                                 ),
                                 value=64,
                                 interactive=True,
-                                
                             )
 
+                    with gr.Row():
                         but2 = gr.Button(i18n("Feature extraction"), variant="primary")
                         info2 = gr.Textbox(
                             label=i18n("Output information:"),
@@ -2453,22 +2453,22 @@ def GradioSetup():
                             interactive=False,
                         )
 
-                        but2.click(
-                            extract_f0_feature,
-                            [
-                                gpus6,
-                                np7,
-                                f0method8,
-                                if_f0_3,
-                                exp_dir1,
-                                version19,
-                                hop_length,
-                            ],
-                            [info2],
-                        )
+                    but2.click(
+                        extract_f0_feature,
+                        [
+                            gpus6,
+                            np7,
+                            f0method8,
+                            if_f0_3,
+                            exp_dir1,
+                            version19,
+                            hop_length,
+                        ],
+                        [info2],
+                    )
 
                 with gr.Row():
-                    with gr.Accordion(label=i18n("Step 4: Model training started")):
+                    with gr.Accordion(label=i18n("Step 3: Model training started")):
                         with gr.Row():
                             save_epoch10 = gr.Slider(
                                 minimum=1,
@@ -2519,27 +2519,26 @@ def GradioSetup():
                                 value=True,
                                 interactive=True,
                             )
-
-                        with gr.Row():
-                            pretrained_G14 = gr.Textbox(
-                                lines=4,
-                                label=i18n("Load pre-trained base model G path:"),
-                                value="assets/pretrained_v2/f0G40k.pth",
-                                interactive=True,
-                            )
-                            pretrained_D15 = gr.Textbox(
-                                lines=4,
-                                label=i18n("Load pre-trained base model D path:"),
-                                value="assets/pretrained_v2/f0D40k.pth",
-                                interactive=True,
-                            )
-                            gpus16 = gr.Textbox(
-                                label=i18n(
-                                    "Provide the GPU index(es) separated by '-', like 0-1-2 for using GPUs 0, 1, and 2:"
-                                ),
-                                value=gpus,
-                                interactive=True,
-                            )
+                        with gr.Column():
+                            with gr.Row():
+                                pretrained_G14 = gr.Textbox(
+                                    label=i18n("Load pre-trained base model G path:"),
+                                    value="assets/pretrained_v2/f0G40k.pth",
+                                    interactive=True,
+                                )
+                                pretrained_D15 = gr.Textbox(
+                                    label=i18n("Load pre-trained base model D path:"),
+                                    value="assets/pretrained_v2/f0D40k.pth",
+                                    interactive=True,
+                                )
+                                with gr.Row():
+                                    gpus16 = gr.Textbox(
+                                        label=i18n(
+                                            "Provide the GPU index(es) separated by '-', like 0-1-2 for using GPUs 0, 1, and 2:"
+                                        ),
+                                        value=gpus,
+                                        interactive=True,
+                                    )
                             sr2.change(
                                 change_sr2,
                                 [sr2, if_f0_3, version19],
@@ -2555,7 +2554,7 @@ def GradioSetup():
                                 inputs=[if_f0_3, sr2, version19],
                                 outputs=[f0method8, pretrained_G14, pretrained_D15],
                             )
-
+                        with gr.Row():
                             butstop = gr.Button(
                                 i18n("Stop training"),
                                 variant="primary",
@@ -2574,13 +2573,14 @@ def GradioSetup():
                                 inputs=[gr.Number(value=1, visible=False)],
                                 outputs=[but3, butstop],
                             )
+                            info3 = gr.Textbox(
+                                label=i18n("Output information:"),
+                                value="",
+                                lines=4,
+                                max_lines=4,
+                            )
 
                             with gr.Column():
-                                info3 = gr.Textbox(
-                                    label=i18n("Output information:"),
-                                    value="",
-                                    max_lines=4,
-                                )
                                 save_action = gr.Dropdown(
                                     label=i18n("Save type"),
                                     choices=[
@@ -2591,11 +2591,11 @@ def GradioSetup():
                                     value=i18n("Choose the method"),
                                     interactive=True,
                                 )
-
-                                but7 = gr.Button(i18n("Save model"), variant="primary")
                                 but4 = gr.Button(
                                     i18n("Train feature index"), variant="primary"
                                 )
+
+                                but7 = gr.Button(i18n("Save model"), variant="primary")
 
                             if_save_every_weights18.change(
                                 fn=lambda if_save_every_weights: (
