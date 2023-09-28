@@ -1835,6 +1835,9 @@ def GradioSetup():
                                 f0_autotune = gr.Checkbox(
                                     label="Enable autotune", interactive=True
                                 )
+                                split_audio = gr.Checkbox(
+                                    label="Split Audio (Better Results)", interactive=True
+                                )
                                 format1_ = gr.Radio(
                                     label=i18n("Export file format:"),
                                     choices=["wav", "flac", "mp3", "m4a"],
@@ -2111,6 +2114,7 @@ def GradioSetup():
                                     rms_mix_rate0,
                                     protect0,
                                     format1_,
+                                    split_audio,
                                     crepe_hop_length,
                                     minpitch_slider,
                                     minpitch_txtbox,

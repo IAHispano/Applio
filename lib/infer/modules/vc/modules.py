@@ -19,9 +19,11 @@ from lib.infer.infer_libs.infer_pack.models import (
 )
 from lib.infer.modules.vc.pipeline import Pipeline
 from lib.infer.modules.vc.utils import *
+import tabs.merge as merge
 import time
 import scipy.io.wavfile as wavfile
-
+import glob
+from shutil import move
 sup_audioext = {
     "wav",
     "mp3",
@@ -188,6 +190,7 @@ class VC:
         rms_mix_rate,
         protect,
         format1,
+        split_audio,
         crepe_hop_length,
         f0_min,
         note_min,
@@ -203,7 +206,126 @@ class VC:
         
         if (not os.path.exists(input_audio_path1)) and (not os.path.exists(os.path.join(now_dir, input_audio_path1))):
             return "Audio was not properly selected or doesn't exist", None
-        
+        if split_audio:
+            resultm, new_dir_path = merge.process_audio(input_audio_path1)
+            print(resultm)
+            print("------")
+            print(new_dir_path)
+            if resultm == "Finish":
+
+                file_index = (
+                (
+                    file_index.strip(" ")
+                    .strip('"')
+                    .strip("\n")
+                    .strip('"')
+                    .strip(" ")
+                    .replace("trained", "added")
+                )
+                if file_index != ""
+                else file_index2
+                )  # 防止小白写错，自动帮他替换掉
+
+                # Use the code from vc_multi to process the segmented audio
+                if rvc_globals.NotesOrHertz and f0_method != 'rmvpe':
+                    f0_min = note_to_hz(note_min) if note_min else 50
+                    f0_max = note_to_hz(note_max) if note_max else 1100
+                    print(f"Converted Min pitch: freq - {f0_min}\n"
+                          f"Converted Max pitch: freq - {f0_max}")
+                else:
+                    f0_min = f0_min or 50
+                    f0_max = f0_max or 1100
+                
+                try:
+                    dir_path = (
+                        new_dir_path.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+                    )  # Prevent leading/trailing whitespace and quotes
+                    try:
+                        if dir_path != "":
+                            paths = [
+                                os.path.join(root, name)
+                                for root, _, files in os.walk(dir_path, topdown=False)
+                                for name in files
+                                if name.endswith(tuple(sup_audioext)) and root == dir_path
+                            ]
+                    except:
+                        traceback.print_exc()
+                    print(paths)
+                    for path in paths:
+                        info, opt = self.vc_single_dont_save(
+                            sid,
+                            path,
+                            path,
+                            f0_up_key,
+                            None,
+                            f0_method,
+                            file_index,
+                            file_index2,
+                            # file_big_npy,
+                            index_rate,
+                            filter_radius,
+                            resample_sr,
+                            rms_mix_rate,
+                            protect,
+                            crepe_hop_length, 
+                            f0_min, 
+                            note_min, 
+                            f0_max, 
+                            note_max,
+                            f0_autotune,
+                        )
+                        if "Success" in info:
+                            try:
+                                tgt_sr, audio_opt = opt
+                                output_filename = os.path.splitext(os.path.basename(path))[0]
+                                if format1 in ["wav", "flac"]:
+                                    sf.write(
+                                        "%s/%s.%s"
+                                        % (new_dir_path, output_filename, format1),
+                                        audio_opt,
+                                        tgt_sr,
+                                    )
+                                else:
+                                    path = "%s/%s.%s" % (new_dir_path, output_filename, format1)
+                                    with BytesIO() as wavf:
+                                        sf.write(
+                                            wavf,
+                                            audio_opt,
+                                            tgt_sr,
+                                            format="wav"
+                                        )
+                                        wavf.seek(0, 0)
+                                        with open(path, "wb") as outf:
+                                            wav2(wavf, outf, format1)
+                            except:
+                                print(traceback.format_exc())
+                except:
+                    print(traceback.format_exc())
+
+                time.sleep(0.5)
+                print("Finished processing segmented audio, now merging audio...")
+
+                # Une el audio segmentado
+                merge_timestamps_file = os.path.join(os.path.dirname(new_dir_path), f"{os.path.basename(input_audio_path1).split('.')[0]}_timestamps.txt")
+                merge.merge_audio(merge_timestamps_file)
+
+                # Calculate the elapsed time
+                end_time = time.time()
+                total_time = end_time - start_time
+
+                merged_audio_path = os.path.join(os.path.dirname(new_dir_path), "audio-outputs", f"{os.path.basename(input_audio_path1).split('.')[0]}_merged.wav")
+                index_info = (
+                    "Index:\n%s." % file_index
+                    if os.path.exists(file_index)
+                    else "Index not used."
+                )
+
+                return (
+                "Success.\n%s\nTime:\infer: %s."
+                % (index_info, total_time),
+                merged_audio_path,
+                )
+    
         print(f"\nStarting inference for '{os.path.basename(input_audio_path1)}'")
         print("-------------------")
         f0_up_key = int(f0_up_key)
@@ -473,6 +595,10 @@ class VC:
             info = traceback.format_exc()
             logger.warn(info)
             return info, (None, None)
+
+
+
+
 
 
     def vc_multi(
