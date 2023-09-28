@@ -42,12 +42,13 @@ else
       exit 1
     fi
   fi
-  python3 -m venv .venv
-  source .venv/bin/activate
+ 
 
 # Clone the repo for make this script usable with echo 1 | curl blabla https://script.sh
 git clone https://github.com/IAHispano/Applio-RVC-Fork
 cd Applio-RVC-Forko
+python3 -m venv .venv
+source .venv/bin/activate
 chmod +x stftpitchshift
 chmod +x *.sh
 # maybe is needed idk
@@ -82,14 +83,14 @@ echo
 echo "Only recommended for experienced users:"
 echo "[1] Nvidia graphics cards"
 echo "[2] AMD graphics cards"
+echo "[2] Intel ARC graphics cards"
 echo
 read -p "Select the option according to your GPU: " choice
 
 case $choice in
     1)
-        echo "Disabled until split requirements.txt in applio-requirements.txt and requirements-nvidia.txt"
+        echo
         finish
-        python -m pip install -r assets/requirements/requirements-nvidia.txt
         echo
         python -m pip uninstall torch torchvision torchaudio -y
         echo
@@ -97,19 +98,23 @@ case $choice in
         echo
         ;;
     2)
-        echo "Disabled until merge amd support"
-        
+        echo
+        echo "Before install this check https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/blob/main/docs/en/README.en.md#rocm-support-for-amd-graphic-cards-linux-only"
+        read -p "Press enter to continue"
+        python -m pip install -r https://raw.githubusercontent.com/WorXeN/Retrieval-based-Voice-Conversion-WebUI/main/requirements-amd.txt
+        python -m pip uninstall torch torchvision torchaudio -y
+        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.4.2
         echo
         finish
         ;;
     3)
-        echo "Disabled until merge ipx support"
-
+        echo 
+        python -m pip install -r https://raw.githubusercontent.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/main/requirements-ipex.txt
         echo
         finish
         ;;
     *)
-        echo "Invalid option. Please enter a number from 1 to 2."
+        echo "Invalid option. Please enter a number from 1 to 3."
         echo ""
         read -p "Press Enter to access the main menu..."
         ;;
