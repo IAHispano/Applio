@@ -18,8 +18,9 @@ echo " ::: "
     echo ""
     echo "[1] Start Applio (Nvidia Support)"
     echo "[2] Start Applio (AMD Support)"
+    echo "[3] Start Applio (Intel GPU/CPU)"
     echo ""
-    echo "[3] Exit"
+    echo "[4] Exit"
     echo ""
 
     read -p "Select an option: " choice
@@ -34,7 +35,12 @@ echo " ::: "
       python3.9 infer-web.py --pycmd python3.9 --port 7897 --dml --theme dark
       read -p "Press Enter to continue..."
       ;;
-    3)
+   3)
+      clear
+      python3.9 -m sklearnex infer-web.py --pycmd python --port 7897 --theme dark
+      read -p "Press Enter to continue..."
+      ;;
+    4)
       finish
       ;;
     *)
