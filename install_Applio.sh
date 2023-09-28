@@ -47,7 +47,7 @@ else
 # Clone the repo for make this script usable with echo 1 | curl blabla https://script.sh
 git clone https://github.com/IAHispano/Applio-RVC-Fork
 cd Applio-RVC-Fork
-python3 -m venv .venv
+python -m venv .venv
 source .venv/bin/activate
 chmod +x stftpitchshift
 chmod +x *.sh
@@ -110,7 +110,7 @@ case $choice in
     3)
         echo 
         python -m pip install -r https://raw.githubusercontent.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/main/requirements-ipex.txt
-        echo
+        python -m pip install scikit-learn-intelex
         finish
         ;;
     *)
