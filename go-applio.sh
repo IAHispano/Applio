@@ -1,6 +1,6 @@
 #!/bin/bash
 echo -e "\033]0;Applio - Start\007"
-export PATH=$HOME/.local/bin/:$PATH
+source .venv/bin/activate
 menu() {
   while true; do
     clear
