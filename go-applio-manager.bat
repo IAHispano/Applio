@@ -28,8 +28,10 @@ for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 
 echo [1] Reinstall Applio
 echo [2] Update Applio
-echo [3] Update Applio + Dependencies
-echo [4] Fix Tensorboard
+echo [3] Download NVDIA Runtime
+echo [4] Download AMD Runtime
+echo [5] Update Applio + Dependencies
+echo [6] Fix Tensorboard
 echo.
 
 set /p choice=Select an option: 
@@ -57,7 +59,7 @@ if "%choice%"=="2" (
 if "%choice%"=="3" (
     cls
     echo.
-    goto updaterDependencies
+    goto nvdiaRuntime
     pause
     cls
     goto menu
@@ -65,6 +67,26 @@ if "%choice%"=="3" (
 )
 
 if "%choice%"=="4" (
+    cls
+    echo.
+    goto amdRuntime
+    pause
+    cls
+    goto menu
+
+)
+
+if "%choice%"=="5" (
+    cls
+    echo.
+    goto updaterDependencies
+    pause
+    cls
+    goto menu
+
+)
+
+if "%choice%"=="6" (
     cls
     echo.
     pip uninstall tb-nightly tensorboardX tensorboard
@@ -302,10 +324,44 @@ if exist "%fixesFolder%\%localFixesPy%" (
     echo The file "%localFixesPy%" was not found in the "Fixes" folder.
 )
 echo.
-
 echo Applio has been updated!
 echo.
 echo Press 'Enter' to access the main menu...
 pause>nul
 cls
 goto menu
+
+:nvdiaRuntime
+if exist "%principal%\runtime" (
+    rmdir "%principal%\runtime" /s /q
+)
+cls
+curl -LJO "%URL_EXTRA%/runtime.zip"
+echo.
+echo Extracting the runtime.zip file...
+powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime.zip', '%principal%') }"
+echo.
+del runtime.zip
+cls
+echo NVDIA Runtime downloaded!
+echo.
+goto menu
+
+:amdRuntime
+if exist "%principal%\runtime" (
+    rmdir "%principal%\runtime" /s /q
+)
+
+cls
+curl -LJO "%URL_EXTRA%/runtime_dml.zip"
+echo.
+echo Extracting the runtime_dml.zip file...
+powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime_dml.zip', '%principal%') }"
+echo.
+del runtime_dml.zip
+cls
+echo AMD Runtime downloaded!
+echo.
+goto menu
+
+
