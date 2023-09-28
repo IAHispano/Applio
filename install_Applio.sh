@@ -109,7 +109,7 @@ case $choice in
         ;;
     3)
         echo 
-        python -m pip install -r https://raw.githubusercontent.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/main/requirements-ipex.txt
+        python -m pip install -r assets/requirements/requirements-ipex.txt
         python -m pip install scikit-learn-intelex
         finish
         ;;
