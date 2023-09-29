@@ -464,7 +464,6 @@ class VC:
     def vc_single_dont_save(
         self,
         sid,
-        input_audio_path0,
         input_audio_path1,
         f0_up_key,
         f0_file,
@@ -486,13 +485,12 @@ class VC:
         global total_time
         total_time = 0
         start_time = time.time()
-        if not input_audio_path0 and not input_audio_path1:
+        if not input_audio_path1:
             return "You need to upload an audio", None
         
-        if (not os.path.exists(input_audio_path0)) and (not os.path.exists(os.path.join(now_dir, input_audio_path0))):
+        if (not os.path.exists(input_audio_path1)) and (not os.path.exists(os.path.join(now_dir, input_audio_path1))):
             return "Audio was not properly selected or doesn't exist", None
         
-        input_audio_path1 = input_audio_path1 or input_audio_path0
         print(f"\nStarting inference for '{os.path.basename(input_audio_path1)}'")
         print("-------------------")
         f0_up_key = int(f0_up_key)
@@ -505,7 +503,6 @@ class VC:
             f0_min = f0_min or 50
             f0_max = f0_max or 1100
         try:
-            input_audio_path1 = input_audio_path1 or input_audio_path0
             print(f"Attempting to load {input_audio_path1}....")
             audio = load_audio(file=input_audio_path1,
                                sr=16000,

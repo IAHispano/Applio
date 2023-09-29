@@ -291,7 +291,6 @@ def custom_voice(
             pass
         info_, (sample_, audio_output_) = vc.vc_single_dont_save(
             sid=0,
-            input_audio_path0=filename,  # f"audio2/{filename}",
             input_audio_path1=filename,  # f"audio2/{filename}",
             f0_up_key=transpose,  # transpose for m to f and reverse 0 12
             f0_file=None,
@@ -414,7 +413,6 @@ def use_tts(
             vc.get_vc(model_path)
             info_, (sample_, audio_output_) = vc.vc_single_dont_save(
                 sid=0,
-                input_audio_path0=converted_tts_filename,
                 input_audio_path1=converted_tts_filename,
                 f0_up_key=transpose,
                 f0_file=None,
@@ -466,9 +464,6 @@ def use_tts(
             vc.get_vc(model_path)
             info_, (sample_, audio_output_) = vc.vc_single_dont_save(
                 sid=0,
-                input_audio_path0=os.path.join(
-                    now_dir, "assets", "audios", "audio-outputs", "bark_out.wav"
-                ),  # f"audio2/{filename}",
                 input_audio_path1=os.path.join(
                     now_dir, "assets", "audios", "audio-outputs", "bark_out.wav"
                 ),  # f"audio2/{filename}",
