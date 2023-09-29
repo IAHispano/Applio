@@ -699,7 +699,6 @@ def train_and_evaluate(
 
     if rank == 0:
         logger.info("Epoch: {} {}".format(epoch, epoch_recorder.record()))
-        info.append("Epoch: {} {}".format(epoch, epoch_recorder.record()))
     if epoch >= hps.total_epoch and rank == 0:
         logger.info("Training successfully completed, closing the program...")
 
