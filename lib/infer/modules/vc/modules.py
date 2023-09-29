@@ -255,7 +255,6 @@ class VC:
                         info, opt = self.vc_single_dont_save(
                             sid,
                             path,
-                            path,
                             f0_up_key,
                             None,
                             f0_method,
