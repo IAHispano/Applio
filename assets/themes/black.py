@@ -92,8 +92,8 @@ class Applio(Base):
             block_radius= "*radius_md",
             block_shadow= "none",
             block_shadow_dark= "none",
-            block_title_background_fill= "rgba(46,85,65,255)",
-            block_title_background_fill_dark= "rgba(46,85,65,255)",
+            block_title_background_fill= "rgba(114,193,152,1)", #black text on lighter green background
+            block_title_background_fill_dark= "rgba(114,193,152,1)", #black text on lighter green background
             block_title_border_color= "none",
             block_title_border_color_dark= "none",
             block_title_border_width= "0px",
