@@ -41,32 +41,6 @@ def replace_in_file(file_name, old_text, new_text):
 
     return False
 
-if __name__ == "__main__":
-    current_path = os.getcwd()
-    file_name = os.path.join(current_path, "lib", "infer", "modules", "train", "extract", "extract_f0_print.py")
-    line_to_find = 'import numpy as np, logging'
-    text_to_insert = "sys.path.append(r'" + current_path + "')"
-    
-
-    success_1 = insert_new_line(file_name, line_to_find, text_to_insert)
-    if success_1:
-        print('The first operation was successful!')
-    else:
-        print('He skipped the first operation because it was already fixed!')
-
-    file_name = 'infer-web.py'
-    old_text = 'with gr.Blocks(theme=gr.themes.Soft()) as app:'
-    new_text = 'with gr.Blocks() as app:'
-
-    success_2 = replace_in_file(file_name, old_text, new_text)
-    if success_2:
-        print('The second operation was successful!')
-    else:
-        print('The second operation was omitted because it was already fixed!')
-
-    print('Local corrections successful! You should now be able to infer and train locally in Applio RVC Fork.')
-    
-    time.sleep(5)
 
 def find_torchcrepe_directory(directory):
     """

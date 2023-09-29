@@ -250,7 +250,12 @@ git pull
 echo Verifying if the local_fixes.py file exists in the Fixes folder...
 if exist "%fixesFolder%\%localFixesPy%" (
     echo Running the file...
-    runtime\python.exe "%fixesFolder%\%localFixesPy%"
+    if exist "%principal%\runtime" (
+        runtime\python.exe "%fixesFolder%\%localFixesPy%"
+    ) else (
+        python.exe "%fixesFolder%\%localFixesPy%"
+    )
+    
 ) else (
     echo The file "%localFixesPy%" was not found in the "Fixes" folder.
 )
@@ -319,7 +324,11 @@ goto dependenciesFinished
 echo Verifying if the local_fixes.py file exists in the Fixes folder...
 if exist "%fixesFolder%\%localFixesPy%" (
     echo Running the file...
-    runtime\python.exe "%fixesFolder%\%localFixesPy%"
+    if exist "%principal%\runtime" (
+        runtime\python.exe "%fixesFolder%\%localFixesPy%"
+    ) else (
+        python.exe "%fixesFolder%\%localFixesPy%"
+    )
 ) else (
     echo The file "%localFixesPy%" was not found in the "Fixes" folder.
 )
