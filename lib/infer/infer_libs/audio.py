@@ -131,9 +131,7 @@ def check_audio_duration(file):
 
         if duration < 0.76:
             print(
-                f"\n------------\n"
                 f"Audio file, {file.split('/')[-1]}, under ~0.76s detected - file is too short. Target at least 1-2s for best results."
-                f"\n------------\n\n"
             )
             return False
 

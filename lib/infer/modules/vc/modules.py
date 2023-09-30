@@ -326,7 +326,6 @@ class VC:
                 )
     
         print(f"\nStarting inference for '{os.path.basename(input_audio_path1)}'")
-        print("-------------------")
         f0_up_key = int(f0_up_key)
         if rvc_globals.NotesOrHertz and f0_method != 'rmvpe':
             f0_min = note_to_hz(note_min) if note_min else 50
@@ -491,7 +490,6 @@ class VC:
             return "Audio was not properly selected or doesn't exist", None
         
         print(f"\nStarting inference for '{os.path.basename(input_audio_path1)}'")
-        print("-------------------")
         f0_up_key = int(f0_up_key)
         if rvc_globals.NotesOrHertz and f0_method != 'rmvpe':
             f0_min = note_to_hz(note_min) if note_min else 50

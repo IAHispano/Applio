@@ -1328,6 +1328,44 @@ def update_model_choices(select_value):
         return {"choices": model_ids_list, "__type__": "update"}
 
 
+def save_drop_model_pth(dropbox):
+    file_path = dropbox.name 
+    file_name = os.path.basename(file_path)
+    target_path = os.path.join("logs", "weights", os.path.basename(file_path))
+    
+    if not file_name.endswith('.pth'):
+        print(i18n("The file does not have the .pth extension. Please upload the correct file."))
+        return None
+    
+    shutil.move(file_path, target_path)
+    return target_path
+
+def extract_folder_name(file_name):
+    match = re.search(r'nprobe_(.*?)\.index', file_name)
+    
+    if match:
+        return match.group(1)
+    else:
+        return
+
+def save_drop_model_index(dropbox):
+    file_path = dropbox.name
+    file_name = os.path.basename(file_path)
+    folder_name = extract_folder_name(file_name)
+
+    if not file_name.endswith('.index'):
+        print(i18n("The file does not have the .index extension. Please upload the correct file."))
+        return None
+
+    out_path = os.path.join("logs", folder_name)
+    os.mkdir(out_path)
+
+    target_path = os.path.join(out_path, os.path.basename(file_path))
+
+    shutil.move(file_path, target_path)
+    return target_path
+
+
 def download_model():
     gr.Markdown(value="# " + i18n("Download Model"))
     gr.Markdown(value=i18n("It is used to download your inference models."))
@@ -1342,6 +1380,19 @@ def download_model():
             inputs=[model_url],
             outputs=[download_model_status_bar],
         )
+    gr.Markdown(value=i18n("You can also drop your files to load your model."))    
+    with gr.Row():
+        dropbox_pth = gr.File(label=i18n("Drag your .pth file here:"))
+        dropbox_index = gr.File(label=i18n("Drag your .index file here:"))
+
+    dropbox_pth.upload(
+        fn=save_drop_model_pth,
+        inputs=[dropbox_pth],
+    )
+    dropbox_index.upload(
+        fn=save_drop_model_index,
+        inputs=[dropbox_index],
+    )
 
 
 def download_backup():
@@ -1527,68 +1578,3 @@ def youtube_separator():
     )
 
 
-def save_drop_model_pth(dropbox):
-    file_path = dropbox.name 
-    file_name = os.path.basename(file_path)
-    target_path = os.path.join("logs", "weights", os.path.basename(file_path))
-    
-    if not file_name.endswith('.pth'):
-        print(i18n("The file does not have the .pth extension. Please upload the correct file."))
-        return None
-    
-    shutil.move(file_path, target_path)
-    return target_path
-
-def extract_folder_name(file_name):
-    match = re.search(r'nprobe_(.*?)\.index', file_name)
-    
-    if match:
-        return match.group(1)
-    else:
-        return
-
-def save_drop_model_index(dropbox):
-    file_path = dropbox.name
-    file_name = os.path.basename(file_path)
-    folder_name = extract_folder_name(file_name)
-
-    if not file_name.endswith('.index'):
-        print(i18n("The file does not have the .index extension. Please upload the correct file."))
-        return None
-
-    out_path = os.path.join("logs", folder_name)
-    os.mkdir(out_path)
-
-    target_path = os.path.join(out_path, os.path.basename(file_path))
-
-    shutil.move(file_path, target_path)
-    return target_path
-
-
-def download_model_():
-    gr.Markdown(value="# " + i18n("Download Model"))
-    gr.Markdown(value=i18n("It is used to download your inference models."))
-    with gr.Row():
-        model_url = gr.Textbox(label=i18n("Url:"))
-    with gr.Row():
-        download_model_status_bar = gr.Textbox(label=i18n("Status:"))
-    with gr.Row():
-        download_button = gr.Button(i18n("Download"))
-        download_button.click(
-            fn=load_downloaded_model,
-            inputs=[model_url],
-            outputs=[download_model_status_bar],
-        )
-    gr.Markdown(value=i18n("You can also drop your files to load your model."))    
-    with gr.Row():
-        dropbox_pth = gr.File(label=i18n("Drag your .pth file here:"))
-        dropbox_index = gr.File(label=i18n("Drag your .index file here:"))
-
-    dropbox_pth.upload(
-        fn=save_drop_model_pth,
-        inputs=[dropbox_pth],
-    )
-    dropbox_index.upload(
-        fn=save_drop_model_index,
-        inputs=[dropbox_index],
-    )

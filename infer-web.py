@@ -1050,7 +1050,7 @@ def click_train(
             f.write("\n")
     if gpus16:
         cmd = (
-            '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -g %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s -li %s'
+            '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -g %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s'
             % (
                 config.python_cmd,
                 exp_dir1,
@@ -1066,12 +1066,11 @@ def click_train(
                 1 if if_cache_gpu17 == True else 0,
                 1 if if_save_every_weights18 == True else 0,
                 version19,
-                log_interval,
             )
         )
     else:
         cmd = (
-            '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s -li %s'
+            '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s'
             % (
                 config.python_cmd,
                 exp_dir1,
@@ -1085,8 +1084,6 @@ def click_train(
                 1 if if_save_latest13 == True else 0,
                 1 if if_cache_gpu17 == True else 0,
                 1 if if_save_every_weights18 == True else 0,
-                version19,
-                log_interval,
             )
         )
     logger.info(cmd)
@@ -2805,7 +2802,6 @@ def GradioSetup():
                 resources.download_dataset(trainset_dir4)
                 resources.download_audio()
                 resources.youtube_separator()
-                resources.download_model_()
             with gr.TabItem(i18n("Extra")):
                 gr.Markdown(
                     value=i18n(
@@ -2878,11 +2874,5 @@ def GradioRun(app):
 
 
 if __name__ == "__main__":
-    if os.name == "nt":
-        logger.info(
-            i18n(
-                "Any ConnectionResetErrors post-conversion are irrelevant and purely visual; they can be ignored.\n"
-            )
-        )
     app = GradioSetup()
     GradioRun(app)
