@@ -45,7 +45,7 @@ else
  
 
 # Clone the repo for make this script usable with echo 1 | curl blabla https://script.sh
-git clone https://github.com/soudabot/Applio-RVC-Fork -b python3.10-support
+git clone https://github.com/soudabot/Applio-RVC-Fork -b linux-dev
 cd Applio-RVC-Fork
 python -m venv .venv
 source .venv/bin/activate
@@ -96,6 +96,7 @@ case $choice in
         python -m pip install https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-linux_x86_64.whl
         python -m pip uninstall torch torchvision torchaudio -y
         echo
+        python -m pip install scikit-learn-intelex
         python -m pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
         echo
         ;;
@@ -104,6 +105,8 @@ case $choice in
         echo "Before install this check https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/blob/main/docs/en/README.en.md#rocm-support-for-amd-graphic-cards-linux-only"
         read -p "Press enter to continue"
         python -m pip install -r https://raw.githubusercontent.com/WorXeN/Retrieval-based-Voice-Conversion-WebUI/main/requirements-amd.txt
+        python -m pip uninstall fairseq
+        python -m pip install https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-linux_x86_64.whl
         python -m pip uninstall torch torchvision torchaudio -y
         pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.4.2
         echo
@@ -112,6 +115,8 @@ case $choice in
     3)
         echo 
         python -m pip install -r assets/requirements/requirements-ipex.txt
+        python -m pip uninstall fairseq
+        python -m pip install https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-linux_x86_64.whl
         python -m pip install scikit-learn-intelex
         finish
         ;;
