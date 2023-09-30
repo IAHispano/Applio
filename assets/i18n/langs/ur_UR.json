@@ -241,5 +241,8 @@
   "TTS": "TTS",
   "TTS Method:": "TTS میثاق",
   "Audio TTS:": "آڈیو TTS",
-  "Audio RVC:": "آڈیو ماڈل"
+  "Audio RVC:": "آڈیو ماڈل",
+  "You can also drop your files to load your model.": "آپ اپنے ماڈل کو لوڈ کرنے کے لئے اپنے فائلوں کو بھی ڈراپ کرسکتے ہیں.",
+  "Drag your .pth file here:": "اپنے .pth فائل کو یہاں کھینچیں:",
+  "Drag your .index file here:":  "اپنے .index فائل کو یہاں کھینچیں:"
 }

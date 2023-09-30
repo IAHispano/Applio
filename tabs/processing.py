@@ -111,6 +111,7 @@ def processing_():
                     version_2,
                 ],
                 info4,
+                api_name="ckpt_merge",
             )  # def merge(path1,path2,alpha1,sr,f0,info):
 
         with gr.Accordion(label=i18n("Modify model information")):
@@ -143,7 +144,7 @@ def processing_():
                         label=i18n("Output information:"), value="", max_lines=8
                     )
             but7 = gr.Button(i18n("Modify"), variant="primary")
-            but7.click(change_info, [ckpt_path0, info_, name_to_save1], info5)
+            but7.click(change_info, [ckpt_path0, info_, name_to_save1], info5, api_name="ckpt_modify",)
 
         with gr.Accordion(label=i18n("View model information")):
             with gr.Row():
@@ -159,7 +160,7 @@ def processing_():
                         label=i18n("Output information:"), value="", max_lines=8
                     )
                     but8 = gr.Button(i18n("View"), variant="primary")
-            but8.click(show_info, [ckpt_path1], info6)
+            but8.click(show_info, [ckpt_path1], info6, api_name="ckpt_show")
 
         with gr.Accordion(label=i18n("Model extraction")):
             with gr.Row():
@@ -214,4 +215,5 @@ def processing_():
                 extract_small_model,
                 [ckpt_path2, save_name, sr__, if_f0__, info___, version_1],
                 info7,
+                api_name="ckpt_extract",
             )

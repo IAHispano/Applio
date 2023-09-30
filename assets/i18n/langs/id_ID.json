@@ -241,5 +241,8 @@
   "TTS": "TTS",
   "TTS Method:": "Metode TTS",
   "Audio TTS:": "Audio TTS:",
-  "Audio RVC:": "Model Audio"
+  "Audio RVC:": "Model Audio",
+  "You can also drop your files to load your model.": "Anda juga dapat menjatuhkan berkas Anda untuk memuat model Anda.",
+  "Drag your .pth file here:": "Seret file .pth Anda ke sini:",
+  "Drag your .index file here:": "Seret file .index Anda ke sini:"
 }

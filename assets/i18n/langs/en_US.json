@@ -255,5 +255,8 @@
   "Audio TTS:": "Audio TTS:",
   "Audio RVC:": "Audio RVC:",
   "Enter the text you want to convert to voice...": "Enter the text you want to convert to voice...",
-  "Text:": "Text:"
+  "Text:": "Text:",
+  "You can also drop your files to load your model.": "You can also drop your files to load your model.",
+  "Drag your .pth file here:": "Drag your .pth file here:",
+  "Drag your .index file here:": "Drag your .index file here:"
 }

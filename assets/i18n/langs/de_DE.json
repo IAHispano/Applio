@@ -246,5 +246,8 @@
   "TTS": "TTS",
   "TTS Method:": "TTS-Methode",
   "Audio TTS:": "Audio-TTS",
-  "Audio RVC:": "Audio-Modell"
+  "Audio RVC:": "Audio-Modell",
+  "You can also drop your files to load your model.": "Sie können auch Ihre Dateien ablegen, um Ihr Modell zu laden.",
+  "Drag your .pth file here:": "Ziehen Sie Ihre .pth-Datei hierher:",
+  "Drag your .index file here:": "Ziehen Sie Ihre .index-Datei hierher:"
 }

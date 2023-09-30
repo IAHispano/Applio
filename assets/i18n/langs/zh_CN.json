@@ -241,5 +241,8 @@
   "TTS": "TTS",
   "TTS Method:": "TTS 方法",
   "Audio TTS:": "音频 TTS",
-  "Audio RVC:": "音频模型"
+  "Audio RVC:": "音频模型",
+  "You can also drop your files to load your model.": "您还可以拖放文件以加载模型。",
+  "Drag your .pth file here:": "将您的 .pth 文件拖到这里：",
+  "Drag your .index file here:": "将您的 .index 文件拖到这里："
 }

@@ -243,5 +243,8 @@
   "TTS": "TTS",
   "TTS Method:": "TTS Yöntemi",
   "Audio TTS:": "Sesli TTS",
-  "Audio RVC:": "Sesli Model"
+  "Audio RVC:": "Sesli Model",
+  "You can also drop your files to load your model.": "Modelinizi yüklemek için dosyalarınızı da sürükleyebilirsiniz.",
+  "Drag your .pth file here:": ".pth dosyanızı buraya sürükleyin:",
+  "Drag your .index file here:": ".index dosyanızı buraya sürükleyin:"
 }

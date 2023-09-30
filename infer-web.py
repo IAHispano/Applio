@@ -8,14 +8,9 @@ os.environ["no_proxy"] = "localhost, 127.0.0.1, ::1"
 import logging
 import shutil
 import threading
+from assets.configs.config import Config
 import lib.globals.globals as rvc_globals
-import lib.infer.infer_libs.uvr5_pack.mdx as mdx
-from lib.infer.modules.uvr5.mdxprocess import (
-    get_model_list,
-    id_to_ptm,
-    prepare_mdx,
-    run_mdx,
-)
+
 import lib.tools.model_fetcher as model_fetcher
 import math as math
 import ffmpeg as ffmpeg
@@ -47,7 +42,7 @@ from glob import glob1
 import signal
 from signal import SIGTERM
 
-from assets.configs.config import Config
+
 from assets.i18n.i18n import I18nAuto
 from lib.infer.infer_libs.train.process_ckpt import (
     change_info,
@@ -200,6 +195,13 @@ class ToolButton(gr.Button, gr.components.FormComponent):
     def get_block_name(self):
         return "button"
 
+import lib.infer.infer_libs.uvr5_pack.mdx as mdx
+from lib.infer.modules.uvr5.mdxprocess import (
+    get_model_list,
+    id_to_ptm,
+    prepare_mdx,
+    run_mdx,
+)
 
 hubert_model = None
 weight_root = os.getenv("weight_root")
@@ -1733,6 +1735,7 @@ def GradioSetup():
                         fn=lambda: ({"value": "", "__type__": "update"}),
                         inputs=[],
                         outputs=[sid0],
+                        api_name="infer_clean"
                     )
 
                 with gr.TabItem(i18n("Single")):
@@ -1800,6 +1803,7 @@ def GradioSetup():
                                 fn=change_choices,
                                 inputs=[],
                                 outputs=[sid0, file_index2, input_audio1],
+                                api_name="infer_refresh"
                             )
                     # Create a checkbox for advanced settings
                     advanced_settings_checkbox = gr.Checkbox(
@@ -2123,6 +2127,7 @@ def GradioSetup():
                                     f0_autotune,
                                 ],
                                 [vc_output1, vc_output2],
+                                api_name="infer_convert",
                             )
 
                 with gr.TabItem(i18n("Batch")):  # Dont Change
@@ -2162,6 +2167,7 @@ def GradioSetup():
                                 fn=lambda: change_choices()[1],
                                 inputs=[],
                                 outputs=file_index4,
+                                api_name="infer_refresh_batch",
                             )
 
                         with gr.Column():
@@ -2310,12 +2316,14 @@ def GradioSetup():
                                     f0_autotune,
                                 ],
                                 [vc_output3],
+                                api_name="infer_convert_batch",
                             )
 
                     sid0.change(
                         fn=vc.get_vc,
                         inputs=[sid0, protect0, protect1],
                         outputs=[spk_item, protect0, protect1],
+                        api_name="infer_change_voice",
                     )
                     if not sid0.value == "":
                         spk_item, protect0, protect1 = vc.get_vc(
@@ -2405,6 +2413,7 @@ def GradioSetup():
                             preprocess_dataset,
                             [trainset_dir4, exp_dir1, sr2, np7, dataset_path],
                             [info1],
+                            api_name="train_preprocess",
                         )
 
                 with gr.Accordion(label=i18n("Step 2: Extracting features")):
@@ -2469,6 +2478,7 @@ def GradioSetup():
                             hop_length,
                         ],
                         [info2],
+                        api_name="train_extract_f0_feature",
                     )
 
                 with gr.Row():
@@ -2571,6 +2581,7 @@ def GradioSetup():
                                 fn=stoptraining,
                                 inputs=[gr.Number(value=0, visible=False)],
                                 outputs=[but3, butstop],
+                                api_name="train_stop",
                             )
                             butstop.click(
                                 fn=stoptraining,
@@ -2631,6 +2642,7 @@ def GradioSetup():
                                 version19,
                             ],
                             [info3, butstop, but3],
+                            api_name="train_start",
                         )
 
                         but4.click(train_index, [exp_dir1, version19], info3)
@@ -2706,6 +2718,7 @@ def GradioSetup():
                             model_select,
                         ],
                         [vc_output4],
+                        api_name="uvr_convert",
                     )
             with gr.TabItem(i18n("TTS")):
                 with gr.Column():
@@ -2792,6 +2805,7 @@ def GradioSetup():
                 resources.download_dataset(trainset_dir4)
                 resources.download_audio()
                 resources.youtube_separator()
+                resources.download_model_()
             with gr.TabItem(i18n("Extra")):
                 gr.Markdown(
                     value=i18n(

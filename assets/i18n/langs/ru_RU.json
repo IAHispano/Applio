@@ -241,5 +241,8 @@
   "TTS": "TTS",
   "TTS Method:": "Метод TTS",
   "Audio TTS:": "Аудио TTS",
-  "Audio RVC:": "Аудио Модель"
+  "Audio RVC:": "Аудио Модель",
+  "You can also drop your files to load your model.": "Вы также можете перетащить свои файлы, чтобы загрузить свою модель.",
+  "Drag your .pth file here:": "Перетащите ваш файл .pth сюда:",
+  "Drag your .index file here:": "Перетащите ваш файл .index сюда:"
 }
