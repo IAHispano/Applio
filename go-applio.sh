@@ -1,6 +1,6 @@
 #!/bin/bash
 echo -e "\033]0;Applio - Start\007"
-export PATH=$HOME/.local/bin:$PATH
+source .venv/bin/activate
 menu() {
   while true; do
     clear
@@ -26,12 +26,12 @@ echo " ::: "
     case $choice in
     1)
       clear
-      python3.9 infer-web.py --pycmd python --port 7897 --theme dark
+      python infer-web.py --pycmd python --port 7897 --theme dark
       read -p "Press Enter to continue..."
       ;;
    2)
       clear
-      python3.9 -m sklearnex infer-web.py --pycmd python --port 7897 --theme dark
+      python -m sklearnex infer-web.py --pycmd python --port 7897 --theme dark
       read -p "Press Enter to continue..."
       ;;
     3)

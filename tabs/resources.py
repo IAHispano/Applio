@@ -5,7 +5,6 @@ import sys
 import errno
 import shutil
 import yt_dlp
-from mega import Mega
 import datetime
 import torch
 import glob
@@ -177,7 +176,7 @@ def download_from_url(url):
 
             if file_id:
                 os.chdir(zips_path)
-                result = subprocess.run(
+                result = subprocess.run(0
                     ["gdown", f"https://drive.google.com/uc?id={file_id}", "--fuzzy"],
                     capture_output=True,
                     text=True,
@@ -226,8 +225,7 @@ def download_from_url(url):
             else:
                 return None
             if file_id:
-                m = Mega()
-                m.download_url(url, zips_path)
+                print("Mega.nz is unsupported due mega.py deprecation")
         elif "/tree/main" in url:
             response = requests.get(url)
             soup = BeautifulSoup(response.content, "html.parser")
