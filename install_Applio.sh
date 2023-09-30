@@ -65,7 +65,6 @@ python3.9 -m ensurepip
     echo "${requirements_file} not found. Please ensure the requirements file with required packages exists."
     exit 1
   fi
-fi
 
 clear
 menu() {
