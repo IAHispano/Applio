@@ -90,7 +90,7 @@ read -p "Select the option according to your GPU: " choice
 case $choice in
     1)
         echo
-        python -m pip uninstall fairseq
+        python -m pip uninstall fairseq -y
         python -m pip install https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-linux_x86_64.whl
         python -m pip uninstall torch torchvision torchaudio -y
         python -m pip install scikit-learn-intelex
@@ -110,7 +110,7 @@ case $choice in
     3)
         echo 
         python -m pip install -r assets/requirements/requirements-ipex.txt
-        python -m pip uninstall fairseq
+        python -m pip uninstall fairseq -y
         python -m pip install https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-linux_x86_64.whl
         python -m pip install scikit-learn-intelex
         finish
