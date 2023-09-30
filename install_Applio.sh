@@ -92,6 +92,8 @@ case $choice in
         echo
         finish
         echo
+        python -m pip uninstall fairseq
+        python -m pip install https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-linux_x86_64.whl
         python -m pip uninstall torch torchvision torchaudio -y
         echo
         python -m pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
