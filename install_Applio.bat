@@ -51,7 +51,7 @@ echo.
 cls
 
 echo Installing dependencies...
-echo,
+echo.
 echo Recommended for Nvidia GPU users: 
 echo [1] Download Runtime (pre-installed dependencies)
 echo.
