@@ -96,6 +96,7 @@ case $choice in
         python -m pip install scikit-learn-intelex
         python -m pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
         echo
+        finish
         ;;
     2)
         echo
