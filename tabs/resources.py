@@ -176,7 +176,7 @@ def download_from_url(url):
 
             if file_id:
                 os.chdir(zips_path)
-                result = subprocess.run(0
+                result = subprocess.run(
                     ["gdown", f"https://drive.google.com/uc?id={file_id}", "--fuzzy"],
                     capture_output=True,
                     text=True,
