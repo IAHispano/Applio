@@ -1,5 +1,6 @@
 #!/bin/bash
 echo -e "\033]0;Applio - Installer\007"
+source .venv/bin/activate
 clear
 menu1() {
   while true; do
@@ -25,10 +26,10 @@ read -p "Select an option:  " choice1
 
 case $choice1 in
     1)
-        python3.9 -m pip uninstall -r assets/requirements/requirements-dml* -y
-        python3.9 -m pip uninstall -r assets/requirements/requirements-ipex* -y
-        python3.9 -m pip uninstall -r  https://raw.githubusercontent.com/WorXeN/Retrieval-based-Voice-Conversion-WebUI/main/requirements-amd.txt -y
-        python3.9 -m pip uninstall -r assets/requirements/requirements-realtime-vc.txt -y
+        pip uninstall -r assets/requirements/requirements-dml* -y
+        pip uninstall -r assets/requirements/requirements-ipex* -y
+        pip uninstall -r  https://raw.githubusercontent.com/WorXeN/Retrieval-based-Voice-Conversion-WebUI/main/requirements-amd.txt -y
+        pip uninstall -r assets/requirements/requirements-realtime-vc.txt -y
         cd .. && rm -rf *Applio*
         finish1
         ;;

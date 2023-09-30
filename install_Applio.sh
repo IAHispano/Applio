@@ -23,14 +23,20 @@ elif [[ "$(uname)" != "Linux" ]]; then
   exit 1
 fi
 
+if [ -d ".venv" ]; then
+  echo "Activate venv..."
+  source .venv/bin/activate
+else
+  echo "Creating venv..."
   requirements_file="assets/requirements/requirements.txt"
   # Check if Python is installed
-  if ! command -v python3.9 &> /dev/null; then
+  if ! command -v python3 &> /dev/null; then
     echo "Python 3 not found. Attempting to install..."
     if [[ "$(uname)" == "Darwin" ]] && command -v brew &> /dev/null; then
-      brew install python@3.9 git ffmpeg
-    elif [[ "$(uname)" == "Linux" ]] && command -v yay &> /dev/null; then
-      yay -S python39 git ffmpeg
+      brew install python
+    elif [[ "$(uname)" == "Linux" ]] && command -v apt-get &> /dev/null; then
+      sudo apt-get update
+      sudo apt-get install python
     else
       echo "Please install Python manually."
       exit 1
@@ -38,33 +44,36 @@ fi
   fi
  
 
-
-git clone https://github.com/IAHispano/Applio-RVC-Fork
+# Clone the repo for make this script usable with echo 1 | curl blabla https://script.sh
+git clone https://github.com/soudabot/Applio-RVC-Fork -b python3.10-support
 cd Applio-RVC-Fork
+python -m venv .venv
+source .venv/bin/activate
 chmod +x stftpitchshift
 chmod +x *.sh
 # maybe is needed idk
 chmod +x ./lib/infer/infer_libs/stftpitchshift
-python3.9 -m ensurepip
+python -m ensurepip
 
   
   # Check if required packages are installed and install them if notia
   # I will change this to make a  requirements with the applio changes 
   # And add a custom one for nvidia, ipx, amd support on linux and directml for the batch script
   if [ -f "${requirements_file}" ]; then
-    installed_packages=$(python3.9 -m pip freeze)
+    installed_packages=$(python -m pip freeze)
     while IFS= read -r package; do
       [[ "${package}" =~ ^#.* ]] && continue
       package_name=$(echo "${package}" | sed 's/[<>=!].*//')
       if ! echo "${installed_packages}" | grep -q "${package_name}"; then
         echo "${package_name} not found. Attempting to install..."
-        python3.9 -m pip install --upgrade "${package}"
+        python -m pip install --upgrade "${package}"
       fi
     done < "${requirements_file}"
   else
     echo "${requirements_file} not found. Please ensure the requirements file with required packages exists."
     exit 1
   fi
+fi
 
 clear
 menu() {
@@ -83,25 +92,27 @@ case $choice in
         echo
         finish
         echo
-        python3.9 -m pip uninstall torch torchvision torchaudio -y
+        python -m pip uninstall fairseq
+        python -m pip install https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-linux_x86_64.whl
+        python -m pip uninstall torch torchvision torchaudio -y
         echo
-        python3.9 -m pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
+        python -m pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
         echo
         ;;
     2)
         echo
         echo "Before install this check https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/blob/main/docs/en/README.en.md#rocm-support-for-amd-graphic-cards-linux-only"
         read -p "Press enter to continue"
-        python3.9 -m pip install -r https://raw.githubusercontent.com/WorXeN/Retrieval-based-Voice-Conversion-WebUI/main/requirements-amd.txt
-        python3.9 -m pip uninstall torch torchvision torchaudio -y
-        python3.9 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.4.2
+        python -m pip install -r https://raw.githubusercontent.com/WorXeN/Retrieval-based-Voice-Conversion-WebUI/main/requirements-amd.txt
+        python -m pip uninstall torch torchvision torchaudio -y
+        pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.4.2
         echo
         finish
         ;;
     3)
         echo 
-        python3.9 -m pip install -r assets/requirements/requirements-ipex.txt
-        python3.9 -m pip install scikit-learn-intelex
+        python -m pip install -r assets/requirements/requirements-ipex.txt
+        python -m pip install scikit-learn-intelex
         finish
         ;;
     *)
