@@ -5,7 +5,6 @@ import sys
 import errno
 import shutil
 import yt_dlp
-from mega import Mega
 import datetime
 import torch
 import glob
@@ -226,8 +225,7 @@ def download_from_url(url):
             else:
                 return None
             if file_id:
-                m = Mega()
-                m.download_url(url, zips_path)
+                print("Mega.py is deprecated so mega links are not working")
         elif "/tree/main" in url:
             response = requests.get(url)
             soup = BeautifulSoup(response.content, "html.parser")
