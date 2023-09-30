@@ -25,7 +25,10 @@ read -p "Select an option:  " choice1
 
 case $choice1 in
     1)
-        pip uninstall -r assets/requirements/requirements* -y
+        python3.9 -m pip uninstall -r assets/requirements/requirements-dml* -y
+        python3.9 -m pip uninstall -r assets/requirements/requirements-ipex* -y
+        python3.9 -m pip uninstall -r  https://raw.githubusercontent.com/WorXeN/Retrieval-based-Voice-Conversion-WebUI/main/requirements-amd.txt -y
+        python3.9 -m pip uninstall -r assets/requirements/requirements-realtime-vc.txt -y
         cd .. && rm -rf *Applio*
         finish1
         ;;

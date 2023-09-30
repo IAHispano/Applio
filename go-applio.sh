@@ -1,7 +1,6 @@
-
 #!/bin/bash
 echo -e "\033]0;Applio - Start\007"
-export PATH=$HOME/.local/bin/:$PATH
+export PATH=$HOME/.local/bin:$PATH
 menu() {
   while true; do
     clear
@@ -17,8 +16,8 @@ echo " :::          |_|   |_| "
 echo " ::: "
 echo " ::: "
     echo ""
-    echo "[1] Start Applio (Nvidia Support)"
-    echo "[2] Start Applio (AMD Support)"
+    echo "[1] Start Applio (Nvidia/AMD Support)"
+    echo "[2] Start Applio (Intel GPU/CPU)"
     echo ""
     echo "[3] Exit"
     echo ""
@@ -30,9 +29,9 @@ echo " ::: "
       python3.9 infer-web.py --pycmd python --port 7897 --theme dark
       read -p "Press Enter to continue..."
       ;;
-    2)
+   2)
       clear
-      python3.9 infer-web.py --pycmd python3.9 --port 7897 --dml --theme dark
+      python3.9 -m sklearnex infer-web.py --pycmd python --port 7897 --theme dark
       read -p "Press Enter to continue..."
       ;;
     3)
