@@ -110,7 +110,7 @@ goto dependenciesFinished
 
 if "%choice%"=="4" (
 cls
-pip install -r assets/requirements/requirements.txt
+pip install setuptools
 pip install -r assets/requirements/requirements-dml.txt
 echo.
 echo.
