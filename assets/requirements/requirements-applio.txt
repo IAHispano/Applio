@@ -6,7 +6,8 @@ pedalboard
 websockets>=10.0
 gTTS==2.3.2
 wget
-psutil
+psutil        
+scikit-learn-intelex
 mega.py==1.0.8
 gdown
 edge-tts
