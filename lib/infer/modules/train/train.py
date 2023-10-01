@@ -525,7 +525,7 @@ def train_and_evaluate(
                     hps.data.mel_fmax,
                 )
             if hps.train.fp16_run == True:
-                y_hat_mel = y_hat_mel.half()
+                y_hat_mel = y_hat_mel.float()
             wave = commons.slice_segments(
                 wave, ids_slice * hps.data.hop_length, hps.train.segment_size
             )  # slice
