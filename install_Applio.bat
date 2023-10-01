@@ -69,7 +69,7 @@ set choice=%choice: =%
 
 if "%choice%"=="1" (
 cls
-curl -LJO "%URL_EXTRA%/runtime.zip"
+powershell -command "Invoke-WebRequest -Uri %URL_EXTRA%/runtime.zip -OutFile runtime.zip"
 echo.
 echo Extracting the runtime.zip file...
 powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime.zip', '%principal%') }"
@@ -82,7 +82,7 @@ goto dependenciesFinished
 
 if "%choice%"=="2" (
 cls
-curl -LJO "%URL_EXTRA%/runtime_dml.zip"
+powershell -command "Invoke-WebRequest -Uri %URL_EXTRA%/runtime_dml.zip -OutFile runtime_dml.zip"
 echo.
 echo Extracting the runtime_dml.zip file...
 powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime_dml.zip', '%principal%') }"
