@@ -8,14 +8,16 @@ os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
 device = sys.argv[1]
 n_part = int(sys.argv[2])
 i_part = int(sys.argv[3])
-if len(sys.argv) == 6:
+if len(sys.argv) == 7:
     exp_dir = sys.argv[4]
     version = sys.argv[5]
+    is_half = sys.argv[6]
 else:
     i_gpu = sys.argv[4]
     exp_dir = sys.argv[5]
     os.environ["CUDA_VISIBLE_DEVICES"] = str(i_gpu)
     version = sys.argv[6]
+    is_half = sys.argv[7]
 import fairseq
 import numpy as np
 import soundfile as sf
@@ -64,7 +66,12 @@ os.makedirs(outPath, exist_ok=True)
 def readwave(wav_path, normalize=False):
     wav, sr = sf.read(wav_path)
     assert sr == 16000
-    feats = torch.from_numpy(wav).float()
+    #feats = torch.from_numpy(wav).float()
+    feats = torch.from_numpy(wav)
+    if is_half:
+        feats = feats.half()
+    else:
+        feats = feats.float()
     if feats.dim() == 2:  # double channels
         feats = feats.mean(-1)
     assert feats.dim() == 1, feats.dim()
@@ -93,8 +100,12 @@ models, saved_cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task(
 model = models[0]
 model = model.to(device)
 printt("Using %s" % device)
-if device not in ["mps", "cpu"]:
+#if device not in ["mps", "cpu"]:
+#    model = model.half()
+if is_half:
     model = model.half()
+else:
+    model = model.float()
 model.eval()
 
 todo = sorted(list(os.listdir(wavPath)))[i_part::n_part]
@@ -117,9 +128,7 @@ else:
                     feats = readwave(wav_path, normalize=saved_cfg.task.normalize)
                     padding_mask = torch.BoolTensor(feats.shape).fill_(False)
                     inputs = {
-                        "source": feats.half().to(device)
-                        if device not in ["mps", "cpu"]
-                        else feats.to(device),
+                        "source": feats.to(device),
                         "padding_mask": padding_mask.to(device),
                         "output_layer": 9 if version == "v1" else 12,  # layer 9
                     }
