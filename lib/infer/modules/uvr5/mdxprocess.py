@@ -19,8 +19,12 @@ _models = "https://raw.githubusercontent.com/TRvlvr/application_data/main/fileli
 stem_naming = "https://pastebin.com/raw/mpH4hRcF"
 
 file_folder = "Colab-for-MDX_B"
-model_ids = requests.get(_models).json()
-model_ids = model_ids["mdx_download_list"].values()
+model_request = requests.get(_models).json()
+model_ids = model_request["mdx_download_list"].values()
+demucs_download_list = model_request["demucs_download_list"]
+model_ids_demucs_inpure = [name.split(":")[1].strip() for name in demucs_download_list.keys()]
+model_ids_demucs = list(set(model_ids_demucs_inpure))
+
 #print(model_ids)
 model_params = requests.get(model_params).json()
 #Remove request for stem_naming
@@ -47,6 +51,9 @@ else:
 
 def get_model_list():
     return model_ids
+
+def get_demucs_model_list():
+    return model_ids_demucs
 
 def id_to_ptm(mkey):
     if mkey in model_ids:
