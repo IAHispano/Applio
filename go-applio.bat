@@ -1,6 +1,7 @@
 @echo off
 setlocal
 title Applio - Start
+cd %~dp0
 
 :::
 :::                       _ _
