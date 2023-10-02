@@ -736,56 +736,101 @@ import zipfile
 
 
 def save_model(modelname, save_action):
+    parent_path = find_folder_parent(now_dir, "assets")
+    zips_path = os.path.join(parent_path, "assets", "zips")
+    dst = os.path.join(zips_path, f"{modelname}.zip")
+    logs_path = os.path.join(parent_path, "logs", modelname)
+    weights_path = os.path.join(logs_path, "weights")
+    save_folder = parent_path
+    infos = []
+
     try:
-        # Define paths
-        parent_path = find_folder_parent(now_dir, "assets")
-        weight_path = os.path.join(parent_path, "logs", "weights", f"{modelname}.pth")
-        logs_path = os.path.join(parent_path, "logs", modelname)
-        save_folder = SAVE_ACTION_CONFIG[save_action]['destination_folder']
-        save_path = os.path.join(parent_path, "logs", save_folder, modelname + ".zip")
-        infos = []
-
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-
-        # Comprobar si el directorio de logs existe
         if not os.path.exists(logs_path):
-            raise Exception(f"The logs directory '{logs_path}' does not exist.")
+            raise Exception("No model found.")
 
-        # Realizar las acciones según la opción seleccionada
-        if SAVE_ACTION_CONFIG[save_action]['copy_files']:
-            # Option: Copy all files and folders
-            infos.append(save_action)
-            print(save_action)
-            yield "\n".join(infos)
-            with zipfile.ZipFile(save_path, 'w') as zipf:
-                for root, _, files in os.walk(logs_path):
+        if not "content" in parent_path:
+            save_folder = os.path.join(parent_path, "logs")
+        else:
+            save_folder = "/content/drive/MyDrive/RVC_Backup"
+
+        infos.append(i18n("Save model"))
+        yield "\n".join(infos)
+
+        if not os.path.exists(save_folder):
+            os.mkdir(save_folder)
+        if not os.path.exists(os.path.join(save_folder, "manual_backup")):
+            os.mkdir(os.path.join(save_folder, "manual_backup"))
+        if not os.path.exists(os.path.join(save_folder, "finished")):
+            os.mkdir(os.path.join(save_folder, "finished"))
+
+        if os.path.exists(zips_path):
+            shutil.rmtree(zips_path)
+
+        os.mkdir(zips_path)
+
+        if save_action == i18n("Choose the method"):
+            raise Exception("No method chosen.")
+        
+        if save_action == i18n("Save all"):
+            save_folder = os.path.join(save_folder, "manual_backup")
+        elif save_action == i18n("Save D and G"):
+            save_folder = os.path.join(save_folder, "manual_backup")
+        elif save_action == i18n("Save voice"):
+            save_folder = os.path.join(save_folder, "finished")
+
+        # Obtain the configuration for the selected save action
+        save_action_config = SAVE_ACTION_CONFIG.get(save_action)
+
+        if save_action_config is None:
+            raise Exception("Invalid save action.")
+
+        # Check if we should copy all files
+        if save_action_config['copy_files']:
+            with zipfile.ZipFile(dst, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(logs_path):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        # Create a folder with the model name in the ZIP
-                        model_folder = os.path.join(modelname, "")
-                        zipf.write(file_path, os.path.join(model_folder, os.path.relpath(file_path, logs_path)))
-                zipf.write(weight_path, os.path.join(model_folder, os.path.basename(weight_path)))
-        
+                        zipf.write(file_path, os.path.relpath(file_path, logs_path))
         else:
-            # Option: Copy specific files
-            infos.append(save_action)
-            print(save_action)
+            # Weight file management according to configuration
+            if save_action_config['include_weights']:
+                if not os.path.exists(weights_path):
+                    infos.append(i18n("Saved without inference model..."))
+                else:
+                    pth_files = [file for file in os.listdir(weights_path) if file.endswith('.pth')]
+                    if not pth_files:
+                        infos.append(i18n("Saved without inference model..."))
+                    else:
+                        with zipfile.ZipFile(dst, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                            skipped_files = set()
+                            for pth_file in pth_files:
+                                match = re.search(r'(.*)_s\d+.pth$', pth_file)
+                                if match:
+                                    base_name = match.group(1)
+                                    if base_name not in skipped_files:
+                                        print(f'Skipping autosave epoch files for {base_name}.')
+                                        skipped_files.add(base_name)
+                                    continue
+
+                                print(f'Processing file: {pth_file}')
+                                zipf.write(os.path.join(weights_path, pth_file), arcname=os.path.basename(pth_file))
+
             yield "\n".join(infos)
-            files_to_copy = SAVE_ACTION_CONFIG[save_action]['files_to_copy']
-            with zipfile.ZipFile(save_path, 'w') as zipf:
-                for root, _, files in os.walk(logs_path):
-                    for file in files:
-                        for pattern in files_to_copy:
-                            if fnmatch.fnmatch(file, pattern):
-                                file_path = os.path.join(root, file)
-                                zipf.write(file_path, os.path.relpath(file_path, logs_path))
+            infos.append("\n" + i18n("This may take a few minutes, please wait..."))
+            yield "\n".join(infos)
 
-        if SAVE_ACTION_CONFIG[save_action]['include_weights']:
-            # Include the weight file in the ZIP
-            with zipfile.ZipFile(save_path, 'a') as zipf:
-                zipf.write(weight_path, os.path.basename(weight_path))
+            # Create a zip file with only the necessary files in the ZIP file
+            for pattern in save_action_config.get('files_to_copy', []):
+                matching_files = glob.glob(os.path.join(logs_path, pattern))
+                with zipfile.ZipFile(dst, 'a', zipfile.ZIP_DEFLATED) as zipf:
+                    for file_path in matching_files:
+                        zipf.write(file_path, os.path.basename(file_path))
 
-        infos.append(i18n("The model has been saved successfully."))
+        # Move the ZIP file created to the Save_Folder directory
+        shutil.move(dst, os.path.join(save_folder, f"{modelname}.zip"))
+
+        shutil.rmtree(zips_path)
+        infos.append("\n" + i18n("Model saved successfully"))
         yield "\n".join(infos)
 
     except Exception as e:
