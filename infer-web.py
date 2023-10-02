@@ -198,6 +198,7 @@ class ToolButton(gr.Button, gr.components.FormComponent):
 import lib.infer.infer_libs.uvr5_pack.mdx as mdx
 from lib.infer.modules.uvr5.mdxprocess import (
     get_model_list,
+    get_demucs_model_list,
     id_to_ptm,
     prepare_mdx,
     run_mdx,
@@ -280,11 +281,14 @@ def get_dataset():
 def update_model_choices(select_value):
     model_ids = get_model_list()
     model_ids_list = list(model_ids)
+    demucs_model_ids = get_demucs_model_list()
+    demucs_model_ids_list = list(demucs_model_ids)
     if select_value == "VR":
         return {"choices": uvr5_names, "__type__": "update"}
     elif select_value == "MDX":
         return {"choices": model_ids_list, "__type__": "update"}
-
+    elif select_value == "Demucs (Beta)":
+        return {"choices": demucs_model_ids_list, "__type__": "update"}
 
 def update_dataset_list(name):
     new_datasets = []
@@ -522,9 +526,65 @@ def uvr(
                 traceback.print_exc()
 
             print("clean_empty_cache")
-
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
+    elif architecture == " (Beta)":
+        try:
+            infos.append(
+                i18n("Starting audio conversion... (This might take a moment)")
+            )
+            yield "\n".join(infos)
+            inp_root, save_root_vocal, save_root_ins = [
+                x.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+                for x in [inp_root, save_root_vocal, save_root_ins]
+            ]
+
+            if inp_root != "":
+                paths = [
+                    os.path.join(inp_root, name)
+                    for root, _, files in os.walk(inp_root, topdown=False)
+                    for name in files
+                    if name.endswith(tuple(sup_audioext)) and root == inp_root
+                ]
+            else:
+                paths = [path.name for path in paths]
+
+            # Loop through the audio files and separate sources
+            for path in paths:
+                input_audio_path = os.path.join(inp_root, path)
+                filename_without_extension = os.path.splitext(os.path.basename(input_audio_path))[0]
+                _output_dir = os.path.join(tmp, model_name, filename_without_extension)
+                vocals = os.path.join(_output_dir, "vocals.wav")
+                no_vocals = os.path.join(_output_dir, "no_vocals.wav")
+
+                os.makedirs(tmp, exist_ok=True)
+
+                if torch.cuda.is_available():
+                    cpu_insted = ""
+                else:
+                    cpu_insted = "-d cpu"
+                print(cpu_insted)
+                
+                # Use with os.system  to separate audio sources becuase at invoking from the command line it is faster than invoking from python
+                os.system(f"python -m .separate --two-stems=vocals -n {model_name} {cpu_insted} {input_audio_path} -o {tmp}")
+
+                # Move vocals and no_vocals to the output directory assets/audios for the vocal and assets/audios/audio-others for the instrumental
+                shutil.move(vocals, save_root_vocal)
+                shutil.move(no_vocals, save_root_ins)
+                
+                # And now rename the vocals and no vocals with the name of the input audio file and the suffix vocals or instrumental
+                os.rename(os.path.join(save_root_vocal, "vocals.wav"), os.path.join(save_root_vocal, f"{filename_without_extension}_vocals.wav"))
+                os.rename(os.path.join(save_root_ins, "no_vocals.wav"), os.path.join(save_root_ins, f"{filename_without_extension}_instrumental.wav"))
+                
+                # Remove the temporary directory
+                os. rmdir(tmp, model_name)
+
+                infos.append(f"{os.path.basename(input_audio_path)}->Success")
+                yield "\n".join(infos)
+
+        except:
+            infos.append(traceback.format_exc())
+            yield "\n".join(infos)
 
 
 def change_choices():
