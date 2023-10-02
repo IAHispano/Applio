@@ -1,6 +1,6 @@
 @echo off
 title Applio - Manager
-
+cd %~dp0
 :::
 :::                       _ _
 :::     /\               | (_)
