@@ -38,6 +38,8 @@ echo Runtime: Recommended for regular users
 echo [1] Start Applio - Runtime ^(Nvidia Support^)
 echo [2] Start Applio - Runtime ^(AMD Support^)
 echo.
+echo For amd users, start nvidia compatibility/support, it seems that direct_dml is somewhat broken.
+echo.
 echo Dependencies: Only recommended for experienced users
 echo [3] Start Applio ^(Nvidia Support^)
 echo [4] Start Applio ^(AMD Support^)

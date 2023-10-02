@@ -55,7 +55,9 @@ echo.
 echo Recommended for Nvidia GPU users: 
 echo [1] Download Runtime (pre-installed dependencies)
 echo.
-echo Recommended for AMD/Intel GPU users: 
+echo For amd users, download the nvidia dependencies, it seems that direct_dml is broken.
+echo.
+echo Recommended for AMD/Intel GPU users (Broken): 
 echo [2] Download DML Runtime (pre-installed dependencies)
 echo.
 echo Only recommended for experienced users:
