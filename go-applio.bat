@@ -36,40 +36,49 @@ if %errorlevel% equ 1 (
 :continue
 echo Runtime: Recommended for regular users
 echo [1] Start Applio - Runtime ^(Nvidia Support^)
-echo [2] Start Applio - Runtime ^(AMD Support^)
+echo [2] Start Applio - Runtime ^(Intel Support. Requires Nvidia runtime^)
+echo [3] Start Applio - Runtime ^(AMD Support^)
 echo.
 echo For amd users, start nvidia compatibility/support, it seems that direct_dml is somewhat broken.
 echo.
 echo Dependencies: Only recommended for experienced users
-echo [3] Start Applio ^(Nvidia Support^)
-echo [4] Start Applio ^(AMD Support^)
+echo [4] Start Applio ^(Nvidia Support^)
+echo [5] Start Applio ^(AMD Support^)
 echo.
-echo [5] Exit
+echo [6] Exit
 echo.
 
 set /p choice=Select an option: 
 set choice=%choice: =%
 
-if "%choice%"=="5" (
+if "%choice%"=="6" (
     goto finish
-) else if "%choice%"=="4" (
+) else if "%choice%"=="5" (
     cls
     echo Starting Applio with AMD support...
     python infer-web.py --pycmd python --port 7897 --dml --theme dark
     pause
     cls
     goto menu
-) else if "%choice%"=="3" (
+) else if "%choice%"=="4" (
     cls
     echo Starting Applio with Nvidia support...
     python infer-web.py --pycmd python --port 7897 --theme dark
     pause
     cls
     goto menu
-) else if "%choice%"=="2" (
+) else if "%choice%"=="3" (
     cls
     echo Starting Applio with runtime for AMD support ^(you must have it installed^)...
     runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --dml --theme dark
+    pause
+    cls
+    goto menu
+) else if "%choice%"=="2" (
+    runtime\python.exe -m pip install scikit-learn-intelex
+    cls
+    echo Starting Applio with runtime for Intel CPU support ^(you must have Nvidia support installed^)...
+    runtime\python.exe -m sklearnex infer-web.py --pycmd runtime/python.exe --port 7897 --theme dark
     pause
     cls
     goto menu
