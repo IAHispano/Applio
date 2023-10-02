@@ -47,6 +47,8 @@ echo.
 echo Cloning the repository...
 git clone %repoUrl% %repoFolder%
 cd %repoFolder%
+del install_Applio.bat
+del /q *.sh
 echo.
 cls
 
