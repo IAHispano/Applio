@@ -1,7 +1,7 @@
 @echo off
 Title Applio - Installer
 setlocal
-
+cd %~dp0
 
 :::
 :::                       _ _
