@@ -22,9 +22,30 @@ file_folder = "Colab-for-MDX_B"
 model_request = requests.get(_models).json()
 model_ids = model_request["mdx_download_list"].values()
 demucs_download_list = model_request["demucs_download_list"]
+
+# Iterate through the keys and get the model names
 model_ids_demucs_inpure = [name.split(":")[1].strip() for name in demucs_download_list.keys()]
+
+# Remove duplicates by converting the list to a set and then back to a list
 model_ids_demucs = list(set(model_ids_demucs_inpure))
 
+# Remove some not working models
+demucs_ids_to_delete = ["tasnet_extra", "tasnet", "light_extra", "light", "demucs_extra", "demucs", "demucs_unittest", "demucs48_hq", "repro_mdx_a_hybrid_only", "repro_mdx_a_time_only", "repro_mdx_a", "UVR Model"]
+
+# Add some models that are not in the list
+demucs_ids_to_add = ["SIG"]
+
+# Add the new ID to the model_ids_demucs list
+
+for demucs_ids_to_add in demucs_ids_to_add:
+    if demucs_ids_to_add not in model_ids_demucs:
+        model_ids_demucs.append(demucs_ids_to_add)
+
+# If the ID is in the list of IDs to delete, remove it from the list of model_ids_demucs
+for demucs_ids_to_delete in demucs_ids_to_delete:
+    if demucs_ids_to_delete in model_ids_demucs:
+        model_ids_demucs.remove(demucs_ids_to_delete)
+        
 #print(model_ids)
 model_params = requests.get(model_params).json()
 #Remove request for stem_naming
