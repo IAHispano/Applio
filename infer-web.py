@@ -80,7 +80,7 @@ shutil.rmtree(tmp, ignore_errors=True)
 os.makedirs(tmp, exist_ok=True)
 
 # Start the download server
-if False == True:
+if True == True:
     host = 'localhost'
     port = 8000
 
