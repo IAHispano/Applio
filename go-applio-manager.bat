@@ -288,6 +288,8 @@ if "%choice%"=="1" (
 cls
 pip uninstall tb-nightly tensorboardX tensorboard
 echo.
+pip uninstall onnxruntime onnxruntime-directml
+echo.
 pip install -r assets/requirements/requirements.txt
 echo.
 pip uninstall torch torchvision torchaudio -y
