@@ -656,14 +656,21 @@ class RMVPE:
         return f0
     
     def infer_from_audio_with_pitch(self, audio, thred=0.03, f0_min=50, f0_max=1100):
+        t0 = ttime()
         audio = torch.from_numpy(audio).float().to(self.device).unsqueeze(0)
         mel = self.mel_extractor(audio, center=True)
+        t1 = ttime()
         hidden = self.mel2hidden(mel)
-        hidden = hidden.squeeze(0).cpu().numpy()
+        t2 = ttime()
+        if "privateuseone" not in str(self.device):
+            hidden = hidden.squeeze(0).cpu().numpy()
+        else:
+            hidden = hidden[0]
         if self.is_half == True:
             hidden = hidden.astype("float32")
         f0 = self.decode(hidden, thred=thred)
         f0[(f0 < f0_min) | (f0 > f0_max)] = 0  
+        t3 = ttime()
         return f0
     
     def to_local_average_cents(self, salience, thred=0.05):

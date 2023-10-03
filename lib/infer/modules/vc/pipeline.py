@@ -251,7 +251,24 @@ class Pipeline(object):
     
 
     def get_pitch_dependant_rmvpe(self, x, f0_min=1, f0_max=40000, *args, **kwargs):
-        return self.model_rmvpe.infer_from_audio_with_pitch(x, thred=0.03, f0_min=f0_min, f0_max=f0_max)
+        if not hasattr(self, "model_rmvpe"):
+            from lib.infer.infer_libs.rmvpe import RMVPE
+            
+            logger.info(
+                "Loading rmvpe model,%s" % "%s/rmvpe.pt" % os.environ["rmvpe_root"]
+            )
+            self.model_rmvpe = RMVPE(
+                "%s/rmvpe.pt" % os.environ["rmvpe_root"],
+                is_half=self.is_half,
+                device=self.device,
+            )
+        f0 = self.model_rmvpe.infer_from_audio_with_pitch(x, thred=0.03, f0_min=f0_min, f0_max=f0_max)   
+        if "privateuseone" in str(self.device):  # clean ortruntime memory
+                del self.model_rmvpe.model
+                del self.model_rmvpe
+                logger.info("Cleaning ortruntime memory")
+            
+        return f0
 
     def autotune_f0(self, f0):
         autotuned_f0 = []
