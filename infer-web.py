@@ -21,8 +21,9 @@ from subprocess import Popen
 from time import sleep
 import json
 import pathlib
-
 import fairseq
+import socket
+import requests
 
 logging.getLogger("faiss").setLevel(logging.WARNING)
 import faiss
@@ -41,8 +42,6 @@ import datetime
 from glob import glob1
 import signal
 from signal import SIGTERM
-
-
 from assets.i18n.i18n import I18nAuto
 from lib.infer.infer_libs.train.process_ckpt import (
     change_info,
@@ -68,6 +67,7 @@ from lib.infer.infer_libs.csvutil import CSVutil
 import time
 import csv
 from shlex import quote as SQuote
+logger = logging.getLogger(__name__)
 
 RQuote = lambda val: SQuote(str(val))
 
@@ -79,6 +79,26 @@ shutil.rmtree(tmp, ignore_errors=True)
 
 os.makedirs(tmp, exist_ok=True)
 
+# Start the download server
+if False == True:
+    host = 'localhost'
+    port = 8000
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(2)  # Timeout in seconds
+
+    try:
+        sock.connect((host, port))
+        logger.info(f"Something is listening on port {port}; trying to close the flask server if possible")
+        sock.close()
+        requests.post('http://localhost:8000/shutdown')
+        time.sleep(3)
+        script_path = os.path.join(now_dir, "lib", "tools", "server.py")
+        os.system(f'start cmd /k "python {script_path}"')
+    except Exception as e:
+        sock.close()
+        script_path = os.path.join(now_dir, "lib", "tools", "server.py")
+        os.system(f'start cmd /k "python {script_path}"')
 
 # for folder in directories:
 #    os.makedirs(os.path.join(now_dir, folder), exist_ok=True)
@@ -114,9 +134,6 @@ os.environ["temp"] = tmp
 warnings.filterwarnings("ignore")
 torch.manual_seed(114514)
 logging.getLogger("numba").setLevel(logging.WARNING)
-
-logger = logging.getLogger(__name__)
-
 
 if not os.path.isdir("lib/csvdb/"):
     os.makedirs("lib/csvdb")
