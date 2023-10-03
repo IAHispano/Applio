@@ -57,8 +57,6 @@ echo.
 echo Recommended for Nvidia GPU users: 
 echo [1] Download Runtime (pre-installed dependencies)
 echo.
-echo For amd users, download the nvidia dependencies, it seems that direct_dml is broken.
-echo.
 echo Recommended for AMD/Intel GPU users (Broken): 
 echo [2] Download DML Runtime (pre-installed dependencies)
 echo.
@@ -114,6 +112,8 @@ goto dependenciesFinished
 
 if "%choice%"=="4" (
 cls
+pip uninstall onnxruntime onnxruntime-directml
+echo.
 pip install -r assets/requirements/requirements.txt
 echo.
 pip install -r assets/requirements/requirements-dml.txt

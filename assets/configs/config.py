@@ -284,20 +284,7 @@ class Config:
                 )
                 == False
             ):
-                try:
-                    os.rename(
-                        os.path.join(python_path, "Lib", "site-packages", "onnxruntime"),
-                        os.path.join(python_path, "Lib", "site-packages", "onnxruntime-cuda"),
-                    )
-                except:
-                    pass
-                try:
-                    os.rename(
-                        os.path.join(python_path, "Lib", "site-packages", "onnxruntime-dml"),
-                        os.path.join(python_path, "Lib", "site-packages", "onnxruntime"),
-                    )
-                except:
-                    pass
+                pass
             # if self.device != "cpu":
             import torch_directml
 
@@ -313,18 +300,5 @@ class Config:
                 )
                 == False
             ):
-                try:
-                    os.rename(
-                        os.path.join(python_path, "Lib", "site-packages", "onnxruntime"),
-                        os.path.join(python_path, "Lib", "site-packages", "onnxruntime-dml"),
-                    )
-                except:
-                    pass
-                try:
-                    os.rename(
-                        os.path.join(python_path, "Lib", "site-packages", "onnxruntime-cuda"),
-                        os.path.join(python_path, "Lib", "site-packages", "onnxruntime"),
-                    )
-                except:
-                    pass
+                pass
         return x_pad, x_query, x_center, x_max

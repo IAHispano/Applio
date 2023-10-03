@@ -305,6 +305,10 @@ if "%choice%"=="2" (
 cls
 pip uninstall tb-nightly tensorboardX tensorboard
 echo.
+pip uninstall onnxruntime onnxruntime-directml
+echo.
+pip install -r assets/requirements/requirements.txt
+echo.
 pip install -r assets/requirements/requirements-dml.txt
 echo.
 echo.
