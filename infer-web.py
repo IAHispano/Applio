@@ -1783,16 +1783,17 @@ def save_to_wav2(dropbox):
     return target_path
 
 
-from assets.themes.black import Applio
-
-# Crear una instancia de Applio
-mi_applio = Applio()
-
+import lib.tools.loader_themes as loader_themes
+my_applio = loader_themes.load_json()
+if my_applio:
+    pass
+else:
+    my_applio = "JohnSmith9982/small_and_pretty"
 
 def GradioSetup():
     default_weight = names[0] if names else ""
 
-    with gr.Blocks(theme=mi_applio, title="Applio-RVC-Fork") as app:
+    with gr.Blocks(theme=my_applio, title="Applio-RVC-Fork") as app:
         gr.HTML("<h1> 🍏 Applio-RVC-Fork </h1>")
         with gr.Tabs():
             with gr.TabItem(i18n("Model Inference")):
@@ -2902,6 +2903,17 @@ def GradioSetup():
                             ),
                             value=rvc_globals.NotesOrHertz,
                             interactive=True,
+                        )
+                        themes_select = gr.Dropdown(
+                            loader_themes.get_list(),
+                            value=loader_themes.read_json(),
+                            label=i18n("Select Theme:"),
+                            visible=True,
+                        )
+                        themes_select.change(
+                            fn=loader_themes.select_theme,
+                            inputs=themes_select,
+                            outputs=[],
                         )
 
             noteshertz.change(

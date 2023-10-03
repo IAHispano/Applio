@@ -298,5 +298,3 @@ class Applio(Base):
         )
 
 
-applio = Applio()
-

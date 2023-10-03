@@ -237,7 +237,6 @@ def load_downloaded_model(url):
     response = requests.get(url)
     response.raise_for_status()
     try:
-        infos = []
         zips_path = os.path.join(parent_path, "assets", "zips")
         unzips_path = os.path.join(parent_path, "assets", "unzips")
         weights_path = os.path.join(parent_path, "logs", "weights")
@@ -254,12 +253,8 @@ def load_downloaded_model(url):
         download_file = download_from_url(url)
         if not download_file:
             print(i18n("The file could not be downloaded."))
-            infos.append(i18n("The file could not be downloaded."))
-            yield "\n".join(infos)
         elif download_file == "downloaded":
             print(i18n("It has been downloaded successfully."))
-            infos.append(i18n("It has been downloaded successfully."))
-            yield "\n".join(infos)
         elif download_file == "too much use":
             raise Exception(
                 i18n("Too many users have recently viewed or downloaded this file")
@@ -271,7 +266,6 @@ def load_downloaded_model(url):
             if filename.endswith(".zip"):
                 zipfile_path = os.path.join(zips_path, filename)
                 print(i18n("Proceeding with the extraction..."))
-                infos.append(i18n("Proceeding with the extraction..."))
                 model_name = os.path.basename(zipfile_path)
                 logs_dir = os.path.join(
                     parent_path,
@@ -279,17 +273,13 @@ def load_downloaded_model(url):
                     os.path.normpath(str(model_name).replace(".zip", "")),
                 )
                 
-                yield "\n".join(infos)
                 success = extract_and_show_progress(zipfile_path, unzips_path)
                 if success:
-                    yield f"Extracción exitosa: {model_name}"
+                    print(f"Extracción exitosa: {model_name}")
                 else:
-                    yield f"Fallo en la extracción: {model_name}"
-                yield "\n".join(infos)
+                    print(f"Fallo en la extracción: {model_name}")
             else:
                 print(i18n("Unzip error."))
-                infos.append(i18n("Unzip error."))
-                yield "\n".join(infos)
                 return ""
 
         index_file = False
@@ -333,29 +323,15 @@ def load_downloaded_model(url):
         if model_file:
             if index_file:
                 print(i18n("The model works for inference, and has the .index file."))
-                infos.append(
-                    "\n"
-                    + i18n("The model works for inference, and has the .index file.")
-                )
-                yield "\n".join(infos)
             else:
                 print(
                     i18n(
                         "The model works for inference, but it doesn't have the .index file."
                     )
                 )
-                infos.append(
-                    "\n"
-                    + i18n(
-                        "The model works for inference, but it doesn't have the .index file."
-                    )
-                )
-                yield "\n".join(infos)
 
         if not index_file and not model_file:
             print(i18n("No relevant file was found to upload."))
-            infos.append(i18n("No relevant file was found to upload."))
-            yield "\n".join(infos)
         
         os.chdir(parent_path)
         return result
@@ -363,13 +339,11 @@ def load_downloaded_model(url):
         os.chdir(parent_path)
         if "too much use" in str(e):
             print(i18n("Too many users have recently viewed or downloaded this file"))
-            yield i18n("Too many users have recently viewed or downloaded this file")
         elif "private link" in str(e):
             print(i18n("Cannot get file from this private link"))
-            yield i18n("Cannot get file from this private link")
         else:
+            print(i18n("An error occurred downloading"))
             print(e)
-            yield i18n("An error occurred downloading")
     finally:
         os.chdir(parent_path)
 
