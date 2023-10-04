@@ -7,8 +7,24 @@ import subprocess
 import wget
 import signal
 from bs4 import BeautifulSoup
+import logging
+import click
+
 
 app = Flask(__name__)
+
+# Disable flask starting message
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+def secho(text, file=None, nl=None, err=None, color=None, **styles):
+    pass
+
+def echo(text, file=None, nl=None, err=None, color=None, **styles):
+    pass
+
+click.echo = echo
+click.secho = secho
 
 # Get the current directory path
 now_dir = os.path.dirname(os.path.abspath(__file__))
