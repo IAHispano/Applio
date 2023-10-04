@@ -68,6 +68,7 @@ from lib.infer.infer_libs.csvutil import CSVutil
 import time
 import csv
 from shlex import quote as SQuote
+
 logger = logging.getLogger(__name__)
 
 RQuote = lambda val: SQuote(str(val))
@@ -82,7 +83,7 @@ os.makedirs(tmp, exist_ok=True)
 
 # Start the download server
 if True == True:
-    host = 'localhost'
+    host = "localhost"
     port = 8000
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -91,28 +92,31 @@ if True == True:
     try:
         sock.connect((host, port))
         logger.info("Starting the Flask server")
-        logger.warn(f"Something is listening on port {port}; check open connection and restart Applio.")
+        logger.warn(
+            f"Something is listening on port {port}; check open connection and restart Applio."
+        )
         logger.warn("Trying to start it anyway")
         sock.close()
-        requests.post('http://localhost:8000/shutdown')
+        requests.post("http://localhost:8000/shutdown")
         time.sleep(3)
         script_path = os.path.join(now_dir, "lib", "tools", "server.py")
         try:
             subprocess.Popen(f"python {script_path}", shell=True)
-            logger.info("Flask server started!")    
+            logger.info("Flask server started!")
         except Exception as e:
             logger.error(f"Failed to start the Flask server")
-            logger.error(e)                    
+            logger.error(e)
     except Exception as e:
         logger.info("Starting the Flask server")
         sock.close()
         script_path = os.path.join(now_dir, "lib", "tools", "server.py")
         try:
             subprocess.Popen(f"python {script_path}", shell=True)
-            logger.info("Flask server started!")    
+            logger.info("Flask server started!")
         except Exception as e:
             logger.error("Failed to start the Flask server")
-            logger.error(e)        
+            logger.error(e)
+
 
 # for folder in directories:
 #    os.makedirs(os.path.join(now_dir, folder), exist_ok=True)
@@ -226,6 +230,7 @@ class ToolButton(gr.Button, gr.components.FormComponent):
     def get_block_name(self):
         return "button"
 
+
 import lib.infer.infer_libs.uvr5_pack.mdx as mdx
 from lib.infer.modules.uvr5.mdxprocess import (
     get_model_list,
@@ -320,6 +325,7 @@ def update_model_choices(select_value):
         return {"choices": model_ids_list, "__type__": "update"}
     elif select_value == "Demucs (Beta)":
         return {"choices": demucs_model_ids_list, "__type__": "update"}
+
 
 def update_dataset_list(name):
     new_datasets = []
@@ -583,7 +589,9 @@ def uvr(
             # Loop through the audio files and separate sources
             for path in paths:
                 input_audio_path = os.path.join(inp_root, path)
-                filename_without_extension = os.path.splitext(os.path.basename(input_audio_path))[0]
+                filename_without_extension = os.path.splitext(
+                    os.path.basename(input_audio_path)
+                )[0]
                 _output_dir = os.path.join(tmp, model_name, filename_without_extension)
                 vocals = os.path.join(_output_dir, "vocals.wav")
                 no_vocals = os.path.join(_output_dir, "no_vocals.wav")
@@ -595,20 +603,32 @@ def uvr(
                 else:
                     cpu_insted = "-d cpu"
                 print(cpu_insted)
-                
+
                 # Use with os.system  to separate audio sources becuase at invoking from the command line it is faster than invoking from python
-                os.system(f"python -m .separate --two-stems=vocals -n {model_name} {cpu_insted} {input_audio_path} -o {tmp}")
+                os.system(
+                    f"python -m .separate --two-stems=vocals -n {model_name} {cpu_insted} {input_audio_path} -o {tmp}"
+                )
 
                 # Move vocals and no_vocals to the output directory assets/audios for the vocal and assets/audios/audio-others for the instrumental
                 shutil.move(vocals, save_root_vocal)
                 shutil.move(no_vocals, save_root_ins)
-                
+
                 # And now rename the vocals and no vocals with the name of the input audio file and the suffix vocals or instrumental
-                os.rename(os.path.join(save_root_vocal, "vocals.wav"), os.path.join(save_root_vocal, f"{filename_without_extension}_vocals.wav"))
-                os.rename(os.path.join(save_root_ins, "no_vocals.wav"), os.path.join(save_root_ins, f"{filename_without_extension}_instrumental.wav"))
-                
+                os.rename(
+                    os.path.join(save_root_vocal, "vocals.wav"),
+                    os.path.join(
+                        save_root_vocal, f"{filename_without_extension}_vocals.wav"
+                    ),
+                )
+                os.rename(
+                    os.path.join(save_root_ins, "no_vocals.wav"),
+                    os.path.join(
+                        save_root_ins, f"{filename_without_extension}_instrumental.wav"
+                    ),
+                )
+
                 # Remove the temporary directory
-                os. rmdir(tmp, model_name)
+                os.rmdir(tmp, model_name)
 
                 infos.append(f"{os.path.basename(input_audio_path)}->Success")
                 yield "\n".join(infos)
@@ -1798,11 +1818,13 @@ def save_to_wav2(dropbox):
 
 
 import lib.tools.loader_themes as loader_themes
+
 my_applio = loader_themes.load_json()
 if my_applio:
     pass
 else:
     my_applio = "JohnSmith9982/small_and_pretty"
+
 
 def GradioSetup():
     default_weight = names[0] if names else ""
@@ -1817,15 +1839,26 @@ def GradioSetup():
                         choices=sorted(names),
                         value=default_weight,
                     )
-                    refresh_button = gr.Button(i18n("Refresh"), variant="primary")
-                    clean_button = gr.Button(
-                        i18n("Unload voice to save GPU memory"), variant="primary"
+                    best_match_index_path1, _ = match_index(sid0.value)
+                    file_index2 = gr.Dropdown(
+                        label=i18n(
+                            "Auto-detect index path and select from the dropdown:"
+                        ),
+                        choices=get_indexes(),
+                        value=best_match_index_path1,
+                        interactive=True,
+                        allow_custom_value=True,
                     )
+                    with gr.Column():
+                        refresh_button = gr.Button(i18n("Refresh"), variant="primary")
+                        clean_button = gr.Button(
+                            i18n("Unload voice to save GPU memory"), variant="primary"
+                        )
                     clean_button.click(
                         fn=lambda: ({"value": "", "__type__": "update"}),
                         inputs=[],
                         outputs=[sid0],
-                        api_name="infer_clean"
+                        api_name="infer_clean",
                     )
 
                 with gr.TabItem(i18n("Single")):
@@ -1848,21 +1881,7 @@ def GradioSetup():
                                 type="filepath",
                             )
 
-                        best_match_index_path1, _ = match_index(
-                            sid0.value
-                        )  # Get initial index from default sid0 (first voice model in list)
-
                         with gr.Column():  # Second column for pitch shift and other options
-                            file_index2 = gr.Dropdown(
-                                label=i18n(
-                                    "Auto-detect index path and select from the dropdown:"
-                                ),
-                                choices=get_indexes(),
-                                value=best_match_index_path1,
-                                interactive=True,
-                                allow_custom_value=True,
-                            )
-
                             with gr.Column():
                                 input_audio1 = gr.Dropdown(
                                     label=i18n(
@@ -1893,7 +1912,7 @@ def GradioSetup():
                                 fn=change_choices,
                                 inputs=[],
                                 outputs=[sid0, file_index2, input_audio1],
-                                api_name="infer_refresh"
+                                api_name="infer_refresh",
                             )
                     # Create a checkbox for advanced settings
                     advanced_settings_checkbox = gr.Checkbox(
@@ -1926,16 +1945,18 @@ def GradioSetup():
                                     value="rmvpe+",
                                     interactive=True,
                                 )
-                                f0_autotune = gr.Checkbox(
-                                    label="Enable autotune", interactive=True
-                                )
-                                split_audio = gr.Checkbox(
-                                    label="Split Audio (Better Results)", interactive=True
-                                )
                                 format1_ = gr.Radio(
                                     label=i18n("Export file format:"),
                                     choices=["wav", "flac", "mp3", "m4a"],
                                     value="wav",
+                                    interactive=True,
+                                )
+
+                                f0_autotune = gr.Checkbox(
+                                    label="Enable autotune", interactive=True
+                                )
+                                split_audio = gr.Checkbox(
+                                    label="Split Audio (Better Results)",
                                     interactive=True,
                                 )
 
@@ -1950,16 +1971,7 @@ def GradioSetup():
                                     interactive=True,
                                     visible=False,
                                 )
-                                filter_radius0 = gr.Slider(
-                                    minimum=0,
-                                    maximum=7,
-                                    label=i18n(
-                                        "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness."
-                                    ),
-                                    value=3,
-                                    step=1,
-                                    interactive=True,
-                                )
+                 
 
                                 minpitch_slider = gr.Slider(
                                     label=i18n("Min pitch:"),
@@ -2072,6 +2084,16 @@ def GradioSetup():
                                     ),
                                     value=0.33,
                                     step=0.01,
+                                    interactive=True,
+                                )
+                                filter_radius0 = gr.Slider(
+                                    minimum=0,
+                                    maximum=7,
+                                    label=i18n(
+                                        "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness."
+                                    ),
+                                    value=3,
+                                    step=1,
                                     interactive=True,
                                 )
                                 index_rate1 = gr.Slider(
