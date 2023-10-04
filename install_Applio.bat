@@ -71,12 +71,13 @@ set choice=%choice: =%
 
 if "%choice%"=="1" (
 cls
-powershell -command "Invoke-WebRequest -Uri %URL_EXTRA%/runtime.zip -OutFile runtime.zip"
+powershell -command "Invoke-WebRequest -Uri https://frippery.org/files/busybox/busybox.exe -OutFile busybox.exe"
+busybox.exe wget %URL_EXTRA%/runtime.zip
 echo.
 echo Extracting the runtime.zip file...
 powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime.zip', '%principal%') }"
 echo.
-del runtime.zip
+del runtime.zip busybox.exe
 cls
 echo.
 goto dependenciesFinished
@@ -84,12 +85,16 @@ goto dependenciesFinished
 
 if "%choice%"=="2" (
 cls
-powershell -command "Invoke-WebRequest -Uri %URL_EXTRA%/runtime_dml.zip -OutFile runtime_dml.zip"
+powershell -command "Invoke-WebRequest -Uri https://frippery.org/files/busybox/busybox.exe -OutFile busybox.exe"
+busybox.exe wget %URL_EXTRA%/runtime_dml.zip
 echo.
 echo Extracting the runtime_dml.zip file...
 powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime_dml.zip', '%principal%') }"
 echo.
-del runtime_dml.zip
+del runtime_dml.zip busybox.exe
+cd runtime
+python -m pip install onnxruntime
+cd ..
 cls
 echo.
 goto dependenciesFinished
