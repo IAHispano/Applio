@@ -13,7 +13,7 @@ folder = os.path.dirname(folder)
 folder = os.path.dirname(folder)
 folder = os.path.dirname(folder)
 now_dir = os.path.dirname(folder)
-print(now_dir)
+
 import sys
 sys.path.append(now_dir)
 
