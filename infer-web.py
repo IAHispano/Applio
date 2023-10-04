@@ -24,6 +24,7 @@ import pathlib
 import fairseq
 import socket
 import requests
+import subprocess
 
 logging.getLogger("faiss").setLevel(logging.WARNING)
 import faiss
