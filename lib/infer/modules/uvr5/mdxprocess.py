@@ -7,8 +7,16 @@ import soundfile as sf
 import numpy as np
 import torch
 import json
-now_dir = os.getcwd()
+
+folder = os.path.dirname(os.path.abspath(__file__))
+folder = os.path.dirname(folder)
+folder = os.path.dirname(folder)
+folder = os.path.dirname(folder)
+now_dir = os.path.dirname(folder)
+print(now_dir)
+import sys
 sys.path.append(now_dir)
+
 import lib.infer.infer_libs.uvr5_pack.mdx as mdx
 branch = "https://github.com/NaJeongMo/Colab-for-MDX_B"
 
@@ -16,7 +24,7 @@ model_params = "https://raw.githubusercontent.com/TRvlvr/application_data/main/m
 _Models = "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/"
 # _models = "https://pastebin.com/raw/jBzYB8vz"
 _models = "https://raw.githubusercontent.com/TRvlvr/application_data/main/filelists/download_checks.json"
-stem_naming = "https://pastebin.com/raw/mpH4hRcF"
+
 
 file_folder = "Colab-for-MDX_B"
 model_request = requests.get(_models).json()
@@ -78,11 +86,12 @@ def get_demucs_model_list():
 
 def id_to_ptm(mkey):
     if mkey in model_ids:
+        #print(mkey)
         mpath = f"{now_dir}/assets/uvr5_weights/MDX/{mkey}"
         if not os.path.exists(f'{now_dir}/assets/uvr5_weights/MDX/{mkey}'):
             print('Downloading model...',end=' ')
             subprocess.run(
-                ["wget", _Models+mkey, "-O", mpath]
+                ["python", "-m", "wget", "-o", mpath, _Models+mkey]
             )
             print(f'saved to {mpath}')
             return mpath
