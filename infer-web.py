@@ -89,16 +89,29 @@ if True == True:
 
     try:
         sock.connect((host, port))
-        logger.info(f"Something is listening on port {port}; trying to close the flask server if possible")
+        logger.info("Starting the Flask server")
+        logger.warn(f"Something is listening on port {port}; check open connection and restart Applio.")
+        logger.warn("Trying to start it anyway")
         sock.close()
         requests.post('http://localhost:8000/shutdown')
         time.sleep(3)
         script_path = os.path.join(now_dir, "lib", "tools", "server.py")
-        os.system(f'start cmd /k "python {script_path}"')
+        try:
+            subprocess.Popen(f"python {script_path}", shell=True)
+            logger.info("Flask server started!")    
+        except Exception as e:
+            logger.error(f"Failed to start the Flask server")
+            logger.error(e)                    
     except Exception as e:
+        logger.info("Starting the Flask server")
         sock.close()
         script_path = os.path.join(now_dir, "lib", "tools", "server.py")
-        os.system(f'start cmd /k "python {script_path}"')
+        try:
+            subprocess.Popen(f"python {script_path}", shell=True)
+            logger.info("Flask server started!")    
+        except Exception as e:
+            logger.error("Failed to start the Flask server")
+            logger.error(e)        
 
 # for folder in directories:
 #    os.makedirs(os.path.join(now_dir, folder), exist_ok=True)
