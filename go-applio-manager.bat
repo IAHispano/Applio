@@ -110,129 +110,118 @@ goto menu
 
 :reinstaller
 
-echo WARNING: Remember to install Microsoft C++ Build Tools, Redistributable, Python, and Git before continuing.
+cls
+echo INFO: Please ensure you have installed the required dependencies before continuing. Refer to the installation guide for details.
 echo.
 echo Step-by-step guide: https://rentry.org/appliolocal
 echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
 echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
 echo Git: https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe
-echo Python: Add this route to the windows enviroment variables the user path variable: %principal%\runtime\Scripts
+echo Python 3.9.8: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
+echo.
+echo INFO: Its recommend installing Python 3.9.X and ensuring that it has been added to the system's path.
 echo.
 pause
 cls
+for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
+echo.
 
-echo Updating the repository...
+echo Reseting the repository...
+git reset --hard
 git pull
-
-echo Proceeding to download the models...
 echo.
+cls
 
-echo WARNING: At this point, it's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
+echo Installing dependencies...
+echo.
+echo Recommended for Nvidia GPU users: 
+echo [1] Download Runtime (pre-installed dependencies)
+echo.
+echo Recommended for AMD/Intel GPU users (Broken): 
+echo [2] Download DML Runtime (pre-installed dependencies)
+echo.
+echo Only recommended for experienced users:
+echo [3] Nvidia graphics cards
+echo [4] AMD / Intel graphics cards
+echo.
+echo [5] I have already installed the dependencies
+echo.
+set /p choice=Select the option according to your GPU: 
+set choice=%choice: =%
+
+if "%choice%"=="1" (
+cls
+powershell -command "Invoke-WebRequest -Uri https://frippery.org/files/busybox/busybox.exe -OutFile busybox.exe"
+busybox.exe wget %URL_EXTRA%/runtime.zip
+echo.
+echo Extracting the runtime.zip file...
+powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime.zip', '%principal%') }"
+echo.
+del runtime.zip busybox.exe
+cls
+echo.
+goto dependenciesFinished
+)
+
+if "%choice%"=="2" (
+cls
+powershell -command "Invoke-WebRequest -Uri https://frippery.org/files/busybox/busybox.exe -OutFile busybox.exe"
+busybox.exe wget %URL_EXTRA%/runtime_dml.zip
+echo.
+echo Extracting the runtime_dml.zip file...
+powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime_dml.zip', '%principal%') }"
+echo.
+del runtime_dml.zip busybox.exe
+cd runtime
+python.exe -m pip install onnxruntime
+cd ..
+cls
+echo.
+goto dependenciesFinished
+)
+
+if "%choice%"=="3" (
+cls
+pip install -r assets/requirements/requirements.txt
+echo.
+pip uninstall torch torchvision torchaudio -y
+echo.
+pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
+echo.
+echo.
+cls
+echo Dependencies successfully installed!
+echo.
+goto dependenciesFinished
+)
+
+if "%choice%"=="4" (
+cls
+pip uninstall onnxruntime onnxruntime-directml
+echo.
+pip install -r assets/requirements/requirements.txt
+echo.
+pip install -r assets/requirements/requirements-dml.txt
+echo.
+echo.
+cls
+echo Dependencies successfully installed!
+echo.
+goto dependenciesFinished
+)
+
+if "%choice%"=="5" (
+echo Dependencies successfully installed!
+echo.
+goto dependenciesFinished
+)
+
+:dependenciesFinished
+cls 
+echo Applio has been successfully downloaded, run the file go-applio.bat to run the web interface!
+echo.
 pause
-cls
-
-echo Downloading models in the assets folder...
-cd "assets"
-echo.
-echo Downloading the "pretrained" folder...
-cd "pretrained"
-curl -LJO "%URL_BASE%/pretrained/D32k.pth"
-curl -LJO "%URL_BASE%/pretrained/D40k.pth"
-curl -LJO "%URL_BASE%/pretrained/D48k.pth"
-curl -LJO "%URL_BASE%/pretrained/G32k.pth"
-curl -LJO "%URL_BASE%/pretrained/G40k.pth"
-curl -LJO "%URL_BASE%/pretrained/G48k.pth"
-curl -LJO "%URL_BASE%/pretrained/f0D32k.pth"
-curl -LJO "%URL_BASE%/pretrained/f0D40k.pth"
-curl -LJO "%URL_BASE%/pretrained/f0D48k.pth"
-curl -LJO "%URL_BASE%/pretrained/f0G32k.pth"
-curl -LJO "%URL_BASE%/pretrained/f0G40k.pth"
-curl -LJO "%URL_BASE%/pretrained/f0G48k.pth"
-cd ".."
-echo.
-cls
-
-echo Downloading the "pretrained_v2" folder...
-cd "pretrained_v2"
-curl -LJO "%URL_BASE%/pretrained_v2/D32k.pth"
-curl -LJO "%URL_BASE%/pretrained_v2/D40k.pth"
-curl -LJO "%URL_BASE%/pretrained_v2/D48k.pth"
-curl -LJO "%URL_BASE%/pretrained_v2/G32k.pth"
-curl -LJO "%URL_BASE%/pretrained_v2/G40k.pth"
-curl -LJO "%URL_BASE%/pretrained_v2/G48k.pth"
-curl -LJO "%URL_BASE%/pretrained_v2/f0D32k.pth"
-curl -LJO "%URL_BASE%/pretrained_v2/f0D40k.pth"
-curl -LJO "%URL_BASE%/pretrained_v2/f0D48k.pth"
-curl -LJO "%URL_BASE%/pretrained_v2/f0G32k.pth"
-curl -LJO "%URL_BASE%/pretrained_v2/f0G40k.pth"
-curl -LJO "%URL_BASE%/pretrained_v2/f0G48k.pth"
-cd ".."
-echo.
-cls
-
-echo Downloading the hubert_base.pt file...
-cd "hubert"
-curl -LJO "%URL_BASE%/hubert_base.pt"
-cd ".."
-echo.
-cls
-
-
-echo Downloading the rmvpe.pt file...
-cd "rmvpe"
-curl -LJO "%URL_BASE%/rmvpe.pt"
-echo.
-cls
-
-echo Downloading the rmvpe.onnx file...
-curl -LJO "%URL_BASE%/rmvpe.onnx"
-cd ".."
-cd ".."
-echo.
-cls
-
-echo Downloading the rest of the large files
-cd "assets"
-echo Downloading the "uvr5_weights" folder...
-cd "uvr5_weights"
-curl -LJO "%URL_BASE%/uvr5_weights/HP2_all_vocals.pth"
-curl -LJO "%URL_BASE%/uvr5_weights/HP3_all_vocals.pth"
-curl -LJO "%URL_BASE%/uvr5_weights/HP5_only_main_vocal.pth"
-curl -LJO "%URL_BASE%/uvr5_weights/VR-DeEchoAggressive.pth"
-curl -LJO "%URL_BASE%/uvr5_weights/VR-DeEchoDeReverb.pth"
-curl -LJO "%URL_BASE%/uvr5_weights/VR-DeEchoNormal.pth"
-cd ".."
-cd ".."
-echo.
-cls
-
-echo Downloading the ffmpeg.exe file...
-curl -LJO "%URL_BASE%/ffmpeg.exe"
-echo.
-cls
-
-echo Downloading the ffprobe.exe file...
-curl -LJO "%URL_BASE%/ffprobe.exe"
-echo.
-cls
-
-echo Downloading torchcrepe
-mkdir temp_torchcrepe
-echo.
-
-echo Clone the GitHub repository to the temporary directory
-git clone --depth 1 https://github.com/maxrmorrison/torchcrepe.git temp_torchcrepe
-
-echo Copy the "torchcrepe" folder and its contents to the current directory
-robocopy "temp_torchcrepe\torchcrepe" ".\torchcrepe" /E
-echo.
-
-echo Remove the temporary directory
-rmdir /s /q temp_torchcrepe
-echo.
-
-echo Downloads completed!
-echo.
+exit
 
 echo Applio has been reinstalled!
 echo.
@@ -246,21 +235,6 @@ goto menu
 
 echo Updating the repository...
 git pull
-
-echo Verifying if the local_fixes.py file exists in the Fixes folder...
-if exist "%fixesFolder%\%localFixesPy%" (
-    echo Running the file...
-    if exist "%principal%\runtime" (
-        runtime\python.exe "%fixesFolder%\%localFixesPy%"
-    ) else (
-        python.exe "%fixesFolder%\%localFixesPy%"
-    )
-    
-) else (
-    echo The file "%localFixesPy%" was not found in the "Fixes" folder.
-)
-echo.
-
 echo Applio has been updated!
 echo.
 echo Press 'Enter' to access the main menu... 
