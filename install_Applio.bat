@@ -93,7 +93,7 @@ powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem
 echo.
 del runtime_dml.zip busybox.exe
 cd runtime
-python -m pip install onnxruntime
+python.exe -m pip install onnxruntime
 cd ..
 cls
 echo.
