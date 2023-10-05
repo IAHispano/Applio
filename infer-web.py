@@ -565,7 +565,7 @@ def uvr(
             print("clean_empty_cache")
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-    elif architecture == " (Beta)":
+    elif architecture == "Demucs (Beta)":
         try:
             infos.append(
                 i18n("Starting audio conversion... (This might take a moment)")
@@ -2765,7 +2765,7 @@ def GradioSetup():
                     with gr.Column():
                         model_select = gr.Radio(
                             label=i18n("Model Architecture:"),
-                            choices=["VR", "MDX"],
+                            choices=["VR", "MDX", "Demucs (Beta)"],
                             value="VR",
                             interactive=True,
                         )
