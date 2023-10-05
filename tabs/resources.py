@@ -1,7 +1,7 @@
 import subprocess
 import os
 import sys
-import gdown
+
 import errno
 import shutil
 import yt_dlp
@@ -176,20 +176,20 @@ def download_from_url(url):
 
             if file_id:
                 os.chdir(zips_path)
-                try:
-                    gdown.download(f"https://drive.google.com/uc?id={file_id}", quiet=False, fuzzy=True)
-                except Exception as e:
-                    error_message = str(e)
-                    if "Too many users have viewed or downloaded this file recently" in error_message:
-                        os.chdir(file_path)
-                        return "too much use"
-                    elif "Cannot retrieve the public link of the file." in error_message:
-                        os.chdir(file_path)
-                        return "private link"
-                    else:
-                        print(error_message)
-                        os.chdir(file_path)
-                        return None
+                result = subprocess.run(
+                    ["gdown", f"https://drive.google.com/uc?id={file_id}", "--fuzzy"],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                )
+                if (
+                    "Too many users have viewed or downloaded this file recently"
+                    in str(result.stderr)
+                ):
+                    return "too much use"
+                if "Cannot retrieve the public link of the file." in str(result.stderr):
+                    return "private link"
+                print(result.stderr)
 
         elif "/blob/" in url or "/resolve/" in url:
             os.chdir(zips_path)
