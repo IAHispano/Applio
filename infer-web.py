@@ -2252,17 +2252,9 @@ def GradioSetup():
                                 value=0,
                             )
                             opt_input = gr.Textbox(
-                                label=i18n("Specify output folder:"), value="opt"
+                                label=i18n("Specify output folder:"), value="assets/audios/audio-outputs"
                             )
                         with gr.Column():
-                            file_index4 = gr.Dropdown(
-                                label=i18n(
-                                    "Auto-detect index path and select from the dropdown:"
-                                ),
-                                choices=get_indexes(),
-                                value=best_match_index_path1,
-                                interactive=True,
-                            )
                             dir_input = gr.Textbox(
                                 label=i18n(
                                     "Enter the path of the audio folder to be processed (copy it from the address bar of the file manager):"
@@ -2272,14 +2264,7 @@ def GradioSetup():
                             sid0.select(
                                 fn=match_index,
                                 inputs=[sid0],
-                                outputs=[file_index2, file_index4],
-                            )
-
-                            refresh_button.click(
-                                fn=lambda: change_choices()[1],
-                                inputs=[],
-                                outputs=file_index4,
-                                api_name="infer_refresh_batch",
+                                outputs=[file_index2],
                             )
 
                         with gr.Column():
@@ -2413,7 +2398,7 @@ def GradioSetup():
                                     vc_transform1,
                                     f0method1,
                                     file_index3,
-                                    file_index4,
+                                    file_index2,
                                     index_rate2,
                                     filter_radius1,
                                     resample_sr1,
