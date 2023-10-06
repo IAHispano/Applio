@@ -418,24 +418,25 @@ class VC:
             total_time = end_time - start_time
             opt_root = "assets/audios/audio-outputs"
             os.makedirs(opt_root, exist_ok=True)
-            opt_filename = "generated_audio_{}"
             output_count = 1
+            
             while True:
-                current_output_path = os.path.join(opt_root, opt_filename.format(output_count))
+                opt_filename = f"generated_audio_{output_count}.{format1}"
+                current_output_path = os.path.join(opt_root, opt_filename)
+                print(current_output_path)
                 if not os.path.exists(current_output_path):
                     break
                 output_count += 1
+                print(output_count)
             try:
                 if format1 in ["wav", "flac"]:
                     sf.write(
-                        "%s.%s"
-                        % (current_output_path, format1),
+                        current_output_path,
                         audio_opt,
                         self.tgt_sr,
                     )
                     print(f"💾 Generated audio saved to: {current_output_path}")
                 else:
-                    path = "%s.%s" % (current_output_path, format1)
                     with BytesIO() as wavf:
                         sf.write(
                             wavf,
@@ -444,7 +445,7 @@ class VC:
                             format="wav"
                         )
                         wavf.seek(0, 0)
-                        with open(path, "wb") as outf:
+                        with open(current_output_path, "wb") as outf:
                                 wav2(wavf, outf, format1)
                     print(f"💾 Generated audio saved to: {current_output_path}")
             except:
