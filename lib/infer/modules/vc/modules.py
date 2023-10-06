@@ -423,11 +423,9 @@ class VC:
             while True:
                 opt_filename = f"generated_audio_{output_count}.{format1}"
                 current_output_path = os.path.join(opt_root, opt_filename)
-                print(current_output_path)
                 if not os.path.exists(current_output_path):
                     break
                 output_count += 1
-                print(output_count)
             try:
                 if format1 in ["wav", "flac"]:
                     sf.write(
