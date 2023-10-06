@@ -1196,6 +1196,7 @@ def click_train(
                 1 if if_save_latest13 == True else 0,
                 1 if if_cache_gpu17 == True else 0,
                 1 if if_save_every_weights18 == True else 0,
+                version19,
             )
         )
     logger.info(cmd)
