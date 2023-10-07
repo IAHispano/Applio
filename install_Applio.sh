@@ -28,7 +28,7 @@ if [ -d ".venv" ]; then
   source .venv/bin/activate
 else
   echo "Creating venv..."
-  requirements_file="assets/requirements/requirements.txt"
+  requirements_file="assets/requirements/requirements-applio.txt"
   # Check if Python is installed
   if ! command -v python3 &> /dev/null; then
     echo "Python 3 not found. Attempting to install..."
