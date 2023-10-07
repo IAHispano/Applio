@@ -32,3 +32,6 @@ gin
 gin_config
 flask_cors
 flask
+https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-linux_x86_64.whl; sys_platform == 'linux'
+https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-win_amd64.whl; sys_platform == 'win32'
+https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-macosx_10_9_universal2.whl; sys_platform == 'darwin'
