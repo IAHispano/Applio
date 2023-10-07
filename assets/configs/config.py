@@ -206,7 +206,8 @@ class Config:
                 self.is_half = True
             i_device = int(self.device.split(":")[-1])
             self.gpu_name = torch.cuda.get_device_name(i_device)
-            if (actual_vram is not None and actual_vram <= 1) or (1 < float(cuda_version) < 3.7):
+            torch.cuda.empty_cache()
+            if (actual_vram is not None and actual_vram < 0.3) or (1 < float(cuda_version) < 3.7):
                 logger.info("Using CPU due to unsupported CUDA version or low VRAM...")
                 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
                 self.device = self.instead = "cpu"
