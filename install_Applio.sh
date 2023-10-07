@@ -28,7 +28,7 @@ if [ -d ".venv" ]; then
   source .venv/bin/activate
 else
   echo "Creating venv..."
-  requirements_file="assets/requirements/requirements-applio.txt"
+  requirements_file="assets/requirements/requirements.txt"
   # Check if Python is installed
   if ! command -v python3 &> /dev/null; then
     echo "Python 3 not found. Attempting to install..."
@@ -55,6 +55,9 @@ chmod +x *.sh
 chmod +x ./lib/infer/infer_libs/stftpitchshift
 python -m ensurepip
 
+  
+
+fi
 
 clear
 menu() {
@@ -71,8 +74,10 @@ read -p "Select the option according to your GPU: " choice
 case $choice in
     1)
         echo
-        python -m pip install -r assets/requirements/requirements.txt
+        python -m pip uninstall fairseq -y
+        python -m pip install https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-linux_x86_64.whl
         python -m pip uninstall torch torchvision torchaudio -y
+        python -m pip install scikit-learn-intelex
         python -m pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
         echo
         finish
@@ -81,7 +86,7 @@ case $choice in
         echo
         echo "Before install this check https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/blob/main/docs/en/README.en.md#rocm-support-for-amd-graphic-cards-linux-only"
         read -p "Press enter to continue"
-        python -m pip install -r assets/requirements/requirements-amd.txt
+        python -m pip install -r https://raw.githubusercontent.com/WorXeN/Retrieval-based-Voice-Conversion-WebUI/main/requirements-amd.txt
         python -m pip uninstall torch torchvision torchaudio -y
         pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.4.2
         echo
@@ -90,6 +95,9 @@ case $choice in
     3)
         echo 
         python -m pip install -r assets/requirements/requirements-ipex.txt
+        python -m pip uninstall fairseq -y
+        python -m pip install https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-linux_x86_64.whl
+        python -m pip install scikit-learn-intelex
         finish
         ;;
     *)
@@ -103,13 +111,7 @@ done
 
 # Finish installation
 finish() {
-  python -m pip uninstall fairseq -y
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-  python -m pip install https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-macosx_10_9_universal2.whl
-  else
-  python -m pip install https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-linux_x86_64.whl
-  fi
-  # Check if required packages are installed and install them if not
+  # Check if required packages are installed and install them if notia
   # I will change this to make a  requirements with the applio changes 
   # And add a custom one for nvidia, ipx, amd support on linux and directml for the batch script
   if [ -f "${requirements_file}" ]; then
@@ -126,7 +128,6 @@ finish() {
     echo "${requirements_file} not found. Please ensure the requirements file with required packages exists."
     exit 1
   fi
-fi
   clear
   echo "Applio has been successfully downloaded, run the file go-applio.sh to run the web interface!"
   exit 0
