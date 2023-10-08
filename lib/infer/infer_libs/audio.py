@@ -74,11 +74,10 @@ def load_audion(file, sr):
 
 def load_audio(file, sr, DoFormant=False, Quefrency=1.0, Timbre=1.0):
     converted = False
-    DoFormant, Quefrency, Timbre = CSVutil("lib/csvdb/formanting.csv", "r", "formanting")
-    DoFormant, Quefrency, Timbre = bool(DoFormant), float(Quefrency), float(Timbre)
-    
     try:
-        file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+        file = (
+            file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+        )
         
         if not file.endswith(".wav"):
             converted = True
@@ -91,7 +90,7 @@ def load_audio(file, sr, DoFormant=False, Quefrency=1.0, Timbre=1.0):
             file = f"{file}.wav"
             print(f" · File converted to Wav format: {file}\n")
 
-        if DoFormant == False:
+        if DoFormant == True:
             # Procesamiento de formantes usando stftpitchshift
             command = (
                 f'{stft} -i "{file}" -q "{Quefrency}" '
