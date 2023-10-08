@@ -1942,6 +1942,14 @@ def GradioSetup():
                                         "mangio-crepe-tiny",
                                         "rmvpe",
                                         "rmvpe+",
+                                    ]
+                                    if config.dml == False
+                                    else [
+                                        "pm",
+                                        "harvest",
+                                        "dio",
+                                        "rmvpe",
+                                        "rmvpe+",
                                     ],
                                     value="rmvpe+",
                                     interactive=True,
@@ -2312,6 +2320,13 @@ def GradioSetup():
                                                 "mangio-crepe",
                                                 "mangio-crepe-tiny",
                                                 "rmvpe",
+                                            ]
+                                            if config.dml == False
+                                            else [
+                                                "pm",
+                                                "harvest",
+                                                "dio",
+                                                "rmvpe",
                                             ],
                                             value="rmvpe",
                                             interactive=True,
@@ -2540,7 +2555,15 @@ def GradioSetup():
                                     "mangio-crepe",
                                     "rmvpe",
                                     "rmvpe_gpu",
-                                ],
+                                ]
+                                if config.dml == False
+                                    else [
+                                        "pm",
+                                        "harvest",
+                                        "dio",
+                                        "rmvpe",
+                                        "rmvpe_gpu",
+                                    ],
                                 value="rmvpe",
                                 interactive=True,
                             )
