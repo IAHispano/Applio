@@ -2,13 +2,14 @@ torch==2.0.1a0
 intel_extension_for_pytorch==2.0.110+xpu
 torchvision==0.15.2a0
 https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/torchaudio-2.0.2+31de77d-cp311-cp311-linux_x86_64.whl
--f https://developer.intel.com/ipex-whl-stable-xpu
+--extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
 joblib>=1.1.0
 numba
 numpy==1.23.5
 scipy
 librosa==0.9.1
-llvmlite
+llvmlite==0.39.0
+https://github.com/soudabot/fairseq-build-whl/releases/download/3.11/fairseq-0.12.3-cp311-cp311-linux_x86_64.whl
 faiss-cpu==1.7.3
 gradio==3.34.0
 Cython
