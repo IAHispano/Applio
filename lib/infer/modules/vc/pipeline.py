@@ -447,8 +447,9 @@ class Pipeline(object):
                 crepe_hop_length,
                 time_step,
             )
-        print("Autotune:", f0_autotune)
-        if f0_autotune:
+        #print("Autotune:", f0_autotune)
+        if f0_autotune == True:
+            print("Autotune:", f0_autotune)
             f0 = self.autotune_f0(f0)
 
         f0 *= pow(2, f0_up_key / 12)

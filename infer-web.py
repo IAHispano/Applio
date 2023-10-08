@@ -1954,7 +1954,7 @@ def GradioSetup():
                                 )
 
                                 f0_autotune = gr.Checkbox(
-                                    label="Enable autotune", interactive=True
+                                    label="Enable autotune", interactive=True, value=False
                                 )
                                 split_audio = gr.Checkbox(
                                     label="Split Audio (Better Results)",
@@ -2373,7 +2373,7 @@ def GradioSetup():
                                         interactive=True,
                                     )
                                     f0_autotune = gr.Checkbox(
-                                        label="Enable autotune", interactive=True
+                                        label="Enable autotune", interactive=True, value=False
                                     )
                                     hop_length = gr.Slider(
                                         minimum=1,
