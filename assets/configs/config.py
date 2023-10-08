@@ -199,9 +199,9 @@ class Config:
                 strr = f.read().replace("true", "false")
             with open(f"./assets/configs/{config_file}", "w") as f:
                 f.write(strr)
-        with open("infer/modules/train/preprocess.py", "r") as f:
+        with open("./lib/infer/modules/train/preprocess.py", "r") as f:
             strr = f.read().replace("3.7", "3.0")
-        with open("infer/modules/train/preprocess.py", "w") as f:
+        with open("./lib/infer/modules/train/preprocess.py", "w") as f:
             f.write(strr)
         print("overwrite preprocess and configs.json")
 
