@@ -100,12 +100,8 @@ models, saved_cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task(
 model = models[0]
 model = model.to(device)
 printt("Using %s" % device)
-#if device not in ["mps", "cpu"]:
-#    model = model.half()
-if is_half:
+if device not in ["mps", "cpu"]:
     model = model.half()
-else:
-    model = model.float()
 model.eval()
 
 todo = sorted(list(os.listdir(wavPath)))[i_part::n_part]
