@@ -31,6 +31,7 @@ echo " ::: "
       ;;
    2)
       clear
+      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/.venv/lib
       python -m sklearnex infer-web.py --pycmd python --port 7897 --theme dark
       read -p "Press Enter to continue..."
       ;;
