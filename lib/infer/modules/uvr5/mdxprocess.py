@@ -156,6 +156,7 @@ def run_mdx(onnx, mdx_model,filename, output_format='wav',diff=False,suffix=None
     #instrumental_save_path = os.path.join(instrumental_folder, f"{save_path}_{stem_name}.{output_format}")
     save_path = f"{os.path.basename(os.path.splitext(filename)[0])}_{stem_name}.{output_format}"
     save_path = os.path.join(
+            'assets',
             'audios',
             save_path
         )
@@ -172,6 +173,8 @@ def run_mdx(onnx, mdx_model,filename, output_format='wav',diff=False,suffix=None
         stem_name = f"{stem_name}_diff" if diff_stem_name is None else diff_stem_name
         save_path = f"{os.path.basename(os.path.splitext(filename)[0])}_{stem_name}.{output_format}"
         save_path = os.path.join(
+                'assets',
+                'audios',
                 'audio-others',
                 save_path
             )
