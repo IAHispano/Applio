@@ -4,9 +4,9 @@ import av
 from io import BytesIO
 import ffmpeg
 import os
+import traceback
 import sys
 
-import random
 from lib.infer.infer_libs.csvutil import CSVutil
 #import csv
 
@@ -73,12 +73,15 @@ def load_audion(file, sr):
 
 
 def load_audio(file, sr, DoFormant=False, Quefrency=1.0, Timbre=1.0):
-    converted = False
-    try:
-        file = (
+    file = (
             file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
         )
-        
+    if os.path.exists(file) == False:
+        raise RuntimeError(
+            "You input a wrong audio path that does not exists, please fix it!"
+        )
+    converted = False
+    try:
         if not file.endswith(".wav"):
             converted = True
             # Conversión de formato usando ffmpeg
@@ -116,8 +119,8 @@ def load_audio(file, sr, DoFormant=False, Quefrency=1.0, Timbre=1.0):
         if len(audio.shape) == 2:
             audio = np.mean(audio, -1)
         return librosa.resample(audio, orig_sr=file[0], target_sr=16000)
-    except Exception as e:
-        raise RuntimeError(f"Failed to load audio: {e}")
+    except:
+        raise RuntimeError(traceback.format_exc())
 
 
 def check_audio_duration(file):
