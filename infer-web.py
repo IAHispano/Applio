@@ -2897,7 +2897,7 @@ def GradioSetup():
                 resources.download_backup()
                 resources.download_dataset(trainset_dir4)
                 resources.download_audio()
-                resources.youtube_separator()
+                resources.audio_downloader_separator()
             with gr.TabItem(i18n("Extra")):
                 gr.Markdown(
                     value=i18n(
