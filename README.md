@@ -112,16 +112,10 @@ brew install swig
 ```
 
 Install requirements:
-*Using pip (Python 3.9.8 is stable with this fork)*
+*Before this install ffmpeg, wget, git and python (This fork just works with 3.11+ on linux btw)*
 ```bash
-for Nvidia graphics cards:
-  pip install -r assets/requirements/requirements.txt
-
-for AMD / Intel graphics cards：
-  pip install -r assets/requirements/requirements-dml.txt
-
-for Intel ARC graphics cards on Linux / WSL using Python 3.10: 
-  pip install -r assets/requirements/requirements-ipex.txt
+wget https://github.com/IAHispano/Applio-RVC-Fork/releases/download/v2.0.0/install_Applio-linux.sh
+chmod +x install_Applio-linux.sh && ./install_Applio-linux.sh
 ```
 
 ### Manual installation (Paperspace):
