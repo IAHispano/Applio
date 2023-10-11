@@ -29,8 +29,8 @@ if [ -d ".venv" ]; then
 else
   echo "Creating venv..."
   requirements_file="assets/requirements/requirements-applio.txt"
-  # Check if Python is installed
-  if ! command -v python3 &> /dev/null; then
+  # Check if python is installed
+  if ! command -v python3 > /dev/null 2>&1; then
     echo "Python 3 not found. Attempting to install..."
     if [[ "$(uname)" == "Darwin" ]] && command -v brew &> /dev/null; then
       brew install python
@@ -38,16 +38,21 @@ else
       sudo apt-get update
       sudo apt-get install python
     else
-      echo "Please install Python manually."
-      exit 1
+      echo "Please install python manually."
     fi
   fi
- 
+  if ! command -v python3 > /dev/null 2>&1; then
+  py=$(which python)
+  echo "Using python"
+  else
+  py=$(which python3)
+  echo "Using python3"
+fi
 
 # Clone the repo for make this script usable with echo 1 | curl blabla https://script.sh
 git clone https://github.com/IAHispano/Applio-RVC-Fork
 cd Applio-RVC-Fork
-python -m venv .venv
+$py -m venv .venv
 source .venv/bin/activate
 chmod +x stftpitchshift
 chmod +x *.sh
