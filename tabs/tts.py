@@ -2,7 +2,8 @@ import sys
 
 sys.path.append("..")
 import os
-
+os.environ["SUNO_OFFLOAD_CPU"] = "True"
+os.environ["SUNO_USE_SMALL_MODELS"] = "True"
 now_dir = os.getcwd()
 
 from dotenv import load_dotenv
