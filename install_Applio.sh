@@ -15,6 +15,7 @@ echo " ::: "
 
 if [[ "$(uname)" == "Darwin" ]]; then
   # macOS specific env:
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   export PYTORCH_ENABLE_MPS_FALLBACK=1
   export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
 elif [[ "$(uname)" != "Linux" ]]; then
@@ -135,3 +136,4 @@ finish() {
 }
 # Loop to the main menu
 menu
+
