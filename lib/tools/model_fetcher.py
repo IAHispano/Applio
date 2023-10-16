@@ -21,11 +21,6 @@ models_download = [
         "f0D32k.pth", "f0D40k.pth", "f0D48k.pth",
         "f0G32k.pth", "f0G40k.pth", "f0G48k.pth",
     ]),
-    ("uvr5_weights/", [
-        "HP2_all_vocals.pth", "HP3_all_vocals.pth",
-        "HP5_only_main_vocal.pth", "VR-DeEchoAggressive.pth",
-        "VR-DeEchoDeReverb.pth", "VR-DeEchoNormal.pth",
-    ]),
     ("", ["ffmpeg.exe", "ffprobe.exe"]),  # ffmpeg and ffprobe go to the main folder
 ]
 
@@ -40,7 +35,6 @@ individual_files = [
 folder_mapping = {
     "pretrained/": "assets/pretrained/",
     "pretrained_v2/": "assets/pretrained_v2/",
-    "uvr5_weights/": "assets/uvr5_weights/",
     "": "",  # Default folder for files without a remote folder
 }
 

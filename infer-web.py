@@ -264,13 +264,6 @@ audio_others_paths = [
     if name.endswith(tuple(sup_audioext)) and root == audio_others_root
 ]
 
-uvr5_names = [
-    name.replace(".pth", "")
-    for name in os.listdir(weight_uvr5_root)
-    if name.endswith(".pth") or "onnx" in name
-]
-
-
 check_for_name = lambda: sorted(names)[0] if names else ""
 
 datasets = []
@@ -285,6 +278,26 @@ def get_dataset():
     else:
         return ""
 
+uvr5_names = ["HP2_all_vocals.pth", "HP3_all_vocals.pth", "HP5_only_main_vocal.pth",
+             "VR-DeEchoAggressive.pth", "VR-DeEchoDeReverb.pth", "VR-DeEchoNormal.pth"]
+
+__s = "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/"
+
+def id_(mkey):
+    if mkey in uvr5_names:
+        model_name, ext = os.path.splitext(mkey)
+        mpath = f"{now_dir}/assets/uvr5_weights/{mkey}"
+        if not os.path.exists(f'{now_dir}/assets/uvr5_weights/{mkey}'):
+            print('Downloading model...',end=' ')
+            subprocess.run(
+                ["python", "-m", "wget", "-o", mpath, __s+mkey]
+            )
+            print(f'saved to {mpath}')
+            return model_name
+        else:
+            return model_name
+    else:
+        return None
 
 def update_model_choices(select_value):
     model_ids = get_model_list()
@@ -334,7 +347,6 @@ def get_fshift_presets():
 
     return fshift_presets_list if fshift_presets_list else ""
 
-
 def uvr(
     model_name,
     inp_root,
@@ -348,15 +360,23 @@ def uvr(
     infos = []
     if architecture == "VR":
         try:
-            infos.append(
-                i18n("Starting audio conversion... (This might take a moment)")
-            )
+            
             inp_root = inp_root.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
             save_root_vocal = (
                 save_root_vocal.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
             )
             save_root_ins = (
                 save_root_ins.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+            )
+
+            model_name = id_(model_name)
+            if model_name == None:
+                return ""
+            else:
+                pass
+            
+            infos.append(
+                i18n("Starting audio conversion... (This might take a moment)")
             )
 
             if model_name == "onnx_dereverb_By_FoxJoy":
