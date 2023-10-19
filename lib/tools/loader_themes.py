@@ -12,16 +12,13 @@ folder = os.path.join(folder, "assets", "themes")
 
 import sys
 sys.path.append(folder)
-
-def get_class(file_name, class_name):
-    with open(file_name, 'r') as file:
-        content = file.read()
-        syntax_tree = ast.parse(content)
-        
-        for node in ast.walk(syntax_tree):
-            if isinstance(node, ast.ClassDef) and node.name == class_name:
-                return node
-
+def get_class(filename):
+    with open(filename, 'r') as f:
+        for line_number, line in enumerate(f, start=1):
+            if 'class ' in line:
+                found = line.split('class ')[1].split(':')[0].split('(')[0].strip()
+                return found
+                break
     return None
 
 def get_list():
@@ -35,15 +32,14 @@ def get_list():
 
 def select_theme(name):
     selected_file = name + ".py"
-    class_name = name
     full_path = os.path.join(folder, selected_file)
-    class_found = get_class(full_path, class_name)
+    class_found = get_class(full_path)
     if class_found:
         with open(os.path.join(folder, 'theme.json'), 'w') as json_file:
-            json.dump({"file": selected_file, "class": class_name}, json_file)
-        logger.info(f"Theme {class_name} successfully selected, restart applio.")
+            json.dump({"file": selected_file, "class": class_found}, json_file)
+        logger.info(f"Theme {name} successfully selected, restart applio.")
     else:
-        logger.warn(f"Theme {class_name} was not found.")
+        logger.warn(f"Theme {name} was not found.")
 
 def read_json():
     json_file_name = os.path.join(folder, 'theme.json')
