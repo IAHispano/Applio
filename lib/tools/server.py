@@ -366,6 +366,10 @@ def load_downloaded_model(url):
     finally:
         os.chdir(parent_path)
 
+@app.route('/downloaded', methods=['GET'])
+def downloaded():
+    return render_template('sucess.html')
+
 @app.route('/shutdown', methods=['POST'])
 def shoutdown():
     print("This flask server is shutting down please close the window")   
