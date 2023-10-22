@@ -350,7 +350,10 @@ def load_downloaded_model(url):
             print(i18n("No relevant file was found to upload."))
         
         os.chdir(parent_path)
-        return render_template('downloaded.html')
+        if 'text/html' in request.headers.get('Accept', ''):
+            return redirect("http://localhost:8000/downloaded", code=302)
+        else:
+            return ""
     except Exception as e:
         os.chdir(parent_path)
         if "too much use" in str(e):
