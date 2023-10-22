@@ -323,7 +323,7 @@ def load_downloaded_model(url):
         for path, subdirs, files in os.walk(unzips_path):
             for item in files:
                 item_path = os.path.join(path, item)
-                if item.startswith("added_") and item.endswith(".index"):
+                if item.startswith(("added_", "trained_")) and item.endswith(".index"):
                     index_file = True
                     if os.path.exists(item_path):
                         if os.path.exists(os.path.join(logs_dir, item)):
