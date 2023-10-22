@@ -350,7 +350,7 @@ def load_downloaded_model(url):
             print(i18n("No relevant file was found to upload."))
         
         os.chdir(parent_path)
-        return result
+        return render_template('downloaded.html')
     except Exception as e:
         os.chdir(parent_path)
         if "too much use" in str(e):
