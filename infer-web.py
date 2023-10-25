@@ -268,7 +268,7 @@ check_for_name = lambda: sorted(names)[0] if names else ""
 
 datasets = []
 for foldername in os.listdir(os.path.join(now_dir, datasets_root)):
-    if "." not in foldername:
+    if os.path.isdir(os.path.join(now_dir, "datasets", foldername)):
         datasets.append(os.path.join(now_dir, "datasets", foldername))
 
 
@@ -315,7 +315,7 @@ def update_model_choices(select_value):
 def update_dataset_list(name):
     new_datasets = []
     for foldername in os.listdir(os.path.join(now_dir, datasets_root)):
-        if "." not in foldername:
+        if os.path.isdir(os.path.join(now_dir, "datasets", foldername)):
             new_datasets.append(
                 os.path.join(
                     now_dir,
@@ -1043,7 +1043,7 @@ def set_log_interval(exp_dir, batch_size12):
     return log_interval
 
 
-global PID, PROCESS
+global PID, PROCESS, TB
 
 
 def click_train(
@@ -1061,6 +1061,7 @@ def click_train(
     if_cache_gpu17,
     if_save_every_weights18,
     version19,
+    if_retrain_collapse20
 ):
     CSVutil("lib/csvdb/stop.csv", "w+", "formanting", False)
     # 生成filelist
@@ -1152,53 +1153,47 @@ def click_train(
                 sort_keys=True,
             )
             f.write("\n")
-    if gpus16:
-        cmd = (
-            '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -g %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s'
-            % (
-                config.python_cmd,
-                exp_dir1,
-                sr2,
-                1 if if_f0_3 else 0,
-                batch_size12,
-                gpus16,
-                total_epoch11,
-                save_epoch10,
-                "-pg %s" % pretrained_G14 if pretrained_G14 != "" else "",
-                "-pd %s" % pretrained_D15 if pretrained_D15 != "" else "",
-                1 if if_save_latest13 == True else 0,
-                1 if if_cache_gpu17 == True else 0,
-                1 if if_save_every_weights18 == True else 0,
-                version19,
-            )
+    cmd = (
+        '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s %s'
+        % (
+            config.python_cmd,
+            exp_dir1,
+            sr2,
+            1 if if_f0_3 else 0,
+            batch_size12,
+            ("-g %s" % gpus16) if gpus16 else "",
+            total_epoch11,
+            save_epoch10,
+            "-pg %s" % pretrained_G14 if pretrained_G14 != "" else "",
+            "-pd %s" % pretrained_D15 if pretrained_D15 != "" else "",
+            1 if if_save_latest13 == True else 0,
+            1 if if_cache_gpu17 == True else 0,
+            1 if if_save_every_weights18 == True else 0,
+            version19,
+            ("-rc %s" % 1 if if_retrain_collapse20 == True else 0) if if_retrain_collapse20 else ""
         )
-    else:
-        cmd = (
-            '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s'
-            % (
-                config.python_cmd,
-                exp_dir1,
-                sr2,
-                1 if if_f0_3 else 0,
-                batch_size12,
-                total_epoch11,
-                save_epoch10,
-                "-pg %s" % pretrained_G14 if pretrained_G14 != "" else "",
-                "-pd %s" % pretrained_D15 if pretrained_D15 != "" else "",
-                1 if if_save_latest13 == True else 0,
-                1 if if_cache_gpu17 == True else 0,
-                1 if if_save_every_weights18 == True else 0,
-                version19,
-            )
-        )
+    )
     logger.info(cmd)
-    global p
+    global p, PID, TB
+    os.environ["TENSORBOARD_PORT"] = str(config.listen_port + 1)
+    if 'TB' in globals():
+        TB.terminate()
+    TB = Popen(f'tensorboard --logdir "logs/{exp_dir1}" --reload_interval 1 --port {os.environ["TENSORBOARD_PORT"]}', cwd=now_dir)
     p = Popen(cmd, shell=True, cwd=now_dir)
-    global PID
     PID = p.pid
 
     p.wait()
-
+    batchSize = batch_size12
+    while if_retrain_collapse20:
+        if not os.path.exists(f"logs/{exp_dir1}/col"):
+            break
+        batchSize -= 1
+        if batchSize < 1:
+            break
+        p = Popen(cmd.replace(f"-bs {batch_size12}", f"-bs {batchSize}"), shell=True, cwd=now_dir)
+        PID = p.pid
+        p.wait()
+    
     return (
         i18n("Training is done, check train.log"),
         {"visible": False, "__type__": "update"},
@@ -1820,7 +1815,7 @@ else:
 
 
 def GradioSetup():
-    default_weight = names[0] if names else ""
+    default_weight = ""
 
     with gr.Blocks(theme=my_applio, title="Applio-RVC-Fork") as app:
         gr.HTML("<h1> 🍏 Applio-RVC-Fork </h1>")
@@ -2646,6 +2641,11 @@ def GradioSetup():
                                 value=True,
                                 interactive=True,
                             )
+                            if_retrain_collapse20 = gr.Checkbox(
+                                label="Reload from checkpoint before a mode collapse and try training it again",
+                                value=False,
+                                interactive=True,
+                            )
                         with gr.Column():
                             with gr.Row():
                                 pretrained_G14 = gr.Textbox(
@@ -2753,6 +2753,7 @@ def GradioSetup():
                                 if_cache_gpu17,
                                 if_save_every_weights18,
                                 version19,
+                                if_retrain_collapse20
                             ],
                             [info3, butstop, but3],
                             api_name="train_start",

@@ -1605,7 +1605,7 @@ def update_dataset_list(name):
     new_datasets = []
     file_path = find_folder_parent(now_dir, "assets")
     for foldername in os.listdir("./datasets"):
-        if "." not in foldername:
+        if os.path.isdir(os.path.join(file_path, "datasets", foldername)):
             new_datasets.append(
                 os.path.join(
                     file_path, "datasets", foldername
