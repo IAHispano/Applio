@@ -1066,7 +1066,8 @@ def click_train(
     if_cache_gpu17,
     if_save_every_weights18,
     version19,
-    if_retrain_collapse20
+    if_retrain_collapse20,
+    if_stop_on_fit21
 ):
     CSVutil("lib/csvdb/stop.csv", "w+", "formanting", False)
     # 生成filelist
@@ -1159,7 +1160,7 @@ def click_train(
             )
             f.write("\n")
     cmd = (
-        '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s %s'
+        '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s %s %s'
         % (
             config.python_cmd,
             exp_dir1,
@@ -1175,7 +1176,8 @@ def click_train(
             1 if if_cache_gpu17 == True else 0,
             1 if if_save_every_weights18 == True else 0,
             version19,
-            ("-rc %s" % 1 if if_retrain_collapse20 == True else 0) if if_retrain_collapse20 else ""
+            ("-rc %s" % 1 if if_retrain_collapse20 == True else 0) if if_retrain_collapse20 else "",
+            ("-sof %s" % 1 if if_stop_on_fit21 == True else 0) if if_stop_on_fit21 else ""
         )
     )
     logger.info(cmd)
@@ -1183,7 +1185,8 @@ def click_train(
     os.environ["TENSORBOARD_PORT"] = str(config.listen_port + 1)
     if 'TB' in globals():
         TB.terminate()
-    TB = Popen(f'tensorboard --logdir "logs/{exp_dir1}" --reload_interval 1 --port {os.environ["TENSORBOARD_PORT"]}', cwd=now_dir)
+    if if_stop_on_fit21 or if_retrain_collapse20:
+        TB = Popen(f'tensorboard --logdir "logs/{exp_dir1}" --reload_interval 1 --port {os.environ["TENSORBOARD_PORT"]}', cwd=now_dir)
     p = Popen(cmd, shell=True, cwd=now_dir)
     PID = p.pid
 
@@ -1198,7 +1201,9 @@ def click_train(
         p = Popen(cmd.replace(f"-bs {batch_size12}", f"-bs {batchSize}"), shell=True, cwd=now_dir)
         PID = p.pid
         p.wait()
-    
+
+    if 'TB' in globals():
+        TB.terminate()
     return (
         i18n("Training is done, check train.log"),
         {"visible": False, "__type__": "update"},
@@ -2655,6 +2660,11 @@ def GradioSetup():
                                 value=True,
                                 interactive=True,
                             )
+                            if_stop_on_fit21 = gr.Checkbox(
+                                label="Stop training early if no improvement detected. (Set Training Epochs to something high like 9999)",
+                                value=True,
+                                interactive=True,
+                            )
                         with gr.Column():
                             with gr.Row():
                                 pretrained_G14 = gr.Textbox(
@@ -2762,7 +2772,8 @@ def GradioSetup():
                                 if_cache_gpu17,
                                 if_save_every_weights18,
                                 version19,
-                                if_retrain_collapse20
+                                if_retrain_collapse20,
+                                if_stop_on_fit21
                             ],
                             [info3, butstop, but3],
                             api_name="train_start",

@@ -4,56 +4,6 @@ import sys
 import logging
 import requests
 
-def smooth(scalars, weight):
-    last = 0
-    smoothed = []
-    num_acc = 0
-    for next_val in scalars:
-        last = last * weight + (1 - weight) * next_val
-        num_acc += 1
-        debias_weight = 1
-        if weight != 1:
-            debias_weight = 1 - math.pow(weight, num_acc)
-        smoothed_val = last / debias_weight
-        smoothed.append(smoothed_val)
-    return smoothed
-
-
-lowestValue = {"step": 0, "value": float("inf"), "epoch": 0}
-dirtyTb = []
-dirtyValues = []
-dirtySteps = []
-
-def getBestValue(stepsPerEpoch):
-    res = requests.get(
-        f'http://localhost:{os.environ["TENSORBOARD_PORT"]}/data/plugin/scalars/scalars?tag=loss%2Fg%2Ftotal&format=csv&run=.',
-        timeout=1,
-    ).text.split()
-    global continued
-    steps = []
-    values = []
-    if res[0] == "Not":
-        res.clear()
-    global lowestValue, dirtySteps, dirtyValues
-    line_count = 0
-    for row in csv.reader(res):
-        if line_count < 2:
-            line_count += 1
-            continue
-        steps.append(row[1])
-        values.append(float(row[2]))
-    steps += dirtySteps
-    values += dirtyValues
-    values = smooth(values, 0.99)
-    if continued:
-        for i in range(len(values)):
-            if lowestValue["value"] >= values[i]:
-                lowestValue = {"step": steps[i], "value": values[i], "epoch": int(int(steps[i]) / stepsPerEpoch)}
-    if lowestValue["value"] >= values[-1]:
-        lowestValue = {"step": steps[-1], "value": values[-1], "epoch": int(steps[-1] / stepsPerEpoch)}
-    return lowestValue
-
-
 logging.getLogger("urllib3").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
@@ -128,6 +78,14 @@ from lib.infer.infer_libs.train.mel_processing import mel_spectrogram_torch, spe
 from lib.infer.infer_libs.train.process_ckpt import savee
 
 global_step = 0
+continued=False
+bestEpochStep=0
+lastValue=1
+lowestValue = {"step": 0, "value": float("inf"), "epoch": 0}
+dirtyTb = []
+dirtyValues = []
+dirtySteps = []
+
 import csv
 
 class EpochRecorder:
@@ -212,6 +170,8 @@ def main():
         n_gpus = 1
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
+    if os.environ["TENSORBOARD_PORT"]:
+        logger.info(f'View Tensorboard progress at http://localhost:{os.environ["TENSORBOARD_PORT"]}/?pinnedCards=%5B%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fd%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fkl%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fmel%22%7D%5D&smoothing=0.99')
     children = []
     for i in range(n_gpus):
         subproc = mp.Process(
@@ -228,8 +188,6 @@ def main():
     for i in range(n_gpus):
         children[i].join()
 
-continued=False
-bestEpochStep=0
 def run(rank, n_gpus, hps):
     global global_step
     if rank == 0:
@@ -618,7 +576,7 @@ def train_and_evaluate(
         scaler.step(optim_g)
         scaler.update()
 
-        if rank == 0 and hps.total_epoch != 9999:
+        if rank == 0 and not hps.if_stop_on_fit:
             if global_step % hps.train.log_interval == 0:
                 lr = optim_g.param_groups[0]["lr"]
                 logger.info(
@@ -680,7 +638,7 @@ def train_and_evaluate(
         global_step += 1
     # /Run steps
 
-    if epoch % hps.save_every_epoch == 0 and rank == 0 and hps.total_epoch != 9999:
+    if epoch % hps.save_every_epoch == 0 and rank == 0 and not hps.if_stop_on_fit:
         utils.save_checkpoint(
             net_g,
             optim_g,
@@ -742,9 +700,9 @@ def train_and_evaluate(
         reset_stop_flag()
         os._exit(2333333)
 
-    if rank == 0 and hps.total_epoch != 9999:
+    if rank == 0 and not hps.if_stop_on_fit:
         logger.info("Epoch: {} {}".format(epoch, epoch_recorder.record()))
-    if rank == 0 and hps.total_epoch == 9999:
+    if rank == 0 and hps.if_stop_on_fit:
         lr = optim_g.param_groups[0]["lr"]
         logger.info(
             f"====> Epoch: {epoch} Step: {global_step} Learning Rate: {lr:.5} {epoch_recorder.record()}"
@@ -794,15 +752,16 @@ def train_and_evaluate(
             images=image_dict,
             scalars=scalar_dict,
         )
-        global dirtyTb, dirtySteps, dirtyValues, continued, bestEpochStep
+        global dirtyTb, dirtySteps, dirtyValues, continued, bestEpochStep, lastValue
         
-        if loss_gen_all < 15:
+        if loss_gen_all / lastValue < 0.25:
             logger.warning("Mode collapse detected, model quality may be hindered. More information here: https://rentry.org/RVC_making-models#mode-collapse")
             if hps.if_retrain_collapse:
                 logger.info("Restarting training from last fit epoch...")
                 with open(f"{hps.model_dir}/col", 'w') as f:
                     f.write(str(bestEpochStep))
                 os._exit(15)
+        lastValue = loss_gen_all
         dirtyTb.append(
             {
                 "global_step": global_step,
@@ -832,14 +791,14 @@ def train_and_evaluate(
                     optim_g,
                     hps.train.learning_rate,
                     epoch,
-                    os.path.join(hps.model_dir, "G_9999.pth"),
+                    os.path.join(hps.model_dir, "G_9999999.pth"),
                 )
                 utils.save_checkpoint(
                     net_d,
                     optim_d,
                     hps.train.learning_rate,
                     epoch,
-                    os.path.join(hps.model_dir, "D_9999.pth"),
+                    os.path.join(hps.model_dir, "D_9999999.pth"),
                 )
                 bestEpochStep = global_step
                 if hasattr(net_g, "module"):
@@ -864,7 +823,7 @@ def train_and_evaluate(
                 else:
                     ckpt = net_g.state_dict()
                 logger.info(
-                    f'Training is done at epoch {epoch}. Best fit epoch: [e{best["epoch"]}]. The program is closed.'
+                    f'No improvement found after epoch: [e{best["epoch"]}]. The program is closed.'
                 )
                 os._exit(2333333)
         except Exception as ex:
@@ -890,6 +849,48 @@ def train_and_evaluate(
         sleep(1)
         os._exit(2333333)
 
+def smooth(scalars, weight):
+    last = 0
+    smoothed = []
+    num_acc = 0
+    for next_val in scalars:
+        last = last * weight + (1 - weight) * next_val
+        num_acc += 1
+        debias_weight = 1
+        if weight != 1:
+            debias_weight = 1 - math.pow(weight, num_acc)
+        smoothed_val = last / debias_weight
+        smoothed.append(smoothed_val)
+    return smoothed
+
+def getBestValue(stepsPerEpoch):
+    res = requests.get(
+        f'http://localhost:{os.environ["TENSORBOARD_PORT"]}/data/plugin/scalars/scalars?tag=loss%2Fg%2Ftotal&format=csv&run=.',
+        timeout=1,
+    ).text.split()
+    global continued
+    steps = []
+    values = []
+    if res[0] == "Not":
+        res.clear()
+    global lowestValue, dirtySteps, dirtyValues
+    line_count = 0
+    for row in csv.reader(res):
+        if line_count < 2:
+            line_count += 1
+            continue
+        steps.append(row[1])
+        values.append(float(row[2]))
+    steps += dirtySteps
+    values += dirtyValues
+    values = smooth(values, 0.99)
+    if continued:
+        for i in range(len(values)):
+            if lowestValue["value"] >= values[i]:
+                lowestValue = {"step": steps[i], "value": values[i], "epoch": int(int(steps[i]) / stepsPerEpoch)}
+    if lowestValue["value"] >= values[-1]:
+        lowestValue = {"step": steps[-1], "value": values[-1], "epoch": int(steps[-1] / stepsPerEpoch)}
+    return lowestValue
 
 if __name__ == "__main__":
     torch.multiprocessing.set_start_method("spawn")

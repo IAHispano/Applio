@@ -364,6 +364,13 @@ def get_hparams(init=True):
         required=False,
         help="if retraining mode collapses, 1 or 0",
     )
+    parser.add_argument(
+        "-sof",
+        "--stop_on_fit",
+        type=int,
+        required=False,
+        help="if retraining mode collapses, 1 or 0",
+    )
     args = parser.parse_args()
     name = args.experiment_dir
     experiment_dir = os.path.join("./logs", args.experiment_dir)
@@ -386,6 +393,7 @@ def get_hparams(init=True):
     hparams.save_every_weights = args.save_every_weights
     hparams.if_cache_data_in_gpu = args.if_cache_data_in_gpu
     hparams.if_retrain_collapse = args.retrain_collapse
+    hparams.if_stop_on_fit = args.stop_on_fit
     hparams.data.training_files = "%s/filelist.txt" % experiment_dir
     return hparams
 
