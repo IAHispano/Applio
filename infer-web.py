@@ -269,14 +269,18 @@ check_for_name = lambda: sorted(names)[0] if names else ""
 datasets = []
 for foldername in os.listdir(os.path.join(now_dir, datasets_root)):
     if os.path.isdir(os.path.join(now_dir, "datasets", foldername)):
-        datasets.append(os.path.join(now_dir, "datasets", foldername))
-
+        datasets.append(foldername)
 
 def get_dataset():
     if len(datasets) > 0:
         return sorted(datasets)[0]
     else:
         return ""
+
+def change_dataset(
+        trainset_dir4
+):
+    return gr.Textbox.update(value=trainset_dir4)
 
 uvr5_names = ["HP2_all_vocals.pth", "HP3_all_vocals.pth", "HP5_only_main_vocal.pth",
              "VR-DeEchoAggressive.pth", "VR-DeEchoDeReverb.pth", "VR-DeEchoNormal.pth"]
@@ -788,6 +792,7 @@ def update_fshift_presets(preset, qfrency, tmbre):
 def preprocess_dataset(trainset_dir, exp_dir, sr, n_p, dataset_path):
     if not dataset_path.strip() == "":
         trainset_dir = dataset_path
+    trainset_dir = os.path.join(now_dir, "datasets", foldername)
     sr = sr_dict[sr]
     os.makedirs("%s/logs/%s" % (now_dir, exp_dir), exist_ok=True)
     f = open("%s/logs/%s/preprocess.log" % (now_dir, exp_dir), "w")
@@ -2493,9 +2498,13 @@ def GradioSetup():
                             trainset_dir4 = gr.Dropdown(
                                 choices=sorted(datasets),
                                 label=i18n("Select your dataset:"),
-                                value=get_dataset(),
+                                value="",
                             )
-
+                            trainset_dir4.change(
+                                change_dataset,
+                                [trainset_dir4],
+                                [exp_dir1]
+                            )
                             dataset_path = gr.Textbox(
                                 label=i18n("Or add your dataset path:"),
                                 interactive=True,
