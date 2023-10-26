@@ -2551,7 +2551,7 @@ def GradioSetup():
                                         "rmvpe",
                                         "rmvpe_gpu",
                                     ],
-                                value="rmvpe",
+                                value="rmvpe_gpu",
                                 interactive=True,
                             )
                             hop_length = gr.Slider(
@@ -2599,14 +2599,14 @@ def GradioSetup():
                                 label=i18n("Save frequency:"),
                                 value=10,
                                 interactive=True,
-                                visible=True,
+                                visible=False,
                             )
                             total_epoch11 = gr.Slider(
                                 minimum=1,
                                 maximum=10000,
                                 step=2,
                                 label=i18n("Training epochs:"),
-                                value=750,
+                                value=9999,
                                 interactive=True,
                             )
                             batch_size12 = gr.Slider(
@@ -2624,7 +2624,7 @@ def GradioSetup():
                                 label=i18n(
                                     "Whether to save only the latest .ckpt file to save hard drive space"
                                 ),
-                                value=True,
+                                value=False,
                                 interactive=True,
                             )
                             if_cache_gpu17 = gr.Checkbox(
@@ -2638,12 +2638,12 @@ def GradioSetup():
                                 label=i18n(
                                     "Save a small final model to the 'weights' folder at each save point"
                                 ),
-                                value=True,
+                                value=False,
                                 interactive=True,
                             )
                             if_retrain_collapse20 = gr.Checkbox(
                                 label="Reload from checkpoint before a mode collapse and try training it again",
-                                value=False,
+                                value=True,
                                 interactive=True,
                             )
                         with gr.Column():

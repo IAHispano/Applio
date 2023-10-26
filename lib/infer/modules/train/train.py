@@ -229,6 +229,7 @@ def main():
         children[i].join()
 
 continued=False
+bestEpochStep=0
 def run(rank, n_gpus, hps):
     global global_step
     if rank == 0:
@@ -328,14 +329,13 @@ def run(rank, n_gpus, hps):
             utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g
         )
         global_step = (epoch_str - 1) * len(train_loader)
+        global continued, bestEpochStep
         if hps.if_retrain_collapse and os.path.exists(f"{hps.model_dir}/col"):
             with open(f"{hps.model_dir}/col", 'r') as f:
-                global_step = int(f.readline())
-                logger.warning(f'resume training {global_step}')
+                bestEpochStep=global_step = int(f.readline())
             os.remove(f"{hps.model_dir}/col")
         # epoch_str = 1
         # global_step = 0
-        global continued
         continued = True
     except:  # 如果首次不能加载，加载pretrain
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -794,15 +794,15 @@ def train_and_evaluate(
             images=image_dict,
             scalars=scalar_dict,
         )
+        global dirtyTb, dirtySteps, dirtyValues, continued, bestEpochStep
+        
         if loss_gen_all < 15:
             logger.warning("Mode collapse detected, model quality may be hindered. More information here: https://rentry.org/RVC_making-models#mode-collapse")
             if hps.if_retrain_collapse:
                 logger.info("Restarting training from last fit epoch...")
                 with open(f"{hps.model_dir}/col", 'w') as f:
-                    f.write(str(global_step))
-                    logger.warning(f'collapsed {global_step}')
+                    f.write(str(bestEpochStep))
                 os._exit(15)
-        global dirtyTb, dirtySteps, dirtyValues, continued
         dirtyTb.append(
             {
                 "global_step": global_step,
@@ -841,6 +841,7 @@ def train_and_evaluate(
                     epoch,
                     os.path.join(hps.model_dir, "D_9999.pth"),
                 )
+                bestEpochStep = global_step
                 if hasattr(net_g, "module"):
                     ckpt = net_g.module.state_dict()
                 else:
