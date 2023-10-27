@@ -170,8 +170,6 @@ def main():
         n_gpus = 1
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
-    if os.environ["TENSORBOARD_PORT"]:
-        logger.info(f'View Tensorboard progress at http://localhost:{os.environ["TENSORBOARD_PORT"]}/?pinnedCards=%5B%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fd%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fkl%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fmel%22%7D%5D&smoothing=0.99')
     children = []
     for i in range(n_gpus):
         subproc = mp.Process(
@@ -329,6 +327,9 @@ def run(rank, n_gpus, hps):
                         torch.load(hps.pretrainD, map_location="cpu")["model"]
                     )
                 )
+        if os.environ["TENSORBOARD_PORT"]:
+            logger.info(f'View Tensorboard progress at http://localhost:{os.environ["TENSORBOARD_PORT"]}/?pinnedCards=%5B%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fd%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fkl%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fmel%22%7D%5D&smoothing=0.99')
+
 
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
         optim_g, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
@@ -685,7 +686,8 @@ def train_and_evaluate(
         stopbtn = False
 
     if stopbtn:
-        os.remove(f"{hps.model_dir}/col")
+        if os.path.exists(f"{hps.model_dir}/col"):
+            os.remove(f"{hps.model_dir}/col")
         logger.info("Stop Button was pressed. The program is closed.")
         ckpt = net_g.module.state_dict() if hasattr(net_g, "module") else net_g.state_dict()
         logger.info(
@@ -700,6 +702,18 @@ def train_and_evaluate(
         reset_stop_flag()
         os._exit(2333333)
 
+    global dirtyTb, dirtySteps, dirtyValues, continued, bestEpochStep, lastValue
+
+    if loss_gen_all / lastValue < 0.25:
+        logger.warning("Mode collapse detected, model quality may be hindered. More information here: https://rentry.org/RVC_making-models#mode-collapse")
+        logger.warning([loss_gen_all, lastValue, loss_gen_all / lastValue])
+        if hps.if_retrain_collapse:
+            logger.info("Restarting training from last fit epoch...")
+            with open(f"{hps.model_dir}/col", 'w') as f:
+                f.write(str(bestEpochStep))
+            os._exit(15)
+    lastValue = loss_gen_all
+    
     if rank == 0 and not hps.if_stop_on_fit:
         logger.info("Epoch: {} {}".format(epoch, epoch_recorder.record()))
     if rank == 0 and hps.if_stop_on_fit:
@@ -752,16 +766,6 @@ def train_and_evaluate(
             images=image_dict,
             scalars=scalar_dict,
         )
-        global dirtyTb, dirtySteps, dirtyValues, continued, bestEpochStep, lastValue
-        
-        if loss_gen_all / lastValue < 0.25:
-            logger.warning("Mode collapse detected, model quality may be hindered. More information here: https://rentry.org/RVC_making-models#mode-collapse")
-            if hps.if_retrain_collapse:
-                logger.info("Restarting training from last fit epoch...")
-                with open(f"{hps.model_dir}/col", 'w') as f:
-                    f.write(str(bestEpochStep))
-                os._exit(15)
-        lastValue = loss_gen_all
         dirtyTb.append(
             {
                 "global_step": global_step,
