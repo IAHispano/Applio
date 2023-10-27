@@ -268,15 +268,19 @@ check_for_name = lambda: sorted(names)[0] if names else ""
 
 datasets = []
 for foldername in os.listdir(os.path.join(now_dir, datasets_root)):
-    if "." not in foldername:
-        datasets.append(os.path.join(now_dir, "datasets", foldername))
-
+    if os.path.isdir(os.path.join(now_dir, "datasets", foldername)):
+        datasets.append(foldername)
 
 def get_dataset():
     if len(datasets) > 0:
         return sorted(datasets)[0]
     else:
         return ""
+
+def change_dataset(
+        trainset_dir4
+):
+    return gr.Textbox.update(value=trainset_dir4)
 
 uvr5_names = ["HP2_all_vocals.pth", "HP3_all_vocals.pth", "HP5_only_main_vocal.pth",
              "VR-DeEchoAggressive.pth", "VR-DeEchoDeReverb.pth", "VR-DeEchoNormal.pth"]
@@ -315,7 +319,7 @@ def update_model_choices(select_value):
 def update_dataset_list(name):
     new_datasets = []
     for foldername in os.listdir(os.path.join(now_dir, datasets_root)):
-        if "." not in foldername:
+        if os.path.isdir(os.path.join(now_dir, "datasets", foldername)):
             new_datasets.append(
                 os.path.join(
                     now_dir,
@@ -788,6 +792,8 @@ def update_fshift_presets(preset, qfrency, tmbre):
 def preprocess_dataset(trainset_dir, exp_dir, sr, n_p, dataset_path):
     if not dataset_path.strip() == "":
         trainset_dir = dataset_path
+    else:
+        trainset_dir = os.path.join(now_dir, "datasets", trainset_dir)
     sr = sr_dict[sr]
     os.makedirs("%s/logs/%s" % (now_dir, exp_dir), exist_ok=True)
     f = open("%s/logs/%s/preprocess.log" % (now_dir, exp_dir), "w")
@@ -1043,7 +1049,7 @@ def set_log_interval(exp_dir, batch_size12):
     return log_interval
 
 
-global PID, PROCESS
+global PID, PROCESS, TB
 
 
 def click_train(
@@ -1061,6 +1067,8 @@ def click_train(
     if_cache_gpu17,
     if_save_every_weights18,
     version19,
+    if_retrain_collapse20,
+    if_stop_on_fit21
 ):
     CSVutil("lib/csvdb/stop.csv", "w+", "formanting", False)
     # 生成filelist
@@ -1152,53 +1160,51 @@ def click_train(
                 sort_keys=True,
             )
             f.write("\n")
-    if gpus16:
-        cmd = (
-            '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -g %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s'
-            % (
-                config.python_cmd,
-                exp_dir1,
-                sr2,
-                1 if if_f0_3 else 0,
-                batch_size12,
-                gpus16,
-                total_epoch11,
-                save_epoch10,
-                "-pg %s" % pretrained_G14 if pretrained_G14 != "" else "",
-                "-pd %s" % pretrained_D15 if pretrained_D15 != "" else "",
-                1 if if_save_latest13 == True else 0,
-                1 if if_cache_gpu17 == True else 0,
-                1 if if_save_every_weights18 == True else 0,
-                version19,
-            )
+    cmd = (
+        '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s %s %s'
+        % (
+            config.python_cmd,
+            exp_dir1,
+            sr2,
+            1 if if_f0_3 else 0,
+            batch_size12,
+            ("-g %s" % gpus16) if gpus16 else "",
+            total_epoch11,
+            save_epoch10,
+            "-pg %s" % pretrained_G14 if pretrained_G14 != "" else "",
+            "-pd %s" % pretrained_D15 if pretrained_D15 != "" else "",
+            1 if if_save_latest13 == True else 0,
+            1 if if_cache_gpu17 == True else 0,
+            1 if if_save_every_weights18 == True else 0,
+            version19,
+            ("-rc %s" % 1 if if_retrain_collapse20 == True else 0) if if_retrain_collapse20 else "",
+            ("-sof %s" % 1 if if_stop_on_fit21 == True else 0) if if_stop_on_fit21 else ""
         )
-    else:
-        cmd = (
-            '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s'
-            % (
-                config.python_cmd,
-                exp_dir1,
-                sr2,
-                1 if if_f0_3 else 0,
-                batch_size12,
-                total_epoch11,
-                save_epoch10,
-                "-pg %s" % pretrained_G14 if pretrained_G14 != "" else "",
-                "-pd %s" % pretrained_D15 if pretrained_D15 != "" else "",
-                1 if if_save_latest13 == True else 0,
-                1 if if_cache_gpu17 == True else 0,
-                1 if if_save_every_weights18 == True else 0,
-                version19,
-            )
-        )
+    )
     logger.info(cmd)
-    global p
+    global p, PID, TB
+    os.environ["TENSORBOARD_PORT"] = str(config.listen_port + 1)
+    if 'TB' in globals():
+        TB.terminate()
+    if if_stop_on_fit21 or if_retrain_collapse20:
+        TB = Popen(f'tensorboard --logdir "logs/{exp_dir1}" --reload_interval 1 --port {os.environ["TENSORBOARD_PORT"]}', cwd=now_dir)
     p = Popen(cmd, shell=True, cwd=now_dir)
-    global PID
     PID = p.pid
 
     p.wait()
+    batchSize = batch_size12
+    while if_retrain_collapse20:
+        if not os.path.exists(f"logs/{exp_dir1}/col"):
+            break
+        batchSize -= 1
+        if batchSize < 1:
+            break
+        p = Popen(cmd.replace(f"-bs {batch_size12}", f"-bs {batchSize}"), shell=True, cwd=now_dir)
+        PID = p.pid
+        p.wait()
 
+    if 'TB' in globals():
+        TB.terminate()
     return (
         i18n("Training is done, check train.log"),
         {"visible": False, "__type__": "update"},
@@ -1820,7 +1826,7 @@ else:
 
 
 def GradioSetup():
-    default_weight = names[0] if names else ""
+    default_weight = ""
 
     with gr.Blocks(theme=my_applio, title="Applio-RVC-Fork") as app:
         gr.HTML("<h1> 🍏 Applio-RVC-Fork </h1>")
@@ -2498,9 +2504,13 @@ def GradioSetup():
                             trainset_dir4 = gr.Dropdown(
                                 choices=sorted(datasets),
                                 label=i18n("Select your dataset:"),
-                                value=get_dataset(),
+                                value="",
                             )
-
+                            trainset_dir4.change(
+                                change_dataset,
+                                [trainset_dir4],
+                                [exp_dir1]
+                            )
                             dataset_path = gr.Textbox(
                                 label=i18n("Or add your dataset path:"),
                                 interactive=True,
@@ -2556,7 +2566,7 @@ def GradioSetup():
                                         "rmvpe",
                                         "rmvpe_gpu",
                                     ],
-                                value="rmvpe",
+                                value="rmvpe_gpu",
                                 interactive=True,
                             )
                             hop_length = gr.Slider(
@@ -2604,14 +2614,14 @@ def GradioSetup():
                                 label=i18n("Save frequency:"),
                                 value=10,
                                 interactive=True,
-                                visible=True,
+                                visible=False,
                             )
                             total_epoch11 = gr.Slider(
                                 minimum=1,
                                 maximum=10000,
                                 step=2,
                                 label=i18n("Training epochs:"),
-                                value=750,
+                                value=9999,
                                 interactive=True,
                             )
                             batch_size12 = gr.Slider(
@@ -2629,7 +2639,7 @@ def GradioSetup():
                                 label=i18n(
                                     "Whether to save only the latest .ckpt file to save hard drive space"
                                 ),
-                                value=True,
+                                value=False,
                                 interactive=True,
                             )
                             if_cache_gpu17 = gr.Checkbox(
@@ -2643,6 +2653,16 @@ def GradioSetup():
                                 label=i18n(
                                     "Save a small final model to the 'weights' folder at each save point"
                                 ),
+                                value=False,
+                                interactive=True,
+                            )
+                            if_retrain_collapse20 = gr.Checkbox(
+                                label="Reload from checkpoint before a mode collapse and try training it again",
+                                value=True,
+                                interactive=True,
+                            )
+                            if_stop_on_fit21 = gr.Checkbox(
+                                label="Stop training early if no improvement detected. (Set Training Epochs to something high like 9999)",
                                 value=True,
                                 interactive=True,
                             )
@@ -2753,6 +2773,8 @@ def GradioSetup():
                                 if_cache_gpu17,
                                 if_save_every_weights18,
                                 version19,
+                                if_retrain_collapse20,
+                                if_stop_on_fit21
                             ],
                             [info3, butstop, but3],
                             api_name="train_start",
