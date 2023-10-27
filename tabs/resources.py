@@ -1606,11 +1606,7 @@ def update_dataset_list(name):
     file_path = find_folder_parent(now_dir, "assets")
     for foldername in os.listdir("./datasets"):
         if os.path.isdir(os.path.join(file_path, "datasets", foldername)):
-            new_datasets.append(
-                os.path.join(
-                    file_path, "datasets", foldername
-                )
-            )
+            new_datasets.append(foldername)
     return gr.Dropdown.update(choices=new_datasets)
 
 

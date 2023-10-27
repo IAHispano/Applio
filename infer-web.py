@@ -792,7 +792,8 @@ def update_fshift_presets(preset, qfrency, tmbre):
 def preprocess_dataset(trainset_dir, exp_dir, sr, n_p, dataset_path):
     if not dataset_path.strip() == "":
         trainset_dir = dataset_path
-    trainset_dir = os.path.join(now_dir, "datasets", foldername)
+    else:
+        trainset_dir = os.path.join(now_dir, "datasets", exp_dir)
     sr = sr_dict[sr]
     os.makedirs("%s/logs/%s" % (now_dir, exp_dir), exist_ok=True)
     f = open("%s/logs/%s/preprocess.log" % (now_dir, exp_dir), "w")
