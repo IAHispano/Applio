@@ -286,10 +286,22 @@ def run(rank, n_gpus, hps):
         )
         global_step = (epoch_str - 1) * len(train_loader)
         global continued, bestEpochStep
-        if hps.if_retrain_collapse and os.path.exists(f"{hps.model_dir}/col"):
-            with open(f"{hps.model_dir}/col", 'r') as f:
-                bestEpochStep=global_step = int(f.readline())
-            os.remove(f"{hps.model_dir}/col")
+        if hps.if_retrain_collapse:
+            if os.path.exists(f"{hps.model_dir}/col"):
+                with open(f"{hps.model_dir}/col", 'r') as f:
+                    bestEpochStep=global_step = int(f.readline())
+                os.remove(f"{hps.model_dir}/col")
+            else:
+                res = requests.get(
+                    f'http://localhost:{os.environ["TENSORBOARD_PORT"]}/data/plugin/scalars/scalars?tag=loss%2Fg%2Ftotal&format=csv&run=.',
+                    timeout=1,
+                ).text.split()
+                line_count = 0
+                for row in csv.reader(res):
+                    if line_count < 2:
+                        line_count += 1
+                        continue
+                    global_step = int(row[1])
         # epoch_str = 1
         # global_step = 0
         continued = True
