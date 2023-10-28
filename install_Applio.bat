@@ -84,7 +84,7 @@ if "%rt%"=="1" (
 curl -L "%rtver%" -o runtime.zip
 )
 if "%rt%"=="2" (
-powershell -command "Invoke-WebRequest -Uri https://frippery.org/files/busybox/busybox.exe -OutFile busybox.exe"
+powershell -command "Invoke-WebRequest -Uri https://huggingface.co/IAHispano/applio/resolve/main/busybox.exe -OutFile busybox.exe"
 busybox.exe wget %rtver% -O runtime.zip
 del busybox.exe
 )
