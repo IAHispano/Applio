@@ -69,35 +69,51 @@ echo.
 set /p choice=Select the option according to your GPU: 
 set choice=%choice: =%
 
-if "%choice%"=="1" (
+:runtimedl
+echo [1] Curl 
+echo Fast but just works on newer windows 10 builds
+echo [2] Wget 
+echo Fast and works in old windows 10 versions but requires powershell
+echo [3]Powershell 
+echo Slow and works in almost any machine but requires powershell
+set /p rt=Select the option according to your GPU: 
+set rt=%rt: =%
 cls
+echo Downloading this may take a while since are like 10gb
+if "%rt%"=="1" (
+curl -L "%rtver%" -o runtime.zip
+)
+if "%rt%"=="2" (
 powershell -command "Invoke-WebRequest -Uri https://frippery.org/files/busybox/busybox.exe -OutFile busybox.exe"
-busybox.exe wget %URL_EXTRA%/runtime.zip
-echo.
+busybox.exe wget %rtver% -O runtime.zip
+del busybox.exe
+)
+if "%rt%"=="3" (
+powershell -command "Invoke-WebRequest -Uri %rtver% -OutFile runtime.zip"
+)
+cls
 echo Extracting the runtime.zip file...
 powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime.zip', '%principal%') }"
-echo.
-del runtime.zip busybox.exe
-cls
-echo.
+del runtime.zip
+if "%ins%"=="amd"(
+cd runtime
+python.exe -m pip install onnxruntime
+cd ..
+)
 goto dependenciesFinished
+
+if "%choice%"=="1" (
+cls
+set "ins=nvidia"
+set "rtver=%URL_EXTRA%/runtime.zip"
+goto runtimedl
 )
 
 if "%choice%"=="2" (
 cls
-powershell -command "Invoke-WebRequest -Uri https://frippery.org/files/busybox/busybox.exe -OutFile busybox.exe"
-busybox.exe wget %URL_EXTRA%/runtime_dml.zip
-echo.
-echo Extracting the runtime_dml.zip file...
-powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime_dml.zip', '%principal%') }"
-echo.
-del runtime_dml.zip busybox.exe
-cd runtime
-python.exe -m pip install onnxruntime
-cd ..
-cls
-echo.
-goto dependenciesFinished
+set "ins=amd"
+set "rtver=%URL_EXTRA%/runtime_dml.zip"
+goto runtimedl
 )
 
 if "%choice%"=="3" (
