@@ -284,7 +284,6 @@ def run(rank, n_gpus, hps):
         _, _, _, epoch_str = utils.load_checkpoint(
             utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g
         )
-        global_step = (epoch_str - 1) * len(train_loader)
         global continued, bestEpochStep
         if hps.if_retrain_collapse:
             if os.path.exists(f"{hps.model_dir}/col"):
@@ -299,9 +298,13 @@ def run(rank, n_gpus, hps):
                 line_count = 0
                 for row in csv.reader(res):
                     if line_count < 2:
-                        line_count += 1
                         continue
-                    global_step = int(row[1])
+                    line_count += 1
+                    if global_step < int(row[1]):
+                        global_step = int(row[1])
+                        print([line_count,row, global_step])
+        else:
+            global_step = (epoch_str - 1) * len(train_loader)
         # epoch_str = 1
         # global_step = 0
         continued = True
