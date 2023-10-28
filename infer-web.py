@@ -1830,6 +1830,7 @@ def GradioSetup():
 
     with gr.Blocks(theme=my_applio, title="Applio-RVC-Fork") as app:
         gr.HTML("<h1> 🍏 Applio-RVC-Fork </h1>")
+        gr.HTML("<h3>Discover over 15,000 voice models with our Discord bot — <a href='https://bot.applio.org'>Invite it here!</a></h3>")
         with gr.Tabs():
             with gr.TabItem(i18n("Model Inference")):
                 with gr.Row():

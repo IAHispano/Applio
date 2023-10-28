@@ -1680,7 +1680,7 @@ def audio_downloader_separator():
                     "Model: (Be aware that in some models the named vocal will be the instrumental)"
                 ),
                 choices=uvr5_names,
-                value="HP5_only_main_vocal",
+                value="HP5_only_main_vocal.pth",
             )
             with gr.Row():
                 agg = gr.Slider(
