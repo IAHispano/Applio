@@ -71,7 +71,7 @@ set choice=%choice: =%
 
 if "%choice%"=="1" (
 cls
-powershell -command "Invoke-WebRequest -Uri https://frippery.org/files/busybox/busybox.exe -OutFile busybox.exe"
+powershell -command "Invoke-WebRequest -Uri https://huggingface.co/IAHispano/applio/resolve/main/busybox.exe -OutFile busybox.exe"
 busybox.exe wget %URL_EXTRA%/runtime.zip
 echo.
 echo Extracting the runtime.zip file...
@@ -85,7 +85,7 @@ goto dependenciesFinished
 
 if "%choice%"=="2" (
 cls
-powershell -command "Invoke-WebRequest -Uri https://frippery.org/files/busybox/busybox.exe -OutFile busybox.exe"
+powershell -command "Invoke-WebRequest -Uri https://huggingface.co/IAHispano/applio/resolve/main/busybox.exe -OutFile busybox.exe"
 busybox.exe wget %URL_EXTRA%/runtime_dml.zip
 echo.
 echo Extracting the runtime_dml.zip file...
