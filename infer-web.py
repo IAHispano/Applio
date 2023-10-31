@@ -2590,7 +2590,7 @@ def GradioSetup():
                                 label=i18n(
                                     "Hop Length (lower hop lengths take more time to infer but are more pitch accurate):"
                                 ),
-                                value=32,
+                                value=64,
                                 interactive=True,
                             )
 
