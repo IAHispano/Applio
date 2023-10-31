@@ -1,9 +1,7 @@
 #!/bin/bash
 echo -e "\033]0;Applio - Installer\007"
 clear
-#!/bin/bash
-echo -e "\033]0;Applio - Installer\007"
-clear
+
 cat << "EOF"
  :::                       _ _
  :::     /\               | (_)
@@ -15,24 +13,10 @@ cat << "EOF"
  :::          |_|   |_|
  :::
 EOF
-pip3 install --upgrade pip
-# Script optimized for macOS
+
 # Function to install Homebrew if not installed
 install_homebrew() {
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-}
-
-# Function to install Python 3 if not installed
-install_python3() {
-    if ! command -v python3 > /dev/null 2>&1; then
-        echo "Python 3 not found. Attempting to install..."
-        if command -v brew &> /dev/null; then
-            brew install python
-        else
-            echo "Please install Python manually."
-            exit 1
-        fi
-    fi
 }
 
 # Function to create or activate a virtual environment
@@ -43,7 +27,16 @@ create_or_activate_venv() {
     else
         echo "Creating venv..."
         requirements_file="assets/requirements/requirements-applio.txt"
-        install_python3
+
+        if ! command -v python3 > /dev/null 2>&1; then
+            echo "Python 3 not found. Attempting to install..."
+            if command -v brew &> /dev/null; then
+                brew install python
+            else
+                echo "Please install Python manually."
+                exit 1
+            fi
+        fi
 
         if command -v python3 > /dev/null 2>&1; then
             py=$(which python3)
@@ -62,10 +55,12 @@ create_or_activate_venv() {
         chmod +x *.sh
         chmod +x ./lib/infer/infer_libs/stftpitchshift
         python -m ensurepip
+      # Update pip within the virtual environment
+        pip3 install --upgrade pip
     fi
 }
 
-# Function to display the main menu
+
 main_menu() {
     while true; do
         clear
@@ -134,7 +129,7 @@ finish() {
     exit 0
 }
 
-# Main script flow
+# Loop to the main menu
 if [[ "$(uname)" == "Darwin" ]]; then
     install_homebrew
     export PYTORCH_ENABLE_MPS_FALLBACK=1
@@ -147,3 +142,4 @@ fi
 
 create_or_activate_venv
 main_menu
+
