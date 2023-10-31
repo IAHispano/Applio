@@ -16,9 +16,7 @@ cat << "EOF"
  :::
 EOF
 pip3 install --upgrade pip
-
 # Script optimized for macOS
-
 # Function to install Homebrew if not installed
 install_homebrew() {
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
