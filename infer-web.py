@@ -790,6 +790,8 @@ def update_fshift_presets(preset, qfrency, tmbre):
 
 
 def preprocess_dataset(trainset_dir, exp_dir, sr, n_p, dataset_path):
+    if re.search(r"[^0-9a-zA-Z !@#$%^&\(\)_+=\-`~\[\]\{\};',.]", exp_dir):
+        raise gr.Error("Model name contains non-ASCII characters!")
     if not dataset_path.strip() == "":
         trainset_dir = dataset_path
     else:
@@ -836,6 +838,8 @@ def preprocess_dataset(trainset_dir, exp_dir, sr, n_p, dataset_path):
 
 
 def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, echl):
+    if re.search(r"[^0-9a-zA-Z !@#$%^&\(\)_+=\-`~\[\]\{\};',.]", exp_dir):
+        raise gr.Error("Model name contains non-ASCII characters!")
     gpus_rmvpe = gpus
     gpus = gpus.split("-")
     os.makedirs("%s/logs/%s" % (now_dir, exp_dir), exist_ok=True)
@@ -1068,7 +1072,9 @@ def click_train(
     if_save_every_weights18,
     version19,
     if_retrain_collapse20,
-    if_stop_on_fit21
+    if_stop_on_fit21,
+    smoothness22,
+    collapse_threshold23
 ):
     CSVutil("lib/csvdb/stop.csv", "w+", "formanting", False)
     # 生成filelist
@@ -1177,8 +1183,8 @@ def click_train(
             1 if if_cache_gpu17 == True else 0,
             1 if if_save_every_weights18 == True else 0,
             version19,
-            ("-rc %s" % 1 if if_retrain_collapse20 == True else 0) if if_retrain_collapse20 else "",
-            ("-sof %s" % 1 if if_stop_on_fit21 == True else 0) if if_stop_on_fit21 else ""
+            ("-sof %s -sm %s" % (1 if if_stop_on_fit21 == True else 0, smoothness22)) if if_stop_on_fit21 else "",
+            ("-rc %s -ct %s" % (1 if if_retrain_collapse20 == True else 0, collapse_threshold23)) if if_retrain_collapse20 else "",
         )
     )
     logger.info(cmd)
@@ -1193,10 +1199,17 @@ def click_train(
 
     p.wait()
     batchSize = batch_size12
+    colEpoch = 0
     while if_retrain_collapse20:
         if not os.path.exists(f"logs/{exp_dir1}/col"):
             break
-        batchSize -= 1
+        with open(f"logs/{exp_dir1}/col") as f:
+            col = f.read().split(',')
+            if colEpoch < col[1]:
+                colEpoch = col[1]
+                if batchSize != batch_size12:
+                    batchSize = batch_size12 + 1
+            batchSize -= 1
         if batchSize < 1:
             break
         p = Popen(cmd.replace(f"-bs {batch_size12}", f"-bs {batchSize}"), shell=True, cwd=now_dir)
@@ -2567,7 +2580,7 @@ def GradioSetup():
                                         "rmvpe",
                                         "rmvpe_gpu",
                                     ],
-                                value="rmvpe_gpu",
+                                value="rmvpe",
                                 interactive=True,
                             )
                             hop_length = gr.Slider(
@@ -2608,21 +2621,12 @@ def GradioSetup():
                 with gr.Row():
                     with gr.Accordion(label=i18n("Step 3: Model training started")):
                         with gr.Row():
-                            save_epoch10 = gr.Slider(
-                                minimum=1,
-                                maximum=100,
-                                step=1,
-                                label=i18n("Save frequency:"),
-                                value=10,
-                                interactive=True,
-                                visible=False,
-                            )
                             total_epoch11 = gr.Slider(
                                 minimum=1,
                                 maximum=10000,
                                 step=2,
                                 label=i18n("Training epochs:"),
-                                value=9999,
+                                value=100,
                                 interactive=True,
                             )
                             batch_size12 = gr.Slider(
@@ -2634,13 +2638,40 @@ def GradioSetup():
                                 # value=20,
                                 interactive=True,
                             )
+                            save_epoch10 = gr.Slider(
+                                minimum=1,
+                                maximum=100,
+                                step=1,
+                                label=i18n("Save frequency:"),
+                                value=10,
+                                interactive=True,
+                                visible=True,
+                            )
+                            collapse_threshold22 = gr.Slider(
+                                minimum=1,
+                                maximum=50,
+                                step=1,
+                                label="Threshold % for collapse:",
+                                value=25,
+                                interactive=True,
+                                visible=False
+                            )
+                            smoothness23 = gr.Slider(
+                                minimum=0,
+                                maximum=0.99,
+                                step=0.005,
+                                label="Improvement smoothness calculation:",
+                                value=0.975,
+                                interactive=True,
+                                visible=False
+                            )
 
                         with gr.Row():
                             if_save_latest13 = gr.Checkbox(
                                 label=i18n(
                                     "Whether to save only the latest .ckpt file to save hard drive space"
                                 ),
-                                value=False,
+                                value=True,
                                 interactive=True,
                             )
                             if_cache_gpu17 = gr.Checkbox(
@@ -2654,17 +2685,17 @@ def GradioSetup():
                                 label=i18n(
                                     "Save a small final model to the 'weights' folder at each save point"
                                 ),
-                                value=False,
+                                value=True,
                                 interactive=True,
                             )
                             if_retrain_collapse20 = gr.Checkbox(
                                 label="Reload from checkpoint before a mode collapse and try training it again",
-                                value=True,
+                                value=False,
                                 interactive=True,
                             )
                             if_stop_on_fit21 = gr.Checkbox(
                                 label="Stop training early if no improvement detected. (Set Training Epochs to something high like 9999)",
-                                value=True,
+                                value=False,
                                 interactive=True,
                             )
                         with gr.Column():
@@ -2756,6 +2787,26 @@ def GradioSetup():
                                 inputs=[if_save_every_weights18],
                                 outputs=[save_epoch10],
                             )
+                            if_retrain_collapse20.change(
+                                fn=lambda if_retrain_collapse20: (
+                                    {
+                                        "visible": if_retrain_collapse20,
+                                        "__type__": "update",
+                                    }
+                                ),
+                                inputs=[if_retrain_collapse20],
+                                outputs=[collapse_threshold22],
+                            )
+                            if_stop_on_fit21.change(
+                                fn=lambda if_stop_on_fit21: (
+                                    {
+                                        "visible": if_stop_on_fit21,
+                                        "__type__": "update",
+                                    }
+                                ),
+                                inputs=[if_stop_on_fit21],
+                                outputs=[smoothness23],
+                            )
 
                         but3.click(
                             click_train,
@@ -2775,7 +2826,9 @@ def GradioSetup():
                                 if_save_every_weights18,
                                 version19,
                                 if_retrain_collapse20,
-                                if_stop_on_fit21
+                                if_stop_on_fit21,
+                                smoothness23,
+                                collapse_threshold22
                             ],
                             [info3, butstop, but3],
                             api_name="train_start",
