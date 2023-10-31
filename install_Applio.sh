@@ -15,7 +15,7 @@ cat << "EOF"
  :::          |_|   |_|
  :::
 EOF
-pip install --upgrade pip
+pip3 install --upgrade pip
 
 # Script optimized for macOS
 
