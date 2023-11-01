@@ -1,5 +1,7 @@
 import os, sys
 
+from tensorboard import program
+
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -1188,12 +1190,7 @@ def click_train(
         )
     )
     logger.info(cmd)
-    global p, PID, TB
-    os.environ["TENSORBOARD_PORT"] = str(config.listen_port + 1)
-    if 'TB' in globals():
-        TB.terminate()
-    if if_stop_on_fit21 or if_retrain_collapse20:
-        TB = Popen(f'tensorboard --logdir "logs/{exp_dir1}" --reload_interval 1 --port {os.environ["TENSORBOARD_PORT"]}', cwd=now_dir)
+    global p, PID
     p = Popen(cmd, shell=True, cwd=now_dir)
     PID = p.pid
 
@@ -1205,8 +1202,9 @@ def click_train(
             break
         with open(f"logs/{exp_dir1}/col") as f:
             col = f.read().split(',')
-            if colEpoch < col[1]:
-                colEpoch = col[1]
+            if colEpoch < int(col[1]):
+                colEpoch = int(col[1])
+                logger.info(f"Epoch to beat {col[1]}")
                 if batchSize != batch_size12:
                     batchSize = batch_size12 + 1
             batchSize -= 1
@@ -1215,9 +1213,7 @@ def click_train(
         p = Popen(cmd.replace(f"-bs {batch_size12}", f"-bs {batchSize}"), shell=True, cwd=now_dir)
         PID = p.pid
         p.wait()
-
-    if 'TB' in globals():
-        TB.terminate()
+        
     return (
         i18n("Training is done, check train.log"),
         {"visible": False, "__type__": "update"},
