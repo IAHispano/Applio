@@ -5,7 +5,6 @@ import sys
 import logging
 import requests
 
-logging.getLogger("urllib3").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
 now_dir = os.getcwd()
@@ -86,6 +85,7 @@ dirtyTb = []
 dirtyValues = []
 dirtySteps = []
 dirtyEpochs = []
+continued = False
 
 import csv
 
@@ -285,12 +285,13 @@ def run(rank, n_gpus, hps):
         _, _, _, epoch_str = utils.load_checkpoint(
             utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g
         )
-        global bestEpochStep
+        global bestEpochStep, lastValue, lowestValue, continued
         if hps.if_retrain_collapse:
             if os.path.exists(f"{hps.model_dir}/col"):
                 with open(f"{hps.model_dir}/col", 'r') as f:
                     bestEpochStep=global_step = int(f.readline().split(',')[0])
                 os.remove(f"{hps.model_dir}/col")
+                continued = True
             if not os.path.exists(f"{hps.model_dir}/col") and os.path.exists(f"{hps.model_dir}/fitness.csv"):
                 latest = ""
                 with open(f'{hps.model_dir}/fitness.csv', 'r') as f:
@@ -298,6 +299,9 @@ def run(rank, n_gpus, hps):
                         if line.strip() != "":
                             latest = line.split(',')
                 global_step = int(latest[1])
+                lastValue = float(latest[2])
+                lowestValue = {"step": int(latest[1]), "value": float(latest[2]), "epoch": int(latest[0])}
+                continued = True
         else:
             global_step = (epoch_str - 1) * len(train_loader)
         # epoch_str = 1
@@ -648,7 +652,7 @@ def train_and_evaluate(
         global_step += 1
     # /Run steps
 
-    if epoch % hps.save_every_epoch == 0 and rank == 0 and not hps.if_stop_on_fit:
+    if epoch % hps.save_every_epoch == 0 and rank == 0 and hps.save_every_weights:
         utils.save_checkpoint(
             net_g,
             optim_g,
@@ -711,17 +715,18 @@ def train_and_evaluate(
         reset_stop_flag()
         os._exit(2333333)
 
-    global dirtyTb, dirtySteps, dirtyValues, dirtyEpochs, bestEpochStep, lastValue
+    global dirtyTb, dirtySteps, dirtyValues, dirtyEpochs, bestEpochStep, lastValue, continued
 
-    if loss_gen_all / lastValue < hps.collapse_threshold:
+    if rank == 0 and loss_gen_all / lastValue < hps.collapse_threshold:
         logger.warning("Mode collapse detected, model quality may be hindered. More information here: https://rentry.org/RVC_making-models#mode-collapse")
-        logger.warning([loss_gen_all.item(), lastValue, loss_gen_all.item() / lastValue])
+        logger.warning(f'loss_gen_all={loss_gen_all.item()}, last value={lastValue}, drop % {loss_gen_all.item() / lastValue * 100}'[loss_gen_all.item(), lastValue, loss_gen_all.item() / lastValue])
         if hps.if_retrain_collapse:
             logger.info("Restarting training from last fit epoch...")
             with open(f"{hps.model_dir}/col", 'w') as f:
                 f.write(f'{bestEpochStep},{epoch}')
             os._exit(15)
-    lastValue = loss_gen_all.item()
+    if rank == 0:
+        lastValue = loss_gen_all.item()
     
     if rank == 0 and not hps.if_stop_on_fit:
         logger.info("Epoch: {} {}".format(epoch, epoch_recorder.record()))
@@ -785,65 +790,63 @@ def train_and_evaluate(
         dirtySteps.append(global_step)
         dirtyValues.append(loss_gen_all.item())
         dirtyEpochs.append(epoch)
+
         best = getBestValue()
-        try:
-            if epoch - best["epoch"] == 0:
-                for i in range(len(dirtyTb)):
-                    utils.summarize(
-                        writer=writer,
-                        global_step=dirtyTb[i]["global_step"],
-                        images=dirtyTb[i]["images"],
-                        scalars=dirtyTb[i]["scalars"],
-                    )
-                    if not os.path.exists(f"{hps.model_dir}/fitness.csv"):
-                        with open(f"{hps.model_dir}/fitness.csv", 'w', newline='') as f:
-                            pass
-                    with open(f"{hps.model_dir}/fitness.csv", 'a', newline='') as f:
-                        csvwriter = csv.writer(f)
-                        csvwriter.writerow([dirtyEpochs[i], dirtySteps[i], dirtyValues[i]])
+        if not continued and epoch - best["epoch"] == 0:
+            for i in range(len(dirtyTb)):
+                utils.summarize(
+                    writer=writer,
+                    global_step=dirtyTb[i]["global_step"],
+                    images=dirtyTb[i]["images"],
+                    scalars=dirtyTb[i]["scalars"],
+                )
+                if not os.path.exists(f"{hps.model_dir}/fitness.csv"):
+                    with open(f"{hps.model_dir}/fitness.csv", 'w', newline='') as f:
+                        pass
+                with open(f"{hps.model_dir}/fitness.csv", 'a', newline='') as f:
+                    csvwriter = csv.writer(f)
+                    csvwriter.writerow([dirtyEpochs[i], dirtySteps[i], dirtyValues[i]])
 
-                dirtyTb.clear()
-                dirtySteps.clear()
-                dirtyValues.clear()
-                dirtyEpochs.clear()
-                # save the current best checkpoint to disk along with the training weights
-                utils.save_checkpoint(
-                    net_g,
-                    optim_g,
-                    hps.train.learning_rate,
-                    epoch,
-                    os.path.join(hps.model_dir, "G_9999999.pth"),
-                )
-                utils.save_checkpoint(
-                    net_d,
-                    optim_d,
-                    hps.train.learning_rate,
-                    epoch,
-                    os.path.join(hps.model_dir, "D_9999999.pth"),
-                )
-                bestEpochStep = global_step
-                if hasattr(net_g, "module"):
-                    ckpt = net_g.module.state_dict()
-                else:
-                    ckpt = net_g.state_dict()
-                logger.info(
-                    f'Saving current fittest ckpt: {hps.name}_fittest:{savee(ckpt, hps.sample_rate, hps.if_f0, f"{hps.name}_fittest", epoch, hps.version, hps)}'
-                )
-            logger.info(
-                f"New best epoch!! [e{epoch}]\n"
-                if epoch - best["epoch"] == 0
-                else f'Last best epoch [e{best["epoch"]}] seen {epoch - best["epoch"]} epochs ago\n'
+            dirtyTb.clear()
+            dirtySteps.clear()
+            dirtyValues.clear()
+            dirtyEpochs.clear()
+            # save the current best checkpoint to disk along with the training weights
+            utils.save_checkpoint(
+                net_g,
+                optim_g,
+                hps.train.learning_rate,
+                epoch,
+                os.path.join(hps.model_dir, "G_9999999.pth"),
             )
+            utils.save_checkpoint(
+                net_d,
+                optim_d,
+                hps.train.learning_rate,
+                epoch,
+                os.path.join(hps.model_dir, "D_9999999.pth"),
+            )
+            bestEpochStep = global_step
+            if hasattr(net_g, "module"):
+                ckpt = net_g.module.state_dict()
+            else:
+                ckpt = net_g.state_dict()
+            logger.info(
+                f'Saving current fittest ckpt: {hps.name}_fittest:{savee(ckpt, hps.sample_rate, hps.if_f0, f"{hps.name}_fittest", epoch, hps.version, hps)}'
+            )
+        logger.info(
+            f"New best epoch!! [e{epoch}]\n"
+            if epoch - best["epoch"] == 0
+            else f'Last best epoch [e{best["epoch"]}] seen {epoch - best["epoch"]} epochs ago\n'
+        )
+        # if overtraining is detected, exit (idk what the 2333333 stands for but it seems like success ¯\_(ツ)_/¯)
+        if epoch - best["epoch"] >= 100:
+            shutil.copy2(f"logs/weights/{hps.name}_fittest.pth", os.path.join(hps.model_dir,f"{hps.name}_{epoch}.pth"))
+            logger.info(
+                f'No improvement found after epoch: [e{best["epoch"]}]. The program is closed.'
+            )
+            os._exit(2333333)
 
-            # if overtraining is detected, exit (idk what the 2333333 stands for but it seems like success ¯\_(ツ)_/¯)
-            if epoch - best["epoch"] >= 100:
-                shutil.copy2(f"logs/weights/{hps.name}_fittest.pth", os.path.join(hps.model_dir,f"{hps.name}_{epoch}.pth"))
-                logger.info(
-                    f'No improvement found after epoch: [e{best["epoch"]}]. The program is closed.'
-                )
-                os._exit(2333333)
-        except Exception as ex:
-                print(ex)
     if epoch >= hps.total_epoch and rank == 0:
         logger.info("Training successfully completed, closing the program...")
 
@@ -861,6 +864,8 @@ def train_and_evaluate(
         )
         sleep(1)
         os._exit(2333333)
+    if continued and rank == 0:
+        continued = False
 
 def smooth(scalars, weight):
     last = 0

@@ -409,7 +409,8 @@ def get_hparams(init=True):
     hparams.if_stop_on_fit = args.stop_on_fit
     hparams.smoothness = args.smoothness
     hparams.if_retrain_collapse = args.retrain_collapse
-    hparams.collapse_threshold = args.collapse_threshold * 0.01
+    if args.collapse_threshold != None:
+        hparams.collapse_threshold = args.collapse_threshold * 0.01
     hparams.data.training_files = "%s/filelist.txt" % experiment_dir
     return hparams
 
