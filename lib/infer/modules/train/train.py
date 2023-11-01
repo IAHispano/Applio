@@ -652,7 +652,7 @@ def train_and_evaluate(
         global_step += 1
     # /Run steps
 
-    if epoch % hps.save_every_epoch == 0 and rank == 0 and hps.save_every_weights:
+    if hps.save_every_epoch != 0 and epoch % hps.save_every_epoch == 0 and rank == 0:
         utils.save_checkpoint(
             net_g,
             optim_g,
@@ -719,7 +719,7 @@ def train_and_evaluate(
 
     if rank == 0 and loss_gen_all / lastValue < hps.collapse_threshold:
         logger.warning("Mode collapse detected, model quality may be hindered. More information here: https://rentry.org/RVC_making-models#mode-collapse")
-        logger.warning(f'loss_gen_all={loss_gen_all.item()}, last value={lastValue}, drop % {loss_gen_all.item() / lastValue * 100}'[loss_gen_all.item(), lastValue, loss_gen_all.item() / lastValue])
+        logger.warning(f'loss_gen_all={loss_gen_all.item()}, last value={lastValue}, drop % {loss_gen_all.item() / lastValue * 100}')
         if hps.if_retrain_collapse:
             logger.info("Restarting training from last fit epoch...")
             with open(f"{hps.model_dir}/col", 'w') as f:

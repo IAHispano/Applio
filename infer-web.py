@@ -2635,7 +2635,7 @@ def GradioSetup():
                                 interactive=True,
                             )
                             save_epoch10 = gr.Slider(
-                                minimum=1,
+                                minimum=0,
                                 maximum=100,
                                 step=1,
                                 label=i18n("Save frequency:"),
@@ -2773,16 +2773,16 @@ def GradioSetup():
 
                                 but7 = gr.Button(i18n("Save model"), variant="primary")
 
-                            if_save_every_weights18.change(
-                                fn=lambda if_save_every_weights: (
-                                    {
-                                        "visible": if_save_every_weights,
-                                        "__type__": "update",
-                                    }
-                                ),
-                                inputs=[if_save_every_weights18],
-                                outputs=[save_epoch10],
-                            )
+                            # if_save_every_weights18.change(
+                            #     fn=lambda if_save_every_weights: (
+                            #         {
+                            #             "visible": if_save_every_weights,
+                            #             "__type__": "update",
+                            #         }
+                            #     ),
+                            #     inputs=[if_save_every_weights18],
+                            #     outputs=[save_epoch10],
+                            # )
                             if_retrain_collapse20.change(
                                 fn=lambda if_retrain_collapse20: (
                                     {
