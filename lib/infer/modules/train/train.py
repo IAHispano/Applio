@@ -5,7 +5,6 @@ import sys
 import logging
 import requests
 
-logging.getLogger("urllib3").setLevel(logging.ERROR)
 logger = logging.getLogger(__name__)
 
 now_dir = os.getcwd()
@@ -79,13 +78,14 @@ from lib.infer.infer_libs.train.mel_processing import mel_spectrogram_torch, spe
 from lib.infer.infer_libs.train.process_ckpt import savee
 
 global_step = 0
-continued=False
 bestEpochStep=0
 lastValue=1
 lowestValue = {"step": 0, "value": float("inf"), "epoch": 0}
 dirtyTb = []
 dirtyValues = []
 dirtySteps = []
+dirtyEpochs = []
+continued = False
 
 import csv
 
@@ -285,30 +285,27 @@ def run(rank, n_gpus, hps):
         _, _, _, epoch_str = utils.load_checkpoint(
             utils.latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g
         )
-        global continued, bestEpochStep
+        global bestEpochStep, lastValue, lowestValue, continued
         if hps.if_retrain_collapse:
             if os.path.exists(f"{hps.model_dir}/col"):
                 with open(f"{hps.model_dir}/col", 'r') as f:
                     bestEpochStep=global_step = int(f.readline().split(',')[0])
                 os.remove(f"{hps.model_dir}/col")
-            else:
-                res = requests.get(
-                    f'http://localhost:{os.environ["TENSORBOARD_PORT"]}/data/plugin/scalars/scalars?tag=loss%2Fg%2Ftotal&format=csv&run=.',
-                    timeout=1,
-                ).text.split()
-                line_count = 0
-                for row in csv.reader(res):
-                    if line_count < 2:
-                        continue
-                    line_count += 1
-                    if global_step < int(row[1]):
-                        global_step = int(row[1])
-                        print([line_count,row, global_step])
+                continued = True
+            if not os.path.exists(f"{hps.model_dir}/col") and os.path.exists(f"{hps.model_dir}/fitness.csv"):
+                latest = ""
+                with open(f'{hps.model_dir}/fitness.csv', 'r') as f:
+                    for line in f:
+                        if line.strip() != "":
+                            latest = line.split(',')
+                global_step = int(latest[1])
+                lastValue = float(latest[2])
+                lowestValue = {"step": int(latest[1]), "value": float(latest[2]), "epoch": int(latest[0])}
+                continued = True
         else:
             global_step = (epoch_str - 1) * len(train_loader)
         # epoch_str = 1
         # global_step = 0
-        continued = True
     except:  # 如果首次不能加载，加载pretrain
         os.system('cls' if os.name == 'nt' else 'clear')
         epoch_str = 1
@@ -343,8 +340,8 @@ def run(rank, n_gpus, hps):
                         torch.load(hps.pretrainD, map_location="cpu")["model"]
                     )
                 )
-        if os.environ["TENSORBOARD_PORT"]:
-            logger.info(f'View Tensorboard progress at http://localhost:{os.environ["TENSORBOARD_PORT"]}/?pinnedCards=%5B%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fd%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fkl%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fmel%22%7D%5D{f"&smoothing={hps.smoothness}" if hps.smoothness else ""}')
+        # if "TENSORBOARD_PORT" in os.environ:
+        #     logger.info(f'View Tensorboard progress at http://localhost:{os.environ["TENSORBOARD_PORT"]}/?pinnedCards=%5B%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fd%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fkl%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fmel%22%7D%5D{f"&smoothing={hps.smoothness}" if hps.smoothness else ""}')
 
 
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
@@ -655,7 +652,7 @@ def train_and_evaluate(
         global_step += 1
     # /Run steps
 
-    if epoch % hps.save_every_epoch == 0 and rank == 0 and not hps.if_stop_on_fit:
+    if hps.save_every_epoch != 0 and epoch % hps.save_every_epoch == 0 and rank == 0:
         utils.save_checkpoint(
             net_g,
             optim_g,
@@ -718,17 +715,18 @@ def train_and_evaluate(
         reset_stop_flag()
         os._exit(2333333)
 
-    global dirtyTb, dirtySteps, dirtyValues, continued, bestEpochStep, lastValue
+    global dirtyTb, dirtySteps, dirtyValues, dirtyEpochs, bestEpochStep, lastValue, continued
 
-    if loss_gen_all / lastValue < hps.collapse_threshold:
+    if rank == 0 and loss_gen_all / lastValue < hps.collapse_threshold:
         logger.warning("Mode collapse detected, model quality may be hindered. More information here: https://rentry.org/RVC_making-models#mode-collapse")
-        logger.warning([loss_gen_all.item(), lastValue, loss_gen_all.item() / lastValue])
+        logger.warning(f'loss_gen_all={loss_gen_all.item()}, last value={lastValue}, drop % {loss_gen_all.item() / lastValue * 100}')
         if hps.if_retrain_collapse:
             logger.info("Restarting training from last fit epoch...")
             with open(f"{hps.model_dir}/col", 'w') as f:
                 f.write(f'{bestEpochStep},{epoch}')
             os._exit(15)
-    lastValue = loss_gen_all.item()
+    if rank == 0:
+        lastValue = loss_gen_all.item()
     
     if rank == 0 and not hps.if_stop_on_fit:
         logger.info("Epoch: {} {}".format(epoch, epoch_recorder.record()))
@@ -791,63 +789,64 @@ def train_and_evaluate(
         )
         dirtySteps.append(global_step)
         dirtyValues.append(loss_gen_all.item())
-        # try to get tensorboard values for the current model. if tensorboard isn't running, move on
-        try:
-            best = getBestValue(global_step / epoch)
-            if not continued and epoch > 1 and epoch - best["epoch"] == 0:
-                for i in range(len(dirtyTb)):
-                    utils.summarize(
-                        writer=writer,
-                        global_step=dirtyTb[i]["global_step"],
-                        images=dirtyTb[i]["images"],
-                        scalars=dirtyTb[i]["scalars"],
-                    )
-                dirtyTb.clear()
-                dirtySteps.clear()
-                dirtyValues.clear()
-                # save the current best checkpoint to disk along with the training weights
-                utils.save_checkpoint(
-                    net_g,
-                    optim_g,
-                    hps.train.learning_rate,
-                    epoch,
-                    os.path.join(hps.model_dir, "G_9999999.pth"),
+        dirtyEpochs.append(epoch)
+
+        best = getBestValue()
+        if not continued and epoch - best["epoch"] == 0:
+            for i in range(len(dirtyTb)):
+                utils.summarize(
+                    writer=writer,
+                    global_step=dirtyTb[i]["global_step"],
+                    images=dirtyTb[i]["images"],
+                    scalars=dirtyTb[i]["scalars"],
                 )
-                utils.save_checkpoint(
-                    net_d,
-                    optim_d,
-                    hps.train.learning_rate,
-                    epoch,
-                    os.path.join(hps.model_dir, "D_9999999.pth"),
-                )
-                bestEpochStep = global_step
-                if hasattr(net_g, "module"):
-                    ckpt = net_g.module.state_dict()
-                else:
-                    ckpt = net_g.state_dict()
-                logger.info(
-                    f'Saving current fittest ckpt: {hps.name}_fittest:{savee(ckpt, hps.sample_rate, hps.if_f0, f"{hps.name}_fittest", epoch, hps.version, hps)}'
-                )
-            if not continued:
-                logger.info(
-                    f"New best epoch!! [e{epoch}]\n"
-                    if epoch - best["epoch"] == 0
-                    else f'Last best epoch [e{best["epoch"]}] seen {epoch - best["epoch"]} epochs ago\n'
-                )
-            if continued:
-                continued = False
-            # if overtraining is detected, exit (idk what the 2333333 stands for but it seems like success ¯\_(ツ)_/¯)
-            if epoch - best["epoch"] >= 100:
-                shutil.copy2(f"logs/weights/{hps.name}_fittest.pth", os.path.join(hps.model_dir,f"{hps.name}_{epoch}.pth"))
-                logger.info(
-                    f'No improvement found after epoch: [e{best["epoch"]}]. The program is closed.'
-                )
-                os._exit(2333333)
-        except Exception as ex:
-            if epoch > 1:
-                print("tensorboard is not running, cannot detect overtraining.")
-                print(ex)
-            pass
+                if not os.path.exists(f"{hps.model_dir}/fitness.csv"):
+                    with open(f"{hps.model_dir}/fitness.csv", 'w', newline='') as f:
+                        pass
+                with open(f"{hps.model_dir}/fitness.csv", 'a', newline='') as f:
+                    csvwriter = csv.writer(f)
+                    csvwriter.writerow([dirtyEpochs[i], dirtySteps[i], dirtyValues[i]])
+
+            dirtyTb.clear()
+            dirtySteps.clear()
+            dirtyValues.clear()
+            dirtyEpochs.clear()
+            # save the current best checkpoint to disk along with the training weights
+            utils.save_checkpoint(
+                net_g,
+                optim_g,
+                hps.train.learning_rate,
+                epoch,
+                os.path.join(hps.model_dir, "G_9999999.pth"),
+            )
+            utils.save_checkpoint(
+                net_d,
+                optim_d,
+                hps.train.learning_rate,
+                epoch,
+                os.path.join(hps.model_dir, "D_9999999.pth"),
+            )
+            bestEpochStep = global_step
+            if hasattr(net_g, "module"):
+                ckpt = net_g.module.state_dict()
+            else:
+                ckpt = net_g.state_dict()
+            logger.info(
+                f'Saving current fittest ckpt: {hps.name}_fittest:{savee(ckpt, hps.sample_rate, hps.if_f0, f"{hps.name}_fittest", epoch, hps.version, hps)}'
+            )
+        logger.info(
+            f"New best epoch!! [e{epoch}]\n"
+            if epoch - best["epoch"] == 0
+            else f'Last best epoch [e{best["epoch"]}] seen {epoch - best["epoch"]} epochs ago\n'
+        )
+        # if overtraining is detected, exit (idk what the 2333333 stands for but it seems like success ¯\_(ツ)_/¯)
+        if epoch - best["epoch"] >= 100:
+            shutil.copy2(f"logs/weights/{hps.name}_fittest.pth", os.path.join(hps.model_dir,f"{hps.name}_{epoch}.pth"))
+            logger.info(
+                f'No improvement found after epoch: [e{best["epoch"]}]. The program is closed.'
+            )
+            os._exit(2333333)
+
     if epoch >= hps.total_epoch and rank == 0:
         logger.info("Training successfully completed, closing the program...")
 
@@ -865,6 +864,8 @@ def train_and_evaluate(
         )
         sleep(1)
         os._exit(2333333)
+    if continued and rank == 0:
+        continued = False
 
 def smooth(scalars, weight):
     last = 0
@@ -880,33 +881,24 @@ def smooth(scalars, weight):
         smoothed.append(smoothed_val)
     return smoothed
 
-def getBestValue(stepsPerEpoch):
-    res = requests.get(
-        f'http://localhost:{os.environ["TENSORBOARD_PORT"]}/data/plugin/scalars/scalars?tag=loss%2Fg%2Ftotal&format=csv&run=.',
-        timeout=1,
-    ).text.split()
-    global continued
+def getBestValue():
+    global lowestValue, dirtySteps, dirtyValues, dirtyEpochs
     steps = []
     values = []
-    if res[0] == "Not":
-        res.clear()
-    global lowestValue, dirtySteps, dirtyValues
-    line_count = 0
-    for row in csv.reader(res):
-        if line_count < 2:
-            line_count += 1
-            continue
-        steps.append(row[1])
-        values.append(float(row[2]))
+    epochs = []
+    if os.path.exists(f"{hps.model_dir}/fitness.csv"):
+        with open(f'{hps.model_dir}/fitness.csv', 'r') as f:
+            for line in f:
+                if line.strip() != "":
+                    line = line.split(',')
+                    epochs.append(int(line[0]))
+                    steps.append(line[1])
+                    values.append(float(line[2]))
     steps += dirtySteps
-    values += dirtyValues
-    values = smooth(values, hps.smoothness)
-    if continued:
-        for i in range(len(values)):
-            if lowestValue["value"] >= values[i]:
-                lowestValue = {"step": steps[i], "value": values[i], "epoch": int(int(steps[i]) / stepsPerEpoch)}
+    values = smooth([*values,*dirtyValues], hps.smoothness)
+    epochs += dirtyEpochs
     if lowestValue["value"] >= values[-1]:
-        lowestValue = {"step": steps[-1], "value": values[-1], "epoch": int(steps[-1] / stepsPerEpoch)}
+        lowestValue = {"step": steps[-1], "value": values[-1], "epoch": epochs[-1]}
     return lowestValue
 
 if __name__ == "__main__":
