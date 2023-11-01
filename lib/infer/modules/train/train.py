@@ -717,7 +717,7 @@ def train_and_evaluate(
 
     global dirtyTb, dirtySteps, dirtyValues, dirtyEpochs, bestEpochStep, lastValue, continued
 
-    if rank == 0 and loss_gen_all / lastValue < hps.collapse_threshold:
+    if rank == 0 and hps.if_retrain_collapse and loss_gen_all / lastValue < hps.collapse_threshold:
         logger.warning("Mode collapse detected, model quality may be hindered. More information here: https://rentry.org/RVC_making-models#mode-collapse")
         logger.warning(f'loss_gen_all={loss_gen_all.item()}, last value={lastValue}, drop % {loss_gen_all.item() / lastValue * 100}')
         if hps.if_retrain_collapse:
