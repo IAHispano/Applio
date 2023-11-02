@@ -203,13 +203,7 @@ Our goal is not to supplant RVC or Mangio; rather, we aim to provide a contempor
   <img src="https://contrib.rocks/image?repo=liujing04/Retrieval-based-Voice-Conversion-WebUI" />
 </a>
 
-### Mangio:
-
-<a href="https://github.com/Mangio621/Mangio-RVC-Fork/graphs/contributors" target="_blank">
-  <img src="https://contrib.rocks/image?repo=Mangio621/Mangio-RVC-Fork" />
-</a>
-
-### Applio:
+### Applio & Mangio:
 
 <a href="https://github.com/IAHispano/Applio-RVC-Fork/graphs/contributors" target="_blank">
   <img src="https://contrib.rocks/image?repo=IAHispano/Applio-RVC-Fork" />
