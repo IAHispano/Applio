@@ -1,5 +1,6 @@
 #!/bin/bash
 echo -e "\033]0;Applio - Start\007"
+python3 -m venv .venv
 source .venv/bin/activate
 menu() {
   while true; do
