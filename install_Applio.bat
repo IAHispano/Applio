@@ -21,6 +21,10 @@ set "principal=%cd%\%repoFolder%"
 set "runtime_scripts=%cd%\%repoFolder%\runtime\Scripts"
 set "URL_BASE=https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
 set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
+set "CONDA_ROOT_PREFIX=%UserProfile%\Miniconda3"
+set "INSTALL_ENV_DIR=%cd%\env"
+set "MINICONDA_DOWNLOAD_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_23.9.0-0-Windows-x86_64.exe"
+set "conda_exists=F"
 
 echo.
 cls
@@ -56,15 +60,16 @@ echo Installing dependencies...
 echo.
 echo Recommended for Nvidia GPU users: 
 echo [1] Download Runtime (pre-installed dependencies)
+echo [2] Download conda env (customized python environment designed for the installation of required dependencies)
 echo.
 echo Recommended for AMD/Intel GPU users (Broken): 
-echo [2] Download DML Runtime (pre-installed dependencies)
+echo [3] Download DML Runtime (pre-installed dependencies)
 echo.
 echo Only recommended for experienced users:
-echo [3] Nvidia graphics cards
-echo [4] AMD / Intel graphics cards
+echo [4] Nvidia graphics cards
+echo [5] AMD / Intel graphics cards
 echo.
-echo [5] I have already installed the dependencies
+echo [6] I have already installed the dependencies
 echo.
 set /p choice=Select the option according to your GPU: 
 set choice=%choice: =%
@@ -85,6 +90,36 @@ goto dependenciesFinished
 
 if "%choice%"=="2" (
 cls
+call "%CONDA_ROOT_PREFIX%\_conda.exe" --version >nul 2>&1
+if "%ERRORLEVEL%" EQU "0" set conda_exists=T
+
+if "%conda_exists%" == "F" (
+echo Downloading Miniconda from %MINICONDA_DOWNLOAD_URL%
+
+echo Installing Miniconda to %CONDA_ROOT_PREFIX%
+start /wait "" miniconda.exe /InstallationType=JustMe /NoShortcuts=1 /AddToPath=0 /RegisterPython=0 /NoRegistry=1 /S /D=%CONDA_ROOT_PREFIX%
+del miniconda.exe
+)
+
+if not exist "%INSTALL_ENV_DIR%" (
+echo Packages to install: %PACKAGES_TO_INSTALL%
+call "%CONDA_ROOT_PREFIX%\_conda.exe" create --no-shortcuts -y -k --prefix "%INSTALL_ENV_DIR%" python=3.9
+echo Conda env installed !
+)
+
+call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
+
+echo Installing the dependencies...
+pip install ffmpeg
+pip install -r assets/requirements/requirements.txt
+pip uninstall torch torchvision torchaudio -y
+pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
+
+goto dependenciesFinished
+)
+
+if "%choice%"=="3" (
+cls
 powershell -command "Invoke-WebRequest -Uri https://huggingface.co/IAHispano/applio/resolve/main/busybox.exe -OutFile busybox.exe"
 busybox.exe wget %URL_EXTRA%/runtime_dml.zip
 echo.
@@ -100,7 +135,7 @@ echo.
 goto dependenciesFinished
 )
 
-if "%choice%"=="3" (
+if "%choice%"=="4" (
 cls
 pip install -r assets/requirements/requirements.txt
 echo.
@@ -115,7 +150,7 @@ echo.
 goto dependenciesFinished
 )
 
-if "%choice%"=="4" (
+if "%choice%"=="5" (
 cls
 pip uninstall onnxruntime onnxruntime-directml
 echo.
@@ -130,7 +165,7 @@ echo.
 goto dependenciesFinished
 )
 
-if "%choice%"=="5" (
+if "%choice%"=="6" (
 echo Dependencies successfully installed!
 echo.
 goto dependenciesFinished
@@ -142,4 +177,3 @@ echo Applio has been successfully downloaded, run the file go-applio.bat to run 
 echo.
 pause
 exit
-
