@@ -46,7 +46,6 @@ sounddevice==0.4.6
 soundfile==0.12.1
 ffmpeg-python>=0.2.0
 tensorboard==2.13.0
-tb_nightly==2.14.0a20230803
 torch==2.0.0
 torchcrepe==0.0.21
 torch_directml==0.2.0.dev230426
