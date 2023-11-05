@@ -3,6 +3,10 @@ setlocal
 title Applio - Start
 cd %~dp0
 
+rem Conda env variables
+set CONDA_ROOT_PREFIX=%UserProfile%\Miniconda3
+set INSTALL_ENV_DIR=%cd%\env
+
 :::
 :::                       _ _
 :::     /\               | (_)
@@ -40,9 +44,12 @@ echo [1] Start Applio - Runtime ^(Nvidia Support^)
 echo [2] Start Applio - Runtime ^(Intel Support. Requires Nvidia runtime^)
 echo [3] Start Applio - Runtime ^(AMD Support^)
 echo.
+echo Conda: Recommended for users with the conda environment
+echo [4] Start Applio - Conda ^(Nvidia Support^)
+echo.
 echo Dependencies: Only recommended for experienced users
-echo [4] Start Applio ^(Nvidia Support^)
-echo [5] Start Applio ^(AMD Support^)
+echo [5] Start Applio ^(Nvidia Support^)
+echo [6] Start Applio ^(AMD Support^)
 echo.
 echo [6] Exit
 echo.
@@ -52,16 +59,24 @@ set choice=%choice: =%
 
 if "%choice%"=="6" (
     goto finish
-) else if "%choice%"=="5" (
+) else if "%choice%"=="6" (
     cls
     echo Starting Applio with AMD support...
     python infer-web.py --pycmd python --port 7897 --dml --theme dark
     pause
     cls
     goto menu
-) else if "%choice%"=="4" (
+) else if "%choice%"=="5" (
     cls
     echo Starting Applio with Nvidia support...
+    python infer-web.py --pycmd python --port 7897 --theme dark
+    pause
+    cls
+    goto menu
+) else if "%choice%"=="4" (
+    cls
+    echo Starting Applio with Conda for Nvidia support...
+    call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
     python infer-web.py --pycmd python --port 7897 --theme dark
     pause
     cls
