@@ -122,7 +122,7 @@ if True == True:
 os.makedirs(tmp, exist_ok=True)
 os.makedirs(os.path.join(now_dir, "logs"), exist_ok=True)
 os.makedirs(os.path.join(now_dir, "logs/weights"), exist_ok=True)
-os.environ["temp"] = tmp
+os.environ["tmp"] = tmp
 warnings.filterwarnings("ignore")
 torch.manual_seed(114514)
 logging.getLogger("numba").setLevel(logging.WARNING)
