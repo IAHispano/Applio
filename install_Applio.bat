@@ -76,13 +76,12 @@ set choice=%choice: =%
 
 if "%choice%"=="1" (
 cls
-powershell -command "Invoke-WebRequest -Uri https://huggingface.co/IAHispano/applio/resolve/main/busybox.exe -OutFile busybox.exe"
-busybox.exe wget %URL_EXTRA%/runtime.zip
+curl -LJO "%URL_EXTRA%/runtime.zip"
 echo.
 echo Extracting the runtime.zip file...
 powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime.zip', '%principal%') }"
 echo.
-del runtime.zip busybox.exe
+del runtime.zip
 cls
 echo.
 goto dependenciesFinished
@@ -120,13 +119,12 @@ goto dependenciesFinished
 
 if "%choice%"=="3" (
 cls
-powershell -command "Invoke-WebRequest -Uri https://huggingface.co/IAHispano/applio/resolve/main/busybox.exe -OutFile busybox.exe"
-busybox.exe wget %URL_EXTRA%/runtime_dml.zip
+curl -LJO "%URL_EXTRA%/runtime_dml.zip"
 echo.
 echo Extracting the runtime_dml.zip file...
 powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime_dml.zip', '%principal%') }"
 echo.
-del runtime_dml.zip busybox.exe
+del runtime_dml.zip
 cd runtime
 python.exe -m pip install onnxruntime
 cd ..
