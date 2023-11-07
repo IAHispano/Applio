@@ -5,8 +5,8 @@ import os
 import shutil
 
 now_dir = os.getcwd()
-import soundfile as sf
 import librosa
+import unicodedata
 from lib.tools import audioEffects
 from assets.i18n.i18n import I18nAuto
 
@@ -15,6 +15,7 @@ import gradio as gr
 import tabs.resources as resources
 import numpy as np
 from scipy.signal import resample
+
 
 def save_to_wav2(dropbox):
     file_path = dropbox.name
@@ -187,7 +188,12 @@ def audio_combined(
         )
 
         return i18n("Conversion complete!"), output_path
-
+def format_title(title):
+    formatted_title = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('utf-8')
+    formatted_title = re.sub(r'[\u2500-\u257F]+', '', title)
+    formatted_title = re.sub(r'[^\w\s-]', '', title)
+    formatted_title = re.sub(r'\s+', '_', formatted_title)
+    return formatted_title
 def process_audio(file_path):
     try:
         # load audio file
@@ -205,6 +211,7 @@ def process_audio(file_path):
         # Create a new directory to store chunks
         file_dir = os.path.dirname(file_path)
         file_name = os.path.basename(file_path).split('.')[0]
+        file_name = format_title(file_name)
         new_dir_path = os.path.join(file_dir, file_name)
         os.makedirs(new_dir_path, exist_ok=True)
 
