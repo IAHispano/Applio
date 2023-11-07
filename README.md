@@ -89,6 +89,15 @@ In addition to the aforementioned improvements, this repository offers the follo
 ### Universal Compatibility
 - Acceleration support for AMD/Intel graphics cards and enhanced acceleration for Intel ARC graphics cards, including IPEX compatibility.
 
+### Overtraining Detection
+- This feature keeps track of the current progress trend and stops the training if no improvement is found after 100 epochs.
+  - During the 100 epochs with no improvement, no progress is saved. This allows you to continue training from the best-found epoch.
+  - A `.pth` file of the best epoch is saved in the logs folder under `name_[epoch].pth`, and in the weights folder as `name_fittest.pth`. These files are the same.
+
+### Mode Collapse Detection
+- This feature restarts training before a mode collapse by lowering the batch size until it can progress past the mode collapse.
+  - If a mode collapse is overcome but another one occurs later, it will reset the batch size to its initial setting. This helps maintain training speed when dealing with multiple collapses.
+
 ## 🛠️ Planned Features for Future Development
 As part of the ongoing development of this fork, the following features are planned to be added:
 
