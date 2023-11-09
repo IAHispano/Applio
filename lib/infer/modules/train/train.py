@@ -835,13 +835,15 @@ def train_and_evaluate(
                 logger.info(
                     f'Saving current fittest ckpt: {hps.name}_fittest:{savee(ckpt, hps.sample_rate, hps.if_f0, f"{hps.name}_fittest", epoch, hps.version, hps)}'
                 )
-        logger.info(
-            f"Epochs until overtraining detection begins: {10 - epoch}"
-            if epoch <= 10
-            else f"New best epoch!! [e{epoch}]\n"
-            if epoch - best["epoch"] == 0
-            else f'Last best epoch [e{best["epoch"]}] seen {epoch - best["epoch"]} epochs ago\n'
-        )
+        if epoch < 10:
+            message = f"Overtrain detection begins in {10 - epoch} epochs"
+        elif epoch == 10:
+            message = "Overtrain detection will begin next epoch"
+        elif epoch - best["epoch"] == 0 and not continued:
+            message = f"New best epoch!! [e{epoch}]\n"
+        else:
+            message = f'Last best epoch [e{best["epoch"]}] seen {epoch - best["epoch"]} epochs ago\n'
+        logger.info(message)
         # if overtraining is detected, exit (idk what the 2333333 stands for but it seems like success ¯\_(ツ)_/¯)
         if epoch - best["epoch"] >= 100:
             shutil.copy2(f"logs/weights/{hps.name}_fittest.pth", os.path.join(hps.model_dir,f"{hps.name}_{epoch}.pth"))
