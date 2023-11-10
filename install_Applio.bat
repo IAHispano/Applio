@@ -95,6 +95,7 @@ if "%ERRORLEVEL%" EQU "0" set conda_exists=T
 if "%conda_exists%" == "F" (
 echo Downloading Miniconda from %MINICONDA_DOWNLOAD_URL%
 
+curl %MINICONDA_DOWNLOAD_URL% -o miniconda.exe
 echo Installing Miniconda to %CONDA_ROOT_PREFIX%
 start /wait "" miniconda.exe /InstallationType=JustMe /NoShortcuts=1 /AddToPath=0 /RegisterPython=0 /NoRegistry=1 /S /D=%CONDA_ROOT_PREFIX%
 del miniconda.exe
