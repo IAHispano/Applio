@@ -102,7 +102,7 @@ powershell -Command "& {Invoke-WebRequest -Uri '%MINICONDA_DOWNLOAD_URL%' -OutFi
 )
 
 echo Installing Miniconda to %CONDA_ROOT_PREFIX%
-start /wait "" miniconda.exe /InstallationType=JustMe /NoShortcuts=1 /AddToPath=0 /RegisterPython=0 /NoRegistry=1 /S /D=%CONDA_ROOT_PREFIX%
+start /wait "" miniconda.exe /InstallationType=JustMe /NoShortcuts=1 /AddToPath=0 /RegisterPython=0 /S /D=%CONDA_ROOT_PREFIX%
 del miniconda.exe
 )
 
@@ -115,6 +115,7 @@ echo Conda env installed !
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
 
 echo Installing the dependencies...
+pip uninstall ffmpeg-python
 pip install ffmpeg
 pip install -r assets/requirements/requirements.txt
 pip uninstall torch torchvision torchaudio -y
