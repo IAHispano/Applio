@@ -632,6 +632,7 @@ class Pipeline(object):
     ):
         if (
             file_index != ""
+            and isinstance(file_index, str)
             # and file_big_npy != ""
             # and os.path.exists(file_big_npy) == True
             and os.path.exists(file_index)

@@ -213,18 +213,17 @@ class VC:
             print(new_dir_path)
             if resultm == "Finish":
 
-                file_index = (
-                (
-                    file_index.strip(" ")
-                    .strip('"')
-                    .strip("\n")
-                    .strip('"')
-                    .strip(" ")
+                if file_index and not file_index == "" and isinstance(file_index, str):
+                    file_index = file_index.strip(" ") \
+                    .strip('"') \
+                    .strip("\n") \
+                    .strip('"') \
+                    .strip(" ") \
                     .replace("trained", "added")
-                )
-                if file_index != ""
-                else file_index2
-                )  # 防止小白写错，自动帮他替换掉
+                elif file_index2:
+                    file_index = file_index2
+                else:
+                    file_index = ""  
 
                 # Use the code from vc_multi to process the segmented audio
                 if rvc_globals.NotesOrHertz and f0_method != 'rmvpe':
@@ -315,7 +314,7 @@ class VC:
                 merged_audio_path = os.path.join(os.path.dirname(new_dir_path), "audio-outputs", f"{os.path.basename(input_audio_path1).split('.')[0]}_merged.wav")
                 index_info = (
                     "Index:\n%s." % file_index
-                    if os.path.exists(file_index)
+                    if isinstance(file_index, str) and os.path.exists(file_index)
                     else "Index not used."
                 )
 
@@ -357,19 +356,17 @@ class VC:
                 message = "Model was not properly selected"
                 print(message)
                 return message, None
-            
-            file_index = (
-                (
-                    file_index.strip(" ")
-                    .strip('"')
-                    .strip("\n")
-                    .strip('"')
-                    .strip(" ")
-                    .replace("trained", "added")
-                )
-                if file_index != ""
-                else file_index2
-            )  # 防止小白写错，自动帮他替换掉
+            if file_index and not file_index == "" and isinstance(file_index, str):
+                file_index = file_index.strip(" ") \
+                .strip('"') \
+                .strip("\n") \
+                .strip('"') \
+                .strip(" ") \
+                .replace("trained", "added")
+            elif file_index2:
+                file_index = file_index2
+            else:
+                file_index = ""
 
             try:
                 audio_opt = self.pipeline.pipeline(
@@ -411,7 +408,7 @@ class VC:
                 tgt_sr = self.tgt_sr
             index_info = (
                 "Index:\n%s." % file_index
-                if os.path.exists(file_index)
+                if isinstance(file_index, str) and os.path.exists(file_index)
                 else "Index not used."
             )
             end_time = time.time()
@@ -521,18 +518,17 @@ class VC:
                 print(message)
                 return message, None
             
-            file_index = (
-                (
-                    file_index.strip(" ")
-                    .strip('"')
-                    .strip("\n")
-                    .strip('"')
-                    .strip(" ")
-                    .replace("trained", "added")
-                )
-                if file_index != ""
-                else file_index2
-            )  # 防止小白写错，自动帮他替换掉
+            if file_index and not file_index == "" and isinstance(file_index, str):
+                file_index = file_index.strip(" ") \
+                .strip('"') \
+                .strip("\n") \
+                .strip('"') \
+                .strip(" ") \
+                .replace("trained", "added")
+            elif file_index2:
+                file_index = file_index2
+            else:
+                file_index = ""  
 
             try:
                 audio_opt = self.pipeline.pipeline(
@@ -574,7 +570,7 @@ class VC:
                 tgt_sr = self.tgt_sr
             index_info = (
                 "Index:\n%s." % file_index
-                if os.path.exists(file_index)
+                if isinstance(file_index, str) and os.path.exists(file_index)
                 else "Index not used."
             )
             end_time = time.time()
