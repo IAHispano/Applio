@@ -22,7 +22,7 @@ set "runtime_scripts=%cd%\%repoFolder%\runtime\Scripts"
 set "URL_BASE=https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
 set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
 set "CONDA_ROOT_PREFIX=%UserProfile%\Miniconda3"
-set "INSTALL_ENV_DIR=%cd%\env"
+set "INSTALL_ENV_DIR=%principal%\env"
 set "MINICONDA_DOWNLOAD_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_23.9.0-0-Windows-x86_64.exe"
 set "conda_exists=F"
 
@@ -94,8 +94,13 @@ if "%ERRORLEVEL%" EQU "0" set conda_exists=T
 
 if "%conda_exists%" == "F" (
 echo Downloading Miniconda from %MINICONDA_DOWNLOAD_URL%
-
 curl %MINICONDA_DOWNLOAD_URL% -o miniconda.exe
+
+if not exist "%principal%\miniconda.exe" (
+echo Download failed trying with the powershell method
+powershell -Command "& {Invoke-WebRequest -Uri '%MINICONDA_DOWNLOAD_URL%' -OutFile 'miniconda.exe'}"
+)
+
 echo Installing Miniconda to %CONDA_ROOT_PREFIX%
 start /wait "" miniconda.exe /InstallationType=JustMe /NoShortcuts=1 /AddToPath=0 /RegisterPython=0 /NoRegistry=1 /S /D=%CONDA_ROOT_PREFIX%
 del miniconda.exe
