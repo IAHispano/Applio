@@ -24,7 +24,7 @@ set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
 set "CONDA_ROOT_PREFIX=%UserProfile%\Miniconda3"
 set "INSTALL_ENV_DIR=%principal%\env"
 set "MINICONDA_DOWNLOAD_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_23.9.0-0-Windows-x86_64.exe"
-set "conda_exists=F"
+set "CONDA_EXECUTABLE=%CONDA_ROOT_PREFIX%\Scripts\conda.exe"
 
 echo.
 cls
@@ -89,10 +89,8 @@ goto dependenciesFinished
 
 if "%choice%"=="2" (
 cls
-call "%CONDA_ROOT_PREFIX%\_conda.exe" --version >nul 2>&1
-if "%ERRORLEVEL%" EQU "0" set conda_exists=T
 
-if "%conda_exists%" == "F" (
+if not exist "%CONDA_EXECUTABLE%" (
 echo Downloading Miniconda from %MINICONDA_DOWNLOAD_URL%
 curl %MINICONDA_DOWNLOAD_URL% -o miniconda.exe
 
