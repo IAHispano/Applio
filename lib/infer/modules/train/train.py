@@ -811,34 +811,39 @@ def train_and_evaluate(
             dirtySteps.clear()
             dirtyValues.clear()
             dirtyEpochs.clear()
-            # save the current best checkpoint to disk along with the training weights
-            utils.save_checkpoint(
-                net_g,
-                optim_g,
-                hps.train.learning_rate,
-                epoch,
-                os.path.join(hps.model_dir, "G_9999999.pth"),
-            )
-            utils.save_checkpoint(
-                net_d,
-                optim_d,
-                hps.train.learning_rate,
-                epoch,
-                os.path.join(hps.model_dir, "D_9999999.pth"),
-            )
-            bestEpochStep = global_step
-            if hasattr(net_g, "module"):
-                ckpt = net_g.module.state_dict()
-            else:
-                ckpt = net_g.state_dict()
-            logger.info(
-                f'Saving current fittest ckpt: {hps.name}_fittest:{savee(ckpt, hps.sample_rate, hps.if_f0, f"{hps.name}_fittest", epoch, hps.version, hps)}'
-            )
-        logger.info(
-            f"New best epoch!! [e{epoch}]\n"
-            if epoch - best["epoch"] == 0
-            else f'Last best epoch [e{best["epoch"]}] seen {epoch - best["epoch"]} epochs ago\n'
-        )
+            if epoch > 10:
+                # save the current best checkpoint to disk along with the training weights
+                utils.save_checkpoint(
+                    net_g,
+                    optim_g,
+                    hps.train.learning_rate,
+                    epoch,
+                    os.path.join(hps.model_dir, "G_9999999.pth"),
+                )
+                utils.save_checkpoint(
+                    net_d,
+                    optim_d,
+                    hps.train.learning_rate,
+                    epoch,
+                    os.path.join(hps.model_dir, "D_9999999.pth"),
+                )
+                bestEpochStep = global_step
+                if hasattr(net_g, "module"):
+                    ckpt = net_g.module.state_dict()
+                else:
+                    ckpt = net_g.state_dict()
+                logger.info(
+                    f'Saving current fittest ckpt: {hps.name}_fittest:{savee(ckpt, hps.sample_rate, hps.if_f0, f"{hps.name}_fittest", epoch, hps.version, hps)}'
+                )
+        if epoch < 10:
+            message = f"Overtrain detection begins in {10 - epoch} epochs"
+        elif epoch == 10:
+            message = "Overtrain detection will begin next epoch"
+        elif epoch - best["epoch"] == 0 and not continued:
+            message = f"New best epoch!! [e{epoch}]\n"
+        else:
+            message = f'Last best epoch [e{best["epoch"]}] seen {epoch - best["epoch"]} epochs ago\n'
+        logger.info(message)
         # if overtraining is detected, exit (idk what the 2333333 stands for but it seems like success ¯\_(ツ)_/¯)
         if epoch - best["epoch"] >= 100:
             shutil.copy2(f"logs/weights/{hps.name}_fittest.pth", os.path.join(hps.model_dir,f"{hps.name}_{epoch}.pth"))
@@ -897,7 +902,7 @@ def getBestValue():
     steps += dirtySteps
     values = smooth([*values,*dirtyValues], hps.smoothness)
     epochs += dirtyEpochs
-    if lowestValue["value"] >= values[-1]:
+    if lowestValue["value"] >= values[-1] and epochs[-1] > 10:
         lowestValue = {"step": steps[-1], "value": values[-1], "epoch": epochs[-1]}
     return lowestValue
 
