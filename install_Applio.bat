@@ -115,7 +115,7 @@ call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
 echo Installing the dependencies...
 pip uninstall ffmpeg-python -y
 pip install ffmpeg
-pip install -r %cd%/%repoFolder%/assets/requirements/requirements.txt
+pip install -r %principal%/assets/requirements/requirements.txt
 pip uninstall torch torchvision torchaudio -y
 pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
 
