@@ -58,9 +58,17 @@ def download_file_with_progress(url, destination_path):
 # Download torch crepe if not exists
 if not os.path.exists("torchcrepe"):
     os_name = platform.system()
+
     # Cloning the GitHub repository into the temporary directory
     print("Cloning the GitHub repository into the temporary directory...")
-    subprocess.run(["git", "clone", "https://github.com/maxrmorrison/torchcrepe.git", "temp_torchcrepe"])
+
+    # Checking if mingit is installed
+    mingit_path = os.path.join(os.getcwd(), "lib", "tools", "mingit", "cmd", "git.exe")
+
+    if os.path.exists(mingit_path):
+        subprocess.run([mingit_path, "clone", "https://github.com/maxrmorrison/torchcrepe.git", "temp_torchcrepe"])
+    else:
+        subprocess.run(["git", "clone", "https://github.com/maxrmorrison/torchcrepe.git", "temp_torchcrepe"])
 
     # Copying the torchcrepe folder to a different location
     print("Copying the torchcrepe folder...")
