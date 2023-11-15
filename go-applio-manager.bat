@@ -22,6 +22,7 @@ set "localFixesPy=local_fixes.py"
 set "principal=%cd%"
 set "URL_BASE=https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
 set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
+set "mingit_path=%cd%\lib\tools\mingit\cmd\git.exe"
 
 :menu
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
@@ -234,7 +235,11 @@ goto menu
 :updater
 
 echo Updating the repository...
-git pull
+if exist "%mingit_path%" (
+    %mingit_path% pull
+) else (
+    git pull
+)
 echo Applio has been updated!
 echo.
 echo Press 'Enter' to access the main menu... 
