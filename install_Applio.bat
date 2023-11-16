@@ -45,8 +45,16 @@ echo Download failed trying with the powershell method
 powershell -Command "& {Invoke-WebRequest -Uri '%URL_EXTRA%/mingit.zip' -OutFile 'mingit.zip'}"
 )
 
-powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('mingit.zip', '%cd%') }"
+set "powershellCommand=try { Add-Type -AssemblyName 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('%cd%\mingit.zip', '%cd%'); goto goodExtract } catch { goto errorExtract }"
+powershell -command "& {%powershellCommand%}"
 
+:errorExtract
+echo Error extracting! Deleting file and trying directly with powershell method!
+del mingit.zip
+powershell -Command "& {Invoke-WebRequest -Uri '%URL_EXTRA%/mingit.zip' -OutFile 'mingit.zip'}"
+powershell -command "& {%powershellCommand%}"
+
+:goodExtract
 echo Cloning the repository...
 %cd%\mingit\cmd\git.exe clone %repoUrl% %repoFolder%
 echo Moving the mingit folder...
@@ -58,6 +66,7 @@ del /q *.sh
 echo.
 cls
 
+:menu
 echo Installing dependencies...
 echo.
 echo Recommended for Nvdia/AMD/Intel GPU and non GPU users:
