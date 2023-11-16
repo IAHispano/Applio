@@ -29,6 +29,8 @@ set "CONDA_EXECUTABLE=%CONDA_ROOT_PREFIX%\Scripts\conda.exe"
 echo.
 cls
 echo INFO: It's important not to run this installer as an administrator as it might cause issues, and it's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
+echo IMPORTANT Install manually this depdendency
+echo https://aka.ms/vs/17/release/vc_redist.x64.exe
 echo.
 pause
 cls
