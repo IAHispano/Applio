@@ -31,25 +31,25 @@ cls
 echo INFO: It's important not to run this installer as an administrator as it might cause issues, and it's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
 echo.
 pause
-
-cls
-echo INFO: Please ensure you have installed the required dependencies before continuing. Refer to the installation guide for details.
-echo.
-echo Step-by-step guide: https://rentry.org/appliolocal
-echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
-echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
-echo Git: https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe
-echo Python 3.9.8: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
-echo.
-echo INFO: Its recommend installing Python 3.9.X and ensuring that it has been added to the system's path.
-echo.
-pause
 cls
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 echo.
 
+echo Downloading MinGit from %URL_EXTRA%/mingit.zip
+curl -s -LJO %URL_EXTRA%/mingit.zip -o mingit.zip
+
+if not exist "%cd%\mingit.zip" (
+echo Download failed trying with the powershell method
+powershell -Command "& {Invoke-WebRequest -Uri '%URL_EXTRA%/mingit.zip' -OutFile 'mingit.zip'}"
+)
+
+powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('mingit.zip', '%cd%') }"
+
 echo Cloning the repository...
-git clone %repoUrl% %repoFolder%
+%cd%\mingit\cmd\git.exe clone %repoUrl% %repoFolder%
+echo Moving the mingit folder...
+robocopy "%cd%\mingit" "%principal%\lib\tools\mingit" /e /move /dcopy:t > NUL
+if errorlevel 8 echo Warnings or errors occurred during the move.
 cd %repoFolder%
 del install_Applio.bat
 del /q *.sh
@@ -58,32 +58,53 @@ cls
 
 echo Installing dependencies...
 echo.
-echo Recommended for Nvidia GPU users: 
-echo [1] Download Runtime (pre-installed dependencies)
-echo [2] Download conda env (customized python environment designed for the installation of required dependencies)
+echo Recommended for Nvdia/AMD/Intel GPU and non GPU users:
+echo [1] Download Nvdia conda env (customized python environment designed for the installation of required dependencies)
 echo.
 echo Recommended for AMD/Intel GPU users (Broken): 
-echo [3] Download DML Runtime (pre-installed dependencies)
+echo [2] Download DML conda env (customized python environment designed for the installation of required dependencies)
 echo.
 echo Only recommended for experienced users:
-echo [4] Nvidia graphics cards
-echo [5] AMD / Intel graphics cards
+echo [3] Nvidia graphics cards
+echo [4] AMD / Intel graphics cards (Broken)
 echo.
-echo [6] I have already installed the dependencies
+echo [5] I have already installed the dependencies
 echo.
 set /p choice=Select the option according to your GPU: 
 set choice=%choice: =%
 
 if "%choice%"=="1" (
 cls
-curl -LJO "%URL_EXTRA%/runtime.zip"
-echo.
-echo Extracting the runtime.zip file...
-powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime.zip', '%principal%') }"
-echo.
-del runtime.zip
-cls
-echo.
+
+if not exist "%CONDA_EXECUTABLE%" (
+echo Downloading Miniconda from %MINICONDA_DOWNLOAD_URL%
+curl %MINICONDA_DOWNLOAD_URL% -o miniconda.exe
+
+if not exist "%principal%\miniconda.exe" (
+echo Download failed trying with the powershell method
+powershell -Command "& {Invoke-WebRequest -Uri '%MINICONDA_DOWNLOAD_URL%' -OutFile 'miniconda.exe'}"
+)
+
+echo Installing Miniconda to %CONDA_ROOT_PREFIX%
+start /wait "" miniconda.exe /InstallationType=JustMe /RegisterPython=0 /S /D=%CONDA_ROOT_PREFIX%
+del miniconda.exe
+)
+
+if not exist "%INSTALL_ENV_DIR%" (
+echo Packages to install: %PACKAGES_TO_INSTALL%
+call "%CONDA_ROOT_PREFIX%\_conda.exe" create --no-shortcuts -y -k --prefix "%INSTALL_ENV_DIR%" python=3.9
+echo Conda env installed !
+)
+
+echo Installing the dependencies...
+call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
+conda install -c anaconda git -y
+call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" deactivate
+call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
+pip install -r %principal%\assets\requirements\requirements.txt
+pip install future==0.18.2
+pip uninstall torch torchvision torchaudio -y
+pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
 goto dependenciesFinished
 )
 
@@ -100,7 +121,7 @@ powershell -Command "& {Invoke-WebRequest -Uri '%MINICONDA_DOWNLOAD_URL%' -OutFi
 )
 
 echo Installing Miniconda to %CONDA_ROOT_PREFIX%
-start /wait "" miniconda.exe /InstallationType=JustMe /NoShortcuts=1 /AddToPath=0 /RegisterPython=0 /S /D=%CONDA_ROOT_PREFIX%
+start /wait "" miniconda.exe /InstallationType=JustMe /RegisterPython=0 /S /D=%CONDA_ROOT_PREFIX%
 del miniconda.exe
 )
 
@@ -110,34 +131,27 @@ call "%CONDA_ROOT_PREFIX%\_conda.exe" create --no-shortcuts -y -k --prefix "%INS
 echo Conda env installed !
 )
 
-call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
-
 echo Installing the dependencies...
-pip install -r %principal%/assets/requirements/requirements.txt
+call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
+conda install -c anaconda git -y
+call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" deactivate
+call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
+pip uninstall onnxruntime onnxruntime-directml
+pip install -r %principal%\assets\requirements\requirements.txt
+pip install -r %principal%\assets\requirements\requirements-dml.txt
 pip install future==0.18.2
-pip uninstall torch torchvision torchaudio -y
-pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
-
 goto dependenciesFinished
 )
 
 if "%choice%"=="3" (
 cls
-curl -LJO "%URL_EXTRA%/runtime_dml.zip"
-echo.
-echo Extracting the runtime_dml.zip file...
-powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('runtime_dml.zip', '%principal%') }"
-echo.
-del runtime_dml.zip
-cd runtime
-python.exe -m pip install onnxruntime
-cd ..
-cls
-echo.
-goto dependenciesFinished
-)
-
-if "%choice%"=="4" (
+echo INFO: Please ensure you have installed the required dependencies before continuing. Refer to the installation guide for details.
+echo Step-by-step guide: https://rentry.org/appliolocal
+echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
+echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
+echo Git: https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe
+echo Python 3.9.8: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
+pause
 cls
 pip install -r assets/requirements/requirements.txt
 echo.
@@ -152,7 +166,15 @@ echo.
 goto dependenciesFinished
 )
 
-if "%choice%"=="5" (
+if "%choice%"=="4" (
+cls
+echo INFO: Please ensure you have installed the required dependencies before continuing. Refer to the installation guide for details.
+echo Step-by-step guide: https://rentry.org/appliolocal
+echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
+echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
+echo Git: https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe
+echo Python 3.9.8: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
+pause
 cls
 pip uninstall onnxruntime onnxruntime-directml
 echo.
@@ -167,7 +189,7 @@ echo.
 goto dependenciesFinished
 )
 
-if "%choice%"=="6" (
+if "%choice%"=="5" (
 echo Dependencies successfully installed!
 echo.
 goto dependenciesFinished

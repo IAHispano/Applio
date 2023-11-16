@@ -39,41 +39,27 @@ if %errorlevel% equ 1 (
 )
 
 :continue
-echo Runtime: Recommended for regular users
-echo [1] Start Applio - Runtime ^(Nvidia Support^)
-echo [2] Start Applio - Runtime ^(Intel Support. Requires Nvidia runtime^)
-echo [3] Start Applio - Runtime ^(AMD Support^)
+echo Conda: Recommended for regular users
+echo [1] Start Applio - Conda ^(Nvidia Support^)
+echo [2] Start Applio - Conda ^(Intel Support. Requires Nvdia conda env^)
+echo [3] Start Applio - Conda ^(AMD Support^)
 echo.
-echo Conda: Recommended for users with the conda environment
-echo [4] Start Applio - Conda ^(Nvidia Support^)
+echo Runtime: Not recommended ^(Some features may not work^)
+echo [4] Start Applio - Runtime ^(Nvidia Support^)
+echo [5] Start Applio - Runtime ^(Intel Support. Requires Nvidia runtime^)
+echo [6] Start Applio - Runtime ^(AMD Support^)
 echo.
 echo Dependencies: Only recommended for experienced users
-echo [5] Start Applio ^(Nvidia Support^)
-echo [6] Start Applio ^(AMD Support^)
+echo [7] Start Applio ^(Nvidia Support^)
+echo [8] Start Applio ^(AMD Support^)
 echo.
-echo [6] Exit
+echo [9] Exit
 echo.
 
 set /p choice=Select an option: 
 set choice=%choice: =%
 
-if "%choice%"=="6" (
-    goto finish
-) else if "%choice%"=="6" (
-    cls
-    echo Starting Applio with AMD support...
-    python infer-web.py --pycmd python --port 7897 --dml --theme dark
-    pause
-    cls
-    goto menu
-) else if "%choice%"=="5" (
-    cls
-    echo Starting Applio with Nvidia support...
-    python infer-web.py --pycmd python --port 7897 --theme dark
-    pause
-    cls
-    goto menu
-) else if "%choice%"=="4" (
+if "%choice%"=="1" (
     cls
     echo Starting Applio with Conda for Nvidia support...
     call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
@@ -81,14 +67,31 @@ if "%choice%"=="6" (
     pause
     cls
     goto menu
-) else if "%choice%"=="3" (
+) else if "%choice%"=="2" (
     cls
-    echo Starting Applio with runtime for AMD support ^(you must have it installed^)...
-    runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --dml --theme dark
+    echo Starting Applio with Conda for Intel CPU support ^(you must have Nvidia support installed^)...
+    call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
+    python -m pip install scikit-learn-intelex
+    python -m sklearnex infer-web.py --pycmd runtime/python.exe --port 7897 --theme dark
     pause
     cls
     goto menu
-) else if "%choice%"=="2" (
+) else if "%choice%"=="3" (
+    cls
+    echo Starting Applio with Conda for AMD support...
+    call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
+    python infer-web.py --pycmd python --port 7897 --dml --theme dark
+    pause
+    cls
+    goto menu
+) else if "%choice%"=="4" (
+    cls
+    echo Starting Applio with runtime for Nvidia support ^(you must have it installed^)...
+    runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --theme dark
+    pause
+    cls
+    goto menu
+) else if "%choice%"=="5" (
     runtime\python.exe -m pip install scikit-learn-intelex
     cls
     echo Starting Applio with runtime for Intel CPU support ^(you must have Nvidia support installed^)...
@@ -96,14 +99,34 @@ if "%choice%"=="6" (
     pause
     cls
     goto menu
-) else if "%choice%"=="1" (
+) else if "%choice%"=="6" (
     cls
-    echo Starting Applio with runtime for Nvidia support ^(you must have it installed^)...
-    runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --theme dark
+    echo Starting Applio with runtime for AMD support ^(you must have it installed^)...
+    runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --dml --theme dark
     pause
     cls
     goto menu
-)
+) else if "%choice%"=="7" (
+    cls
+    echo Starting Applio for Nvidia support...
+    python infer-web.py --pycmd python --port 7897 --theme dark
+    pause
+    cls
+    goto menu
+) else if "%choice%"=="8" (
+    cls
+    echo Starting Applio for AMD support...
+    python infer-web.py --pycmd python --port 7897 --dml --theme dark
+    pause
+    cls
+    goto menu
+) else if "%choice%"=="9" (
+    goto finish
+) else (
+    cls
+    echo Invalid option. Please enter a number from 1 to 9.
+    goto menu
+) 
 
 cls
 echo Invalid option. Please enter a number from 1 to 5.
