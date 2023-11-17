@@ -1340,7 +1340,7 @@ def cli_infer(com):
     com = cli_split_command(com)
     model_name = com[0]
     source_audio_path = com[1]
-    output_file_name = com[2]
+    format1_ = com[2]
     feature_index_path = com[3]
     f0_file = None  # Not Implemented Yet
 
@@ -1356,7 +1356,7 @@ def cli_infer(com):
     protection_amnt = float(com[12])
     protect1 = 0.5
 
-    if com[14] == "False" or com[14] == "false":
+    if com[13] == "False" or com[13] == "false":
         DoFormant = False
         Quefrency = 0.0
         Timbre = 0.0
@@ -1366,11 +1366,17 @@ def cli_infer(com):
 
     else:
         DoFormant = True
-        Quefrency = float(com[15])
-        Timbre = float(com[16])
+        Quefrency = float(com[14])
+        Timbre = float(com[15])
         CSVutil(
             "lib/csvdb/formanting.csv", "w+", "formanting", DoFormant, Quefrency, Timbre
         )
+    split_audio = True if (com[16] == 1) else False	
+    f0_autotune = True if (com[17] == 1) else False	
+    minpitch_slider = com[18]
+    minpitch_txtbox = minpitch_slider
+    maxpitch_slider = com[19]
+    maxpitch_txtbox = maxpitch_slider
 
     print("Applio-RVC-Fork Infer-CLI: Starting the inference...")
     vc_data = vc.get_vc(model_name, protection_amnt, protect1)
@@ -1389,21 +1395,18 @@ def cli_infer(com):
         resample,
         mix,
         protection_amnt,
+        format1_,
+        split_audio,
         crepe_hop_length,
+        minpitch_slider,
+        minpitch_txtbox,
+        maxpitch_slider,
+        maxpitch_txtbox,
+        f0_autotune,
     )
     if "Success." in conversion_data[0]:
         print(
-            "Applio-RVC-Fork Infer-CLI: Inference succeeded. Writing to %s/%s..."
-            % ("assets", "audios", "audio-outputs", output_file_name)
-        )
-        wavfile.write(
-            "%s/%s" % ("assets", "audios", "audio-outputs", output_file_name),
-            conversion_data[1][0],
-            conversion_data[1][1],
-        )
-        print(
-            "Applio-RVC-Fork Infer-CLI: Finished! Saved output to %s/%s"
-            % ("assets", "audios", "audio-outputs", output_file_name)
+            "Applio-RVC-Fork Infer-CLI: Inference succeeded."
         )
     else:
         print("Applio-RVC-Fork Infer-CLI: Inference failed. Here's the traceback: ")
@@ -1465,6 +1468,11 @@ def cli_train(com):
     if_cache_gpu = True if (int(com[9]) == 1) else False
     if_save_every_weight = True if (int(com[10]) == 1) else False
     version = com[11]
+    if_retrain_collapse20 = True if (int(com[12]) == 1) else False	
+    if_stop_on_fit21 = True if (int(com[13]) == 1) else False	
+    smoothness23 = float(com[14]) if com[14] != "" else 0.975 
+    collapse_threshold22 = int(com[15]) if com[15] != "" else 25
+
 
     pretrained_base = "pretrained/" if version == "v1" else "pretrained_v2/"
 
@@ -1487,6 +1495,10 @@ def cli_train(com):
         if_cache_gpu,
         if_save_every_weight,
         version,
+        if_retrain_collapse20,
+        if_stop_on_fit21,
+        smoothness23,
+        collapse_threshold22
     )
 
 
@@ -1545,23 +1557,28 @@ def print_page_details():
         )
     elif cli_current_page == "INFER":
         print(
-            "\n    arg 1) model name with .pth in ./weights: mi-test.pth"
-            "\n    arg 2) source audio path: myFolder\\MySource.wav"
-            "\n    arg 3) output file name to be placed in './audio-outputs': MyTest.wav"
+            "\n    arg 1) model name with .pth in logs/weights: mi-test.pth"
+            "\n    arg 2) source audio path: assets/audios/MySource.wav"
+            "\n    arg 3) export format (wav,flac,mp3) : wav"
             "\n    arg 4) feature index file path: logs/mi-test/added_IVF3042_Flat_nprobe_1.index"
             "\n    arg 5) speaker id: 0"
             "\n    arg 6) transposition: 0"
-            "\n    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x], mangio-crepe, mangio-crepe-tiny, rmvpe)"
+            "\n    arg 7) f0 method: harvest (pm, harvest, crepe, crepe-tiny, hybrid[x,x,x,x], mangio-crepe, mangio-crepe-tiny, rmvpe, rmvpe+)"
             "\n    arg 8) crepe hop length: 160"
             "\n    arg 9) harvest median filter radius: 3 (0-7)"
             "\n    arg 10) post resample rate: 0"
             "\n    arg 11) mix volume envelope: 1"
-            "\n    arg 12) feature index ratio: 0.78 (0-1)"
+            "\n    arg 12) feature index ratio: 0.75 (0-1)"
             "\n    arg 13) Voiceless Consonant Protection (Less Artifact): 0.33 (Smaller number = more protection. 0.50 means Dont Use.)"
             "\n    arg 14) Whether to formant shift the inference audio before conversion: False (if set to false, you can ignore setting the quefrency and timbre values for formanting)"
             "\n    arg 15)* Quefrency for formanting: 8.0 (no need to set if arg14 is False/false)"
-            "\n    arg 16)* Timbre for formanting: 1.2 (no need to set if arg14 is False/false) \n"
-            "\nExample: mi-test.pth saudio/Sidney.wav myTest.wav logs/mi-test/added_index.index 0 -2 harvest 160 3 0 1 0.95 0.33 0.45 True 8.0 1.2"
+            "\n    arg 16)* Timbre for formanting: 1.2 (no need to set if arg14 is False/false)"
+            "\n    arg 17)* Audio split depending on silence: 0 (0 for no, 1 for yes)"
+            "\n    arg 18)* Extra autotune: 0 (0 for no, 1 for yes)\n"
+            "\n    Only for rmvpe+ algorithm (If it is another algorithm, set default.):"
+            "\n    arg 19)* Min pitch [HZ] / [NOTE][OCTAVE]: 50 or C5"
+            "\n    arg 20)* Max pitch [HZ] / [NOTE][OCTAVE]: 1000 or C6\n"
+            "\nExample: mi-test.pth assets/audios/Sidney.wav wav logs/mi-test/added_index.index 0 -2 harvest 160 3 0 1 0.95 0.33 True 8.0 1.2 1 0 50 1000"
         )
     elif cli_current_page == "PRE-PROCESS":
         print(
@@ -1595,8 +1612,12 @@ def print_page_details():
             "\n    arg 9) Save only the latest checkpoint: 0 (0 for no, 1 for yes)"
             "\n    arg 10) Whether to cache training set to vram: 0 (0 for no, 1 for yes)"
             "\n    arg 11) Save extracted small model every generation?: 0 (0 for no, 1 for yes)"
-            "\n    arg 12) Model architecture version: v2 (use either v1 or v2)\n"
-            "\nExample: mi-test 40k 1 0 50 10000 8 0 0 0 0 v2"
+            "\n    arg 12) Model architecture version: v2 (use either v1 or v2)"
+            "\n    arg 13) Reload from checkpoint before a mode collapse and try training it again: 0 (0 for no, 1 for yes)"
+            "\n    arg 14) Stop training early if no improvement detected. (Set Training Epochs to something high like 9999): 0 (0 for no, 1 for yes)\n"
+            "\n    arg 15) Threshold %% for collapse: Default 25"
+            "\n    arg 16) Improvement smoothness calculation: Default 0.975\n"
+            "\nExample: mi-test 40k 1 0 50 10000 8 0 0 0 0 v2 0 0 25 0.975"
         )
     elif cli_current_page == "TRAIN-FEATURE":
         print(
@@ -2917,7 +2938,7 @@ def GradioSetup():
 
                 with gr.Row():
                     with gr.Column():
-                        tts_methods_voice = ["Edge-tts", "Bark-tts"]
+                        tts_methods_voice = ["Edge-tts", "Google-tts"]
                         ttsmethod_test = gr.Dropdown(
                             tts_methods_voice,
                             value="Edge-tts",
