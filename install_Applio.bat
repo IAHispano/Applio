@@ -64,16 +64,15 @@ if "%powershellOutput%"=="goodExtract" (
     del mingit.zip
     echo Cloning the repository...
     %cd%\mingit\cmd\git.exe clone %repoUrl% %repoFolder%
-    pause
     echo Moving the mingit folder...
-    pause
     robocopy "%cd%\mingit" "%principal%\lib\tools\mingit" /e /move /dcopy:t > NUL
     if errorlevel 8 echo Warnings or errors occurred during the move.
-    pause
     cd %repoFolder%
     del install_Applio.bat
     del /q *.sh
     echo.
+    echo Do you want to continue?
+    pause>nul
     cls
 ) else (
     echo Error extracting! Deleting file and trying directly with PowerShell method!
