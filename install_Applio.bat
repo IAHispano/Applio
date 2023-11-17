@@ -26,12 +26,11 @@ set "INSTALL_ENV_DIR=%principal%\env"
 set "MINICONDA_DOWNLOAD_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_23.9.0-0-Windows-x86_64.exe"
 set "CONDA_EXECUTABLE=%CONDA_ROOT_PREFIX%\Scripts\conda.exe"
 set "tempFile=%cd%\powershell_output.txt"
+set "buildToolsUrl=https://aka.ms/vs/17/release/vs_BuildTools.exe"
 
 echo.
 cls
 echo INFO: It's important not to run this installer as an administrator as it might cause issues, and it's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
-echo IMPORTANT Install manually this depdendency and follow the first step in https://docs.applio.org/installation/requirements/
-echo https://aka.ms/vs/17/release/vs_BuildTools.exe
 echo.
 pause
 cls
@@ -131,6 +130,22 @@ echo.
 set /p choice=Select the option according to your GPU: 
 set choice=%choice: =%
 
+if not exist "%principal%\vs_BuildTools.exe" (
+    curl -s -LJO %buildToolsUrl% -o vs_BuildTools.exe
+    echo Downloading vs_BuildTools from %buildToolsUrl%
+)
+if not exist "%principal%\vs_BuildTools.exe" (
+    echo Download failed trying with the powershell method
+    del vs_BuildTools.exe
+    powershell -Command "& {Invoke-WebRequest -Uri '%buildToolsUrl%' -OutFile 'vs_BuildTools.exe'}"
+)
+vs_BuildTools.exe --add Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools --add Microsoft.VisualStudio.Workload.VCTools --passive
+echo Installing vs_BuildTools...
+echo.
+echo Wait till the installation is finished (the installer will close automatically), then press any key to continue...
+pause>nul
+cls
+
 if "%choice%"=="1" (
 cls
 
@@ -205,7 +220,6 @@ if "%choice%"=="3" (
 cls
 echo INFO: Please ensure you have installed the required dependencies before continuing. Refer to the installation guide for details.
 echo Step-by-step guide: https://rentry.org/appliolocal
-echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
 echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
 echo Git: https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe
 echo Python 3.9.8: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
@@ -228,7 +242,6 @@ if "%choice%"=="4" (
 cls
 echo INFO: Please ensure you have installed the required dependencies before continuing. Refer to the installation guide for details.
 echo Step-by-step guide: https://rentry.org/appliolocal
-echo Build Tools: https://aka.ms/vs/17/release/vs_BuildTools.exe
 echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
 echo Git: https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe
 echo Python 3.9.8: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
