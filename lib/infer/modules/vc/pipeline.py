@@ -168,11 +168,12 @@ class Pipeline(object):
         batch_size = 512
         # Compute pitch using first gpu
         audio = torch.tensor(np.copy(x))[None].float()
-        model = kwargs.get('model', 'full') 
+        hop_length = kwargs.get('crepe_hop_length', 160) 
+        model = kwargs.get('model', 'full')
         f0, pd = torchcrepe.predict(
             audio,
             self.sr,
-            self.window,
+            hop_length,
             f0_min,
             f0_max,
             model,
@@ -304,15 +305,15 @@ class Pipeline(object):
         for method in methods:
             f0 = None
             if method == "crepe-tiny":
-                f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, "tiny")
+                f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, crepe_hop_length=crepe_hop_length, model="tiny")
                 f0 = f0[1:]  # Get rid of extra first frame
             elif method == "mangio-crepe":
                 f0 = self.get_f0_crepe_computation(
-                    x, f0_min, f0_max, p_len, crepe_hop_length
+                    x, f0_min, f0_max, p_len, crepe_hop_length=crepe_hop_length
                 )
             elif method == "mangio-crepe-tiny":
                 f0 = self.get_f0_crepe_computation(
-                    x, f0_min, f0_max, p_len, crepe_hop_length, "tiny"
+                    x, f0_min, f0_max, p_len, crepe_hop_length=crepe_hop_length, model="tiny"
                 )
             # elif method == "pyin": Not Working just yet
             #    f0 = self.get_f0_pyin_computation(x, f0_min, f0_max)
@@ -387,7 +388,7 @@ class Pipeline(object):
             f0, pd = torchcrepe.predict(
                 audio,
                 self.sr,
-                self.window,
+                crepe_hop_length,
                 f0_min,
                 f0_max,
                 model,
@@ -400,14 +401,14 @@ class Pipeline(object):
             f0[pd < 0.1] = 0
             f0 = f0[0].cpu().numpy()
         elif f0_method == "crepe-tiny":
-            f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, "tiny")
+            f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, crepe_hop_length=crepe_hop_length, model="tiny")
         elif f0_method == "mangio-crepe":
             f0 = self.get_f0_crepe_computation(
-                x, f0_min, f0_max, p_len, crepe_hop_length
+                x, f0_min, f0_max, p_len, crepe_hop_length=crepe_hop_length
             )
         elif f0_method == "mangio-crepe-tiny":
             f0 = self.get_f0_crepe_computation(
-                x, f0_min, f0_max, p_len, crepe_hop_length, "tiny"
+                x, f0_min, f0_max, p_len, crepe_hop_length=crepe_hop_length, model="tiny"
             )
         elif f0_method == "rmvpe":
             if not hasattr(self, "model_rmvpe"):
