@@ -87,7 +87,7 @@ In addition to the aforementioned improvements, this repository offers the follo
 - Supports training with a small dataset, yielding commendable results, especially with audio clips of at least 10 minutes of low-noise speech.
 
 ### Universal Compatibility
-- Acceleration support for AMD/Intel graphics cards and enhanced acceleration for Intel ARC graphics cards, including IPEX compatibility.
+- Acceleration support for AMD/Intel graphics cards and enhanced acceleration for Intel ARC graphics cards, including IPEX compatibility (Not for training).
 
 ### Overtraining Detection
 - This feature keeps track of the current progress trend and stops the training if no improvement is found after 100 epochs.
