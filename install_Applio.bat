@@ -38,55 +38,37 @@ cls
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 echo.
 
-if not exist "%cd%\mingit.zip" (
-echo Downloading MinGit from %URL_EXTRA%/mingit.zip
-curl -s -LJO %URL_EXTRA%/mingit.zip -o mingit.zip
-)
-
-if not exist "%cd%\mingit.zip" (
-echo Download failed trying with the powershell method
-powershell -Command "& {Invoke-WebRequest -Uri '%URL_EXTRA%/mingit.zip' -OutFile 'mingit.zip'}"
-)
-
-set powershellOutput="goodExtract"
-
-if not exist "%cd%\mingit" (
-    set "powershellScript=try { Add-Type -AssemblyName 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('%cd%\mingit.zip', '%cd%'); Write-Output 'goodExtract' } catch { Write-Output 'errorExtract' }"
-
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "%powershellScript%" > "%tempFile%"
-
-    set /p powershellOutput=<"%tempFile%"
-
-    del "%tempFile%"
-)
-
-if "%powershellOutput%"=="goodExtract" (
-    del mingit.zip
+git --version >nul 2>&1
+if %errorlevel% equ 0 (
     echo Cloning the repository...
-    %cd%\mingit\cmd\git.exe clone %repoUrl% %repoFolder%
+    git clone %repoUrl% %repoFolder%
     echo Moving the mingit folder...
-    robocopy "%cd%\mingit" "%principal%\lib\tools\mingit" /e /move /dcopy:t > NUL
-    if errorlevel 8 echo Warnings or errors occurred during the move.
     cd %repoFolder%
     del install_Applio.bat
     del /q *.sh
-    echo.
-    echo Do you want to continue?
-    pause>nul
     cls
+
 ) else (
-    echo Error extracting! Deleting file and trying directly with PowerShell method!
-    del mingit.zip
+    if not exist "%cd%\mingit.zip" (
+    echo Downloading MinGit from %URL_EXTRA%/mingit.zip
+    curl -s -LJO %URL_EXTRA%/mingit.zip -o mingit.zip
+    )
+
+    if not exist "%cd%\mingit.zip" (
+    echo Download failed trying with the powershell method
     powershell -Command "& {Invoke-WebRequest -Uri '%URL_EXTRA%/mingit.zip' -OutFile 'mingit.zip'}"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "%powershellScript%" > "%tempFile%"
-    set /p powershellOutput=<"%tempFile%"
-    del "%tempFile%"
-    if "%powershellOutput%"=="errorExtract" (
-        echo Theres a problem extracting the file please download the file and extract it manually 
-        echo https://huggingface.co/IAHispano/applio/resolve/main/mingit.zip
-        pause
-        exit
-    ) else (
+    )
+
+    set powershellOutput="goodExtract"
+
+    if not exist "%cd%\mingit" (
+        set "powershellScript=try { Add-Type -AssemblyName 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('%cd%\mingit.zip', '%cd%'); Write-Output 'goodExtract' } catch { Write-Output 'errorExtract' }"
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "%powershellScript%" > "%tempFile%"
+        set /p powershellOutput=<"%tempFile%"
+        del "%tempFile%"
+    )
+
+    if "%powershellOutput%"=="goodExtract" (
         del mingit.zip
         echo Cloning the repository...
         %cd%\mingit\cmd\git.exe clone %repoUrl% %repoFolder%
@@ -100,6 +82,34 @@ if "%powershellOutput%"=="goodExtract" (
         echo Do you want to continue?
         pause>nul
         cls
+        
+    ) else (
+        echo Error extracting! Deleting file and trying directly with PowerShell method!
+        del mingit.zip
+        powershell -Command "& {Invoke-WebRequest -Uri '%URL_EXTRA%/mingit.zip' -OutFile 'mingit.zip'}"
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "%powershellScript%" > "%tempFile%"
+        set /p powershellOutput=<"%tempFile%"
+        del "%tempFile%"
+        if "%powershellOutput%"=="errorExtract" (
+            echo Theres a problem extracting the file please download the file and extract it manually 
+            echo https://huggingface.co/IAHispano/applio/resolve/main/mingit.zip
+            pause
+            exit
+        ) else (
+            del mingit.zip
+            echo Cloning the repository...
+            %cd%\mingit\cmd\git.exe clone %repoUrl% %repoFolder%
+            echo Moving the mingit folder...
+            robocopy "%cd%\mingit" "%principal%\lib\tools\mingit" /e /move /dcopy:t > NUL
+            if errorlevel 8 echo Warnings or errors occurred during the move.
+            cd %repoFolder%
+            del install_Applio.bat
+            del /q *.sh
+            echo.
+            echo Do you want to continue?
+            pause>nul
+            cls
+        )
     )
 )
 
