@@ -304,14 +304,14 @@ class VC:
                 print("Finished processing segmented audio, now merging audio...")
 
                 # Une el audio segmentado
-                merge_timestamps_file = os.path.join(os.path.dirname(new_dir_path), f"{os.path.basename(input_audio_path1).split('.')[0]}_timestamps.txt")
+                merge_timestamps_file = os.path.join(os.path.dirname(new_dir_path), f"{os.path.basename(new_dir_path).split('.')[0]}_timestamps.txt")
                 merge.merge_audio(merge_timestamps_file)
 
                 # Calculate the elapsed time
                 end_time = time.time()
                 total_time = end_time - start_time
 
-                merged_audio_path = os.path.join(os.path.dirname(new_dir_path), "audio-outputs", f"{os.path.basename(input_audio_path1).split('.')[0]}_merged.wav")
+                merged_audio_path = os.path.join(os.path.dirname(new_dir_path), "audio-outputs", f"{os.path.basename(new_dir_path).split('.')[0]}_merged.wav")
                 index_info = (
                     "Index:\n%s." % file_index
                     if isinstance(file_index, str) and os.path.exists(file_index)
