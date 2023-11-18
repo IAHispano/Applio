@@ -25,10 +25,8 @@ set "CONDA_ROOT_PREFIX=%UserProfile%\Miniconda3"
 set "INSTALL_ENV_DIR=%principal%\env"
 set "MINICONDA_DOWNLOAD_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_23.9.0-0-Windows-x86_64.exe"
 set "CONDA_EXECUTABLE=%CONDA_ROOT_PREFIX%\Scripts\conda.exe"
-set "tempFile=%cd%\powershell_output.txt"
 set "buildToolsUrl=https://aka.ms/vs/17/release/vs_BuildTools.exe"
 
-echo.
 cls
 echo INFO: It's important not to run this installer as an administrator as it might cause issues, and it's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
 echo.
@@ -58,16 +56,12 @@ if %errorlevel% equ 0 (
     powershell -Command "& {Invoke-WebRequest -Uri '%URL_EXTRA%/mingit.zip' -OutFile 'mingit.zip'}"
     )
 
-    set powershellOutput="goodExtract"
-
     if not exist "%cd%\mingit" (
-        set "powershellScript=try { Add-Type -AssemblyName 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('%cd%\mingit.zip', '%cd%'); Write-Output 'goodExtract' } catch { Write-Output 'errorExtract' }"
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "%powershellScript%" > "%tempFile%"
-        set /p powershellOutput=<"%tempFile%"
-        del "%tempFile%"
+        echo Extracting the file...
+        powershell -Command "Add-Type -AssemblyName 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('%cd%\mingit.zip', '%cd%')"
     )
 
-    if "%powershellOutput%"=="goodExtract" (
+    if exist "%cd%\mingit" (
         del mingit.zip
         echo Cloning the repository...
         %cd%\mingit\cmd\git.exe clone %repoUrl% %repoFolder%
@@ -78,37 +72,15 @@ if %errorlevel% equ 0 (
         del install_Applio.bat
         del /q *.sh
         echo.
-        echo Do you want to continue?
+        echo Do you want to continue? ^(Press Enter to continue or Ctrl+C to cancel^)
         pause>nul
         cls
         
     ) else (
-        echo Error extracting! Deleting file and trying directly with PowerShell method!
-        del mingit.zip
-        powershell -Command "& {Invoke-WebRequest -Uri '%URL_EXTRA%/mingit.zip' -OutFile 'mingit.zip'}"
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "%powershellScript%" > "%tempFile%"
-        set /p powershellOutput=<"%tempFile%"
-        del "%tempFile%"
-        if "%powershellOutput%"=="errorExtract" (
-            echo Theres a problem extracting the file please download the file and extract it manually 
-            echo https://huggingface.co/IAHispano/applio/resolve/main/mingit.zip
-            pause
-            exit
-        ) else (
-            del mingit.zip
-            echo Cloning the repository...
-            %cd%\mingit\cmd\git.exe clone %repoUrl% %repoFolder%
-            echo Moving the mingit folder...
-            robocopy "%cd%\mingit" "%principal%\lib\tools\mingit" /e /move /dcopy:t > NUL
-            if errorlevel 8 echo Warnings or errors occurred during the move.
-            cd %repoFolder%
-            del install_Applio.bat
-            del /q *.sh
-            echo.
-            echo Do you want to continue?
-            pause>nul
-            cls
-        )
+        echo Theres a problem extracting the file please download the file and extract it manually 
+        echo https://huggingface.co/IAHispano/applio/resolve/main/mingit.zip
+        pause
+        exit
     )
 )
 
