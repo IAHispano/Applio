@@ -287,7 +287,7 @@ def change_dataset(
 uvr5_names = ["HP2_all_vocals.pth", "HP3_all_vocals.pth", "HP5_only_main_vocal.pth",
              "VR-DeEchoAggressive.pth", "VR-DeEchoDeReverb.pth", "VR-DeEchoNormal.pth"]
 
-__s = "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/"
+__s = "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/"
 
 def id_(mkey):
     if mkey in uvr5_names:
