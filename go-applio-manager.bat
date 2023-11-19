@@ -22,6 +22,7 @@ set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
 set "mingit_path=%cd%\lib\tools\mingit\cmd\git.exe"
 set "CONDA_ROOT_PREFIX=%UserProfile%\Miniconda3"
 set "CONDA_EXECUTABLE=%CONDA_ROOT_PREFIX%\Scripts\conda.exe"
+set "INSTALL_ENV_DIR=%principal%\env"
 
 :menu
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
