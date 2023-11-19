@@ -388,7 +388,7 @@ class Pipeline(object):
             f0, pd = torchcrepe.predict(
                 audio,
                 self.sr,
-                crepe_hop_length,
+                self.window,
                 f0_min,
                 f0_max,
                 model,
