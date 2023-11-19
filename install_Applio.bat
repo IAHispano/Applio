@@ -58,7 +58,7 @@ if %errorlevel% equ 0 (
 
     if not exist "%cd%\mingit" (
         echo Extracting the file...
-        powershell -Command "Add-Type -AssemblyName 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('%cd%\mingit.zip', '%cd%')"
+        powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('%cd%\mingit.zip', '%cd%') }"
     )
 
     if exist "%cd%\mingit" (
