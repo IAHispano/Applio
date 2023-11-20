@@ -146,8 +146,8 @@ call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
 conda install -c anaconda git -y
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" deactivate
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
-pip install --upgrade pip
 pip install -r %principal%\assets\requirements\requirements.txt
+pip install --upgrade setuptools
 pip install future==0.18.2
 pip uninstall torch torchvision torchaudio -y
 pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
@@ -182,8 +182,8 @@ call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
 conda install -c anaconda git -y
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" deactivate
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
-pip install --upgrade pip
 pip uninstall onnxruntime onnxruntime-directml
+pip install --upgrade setuptools
 pip install -r %principal%\assets\requirements\requirements.txt
 pip install -r %principal%\assets\requirements\requirements-dml.txt
 pip install future==0.18.2
