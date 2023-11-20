@@ -60,6 +60,11 @@ if %errorlevel% equ 0 (
         echo Extracting the file...
         powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('%cd%\mingit.zip', '%cd%') }"
     )
+	
+    if not exist "%cd%\mingit" (
+        echo Extracting failed trying with the tar method...
+        tar -xf %cd%\mingit.zip
+    )	
 
     if exist "%cd%\mingit" (
         del mingit.zip
