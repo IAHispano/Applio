@@ -168,12 +168,11 @@ class Pipeline(object):
         batch_size = 512
         # Compute pitch using first gpu
         audio = torch.tensor(np.copy(x))[None].float()
-        hop_length = kwargs.get('crepe_hop_length', 160) 
         model = kwargs.get('model', 'full')
         f0, pd = torchcrepe.predict(
             audio,
             self.sr,
-            hop_length,
+            self.window,
             f0_min,
             f0_max,
             model,
@@ -305,7 +304,7 @@ class Pipeline(object):
         for method in methods:
             f0 = None
             if method == "crepe-tiny":
-                f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, crepe_hop_length=crepe_hop_length, model="tiny")
+                f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, model="tiny")
                 f0 = f0[1:]  # Get rid of extra first frame
             elif method == "mangio-crepe":
                 f0 = self.get_f0_crepe_computation(
@@ -401,7 +400,7 @@ class Pipeline(object):
             f0[pd < 0.1] = 0
             f0 = f0[0].cpu().numpy()
         elif f0_method == "crepe-tiny":
-            f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, crepe_hop_length=crepe_hop_length, model="tiny")
+            f0 = self.get_f0_official_crepe_computation(x, f0_min, f0_max, model="tiny")
         elif f0_method == "mangio-crepe":
             f0 = self.get_f0_crepe_computation(
                 x, f0_min, f0_max, p_len, crepe_hop_length=crepe_hop_length
