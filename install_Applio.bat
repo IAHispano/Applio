@@ -107,20 +107,8 @@ echo.
 set /p choice=Select the option according to your GPU: 
 set choice=%choice: =%
 
-if not exist "%principal%\vs_BuildTools.exe" (
-    curl -s -LJO %buildToolsUrl% -o vs_BuildTools.exe
-    echo Downloading vs_BuildTools from %buildToolsUrl%
-)
-if not exist "%principal%\vs_BuildTools.exe" (
-    echo Download failed trying with the powershell method
-    del vs_BuildTools.exe
-    powershell -Command "& {Invoke-WebRequest -Uri '%buildToolsUrl%' -OutFile 'vs_BuildTools.exe'}"
-)
-vs_BuildTools.exe --add Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools --add Microsoft.VisualStudio.Workload.VCTools --passive
 echo Installing vs_BuildTools...
-echo.
-echo Wait till the installation is finished (the installer will close automatically), then press any key to continue...
-pause>nul
+winget install Microsoft.VisualStudio.2022.BuildTools --force --override "--wait --passive --add Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools --add Microsoft.VisualStudio.Workload.VCTools"
 cls
 
 if "%choice%"=="1" (
@@ -251,3 +239,4 @@ echo Applio has been successfully downloaded, run the file go-applio.bat to run 
 echo.
 pause
 exit
+
