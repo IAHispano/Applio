@@ -189,18 +189,18 @@ Applio owes its existence to the collaborative efforts of various repositories, 
 
 Our goal is not to supplant RVC or Mangio; rather, we aim to provide a contemporary and up-to-date alternative for the entire community.
 
-+ [Retrieval-based-Voice-Conversion-WebUI](Retrieval-based-Voice-Conversion-WebUI)
-  + [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork)
-  + [Mangio-RVC-Tweaks](https://github.com/alexlnkp/Mangio-RVC-Tweaks)
-  + [RVG_tts](https://github.com/Foxify52/RVG_tts)
-+ [ContentVec](https://github.com/auspicious3000/contentvec/)
-+ [VITS](https://github.com/jaywalnut310/vits)
-+ [HIFIGAN](https://github.com/jik876/hifi-gan)
-+ [Gradio](https://github.com/gradio-app/gradio)
-+ [FFmpeg](https://github.com/FFmpeg/FFmpeg)
-+ [Ultimate Vocal Remover](https://github.com/Anjok07/ultimatevocalremovergui)
-+ [audio-slicer](https://github.com/openvpi/audio-slicer)
-+ [RMVPE](https://github.com/Dream-High/RMVPE)
++ [VITS](https://github.com/jaywalnut310/vits) by jaywalnut310
++ [Retrieval-based-Voice-Conversion-WebUI](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) by RVC-Project
++ [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork) by Mangio621
++ [Mangio-RVC-Tweaks](https://github.com/alexlnkp/Mangio-RVC-Tweaks) by alexlnkp
++ [RVG_tts](https://github.com/Foxify52/RVG_tts) by Foxify52
++ [RMVPE](https://github.com/Dream-High/RMVPE) by Dream-High
++ [ContentVec](https://github.com/auspicious3000/contentvec/) by auspicious3000
++ [HIFIGAN](https://github.com/jik876/hifi-gan) by jik876
++ [Gradio](https://github.com/gradio-app/gradio) by gradio-app
++ [FFmpeg](https://github.com/FFmpeg/FFmpeg) by FFmpeg
++ [Ultimate Vocal Remover](https://github.com/Anjok07/ultimatevocalremovergui) by Anjok07
++ [audio-slicer](https://github.com/openvpi/audio-slicer) by openvpi
 
 > [!WARNING]  
 > If you believe you've made contributions to the code utilized in Applio and should be acknowledged in the credits, please feel free to open a pull request (PR). It's possible that we may have unintentionally overlooked your contributions, and we appreciate your proactive approach in ensuring proper recognition.
