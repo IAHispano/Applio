@@ -16,7 +16,7 @@
 
 
 ## 🎯 Improvements of Applio-RVC-Fork Over RVC
-*The comparisons are with respect to the official [Retrieval-based-Voice-Conversion-WebUI](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) repository.*
+*The comparisons are with respect to the original [Retrieval-based-Voice-Conversion-WebUI](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) repository.*
 ### f0 Inference Algorithm Overhaul
 - Applio features a comprehensive overhaul of the f0 inference algorithm, including:
   - Addition of the pyworld dio f0 method.
