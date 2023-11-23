@@ -193,8 +193,9 @@ Applio owes its existence to the collaborative efforts of various repositories, 
 Our goal is not to supplant RVC or Mangio; rather, we aim to provide a contemporary and up-to-date alternative for the entire community.
 
 + [Retrieval-based-Voice-Conversion-WebUI](Retrieval-based-Voice-Conversion-WebUI)
-+ [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork)
-+ [RVG_tts](https://github.com/Foxify52/RVG_tts)
+  + [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork)
+  + [Mangio-RVC-Tweaks](https://github.com/alexlnkp/Mangio-RVC-Tweaks)
+  + [RVG_tts](https://github.com/Foxify52/RVG_tts)
 + [ContentVec](https://github.com/auspicious3000/contentvec/)
 + [VITS](https://github.com/jaywalnut310/vits)
 + [HIFIGAN](https://github.com/jik876/hifi-gan)
