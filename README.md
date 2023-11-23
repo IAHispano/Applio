@@ -5,6 +5,8 @@
 [![Discord](https://img.shields.io/badge/SUPPORT_DISCORD-37a779?style=for-the-badge)](https://discord.gg/IAHispano) [![Discord Bot](https://img.shields.io/badge/DISCORD_BOT-37a779?style=for-the-badge)](https://bot.applio.org)  [![Docs](https://img.shields.io/badge/DOCS-37a779?style=for-the-badge)](https://docs.applio.org)
 
 ## 📚 Table of Contents
+*This README has been enhanced by incorporating the features introduced in Applio-RVC-Fork to the original [Mangio-RVC-Fork README](https://github.com/Mangio621/Mangio-RVC-Fork/blob/main/README.md), along with additional details and explanations.*
+
   1. [Improvements of Applio Over RVC](#-improvements-of-applio-rvc-fork-over-rvc)
   2. [Additional Features of This Repository](#️-additional-features-of-this-repository)
   3. [Planned Features for Future Development](#️-planned-features-for-future-development)
