@@ -32,6 +32,15 @@ echo INFO: It's important not to run this installer as an administrator as it mi
 echo.
 pause
 cls
+
+net session >nul 2>&1
+if %errorLevel% == 0 (
+    echo You are executing the script with administrator privileges. Please run it without elevated permissions.
+    echo Please, hit enter to exit.
+    pause>nul
+    exit
+)
+
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 echo.
 
