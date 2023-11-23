@@ -1,12 +1,11 @@
-# 🍏 Applio-RVC-Fork (V2)
-Applio is a user-friendly fork of Mangio-RVC-Fork/RVC, designed to provide an intuitive interface, especially for newcomers.
-<br>
+# 🍏 Applio-RVC-Fork
+> [!NOTE]
+> Applio-RVC-Fork is designed to complement existing repositories, and as such, certain features may be in experimental stages, potentially containing bugs. Additionally, there might be instances of coding practices that could be improved or refined. It is not intended to replace any other repository.
 
 [![Discord](https://img.shields.io/badge/SUPPORT_DISCORD-37a779?style=for-the-badge)](https://discord.gg/IAHispano) [![Discord Bot](https://img.shields.io/badge/DISCORD_BOT-37a779?style=for-the-badge)](https://bot.applio.org)  [![Docs](https://img.shields.io/badge/DOCS-37a779?style=for-the-badge)](https://docs.applio.org)
 
-
 ## 📚 Table of Contents
-  1. [Improvements of Applio Over RVC](#-improvements-of-applio-over-rvc)
+  1. [Improvements of Applio Over RVC](#-improvements-of-applio-rvc-fork-over-rvc)
   2. [Additional Features of This Repository](#️-additional-features-of-this-repository)
   3. [Planned Features for Future Development](#️-planned-features-for-future-development)
   4. [Installation](#-installation)
@@ -16,7 +15,8 @@ Applio is a user-friendly fork of Mangio-RVC-Fork/RVC, designed to provide an in
   8. [Thanks to all RVC, Mangio and Applio contributors](#-thanks-to-all-rvc-mangio-and-applio-contributors)
 
 
-## 🎯 Improvements of Applio Over RVC
+## 🎯 Improvements of Applio-RVC-Fork Over RVC
+*The comparisons are with respect to the official [Retrieval-based-Voice-Conversion-WebUI](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) repository.*
 ### f0 Inference Algorithm Overhaul
 - Applio features a comprehensive overhaul of the f0 inference algorithm, including:
   - Addition of the pyworld dio f0 method.
@@ -86,9 +86,6 @@ In addition to the aforementioned improvements, this repository offers the follo
 ### Data Efficiency
 - Supports training with a small dataset, yielding commendable results, especially with audio clips of at least 10 minutes of low-noise speech.
 
-### Universal Compatibility
-- Acceleration support for AMD/Intel graphics cards and enhanced acceleration for Intel ARC graphics cards, including IPEX compatibility (Not for training).
-
 ### Overtraining Detection
 - This feature keeps track of the current progress trend and stops the training if no improvement is found after 100 epochs.
   - During the 100 epochs with no improvement, no progress is saved. This allows you to continue training from the best-found epoch.
@@ -121,7 +118,7 @@ brew install swig
 ```
 
 Install requirements:
-*Before this install ffmpeg, wget, git and python (This fork just works with 3.11+ on linux btw)*
+*Before this install ffmpeg, wget, git and python (This fork just works with 3.11+ on Linux)*
 ```bash
 wget https://github.com/IAHispano/Applio-RVC-Fork/releases/download/v2.0.0/install_Applio-linux.sh
 chmod +x install_Applio-linux.sh && ./install_Applio-linux.sh
@@ -204,6 +201,9 @@ Our goal is not to supplant RVC or Mangio; rather, we aim to provide a contempor
 + [Ultimate Vocal Remover](https://github.com/Anjok07/ultimatevocalremovergui)
 + [audio-slicer](https://github.com/openvpi/audio-slicer)
 + [RMVPE](https://github.com/Dream-High/RMVPE)
+
+> [!WARNING]  
+> If you believe you've made contributions to the code utilized in Applio and should be acknowledged in the credits, please feel free to open a pull request (PR). It's possible that we may have unintentionally overlooked your contributions, and we appreciate your proactive approach in ensuring proper recognition.
 
 
 ## 🙏 Thanks to all RVC, Mangio and Applio contributors
