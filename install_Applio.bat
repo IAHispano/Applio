@@ -1,5 +1,5 @@
 @echo off
-Title Applio - Installer
+Title Applio Installer
 setlocal
 cd %~dp0
 
@@ -28,7 +28,7 @@ set "CONDA_EXECUTABLE=%CONDA_ROOT_PREFIX%\Scripts\conda.exe"
 set "buildToolsUrl=https://aka.ms/vs/17/release/vs_BuildTools.exe"
 
 cls
-echo INFO: It's important not to run this installer as an administrator as it might cause issues, and it's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
+echo INFO: It's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
 echo.
 pause
 cls
@@ -61,7 +61,7 @@ if %errorlevel% equ 0 (
     )
 
     if not exist "%cd%\mingit.zip" (
-    echo Download failed trying with the powershell method
+    echo Download failed, trying with the powershell method
     powershell -Command "& {Invoke-WebRequest -Uri '%URL_EXTRA%/mingit.zip' -OutFile 'mingit.zip'}"
     )
 
@@ -69,11 +69,11 @@ if %errorlevel% equ 0 (
         echo Extracting the file...
         powershell -command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem ; [System.IO.Compression.ZipFile]::ExtractToDirectory('%cd%\mingit.zip', '%cd%') }"
     )
-	
+
     if not exist "%cd%\mingit" (
         echo Extracting failed trying with the tar method...
         tar -xf %cd%\mingit.zip
-    )	
+    )
 
     if exist "%cd%\mingit" (
         del mingit.zip
@@ -89,7 +89,6 @@ if %errorlevel% equ 0 (
         echo Do you want to continue? ^(Press Enter to continue or Ctrl+C to cancel^)
         pause>nul
         cls
-        
     ) else (
         echo Theres a problem extracting the file please download the file and extract it manually 
         echo https://huggingface.co/IAHispano/applio/resolve/main/mingit.zip
@@ -97,24 +96,24 @@ if %errorlevel% equ 0 (
         exit
     )
 )
-
 :menu
-echo Installing dependencies...
+echo 
+echo You can install Applio-RVC-Fork in various ways. The first method is highly recommended for most users, as it sets up all the dependencies in a virtual environment, preventing compatibility issues. The remaining options may be in experimental stages or cater to more advanced users.
 echo.
-echo Recommended for Nvdia/AMD/Intel GPU and non GPU users:
-echo [1] Download Nvdia conda env (customized python environment designed for the installation of required dependencies)
+
+echo Recommended for Nvidia/AMD/Intel GPU and non-GPU users:
+echo [1] Download the dependencies using a Python virtual environment (Conda)
 echo.
-echo Recommended for AMD/Intel GPU users (Broken): 
-echo [2] Download DML conda env (customized python environment designed for the installation of required dependencies)
+
+echo Recommended for AMD/Intel GPU users (Potentially buggy):
+echo [2] Download the DML dependencies using a Python virtual environment (Conda)
 echo.
-echo Only recommended for experienced users:
-echo [3] Nvidia graphics cards
-echo [4] AMD / Intel graphics cards (Broken)
+
+echo [3] Skip dependency installation
 echo.
-echo [5] I have already installed the dependencies
-echo.
-set /p choice=Select the option according to your GPU: 
+set /p choice=Select the most appropriate option in your case (Option 1 is generally recommended): 
 set choice=%choice: =%
+
 
 echo Installing vs_BuildTools...
 winget install Microsoft.VisualStudio.2022.BuildTools --force --override "--wait --passive --add Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools --add Microsoft.VisualStudio.Workload.VCTools"
@@ -193,50 +192,6 @@ goto dependenciesFinished
 )
 
 if "%choice%"=="3" (
-cls
-echo INFO: Please ensure you have installed the required dependencies before continuing. Refer to the installation guide for details.
-echo Step-by-step guide: https://rentry.org/appliolocal
-echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
-echo Git: https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe
-echo Python 3.9.8: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
-pause
-cls
-pip install -r assets/requirements/requirements.txt
-echo.
-pip uninstall torch torchvision torchaudio -y
-echo.
-pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
-echo.
-echo.
-cls
-echo Dependencies successfully installed!
-echo.
-goto dependenciesFinished
-)
-
-if "%choice%"=="4" (
-cls
-echo INFO: Please ensure you have installed the required dependencies before continuing. Refer to the installation guide for details.
-echo Step-by-step guide: https://rentry.org/appliolocal
-echo Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe
-echo Git: https://github.com/git-for-windows/git/releases/download/v2.42.0.windows.2/Git-2.42.0.2-64-bit.exe
-echo Python 3.9.8: https://www.python.org/ftp/python/3.9.8/python-3.9.8-amd64.exe
-pause
-cls
-pip uninstall onnxruntime onnxruntime-directml
-echo.
-pip install -r assets/requirements/requirements.txt
-echo.
-pip install -r assets/requirements/requirements-dml.txt
-echo.
-echo.
-cls
-echo Dependencies successfully installed!
-echo.
-goto dependenciesFinished
-)
-
-if "%choice%"=="5" (
 echo Dependencies successfully installed!
 echo.
 goto dependenciesFinished
@@ -248,4 +203,3 @@ echo Applio has been successfully downloaded, run the file go-applio.bat to run 
 echo.
 pause
 exit
-
