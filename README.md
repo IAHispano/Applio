@@ -6,16 +6,14 @@
 
 ## 📚 Table of Contents
 *This README has been enhanced by incorporating the features introduced in Applio-RVC-Fork to the original [Mangio-RVC-Fork README](https://github.com/Mangio621/Mangio-RVC-Fork/blob/main/README.md), along with additional details and explanations.*
-
   1. [Improvements of Applio Over RVC](#-improvements-of-applio-rvc-fork-over-rvc)
   2. [Additional Features of This Repository](#️-additional-features-of-this-repository)
-  3. [Planned Features for Future Development](#️-planned-features-for-future-development)
+  3. [Todo Tasks](#-todo-tasks)
   4. [Installation](#-installation)
   5. [Running the Web GUI (Inference & Train)](#-running-the-web-gui-inference--train)
   6. [Running the CLI (Inference & Train)](#-running-the-cli-inference--train)
   7. [Credits](#-credits)
   8. [Thanks to all RVC, Mangio and Applio contributors](#-thanks-to-all-rvc-mangio-and-applio-contributors)
-
 
 ## 🎯 Improvements of Applio-RVC-Fork Over RVC
 *The comparisons are with respect to the original [Retrieval-based-Voice-Conversion-WebUI](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) repository.*
@@ -97,12 +95,19 @@ In addition to the aforementioned improvements, this repository offers the follo
 - This feature restarts training before a mode collapse by lowering the batch size until it can progress past the mode collapse.
   - If a mode collapse is overcome but another one occurs later, it will reset the batch size to its initial setting. This helps maintain training speed when dealing with multiple collapses.
 
-## 🛠️ Planned Features for Future Development
-As part of the ongoing development of this fork, the following features are planned to be added:
-
-- Incorporating an inference batcher script based on user feedback. This enhancement will allow for processing 30-second audio samples at a time, improving output quality and preventing memory errors during inference.
-- Implementing an automatic removal mechanism for old generations to optimize storage space usage. This feature ensures that the repository remains efficient and organized over time.
-- Streamlining the training process for Paperspace machines to further improve efficiency and resource utilization during training tasks.
+## 📝 Todo Tasks
+- [ ] **Investigate GPU Detection Issue:** Address the GPU detection problem and ensure proper utilization of Nvidia GPU.
+- [ ] **Fix Mode Collapse Prevention Feature:** Refine the mode collapse prevention feature to maintain graph consistency during retraining.
+- [ ] **Resolve CUDA Compatibility Issue:** Investigate and resolve the cuFFT error related to CUDA compatibility.
+- [ ] **Refactor infer-web.py:** Organize the code of infer-web.py into different files for each tab, enhancing modularity.
+- [ ] **Expand UVR Model Options:** Integrate additional UVR models to provide users with more options and flexibility.
+- [ ] **Enhance Installation Process:** Improve the system installation process for better user experience and clarity.
+- [ ] **Implement Automatic Updates:** Add automatic update functionality to keep the application current with the latest features.
+- [ ] **Multilingual Support:** Include more translations for various languages.
+- [ ] **Diversify TTS Methods:** Introduce new TTS methods and enhance customization options for a richer user experience.
+- [ ] **CLI Improvement:** Enhance the CLI functionality and introduce a pipeline for a more streamlined user experience.
+- [ ] **Dependency Updates:** Keep dependencies up-to-date by regularly updating to the latest versions.
+- [ ] **Dataset Creation Assistant:** Develop an assistant for creating datasets to simplify and guide users through the process.
 
 ## ✨ Installation
 
