@@ -97,7 +97,7 @@ if %errorlevel% equ 0 (
     )
 )
 :menu
-echo 
+echo.
 echo You can install Applio-RVC-Fork in various ways. The first method is highly recommended for most users, as it sets up all the dependencies in a virtual environment, preventing compatibility issues. The remaining options may be in experimental stages or cater to more advanced users.
 echo.
 
