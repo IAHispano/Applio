@@ -2,6 +2,7 @@ ffmpeg.exe
 ffprobe.exe
 
 runtime
+env/*
 torchcrepe
 datasets/*
 logs/*
