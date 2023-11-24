@@ -258,5 +258,9 @@
   "Text:": "Text:",
   "You can also drop your files to load your model.": "You can also drop your files to load your model.",
   "Drag your .pth file here:": "Drag your .pth file here:",
-  "Drag your .index file here:": "Drag your .index file here:"
+  "Drag your .index file here:": "Drag your .index file here:",
+  "Reload from checkpoint before a mode collapse and try training it again": "Reload from checkpoint before a mode collapse and try training it again",
+  "Stop training early if no improvement detected": "Stop training early if no improvement detected",
+  "Enable autotune": "Enable autotune",
+  "Split Audio (Better Results)": "Split Audio (Better Results)"
 }

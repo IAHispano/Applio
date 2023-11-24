@@ -273,37 +273,44 @@ for foldername in os.listdir(os.path.join(now_dir, datasets_root)):
     if os.path.isdir(os.path.join(now_dir, "datasets", foldername)):
         datasets.append(foldername)
 
+
 def get_dataset():
     if len(datasets) > 0:
         return sorted(datasets)[0]
     else:
         return ""
 
-def change_dataset(
-        trainset_dir4
-):
+
+def change_dataset(trainset_dir4):
     return gr.Textbox.update(value=trainset_dir4)
 
-uvr5_names = ["HP2_all_vocals.pth", "HP3_all_vocals.pth", "HP5_only_main_vocal.pth",
-             "VR-DeEchoAggressive.pth", "VR-DeEchoDeReverb.pth", "VR-DeEchoNormal.pth"]
+
+uvr5_names = [
+    "HP2_all_vocals.pth",
+    "HP3_all_vocals.pth",
+    "HP5_only_main_vocal.pth",
+    "VR-DeEchoAggressive.pth",
+    "VR-DeEchoDeReverb.pth",
+    "VR-DeEchoNormal.pth",
+]
 
 __s = "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/uvr5_weights/"
+
 
 def id_(mkey):
     if mkey in uvr5_names:
         model_name, ext = os.path.splitext(mkey)
         mpath = f"{now_dir}/assets/uvr5_weights/{mkey}"
-        if not os.path.exists(f'{now_dir}/assets/uvr5_weights/{mkey}'):
-            print('Downloading model...',end=' ')
-            subprocess.run(
-                ["python", "-m", "wget", "-o", mpath, __s+mkey]
-            )
-            print(f'saved to {mpath}')
+        if not os.path.exists(f"{now_dir}/assets/uvr5_weights/{mkey}"):
+            print("Downloading model...", end=" ")
+            subprocess.run(["python", "-m", "wget", "-o", mpath, __s + mkey])
+            print(f"saved to {mpath}")
             return model_name
         else:
             return model_name
     else:
         return None
+
 
 def update_model_choices(select_value):
     model_ids = get_model_list()
@@ -353,6 +360,7 @@ def get_fshift_presets():
 
     return fshift_presets_list if fshift_presets_list else ""
 
+
 def uvr(
     model_name,
     inp_root,
@@ -366,7 +374,6 @@ def uvr(
     infos = []
     if architecture == "VR":
         try:
-            
             inp_root = inp_root.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
             save_root_vocal = (
                 save_root_vocal.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
@@ -380,7 +387,7 @@ def uvr(
                 return ""
             else:
                 pass
-            
+
             infos.append(
                 i18n("Starting audio conversion... (This might take a moment)")
             )
@@ -1076,7 +1083,7 @@ def click_train(
     if_retrain_collapse20,
     if_stop_on_fit21,
     smoothness22,
-    collapse_threshold23
+    collapse_threshold23,
 ):
     CSVutil("lib/csvdb/stop.csv", "w+", "formanting", False)
     # 生成filelist
@@ -1185,8 +1192,15 @@ def click_train(
             1 if if_cache_gpu17 == True else 0,
             1 if if_save_every_weights18 == True else 0,
             version19,
-            ("-sof %s -sm %s" % (1 if if_stop_on_fit21 == True else 0, smoothness22)) if if_stop_on_fit21 else "",
-            ("-rc %s -ct %s" % (1 if if_retrain_collapse20 == True else 0, collapse_threshold23)) if if_retrain_collapse20 else "",
+            ("-sof %s -sm %s" % (1 if if_stop_on_fit21 == True else 0, smoothness22))
+            if if_stop_on_fit21
+            else "",
+            (
+                "-rc %s -ct %s"
+                % (1 if if_retrain_collapse20 == True else 0, collapse_threshold23)
+            )
+            if if_retrain_collapse20
+            else "",
         )
     )
     logger.info(cmd)
@@ -1201,7 +1215,7 @@ def click_train(
         if not os.path.exists(f"logs/{exp_dir1}/col"):
             break
         with open(f"logs/{exp_dir1}/col") as f:
-            col = f.read().split(',')
+            col = f.read().split(",")
             if colEpoch < int(col[1]):
                 colEpoch = int(col[1])
                 logger.info(f"Epoch to beat {col[1]}")
@@ -1210,10 +1224,14 @@ def click_train(
             batchSize -= 1
         if batchSize < 1:
             break
-        p = Popen(cmd.replace(f"-bs {batch_size12}", f"-bs {batchSize}"), shell=True, cwd=now_dir)
+        p = Popen(
+            cmd.replace(f"-bs {batch_size12}", f"-bs {batchSize}"),
+            shell=True,
+            cwd=now_dir,
+        )
         PID = p.pid
         p.wait()
-        
+
     return (
         i18n("Training is done, check train.log"),
         {"visible": False, "__type__": "update"},
@@ -1371,8 +1389,8 @@ def cli_infer(com):
         CSVutil(
             "lib/csvdb/formanting.csv", "w+", "formanting", DoFormant, Quefrency, Timbre
         )
-    split_audio = True if (com[16] == 1) else False	
-    f0_autotune = True if (com[17] == 1) else False	
+    split_audio = True if (com[16] == 1) else False
+    f0_autotune = True if (com[17] == 1) else False
     minpitch_slider = com[18]
     minpitch_txtbox = minpitch_slider
     maxpitch_slider = com[19]
@@ -1405,9 +1423,7 @@ def cli_infer(com):
         f0_autotune,
     )
     if "Success." in conversion_data[0]:
-        print(
-            "Applio-RVC-Fork Infer-CLI: Inference succeeded."
-        )
+        print("Applio-RVC-Fork Infer-CLI: Inference succeeded.")
     else:
         print("Applio-RVC-Fork Infer-CLI: Inference failed. Here's the traceback: ")
         print(conversion_data[0])
@@ -1468,11 +1484,10 @@ def cli_train(com):
     if_cache_gpu = True if (int(com[9]) == 1) else False
     if_save_every_weight = True if (int(com[10]) == 1) else False
     version = com[11]
-    if_retrain_collapse20 = True if (int(com[12]) == 1) else False	
-    if_stop_on_fit21 = True if (int(com[13]) == 1) else False	
-    smoothness23 = float(com[14]) if com[14] != "" else 0.975 
+    if_retrain_collapse20 = True if (int(com[12]) == 1) else False
+    if_stop_on_fit21 = True if (int(com[13]) == 1) else False
+    smoothness23 = float(com[14]) if com[14] != "" else 0.975
     collapse_threshold22 = int(com[15]) if com[15] != "" else 25
-
 
     pretrained_base = "pretrained/" if version == "v1" else "pretrained_v2/"
 
@@ -1498,7 +1513,7 @@ def cli_train(com):
         if_retrain_collapse20,
         if_stop_on_fit21,
         smoothness23,
-        collapse_threshold22
+        collapse_threshold22,
     )
 
 
@@ -1860,7 +1875,9 @@ def GradioSetup():
 
     with gr.Blocks(theme=my_applio, title="Applio-RVC-Fork") as app:
         gr.HTML("<h1> 🍏 Applio-RVC-Fork </h1>")
-        gr.HTML("<h3>Discover over 15,000 voice models with our Discord bot — <a href='https://bot.applio.org'>Invite it here!</a></h3>")
+        gr.HTML(
+            "<h3>Discover over 15,000 voice models with our Discord bot — <a href='https://bot.applio.org'>Invite it here!</a></h3>"
+        )
         with gr.Tabs():
             with gr.TabItem(i18n("Model Inference")):
                 with gr.Row():
@@ -1991,10 +2008,12 @@ def GradioSetup():
                                 )
 
                                 f0_autotune = gr.Checkbox(
-                                    label="Enable autotune", interactive=True, value=False
+                                    label=i18n("Enable autotune"),
+                                    interactive=True,
+                                    value=False,
                                 )
                                 split_audio = gr.Checkbox(
-                                    label="Split Audio (Better Results)",
+                                    label=i18n("Split Audio (Better Results)"),
                                     interactive=True,
                                 )
 
@@ -2009,7 +2028,6 @@ def GradioSetup():
                                     interactive=True,
                                     visible=False,
                                 )
-                 
 
                                 minpitch_slider = gr.Slider(
                                     label=i18n("Min pitch:"),
@@ -2290,7 +2308,8 @@ def GradioSetup():
                                 value=0,
                             )
                             opt_input = gr.Textbox(
-                                label=i18n("Specify output folder:"), value="assets/audios/audio-outputs"
+                                label=i18n("Specify output folder:"),
+                                value="assets/audios/audio-outputs",
                             )
                         with gr.Column():
                             dir_input = gr.Textbox(
@@ -2417,7 +2436,9 @@ def GradioSetup():
                                         interactive=True,
                                     )
                                     f0_autotune = gr.Checkbox(
-                                        label="Enable autotune", interactive=True, value=False
+                                        label="Enable autotune",
+                                        interactive=True,
+                                        value=False,
                                     )
                                     hop_length = gr.Slider(
                                         minimum=1,
@@ -2538,9 +2559,7 @@ def GradioSetup():
                                 value="",
                             )
                             trainset_dir4.change(
-                                change_dataset,
-                                [trainset_dir4],
-                                [exp_dir1]
+                                change_dataset, [trainset_dir4], [exp_dir1]
                             )
                             dataset_path = gr.Textbox(
                                 label=i18n("Or add your dataset path:"),
@@ -2590,13 +2609,13 @@ def GradioSetup():
                                     "rmvpe_gpu",
                                 ]
                                 if config.dml == False
-                                    else [
-                                        "pm",
-                                        "harvest",
-                                        "dio",
-                                        "rmvpe",
-                                        "rmvpe_gpu",
-                                    ],
+                                else [
+                                    "pm",
+                                    "harvest",
+                                    "dio",
+                                    "rmvpe",
+                                    "rmvpe_gpu",
+                                ],
                                 value="rmvpe",
                                 interactive=True,
                             )
@@ -2671,7 +2690,7 @@ def GradioSetup():
                                 label="Threshold % for collapse:",
                                 value=25,
                                 interactive=True,
-                                visible=False
+                                visible=False,
                             )
                             smoothness23 = gr.Slider(
                                 minimum=0,
@@ -2680,7 +2699,7 @@ def GradioSetup():
                                 label="Improvement smoothness calculation:",
                                 value=0.975,
                                 interactive=True,
-                                visible=False
+                                visible=False,
                             )
 
                         with gr.Row():
@@ -2706,12 +2725,12 @@ def GradioSetup():
                                 interactive=True,
                             )
                             if_retrain_collapse20 = gr.Checkbox(
-                                label="Reload from checkpoint before a mode collapse and try training it again",
+                                label=i18n("Reload from checkpoint before a mode collapse and try training it again"),
                                 value=False,
                                 interactive=True,
                             )
                             if_stop_on_fit21 = gr.Checkbox(
-                                label="Stop training early if no improvement detected. (Set Training Epochs to something high like 9999)",
+                                label=i18n("Stop training early if no improvement detected"),
                                 value=False,
                                 interactive=True,
                             )
@@ -2845,7 +2864,7 @@ def GradioSetup():
                                 if_retrain_collapse20,
                                 if_stop_on_fit21,
                                 smoothness23,
-                                collapse_threshold22
+                                collapse_threshold22,
                             ],
                             [info3, butstop, but3],
                             api_name="train_start",
