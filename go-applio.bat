@@ -1,9 +1,8 @@
 @echo off
 setlocal
-title Applio - Start
+title Applio-RVC-Fork
 cd %~dp0
 
-rem Conda env variables
 set CONDA_ROOT_PREFIX=%UserProfile%\Miniconda3
 set INSTALL_ENV_DIR=%cd%\env
 
@@ -18,6 +17,7 @@ set INSTALL_ENV_DIR=%cd%\env
 :::          |_|   |_|
 :::
 :::
+
 
 for /f "usebackq delims=" %%i in ("%cd%\assets\configs\version.txt") do (
     set "localVersion=%%i"
@@ -39,21 +39,15 @@ if %errorlevel% equ 1 (
 )
 
 :continue
-echo Conda: Recommended for regular users
-echo [1] Start Applio - Conda ^(Nvidia Support^)
-echo [2] Start Applio - Conda ^(Intel Support. Requires Nvdia conda env^)
-echo [3] Start Applio - Conda ^(AMD Support^)
+call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
+echo Start with Conda default compatible with all platforms
+echo [1] Start Applio with Conda default ^(Nvidia Support, works for other platforms^)
 echo.
-echo Runtime: Not recommended ^(Some features may not work^)
-echo [4] Start Applio - Runtime ^(Nvidia Support^)
-echo [5] Start Applio - Runtime ^(Intel Support. Requires Nvidia runtime^)
-echo [6] Start Applio - Runtime ^(AMD Support^)
+echo Start with Conda for platform specific support (in case of failure use option 1)
+echo [2] Start Applio with Conda ^& sklearnex ^(Intel Support)
+echo [3] Start Applio with Conda ^& DML ^(AMD Support^)
 echo.
-echo Dependencies: Only recommended for experienced users
-echo [7] Start Applio ^(Nvidia Support^)
-echo [8] Start Applio ^(AMD Support^)
-echo.
-echo [9] Exit
+echo [4] Exit
 echo.
 
 set /p choice=Select an option: 
@@ -61,16 +55,14 @@ set choice=%choice: =%
 
 if "%choice%"=="1" (
     cls
-    echo Starting Applio with Conda for Nvidia support...
-    call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
+    echo Starting Applio-RVC-Fork with Conda default compatible with all platforms...
     python infer-web.py --pycmd python --port 7897 --theme dark
     pause
     cls
     goto menu
 ) else if "%choice%"=="2" (
     cls
-    echo Starting Applio with Conda for Intel CPU support ^(you must have Nvidia support installed^)...
-    call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
+    echo Starting Applio-RVC-Fork with Conda for Intel specific support...
     python -m pip install scikit-learn-intelex
     python -m sklearnex infer-web.py --pycmd runtime/python.exe --port 7897 --theme dark
     pause
@@ -78,60 +70,22 @@ if "%choice%"=="1" (
     goto menu
 ) else if "%choice%"=="3" (
     cls
-    echo Starting Applio with Conda for AMD support...
-    call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
+    echo Starting Applio-RVC-Fork with Conda for AMD specific support...
     python infer-web.py --pycmd python --port 7897 --dml --theme dark
     pause
     cls
     goto menu
 ) else if "%choice%"=="4" (
-    cls
-    echo Starting Applio with runtime for Nvidia support ^(you must have it installed^)...
-    runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --theme dark
-    pause
-    cls
-    goto menu
-) else if "%choice%"=="5" (
-    runtime\python.exe -m pip install scikit-learn-intelex
-    cls
-    echo Starting Applio with runtime for Intel CPU support ^(you must have Nvidia support installed^)...
-    runtime\python.exe -m sklearnex infer-web.py --pycmd runtime/python.exe --port 7897 --theme dark
-    pause
-    cls
-    goto menu
-) else if "%choice%"=="6" (
-    cls
-    echo Starting Applio with runtime for AMD support ^(you must have it installed^)...
-    runtime\python.exe infer-web.py --pycmd runtime/python.exe --port 7897 --dml --theme dark
-    pause
-    cls
-    goto menu
-) else if "%choice%"=="7" (
-    cls
-    echo Starting Applio for Nvidia support...
-    python infer-web.py --pycmd python --port 7897 --theme dark
-    pause
-    cls
-    goto menu
-) else if "%choice%"=="8" (
-    cls
-    echo Starting Applio for AMD support...
-    python infer-web.py --pycmd python --port 7897 --dml --theme dark
-    pause
-    cls
-    goto menu
-) else if "%choice%"=="9" (
     goto finish
 ) else (
     cls
-    echo Invalid option. Please enter a number from 1 to 9.
+    echo Invalid option, please enter a number from 1-4.
     goto menu
-) 
+)
 
 cls
-echo Invalid option. Please enter a number from 1 to 5.
+echo Invalid option, please enter a number from 1-4.
 echo.
-echo Press 'Enter' to access the main menu...
 pause>nul
 cls
 goto menu
