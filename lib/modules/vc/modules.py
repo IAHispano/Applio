@@ -4,14 +4,10 @@ import logging
 import os
 import sys
 import torch
-from lib.modules.vc.utils import (
-    get_index_path_from_model,
-    load_hubert,
-)
 import numpy as np
 import soundfile as sf
 from io import BytesIO
-
+from lib.modules.vc.utils import get_index_path_from_model, load_hubert
 from lib.modules.infer.audio import load_audio, wav2
 from lib.modules.infer.infer_pack.models import (
     SynthesizerTrnMs256NSFsid,
@@ -22,6 +18,7 @@ from lib.modules.infer.infer_pack.models import (
 from lib.modules.vc.pipeline import Pipeline
 import tabs.merge as merge
 import lib.globals.globals as rvc_globals
+
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -81,7 +78,7 @@ class VC:
         self.config = config
 
     def get_vc(self, sid, *to_return_protect):
-        logger.info("Get sid: " + sid)
+        logger.info("Selected model: " + sid)
 
         to_return_protect0 = {
             "visible": self.if_f0 != 0,
@@ -148,10 +145,7 @@ class VC:
                 "",
                 "",
             )
-        # person = f'{os.getenv("weight_root")}/{sid}'
         person = f"{sid}"
-        # logger.info(f"Loading: {person}")
-        logger.info(f"Loading...")
         self.cpt = torch.load(person, map_location="cpu")
         self.tgt_sr = self.cpt["config"][-1]
         self.cpt["config"][-3] = self.cpt["weight"]["emb_g.weight"].shape[0]  # n_spk
@@ -181,7 +175,7 @@ class VC:
         self.pipeline = Pipeline(self.tgt_sr, self.config)
         n_spk = self.cpt["config"][-3]
         index = {"value": get_index_path_from_model(sid), "__type__": "update"}
-        logger.info("Select index: " + index["value"])
+        logger.info("Selected index: " + index["value"])
 
         return (
             (

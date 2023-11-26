@@ -1,79 +1,55 @@
 import argparse
-import getpass
-import sys
-sys.path.append('..')
 import json
+import logging
+import os
+import platform
+import subprocess
+import sys
 from multiprocessing import cpu_count
 
 import torch
 
 try:
-    import intel_extension_for_pytorch as ipex # pylint: disable=import-error, unused-import
+    import intel_extension_for_pytorch as ipex
+
     if torch.xpu.is_available():
         from lib.modules.ipex import ipex_init
+
         ipex_init()
 except Exception:
     pass
 
-import logging
-
 logger = logging.getLogger(__name__)
-
-import os
-import sys
-import subprocess
-import platform
 
 syspf = platform.system()
 python_version = "39"
 
+
 def find_python_executable():
-    runtime_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'runtime'))
+    runtime_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "runtime")
+    )
     if os.path.exists(runtime_path):
         logger.info("Current user: Runtime")
         return runtime_path
     elif syspf == "Linux":
-        try:
-            result = subprocess.run(["which", "python"], capture_output=True, text=True, check=True)
-            python_path = result.stdout.strip()
-            logger.info("Current user: Linux")
-            return python_path
-        except subprocess.CalledProcessError:
-            raise Exception("Could not find the Python path on Linux.")
+        return find_executable(["which", "python"], "Linux")
     elif syspf == "Windows":
-        try:
-            result = subprocess.run(["where", "python"], capture_output=True, text=True, check=True)
-            output_lines = result.stdout.strip().split('\n')
-            if output_lines:
-                python_path = output_lines[0]
-                python_path = os.path.dirname(python_path)
-                current_user = os.getlogin() or getpass.getuser()
-                logger.info("Current user: %s" % current_user)
-                return python_path
-            raise Exception("Python executable not found in the PATH.")
-        except subprocess.CalledProcessError:
-            raise Exception("Could not find the Python path on Windows.")
+        return find_executable(["where", "python"], "Windows")
     elif syspf == "Darwin":
-        try:
-            result = subprocess.run(["which", "python"], capture_output=True, text=True, check=True)
-            python_path = result.stdout.strip()
-            logger.info("Current user: Darwin")
-            return python_path
-        except subprocess.CalledProcessError:
-            raise Exception("Could not find the Python path on macOS.")
+        return find_executable(["which", "python"], "Darwin")
     else:
-        raise Exception("Operating system not compatible: {syspf}".format(syspf=syspf))
-
-python_path = find_python_executable()
+        raise Exception(f"Operating system not compatible: {syspf}")
 
 
-version_config_list = [
-    "v1/32k.json",
-    "v1/40k.json",
-    "v1/48k.json",
-    "v2/48k.json",
-    "v2/32k.json",
-]
+def find_executable(command, system):
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        python_path = result.stdout.strip()
+        logger.info(f"Current user: {system}")
+        return python_path
+    except subprocess.CalledProcessError:
+        raise Exception(f"Could not find the Python path on {system}.")
 
 
 def singleton_variable(func):
@@ -86,6 +62,17 @@ def singleton_variable(func):
     return wrapper
 
 
+python_path = find_python_executable()
+
+version_config_list = [
+    "v1/32k.json",
+    "v1/40k.json",
+    "v1/48k.json",
+    "v2/48k.json",
+    "v2/32k.json",
+]
+
+
 @singleton_variable
 class Config:
     def __init__(self):
@@ -95,6 +82,20 @@ class Config:
         self.gpu_name = None
         self.json_config = self.load_config_json()
         self.gpu_mem = None
+        self.set_command_line_options()
+        self.instead = ""
+        self.x_pad, self.x_query, self.x_center, self.x_max = self.device_config()
+
+    @staticmethod
+    def load_config_json() -> dict:
+        return {
+            config_file: json.load(open(f"./assets/configs/{config_file}", "r"))
+            for config_file in version_config_list
+        }
+
+    def set_command_line_options(self):
+        exe = sys.argv[0] or "python"
+        cmd_opts = self.arg_parse(exe)
         (
             self.python_cmd,
             self.listen_port,
@@ -105,21 +106,10 @@ class Config:
             self.is_cli,
             self.grtheme,
             self.dml,
-        ) = self.arg_parse()
-        self.instead = ""
-        self.x_pad, self.x_query, self.x_center, self.x_max = self.device_config()
+        ) = cmd_opts
 
     @staticmethod
-    def load_config_json() -> dict:
-        d = {}
-        for config_file in version_config_list:
-            with open(f"./assets/configs/{config_file}", "r") as f:
-                d[config_file] = json.load(f)
-        return d
-
-    @staticmethod
-    def arg_parse() -> tuple:
-        exe = sys.executable or "python"
+    def arg_parse(exe) -> tuple:
         parser = argparse.ArgumentParser()
         parser.add_argument("--port", type=int, default=7865, help="Listen port")
         parser.add_argument("--pycmd", type=str, default=exe, help="Python command")
@@ -132,34 +122,28 @@ class Config:
             action="store_true",
             help="Do not open in browser automatically",
         )
-        parser.add_argument(  
+        parser.add_argument(
             "--paperspace",
             action="store_true",
             help="Note that this argument just shares a gradio link for the web UI. Thus can be used on other non-local CLI systems.",
         )
-        parser.add_argument(  
+        parser.add_argument(
             "--is_cli",
             action="store_true",
             help="Use the CLI instead of setting up a gradio UI. This flag will launch an RVC text interface where you can execute functions from infer-web.py!",
         )
-
         parser.add_argument(
-                    "-t",
-                    "--theme",
-            help    = "Theme for Gradio. Format - `JohnSmith9982/small_and_pretty` (no backticks)",
-            default = "JohnSmith9982/small_and_pretty",
-            type    = str
+            "--theme",
+            help="Theme for Gradio. Format - `JohnSmith9982/small_and_pretty` (no backticks)",
+            default="JohnSmith9982/small_and_pretty",
+            type=str,
         )
-
         parser.add_argument(
-            "--dml",
-            action="store_true",
-            help="Use DirectML backend instead of CUDA."
+            "--dml", action="store_true", help="Use DirectML backend instead of CUDA."
         )
-        
         cmd_opts = parser.parse_args()
 
-        cmd_opts.port = cmd_opts.port if 0 <= cmd_opts.port <= 65535 else 7865
+        cmd_opts.port = max(0, min(cmd_opts.port, 65535))
 
         return (
             cmd_opts.pycmd,
@@ -173,8 +157,6 @@ class Config:
             cmd_opts.dml,
         )
 
-    # has_mps is only available in nightly pytorch (for now) and MasOS 12.3+.
-    # check `getattr` and try it for compatibility
     @staticmethod
     def has_mps() -> bool:
         if not torch.backends.mps.is_available():
@@ -208,15 +190,22 @@ class Config:
     def device_config(self) -> tuple:
         if torch.cuda.is_available():
             current_device = torch.cuda.current_device()
-            cuda_version = '.'.join(str(x) for x in torch.cuda.get_device_capability(torch.cuda.current_device()))
-            actual_vram = torch.cuda.get_device_properties(torch.cuda.current_device()).total_memory / (1024 ** 3)
+            cuda_version = ".".join(
+                str(x)
+                for x in torch.cuda.get_device_capability(torch.cuda.current_device())
+            )
+            actual_vram = torch.cuda.get_device_properties(
+                torch.cuda.current_device()
+            ).total_memory / (1024**3)
             if self.has_xpu():
                 self.device = self.instead = "xpu:0"
                 self.is_half = True
             i_device = int(self.device.split(":")[-1])
             self.gpu_name = torch.cuda.get_device_name(i_device)
             torch.cuda.empty_cache()
-            if (actual_vram is not None and actual_vram < 0.3) or (1 < float(cuda_version) < 3.7):
+            if (actual_vram is not None and actual_vram < 0.3) or (
+                1 < float(cuda_version) < 3.7
+            ):
                 logger.info("Using CPU due to unsupported CUDA version or low VRAM...")
                 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
                 self.device = self.instead = "cpu"
@@ -257,7 +246,7 @@ class Config:
             self.device = self.instead = "cpu"
             self.is_half = False
             self.use_fp32_config()
-        
+
         if self.n_cpu == 0:
             self.n_cpu = cpu_count()
 
@@ -285,16 +274,18 @@ class Config:
                 x_query = 2
                 x_center = 16
                 x_max = 18
-        
+
         if self.dml:
             logger.info("Use DirectML instead")
-            directml_dll_path = os.path.join(python_path, "Lib", "site-packages", "onnxruntime", "capi", "DirectML.dll")
-            if (
-                os.path.exists(
-                    directml_dll_path
-                )
-                == False
-            ):
+            directml_dll_path = os.path.join(
+                python_path,
+                "Lib",
+                "site-packages",
+                "onnxruntime",
+                "capi",
+                "DirectML.dll",
+            )
+            if os.path.exists(directml_dll_path) == False:
                 pass
             # if self.device != "cpu":
             import torch_directml
@@ -304,13 +295,15 @@ class Config:
         else:
             if self.instead:
                 logger.info(f"Use {self.instead} instead")
-            providers_cuda_dll_path = os.path.join(python_path, "Lib", "site-packages", "onnxruntime", "capi", "onnxruntime_providers_cuda.dll")
-            if (
-                os.path.exists(
-                    providers_cuda_dll_path
-                )
-                == False
-            ):
+            providers_cuda_dll_path = os.path.join(
+                python_path,
+                "Lib",
+                "site-packages",
+                "onnxruntime",
+                "capi",
+                "onnxruntime_providers_cuda.dll",
+            )
+            if os.path.exists(providers_cuda_dll_path) == False:
                 pass
         print("is_half:%s, device:%s" % (self.is_half, self.device))
         return x_pad, x_query, x_center, x_max

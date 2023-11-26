@@ -372,7 +372,7 @@ def downloaded():
 
 @app.route('/shutdown', methods=['POST'])
 def shoutdown():
-    print("This flask server is shutting down please close the window")   
+    print("This flask server is shutting down... Please close the window!")   
     pid = os.getpid()
     os.kill(pid, signal.SIGTERM)
 

@@ -23,7 +23,6 @@ def save_to_wav2(dropbox):
 
     if os.path.exists(target_path):
         os.remove(target_path)
-        print("Replacing old dropdown file...")
 
     shutil.move(file_path, target_path)
     return target_path

@@ -93,7 +93,6 @@ if True == True:
 
     try:
         sock.connect((host, port))
-        logger.info("Starting the Flask server")
         logger.warn(
             f"Something is listening on port {port}; check open connection and restart Applio."
         )
@@ -104,17 +103,14 @@ if True == True:
         script_path = os.path.join(now_dir, "lib", "tools", "server.py")
         try:
             subprocess.Popen(f"python {script_path}", shell=True)
-            logger.info("Flask server started!")
         except Exception as e:
             logger.error(f"Failed to start the Flask server")
             logger.error(e)
     except Exception as e:
-        logger.info("Starting the Flask server")
         sock.close()
         script_path = os.path.join(now_dir, "lib", "tools", "server.py")
         try:
             subprocess.Popen(f"python {script_path}", shell=True)
-            logger.info("Flask server started!")
         except Exception as e:
             logger.error("Failed to start the Flask server")
             logger.error(e)
@@ -220,7 +216,7 @@ weight_uvr5_root = os.getenv("weight_uvr5_root")
 index_root = os.getenv("index_root")
 datasets_root = "datasets"
 fshift_root = "lib/modules/infer/formantshiftcfg"
-audio_root = "assets/audios"
+audio_root = "assets\\audios"
 audio_others_root = "assets/audios/audio-others"
 sup_audioext = {
     "wav",
@@ -1832,7 +1828,6 @@ def save_to_wav2_edited(dropbox):
 
         if os.path.exists(target_path):
             os.remove(target_path)
-            print("Replacing old dropdown file...")
 
         shutil.move(file_path, target_path)
     return
@@ -1844,7 +1839,6 @@ def save_to_wav2(dropbox):
 
     if os.path.exists(target_path):
         os.remove(target_path)
-        print("Replacing old dropdown file...")
 
     shutil.move(file_path, target_path)
     return target_path
