@@ -17,31 +17,23 @@ echo " :::          |_|   |_| "
 echo " ::: "
 echo " ::: "
 echo
-echo "[1] Uninstall Applio"
-echo "[2] Update Applio"
-echo "[3] Update Applio + Dependencies"
-echo "[4] Fix Tensorboard"
+echo "[1] Update Applio"
+echo "[2] Update Applio + Dependencies"
+echo "[3] Fix Tensorboard"
 echo
 read -p "Select an option:  " choice1
 
 case $choice1 in
     1)
-        pip uninstall -r assets/requirements/requirements-dml* -y
-        pip uninstall -r assets/requirements/requirements-ipex* -y
-        pip uninstall -r https://raw.githubusercontent.com/WorXeN/Retrieval-based-Voice-Conversion-WebUI/main/requirements-amd.txt -y
-        cd .. && rm -rf *Applio*
+        git pull
         finish1
         ;;
     2)
         git pull
-        finish1
-        ;;
-    3)
-        git pull
         ./install_Applio.sh
         finish1
         ;;
-    4)
+    3)
         python3.9 -m pip uninstall tb-nightly tensorboardX tensorboard
         python3.9 -m pip install tensorboard
         cls
