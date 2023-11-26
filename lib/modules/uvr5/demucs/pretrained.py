@@ -7,7 +7,7 @@
 
 import logging
 
-from diffq import DiffQuantizer
+from tools.diffq import DiffQuantizer
 import torch.hub
 
 from .model import Demucs

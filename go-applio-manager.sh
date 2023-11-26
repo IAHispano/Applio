@@ -28,7 +28,7 @@ case $choice1 in
     1)
         pip uninstall -r assets/requirements/requirements-dml* -y
         pip uninstall -r assets/requirements/requirements-ipex* -y
-        pip uninstall -r  https://raw.githubusercontent.com/WorXeN/Retrieval-based-Voice-Conversion-WebUI/main/requirements-amd.txt -y
+        pip uninstall -r https://raw.githubusercontent.com/WorXeN/Retrieval-based-Voice-Conversion-WebUI/main/requirements-amd.txt -y
         pip uninstall -r assets/requirements/requirements-realtime-vc.txt -y
         cd .. && rm -rf *Applio*
         finish1
