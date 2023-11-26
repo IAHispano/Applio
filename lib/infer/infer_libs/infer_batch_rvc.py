@@ -34,7 +34,7 @@ class Config:
                 or "1070" in self.gpu_name
                 or "1080" in self.gpu_name
             ):
-                print("16系/10系显卡和P40强制单精度")
+                print("16-series/10-series graphics cards and P40 forced single precision.")
                 self.is_half = False
                 for config_file in ["32k.json", "40k.json", "48k.json"]:
                     with open(f"assets/configs/{config_file}", "r") as f:
@@ -110,7 +110,7 @@ config = Config(device, is_half)
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 from lib.infer.modules.vc.modules import VC
-from lib.infer.infer_pack.models import (
+from lib.infer.infer_libs.infer_pack.models import (
     SynthesizerTrnMs256NSFsid,
     SynthesizerTrnMs256NSFsid_nono,
     SynthesizerTrnMs768NSFsid,

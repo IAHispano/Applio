@@ -39,7 +39,6 @@ code_keys = set(strings)
 """
 n_i18n.py
 gui_v1.py 26
-app.py 16
 infer-web.py 147
 scan_i18n.py 0
 i18n.py 0

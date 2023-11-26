@@ -124,5 +124,5 @@ def check_audio_duration(file):
             return False
 
         return True
-    except Exception as e:
-        raise RuntimeError(f"Failed to check audio duration: {e}")
+    except Exception as error:
+        raise RuntimeError(f"Failed to check audio duration: {error}")

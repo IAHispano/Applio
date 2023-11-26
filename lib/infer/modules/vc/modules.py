@@ -1,16 +1,18 @@
-import os, sys
+import time
 import traceback
 import logging
-now_dir = os.getcwd()
-sys.path.append(now_dir)
-logger = logging.getLogger(__name__)
-import lib.globals.globals as rvc_globals
+import os
+import sys
+import torch
+from lib.infer.modules.vc.utils import (
+    get_index_path_from_model,
+    load_hubert,
+)
 import numpy as np
 import soundfile as sf
-import torch
 from io import BytesIO
-from lib.infer.infer_libs.audio import load_audio
-from lib.infer.infer_libs.audio import wav2
+
+from lib.infer.infer_libs.audio import load_audio, wav2
 from lib.infer.infer_libs.infer_pack.models import (
     SynthesizerTrnMs256NSFsid,
     SynthesizerTrnMs256NSFsid_nono,
@@ -18,12 +20,13 @@ from lib.infer.infer_libs.infer_pack.models import (
     SynthesizerTrnMs768NSFsid_nono,
 )
 from lib.infer.modules.vc.pipeline import Pipeline
-from lib.infer.modules.vc.utils import *
 import tabs.merge as merge
-import time
-import scipy.io.wavfile as wavfile
-import glob
-from shutil import move
+import lib.globals.globals as rvc_globals
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+logger = logging.getLogger(__name__)
+
 sup_audioext = {
     "wav",
     "mp3",
@@ -39,13 +42,29 @@ sup_audioext = {
     "webm",
     "ac3",
 }
+
+
 def note_to_hz(note_name):
-        SEMITONES = {'C': -9, 'C#': -8, 'D': -7, 'D#': -6, 'E': -5, 'F': -4, 'F#': -3, 'G': -2, 'G#': -1, 'A': 0, 'A#': 1, 'B': 2}
-        pitch_class, octave = note_name[:-1], int(note_name[-1])
-        semitone = SEMITONES[pitch_class]
-        note_number = 12 * (octave - 4) + semitone
-        frequency = 440.0 * (2.0 ** (1.0/12)) ** note_number
-        return frequency
+    SEMITONES = {
+        "C": -9,
+        "C#": -8,
+        "D": -7,
+        "D#": -6,
+        "E": -5,
+        "F": -4,
+        "F#": -3,
+        "G": -2,
+        "G#": -1,
+        "A": 0,
+        "A#": 1,
+        "B": 2,
+    }
+    pitch_class, octave = note_name[:-1], int(note_name[-1])
+    semitone = SEMITONES[pitch_class]
+    note_number = 12 * (octave - 4) + semitone
+    frequency = 440.0 * (2.0 ** (1.0 / 12)) ** note_number
+    return frequency
+
 
 class VC:
     def __init__(self, config):
@@ -129,9 +148,9 @@ class VC:
                 "",
                 "",
             )
-        #person = f'{os.getenv("weight_root")}/{sid}'
-        person = f'{sid}'
-        #logger.info(f"Loading: {person}")
+        # person = f'{os.getenv("weight_root")}/{sid}'
+        person = f"{sid}"
+        # logger.info(f"Loading: {person}")
         logger.info(f"Loading...")
         self.cpt = torch.load(person, map_location="cpu")
         self.tgt_sr = self.cpt["config"][-1]
@@ -168,12 +187,11 @@ class VC:
             (
                 {"visible": False, "maximum": n_spk, "__type__": "update"},
                 to_return_protect0,
-                to_return_protect1
+                to_return_protect1,
             )
             if to_return_protect
             else {"visible": False, "maximum": n_spk, "__type__": "update"}
         )
-    
 
     def vc_single(
         self,
@@ -203,8 +221,10 @@ class VC:
         start_time = time.time()
         if not input_audio_path1:
             return "You need to upload an audio", None
-        
-        if (not os.path.exists(input_audio_path1)) and (not os.path.exists(os.path.join(now_dir, input_audio_path1))):
+
+        if (not os.path.exists(input_audio_path1)) and (
+            not os.path.exists(os.path.join(now_dir, input_audio_path1))
+        ):
             return "Audio was not properly selected or doesn't exist", None
         if split_audio:
             resultm, new_dir_path = merge.process_audio(input_audio_path1)
@@ -212,40 +232,48 @@ class VC:
             print("------")
             print(new_dir_path)
             if resultm == "Finish":
-
                 if file_index and not file_index == "" and isinstance(file_index, str):
-                    file_index = file_index.strip(" ") \
-                    .strip('"') \
-                    .strip("\n") \
-                    .strip('"') \
-                    .strip(" ") \
-                    .replace("trained", "added")
+                    file_index = (
+                        file_index.strip(" ")
+                        .strip('"')
+                        .strip("\n")
+                        .strip('"')
+                        .strip(" ")
+                        .replace("trained", "added")
+                    )
                 elif file_index2:
                     file_index = file_index2
                 else:
-                    file_index = ""  
+                    file_index = ""
 
                 # Use the code from vc_multi to process the segmented audio
-                if rvc_globals.NotesOrHertz and f0_method != 'rmvpe':
+                if rvc_globals.NotesOrHertz and f0_method != "rmvpe":
                     f0_min = note_to_hz(note_min) if note_min else 50
                     f0_max = note_to_hz(note_max) if note_max else 1100
-                    print(f"Converted Min pitch: freq - {f0_min}\n"
-                          f"Converted Max pitch: freq - {f0_max}")
+                    print(
+                        f"Converted Min pitch: freq - {f0_min}\n"
+                        f"Converted Max pitch: freq - {f0_max}"
+                    )
                 else:
                     f0_min = f0_min or 50
                     f0_max = f0_max or 1100
-                
+
                 try:
                     dir_path = (
-                        new_dir_path.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-                    )  # Prevent leading/trailing whitespace and quotes
+                        new_dir_path.strip(" ")
+                        .strip('"')
+                        .strip("\n")
+                        .strip('"')
+                        .strip(" ")
+                    )
                     try:
                         if dir_path != "":
                             paths = [
                                 os.path.join(root, name)
                                 for root, _, files in os.walk(dir_path, topdown=False)
                                 for name in files
-                                if name.endswith(tuple(sup_audioext)) and root == dir_path
+                                if name.endswith(tuple(sup_audioext))
+                                and root == dir_path
                             ]
                     except:
                         traceback.print_exc()
@@ -265,17 +293,19 @@ class VC:
                             resample_sr,
                             rms_mix_rate,
                             protect,
-                            crepe_hop_length, 
-                            f0_min, 
-                            note_min, 
-                            f0_max, 
+                            crepe_hop_length,
+                            f0_min,
+                            note_min,
+                            f0_max,
                             note_max,
                             f0_autotune,
                         )
                         if "Success" in info:
                             try:
                                 tgt_sr, audio_opt = opt
-                                output_filename = os.path.splitext(os.path.basename(path))[0]
+                                output_filename = os.path.splitext(
+                                    os.path.basename(path)
+                                )[0]
                                 if format1 in ["wav", "flac"]:
                                     sf.write(
                                         "%s/%s.%s"
@@ -284,14 +314,13 @@ class VC:
                                         tgt_sr,
                                     )
                                 else:
-                                    path = "%s/%s.%s" % (new_dir_path, output_filename, format1)
+                                    path = "%s/%s.%s" % (
+                                        new_dir_path,
+                                        output_filename,
+                                        format1,
+                                    )
                                     with BytesIO() as wavf:
-                                        sf.write(
-                                            wavf,
-                                            audio_opt,
-                                            tgt_sr,
-                                            format="wav"
-                                        )
+                                        sf.write(wavf, audio_opt, tgt_sr, format="wav")
                                         wavf.seek(0, 0)
                                         with open(path, "wb") as outf:
                                             wav2(wavf, outf, format1)
@@ -303,15 +332,20 @@ class VC:
                 time.sleep(0.5)
                 print("Finished processing segmented audio, now merging audio...")
 
-                # Une el audio segmentado
-                merge_timestamps_file = os.path.join(os.path.dirname(new_dir_path), f"{os.path.basename(new_dir_path).split('.')[0]}_timestamps.txt")
+                merge_timestamps_file = os.path.join(
+                    os.path.dirname(new_dir_path),
+                    f"{os.path.basename(new_dir_path).split('.')[0]}_timestamps.txt",
+                )
                 merge.merge_audio(merge_timestamps_file)
 
-                # Calculate the elapsed time
                 end_time = time.time()
                 total_time = end_time - start_time
 
-                merged_audio_path = os.path.join(os.path.dirname(new_dir_path), "audio-outputs", f"{os.path.basename(new_dir_path).split('.')[0]}_merged.wav")
+                merged_audio_path = os.path.join(
+                    os.path.dirname(new_dir_path),
+                    "audio-outputs",
+                    f"{os.path.basename(new_dir_path).split('.')[0]}_merged.wav",
+                )
                 index_info = (
                     "Index:\n%s." % file_index
                     if isinstance(file_index, str) and os.path.exists(file_index)
@@ -319,29 +353,31 @@ class VC:
                 )
 
                 return (
-                "Success.\n%s\nTime:\infer: %s."
-                % (index_info, total_time),
-                merged_audio_path,
+                    "Success.\n%s\nTime:\infer: %s." % (index_info, total_time),
+                    merged_audio_path,
                 )
-    
+
         print(f"\nStarting inference for '{os.path.basename(input_audio_path1)}'")
         f0_up_key = int(f0_up_key)
-        if rvc_globals.NotesOrHertz and f0_method != 'rmvpe':
+        if rvc_globals.NotesOrHertz and f0_method != "rmvpe":
             f0_min = note_to_hz(note_min) if note_min else 50
             f0_max = note_to_hz(note_max) if note_max else 1100
-            print(f"Converted Min pitch: freq - {f0_min}\n"
-                  f"Converted Max pitch: freq - {f0_max}")
+            print(
+                f"Converted Min pitch: freq - {f0_min}\n"
+                f"Converted Max pitch: freq - {f0_max}"
+            )
         else:
             f0_min = f0_min or 50
             f0_max = f0_max or 1100
         try:
-            print(f"Attempting to load {input_audio_path1}....")
-            audio = load_audio(file=input_audio_path1,
-                               sr=16000,
-                               DoFormant=rvc_globals.DoFormant,
-                               Quefrency=rvc_globals.Quefrency,
-                               Timbre=rvc_globals.Timbre)
-            
+            audio = load_audio(
+                file=input_audio_path1,
+                sr=16000,
+                DoFormant=rvc_globals.DoFormant,
+                Quefrency=rvc_globals.Quefrency,
+                Timbre=rvc_globals.Timbre,
+            )
+
             audio_max = np.abs(audio).max() / 0.95
             if audio_max > 1:
                 audio /= audio_max
@@ -357,12 +393,14 @@ class VC:
                 print(message)
                 return message, None
             if file_index and not file_index == "" and isinstance(file_index, str):
-                file_index = file_index.strip(" ") \
-                .strip('"') \
-                .strip("\n") \
-                .strip('"') \
-                .strip(" ") \
-                .replace("trained", "added")
+                file_index = (
+                    file_index.strip(" ")
+                    .strip('"')
+                    .strip("\n")
+                    .strip('"')
+                    .strip(" ")
+                    .replace("trained", "added")
+                )
             elif file_index2:
                 file_index = file_index2
             else:
@@ -391,10 +429,12 @@ class VC:
                     f0_autotune,
                     f0_file=f0_file,
                     f0_min=f0_min,
-                    f0_max=f0_max
-                    )
+                    f0_max=f0_max,
+                )
             except AssertionError:
-                message = "Mismatching index version detected (v1 with v2, or v2 with v1)."
+                message = (
+                    "Mismatching index version detected (v1 with v2, or v2 with v1)."
+                )
                 print(message)
                 return message, None
             except NameError:
@@ -416,7 +456,7 @@ class VC:
             opt_root = "assets/audios/audio-outputs"
             os.makedirs(opt_root, exist_ok=True)
             output_count = 1
-            
+
             while True:
                 opt_filename = f"generated_audio_{output_count}.{format1}"
                 current_output_path = os.path.join(opt_root, opt_filename)
@@ -430,19 +470,14 @@ class VC:
                         audio_opt,
                         self.tgt_sr,
                     )
-                    print(f"💾 Generated audio saved to: {current_output_path}")
+                    print(f"Generated audio saved to {current_output_path}")
                 else:
                     with BytesIO() as wavf:
-                        sf.write(
-                            wavf,
-                            audio_opt,
-                            self.tgt_sr,
-                            format="wav"
-                        )
+                        sf.write(wavf, audio_opt, self.tgt_sr, format="wav")
                         wavf.seek(0, 0)
                         with open(current_output_path, "wb") as outf:
-                                wav2(wavf, outf, format1)
-                    print(f"💾 Generated audio saved to: {current_output_path}")
+                            wav2(wavf, outf, format1)
+                    print(f"Audio saved to {current_output_path}")
             except:
                 info = traceback.format_exc()
             return (
@@ -481,28 +516,33 @@ class VC:
         start_time = time.time()
         if not input_audio_path1:
             return "You need to upload an audio", None
-        
-        if (not os.path.exists(input_audio_path1)) and (not os.path.exists(os.path.join(now_dir, input_audio_path1))):
+
+        if (not os.path.exists(input_audio_path1)) and (
+            not os.path.exists(os.path.join(now_dir, input_audio_path1))
+        ):
             return "Audio was not properly selected or doesn't exist", None
-        
+
         print(f"\nStarting inference for '{os.path.basename(input_audio_path1)}'")
         f0_up_key = int(f0_up_key)
-        if rvc_globals.NotesOrHertz and f0_method != 'rmvpe':
+        if rvc_globals.NotesOrHertz and f0_method != "rmvpe":
             f0_min = note_to_hz(note_min) if note_min else 50
             f0_max = note_to_hz(note_max) if note_max else 1100
-            print(f"Converted Min pitch: freq - {f0_min}\n"
-                  f"Converted Max pitch: freq - {f0_max}")
+            print(
+                f"Converted Min pitch: freq - {f0_min}\n"
+                f"Converted Max pitch: freq - {f0_max}"
+            )
         else:
             f0_min = f0_min or 50
             f0_max = f0_max or 1100
         try:
-            print(f"Attempting to load {input_audio_path1}....")
-            audio = load_audio(file=input_audio_path1,
-                               sr=16000,
-                               DoFormant=rvc_globals.DoFormant,
-                               Quefrency=rvc_globals.Quefrency,
-                               Timbre=rvc_globals.Timbre)
-            
+            audio = load_audio(
+                file=input_audio_path1,
+                sr=16000,
+                DoFormant=rvc_globals.DoFormant,
+                Quefrency=rvc_globals.Quefrency,
+                Timbre=rvc_globals.Timbre,
+            )
+
             audio_max = np.abs(audio).max() / 0.95
             if audio_max > 1:
                 audio /= audio_max
@@ -517,18 +557,20 @@ class VC:
                 message = "Model was not properly selected"
                 print(message)
                 return message, None
-            
+
             if file_index and not file_index == "" and isinstance(file_index, str):
-                file_index = file_index.strip(" ") \
-                .strip('"') \
-                .strip("\n") \
-                .strip('"') \
-                .strip(" ") \
-                .replace("trained", "added")
+                file_index = (
+                    file_index.strip(" ")
+                    .strip('"')
+                    .strip("\n")
+                    .strip('"')
+                    .strip(" ")
+                    .replace("trained", "added")
+                )
             elif file_index2:
                 file_index = file_index2
             else:
-                file_index = ""  
+                file_index = ""
 
             try:
                 audio_opt = self.pipeline.pipeline(
@@ -553,10 +595,12 @@ class VC:
                     f0_autotune,
                     f0_file=f0_file,
                     f0_min=f0_min,
-                    f0_max=f0_max
-                    )
+                    f0_max=f0_max,
+                )
             except AssertionError:
-                message = "Mismatching index version detected (v1 with v2, or v2 with v1)."
+                message = (
+                    "Mismatching index version detected (v1 with v2, or v2 with v1)."
+                )
                 print(message)
                 return message, None
             except NameError:
@@ -585,11 +629,6 @@ class VC:
             logger.warn(info)
             return info, (None, None)
 
-
-
-
-
-
     def vc_multi(
         self,
         sid,
@@ -613,11 +652,13 @@ class VC:
         note_max,
         f0_autotune,
     ):
-        if rvc_globals.NotesOrHertz and f0_method != 'rmvpe':
+        if rvc_globals.NotesOrHertz and f0_method != "rmvpe":
             f0_min = note_to_hz(note_min) if note_min else 50
             f0_max = note_to_hz(note_max) if note_max else 1100
-            print(f"Converted Min pitch: freq - {f0_min}\n"
-                  f"Converted Max pitch: freq - {f0_max}")
+            print(
+                f"Converted Min pitch: freq - {f0_min}\n"
+                f"Converted Max pitch: freq - {f0_max}"
+            )
         else:
             f0_min = f0_min or 50
             f0_max = f0_max or 1100
@@ -634,7 +675,7 @@ class VC:
                         for root, _, files in os.walk(dir_path, topdown=False)
                         for name in files
                         if name.endswith(tuple(sup_audioext)) and root == dir_path
-                        ]
+                    ]
                 else:
                     paths = [path.name for path in paths]
             except:
@@ -657,10 +698,10 @@ class VC:
                     resample_sr,
                     rms_mix_rate,
                     protect,
-                    crepe_hop_length, 
-                    f0_min, 
-                    note_min, 
-                    f0_max, 
+                    crepe_hop_length,
+                    f0_min,
+                    note_min,
+                    f0_max,
                     note_max,
                     f0_autotune,
                 )
@@ -675,14 +716,13 @@ class VC:
                                 tgt_sr,
                             )
                         else:
-                            path = "%s/%s.%s" % (opt_root, os.path.basename(path), format1)
+                            path = "%s/%s.%s" % (
+                                opt_root,
+                                os.path.basename(path),
+                                format1,
+                            )
                             with BytesIO() as wavf:
-                                sf.write(
-                                    wavf,
-                                    audio_opt,
-                                    tgt_sr,
-                                    format="wav"
-                                )
+                                sf.write(wavf, audio_opt, tgt_sr, format="wav")
                                 wavf.seek(0, 0)
                                 with open(path, "wb") as outf:
                                     wav2(wavf, outf, format1)

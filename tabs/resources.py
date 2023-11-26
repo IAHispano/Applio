@@ -30,7 +30,7 @@ import re
 from lib.infer.modules.vc.pipeline import Pipeline
 
 VC = Pipeline
-from lib.infer.infer_pack.models import (
+from lib.infer.infer_libs.infer_pack.models import (
     SynthesizerTrnMs256NSFsid,
     SynthesizerTrnMs256NSFsid_nono,
     SynthesizerTrnMs768NSFsid,
