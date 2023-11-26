@@ -116,7 +116,7 @@ set choice=%choice: =%
 
 
 echo Installing vs_BuildTools...
-winget install Microsoft.VisualStudio.2022.BuildTools --force --override "--wait --passive --add Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools --add Microsoft.VisualStudio.Workload.VCTools"
+winget install Microsoft.VisualStudio.2022.BuildTools --force --override "--wait  --passive --add Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.Windows10SDK.19041 --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --includeRecommended"
 cls
 
 if "%choice%"=="1" (
