@@ -2,11 +2,16 @@ ffmpeg.exe
 ffprobe.exe
 
 runtime
-env/*
+env/
 torchcrepe
-datasets/*
-logs/*
-assets/audios/
+datasets/
+logs/
+
+assets/pretrained/
+assets/pretrained_v2/
+assets/zips/
+assets/unzips/
+
 
 assets/rmvpe/rmvpe.pt
 assets/rmvpe/rmvpe.onnx
