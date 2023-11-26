@@ -43,3 +43,4 @@ tensorboardX==2.6.2.1
 flask_cors
 flask
 resampy==0.4.2
+faiss-cpu==1.7.3
