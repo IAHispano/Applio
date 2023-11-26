@@ -7,8 +7,6 @@ torchcrepe
 datasets/
 logs/
 
-assets/pretrained/
-assets/pretrained_v2/
 assets/zips/
 assets/unzips/
 assets/audios/
