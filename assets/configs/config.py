@@ -10,7 +10,7 @@ import torch
 try:
     import intel_extension_for_pytorch as ipex # pylint: disable=import-error, unused-import
     if torch.xpu.is_available():
-        from lib.infer.modules.ipex import ipex_init
+        from lib.modules.ipex import ipex_init
         ipex_init()
 except Exception:
     pass
@@ -199,9 +199,9 @@ class Config:
                 strr = f.read().replace("true", "false")
             with open(f"./assets/configs/{config_file}", "w") as f:
                 f.write(strr)
-        with open("./lib/infer/modules/train/preprocess.py", "r") as f:
+        with open("./lib/modules/train/preprocess.py", "r") as f:
             strr = f.read().replace("3.7", "3.0")
-        with open("./lib/infer/modules/train/preprocess.py", "w") as f:
+        with open("./lib/modules/train/preprocess.py", "w") as f:
             f.write(strr)
         print("overwrite preprocess and configs.json")
 
@@ -243,9 +243,9 @@ class Config:
                 + 0.4
             )
             if self.gpu_mem <= 4:
-                with open("lib/infer/modules/train/preprocess.py", "r") as f:
+                with open("lib/modules/train/preprocess.py", "r") as f:
                     strr = f.read().replace("3.7", "3.0")
-                with open("lib/infer/modules/train/preprocess.py", "w") as f:
+                with open("lib/modules/train/preprocess.py", "w") as f:
                     f.write(strr)
         elif self.has_mps():
             logger.info("No supported Nvidia GPU found")

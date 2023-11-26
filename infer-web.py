@@ -46,16 +46,16 @@ from glob import glob1
 import signal
 from signal import SIGTERM
 from assets.i18n.i18n import I18nAuto
-from lib.infer.infer_libs.train.process_ckpt import (
+from lib.modules.train.process_ckpt import (
     change_info,
     extract_small_model,
     merge,
     show_info,
 )
-from lib.infer.modules.uvr5.mdxnet import MDXNetDereverb
-from lib.infer.modules.uvr5.preprocess import AudioPre, AudioPreDeEcho
-from lib.infer.modules.vc.modules import VC
-from lib.infer.modules.vc.utils import *
+from lib.modules.uvr5.mdxnet import MDXNetDereverb
+from lib.modules.uvr5.preprocess import AudioPre, AudioPreDeEcho
+from lib.modules.vc.modules import VC
+from lib.modules.vc.utils import *
 import lib.globals.globals as rvc_globals
 import nltk
 
@@ -66,7 +66,7 @@ import tabs.tts as tts
 import tabs.merge as mergeaudios
 import tabs.processing as processing
 
-from lib.infer.infer_libs.csvutil import CSVutil
+from lib.modules.infer.csvutil import CSVutil
 import time
 import csv
 from shlex import quote as SQuote
@@ -205,8 +205,8 @@ class ToolButton(gr.Button, gr.components.FormComponent):
         return "button"
 
 
-import lib.infer.infer_libs.uvr5_pack.mdx as mdx
-from lib.infer.modules.uvr5.mdxprocess import (
+import lib.modules.uvr5.mdx as mdx
+from lib.modules.uvr5.mdxprocess import (
     get_model_list,
     get_demucs_model_list,
     id_to_ptm,
@@ -219,7 +219,7 @@ weight_root = os.getenv("weight_root")
 weight_uvr5_root = os.getenv("weight_uvr5_root")
 index_root = os.getenv("index_root")
 datasets_root = "datasets"
-fshift_root = "lib/infer/infer_libs/formantshiftcfg"
+fshift_root = "lib/modules/infer/formantshiftcfg"
 audio_root = "assets/audios"
 audio_others_root = "assets/audios/audio-others"
 sup_audioext = {
@@ -695,7 +695,7 @@ def clean():
 
 
 def export_onnx():
-    from lib.infer.modules.onnx.export import export_onnx as eo
+    from lib.modules.onnx.export import export_onnx as eo
 
     eo()
 
@@ -810,18 +810,15 @@ def preprocess_dataset(trainset_dir, exp_dir, sr, n_p, dataset_path):
     f = open("%s/logs/%s/preprocess.log" % (now_dir, exp_dir), "w")
     f.close()
     per = 3.0 if config.is_half else 3.7
-    cmd = (
-        '"%s" lib/infer/modules/train/preprocess.py "%s" %s %s "%s/logs/%s" %s %.1f'
-        % (
-            config.python_cmd,
-            trainset_dir,
-            sr,
-            n_p,
-            now_dir,
-            exp_dir,
-            config.noparallel,
-            per,
-        )
+    cmd = '"%s" lib/modules/train/preprocess.py "%s" %s %s "%s/logs/%s" %s %.1f' % (
+        config.python_cmd,
+        trainset_dir,
+        sr,
+        n_p,
+        now_dir,
+        exp_dir,
+        config.noparallel,
+        per,
     )
     logger.info(cmd)
     p = Popen(cmd, shell=True)  # , stdin=PIPE, stdout=PIPE,stderr=PIPE,cwd=now_dir
@@ -857,7 +854,7 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, echl):
     if if_f0:
         if f0method != "rmvpe_gpu":
             cmd = (
-                '"%s" lib/infer/modules/train/extract/extract_f0_print.py "%s/logs/%s" %s %s %s'
+                '"%s" lib/modules/train/extract/extract_f0_print.py "%s/logs/%s" %s %s %s'
                 % (config.python_cmd, now_dir, exp_dir, n_p, f0method, RQuote(echl))
             )
             logger.info(cmd)
@@ -880,7 +877,7 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, echl):
                 ps = []
                 for idx, n_g in enumerate(gpus_rmvpe):
                     cmd = (
-                        '"%s" lib/infer/modules/train/extract/extract_f0_rmvpe.py %s %s %s "%s/logs/%s" %s '
+                        '"%s" lib/modules/train/extract/extract_f0_rmvpe.py %s %s %s "%s/logs/%s" %s '
                         % (
                             config.python_cmd,
                             leng,
@@ -908,7 +905,7 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, echl):
             else:
                 cmd = (
                     config.python_cmd
-                    + ' lib/infer/modules/train/extract/extract_f0_rmvpe_dml.py "%s/logs/%s" '
+                    + ' lib/modules/train/extract/extract_f0_rmvpe_dml.py "%s/logs/%s" '
                     % (
                         now_dir,
                         exp_dir,
@@ -932,19 +929,11 @@ def extract_f0_feature(gpus, n_p, f0method, if_f0, exp_dir, version19, echl):
             log = f.read()
         logger.info(log)
         yield log
-    ####对不同part分别开多进程
-    """
-    n_part=int(sys.argv[1])
-    i_part=int(sys.argv[2])
-    i_gpu=sys.argv[3]
-    exp_dir=sys.argv[4]
-    os.environ["CUDA_VISIBLE_DEVICES"]=str(i_gpu)
-    """
     leng = len(gpus)
     ps = []
     for idx, n_g in enumerate(gpus):
         cmd = (
-            '"%s" lib/infer/modules/train/extract_feature_print.py %s %s %s %s "%s/logs/%s" %s %s'
+            '"%s" lib/modules/train/extract_feature_print.py %s %s %s %s "%s/logs/%s" %s %s'
             % (
                 config.python_cmd,
                 config.device,
@@ -1176,7 +1165,7 @@ def click_train(
             )
             f.write("\n")
     cmd = (
-        '"%s" lib/infer/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s %s %s'
+        '"%s" lib/modules/train/train.py -e "%s" -sr %s -f0 %s -bs %s %s -te %s -se %s %s %s -l %s -c %s -sw %s -v %s %s %s'
         % (
             config.python_cmd,
             exp_dir1,
@@ -2725,12 +2714,16 @@ def GradioSetup():
                                 interactive=True,
                             )
                             if_retrain_collapse20 = gr.Checkbox(
-                                label=i18n("Reload from checkpoint before a mode collapse and try training it again"),
+                                label=i18n(
+                                    "Reload from checkpoint before a mode collapse and try training it again"
+                                ),
                                 value=False,
                                 interactive=True,
                             )
                             if_stop_on_fit21 = gr.Checkbox(
-                                label=i18n("Stop training early if no improvement detected"),
+                                label=i18n(
+                                    "Stop training early if no improvement detected"
+                                ),
                                 value=False,
                                 interactive=True,
                             )

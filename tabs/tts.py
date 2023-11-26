@@ -5,7 +5,7 @@ import os
 now_dir = os.getcwd()
 
 from dotenv import load_dotenv
-from lib.infer.modules.vc.modules import VC
+from lib.modules.vc.modules import VC
 from assets.configs.config import Config
 
 load_dotenv()

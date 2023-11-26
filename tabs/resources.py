@@ -10,8 +10,8 @@ import torch
 import glob
 import gradio as gr
 import traceback
-import lib.infer.infer_libs.uvr5_pack.mdx as mdx
-from lib.infer.modules.uvr5.mdxprocess import (
+import lib.modules.uvr5.mdx as mdx
+from lib.modules.uvr5.mdxprocess import (
     get_model_list,
     get_demucs_model_list,
     id_to_ptm,
@@ -27,10 +27,10 @@ script_parent_directory = os.path.dirname(current_script_path)
 now_dir = os.path.dirname(script_parent_directory)
 sys.path.append(now_dir)
 import re
-from lib.infer.modules.vc.pipeline import Pipeline
+from lib.modules.vc.pipeline import Pipeline
 
 VC = Pipeline
-from lib.infer.infer_libs.infer_pack.models import (
+from lib.modules.infer.infer_pack.models import (
     SynthesizerTrnMs256NSFsid,
     SynthesizerTrnMs256NSFsid_nono,
     SynthesizerTrnMs768NSFsid,
@@ -38,8 +38,8 @@ from lib.infer.infer_libs.infer_pack.models import (
 )
 
 from assets.configs.config import Config
-from lib.infer.modules.uvr5.mdxnet import MDXNetDereverb
-from lib.infer.modules.uvr5.preprocess import AudioPre, AudioPreDeEcho
+from lib.modules.uvr5.mdxnet import MDXNetDereverb
+from lib.modules.uvr5.preprocess import AudioPre, AudioPreDeEcho
 from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()

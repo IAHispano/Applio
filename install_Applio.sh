@@ -53,7 +53,7 @@ create_or_activate_venv() {
         source .venv/bin/activate
         chmod +x stftpitchshift
         chmod +x *.sh
-        chmod +x ./lib/infer/infer_libs/stftpitchshift
+        chmod +x ./lib/modules/infer/stftpitchshift
         python -m ensurepip
       # Update pip within the virtual environment
         pip3 install --upgrade pip

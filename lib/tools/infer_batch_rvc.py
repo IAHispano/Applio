@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from scipy.io import wavfile
 
 from assets.configs.config import Config
-from lib.infer.modules.vc.modules import VC
+from lib.modules.vc.modules import VC
 
 
 def arg_parse() -> tuple:

@@ -4,7 +4,7 @@ sys.path.append("..")
 import os
 
 now_dir = os.getcwd()
-from lib.infer.infer_libs.train.process_ckpt import (
+from lib.modules.train.process_ckpt import (
     change_info,
     extract_small_model,
     merge,
