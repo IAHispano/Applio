@@ -7,8 +7,6 @@ torchcrepe
 datasets/
 logs/
 
-assets/zips/
-assets/unzips/
 assets/audios/
 
 assets/rmvpe/rmvpe.pt

@@ -3083,7 +3083,7 @@ def GradioRun(app):
             inbrowser=not config.noautoopen,
             server_port=config.listen_port,
             quiet=True,
-            favicon_path="./assets/images/icon.png",
+            favicon_path="./assets/icon.png",
             share=share_gradio_link,
         )
     else:
@@ -3092,7 +3092,7 @@ def GradioRun(app):
             inbrowser=not config.noautoopen,
             server_port=config.listen_port,
             quiet=True,
-            favicon_path="./assets/images/icon.png",
+            favicon_path="./assets/icon.png",
             share=share_gradio_link,
         )
 
