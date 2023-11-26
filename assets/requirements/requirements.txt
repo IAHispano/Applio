@@ -1,30 +1,18 @@
-tornado>=6.1
 setuptools
-pydantic
 fairseq==0.12.2
 wheel
-google-auth-oauthlib
 pedalboard
 pydub==0.25.1
-httpx==0.23.0
-faiss_cpu==1.7.3
-ffmpeg_python==0.2.0
 ffmpy==0.3.1
-websockets>=10.0
 gradio==3.34.0
 librosa==0.9.1
-llvmlite
-elevenlabs
 gTTS==2.3.2
 wget
-psutil
 matplotlib==3.7.2
 mega.py==1.0.8
 git+https://github.com/wkentaro/gdown.git
 edge-tts
 nltk
-noisereduce==2.0.1
-unidecode
 numba; sys_platform == 'linux'
 numba==0.56.4; sys_platform == 'win32'
 numpy==1.23.5
@@ -32,13 +20,9 @@ onnxruntime
 onnxruntime_gpu==1.15.1
 opencv_python==4.8.0.74
 opencv_python_headless==4.8.0.74
-pandas==2.0.3
 praat-parselmouth==0.4.2
-PySimpleGUI==4.60.5
 pyworld==0.3.4
 requests==2.31.0
-resampy==0.4.2
-scikit_learn==1.3.0
 scipy==1.11.1
 sounddevice==0.4.6
 soundfile==0.12.1
@@ -56,7 +40,6 @@ av
 fastapi==0.95.2
 protobuf==3.20.2
 tensorboardX==2.6.2.1
-gin
-gin_config
 flask_cors
 flask
+resampy==0.4.2
