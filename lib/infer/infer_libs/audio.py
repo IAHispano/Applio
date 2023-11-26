@@ -84,7 +84,7 @@ def load_audio(file, sr, DoFormant=False, Quefrency=1.0, Timbre=1.0):
                 f'-t "{Timbre}" -o "{file}_formatted.wav"'
             )
             subprocess.run(command, shell=True)
-            file = f"{file}_FORMANTED.wav"
+            file = f"{file}_FORMATTED.wav"
             print(f"Formatted {file}\n")
 
         with open(file, "rb") as f:
