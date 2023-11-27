@@ -30,7 +30,7 @@ ffmpeg-python>=0.2.0
 tensorboard==2.13.0
 torch==2.0.0
 torchcrepe==0.0.21
-torch_directml==0.2.0.dev230426
+torch_directml==0.2.0.dev230426; sys_platform == 'windows'
 torchaudio==2.0.1
 torchvision==0.15.1
 torchgen>=0.0.1
