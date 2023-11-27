@@ -1,5 +1,6 @@
 #!/bin/bash
 echo -e "\033]0;Applio - Installer\007"
+chmod +x go-applio-manager.sh
 source .venv/bin/activate
 clear
 menu1() {
@@ -20,6 +21,7 @@ echo
 echo "[1] Update Applio"
 echo "[2] Update Applio + Dependencies"
 echo "[3] Fix Tensorboard"
+echo "[4] Exit"
 echo
 read -p "Select an option:  " choice1
 
@@ -41,6 +43,12 @@ case $choice1 in
         read -p "Press Enter to access the main menu..."
         finish1
         ;;
+     4) 
+      
+       echo "Exiting Applio🍏 ( sh install_Applio.sh ) ( sh go-applio.sh )..." 
+       exit 0
+       # Acesso rapido a  sh install_Applio.sh  Y  sh go-applio.sh 
+       ;;
 
     *)
         echo "Invalid option. Please enter a number from 1 to 4."
@@ -58,3 +66,4 @@ finish1() {
 }
 # Loop to the main menu
 menu1
+
