@@ -1,6 +1,5 @@
 #!/bin/bash
 echo -e "\033]0;Applio - Installer\007"
-chmod +x go-applio-manager.sh
 source .venv/bin/activate
 clear
 menu1() {
@@ -44,10 +43,8 @@ case $choice1 in
         finish1
         ;;
      4) 
-      
-       echo "Exiting Applio🍏 ( sh install_Applio.sh ) ( sh go-applio.sh )..." 
+       echo "Exiting Applio..." 
        exit 0
-       # Acesso rapido a  sh install_Applio.sh  Y  sh go-applio.sh 
        ;;
 
     *)
@@ -59,11 +56,9 @@ esac
 done
 }
 
-# Finish this thing
 finish1() {
   clear
   echo "Goodbye!"
 }
-# Loop to the main menu
 menu1
 
