@@ -63,7 +63,7 @@
 
 #### TTS (Text-to-Speech, New):
 - Introducing a new Text-to-Speech (TTS) feature using RVC models.
-- Support for multiple languages and Edge-tts/Bark-tts.
+- Support for multiple languages and Edge-tts/Google-tts.
 
 #### Resources (New):
 - Users can now upload models, backups, datasets, and audios from various storage services like Drive, Huggingface, Discord, and more.
