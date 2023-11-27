@@ -1,5 +1,6 @@
 #!/bin/bash
 echo -e "\033]0;Applio - Start\007"
+chmod +x go-applio.sh
 python3 -m venv .venv
 source .venv/bin/activate
 menu() {
@@ -56,3 +57,4 @@ finish() {
 }
 
 menu
+
