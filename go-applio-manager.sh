@@ -20,6 +20,7 @@ echo
 echo "[1] Update Applio"
 echo "[2] Update Applio + Dependencies"
 echo "[3] Fix Tensorboard"
+echo "[4] Exit"
 echo
 read -p "Select an option:  " choice1
 
@@ -41,6 +42,10 @@ case $choice1 in
         read -p "Press Enter to access the main menu..."
         finish1
         ;;
+     4) 
+       echo "Exiting Applio..." 
+       exit 0
+       ;;
 
     *)
         echo "Invalid option. Please enter a number from 1 to 4."
@@ -51,10 +56,9 @@ esac
 done
 }
 
-# Finish this thing
 finish1() {
   clear
   echo "Goodbye!"
 }
-# Loop to the main menu
 menu1
+
