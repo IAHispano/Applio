@@ -1,5 +1,6 @@
 #!/bin/bash
 echo -e "\033]0;Applio - Installer\007"
+chmod +x install_Applio.sh
 clear
 
 cat << "EOF"
@@ -142,4 +143,5 @@ fi
 
 create_or_activate_venv
 main_menu
+
 
