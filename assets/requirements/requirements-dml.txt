@@ -1,5 +1,5 @@
 torch_directml==0.2.0.dev230426; sys_platform == 'win32'
-future==0.18.2
+future==0.18.3
 joblib>=1.1.0
 llvmlite==0.39.0
 Jinja2>=3.1.2
