@@ -108,7 +108,7 @@ main_menu() {
     done
 }
 
-# Function to finish installation
+# Function to finish installation (this should install missing dependencies)
 finish() {
     # Check if required packages are installed and install them if not
     if [ -f "${requirements_file}" ]; then
@@ -127,6 +127,7 @@ finish() {
     fi
     clear
     echo "Applio has been successfully downloaded, run the file go-applio.sh to run the web interface!"
+    mv install_Applio.sh reinstall_applio.sh
     exit 0
 }
 
