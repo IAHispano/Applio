@@ -1,28 +1,23 @@
 #!/bin/bash
 echo -e "\033]0;Applio - Start\007"
-python3 -m venv .venv
 source .venv/bin/activate
 menu() {
   while true; do
     clear
-echo " :::"
-echo " :::                       _ _ "
-echo " :::     /\               | (_) "
-echo " :::    /  \   _ __  _ __ | |_  ___ "
-echo " :::   / /\ \ | '_ \| '_ \| | |/ _ \ "
-echo " :::  / ____ \| |_) | |_) | | | (_) | "
-echo " ::: /_/    \_\ .__/| .__/|_|_|\___/ "
-echo " :::          | |   | | "
-echo " :::          |_|   |_| "
-echo " ::: "
-echo " ::: "
-    echo ""
-    echo "[1] Start Applio (Nvidia/AMD Support)"
-    echo "[2] Start Applio (Intel GPU/CPU)"
-    echo ""
-    echo "[3] Exit"
-    echo ""
-
+cat << "EOF"
+ :::                       _ _
+ :::     /\               | (_)
+ :::    /  \   _ __  _ __ | |_  ___
+ :::   / /\ \ | '_ \| '_ \| | |/ _ \
+ :::  / ____ \| |_) | |_) | | | (_) |
+ ::: /_/    \_\ .__/| .__/|_|_|\___/
+ :::          | |   | |
+ :::          |_|   |_|
+ :::
+ [1] Start Applio (Nvidia/AMD Support)
+ [2] Start Applio (Intel GPU/CPU) Probably broken
+ [3] Exit
+EOF
     read -p "Select an option: " choice
     case $choice in
     1)

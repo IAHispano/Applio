@@ -1,37 +1,37 @@
 #!/bin/bash
-echo -e "\033]0;Applio - Installer\007"
+echo -e "\033]0;Applio - Manager\007"
 source .venv/bin/activate
 clear
 menu1() {
   while true; do
   clear
-echo " :::"
-echo " :::                       _ _ "
-echo " :::     /\               | (_) "
-echo " :::    /  \   _ __  _ __ | |_  ___ "
-echo " :::   / /\ \ | '_ \| '_ \| | |/ _ \ "
-echo " :::  / ____ \| |_) | |_) | | | (_) | "
-echo " ::: /_/    \_\ .__/| .__/|_|_|\___/ "
-echo " :::          | |   | | "
-echo " :::          |_|   |_| "
-echo " ::: "
-echo " ::: "
-echo
-echo "[1] Update Applio"
-echo "[2] Update Applio + Dependencies"
-echo "[3] Fix Tensorboard"
-echo "[4] Exit"
-echo
+cat << "EOF"
+ :::                       _ _
+ :::     /\               | (_)
+ :::    /  \   _ __  _ __ | |_  ___
+ :::   / /\ \ | '_ \| '_ \| | |/ _ \
+ :::  / ____ \| |_) | |_) | | | (_) |
+ ::: /_/    \_\ .__/| .__/|_|_|\___/
+ :::          | |   | |
+ :::          |_|   |_|
+ :::
+ [1] Update Applio
+ [2] Update Applio + Dependencies
+ [3] Fix Tensorboard
+ [4] Exit
+EOF
 read -p "Select an option:  " choice1
 
 case $choice1 in
     1)
         git pull
+        read -p "Applio has been updated or its already in the latest version"
         finish1
         ;;
     2)
         git pull
-        ./install_Applio.sh
+        ./reinstall_applio.sh
+        read -p "Applio has been updated or its already in the latest version"
         finish1
         ;;
     3)
@@ -57,6 +57,7 @@ done
 }
 
 finish1() {
+  chmod +x *.sh
   clear
   echo "Goodbye!"
 }
