@@ -42,7 +42,7 @@ prepare_install() {
             py=$(which python3)
             echo "Using python3"
         else
-        if [[ -n $(python) --version | grep 3.) ]]; then
+        if [[ -n $(python --version | grep 3.) ]]; then
             py=$(which python)
             echo "Using python"
         else
@@ -54,7 +54,7 @@ prepare_install() {
         $py -m venv .venv
         source .venv/bin/activate
         chmod +x stftpitchshift *.sh ./lib/modules/infer/stftpitchshift
-        $py -m ensurepip
+        python -m ensurepip
       # Update pip within the virtual environment
         pip3 install --upgrade pip
     fi
@@ -138,6 +138,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
     brew install python
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
+    fi    
 elif [[ "$(uname)" != "Linux" ]]; then
     echo "Unsupported operating system. Are you using Windows...?"
     echo "If yes, use the batch (.bat) file instead of this one!"
