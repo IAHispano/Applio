@@ -1,5 +1,5 @@
 @echo off
-title Applio - Manager
+title Applio-RVC-Fork - Manager
 cd %~dp0
 :::
 :::                       _ _

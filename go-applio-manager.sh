@@ -1,5 +1,5 @@
 #!/bin/bash
-echo -e "\033]0;Applio - Manager\007"
+echo -e "\033]0;Applio-RVC-Fork - Manager\007"
 source .venv/bin/activate
 clear
 menu1() {

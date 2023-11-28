@@ -1,5 +1,5 @@
 #!/bin/bash
-echo -e "\033]0;Applio - Start\007"
+echo -e "\033]0;Applio-RVC-Fork\007"
 source .venv/bin/activate
 menu() {
   while true; do

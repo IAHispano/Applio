@@ -1,5 +1,5 @@
 #!/bin/bash
-echo -e "\033]0;Applio - Installer\007"
+echo -e "\033]0;Applio-RVC-Fork - Installer\007"
 clear
 
 cat << "EOF"
