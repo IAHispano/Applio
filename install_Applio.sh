@@ -36,7 +36,7 @@ prepare_install() {
         source .venv/bin/activate
     else
         echo "Creating venv..."
-        requirements_file="assets/requirements/requirements-applio.txt"
+        requirements_file="assets/requirements/requirements.txt"
         echo "Checking if python exists"
         if command -v python3 > /dev/null 2>&1; then
             py=$(which python3)
