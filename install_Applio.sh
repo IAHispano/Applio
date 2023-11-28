@@ -87,7 +87,7 @@ main_menu() {
                 echo
                 echo "Before installing this, check https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI/blob/main/docs/en/README.en.md#rocm-support-for-amd-graphic-cards-linux-only"
                 read -p "Press Enter to continue"
-                python -m pip install -r assets/requirements/requirements-amd.txt
+                python -m pip install -r assets/requirements/requirements-dml.txt
                 python -m pip uninstall torch torchvision torchaudio -y
                 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm5.4.2
                 echo

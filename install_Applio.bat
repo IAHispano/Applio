@@ -184,10 +184,7 @@ conda install -c anaconda git -y
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" deactivate
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
 pip uninstall onnxruntime onnxruntime-directml
-pip install --upgrade setuptools
-pip install -r %principal%\assets\requirements\requirements.txt
 pip install -r %principal%\assets\requirements\requirements-dml.txt
-pip install future==0.18.2
 goto dependenciesFinished
 )
 
