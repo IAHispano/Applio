@@ -133,7 +133,7 @@ finish() {
 
 # Loop to the main menu
 if [[ "$(uname)" == "Darwin" ]]; then
-    if command -v brew &> /dev/null; then
+    if ! command -v brew &> /dev/null; then
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     else
     brew install python
