@@ -25,11 +25,13 @@ read -p "Select an option:  " choice1
 case $choice1 in
     1)
         git pull
+        read -p "Applio has been updated or its already in the latest version"
         finish1
         ;;
     2)
         git pull
-        ./install_Applio.sh
+        ./reinstall_applio.sh
+        read -p "Applio has been updated or its already in the latest version"
         finish1
         ;;
     3)
@@ -55,8 +57,7 @@ done
 }
 
 finish1() {
-  chmod +x *.sh # Return execution perms after update and delete install_Applio.sh
-  rm -rf install_Applio.sh
+  chmod +x *.sh
   clear
   echo "Goodbye!"
 }
