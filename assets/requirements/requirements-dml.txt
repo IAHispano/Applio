@@ -1,4 +1,4 @@
-torch_directml==0.2.0.dev230426; sys_platform == 'windows'
+torch_directml==0.2.0.dev230426; sys_platform == 'win32'
 future==0.18.2
 joblib>=1.1.0
 llvmlite==0.39.0
