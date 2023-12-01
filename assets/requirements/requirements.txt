@@ -3,8 +3,7 @@ fairseq==0.12.2
 wheel
 pedalboard
 pydub==0.25.1
-ffmpeg-python==0.1.18; sys_platform == 'linux'
-ffmpy==0.3.1; sys_platform == 'linux'
+ffmpy==0.3.1
 gradio==3.34.0
 librosa==0.9.1
 gTTS==2.3.2
@@ -27,6 +26,7 @@ requests==2.31.0
 scipy==1.11.1
 sounddevice==0.4.6
 soundfile==0.12.1
+ffmpeg-python>=0.2.0
 tensorboard==2.13.0
 torch==2.0.0
 torchcrepe==0.0.21
