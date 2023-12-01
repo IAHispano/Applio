@@ -3,6 +3,8 @@ intel_extension_for_pytorch==2.0.110+xpu
 torchvision==0.15.2a0
 --extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
 mkl
+ffmpeg-python==0.1.18; sys_platform == 'linux'
+ffmpy==0.3.1; sys_platform == 'linux'
 joblib>=1.1.0
 torchaudio
 librosa==0.9.1
@@ -13,7 +15,6 @@ gradio==3.34.0
 Cython
 pydub>=0.25.1
 soundfile>=0.12.1
-ffmpeg-python>=0.2.0
 Jinja2>=3.1.2
 json5
 Markdown
@@ -37,7 +38,6 @@ httpx
 onnxruntime; sys_platform == 'darwin'
 onnxruntime-gpu; sys_platform != 'darwin'
 torchcrepe==0.0.20
-ffmpy==0.3.1
 av
 setuptools
 fairseq==0.12.2
