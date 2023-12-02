@@ -125,7 +125,7 @@ brew install swig
 ```
 
 Install requirements:
-*Before this install ffmpeg, wget, git and python (This fork just works with 3.11+ on Linux)*
+*Before this install ffmpeg, wget, git and python (This fork just works with 3.9.X on Linux)*
 ```bash
 wget https://github.com/IAHispano/Applio-RVC-Fork/releases/download/v2.0.0/install_Applio-linux.sh
 chmod +x install_Applio-linux.sh && ./install_Applio-linux.sh
