@@ -25,7 +25,6 @@ set "CONDA_ROOT_PREFIX=%UserProfile%\Miniconda3"
 set "INSTALL_ENV_DIR=%principal%\env"
 set "MINICONDA_DOWNLOAD_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_23.9.0-0-Windows-x86_64.exe"
 set "CONDA_EXECUTABLE=%CONDA_ROOT_PREFIX%\Scripts\conda.exe"
-set "buildToolsUrl=https://aka.ms/vs/17/release/vs_BuildTools.exe"
 
 :processArguments
 set "useManual=false"
