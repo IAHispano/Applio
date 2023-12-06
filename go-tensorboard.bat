@@ -6,7 +6,7 @@ set CONDA_ROOT_PREFIX=%UserProfile%\Miniconda3
 set INSTALL_ENV_DIR=%cd%\env
 
 echo Activating Conda environment...
-"%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
+call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
 
 if errorlevel 1 (
     echo Failed to activate Conda environment.
