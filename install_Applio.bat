@@ -100,9 +100,11 @@ if %errorlevel% equ 0 (
         cd %repoFolder%
         del install_Applio.bat
         del /q *.sh
-        echo.
-        echo Do you want to continue? ^(Press Enter to continue or Ctrl+C to cancel^)
-        pause>nul
+        if %useManual% == "false" (
+            echo.
+            echo Do you want to continue? ^(Press Enter to continue or Ctrl+C to cancel^)
+            pause>nul
+        )
         cls
     ) else (
         echo Theres a problem extracting the file please download the file and extract it manually 
