@@ -43,3 +43,4 @@ flask_cors
 flask
 resampy==0.4.2
 faiss-cpu==1.7.3
+httpx
