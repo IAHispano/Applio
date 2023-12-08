@@ -103,7 +103,7 @@ class Config:
             self.noparallel,
             self.noautoopen,
             self.paperspace,
-            self.is_cli,
+            self.cli,
             self.grtheme,
             self.dml,
         ) = cmd_opts
@@ -152,7 +152,7 @@ class Config:
             cmd_opts.noparallel,
             cmd_opts.noautoopen,
             cmd_opts.paperspace,
-            cmd_opts.is_cli,
+            cmd_opts.cli,
             cmd_opts.theme,
             cmd_opts.dml,
         )

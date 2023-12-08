@@ -1688,7 +1688,7 @@ def cli_navigation_loop():
             print(traceback.format_exc())
 
 
-if config.is_cli:
+if config.cli:
     print("\n\nApplio-RVC-Fork CLI\n")
     print(
         "Welcome to the CLI version of RVC. Please read the documentation on README.MD to understand how to use this app.\n"
