@@ -17,6 +17,6 @@ if errorlevel 1 (
 echo Starting the Tensorboard with Conda...
 cls
 echo Starting Tensorboard...
-python lib\fixes\tensor-launch.py
+python lib\tools\tensorLaunch.py
 pause
 exit /b 0

@@ -354,14 +354,11 @@ class Pipeline(object):
     def get_f0_hybrid_computation(
         self,
         methods_str,
-        input_audio_path,
         x,
         f0_min,
         f0_max,
         p_len,
-        filter_radius,
         crepe_hop_length,
-        time_step,
     ):
         # Get various f0 methods from input to use in the computation stack
         methods_str = re.search("hybrid\[(.+)\]", methods_str)

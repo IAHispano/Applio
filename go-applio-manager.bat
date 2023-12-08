@@ -14,8 +14,6 @@ cd %~dp0
 :::
 
 setlocal 
-set "fixesFolder=lib/fixes"
-set "localFixesPy=local_fixes.py"
 set "principal=%cd%"
 set "URL_BASE=https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
 set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"

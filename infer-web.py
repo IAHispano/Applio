@@ -13,7 +13,7 @@ import threading
 from assets.configs.config import Config
 import lib.globals.globals as rvc_globals
 
-import lib.tools.model_fetcher as model_fetcher
+import lib.tools.modelFetcher as modelFetcher
 import math as math
 import ffmpeg as ffmpeg
 import traceback
@@ -1844,9 +1844,9 @@ def save_to_wav2(dropbox):
     return target_path
 
 
-import lib.tools.loader_themes as loader_themes
+import lib.tools.loadThemes as loadThemes
 
-my_applio = loader_themes.load_json()
+my_applio = loadThemes.load_json()
 if my_applio:
     pass
 else:
@@ -3041,13 +3041,13 @@ def GradioSetup():
                             interactive=True,
                         )
                         themes_select = gr.Dropdown(
-                            loader_themes.get_list(),
-                            value=loader_themes.read_json(),
+                            loadThemes.get_list(),
+                            value=loadThemes.read_json(),
                             label=i18n("Select Theme:"),
                             visible=True,
                         )
                         themes_select.change(
-                            fn=loader_themes.select_theme,
+                            fn=loadThemes.select_theme,
                             inputs=themes_select,
                             outputs=[],
                         )
