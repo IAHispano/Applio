@@ -13,4 +13,8 @@ assets/rmvpe/rmvpe.pt
 assets/rmvpe/rmvpe.onnx
 assets/hubert/hubert_base.pt
 
+*.pyc
+*.pyd
+*.swp
+__pycache__
 lib/csvdb/stop.csv
