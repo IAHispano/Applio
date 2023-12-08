@@ -66,6 +66,10 @@ if %errorlevel% equ 0 (
     echo Moving the mingit folder...
     cd %repoFolder%
     del install_Applio.bat
+    del Makefile
+    del Dockerfile
+    del docker-compose.yaml
+    del stftpitchshift
     del /q *.sh
     cls
 
