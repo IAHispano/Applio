@@ -56,7 +56,7 @@ run-ui: ## Run the python GUI
 	python infer-web.py --paperspace --pycmd python
 
 run-cli: ## Run the python CLI
-	python infer-web.py --pycmd python --is_cli
+	python infer-web.py --pycmd python --cli
 
 tensorboard: ## Start the tensorboard (Run on separate terminal)
 	echo https://tensorboard-$$(hostname).clg07azjl.paperspacegradient.com

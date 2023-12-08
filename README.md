@@ -36,7 +36,7 @@
 - Applio grants easy access to Tensorboard via a Makefile and a Python script.
 
 ### CLI Functionality
-- Applio introduces command-line interface (CLI) functionality, with the addition of the --is_cli flag in infer-web.py for CLI system usage.
+- Applio introduces command-line interface (CLI) functionality, with the addition of the --cli flag in infer-web.py for CLI system usage.
 
 ### f0 Hybrid Estimation Method
 - Applio offers a novel f0 hybrid estimation method by calculating nanmedian for a specified array of f0 methods, ensuring the best results from multiple methods (CLI exclusive).
@@ -145,7 +145,7 @@ python infer-web.py --pycmd python --port 3000
 
 ## 💻 Running the CLI (Inference & Train) 
 ```bash
-python infer-web.py --pycmd python --is_cli
+python infer-web.py --pycmd python --cli
 ```
 
 ```bash

@@ -128,7 +128,7 @@ class Config:
             help="Note that this argument just shares a gradio link for the web UI. Thus can be used on other non-local CLI systems.",
         )
         parser.add_argument(
-            "--is_cli",
+            "--cli",
             action="store_true",
             help="Use the CLI instead of setting up a gradio UI. This flag will launch an RVC text interface where you can execute functions from infer-web.py!",
         )
