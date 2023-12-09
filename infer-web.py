@@ -85,7 +85,7 @@ shutil.rmtree(tmp, ignore_errors=True)
 os.makedirs(tmp, exist_ok=True)
 
 # Start the download server
-if True == True:
+if True == True: # Shutdown trigger
     host = "localhost"
     port = 8000
 
