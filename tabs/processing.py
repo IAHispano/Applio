@@ -34,7 +34,7 @@ def change_info_(ckpt_path):
         return {"__type__": "update"}, {"__type__": "update"}, {"__type__": "update"}
 
 
-def processing_():
+def processing():
 
         with gr.Accordion(
             label=i18n("Model fusion, can be used to test timbre fusion")

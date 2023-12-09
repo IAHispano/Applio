@@ -27,8 +27,9 @@ import fairseq
 import socket
 import requests
 import subprocess
+import matplotlib.pyplot as plt
 
-logging.getLogger('requests').setLevel(logging.CRITICAL)
+logging.getLogger("requests").setLevel(logging.CRITICAL)
 logging.getLogger("faiss").setLevel(logging.WARNING)
 import faiss
 import gradio as gr
@@ -66,10 +67,10 @@ import tabs.resources as resources
 import tabs.tts as tts
 import tabs.merge as mergeaudios
 import tabs.processing as processing
+import tabs.analyzer as analyzer
 
 from lib.modules.infer.csvutil import CSVutil
 import time
-import csv
 from shlex import quote as SQuote
 
 logger = logging.getLogger(__name__)
@@ -85,7 +86,7 @@ shutil.rmtree(tmp, ignore_errors=True)
 os.makedirs(tmp, exist_ok=True)
 
 # Start the download server
-if True == True: # Shutdown trigger
+if True == True:  # Shutdown trigger
     host = "localhost"
     port = 8000
 
@@ -3028,7 +3029,10 @@ def GradioSetup():
                     mergeaudios.merge_audios()
 
                 with gr.TabItem(i18n("Processing")):
-                    processing.processing_()
+                    processing.processing()
+
+                with gr.TabItem(i18n("Audio Analyzer")):
+                    analyzer.analyzer()
 
             with gr.TabItem(i18n("Settings")):
                 with gr.Row():

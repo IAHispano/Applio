@@ -8,10 +8,11 @@ datasets/
 logs/
 
 assets/audios/
-
 assets/rmvpe/rmvpe.pt
 assets/rmvpe/rmvpe.onnx
 assets/hubert/hubert_base.pt
+
+spectrogram.png
 
 *.pyc
 *.pyd

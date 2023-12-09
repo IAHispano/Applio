@@ -33,7 +33,6 @@ absl-py>=1.2.0
 audioread
 uvicorn>=0.21.1
 colorama>=0.4.5
-httpx
 onnxruntime; sys_platform == 'darwin'
 onnxruntime-gpu; sys_platform != 'darwin'
 torchcrepe==0.0.20
