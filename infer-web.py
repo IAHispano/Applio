@@ -28,6 +28,7 @@ import socket
 import requests
 import subprocess
 
+logging.getLogger('requests').setLevel(logging.CRITICAL)
 logging.getLogger("faiss").setLevel(logging.WARNING)
 import faiss
 import gradio as gr
