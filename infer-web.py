@@ -86,37 +86,36 @@ shutil.rmtree(tmp, ignore_errors=True)
 os.makedirs(tmp, exist_ok=True)
 
 # Start the download server
-if True == True:  # Shutdown trigger
-    host = "localhost"
-    port = 8000
+host = "localhost"
+port = 8000
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(2)  # Timeout in seconds
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.settimeout(2)  # Timeout in seconds
 
+try:
+    sock.connect((host, port))
+    logger.warn(
+        f"Something is listening on port {port}; check open connection and restart Applio."
+    )
+    logger.warn("Trying to start it anyway")
+    sock.close()
+    requests.post("http://localhost:8000/shutdown")
+    time.sleep(3)
+    script_path = os.path.join(now_dir, "lib", "tools", "server.py")
     try:
-        sock.connect((host, port))
-        logger.warn(
-            f"Something is listening on port {port}; check open connection and restart Applio."
-        )
-        logger.warn("Trying to start it anyway")
-        sock.close()
-        requests.post("http://localhost:8000/shutdown")
-        time.sleep(3)
-        script_path = os.path.join(now_dir, "lib", "tools", "server.py")
-        try:
-            subprocess.Popen(f"python {script_path}", shell=True)
-        except Exception as e:
-            logger.error(f"Failed to start the Flask server")
-            logger.error(e)
+        subprocess.Popen(f"python {script_path}", shell=True)
     except Exception as e:
-        sock.close()
-        script_path = os.path.join(now_dir, "lib", "tools", "server.py")
-        try:
-            subprocess.Popen(f"python {script_path}", shell=True)
-        except Exception as e:
-            logger.error("Failed to start the Flask server")
-            logger.error(e)
-
+        logger.error(f"Failed to start the Flask server")
+        logger.error(e)
+except Exception as e:
+    sock.close()
+    script_path = os.path.join(now_dir, "lib", "tools", "server.py")
+    try:
+        subprocess.Popen(f"python {script_path}", shell=True)
+    except Exception as e:
+        logger.error("Failed to start the Flask server")
+        logger.error(e)
+        
 os.makedirs(tmp, exist_ok=True)
 os.makedirs(os.path.join(now_dir, "logs"), exist_ok=True)
 os.makedirs(os.path.join(now_dir, "logs/weights"), exist_ok=True)
