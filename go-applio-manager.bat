@@ -303,6 +303,12 @@ set "force=%force: =%"
 if /i "%force%"=="Y" (
     %mingit_path% fetch --all
     %mingit_path% reset --hard origin/main
+    del install_Applio.bat
+    del Makefile
+    del Dockerfile
+    del docker-compose.yaml
+    del stftpitchshift
+    del /q *.sh
     goto updateSuccess
 ) else (
     echo Update canceled.
@@ -316,6 +322,12 @@ set "force=%force: =%"
 if /i "%force%"=="Y" (
     git fetch --all
     git reset --hard origin/main
+    del install_Applio.bat
+    del Makefile
+    del Dockerfile
+    del docker-compose.yaml
+    del stftpitchshift
+    del /q *.sh
     goto updateSuccess
 ) else (
     echo Update canceled.
