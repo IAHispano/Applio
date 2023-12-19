@@ -273,17 +273,53 @@ rem Start Updater
 :updater
 
 echo Updating the repository...
+
 if exist "%mingit_path%" (
-    %mingit_path% pull
+    call %mingit_path% pull 2>&1 | find "error: Your local changes to the following files would be overwritten by merge" & cls 
+    if not errorlevel 1 (
+            goto updaterErrorMingit
+        )
+
 ) else (
-    git pull
-)
+    call git pull 2>&1 | find "error: Your local changes to the following files would be overwritten by merge" & cls
+    if not errorlevel 1 (
+            goto updaterErrorGit
+        )
+    )
+
 echo Applio has been updated!
 echo.
 echo Press 'Enter' to access the main menu... 
 pause>nul
 cls
 goto menu
+
+rem Merge Updater Errors
+:updaterErrorMingit
+set /p "force=Error: We detected some changes in your local files. If you want to force the update, please type Y; if not, type N: "
+set "force=%force: =%"
+if /i "%force%"=="Y" (
+    call %mingit_path% fetch --all
+    call %mingit_path% reset --hard origin/main
+    pause
+) else (
+    echo Update canceled.
+    cls
+    goto menu
+)
+
+:updaterErrorGit
+set /p "force=Error: We detected some changes in your local files. If you want to force the update, please type Y; if not, type N: "
+set "force=%force: =%"
+if /i "%force%"=="Y" (
+    call git fetch --all
+    call git reset --hard origin/main
+    pause
+) else (
+    echo Update canceled.
+    cls
+    goto menu
+)
 rem End Updater
 
 
