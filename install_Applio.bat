@@ -103,6 +103,10 @@ if %errorlevel% equ 0 (
         if errorlevel 8 echo Warnings or errors occurred during the move.
         cd %repoFolder%
         del install_Applio.bat
+        del Makefile
+        del Dockerfile
+        del docker-compose.yaml
+        del stftpitchshift
         del /q *.sh
         cls
     ) else (
