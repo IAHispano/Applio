@@ -287,6 +287,8 @@ if exist "%mingit_path%" (
         )
     )
 
+:updateSuccess
+cls
 echo Applio has been updated!
 echo.
 echo Press 'Enter' to access the main menu... 
@@ -299,9 +301,9 @@ rem Merge Updater Errors
 set /p "force=Error: We detected some changes in your local files. If you want to force the update, please type Y; if not, type N: "
 set "force=%force: =%"
 if /i "%force%"=="Y" (
-    call %mingit_path% fetch --all
-    call %mingit_path% reset --hard origin/main
-    pause
+    %mingit_path% fetch --all
+    %mingit_path% reset --hard origin/main
+    goto updateSuccess
 ) else (
     echo Update canceled.
     cls
@@ -312,9 +314,9 @@ if /i "%force%"=="Y" (
 set /p "force=Error: We detected some changes in your local files. If you want to force the update, please type Y; if not, type N: "
 set "force=%force: =%"
 if /i "%force%"=="Y" (
-    call git fetch --all
-    call git reset --hard origin/main
-    pause
+    git fetch --all
+    git reset --hard origin/main
+    goto updateSuccess
 ) else (
     echo Update canceled.
     cls
