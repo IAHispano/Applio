@@ -27,7 +27,7 @@ wheel
 pedalboard
 pydub==0.25.1
 ffmpy==0.3.1
-gradio==3.34.0
+gradio==4.11.0
 librosa==0.9.1
 gTTS==2.3.2
 wget
