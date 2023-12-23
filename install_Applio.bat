@@ -39,14 +39,14 @@ for %%i in (%*) do (
     )
 )
 
-:endProcessArguments
-if %useManual% == "false" (
-    cls
-    echo INFO: It's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
-    echo.
-    pause
-    cls
-)
+
+
+cls
+echo INFO: It's recommended to disable antivirus or firewall, as errors might occur when downloading pretrained models.
+echo.
+pause
+cls
+
 
 net session >nul 2>&1
 if %errorLevel% == 0 (
@@ -56,6 +56,7 @@ if %errorLevel% == 0 (
     exit
 )
 
+:endProcessArguments
 for /f "delims=: tokens=*" %%A in ('findstr /b ":::" "%~f0"') do @echo(%%A
 echo.
 
