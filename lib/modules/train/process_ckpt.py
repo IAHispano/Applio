@@ -37,7 +37,7 @@ def savee(ckpt, sr, if_f0, name, epoch, version, hps):
             hps.model.gin_channels,
             hps.data.sampling_rate,
         ]
-        opt["info"] = "%sepoch" % epoch
+        opt["info"] = epoch
         opt["sr"] = sr
         opt["f0"] = if_f0
         opt["version"] = version
