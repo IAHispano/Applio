@@ -141,9 +141,8 @@ if exist "%cd%\env" (
     pause
     exit
 )
-
-
 cls
+
 if not exist "%CONDA_EXECUTABLE%" (
     echo Downloading Miniconda from %MINICONDA_DOWNLOAD_URL%
     curl %MINICONDA_DOWNLOAD_URL% -o miniconda.exe
