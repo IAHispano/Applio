@@ -29,6 +29,7 @@ import requests
 import subprocess
 import matplotlib.pyplot as plt
 
+logging.getLogger("httpx").setLevel(logging.CRITICAL)
 logging.getLogger("requests").setLevel(logging.CRITICAL)
 logging.getLogger("faiss").setLevel(logging.WARNING)
 import faiss
