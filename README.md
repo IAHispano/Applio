@@ -125,7 +125,7 @@ In addition to the aforementioned improvements, this repository offers the follo
 - [ ] **Resolve CUDA Compatibility Issue:** Investigate and resolve the cuFFT error related to CUDA compatibility.
 - [ ] **Refactor infer-web.py:** Organize the code of infer-web.py into different files for each tab, enhancing modularity.
 - [ ] **Expand UVR Model Options:** Integrate additional UVR models to provide users with more options and flexibility.
-- [ ] **Enhance Installation Process:** Improve the system installation process for better user experience and clarity.
+- [x] **Enhance Installation Process:** Improve the system installation process for better user experience and clarity. [Applio Installer.exe](https://github.com/IAHispano/Applio-Installer/releases)
 - [ ] **Implement Automatic Updates:** Add automatic update functionality to keep the application current with the latest features.
 - [ ] **Multilingual Support:** Include more translations for various languages.
 - [ ] **Diversify TTS Methods:** Introduce new TTS methods and enhance customization options for a richer user experience.
@@ -137,7 +137,7 @@ In addition to the aforementioned improvements, this repository offers the follo
 
 ### Automatic installation (Windows):
 
-To quickly and effortlessly install Applio along with all the necessary models and configurations on Windows, you can use the [install_Applio.bat](https://github.com/IAHispano/Applio-RVC-Fork/releases) script available in the releases section.
+To quickly and effortlessly install Applio along with all the necessary models and configurations on Windows, you can use the [Applio Installer.exe](https://github.com/IAHispano/Applio-Installer/releases) or the [install_Applio.bat](https://github.com/IAHispano/Applio-RVC-Fork/releases) script available in the releases section.
 
 ### Manual installation (Windows/MacOS):
 
