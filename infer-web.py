@@ -2002,6 +2002,11 @@ def GradioSetup():
                                     interactive=True,
                                 )
 
+                                force_cpu = gr.Checkbox(
+                                    label=i18n("Force CPU usage (Slower)"),
+                                    interactive=True,
+                                )
+
                                 crepe_hop_length = gr.Slider(
                                     minimum=1,
                                     maximum=512,
@@ -2278,6 +2283,7 @@ def GradioSetup():
                                     maxpitch_slider,
                                     maxpitch_txtbox,
                                     f0_autotune,
+                                    force_cpu,
                                 ],
                                 [vc_output1, vc_output2],
                                 api_name="infer_convert",

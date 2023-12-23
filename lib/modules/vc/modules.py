@@ -209,7 +209,15 @@ class VC:
         f0_max,
         note_max,
         f0_autotune,
+        force_cpu,
     ):
+        if force_cpu == True:
+            self.device = self.instead = "cpu"
+            print("Using Forced CPU")
+        else:
+            self.device = self.instead = "cuda:0" if torch.cuda.is_available() else "cpu"
+            
+
         global total_time
         total_time = 0
         start_time = time.time()
