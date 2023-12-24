@@ -164,9 +164,6 @@ echo Conda env installed !
 
 echo Installing the dependencies...
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
-conda install -c anaconda git -y
-call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" deactivate
-call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
 pip install --upgrade setuptools
 pip install -r "%principal%\assets\requirements\requirements.txt"
 pip install future==0.18.2
