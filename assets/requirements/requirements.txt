@@ -10,7 +10,7 @@ gTTS==2.3.2
 wget
 matplotlib==3.7.2
 mega.py==1.0.8
-git+https://github.com/wkentaro/gdown.git
+gdown
 edge-tts
 nltk
 numba; sys_platform == 'linux'
