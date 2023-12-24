@@ -2005,6 +2005,7 @@ def GradioSetup():
                                 force_cpu = gr.Checkbox(
                                     label=i18n("Force CPU usage (Slower)"),
                                     interactive=True,
+                                    value=False,
                                 )
 
                                 crepe_hop_length = gr.Slider(
