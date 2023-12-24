@@ -32,6 +32,7 @@ set "useManual=false"
 for %%i in (%*) do (
     if /I "%%i"=="--manual" (
         set "useManual=true"
+        goto endProcessArguments
     )
 )
 
