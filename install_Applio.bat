@@ -23,7 +23,7 @@ set "URL_BASE=https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
 set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
 set "CONDA_ROOT_PREFIX=%UserProfile%\Miniconda3"
 set "INSTALL_ENV_DIR=%principal%\env"
-set "MINICONDA_DOWNLOAD_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_23.9.0-0-Windows-x86_64.exe"
+set "MINICONDA_DOWNLOAD_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_23.11.0-2-Windows-x86_64.exe"
 set "CONDA_EXECUTABLE=%CONDA_ROOT_PREFIX%\Scripts\conda.exe"
 
 :processArguments
