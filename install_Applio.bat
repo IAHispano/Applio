@@ -176,5 +176,7 @@ goto dependenciesFinished
 cls 
 echo Applio has been successfully downloaded, run the file go-applio.bat to run the web interface!
 echo.
+if /I "%useManual%"=="true" goto :skipPause
 pause
+:skipPause
 exit
