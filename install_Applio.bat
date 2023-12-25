@@ -168,7 +168,7 @@ pip install --upgrade setuptools
 pip install -r "%principal%\assets\requirements\requirements.txt"
 pip install future==0.18.2
 pip uninstall torch torchvision torchaudio -y
-pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
+pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" deactivate
 goto dependenciesFinished
 

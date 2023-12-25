@@ -28,10 +28,10 @@ sounddevice==0.4.6
 soundfile==0.12.1
 ffmpeg-python>=0.2.0
 tensorboard==2.13.0
-torch==2.0.0
+torch==2.1.1
 torchcrepe==0.0.21
 torchaudio==2.0.1
-torchvision==0.15.1
+torchvision==0.16.1
 torchgen>=0.0.1
 tqdm==4.65.0
 python-dotenv>=1.0.0
