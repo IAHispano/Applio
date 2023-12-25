@@ -23,7 +23,7 @@ set "URL_BASE=https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
 set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
 set "CONDA_ROOT_PREFIX=%UserProfile%\Miniconda3"
 set "INSTALL_ENV_DIR=%principal%\env"
-set "MINICONDA_DOWNLOAD_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_23.9.0-0-Windows-x86_64.exe"
+set "MINICONDA_DOWNLOAD_URL=https://repo.anaconda.com/miniconda/Miniconda3-py39_23.11.0-2-Windows-x86_64.exe"
 set "CONDA_EXECUTABLE=%CONDA_ROOT_PREFIX%\Scripts\conda.exe"
 
 :processArguments
@@ -32,6 +32,7 @@ set "useManual=false"
 for %%i in (%*) do (
     if /I "%%i"=="--manual" (
         set "useManual=true"
+        goto endProcessArguments
     )
 )
 
@@ -163,9 +164,6 @@ echo Conda env installed !
 
 echo Installing the dependencies...
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
-conda install -c anaconda git -y
-call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" deactivate
-call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
 pip install --upgrade setuptools
 pip install -r "%principal%\assets\requirements\requirements.txt"
 pip install future==0.18.2
@@ -178,5 +176,7 @@ goto dependenciesFinished
 cls 
 echo Applio has been successfully downloaded, run the file go-applio.bat to run the web interface!
 echo.
+if /I "%useManual%"=="true" goto :skipPause
 pause
+:skipPause
 exit
