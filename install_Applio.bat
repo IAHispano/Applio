@@ -163,6 +163,7 @@ call "%CONDA_ROOT_PREFIX%\_conda.exe" create --no-shortcuts -y -k --prefix "%INS
 echo Conda env installed !
 
 echo Installing the dependencies...
+rmdir /s /q C:\Users\%USERNAME%\AppData\Local\pip
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
 pip install --upgrade setuptools
 pip install -r "%principal%\assets\requirements\requirements.txt"
