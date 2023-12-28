@@ -87,13 +87,13 @@ if %errorlevel% equ 0 (
 
     if not exist "%cd%\mingit" (
         echo Extracting failed trying with the tar method...
-        tar -xf %cd%\mingit.zip
+        tar -xf "%cd%\mingit.zip"
     )
 
     if exist "%cd%\mingit" (
         del mingit.zip
         echo Cloning the repository...
-        %cd%\mingit\cmd\git.exe clone %repoUrl% %repoFolder%
+        "%cd%\mingit\cmd\git.exe" clone %repoUrl% %repoFolder%
         echo Moving the mingit folder...
         robocopy "%cd%\mingit" "%principal%\lib\tools\mingit" /e /move /dcopy:t > NUL
         if errorlevel 8 echo Warnings or errors occurred during the move.
@@ -131,7 +131,7 @@ if not exist "%cd%\env" (
 
 if not exist "%cd%\env" (
     echo Extracting failed trying with the tar method...
-    tar -xf %cd%\env.zip
+    tar -xf "%cd%\env.zip"
 )
 
 if exist "%cd%\env" (
