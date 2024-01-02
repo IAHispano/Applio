@@ -262,5 +262,8 @@
   "Reload from checkpoint before a mode collapse and try training it again": "Recarga desde el punto de guardado antes del colapso de un modo e intenta entrenarlo de nuevo",
   "Stop training early if no improvement detected": "Detener el entrenamiento si no se detectan mejoras",
   "Enable autotune": "Activa el autotune",
-  "Split Audio (Better Results)": "Audio dividido (mejores resultados)"
+  "Split Audio (Better Results)": "Audio dividido (mejores resultados)",
+  "Model conversion": "Conversion de modelo",
+  "Pth file:": "Archivo pth:",
+  "Output of the pth file:": "Salida del archivo pth:"
 }

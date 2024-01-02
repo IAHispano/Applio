@@ -9,6 +9,7 @@ from lib.modules.train.process_ckpt import (
     extract_small_model,
     merge,
     show_info,
+    convert_pth_to_old_format,
 )
 from assets.i18n.i18n import I18nAuto
 
@@ -217,3 +218,18 @@ def processing():
                 info7,
                 api_name="ckpt_extract",
             )
+        with gr.Accordion(label=i18n("Model conversion")):
+            with gr.Row():
+                with gr.Column():
+                    pth_input = gr.File(label=i18n("Pth file:"))
+                with gr.Row():
+                    pth_output = gr.File(label=i18n("Output of the pth file:"))
+            with gr.Row():
+                but2 = gr.Button(i18n("Convert"), variant="primary")
+                but2.click(
+                    convert_pth_to_old_format,
+                    [
+                        pth_input
+                    ],
+                    [pth_output],
+                )

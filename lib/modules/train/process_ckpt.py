@@ -1,4 +1,4 @@
-import os
+import os, sys, shutil
 import traceback
 from collections import OrderedDict
 
@@ -7,7 +7,8 @@ import torch
 from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
-
+now_dir = os.getcwd()
+tmp_converter = os.path.join(now_dir, "temp", "converter")
 
 def savee(ckpt, sr, if_f0, name, epoch, version, hps):
     try:
@@ -258,3 +259,35 @@ def merge(path1, path2, alpha1, sr, f0, info, name, version):
         return "Success."
     except:
         return traceback.format_exc()
+
+def convert_pth_to_old_format(pth_input):
+    original_name_without_extension = os.path.basename(pth_input.name).rsplit('.', 1)[0]
+    new_output_name = original_name_without_extension + '_old_version.pth'
+    new_output_path = os.path.join(tmp_converter, new_output_name)
+
+    if os.path.exists(tmp_converter):
+        shutil.rmtree(tmp_converter)
+    os.mkdir(tmp_converter)
+
+    model = torch.load(pth_input.name, map_location=torch.device('cpu'))
+    torch.save(replace_keys_in_dict(replace_keys_in_dict(model, '.parametrizations.weight.original1', '.weight_v'), '.parametrizations.weight.original0', '.weight_g'), new_output_path)
+    return new_output_path
+
+def replace_keys_in_dict(d, old_key_part, new_key_part):
+    # Use OrderedDict if the original is an OrderedDict
+    if isinstance(d, OrderedDict):
+        updated_dict = OrderedDict()
+    else:
+        updated_dict = {}
+
+    for key, value in d.items():
+        # Replace the key part if found
+        new_key = key.replace(old_key_part, new_key_part)
+
+        # If the value is a dictionary, apply the function recursively
+        if isinstance(value, dict):
+            value = replace_keys_in_dict(value, old_key_part, new_key_part)
+
+        updated_dict[new_key] = value
+
+    return updated_dict
