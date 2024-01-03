@@ -43,6 +43,10 @@ def savee(ckpt, sr, if_f0, name, epoch, version, hps):
         opt["f0"] = if_f0
         opt["version"] = version
         torch.save(opt, "logs/weights/%s.pth" % name)
+        model = torch.load("logs/weights/%s.pth" % name, map_location=torch.device('cpu'))
+        torch.save(replace_keys_in_dict(replace_keys_in_dict(model, '.parametrizations.weight.original1', '.weight_v'), '.parametrizations.weight.original0', '.weight_g'), "logs/weights/%s_old_version.pth" % name)
+        os.remove("logs/weights/%s.pth" % name)
+        os.rename("logs/weights/%s_old_version.pth" % name, "logs/weights/%s.pth" % name)
         return "Success."
     except:
         return traceback.format_exc()
