@@ -1,6 +1,6 @@
-#!/bin/bash
-echo -e "\033]0;Applio-RVC-Fork - Manager\007"
-source .venv/bin/activate
+#!/bin/sh
+printf "\033]0;Applio-RVC-Fork - Manager\007"
+. .venv/bin/activate
 clear
 menu1() {
   while true; do
@@ -20,26 +20,28 @@ cat << "EOF"
  [3] Fix Tensorboard
  [4] Exit
 EOF
-read -p "Select an option:  " choice1
+printf "Select an option:  " >&2
+read -r choice1
 
 case $choice1 in
     1)
         git pull
-        read -p "Applio has been updated or its already in the latest version"
+        printf "Applio has been updated or its already in the latest version"
         finish1
         ;;
     2)
         git pull
         ./reinstall_applio.sh
-        read -p "Applio has been updated or its already in the latest version"
+        printf "Applio has been updated or its already in the latest version"
         finish1
         ;;
     3)
         python3.9 -m pip uninstall tb-nightly tensorboardX tensorboard
         python3.9 -m pip install tensorboard
-        cls
+        clear
         echo Tensorboard re-installed correctly!
-        read -p "Press Enter to access the main menu..."
+        printf "Press Enter to access the main menu..." >&2
+        read -r ""
         finish1
         ;;
      4) 
@@ -50,16 +52,16 @@ case $choice1 in
     *)
         echo "Invalid option. Please enter a number from 1 to 4."
         echo ""
-        read -p "Press Enter to access the main menu..."
+        printf "Press Enter to access the main menu..." >&2
+        read -r ""
         ;;
 esac
 done
 }
 
 finish1() {
-  chmod +x *.sh
+  chmod +x ./*.sh
   clear
   echo "Goodbye!"
 }
 menu1
-
