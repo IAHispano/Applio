@@ -1,6 +1,6 @@
-#!/bin/bash
-echo -e "\033]0;Applio-RVC-Fork - Tensorboard\007"
-source .venv/bin/activate
+#!/bin/sh
+printf "\033]0;Applio-RVC-Fork - Tensorboard\007"
+. .venv/bin/activate
 clear
 
 echo "Starting the Tensorboard with Conda..."
@@ -9,5 +9,6 @@ echo "Starting Tensorboard..."
 pip install tensorboard
 python lib/tools/tensorLaunch.py
 
-read -p "Press Enter to exit..."
+printf "Press Enter to exit..." >&2
+read -r ""
 exit 0

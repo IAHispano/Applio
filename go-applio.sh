@@ -1,6 +1,6 @@
-#!/bin/bash
-echo -e "\033]0;Applio-RVC-Fork\007"
-source .venv/bin/activate
+#!/bin/sh
+printf "\033]0;Applio-RVC-Fork\007"
+. .venv/bin/activate
 menu() {
   while true; do
     clear
@@ -18,18 +18,21 @@ cat << "EOF"
  [2] Start Applio (Intel GPU/CPU) Probably broken
  [3] Exit
 EOF
-    read -p "Select an option: " choice
+    printf "Select an option: " >&2
+    read -r choice
     case $choice in
     1)
       clear
       python infer-web.py --pycmd python --port 7897 --theme dark
-      read -p "Press Enter to continue..."
+      printf "Press Enter to continue..." >&2
+      read -r ""
       ;;
    2)
       clear
       export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/.venv/lib
       python -m sklearnex infer-web.py --pycmd python --port 7897 --theme dark
-      read -p "Press Enter to continue..."
+      printf "Press Enter to continue..." >&2
+      read -r ""
       ;;
     3)
       finish
@@ -38,7 +41,8 @@ EOF
       clear
       echo "Invalid option. Please enter a number from 1 to 3."
       echo ""
-      read -n 1 -s -r -p "Press 'Enter' to access the main menu..."
+      printf "Press 'Enter' to access the main menu..." >&2
+      read -r ""
       ;;
     esac
   done
