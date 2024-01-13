@@ -1,7 +1,7 @@
 import subprocess
 import os
 import sys
-import gdown
+import lib.tools.download as gdown
 import errno
 import json
 import shutil
