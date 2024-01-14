@@ -1,7 +1,7 @@
 # 🍏 Applio-RVC-Fork
 
-> [!NOTE]
-> Applio-RVC-Fork is designed to complement existing repositories, and as such, certain features may be in experimental stages, potentially containing bugs. Additionally, there might be instances of coding practices that could be improved or refined. It is not intended to replace any other repository.
+> [!WARNING]
+> Development and issues paused until the new version is released.
 
 [![Discord](https://img.shields.io/badge/SUPPORT_DISCORD-37a779?style=for-the-badge)](https://discord.gg/IAHispano) [![Discord Bot](https://img.shields.io/badge/DISCORD_BOT-37a779?style=for-the-badge)](https://bot.applio.org) [![Docs](https://img.shields.io/badge/DOCS-37a779?style=for-the-badge)](https://docs.applio.org)
 
