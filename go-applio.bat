@@ -1,4 +1,5 @@
 @echo off
+color 0A
 setlocal
 title Applio-RVC-Fork
 cd %~dp0
