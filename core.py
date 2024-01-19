@@ -2,6 +2,10 @@ import os
 import sys
 import argparse
 import subprocess
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+
 from rvc.configs.config import Config
 from rvc.lib.tools.validators import (
     validate_sampling_rate,

@@ -573,9 +573,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             )
 
     if rank == 0:
-        print(
-            f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | loss_disc={loss_disc:.3f} | loss_gen={loss_gen:.3f} | loss_fm={loss_fm:.3f} | loss_mel={loss_mel:.3f} | loss_kl={loss_kl:.3f}"
-        )
+        print(f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | loss_disc={loss_disc:.3f} | loss_gen={loss_gen:.3f} | loss_fm={loss_fm:.3f} | loss_mel={loss_mel:.3f} | loss_kl={loss_kl:.3f}")
     if epoch >= hps.total_epoch and rank == 0:
         print(
             f"Training has been successfully completed with {epoch} epoch and {global_step} steps."

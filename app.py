@@ -1,5 +1,9 @@
 import gradio as gr
 import sys
+import os
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 
 from assets.i18n.i18n import I18nAuto
 
