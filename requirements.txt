@@ -1,0 +1,34 @@
+# General dependencies
+ffmpeg-python>=0.2.0
+numpy==1.23.5
+requests
+tqdm
+wget
+
+# Audio processing
+faiss-cpu==1.7.3
+librosa==0.9.1
+pyworld==0.3.4
+scipy==1.11.1
+soundfile==0.12.1
+praat-parselmouth
+
+# Machine learning
+fairseq==0.12.2
+numba; sys_platform == 'linux'
+numba==0.56.4; sys_platform == 'win32'
+torch==2.1.1
+torchcrepe==0.0.21
+torchvision==0.16.1
+
+# Visualization
+matplotlib==3.7.2
+tensorboard
+gradio==4.14.0
+
+# Miscellaneous
+ffmpy==0.3.1
+git+https://github.com/lanpa/tensorboardX
+requests==2.31.0
+edge-tts==6.1.9
+pypresence

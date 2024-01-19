@@ -1,0 +1,16 @@
+version: '1'
+
+services:
+  applio:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "6969"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
