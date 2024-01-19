@@ -1,7 +1,6 @@
 # Applio
 *.exe
 *.pt
-logs
 rvc/pretraineds
 
 # Byte-compiled / optimized / DLL files
