@@ -2,6 +2,7 @@ from pypresence import Presence
 import datetime as dt
 import time
 
+
 def rich_presence():
     client_id = "1144714449563955302"
     RPC = Presence(client_id)
@@ -18,6 +19,7 @@ def rich_presence():
         start=dt.datetime.now().timestamp(),
     )
     return RPC
+
 
 if __name__ == "__main__":
     rpc = rich_presence()

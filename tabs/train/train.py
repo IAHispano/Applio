@@ -162,7 +162,9 @@ def train_tab():
                 label=i18n("Save Only Latest"), value=False, interactive=True
             )
             save_every_weights = gr.Checkbox(
-                label=i18n("Save Every Weights"), value=False, visible=False # Working on fix this - Only saving on final epoch
+                label=i18n("Save Every Weights"),
+                value=False,
+                visible=False,  # Working on fix this - Only saving on final epoch
             )
             custom_pretrained = gr.Checkbox(
                 label=i18n("Custom Pretrained"), value=False, interactive=True
