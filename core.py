@@ -36,7 +36,7 @@ def run_infer_script(
     output_path,
     pth_file,
     index_path,
-    split_audio
+    split_audio,
 ):
     infer_script_path = os.path.join("rvc", "infer", "infer.py")
     command = [
@@ -51,7 +51,7 @@ def run_infer_script(
         output_path,
         pth_file,
         index_path,
-        str(split_audio)
+        str(split_audio),
     ]
     subprocess.run(command)
     return f"File {input_path} inferred successfully.", output_path
@@ -322,6 +322,7 @@ def run_download_script(model_link):
     ]
     subprocess.run(command)
     return f"Model downloaded successfully."
+
 
 # Parse arguments
 def parse_arguments():
@@ -670,7 +671,7 @@ def main():
                 args.output_path,
                 args.pth_file,
                 args.index_path,
-                args.split_audio
+                args.split_audio,
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(

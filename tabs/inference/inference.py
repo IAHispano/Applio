@@ -58,8 +58,11 @@ audio_paths = [
     and "_output" not in name
 ]
 
+
 def output_path_fn(input_audio_path):
-    original_name_without_extension = os.path.basename(input_audio_path).rsplit(".", 1)[0]
+    original_name_without_extension = os.path.basename(input_audio_path).rsplit(".", 1)[
+        0
+    ]
     new_name = original_name_without_extension + "_output.wav"
     output_path = os.path.join(os.path.dirname(input_audio_path), new_name)
     return output_path
@@ -248,7 +251,9 @@ def inference_tab():
                 output_path = gr.Textbox(
                     label=i18n("Output Path"),
                     placeholder=i18n("Enter output path"),
-                    value=output_path_fn(audio_paths[0]) if audio_paths else os.path.join(now_dir, "assets", "audios", "output.wav"),
+                    value=output_path_fn(audio_paths[0])
+                    if audio_paths
+                    else os.path.join(now_dir, "assets", "audios", "output.wav"),
                     interactive=True,
                 )
                 split_audio = gr.Checkbox(

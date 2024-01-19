@@ -12,6 +12,7 @@ from tabs.report.report import report_tab
 from tabs.download.download import download_tab
 from tabs.tts.tts import tts_tab
 from assets.discord_presence import rich_presence
+
 rich_presence()
 
 with gr.Blocks(theme="ParityError/Interstellar", title="Applio") as Applio:
