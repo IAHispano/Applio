@@ -32,3 +32,4 @@ git+https://github.com/lanpa/tensorboardX
 requests==2.31.0
 edge-tts==6.1.9
 pypresence
+beautifulsoup4
