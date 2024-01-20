@@ -34,6 +34,7 @@ Download the latest version from [GitHub Releases](https://github.com/IAHispano/
 chmod +x run-install.sh
 ./run-install.sh
 ```
+*If you have problems with fairseq try `pip install git+https://github.com/One-sixth/fairseq.git`*.
 
 ### Using Makefile (for platforms such as [Paperspace](https://www.paperspace.com/))
 ```
