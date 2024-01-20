@@ -2,6 +2,7 @@ from pypresence import Presence
 import datetime as dt
 import time
 
+
 def rich_presence():
     client_id = "1144714449563955302"
     RPC = Presence(client_id)
@@ -22,6 +23,7 @@ def rich_presence():
     except Exception as e:
         print(f"An error occurred: {e}")
         return None
+
 
 if __name__ == "__main__":
     rpc = rich_presence()
