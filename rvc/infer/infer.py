@@ -222,7 +222,10 @@ audio_output_path = sys.argv[7]
 
 model_path = sys.argv[8]
 index_path = sys.argv[9]
-split_audio = sys.argv[10]
+try:
+    split_audio = sys.argv[10]
+except IndexError:
+    split_audio = None
 
 sid = f0up_key
 input_audio = audio_input_path
