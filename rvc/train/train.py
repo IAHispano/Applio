@@ -43,7 +43,7 @@ from losses import (
     kl_loss,
 )
 from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
-from process_ckpt import save_final
+from process_ckpt import save_final, extract_small_model
 
 from rvc.lib.infer_pack import commons
 
@@ -560,7 +560,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 % (
                     hps.name,
                     epoch,
-                    save_final(
+                    extract_small_model(
                         ckpt,
                         hps.sample_rate,
                         hps.if_f0,

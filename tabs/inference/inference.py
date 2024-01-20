@@ -1,6 +1,6 @@
 import os, sys
 import gradio as gr
-import regex as re
+import re
 import shutil
 import datetime
 import random

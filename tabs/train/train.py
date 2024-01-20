@@ -69,6 +69,7 @@ def train_tab():
                 model_name = gr.Textbox(
                     label=i18n("Model Name"),
                     placeholder=i18n("Enter model name"),
+                    value="my-project",
                     interactive=True,
                 )
                 dataset_path = gr.Textbox(
