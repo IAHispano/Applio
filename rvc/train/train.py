@@ -43,7 +43,7 @@ from losses import (
     kl_loss,
 )
 from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
-from process_ckpt import *
+from process_ckpt import save_final, extract_small_model
 
 from rvc.lib.infer_pack import commons
 
