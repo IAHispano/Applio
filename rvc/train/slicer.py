@@ -1,8 +1,8 @@
 import os
+from argparse import ArgumentParser
 import librosa
 import soundfile
 import numpy as np
-
 
 class Slicer:
     def __init__(
@@ -172,3 +172,72 @@ def get_rms(
 
     power = np.mean(np.abs(x) ** 2, axis=-2, keepdims=True)
     return np.sqrt(power)
+
+
+def main():
+    parser = ArgumentParser()
+    parser.add_argument("audio", type=str, help="The audio to be sliced")
+    parser.add_argument(
+        "--out", type=str, help="Output directory of the sliced audio clips"
+    )
+    parser.add_argument(
+        "--db_thresh",
+        type=float,
+        default=-40,
+        help="The dB threshold for silence detection",
+    )
+    parser.add_argument(
+        "--min_length",
+        type=int,
+        default=5000,
+        help="The minimum milliseconds required for each sliced audio clip",
+    )
+    parser.add_argument(
+        "--min_interval",
+        type=int,
+        default=300,
+        help="The minimum milliseconds for a silence part to be sliced",
+    )
+    parser.add_argument(
+        "--hop_size", type=int, default=10, help="Frame length in milliseconds"
+    )
+    parser.add_argument(
+        "--max_sil_kept",
+        type=int,
+        default=500,
+        help="The maximum silence length kept around the sliced clip, presented in milliseconds",
+    )
+    args = parser.parse_args()
+
+    out = args.out or os.path.dirname(os.path.abspath(args.audio))
+    audio, sr = librosa.load(args.audio, sr=None, mono=False)
+
+    slicer = Slicer(
+        sr=sr,
+        threshold=args.db_thresh,
+        min_length=args.min_length,
+        min_interval=args.min_interval,
+        hop_size=args.hop_size,
+        max_sil_kept=args.max_sil_kept,
+    )
+
+    chunks = slicer.slice(audio)
+
+    if not os.path.exists(out):
+        os.makedirs(out)
+
+    for i, chunk in enumerate(chunks):
+        if len(chunk.shape) > 1:
+            chunk = chunk.T
+        soundfile.write(
+            os.path.join(
+                out,
+                f"{os.path.basename(args.audio).rsplit('.', maxsplit=1)[0]}_{i}.wav",
+            ),
+            chunk,
+            sr,
+        )
+
+
+if __name__ == "__main__":
+    main()
