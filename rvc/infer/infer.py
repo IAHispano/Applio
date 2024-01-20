@@ -83,7 +83,9 @@ def vc_single(
             result, new_dir_path = process_audio(input_audio_path)
             if result == "Error":
                 return "Error with Split Audio", None
-            dir_path = new_dir_path.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+            dir_path = (
+                new_dir_path.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+            )
             if dir_path != "":
                 paths = [
                     os.path.join(root, name)
@@ -108,14 +110,17 @@ def vc_single(
                         path,
                         False,
                     )
-                    #new_dir_path
+                    # new_dir_path
             except Exception as error:
                 print(error)
                 return "Error", None
             print("Finished processing segmented audio, now merging audio...")
-            merge_timestamps_file = os.path.join(os.path.dirname(new_dir_path), f"{os.path.basename(input_audio_path).split('.')[0]}_timestamps.txt")
-            tgt_sr, audio_opt  = merge_audio(merge_timestamps_file)
-      
+            merge_timestamps_file = os.path.join(
+                os.path.dirname(new_dir_path),
+                f"{os.path.basename(input_audio_path).split('.')[0]}_timestamps.txt",
+            )
+            tgt_sr, audio_opt = merge_audio(merge_timestamps_file)
+
         else:
             audio_opt = vc.pipeline(
                 hubert_model,
@@ -137,7 +142,6 @@ def vc_single(
                 hop_length,
                 f0_file=f0_file,
             )
-        
 
         if output_path is not None:
             sf.write(output_path, audio_opt, tgt_sr, format="WAV")
@@ -243,7 +247,7 @@ try:
         index_rate=index_rate,
         hop_length=hop_length,
         output_path=output_file,
-        split_audio=split_audio
+        split_audio=split_audio,
     )
 
     if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
