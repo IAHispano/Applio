@@ -30,7 +30,7 @@ jobs:
       run: |
         mkdir -p logs/mi-test
         touch logs/mi-test/preprocess.log
-        python rvc/train/preprocess/preprocess.py logs/mute/0_gt_wavs logs/mi-test 48000 8 3.7
+        python rvc/train/preprocess/preprocess.py logs/mi-test logs/mute/0_gt_wavs 48000 8 3.7
         touch logs/mi-test/extract_f0_feature.log
         python rvc/train/extract/extract_f0_print.py logs/mi-test pm 64
         python rvc/train/extract_feature_print.py cpu 1 0 0 logs/mi-test v1 True
