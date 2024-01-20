@@ -1,4 +1,8 @@
 # Applio
+
+> [!CAUTION]
+> Applio is experiencing problems with model training, we recommend not to train until you no longer see this message! Follow the updates more frequently at https://discord.gg/IAHispano
+
 Welcome to **Applio**, the ultimate voice cloning tool meticulously optimized for unrivaled power, modularity, and a user-friendly experience.
 
 ![GitHub Release](https://img.shields.io/github/v/release/iahispano/applio-rvc-fork?style=flat-square)
