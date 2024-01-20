@@ -13,11 +13,11 @@ n_parts = int(sys.argv[2])
 i_part = int(sys.argv[3])
 
 if len(sys.argv) == 7:
-    exp_dir, version, is_half = sys.argv[4], sys.argv[5], sys.argv[6]
+    exp_dir, version, is_half = sys.argv[4], sys.argv[5], bool(sys.argv[6])
 else:
     i_gpu, exp_dir = sys.argv[4], sys.argv[5]
     os.environ["CUDA_VISIBLE_DEVICES"] = str(i_gpu)
-    version, is_half = sys.argv[6], sys.argv[7]
+    version, is_half = sys.argv[6], bool(sys.argv[7])
 
 
 def forward_dml(ctx, x, scale):
