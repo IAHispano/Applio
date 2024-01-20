@@ -7,9 +7,7 @@ Welcome to **Applio**, the ultimate voice cloning tool meticulously optimized fo
 [![Support Discord](https://img.shields.io/discord/1096877223765606521?style=flat-square)](https://discord.gg/iahispano)
 [![Downloads](https://img.shields.io/github/downloads/iahispano/applio-rvc-fork/total?style=flat-square)](https://github.com/IAHispano/Applio-RVC-Fork/releases)
 [![Issues](https://img.shields.io/github/issues/iahispano/applio-rvc-fork?style=flat-square)](https://github.com/IAHispano/Applio-RVC-Fork/issues)
-<!-- WORKING ON THIS
 [![Open In Collab](https://img.shields.io/badge/google_colab-F9AB00?style=flat-square&logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/iahispano/applio/blob/master/assets/Applio.ipynb)
--->
 
 ## Content Table
 - [**Installation**](#installation)
