@@ -560,7 +560,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 % (
                     hps.name,
                     epoch,
-                    save_final(
+                    extract_small_model(
                         ckpt,
                         hps.sample_rate,
                         hps.if_f0,
