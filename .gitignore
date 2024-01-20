@@ -1,4 +1,5 @@
 # Applio
+logs
 *.exe
 *.pt
 rvc/pretraineds
