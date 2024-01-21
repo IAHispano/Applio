@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 import gradio as gr
 from assets.i18n.i18n import I18nAuto
@@ -40,6 +41,30 @@ def refresh_custom_pretraineds():
         {"choices": sorted(get_pretrained_list("D")), "__type__": "update"},
     )
 
+def run_train(model_name, rvc_version, save_every_epoch, save_only_latest, save_every_weights, total_epoch, sampling_rate, batch_size, gpu, pitch_guidance, pretrained, custom_pretrained, g_pretrained_path, d_pretrained_path):
+    core = os.path.join(
+        "core.py"
+    )
+    command = [
+        "python",
+        core,
+        "train",
+        str(model_name),
+        str(rvc_version),
+        str(save_every_epoch),
+        str(save_only_latest),
+        str(save_every_weights),
+        str(total_epoch),
+        str(sampling_rate),
+        str(batch_size),
+        str(gpu),
+        str(pitch_guidance),
+        str(pretrained),
+        str(custom_pretrained),
+        str(g_pretrained_path),
+        str(d_pretrained_path),
+    ]
+    subprocess.run(command)
 
 def save_drop_model(dropbox):
     if ".pth" not in dropbox:
@@ -222,7 +247,7 @@ def train_tab():
         with gr.Row():
             train_button = gr.Button(i18n("Start Training"))
             train_button.click(
-                run_train_script,
+                run_train,
                 [
                     model_name,
                     rvc_version,
