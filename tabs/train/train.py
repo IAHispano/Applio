@@ -41,10 +41,24 @@ def refresh_custom_pretraineds():
         {"choices": sorted(get_pretrained_list("D")), "__type__": "update"},
     )
 
-def run_train(model_name, rvc_version, save_every_epoch, save_only_latest, save_every_weights, total_epoch, sampling_rate, batch_size, gpu, pitch_guidance, pretrained, custom_pretrained, g_pretrained_path, d_pretrained_path):
-    core = os.path.join(
-        "core.py"
-    )
+
+def run_train(
+    model_name,
+    rvc_version,
+    save_every_epoch,
+    save_only_latest,
+    save_every_weights,
+    total_epoch,
+    sampling_rate,
+    batch_size,
+    gpu,
+    pitch_guidance,
+    pretrained,
+    custom_pretrained,
+    g_pretrained_path,
+    d_pretrained_path,
+):
+    core = os.path.join("core.py")
     command = [
         "python",
         core,
@@ -65,6 +79,7 @@ def run_train(model_name, rvc_version, save_every_epoch, save_only_latest, save_
         str(d_pretrained_path),
     ]
     subprocess.run(command)
+
 
 def save_drop_model(dropbox):
     if ".pth" not in dropbox:

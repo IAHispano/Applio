@@ -258,13 +258,13 @@ def tts_tab():
             )
 
             pitch = gr.Slider(
-                    minimum=-24,
-                    maximum=24,
-                    step=1,
-                    label=i18n("Pitch"),
-                    value=0,
-                    interactive=True,
-                )
+                minimum=-24,
+                maximum=24,
+                step=1,
+                label=i18n("Pitch"),
+                value=0,
+                interactive=True,
+            )
             filter_radius = gr.Slider(
                 minimum=0,
                 maximum=7,
