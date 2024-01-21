@@ -19,10 +19,10 @@ def validate_sampling_rate(value):
 
 def validate_f0up_key(value):
     f0up_key = int(value)
-    if -12 <= f0up_key <= 12:
+    if -24 <= f0up_key <= 24:
         return f0up_key
     else:
-        raise argparse.ArgumentTypeError(f"f0up_key must be in the range of -12 to +12")
+        raise argparse.ArgumentTypeError(f"f0up_key must be in the range of -24 to +24")
 
 def validate_true_false(value):
     valid_tf = [
