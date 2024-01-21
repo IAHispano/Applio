@@ -2,7 +2,6 @@
 logs
 *.exe
 *.pt
-rvc/pretraineds
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

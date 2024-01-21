@@ -169,7 +169,7 @@ def run_preprocess_script(model_name, dataset_path, sampling_rate):
         str(per),
     ]
 
-    os.mkdir(os.path.join(logs_path, str(model_name)))
+    os.makedirs(os.path.join(logs_path, str(model_name)), exist_ok=True)
     subprocess.run(command)
     return f"Model {model_name} preprocessed successfully."
 
@@ -342,7 +342,7 @@ def parse_arguments():
     infer_parser.add_argument(
         "f0up_key",
         type=validate_f0up_key,
-        help="Value for f0up_key (-12 to +12)",
+        help="Value for f0up_key (-24 to +24)",
     )
     infer_parser.add_argument(
         "filter_radius",
@@ -391,7 +391,7 @@ def parse_arguments():
     batch_infer_parser.add_argument(
         "f0up_key",
         type=validate_f0up_key,
-        help="Value for f0up_key (-12 to +12)",
+        help="Value for f0up_key (-24 to +24)",
     )
     batch_infer_parser.add_argument(
         "filter_radius",
@@ -443,7 +443,7 @@ def parse_arguments():
     tts_parser.add_argument(
         "f0up_key",
         type=validate_f0up_key,
-        help="Value for f0up_key (-12 to +12)",
+        help="Value for f0up_key (-24 to +24)",
     )
     tts_parser.add_argument(
         "filter_radius",
