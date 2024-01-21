@@ -19,9 +19,7 @@ sampling_rate = int(sys.argv[3])
 percentage = float(sys.argv[4])
 num_processes = cpu_count()
 
-no_parallel = "True"
 import multiprocessing
-
 
 class PreProcess:
     def __init__(self, sr, exp_dir, per=3.0):
@@ -104,20 +102,16 @@ class PreProcess:
                 (f"{input_root}/{name}", idx)
                 for idx, name in enumerate(sorted(list(os.listdir(input_root))))
             ]
-            if no_parallel:
-                for i in range(num_processes):
-                    self.process_audio_multiprocessing(infos[i::num_processes])
-            else:
-                processes = []
-                for i in range(num_processes):
-                    p = multiprocessing.Process(
-                        target=self.process_audio_multiprocessing,
-                        args=(infos[i::num_processes],),
-                    )
-                    processes.append(p)
-                    p.start()
-                for i in range(num_processes):
-                    processes[i].join()
+            processes = []
+            for i in range(num_processes):
+                p = multiprocessing.Process(
+                    target=self.process_audio_multiprocessing,
+                    args=(infos[i::num_processes],),
+                )
+                processes.append(p)
+                p.start()
+            for i in range(num_processes):
+                processes[i].join()
         except Exception as error:
             print(error)
 
