@@ -84,9 +84,13 @@ We appreciate all contributions ❤️
 ## Planned Features
 - Implement: Support for Apple Devices ([Issue Link](https://github.com/pytorch/pytorch/issues/77764))
 - Implement: rmvpe_gpu
-- Implement: Theme selector
+- Implement: Theme selector, RPC toggle & version checker
+- Implement: Overtraining detector
+- Implement: Autotune
+- Implement: Training stop
 - Fix: Save on every weight
 - Fix: Model fusion
+- Fix: Harvest & Crepe
 
 ## Credits
 - [VITS](https://github.com/jaywalnut310/vits) by jaywalnut310
