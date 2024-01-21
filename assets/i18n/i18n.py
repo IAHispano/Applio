@@ -2,23 +2,20 @@ import json
 from pathlib import Path
 from locale import getdefaultlocale
 
-
 class I18nAuto:
     LANGUAGE_PATH = "./assets/i18n/languages/"
 
     def __init__(self, language=None):
         language = language or getdefaultlocale()[0]
 
-        if self._language_exists(language):
-            self.language = language
-        else:
-            lang_prefix = language[:2]
-            available_languages = self._get_available_languages()
-            matching_languages = [
-                lang for lang in available_languages if lang.startswith(lang_prefix)
-            ]
+        
+        lang_prefix = language[:2] if language is not None else "en"
 
-            self.language = matching_languages[0] if matching_languages else "en_US"
+       
+        available_languages = self._get_available_languages()
+
+        matching_languages = [lang for lang in available_languages if lang.startswith(lang_prefix)]
+        self.language = matching_languages[0] if matching_languages else "en_US"
 
         self.language_map = self._load_language_list()
 
@@ -44,3 +41,4 @@ class I18nAuto:
 
     def print(self):
         print(f"Using Language: {self.language}")
+
