@@ -2,6 +2,8 @@
 logs
 *.exe
 *.pt
+*.pth
+*.index
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
