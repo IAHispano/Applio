@@ -59,7 +59,9 @@ def get_audio_info(audio_file):
 
 def analyzer():
     with gr.Column():
-        gr.Markdown("Tool inspired in the original [Ilaria-Audio-Analyzer](https://github.com/TheStingerX/Ilaria-Audio-Analyzer) code.")
+        gr.Markdown(
+            "Tool inspired in the original [Ilaria-Audio-Analyzer](https://github.com/TheStingerX/Ilaria-Audio-Analyzer) code."
+        )
         audio_input = gr.Audio(type="filepath")
         get_info_button = gr.Button(
             value=i18n("Get information about the audio"), variant="primary"
