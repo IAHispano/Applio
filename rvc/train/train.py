@@ -90,7 +90,7 @@ class EpochRecorder:
         elapsed_time = round(elapsed_time, 1)
         elapsed_time_str = str(datetime.timedelta(seconds=int(elapsed_time)))
         current_time = datetime.datetime.now().strftime("%H:%M:%S")
-        return f"[{current_time}] | ({elapsed_time_str})"
+        return f"time={current_time} | training_speed={elapsed_time_str}"
 
 
 def main():
@@ -201,6 +201,7 @@ def run(
         net_d = DDP(net_d)
 
     try:
+        print("Starting training...")
         _, _, _, epoch_str = load_checkpoint(
             latest_checkpoint_path(hps.model_dir, "D_*.pth"), net_d, optim_d
         )
@@ -477,10 +478,6 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 if loss_kl > 9:
                     loss_kl = 9
 
-                # print([global_step, lr])
-                print(
-                    f"[loss_disc={loss_disc:.3f} | loss_gen={loss_gen:.3f} | loss_fm={loss_fm:.3f} | loss_mel={loss_mel:.3f} | loss_kl={loss_kl:.3f}]"
-                )
                 scalar_dict = {
                     "loss/g/total": loss_gen_all,
                     "loss/d/total": loss_disc,
@@ -559,7 +556,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             else:
                 ckpt = net_g.state_dict()
             print(
-                "Saving small model... %s_e%s:%s"
+                "saving ckpt %s_e%s:%s"
                 % (
                     hps.name,
                     epoch,
@@ -567,7 +564,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                         ckpt,
                         hps.sample_rate,
                         hps.if_f0,
-                        hps.name + f"_e{epoch}_s{global_step}",
+                        hps.name + "_e%s_s%s" % (epoch, global_step),
                         epoch,
                         hps.version,
                         hps,
@@ -576,16 +573,20 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             )
 
     if rank == 0:
-        print(f"Epoch {epoch}: {epoch_recorder.record()}")
+        print(
+            f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | loss_disc={loss_disc:.3f} | loss_gen={loss_gen:.3f} | loss_fm={loss_fm:.3f} | loss_mel={loss_mel:.3f} | loss_kl={loss_kl:.3f}"
+        )
     if epoch >= hps.total_epoch and rank == 0:
-        print("The training is over, finalizing the program...")
+        print(
+            f"Training has been successfully completed with {epoch} epoch and {global_step} steps."
+        )
 
         if hasattr(net_g, "module"):
             ckpt = net_g.module.state_dict()
         else:
             ckpt = net_g.state_dict()
         print(
-            "Saving final model... %s"
+            "Saving final checkpoint: %s"
             % (
                 save_final(
                     ckpt, hps.sample_rate, hps.if_f0, hps.name, epoch, hps.version, hps

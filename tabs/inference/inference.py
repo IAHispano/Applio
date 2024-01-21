@@ -1,6 +1,6 @@
 import os, sys
 import gradio as gr
-import re
+import regex as re
 import shutil
 import datetime
 import random
@@ -39,10 +39,7 @@ names = [
     os.path.join(root, file)
     for root, _, files in os.walk(model_root, topdown=False)
     for file in files
-    if (
-        file.endswith((".pth", ".onnx"))
-        and not (file.startswith("G_") or file.startswith("D_"))
-    )
+    if file.endswith((".pth", ".onnx"))
 ]
 
 indexes_list = [
@@ -76,10 +73,7 @@ def change_choices():
         os.path.join(root, file)
         for root, _, files in os.walk(model_root, topdown=False)
         for file in files
-        if (
-            file.endswith((".pth", ".onnx"))
-            and not (file.startswith("G_") or file.startswith("D_"))
-        )
+        if file.endswith((".pth", ".onnx"))
     ]
 
     indexes_list = [
@@ -268,14 +262,7 @@ def inference_tab():
                     value=False,
                     interactive=True,
                 )
-                pitch = gr.Slider(
-                    minimum=-12,
-                    maximum=12,
-                    step=1,
-                    label=i18n("Pitch"),
-                    value=0,
-                    interactive=True,
-                )
+                pitch = gr.Slider(-12, 12, 0, label=i18n("Pitch"))
                 filter_radius = gr.Slider(
                     minimum=0,
                     maximum=7,

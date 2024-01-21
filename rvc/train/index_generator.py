@@ -45,24 +45,39 @@ try:
 
     n_ivf = min(int(16 * np.sqrt(big_npy.shape[0])), big_npy.shape[0] // 39)
 
-    index = faiss.index_factory(256 if version == "v1" else 768, f"IVF{n_ivf},Flat")
-
-    index_ivf = faiss.extract_index_ivf(index)
-    index_ivf.nprobe = 1
-    index.train(big_npy)
-
-    index_filename = (
-        f"trained_IVF{n_ivf}_Flat_nprobe_{index_ivf.nprobe}_{version}.index"
+    # index_trained
+    index_trained = faiss.index_factory(
+        256 if version == "v1" else 768, f"IVF{n_ivf},Flat"
     )
-    index_filepath = os.path.join(exp_dir, index_filename)
+    index_ivf_trained = faiss.extract_index_ivf(index_trained)
+    index_ivf_trained.nprobe = 1
+    index_trained.train(big_npy)
 
-    faiss.write_index(index, index_filepath)
+    index_filename_trained = (
+        f"trained_IVF{n_ivf}_Flat_nprobe_{index_ivf_trained.nprobe}_{version}.index"
+    )
+    index_filepath_trained = os.path.join(exp_dir, index_filename_trained)
+
+    faiss.write_index(index_trained, index_filepath_trained)
+
+    # index_added
+    index_added = faiss.index_factory(
+        256 if version == "v1" else 768, f"IVF{n_ivf},Flat"
+    )
+    index_ivf_added = faiss.extract_index_ivf(index_added)
+    index_ivf_added.nprobe = 1
+    index_added.train(big_npy)
+
+    index_filename_added = (
+        f"added_IVF{n_ivf}_Flat_nprobe_{index_ivf_added.nprobe}_{version}.index"
+    )
+    index_filepath_added = os.path.join(exp_dir, index_filename_added)
 
     batch_size_add = 8192
     for i in range(0, big_npy.shape[0], batch_size_add):
-        index.add(big_npy[i : i + batch_size_add])
+        index_added.add(big_npy[i : i + batch_size_add])
 
-    faiss.write_index(index, index_filepath)
+    faiss.write_index(index_added, index_filepath_added)
 
 except Exception as error:
     print(f"Failed to train index: {error}")

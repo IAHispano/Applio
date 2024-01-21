@@ -168,8 +168,8 @@ def run_preprocess_script(model_name, dataset_path, sampling_rate):
         str(sampling_rate),
         str(per),
     ]
-    os.makedirs(os.path.join(logs_path, str(model_name)), exist_ok=True)
 
+    os.mkdir(os.path.join(logs_path, str(model_name)))
     subprocess.run(command)
     return f"Model {model_name} preprocessed successfully."
 

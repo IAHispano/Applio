@@ -83,12 +83,12 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
     learning_rate = checkpoint_dict["learning_rate"]
     if optimizer is not None and load_opt == 1:
         optimizer.load_state_dict(checkpoint_dict["optimizer"])
-    print(f"Loaded checkpoint '{checkpoint_path}' (epochs {iteration})")
+    print(f"Loaded checkpoint '{checkpoint_path}' (epoch {iteration})")
     return model, optimizer, learning_rate, iteration
 
 
 def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path):
-    print(f"Saving model '{checkpoint_path}' (epochs {iteration})")
+    print(f"Saving model '{checkpoint_path}' (epoch {iteration})")
     if hasattr(model, "module"):
         state_dict = model.module.state_dict()
     else:
@@ -218,34 +218,6 @@ def get_hparams():
         required=True,
         help="if caching the dataset in GPU memory, 1 or 0",
     )
-    parser.add_argument(
-        "-sof",
-        "--stop_on_fit",
-        type=int,
-        required=False,
-        help="if retraining mode collapses, 1 or 0",
-    )
-    parser.add_argument(
-        "-sm",
-        "--smoothness",
-        type=float,
-        required=False,
-        help="smoothness for --stop_on_fit",
-    )
-    parser.add_argument(
-        "-rc",
-        "--retrain_collapse",
-        type=int,
-        required=False,
-        help="if retraining mode collapses, 1 or 0",
-    )
-    parser.add_argument(
-        "-ct",
-        "--collapse_threshold",
-        type=int,
-        required=False,
-        help="if retraining mode collapses, 1 or 0",
-    )
     args = parser.parse_args()
     name = args.experiment_dir
     experiment_dir = os.path.join("./logs", args.experiment_dir)
@@ -267,11 +239,6 @@ def get_hparams():
     hparams.if_latest = args.if_latest
     hparams.save_every_weights = args.save_every_weights
     hparams.if_cache_data_in_gpu = args.if_cache_data_in_gpu
-    hparams.if_stop_on_fit = args.stop_on_fit
-    hparams.smoothness = args.smoothness
-    hparams.if_retrain_collapse = args.retrain_collapse
-    if args.collapse_threshold != None:
-        hparams.collapse_threshold = args.collapse_threshold * 0.01
     hparams.data.training_files = f"{experiment_dir}/filelist.txt"
     return hparams
 
