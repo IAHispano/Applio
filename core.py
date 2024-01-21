@@ -537,6 +537,11 @@ def parse_arguments():
         help="Version of the model (v1 or v2)",
     )
     train_parser.add_argument(
+        "save_every_epoch",
+        type=str,
+        help="Save every epoch",
+    )
+    train_parser.add_argument(
         "save_only_latest",
         type=str,
         help="Save weight only at last epoch",
@@ -545,11 +550,6 @@ def parse_arguments():
         "save_every_weights",
         type=str,
         help="Save weight every epoch",
-    )
-    train_parser.add_argument(
-        "save_every_epoch",
-        type=str,
-        help="Save every epoch",
     )
     train_parser.add_argument(
         "total_epoch",
