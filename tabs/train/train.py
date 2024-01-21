@@ -203,7 +203,9 @@ def train_tab():
                 label=i18n("Save Only Latest"), value=False, interactive=True
             )
             save_every_weights = gr.Checkbox(
-                label=i18n("Save Every Weights"), value=True, interactive=True, 
+                label=i18n("Save Every Weights"),
+                value=True,
+                interactive=True,
             )
             custom_pretrained = gr.Checkbox(
                 label=i18n("Custom Pretrained"), value=False, interactive=True
