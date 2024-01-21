@@ -88,7 +88,6 @@ We appreciate all contributions ❤️
 - Implement: Overtraining detector
 - Implement: Autotune
 - Implement: Training stop
-- Fix: Save on every weight
 - Fix: Model fusion
 - Fix: Harvest & Crepe
 
