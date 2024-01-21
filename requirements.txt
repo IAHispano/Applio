@@ -28,7 +28,7 @@ gradio==4.14.0
 
 # Miscellaneous
 ffmpy==0.3.1
-git+https://github.com/lanpa/tensorboardX
+tensorboardX
 requests==2.31.0
 edge-tts==6.1.9
 pypresence
