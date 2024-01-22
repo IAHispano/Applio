@@ -19,6 +19,10 @@ sys.path.append(now_dir)
 
 model_root = os.path.join(now_dir, "logs")
 audio_root = os.path.join(now_dir, "assets", "audios")
+
+model_root_relative = os.path.relpath(model_root, now_dir)
+audio_root_relative = os.path.relpath(audio_root, now_dir)
+
 sup_audioext = {
     "wav",
     "mp3",
@@ -37,7 +41,7 @@ sup_audioext = {
 
 names = [
     os.path.join(root, file)
-    for root, _, files in os.walk(model_root, topdown=False)
+    for root, _, files in os.walk(model_root_relative, topdown=False)
     for file in files
     if (
         file.endswith((".pth", ".onnx"))
@@ -47,17 +51,17 @@ names = [
 
 indexes_list = [
     os.path.join(root, name)
-    for root, _, files in os.walk(model_root, topdown=False)
+    for root, _, files in os.walk(model_root_relative, topdown=False)
     for name in files
     if name.endswith(".index") and "trained" not in name
 ]
 
 audio_paths = [
     os.path.join(root, name)
-    for root, _, files in os.walk(audio_root, topdown=False)
+    for root, _, files in os.walk(audio_root_relative, topdown=False)
     for name in files
     if name.endswith(tuple(sup_audioext))
-    and root == audio_root
+    and root == audio_root_relative
     and "_output" not in name
 ]
 
@@ -65,7 +69,7 @@ audio_paths = [
 def change_choices():
     names = [
         os.path.join(root, file)
-        for root, _, files in os.walk(model_root, topdown=False)
+        for root, _, files in os.walk(model_root_relative, topdown=False)
         for file in files
         if (
             file.endswith((".pth", ".onnx"))
@@ -75,17 +79,17 @@ def change_choices():
 
     indexes_list = [
         os.path.join(root, name)
-        for root, _, files in os.walk(model_root, topdown=False)
+        for root, _, files in os.walk(model_root_relative, topdown=False)
         for name in files
         if name.endswith(".index") and "trained" not in name
     ]
 
     audio_paths = [
         os.path.join(root, name)
-        for root, _, files in os.walk(audio_root, topdown=False)
+        for root, _, files in os.walk(audio_root_relative, topdown=False)
         for name in files
         if name.endswith(tuple(sup_audioext))
-        and root == audio_root
+        and root == audio_root_relative
         and "_output" not in name
     ]
     return (
@@ -98,7 +102,7 @@ def change_choices():
 def get_indexes():
     indexes_list = [
         os.path.join(dirpath, filename)
-        for dirpath, _, filenames in os.walk(model_root)
+        for dirpath, _, filenames in os.walk(model_root_relative)
         for filename in filenames
         if filename.endswith(".index") and "trained" not in filename
     ]
@@ -118,9 +122,9 @@ def match_index(model_file: str) -> tuple:
     else:
         base_model_name = model_file_name
 
-    sid_directory = os.path.join(model_root, base_model_name)
+    sid_directory = os.path.join(model_root_relative, base_model_name)
     directories_to_search = [sid_directory] if os.path.exists(sid_directory) else []
-    directories_to_search.append(model_root)
+    directories_to_search.append(model_root_relative)
 
     matching_index_files = []
 
@@ -162,7 +166,7 @@ def save_to_wav(record_button):
     else:
         path_to_file = record_button
         new_name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".wav"
-        target_path = os.path.join(audio_root, os.path.basename(new_name))
+        target_path = os.path.join(audio_root_relative, os.path.basename(new_name))
 
         shutil.move(path_to_file, target_path)
         return target_path
@@ -170,7 +174,7 @@ def save_to_wav(record_button):
 
 def save_to_wav2(upload_audio):
     file_path = upload_audio
-    target_path = os.path.join(audio_root, os.path.basename(file_path))
+    target_path = os.path.join(audio_root_relative, os.path.basename(file_path))
 
     if os.path.exists(target_path):
         os.remove(target_path)
@@ -180,7 +184,7 @@ def save_to_wav2(upload_audio):
 
 
 def delete_outputs():
-    for root, _, files in os.walk(audio_root, topdown=False):
+    for root, _, files in os.walk(audio_root_relative, topdown=False):
         for name in files:
             if name.endswith(tuple(sup_audioext)) and name.__contains__("_output"):
                 os.remove(os.path.join(root, name))
