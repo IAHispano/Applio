@@ -213,7 +213,7 @@ def inference_tab():
         with gr.Row():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
-                choices=sorted(names),
+                choices=sorted(names, key=lambda path: os.path.getsize(path)),
                 interactive=True,
                 value=default_weight,
                 allow_custom_value=True,
