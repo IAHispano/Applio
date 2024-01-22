@@ -52,7 +52,7 @@ def report_tab():
             "4. Complete the provided issue template, ensuring to include details as needed, and utilize the assets section to upload the recorded file from the previous step."
         ),
     ]
-    gr.Markdown(value=instructions)
+    components = [gr.Markdown(value=instruction) for instruction in instructions]
 
     start_button = gr.Button("Record Screen")
     video_component = gr.Video(interactive=False)
