@@ -139,7 +139,6 @@ def match_index(model_file: str) -> tuple:
         [double_sid_directory] if os.path.exists(double_sid_directory) else []
     )
     directories_to_search.append(model_root_relative)
-    print(directories_to_search)
     matching_index_files = []
 
     for directory in directories_to_search:
@@ -164,7 +163,6 @@ def match_index(model_file: str) -> tuple:
                                 " " not in filename,
                             )
                         )
-    print(matching_index_files)
     if matching_index_files:
         # Sort by favoring files without spaces and by size (largest size first)
         matching_index_files.sort(key=lambda x: (-x[2], -x[1]))
