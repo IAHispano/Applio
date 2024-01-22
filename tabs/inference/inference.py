@@ -131,7 +131,9 @@ def match_index(model_file: str) -> tuple:
     sid_directory = os.path.join(model_root, base_model_name)
     double_sid_directory = os.path.join(sid_directory, base_model_name)
     directories_to_search = [sid_directory] if os.path.exists(sid_directory) else []
-    directories_to_search += [double_sid_directory] if os.path.exists(double_sid_directory) else []
+    directories_to_search += (
+        [double_sid_directory] if os.path.exists(double_sid_directory) else []
+    )
     directories_to_search.append(model_root)
     print(directories_to_search)
     matching_index_files = []
@@ -212,7 +214,7 @@ def inference_tab():
                 value=default_weight,
                 allow_custom_value=True,
             )
-            
+
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 choices=get_indexes(),
