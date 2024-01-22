@@ -167,7 +167,6 @@ def match_index(model_file: str) -> tuple:
         # Sort by favoring files without spaces and by size (largest size first)
         matching_index_files.sort(key=lambda x: (-x[2], -x[1]))
         best_match_index_path = matching_index_files[0][0]
-        print(best_match_index_path)
         return best_match_index_path
 
     return ""
