@@ -27,14 +27,13 @@ record_button_js = (
 
 
 def save_base64_video(base64_string):
-    try:
-        video_data = base64.b64decode(base64_string)
-        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_file:
-            temp_filename = temp_file.name
-            temp_file.write(video_data)
-        return temp_filename
-    except Exception as error:
-        raise gr.Error(f"Failed to convert video to mp4:\n{error}")
+    base64_video = base64_string
+    video_data = base64.b64decode(base64_video)
+    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_file:
+        temp_filename = temp_file.name
+        temp_file.write(video_data)
+    print(f"Temporary MP4 file saved as: {temp_filename}")
+    return temp_filename
 
 
 def report_tab():
@@ -53,28 +52,19 @@ def report_tab():
             "4. Complete the provided issue template, ensuring to include details as needed, and utilize the assets section to upload the recorded file from the previous step."
         ),
     ]
-    components = [gr.Markdown(value=instruction) for instruction in instructions]
+    gr.Markdown(value=instructions)
 
-    start_button = gr.Button(i18n("Record Screen"))
+    start_button = gr.Button("Record Screen")
     video_component = gr.Video(interactive=False)
 
     def toggle_button_label(returned_string):
-        if returned_string.startswith(i18n("Record")):
-            return gr.Button(value=i18n("Stop Recording")), None
+        if returned_string.startswith("Record"):
+            return gr.Button(value="Stop Recording"), None
         else:
             try:
                 temp_filename = save_base64_video(returned_string)
-                return gr.Button(value=i18n("Record Screen")), gr.Video(
-                    value=temp_filename, interactive=False
-                )
-            except gr.Error as error:
-                return gr.Button(value=i18n("Record Screen")), error
+            except Exception as e:
+                return gr.Button(value="Record Screen"), gr.Warning(f'Failed to convert video to mp4:\n{e}')
+            return gr.Button(value="Record Screen"), gr.Video(value=temp_filename, interactive=False)
 
-    start_button.click(
-        toggle_button_label,
-        start_button,
-        [start_button, video_component],
-        js=record_button_js,
-    )
-
-    components.extend([start_button, video_component])
+    start_button.click(toggle_button_label, start_button, [start_button, video_component], js=record_button_js)

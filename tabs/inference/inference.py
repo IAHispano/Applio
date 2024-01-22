@@ -129,9 +129,11 @@ def match_index(model_file: str) -> tuple:
         base_model_name = model_file_name
 
     sid_directory = os.path.join(model_root, base_model_name)
+    double_sid_directory = os.path.join(sid_directory, base_model_name)
     directories_to_search = [sid_directory] if os.path.exists(sid_directory) else []
+    directories_to_search += [double_sid_directory] if os.path.exists(double_sid_directory) else []
     directories_to_search.append(model_root)
-
+    print(directories_to_search)
     matching_index_files = []
 
     for directory in directories_to_search:
@@ -156,11 +158,12 @@ def match_index(model_file: str) -> tuple:
                                 " " not in filename,
                             )
                         )
-
+    print(matching_index_files)
     if matching_index_files:
         # Sort by favoring files without spaces and by size (largest size first)
         matching_index_files.sort(key=lambda x: (-x[2], -x[1]))
         best_match_index_path = matching_index_files[0][0]
+        print(best_match_index_path)
         return best_match_index_path
 
     return ""
@@ -199,7 +202,7 @@ def delete_outputs():
 
 # Inference tab
 def inference_tab():
-    default_weight = random.choice(names) if names else ""
+    default_weight = random.choice(names) if names else None
     with gr.Row():
         with gr.Row():
             model_file = gr.Dropdown(
@@ -209,11 +212,11 @@ def inference_tab():
                 value=default_weight,
                 allow_custom_value=True,
             )
-            best_default_index_path = match_index(model_file.value)
+            
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 choices=get_indexes(),
-                value=best_default_index_path,
+                value=match_index(default_weight) if default_weight else "",
                 interactive=True,
                 allow_custom_value=True,
             )
