@@ -190,7 +190,9 @@ class VC(object):
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
             f0 = signal.medfilt(f0, 3)
         elif f0_method == "crepe":
-            f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, int(hop_length))
+            f0 = self.get_f0_crepe_computation(
+                x, f0_min, f0_max, p_len, int(hop_length)
+            )
         elif f0_method == "crepe-tiny":
             f0 = self.get_f0_crepe_computation(
                 x, f0_min, f0_max, p_len, int(hop_length), "tiny"
