@@ -19,7 +19,7 @@ pretraineds_custom_path = os.path.join(
     now_dir, "rvc", "pretraineds", "pretraineds_custom"
 )
 
-pretraineds_custom_path_relative = os.path.realpath(pretraineds_custom_path, now_dir)
+pretraineds_custom_path_relative = os.path.relpath(pretraineds_custom_path, now_dir)
 
 if not os.path.exists(pretraineds_custom_path_relative):
     os.makedirs(pretraineds_custom_path_relative)
