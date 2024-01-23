@@ -14,18 +14,21 @@ from rvc.configs.config import max_vram_gpu, get_gpu_info
 i18n = I18nAuto()
 now_dir = os.getcwd()
 sys.path.append(now_dir)
+
 pretraineds_custom_path = os.path.join(
     now_dir, "rvc", "pretraineds", "pretraineds_custom"
 )
 
-if not os.path.exists(pretraineds_custom_path):
-    os.makedirs(pretraineds_custom_path)
+pretraineds_custom_path_relative = os.path.realpath(pretraineds_custom_path, now_dir)
+
+if not os.path.exists(pretraineds_custom_path_relative):
+    os.makedirs(pretraineds_custom_path_relative)
 
 
 def get_pretrained_list(suffix):
     return [
         os.path.join(dirpath, filename)
-        for dirpath, _, filenames in os.walk(pretraineds_custom_path)
+        for dirpath, _, filenames in os.walk(pretraineds_custom_path_relative)
         for filename in filenames
         if filename.endswith(".pth") and suffix in filename
     ]
@@ -90,7 +93,7 @@ def save_drop_model(dropbox):
         )
     else:
         file_name = os.path.basename(dropbox)
-        pretrained_path = os.path.join(pretraineds_custom_path, file_name)
+        pretrained_path = os.path.join(pretraineds_custom_path_relative, file_name)
         if os.path.exists(pretrained_path):
             os.remove(pretrained_path)
         os.rename(dropbox, pretrained_path)
