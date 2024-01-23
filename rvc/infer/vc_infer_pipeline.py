@@ -177,7 +177,7 @@ class VC(object):
         elif f0_method == "harvest":
             input_audio_path2wav[input_audio_path] = x.astype(np.double)
             f0 = cache_harvest_f0(input_audio_path, self.sr, f0_max, f0_min, 10)
-            if filter_radius > 2:
+            if int(filter_radius) > 2:
                 f0 = signal.medfilt(f0, 3)
         elif f0_method == "dio":
             f0, t = pyworld.dio(
@@ -190,10 +190,10 @@ class VC(object):
             f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
             f0 = signal.medfilt(f0, 3)
         elif f0_method == "crepe":
-            f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, hop_length)
+            f0 = self.get_f0_crepe_computation(x, f0_min, f0_max, p_len, int(hop_length))
         elif f0_method == "crepe-tiny":
             f0 = self.get_f0_crepe_computation(
-                x, f0_min, f0_max, p_len, hop_length, "tiny"
+                x, f0_min, f0_max, p_len, int(hop_length), "tiny"
             )
         elif f0_method == "rmvpe":
             if hasattr(self, "model_rmvpe") == False:
