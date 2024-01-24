@@ -5,6 +5,8 @@ from core import run_download_script
 
 from assets.i18n.i18n import I18nAuto
 
+from rvc.lib.utils import format_title
+
 i18n = I18nAuto()
 
 now_dir = os.getcwd()
@@ -22,16 +24,14 @@ def save_drop_model(dropbox):
             message="The file you dropped is not a valid model file. Please try again."
         )
     else:
-        file_name = os.path.basename(dropbox)
+        file_name = format_title(os.path.basename(dropbox))
         if ".pth" in dropbox:
-            model_name = file_name.split(".pth")[0]
+            model_name = format_title(file_name.split(".pth")[0])
         else:
             if "v2" not in dropbox:
-                model_name = file_name.split("_nprobe_1_")[1].split("_v1")[0]
+                model_name = format_title(file_name.split("_nprobe_1_")[1].split("_v1")[0])
             else:
-                model_name = file_name.split("_nprobe_1_")[1].split("_v2")[0]
-        if " " in model_name:
-            model_name = model_name.replace(" ", "_")
+                model_name = format_title(file_name.split("_nprobe_1_")[1].split("_v2")[0])
         model_path = os.path.join(now_dir, "logs", model_name)
         if not os.path.exists(model_path):
             os.makedirs(model_path)

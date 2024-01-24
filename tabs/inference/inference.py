@@ -12,6 +12,8 @@ from core import (
 
 from assets.i18n.i18n import I18nAuto
 
+from rvc.lib.utils import format_title
+
 i18n = I18nAuto()
 
 now_dir = os.getcwd()
@@ -186,7 +188,8 @@ def save_to_wav(record_button):
 
 def save_to_wav2(upload_audio):
     file_path = upload_audio
-    target_path = os.path.join(audio_root_relative, os.path.basename(file_path))
+    formated_name = format_title(os.path.basename(file_path))
+    target_path = os.path.join(audio_root_relative, formated_name)
 
     if os.path.exists(target_path):
         os.remove(target_path)

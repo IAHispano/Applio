@@ -3,15 +3,8 @@ from pydub import AudioSegment
 import numpy as np
 import re
 import os
-import unicodedata
 
-def format_title(title):
-    formatted_title = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('utf-8')
-    formatted_title = re.sub(r'[\u2500-\u257F]+', '', title)
-    formatted_title = re.sub(r'[^\w\s-]', '', title)
-    formatted_title = re.sub(r'\s+', '_', formatted_title)
-    return formatted_title
-
+from rvc.lib.utils import format_title
 
 def process_audio(file_path):
     try:
