@@ -1,6 +1,5 @@
 import os
 import torch
-import pathlib
 from collections import OrderedDict
 
 logs_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "logs")
