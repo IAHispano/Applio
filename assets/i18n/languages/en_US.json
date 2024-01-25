@@ -17,6 +17,7 @@
     "Model Name": "Model Name",
     "Enter model name": "Enter model name",
     "Dataset Path": "Dataset Path",
+    "The audio file has been successfully added to the dataset. Please click the preprocess button.": "The audio file has been successfully added to the dataset. Please click the preprocess button.",
     "Enter dataset path": "Enter dataset path",
     "Sampling Rate": "Sampling Rate",
     "RVC Version": "RVC Version",

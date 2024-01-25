@@ -10,11 +10,29 @@ from core import (
     run_index_script,
 )
 from rvc.configs.config import max_vram_gpu, get_gpu_info
+from rvc.lib.utils import format_title
 
 i18n = I18nAuto()
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+sup_audioext = {
+    "wav",
+    "mp3",
+    "flac",
+    "ogg",
+    "opus",
+    "m4a",
+    "mp4",
+    "aac",
+    "alac",
+    "wma",
+    "aiff",
+    "webm",
+    "ac3",
+}
+
+# Custom Pretraineds
 pretraineds_custom_path = os.path.join(
     now_dir, "rvc", "pretraineds", "pretraineds_custom"
 )
@@ -33,10 +51,8 @@ def get_pretrained_list(suffix):
         if filename.endswith(".pth") and suffix in filename
     ]
 
-
 pretraineds_list_d = get_pretrained_list("D")
 pretraineds_list_g = get_pretrained_list("G")
-
 
 def refresh_custom_pretraineds():
     return (
@@ -44,7 +60,25 @@ def refresh_custom_pretraineds():
         {"choices": sorted(get_pretrained_list("D")), "__type__": "update"},
     )
 
+# Dataset Creator
+datasets_path = os.path.join(now_dir, "assets", "datasets")
 
+if not os.path.exists(datasets_path):
+    os.makedirs(datasets_path)
+
+datasets_path_relative = os.path.relpath(datasets_path, now_dir)
+
+def get_datasets_list():
+    return [
+        dirpath
+        for dirpath, _, filenames in os.walk(datasets_path_relative)
+        if any(filename.endswith(tuple(sup_audioext)) for filename in filenames)
+    ]
+
+def refresh_datasets():
+    return {"choices": sorted(get_datasets_list()), "__type__": "update"}
+
+# Train Temporal Fix
 def run_train(
     model_name,
     rvc_version,
@@ -83,7 +117,7 @@ def run_train(
     ]
     subprocess.run(command)
 
-
+# Drop Model
 def save_drop_model(dropbox):
     if ".pth" not in dropbox:
         gr.Info(
@@ -104,7 +138,38 @@ def save_drop_model(dropbox):
         )
     return None
 
+# Drop Dataset
+def save_drop_dataset_audio(dropbox, dataset_name):
+    if not dataset_name:
+        gr.Info(
+            "Please enter a valid dataset name. Please try again."
+        )
+        return None, None
+    else:
+        file_extension = os.path.splitext(dropbox)[1][1:].lower()
+        if file_extension not in sup_audioext:
+            gr.Info(
+                "The file you dropped is not a valid audio file. Please try again."
+            )
+        else:
+            dataset_name = format_title(dataset_name)
+            audio_file = format_title(os.path.basename(dropbox))
+            dataset_path = os.path.join(now_dir, "assets", "datasets", dataset_name)
+            if not os.path.exists(dataset_path):
+                os.makedirs(dataset_path)
+            destination_path = os.path.join(dataset_path, audio_file)
+            if os.path.exists(destination_path):
+                os.remove(destination_path)
+            os.rename(dropbox, destination_path)
+            gr.Info(
+                i18n(
+                    "The audio file has been successfully added to the dataset. Please click the preprocess button."
+                )
+            )   
+            return None, destination_path
 
+
+# Train Tab
 def train_tab():
     with gr.Accordion(i18n("Preprocess")):
         with gr.Row():
@@ -115,11 +180,34 @@ def train_tab():
                     value="my-project",
                     interactive=True,
                 )
-                dataset_path = gr.Textbox(
+                dataset_path = gr.Dropdown(
                     label=i18n("Dataset Path"),
-                    placeholder=i18n("Enter dataset path"),
+                    # placeholder=i18n("Enter dataset path"),
+                    choices=get_datasets_list(),
+                    allow_custom_value=True,
                     interactive=True,
                 )
+                refresh_datasets_button = gr.Button(i18n("Refresh Datasets"))
+                dataset_creator = gr.Checkbox(
+                    label=i18n("Dataset Advanced Settings"),
+                    value=False,
+                    interactive=True,
+                    visible=True,
+                )
+
+                with gr.Column(visible=False) as dataset_creator_settings:
+                    with gr.Accordion("Dataset Creator"):
+                        dataset_name = gr.Textbox(
+                            label=i18n("Dataset Name"),
+                            placeholder=i18n("Enter dataset name"),
+                            interactive=True,
+                        )
+                        upload_audio_dataset = gr.File(
+                            label=i18n("Upload Audio Dataset"),
+                            type="filepath",
+                            interactive=True,
+                        )
+
             with gr.Column():
                 sampling_rate = gr.Radio(
                     label=i18n("Sampling Rate"),
@@ -296,6 +384,24 @@ def train_tab():
 
             def toggle_visible(checkbox):
                 return {"visible": checkbox, "__type__": "update"}
+            
+            refresh_datasets_button.click(
+                fn=refresh_datasets,
+                inputs=[],
+                outputs=[dataset_path],
+            )
+
+            dataset_creator.change(
+                fn=toggle_visible,
+                inputs=[dataset_creator],
+                outputs=[dataset_creator_settings],
+            )
+
+            upload_audio_dataset.upload(
+                fn=save_drop_dataset_audio,
+                inputs=[upload_audio_dataset, dataset_name],
+                outputs=[upload_audio_dataset, dataset_path],
+            )
 
             custom_pretrained.change(
                 fn=toggle_visible,
