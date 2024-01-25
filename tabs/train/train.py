@@ -51,14 +51,17 @@ def get_pretrained_list(suffix):
         if filename.endswith(".pth") and suffix in filename
     ]
 
+
 pretraineds_list_d = get_pretrained_list("D")
 pretraineds_list_g = get_pretrained_list("G")
+
 
 def refresh_custom_pretraineds():
     return (
         {"choices": sorted(get_pretrained_list("G")), "__type__": "update"},
         {"choices": sorted(get_pretrained_list("D")), "__type__": "update"},
     )
+
 
 # Dataset Creator
 datasets_path = os.path.join(now_dir, "assets", "datasets")
@@ -68,6 +71,7 @@ if not os.path.exists(datasets_path):
 
 datasets_path_relative = os.path.relpath(datasets_path, now_dir)
 
+
 def get_datasets_list():
     return [
         dirpath
@@ -75,8 +79,10 @@ def get_datasets_list():
         if any(filename.endswith(tuple(sup_audioext)) for filename in filenames)
     ]
 
+
 def refresh_datasets():
     return {"choices": sorted(get_datasets_list()), "__type__": "update"}
+
 
 # Train Temporal Fix
 def run_train(
@@ -117,6 +123,7 @@ def run_train(
     ]
     subprocess.run(command)
 
+
 # Drop Model
 def save_drop_model(dropbox):
     if ".pth" not in dropbox:
@@ -138,19 +145,16 @@ def save_drop_model(dropbox):
         )
     return None
 
+
 # Drop Dataset
 def save_drop_dataset_audio(dropbox, dataset_name):
     if not dataset_name:
-        gr.Info(
-            "Please enter a valid dataset name. Please try again."
-        )
+        gr.Info("Please enter a valid dataset name. Please try again.")
         return None, None
     else:
         file_extension = os.path.splitext(dropbox)[1][1:].lower()
         if file_extension not in sup_audioext:
-            gr.Info(
-                "The file you dropped is not a valid audio file. Please try again."
-            )
+            gr.Info("The file you dropped is not a valid audio file. Please try again.")
         else:
             dataset_name = format_title(dataset_name)
             audio_file = format_title(os.path.basename(dropbox))
@@ -165,7 +169,7 @@ def save_drop_dataset_audio(dropbox, dataset_name):
                 i18n(
                     "The audio file has been successfully added to the dataset. Please click the preprocess button."
                 )
-            )   
+            )
             return None, destination_path
 
 
@@ -384,7 +388,7 @@ def train_tab():
 
             def toggle_visible(checkbox):
                 return {"visible": checkbox, "__type__": "update"}
-            
+
             refresh_datasets_button.click(
                 fn=refresh_datasets,
                 inputs=[],
