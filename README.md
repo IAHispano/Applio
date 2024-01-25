@@ -88,7 +88,6 @@ We appreciate all contributions ❤️
 - Implement: Autotune
 - Implement: Training stop
 - Fix: Model fusion
-- Fix: Harvest & Crepe
 
 ## Credits
 - [VITS](https://github.com/jaywalnut310/vits) by jaywalnut310
