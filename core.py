@@ -227,12 +227,12 @@ def run_train_script(
     g_pretrained_path=None,
     d_pretrained_path=None,
 ):
-    f0 = 1 if pitch_guidance == "True" else 0
-    latest = 1 if save_only_latest == "True" else 0
-    save_every = 1 if save_every_weights == "True" else 0
+    f0 = 1 if str(pitch_guidance) == "True" else 0
+    latest = 1 if str(save_only_latest) == "True" else 0
+    save_every = 1 if str(save_every_weights) == "True" else 0
 
-    if pretrained == "True":
-        if custom_pretrained == "False":
+    if str(pretrained) == "True":
+        if str(custom_pretrained) == "False":
             pg, pd = pretrained_selector(f0)[rvc_version][sampling_rate]
         else:
             if g_pretrained_path is None or d_pretrained_path is None:
@@ -246,25 +246,25 @@ def run_train_script(
     train_script_path = os.path.join("rvc", "train", "train.py")
     command = [
         "python",
-        train_script_path,
+        str(train_script_path),
         "-se",
         str(save_every_epoch),
         "-te",
         str(total_epoch),
         "-pg",
-        pg,
+        str(pg),
         "-pd",
-        pd,
+        str(pd),
         "-sr",
         str(sampling_rate),
         "-bs",
         str(batch_size),
         "-g",
-        gpu,
+        str(gpu),
         "-e",
         os.path.join(logs_path, str(model_name)),
         "-v",
-        rvc_version,
+        str(rvc_version),
         "-l",
         str(latest),
         "-c",
