@@ -48,9 +48,11 @@ class FeatureInput:
         torch_device = (
             torch.device(f"cuda:{torch_device_index % torch.cuda.device_count()}")
             if torch.cuda.is_available()
-            else torch.device("mps")
-            if torch.backends.mps.is_available()
-            else torch.device("cpu")
+            else (
+                torch.device("mps")
+                if torch.backends.mps.is_available()
+                else torch.device("cpu")
+            )
         )
 
         audio = torch.from_numpy(x.astype(np.float32)).to(torch_device, copy=True)
