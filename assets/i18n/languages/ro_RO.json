@@ -108,5 +108,6 @@
   "Text to Synthesize": "Text pentru sintetizare",
   "Enter text to synthesize": "Introduceți text pentru sintetizare",
   "Output Path for TTS Audio": "Cale de ieșire pentru TTS Audio",
-  "Output Path for RVC Audio": "Cale de ieșire pentru RVC Audio"
+  "Output Path for RVC Audio": "Cale de ieșire pentru RVC Audio",
+  "Applio Presence": "Prezența Applio"
 }

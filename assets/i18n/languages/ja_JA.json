@@ -108,5 +108,6 @@
   "Text to Synthesize": "合成するテキスト",
   "Enter text to synthesize": "合成するテキストを入力する",
   "Output Path for TTS Audio": "TTSオーディオの出力パス",
-  "Output Path for RVC Audio": "RVCオーディオの出力パス"
+  "Output Path for RVC Audio": "RVCオーディオの出力パス",
+  "Applio Presence": "Applio プレゼンス"
 }

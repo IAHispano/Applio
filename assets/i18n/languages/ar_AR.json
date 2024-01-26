@@ -108,5 +108,6 @@
   "Text to Synthesize": "النص المراد توليفه",
   "Enter text to synthesize": "أدخل نصا لتوليفه",
   "Output Path for TTS Audio": "مسار الإخراج لصوت TTS",
-  "Output Path for RVC Audio": "مسار الإخراج لصوت RVC"
+  "Output Path for RVC Audio": "مسار الإخراج لصوت RVC",
+  "Applio Presence": "وجود Applio"
 }

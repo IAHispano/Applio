@@ -108,5 +108,6 @@
   "Text to Synthesize": "ਸੰਸ਼ਲੇਸ਼ਣ ਕਰਨ ਲਈ ਟੈਕਸਟ",
   "Enter text to synthesize": "ਸੰਸ਼ਲੇਸ਼ਿਤ ਕਰਨ ਲਈ ਟੈਕਸਟ ਦਾਖਲ ਕਰੋ",
   "Output Path for TTS Audio": "TTS ਆਡੀਓ ਲਈ ਆਉਟਪੁੱਟ ਪਾਥ",
-  "Output Path for RVC Audio": "RVC ਆਡੀਓ ਲਈ ਆਉਟਪੁੱਟ ਪਾਥ"
+  "Output Path for RVC Audio": "RVC ਆਡੀਓ ਲਈ ਆਉਟਪੁੱਟ ਪਾਥ",
+  "Applio Presence": "ਏਪਲੀਓ ਪ੍ਰੈਜ਼ੈਂਸ"
 }

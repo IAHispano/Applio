@@ -113,5 +113,6 @@
   "Text to Synthesize": "Texto a sintetizar",
   "Enter text to synthesize": "Introduzca el texto a sintetizar",
   "Output Path for TTS Audio": "Ruta de salida para el audio TTS",
-  "Output Path for RVC Audio": "Ruta de salida para el audio RVC"
+  "Output Path for RVC Audio": "Ruta de salida para el audio RVC",
+  "Applio Presence": "Presencia de Applio"
 }

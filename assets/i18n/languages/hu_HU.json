@@ -108,5 +108,6 @@
   "Text to Synthesize": "Szintetizálandó szöveg",
   "Enter text to synthesize": "Írja be a szintetizálni kívánt szöveget",
   "Output Path for TTS Audio": "A TTS Audio kimeneti útvonala",
-  "Output Path for RVC Audio": "Az RVC Audio kimeneti útvonala"
+  "Output Path for RVC Audio": "Az RVC Audio kimeneti útvonala",
+  "Applio Presence": "Applio Jelenlét"
 }

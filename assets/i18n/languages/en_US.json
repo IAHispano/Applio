@@ -130,5 +130,6 @@
     "Text to Synthesize": "Text to Synthesize",
     "Enter text to synthesize": "Enter text to synthesize",
     "Output Path for TTS Audio": "Output Path for TTS Audio",
-    "Output Path for RVC Audio": "Output Path for RVC Audio"
+    "Output Path for RVC Audio": "Output Path for RVC Audio",
+    "Applio Presence": "Applio Presence"
 }

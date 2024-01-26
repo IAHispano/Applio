@@ -108,5 +108,6 @@
   "Text to Synthesize": "సంశ్లేషణ చేయడానికి టెక్స్ట్",
   "Enter text to synthesize": "సంశ్లేషణ చేయడానికి టెక్స్ట్ ను నమోదు చేయండి",
   "Output Path for TTS Audio": "TTS ఆడియో కొరకు అవుట్ పుట్ మార్గం",
-  "Output Path for RVC Audio": "RVC ఆడియో కొరకు అవుట్ పుట్ మార్గం"
+  "Output Path for RVC Audio": "RVC ఆడియో కొరకు అవుట్ పుట్ మార్గం",
+  "Applio Presence": "Applio ప్రసెన్స్"
 }

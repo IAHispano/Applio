@@ -108,5 +108,6 @@
   "Text to Synthesize": "Văn bản để tổng hợp",
   "Enter text to synthesize": "Nhập văn bản để tổng hợp",
   "Output Path for TTS Audio": "Đường dẫn đầu ra cho âm thanh TTS",
-  "Output Path for RVC Audio": "Đường dẫn đầu ra cho âm thanh RVC"
+  "Output Path for RVC Audio": "Đường dẫn đầu ra cho âm thanh RVC",
+  "Applio Presence": "Sự hiện diện của Applio"
 }

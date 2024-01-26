@@ -108,5 +108,6 @@
   "Text to Synthesize": "합성할 텍스트(Text to Synthesize)",
   "Enter text to synthesize": "합성할 텍스트 입력",
   "Output Path for TTS Audio": "TTS 오디오의 출력 경로",
-  "Output Path for RVC Audio": "RVC 오디오의 출력 경로"
+  "Output Path for RVC Audio": "RVC 오디오의 출력 경로",
+  "Applio Presence": "Applio 프레즌스"
 }

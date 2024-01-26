@@ -108,5 +108,6 @@
   "Text to Synthesize": "Tekst om te synthetiseren",
   "Enter text to synthesize": "Voer tekst in om te synthetiseren",
   "Output Path for TTS Audio": "Uitvoerpad voor TTS-audio",
-  "Output Path for RVC Audio": "Uitvoerpad voor RVC-audio"
+  "Output Path for RVC Audio": "Uitvoerpad voor RVC-audio",
+  "Applio Presence": "Applio Aanwezigheid"
 }
