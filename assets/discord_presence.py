@@ -1,7 +1,8 @@
-
 from pypresence import Presence
 import datetime as dt
 import time
+
+
 class RichPresenceManager:
     def __init__(self):
         self.client_id = "1144714449563955302"
@@ -39,5 +40,6 @@ class RichPresenceManager:
         if self.rpc:
             self.rpc.close()
             self.rpc = None
+
 
 RPCManager = RichPresenceManager()

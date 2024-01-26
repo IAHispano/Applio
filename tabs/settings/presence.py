@@ -13,6 +13,7 @@ sys.path.append("..")
 
 i18n = I18nAuto()
 
+
 def presence_tab():
     with gr.Row():
         with gr.Column():
@@ -27,16 +28,15 @@ def presence_tab():
                 outputs=[],
             )
 
+
 def toggle(checkbox):
-    
-    if (bool(checkbox)):
-        #print("Start Presence")
+
+    if bool(checkbox):
+        # print("Start Presence")
         try:
             RPCManager.start_presence()
         except KeyboardInterrupt:
             RPCManager.stop_presence()
     else:
-        #print("Stop presence")
+        # print("Stop presence")
         RPCManager.stop_presence()
-
-                

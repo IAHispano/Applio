@@ -14,9 +14,11 @@ from tabs.tts.tts import tts_tab
 from tabs.settings.presence import presence_tab
 
 from assets.i18n.i18n import I18nAuto
+
 i18n = I18nAuto()
 
 from assets.discord_presence import RPCManager
+
 RPCManager.start_presence()
 
 with gr.Blocks(theme="ParityError/Interstellar", title="Applio") as Applio:
