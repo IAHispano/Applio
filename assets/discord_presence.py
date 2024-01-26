@@ -20,6 +20,10 @@ class RichPresenceManager:
                 print(error)
                 self.rpc = None
                 self.running = False
+            except Exception as e:
+                print(f"Error: Unable to connect to Rich Presence. {e}")
+                self.rpc = None
+                self.running = False
 
     def update_presence(self):
         if self.rpc:
