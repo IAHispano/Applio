@@ -112,5 +112,5 @@
   "Refresh Custom Pretraineds": "Обновить список претрейнов",
   "Pretrained Custom Settings": "Настройки кастомных претрейнов",
   "Image": "Изображение",
-  "Applio Presence": "Присутствие Applio"
+  "Enable Applio integration with Discord presence": "Присутствие Applio"
 }

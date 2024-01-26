@@ -109,5 +109,5 @@
   "Enter text to synthesize": "Sentezlenecek metni girin",
   "Output Path for TTS Audio": "TTS Audio için Çıkış Yolu",
   "Output Path for RVC Audio": "RVC Ses için Çıkış Yolu",
-  "Applio Presence": "Applio Varlığı"
+  "Enable Applio integration with Discord presence": "Applio Varlığı"
 }

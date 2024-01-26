@@ -109,5 +109,5 @@
   "Enter text to synthesize": "متن را برای سنتز وارد کنید",
   "Output Path for TTS Audio": "مسیر خروجی برای صدای TTS",
   "Output Path for RVC Audio": "مسیر خروجی برای RVC Audio",
-  "Applio Presence": "حضور Applio"
+  "Enable Applio integration with Discord presence": "حضور Applio"
 }

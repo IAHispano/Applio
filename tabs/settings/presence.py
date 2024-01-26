@@ -13,11 +13,11 @@ sys.path.append("..")
 
 i18n = I18nAuto()
 
-def presence():
+def presence_tab():
     with gr.Row():
         with gr.Column():
             presence = gr.Checkbox(
-                label=i18n("Applio presence"),
+                label=i18n("Applio Enable Applio integration with Discord presence"),
                 interactive=True,
                 value=True,
             )

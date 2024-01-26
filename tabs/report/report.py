@@ -63,9 +63,9 @@ def report_tab():
         else:
             try:
                 temp_filename = save_base64_video(returned_string)
-            except Exception as e:
+            except Exception as error:
                 return gr.Button(value="Record Screen"), gr.Warning(
-                    f"Failed to convert video to mp4:\n{e}"
+                    f"Failed to convert video to mp4:\n{error}"
                 )
             return gr.Button(value="Record Screen"), gr.Video(
                 value=temp_filename, interactive=False

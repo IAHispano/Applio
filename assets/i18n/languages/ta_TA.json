@@ -109,5 +109,5 @@
   "Enter text to synthesize": "ஒருங்கிணைக்க உரையை உள்ளிடவும்",
   "Output Path for TTS Audio": "TTS ஆடியோவுக்கான வெளியீட்டு பாதை",
   "Output Path for RVC Audio": "RVC ஆடியோவுக்கான வெளியீட்டு பாதை",
-  "Applio Presence": "அப்ளியோ உள்ளமை"
+  "Enable Applio integration with Discord presence": "அப்ளியோ உள்ளமை"
 }

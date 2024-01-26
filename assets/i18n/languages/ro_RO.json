@@ -109,5 +109,5 @@
   "Enter text to synthesize": "Introduceți text pentru sintetizare",
   "Output Path for TTS Audio": "Cale de ieșire pentru TTS Audio",
   "Output Path for RVC Audio": "Cale de ieșire pentru RVC Audio",
-  "Applio Presence": "Prezența Applio"
+  "Enable Applio integration with Discord presence": "Prezența Applio"
 }

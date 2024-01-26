@@ -15,8 +15,8 @@ class RichPresenceManager:
             try:
                 self.rpc.connect()
                 self.update_presence()
-            except KeyboardInterrupt as e:
-                print(f"An error occurred: {e}")
+            except KeyboardInterrupt as error:
+                print(error)
                 self.rpc = None
                 self.running = False
 

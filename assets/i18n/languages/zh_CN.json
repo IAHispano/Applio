@@ -109,5 +109,5 @@
   "Enter text to synthesize": "输入要合成的文本",
   "Output Path for TTS Audio": "TTS 音频的输出路径",
   "Output Path for RVC Audio": "RVC 音频的输出路径",
-  "Applio Presence": "Applio 存在"
+  "Enable Applio integration with Discord presence": "Applio 存在"
 }

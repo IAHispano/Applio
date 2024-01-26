@@ -109,5 +109,5 @@
   "Enter text to synthesize": "Masukkan teks untuk mensintesis saiz",
   "Output Path for TTS Audio": "Laluan output untuk TTS Audio",
   "Output Path for RVC Audio": "Laluan Output untuk Audio RVC",
-  "Applio Presence": "Kehadiran Applio"
+  "Enable Applio integration with Discord presence": "Kehadiran Applio"
 }

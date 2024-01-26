@@ -109,5 +109,5 @@
   "Enter text to synthesize": "সংশ্লেষ করতে পাঠ্য লিখুন",
   "Output Path for TTS Audio": "TTS অডিওর জন্য আউটপুট পাথ",
   "Output Path for RVC Audio": "আরভিসি অডিওর জন্য আউটপুট পাথ",
-  "Applio Presence": "Applio উপস্থিতি"
+  "Enable Applio integration with Discord presence": "Applio উপস্থিতি"
 }
