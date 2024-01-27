@@ -14,7 +14,7 @@
   "Report a Bug": "버그 신고",
 
   "Preprocess": "전처리",
-  "Model Name": "모델 이름",
+  "Model Name": "모델명",
   "Enter model name": "모델명 입력",
   "Dataset Path": "데이터셋 위치",
   "Dataset Creator": "데이터셋 작성자",
@@ -38,8 +38,8 @@
   "Custom Pretrained": "사용자 정의 사전 학습(Custom Pretrained)",
   "Upload Pretrained Model": "사전 학습된 모델 업로드",
   "Pretrained Custom Settings": "사전 학습된 사용자 정의 설정",
-  "The file you dropped is not a valid pretrained file. Please try again.": "드롭한 파일이 올바른 사전 교육 파일이 아닙니다. 다시 시도하십시오.",
-  "Click the refresh button to see the pretrained file in the dropdown menu.": "새로 고침 버튼을 클릭하면 드롭다운 메뉴에서 사전 교육된 파일을 볼 수 있습니다.",
+  "The file you dropped is not a valid pretrained file. Please try again.": "드롭한 파일이 올바른 사전 학습 파일이 아닙니다. 다시 시도하십시오.",
+  "Click the refresh button to see the pretrained file in the dropdown menu.": "새로 고침 버튼을 클릭하면 드롭다운 메뉴에서 사전 학습된 파일을 볼 수 있습니다.",
   "Pretrained G Path": "사용자 정의 사전 훈련된 G(Custom Pretrained G)",
   "Pretrained D Path": "사용자 정의 사전 훈련된 D(Custom Pretrained D)",
   "GPU Settings": "GPU 설정",
@@ -121,7 +121,7 @@
 
   "## Download Model": "## 모델 다운로드",
   "Model Link": "모델 링크",
-  "Introduce the model link": "모델 링크 소개",
+  "Introduce the model link": "모델 소개 링크",
   "Download Model": "Descargar Modelo",
   "## Drop files": "## 파일 드롭",
   "Drag your .pth file and .index file into this space. Drag one and then the ot드her.": ".pth 파일과 .index 파일을 이 공간으로 드래그하세요. 하나를 드래그한 다음 다른 하나를 드래그하세요.",
