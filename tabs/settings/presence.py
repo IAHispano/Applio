@@ -18,7 +18,7 @@ def presence_tab():
     with gr.Row():
         with gr.Column():
             presence = gr.Checkbox(
-                label=i18n("Applio Enable Applio integration with Discord presence"),
+                label=i18n("Enable Applio integration with Discord presence"),
                 interactive=True,
                 value=True,
             )
