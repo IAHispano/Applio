@@ -79,7 +79,7 @@ def vc_single(
         )
         if tgt_sr != resample_sr >= 16000:
             tgt_sr = resample_sr
-        if split_audio == "True":
+        if split_audio:
             result, new_dir_path = process_audio(input_audio_path)
             if result == "Error":
                 return "Error with Split Audio", None
@@ -222,9 +222,9 @@ audio_output_path = sys.argv[7]
 
 model_path = sys.argv[8]
 index_path = sys.argv[9]
-try:
-    split_audio = sys.argv[10]
-except IndexError:
+split_audio = sys.argv[10]
+
+if split_audio == "False":
     split_audio = None
 
 sid = f0up_key

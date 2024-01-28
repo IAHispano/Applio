@@ -6,12 +6,11 @@ import os
 
 from rvc.lib.utils import format_title
 
+
 def process_audio(file_path):
     try:
         # load audio file
         song = AudioSegment.from_file(file_path)
-
-        print(f"Ignore the warning if you saw any...")
 
         # set silence threshold and duration
         silence_thresh = -70  # dB

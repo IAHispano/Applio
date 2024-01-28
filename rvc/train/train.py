@@ -43,7 +43,8 @@ from losses import (
     kl_loss,
 )
 from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
-from process_ckpt import save_final
+
+from rvc.train.process.extract_model import extract_model
 
 from rvc.lib.infer_pack import commons
 
@@ -70,6 +71,7 @@ torch.backends.cudnn.benchmark = False
 
 global_step = 0
 bestEpochStep = 0
+last_loss_gen_all = 0
 lastValue = 1
 lowestValue = {"step": 0, "value": float("inf"), "epoch": 0}
 dirtyTb = []
@@ -279,11 +281,15 @@ def run(
                 None,
                 cache,
             )
+
         scheduler_g.step()
         scheduler_d.step()
 
 
 def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers, cache):
+    global global_step, last_loss_gen_all, lowestValue
+    if epoch == 1:
+        last_loss_gen_all = {}
     net_g, net_d = nets
     optim_g, optim_d = optims
     train_loader = loaders[0] if loaders is not None else None
@@ -291,7 +297,6 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
         writer = writers[0]
 
     train_loader.batch_sampler.set_epoch(epoch)
-    global global_step
 
     net_g.train()
     net_d.train()
@@ -461,6 +466,12 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 loss_fm = feature_loss(fmap_r, fmap_g)
                 loss_gen, losses_gen = generator_loss(y_d_hat_g)
                 loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
+
+                if loss_gen_all < lowestValue["value"]:
+                    lowestValue["value"] = loss_gen_all
+                    lowestValue["step"] = global_step
+                    lowestValue["epoch"] = epoch
+
         optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()
         scaler.unscale_(optim_g)
@@ -517,81 +528,80 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                     images=image_dict,
                     scalars=scalar_dict,
                 )
+
+                # optim_g.step()
+                # optim_d.step()
+
         global_step += 1
 
     if epoch % hps.save_every_epoch == 0 and rank == 0:
-        if hps.if_latest == 0:
-            save_checkpoint(
-                net_g,
-                optim_g,
-                hps.train.learning_rate,
-                epoch,
-                os.path.join(hps.model_dir, "G_{}.pth".format(global_step)),
-            )
-            save_checkpoint(
-                net_d,
-                optim_d,
-                hps.train.learning_rate,
-                epoch,
-                os.path.join(hps.model_dir, "D_{}.pth".format(global_step)),
-            )
-        else:
-            save_checkpoint(
-                net_g,
-                optim_g,
-                hps.train.learning_rate,
-                epoch,
-                os.path.join(hps.model_dir, "G_{}.pth".format(2333333)),
-            )
-            save_checkpoint(
-                net_d,
-                optim_d,
-                hps.train.learning_rate,
-                epoch,
-                os.path.join(hps.model_dir, "D_{}.pth".format(2333333)),
-            )
+        checkpoint_suffix = "{}.pth".format(
+            global_step if hps.if_latest == 0 else 2333333
+        )
+        save_checkpoint(
+            net_g,
+            optim_g,
+            hps.train.learning_rate,
+            epoch,
+            os.path.join(hps.model_dir, "G_" + checkpoint_suffix),
+        )
+        save_checkpoint(
+            net_d,
+            optim_d,
+            hps.train.learning_rate,
+            epoch,
+            os.path.join(hps.model_dir, "D_" + checkpoint_suffix),
+        )
+
         if rank == 0 and hps.save_every_weights == "1":
             if hasattr(net_g, "module"):
                 ckpt = net_g.module.state_dict()
             else:
                 ckpt = net_g.state_dict()
-            print(
-                "saving ckpt %s_e%s:%s"
-                % (
-                    hps.name,
-                    epoch,
-                    save_final(
-                        ckpt,
-                        hps.sample_rate,
-                        hps.if_f0,
-                        hps.name + "_e%s_s%s" % (epoch, global_step),
-                        epoch,
-                        hps.version,
-                        hps,
-                    ),
-                )
-            )
+        extract_model(
+            ckpt,
+            hps.sample_rate,
+            hps.if_f0,
+            hps.name,
+            os.path.join(hps.model_dir, "{}_{}e.pth".format(hps.name, epoch)),
+            epoch,
+            hps.version,
+            hps,
+        )
 
     if rank == 0:
-        print(
-            f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | loss_disc={loss_disc:.3f} | loss_gen={loss_gen:.3f} | loss_fm={loss_fm:.3f} | loss_mel={loss_mel:.3f} | loss_kl={loss_kl:.3f}"
-        )
+        if epoch > 1:
+            change = last_loss_gen_all - loss_gen_all
+            change_str = ""
+            if change != 0:
+                change_str = f"({'decreased' if change > 0 else 'increased'} {abs(change)})"  # decreased = good
+            print(
+                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | loss_gen_all={round(loss_gen_all.item(), 3)} {change_str}"
+            )
+        last_loss_gen_all = loss_gen_all
+
     if epoch >= hps.total_epoch and rank == 0:
         print(
-            f"Training has been successfully completed with {epoch} epoch and {global_step} steps."
+            f"Training has been successfully completed with {epoch} epoch, {global_step} steps and {round(loss_gen_all.item(), 3)} loss gen."
+        )
+        print(
+            f"Lowest generator loss: {lowestValue['value']} at epoch {lowestValue['epoch']}, step {lowestValue['step']}"
         )
 
         if hasattr(net_g, "module"):
             ckpt = net_g.module.state_dict()
         else:
             ckpt = net_g.state_dict()
-        print(
-            "Saving final checkpoint: %s"
-            % (
-                save_final(
-                    ckpt, hps.sample_rate, hps.if_f0, hps.name, epoch, hps.version, hps
-                )
-            )
+
+        extract_model(
+            ckpt,
+            hps.sample_rate,
+            hps.if_f0,
+            hps.name,
+            os.path.join(hps.model_dir, "{}_{}e.pth".format(hps.name, epoch)),
+            epoch,
+            hps.version,
+            hps,
         )
         sleep(1)
         os._exit(2333333)

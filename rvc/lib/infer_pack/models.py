@@ -1,5 +1,4 @@
-import math, pdb, os
-from time import time as ttime
+import math
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -7,10 +6,9 @@ from . import modules
 from . import attentions
 from . import commons
 from .commons import init_weights, get_padding
-from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
+from torch.nn import Conv1d, ConvTranspose1d, Conv2d
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import spectral_norm, weight_norm
-import numpy as np
 from typing import Optional
 
 has_xpu = bool(hasattr(torch, "xpu") and torch.xpu.is_available())
