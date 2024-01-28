@@ -1,6 +1,7 @@
 import os
 import torch
 
+
 def change_info(path, info, name):
     try:
         ckpt = torch.load(path, map_location="cpu")
