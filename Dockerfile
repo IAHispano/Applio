@@ -8,9 +8,9 @@ WORKDIR /app
 
 RUN apt update && apt install -y -qq ffmpeg aria2 && apt clean
 
-RUN pip3 install --no-cache-dir -r requirements.txt
-
 COPY . .
+
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 VOLUME [ "/app/logs/weights", "/app/opt" ]
 
