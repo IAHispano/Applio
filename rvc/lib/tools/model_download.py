@@ -195,6 +195,10 @@ def unzip_file(zip_path, zip_file_name):
 
 
 url = sys.argv[1]
+
+if "?download=true" in url:
+    url = url.replace("?download=true", "")
+    
 verify = download_from_url(url)
 
 if verify == "downloaded":
@@ -217,7 +221,7 @@ if verify == "downloaded":
                 print(f"Error downloading {model_name}")
                 sys.exit()
     if extract_folder_path == "":
-        print("No zip founded...")
+        print("Zip file was not found.")
         sys.exit()
     result = search_pth_index(extract_folder_path)
 else:
