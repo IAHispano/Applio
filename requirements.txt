@@ -1,7 +1,7 @@
 # General dependencies
 ffmpeg-python>=0.2.0
 numpy==1.23.5
-requests
+requests==2.31.0
 tqdm
 wget
 
@@ -15,9 +15,9 @@ praat-parselmouth
 
 # Machine learning
 git+https://github.com/IAHispano/fairseq; sys_platform == 'linux'
-fairseq==0.12.2; sys_platform == 'win32'
+fairseq==0.12.2; sys_platform == 'darwin' or sys_platform == 'win32'
 numba; sys_platform == 'linux'
-numba==0.56.4; sys_platform == 'win32'
+numba==0.56.4; sys_platform == 'darwin' or sys_platform == 'win32'
 torch==2.1.1
 torchcrepe==0.0.21
 torchvision==0.16.1
@@ -30,7 +30,7 @@ gradio==4.14.0
 # Miscellaneous
 ffmpy==0.3.1
 tensorboardX
-requests==2.31.0
 edge-tts==6.1.9
 pypresence
 beautifulsoup4
+
