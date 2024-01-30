@@ -8,7 +8,7 @@ sys.path.append(now_dir)
 try:
     system_drive = os.getenv('SystemDrive')
     current_drive = os.path.splitdrive(now_dir)[0]
-except Exception as e:
+except:
     pass
 else:
     class InstallationError(Exception):
