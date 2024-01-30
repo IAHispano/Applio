@@ -93,6 +93,9 @@ def download_from_url(url):
             os.chdir(zips_path)
             if "/blob/" in url:
                 url = url.replace("/blob/", "/resolve/")
+            
+            if url.endswith("?download=true"):
+                url = url[:-14]
 
             response = requests.get(url, stream=True)
             if response.status_code == 200:
