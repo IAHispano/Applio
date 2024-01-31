@@ -79,7 +79,7 @@ def vc_single(
         )
         if tgt_sr != resample_sr >= 16000:
             tgt_sr = resample_sr
-        if split_audio:
+        if split_audio == "True":
             result, new_dir_path = process_audio(input_audio_path)
             if result == "Error":
                 return "Error with Split Audio", None
