@@ -135,11 +135,7 @@ def match_index(model_file: str) -> tuple:
         base_model_name = model_file_name
 
     sid_directory = os.path.join(model_root_relative, base_model_name)
-    double_sid_directory = os.path.join(sid_directory, base_model_name)
     directories_to_search = [sid_directory] if os.path.exists(sid_directory) else []
-    directories_to_search += (
-        [double_sid_directory] if os.path.exists(double_sid_directory) else []
-    )
     directories_to_search.append(model_root_relative)
     matching_index_files = []
 
@@ -157,7 +153,8 @@ def match_index(model_file: str) -> tuple:
 
                 if name_match or folder_match:
                     index_path = os.path.join(directory, filename)
-                    if index_path in indexes_list:
+                    updated_indexes_list = get_indexes()
+                    if index_path in updated_indexes_list:
                         matching_index_files.append(
                             (
                                 index_path,
