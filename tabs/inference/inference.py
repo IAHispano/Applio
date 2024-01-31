@@ -351,6 +351,12 @@ def inference_tab():
                 clear_outputs = gr.Button(
                     i18n("Clear Outputs (Deletes all audios in assets/audios)")
                 )
+                split_audio_batch = gr.Checkbox(
+                    label=i18n("Split Audio"),
+                    visible=True,
+                    value=False,
+                    interactive=True,
+                )
                 pitch_batch = gr.Slider(
                     minimum=-24,
                     maximum=24,
@@ -460,6 +466,7 @@ def inference_tab():
             output_folder_batch,
             model_file,
             index_file,
+            split_audio_batch,
         ],
         outputs=[vc_output3],
     )

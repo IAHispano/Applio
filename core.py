@@ -72,6 +72,7 @@ def run_batch_infer_script(
     output_folder,
     pth_file,
     index_path,
+    split_audio,
 ):
     infer_script_path = os.path.join("rvc", "infer", "infer.py")
 
@@ -104,6 +105,7 @@ def run_batch_infer_script(
             output_path,
             pth_file,
             index_path,
+            str(split_audio),
         ]
         subprocess.run(command)
 
