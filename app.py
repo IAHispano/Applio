@@ -44,6 +44,8 @@ from tabs.report.report import report_tab
 from tabs.download.download import download_tab
 from tabs.tts.tts import tts_tab
 from tabs.settings.presence import presence_tab
+from tabs.settings.themes import theme_tab
+import rvc.lib.tools.loadThemes as loadThemes
 
 from assets.i18n.i18n import I18nAuto
 
@@ -53,7 +55,13 @@ from assets.discord_presence import RPCManager
 
 RPCManager.start_presence()
 
-with gr.Blocks(theme="ParityError/Interstellar", title="Applio") as Applio:
+my_applio = loadThemes.load_json()
+if my_applio:
+    pass
+else:
+    my_applio = "ParityError/Interstellar"
+
+with gr.Blocks(theme=my_applio, title="Applio") as Applio:
     gr.Markdown("# Applio")
     gr.Markdown(
         i18n(
@@ -85,6 +93,7 @@ with gr.Blocks(theme="ParityError/Interstellar", title="Applio") as Applio:
 
     with gr.Tab(i18n("Settings")):
         presence_tab()
+        theme_tab()
 
 
 if __name__ == "__main__":
