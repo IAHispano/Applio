@@ -6,7 +6,7 @@ import tempfile
 import gradio as gr
 
 from assets.i18n.i18n import I18nAuto
-import rvc.lib.tools.loadThemes as loadThemes
+import assets.themes.loadThemes as loadThemes
 now_dir = os.getcwd()
 sys.path.append("..")
 

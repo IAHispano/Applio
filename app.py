@@ -45,7 +45,7 @@ from tabs.download.download import download_tab
 from tabs.tts.tts import tts_tab
 from tabs.settings.presence import presence_tab
 from tabs.settings.themes import theme_tab
-import rvc.lib.tools.loadThemes as loadThemes
+import assets.themes.loadThemes as loadThemes
 
 from assets.i18n.i18n import I18nAuto
 
