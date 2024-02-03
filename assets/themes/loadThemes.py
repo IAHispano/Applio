@@ -11,15 +11,19 @@ folder = os.path.dirname(folder)
 folder = os.path.join(folder, "assets", "themes")
 
 import sys
+
 sys.path.append(folder)
+
+
 def get_class(filename):
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         for line_number, line in enumerate(f, start=1):
-            if 'class ' in line:
-                found = line.split('class ')[1].split(':')[0].split('(')[0].strip()
+            if "class " in line:
+                found = line.split("class ")[1].split(":")[0].split("(")[0].strip()
                 return found
                 break
     return None
+
 
 def get_list():
 
@@ -33,7 +37,7 @@ def get_list():
     json_file_path = os.path.join(folder, "theme_list.json")
 
     try:
-        with open(json_file_path, 'r') as json_file:
+        with open(json_file_path, "r") as json_file:
             themes_from_url = [item["id"] for item in json.load(json_file)]
     except FileNotFoundError:
         themes_from_url = []
@@ -42,26 +46,28 @@ def get_list():
 
     return list(combined_themes)
 
+
 def select_theme(name):
     selected_file = name + ".py"
     full_path = os.path.join(folder, selected_file)
     if not os.path.exists(full_path):
-        with open(os.path.join(folder, 'theme.json'), 'w') as json_file:
+        with open(os.path.join(folder, "theme.json"), "w") as json_file:
             json.dump({"file": None, "class": name}, json_file)
         print(f"Theme {name} successfully selected, restart applio.")
         return
     class_found = get_class(full_path)
     if class_found:
-        with open(os.path.join(folder, 'theme.json'), 'w') as json_file:
+        with open(os.path.join(folder, "theme.json"), "w") as json_file:
             json.dump({"file": selected_file, "class": class_found}, json_file)
         print(f"Theme {name} successfully selected, restart applio.")
     else:
         print(f"Theme {name} was not found.")
 
+
 def read_json():
-    json_file_name = os.path.join(folder, 'theme.json')
+    json_file_name = os.path.join(folder, "theme.json")
     try:
-        with open(json_file_name, 'r') as json_file:
+        with open(json_file_name, "r") as json_file:
             data = json.load(json_file)
             selected_file = data.get("file")
             class_name = data.get("class")
@@ -74,10 +80,11 @@ def read_json():
     except:
         return "ParityError/Interstellar"
 
+
 def load_json():
-    json_file_name = os.path.join(folder, 'theme.json')
+    json_file_name = os.path.join(folder, "theme.json")
     try:
-        with open(json_file_name, 'r') as json_file:
+        with open(json_file_name, "r") as json_file:
             data = json.load(json_file)
             selected_file = data.get("file")
             class_name = data.get("class")

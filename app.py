@@ -49,9 +49,11 @@ from tabs.settings.themes import theme_tab
 import assets.themes.loadThemes as loadThemes
 
 from assets.i18n.i18n import I18nAuto
+
 i18n = I18nAuto()
 
 from assets.discord_presence import RPCManager
+
 RPCManager.start_presence()
 
 my_applio = loadThemes.load_json()
