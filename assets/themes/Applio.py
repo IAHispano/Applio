@@ -55,10 +55,10 @@ class Applio(Base):
 
         super().set(
             # Blaise
-            background_fill_primary="black",
-            background_fill_primary_dark="black",
-            background_fill_secondary="black",
-            background_fill_secondary_dark="black",
+            background_fill_primary="#09090B",
+            background_fill_primary_dark="#09090B",
+            background_fill_secondary="#09090B",
+            background_fill_secondary_dark="#09090B",
             block_background_fill="*neutral_800",
             block_background_fill_dark="*neutral_800",
             block_border_color="*border_color_primary",
@@ -98,8 +98,8 @@ class Applio(Base):
             block_title_text_color_dark="*neutral_200",
             block_title_text_size="*text_md",
             block_title_text_weight="600",
-            body_background_fill="black",
-            body_background_fill_dark="black",
+            body_background_fill="#09090B",
+            body_background_fill_dark="#09090B",
             body_text_color="white",
             body_text_color_dark="white",
             body_text_color_subdued="*neutral_400",
