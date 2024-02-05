@@ -45,6 +45,7 @@ from tabs.download.download import download_tab
 from tabs.tts.tts import tts_tab
 from tabs.settings.presence import presence_tab
 from tabs.settings.themes import theme_tab
+from tabs.plugins.plugins import plugins_tab
 
 import assets.themes.loadThemes as loadThemes
 
@@ -88,6 +89,9 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
 
     with gr.Tab(i18n("Download")):
         download_tab()
+
+    with gr.Tab(i18n("Plugins")):
+        plugins_tab()
 
     with gr.Tab(i18n("Report a Bug")):
         report_tab()
