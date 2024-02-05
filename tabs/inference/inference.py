@@ -241,19 +241,18 @@ def inference_tab():
 
     # Single inference tab
     with gr.Tab(i18n("Single")):
-        with gr.Row():
-            with gr.Column():
-                upload_audio = gr.Audio(
-                    label=i18n("Upload Audio"), type="filepath", editable=False
+        with gr.Column():
+            upload_audio = gr.Audio(
+                label=i18n("Upload Audio"), type="filepath", editable=False
+            )
+            with gr.Row():
+                audio = gr.Dropdown(
+                    label=i18n("Select Audio"),
+                    choices=sorted(audio_paths),
+                    value=audio_paths[0] if audio_paths else "",
+                    interactive=True,
+                    allow_custom_value=True,
                 )
-                with gr.Row():
-                    audio = gr.Dropdown(
-                        label=i18n("Select Audio"),
-                        choices=sorted(audio_paths),
-                        value=audio_paths[0] if audio_paths else "",
-                        interactive=True,
-                        allow_custom_value=True,
-                    )
 
         with gr.Accordion(i18n("Advanced Settings"), open=False):
             with gr.Column():
