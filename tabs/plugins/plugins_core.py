@@ -59,6 +59,8 @@ def save_plugin_dropbox(dropbox):
     return None
 
 def check_new_folders():
+    if not os.path.exists(plugins_path):
+        os.makedirs(plugins_path)
     existing_folders = get_existing_folders()
     new_folders = set(current_folders) - set(existing_folders)
     if new_folders:
