@@ -41,7 +41,7 @@ def save_drop_model(dropbox):
             os.makedirs(model_path)
         if os.path.exists(os.path.join(model_path, file_name)):
             os.remove(os.path.join(model_path, file_name))
-        os.rename(dropbox, os.path.join(model_path, file_name))
+        shutil.move(dropbox, os.path.join(model_path, file_name))
         print(f"{file_name} saved in {model_path}")
         gr.Info(f"{file_name} saved in {model_path}")
     return None
