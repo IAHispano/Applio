@@ -13,20 +13,23 @@ sys.path.append(now_dir)
 
 plugins_path = os.path.join(now_dir, "tabs", "plugins", "installed")
 if not os.path.exists(plugins_path):
-    os.makedirs(plugins_path)       
+    os.makedirs(plugins_path)
 json_file_path = os.path.join(now_dir, "tabs", "plugins", "installed_list.json")
 current_folders = os.listdir(plugins_path)
 
+
 def get_existing_folders():
     if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as file:
+        with open(json_file_path, "r") as file:
             return json.load(file)
     else:
         return []
 
+
 def save_existing_folders(existing_folders):
-    with open(json_file_path, 'w') as file:
+    with open(json_file_path, "w") as file:
         json.dump(existing_folders, file)
+
 
 def save_plugin_dropbox(dropbox):
     if "zip" not in dropbox:
@@ -34,8 +37,8 @@ def save_plugin_dropbox(dropbox):
             message="The file you dropped is not a valid plugin.zip. Please try again."
         )
     else:
-        file_name = (os.path.basename(dropbox))
-        folder_name = (file_name.split(".zip")[0])
+        file_name = os.path.basename(dropbox)
+        folder_name = file_name.split(".zip")[0]
         folder_path = os.path.join(plugins_path, folder_name)
         zip_file_path = os.path.join(plugins_path, file_name)
 
@@ -48,17 +51,31 @@ def save_plugin_dropbox(dropbox):
         with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
             zip_ref.extractall(plugins_path)
         os.remove(zip_file_path)
-        
+
         if os.path.exists(os.path.join(folder_path, "requirements.txt")):
-            subprocess.run([os.path.join("env", "python.exe"), "-m", "pip", "install", "-r", os.path.join(folder_path, "requirements.txt")])
+            subprocess.run(
+                [
+                    os.path.join("env", "python.exe"),
+                    "-m",
+                    "pip",
+                    "install",
+                    "-r",
+                    os.path.join(folder_path, "requirements.txt"),
+                ]
+            )
         else:
             print("No requirements.txt file found in the plugin folder.")
-        
+
         save_existing_folders(get_existing_folders() + [folder_name])
 
-        print(f"{folder_name} plugin installed in {plugins_path}! Restart applio to see the changes.")
-        gr.Info(f"{folder_name} plugin installed in {plugins_path}! Restart applio to see the changes.") 
+        print(
+            f"{folder_name} plugin installed in {plugins_path}! Restart applio to see the changes."
+        )
+        gr.Info(
+            f"{folder_name} plugin installed in {plugins_path}! Restart applio to see the changes."
+        )
     return None
+
 
 def check_new_folders():
     existing_folders = get_existing_folders()
@@ -69,8 +86,17 @@ def check_new_folders():
             print(f"New Plugin {new_folder} found! Installing...")
 
             if os.path.exists(os.path.join(complete_path, "requirements.txt")):
-                subprocess.run([os.path.join("env", "python.exe"), "-m", "pip", "install", "-r", os.path.join(complete_path, "requirements.txt")])
+                subprocess.run(
+                    [
+                        os.path.join("env", "python.exe"),
+                        "-m",
+                        "pip",
+                        "install",
+                        "-r",
+                        os.path.join(complete_path, "requirements.txt"),
+                    ]
+                )
             else:
-                print("No requirements.txt file found in the plugin folder.")   
+                print("No requirements.txt file found in the plugin folder.")
         print("Plugins checked and installed! Restart applio to see the changes.")
     save_existing_folders(current_folders)
