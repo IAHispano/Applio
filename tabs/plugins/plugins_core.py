@@ -12,6 +12,8 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 plugins_path = os.path.join(now_dir, "tabs", "plugins", "installed")
+if not os.path.exists(plugins_path):
+    os.makedirs(plugins_path)       
 json_file_path = os.path.join(now_dir, "tabs", "plugins", "installed_list.json")
 current_folders = os.listdir(plugins_path)
 
@@ -59,8 +61,6 @@ def save_plugin_dropbox(dropbox):
     return None
 
 def check_new_folders():
-    if not os.path.exists(plugins_path):
-        os.makedirs(plugins_path)
     existing_folders = get_existing_folders()
     new_folders = set(current_folders) - set(existing_folders)
     if new_folders:
