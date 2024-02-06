@@ -5,38 +5,7 @@ import os
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-
-class InstallationError(Exception):
-    def __init__(self, message="InstallationError"):
-        self.message = message
-        super().__init__(self.message)
-
-
-try:
-    system_drive = os.getenv("SystemDrive")
-    current_drive = os.path.splitdrive(now_dir)[0]
-    if current_drive.upper() != system_drive.upper():
-        raise InstallationError(
-            f"Error: Current working directory is not on the default system drive ({system_drive}). Please move Applio in the correct drive."
-        )
-except:
-    pass
-else:
-    if "OneDrive" in now_dir:
-        raise InstallationError(
-            "Error: Current working directory is on OneDrive. Please move Applio in another folder."
-        )
-    elif " " in now_dir:
-        raise InstallationError(
-            "Error: Current working directory contains spaces. Please move Applio in another folder."
-        )
-    try:
-        now_dir.encode("ascii")
-    except UnicodeEncodeError:
-        raise InstallationError(
-            "Error: Current working directory contains non-ASCII characters. Please move Applio in another folder."
-        )
-
+# Tabs
 from tabs.inference.inference import inference_tab
 from tabs.train.train import train_tab
 from tabs.extra.extra import extra_tab
@@ -47,15 +16,15 @@ from tabs.settings.presence import presence_tab
 from tabs.settings.themes import theme_tab
 from tabs.plugins.plugins import plugins_tab
 
+# Assets
 import assets.themes.loadThemes as loadThemes
-
 from assets.i18n.i18n import I18nAuto
-
-i18n = I18nAuto()
-
+import assets.installation_checker as installation_checker
 from assets.discord_presence import RPCManager
 
+i18n = I18nAuto()
 RPCManager.start_presence()
+installation_checker.check_installation()
 
 my_applio = loadThemes.load_json()
 if my_applio:
@@ -87,11 +56,11 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
     with gr.Tab(i18n("Extra")):
         extra_tab()
 
-    with gr.Tab(i18n("Download")):
-        download_tab()
-
     with gr.Tab(i18n("Plugins")):
         plugins_tab()
+
+    with gr.Tab(i18n("Download")):
+        download_tab()
 
     with gr.Tab(i18n("Report a Bug")):
         report_tab()
