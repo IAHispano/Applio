@@ -4,10 +4,12 @@ import os
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+
 class InstallationError(Exception):
     def __init__(self, message="InstallationError"):
         self.message = message
         super().__init__(self.message)
+
 
 def check_installation():
     try:
