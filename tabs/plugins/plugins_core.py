@@ -83,7 +83,7 @@ def check_new_folders():
     if new_folders:
         for new_folder in new_folders:
             complete_path = os.path.join(plugins_path, new_folder)
-            print(f"New Plugin {new_folder} found! Installing...")
+            print(f"New plugin {new_folder} found, installing it...")
 
             if os.path.exists(os.path.join(complete_path, "requirements.txt")):
                 subprocess.run(
