@@ -191,6 +191,13 @@ def delete_outputs():
     gr.Info(f"Outputs cleared!")
 
 
+def process_input(file_path):
+    with open(file_path, 'r') as file:
+        file_contents = file.read()
+    gr.Info(f"The text from the txt file has been loaded!")
+    return file_contents, None    
+
+
 def tts_tab():
     default_weight = random.choice(names) if names else ""
     with gr.Row():
@@ -243,6 +250,13 @@ def tts_tab():
         label=i18n("Text to Synthesize"),
         placeholder=i18n("Enter text to synthesize"),
         lines=3,
+    )
+
+    txt_file = gr.File(
+        label=i18n(
+            "Or you can upload a .txt file"
+        ),
+        type="filepath",
     )
 
     with gr.Accordion(i18n("Advanced Settings"), open=False):
@@ -319,6 +333,11 @@ def tts_tab():
         fn=change_choices,
         inputs=[],
         outputs=[model_file, index_file],
+    )
+    txt_file.upload(
+        fn=process_input,
+        inputs=[txt_file],
+        outputs=[tts_text, txt_file],
     )
     convert_button1.click(
         fn=run_tts_script,

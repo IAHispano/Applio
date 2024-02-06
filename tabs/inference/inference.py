@@ -196,11 +196,11 @@ def save_to_wav2(upload_audio):
 
 
 def delete_outputs():
+    gr.Info(f"Outputs cleared!")
     for root, _, files in os.walk(audio_root_relative, topdown=False):
         for name in files:
             if name.endswith(tuple(sup_audioext)) and name.__contains__("_output"):
                 os.remove(os.path.join(root, name))
-    gr.Info(f"Outputs cleared!")
 
 
 # Inference tab
@@ -256,7 +256,7 @@ def inference_tab():
 
         with gr.Accordion(i18n("Advanced Settings"), open=False):
             with gr.Column():
-                clear_outputs = gr.Button(
+                clear_outputs_infer = gr.Button(
                     i18n("Clear Outputs (Deletes all audios in assets/audios)")
                 )
                 output_path = gr.Textbox(
@@ -347,7 +347,7 @@ def inference_tab():
                 )
         with gr.Accordion(i18n("Advanced Settings"), open=False):
             with gr.Column():
-                clear_outputs = gr.Button(
+                clear_outputs_batch = gr.Button(
                     i18n("Clear Outputs (Deletes all audios in assets/audios)")
                 )
                 split_audio_batch = gr.Checkbox(
@@ -432,7 +432,12 @@ def inference_tab():
         inputs=[upload_audio],
         outputs=[audio, output_path],
     )
-    clear_outputs.click(
+    clear_outputs_infer.click(
+        fn=delete_outputs,
+        inputs=[],
+        outputs=[],
+    )
+    clear_outputs_batch.click(
         fn=delete_outputs,
         inputs=[],
         outputs=[],

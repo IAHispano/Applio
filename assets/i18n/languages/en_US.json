@@ -10,8 +10,10 @@
   "Processing": "Processing",
   "Audio Analyzer": "Audio Analyzer",
   "Model Information": "Model Information",
+  "Plugins": "Plugins",
   "Download": "Download",
   "Report a Bug": "Report a Bug",
+  "Settings": "Settings",
 
   "Preprocess": "Preprocess",
   "Model Name": "Model Name",
@@ -128,8 +130,14 @@
 
   "TTS Voices": "TTS Voices",
   "Text to Synthesize": "Text to Synthesize",
+  "Or you can upload a .txt file": "Or you can upload a .txt file",
   "Enter text to synthesize": "Enter text to synthesize",
   "Output Path for TTS Audio": "Output Path for TTS Audio",
   "Output Path for RVC Audio": "Output Path for RVC Audio",
-  "Enable Applio integration with Discord presence": "Enable Applio integration with Discord presence"
+
+  "Enable Applio integration with Discord presence": "Enable Applio integration with Discord presence",
+  "Theme": "Theme",
+
+  "Plugin Installer": "Plugin Installer",
+  "Drag your plugin.zip to install it": "Drag your plugin.zip to install it"
 }

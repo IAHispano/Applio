@@ -9,8 +9,10 @@
   "Processing": "Procesamiento",
   "Audio Analyzer": "Analizador de audio",
   "Model Information": "Información del modelo",
+  "Plugins": "Complementos",
   "Download": "Descargar",
   "Report a Bug": "Reportar un fallo",
+  "Settings": "Ajustes",
   "Preprocess": "Preprocesar",
   "Model Name": "Nombre del modelo",
   "Enter model name": "Introduzca el nombre del modelo",
@@ -111,8 +113,12 @@
   "Drag your .pth file and .index file into this space. Drag one and then the other.": "Arrastre el archivo .pth y el archivo .index a este espacio. Arrastre uno y luego el otro.",
   "TTS Voices": "Voces TTS",
   "Text to Synthesize": "Texto a sintetizar",
+  "Or you can upload a .txt file": "O puedes subir un archivo .txt",
   "Enter text to synthesize": "Introduzca el texto a sintetizar",
   "Output Path for TTS Audio": "Ruta de salida para el audio TTS",
   "Output Path for RVC Audio": "Ruta de salida para el audio RVC",
-  "Enable Applio integration with Discord presence": "Habilita la integración de Applio con la presencia de Discord"
+  "Enable Applio integration with Discord presence": "Habilita la integración de Applio con la presencia de Discord",
+  "Theme": "Tema",
+  "Plugin Installer": "Instalador de complementos",
+  "Drag your plugin.zip to install it": "Arrastra tu plugin.zip para instalarlo"
 }
