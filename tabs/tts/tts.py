@@ -192,10 +192,10 @@ def delete_outputs():
 
 
 def process_input(file_path):
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         file_contents = file.read()
     gr.Info(f"The text from the txt file has been loaded!")
-    return file_contents, None    
+    return file_contents, None
 
 
 def tts_tab():
@@ -253,9 +253,7 @@ def tts_tab():
     )
 
     txt_file = gr.File(
-        label=i18n(
-            "Or you can upload a .txt file"
-        ),
+        label=i18n("Or you can upload a .txt file"),
         type="filepath",
     )
 
