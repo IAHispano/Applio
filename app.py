@@ -27,6 +27,7 @@ i18n = I18nAuto()
 RPCManager.start_presence()
 installation_checker.check_installation()
 logging.getLogger("uvicorn").disabled = True
+logging.getLogger("fairseq").disabled = True
 
 my_applio = loadThemes.load_json()
 if my_applio:
