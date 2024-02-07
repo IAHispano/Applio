@@ -1,6 +1,7 @@
 import gradio as gr
 import sys
 import os
+import logging
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -25,6 +26,7 @@ from assets.discord_presence import RPCManager
 i18n = I18nAuto()
 RPCManager.start_presence()
 installation_checker.check_installation()
+logging.getLogger("uvicorn").disabled = True
 
 my_applio = loadThemes.load_json()
 if my_applio:
