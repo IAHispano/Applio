@@ -1,21 +1,31 @@
+import os, sys
 import json
 from pathlib import Path
 from locale import getdefaultlocale
 
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 
 class I18nAuto:
-    LANGUAGE_PATH = "./assets/i18n/languages/"
+    LANGUAGE_PATH = os.path.join(now_dir, "assets", "i18n", "languages")
 
     def __init__(self, language=None):
-        language = language or getdefaultlocale()[0]
+        with open(os.path.join(now_dir, "assets", "i18n", "override_lang.json"), "r") as f:
+            config = json.load(f)
+            override = config["override"]
+            lang_prefix = config["language"]
+        
+        self.language = lang_prefix
 
-        lang_prefix = language[:2] if language is not None else "en"
-        available_languages = self._get_available_languages()
-        matching_languages = [
-            lang for lang in available_languages if lang.startswith(lang_prefix)
-        ]
+        if override == False:
+            language = language or getdefaultlocale()[0]
+            lang_prefix = language[:2] if language is not None else "en"
+            available_languages = self._get_available_languages()
+            matching_languages = [
+                lang for lang in available_languages if lang.startswith(lang_prefix)
+            ]
+            self.language = matching_languages[0] if matching_languages else "en_US"
 
-        self.language = matching_languages[0] if matching_languages else "en_US"
         self.language_map = self._load_language_list()
 
     def _load_language_list(self):
