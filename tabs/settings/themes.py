@@ -20,7 +20,7 @@ def theme_tab():
             themes_select = gr.Dropdown(
                 loadThemes.get_list(),
                 value=loadThemes.read_json(),
-                label=i18n("Theme"),
+                label=i18n("Theme (Restart required)"),
                 visible=True,
             )
             themes_select.change(
