@@ -39,7 +39,7 @@ def save_lang_settings(select_language):
 def lang_tab():
     with gr.Column():
         select_language = gr.Dropdown(
-            label=i18n("Override language settings (Restart required)"),
+            label="Override language settings (Restart required)",
             value=get_language_settings(),
             choices=["False"] + i18n._get_available_languages(),
             interactive=True,
