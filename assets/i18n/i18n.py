@@ -6,15 +6,18 @@ from locale import getdefaultlocale
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+
 class I18nAuto:
     LANGUAGE_PATH = os.path.join(now_dir, "assets", "i18n", "languages")
 
     def __init__(self, language=None):
-        with open(os.path.join(now_dir, "assets", "i18n", "override_lang.json"), "r") as f:
+        with open(
+            os.path.join(now_dir, "assets", "i18n", "override_lang.json"), "r"
+        ) as f:
             config = json.load(f)
             override = config["override"]
             lang_prefix = config["language"]
-        
+
         self.language = lang_prefix
 
         if override == False:
