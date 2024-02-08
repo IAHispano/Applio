@@ -31,7 +31,7 @@ def save_lang_settings(select_language):
         config["override"] = True
         config["language"] = select_language
     
-    gr.Info("Language settings have been saved. Restart the app to apply the changes.")
+    gr.Info("Language settings have been saved. Restart Applio to apply the changes.")
 
     with open(json_file_path, "w") as f:
         json.dump(config, f, indent=2)  
