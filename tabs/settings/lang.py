@@ -10,6 +10,7 @@ i18n = I18nAuto()
 
 json_file_path = os.path.join(now_dir, "assets", "i18n", "override_lang.json")
 
+
 def get_language_settings():
     with open(json_file_path, "r") as f:
         config = json.load(f)
@@ -19,9 +20,10 @@ def get_language_settings():
     else:
         return config["language"]
 
+
 def save_lang_settings(select_language):
     json_file_path = os.path.join(now_dir, "assets", "i18n", "override_lang.json")
-    
+
     with open(json_file_path, "r") as f:
         config = json.load(f)
 
@@ -30,18 +32,20 @@ def save_lang_settings(select_language):
     else:
         config["override"] = True
         config["language"] = select_language
-    
+
     gr.Info("Language settings have been saved. Restart Applio to apply the changes.")
 
     with open(json_file_path, "w") as f:
-        json.dump(config, f, indent=2)  
+        json.dump(config, f, indent=2)
+
 
 def lang_tab():
     with gr.Column():
         select_language = gr.Dropdown(
             label="Override language settings (Restart required)",
             value=get_language_settings(),
-            choices=["Language automatically detected in the system"] + i18n._get_available_languages(),
+            choices=["Language automatically detected in the system"]
+            + i18n._get_available_languages(),
             interactive=True,
         )
 
@@ -49,4 +53,4 @@ def lang_tab():
             fn=save_lang_settings,
             inputs=[select_language],
             outputs=[],
-        )            
+        )
