@@ -10,8 +10,10 @@
   "Processing": "프로세싱",
   "Audio Analyzer": "오디오 분석기",
   "Model Information": "모델 정보",
+  "Plugins": "플러그인",
   "Download": "다운로드",
   "Report a Bug": "버그 신고",
+  "Settings": "설정",
 
   "Preprocess": "전처리",
   "Model Name": "모델명",
@@ -128,8 +130,14 @@
 
   "TTS Voices": "TTS 보이스",
   "Text to Synthesize": "합성할 텍스트(Text to Synthesize)",
+  "Or you can upload a .txt file": "또는 .txt 파일을 업로드할 수 있습니다.",
   "Enter text to synthesize": "합성할 텍스트 입력",
   "Output Path for TTS Audio": "TTS 오디오의 출력 경로",
   "Output Path for RVC Audio": "RVC 오디오의 출력 경로",
-  "Enable Applio integration with Discord presence": "Applio와 Discord presence의 통합 활성화"
+  
+  "Enable Applio integration with Discord presence": "Discord presence와 Applio 통합 활성화",
+  "Theme": "테마",
+
+  "Plugin Installer": "플러그인 인스톨러",
+  "Drag your plugin.zip to install it": "plugin.zip을 드래그하여 설치"
 }
