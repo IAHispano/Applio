@@ -120,5 +120,7 @@
   "Enable Applio integration with Discord presence": "Habilita la integración de Applio con la presencia de Discord",
   "Theme": "Tema",
   "Plugin Installer": "Instalador de complementos",
-  "Drag your plugin.zip to install it": "Arrastra tu plugin.zip para instalarlo"
+  "Drag your plugin.zip to install it": "Arrastra tu plugin.zip para instalarlo",
+  "Version checker": "Comprobador de versiones",
+  "Check for updates": "Buscar actualizaciones"
 }

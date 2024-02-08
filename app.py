@@ -16,6 +16,7 @@ from tabs.tts.tts import tts_tab
 from tabs.settings.presence import presence_tab
 from tabs.settings.themes import theme_tab
 from tabs.plugins.plugins import plugins_tab
+from tabs.settings.version_checker import version_tab
 
 # Assets
 import assets.themes.loadThemes as loadThemes
@@ -71,6 +72,7 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
     with gr.Tab(i18n("Settings")):
         presence_tab()
         theme_tab()
+        version_tab()
 
 
 if __name__ == "__main__":

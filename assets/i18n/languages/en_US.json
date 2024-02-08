@@ -139,5 +139,8 @@
   "Theme": "Theme",
 
   "Plugin Installer": "Plugin Installer",
-  "Drag your plugin.zip to install it": "Drag your plugin.zip to install it"
+  "Drag your plugin.zip to install it": "Drag your plugin.zip to install it",
+
+  "Version checker": "Version checker",
+  "Check for updates": "Check for updates"
 }
