@@ -25,7 +25,7 @@ def save_lang_settings(select_language):
     with open(json_file_path, "r") as f:
         config = json.load(f)
 
-    if select_language == "False":
+    if select_language == "Language automatically detected in the system":
         config["override"] = False
     else:
         config["override"] = True
@@ -41,7 +41,7 @@ def lang_tab():
         select_language = gr.Dropdown(
             label="Override language settings (Restart required)",
             value=get_language_settings(),
-            choices=["False"] + i18n._get_available_languages(),
+            choices=["Language automatically detected in the system"] + i18n._get_available_languages(),
             interactive=True,
         )
 
