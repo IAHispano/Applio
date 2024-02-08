@@ -17,7 +17,7 @@ def obtain_tag_name():
         return None
 
 def compare_version():
-    local_version = "3.0.4"
+    local_version = "3.0.5"
     online_version = obtain_tag_name()
     elements_online_version = list(map(int, online_version.split('.')))
     elements_local_version = list(map(int, local_version.split('.')))
