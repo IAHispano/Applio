@@ -29,7 +29,7 @@ def get_existing_folders():
 
 def save_existing_folders(existing_folders):
     with open(json_file_path, "r") as file:
-        config = json.load(file)  
+        config = json.load(file)
         config["plugins"] = existing_folders
     with open(json_file_path, "w") as file:
         json.dump(config, file, indent=2)
