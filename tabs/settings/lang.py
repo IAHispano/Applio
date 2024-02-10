@@ -8,49 +8,47 @@ sys.path.append(now_dir)
 
 i18n = I18nAuto()
 
-json_file_path = os.path.join(now_dir, "assets", "i18n", "override_lang.json")
+config_file = os.path.join(now_dir, "assets", "config.json")
 
 
 def get_language_settings():
-    with open(json_file_path, "r") as f:
+    with open(config_file, "r") as f:
         config = json.load(f)
 
-    if config["override"] == False:
-        return "False"
+    if config["lang"]["override"] == False:
+        return "Language automatically detected in the system"
     else:
-        return config["language"]
+        return config["lang"]["selected_lang"]
 
 
-def save_lang_settings(select_language):
-    json_file_path = os.path.join(now_dir, "assets", "i18n", "override_lang.json")
-
-    with open(json_file_path, "r") as f:
+def save_lang_settings(selected_language):
+    with open(config_file, "r") as f:
         config = json.load(f)
 
-    if select_language == "Language automatically detected in the system":
-        config["override"] = False
+    if selected_language == "Language automatically detected in the system":
+        config["lang"]["override"] = False
     else:
-        config["override"] = True
-        config["language"] = select_language
+        config["lang"]["override"] = True
+        config["lang"]["selected_lang"] = selected_language
 
     gr.Info("Language settings have been saved. Restart Applio to apply the changes.")
 
-    with open(json_file_path, "w") as f:
+    with open(config_file, "w") as f:
         json.dump(config, f, indent=2)
 
 
 def lang_tab():
     with gr.Column():
-        select_language = gr.Dropdown(
-            label="Override language settings (Restart required)",
+        selected_language = gr.Dropdown(
+            label="Language settings (Restart required)",
             value=get_language_settings(),
             choices=["Language automatically detected in the system"]
             + i18n._get_available_languages(),
             interactive=True,
         )
 
-        select_language.change(
+        selected_language.change(
             fn=save_lang_settings,
-            inputs=[select_language],
+            inputs=[selected_language],
             outputs=[],
         )

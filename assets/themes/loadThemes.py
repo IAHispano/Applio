@@ -1,14 +1,15 @@
-import ast
 import json
 import os
 import importlib
-import requests
+import gradio as gr
 
+now_dir = os.getcwd()
 
 folder = os.path.dirname(os.path.abspath(__file__))
 folder = os.path.dirname(folder)
 folder = os.path.dirname(folder)
 folder = os.path.join(folder, "assets", "themes")
+config_file = os.path.join(now_dir, "assets", "config.json")
 
 import sys
 
@@ -50,45 +51,62 @@ def get_list():
 def select_theme(name):
     selected_file = name + ".py"
     full_path = os.path.join(folder, selected_file)
+
     if not os.path.exists(full_path):
-        with open(os.path.join(folder, "theme.json"), "w") as json_file:
-            json.dump({"file": None, "class": name}, json_file)
+        with open(config_file, "r") as json_file:
+            config_data = json.load(json_file)
+            
+        config_data["theme"]["file"] = None
+        config_data["theme"]["class"] = name
+
+        with open(config_file, "w") as json_file:
+            json.dump(config_data, json_file, indent=2)
         print(f"Theme {name} successfully selected, restart applio.")
+        gr.Info(f"Theme {name} successfully selected, restart applio.")
         return
+
     class_found = get_class(full_path)
     if class_found:
-        with open(os.path.join(folder, "theme.json"), "w") as json_file:
-            json.dump({"file": selected_file, "class": class_found}, json_file)
+        with open(config_file, "r") as json_file:
+            config_data = json.load(json_file)
+            
+        config_data["theme"]["file"] = selected_file
+        config_data["theme"]["class"] = class_found
+
+        with open(config_file, "w") as json_file:
+            json.dump(config_data, json_file, indent=2)
         print(f"Theme {name} successfully selected, restart applio.")
+        gr.Info(f"Theme {name} successfully selected, restart applio.")
     else:
         print(f"Theme {name} was not found.")
 
 
 def read_json():
-    json_file_name = os.path.join(folder, "theme.json")
     try:
-        with open(json_file_name, "r") as json_file:
+        with open(config_file, "r") as json_file:
             data = json.load(json_file)
-            selected_file = data.get("file")
-            class_name = data.get("class")
-            if not selected_file == None and class_name:
+            selected_file = data["theme"]["file"]
+            class_name = data["theme"]["class"]
+
+            if selected_file is not None and class_name:
                 return class_name
             elif selected_file == None and class_name:
                 return class_name
             else:
                 return "ParityError/Interstellar"
-    except:
+    except Exception as e:
+        print(f"Error reading config.json: {e}")
         return "ParityError/Interstellar"
 
 
 def load_json():
-    json_file_name = os.path.join(folder, "theme.json")
     try:
-        with open(json_file_name, "r") as json_file:
+        with open(config_file, "r") as json_file:
             data = json.load(json_file)
-            selected_file = data.get("file")
-            class_name = data.get("class")
-            if not selected_file == None and class_name:
+            selected_file = data["theme"]["file"]
+            class_name = data["theme"]["class"]
+
+            if selected_file is not None and class_name:
                 module = importlib.import_module(selected_file[:-3])
                 obtained_class = getattr(module, class_name)
                 instance = obtained_class()

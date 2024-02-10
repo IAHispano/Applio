@@ -1,5 +1,16 @@
+import os, sys
+import json
 import requests
 
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+
+config_file = os.path.join(now_dir, "assets", "config.json")
+
+def load_local_version():
+    with open(config_file, "r") as file:
+            config = json.load(file)  
+            return config["version"]
 
 def obtain_tag_name():
     url = "https://api.github.com/repos/IAHispano/Applio/releases/latest"
@@ -19,7 +30,7 @@ def obtain_tag_name():
 
 
 def compare_version():
-    local_version = "3.0.6"
+    local_version = load_local_version()
     online_version = obtain_tag_name()
     elements_online_version = list(map(int, online_version.split(".")))
     elements_local_version = list(map(int, local_version.split(".")))

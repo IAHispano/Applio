@@ -14,21 +14,25 @@ sys.path.append(now_dir)
 plugins_path = os.path.join(now_dir, "tabs", "plugins", "installed")
 if not os.path.exists(plugins_path):
     os.makedirs(plugins_path)
-json_file_path = os.path.join(now_dir, "tabs", "plugins", "installed_list.json")
+json_file_path = os.path.join(now_dir, "assets", "config.json")
 current_folders = os.listdir(plugins_path)
 
 
 def get_existing_folders():
     if os.path.exists(json_file_path):
         with open(json_file_path, "r") as file:
-            return json.load(file)
+            config = json.load(file)
+            return config["plugins"]
     else:
         return []
 
 
 def save_existing_folders(existing_folders):
+    with open(json_file_path, "r") as file:
+        config = json.load(file)  
+        config["plugins"] = existing_folders
     with open(json_file_path, "w") as file:
-        json.dump(existing_folders, file)
+        json.dump(config, file, indent=2)
 
 
 def save_plugin_dropbox(dropbox):

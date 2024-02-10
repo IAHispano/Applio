@@ -13,7 +13,7 @@ from tabs.extra.extra import extra_tab
 from tabs.report.report import report_tab
 from tabs.download.download import download_tab
 from tabs.tts.tts import tts_tab
-from tabs.settings.presence import presence_tab
+from tabs.settings.presence import presence_tab, load_config
 from tabs.settings.themes import theme_tab
 from tabs.plugins.plugins import plugins_tab
 from tabs.settings.version import version_tab
@@ -26,7 +26,8 @@ import assets.installation_checker as installation_checker
 from assets.discord_presence import RPCManager
 
 i18n = I18nAuto()
-RPCManager.start_presence()
+if load_config == True:
+    RPCManager.start_presence()
 installation_checker.check_installation()
 logging.getLogger("uvicorn").disabled = True
 logging.getLogger("fairseq").disabled = True

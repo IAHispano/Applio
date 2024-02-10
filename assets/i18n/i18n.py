@@ -12,11 +12,11 @@ class I18nAuto:
 
     def __init__(self, language=None):
         with open(
-            os.path.join(now_dir, "assets", "i18n", "override_lang.json"), "r"
+            os.path.join(now_dir, "assets", "config.json"), "r"
         ) as f:
             config = json.load(f)
-            override = config["override"]
-            lang_prefix = config["language"]
+            override = config["lang"]["override"]
+            lang_prefix = config["lang"]["selected_lang"]
 
         self.language = lang_prefix
 
