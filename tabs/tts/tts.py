@@ -35,6 +35,7 @@ indexes_list = [
     if name.endswith(".index") and "trained" not in name
 ]
 
+
 def change_choices():
     names = [
         os.path.join(root, file)
@@ -71,9 +72,7 @@ def get_indexes():
 
 def match_index(model_file: str) -> tuple:
     model_files_trip = re.sub(r"\.pth|\.onnx$", "", model_file)
-    model_file_name = os.path.split(model_files_trip)[
-        -1
-    ] 
+    model_file_name = os.path.split(model_files_trip)[-1]
     if re.match(r".+_e\d+_s\d+$", model_file_name):
         base_model_name = model_file_name.rsplit("_", 2)[0]
     else:
@@ -111,6 +110,7 @@ def match_index(model_file: str) -> tuple:
         return best_match_index_path
 
     return ""
+
 
 def process_input(file_path):
     with open(file_path, "r") as file:
