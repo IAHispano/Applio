@@ -2,8 +2,6 @@ import os, sys
 import gradio as gr
 import regex as re
 import json
-import shutil
-import datetime
 import random
 
 from core import (
@@ -18,26 +16,7 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 model_root = os.path.join(now_dir, "logs")
-audio_root = os.path.join(now_dir, "assets", "audios")
-
 model_root_relative = os.path.relpath(model_root, now_dir)
-audio_root_relative = os.path.relpath(audio_root, now_dir)
-
-sup_audioext = {
-    "wav",
-    "mp3",
-    "flac",
-    "ogg",
-    "opus",
-    "m4a",
-    "mp4",
-    "aac",
-    "alac",
-    "wma",
-    "aiff",
-    "webm",
-    "ac3",
-}
 
 names = [
     os.path.join(root, file)
@@ -56,16 +35,6 @@ indexes_list = [
     if name.endswith(".index") and "trained" not in name
 ]
 
-audio_paths = [
-    os.path.join(root, name)
-    for root, _, files in os.walk(audio_root_relative, topdown=False)
-    for name in files
-    if name.endswith(tuple(sup_audioext))
-    and root == audio_root_relative
-    and "_output" not in name
-]
-
-
 def change_choices():
     names = [
         os.path.join(root, file)
@@ -83,19 +52,9 @@ def change_choices():
         for name in files
         if name.endswith(".index") and "trained" not in name
     ]
-
-    audio_paths = [
-        os.path.join(root, name)
-        for root, _, files in os.walk(audio_root_relative, topdown=False)
-        for name in files
-        if name.endswith(tuple(sup_audioext))
-        and root == audio_root_relative
-        and "_output" not in name
-    ]
     return (
         {"choices": sorted(names), "__type__": "update"},
         {"choices": sorted(indexes_list), "__type__": "update"},
-        {"choices": sorted(audio_paths), "__type__": "update"},
     )
 
 
@@ -114,9 +73,7 @@ def match_index(model_file: str) -> tuple:
     model_files_trip = re.sub(r"\.pth|\.onnx$", "", model_file)
     model_file_name = os.path.split(model_files_trip)[
         -1
-    ]  # Extract only the name, not the directory
-
-    # Check if the sid0strip has the specific ending format _eXXX_sXXX
+    ] 
     if re.match(r".+_e\d+_s\d+$", model_file_name):
         base_model_name = model_file_name.rsplit("_", 2)[0]
     else:
@@ -125,7 +82,6 @@ def match_index(model_file: str) -> tuple:
     sid_directory = os.path.join(model_root_relative, base_model_name)
     directories_to_search = [sid_directory] if os.path.exists(sid_directory) else []
     directories_to_search.append(model_root_relative)
-
     matching_index_files = []
 
     for directory in directories_to_search:
@@ -136,13 +92,12 @@ def match_index(model_file: str) -> tuple:
                     name.lower() in filename.lower()
                     for name in [model_file_name, base_model_name]
                 )
-
-                # If in the specific directory, it's automatically a match
                 folder_match = directory == sid_directory
 
                 if name_match or folder_match:
                     index_path = os.path.join(directory, filename)
-                    if index_path in indexes_list:
+                    updated_indexes_list = get_indexes()
+                    if index_path in updated_indexes_list:
                         matching_index_files.append(
                             (
                                 index_path,
@@ -150,46 +105,12 @@ def match_index(model_file: str) -> tuple:
                                 " " not in filename,
                             )
                         )
-
     if matching_index_files:
-        # Sort by favoring files without spaces and by size (largest size first)
         matching_index_files.sort(key=lambda x: (-x[2], -x[1]))
         best_match_index_path = matching_index_files[0][0]
         return best_match_index_path
 
     return ""
-
-
-def save_to_wav(record_button):
-    if record_button is None:
-        pass
-    else:
-        path_to_file = record_button
-        new_name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".wav"
-        target_path = os.path.join(audio_root_relative, os.path.basename(new_name))
-
-        shutil.move(path_to_file, target_path)
-        return target_path
-
-
-def save_to_wav2(upload_audio):
-    file_path = upload_audio
-    target_path = os.path.join(audio_root_relative, os.path.basename(file_path))
-
-    if os.path.exists(target_path):
-        os.remove(target_path)
-
-    shutil.copy(file_path, target_path)
-    return target_path
-
-
-def delete_outputs():
-    for root, _, files in os.walk(audio_root_relative, topdown=False):
-        for name in files:
-            if name.endswith(tuple(sup_audioext)) and name.__contains__("_output"):
-                os.remove(os.path.join(root, name))
-    gr.Info(f"Outputs cleared!")
-
 
 def process_input(file_path):
     with open(file_path, "r") as file:
