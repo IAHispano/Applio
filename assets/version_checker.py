@@ -7,10 +7,12 @@ sys.path.append(now_dir)
 
 config_file = os.path.join(now_dir, "assets", "config.json")
 
+
 def load_local_version():
     with open(config_file, "r") as file:
-            config = json.load(file)  
-            return config["version"]
+        config = json.load(file)
+        return config["version"]
+
 
 def obtain_tag_name():
     url = "https://api.github.com/repos/IAHispano/Applio/releases/latest"

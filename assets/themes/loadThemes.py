@@ -55,7 +55,7 @@ def select_theme(name):
     if not os.path.exists(full_path):
         with open(config_file, "r") as json_file:
             config_data = json.load(json_file)
-            
+
         config_data["theme"]["file"] = None
         config_data["theme"]["class"] = name
 
@@ -69,7 +69,7 @@ def select_theme(name):
     if class_found:
         with open(config_file, "r") as json_file:
             config_data = json.load(json_file)
-            
+
         config_data["theme"]["file"] = selected_file
         config_data["theme"]["class"] = class_found
 

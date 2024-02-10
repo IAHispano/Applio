@@ -11,17 +11,20 @@ sys.path.append("..")
 i18n = I18nAuto()
 config_file = os.path.join(now_dir, "assets", "config.json")
 
+
 def load_config():
     with open(config_file, "r") as file:
-            config = json.load(file)  
-            return config["discord_presence"]
-    
+        config = json.load(file)
+        return config["discord_presence"]
+
+
 def save_config(value):
     with open(config_file, "r") as file:
-        config = json.load(file)  
+        config = json.load(file)
         config["discord_presence"] = value
     with open(config_file, "w") as file:
         json.dump(config, file, indent=2)
+
 
 def presence_tab():
     with gr.Row():
