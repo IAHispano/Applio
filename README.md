@@ -91,10 +91,6 @@ We appreciate all contributions ❤️
 
 ## Credits
 - [VITS](https://github.com/jaywalnut310/vits) by jaywalnut310
-- [Retrieval-based-Voice-Conversion-WebUI](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) by RVC-Project
-- [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork) by Mangio621
-- [Mangio-RVC-Tweaks](https://github.com/alexlnkp/Mangio-RVC-Tweaks) by alexlnkp
-- [RVG_tts](https://github.com/Foxify52/RVG_tts) by Foxify52
 - [RMVPE](https://github.com/Dream-High/RMVPE) by Dream-High
 - [ContentVec](https://github.com/auspicious3000/contentvec/) by auspicious3000
 - [HIFIGAN](https://github.com/jik876/hifi-gan) by jik876
@@ -104,6 +100,8 @@ We appreciate all contributions ❤️
 - [Ilaria-Audio-Analyzer](https://github.com/TheStingerX/Ilaria-Audio-Analyzer) by TheStingerX
 - [gradio-screen-recorder](https://huggingface.co/spaces/gstaff/gradio-screen-recorder) by gstaff
 - [RVC_CLI](https://github.com/blaise-tk/RVC_CLI) by blaise-tk
+  - [Retrieval-based-Voice-Conversion-WebUI](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) by RVC-Project
+  - [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork) by Mangio621
 
 ### Contributors
 <a href="https://github.com/IAHispano/Applio/graphs/contributors" target="_blank">
