@@ -108,7 +108,7 @@
   "## Download Model": "## Descargar modelo",
   "Model Link": "Enlace de modelo",
   "Introduce the model link": "Introducir el enlace del modelo",
-  "Download Model": "Download Model",
+  "Download Model": "Descargar Modelo",
   "## Drop files": "## Soltar archivos",
   "Drag your .pth file and .index file into this space. Drag one and then the other.": "Arrastre el archivo .pth y el archivo .index a este espacio. Arrastre uno y luego el otro.",
   "TTS Voices": "Voces TTS",

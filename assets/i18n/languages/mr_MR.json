@@ -101,7 +101,7 @@
   "## Download Model": "## मॉडेल डाऊनलोड करा",
   "Model Link": "मॉडेल लिंक",
   "Introduce the model link": "मॉडेल लिंक ची ओळख करून द्या",
-  "Download Model": "Descargar Modelo",
+  "Download Model": "मॉडेल डाउनलोड करा",
   "## Drop files": "## फाइल्स ड्रॉप करा",
   "Drag your .pth file and .index file into this space. Drag one and then the other.": "आपली .pth फाइल आणि .अनुक्रमणिका फाईल या जागेत खेचून घ्या. एकाला ओढून घ्या आणि मग दुसरं.",
   "TTS Voices": "टीटीएस आवाज",

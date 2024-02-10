@@ -101,7 +101,7 @@
   "## Download Model": "## মডেল ডাউনলোড করুন",
   "Model Link": "মডেল লিংক",
   "Introduce the model link": "মডেল লিঙ্কটি পরিচয় করিয়ে দিন",
-  "Download Model": "Descargar Modelo",
+  "Download Model": "মডেল ডাউনলোড করুন",
   "## Drop files": "## ফাইল ড্রপ করুন",
   "Drag your .pth file and .index file into this space. Drag one and then the other.": "আপনার .pth ফাইল এবং .index ফাইলটি এই স্পেসে টেনে আনুন। একটা টেনে আনুন, তারপর অন্যটা।",
   "TTS Voices": "টিটিএস ভয়েসেস",

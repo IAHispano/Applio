@@ -124,7 +124,7 @@
   "## Download Model": "## 모델 다운로드",
   "Model Link": "모델 링크",
   "Introduce the model link": "모델 소개 링크",
-  "Download Model": "Descargar Modelo",
+  "Download Model": "모델 다운로드",
   "## Drop files": "## 파일 드롭",
   "Drag your .pth file and .index file into this space. Drag one and then the ot드her.": ".pth 파일과 .index 파일을 이 공간으로 드래그하세요. 하나를 드래그한 다음 다른 하나를 드래그하세요.",
 

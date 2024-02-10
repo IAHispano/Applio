@@ -101,7 +101,7 @@
   "## Download Model": "## Tải xuống mô hình",
   "Model Link": "Liên kết mô hình",
   "Introduce the model link": "Giới thiệu link mô hình",
-  "Download Model": "Descargar Modelo",
+  "Download Model": "Tải xuống mô hình",
   "## Drop files": "## Thả tệp",
   "Drag your .pth file and .index file into this space. Drag one and then the other.": "Kéo tệp .pth và tệp .index của bạn vào không gian này. Kéo cái này rồi cái kia.",
   "TTS Voices": "Tiếng nói TTS",
