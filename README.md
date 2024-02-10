@@ -84,7 +84,6 @@ We appreciate all contributions ❤️
 ## Planned Features
 - Implement: Support for Apple Devices ([Issue Link](https://github.com/pytorch/pytorch/issues/77764))
 - Implement: rmvpe_gpu
-- Implement: Theme selector, RPC toggle & version checker
 - Implement: Overtraining detector
 - Implement: Autotune
 - Implement: Training stop
