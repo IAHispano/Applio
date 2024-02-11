@@ -6,7 +6,6 @@ import sys
 def restart_applio():
     if os.name == "nt":
         os.system("cls")
-    gr.Info("Applio has been restarted please press enter in the console to continue")
     python = sys.executable
     os.execl(python, python, *sys.argv)
 
