@@ -22,7 +22,7 @@ def start_flask():
     try:
         sock.connect((host, port))
         print(
-            f"Something is listening on port {port}; check open connection and restart Applio."
+            f"Something is listening on port {port}; Probably the Flask server is already running."
         )
         print("Trying to start it anyway")
         sock.close()
