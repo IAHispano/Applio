@@ -11,11 +11,14 @@ from assets.flask.server import start_flask, load_config_flask, save_config
 
 i18n = I18nAuto()
 
+
 def flask_server_tab():
     with gr.Row():
         with gr.Column():
             flask_checkbox = gr.Checkbox(
-                label=i18n("Enable Applio integration with applio.org/models using flask"),
+                label=i18n(
+                    "Enable Applio integration with applio.org/models using flask"
+                ),
                 interactive=True,
                 value=load_config_flask(),
             )
@@ -31,7 +34,7 @@ def toggle(checkbox):
     if load_config_flask() == True:
         start_flask()
     else:
-        try:   
+        try:
             requests.post("http://localhost:8000/shutdown")
         except requests.exceptions.ConnectionError:
             pass
