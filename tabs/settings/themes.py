@@ -9,7 +9,7 @@ from assets.i18n.i18n import I18nAuto
 import assets.themes.loadThemes as loadThemes
 
 now_dir = os.getcwd()
-sys.path.append("..")
+sys.path.append(now_dir)
 
 i18n = I18nAuto()
 

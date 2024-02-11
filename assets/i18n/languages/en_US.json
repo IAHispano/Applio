@@ -136,6 +136,7 @@
   "Output Path for RVC Audio": "Output Path for RVC Audio",
 
   "Enable Applio integration with Discord presence": "Enable Applio integration with Discord presence",
+  "Enable Applio integration with applio.org/models using flask": "Enable Applio integration with applio.org/models using flask",
   "Theme (Restart required)": "Theme (Restart required)",
 
   "Plugin Installer": "Plugin Installer",

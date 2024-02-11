@@ -4,7 +4,9 @@ import sys
 
 
 def restart_applio():
-    if os.name == "nt":
+    if os.name != "nt":
+        os.system("clear")
+    else:
         os.system("cls")
     python = sys.executable
     os.execl(python, python, *sys.argv)

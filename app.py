@@ -13,25 +13,30 @@ from tabs.extra.extra import extra_tab
 from tabs.report.report import report_tab
 from tabs.download.download import download_tab
 from tabs.tts.tts import tts_tab
-from tabs.settings.presence import presence_tab, load_config
+from tabs.settings.presence import presence_tab, load_config_presence
+from tabs.settings.flask_server import flask_server_tab
 from tabs.settings.themes import theme_tab
 from tabs.plugins.plugins import plugins_tab
 from tabs.settings.version import version_tab
-from tabs.settings.restart import restart_tab
 from tabs.settings.lang import lang_tab
+from tabs.settings.restart import restart_tab
 
 # Assets
 import assets.themes.loadThemes as loadThemes
 from assets.i18n.i18n import I18nAuto
 import assets.installation_checker as installation_checker
 from assets.discord_presence import RPCManager
+from assets.flask.server import start_flask, load_config_flask
 
 i18n = I18nAuto()
-if load_config == True:
+if load_config_presence() == True:
     RPCManager.start_presence()
 installation_checker.check_installation()
 logging.getLogger("uvicorn").disabled = True
 logging.getLogger("fairseq").disabled = True
+if load_config_flask() == True:
+    print("Starting Flask server")
+    start_flask()
 
 my_applio = loadThemes.load_json()
 if my_applio:
@@ -74,6 +79,7 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
 
     with gr.Tab(i18n("Settings")):
         presence_tab()
+        flask_server_tab()
         theme_tab()
         version_tab()
         lang_tab()

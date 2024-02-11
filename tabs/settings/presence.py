@@ -6,13 +6,13 @@ from assets.i18n.i18n import I18nAuto
 from assets.discord_presence import RPCManager
 
 now_dir = os.getcwd()
-sys.path.append("..")
+sys.path.append(now_dir)
 
 i18n = I18nAuto()
 config_file = os.path.join(now_dir, "assets", "config.json")
 
 
-def load_config():
+def load_config_presence():
     with open(config_file, "r") as file:
         config = json.load(file)
         return config["discord_presence"]
@@ -32,7 +32,7 @@ def presence_tab():
             presence = gr.Checkbox(
                 label=i18n("Enable Applio integration with Discord presence"),
                 interactive=True,
-                value=load_config(),
+                value=load_config_presence(),
             )
             presence.change(
                 fn=toggle,
@@ -43,7 +43,7 @@ def presence_tab():
 
 def toggle(checkbox):
     save_config(bool(checkbox))
-    if load_config() == True:
+    if load_config_presence() == True:
         try:
             RPCManager.start_presence()
         except KeyboardInterrupt:

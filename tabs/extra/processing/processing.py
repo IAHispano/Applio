@@ -1,9 +1,8 @@
-import sys
-
-sys.path.append("..")
-import os
+import os, sys
 
 now_dir = os.getcwd()
+sys.path.append(now_dir)
+
 from rvc.train.process_ckpt import (
     extract_small_model,
 )
