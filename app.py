@@ -77,7 +77,7 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
         theme_tab()
         version_tab()
         lang_tab()
-        restart_tab()        
+        restart_tab()
 
 
 if __name__ == "__main__":

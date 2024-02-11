@@ -2,15 +2,18 @@ import gradio as gr
 import os
 import sys
 
+
 def restart_applio():
-    if os.name == "nt": 
+    if os.name == "nt":
         os.system("cls")
     python = sys.executable
     os.execl(python, python, *sys.argv)
-    
+
+
 from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
+
 
 def restart_tab():
     with gr.Row():
