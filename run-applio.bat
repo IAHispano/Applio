@@ -9,4 +9,5 @@ if not exist env (
 )
 
 env\python.exe app.py --open
+echo.
 pause
