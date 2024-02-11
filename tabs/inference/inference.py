@@ -122,55 +122,6 @@ def get_indexes():
     return indexes_list if indexes_list else ""
 
 
-def match_index(model_file: str) -> tuple:
-    model_files_trip = re.sub(r"\.pth|\.onnx$", "", model_file)
-    model_file_name = os.path.split(model_files_trip)[
-        -1
-    ]  # Extract only the name, not the directory
-
-    # Check if the sid0strip has the specific ending format _eXXX_sXXX
-    if re.match(r".+_e\d+_s\d+$", model_file_name):
-        base_model_name = model_file_name.rsplit("_", 2)[0]
-    else:
-        base_model_name = model_file_name
-
-    sid_directory = os.path.join(model_root_relative, base_model_name)
-    directories_to_search = [sid_directory] if os.path.exists(sid_directory) else []
-    directories_to_search.append(model_root_relative)
-    matching_index_files = []
-
-    for directory in directories_to_search:
-        for filename in os.listdir(directory):
-            if filename.endswith(".index") and "trained" not in filename:
-                # Condition to match the name
-                name_match = any(
-                    name.lower() in filename.lower()
-                    for name in [model_file_name, base_model_name]
-                )
-
-                # If in the specific directory, it's automatically a match
-                folder_match = directory == sid_directory
-
-                if name_match or folder_match:
-                    index_path = os.path.join(directory, filename)
-                    updated_indexes_list = get_indexes()
-                    if index_path in updated_indexes_list:
-                        matching_index_files.append(
-                            (
-                                index_path,
-                                os.path.getsize(index_path),
-                                " " not in filename,
-                            )
-                        )
-    if matching_index_files:
-        # Sort by favoring files without spaces and by size (largest size first)
-        matching_index_files.sort(key=lambda x: (-x[2], -x[1]))
-        best_match_index_path = matching_index_files[0][0]
-        return best_match_index_path
-
-    return ""
-
-
 def save_to_wav(record_button):
     if record_button is None:
         pass
@@ -228,7 +179,7 @@ def inference_tab():
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 choices=get_indexes(),
-                value=match_index(default_weight) if default_weight else "",
+                value=matchindex(default_weight) if default_weight else "",
                 interactive=True,
                 allow_custom_value=True,
             )
