@@ -35,6 +35,7 @@ indexes_list = [
     if name.endswith(".index") and "trained" not in name
 ]
 
+
 def change_choices():
     names = [
         os.path.join(root, file)
