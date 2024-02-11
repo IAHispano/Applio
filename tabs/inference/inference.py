@@ -201,6 +201,15 @@ def delete_outputs():
         for name in files:
             if name.endswith(tuple(sup_audioext)) and name.__contains__("_output"):
                 os.remove(os.path.join(root, name))
+                
+def matchindex(model_file_value):
+    if model_file_value:
+        model_folder = os.path.dirname(model_file_value)
+        index_files = get_indexes()
+        for index_file in index_files:
+            if os.path.dirname(index_file) == model_folder:
+                return index_file
+    return ""
 
 
 # Inference tab
@@ -228,16 +237,17 @@ def inference_tab():
             unload_button = gr.Button(i18n("Unload Voice"))
 
             unload_button.click(
-                fn=lambda: ({"value": "", "__type__": "update"}),
+                fn=lambda: ({"value": "", "__type__": "update"}, {"value": "", "__type__": "update"}),
                 inputs=[],
-                outputs=[model_file],
+                outputs=[model_file, index_file],
             )
 
             model_file.select(
-                fn=match_index,
+                fn=lambda model_file_value: matchindex(model_file_value),
                 inputs=[model_file],
                 outputs=[index_file],
             )
+
 
     # Single inference tab
     with gr.Tab(i18n("Single")):
