@@ -75,7 +75,7 @@ def process_input(file_path):
     gr.Info(f"The text from the txt file has been loaded!")
     return file_contents, None
 
-def matchindex(model_file_value):
+def match_index(model_file_value):
     if model_file_value:
         model_folder = os.path.dirname(model_file_value)
         index_files = get_indexes()
@@ -95,7 +95,7 @@ def tts_tab():
                 value=default_weight,
                 allow_custom_value=True,
             )
-            best_default_index_path = matchindex(model_file.value)
+            best_default_index_path = match_index(model_file.value)
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 choices=get_indexes(),
@@ -114,7 +114,7 @@ def tts_tab():
             )
 
             model_file.select(
-                fn=lambda model_file_value: matchindex(model_file_value),
+                fn=lambda model_file_value: match_index(model_file_value),
                 inputs=[model_file],
                 outputs=[index_file],
             )
