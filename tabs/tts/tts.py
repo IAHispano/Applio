@@ -76,6 +76,7 @@ def process_input(file_path):
     gr.Info(f"The text from the txt file has been loaded!")
     return file_contents, None
 
+
 def match_index(model_file_value):
     if model_file_value:
         model_folder = os.path.dirname(model_file_value)
@@ -84,7 +85,8 @@ def match_index(model_file_value):
             if os.path.dirname(index_file) == model_folder:
                 return index_file
     return ""
-    
+
+
 def tts_tab():
     default_weight = random.choice(names) if names else ""
     with gr.Row():
@@ -109,7 +111,10 @@ def tts_tab():
             unload_button = gr.Button(i18n("Unload Voice"))
 
             unload_button.click(
-                fn=lambda: ({"value": "", "__type__": "update"}, {"value": "", "__type__": "update"}),
+                fn=lambda: (
+                    {"value": "", "__type__": "update"},
+                    {"value": "", "__type__": "update"},
+                ),
                 inputs=[],
                 outputs=[model_file, index_file],
             )
