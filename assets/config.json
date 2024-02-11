@@ -1,7 +1,7 @@
 {
   "theme": {
-    "file": "Applio.py",
-    "class": "Applio"
+    "file": null,
+    "class": "coding-alt/soft"
   },
   "plugins": [],
   "discord_presence": true,
