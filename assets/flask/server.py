@@ -17,6 +17,7 @@ port = 8000
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.settimeout(2)
 
+
 def start_flask():
     try:
         sock.connect((host, port))
@@ -29,7 +30,9 @@ def start_flask():
         time.sleep(3)
         script_path = os.path.join(now_dir, "assets", "flask", "routes.py")
         try:
-            subprocess.Popen([env_path, script_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
+            subprocess.Popen(
+                [env_path, script_path], creationflags=subprocess.CREATE_NEW_CONSOLE
+            )
         except Exception as e:
             print(f"Failed to start the Flask server")
             print(e)
@@ -37,15 +40,19 @@ def start_flask():
         sock.close()
         script_path = os.path.join(now_dir, "assets", "flask", "routes.py")
         try:
-            subprocess.Popen([env_path, script_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
+            subprocess.Popen(
+                [env_path, script_path], creationflags=subprocess.CREATE_NEW_CONSOLE
+            )
         except Exception as e:
             print("Failed to start the Flask server")
             print(e)
+
 
 def load_config_flask():
     with open(config_file, "r") as file:
         config = json.load(file)
         return config["flask_server"]
+
 
 def save_config(value):
     with open(config_file, "r") as file:
