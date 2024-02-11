@@ -17,6 +17,7 @@ from tabs.settings.presence import presence_tab, load_config
 from tabs.settings.themes import theme_tab
 from tabs.plugins.plugins import plugins_tab
 from tabs.settings.version import version_tab
+from tabs.settings.restart import restart_tab
 from tabs.settings.lang import lang_tab
 
 # Assets
@@ -76,6 +77,8 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
         theme_tab()
         version_tab()
         lang_tab()
+    with gr.Tab(i18n("Restart")):
+        restart_tab()        
 
 
 if __name__ == "__main__":
