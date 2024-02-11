@@ -153,7 +153,7 @@ def delete_outputs():
             if name.endswith(tuple(sup_audioext)) and name.__contains__("_output"):
                 os.remove(os.path.join(root, name))
                 
-def matchindex(model_file_value):
+def match_index(model_file_value):
     if model_file_value:
         model_folder = os.path.dirname(model_file_value)
         index_files = get_indexes()
@@ -179,7 +179,7 @@ def inference_tab():
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 choices=get_indexes(),
-                value=matchindex(default_weight) if default_weight else "",
+                value=match_index(default_weight) if default_weight else "",
                 interactive=True,
                 allow_custom_value=True,
             )
@@ -194,7 +194,7 @@ def inference_tab():
             )
 
             model_file.select(
-                fn=lambda model_file_value: matchindex(model_file_value),
+                fn=lambda model_file_value: match_index(model_file_value),
                 inputs=[model_file],
                 outputs=[index_file],
             )
