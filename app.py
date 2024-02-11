@@ -77,7 +77,6 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
         theme_tab()
         version_tab()
         lang_tab()
-    with gr.Tab(i18n("Restart")):
         restart_tab()        
 
 
