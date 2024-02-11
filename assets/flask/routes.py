@@ -15,7 +15,7 @@ def download(url):
     file_path = run_download_script(url)
     if file_path == "Model downloaded successfully.":
         if "text/html" in request.headers.get("Accept", ""):
-            return redirect("https://applio.org", code=302)
+            return redirect("https://applio.org/models/downloaded", code=302)
         else:
             return ""
     else:
