@@ -68,6 +68,7 @@
   "Custom Output Path": "Custom Output Path",
   "Output Path": "Output Path",
   "Split Audio": "Split Audio",
+  "Autotune": "Autotune",
   "Pitch": "Pitch",
   "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness": "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness",
   "Search Feature Ratio": "Search Feature Ratio",

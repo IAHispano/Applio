@@ -61,6 +61,7 @@
   "Custom Output Path": "Ruta de salida personalizada",
   "Output Path": "Ruta de salida",
   "Split Audio": "Audio dividido",
+  "Autotune": "Autotune",
   "Pitch": "Tono",
   "If >=3: apply median filtering to the harvested pitch results. The value represents the filter radius and can reduce breathiness": "Si >=3: aplique el filtrado de la mediana a los resultados de la parcela cosechada. El valor representa el radio del filtro y puede reducir la respiración",
   "Search Feature Ratio": "Relación de características de búsqueda",
