@@ -164,7 +164,18 @@ def tts_tab():
                 value=os.path.join(now_dir, "assets", "audios", "tts_rvc_output.wav"),
                 interactive=True,
             )
-
+            split_audio = gr.Checkbox(
+                label=i18n("Split Audio"),
+                visible=True,
+                value=False,
+                interactive=True,
+            )
+            autotune = gr.Checkbox(
+                label=i18n("Autotune"),
+                visible=True,
+                value=False,
+                interactive=True,
+            )
             pitch = gr.Slider(
                 minimum=-24,
                 maximum=24,
@@ -243,6 +254,8 @@ def tts_tab():
             output_rvc_path,
             model_file,
             index_file,
+            split_audio,
+            autotune,
         ],
         outputs=[vc_output1, vc_output2],
     )

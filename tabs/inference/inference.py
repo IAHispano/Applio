@@ -239,6 +239,12 @@ def inference_tab():
                     value=False,
                     interactive=True,
                 )
+                autotune = gr.Checkbox(
+                    label=i18n("Autotune"),
+                    visible=True,
+                    value=False,
+                    interactive=True,
+                )
                 pitch = gr.Slider(
                     minimum=-24,
                     maximum=24,
@@ -316,6 +322,12 @@ def inference_tab():
                 )
                 split_audio_batch = gr.Checkbox(
                     label=i18n("Split Audio"),
+                    visible=True,
+                    value=False,
+                    interactive=True,
+                )
+                autotune_batch = gr.Checkbox(
+                    label=i18n("Autotune"),
                     visible=True,
                     value=False,
                     interactive=True,
@@ -419,6 +431,7 @@ def inference_tab():
             model_file,
             index_file,
             split_audio,
+            autotune,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -435,6 +448,8 @@ def inference_tab():
             model_file,
             index_file,
             split_audio_batch,
+            autotune_batch,
+
         ],
         outputs=[vc_output3],
     )

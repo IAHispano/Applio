@@ -51,6 +51,7 @@ def vc_single(
     hop_length=None,
     output_path=None,
     split_audio=False,
+    f0_autotune=False,
 ):
     global tgt_sr, net_g, vc, hubert_model, version
 
@@ -109,6 +110,7 @@ def vc_single(
                         hop_length,
                         path,
                         False,
+                        f0_autotune,
                     )
                     # new_dir_path
             except Exception as error:
@@ -140,6 +142,7 @@ def vc_single(
                 version,
                 protect,
                 hop_length,
+                f0_autotune,
                 f0_file=f0_file,
             )
 
@@ -228,6 +231,8 @@ try:
 except IndexError:
     split_audio = None
 
+f0_autotune = sys.argv[11]
+
 sid = f0up_key
 input_audio = audio_input_path
 f0_pitch = f0up_key
@@ -237,6 +242,7 @@ file_index = index_path
 index_rate = index_rate
 output_file = audio_output_path
 split_audio = split_audio
+f0_autotune = f0_autotune
 
 get_vc(model_path, 0)
 
@@ -252,6 +258,8 @@ try:
         hop_length=hop_length,
         output_path=output_file,
         split_audio=split_audio,
+        f0_autotune=f0_autotune,
+        
     )
 
     if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
