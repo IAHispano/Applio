@@ -449,7 +449,6 @@ def inference_tab():
             index_file,
             split_audio_batch,
             autotune_batch,
-
         ],
         outputs=[vc_output3],
     )
