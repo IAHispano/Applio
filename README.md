@@ -86,10 +86,9 @@ These enhancements contribute to a more robust and scalable codebase, making the
 We appreciate all contributions ❤️
 
 ## Planned Features
-- Implement: Support for Apple Devices ([Issue Link](https://github.com/pytorch/pytorch/issues/77764))
+- Implement: Support training for Apple Devices
 - Implement: rmvpe_gpu
 - Implement: Overtraining detector
-- Implement: Autotune
 - Implement: Training stop
 - Fix: Model fusion
 
