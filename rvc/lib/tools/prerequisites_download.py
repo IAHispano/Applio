@@ -44,7 +44,7 @@ models_file = [
     "hubert_base.pt",
     "rmvpe.pt",
     "fcpe.pt",
-   #"rmvpe.onnx"
+    # "rmvpe.onnx"
 ]
 
 executables_file = ["ffmpeg.exe", "ffprobe.exe"]

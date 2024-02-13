@@ -17,11 +17,13 @@ def process_audio(file_path):
         min_silence_len = 750  # ms, adjust as needed
 
         # detect nonsilent parts
-        nonsilent_parts = detect_nonsilent(song, min_silence_len=min_silence_len, silence_thresh=silence_thresh)
+        nonsilent_parts = detect_nonsilent(
+            song, min_silence_len=min_silence_len, silence_thresh=silence_thresh
+        )
 
         # Create a new directory to store chunks
         file_dir = os.path.dirname(file_path)
-        file_name = os.path.basename(file_path).split('.')[0]
+        file_name = os.path.basename(file_path).split(".")[0]
         file_name = format_title(file_name)
         new_dir_path = os.path.join(file_dir, file_name)
         os.makedirs(new_dir_path, exist_ok=True)
@@ -58,7 +60,7 @@ def process_audio(file_path):
 def merge_audio(timestamps_file):
     try:
         # Extract prefix from the timestamps filename
-        prefix = os.path.basename(timestamps_file).replace('_timestamps.txt', '')
+        prefix = os.path.basename(timestamps_file).replace("_timestamps.txt", "")
         timestamps_dir = os.path.dirname(timestamps_file)
 
         # Open the timestamps file
@@ -98,7 +100,7 @@ def merge_audio(timestamps_file):
         # Concatenate all audio_segments and export
         merged_audio = sum(audio_segments)
         merged_audio_np = np.array(merged_audio.get_array_of_samples())
-        #print(f"Exported merged file: {merged_filename}\n")
+        # print(f"Exported merged file: {merged_filename}\n")
         return merged_audio.frame_rate, merged_audio_np
 
     except Exception as e:

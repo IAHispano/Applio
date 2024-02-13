@@ -16,6 +16,7 @@ import requests
 import six
 import tqdm
 
+
 def indent(text, prefix):
     def prefixed_lines():
         for line in text.splitlines(True):
@@ -23,12 +24,14 @@ def indent(text, prefix):
 
     return "".join(prefixed_lines())
 
+
 class FileURLRetrievalError(Exception):
     pass
 
 
 class FolderContentsMaximumLimitError(Exception):
     pass
+
 
 def parse_url(url, warning=True):
     """Parse URLs especially for Google Drive links.
@@ -93,11 +96,17 @@ def get_url_from_gdrive_confirmation(contents):
     m = re.search(r'href="/open\?id=([^"]+)"', contents)
     if m:
         url = m.groups()[0]
-        uuid = re.search(r'<input\s+type="hidden"\s+name="uuid"\s+value="([^"]+)"', contents)
+        uuid = re.search(
+            r'<input\s+type="hidden"\s+name="uuid"\s+value="([^"]+)"', contents
+        )
         uuid = uuid.groups()[0]
-        url = "https://drive.usercontent.google.com/download?id=" + url + "&confirm=t&uuid=" + uuid
+        url = (
+            "https://drive.usercontent.google.com/download?id="
+            + url
+            + "&confirm=t&uuid="
+            + uuid
+        )
         return url
-        
 
     m = re.search(r'"downloadUrl":"([^"]+)', contents)
     if m:
@@ -116,6 +125,8 @@ def get_url_from_gdrive_confirmation(contents):
         "You may need to change the permission to "
         "'Anyone with the link', or have had many accesses."
     )
+
+
 def _get_session(proxy, use_cookies, return_cookies_file=False):
     sess = requests.session()
 
@@ -211,16 +222,12 @@ def download(
         url_origin = url
         is_gdrive_download_link = True
 
-
-
     while True:
         res = sess.get(url, stream=True, verify=verify)
 
         if url == url_origin and res.status_code == 500:
             # The file could be Google Docs or Spreadsheets.
-            url = "https://drive.google.com/open?id={id}".format(
-                id=gdrive_file_id
-            )
+            url = "https://drive.google.com/open?id={id}".format(id=gdrive_file_id)
             continue
 
         if res.headers["Content-Type"].startswith("text/html"):

@@ -1,5 +1,6 @@
 import torch
 
+
 def model_information(path):
     model_data = torch.load(path, map_location="cpu")
 
@@ -12,4 +13,4 @@ def model_information(path):
     f0 = data.get("f0", "None")
     version = data.get("version", "None")
 
-    return(f"Epochs: {epochs}\nSampling rate: {sr}\nPitch guidance: {f0}\nVersion: {version}")
+    return f"Epochs: {epochs}\nSampling rate: {sr}\nPitch guidance: {f0}\nVersion: {version}"
