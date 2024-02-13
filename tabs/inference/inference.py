@@ -288,7 +288,6 @@ def inference_tab():
                         "crepe",
                         "crepe-tiny",
                         "rmvpe",
-                        "rmvpe+",
                         "fcpe",
                         "hybrid[crepe+rmvpe]",
                         "hybrid[crepe+fcpe]",

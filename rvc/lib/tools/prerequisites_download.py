@@ -2,10 +2,10 @@ import os
 import wget
 import sys
 
-url_base = "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main"
+url_base = "https://huggingface.co/IAHispano/Applio/resolve/main/Resources"
 models_download = [
     (
-        "pretrained/",
+        "pretrained_v1/",
         [
             "D32k.pth",
             "D40k.pth",
@@ -43,16 +43,14 @@ models_download = [
 models_file = [
     "hubert_base.pt",
     "rmvpe.pt",
-    # "rmvpe.onnx",
+    "fcpe.pt",
+   #"rmvpe.onnx"
 ]
 
-executables_file = [
-    "ffmpeg.exe",
-    "ffprobe.exe",
-]
+executables_file = ["ffmpeg.exe", "ffprobe.exe"]
 
 folder_mapping = {
-    "pretrained/": "rvc/pretraineds/pretrained_v1/",
+    "pretrained_v1/": "rvc/pretraineds/pretrained_v1/",
     "pretrained_v2/": "rvc/pretraineds/pretrained_v2/",
 }
 
