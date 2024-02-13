@@ -183,7 +183,6 @@ class VC(object):
         if audio.ndim == 2 and audio.shape[0] > 1:
             audio = torch.mean(audio, dim=0, keepdim=True).detach()
         audio = audio.detach()
-        print("Initiating prediction with a hop_length of: " + str(hop_length))
         pitch: Tensor = torchcrepe.predict(
             audio,
             self.sr,
@@ -245,7 +244,7 @@ class VC(object):
         if methods_str:
             methods = [method.strip() for method in methods_str.group(1).split('+')]
         f0_computation_stack = []
-        print("Calculating f0 pitch estimations for methods: %s" % str(methods))
+        print(f"Calculating f0 pitch estimations for methods {str(methods)}")
         x = x.astype(np.float32)
         x /= np.quantile(np.abs(x), 0.999)
         for method in methods:
@@ -270,17 +269,13 @@ class VC(object):
                 gc.collect()
             f0_computation_stack.append(f0)
 
-        for fc in f0_computation_stack:
-            print(len(fc))
-
-        print("Calculating hybrid median f0 from the stack of: %s" % str(methods))
+        print(f"Calculating hybrid median f0 from the stack of {str(methods)}")
         f0_computation_stack = [fc for fc in f0_computation_stack if fc is not None]
         f0_median_hybrid = None
         if len(f0_computation_stack) == 1:
             f0_median_hybrid = f0_computation_stack[0]
         else:
             f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
-        print(f0_median_hybrid)
         return f0_median_hybrid
 
     def get_f0(
