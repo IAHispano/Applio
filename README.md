@@ -90,8 +90,6 @@ We appreciate all contributions ❤️
 - Fix: Model fusion
 
 ## Credits
-- [VITS](https://github.com/jaywalnut310/vits) by jaywalnut310
-- [RMVPE](https://github.com/Dream-High/RMVPE) by Dream-High
 - [ContentVec](https://github.com/auspicious3000/contentvec/) by auspicious3000
 - [HIFIGAN](https://github.com/jik876/hifi-gan) by jik876
 - [Gradio](https://github.com/gradio-app/gradio) by gradio-app
@@ -99,9 +97,14 @@ We appreciate all contributions ❤️
 - [audio-slicer](https://github.com/openvpi/audio-slicer) by openvpi
 - [Ilaria-Audio-Analyzer](https://github.com/TheStingerX/Ilaria-Audio-Analyzer) by TheStingerX
 - [gradio-screen-recorder](https://huggingface.co/spaces/gstaff/gradio-screen-recorder) by gstaff
+- [VITS](https://github.com/jaywalnut310/vits) by jaywalnut310
+- [RMVPE](https://github.com/Dream-High/RMVPE) by Dream-High
+- [FCPE](https://github.com/CNChTu/FCPE) by CNChTu
+- [So-Vits-SVC](https://github.com/svc-develop-team/so-vits-svc) by svc-develop-team
+- [Harmonify](https://huggingface.co/Eempostor/Harmonify) by Eempostor
 - [RVC_CLI](https://github.com/blaise-tk/RVC_CLI) by blaise-tk
-  - [Retrieval-based-Voice-Conversion-WebUI](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) by RVC-Project
-  - [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork) by Mangio621
+- [Retrieval-based-Voice-Conversion-WebUI](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) by RVC-Project
+- [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork) by Mangio621
 
 ### Contributors
 <a href="https://github.com/IAHispano/Applio/graphs/contributors" target="_blank">
