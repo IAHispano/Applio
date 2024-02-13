@@ -712,7 +712,6 @@ def main():
                 args.index_path,
                 args.split_audio,
                 args.f0_autotune,
-
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(
