@@ -8,9 +8,13 @@ import pyworld, os, faiss, librosa, torchcrepe
 from scipy import signal
 from functools import lru_cache
 import random
+import gc
+import re
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
+
+from rvc.lib.FCPEF0Predictor import FCPEF0Predictor
 
 bh, ah = signal.butter(N=5, Wn=48, btype="high", fs=16000)
 
@@ -227,6 +231,57 @@ class VC(object):
         f0[pd < 0.1] = 0
         f0 = f0[0].cpu().numpy()
         return f0
+    
+    def get_f0_hybrid_computation(
+        self,
+        methods_str,
+        x,
+        f0_min,
+        f0_max,
+        p_len,
+        hop_length,
+    ):
+        methods_str = re.search('hybrid\[(.+)\]', methods_str)
+        if methods_str:
+            methods = [method.strip() for method in methods_str.group(1).split('+')]
+        f0_computation_stack = []
+        print("Calculating f0 pitch estimations for methods: %s" % str(methods))
+        x = x.astype(np.float32)
+        x /= np.quantile(np.abs(x), 0.999)
+        for method in methods:
+            f0 = None
+            if method == "crepe":
+                f0 = self.get_f0_crepe_computation(
+                    x, f0_min, f0_max, p_len, int(hop_length)
+                )
+            elif method == "rmvpe":
+                if hasattr(self, "model_rmvpe") == False:
+                    from rvc.lib.rmvpe import RMVPE
+
+                    self.model_rmvpe = RMVPE(
+                        "rmvpe.pt", is_half=self.is_half, device=self.device
+                    )
+                f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
+                f0 = f0[1:]
+            elif method == "fcpe":
+                self.model_fcpe = FCPEF0Predictor("fcpe.pt", f0_min=int(f0_min), f0_max=int(f0_max), dtype=torch.float32, device=self.device, sampling_rate=self.sr, threshold=0.03)
+                f0 = self.model_fcpe.compute_f0(x, p_len=p_len)
+                del self.model_fcpe
+                gc.collect()
+            f0_computation_stack.append(f0)
+
+        for fc in f0_computation_stack:
+            print(len(fc))
+
+        print("Calculating hybrid median f0 from the stack of: %s" % str(methods))
+        f0_computation_stack = [fc for fc in f0_computation_stack if fc is not None]
+        f0_median_hybrid = None
+        if len(f0_computation_stack) == 1:
+            f0_median_hybrid = f0_computation_stack[0]
+        else:
+            f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
+        print(f0_median_hybrid)
+        return f0_median_hybrid
 
     def get_f0(
         self,
@@ -293,6 +348,30 @@ class VC(object):
                     "rmvpe.pt", is_half=self.is_half, device=self.device
                 )
             f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
+        elif f0_method == "rmvpe+":
+            if hasattr(self, "model_rmvpe") == False:
+                from rvc.lib.rmvpe import RMVPE
+                print("Using RMVPE+ for f0 extraction, this may take a while, please be patient.")
+                
+                self.model_rmvpe = RMVPE(
+                    "rmvpe.pt", is_half=self.is_half, device=self.device,
+                )
+            f0 = self.model_rmvpe.infer_from_audio_with_pitch(x, thred=0.03, f0_min=int(f0_min), f0_max=int(f0_max))  
+        elif f0_method == "fcpe":
+            self.model_fcpe = FCPEF0Predictor("fcpe.pt", f0_min=int(f0_min), f0_max=int(f0_max), dtype=torch.float32, device=self.device, sampling_rate=self.sr, threshold=0.03)
+            f0 = self.model_fcpe.compute_f0(x, p_len=p_len)
+            del self.model_fcpe
+            gc.collect()
+        elif "hybrid" in f0_method:
+            input_audio_path2wav[input_audio_path] = x.astype(np.double)
+            f0 = self.get_f0_hybrid_computation(
+                f0_method,
+                x,
+                f0_min,
+                f0_max,
+                p_len,
+                hop_length,
+            )
 
         if f0_autotune == "True":
             print("Autotuning f0")

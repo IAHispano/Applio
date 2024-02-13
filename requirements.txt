@@ -21,6 +21,7 @@ numba==0.56.4; sys_platform == 'darwin' or sys_platform == 'win32'
 torch==2.1.1
 torchcrepe==0.0.21
 torchvision==0.16.1
+einops
 
 # Visualization
 matplotlib==3.7.2
@@ -34,3 +35,4 @@ edge-tts==6.1.9
 pypresence
 beautifulsoup4
 flask
+local-attention
