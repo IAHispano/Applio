@@ -64,15 +64,19 @@ make run-applio
 
 ## Repository Enhancements
 
-This repository has undergone significant improvements to enhance its functionality and maintainability:
+This repository has undergone significant enhancements to improve its functionality and maintainability:
 
-- **Code Modularization:** The codebase has been restructured to follow a modular approach. This ensures better organization, readability, and ease of maintenance.
-- **Hop Length Implementation:** Special thanks to [@Mangio621](https://github.com/Mangio621/Mangio-RVC-Fork) for introducing hop length implementation. This enhancement enhances the efficiency and performance on Crepe (previously known as Mangio-Crepe).
-- **Translations to +30 Languages:** The repository now supports translations in over 30 languages, making it more accessible to a global audience.
-- **Cross-Platform Compatibility:** With multiplatform compatibility, this repository can seamlessly operate across various platforms, providing a consistent experience to users.
-- **Optimized Requirements:** The project's requirements have been fine-tuned for improved performance and resource utilization.
-- **Simple Installation:** The installation process has been streamlined, ensuring a straightforward and user-friendly experience for setup.
-
+- **Modular Codebase:** Restructured codebase following a modular approach for better organization, readability, and maintenance.
+- **Hop Length Implementation:** Implemented hop length, courtesy of [@Mangio621](https://github.com/Mangio621/Mangio-RVC-Fork), boosting efficiency and performance, especially on Crepe (formerly Mangio-Crepe).
+- **Translations in 30+ Languages:** Added support for translations in over 30 languages, enhancing accessibility for a global audience.
+- **Cross-Platform Compatibility:** Ensured seamless operation across various platforms for a consistent user experience.
+- **Optimized Requirements:** Fine-tuned project requirements for enhanced performance and resource efficiency.
+- **Streamlined Installation:** Simplified installation process for a user-friendly setup experience.
+- **Hybrid F0 Estimation:** Introduced a personalized 'hybrid' F0 estimation method utilizing nanmedian, combining F0 calculations from various methods to achieve optimal results.
+- **Easy-to-Use UI:** Implemented a user-friendly interface for intuitive interaction.
+- **Optimized Code & Dependencies:** Enhanced code and streamlined dependencies for improved efficiency.
+- **Plugin System:** Introduced a plugin system for extending functionality and customization.
+  
 These enhancements contribute to a more robust and scalable codebase, making the repository more accessible for contributors and users alike.
 
 ## Contributions
