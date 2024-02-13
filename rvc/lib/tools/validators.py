@@ -1,5 +1,5 @@
 import argparse
-import os 
+import os
 import json
 
 
@@ -24,6 +24,7 @@ def validate_f0up_key(value):
     else:
         raise argparse.ArgumentTypeError(f"f0up_key must be in the range of -24 to +24")
 
+
 def validate_true_false(value):
     valid_tf = [
         "True",
@@ -36,14 +37,21 @@ def validate_true_false(value):
             f"Invalid true_false. Please choose from {valid_tf} not {value}"
         )
 
+
 def validate_f0method(value):
     valid_f0methods = [
         "pm",
+        "harvest",
         "dio",
         "crepe",
         "crepe-tiny",
-        "harvest",
         "rmvpe",
+        "fcpe",
+        # "pyin",
+        "hybrid[crepe+rmvpe]",
+        "hybrid[crepe+fcpe]",
+        "hybrid[rmvpe+fcpe]",
+        "hybrid[crepe+rmvpe+fcpe]",
     ]
     if value in valid_f0methods:
         return value
@@ -52,9 +60,10 @@ def validate_f0method(value):
             f"Invalid f0method. Please choose from {valid_f0methods} not {value}"
         )
 
+
 def validate_tts_voices(value):
     json_path = os.path.join("rvc", "lib", "tools", "tts_voices.json")
-    with open(json_path, 'r') as file:
+    with open(json_path, "r") as file:
         tts_voices_data = json.load(file)
 
     # Extrae los valores de "ShortName" del JSON
