@@ -292,7 +292,7 @@ def inference_tab():
                         "hybrid[crepe+rmvpe]",
                         "hybrid[crepe+fcpe]",
                         "hybrid[rmvpe+fcpe]",
-                        "hybrid[crepe+rmvpe+fcpe]"
+                        "hybrid[crepe+rmvpe+fcpe]",
                     ],
                     value="rmvpe",
                     interactive=True,

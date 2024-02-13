@@ -8,11 +8,13 @@ from urllib.parse import unquote
 import re
 import shutil
 
+
 def find_folder_parent(search_dir, folder_name):
     for dirpath, dirnames, _ in os.walk(search_dir):
         if folder_name in dirnames:
             return os.path.abspath(dirpath)
     return None
+
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -201,7 +203,7 @@ url = sys.argv[1]
 
 if "?download=true" in url:
     url = url.replace("?download=true", "")
-    
+
 verify = download_from_url(url)
 
 if verify == "downloaded":
@@ -219,8 +221,12 @@ if verify == "downloaded":
             )
 
             success = extract_and_show_progress(zipfile_path, extract_folder_path)
-            
-            subfolders = [f for f in os.listdir(extract_folder_path) if os.path.isdir(os.path.join(extract_folder_path, f))]
+
+            subfolders = [
+                f
+                for f in os.listdir(extract_folder_path)
+                if os.path.isdir(os.path.join(extract_folder_path, f))
+            ]
             if len(subfolders) == 1:
                 subfolder_path = os.path.join(extract_folder_path, subfolders[0])
                 for item in os.listdir(subfolder_path):
@@ -228,7 +234,7 @@ if verify == "downloaded":
                     d = os.path.join(extract_folder_path, item)
                     shutil.move(s, d)
                 os.rmdir(subfolder_path)
-            
+
             for item in os.listdir(extract_folder_path):
                 if ".pth" in item:
                     file_name = item.split(".pth")[0]
@@ -241,18 +247,32 @@ if verify == "downloaded":
                     if "v2" not in item:
                         file_name = item.split("_nprobe_1_")[1].split("_v1")[0]
                         if file_name != model_name:
-                            new_file_name = item.split("_nprobe_1_")[0] + "_nprobe_1_" + model_name + "_v1"
+                            new_file_name = (
+                                item.split("_nprobe_1_")[0]
+                                + "_nprobe_1_"
+                                + model_name
+                                + "_v1"
+                            )
                             os.rename(
                                 os.path.join(extract_folder_path, item),
-                                os.path.join(extract_folder_path, new_file_name + ".index"),
+                                os.path.join(
+                                    extract_folder_path, new_file_name + ".index"
+                                ),
                             )
                     else:
                         file_name = item.split("_nprobe_1_")[1].split("_v2")[0]
                         if file_name != model_name:
-                            new_file_name = item.split("_nprobe_1_")[0] + "_nprobe_1_" + model_name + "_v2"
+                            new_file_name = (
+                                item.split("_nprobe_1_")[0]
+                                + "_nprobe_1_"
+                                + model_name
+                                + "_v2"
+                            )
                             os.rename(
                                 os.path.join(extract_folder_path, item),
-                                os.path.join(extract_folder_path, new_file_name + ".index"),
+                                os.path.join(
+                                    extract_folder_path, new_file_name + ".index"
+                                ),
                             )
 
             if success:
