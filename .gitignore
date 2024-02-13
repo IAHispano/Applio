@@ -3,6 +3,9 @@
 *.onnx
 *pth
 *.pyc
+*.pth
+*.index
+*.wav
 
 logs
 env
