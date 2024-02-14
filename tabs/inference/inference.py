@@ -289,22 +289,10 @@ def inference_tab():
                         "crepe-tiny",
                         "rmvpe",
                         "fcpe",
-                        "hybrid",
+                        "hybrid[rmvpe+fcpe]",
                     ],
                     value="rmvpe",
                     interactive=True,
-                )
-                hybrid = gr.Dropdown(
-                    label=i18n("Hybrid Pitch Extraction"),
-                    choices=[
-                        "hybrid[crepe+rmvpe+fcpe]",                        
-                        "hybrid[crepe+rmvpe]",
-                        "hybrid[crepe+fcpe]",
-                        "hybrid[rmvpe+fcpe]",
-                    ],
-                    value="hybrid[crepe+rmvpe+fcpe]",
-                    interactive=True,
-                    visible=False,
                 )
 
         convert_button1 = gr.Button(i18n("Convert"))
@@ -389,111 +377,19 @@ def inference_tab():
                         "crepe",
                         "crepe-tiny",
                         "rmvpe",
-                        "fcpe",
-                        "hybrid",
+                        "hybrid[rmvpe+fcpe]"
                     ],
                     value="rmvpe",
                     interactive=True,
                 )
-                hybrid_batch = gr.Dropdown(
-                    label=i18n("Hybrid Pitch Extraction"),
-                    choices=[                        
-                        "hybrid[crepe+rmvpe+fcpe]",                        
-                        "hybrid[crepe+rmvpe]",
-                        "hybrid[crepe+fcpe]",
-                        "hybrid[rmvpe+fcpe]",
-                    ],
-                    value="hybrid[crepe+rmvpe+fcpe]",
-                    interactive=True,
-                    visible=False,
-                )
 
         convert_button2 = gr.Button(i18n("Convert"))
 
-        with gr.Row():
+        with gr.Row():  # Defines output info + output audio download after conversion
             vc_output3 = gr.Textbox(label=i18n("Output Information"))
 
-    def toggle_visible(f0_method):
-        if "hybrid" in f0_method:
-            return {"visible": True, "__type__": "update"}
-        else:
-            return {"visible": False, "__type__": "update"}
-
-    def process_f0method_single(            
-            pitch,
-            filter_radius,
-            index_rate,
-            hop_length,
-            f0method,
-            audio,
-            output_path,
-            model_file,
-            index_file,
-            split_audio,
-            autotune,
-            hybrid,
-        ):
-        if "hybrid" == f0method:
-            f0method = hybrid
-        
-        vc_output1, vc_output2 = run_infer_script(
-            pitch,
-            filter_radius,
-            index_rate,
-            hop_length,
-            f0method,
-            audio,
-            output_path,
-            model_file,
-            index_file,
-            split_audio,
-            autotune,
-        )
-        return vc_output1, vc_output2
-
-    def process_f0method_batch(
-            pitch_batch,
-            filter_radius_batch,
-            index_rate_batch,
-            hop_length_batch,
-            f0method_batch,
-            input_folder_batch,
-            output_folder_batch,
-            model_file,
-            index_file,
-            split_audio_batch,
-            autotune_batch,
-            hybrid_batch,
-        ):
-        if "hybrid" == f0method_batch:
-            f0method_batch = hybrid_batch
-
-        vc_output3 = run_batch_infer_script(
-            pitch_batch,
-            filter_radius_batch,
-            index_rate_batch,
-            hop_length_batch,
-            f0method_batch,
-            input_folder_batch,
-            output_folder_batch,
-            model_file,
-            index_file,
-            split_audio_batch,
-            autotune_batch,
-        )
-        return vc_output3
-        
-    f0method.change(
-        fn=toggle_visible,
-        inputs=[f0method],
-        outputs=[hybrid],
-    )
-
-    f0method_batch.change(
-        fn=toggle_visible,
-        inputs=[f0method_batch],
-        outputs=[hybrid_batch],
-    )
+    def toggle_visible(checkbox):
+        return {"visible": checkbox, "__type__": "update"}
 
     refresh_button.click(
         fn=change_choices,
@@ -526,7 +422,7 @@ def inference_tab():
         outputs=[],
     )
     convert_button1.click(
-        fn=process_f0method_single,
+        fn=run_infer_script,
         inputs=[
             pitch,
             filter_radius,
@@ -539,12 +435,11 @@ def inference_tab():
             index_file,
             split_audio,
             autotune,
-            hybrid,
         ],
         outputs=[vc_output1, vc_output2],
     )
     convert_button2.click(
-        fn=process_f0method_batch,
+        fn=run_batch_infer_script,
         inputs=[
             pitch_batch,
             filter_radius_batch,
@@ -557,7 +452,6 @@ def inference_tab():
             index_file,
             split_audio_batch,
             autotune_batch,
-            hybrid_batch,
         ],
         outputs=[vc_output3],
     )

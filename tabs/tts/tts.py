@@ -209,89 +209,28 @@ def tts_tab():
                 value=128,
                 interactive=True,
             )
-            with gr.Column():
-                f0method = gr.Radio(
-                    label=i18n("Pitch extraction algorithm"),
-                    choices=[
-                        "pm",
-                        "harvest",
-                        "dio",
-                        "crepe",
-                        "crepe-tiny",
-                        "rmvpe",
-                        "fcpe",
-                        "hybrid",
-                    ],
-                    value="rmvpe",
-                    interactive=True,
-                )
-                hybrid = gr.Dropdown(
-                    label=i18n("Hybrid Pitch Extraction"),
-                    choices=[
-                        "hybrid[crepe+rmvpe+fcpe]",                        
-                        "hybrid[crepe+rmvpe]",
-                        "hybrid[crepe+fcpe]",
-                        "hybrid[rmvpe+fcpe]",
-                    ],
-                    value="hybrid[crepe+rmvpe+fcpe]",
-                    interactive=True,
-                    visible=False,
-                )
+        with gr.Column():
+            f0method = gr.Radio(
+                label=i18n("Pitch extraction algorithm"),
+                choices=[
+                    "pm",
+                    "harvest",
+                    "dio",
+                    "crepe",
+                    "crepe-tiny",
+                    "rmvpe",
+                    "fcpe",
+                    "hybrid[rmvpe+fcpe]",
+                ],
+                value="rmvpe",
+                interactive=True,
+            )
 
     convert_button1 = gr.Button(i18n("Convert"))
 
     with gr.Row():  # Defines output info + output audio download after conversion
         vc_output1 = gr.Textbox(label=i18n("Output Information"))
         vc_output2 = gr.Audio(label=i18n("Export Audio"))
-
-    def toggle_visible(f0_method):
-        if "hybrid" in f0_method:
-            return {"visible": True, "__type__": "update"}
-        else:
-            return {"visible": False, "__type__": "update"}
-
-    def process_f0method_tts(            
-            tts_text,
-            tts_voice,
-            pitch,
-            filter_radius,
-            index_rate,
-            hop_length,
-            f0method,
-            output_tts_path,
-            output_rvc_path,
-            model_file,
-            index_file,
-            split_audio,
-            autotune,
-            hybrid,
-        ):
-        if "hybrid" == f0method:
-            f0method = hybrid
-        
-        vc_output1, vc_output2 = run_tts_script(
-            tts_text,
-            tts_voice,
-            pitch,
-            filter_radius,
-            index_rate,
-            hop_length,
-            f0method,
-            output_tts_path,
-            output_rvc_path,
-            model_file,
-            index_file,
-            split_audio,
-            autotune,
-        )
-        return vc_output1, vc_output2
-
-
-    f0method.change(
-        fn=toggle_visible,
-        inputs=[f0method],
-        outputs=[hybrid],
-    )
 
     refresh_button.click(
         fn=change_choices,
@@ -304,7 +243,7 @@ def tts_tab():
         outputs=[tts_text, txt_file],
     )
     convert_button1.click(
-        fn=process_f0method_tts,
+        fn=run_tts_script,
         inputs=[
             tts_text,
             tts_voice,
@@ -319,7 +258,6 @@ def tts_tab():
             index_file,
             split_audio,
             autotune,
-            hybrid,
         ],
         outputs=[vc_output1, vc_output2],
     )
