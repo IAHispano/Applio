@@ -9,6 +9,6 @@
     "override": false,
     "selected_lang": "en_US"
   },
-  "flask_server": true,
+  "flask_server": false,
   "version": "3.0.6"
 }
