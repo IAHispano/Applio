@@ -558,16 +558,17 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 ckpt = net_g.module.state_dict()
             else:
                 ckpt = net_g.state_dict()
-        extract_model(
-            ckpt,
-            hps.sample_rate,
-            hps.if_f0,
-            hps.name,
-            os.path.join(hps.model_dir, "{}_{}e.pth".format(hps.name, epoch)),
-            epoch,
-            hps.version,
-            hps,
-        )
+            
+            extract_model(
+                ckpt,
+                hps.sample_rate,
+                hps.if_f0,
+                hps.name,
+                os.path.join(hps.model_dir, "{}_{}e.pth".format(hps.name, epoch)),
+                epoch,
+                hps.version,
+                hps,
+            )
 
     if rank == 0:
         if epoch > 1:
