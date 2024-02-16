@@ -11,6 +11,8 @@ i18n = I18nAuto()
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+from tabs.settings.restart import restart_applio
+
 plugins_path = os.path.join(now_dir, "tabs", "plugins", "installed")
 if not os.path.exists(plugins_path):
     os.makedirs(plugins_path)
@@ -73,11 +75,12 @@ def save_plugin_dropbox(dropbox):
         save_existing_folders(get_existing_folders() + [folder_name])
 
         print(
-            f"{folder_name} plugin installed in {plugins_path}! Restart applio to see the changes."
+            f"{folder_name} plugin installed in {plugins_path}! Restarting applio to apply the changes."
         )
         gr.Info(
-            f"{folder_name} plugin installed in {plugins_path}! Restart applio to see the changes."
+            f"{folder_name} plugin installed in {plugins_path}! Restarting applio to apply the changes."
         )
+        restart_applio()
     return None
 
 
@@ -102,5 +105,6 @@ def check_new_folders():
                 )
             else:
                 print("No requirements.txt file found in the plugin folder.")
-        print("Plugins checked and installed! Restart applio to see the changes.")
-    save_existing_folders(current_folders)
+        print("Plugins checked and installed! Restarting applio to apply the changes.")  
+        save_existing_folders(current_folders)
+        restart_applio()
