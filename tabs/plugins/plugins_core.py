@@ -105,6 +105,6 @@ def check_new_folders():
                 )
             else:
                 print("No requirements.txt file found in the plugin folder.")
-        print("Plugins checked and installed! Restarting applio to apply the changes.")  
+        print("Plugins checked and installed! Restarting applio to apply the changes.")
         save_existing_folders(current_folders)
         restart_applio()
