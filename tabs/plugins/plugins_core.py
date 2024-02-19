@@ -59,16 +59,28 @@ def save_plugin_dropbox(dropbox):
         os.remove(zip_file_path)
 
         if os.path.exists(os.path.join(folder_path, "requirements.txt")):
-            subprocess.run(
-                [
-                    os.path.join("env", "python.exe"),
-                    "-m",
-                    "pip",
-                    "install",
-                    "-r",
-                    os.path.join(folder_path, "requirements.txt"),
-                ]
-            )
+            if os.name == "nt":
+                subprocess.run(
+                    [
+                        os.path.join("env", "python.exe"),
+                        "-m",
+                        "pip",
+                        "install",
+                        "-r",
+                        os.path.join(folder_path, "requirements.txt"),
+                    ]
+                )
+            else:
+                subprocess.run(
+                    [
+                        "python",
+                        "-m",
+                        "pip",
+                        "install",
+                        "-r",
+                        os.path.join(folder_path, "requirements.txt"),
+                    ]
+                )
         else:
             print("No requirements.txt file found in the plugin folder.")
 
