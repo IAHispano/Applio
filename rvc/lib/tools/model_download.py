@@ -9,6 +9,7 @@ import re
 import shutil
 import six
 
+
 def find_folder_parent(search_dir, folder_name):
     for dirpath, dirnames, _ in os.walk(search_dir):
         if folder_name in dirnames:
@@ -102,7 +103,7 @@ def download_from_url(url):
             response = requests.get(url, stream=True)
             if response.status_code == 200:
                 content_disposition = six.moves.urllib_parse.unquote(
-                  response.headers["Content-Disposition"]
+                    response.headers["Content-Disposition"]
                 )
                 m = re.search(r'filename="([^"]+)"', content_disposition)
                 file_name = m.groups()[0]
