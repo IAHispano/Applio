@@ -7,7 +7,7 @@ import requests
 from urllib.parse import unquote
 import re
 import shutil
-
+import six
 
 def find_folder_parent(search_dir, folder_name):
     for dirpath, dirnames, _ in os.walk(search_dir):
@@ -101,11 +101,12 @@ def download_from_url(url):
 
             response = requests.get(url, stream=True)
             if response.status_code == 200:
-                file_name = url.split("/")[-1]
-                file_name = unquote(file_name)
-
-                file_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", file_name)
-
+                content_disposition = six.moves.urllib_parse.unquote(
+                  response.headers["Content-Disposition"]
+                )
+                m = re.search(r'filename="([^"]+)"', content_disposition)
+                file_name = m.groups()[0]
+                file_name = file_name.replace(os.path.sep, "_")
                 total_size_in_bytes = int(response.headers.get("content-length", 0))
                 block_size = 1024
                 progress_bar_length = 50
@@ -200,9 +201,6 @@ def unzip_file(zip_path, zip_file_name):
 
 
 url = sys.argv[1]
-
-if "?download=true" in url:
-    url = url.replace("?download=true", "")
 
 verify = download_from_url(url)
 
