@@ -48,18 +48,20 @@ def run_infer_script(
     infer_script_path = os.path.join("rvc", "infer", "infer.py")
     command = [
         "python",
-        infer_script_path,
-        str(f0up_key),
-        str(filter_radius),
-        str(index_rate),
-        str(hop_length),
-        f0method,
-        input_path,
-        output_path,
-        pth_file,
-        index_path,
-        str(split_audio),
-        str(f0autotune),
+        *map(str, [
+            infer_script_path,
+            f0up_key,
+            filter_radius,
+            index_rate,
+            hop_length,
+            f0method,
+            input_path,
+            output_path,
+            pth_file,
+            index_path,
+            split_audio,
+            f0autotune,
+        ]),
     ]
     subprocess.run(command)
     return f"File {input_path} inferred successfully.", output_path
@@ -100,18 +102,20 @@ def run_batch_infer_script(
 
         command = [
             "python",
-            infer_script_path,
-            str(f0up_key),
-            str(filter_radius),
-            str(index_rate),
-            str(hop_length),
-            f0method,
-            input_path,
-            output_path,
-            pth_file,
-            index_path,
-            str(split_audio),
-            str(f0autotune),
+            *map(str, [
+                infer_script_path,
+                f0up_key,
+                filter_radius,
+                index_rate,
+                hop_length,
+                f0method,
+                input_path,
+                output_path,
+                pth_file,
+                index_path,
+                split_audio,
+                f0autotune,
+            ]),
         ]
         subprocess.run(command)
 
@@ -151,17 +155,19 @@ def run_tts_script(
     command_infer = [
         "python",
         infer_script_path,
-        str(f0up_key),
-        str(filter_radius),
-        str(index_rate),
-        str(hop_length),
-        f0method,
-        output_tts_path,
-        output_rvc_path,
-        pth_file,
-        index_path,
-        str(split_audio),
-        str(f0autotune),
+        *map(str, [
+            f0up_key,
+            filter_radius,
+            index_rate,
+            hop_length,
+            f0method,
+            output_tts_path,
+            output_rvc_path,
+            pth_file,
+            index_path,
+            split_audio,
+            f0autotune,
+        ]),
     ]
     subprocess.run(command_tts)
     subprocess.run(command_infer)
@@ -175,10 +181,12 @@ def run_preprocess_script(model_name, dataset_path, sampling_rate):
     command = [
         "python",
         preprocess_script_path,
-        os.path.join(logs_path, model_name),
-        dataset_path,
-        str(sampling_rate),
-        str(per),
+        *map(str, [
+            os.path.join(logs_path, model_name),
+            dataset_path,
+            sampling_rate,
+            per,
+        ]),
     ]
 
     os.makedirs(os.path.join(logs_path, model_name), exist_ok=True)
@@ -190,29 +198,33 @@ def run_preprocess_script(model_name, dataset_path, sampling_rate):
 def run_extract_script(model_name, rvc_version, f0method, hop_length, sampling_rate):
     model_path = os.path.join(logs_path, model_name)
     extract_f0_script_path = os.path.join(
-        "--rvc", "train", "extract", "extract_f0_print.py"
+        "rvc", "train", "extract", "extract_f0_print.py"
     )
     extract_feature_script_path = os.path.join(
-        "--rvc", "train", "extract", "extract_feature_print.py"
+        "rvc", "train", "extract", "extract_feature_print.py"
     )
 
     command_1 = [
         "python",
         extract_f0_script_path,
-        model_path,
-        f0method,
-        str(hop_length),
+        *map(str, [
+            model_path,
+            f0method,
+            hop_length,
+        ]),
     ]
     command_2 = [
         "python",
         extract_feature_script_path,
-        config.device,
-        "1",
-        "0",
-        "0",
-        model_path,
-        rvc_version,
-        "True",
+        *map(str, [
+            config.device,
+            "1",
+            "0",
+            "0",
+            model_path,
+            rvc_version,
+            "True",
+        ]),
     ]
     subprocess.run(command_1)
     subprocess.run(command_2)
@@ -258,33 +270,35 @@ def run_train_script(
     train_script_path = os.path.join("rvc", "train", "train.py")
     command = [
         "python",
-        str(train_script_path),
-        "-se",
-        str(save_every_epoch),
-        "-te",
-        str(total_epoch),
-        "-pg",
-        str(pg),
-        "-pd",
-        str(pd),
-        "-sr",
-        str(sampling_rate),
-        "-bs",
-        str(batch_size),
-        "-g",
-        str(gpu),
-        "-e",
-        os.path.join(logs_path, str(model_name)),
-        "-v",
-        str(rvc_version),
-        "-l",
-        str(latest),
-        "-c",
-        "0",
-        "-sw",
-        str(save_every),
-        "-f0",
-        str(f0),
+        train_script_path,
+        *map(str, [
+            "-se",
+            save_every_epoch,
+            "-te",
+            total_epoch,
+            "-pg",
+            pg,
+            "-pd",
+            pd,
+            "-sr",
+            sampling_rate,
+            "-bs",
+            batch_size,
+            "-g",
+            gpu,
+            "-e",
+            os.path.join(logs_path, model_name),
+            "-v",
+            rvc_version,
+            "-l",
+            latest,
+            "-c",
+            "0",
+            "-sw",
+            save_every,
+            "-f0",
+            f0,
+        ]),
     ]
 
     subprocess.run(command)
