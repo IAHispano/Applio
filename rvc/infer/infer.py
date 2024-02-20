@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import torch
 import numpy as np
 import soundfile as sf
@@ -15,6 +16,10 @@ from rvc.lib.infer_pack.models import (
 )
 
 from rvc.configs.config import Config
+
+import logging
+
+logging.getLogger("fairseq").setLevel(logging.WARNING)
 
 config = Config()
 
@@ -51,7 +56,7 @@ def vc_single(
     hop_length=None,
     output_path=None,
     split_audio=False,
-    f0_autotune=False,
+    f0autotune=False,
 ):
     global tgt_sr, net_g, vc, hubert_model, version
 
@@ -110,7 +115,7 @@ def vc_single(
                         hop_length,
                         path,
                         False,
-                        f0_autotune,
+                        f0autotune,
                     )
                     # new_dir_path
             except Exception as error:
@@ -142,7 +147,7 @@ def vc_single(
                 version,
                 protect,
                 hop_length,
-                f0_autotune,
+                f0autotune,
                 f0_file=f0_file,
             )
 
@@ -231,7 +236,7 @@ try:
 except IndexError:
     split_audio = None
 
-f0_autotune = sys.argv[11]
+f0autotune = sys.argv[11]
 
 sid = f0up_key
 input_audio = audio_input_path
@@ -242,11 +247,13 @@ file_index = index_path
 index_rate = index_rate
 output_file = audio_output_path
 split_audio = split_audio
-f0_autotune = f0_autotune
+f0autotune = f0autotune
 
 get_vc(model_path, 0)
 
+
 try:
+    start_time = time.time()
     result, audio_opt = vc_single(
         sid=0,
         input_audio_path=input_audio,
@@ -258,7 +265,7 @@ try:
         hop_length=hop_length,
         output_path=output_file,
         split_audio=split_audio,
-        f0_autotune=f0_autotune,
+        f0autotune=f0autotune,
     )
 
     if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
@@ -266,7 +273,11 @@ try:
     else:
         message = result
 
-    print(f"Conversion completed. Output file: '{output_file}'")
+    end_time = time.time()  # Registra el tiempo de finalización de la conversión
+    elapsed_time = end_time - start_time
+    print(
+        f"Conversion completed. Output file: '{output_file}' in {elapsed_time:.2f} seconds."
+    )
 
 except Exception as error:
     print(f"Voice conversion failed: {error}")

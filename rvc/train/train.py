@@ -558,7 +558,6 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 ckpt = net_g.module.state_dict()
             else:
                 ckpt = net_g.state_dict()
-
             extract_model(
                 ckpt,
                 hps.sample_rate,

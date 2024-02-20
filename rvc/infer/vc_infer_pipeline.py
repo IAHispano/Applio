@@ -295,7 +295,7 @@ class VC(object):
         f0_method,
         filter_radius,
         hop_length,
-        f0_autotune,
+        f0autotune,
         inp_f0=None,
     ):
         global input_audio_path2wav
@@ -375,7 +375,7 @@ class VC(object):
                 hop_length,
             )
 
-        if f0_autotune == "True":
+        if f0autotune == "True":
             print("Autotuning f0")
             f0 = self.autotune_f0(f0)
 
@@ -518,7 +518,7 @@ class VC(object):
         version,
         protect,
         hop_length,
-        f0_autotune,
+        f0autotune,
         f0_file=None,
     ):
         if file_index != "" and os.path.exists(file_index) == True and index_rate != 0:
@@ -574,7 +574,7 @@ class VC(object):
                 f0_method,
                 filter_radius,
                 hop_length,
-                f0_autotune,
+                f0autotune,
                 inp_f0,
             )
             pitch = pitch[:p_len]
