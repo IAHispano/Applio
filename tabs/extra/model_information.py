@@ -9,8 +9,9 @@ i18n = I18nAuto()
 def model_information_tab():
     with gr.Column():
         model_name = gr.Textbox(
-            label=i18n("Model Path"),
-            placeholder=i18n("Introduce the model .pth path"),
+            label=i18n("Path to Model"),
+            info=i18n("Introduce the model pth path"),
+            placeholder=i18n("Introduce the model pth path"),
             interactive=True,
         )
         model_information_output_info = gr.Textbox(
