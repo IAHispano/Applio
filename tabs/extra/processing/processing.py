@@ -62,7 +62,9 @@ def processing():
                 )
                 model_extract_info = gr.Textbox(
                     label=i18n("Model information to be placed"),
-                    info=i18n("The information to be placed in the model (You can leave it blank or put anything)."),
+                    info=i18n(
+                        "The information to be placed in the model (You can leave it blank or put anything)."
+                    ),
                     value="",
                     max_lines=8,
                     interactive=True,
@@ -80,9 +82,7 @@ def processing():
                 model_extract_sampling_rate = gr.Radio(
                     label=i18n("Sampling Rate"),
                     choices=["32000", "40000", "48000"],
-                    info=i18n(
-                        "The sampling rate of the audio files."
-                    ),
+                    info=i18n("The sampling rate of the audio files."),
                     value="40000",
                     interactive=True,
                 )

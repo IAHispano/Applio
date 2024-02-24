@@ -11,7 +11,9 @@ def version_tab():
         with gr.Column():
             version_check = gr.Textbox(
                 label=i18n("Version Checker"),
-                info=i18n("Check which version of Applio is the latest to see if you need to update."),
+                info=i18n(
+                    "Check which version of Applio is the latest to see if you need to update."
+                ),
                 interactive=False,
             )
             version_button = gr.Button(i18n("Check for updates"))

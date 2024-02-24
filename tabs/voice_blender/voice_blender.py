@@ -10,12 +10,18 @@ from rvc.lib.process.model_fusion import model_fusion
 
 i18n = I18nAuto()
 
+
 def update_model_fusion(dropbox):
     return dropbox, None
 
+
 def voice_blender_tab():
     gr.Markdown(i18n("## Voice Blender"))
-    gr.Markdown(i18n("Select two voice models, set your desired blend percentage, and blend them into an entirely new voice."))
+    gr.Markdown(
+        i18n(
+            "Select two voice models, set your desired blend percentage, and blend them into an entirely new voice."
+        )
+    )
     with gr.Column():
         model_fusion_name = gr.Textbox(
             label=i18n("Model Name"),
@@ -27,7 +33,9 @@ def voice_blender_tab():
         )
         with gr.Row():
             with gr.Column():
-                model_fusion_a_dropbox = gr.File(label=i18n("Drag and drop your model here"), type="filepath")
+                model_fusion_a_dropbox = gr.File(
+                    label=i18n("Drag and drop your model here"), type="filepath"
+                )
                 model_fusion_a = gr.Textbox(
                     label=i18n("Path to Model"),
                     value="",
@@ -36,7 +44,9 @@ def voice_blender_tab():
                     info=i18n("You can also use a custom path."),
                 )
             with gr.Column():
-                model_fusion_b_dropbox = gr.File(label=i18n("Drag and drop your model here"), type="filepath")
+                model_fusion_b_dropbox = gr.File(
+                    label=i18n("Drag and drop your model here"), type="filepath"
+                )
                 model_fusion_b = gr.Textbox(
                     label=i18n("Path to Model"),
                     value="",
@@ -50,18 +60,20 @@ def voice_blender_tab():
             label=i18n("Blend Ratio"),
             value=0.5,
             interactive=True,
-            info=i18n("Adjusting the position more towards one side or the other will make the model more similar to the first or second."),
+            info=i18n(
+                "Adjusting the position more towards one side or the other will make the model more similar to the first or second."
+            ),
         )
-        model_fusion_button = gr.Button(
-            i18n("Fusion"), variant="primary"
-        )
+        model_fusion_button = gr.Button(i18n("Fusion"), variant="primary")
         with gr.Row():
             model_fusion_output_info = gr.Textbox(
-            label=i18n("Output Information"),
-            info=i18n("The output information will be displayed here."),
-            value="",
-        )
-            model_fusion_pth_output = gr.File(label=i18n("Download Model"), type="filepath", interactive=False)
+                label=i18n("Output Information"),
+                info=i18n("The output information will be displayed here."),
+                value="",
+            )
+            model_fusion_pth_output = gr.File(
+                label=i18n("Download Model"), type="filepath", interactive=False
+            )
 
     model_fusion_button.click(
         fn=model_fusion,
