@@ -42,7 +42,7 @@ prepare_install() {
         echo "Installing Applio dependencies..."
         python -m pip install -r requirements.txt
         python -m pip uninstall torch torchvision torchaudio -y
-        python -m pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu117
+        python -m pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1
         finish
     fi
 }
@@ -74,7 +74,8 @@ if [ "$(uname)" = "Darwin" ]; then
     if ! command -v brew >/dev/null 2>&1; then
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     else
-        brew install python
+        #python 3.10 used because dependencies are not compatible with 3.11.7 yet
+        brew install python@3.10
         export PYTORCH_ENABLE_MPS_FALLBACK=1
         export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
     fi
