@@ -31,7 +31,7 @@ def save_lang_settings(selected_language):
         config["lang"]["override"] = True
         config["lang"]["selected_lang"] = selected_language
 
-    gr.Info("Language settings have been saved. Restart Applio to apply the changes.")
+    gr.Info("Language have been saved. Restart Applio to apply the changes.")
 
     with open(config_file, "w") as f:
         json.dump(config, f, indent=2)
@@ -40,7 +40,8 @@ def save_lang_settings(selected_language):
 def lang_tab():
     with gr.Column():
         selected_language = gr.Dropdown(
-            label="Language settings (Restart required)",
+            label=i18n("Language"),
+            info=i18n("Select the language you want to use. (Requires restarting Applio)"),
             value=get_language_settings(),
             choices=["Language automatically detected in the system"]
             + i18n._get_available_languages(),

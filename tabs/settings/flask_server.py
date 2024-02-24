@@ -19,6 +19,9 @@ def flask_server_tab():
                 label=i18n(
                     "Enable Applio integration with applio.org/models using flask"
                 ),
+                info=i18n(
+                    "It will activate the possibility of downloading models with a click from the website."
+                ),
                 interactive=True,
                 value=load_config_flask(),
             )

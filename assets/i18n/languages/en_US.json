@@ -170,12 +170,18 @@
   "Output Path for RVC Audio": "Output Path for RVC Audio",
 
   "Enable Applio integration with Discord presence": "Enable Applio integration with Discord presence",
+  "It will activate the possibility of displaying the current Applio activity in Discord.": "It will activate the possibility of displaying the current Applio activity in Discord.",
   "Enable Applio integration with applio.org/models using flask": "Enable Applio integration with applio.org/models using flask",
-  "Theme (Restart required)": "Theme (Restart required)",
+  "It will activate the possibility of downloading models with a click from the website.": "It will activate the possibility of downloading models with a click from the website.",
+  "Theme": "Theme",
+  "Select the theme you want to use. (Requires restarting Applio)": "Select the theme you want to use. (Requires restarting Applio)",
+  "Language": "Language",
+  "Select the language you want to use. (Requires restarting Applio)": "Select the language you want to use. (Requires restarting Applio)",
 
   "Plugin Installer": "Plugin Installer",
   "Drag your plugin.zip to install it": "Drag your plugin.zip to install it",
 
-  "Version checker": "Version checker",
+  "Version Checker": "Version Checker",
+  "Check which version of Applio is the latest to see if you need to update.": "Check which version of Applio is the latest to see if you need to update.",
   "Check for updates": "Check for updates"
 }

@@ -31,6 +31,9 @@ def presence_tab():
         with gr.Column():
             presence = gr.Checkbox(
                 label=i18n("Enable Applio integration with Discord presence"),
+                info=i18n(
+                    "It will activate the possibility of displaying the current Applio activity in Discord."
+                ),
                 interactive=True,
                 value=load_config_presence(),
             )

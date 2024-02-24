@@ -20,7 +20,8 @@ def theme_tab():
             themes_select = gr.Dropdown(
                 loadThemes.get_list(),
                 value=loadThemes.read_json(),
-                label=i18n("Theme (Restart required)"),
+                label=i18n("Theme"),
+                info=i18n("Select the theme you want to use. (Requires restarting Applio)"),
                 visible=True,
             )
             themes_select.change(

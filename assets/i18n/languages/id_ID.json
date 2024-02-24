@@ -138,11 +138,11 @@
 
   "Enable Applio integration with Discord presence": "Aktifkan integrasi Applio dengan kehadiran Discord",
   "Enable Applio integration with applio.org/models using flask": "Aktifkan integrasi Applio dengan applio.org/models menggunakan flask",
-  "Theme (Restart required)": "Tema (Diperlukan mulai ulang)",
+  "Theme": "Tema (Diperlukan mulai ulang)",
 
   "Plugin Installer": "Penginstal Plugin",
   "Drag your plugin.zip to install it": "Seret plugin.zip Anda untuk menginstalnya",
 
-  "Version checker": "Pemeriksa versi",
+  "Version Checker": "Pemeriksa versi",
   "Check for updates": "Periksa pembaruan"
 }
