@@ -30,7 +30,10 @@ def processing():
                 )
 
         model_view_output_info = gr.Textbox(
-            label=i18n("Output Information"), value="", max_lines=8
+            label=i18n("Output Information"),
+            info="The output information will be displayed here.",
+            value="",
+            max_lines=8,
         )
         model_view_button = gr.Button(i18n("View"), variant="primary")
         model_view_button.click(
@@ -80,7 +83,10 @@ def processing():
                     interactive=True,
                 )
         model_extract_output_info = gr.Textbox(
-            label=i18n("Output Information"), value="", max_lines=8
+            label=i18n("Output Information"),
+            info="The output information will be displayed here.",
+            value="",
+            max_lines=8,
         )
 
         model_extract_button = gr.Button(i18n("Extract"), variant="primary")

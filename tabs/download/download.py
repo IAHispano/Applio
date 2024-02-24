@@ -57,6 +57,7 @@ def download_tab():
         )
         model_download_output_info = gr.Textbox(
             label=i18n("Output Information"),
+            info=i18n("The output information will be displayed here."),
             value="",
             max_lines=8,
             interactive=False,
