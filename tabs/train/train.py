@@ -165,7 +165,7 @@ def train_tab():
                 )
 
                 with gr.Column(visible=False) as dataset_creator_settings:
-                    with gr.Accordion("Dataset Creator"):
+                    with gr.Accordion(i18n("Dataset Creator")):
                         dataset_name = gr.Textbox(
                             label=i18n("Dataset Name"),
                             info=i18n("Name of the new dataset."),
@@ -220,7 +220,7 @@ def train_tab():
                 128,
                 step=1,
                 label=i18n("Hop Length"),
-                info="Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy.",
+                info=i18n("Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."),
                 interactive=True,
             )
         with gr.Row():
@@ -326,16 +326,16 @@ def train_tab():
             )
             multiple_gpu = gr.Checkbox(
                 label=i18n("GPU Settings"),
-                info=(
+                info=(i18n(
                     "Sets advanced GPU settings, recommended for users with better GPU architecture."
-                ),
+                )),
                 value=False,
                 interactive=True,
             )
 
         with gr.Row():
             with gr.Column(visible=False) as pretrained_custom_settings:
-                with gr.Accordion("Pretrained Custom Settings"):
+                with gr.Accordion(i18n("Pretrained Custom Settings")):
                     upload_pretrained = gr.File(
                         label=i18n("Upload Pretrained Model"),
                         type="filepath",

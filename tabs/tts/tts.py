@@ -293,7 +293,7 @@ def tts_tab():
     with gr.Row():  # Defines output info + output audio download after conversion
         vc_output1 = gr.Textbox(
             label=i18n("Output Information"),
-            info=i18n("Output information will be displayed here."),
+            info=i18n("The output information will be displayed here."),
         )
         vc_output2 = gr.Audio(label=i18n("Export Audio"))
 

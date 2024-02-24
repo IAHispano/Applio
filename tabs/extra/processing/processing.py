@@ -27,12 +27,12 @@ def processing():
                     info=i18n("Introduce the model pth path"),
                     value="",
                     interactive=True,
-                    placeholder=i18n("Path to model"),
+                    placeholder=i18n("Enter path to model"),
                 )
 
         model_view_output_info = gr.Textbox(
             label=i18n("Output Information"),
-            info="The output information will be displayed here.",
+            info=i18n("The output information will be displayed here."),
             value="",
             max_lines=8,
         )
@@ -57,7 +57,7 @@ def processing():
                 model_extract_path = gr.Textbox(
                     label=i18n("Path to Model"),
                     info=i18n("Introduce the model pth path"),
-                    placeholder=i18n("Path to model"),
+                    placeholder=i18n("Enter path to model"),
                     interactive=True,
                 )
                 model_extract_info = gr.Textbox(
@@ -96,7 +96,7 @@ def processing():
                 )
         model_extract_output_info = gr.Textbox(
             label=i18n("Output Information"),
-            info="The output information will be displayed here.",
+            info=i18n("The output information will be displayed here."),
             value="",
             max_lines=8,
         )

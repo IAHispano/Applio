@@ -40,7 +40,7 @@ def voice_blender_tab():
                     label=i18n("Path to Model"),
                     value="",
                     interactive=True,
-                    placeholder=i18n("Path to model"),
+                    placeholder=i18n("Enter path to model"),
                     info=i18n("You can also use a custom path."),
                 )
             with gr.Column():
@@ -51,7 +51,7 @@ def voice_blender_tab():
                     label=i18n("Path to Model"),
                     value="",
                     interactive=True,
-                    placeholder=i18n("Path to model"),
+                    placeholder=i18n("Enter path to model"),
                     info=i18n("You can also use a custom path."),
                 )
         alpha_a = gr.Slider(
