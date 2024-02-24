@@ -363,7 +363,10 @@ def inference_tab():
         convert_button1 = gr.Button(i18n("Convert"))
 
         with gr.Row():  # Defines output info + output audio download after conversion
-            vc_output1 = gr.Textbox(label=i18n("Output Information"), info=i18n("The output information will be displayed here."))
+            vc_output1 = gr.Textbox(
+                label=i18n("Output Information"),
+                info=i18n("The output information will be displayed here."),
+            )
             vc_output2 = gr.Audio(label=i18n("Export Audio"))
 
     # Batch inference tab
@@ -379,7 +382,9 @@ def inference_tab():
                 )
                 output_folder_batch = gr.Textbox(
                     label=i18n("Output Folder"),
-                    info=i18n("Select the folder where the output audios will be saved."),
+                    info=i18n(
+                        "Select the folder where the output audios will be saved."
+                    ),
                     placeholder=i18n("Enter output path"),
                     value=os.path.join(now_dir, "assets", "audios"),
                     interactive=True,
@@ -513,7 +518,10 @@ def inference_tab():
         convert_button2 = gr.Button(i18n("Convert"))
 
         with gr.Row():  # Defines output info + output audio download after conversion
-            vc_output3 = gr.Textbox(label=i18n("Output Information"), info=i18n("The output information will be displayed here."))
+            vc_output3 = gr.Textbox(
+                label=i18n("Output Information"),
+                info=i18n("The output information will be displayed here."),
+            )
 
     def toggle_visible(checkbox):
         return {"visible": checkbox, "__type__": "update"}
