@@ -293,12 +293,12 @@ def run_train_script(
     g_pretrained_path=None,
     d_pretrained_path=None,
 ):
-    f0 = 1 if pitch_guidance == "True" else 0
-    latest = 1 if save_only_latest == "True" else 0
-    save_every = 1 if save_every_weights == "True" else 0
+    f0 = 1 if str(pitch_guidance) == "True" else 0
+    latest = 1 if str(save_only_latest) == "True" else 0
+    save_every = 1 if str(save_every_weights) == "True" else 0
 
-    if pretrained == "True":
-        if custom_pretrained == "False":
+    if str(pretrained) == "True":
+        if str(custom_pretrained) == "False":
             pg, pd = pretrained_selector(f0)[rvc_version][sampling_rate]
         else:
             if g_pretrained_path is None or d_pretrained_path is None:
@@ -312,38 +312,33 @@ def run_train_script(
     train_script_path = os.path.join("rvc", "train", "train.py")
     command = [
         "python",
-        train_script_path,
-        *map(
-            str,
-            [
-                "-se",
-                save_every_epoch,
-                "-te",
-                total_epoch,
-                "-pg",
-                pg,
-                "-pd",
-                pd,
-                "-sr",
-                sampling_rate,
-                "-bs",
-                batch_size,
-                "-g",
-                gpu,
-                "-e",
-                os.path.join(logs_path, model_name),
-                "-v",
-                rvc_version,
-                "-l",
-                latest,
-                "-c",
-                "0",
-                "-sw",
-                save_every,
-                "-f0",
-                f0,
-            ],
-        ),
+        str(train_script_path),
+        "-se",
+        str(save_every_epoch),
+        "-te",
+        str(total_epoch),
+        "-pg",
+        str(pg),
+        "-pd",
+        str(pd),
+        "-sr",
+        str(sampling_rate),
+        "-bs",
+        str(batch_size),
+        "-g",
+        str(gpu),
+        "-e",
+        os.path.join(logs_path, str(model_name)),
+        "-v",
+        str(rvc_version),
+        "-l",
+        str(latest),
+        "-c",
+        "0",
+        "-sw",
+        str(save_every),
+        "-f0",
+        str(f0),
     ]
 
     subprocess.run(command)
@@ -1039,20 +1034,20 @@ def main():
             )
         elif args.mode == "train":
             run_train_script(
-                str(args.model_name),
-                str(args.rvc_version),
-                str(args.save_every_epoch),
-                str(args.save_only_latest),
-                str(args.save_every_weights),
-                str(args.total_epoch),
-                str(args.sampling_rate),
-                str(args.batch_size),
-                str(args.gpu),
-                str(args.pitch_guidance),
-                str(args.pretrained),
-                str(args.custom_pretrained),
-                str(args.g_pretrained_path),
-                str(args.d_pretrained_path),
+                args.model_name,
+                args.rvc_version,
+                args.save_every_epoch,
+                args.save_only_latest,
+                args.save_every_weights,
+                args.total_epoch,
+                args.sampling_rate,
+                args.batch_size,
+                args.gpu,
+                args.pitch_guidance,
+                args.pretrained,
+                args.custom_pretrained,
+                args.g_pretrained_path,
+                args.d_pretrained_path,
             )
         elif args.mode == "index":
             run_index_script(
