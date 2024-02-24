@@ -371,8 +371,8 @@ def run_model_information_script(pth_path):
 
 
 # Model fusion
-def run_model_fusion_script(model_name, pth_path_1, pth_path_2):
-    model_fusion(model_name, pth_path_1, pth_path_2)
+def run_model_fusion_script(model_name, pth_path_1, pth_path_2, alpha):
+    model_fusion(model_name, pth_path_1, pth_path_2, alpha)
 
 
 # Tensorboard
@@ -932,6 +932,13 @@ def parse_arguments():
         type=str,
         help="Path to the second .pth file",
     )
+    model_fusion_parser.add_argument(
+        "--alpha",
+        type=str,
+        help="Value for alpha",
+        choices=[str(i / 10) for i in range(11)],
+        default="0.5",
+    )
 
     # Parser for 'tensorboard' mode
     subparsers.add_parser("tensorboard", help="Run tensorboard")
@@ -1061,6 +1068,7 @@ def main():
                 str(args.model_name),
                 str(args.pth_path_1),
                 str(args.pth_path_2),
+                str(args.alpha),
             )
         elif args.mode == "tensorboard":
             run_tensorboard_script()
