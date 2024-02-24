@@ -220,7 +220,9 @@ def train_tab():
                 128,
                 step=1,
                 label=i18n("Hop Length"),
-                info=i18n("Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."),
+                info=i18n(
+                    "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
+                ),
                 interactive=True,
             )
         with gr.Row():
@@ -326,9 +328,11 @@ def train_tab():
             )
             multiple_gpu = gr.Checkbox(
                 label=i18n("GPU Settings"),
-                info=(i18n(
-                    "Sets advanced GPU settings, recommended for users with better GPU architecture."
-                )),
+                info=(
+                    i18n(
+                        "Sets advanced GPU settings, recommended for users with better GPU architecture."
+                    )
+                ),
                 value=False,
                 interactive=True,
             )

@@ -10,6 +10,7 @@ i18n = I18nAuto()
 
 import gradio as gr
 
+
 def processing():
     with gr.Accordion(label=i18n("View model information")):
         with gr.Row():
