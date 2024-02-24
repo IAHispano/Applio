@@ -11,6 +11,9 @@ Welcome to **Applio**, the ultimate voice cloning tool meticulously optimized fo
 [![Issues](https://img.shields.io/github/issues/iahispano/applio-rvc-fork?style=flat-square)](https://github.com/IAHispano/Applio-RVC-Fork/issues)
 [![Open In Collab](https://img.shields.io/badge/google_colab-F9AB00?style=flat-square&logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/iahispano/applio/blob/master/assets/Applio.ipynb)
 
+
+[applio playground version](https://applio.org/playground)
+
 ## Content Table
 - [**Installation**](#installation)
   - [Windows](#windows)
