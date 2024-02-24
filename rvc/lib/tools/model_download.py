@@ -4,7 +4,7 @@ import wget
 import zipfile
 from bs4 import BeautifulSoup
 import requests
-from urllib.parse import unquote
+from urllib.parse import unquote, urlencode, parse_qs, urlparse
 import re
 import shutil
 import six
@@ -94,7 +94,60 @@ def download_from_url(url):
                         print(error_message)
                         os.chdir(now_dir)
                         return None
+        elif "disk.yandex.ru" in url:
+            base_url = "https://cloud-api.yandex.net/v1/disk/public/resources/download?"
+            public_key = url
+            final_url = base_url + urlencode(dict(public_key=public_key))
+            response = requests.get(final_url)
+            download_url = response.json()["href"]
+            download_response = requests.get(download_url)
 
+            if download_response.status_code == 200:
+                filename = parse_qs(urlparse(unquote(download_url)).query).get(
+                    "filename", [""]
+                )[0]
+                if filename:
+                    os.chdir(zips_path)
+                    with open(filename, "wb") as f:
+                        f.write(download_response.content)
+            else:
+                print("Failed to get filename from URL.")
+                return None
+
+        elif "pixeldrain.com" in url:
+            try:
+                file_id = url.split("pixeldrain.com/u/")[1]
+                os.chdir(zips_path)
+                print(file_id)
+                response = requests.get(f"https://pixeldrain.com/api/file/{file_id}")
+                if response.status_code == 200:
+                    file_name = (
+                        response.headers.get("Content-Disposition")
+                        .split("filename=")[-1]
+                        .strip('";')
+                    )
+                    os.makedirs(zips_path, exist_ok=True)
+                    with open(os.path.join(zips_path, file_name), "wb") as newfile:
+                        newfile.write(response.content)
+                        os.chdir(file_path)
+                        return "downloaded"
+                else:
+                    os.chdir(file_path)
+                    return None
+            except Exception as e:
+                print(e)
+                os.chdir(file_path)
+                return None
+
+        elif "cdn.discordapp.com" in url:
+            file = requests.get(url)
+            os.chdir(zips_path)
+            if file.status_code == 200:
+                name = url.split("/")
+                with open(os.path.join(name[-1]), "wb") as newfile:
+                    newfile.write(file.content)
+            else:
+                return None
         elif "/blob/" in url or "/resolve/" in url:
             os.chdir(zips_path)
             if "/blob/" in url:
