@@ -19,6 +19,7 @@ def voice_blender_tab():
     with gr.Column():
         model_fusion_name = gr.Textbox(
             label=i18n("Model Name"),
+            info=i18n("Name of the new model."),
             value="",
             max_lines=1,
             interactive=True,
@@ -32,7 +33,7 @@ def voice_blender_tab():
                     value="",
                     interactive=True,
                     placeholder=i18n("Path to model"),
-                    info=i18n("You can also use a custom path"),
+                    info=i18n("You can also use a custom path."),
                 )
             with gr.Column():
                 model_fusion_b_dropbox = gr.File(label=i18n("Drag and drop your model here"), type="filepath")
@@ -41,7 +42,7 @@ def voice_blender_tab():
                     value="",
                     interactive=True,
                     placeholder=i18n("Path to model"),
-                    info=i18n("You can also use a custom path"),
+                    info=i18n("You can also use a custom path."),
                 )
         alpha_a = gr.Slider(
             minimum=0,
@@ -54,11 +55,13 @@ def voice_blender_tab():
         model_fusion_button = gr.Button(
             i18n("Fusion"), variant="primary"
         )
-        model_fusion_output_info = gr.Textbox(
+        with gr.Row():
+            model_fusion_output_info = gr.Textbox(
             label=i18n("Output Information"),
+            info=i18n("The output information will be displayed here."),
             value="",
         )
-        model_fusion_pth_output = gr.File(label=i18n("Download Model"), type="filepath", interactive=False)
+            model_fusion_pth_output = gr.File(label=i18n("Download Model"), type="filepath", interactive=False)
 
     model_fusion_button.click(
         fn=model_fusion,

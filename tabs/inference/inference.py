@@ -344,7 +344,7 @@ def inference_tab():
                 f0method = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
                     info=i18n(
-                        "Select the pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
+                        "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
                     ),
                     choices=[
                         "pm",

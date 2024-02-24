@@ -80,7 +80,7 @@
   "Select two voice models, set your desired blend percentage, and blend them into an entirely new voice.": "Selecciona dos modelos de voz, establece el porcentaje de mezcla deseado y mézclalos en una voz completamente nueva.",
   "Voice Blender": "Mezclador de voces",
   "Drag and drop your model here": "Arrastra y suelta tu modelo aquí",
-  "You can also use a custom path": "También puedes usar una ruta personalizada",
+  "You can also use a custom path.": "También puedes usar una ruta personalizada",
   "Blend Ratio": "Relación de mezcla",
   "Adjusting the position more towards one side or the other will make the model more similar to the first or second.": "Ajustar la posición más hacia un lado u otro hará que el modelo sea más similar al primero o al segundo.",
   "Fusion": "Fusión",
