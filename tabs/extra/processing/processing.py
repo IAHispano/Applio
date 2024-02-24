@@ -3,20 +3,15 @@ import os, sys
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.train.process_ckpt import (
-    extract_small_model,
+from rvc.train.process import (
+    extract_model,
+    model_information
 )
-
-from rvc.lib.process.model_information import (
-    model_information,
-)
-
 from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
 
 import gradio as gr
-
 
 def processing():
     with gr.Accordion(label=i18n("View model information")):
@@ -103,7 +98,7 @@ def processing():
 
         model_extract_button = gr.Button(i18n("Extract"), variant="primary")
         model_extract_button.click(
-            extract_small_model,
+            extract_model,
             [
                 model_extract_path,
                 model_extract_name,
