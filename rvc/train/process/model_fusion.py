@@ -54,9 +54,10 @@ def model_fusion(name, path1, path2, alpha):
         opt["f0"] = cfg_f0
         opt["version"] = cfg_version
         opt["info"] = message
+
         torch.save(opt, os.path.join("logs", "%s.pth" % name))
         print(message)
         return message, os.path.join("logs", "%s.pth" % name)
-    except Exception as e:
-        print(e)
-        return e
+    except Exception as error:
+        print(error)
+        return error
