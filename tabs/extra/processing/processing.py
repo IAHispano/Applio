@@ -3,10 +3,9 @@ import os, sys
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.train.process import (
-    extract_model,
-    model_information
-)
+from rvc.train.process.extract_model import extract_model
+from rvc.train.process.model_information import model_information
+
 from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()

@@ -6,7 +6,7 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from assets.i18n.i18n import I18nAuto
-from rvc.lib.process.model_fusion import model_fusion
+from rvc.train.process.model_fusion import model_fusion
 
 i18n = I18nAuto()
 
