@@ -274,7 +274,7 @@ def train_tab():
             )
             total_epoch = gr.Slider(
                 1,
-                1000,
+                10000,
                 500,
                 step=1,
                 label=i18n("Total Epoch"),
