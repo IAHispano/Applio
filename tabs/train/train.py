@@ -259,7 +259,7 @@ def train_tab():
                 step=1,
                 label=i18n("Batch Size"),
                 info=i18n(
-                    "Represents the number of samples utilized in a single forward and backward pass through the network. It's advisable to align it with the available VRAM of your GPU. A setting of 4 offers improved accuracy but slower processing, while 8 provides faster and standard results."
+                    "It's advisable to align it with the available VRAM of your GPU. A setting of 4 offers improved accuracy but slower processing, while 8 provides faster and standard results."
                 ),
                 interactive=True,
             )

@@ -39,7 +39,7 @@
   "Hop Length": "Hop Length",
   "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy.": "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy.",
   "Batch Size": "Batch Size",
-  "Represents the number of samples utilized in a single forward and backward pass through the network. It's advisable to align it with the available VRAM of your GPU. A setting of 4 offers improved accuracy but slower processing, while 8 provides faster and standard results.": "Represents the number of samples utilized in a single forward and backward pass through the network. It's advisable to align it with the available VRAM of your GPU. A setting of 4 offers improved accuracy but slower processing, while 8 provides faster and standard results.",
+  "It's advisable to align it with the available VRAM of your GPU. A setting of 4 offers improved accuracy but slower processing, while 8 provides faster and standard results.": "It's advisable to align it with the available VRAM of your GPU. A setting of 4 offers improved accuracy but slower processing, while 8 provides faster and standard results.",
   "Save Every Epoch": "Save Every Epoch",
   "Determine at how many epochs the model will saved at.": "Determine at how many epochs the model will saved at.",
   "Total Epoch": "Total Epoch",
@@ -71,7 +71,9 @@
   "Generate Index": "Generate Index",
 
   "Voice Model": "Voice Model",
+  "Select the voice model to use for the conversion.": "Select the voice model to use for the conversion.",
   "Index File": "Index File",
+  "Select the index file to use for the conversion.": "Select the index file to use for the conversion.",
   "Refresh": "Refresh",
   "Unload Voice": "Unload Voice",
 
@@ -162,7 +164,9 @@
   "Drag your .pth file and .index file into this space. Drag one and then the other.": "Drag your .pth file and .index file into this space. Drag one and then the other.",
 
   "TTS Voices": "TTS Voices",
+  "Select the TTS voice to use for the conversion.": "Select the TTS voice to use for the conversion.",
   "Text to Synthesize": "Text to Synthesize",
+  "Enter the text to synthesize.": "Enter the text to synthesize.",
   "Or you can upload a .txt file": "Or you can upload a .txt file",
   "Enter text to synthesize": "Enter text to synthesize",
   "Output Path for TTS Audio": "Output Path for TTS Audio",

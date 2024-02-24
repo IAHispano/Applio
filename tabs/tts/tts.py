@@ -93,6 +93,7 @@ def tts_tab():
         with gr.Row():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
+                info=i18n("Select the voice model to use for the conversion."),
                 choices=sorted(names, key=lambda path: os.path.getsize(path)),
                 interactive=True,
                 value=default_weight,
@@ -101,6 +102,7 @@ def tts_tab():
             best_default_index_path = match_index(model_file.value)
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
+                info=i18n("Select the index file to use for the conversion."),
                 choices=get_indexes(),
                 value=best_default_index_path,
                 interactive=True,
@@ -133,6 +135,7 @@ def tts_tab():
 
     tts_voice = gr.Dropdown(
         label=i18n("TTS Voices"),
+        info=i18n("Select the TTS voice to use for the conversion."),
         choices=short_names,
         interactive=True,
         value=None,
@@ -140,6 +143,7 @@ def tts_tab():
 
     tts_text = gr.Textbox(
         label=i18n("Text to Synthesize"),
+        info=i18n("Enter the text to synthesize."),
         placeholder=i18n("Enter text to synthesize"),
         lines=3,
     )
@@ -164,106 +168,106 @@ def tts_tab():
                 interactive=True,
             )
             split_audio = gr.Checkbox(
-                    label=i18n("Split Audio"),
-                    info=i18n(
-                        "Split the audio into chunks for inference to obtain better results in some cases."
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
+                label=i18n("Split Audio"),
+                info=i18n(
+                    "Split the audio into chunks for inference to obtain better results in some cases."
+                ),
+                visible=True,
+                value=False,
+                interactive=True,
+            )
             autotune = gr.Checkbox(
-                    label=i18n("Autotune"),
-                    info=i18n(
-                        "Apply a soft autotune to your inferences, recommended for singing conversions."
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
+                label=i18n("Autotune"),
+                info=i18n(
+                    "Apply a soft autotune to your inferences, recommended for singing conversions."
+                ),
+                visible=True,
+                value=False,
+                interactive=True,
+            )
             clean_audio = gr.Checkbox(
-                    label=i18n("Clean Audio"),
-                    info=i18n(
-                        "Clean your audio output using noise detection algorithms, recommended for speaking audios."
-                    ),
-                    visible=True,
-                    value=True,
-                    interactive=True,
-                )
+                label=i18n("Clean Audio"),
+                info=i18n(
+                    "Clean your audio output using noise detection algorithms, recommended for speaking audios."
+                ),
+                visible=True,
+                value=True,
+                interactive=True,
+            )
             clean_strength = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Clean Strength"),
-                    info=i18n(
-                        "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
-                    ),
-                    visible=True,
-                    value=0.5,
-                    interactive=True,
-                )
+                minimum=0,
+                maximum=1,
+                label=i18n("Clean Strength"),
+                info=i18n(
+                    "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
+                ),
+                visible=True,
+                value=0.5,
+                interactive=True,
+            )
             pitch = gr.Slider(
-                    minimum=-24,
-                    maximum=24,
-                    step=1,
-                    label=i18n("Pitch"),
-                    info=i18n(
-                        "Set the pitch of the audio, the higher the value, the higher the pitch."
-                    ),
-                    value=0,
-                    interactive=True,
-                )
+                minimum=-24,
+                maximum=24,
+                step=1,
+                label=i18n("Pitch"),
+                info=i18n(
+                    "Set the pitch of the audio, the higher the value, the higher the pitch."
+                ),
+                value=0,
+                interactive=True,
+            )
             filter_radius = gr.Slider(
-                    minimum=0,
-                    maximum=7,
-                    label=i18n("Filter Radius"),
-                    info=i18n(
-                        "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
-                    ),
-                    value=3,
-                    step=1,
-                    interactive=True,
-                )
+                minimum=0,
+                maximum=7,
+                label=i18n("Filter Radius"),
+                info=i18n(
+                    "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
+                ),
+                value=3,
+                step=1,
+                interactive=True,
+            )
             index_rate = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Search Feature Ratio"),
-                    info=i18n(
-                        "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
-                    ),
-                    value=0.75,
-                    interactive=True,
-                )
+                minimum=0,
+                maximum=1,
+                label=i18n("Search Feature Ratio"),
+                info=i18n(
+                    "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
+                ),
+                value=0.75,
+                interactive=True,
+            )
             rms_mix_rate = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Volume Envelope"),
-                    info=i18n(
-                        "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
-                    ),
-                    value=1,
-                    interactive=True,
-                )
+                minimum=0,
+                maximum=1,
+                label=i18n("Volume Envelope"),
+                info=i18n(
+                    "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
+                ),
+                value=1,
+                interactive=True,
+            )
             protect = gr.Slider(
-                    minimum=0,
-                    maximum=0.5,
-                    label=i18n("Protect Voiceless Consonants"),
-                    info=i18n(
-                        "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
-                    ),
-                    value=0.5,
-                    interactive=True,
-                )
+                minimum=0,
+                maximum=0.5,
+                label=i18n("Protect Voiceless Consonants"),
+                info=i18n(
+                    "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
+                ),
+                value=0.5,
+                interactive=True,
+            )
             hop_length = gr.Slider(
-                    minimum=1,
-                    maximum=512,
-                    step=1,
-                    label=i18n("Hop Length"),
-                    info=i18n(
-                        "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
-                    ),
-                    value=128,
-                    interactive=True,
-                )
+                minimum=1,
+                maximum=512,
+                step=1,
+                label=i18n("Hop Length"),
+                info=i18n(
+                    "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
+                ),
+                value=128,
+                interactive=True,
+            )
             with gr.Column():
                 f0method = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
@@ -283,12 +287,14 @@ def tts_tab():
                     value="rmvpe",
                     interactive=True,
                 )
-            
 
     convert_button1 = gr.Button(i18n("Convert"))
 
     with gr.Row():  # Defines output info + output audio download after conversion
-        vc_output1 = gr.Textbox(label=i18n("Output Information"))
+        vc_output1 = gr.Textbox(
+            label=i18n("Output Information"),
+            info=i18n("Output information will be displayed here."),
+        )
         vc_output2 = gr.Audio(label=i18n("Export Audio"))
 
     def toggle_visible(checkbox):
