@@ -22,7 +22,7 @@ sys.path.append(now_dir)
 
 from rvc.lib.utils import format_title
 
-import gdown
+from rvc.lib.tools import gdown
 
 file_path = find_folder_parent(now_dir, "logs")
 

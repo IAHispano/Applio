@@ -12,6 +12,7 @@ pyworld==0.3.4
 scipy==1.11.1
 soundfile==0.12.1
 praat-parselmouth
+noisereduce
 
 # Machine learning
 git+https://github.com/IAHispano/fairseq; sys_platform == 'linux'

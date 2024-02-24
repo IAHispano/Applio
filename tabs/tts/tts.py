@@ -157,7 +157,6 @@ def tts_tab():
                 value=os.path.join(now_dir, "assets", "audios", "tts_output.wav"),
                 interactive=True,
             )
-
             output_rvc_path = gr.Textbox(
                 label=i18n("Output Path for RVC Audio"),
                 placeholder=i18n("Enter output path"),
@@ -174,6 +173,20 @@ def tts_tab():
                 label=i18n("Autotune"),
                 visible=True,
                 value=False,
+                interactive=True,
+            )
+            clean_audio = gr.Checkbox(
+                label=i18n("Clean Audio"),
+                visible=True,
+                value=False,
+                interactive=True,
+            )
+            clean_strength = gr.Slider(
+                minimum=0,
+                maximum=1,
+                label=i18n("Clean Strength"),
+                visible=False,
+                value=0.5,
                 interactive=True,
             )
             pitch = gr.Slider(
@@ -199,6 +212,20 @@ def tts_tab():
                 maximum=1,
                 label=i18n("Search Feature Ratio"),
                 value=0.75,
+                interactive=True,
+            )
+            rms_mix_rate = gr.Slider(
+                minimum=0,
+                maximum=1,
+                label=i18n("RMS Mix Rate"),
+                value=1,
+                interactive=True,
+            )
+            protect = gr.Slider(
+                minimum=0,
+                maximum=0.5,
+                label=i18n("Protect"),
+                value=0.5,
                 interactive=True,
             )
             hop_length = gr.Slider(
@@ -232,6 +259,14 @@ def tts_tab():
         vc_output1 = gr.Textbox(label=i18n("Output Information"))
         vc_output2 = gr.Audio(label=i18n("Export Audio"))
 
+    def toggle_visible(checkbox):
+        return {"visible": checkbox, "__type__": "update"}
+
+    clean_audio.change(
+        fn=toggle_visible,
+        inputs=[clean_audio],
+        outputs=[clean_strength],
+    )
     refresh_button.click(
         fn=change_choices,
         inputs=[],
@@ -250,6 +285,8 @@ def tts_tab():
             pitch,
             filter_radius,
             index_rate,
+            rms_mix_rate,
+            protect,
             hop_length,
             f0method,
             output_tts_path,
@@ -258,6 +295,8 @@ def tts_tab():
             index_file,
             split_audio,
             autotune,
+            clean_audio,
+            clean_strength,
         ],
         outputs=[vc_output1, vc_output2],
     )

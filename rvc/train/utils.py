@@ -7,49 +7,6 @@ import numpy as np
 from scipy.io.wavfile import read
 
 
-def load_checkpoint_d(checkpoint_path, combd, sbd, optimizer=None, load_opt=1):
-    assert os.path.isfile(checkpoint_path)
-    checkpoint_dict = torch.load(checkpoint_path, map_location="cpu")
-
-    def go(model, bkey):
-        saved_state_dict = checkpoint_dict[bkey]
-        if hasattr(model, "module"):
-            state_dict = model.module.state_dict()
-        else:
-            state_dict = model.state_dict()
-        new_state_dict = {}
-        for k, v in state_dict.items():
-            try:
-                new_state_dict[k] = saved_state_dict[k]
-                if saved_state_dict[k].shape != state_dict[k].shape:
-                    print(
-                        "shape-%s-mismatch. need: %s, get: %s",
-                        k,
-                        state_dict[k].shape,
-                        saved_state_dict[k].shape,
-                    )
-                    raise KeyError
-            except:
-                print("%s is not in the checkpoint", k)
-                new_state_dict[k] = v
-        if hasattr(model, "module"):
-            model.module.load_state_dict(new_state_dict, strict=False)
-        else:
-            model.load_state_dict(new_state_dict, strict=False)
-        return model
-
-    go(combd, "combd")
-    model = go(sbd, "sbd")
-
-    iteration = checkpoint_dict["iteration"]
-    learning_rate = checkpoint_dict["learning_rate"]
-    if optimizer is not None and load_opt == 1:
-        optimizer.load_state_dict(checkpoint_dict["optimizer"])
-
-    print("Loaded checkpoint '{}' (epoch {})".format(checkpoint_path, iteration))
-    return model, optimizer, learning_rate, iteration
-
-
 def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
     assert os.path.isfile(checkpoint_path)
     checkpoint_dict = torch.load(checkpoint_path, map_location="cpu")

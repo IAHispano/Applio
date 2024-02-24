@@ -12,8 +12,8 @@ from rvc.configs.config import Config
 from rvc.train.extract.preparing_files import generate_config, generate_filelist
 from rvc.lib.tools.pretrained_selector import pretrained_selector
 
-from rvc.lib.process.model_fusion import model_fusion
-from rvc.lib.process.model_information import model_information
+from rvc.train.process.model_fusion import model_fusion
+from rvc.train.process.model_information import model_information
 
 config = Config()
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
@@ -36,14 +36,18 @@ def run_infer_script(
     f0up_key,
     filter_radius,
     index_rate,
+    rms_mix_rate,
+    protect,
     hop_length,
     f0method,
     input_path,
     output_path,
-    pth_file,
+    pth_path,
     index_path,
     split_audio,
     f0autotune,
+    clean_audio,
+    clean_strength,
 ):
     infer_script_path = os.path.join("rvc", "infer", "infer.py")
     command = [
@@ -59,10 +63,14 @@ def run_infer_script(
                 f0method,
                 input_path,
                 output_path,
-                pth_file,
+                pth_path,
                 index_path,
                 split_audio,
                 f0autotune,
+                rms_mix_rate,
+                protect,
+                clean_audio,
+                clean_strength,
             ],
         ),
     ]
@@ -75,14 +83,18 @@ def run_batch_infer_script(
     f0up_key,
     filter_radius,
     index_rate,
+    rms_mix_rate,
+    protect,
     hop_length,
     f0method,
     input_folder,
     output_folder,
-    pth_file,
+    pth_path,
     index_path,
     split_audio,
     f0autotune,
+    clean_audio,
+    clean_strength,
 ):
     infer_script_path = os.path.join("rvc", "infer", "infer.py")
 
@@ -112,14 +124,18 @@ def run_batch_infer_script(
                     f0up_key,
                     filter_radius,
                     index_rate,
+                    rms_mix_rate,
+                    protect,
                     hop_length,
                     f0method,
                     input_path,
                     output_path,
-                    pth_file,
+                    pth_path,
                     index_path,
                     split_audio,
                     f0autotune,
+                    clean_audio,
+                    clean_strength,
                 ],
             ),
         ]
@@ -135,14 +151,18 @@ def run_tts_script(
     f0up_key,
     filter_radius,
     index_rate,
+    rms_mix_rate,
+    protect,
     hop_length,
     f0method,
     output_tts_path,
     output_rvc_path,
-    pth_file,
+    pth_path,
     index_path,
     split_audio,
     f0autotune,
+    clean_audio,
+    clean_strength,
 ):
     tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
     infer_script_path = os.path.join("rvc", "infer", "infer.py")
@@ -167,14 +187,18 @@ def run_tts_script(
                 f0up_key,
                 filter_radius,
                 index_rate,
+                rms_mix_rate,
+                protect,
                 hop_length,
                 f0method,
                 output_tts_path,
                 output_rvc_path,
-                pth_file,
+                pth_path,
                 index_path,
                 split_audio,
                 f0autotune,
+                clean_audio,
+                clean_strength,
             ],
         ),
     ]
@@ -354,7 +378,7 @@ def run_model_fusion_script(model_name, pth_path_1, pth_path_2):
 # Tensorboard
 def run_tensorboard_script():
     tensorboard_script_path = os.path.join(
-        "--rvc", "lib", "tools", "launch_tensorboard.py"
+        "rvc", "lib", "tools", "launch_tensorboard.py"
     )
     command = [
         "python",
@@ -376,11 +400,14 @@ def run_download_script(model_link):
 
 
 # API
-def run_api_script():
-    api_script_path = os.path.join("api.py")
+def run_api_script(ip, port):
     command = [
-        "python",
-        api_script_path,
+        "uvicorn",
+        "api:app",
+        "--host",
+        ip,
+        "--port",
+        port,
     ]
     subprocess.run(command)
 
@@ -399,32 +426,67 @@ def parse_arguments():
     infer_parser.add_argument(
         "--f0up_key",
         type=str,
-        help="Value for f0up_key (-24 to +24)",
+        help="Value for f0up_key",
+        choices=[str(i) for i in range(-24, 25)],
+        default="0",
     )
     infer_parser.add_argument(
         "--filter_radius",
         type=str,
-        help="Value for filter_radius (0 to 10)",
+        help="Value for filter_radius",
+        choices=[str(i) for i in range(11)],
+        default="3",
     )
     infer_parser.add_argument(
         "--index_rate",
         type=str,
-        help="Value for index_rate (0.0 to 1)",
+        help="Value for index_rate",
+        choices=[str(i / 10) for i in range(11)],
+        default="0.3",
+    )
+    infer_parser.add_argument(
+        "--rms_mix_rate",
+        type=str,
+        help="Value for rms_mix_rate",
+        choices=[str(i / 10) for i in range(11)],
+        default="1",
+    )
+    infer_parser.add_argument(
+        "--protect",
+        type=str,
+        help="Value for protect",
+        choices=[str(i / 10) for i in range(6)],
+        default="0.33",
     )
     infer_parser.add_argument(
         "--hop_length",
         type=str,
-        help="Value for hop_length (1 to 512)",
-        choices=range(1, 513),
+        help="Value for hop_length",
+        choices=[str(i) for i in range(1, 513)],
+        default="128",
     )
     infer_parser.add_argument(
         "--f0method",
         type=str,
-        help="Value for f0method (pm, harvest, dio, crepe, crepe-tiny, rmvpe, fcpe, hybrid[crepe+rmvpe], hybrid[crepe+fcpe], hybrid[rmvpe+fcpe], hybrid[crepe+rmvpe+fcpe])",
+        help="Value for f0method",
+        choices=[
+            "pm",
+            "harvest",
+            "dio",
+            "crepe",
+            "crepe-tiny",
+            "rmvpe",
+            "fcpe",
+            "hybrid[crepe+rmvpe]",
+            "hybrid[crepe+fcpe]",
+            "hybrid[rmvpe+fcpe]",
+            "hybrid[crepe+rmvpe+fcpe]",
+        ],
+        default="rmvpe",
     )
     infer_parser.add_argument("--input_path", type=str, help="Input path")
     infer_parser.add_argument("--output_path", type=str, help="Output path")
-    infer_parser.add_argument("--pth_file", type=str, help="Path to the .pth file")
+    infer_parser.add_argument("--pth_path", type=str, help="Path to the .pth file")
     infer_parser.add_argument(
         "--index_path",
         type=str,
@@ -443,6 +505,20 @@ def parse_arguments():
         help="Enable autotune",
         choices=["True", "False"],
         default="False",
+    )
+    infer_parser.add_argument(
+        "--clean_audio",
+        type=str,
+        help="Enable clean audio",
+        choices=["True", "False"],
+        default="False",
+    )
+    infer_parser.add_argument(
+        "--clean_strength",
+        type=str,
+        help="Value for clean_strength",
+        choices=[str(i / 10) for i in range(11)],
+        default="0.7",
     )
 
     # Parser for 'batch_infer' mode
@@ -452,33 +528,68 @@ def parse_arguments():
     batch_infer_parser.add_argument(
         "--f0up_key",
         type=str,
-        help="Value for f0up_key (-24 to +24)",
+        help="Value for f0up_key",
+        choices=[str(i) for i in range(-24, 25)],
+        default="0",
     )
     batch_infer_parser.add_argument(
         "--filter_radius",
         type=str,
-        help="Value for filter_radius (0 to 10)",
+        help="Value for filter_radius",
+        choices=[str(i) for i in range(11)],
+        default="3",
     )
     batch_infer_parser.add_argument(
         "--index_rate",
         type=str,
-        help="Value for index_rate (0.0 to 1)",
+        help="Value for index_rate",
+        choices=[str(i / 10) for i in range(11)],
+        default="0.3",
+    )
+    batch_infer_parser.add_argument(
+        "--rms_mix_rate",
+        type=str,
+        help="Value for rms_mix_rate",
+        choices=[str(i / 10) for i in range(11)],
+        default="1",
+    )
+    batch_infer_parser.add_argument(
+        "--protect",
+        type=str,
+        help="Value for protect",
+        choices=[str(i / 10) for i in range(6)],
+        default="0.33",
     )
     batch_infer_parser.add_argument(
         "--hop_length",
         type=str,
-        help="Value for hop_length (1 to 512)",
-        choices=range(1, 513),
+        help="Value for hop_length",
+        choices=[str(i) for i in range(1, 513)],
+        default="128",
     )
     batch_infer_parser.add_argument(
         "--f0method",
         type=str,
-        help="Value for f0method (pm, harvest, dio, crepe, crepe-tiny, rmvpe, fcpe, hybrid[crepe+rmvpe], hybrid[crepe+fcpe], hybrid[rmvpe+fcpe], hybrid[crepe+rmvpe+fcpe])",
+        help="Value for f0method",
+        choices=[
+            "pm",
+            "harvest",
+            "dio",
+            "crepe",
+            "crepe-tiny",
+            "rmvpe",
+            "fcpe",
+            "hybrid[crepe+rmvpe]",
+            "hybrid[crepe+fcpe]",
+            "hybrid[rmvpe+fcpe]",
+            "hybrid[crepe+rmvpe+fcpe]",
+        ],
+        default="rmvpe",
     )
     batch_infer_parser.add_argument("--input_folder", type=str, help="Input folder")
     batch_infer_parser.add_argument("--output_folder", type=str, help="Output folder")
     batch_infer_parser.add_argument(
-        "--pth_file", type=str, help="Path to the .pth file"
+        "--pth_path", type=str, help="Path to the .pth file"
     )
     batch_infer_parser.add_argument(
         "--index_path",
@@ -498,6 +609,20 @@ def parse_arguments():
         help="Enable autotune",
         choices=["True", "False"],
         default="False",
+    )
+    batch_infer_parser.add_argument(
+        "--clean_audio",
+        type=str,
+        help="Enable clean audio",
+        choices=["True", "False"],
+        default="False",
+    )
+    batch_infer_parser.add_argument(
+        "--clean_strength",
+        type=str,
+        help="Value for clean_strength",
+        choices=[str(i / 10) for i in range(11)],
+        default="0.7",
     )
 
     # Parser for 'tts' mode
@@ -516,32 +641,67 @@ def parse_arguments():
     tts_parser.add_argument(
         "--f0up_key",
         type=str,
-        help="Value for f0up_key (-24 to +24)",
+        help="Value for f0up_key",
+        choices=[str(i) for i in range(-24, 25)],
+        default="0",
     )
     tts_parser.add_argument(
         "--filter_radius",
         type=str,
-        help="Value for filter_radius (0 to 10)",
+        help="Value for filter_radius",
+        choices=[str(i) for i in range(11)],
+        default="3",
     )
     tts_parser.add_argument(
         "--index_rate",
         type=str,
-        help="Value for index_rate (0.0 to 1)",
+        help="Value for index_rate",
+        choices=[str(i / 10) for i in range(11)],
+        default="0.3",
+    )
+    tts_parser.add_argument(
+        "--rms_mix_rate",
+        type=str,
+        help="Value for rms_mix_rate",
+        choices=[str(i / 10) for i in range(11)],
+        default="1",
+    )
+    tts_parser.add_argument(
+        "--protect",
+        type=str,
+        help="Value for protect",
+        choices=[str(i / 10) for i in range(6)],
+        default="0.33",
     )
     tts_parser.add_argument(
         "--hop_length",
         type=str,
-        help="Value for hop_length (1 to 512)",
-        choices=range(1, 513),
+        help="Value for hop_length",
+        choices=[str(i) for i in range(1, 513)],
+        default="128",
     )
     tts_parser.add_argument(
         "--f0method",
         type=str,
-        help="Value for f0method (pm, harvest, dio, crepe, crepe-tiny, rmvpe, fcpe, hybrid[crepe+rmvpe], hybrid[crepe+fcpe], hybrid[rmvpe+fcpe], hybrid[crepe+rmvpe+fcpe])",
+        help="Value for f0method",
+        choices=[
+            "pm",
+            "harvest",
+            "dio",
+            "crepe",
+            "crepe-tiny",
+            "rmvpe",
+            "fcpe",
+            "hybrid[crepe+rmvpe]",
+            "hybrid[crepe+fcpe]",
+            "hybrid[rmvpe+fcpe]",
+            "hybrid[crepe+rmvpe+fcpe]",
+        ],
+        default="rmvpe",
     )
     tts_parser.add_argument("--output_tts_path", type=str, help="Output tts path")
     tts_parser.add_argument("--output_rvc_path", type=str, help="Output rvc path")
-    tts_parser.add_argument("--pth_file", type=str, help="Path to the .pth file")
+    tts_parser.add_argument("--pth_path", type=str, help="Path to the .pth file")
     tts_parser.add_argument(
         "--index_path",
         type=str,
@@ -552,6 +712,7 @@ def parse_arguments():
         type=str,
         help="Enable split audio",
         choices=["True", "False"],
+        default="False",
     )
     tts_parser.add_argument(
         "--f0autotune",
@@ -559,6 +720,20 @@ def parse_arguments():
         help="Enable autotune",
         choices=["True", "False"],
         default="False",
+    )
+    tts_parser.add_argument(
+        "--clean_audio",
+        type=str,
+        help="Enable clean audio",
+        choices=["True", "False"],
+        default="False",
+    )
+    tts_parser.add_argument(
+        "--clean_strength",
+        type=str,
+        help="Value for clean_strength",
+        choices=[str(i / 10) for i in range(11)],
+        default="0.7",
     )
 
     # Parser for 'preprocess' mode
@@ -572,7 +747,7 @@ def parse_arguments():
     preprocess_parser.add_argument(
         "--sampling_rate",
         type=str,
-        help="Sampling rate (32000, 40000 or 48000)",
+        help="Sampling rate",
         choices=["32000", "40000", "48000"],
     )
 
@@ -586,25 +761,35 @@ def parse_arguments():
     extract_parser.add_argument(
         "--rvc_version",
         type=str,
-        help="Version of the model (v1 or v2)",
+        help="Version of the model",
         choices=["v1", "v2"],
         default="v2",
     )
     extract_parser.add_argument(
         "--f0method",
         type=str,
-        help="Value for f0method (pm, harvest, dio, crepe, crepe-tiny, rmvpe, fcpe, hybrid[crepe+rmvpe], hybrid[crepe+fcpe], hybrid[rmvpe+fcpe], hybrid[crepe+rmvpe+fcpe])",
+        help="Value for f0method",
+        choices=[
+            "pm",
+            "harvest",
+            "dio",
+            "crepe",
+            "crepe-tiny",
+            "rmvpe",
+        ],
+        default="rmvpe",
     )
     extract_parser.add_argument(
         "--hop_length",
         type=str,
-        help="Value for hop_length (1 to 512)",
-        choices=range(1, 513),
+        help="Value for hop_length",
+        choices=[str(i) for i in range(1, 513)],
+        default="128",
     )
     extract_parser.add_argument(
         "--sampling_rate",
         type=str,
-        help="Sampling rate (32000, 40000 or 48000)",
+        help="Sampling rate",
         choices=["32000", "40000", "48000"],
     )
 
@@ -618,58 +803,77 @@ def parse_arguments():
     train_parser.add_argument(
         "--rvc_version",
         type=str,
-        help="Version of the model (v1 or v2)",
+        help="Version of the model",
         choices=["v1", "v2"],
         default="v2",
     )
     train_parser.add_argument(
-        "--save_every_epoch", type=str, help="Save every epoch", choices=range(1, 101)
+        "--save_every_epoch",
+        type=str,
+        help="Save every epoch",
+        choices=[str(i) for i in range(1, 101)],
     )
     train_parser.add_argument(
         "--save_only_latest",
         type=str,
         help="Save weight only at last epoch",
         choices=["True", "False"],
+        default="False",
     )
     train_parser.add_argument(
         "--save_every_weights",
         type=str,
         help="Save weight every epoch",
         choices=["True", "False"],
+        default="True",
     )
     train_parser.add_argument(
-        "--total_epoch", type=str, help="Total epoch", choices=range(1, 1001)
+        "--total_epoch",
+        type=str,
+        help="Total epoch",
+        choices=[str(i) for i in range(1, 1001)],
+        default="128",
     )
     train_parser.add_argument(
         "--sampling_rate",
         type=str,
-        help="Sampling rate (32000, 40000, or 48000)",
+        help="Sampling rate",
         choices=["32000", "40000", "48000"],
     )
     train_parser.add_argument(
         "--batch_size",
         type=str,
         help="Batch size",
+        choices=[str(i) for i in range(1, 51)],
+        default="8",
     )
     train_parser.add_argument(
         "--gpu",
         type=str,
-        help="GPU number (0 to 10 separated by -)",
+        help="GPU number",
+        choices=[str(i) for i in range(1, 11)],
+        default="0",
     )
     train_parser.add_argument(
         "--pitch_guidance",
         type=str,
-        help="Pitch guidance (True or False)",
+        help="Pitch guidance",
+        choices=["True", "False"],
+        default="True",
     )
     train_parser.add_argument(
         "--pretrained",
         type=str,
-        help="Pretrained (True or False)",
+        help="Pretrained",
+        choices=["True", "False"],
+        default="True",
     )
     train_parser.add_argument(
         "--custom_pretrained",
         type=str,
-        help="Custom pretrained (True or False)",
+        help="Custom pretrained",
+        choices=["True", "False"],
+        default="False",
     )
     train_parser.add_argument(
         "--g_pretrained_path",
@@ -696,7 +900,7 @@ def parse_arguments():
     index_parser.add_argument(
         "--rvc_version",
         type=str,
-        help="Version of the model (v1 or v2)",
+        help="Version of the model",
         choices=["v1", "v2"],
         default="v2",
     )
@@ -741,7 +945,9 @@ def parse_arguments():
     )
 
     # Parser for 'api' mode
-    subparsers.add_parser("api", help="Run the API")
+    api_parser = subparsers.add_parser("api", help="Run the API")
+    api_parser.add_argument("--ip", type=str, help="IP address", default="127.0.0.1")
+    api_parser.add_argument("--port", type=str, help="Port", default="8003")
 
     return parser.parse_args()
 
@@ -759,28 +965,36 @@ def main():
                 str(args.f0up_key),
                 str(args.filter_radius),
                 str(args.index_rate),
+                str(args.rms_mix_rate),
+                str(args.protect),
                 str(args.hop_length),
                 str(args.f0method),
                 str(args.input_path),
                 str(args.output_path),
-                str(args.pth_file),
+                str(args.pth_path),
                 str(args.index_path),
                 str(args.split_audio),
                 str(args.f0autotune),
+                str(args.clean_audio),
+                str(args.clean_strength),
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(
                 str(args.f0up_key),
                 str(args.filter_radius),
                 str(args.index_rate),
+                str(args.rms_mix_rate),
+                str(args.protect),
                 str(args.hop_length),
                 str(args.f0method),
                 str(args.input_folder),
                 str(args.output_folder),
-                str(args.pth_file),
+                str(args.pth_path),
                 str(args.index_path),
                 str(args.split_audio),
                 str(args.f0autotune),
+                str(args.clean_audio),
+                str(args.clean_strength),
             )
         elif args.mode == "tts":
             run_tts_script(
@@ -789,14 +1003,18 @@ def main():
                 str(args.f0up_key),
                 str(args.filter_radius),
                 str(args.index_rate),
+                str(args.rms_mix_rate),
+                str(args.protect),
                 str(args.hop_length),
                 str(args.f0method),
                 str(args.output_tts_path),
                 str(args.output_rvc_path),
-                str(args.pth_file),
+                str(args.pth_path),
                 str(args.index_path),
                 str(args.split_audio),
                 str(args.f0autotune),
+                str(args.clean_audio),
+                str(args.clean_strength),
             )
         elif args.mode == "preprocess":
             run_preprocess_script(
@@ -851,7 +1069,10 @@ def main():
                 str(args.model_link),
             )
         elif args.mode == "api":
-            run_api_script()
+            run_api_script(
+                str(args.ip),
+                str(args.port),
+            )
     except Exception as error:
         print(f"Error: {error}")
 

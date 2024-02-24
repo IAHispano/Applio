@@ -78,8 +78,11 @@ try:
         index_added.add(big_npy[i : i + batch_size_add])
 
     faiss.write_index(index_added, index_filepath_added)
+    print(f"Saved index file '{index_filepath_added}'")
 
 except Exception as error:
     print(f"Failed to train index: {error}")
-
-print(f"Saved index file '{index_filepath_added}'")
+    if "one array to concatenate" in str(error):
+        print(
+            "If you are running this code in a virtual environment, make sure you have enough GPU available to generate the Index file."
+        )

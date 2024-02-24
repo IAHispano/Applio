@@ -7,7 +7,6 @@ from rvc.train.process_ckpt import (
     extract_small_model,
 )
 
-from rvc.lib.process.model_fusion import model_fusion
 from rvc.lib.process.model_information import (
     model_information,
 )
@@ -20,47 +19,6 @@ import gradio as gr
 
 
 def processing():
-    with gr.Accordion(label=i18n("Model fusion (On progress)"), open=False):
-        with gr.Column():
-            model_fusion_name = gr.Textbox(
-                label=i18n("Model Name"),
-                value="",
-                max_lines=1,
-                interactive=True,
-                placeholder=i18n("Enter model name"),
-            )
-            model_fusion_a = gr.Textbox(
-                label=i18n("Path to Model A"),
-                value="",
-                interactive=True,
-                placeholder=i18n("Path to model"),
-            )
-            model_fusion_b = gr.Textbox(
-                label=i18n("Path to Model B"),
-                value="",
-                interactive=True,
-                placeholder=i18n("Path to model"),
-            )
-        model_fusion_output_info = gr.Textbox(
-            label=i18n("Output Information"),
-            value="",
-        )
-
-        model_fusion_button = gr.Button(
-            i18n("Fusion"), variant="primary", interactive=False
-        )
-
-        model_fusion_button.click(
-            model_fusion,
-            [
-                model_fusion_name,
-                model_fusion_a,
-                model_fusion_b,
-            ],
-            model_fusion_output_info,
-            api_name="model_fusion",
-        )
-
     with gr.Accordion(label=i18n("View model information")):
         with gr.Row():
             with gr.Column():

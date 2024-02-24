@@ -245,6 +245,20 @@ def inference_tab():
                     value=False,
                     interactive=True,
                 )
+                clean_audio = gr.Checkbox(
+                    label=i18n("Clean Audio"),
+                    visible=True,
+                    value=False,
+                    interactive=True,
+                )
+                clean_strength = gr.Slider(
+                    minimum=0,
+                    maximum=1,
+                    label=i18n("Clean Strength"),
+                    visible=False,
+                    value=0.5,
+                    interactive=True,
+                )
                 pitch = gr.Slider(
                     minimum=-24,
                     maximum=24,
@@ -268,6 +282,20 @@ def inference_tab():
                     maximum=1,
                     label=i18n("Search Feature Ratio"),
                     value=0.75,
+                    interactive=True,
+                )
+                rms_mix_rate = gr.Slider(
+                    minimum=0,
+                    maximum=1,
+                    label=i18n("RMS Mix Rate"),
+                    value=1,
+                    interactive=True,
+                )
+                protect = gr.Slider(
+                    minimum=0,
+                    maximum=0.5,
+                    label=i18n("Protect"),
+                    value=0.5,
                     interactive=True,
                 )
                 hop_length = gr.Slider(
@@ -334,6 +362,20 @@ def inference_tab():
                     value=False,
                     interactive=True,
                 )
+                clean_audio_batch = gr.Checkbox(
+                    label=i18n("Clean Audio"),
+                    visible=True,
+                    value=False,
+                    interactive=True,
+                )
+                clean_strength_batch = gr.Slider(
+                    minimum=0,
+                    maximum=1,
+                    label=i18n("Clean Strength"),
+                    visible=False,
+                    value=0.5,
+                    interactive=True,
+                )
                 pitch_batch = gr.Slider(
                     minimum=-24,
                     maximum=24,
@@ -357,6 +399,20 @@ def inference_tab():
                     maximum=1,
                     label=i18n("Search Feature Ratio"),
                     value=0.75,
+                    interactive=True,
+                )
+                rms_mix_rate_batch = gr.Slider(
+                    minimum=0,
+                    maximum=1,
+                    label=i18n("RMS Mix Rate"),
+                    value=1,
+                    interactive=True,
+                )
+                protect_batch = gr.Slider(
+                    minimum=0,
+                    maximum=0.5,
+                    label=i18n("Protect"),
+                    value=0.5,
                     interactive=True,
                 )
                 hop_length_batch = gr.Slider(
@@ -391,6 +447,16 @@ def inference_tab():
     def toggle_visible(checkbox):
         return {"visible": checkbox, "__type__": "update"}
 
+    clean_audio.change(
+        fn=toggle_visible,
+        inputs=[clean_audio],
+        outputs=[clean_strength],
+    )
+    clean_audio_batch.change(
+        fn=toggle_visible,
+        inputs=[clean_audio_batch],
+        outputs=[clean_strength_batch],
+    )
     refresh_button.click(
         fn=change_choices,
         inputs=[],
@@ -427,6 +493,8 @@ def inference_tab():
             pitch,
             filter_radius,
             index_rate,
+            rms_mix_rate,
+            protect,
             hop_length,
             f0method,
             audio,
@@ -435,6 +503,8 @@ def inference_tab():
             index_file,
             split_audio,
             autotune,
+            clean_audio,
+            clean_strength,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -444,6 +514,8 @@ def inference_tab():
             pitch_batch,
             filter_radius_batch,
             index_rate_batch,
+            rms_mix_rate_batch,
+            protect_batch,
             hop_length_batch,
             f0method_batch,
             input_folder_batch,
@@ -452,6 +524,8 @@ def inference_tab():
             index_file,
             split_audio_batch,
             autotune_batch,
+            clean_audio_batch,
+            clean_strength_batch,
         ],
         outputs=[vc_output3],
     )
