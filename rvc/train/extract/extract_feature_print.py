@@ -7,6 +7,8 @@ import fairseq
 import soundfile as sf
 import numpy as np
 
+import logging
+logging.getLogger("fairseq").setLevel(logging.WARNING)
 
 device = sys.argv[1]
 n_parts = int(sys.argv[2])

@@ -6,7 +6,7 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from assets.i18n.i18n import I18nAuto
-from core import run_model_fusion_script
+from core import run_model_blender_script
 
 i18n = I18nAuto()
 
@@ -76,7 +76,7 @@ def voice_blender_tab():
             )
 
     model_fusion_button.click(
-        fn=run_model_fusion_script,
+        fn=run_model_blender_script,
         inputs=[
             model_fusion_name,
             model_fusion_a,

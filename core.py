@@ -12,7 +12,7 @@ from rvc.configs.config import Config
 from rvc.train.extract.preparing_files import generate_config, generate_filelist
 from rvc.lib.tools.pretrained_selector import pretrained_selector
 
-from rvc.train.process.model_fusion import model_fusion
+from rvc.train.process.model_blender import model_blender
 from rvc.train.process.model_information import model_information
 
 config = Config()
@@ -364,15 +364,31 @@ def run_index_script(model_name, rvc_version):
     subprocess.run(command)
     return f"Index file for {model_name} generated successfully."
 
+# Model extract
+def run_model_extract_script(pth_path, model_name, sampling_rate, pitch_guidance, rvc_version):
+    f0 = 1 if str(pitch_guidance) == "True" else 0
+    model_extract_script_path = os.path.join("rvc", "train", "process", "extract_small_model.py")
+    command = [
+        "python",
+        model_extract_script_path,
+        pth_path,
+        model_name,
+        sampling_rate,
+        f0,
+        rvc_version,
+    ]
+
+    subprocess.run(command)
+    return f"Model {model_name} extracted successfully."
 
 # Model information
 def run_model_information_script(pth_path):
     print(model_information(pth_path))
 
 
-# Model fusion
-def run_model_fusion_script(model_name, pth_path_1, pth_path_2, alpha):
-    model_fusion(model_name, pth_path_1, pth_path_2, alpha)
+# Model blender
+def run_model_blender_script(model_name, pth_path_1, pth_path_2, ratio):
+    model_blender(model_name, pth_path_1, pth_path_2, ratio)
 
 
 # Tensorboard
@@ -905,6 +921,39 @@ def parse_arguments():
         default="v2",
     )
 
+    # Parser for 'model_extract' mode
+    model_extract_parser = subparsers.add_parser("model_extract", help="Extract model")
+    model_extract_parser.add_argument(
+        "--pth_path",
+        type=str,
+        help="Path to the .pth file",
+    )
+    model_extract_parser.add_argument(
+        "--model_name",
+        type=str,
+        help="Name of the model",
+    )
+    model_extract_parser.add_argument(
+        "--sampling_rate",
+        type=str,
+        help="Sampling rate",
+        choices=["40000", "48000"],
+    )
+    model_extract_parser.add_argument(
+        "--pitch_guidance",
+        type=str,
+        help="Pitch guidance",
+        choices=["True", "False"],
+        default="True",
+    )
+    model_extract_parser.add_argument(
+        "--rvc_version",
+        type=str,
+        help="Version of the model",
+        choices=["v1", "v2"],
+        default="v2",
+    )
+
     # Parser for 'model_information' mode
     model_information_parser = subparsers.add_parser(
         "model_information", help="Print model information"
@@ -915,27 +964,29 @@ def parse_arguments():
         help="Path to the .pth file",
     )
 
-    # Parser for 'model_fusion' mode
-    model_fusion_parser = subparsers.add_parser("model_fusion", help="Fuse two models")
-    model_fusion_parser.add_argument(
+    # Parser for 'model_blender' mode
+    model_blender_parser = subparsers.add_parser(
+        "model_blender", help="Fuse two models"
+    )
+    model_blender_parser.add_argument(
         "--model_name",
         type=str,
         help="Name of the model",
     )
-    model_fusion_parser.add_argument(
+    model_blender_parser.add_argument(
         "--pth_path_1",
         type=str,
         help="Path to the first .pth file",
     )
-    model_fusion_parser.add_argument(
+    model_blender_parser.add_argument(
         "--pth_path_2",
         type=str,
         help="Path to the second .pth file",
     )
-    model_fusion_parser.add_argument(
-        "--alpha",
+    model_blender_parser.add_argument(
+        "--ratio",
         type=str,
-        help="Value for alpha",
+        help="Value for blender ratio",
         choices=[str(i / 10) for i in range(11)],
         default="0.5",
     )
@@ -1059,16 +1110,24 @@ def main():
                 str(args.model_name),
                 str(args.rvc_version),
             )
+        elif args.mode == "model_extract":
+            run_model_extract_script(
+                str(args.pth_path),
+                str(args.model_name),
+                str(args.sampling_rate),
+                str(args.pitch_guidance),
+                str(args.rvc_version),
+            )
         elif args.mode == "model_information":
             run_model_information_script(
                 str(args.pth_path),
             )
-        elif args.mode == "model_fusion":
-            run_model_fusion_script(
+        elif args.mode == "model_blender":
+            run_model_blender_script(
                 str(args.model_name),
                 str(args.pth_path_1),
                 str(args.pth_path_2),
-                str(args.alpha),
+                str(args.ratio),
             )
         elif args.mode == "tensorboard":
             run_tensorboard_script()
