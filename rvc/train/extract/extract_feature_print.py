@@ -8,6 +8,7 @@ import soundfile as sf
 import numpy as np
 
 import logging
+
 logging.getLogger("fairseq").setLevel(logging.WARNING)
 
 device = sys.argv[1]
