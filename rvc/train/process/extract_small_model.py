@@ -144,7 +144,7 @@ def extract_small_model(path, name, sr, if_f0, version):
                     256,
                     32000,
                 ]
- 
+
         opt["info"] = "Extracted model."
         opt["version"] = version
         opt["sr"] = sr

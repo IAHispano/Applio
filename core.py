@@ -364,10 +364,15 @@ def run_index_script(model_name, rvc_version):
     subprocess.run(command)
     return f"Index file for {model_name} generated successfully."
 
+
 # Model extract
-def run_model_extract_script(pth_path, model_name, sampling_rate, pitch_guidance, rvc_version):
+def run_model_extract_script(
+    pth_path, model_name, sampling_rate, pitch_guidance, rvc_version
+):
     f0 = 1 if str(pitch_guidance) == "True" else 0
-    model_extract_script_path = os.path.join("rvc", "train", "process", "extract_small_model.py")
+    model_extract_script_path = os.path.join(
+        "rvc", "train", "process", "extract_small_model.py"
+    )
     command = [
         "python",
         model_extract_script_path,
@@ -380,6 +385,7 @@ def run_model_extract_script(pth_path, model_name, sampling_rate, pitch_guidance
 
     subprocess.run(command)
     return f"Model {model_name} extracted successfully."
+
 
 # Model information
 def run_model_information_script(pth_path):
