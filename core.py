@@ -180,15 +180,13 @@ def run_tts_script(
 
     command_infer = [
         "python",
-        infer_script_path,
         *map(
             str,
             [
+                infer_script_path,
                 f0up_key,
                 filter_radius,
                 index_rate,
-                rms_mix_rate,
-                protect,
                 hop_length,
                 f0method,
                 output_tts_path,
@@ -197,6 +195,8 @@ def run_tts_script(
                 index_path,
                 split_audio,
                 f0autotune,
+                rms_mix_rate,
+                protect,
                 clean_audio,
                 clean_strength,
             ],
