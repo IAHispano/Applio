@@ -10,6 +10,8 @@ Welcome to **Applio**, the ultimate voice cloning tool meticulously optimized fo
 [![Support Discord](https://img.shields.io/discord/1096877223765606521?style=flat-square)](https://discord.gg/iahispano)
 [![Issues](https://img.shields.io/github/issues/iahispano/applio-rvc-fork?style=flat-square)](https://github.com/IAHispano/Applio-RVC-Fork/issues)
 [![Open In Collab](https://img.shields.io/badge/google_colab-F9AB00?style=flat-square&logo=googlecolab&logoColor=white)](https://colab.research.google.com/github/iahispano/applio/blob/master/assets/Applio.ipynb)
+[![Open In Applio](https://img.shields.io/badge/Compiled%20Versions-ffffff?style=flat-square&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAALEsAACxLAaU9lqkAAAHzSURBVDhPrVFNaBNBFP5m9idJU9tE2srS5KSNlxT00AhSEEH01GMOIkpPBSmCehE99aIgVOrJgzdP6kE8qoQKEqmIV00PhRQ3jSbdTbRVm7rbnfHNJLV4lX7w3sx8733z3szDvkIIkQyCoEB2otls9vfof8B6q0a9Xu8b2V66bTSez7BguU+FhT3eQfb8Q549d4sxttVL3RNKKS3xaeEVX797GkOxHkuQZF4Ikb3zZjmcOJvP5wNFc+UUwrXFWd6Y1yK3YWlOadx12o9Y4O7cqZyDKzpA2BUy7j6bRprBWwsw/yTdLfTNwL3HaeBnB0gF4KtPp1WuEuwJ2cYYLAPDjokbF9rUOpA+IHDzYhtIUOsxCyxqjalcJdDCYrHIpLA7aPwAOiEW38dx+XoGM9cy+Lhiak7HWKKjcpVGu99+5ZL9buoR7BY9NkJE98nPo5AxCXP0C1USgGkAO8MIT76ctQ8efqAr8u+VY0ATMOg4EIcxYMMc92DlfLCkrTmYFBNfgY3Kca1RDiZdLah4PyWlEsAg2eZ219RecSomGZgRV//WbbVWq2UObb29b7RfT/FwxQZPIUoWlqQUkfHrwySTm0zauXBn6MyLVnLyquM4q0q3C14qlQY9z5uoVqtH6UyPovG57hHf9wvlcpnm8ncK/wvgD6Orstc1XrkKAAAAAElFTkSuQmCC&link=https://applio.org/playground)](https://applio.org/playground)
+
 
 ## Content Table
 - [**Installation**](#installation)
