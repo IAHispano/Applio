@@ -67,6 +67,7 @@
   "Utilize pretrained models when training your own. This approach reduces training duration and enhances overall quality.": "Utilice modelos preentrenados al entrenar los suyos propios. Este enfoque reduce la duración del entrenamiento y mejora la calidad general.",
   "Extract Features": "Extraer características",
   "Start Training": "Empezar a entrenar",
+  "Stop Training & Restart Applio": "Detener el entrenamiento y reiniciar Applio",
   "Generate Index": "Generar índice",
   "Voice Model": "Modelo de voz",
   "Select the voice model to use for the conversion.": "Seleccione el modelo de voz que desea utilizar para la conversión.",
