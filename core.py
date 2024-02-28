@@ -398,7 +398,6 @@ def run_model_blender_script(model_name, pth_path_1, pth_path_2, ratio):
     return message, model_blended
 
 
-
 # Tensorboard
 def run_tensorboard_script():
     tensorboard_script_path = os.path.join(
