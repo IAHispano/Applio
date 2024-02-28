@@ -99,6 +99,7 @@ def save_plugin_dropbox(dropbox):
 def check_new_folders():
     existing_folders = get_existing_folders()
     new_folders = set(current_folders) - set(existing_folders)
+    save_existing_folders(current_folders)
     if new_folders:
         for new_folder in new_folders:
             complete_path = os.path.join(plugins_path, new_folder)
@@ -118,5 +119,4 @@ def check_new_folders():
             else:
                 print("No requirements.txt file found in the plugin folder.")
         print("Plugins checked and installed! Restarting applio to apply the changes.")
-        save_existing_folders(current_folders)
         restart_applio()

@@ -11,6 +11,7 @@ from core import (
 )
 from rvc.configs.config import max_vram_gpu, get_gpu_info
 from rvc.lib.utils import format_title
+from tabs.settings.restart import restart_applio
 
 i18n = I18nAuto()
 now_dir = os.getcwd()
@@ -415,6 +416,13 @@ def train_tab():
                 ],
                 train_output_info,
                 api_name="start_training",
+            )
+            
+            stop_train_button = gr.Button(i18n("Stop Training & Restart Applio"))
+            stop_train_button.click(
+                fn=restart_applio,
+                inputs=[],
+                outputs=[],
             )
 
             index_button = gr.Button(i18n("Generate Index"))
