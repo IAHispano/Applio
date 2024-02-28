@@ -417,7 +417,7 @@ def train_tab():
                 train_output_info,
                 api_name="start_training",
             )
-            
+
             stop_train_button = gr.Button(i18n("Stop Training & Restart Applio"))
             stop_train_button.click(
                 fn=restart_applio,
