@@ -394,7 +394,9 @@ def run_model_information_script(pth_path):
 
 # Model blender
 def run_model_blender_script(model_name, pth_path_1, pth_path_2, ratio):
-    model_blender(model_name, pth_path_1, pth_path_2, ratio)
+    message, model_blended = model_blender(model_name, pth_path_1, pth_path_2, ratio)
+    return message, model_blended
+
 
 
 # Tensorboard
