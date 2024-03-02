@@ -17,7 +17,7 @@ run-install:
 
 # Run Applio
 run-applio:
-	python app.py
+	python app.py --share
 
 # Run Tensorboard
 run-tensorboard:
