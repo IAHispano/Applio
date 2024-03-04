@@ -92,7 +92,7 @@
   "The path where the output audio will be saved, by default in assets/audios/output.wav": "Varsayılan olarak assets/audios/output.wav'da kaydedilecek çıktı sesinin yolu",
   "Split Audio": "Sesi Böl",
   "Split the audio into chunks for inference to obtain better results in some cases.": "Daha iyi sonuçlar elde etmek için bazı durumlarda çıkarım için sesi parçalara bölün.",
-  "Autotune": "Oto Ayar",
+  "Autotune": "Autotune",
   "Apply a soft autotune to your inferences, recommended for singing conversions.": "Çıkarımlarınıza yumuşak bir oto ayar uygulayın, şarkı dönüştürmeleri için önerilir.",
   "Clean Audio": "Sesi Temizle",
   "Clean your audio output using noise detection algorithms, recommended for speaking audios.": "Ses algılama algoritmaları kullanarak ses çıktınızı temizleyin, konuşan sesler için önerilir.",
