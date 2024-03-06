@@ -73,7 +73,7 @@ def download_tab():
 
         dropbox = gr.File(
             label=i18n(
-                "Drag your .pth file and .index file into this space. Drag one and then the other."
+                "Drag the .PTH file into the upload box. Then the .INDEX."
             ),
             type="filepath",
         )

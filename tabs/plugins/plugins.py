@@ -16,7 +16,7 @@ plugins_core.check_new_folders()
 def plugins_tab():
     with gr.TabItem(i18n("Plugin Installer")):
         dropbox = gr.File(
-            label=i18n("Drag your plugin.zip to install it"),
+            label=i18n("Drag your plugin.zip to install it."),
             type="filepath",
         )
 

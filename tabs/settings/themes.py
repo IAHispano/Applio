@@ -22,7 +22,7 @@ def theme_tab():
                 value=loadThemes.read_json(),
                 label=i18n("Theme"),
                 info=i18n(
-                    "Select the theme you want to use. (Requires restarting Applio)"
+                    "Select the theme. (Restart required)"
                 ),
                 visible=True,
             )

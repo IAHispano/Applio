@@ -180,7 +180,7 @@ def inference_tab():
 
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
-                info=i18n("Select the index file to use for the conversion."),
+                info=i18n("Select the .INDEX file to use for the conversion."),
                 choices=get_indexes(),
                 value=match_index(default_weight) if default_weight else "",
                 interactive=True,
@@ -221,7 +221,7 @@ def inference_tab():
                     allow_custom_value=True,
                 )
 
-        with gr.Accordion(i18n("Advanced Settings"), open=False):
+        with gr.Accordion(i18n("Settings"), open=False):
             with gr.Column():
                 clear_outputs_infer = gr.Button(
                     i18n("Clear Outputs (Deletes all audios in assets/audios)")
@@ -230,7 +230,7 @@ def inference_tab():
                     label=i18n("Output Path"),
                     placeholder=i18n("Enter output path"),
                     info=i18n(
-                        "The path where the output audio will be saved, by default in assets/audios/output.wav"
+                        "The path where the output audio will be saved. By default in assets/audios/output.wav"
                     ),
                     value=(
                         output_path_fn(audio_paths[0])
@@ -242,7 +242,7 @@ def inference_tab():
                 split_audio = gr.Checkbox(
                     label=i18n("Split Audio"),
                     info=i18n(
-                        "Split the audio into chunks for inference to obtain better results in some cases."
+                        "Splits audio in chunks. Brings quicker results & fixes inconsistent volume bug."
                     ),
                     visible=True,
                     value=False,
@@ -251,7 +251,7 @@ def inference_tab():
                 autotune = gr.Checkbox(
                     label=i18n("Autotune"),
                     info=i18n(
-                        "Apply a soft autotune to your inferences, recommended for singing conversions."
+                        "Applies soft autotune. Ideal for singing audios."
                     ),
                     visible=True,
                     value=False,
@@ -260,7 +260,7 @@ def inference_tab():
                 clean_audio = gr.Checkbox(
                     label=i18n("Clean Audio"),
                     info=i18n(
-                        "Clean your audio output using noise detection algorithms, recommended for speaking audios."
+                        "De-noises the output. Ideal for speaking audios."
                     ),
                     visible=True,
                     value=False,
@@ -271,7 +271,7 @@ def inference_tab():
                     maximum=1,
                     label=i18n("Clean Strength"),
                     info=i18n(
-                        "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
+                        "Define clean-up level. Very high values may compress the output too much."
                     ),
                     visible=False,
                     value=0.5,
@@ -283,7 +283,7 @@ def inference_tab():
                     step=1,
                     label=i18n("Pitch"),
                     info=i18n(
-                        "Set the pitch of the audio, the higher the value, the higher the pitch."
+                        "Set the pitch for the voice. Higher values increase the pitch."
                     ),
                     value=0,
                     interactive=True,
@@ -293,7 +293,7 @@ def inference_tab():
                     maximum=7,
                     label=i18n("Filter Radius"),
                     info=i18n(
-                        "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
+                        "A value of 3 or higher applies median filtering. May reduce respiration. Works if you use Harvest."
                     ),
                     value=3,
                     step=1,
@@ -302,9 +302,9 @@ def inference_tab():
                 index_rate = gr.Slider(
                     minimum=0,
                     maximum=1,
-                    label=i18n("Search Feature Ratio"),
+                    label=i18n("Index Rate"),
                     info=i18n(
-                        "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
+                        "Level of influence of model's .INDEX. Lowering it may minimize artifacts."
                     ),
                     value=0.75,
                     interactive=True,
@@ -314,7 +314,7 @@ def inference_tab():
                     maximum=1,
                     label=i18n("Volume Envelope"),
                     info=i18n(
-                        "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
+                        "The closer to 0, the more the audio will keep its original volume. The closer to 1, it will match the loudness of the model."
                     ),
                     value=1,
                     interactive=True,
@@ -322,9 +322,9 @@ def inference_tab():
                 protect = gr.Slider(
                     minimum=0,
                     maximum=0.5,
-                    label=i18n("Protect Voiceless Consonants"),
+                    label=i18n("Protection"),
                     info=i18n(
-                        "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
+                        "Suppresses breath sounds to reduce artifacting. Lowering it too much may suppress some speech."
                     ),
                     value=0.5,
                     interactive=True,
@@ -335,16 +335,16 @@ def inference_tab():
                     step=1,
                     label=i18n("Hop Length"),
                     info=i18n(
-                        "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
+                        "Defines the duration it takes the voice hit a significant pitch change. Smaller values take longer to process, but yield a more precise pitch."
                     ),
                     value=128,
                     interactive=True,
                 )
             with gr.Column():
                 f0method = gr.Radio(
-                    label=i18n("Pitch extraction algorithm"),
+                    label=i18n("Pitch Extraction Algorithm"),
                     info=i18n(
-                        "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
+                        "Pitch extraction algorithm to use for the audio conversion. RMVPE is the most recommended."
                     ),
                     choices=[
                         "pm",
@@ -375,7 +375,7 @@ def inference_tab():
             with gr.Column():
                 input_folder_batch = gr.Textbox(
                     label=i18n("Input Folder"),
-                    info=i18n("Select the folder containing the audios to convert."),
+                    info=i18n("Select the folder containing the audios."),
                     placeholder=i18n("Enter input path"),
                     value=os.path.join(now_dir, "assets", "audios"),
                     interactive=True,
@@ -383,13 +383,13 @@ def inference_tab():
                 output_folder_batch = gr.Textbox(
                     label=i18n("Output Folder"),
                     info=i18n(
-                        "Select the folder where the output audios will be saved."
+                        "Select the folder for the results."
                     ),
                     placeholder=i18n("Enter output path"),
                     value=os.path.join(now_dir, "assets", "audios"),
                     interactive=True,
                 )
-        with gr.Accordion(i18n("Advanced Settings"), open=False):
+        with gr.Accordion(i18n("Settings"), open=False):
             with gr.Column():
                 clear_outputs_batch = gr.Button(
                     i18n("Clear Outputs (Deletes all audios in assets/audios)")
@@ -397,7 +397,7 @@ def inference_tab():
                 split_audio_batch = gr.Checkbox(
                     label=i18n("Split Audio"),
                     info=i18n(
-                        "Split the audio into chunks for inference to obtain better results in some cases."
+                        "Splits audio in chunks. Brings quicker results & fixes inconsistent volume bug."
                     ),
                     visible=True,
                     value=False,
@@ -406,7 +406,7 @@ def inference_tab():
                 autotune_batch = gr.Checkbox(
                     label=i18n("Autotune"),
                     info=i18n(
-                        "Apply a soft autotune to your inferences, recommended for singing conversions."
+                        "Applies soft autotune. Ideal for singing audios."
                     ),
                     visible=True,
                     value=False,
@@ -415,7 +415,7 @@ def inference_tab():
                 clean_audio_batch = gr.Checkbox(
                     label=i18n("Clean Audio"),
                     info=i18n(
-                        "Clean your audio output using noise detection algorithms, recommended for speaking audios."
+                        "De-noises the output. Ideal for speaking audios."
                     ),
                     visible=True,
                     value=False,
@@ -426,7 +426,7 @@ def inference_tab():
                     maximum=1,
                     label=i18n("Clean Strength"),
                     info=i18n(
-                        "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
+                        "Define clean-up level. Very high values may compress the output too much."
                     ),
                     visible=False,
                     value=0.5,
@@ -438,7 +438,7 @@ def inference_tab():
                     step=1,
                     label=i18n("Pitch"),
                     info=i18n(
-                        "Set the pitch of the audio, the higher the value, the higher the pitch."
+                        "Set the pitch for the voice. Higher values increase the pitch."
                     ),
                     value=0,
                     interactive=True,
@@ -448,7 +448,7 @@ def inference_tab():
                     maximum=7,
                     label=i18n("Filter Radius"),
                     info=i18n(
-                        "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
+                        "Level of influence of model's .INDEX. Lowering it may minimize artifacts"
                     ),
                     value=3,
                     step=1,
@@ -457,9 +457,9 @@ def inference_tab():
                 index_rate_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
-                    label=i18n("Search Feature Ratio"),
+                    label=i18n("Index Rate"),
                     info=i18n(
-                        "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
+                        "Level of influence of model's .INDEX. Lowering it may minimize artifacts."
                     ),
                     value=0.75,
                     interactive=True,
@@ -469,7 +469,7 @@ def inference_tab():
                     maximum=1,
                     label=i18n("Volume Envelope"),
                     info=i18n(
-                        "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
+                        "The closer to 0, the more the audio will keep its original volume. The closer to 1, it will match the loudness of the model."
                     ),
                     value=1,
                     interactive=True,
@@ -477,9 +477,9 @@ def inference_tab():
                 protect_batch = gr.Slider(
                     minimum=0,
                     maximum=0.5,
-                    label=i18n("Protect Voiceless Consonants"),
+                    label=i18n("Protection"),
                     info=i18n(
-                        "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
+                        "Suppresses breath sounds to reduce artifacting. Lowering it too much may suppress some speech."
                     ),
                     value=0.5,
                     interactive=True,
@@ -490,16 +490,16 @@ def inference_tab():
                     step=1,
                     label=i18n("Hop Length"),
                     info=i18n(
-                        "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
+                        "Defines the duration it takes the voice hit a significant pitch change. Smaller values take longer to process, but yield a more precise pitch."
                     ),
                     value=128,
                     interactive=True,
                 )
             with gr.Column():
                 f0method_batch = gr.Radio(
-                    label=i18n("Pitch extraction algorithm"),
+                    label=i18n("Pitch Extraction Algorithm"),
                     info=i18n(
-                        "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
+                        "Pitch extraction algorithm to use for the audio conversion. RMVPE is the most recommended."
                     ),
                     choices=[
                         "pm",

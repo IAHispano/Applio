@@ -40,16 +40,16 @@ def report_tab():
     instructions = [
         i18n("# How to Report an Issue on GitHub"),
         i18n(
-            "1. Click on the 'Record Screen' button below to start recording the issue you are experiencing."
+            "1. Click the 'Record Screen' button below to start recording the issue."
         ),
         i18n(
-            "2. Once you have finished recording the issue, click on the 'Stop Recording' button (the same button, but the label changes depending on whether you are actively recording or not)."
+            "2. Once you finish recording, click the 'Stop Recording' button, where 'Record Screen' used to be."
         ),
         i18n(
-            "3. Go to [GitHub Issues](https://github.com/IAHispano/Applio/issues) and click on the 'New Issue' button."
+            "3. Go to [GitHub Issues](https://github.com/IAHispano/Applio/issues) & click 'New Issue'."
         ),
         i18n(
-            "4. Complete the provided issue template, ensuring to include details as needed, and utilize the assets section to upload the recorded file from the previous step."
+            "4. Complete the provided issue template. Ensure to include all the details needed. Use the assets section to upload the recording."
         ),
     ]
     components = [gr.Markdown(value=instruction) for instruction in instructions]

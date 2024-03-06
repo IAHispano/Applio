@@ -1,6 +1,6 @@
-# Applio
+# <h1 align="center">Welcome to Applio</h1>
 
-Welcome to **Applio**, the ultimate voice cloning tool meticulously optimized for unrivaled power, modularity, and a user-friendly experience.
+**The ultimate voice cloning tool. Meticulously optimized for unrivaled power, modularity & user-friendly experience.**  
 
 [![🍏 Applio Plugins](https://img.shields.io/badge/%F0%9F%8D%8F%20Applio%20Plugins-ffffff?style=flat-square&link=https://github.com/IAHispano/Applio-Plugins)](https://github.com/IAHispano/Applio-Plugins)
 [![Compiled Versions](https://img.shields.io/badge/Compiled%20Versions-ffffff?style=flat-square&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAALEsAACxLAaU9lqkAAAHzSURBVDhPrVFNaBNBFP5m9idJU9tE2srS5KSNlxT00AhSEEH01GMOIkpPBSmCehE99aIgVOrJgzdP6kE8qoQKEqmIV00PhRQ3jSbdTbRVm7rbnfHNJLV4lX7w3sx8733z3szDvkIIkQyCoEB2otls9vfof8B6q0a9Xu8b2V66bTSez7BguU+FhT3eQfb8Q549d4sxttVL3RNKKS3xaeEVX797GkOxHkuQZF4Ikb3zZjmcOJvP5wNFc+UUwrXFWd6Y1yK3YWlOadx12o9Y4O7cqZyDKzpA2BUy7j6bRprBWwsw/yTdLfTNwL3HaeBnB0gF4KtPp1WuEuwJ2cYYLAPDjokbF9rUOpA+IHDzYhtIUOsxCyxqjalcJdDCYrHIpLA7aPwAOiEW38dx+XoGM9cy+Lhiak7HWKKjcpVGu99+5ZL9buoR7BY9NkJE98nPo5AxCXP0C1USgGkAO8MIT76ctQ8efqAr8u+VY0ATMOg4EIcxYMMc92DlfLCkrTmYFBNfgY3Kca1RDiZdLah4PyWlEsAg2eZ219RecSomGZgRV//WbbVWq2UObb29b7RfT/FwxQZPIUoWlqQUkfHrwySTm0zauXBn6MyLVnLyquM4q0q3C14qlQY9z5uoVqtH6UyPovG57hHf9wvlcpnm8ncK/wvgD6Orstc1XrkKAAAAAElFTkSuQmCC&link=https://huggingface.co/IAHispano/Applio/tree/main/Compiled)](https://huggingface.co/IAHispano/Applio/tree/main/Compiled)
@@ -13,88 +13,106 @@ Welcome to **Applio**, the ultimate voice cloning tool meticulously optimized fo
 [![Open In Applio](https://img.shields.io/badge/Open%20In%20Applio-ffffff?style=flat-square&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAALEsAACxLAaU9lqkAAAHzSURBVDhPrVFNaBNBFP5m9idJU9tE2srS5KSNlxT00AhSEEH01GMOIkpPBSmCehE99aIgVOrJgzdP6kE8qoQKEqmIV00PhRQ3jSbdTbRVm7rbnfHNJLV4lX7w3sx8733z3szDvkIIkQyCoEB2otls9vfof8B6q0a9Xu8b2V66bTSez7BguU+FhT3eQfb8Q549d4sxttVL3RNKKS3xaeEVX797GkOxHkuQZF4Ikb3zZjmcOJvP5wNFc+UUwrXFWd6Y1yK3YWlOadx12o9Y4O7cqZyDKzpA2BUy7j6bRprBWwsw/yTdLfTNwL3HaeBnB0gF4KtPp1WuEuwJ2cYYLAPDjokbF9rUOpA+IHDzYhtIUOsxCyxqjalcJdDCYrHIpLA7aPwAOiEW38dx+XoGM9cy+Lhiak7HWKKjcpVGu99+5ZL9buoR7BY9NkJE98nPo5AxCXP0C1USgGkAO8MIT76ctQ8efqAr8u+VY0ATMOg4EIcxYMMc92DlfLCkrTmYFBNfgY3Kca1RDiZdLah4PyWlEsAg2eZ219RecSomGZgRV//WbbVWq2UObb29b7RfT/FwxQZPIUoWlqQUkfHrwySTm0zauXBn6MyLVnLyquM4q0q3C14qlQY9z5uoVqtH6UyPovG57hHf9wvlcpnm8ncK/wvgD6Orstc1XrkKAAAAAElFTkSuQmCC&link=https://applio.org/playground)](https://applio.org/playground)
 
 
-## Content Table
+
+
+## Table of Contents
 - [**Installation**](#installation)
   - [Windows](#windows)
   - [Linux](#linux)
-  - [Using Makefile](#using-makefile-for-platforms-such-as-paperspace)
+  - [Makefile](#using-makefile-for-platforms-like-paperspace)
 - [**Usage**](#usage)
   - [Windows](#windows-1)
   - [Linux](#linux-1)
-  - [Using Makefile](#using-makefile-for-platforms-such-as-paperspace-1)
+  - [Makefile](#using-makefile-for-platforms-like-paperspace-1)
 - [**Repository Enhancements**](#repository-enhancements)
 - [**Credits**](#credits)
   - [Contributors](#contributors)
 
-## Installation
-Download the latest version from [GitHub Releases](https://github.com/IAHispano/Applio-RVC-Fork/releases) or use [Precompiled Versions](https://huggingface.co/IAHispano/applio/tree/main/Applio%20V3%20Precompiled).
+
+## <h2 align="center">Installation</h1>
+
+#### <h4 align="center">Download the latest version from [GitHub Releases](https://github.com/IAHispano/Applio-RVC-Fork/releases), or use [Precompiled Versions](https://huggingface.co/IAHispano/applio/tree/main/Applio%20V3%20Precompiled).</h4>
+
 
 ### Windows
-```bash
-./run-install.bat
-```
 
+  ```bash
+  ./run-install.bat
+  ```
+
+‎ 
 ### Linux
 ```bash
 chmod +x run-install.sh
 ./run-install.sh
 ```
 
-### Using Makefile (for platforms such as [Paperspace](https://www.paperspace.com/))
+‎ 
+### Using Makefile (for platforms like [Paperspace](https://www.paperspace.com/))
 ```
 make run-install
 ```
 
-## Usage
-Visit [Applio Documentation](https://docs.applio.org/) for a detailed UI usage explanation.
+‎ 
+## <h2 align="center">Usage</h1>
+
+#### <h4 align="center">Visit the [Applio Documentation](https://docs.applio.org/) for a detailed UI usage explanation.</h4>
 
 ### Windows
 ```bash
 ./run-applio.bat
 ```
 
+‎ 
 ### Linux
 ```bash
 chmod +x run-applio.sh
 ./run-applio.sh
 ```
 
-### Using Makefile (for platforms such as [Paperspace](https://www.paperspace.com/))
+‎ 
+### Using Makefile (for platforms like [Paperspace](https://www.paperspace.com/))
 ```
 make run-applio
 ```
 
-## Repository Enhancements
+‎ 
 
-This repository has undergone significant enhancements to improve its functionality and maintainability:
+## <h2 align="center">Repository Enhancements</h2>
 
-- **Modular Codebase:** Restructured codebase following a modular approach for better organization, readability, and maintenance.
-- **Hop Length Implementation:** Implemented hop length, courtesy of [@Mangio621](https://github.com/Mangio621/Mangio-RVC-Fork), boosting efficiency and performance, especially on Crepe (formerly Mangio-Crepe).
+> #### <h4 align="center">This repository has undergone significant enhancements, to improve its functionality & maintainability:</h4>
+
+- **Modular Codebase:** Restructured codebase following a modular approach, for better organization, readability & maintenance.
+
+- **Hop Length Implementation:** Implemented hop length, boosting efficiency & performance, especially on Crepe (formerly Mangio-Crepe). Courtesy of [@Mangio621](https://github.com/Mangio621/Mangio-RVC-Fork).
 - **Translations in 30+ Languages:** Added support for translations in over 30 languages, enhancing accessibility for a global audience.
-- **Cross-Platform Compatibility:** Ensured seamless operation across various platforms for a consistent user experience.
-- **Optimized Requirements:** Fine-tuned project requirements for enhanced performance and resource efficiency.
+- **Cross-Platform Compatibility:** Ensured seamless operation across various platforms, for a consistent user experience.
+- **Optimized Requirements:** Fine-tuned project requirements for enhanced performance & resource efficiency.
 - **Streamlined Installation:** Simplified installation process for a user-friendly setup experience.
 - **Hybrid F0 Estimation:** Introduced a personalized 'hybrid' F0 estimation method utilizing nanmedian, combining F0 calculations from various methods to achieve optimal results.
 - **Easy-to-Use UI:** Implemented a user-friendly interface for intuitive interaction.
-- **Optimized Code & Dependencies:** Enhanced code and streamlined dependencies for improved efficiency.
-- **Plugin System:** Introduced a plugin system for extending functionality and customization.
-  
-These enhancements contribute to a more robust and scalable codebase, making the repository more accessible for contributors and users alike.
+- **Optimized Code & Dependencies:** Enhanced code & streamlined dependencies for improved efficiency.
+- **Plugin System:** Introduced a plugin system for extending functionality & customization.    
+‎
 
-## Contributions
-- **Backend Contributions:** If you want to contribute to the backend, make your pull requests [here](https://github.com/blaise-tk/RVC_CLI).
-- **Frontend Contributions:** For interface or script-related contributions, feel free to contribute to this repository.
+These enhancements contribute to a more robust & scalable codebase, making the repository more accessible for contributors & users alike.     
 
-We appreciate all contributions ❤️
+
+## <h2 align="center">Contributions</h2>
+- **Backend Contributions:** To contribute to the backend, make your pull requests [here](https://github.com/blaise-tk/RVC_CLI).
+- **Frontend Contributions:** For interface/script-related contributions, feel free to contribute to this repository.
+- **We appreciate all contributions** ❤️    
+‎ 
 
 ## Planned Features
 - Implement: Support training for Apple Devices
 - Implement: rmvpe_gpu
 - Implement: Overtraining detector
 - Implement: Training stop
-- Fix: Model fusion
+- Fix: Model fusion   
+‎ 
 
-## Credits
+## <h2 align="center">Credits</h2>
 - [ContentVec](https://github.com/auspicious3000/contentvec/) by auspicious3000
 - [HIFIGAN](https://github.com/jik876/hifi-gan) by jik876
 - [Gradio](https://github.com/gradio-app/gradio) by gradio-app
@@ -109,9 +127,12 @@ We appreciate all contributions ❤️
 - [Harmonify](https://huggingface.co/Eempostor/Harmonify) by Eempostor
 - [RVC_CLI](https://github.com/blaise-tk/RVC_CLI) by blaise-tk
 - [Retrieval-based-Voice-Conversion-WebUI](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) by RVC-Project
-- [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork) by Mangio621
+- [Mangio-RVC-Fork](https://github.com/Mangio621/Mangio-RVC-Fork) by Mangio621    
+‎ 
+***
+#### <h2 align="center">Contributors</h2>
 
-### Contributors
+
 <a href="https://github.com/IAHispano/Applio/graphs/contributors" target="_blank">
   <img src="https://contrib.rocks/image?repo=IAHispano/Applio" />
 </a>

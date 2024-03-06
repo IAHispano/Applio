@@ -73,7 +73,7 @@ def get_indexes():
 def process_input(file_path):
     with open(file_path, "r") as file:
         file_contents = file.read()
-    gr.Info(f"The text from the txt file has been loaded!")
+    gr.Info(f"Text from .TXT file loaded!")
     return file_contents, None
 
 
@@ -102,7 +102,7 @@ def tts_tab():
             best_default_index_path = match_index(model_file.value)
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
-                info=i18n("Select the index file to use for the conversion."),
+                info=i18n("Select the .INDEX file to use for the conversion."),
                 choices=get_indexes(),
                 value=best_default_index_path,
                 interactive=True,
@@ -144,16 +144,16 @@ def tts_tab():
     tts_text = gr.Textbox(
         label=i18n("Text to Synthesize"),
         info=i18n("Enter the text to synthesize."),
-        placeholder=i18n("Enter text to synthesize"),
+        placeholder=i18n("Enter your text here."),
         lines=3,
     )
 
     txt_file = gr.File(
-        label=i18n("Or you can upload a .txt file"),
+        label=i18n("Or, upload a .TXT file"),
         type="filepath",
     )
 
-    with gr.Accordion(i18n("Advanced Settings"), open=False):
+    with gr.Accordion(i18n("Settings"), open=False):
         with gr.Column():
             output_tts_path = gr.Textbox(
                 label=i18n("Output Path for TTS Audio"),
@@ -170,7 +170,7 @@ def tts_tab():
             split_audio = gr.Checkbox(
                 label=i18n("Split Audio"),
                 info=i18n(
-                    "Split the audio into chunks for inference to obtain better results in some cases."
+                    "Splits audio in chunks. Brings quicker results & fixes inconsistent volume bug."
                 ),
                 visible=True,
                 value=False,
@@ -179,7 +179,7 @@ def tts_tab():
             autotune = gr.Checkbox(
                 label=i18n("Autotune"),
                 info=i18n(
-                    "Apply a soft autotune to your inferences, recommended for singing conversions."
+                    "Applies soft autotune. Ideal for singing audios."
                 ),
                 visible=True,
                 value=False,
@@ -188,7 +188,7 @@ def tts_tab():
             clean_audio = gr.Checkbox(
                 label=i18n("Clean Audio"),
                 info=i18n(
-                    "Clean your audio output using noise detection algorithms, recommended for speaking audios."
+                    "De-noises the output. Ideal for speaking audios."
                 ),
                 visible=True,
                 value=True,
@@ -199,7 +199,7 @@ def tts_tab():
                 maximum=1,
                 label=i18n("Clean Strength"),
                 info=i18n(
-                    "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
+                    "Define clean-up level. Very high values may compress the output too much."
                 ),
                 visible=True,
                 value=0.5,
@@ -211,7 +211,7 @@ def tts_tab():
                 step=1,
                 label=i18n("Pitch"),
                 info=i18n(
-                    "Set the pitch of the audio, the higher the value, the higher the pitch."
+                    "Set the pitch for the voice. Higher values increase the pitch."
                 ),
                 value=0,
                 interactive=True,
@@ -221,7 +221,7 @@ def tts_tab():
                 maximum=7,
                 label=i18n("Filter Radius"),
                 info=i18n(
-                    "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
+                    "A value of 3 or higher applies median filtering. May reduce respiration. Works if you use Harvest."
                 ),
                 value=3,
                 step=1,
@@ -230,9 +230,9 @@ def tts_tab():
             index_rate = gr.Slider(
                 minimum=0,
                 maximum=1,
-                label=i18n("Search Feature Ratio"),
+                label=i18n("Index Rate"),
                 info=i18n(
-                    "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
+                    "Level of influence of model's .INDEX. Lowering it may minimize artifacts."
                 ),
                 value=0.75,
                 interactive=True,
@@ -242,7 +242,7 @@ def tts_tab():
                 maximum=1,
                 label=i18n("Volume Envelope"),
                 info=i18n(
-                    "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
+                    "The closer to 0, the more the audio will keep its original volume. The closer to 1, it will match the loudness of the model."
                 ),
                 value=1,
                 interactive=True,
@@ -250,9 +250,9 @@ def tts_tab():
             protect = gr.Slider(
                 minimum=0,
                 maximum=0.5,
-                label=i18n("Protect Voiceless Consonants"),
+                label=i18n("Protection"),
                 info=i18n(
-                    "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
+                    "Suppresses breath sounds to reduce artifacting. Lowering it too much may suppress some speech."
                 ),
                 value=0.5,
                 interactive=True,
@@ -263,7 +263,7 @@ def tts_tab():
                 step=1,
                 label=i18n("Hop Length"),
                 info=i18n(
-                    "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
+                    "Defines the duration it takes the voice hit a significant pitch change. Smaller values take longer to process, but yield a more precise pitch."
                 ),
                 value=128,
                 interactive=True,
@@ -272,7 +272,7 @@ def tts_tab():
                 f0method = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
                     info=i18n(
-                        "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
+                        "Pitch extraction algorithm to use for the audio conversion. RMVPE is the most recommended."
                     ),
                     choices=[
                         "pm",

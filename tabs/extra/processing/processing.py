@@ -17,7 +17,7 @@ def processing():
             with gr.Column():
                 model_view_model_path = gr.Textbox(
                     label=i18n("Path to Model"),
-                    info=i18n("Introduce the model pth path"),
+                    info=i18n(""Enter the path to the model's .PTH"),
                     value="",
                     interactive=True,
                     placeholder=i18n("Enter path to model"),
