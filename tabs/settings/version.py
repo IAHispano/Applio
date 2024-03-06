@@ -12,7 +12,7 @@ def version_tab():
             version_check = gr.Textbox(
                 label=i18n("Version Checker"),
                 info=i18n(
-                    "Check which version of Applio is the latest to see if you need to update."
+                    "Check the latest Applio version, to see if you need to update."
                 ),
                 interactive=False,
             )

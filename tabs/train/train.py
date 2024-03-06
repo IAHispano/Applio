@@ -110,12 +110,12 @@ def save_drop_model(dropbox):
 # Drop Dataset
 def save_drop_dataset_audio(dropbox, dataset_name):
     if not dataset_name:
-        gr.Info("Please enter a valid dataset name. Please try again.")
+        gr.Info("Enter a valid dataset name & try again.")
         return None, None
     else:
         file_extension = os.path.splitext(dropbox)[1][1:].lower()
         if file_extension not in sup_audioext:
-            gr.Info("The file you dropped is not a valid audio file. Please try again.")
+            gr.Info("The file is not a valid audio file. Please try again.")
         else:
             dataset_name = format_title(dataset_name)
             audio_file = format_title(os.path.basename(dropbox))
@@ -128,7 +128,7 @@ def save_drop_dataset_audio(dropbox, dataset_name):
             os.rename(dropbox, destination_path)
             gr.Info(
                 i18n(
-                    "The audio file has been successfully added to the dataset. Please click the preprocess button."
+                    "The dataset was successfully added. Please click the preprocess button."
                 )
             )
             dataset_path = os.path.dirname(destination_path)
@@ -181,8 +181,8 @@ def train_tab():
 
             with gr.Column():
                 sampling_rate = gr.Radio(
-                    label=i18n("Sampling Rate"),
-                    info=i18n("The sampling rate of the audio files."),
+                    label=i18n("Sample Rate"),
+                    info=i18n("The sample rate of the audio files."),
                     choices=["32000", "40000", "48000"],
                     value="40000",
                     interactive=True,
@@ -205,7 +205,7 @@ def train_tab():
         )
 
         with gr.Row():
-            preprocess_button = gr.Button(i18n("Preprocess Dataset"))
+            preprocess_button = gr.Button(i18n("Preprocess"))
             preprocess_button.click(
                 run_preprocess_script,
                 [model_name, dataset_path, sampling_rate],
@@ -222,7 +222,7 @@ def train_tab():
                 step=1,
                 label=i18n("Hop Length"),
                 info=i18n(
-                    "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
+                    "Defines the duration it takes the voice hit a significant pitch change. Smaller values take longer to process, but yield a more precise pitch."
                 ),
                 interactive=True,
             )
@@ -231,7 +231,7 @@ def train_tab():
                 f0method = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
                     info=i18n(
-                        "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
+                        "Pitch extraction algorithm to use for the audio conversion. RMVPE is the most recommended."
                     ),
                     choices=["pm", "dio", "crepe", "crepe-tiny", "harvest", "rmvpe"],
                     value="rmvpe",
@@ -262,7 +262,7 @@ def train_tab():
                 step=1,
                 label=i18n("Batch Size"),
                 info=i18n(
-                    "It's advisable to align it with the available VRAM of your GPU. A setting of 4 offers improved accuracy but slower processing, while 8 provides faster and standard results."
+                    "It's advisable to match it with your available GPU VRAM. A value of 4 offers better accuracy but slower processing. 8 offers faster & standard results."
                 ),
                 interactive=True,
             )
@@ -271,7 +271,7 @@ def train_tab():
                 100,
                 10,
                 step=1,
-                label=i18n("Save Every Epoch"),
+                label=i18n("Save Frequency"),
                 info=i18n("Determine at how many epochs the model will saved at."),
                 interactive=True,
             )
@@ -282,7 +282,7 @@ def train_tab():
                 step=1,
                 label=i18n("Total Epoch"),
                 info=i18n(
-                    "Specifies the overall quantity of epochs for the model training process."
+                    "Define the total amount of epochs for the training."
                 ),
                 interactive=True,
             )
@@ -290,15 +290,15 @@ def train_tab():
             pitch_guidance = gr.Checkbox(
                 label=i18n("Pitch Guidance"),
                 info=i18n(
-                    "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential."
+                    "Mirror the intonation of the original voice, including its pitch. Ideal for singing & scenarios where keeping the original melody/pitch is essential."
                 ),
                 value=True,
                 interactive=True,
             )
             pretrained = gr.Checkbox(
-                label=i18n("Pretrained"),
+                label=i18n("Pretrain"),
                 info=i18n(
-                    "Utilize pretrained models when training your own. This approach reduces training duration and enhances overall quality."
+                    "Utilize pretrained models when training your own. Reduces training time & enhances quality."
                 ),
                 value=True,
                 interactive=True,
@@ -306,7 +306,7 @@ def train_tab():
             save_only_latest = gr.Checkbox(
                 label=i18n("Save Only Latest"),
                 info=i18n(
-                    "Enabling this setting will result in the G and D files saving only their most recent versions, effectively conserving storage space."
+                    "If enabled, only the latest G and D files will save. Conserves your storage."
                 ),
                 value=False,
                 interactive=True,
@@ -314,15 +314,15 @@ def train_tab():
             save_every_weights = gr.Checkbox(
                 label=i18n("Save Every Weights"),
                 info=i18n(
-                    "This setting enables you to save the weights of the model at the conclusion of each epoch."
+                    "Saves the model at the conclusion of each epoch."
                 ),
                 value=True,
                 interactive=True,
             )
             custom_pretrained = gr.Checkbox(
-                label=i18n("Custom Pretrained"),
+                label=i18n("Custom Pretrain"),
                 info=i18n(
-                    "Utilizing custom pretrained models can lead to superior results, as selecting the most suitable pretrained models tailored to the specific use case can significantly enhance performance."
+                    "Using the most suitable pretrained models for the specific use case can significantly enhance performance & quality."
                 ),
                 value=False,
                 interactive=True,
@@ -331,7 +331,7 @@ def train_tab():
                 label=i18n("GPU Settings"),
                 info=(
                     i18n(
-                        "Sets advanced GPU settings, recommended for users with better GPU architecture."
+                        "Sets advanced GPU settings. Recommended for users with better GPU architecture."
                     )
                 ),
                 value=False,
@@ -340,17 +340,17 @@ def train_tab():
 
         with gr.Row():
             with gr.Column(visible=False) as pretrained_custom_settings:
-                with gr.Accordion(i18n("Pretrained Custom Settings")):
+                with gr.Accordion(i18n("Pretrain Custom Settings")):
                     upload_pretrained = gr.File(
                         label=i18n("Upload Pretrained Model"),
                         type="filepath",
                         interactive=True,
                     )
                     refresh_custom_pretaineds_button = gr.Button(
-                        i18n("Refresh Custom Pretraineds")
+                        i18n("Refresh Custom Pretrains")
                     )
                     g_pretrained_path = gr.Dropdown(
-                        label=i18n("Custom Pretrained G"),
+                        label=i18n("Custom Pretrain G"),
                         info=i18n(
                             "Select the custom pretrained model for the generator."
                         ),
@@ -372,7 +372,7 @@ def train_tab():
                     gpu = gr.Textbox(
                         label=i18n("GPU Number"),
                         info=i18n(
-                            "Specify the number of GPUs you wish to utilize for training by entering them separated by hyphens (-)."
+                            "Set the number of GPUs used for training by entering them separated by hyphens (-)."
                         ),
                         placeholder=i18n("0 to ∞ separated by -"),
                         value="0",

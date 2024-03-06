@@ -11,7 +11,7 @@ i18n = I18nAuto()
 def extra_tab():
     gr.Markdown(
         value=i18n(
-            "This section contains some extra utilities that often may be in experimental phases."
+            "Extra utilities. They often may be in experimental phases."
         )
     )
 

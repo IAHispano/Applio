@@ -50,8 +50,8 @@ def get_audio_info(audio_file):
     - **Duration:** {int(minutes)} minutes, {int(seconds)} seconds, {int(milliseconds)} milliseconds
     - **Bitrate:** {speed_in_kbps} kbp/s
     - **Audio Channels:** {audio_info.channels}
-    - **Sampling rate:** {audio_info.samplerate} Hz
-    - **Bit per second:** {audio_info.samplerate * audio_info.channels * bit_depth} bit/s
+    - **Sample Rate:** {audio_info.samplerate} Hz
+    - **Bits Per Second:** {audio_info.samplerate * audio_info.channels * bit_depth} bit/s
     """
 
     return info_table, "spectrogram.png"
@@ -60,17 +60,17 @@ def get_audio_info(audio_file):
 def analyzer():
     with gr.Column():
         gr.Markdown(
-            "Tool inspired in the original [Ilaria-Audio-Analyzer](https://github.com/TheStingerX/Ilaria-Audio-Analyzer) code."
+            "Tool inspired by the original [Ilaria Audio Analyzer](https://github.com/TheStingerX/Ilaria-Audio-Analyzer) code."
         )
         audio_input = gr.Audio(type="filepath")
         get_info_button = gr.Button(
-            value=i18n("Get information about the audio"), variant="primary"
+            value=i18n("Extract Information"), variant="primary"
         )
     with gr.Column():
         with gr.Row():
             with gr.Column():
                 gr.Markdown(
-                    value=i18n("Information about the audio file"),
+                    value=i18n("Audio information"),
                     visible=True,
                 )
                 output_markdown = gr.Markdown(

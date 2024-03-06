@@ -19,7 +19,7 @@ def voice_blender_tab():
     gr.Markdown(i18n("## Voice Blender"))
     gr.Markdown(
         i18n(
-            "Select two voice models, set your desired blend percentage, and blend them into an entirely new voice."
+            "Select two voice models, set the blend percentage & blend them into an entirely new voice."
         )
     )
     with gr.Column():
@@ -34,7 +34,7 @@ def voice_blender_tab():
         with gr.Row():
             with gr.Column():
                 model_fusion_a_dropbox = gr.File(
-                    label=i18n("Drag and drop your model here"), type="filepath"
+                    label=i18n("Drag & drop your model here."), type="filepath"
                 )
                 model_fusion_a = gr.Textbox(
                     label=i18n("Path to Model"),
@@ -61,7 +61,7 @@ def voice_blender_tab():
             value=0.5,
             interactive=True,
             info=i18n(
-                "Adjusting the position more towards one side or the other will make the model more similar to the first or second."
+                "Adjusting the slider towards a side will make the model more similar to the first or second."
             ),
         )
         model_fusion_button = gr.Button(i18n("Fusion"), variant="primary")

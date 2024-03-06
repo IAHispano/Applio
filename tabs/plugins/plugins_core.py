@@ -40,7 +40,7 @@ def save_existing_folders(existing_folders):
 def save_plugin_dropbox(dropbox):
     if "zip" not in dropbox:
         raise gr.Error(
-            message="The file you dropped is not a valid plugin.zip. Please try again."
+            message="The file is not valid plugin.zip. Please try again."
         )
     else:
         file_name = os.path.basename(dropbox)
@@ -103,7 +103,7 @@ def check_new_folders():
     if new_folders:
         for new_folder in new_folders:
             complete_path = os.path.join(plugins_path, new_folder)
-            print(f"New plugin {new_folder} found, installing it...")
+            print(f"New plugin {new_folder} found. Installing...")
 
             if os.path.exists(os.path.join(complete_path, "requirements.txt")):
                 subprocess.run(
@@ -118,5 +118,5 @@ def check_new_folders():
                 )
             else:
                 print("No requirements.txt file found in the plugin folder.")
-        print("Plugins checked and installed! Restarting applio to apply the changes.")
+        print("Plugins checked & installed! Restarting applio to apply the changes.")
         restart_applio()

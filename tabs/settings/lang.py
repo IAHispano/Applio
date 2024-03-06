@@ -16,7 +16,7 @@ def get_language_settings():
         config = json.load(f)
 
     if config["lang"]["override"] == False:
-        return "Language automatically detected in the system"
+        return "Language detected in the device."
     else:
         return config["lang"]["selected_lang"]
 
@@ -25,13 +25,13 @@ def save_lang_settings(selected_language):
     with open(config_file, "r") as f:
         config = json.load(f)
 
-    if selected_language == "Language automatically detected in the system":
+    if selected_language == "Language detected in the device":
         config["lang"]["override"] = False
     else:
         config["lang"]["override"] = True
         config["lang"]["selected_lang"] = selected_language
 
-    gr.Info("Language have been saved. Restart Applio to apply the changes.")
+    gr.Info("Language saved. Restart Applio to apply changes.")
 
     with open(config_file, "w") as f:
         json.dump(config, f, indent=2)
@@ -42,10 +42,10 @@ def lang_tab():
         selected_language = gr.Dropdown(
             label=i18n("Language"),
             info=i18n(
-                "Select the language you want to use. (Requires restarting Applio)"
+                "Select the language. (Restart needed)"
             ),
             value=get_language_settings(),
-            choices=["Language automatically detected in the system"]
+            choices=["Language detected in the device"]
             + i18n._get_available_languages(),
             interactive=True,
         )

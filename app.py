@@ -49,12 +49,12 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
     gr.Markdown("# Applio")
     gr.Markdown(
         i18n(
-            "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience."
+            "Ultimate voice cloning tool. Meticulously optimized for unrivaled power, modularity & user-friendly experience."
         )
     )
     gr.Markdown(
         i18n(
-            "[Support](https://discord.gg/IAHispano) — [Discord Bot](https://discord.com/oauth2/authorize?client_id=1144714449563955302&permissions=1376674695271&scope=bot%20applications.commands) — [Find Voices](https://applio.org/models) — [GitHub](https://github.com/IAHispano/Applio)"
+            "[Join Us](https://discord.gg/IAHispano) — [Discord Bot](https://discord.com/oauth2/authorize?client_id=1144714449563955302&permissions=1376674695271&scope=bot%20applications.commands) — [Voice Models](https://applio.org/models) — [GitHub](https://github.com/IAHispano/Applio)"
         )
     )
     with gr.Tab(i18n("Inference")):
@@ -75,7 +75,7 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
     with gr.Tab(i18n("Download")):
         download_tab()
 
-    with gr.Tab(i18n("Report a Bug")):
+    with gr.Tab(i18n("Report Bugs")):
         report_tab()
 
     with gr.Tab(i18n("Extra")):
