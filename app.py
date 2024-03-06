@@ -95,5 +95,5 @@ if __name__ == "__main__":
         favicon_path="assets/ICON.ico",
         share="--share" in sys.argv,
         inbrowser="--open" in sys.argv,
-        server_port=6969,
+        server_port="--port" in sys.argv or 6969,
     )
