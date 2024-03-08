@@ -17,11 +17,11 @@ Welcome to **Applio**, the ultimate voice cloning tool meticulously optimized fo
 - [**Installation**](#installation)
   - [Windows](#windows)
   - [Linux](#linux)
-  - [Using Makefile](#using-makefile-for-platforms-such-as-paperspace)
+  - [Makefile](#makefile-for-platforms-such-as-paperspace)
 - [**Usage**](#usage)
   - [Windows](#windows-1)
   - [Linux](#linux-1)
-  - [Using Makefile](#using-makefile-for-platforms-such-as-paperspace-1)
+  - [Makefile](#makefile-for-platforms-such-as-paperspace-1)
 - [**Repository Enhancements**](#repository-enhancements)
 - [**Credits**](#credits)
   - [Contributors](#contributors)
@@ -40,7 +40,7 @@ chmod +x run-install.sh
 ./run-install.sh
 ```
 
-### Using Makefile (for platforms such as [Paperspace](https://www.paperspace.com/))
+### Makefile (for platforms such as [Paperspace](https://www.paperspace.com/))
 ```
 make run-install
 ```
@@ -59,7 +59,7 @@ chmod +x run-applio.sh
 ./run-applio.sh
 ```
 
-### Using Makefile (for platforms such as [Paperspace](https://www.paperspace.com/))
+### Makefile (for platforms such as [Paperspace](https://www.paperspace.com/))
 ```
 make run-applio
 ```
