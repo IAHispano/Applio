@@ -9,7 +9,7 @@ config_file = os.path.join(now_dir, "assets", "config.json")
 
 
 def load_local_version():
-    with open(config_file, "r") as file:
+    with open(config_file, "r", encoding="utf8") as file:
         config = json.load(file)
         return config["version"]
 

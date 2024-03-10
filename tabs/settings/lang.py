@@ -12,8 +12,8 @@ config_file = os.path.join(now_dir, "assets", "config.json")
 
 
 def get_language_settings():
-    with open(config_file, "r") as f:
-        config = json.load(f)
+    with open(config_file, "r", encoding="utf8") as file:
+        config = json.load(file)
 
     if config["lang"]["override"] == False:
         return "Language automatically detected in the system"
@@ -22,8 +22,8 @@ def get_language_settings():
 
 
 def save_lang_settings(selected_language):
-    with open(config_file, "r") as f:
-        config = json.load(f)
+    with open(config_file, "r", encoding="utf8") as file:
+        config = json.load(file)
 
     if selected_language == "Language automatically detected in the system":
         config["lang"]["override"] = False
@@ -33,8 +33,8 @@ def save_lang_settings(selected_language):
 
     gr.Info("Language have been saved. Restart Applio to apply the changes.")
 
-    with open(config_file, "w") as f:
-        json.dump(config, f, indent=2)
+    with open(config_file, "w", encoding="utf8") as file:
+        json.dump(config, file, indent=2)
 
 
 def lang_tab():

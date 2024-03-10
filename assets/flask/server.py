@@ -55,8 +55,8 @@ def load_config_flask():
 
 
 def save_config(value):
-    with open(config_file, "r") as file:
+    with open(config_file, "r", encoding="utf8") as file:
         config = json.load(file)
         config["flask_server"] = value
-    with open(config_file, "w") as file:
+    with open(config_file, "w", encoding="utf8") as file:
         json.dump(config, file, indent=2)

@@ -11,8 +11,8 @@ class I18nAuto:
     LANGUAGE_PATH = os.path.join(now_dir, "assets", "i18n", "languages")
 
     def __init__(self, language=None):
-        with open(os.path.join(now_dir, "assets", "config.json"), "r") as f:
-            config = json.load(f)
+        with open(os.path.join(now_dir, "assets", "config.json"), "r", encoding="utf8") as file:
+            config = json.load(file)
             override = config["lang"]["override"]
             lang_prefix = config["lang"]["selected_lang"]
 
@@ -32,8 +32,8 @@ class I18nAuto:
     def _load_language_list(self):
         try:
             file_path = Path(self.LANGUAGE_PATH) / f"{self.language}.json"
-            with open(file_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+            with open(file_path, "r", encoding="utf-8") as file:
+                return json.load(file)
         except FileNotFoundError:
             raise FileNotFoundError(
                 f"Failed to load language file for {self.language}. Check if the correct .json file exists."

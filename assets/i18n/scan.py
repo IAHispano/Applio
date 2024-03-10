@@ -23,8 +23,8 @@ def extract_i18n_strings(node):
 
 
 def process_file(file_path):
-    with open(file_path, "r") as f:
-        code = f.read()
+    with open(file_path, "r", encoding="utf8") as file:
+        code = file.read()
         if "I18nAuto" in code:
             tree = ast.parse(code)
             i18n_strings = extract_i18n_strings(tree)
@@ -47,8 +47,8 @@ print()
 print("Total unique:", len(code_keys))
 
 standard_file = "languages/en_US.json"
-with open(standard_file, "r", encoding="utf-8") as f:
-    standard_data = json.load(f, object_pairs_hook=OrderedDict)
+with open(standard_file, "r", encoding="utf-8") as file:
+    standard_data = json.load(file, object_pairs_hook=OrderedDict)
 standard_keys = set(standard_data.keys())
 
 # Combine unused and missing keys sections
@@ -66,6 +66,6 @@ for missing_key in missing_keys:
 code_keys_dict = OrderedDict((s, s) for s in code_keys)
 
 # Use context manager for writing back to the file
-with open(standard_file, "w", encoding="utf-8") as f:
-    json.dump(code_keys_dict, f, ensure_ascii=False, indent=4, sort_keys=True)
-    f.write("\n")
+with open(standard_file, "w", encoding="utf-8") as file:
+    json.dump(code_keys_dict, file, ensure_ascii=False, indent=4, sort_keys=True)
+    file.write("\n")

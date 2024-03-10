@@ -17,8 +17,8 @@ sys.path.append(folder)
 
 
 def get_class(filename):
-    with open(filename, "r") as f:
-        for line_number, line in enumerate(f, start=1):
+    with open(filename, "r", encoding="utf8") as file:
+        for line_number, line in enumerate(file, start=1):
             if "class " in line:
                 found = line.split("class ")[1].split(":")[0].split("(")[0].strip()
                 return found
@@ -38,7 +38,7 @@ def get_list():
     json_file_path = os.path.join(folder, "theme_list.json")
 
     try:
-        with open(json_file_path, "r") as json_file:
+        with open(json_file_path, "r", encoding="utf8") as json_file:
             themes_from_url = [item["id"] for item in json.load(json_file)]
     except FileNotFoundError:
         themes_from_url = []
@@ -53,13 +53,13 @@ def select_theme(name):
     full_path = os.path.join(folder, selected_file)
 
     if not os.path.exists(full_path):
-        with open(config_file, "r") as json_file:
+        with open(config_file, "r", encoding="utf8") as json_file:
             config_data = json.load(json_file)
 
         config_data["theme"]["file"] = None
         config_data["theme"]["class"] = name
 
-        with open(config_file, "w") as json_file:
+        with open(config_file, "w", encoding="utf8") as json_file:
             json.dump(config_data, json_file, indent=2)
         print(f"Theme {name} successfully selected, restart applio.")
         gr.Info(f"Theme {name} successfully selected, restart applio.")
@@ -67,13 +67,13 @@ def select_theme(name):
 
     class_found = get_class(full_path)
     if class_found:
-        with open(config_file, "r") as json_file:
+        with open(config_file, "r", encoding="utf8") as json_file:
             config_data = json.load(json_file)
 
         config_data["theme"]["file"] = selected_file
         config_data["theme"]["class"] = class_found
 
-        with open(config_file, "w") as json_file:
+        with open(config_file, "w", encoding="utf8") as json_file:
             json.dump(config_data, json_file, indent=2)
         print(f"Theme {name} successfully selected, restart applio.")
         gr.Info(f"Theme {name} successfully selected, restart applio.")
@@ -83,7 +83,7 @@ def select_theme(name):
 
 def read_json():
     try:
-        with open(config_file, "r") as json_file:
+        with open(config_file, "r", encoding="utf8") as json_file:
             data = json.load(json_file)
             selected_file = data["theme"]["file"]
             class_name = data["theme"]["class"]
@@ -101,7 +101,7 @@ def read_json():
 
 def load_json():
     try:
-        with open(config_file, "r") as json_file:
+        with open(config_file, "r", encoding="utf8") as json_file:
             data = json.load(json_file)
             selected_file = data["theme"]["file"]
             class_name = data["theme"]["class"]
