@@ -435,6 +435,12 @@ def train_tab():
 
             def toggle_visible(checkbox):
                 return {"visible": checkbox, "__type__": "update"}
+            
+            def toggle_pretrained(pretrained, custom_pretrained):
+                if custom_pretrained == False:
+                    return {"visible": pretrained, "__type__": "update"}, {"visible": False, "__type__": "update"}
+                else:
+                    return {"visible": pretrained, "__type__": "update"}, {"visible": pretrained, "__type__": "update"}
 
             refresh_datasets_button.click(
                 fn=refresh_datasets,
@@ -452,6 +458,12 @@ def train_tab():
                 fn=save_drop_dataset_audio,
                 inputs=[upload_audio_dataset, dataset_name],
                 outputs=[upload_audio_dataset, dataset_path],
+            )
+
+            pretrained.change(
+                fn=toggle_pretrained,
+                inputs=[pretrained, custom_pretrained],
+                outputs=[custom_pretrained, pretrained_custom_settings],
             )
 
             custom_pretrained.change(
