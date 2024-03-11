@@ -85,6 +85,29 @@ def refresh_datasets():
     return {"choices": sorted(get_datasets_list()), "__type__": "update"}
 
 
+# Model Names
+models_path = os.path.join(now_dir, "logs")
+
+def get_models_list():
+    return [
+        os.path.basename(dirpath)
+        for dirpath in os.listdir(models_path)
+        if os.path.isdir(os.path.join(models_path, dirpath)) and all(excluded not in dirpath for excluded in ['zips', 'mute'])
+    ]
+
+
+def refresh_models():
+    return {"choices": sorted(get_models_list()), "__type__": "update"}
+
+
+# Refresh Models and Datasets
+def refresh_models_and_datasets():
+    return (
+        {"choices": sorted(get_models_list()), "__type__": "update"},
+        {"choices": sorted(get_datasets_list()), "__type__": "update"},
+    )
+
+
 # Drop Model
 def save_drop_model(dropbox):
     if ".pth" not in dropbox:
@@ -142,12 +165,13 @@ def train_tab():
     with gr.Accordion(i18n("Preprocess")):
         with gr.Row():
             with gr.Column():
-                model_name = gr.Textbox(
+                model_name = gr.Dropdown(
                     label=i18n("Model Name"),
                     info=i18n("Name of the new model."),
-                    placeholder=i18n("Enter model name"),
+                    choices=get_models_list(),
                     value="my-project",
                     interactive=True,
+                    allow_custom_value=True,
                 )
                 dataset_path = gr.Dropdown(
                     label=i18n("Dataset Path"),
@@ -157,7 +181,7 @@ def train_tab():
                     allow_custom_value=True,
                     interactive=True,
                 )
-                refresh_datasets_button = gr.Button(i18n("Refresh Datasets"))
+                refresh = gr.Button(i18n("Refresh"))
                 dataset_creator = gr.Checkbox(
                     label=i18n("Dataset Creator"),
                     value=False,
@@ -418,7 +442,7 @@ def train_tab():
                 api_name="start_training",
             )
 
-            stop_train_button = gr.Button(i18n("Stop Training & Restart Applio"))
+            stop_train_button = gr.Button(i18n("Stop Training & Restart Applio"), visible=False)
             stop_train_button.click(
                 fn=restart_applio,
                 inputs=[],
@@ -441,11 +465,18 @@ def train_tab():
                     return {"visible": pretrained, "__type__": "update"}, {"visible": False, "__type__": "update"}
                 else:
                     return {"visible": pretrained, "__type__": "update"}, {"visible": pretrained, "__type__": "update"}
+                
+            def enable_stop_train_button():
+                return {"visible": False, "__type__": "update"}, {"visible": True, "__type__": "update"}
+            
+            def disable_stop_train_button(train_output_info):
+                if "trained" in train_output_info:
+                    return {"visible": True, "__type__": "update"}, {"visible": False, "__type__": "update"}
 
-            refresh_datasets_button.click(
-                fn=refresh_datasets,
+            refresh.click(
+                fn=refresh_models_and_datasets,
                 inputs=[],
-                outputs=[dataset_path],
+                outputs=[model_name, dataset_path],
             )
 
             dataset_creator.change(
@@ -488,4 +519,16 @@ def train_tab():
                 fn=toggle_visible,
                 inputs=[multiple_gpu],
                 outputs=[gpu_custom_settings],
+            )
+
+            train_button.click(
+                fn=enable_stop_train_button,
+                inputs=[],
+                outputs=[train_button, stop_train_button],
+            )
+
+            train_output_info.change(
+                fn=disable_stop_train_button,
+                inputs=[train_output_info],
+                outputs=[train_button, stop_train_button],
             )
