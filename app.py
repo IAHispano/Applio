@@ -91,15 +91,15 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
 
 
 if __name__ == "__main__":
-    port = 6969  
+    port = 6969
     if "--port" in sys.argv:
         port_index = sys.argv.index("--port") + 1
         if port_index < len(sys.argv):
             port = int(sys.argv[port_index])
-    
+
     Applio.launch(
         favicon_path="assets/ICON.ico",
         share="--share" in sys.argv,
         inbrowser="--open" in sys.argv,
-        server_port=port
+        server_port=port,
     )
