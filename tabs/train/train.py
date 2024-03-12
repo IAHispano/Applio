@@ -88,11 +88,13 @@ def refresh_datasets():
 # Model Names
 models_path = os.path.join(now_dir, "logs")
 
+
 def get_models_list():
     return [
         os.path.basename(dirpath)
         for dirpath in os.listdir(models_path)
-        if os.path.isdir(os.path.join(models_path, dirpath)) and all(excluded not in dirpath for excluded in ['zips', 'mute'])
+        if os.path.isdir(os.path.join(models_path, dirpath))
+        and all(excluded not in dirpath for excluded in ["zips", "mute"])
     ]
 
 
@@ -442,7 +444,9 @@ def train_tab():
                 api_name="start_training",
             )
 
-            stop_train_button = gr.Button(i18n("Stop Training & Restart Applio"), visible=False)
+            stop_train_button = gr.Button(
+                i18n("Stop Training & Restart Applio"), visible=False
+            )
             stop_train_button.click(
                 fn=restart_applio,
                 inputs=[],
@@ -459,19 +463,31 @@ def train_tab():
 
             def toggle_visible(checkbox):
                 return {"visible": checkbox, "__type__": "update"}
-            
+
             def toggle_pretrained(pretrained, custom_pretrained):
                 if custom_pretrained == False:
-                    return {"visible": pretrained, "__type__": "update"}, {"visible": False, "__type__": "update"}
+                    return {"visible": pretrained, "__type__": "update"}, {
+                        "visible": False,
+                        "__type__": "update",
+                    }
                 else:
-                    return {"visible": pretrained, "__type__": "update"}, {"visible": pretrained, "__type__": "update"}
-                
+                    return {"visible": pretrained, "__type__": "update"}, {
+                        "visible": pretrained,
+                        "__type__": "update",
+                    }
+
             def enable_stop_train_button():
-                return {"visible": False, "__type__": "update"}, {"visible": True, "__type__": "update"}
-            
+                return {"visible": False, "__type__": "update"}, {
+                    "visible": True,
+                    "__type__": "update",
+                }
+
             def disable_stop_train_button(train_output_info):
                 if "trained" in train_output_info:
-                    return {"visible": True, "__type__": "update"}, {"visible": False, "__type__": "update"}
+                    return {"visible": True, "__type__": "update"}, {
+                        "visible": False,
+                        "__type__": "update",
+                    }
 
             refresh.click(
                 fn=refresh_models_and_datasets,
