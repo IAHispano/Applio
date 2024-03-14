@@ -209,6 +209,31 @@ def download_from_url(url):
             else:
                 os.chdir(now_dir)
                 return None
+        elif "applio.org" in url:
+            parts = url.split('/')
+            id_with_query = parts[-1]
+            id_parts = id_with_query.split('?')
+            id_number = id_parts[0]
+
+            url = 'https://cjtfqzjfdimgpvpwhzlv.supabase.co/rest/v1/models'
+            headers = {
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqdGZxempmZGltZ3B2cHdoemx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTUxNjczODgsImV4cCI6MjAxMDc0MzM4OH0.7z5WMIbjR99c2Ooc0ma7B_FyGq10G8X-alkCYTkKR10'
+            }
+
+            params = {'id': f'eq.{id_number}'}
+            response = requests.get(url, headers=headers, params=params)
+            if response.status_code == 200:
+                json_response = response.json()
+                print(json_response)
+                if json_response:
+                    link = json_response[0]['link']
+                    verify = download_from_url(link)
+                    if verify == "downloaded":
+                        return "downloaded"
+                    else:
+                        return None
+            else:
+                return None
         else:
             try:
                 os.chdir(zips_path)
