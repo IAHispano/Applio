@@ -27,7 +27,7 @@ einops
 # Visualization
 matplotlib==3.7.2
 tensorboard
-gradio==4.14.0
+gradio==4.17.0
 
 # Miscellaneous
 ffmpy==0.3.1
