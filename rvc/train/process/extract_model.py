@@ -1,28 +1,27 @@
 import os
 import torch
+import hashlib
+import datetime
 from collections import OrderedDict
 
 
 def replace_keys_in_dict(d, old_key_part, new_key_part):
-    # Use OrderedDict if the original is an OrderedDict
     if isinstance(d, OrderedDict):
         updated_dict = OrderedDict()
     else:
         updated_dict = {}
     for key, value in d.items():
-        # Replace the key part if found
         new_key = key.replace(old_key_part, new_key_part)
-        # If the value is a dictionary, apply the function recursively
         if isinstance(value, dict):
             value = replace_keys_in_dict(value, old_key_part, new_key_part)
         updated_dict[new_key] = value
     return updated_dict
 
 
-def extract_model(ckpt, sr, if_f0, name, model_dir, epoch, version, hps):
+def extract_model(ckpt, sr, if_f0, name, model_dir, epoch, step, version, hps):
     try:
-        print(f"Saved model '{model_dir}' (epoch {epoch})")
-        pth_file = f"{name}_{epoch}e.pth"
+        print(f"Saved model '{model_dir}' (epoch {epoch} and step {step})")
+        pth_file = f"{name}_{epoch}e_{step}s.pth"
         pth_file_old_version_path = os.path.join(
             model_dir, f"{pth_file}_old_version.pth"
         )
@@ -51,7 +50,18 @@ def extract_model(ckpt, sr, if_f0, name, model_dir, epoch, version, hps):
             hps.model.gin_channels,
             hps.data.sampling_rate,
         ]
-        opt["info"], opt["sr"], opt["f0"], opt["version"] = epoch, sr, if_f0, version
+
+        opt["epoch"] = epoch
+        opt["step"] = step
+        opt["sr"] = sr
+        opt["f0"] = if_f0
+        opt["version"] = version
+        opt["creation_date"] = datetime.datetime.now().isoformat()
+
+        hash_input = f"{str(ckpt)} {epoch} {step} {datetime.datetime.now().isoformat()}"
+        model_hash = hashlib.sha256(hash_input.encode()).hexdigest()
+        opt["model_hash"] = model_hash
+
         torch.save(opt, model_dir)
 
         model = torch.load(model_dir, map_location=torch.device("cpu"))

@@ -19,11 +19,6 @@ config = Config()
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")
 
-# Check for prerequisites
-subprocess.run(
-    ["python", os.path.join("rvc", "lib", "tools", "prerequisites_download.py")]
-)
-
 # Get TTS Voices
 with open(os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r") as f:
     voices_data = json.load(f)
@@ -48,6 +43,7 @@ def run_infer_script(
     f0autotune,
     clean_audio,
     clean_strength,
+    export_format,
 ):
     infer_script_path = os.path.join("rvc", "infer", "infer.py")
     command = [
@@ -71,6 +67,7 @@ def run_infer_script(
                 protect,
                 clean_audio,
                 clean_strength,
+                export_format,
             ],
         ),
     ]
@@ -95,6 +92,7 @@ def run_batch_infer_script(
     f0autotune,
     clean_audio,
     clean_strength,
+    export_format,
 ):
     infer_script_path = os.path.join("rvc", "infer", "infer.py")
 
@@ -136,6 +134,7 @@ def run_batch_infer_script(
                     protect,
                     clean_audio,
                     clean_strength,
+                    export_format,
                 ],
             ),
         ]
@@ -163,6 +162,7 @@ def run_tts_script(
     f0autotune,
     clean_audio,
     clean_strength,
+    export_format,
 ):
     tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
     infer_script_path = os.path.join("rvc", "infer", "infer.py")
@@ -199,6 +199,7 @@ def run_tts_script(
                 protect,
                 clean_audio,
                 clean_strength,
+                export_format,
             ],
         ),
     ]
@@ -367,7 +368,7 @@ def run_index_script(model_name, rvc_version):
 
 # Model extract
 def run_model_extract_script(
-    pth_path, model_name, sampling_rate, pitch_guidance, rvc_version
+    pth_path, model_name, sampling_rate, pitch_guidance, rvc_version, epoch, step
 ):
     f0 = 1 if str(pitch_guidance) == "True" else 0
     model_extract_script_path = os.path.join(
@@ -381,6 +382,8 @@ def run_model_extract_script(
         sampling_rate,
         f0,
         rvc_version,
+        epoch,
+        step,
     ]
 
     subprocess.run(command)
@@ -422,10 +425,36 @@ def run_download_script(model_link):
     return f"Model downloaded successfully."
 
 
+# Prerequisites
+def run_prerequisites_script(pretraineds_v1, pretraineds_v2, models, exe):
+    prerequisites_script_path = os.path.join(
+        "rvc", "lib", "tools", "prerequisites_download.py"
+    )
+    command = [
+        "python",
+        prerequisites_script_path,
+        *map(
+            str,
+            [
+                "--pretraineds_v1",
+                pretraineds_v1,
+                "--pretraineds_v2",
+                pretraineds_v2,
+                "--models",
+                models,
+                "--exe",
+                exe,
+            ],
+        ),
+    ]
+    subprocess.run(command)
+    return "Prerequisites installed successfully."
+
+
 # API
 def run_api_script(ip, port):
     command = [
-        "uvicorn",
+        "env/Scripts/uvicorn.exe" if os.name == "nt" else "uvicorn",
         "api:app",
         "--host",
         ip,
@@ -543,6 +572,13 @@ def parse_arguments():
         choices=[str(i / 10) for i in range(11)],
         default="0.7",
     )
+    infer_parser.add_argument(
+        "--export_format",
+        type=str,
+        help="Export format",
+        choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+        default="WAV",
+    )
 
     # Parser for 'batch_infer' mode
     batch_infer_parser = subparsers.add_parser(
@@ -646,6 +682,13 @@ def parse_arguments():
         help="Value for clean_strength",
         choices=[str(i / 10) for i in range(11)],
         default="0.7",
+    )
+    batch_infer_parser.add_argument(
+        "--export_format",
+        type=str,
+        help="Export format",
+        choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+        default="WAV",
     )
 
     # Parser for 'tts' mode
@@ -757,6 +800,13 @@ def parse_arguments():
         help="Value for clean_strength",
         choices=[str(i / 10) for i in range(11)],
         default="0.7",
+    )
+    tts_parser.add_argument(
+        "--export_format",
+        type=str,
+        help="Export format",
+        choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+        default="WAV",
     )
 
     # Parser for 'preprocess' mode
@@ -951,7 +1001,6 @@ def parse_arguments():
         type=str,
         help="Pitch guidance",
         choices=["True", "False"],
-        default="True",
     )
     model_extract_parser.add_argument(
         "--rvc_version",
@@ -959,6 +1008,17 @@ def parse_arguments():
         help="Version of the model",
         choices=["v1", "v2"],
         default="v2",
+    )
+    model_extract_parser.add_argument(
+        "--epoch",
+        type=str,
+        help="Epochs of the model",
+        choices=[str(i) for i in range(1, 10001)],
+    )
+    model_extract_parser.add_argument(
+        "--step",
+        type=str,
+        help="Steps of the model",
     )
 
     # Parser for 'model_information' mode
@@ -1009,10 +1069,43 @@ def parse_arguments():
         help="Link of the model",
     )
 
+    # Parser for 'prerequisites' mode
+    prerequisites_parser = subparsers.add_parser(
+        "prerequisites", help="Install prerequisites"
+    )
+    prerequisites_parser.add_argument(
+        "--pretraineds_v1",
+        type=str,
+        choices=["True", "False"],
+        default="True",
+        help="Download pretrained models for v1",
+    )
+    prerequisites_parser.add_argument(
+        "--pretraineds_v2",
+        type=str,
+        choices=["True", "False"],
+        default="True",
+        help="Download pretrained models for v2",
+    )
+    prerequisites_parser.add_argument(
+        "--models",
+        type=str,
+        choices=["True", "False"],
+        default="True",
+        help="Donwload models",
+    )
+    prerequisites_parser.add_argument(
+        "--exe",
+        type=str,
+        choices=["True", "False"],
+        default="True",
+        help="Download executables",
+    )
+
     # Parser for 'api' mode
     api_parser = subparsers.add_parser("api", help="Run the API")
     api_parser.add_argument("--ip", type=str, help="IP address", default="127.0.0.1")
-    api_parser.add_argument("--port", type=str, help="Port", default="8003")
+    api_parser.add_argument("--port", type=str, help="Port", default="8000")
 
     return parser.parse_args()
 
@@ -1042,6 +1135,7 @@ def main():
                 str(args.f0autotune),
                 str(args.clean_audio),
                 str(args.clean_strength),
+                str(args.export_format),
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(
@@ -1060,6 +1154,7 @@ def main():
                 str(args.f0autotune),
                 str(args.clean_audio),
                 str(args.clean_strength),
+                str(args.export_format),
             )
         elif args.mode == "tts":
             run_tts_script(
@@ -1080,6 +1175,7 @@ def main():
                 str(args.f0autotune),
                 str(args.clean_audio),
                 str(args.clean_strength),
+                str(args.export_format),
             )
         elif args.mode == "preprocess":
             run_preprocess_script(
@@ -1124,6 +1220,8 @@ def main():
                 str(args.sampling_rate),
                 str(args.pitch_guidance),
                 str(args.rvc_version),
+                str(args.epoch),
+                str(args.step),
             )
         elif args.mode == "model_information":
             run_model_information_script(
@@ -1141,6 +1239,13 @@ def main():
         elif args.mode == "download":
             run_download_script(
                 str(args.model_link),
+            )
+        elif args.mode == "prerequisites":
+            run_prerequisites_script(
+                str(args.pretraineds_v1),
+                str(args.pretraineds_v2),
+                str(args.models),
+                str(args.exe),
             )
         elif args.mode == "api":
             run_api_script(

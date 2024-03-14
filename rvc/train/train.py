@@ -563,8 +563,11 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 hps.sample_rate,
                 hps.if_f0,
                 hps.name,
-                os.path.join(hps.model_dir, "{}_{}e.pth".format(hps.name, epoch)),
+                os.path.join(
+                    hps.model_dir, "{}_{}e_{}s.pth".format(hps.name, epoch, global_step)
+                ),
                 epoch,
+                global_step,
                 hps.version,
                 hps,
             )
@@ -598,8 +601,11 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             hps.sample_rate,
             hps.if_f0,
             hps.name,
-            os.path.join(hps.model_dir, "{}_{}e.pth".format(hps.name, epoch)),
+            os.path.join(
+                hps.model_dir, "{}_{}e_{}s.pth".format(hps.name, epoch, global_step)
+            ),
             epoch,
+            global_step,
             hps.version,
             hps,
         )

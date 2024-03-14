@@ -239,6 +239,13 @@ def inference_tab():
                     ),
                     interactive=True,
                 )
+                export_format = gr.Radio(
+                    label=i18n("Export Format"),
+                    info=i18n("Select the format to export the audio."),
+                    choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+                    value="WAV",
+                    interactive=True,
+                )
                 split_audio = gr.Checkbox(
                     label=i18n("Split Audio"),
                     info=i18n(
@@ -393,6 +400,13 @@ def inference_tab():
             with gr.Column():
                 clear_outputs_batch = gr.Button(
                     i18n("Clear Outputs (Deletes all audios in assets/audios)")
+                )
+                export_format_batch = gr.Radio(
+                    label=i18n("Export Format"),
+                    info=i18n("Select the format to export the audio."),
+                    choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+                    value="WAV",
+                    interactive=True,
                 )
                 split_audio_batch = gr.Checkbox(
                     label=i18n("Split Audio"),
@@ -584,6 +598,7 @@ def inference_tab():
             autotune,
             clean_audio,
             clean_strength,
+            export_format,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -605,6 +620,7 @@ def inference_tab():
             autotune_batch,
             clean_audio_batch,
             clean_strength_batch,
+            export_format_batch,
         ],
         outputs=[vc_output3],
     )

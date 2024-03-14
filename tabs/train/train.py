@@ -8,6 +8,7 @@ from core import (
     run_extract_script,
     run_train_script,
     run_index_script,
+    run_prerequisites_script
 )
 from rvc.configs.config import max_vram_gpu, get_gpu_info
 from rvc.lib.utils import format_title
@@ -16,6 +17,30 @@ from tabs.settings.restart import restart_applio
 i18n = I18nAuto()
 now_dir = os.getcwd()
 sys.path.append(now_dir)
+
+pretraineds_v1 = [
+    (
+        "pretrained_v1/",
+        [
+            "D32k.pth",
+            "D40k.pth",
+            "D48k.pth",
+            "G32k.pth",
+            "G40k.pth",
+            "G48k.pth",
+            "f0D32k.pth",
+            "f0D40k.pth",
+            "f0D48k.pth",
+            "f0G32k.pth",
+            "f0G40k.pth",
+            "f0G48k.pth",
+        ],
+    ),
+]
+
+folder_mapping = {
+    "pretrained_v1/": "rvc/pretraineds/pretrained_v1/",
+}
 
 sup_audioext = {
     "wav",
@@ -488,6 +513,25 @@ def train_tab():
                         "visible": False,
                         "__type__": "update",
                     }
+            
+            def download_prerequisites(version):
+                for remote_folder, file_list in pretraineds_v1:
+                    local_folder = folder_mapping.get(remote_folder, "")
+                    missing = False
+                    for file in file_list:
+                        destination_path = os.path.join(local_folder, file)
+                        if not os.path.exists(destination_path):
+                            missing = True
+                if version == "v1" and missing == True:
+                    gr.Info("Downloading prerequisites... Please wait till it finishes to start preprocessing.")
+                    run_prerequisites_script("True", "False", "True", "True")
+                    gr.Info("Prerequisites downloaded successfully, you may now start preprocessing.")
+
+            rvc_version.change(
+                fn=download_prerequisites,
+                inputs=[rvc_version],
+                outputs=[],
+            )
 
             refresh.click(
                 fn=refresh_models_and_datasets,

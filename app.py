@@ -28,6 +28,8 @@ from assets.i18n.i18n import I18nAuto
 import assets.installation_checker as installation_checker
 from assets.discord_presence import RPCManager
 from assets.flask.server import start_flask, load_config_flask
+from core import run_prerequisites_script
+run_prerequisites_script("False", "True", "True", "True")
 
 i18n = I18nAuto()
 if load_config_presence() == True:

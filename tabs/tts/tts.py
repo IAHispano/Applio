@@ -167,6 +167,13 @@ def tts_tab():
                 value=os.path.join(now_dir, "assets", "audios", "tts_rvc_output.wav"),
                 interactive=True,
             )
+            export_format = gr.Radio(
+                label=i18n("Export Format"),
+                info=i18n("Select the format to export the audio."),
+                choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+                value="WAV",
+                interactive=True,
+            )
             split_audio = gr.Checkbox(
                 label=i18n("Split Audio"),
                 info=i18n(
@@ -335,6 +342,7 @@ def tts_tab():
             autotune,
             clean_audio,
             clean_strength,
+            export_format,
         ],
         outputs=[vc_output1, vc_output2],
     )
