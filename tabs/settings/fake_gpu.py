@@ -12,6 +12,7 @@ i18n = I18nAuto()
 ngpu = torch.cuda.device_count()
 config_file = os.path.join(now_dir, "assets", "config.json")
 
+
 def gpu_available():
     if torch.cuda.is_available() or ngpu != 0:
         return True
@@ -21,7 +22,7 @@ def load_fake_gpu():
     with open(config_file, "r", encoding="utf8") as file:
         config = json.load(file)
         return config["fake_gpu"]
-    
+
 
 def save_config(value):
     with open(config_file, "r", encoding="utf8") as file:
