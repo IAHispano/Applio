@@ -60,8 +60,10 @@ def search_models(name):
         gr.Info(i18n("We couldn't find models by that name."))
         return None
     else:
-        df = pd.DataFrame(data)[['name', 'link', 'epochs', 'type']]
-        df['link'] = df['link'].apply(lambda x: f'<a href="{x}" target="_blank">{x}</a>')
+        df = pd.DataFrame(data)[["name", "link", "epochs", "type"]]
+        df["link"] = df["link"].apply(
+            lambda x: f'<a href="{x}" target="_blank">{x}</a>'
+        )
         return df
 
 
@@ -115,10 +117,4 @@ def download_tab():
             search_table,
         )
 
-        search_name.submit(
-            search_models, 
-            [search_name], 
-            search_table
-        )
-
-        
+        search_name.submit(search_models, [search_name], search_table)
