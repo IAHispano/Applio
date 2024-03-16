@@ -10,5 +10,6 @@
     "selected_lang": "en_US"
   },
   "flask_server": false,
-  "version": "3.0.8"
+  "version": "3.0.8",
+  "fake_gpu": false
 }

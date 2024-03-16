@@ -507,12 +507,11 @@ def train_tab():
                     "__type__": "update",
                 }
 
-            def disable_stop_train_button(train_output_info):
-                if "trained" in train_output_info:
-                    return {"visible": True, "__type__": "update"}, {
-                        "visible": False,
-                        "__type__": "update",
-                    }
+            def disable_stop_train_button():
+                return {"visible": True, "__type__": "update"}, {
+                    "visible": False,
+                    "__type__": "update",
+                }
 
             def download_prerequisites(version):
                 for remote_folder, file_list in pretraineds_v1:
@@ -593,6 +592,6 @@ def train_tab():
 
             train_output_info.change(
                 fn=disable_stop_train_button,
-                inputs=[train_output_info],
+                inputs=[],
                 outputs=[train_button, stop_train_button],
             )
