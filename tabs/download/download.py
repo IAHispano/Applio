@@ -1,6 +1,8 @@
 import os, sys, shutil
 import tempfile
 import gradio as gr
+import pandas as pd
+import requests
 from core import run_download_script
 
 from assets.i18n.i18n import I18nAuto
@@ -47,6 +49,22 @@ def save_drop_model(dropbox):
     return None
 
 
+def search_models(name):
+    url = f"https://cjtfqzjfdimgpvpwhzlv.supabase.co/rest/v1/models?name=ilike.%25{name}%25&order=created_at.desc&limit=15"
+    headers = {
+        "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqdGZxempmZGltZ3B2cHdoemx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTUxNjczODgsImV4cCI6MjAxMDc0MzM4OH0.7z5WMIbjR99c2Ooc0ma7B_FyGq10G8X-alkCYTkKR10"
+    }
+    response = requests.get(url, headers=headers)
+    data = response.json()
+    if len(data) == 0:
+        gr.Info(i18n("We couldn't find models by that name."))
+        return None
+    else:
+        df = pd.DataFrame(data)[['name', 'link', 'epochs', 'type']]
+        df['link'] = df['link'].apply(lambda x: f'<a href="{x}" target="_blank">{x}</a>')
+        return df
+
+
 def download_tab():
     with gr.Column():
         gr.Markdown(value=i18n("## Download Model"))
@@ -83,3 +101,24 @@ def download_tab():
             inputs=[dropbox],
             outputs=[dropbox],
         )
+        gr.Markdown(value=i18n("## Search Model"))
+        search_name = gr.Textbox(
+            label=i18n("Model Name"),
+            placeholder=i18n("Introduce the model name to search."),
+            interactive=True,
+        )
+        search_table = gr.Dataframe(datatype="markdown")
+        search = gr.Button(i18n("Search"))
+        search.click(
+            search_models,
+            [search_name],
+            search_table,
+        )
+
+        search_name.submit(
+            search_models, 
+            [search_name], 
+            search_table
+        )
+
+        
