@@ -32,7 +32,7 @@
   "Extract": "Ekstrak",
   "Hop Length": "Panjang Lompatan",
   "Batch Size": "Ukuran Batch",
-  "Save Every Epoch": "Selamatkan Setiap Epoch",
+  "Save Every Epoch": "simpan Setiap Epoch",
   "Total Epoch": "Total Epoch",
   "Pretrained": "Terlatih sebelumnya",
   "Save Only Latest": "Simpan Hanya Yang Terbaru",
@@ -127,7 +127,7 @@
   "Introduce the model link": "Perkenalkan tautan model",
   "Download Model": "Unduh Model",
   "## Drop files": "## Jatuhkan file ",
-  "Drag your .pth file and .index file into this space. Drag one and then the other.": "Drag your .pth file and .index file into this space. Drag one and then the other.",
+  "Drag your .pth file and .index file into this space. Drag one and then the other.": "Seret file .pth dan file .index ke dalam ruang ini. Seret yang pertama, lalu yang lainnya.",
 
   "TTS Voices": "TTS Voices",
   "Text to Synthesize": "Text ke disintesis",
