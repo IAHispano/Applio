@@ -1,4 +1,9 @@
-# Applio
+<h1 align="center">Applio</h1>
+<div align="center">
+
+</div>
+
+
 
 Welcome to **Applio**, the ultimate voice cloning tool meticulously optimized for unrivaled power, modularity, and a user-friendly experience.
 
