@@ -5,6 +5,7 @@ import sys
 now_dir = os.getcwd()
 pid_file_path = os.path.join(now_dir, "rvc", "train", "train_pid.txt")
 
+
 def restart_applio():
     if os.name != "nt":
         os.system("clear")
