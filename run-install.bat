@@ -1,7 +1,7 @@
 @echo off
 setlocal
 title Installer
-@echo off
+
 :: Check for administrative privileges
 net session >nul 2>&1
 if %errorLevel% == 0 (
