@@ -1,7 +1,25 @@
 @echo off
 setlocal
 title Installer
+@echo off
+:: Check for administrative privileges
+net session >nul 2>&1
+if %errorLevel% == 0 (
+    echo Running with administrative privileges
+    goto :admin
+) else (
+    echo Attempting to relaunch with administrative privileges...
+)
 
+:: Relaunch the script with administrative privileges
+set "vbs=%temp%\elevate.vbs"
+echo Set UAC = CreateObject^("Shell.Application"^) > "%vbs%"
+echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%vbs%"
+"%temp%\elevate.vbs"
+del "%vbs%"
+exit /b
+
+:admin
 set "principal=%cd%"
 set "URL_EXTRA=https://huggingface.co/IAHispano/applio/resolve/main"
 set "CONDA_ROOT_PREFIX=%UserProfile%\Miniconda3"
