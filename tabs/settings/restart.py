@@ -2,12 +2,22 @@ import gradio as gr
 import os
 import sys
 
+now_dir = os.getcwd()
+pid_file_path = os.path.join(now_dir, "rvc", "train", "train_pid.txt")
 
 def restart_applio():
     if os.name != "nt":
         os.system("clear")
     else:
         os.system("cls")
+    try:
+        with open(pid_file_path, "r") as pid_file:
+            pids = [int(pid) for pid in pid_file.readlines()]
+        for pid in pids:
+            os.kill(pid, 9)
+        os.remove(pid_file_path)
+    except:
+        pass
     python = sys.executable
     os.execl(python, python, *sys.argv)
 

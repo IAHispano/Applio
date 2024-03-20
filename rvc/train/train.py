@@ -104,13 +104,16 @@ def main():
         print("GPU not detected, reverting to CPU (not recommended)")
         n_gpus = 1
     children = []
-    for i in range(n_gpus):
-        subproc = mp.Process(
-            target=run,
-            args=(i, n_gpus, hps),
-        )
-        children.append(subproc)
-        subproc.start()
+    pid_file_path = os.path.join(now_dir, "rvc", "train", "train_pid.txt")
+    with open(pid_file_path, "w") as pid_file:
+        for i in range(n_gpus):
+            subproc = mp.Process(
+                target=run,
+                args=(i, n_gpus, hps),
+            )
+            children.append(subproc)
+            subproc.start()
+            pid_file.write(str(subproc.pid) + "\n")
 
     for i in range(n_gpus):
         children[i].join()
@@ -590,6 +593,9 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
         print(
             f"Lowest generator loss: {lowestValue['value']} at epoch {lowestValue['epoch']}, step {lowestValue['step']}"
         )
+
+        pid_file_path = os.path.join(now_dir, "rvc", "train", "train_pid.txt")
+        os.remove(pid_file_path)
 
         if hasattr(net_g, "module"):
             ckpt = net_g.module.state_dict()
