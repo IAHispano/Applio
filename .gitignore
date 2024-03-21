@@ -6,9 +6,9 @@
 *.pth
 *.index
 *.wav
-*.venv
 
 rvc/train/train_pid.txt
 logs
 env
 venv
+.venv
