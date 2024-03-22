@@ -87,13 +87,6 @@ These enhancements contribute to a more robust and scalable codebase, making the
 
 We appreciate all contributions ❤️
 
-## Planned Features
-- Implement: Support training for Apple Devices
-- Implement: rmvpe_gpu
-- Implement: Overtraining detector
-- Implement: Training stop
-- Fix: Model fusion
-
 ## Credits
 - [ContentVec](https://github.com/auspicious3000/contentvec/) by auspicious3000
 - [HIFIGAN](https://github.com/jik876/hifi-gan) by jik876
