@@ -586,7 +586,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
     if rank == 0:
         if epoch > 1:
             print(
-                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowestValue={lowestValue['value']} (epoch {lowestValue['epoch']} and step {lowestValue['step']})"
+                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowestValue['value']} (epoch {lowestValue['epoch']} and step {lowestValue['step']})"
             )
         else:
             print(
