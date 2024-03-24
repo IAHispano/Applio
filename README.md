@@ -78,7 +78,21 @@ This repository has undergone significant enhancements to improve its functional
 - **Easy-to-Use UI:** Implemented a user-friendly interface for intuitive interaction.
 - **Optimized Code & Dependencies:** Enhanced code and streamlined dependencies for improved efficiency.
 - **Plugin System:** Introduced a plugin system for extending functionality and customization.
-  
+- **Overtraining Detector:** Implemented an overtraining detector which halts training once a specified epoch limit is reached, preventing excessive training.
+- **Model Search:** Integrated a model search feature directly into the application interface, facilitating easy model discovery.
+- **Enhancements in Pretrained Models:** Introduced additional functionalities such as custom pretrained models, allowing users to utilize their preferred pretrained models without requiring RVC1 pretrained models upon installation.
+- **Voice Blender:** Developed a voice blender feature that combines two trained models to create a new one, offering versatility in model generation.
+- **Accessibility Improvements:** Enhanced accessibility with descriptive tooltips indicating the function of each element in the user interface, making it more user-friendly for all users.
+- **New F0 Extraction Methods:** Introduced new F0 extraction methods such as FCPE or Hybrid, expanding options for pitch extraction.
+- **Output Format Selection:** Implemented an output format selection feature, allowing users to choose the format in which they want to save their audio files.
+- **Hashing System:** Implemented a hashing system where each created model is assigned a unique ID to prevent unauthorized duplication or theft.
+- **Model Download System:** Added support for downloading models from various websites such as Google Drive, Yandex, Pixeldrain, Discord, Hugging Face, or Applio.org, enhancing model accessibility.
+- **TTS Enhancements:** Improved Text-to-Speech functionality with support for uploading TXT files, increasing flexibility in input methods.
+- **Split Audio:** Implemented audio splitting functionality which divides audio into segments for inference, subsequently merging them to create the final audio, resulting in faster processing times and potentially better outcomes.
+- **Discord Presence:** Displayed presence on Discord indicating active usage of Applio, with plans to incorporate different statuses based on activities within the application.
+- **Flask Integration:** Integration with Flask, initially disabled by default, allows for automatic model downloads from the web by simply clicking the Applio button next to the model download button in the settings tab.
+- **Support Tab:** Added a support tab enabling users to record their screen to demonstrate encountered issues, facilitating faster issue resolution by allowing users to create GitHub issues for review and troubleshooting.
+
 These enhancements contribute to a more robust and scalable codebase, making the repository more accessible for contributors and users alike.
 
 ## Contributions
