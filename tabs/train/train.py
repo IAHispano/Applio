@@ -276,6 +276,7 @@ def train_tab():
                     "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
                 ),
                 interactive=True,
+                visible=False,
             )
         with gr.Row():
             with gr.Column():
