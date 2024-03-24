@@ -344,6 +344,7 @@ def inference_tab():
                     info=i18n(
                         "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
                     ),
+                    visible=False,
                     value=128,
                     interactive=True,
                 )
@@ -506,6 +507,7 @@ def inference_tab():
                     info=i18n(
                         "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
                     ),
+                    visible=False,
                     value=128,
                     interactive=True,
                 )
@@ -539,6 +541,11 @@ def inference_tab():
 
     def toggle_visible(checkbox):
         return {"visible": checkbox, "__type__": "update"}
+    
+    def toggle_visible_hop_length(f0method):
+        if f0method == "crepe" or f0method == "crepe-tiny":
+            return {"visible": True, "__type__": "update"}
+        return {"visible": False, "__type__": "update"}
 
     clean_audio.change(
         fn=toggle_visible,
@@ -549,6 +556,16 @@ def inference_tab():
         fn=toggle_visible,
         inputs=[clean_audio_batch],
         outputs=[clean_strength_batch],
+    )
+    f0method.change(
+        fn=toggle_visible_hop_length,
+        inputs=[f0method],
+        outputs=[hop_length],
+    )
+    f0method_batch.change(
+        fn=toggle_visible_hop_length,
+        inputs=[f0method_batch],
+        outputs=[hop_length_batch],
     )
     refresh_button.click(
         fn=change_choices,
