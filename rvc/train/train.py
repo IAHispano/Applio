@@ -70,15 +70,9 @@ torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
 
 global_step = 0
-lowestValue = {"step": 0, "value": float("inf"), "epoch": 0}
-bestEpochStep = 0
+lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 last_loss_gen_all = 0
-lastValue = 1
-dirtyTb = []
-dirtyValues = []
-dirtySteps = []
-dirtyEpochs = []
-continued = False
+epochs_since_last_lowest = 0
 
 
 class EpochRecorder:
@@ -290,11 +284,12 @@ def run(
 
 
 def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers, cache):
-    global global_step, last_loss_gen_all, lowestValue
+    global global_step, last_loss_gen_all, lowest_value, epochs_since_last_lowest
 
     if epoch == 1:
-        lowestValue = {"step": 0, "value": float("inf"), "epoch": 0}
-        last_loss_gen_all = {}
+        lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
+        last_loss_gen_all = 0.0
+        epochs_since_last_lowest = 0
 
     net_g, net_d = nets
     optim_g, optim_d = optims
@@ -473,12 +468,12 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 loss_gen, losses_gen = generator_loss(y_d_hat_g)
                 loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
 
-                if loss_gen_all < lowestValue["value"]:
-                    lowestValue["value"] = loss_gen_all
-                    lowestValue["step"] = global_step
-                    lowestValue["epoch"] = epoch
-                    # print(f'Lowest generator loss updated: {lowestValue["value"]} at epoch {epoch}, step {global_step}')
-                    if epoch > lowestValue["epoch"]:
+                if loss_gen_all < lowest_value["value"]:
+                    lowest_value["value"] = loss_gen_all
+                    lowest_value["step"] = global_step
+                    lowest_value["epoch"] = epoch
+                    # print(f'Lowest generator loss updated: {lowest_value["value"]} at epoch {epoch}, step {global_step}')
+                    if epoch > lowest_value["epoch"]:
                         print(
                             "Alert: The lower generating loss has been exceeded by a lower loss in a subsequent epoch."
                         )
@@ -583,10 +578,25 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 hps,
             )
 
+    if hps.overtraining_detector == 1:
+        if lowest_value["value"] < last_loss_gen_all:
+            epochs_since_last_lowest += 1
+        else:
+            epochs_since_last_lowest = 0
+
+        if epochs_since_last_lowest >= hps.overtraining_threshold:
+            print(
+                "Stopping training due to possible overtraining. Lowest generator loss: {} at epoch {}, step {}".format(
+                    lowest_value["value"], lowest_value["epoch"], lowest_value["step"]
+                )
+            )
+            os._exit(2333333)
+
     if rank == 0:
         if epoch > 1:
+            print(hps.overtraining_threshold)
             print(
-                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowestValue['value']} (epoch {lowestValue['epoch']} and step {lowestValue['step']})"
+                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
             )
         else:
             print(
@@ -599,7 +609,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             f"Training has been successfully completed with {epoch} epoch, {global_step} steps and {round(loss_gen_all.item(), 3)} loss gen."
         )
         print(
-            f"Lowest generator loss: {lowestValue['value']} at epoch {lowestValue['epoch']}, step {lowestValue['step']}"
+            f"Lowest generator loss: {lowest_value['value']} at epoch {lowest_value['epoch']}, step {lowest_value['step']}"
         )
 
         pid_file_path = os.path.join(now_dir, "rvc", "train", "train_pid.txt")

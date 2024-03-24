@@ -289,6 +289,8 @@ def run_train_script(
     batch_size,
     gpu,
     pitch_guidance,
+    overtraining_detector,
+    overtraining_threshold,
     pretrained,
     custom_pretrained,
     g_pretrained_path=None,
@@ -297,6 +299,7 @@ def run_train_script(
     f0 = 1 if str(pitch_guidance) == "True" else 0
     latest = 1 if str(save_only_latest) == "True" else 0
     save_every = 1 if str(save_every_weights) == "True" else 0
+    detector = 1 if str(overtraining_detector) == "True" else 0
 
     if str(pretrained) == "True":
         if str(custom_pretrained) == "False":
@@ -343,6 +346,10 @@ def run_train_script(
                 save_every,
                 "-f0",
                 f0,
+                "-od",
+                detector,
+                "-ot",
+                overtraining_threshold,
             ],
         ),
     ]
@@ -962,6 +969,20 @@ def parse_arguments():
         default=None,
         help="Path to the pretrained D file",
     )
+    train_parser.add_argument(
+        "--overtraining_detector",
+        type=str,
+        help="Overtraining detector",
+        choices=["True", "False"],
+        default="False",
+    )
+    train_parser.add_argument(
+        "--overtraining_threshold",
+        type=str,
+        help="Overtraining threshold",
+        choices=[str(i) for i in range(1, 101)],
+        default="50",
+    )
 
     # Parser for 'index' mode
     index_parser = subparsers.add_parser("index", help="Generate index file")
@@ -1207,6 +1228,8 @@ def main():
                 str(args.custom_pretrained),
                 str(args.g_pretrained_path),
                 str(args.d_pretrained_path),
+                str(args.overtraining_detector),
+                str(args.overtraining_threshold),
             )
         elif args.mode == "index":
             run_index_script(

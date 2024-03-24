@@ -69,6 +69,12 @@
   "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential.": "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential.",
   "Utilize pretrained models when training your own. This approach reduces training duration and enhances overall quality.": "Utilize pretrained models when training your own. This approach reduces training duration and enhances overall quality.",
   "Extract Features": "Extract Features",
+  "Overtraining Detector": "Overtraining Detector",
+  "Detect overtraining to prevent the model from learning the training data too well and losing the ability to generalize to new data.": "Detect overtraining to prevent the model from learning the training data too well and losing the ability to generalize to new data.",
+  "Overtraining Detector Settings": "Overtraining Detector Settings",
+  "Overtraining Threshold": "Overtraining Threshold",
+  "Set the maximum number of epochs you want your model to stop training if no improvement is detected.": "Set the maximum number of epochs you want your model to stop training if no improvement is detected.",
+
 
   "Start Training": "Start Training",
   "Stop Training & Restart Applio": "Stop Training & Restart Applio",

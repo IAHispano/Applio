@@ -388,6 +388,14 @@ def train_tab():
                 value=False,
                 interactive=True,
             )
+            overtraining_detector = gr.Checkbox(
+                label=i18n("Overtraining Detector"),
+                info=i18n(
+                    "Detect overtraining to prevent the model from learning the training data too well and losing the ability to generalize to new data."
+                ),
+                value=False,
+                interactive=True,
+            )
 
         with gr.Row():
             with gr.Column(visible=False) as pretrained_custom_settings:
@@ -419,7 +427,7 @@ def train_tab():
                         allow_custom_value=True,
                     )
             with gr.Column(visible=False) as gpu_custom_settings:
-                with gr.Accordion("GPU Settings"):
+                with gr.Accordion(i18n("GPU Settings")):
                     gpu = gr.Textbox(
                         label=i18n("GPU Number"),
                         info=i18n(
@@ -434,6 +442,19 @@ def train_tab():
                         info=i18n("The GPU information will be displayed here."),
                         value=get_gpu_info(),
                         interactive=False,
+                    )
+            with gr.Column(visible=False) as overtraining_settings:
+                with gr.Accordion(i18n("Overtraining Detector Settings")):
+                    overtraining_threshold = gr.Slider(
+                        1,
+                        100,
+                        50,
+                        step=1,
+                        label=i18n("Overtraining Threshold"),
+                        info=i18n(
+                            "Set the maximum number of epochs you want your model to stop training if no improvement is detected."
+                        ),
+                        interactive=True,
                     )
 
         with gr.Row():
@@ -460,6 +481,8 @@ def train_tab():
                     batch_size,
                     gpu,
                     pitch_guidance,
+                    overtraining_detector,
+                    overtraining_threshold,
                     pretrained,
                     custom_pretrained,
                     g_pretrained_path,
@@ -576,6 +599,12 @@ def train_tab():
                 fn=save_drop_model,
                 inputs=[upload_pretrained],
                 outputs=[upload_pretrained],
+            )
+
+            overtraining_detector.change(
+                fn=toggle_visible,
+                inputs=[overtraining_detector],
+                outputs=[overtraining_settings],
             )
 
             multiple_gpu.change(

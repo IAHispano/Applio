@@ -175,6 +175,22 @@ def get_hparams():
         required=True,
         help="if caching the dataset in GPU memory, 1 or 0",
     )
+
+    parser.add_argument(
+        "-od",
+        "--overtraining_detector",
+        type=int,
+        required=True,
+        help="Detect overtraining or not, 1 or 0",
+    )
+    parser.add_argument(
+        "-ot",
+        "--overtraining_threshold",
+        type=int,
+        default=50,
+        help="overtraining_threshold",
+    )
+
     args = parser.parse_args()
     name = args.experiment_dir
     experiment_dir = os.path.join("./logs", args.experiment_dir)
@@ -197,6 +213,8 @@ def get_hparams():
     hparams.save_every_weights = args.save_every_weights
     hparams.if_cache_data_in_gpu = args.if_cache_data_in_gpu
     hparams.data.training_files = f"{experiment_dir}/filelist.txt"
+    hparams.overtraining_detector = args.overtraining_detector
+    hparams.overtraining_threshold = args.overtraining_threshold
     return hparams
 
 
