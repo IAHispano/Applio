@@ -1,10 +1,8 @@
-import argparse
-import os
-import sys
-import json
-from multiprocessing import cpu_count
+
 
 import torch
+import json
+import os
 
 version_config_list = [
     "v1/32000.json",
@@ -64,6 +62,7 @@ class Config:
             return False
 
     def use_fp32_config(self):
+        print(f"Using FP32 config instead of FP16 due to GPU compatibility ({self.gpu_name})")
         for config_file in version_config_list:
             self.json_config[config_file]["train"]["fp16_run"] = False
             with open(f"rvc/configs/{config_file}", "r") as f:
@@ -116,7 +115,7 @@ class Config:
             self.use_fp32_config()
 
         if self.n_cpu == 0:
-            self.n_cpu = cpu_count()
+            self.n_cpu = os.cpu_count()
 
         if self.is_half:
             x_pad = 3
