@@ -198,6 +198,7 @@ def get_pth_list():
         if filename.endswith(".pth")
     ]
 
+
 def get_index_list():
     return [
         os.path.relpath(os.path.join(dirpath, filename), now_dir)
@@ -206,11 +207,13 @@ def get_index_list():
         if filename.endswith(".index") and "trained" not in filename
     ]
 
+
 def refresh_pth_and_index_list():
     return (
         {"choices": sorted(get_pth_list()), "__type__": "update"},
         {"choices": sorted(get_index_list()), "__type__": "update"},
     )
+
 
 ## Export Pth and Index Files
 def export_pth(pth_path):
@@ -218,10 +221,12 @@ def export_pth(pth_path):
         return pth_path
     return None
 
+
 def export_index(index_path):
     if index_path and os.path.exists(index_path):
         return index_path
     return None
+
 
 ## Upload to Google Drive
 def upload_to_google_drive(pth_path, index_path):
@@ -232,7 +237,9 @@ def upload_to_google_drive(pth_path, index_path):
                 google_drive_folder = "/content/drive/MyDrive/ApplioExported"
                 if not os.path.exists(google_drive_folder):
                     os.makedirs(google_drive_folder)
-                google_drive_file_path = os.path.join(google_drive_folder, os.path.basename(file_path))
+                google_drive_file_path = os.path.join(
+                    google_drive_folder, os.path.basename(file_path)
+                )
                 if os.path.exists(google_drive_file_path):
                     os.remove(google_drive_file_path)
                 shutil.copy2(file_path, google_drive_file_path)
@@ -240,6 +247,7 @@ def upload_to_google_drive(pth_path, index_path):
             except Exception as error:
                 print(error)
                 gr.Info("Error uploading to Google Drive")
+
     upload_file(pth_path)
     upload_file(index_path)
 

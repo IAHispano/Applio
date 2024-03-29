@@ -1,5 +1,3 @@
-
-
 import torch
 import json
 import os
@@ -62,7 +60,9 @@ class Config:
             return False
 
     def use_fp32_config(self):
-        print(f"Using FP32 config instead of FP16 due to GPU compatibility ({self.gpu_name})")
+        print(
+            f"Using FP32 config instead of FP16 due to GPU compatibility ({self.gpu_name})"
+        )
         for config_file in version_config_list:
             self.json_config[config_file]["train"]["fp16_run"] = False
             with open(f"rvc/configs/{config_file}", "r") as f:
