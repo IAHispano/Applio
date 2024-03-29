@@ -80,6 +80,14 @@
   "Stop Training & Restart Applio": "Stop Training & Restart Applio",
   "Generate Index": "Generate Index",
 
+  "Export Model": "Export Model",
+  "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.",
+  "Exported Pth file": "Exported Pth file",
+  "Exported Index file": "Exported Index file",
+  "Select the pth file to be exported": "Select the pth file to be exported",
+  "Select the index file to be exported": "Select the index file to be exported",
+  "Upload": "Upload",
+
   "Voice Model": "Voice Model",
   "Select the voice model to use for the conversion.": "Select the voice model to use for the conversion.",
   "Index File": "Index File",

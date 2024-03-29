@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import shutil
 import gradio as gr
 from assets.i18n.i18n import I18nAuto
 from core import (
@@ -185,6 +186,62 @@ def save_drop_dataset_audio(dropbox, dataset_name):
             relative_dataset_path = os.path.relpath(dataset_path, now_dir)
 
             return None, relative_dataset_path
+
+
+# Export
+## Get Pth and Index Files
+def get_pth_list():
+    return [
+        os.path.relpath(os.path.join(dirpath, filename), now_dir)
+        for dirpath, _, filenames in os.walk(models_path)
+        for filename in filenames
+        if filename.endswith(".pth")
+    ]
+
+def get_index_list():
+    return [
+        os.path.relpath(os.path.join(dirpath, filename), now_dir)
+        for dirpath, _, filenames in os.walk(models_path)
+        for filename in filenames
+        if filename.endswith(".index") and "trained" not in filename
+    ]
+
+def refresh_pth_and_index_list():
+    return (
+        {"choices": sorted(get_pth_list()), "__type__": "update"},
+        {"choices": sorted(get_index_list()), "__type__": "update"},
+    )
+
+## Export Pth and Index Files
+def export_pth(pth_path):
+    if pth_path and os.path.exists(pth_path):
+        return pth_path
+    return None
+
+def export_index(index_path):
+    if index_path and os.path.exists(index_path):
+        return index_path
+    return None
+
+## Upload to Google Drive
+def upload_to_google_drive(pth_path, index_path):
+    def upload_file(file_path):
+        if file_path:
+            try:
+                gr.Info(f"Uploading {pth_path} to Google Drive...")
+                google_drive_folder = "/content/drive/MyDrive/ApplioExported"
+                if not os.path.exists(google_drive_folder):
+                    os.makedirs(google_drive_folder)
+                google_drive_file_path = os.path.join(google_drive_folder, os.path.basename(file_path))
+                if os.path.exists(google_drive_file_path):
+                    os.remove(google_drive_file_path)
+                shutil.copy2(file_path, google_drive_file_path)
+                gr.Info("File uploaded successfully.")
+            except Exception as error:
+                print(error)
+                gr.Info("Error uploading to Google Drive")
+    upload_file(pth_path)
+    upload_file(index_path)
 
 
 # Train Tab
@@ -510,6 +567,48 @@ def train_tab():
                 api_name="generate_index",
             )
 
+    with gr.Accordion(i18n("Export Model")):
+        gr.Markdown(
+            i18n(
+                "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive."
+            )
+        )
+        with gr.Row():
+            with gr.Column():
+                pth_file_export = gr.File(
+                    label=i18n("Exported Pth file"),
+                    type="filepath",
+                    value=None,
+                    interactive=False,
+                )
+                pth_dropdown_export = gr.Dropdown(
+                    label=i18n("Pth file"),
+                    info=i18n("Select the pth file to be exported"),
+                    choices=get_pth_list(),
+                    value=None,
+                    interactive=True,
+                    allow_custom_value=True,
+                )
+            with gr.Column():
+                index_file_export = gr.File(
+                    label=i18n("Exported Index File"),
+                    type="filepath",
+                    value=None,
+                    interactive=False,
+                )
+                index_dropdown_export = gr.Dropdown(
+                    label=i18n("Index File"),
+                    info=i18n("Select the index file to be exported"),
+                    choices=get_index_list(),
+                    value=None,
+                    interactive=True,
+                    allow_custom_value=True,
+                )
+        with gr.Row():
+            with gr.Column():
+                refresh_export = gr.Button(i18n("Refresh"))
+                upload_exported = gr.Button(i18n("Upload"), variant="primary")
+
             def toggle_visible(checkbox):
                 return {"visible": checkbox, "__type__": "update"}
 
@@ -635,4 +734,28 @@ def train_tab():
                 fn=disable_stop_train_button,
                 inputs=[],
                 outputs=[train_button, stop_train_button],
+            )
+
+            upload_exported.click(
+                fn=upload_to_google_drive,
+                inputs=[pth_dropdown_export, index_dropdown_export],
+                outputs=[],
+            )
+
+            pth_dropdown_export.change(
+                fn=export_pth,
+                inputs=[pth_dropdown_export],
+                outputs=[pth_file_export],
+            )
+
+            index_dropdown_export.change(
+                fn=export_index,
+                inputs=[index_dropdown_export],
+                outputs=[index_file_export],
+            )
+
+            refresh_export.click(
+                fn=refresh_pth_and_index_list,
+                inputs=[],
+                outputs=[pth_dropdown_export, index_dropdown_export],
             )
