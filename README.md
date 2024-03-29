@@ -107,7 +107,6 @@ We appreciate all contributions ❤️
 - [Gradio](https://github.com/gradio-app/gradio) by gradio-app
 - [FFmpeg](https://github.com/FFmpeg/FFmpeg) by FFmpeg
 - [audio-slicer](https://github.com/openvpi/audio-slicer) by openvpi
-- [Ilaria-Audio-Analyzer](https://github.com/TheStingerX/Ilaria-Audio-Analyzer) by TheStingerX
 - [gradio-screen-recorder](https://huggingface.co/spaces/gstaff/gradio-screen-recorder) by gstaff
 - [VITS](https://github.com/jaywalnut310/vits) by jaywalnut310
 - [RMVPE](https://github.com/Dream-High/RMVPE) by Dream-High

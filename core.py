@@ -15,6 +15,8 @@ from rvc.lib.tools.pretrained_selector import pretrained_selector
 from rvc.train.process.model_blender import model_blender
 from rvc.train.process.model_information import model_information
 
+from rvc.lib.tools.analyzer import analyze_audio
+
 config = Config()
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")
@@ -456,6 +458,13 @@ def run_prerequisites_script(pretraineds_v1, pretraineds_v2, models, exe):
     ]
     subprocess.run(command)
     return "Prerequisites installed successfully."
+
+
+# Audio analyzer
+def run_audio_analyzer_script(input_path, save_plot_path="logs/audio_analysis.png"):
+    audio_info, plot_path = analyze_audio(input_path, save_plot_path)
+    print(f"Audio info of {input_path}: {audio_info}", f"Audio file {input_path} analyzed successfully. Plot saved at: {plot_path}")
+    return audio_info, plot_path
 
 
 # API
@@ -1123,6 +1132,14 @@ def parse_arguments():
         help="Download executables",
     )
 
+    # Parser for 'audio_analyzer' mode
+    audio_analyzer = subparsers.add_parser("audio_analyzer", help="Run audio analyzer")
+    audio_analyzer.add_argument(
+        "--input_path",
+        type=str,
+        help="Path to the input audio file",
+    )
+
     # Parser for 'api' mode
     api_parser = subparsers.add_parser("api", help="Run the API")
     api_parser.add_argument("--ip", type=str, help="IP address", default="127.0.0.1")
@@ -1269,6 +1286,10 @@ def main():
                 str(args.pretraineds_v2),
                 str(args.models),
                 str(args.exe),
+            )
+        elif args.mode == "audio_analyzer":
+            run_audio_analyzer_script(
+                str(args.input_path),
             )
         elif args.mode == "api":
             run_api_script(
