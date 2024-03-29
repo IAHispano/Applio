@@ -463,7 +463,10 @@ def run_prerequisites_script(pretraineds_v1, pretraineds_v2, models, exe):
 # Audio analyzer
 def run_audio_analyzer_script(input_path, save_plot_path="logs/audio_analysis.png"):
     audio_info, plot_path = analyze_audio(input_path, save_plot_path)
-    print(f"Audio info of {input_path}: {audio_info}", f"Audio file {input_path} analyzed successfully. Plot saved at: {plot_path}")
+    print(
+        f"Audio info of {input_path}: {audio_info}",
+        f"Audio file {input_path} analyzed successfully. Plot saved at: {plot_path}",
+    )
     return audio_info, plot_path
 
 

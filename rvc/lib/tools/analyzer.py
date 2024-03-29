@@ -12,17 +12,19 @@ def calculate_features(y, sr):
     rolloff = librosa.feature.spectral_rolloff(S=stft, sr=sr)[0]
     return stft, duration, cent, bw, rolloff
 
+
 def plot_title(title):
     plt.suptitle(title, fontsize=16, fontweight="bold")
 
-def plot_spectrogram(y, sr, stft, duration, cmap='inferno'):
+
+def plot_spectrogram(y, sr, stft, duration, cmap="inferno"):
     plt.subplot(3, 1, 1)
     plt.imshow(
         librosa.amplitude_to_db(stft, ref=np.max),
         origin="lower",
         extent=[0, duration, 0, sr / 1000],
         aspect="auto",
-        cmap=cmap  # Change the colormap here
+        cmap=cmap,  # Change the colormap here
     )
     plt.colorbar(format="%+2.0f dB")
     plt.xlabel("Time (s)")
@@ -53,7 +55,7 @@ def analyze_audio(audio_file, save_plot_path="logs/audio_analysis.png"):
     stft, duration, cent, bw, rolloff = calculate_features(y, sr)
 
     plt.figure(figsize=(12, 10))
-    
+
     plot_title("Audio Analysis" + " - " + audio_file.split("/")[-1])
     plot_spectrogram(y, sr, stft, duration)
     plot_waveform(y, sr, duration)
