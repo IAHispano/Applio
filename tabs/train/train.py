@@ -575,7 +575,7 @@ def train_tab():
                 api_name="generate_index",
             )
 
-    with gr.Accordion(i18n("Export Model")):
+    with gr.Accordion(i18n("Export Model"), open=False):
         gr.Markdown(
             i18n(
                 "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive."

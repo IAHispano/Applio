@@ -67,15 +67,10 @@ def analyze_audio(audio_file, save_plot_path="logs/audio_analysis.png"):
         plt.savefig(save_plot_path, bbox_inches="tight", dpi=300)
     plt.close()
 
-    audio_info = f"""
-    - Sample Rate: {sr},
-    - Duration: {(
+    audio_info = f"""Sample Rate: {sr}\nDuration: {(
             str(round(duration, 2)) + " seconds"
             if duration < 60
             else str(round(duration / 60, 2)) + " minutes"
-    )},
-    - Number of Samples: {len(y)},
-    - Bits per Sample: {librosa.get_samplerate(audio_file)},
-    - Channels: {"Mono (1)" if y.ndim == 1 else "Stereo (2)"}
-    """
+    )}\nNumber of Samples: {len(y)}\nBits per Sample: {librosa.get_samplerate(audio_file)}\nChannels: {"Mono (1)" if y.ndim == 1 else "Stereo (2)"}"""
+
     return audio_info, save_plot_path
