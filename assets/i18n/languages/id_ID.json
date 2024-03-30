@@ -4,7 +4,7 @@
   "Output Information": "informasi keluaran",
 
   "Inference": "Inference",
-  "Train": "training suara",
+  "Train": "training model",
   "Extra": "bonus",
   "Merge Audios": "Gabungkan Audio",
   "Processing": "Pengolahan",
@@ -94,7 +94,7 @@
   "Path to Model B": "Jalan Menuju Model B",
   "Path to model": "Jalan Menuju Model",
   "Model information to be placed": "Informasi model yang akan ditempatkan",
-  "Fusion": "Fusion",
+  "Fusion": "Fusi",
 
   "Modify model information": "Ubah informasi model",
   "Path to Model": "Jalan Menuju Model",
@@ -106,7 +106,7 @@
   "View": "tampilakan",
   "Model extraction": "Ekstraksi model",
   "Model conversion": "Konversi model",
-  "Pth file": "Pth file",
+  "Pth file": "file Pth",
   "Output of the pth file": "Keluaran dari file pth",
 
   "# How to Report an Issue on GitHub": "# Cara Melaporkan Masalah di GitHub",
@@ -126,10 +126,10 @@
   "Model Link": "Tautan model",
   "Introduce the model link": "Perkenalkan tautan model",
   "Download Model": "Unduh Model",
-  "## Drop files": "## Jatuhkan file ",
+  "## Drop files": "## masukkan file ",
   "Drag your .pth file and .index file into this space. Drag one and then the other.": "Seret file .pth dan file .index ke dalam ruang ini. Seret yang pertama, lalu yang lainnya.",
 
-  "TTS Voices": "TTS Voices",
+  "TTS Voices": "TTS suara",
   "Text to Synthesize": "Text ke disintesis",
   "Or you can upload a .txt file": "Atau Anda dapat mengunggah file .txt",
   "Enter text to synthesize": "Masukkan teks untuk disintesis",
