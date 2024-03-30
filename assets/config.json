@@ -10,6 +10,6 @@
     "selected_lang": "en_US"
   },
   "flask_server": false,
-  "version": "3.0.9",
+  "version": "3.1.0",
   "fake_gpu": false
 }
