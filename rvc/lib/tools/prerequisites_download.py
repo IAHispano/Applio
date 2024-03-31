@@ -55,6 +55,7 @@ folder_mapping_list = {
     "pretrained_v2/": "rvc/pretraineds/pretrained_v2/",
 }
 
+
 def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
     def download_files(file_list):
         for file_name in file_list:
@@ -64,7 +65,6 @@ def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
                 os.makedirs(os.path.dirname(destination_path) or ".", exist_ok=True)
                 print(f"\nDownloading {url} to {destination_path}...")
                 wget.download(url, out=destination_path)
-
 
     if models == "True":
         download_files(models_list)

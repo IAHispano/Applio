@@ -3,6 +3,7 @@ from tensorboard import program
 
 log_path = "logs"
 
+
 def launch_tensorboard_pipeline():
     tb = program.TensorBoard()
     tb.configure(argv=[None, "--logdir", log_path])
