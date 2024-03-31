@@ -73,7 +73,7 @@ def run_infer_script(
         clean_strength,
         export_format,
     )
-    return f"File {input_path} inferred successfully.", output_path
+    return f"File {input_path} inferred successfully.", output_path.replace(".wav", f".{export_format.lower()}")
 
 
 # Batch infer
@@ -188,7 +188,7 @@ def run_tts_script(
         export_format,
     )
 
-    return f"Text {tts_text} synthesized successfully.", output_rvc_path
+    return f"Text {tts_text} synthesized successfully.", output_rvc_path.replace(".wav", f".{export_format.lower()}")
 
 
 # Preprocess
