@@ -3,7 +3,7 @@ from tensorboard import program
 
 log_path = "logs"
 
-if __name__ == "__main__":
+def launch_tensorboard_pipeline():
     tb = program.TensorBoard()
     tb.configure(argv=[None, "--logdir", log_path])
     url = tb.launch()

@@ -1,9 +1,8 @@
 import os
 import wget
-import argparse
 
 url_base = "https://huggingface.co/IAHispano/Applio/resolve/main/Resources"
-pretraineds_v1 = [
+pretraineds_v1_list = [
     (
         "pretrained_v1/",
         [
@@ -22,7 +21,7 @@ pretraineds_v1 = [
         ],
     ),
 ]
-pretraineds_v2 = [
+pretraineds_v2_list = [
     (
         "pretrained_v2/",
         [
@@ -42,69 +41,55 @@ pretraineds_v2 = [
     ),
 ]
 
-models = [
+models_list = [
     "hubert_base.pt",
     "rmvpe.pt",
     "fcpe.pt",
     # "rmvpe.onnx"
 ]
 
-executables = ["ffmpeg.exe", "ffprobe.exe"]
+executables_list = ["ffmpeg.exe", "ffprobe.exe"]
 
-folder_mapping = {
+folder_mapping_list = {
     "pretrained_v1/": "rvc/pretraineds/pretrained_v1/",
     "pretrained_v2/": "rvc/pretraineds/pretrained_v2/",
 }
 
-parser = argparse.ArgumentParser(description="Download files from a URL.")
-parser.add_argument(
-    "--pretraineds_v1", type=str, default="False", help="Download pretrained_v1 files"
-)
-parser.add_argument(
-    "--pretraineds_v2", type=str, default="False", help="Download pretrained_v2 files"
-)
-parser.add_argument("--models", type=str, default="False", help="Download model files")
-parser.add_argument(
-    "--exe", type=str, default="False", help="Download executable files"
-)
-
-args = parser.parse_args()
-
-
-def download_files(file_list):
-    for file_name in file_list:
-        destination_path = os.path.join(file_name)
-        url = f"{url_base}/{file_name}"
-        if not os.path.exists(destination_path):
-            os.makedirs(os.path.dirname(destination_path) or ".", exist_ok=True)
-            print(f"\nDownloading {url} to {destination_path}...")
-            wget.download(url, out=destination_path)
-
-
-if args.models == "True":
-    download_files(models)
-
-if args.exe == "True" and os.name == "nt":
-    download_files(executables)
-
-if args.pretraineds_v1 == "True":
-    for remote_folder, file_list in pretraineds_v1:
-        local_folder = folder_mapping.get(remote_folder, "")
-        for file in file_list:
-            destination_path = os.path.join(local_folder, file)
-            url = f"{url_base}/{remote_folder}{file}"
+def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
+    def download_files(file_list):
+        for file_name in file_list:
+            destination_path = os.path.join(file_name)
+            url = f"{url_base}/{file_name}"
             if not os.path.exists(destination_path):
                 os.makedirs(os.path.dirname(destination_path) or ".", exist_ok=True)
                 print(f"\nDownloading {url} to {destination_path}...")
                 wget.download(url, out=destination_path)
 
-if args.pretraineds_v2 == "True":
-    for remote_folder, file_list in pretraineds_v2:
-        local_folder = folder_mapping.get(remote_folder, "")
-        for file in file_list:
-            destination_path = os.path.join(local_folder, file)
-            url = f"{url_base}/{remote_folder}{file}"
-            if not os.path.exists(destination_path):
-                os.makedirs(os.path.dirname(destination_path) or ".", exist_ok=True)
-                print(f"\nDownloading {url} to {destination_path}...")
-                wget.download(url, out=destination_path)
+
+    if models == "True":
+        download_files(models_list)
+
+    if exe == "True" and os.name == "nt":
+        download_files(executables_list)
+
+    if pretraineds_v1 == "True":
+        for remote_folder, file_list in pretraineds_v1_list:
+            local_folder = folder_mapping_list.get(remote_folder, "")
+            for file in file_list:
+                destination_path = os.path.join(local_folder, file)
+                url = f"{url_base}/{remote_folder}{file}"
+                if not os.path.exists(destination_path):
+                    os.makedirs(os.path.dirname(destination_path) or ".", exist_ok=True)
+                    print(f"\nDownloading {url} to {destination_path}...")
+                    wget.download(url, out=destination_path)
+
+    if pretraineds_v2 == "True":
+        for remote_folder, file_list in pretraineds_v2_list:
+            local_folder = folder_mapping_list.get(remote_folder, "")
+            for file in file_list:
+                destination_path = os.path.join(local_folder, file)
+                url = f"{url_base}/{remote_folder}{file}"
+                if not os.path.exists(destination_path):
+                    os.makedirs(os.path.dirname(destination_path) or ".", exist_ok=True)
+                    print(f"\nDownloading {url} to {destination_path}...")
+                    wget.download(url, out=destination_path)

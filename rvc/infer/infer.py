@@ -6,7 +6,12 @@ import logging
 
 import numpy as np
 import soundfile as sf
-from pipeline import VC
+import librosa
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+
+from rvc.infer.pipeline import VC
 from scipy.io import wavfile
 import noisereduce as nr
 from rvc.lib.utils import load_audio
@@ -21,9 +26,16 @@ from rvc.lib.infer_pack.models import (
 from rvc.configs.config import Config
 
 logging.getLogger("fairseq").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 config = Config()
 hubert_model = None
+tgt_sr = None
+net_g = None
+vc = None
+cpt = None
+version = None
+n_spk = None
 
 
 def load_hubert():
@@ -58,10 +70,12 @@ def remove_audio_noise(input_audio_path, reduction_strength=0.7):
 def convert_audio_format(input_path, output_path, output_format):
     try:
         if output_format != "WAV":
-            print(f"Converting audio to {export_format} format...")
-            audio, sample_rate = sf.read(input_path)
-            sf.write(output_path, audio, sample_rate, format=output_format.lower())
-            os.remove(input_path)
+            print(f"Converting audio to {output_format} format...")
+            audio, sample_rate = librosa.load(input_path, sr=None)
+            common_sample_rates = [8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000]
+            target_sr = min(common_sample_rates, key=lambda x: abs(x - sample_rate))
+            audio = librosa.resample(audio, orig_sr=sample_rate, target_sr=target_sr)
+            sf.write(output_path, audio, target_sr, format=output_format.lower())
         return output_path
     except Exception as error:
         print(f"Failed to convert audio to {output_format} format: {error}")
@@ -82,6 +96,7 @@ def vc_single(
     output_path=None,
     split_audio=False,
     f0autotune=False,
+    filter_radius=None,
 ):
     global tgt_sr, net_g, vc, hubert_model, version
 
@@ -240,58 +255,62 @@ def get_vc(weight_root, sid):
     n_spk = cpt["config"][-3]
 
 
-f0up_key = sys.argv[1]
-filter_radius = sys.argv[2]
-index_rate = float(sys.argv[3])
-hop_length = sys.argv[4]
-f0method = sys.argv[5]
-audio_input_path = sys.argv[6]
-audio_output_path = sys.argv[7]
-model_path = sys.argv[8]
-index_path = sys.argv[9]
-split_audio = sys.argv[10]
-f0autotune = sys.argv[11]
-rms_mix_rate = float(sys.argv[12])
-protect = float(sys.argv[13])
-clean_audio = sys.argv[14]
-clean_strength = float(sys.argv[15])
-export_format = sys.argv[16]
+def infer_pipeline(
+    f0up_key,
+    filter_radius,
+    index_rate,
+    rms_mix_rate,
+    protect,
+    hop_length,
+    f0method,
+    audio_input_path,
+    audio_output_path,
+    model_path,
+    index_path,
+    split_audio,
+    f0autotune,
+    clean_audio,
+    clean_strength,
+    export_format,
+):
+    global tgt_sr, net_g, vc, cpt
 
-get_vc(model_path, 0)
+    get_vc(model_path, 0)
 
-try:
-    start_time = time.time()
-    vc_single(
-        sid=0,
-        input_audio_path=audio_input_path,
-        f0_up_key=f0up_key,
-        f0_file=None,
-        f0_method=f0method,
-        file_index=index_path,
-        index_rate=index_rate,
-        rms_mix_rate=rms_mix_rate,
-        protect=protect,
-        hop_length=hop_length,
-        output_path=audio_output_path,
-        split_audio=split_audio,
-        f0autotune=f0autotune,
-    )
+    try:
+        start_time = time.time()
+        vc_single(
+            sid=0,
+            input_audio_path=audio_input_path,
+            f0_up_key=f0up_key,
+            f0_file=None,
+            f0_method=f0method,
+            file_index=index_path,
+            index_rate=index_rate,
+            rms_mix_rate=rms_mix_rate,
+            protect=protect,
+            hop_length=hop_length,
+            output_path=audio_output_path,
+            split_audio=split_audio,
+            f0autotune=f0autotune,
+            filter_radius=filter_radius,
+        )
 
-    if clean_audio == "True":
-        cleaned_audio = remove_audio_noise(audio_output_path, clean_strength)
-        if cleaned_audio is not None:
-            sf.write(audio_output_path, cleaned_audio, tgt_sr, format="WAV")
+        if clean_audio == "True":
+            cleaned_audio = remove_audio_noise(audio_output_path, clean_strength)
+            if cleaned_audio is not None:
+                sf.write(audio_output_path, cleaned_audio, tgt_sr, format="WAV")
 
-    output_path_format = audio_output_path.replace(".wav", f".{export_format.lower()}")
-    audio_output_path = convert_audio_format(
-        audio_output_path, output_path_format, export_format
-    )
+        output_path_format = audio_output_path.replace(".wav", f".{export_format.lower()}")
+        audio_output_path = convert_audio_format(
+            audio_output_path, output_path_format, export_format
+        )
 
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(
-        f"Conversion completed. Output file: '{audio_output_path}' in {elapsed_time:.2f} seconds."
-    )
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print(
+            f"Conversion completed. Output file: '{audio_output_path}' in {elapsed_time:.2f} seconds."
+        )
 
-except Exception as error:
-    print(f"Voice conversion failed: {error}")
+    except Exception as error:
+        print(f"Voice conversion failed: {error}")

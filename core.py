@@ -9,13 +9,22 @@ sys.path.append(now_dir)
 
 from rvc.configs.config import Config
 
+from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
 from rvc.train.extract.preparing_files import generate_config, generate_filelist
 from rvc.lib.tools.pretrained_selector import pretrained_selector
 
 from rvc.train.process.model_blender import model_blender
 from rvc.train.process.model_information import model_information
+from rvc.train.process.extract_small_model import extract_small_model
+
+from rvc.infer.infer import infer_pipeline
+from rvc.lib.tools.tts import tts_pipeline
 
 from rvc.lib.tools.analyzer import analyze_audio
+
+from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
+
+from rvc.lib.tools.model_download import model_download_pipeline
 
 config = Config()
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
@@ -47,33 +56,24 @@ def run_infer_script(
     clean_strength,
     export_format,
 ):
-    infer_script_path = os.path.join("rvc", "infer", "infer.py")
-    command = [
-        "python",
-        *map(
-            str,
-            [
-                infer_script_path,
-                f0up_key,
-                filter_radius,
-                index_rate,
-                hop_length,
-                f0method,
-                input_path,
-                output_path,
-                pth_path,
-                index_path,
-                split_audio,
-                f0autotune,
-                rms_mix_rate,
-                protect,
-                clean_audio,
-                clean_strength,
-                export_format,
-            ],
-        ),
-    ]
-    subprocess.run(command)
+    infer_pipeline(
+        f0up_key,
+        filter_radius,
+        index_rate,
+        rms_mix_rate,
+        protect,
+        hop_length,
+        f0method,
+        input_path,
+        output_path,
+        pth_path,
+        index_path,
+        split_audio,
+        f0autotune,
+        clean_audio,
+        clean_strength,
+        export_format,
+    )
     return f"File {input_path} inferred successfully.", output_path
 
 
@@ -96,8 +96,6 @@ def run_batch_infer_script(
     clean_strength,
     export_format,
 ):
-    infer_script_path = os.path.join("rvc", "infer", "infer.py")
-
     audio_files = [
         f for f in os.listdir(input_folder) if f.endswith((".mp3", ".wav", ".flac"))
     ]
@@ -115,32 +113,24 @@ def run_batch_infer_script(
             )
             print(f"Inferring {input_path}...")
 
-        command = [
-            "python",
-            *map(
-                str,
-                [
-                    infer_script_path,
-                    f0up_key,
-                    filter_radius,
-                    index_rate,
-                    hop_length,
-                    f0method,
-                    input_path,
-                    output_path,
-                    pth_path,
-                    index_path,
-                    split_audio,
-                    f0autotune,
-                    rms_mix_rate,
-                    protect,
-                    clean_audio,
-                    clean_strength,
-                    export_format,
-                ],
-            ),
-        ]
-        subprocess.run(command)
+            infer_pipeline(
+                f0up_key,
+                filter_radius,
+                index_rate,
+                rms_mix_rate,
+                protect,
+                hop_length,
+                f0method,
+                input_path,
+                output_path,
+                pth_path,
+                index_path,
+                split_audio,
+                f0autotune,
+                clean_audio,
+                clean_strength,
+                export_format,
+            )
 
     return f"Files from {input_folder} inferred successfully."
 
@@ -166,47 +156,35 @@ def run_tts_script(
     clean_strength,
     export_format,
 ):
-    tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
-    infer_script_path = os.path.join("rvc", "infer", "infer.py")
 
     if os.path.exists(output_tts_path):
         os.remove(output_tts_path)
 
-    command_tts = [
-        "python",
-        tts_script_path,
-        tts_text,
-        tts_voice,
+    tts_pipeline(
+        tts_text, 
+        tts_voice, 
         output_tts_path,
-    ]
+    )
 
-    command_infer = [
-        "python",
-        *map(
-            str,
-            [
-                infer_script_path,
-                f0up_key,
-                filter_radius,
-                index_rate,
-                hop_length,
-                f0method,
-                output_tts_path,
-                output_rvc_path,
-                pth_path,
-                index_path,
-                split_audio,
-                f0autotune,
-                rms_mix_rate,
-                protect,
-                clean_audio,
-                clean_strength,
-                export_format,
-            ],
-        ),
-    ]
-    subprocess.run(command_tts)
-    subprocess.run(command_infer)
+    infer_pipeline(
+        f0up_key,
+        filter_radius,
+        index_rate,
+        rms_mix_rate,
+        protect,
+        hop_length,
+        f0method,
+        output_tts_path,
+        output_rvc_path,
+        pth_path,
+        index_path,
+        split_audio,
+        f0autotune,
+        clean_audio,
+        clean_strength,
+        export_format,
+    )
+
     return f"Text {tts_text} synthesized successfully.", output_rvc_path
 
 
@@ -380,22 +358,7 @@ def run_model_extract_script(
     pth_path, model_name, sampling_rate, pitch_guidance, rvc_version, epoch, step
 ):
     f0 = 1 if str(pitch_guidance) == "True" else 0
-    model_extract_script_path = os.path.join(
-        "rvc", "train", "process", "extract_small_model.py"
-    )
-    command = [
-        "python",
-        model_extract_script_path,
-        pth_path,
-        model_name,
-        sampling_rate,
-        f0,
-        rvc_version,
-        epoch,
-        step,
-    ]
-
-    subprocess.run(command)
+    extract_small_model(pth_path, model_name, sampling_rate, f0, rvc_version, epoch, step)
     return f"Model {model_name} extracted successfully."
 
 
@@ -412,51 +375,18 @@ def run_model_blender_script(model_name, pth_path_1, pth_path_2, ratio):
 
 # Tensorboard
 def run_tensorboard_script():
-    tensorboard_script_path = os.path.join(
-        "rvc", "lib", "tools", "launch_tensorboard.py"
-    )
-    command = [
-        "python",
-        tensorboard_script_path,
-    ]
-    subprocess.run(command)
+    launch_tensorboard_pipeline()
 
 
 # Download
 def run_download_script(model_link):
-    download_script_path = os.path.join("rvc", "lib", "tools", "model_download.py")
-    command = [
-        "python",
-        download_script_path,
-        model_link,
-    ]
-    subprocess.run(command)
+    model_download_pipeline(model_link)
     return f"Model downloaded successfully."
 
 
 # Prerequisites
 def run_prerequisites_script(pretraineds_v1, pretraineds_v2, models, exe):
-    prerequisites_script_path = os.path.join(
-        "rvc", "lib", "tools", "prerequisites_download.py"
-    )
-    command = [
-        "python",
-        prerequisites_script_path,
-        *map(
-            str,
-            [
-                "--pretraineds_v1",
-                pretraineds_v1,
-                "--pretraineds_v2",
-                pretraineds_v2,
-                "--models",
-                models,
-                "--exe",
-                exe,
-            ],
-        ),
-    ]
-    subprocess.run(command)
+    prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe)
     return "Prerequisites installed successfully."
 
 
