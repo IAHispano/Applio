@@ -576,11 +576,12 @@ def train_tab():
             )
 
     with gr.Accordion(i18n("Export Model"), open=False):
-        gr.Markdown(
-            i18n(
-                "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive."
+        if not os.name == "nt":
+            gr.Markdown(
+                i18n(
+                    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive."
+                )
             )
-        )
         with gr.Row():
             with gr.Column():
                 pth_file_export = gr.File(
@@ -617,7 +618,6 @@ def train_tab():
                 refresh_export = gr.Button(i18n("Refresh"))
                 if not os.name == "nt":
                     upload_exported = gr.Button(i18n("Upload"), variant="primary")
-                    
                     upload_exported.click(
                         fn=upload_to_google_drive,
                         inputs=[pth_dropdown_export, index_dropdown_export],
