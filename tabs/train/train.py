@@ -617,6 +617,12 @@ def train_tab():
                 refresh_export = gr.Button(i18n("Refresh"))
                 if not os.name == "nt":
                     upload_exported = gr.Button(i18n("Upload"), variant="primary")
+                    
+                    upload_exported.click(
+                        fn=upload_to_google_drive,
+                        inputs=[pth_dropdown_export, index_dropdown_export],
+                        outputs=[],
+                    )
 
             def toggle_visible(checkbox):
                 return {"visible": checkbox, "__type__": "update"}
@@ -744,12 +750,6 @@ def train_tab():
                 inputs=[],
                 outputs=[train_button, stop_train_button],
             )
-            if not os.name == "nt":
-                upload_exported.click(
-                    fn=upload_to_google_drive,
-                    inputs=[pth_dropdown_export, index_dropdown_export],
-                    outputs=[],
-                )
 
             pth_dropdown_export.change(
                 fn=export_pth,
