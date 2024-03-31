@@ -615,7 +615,8 @@ def train_tab():
         with gr.Row():
             with gr.Column():
                 refresh_export = gr.Button(i18n("Refresh"))
-                upload_exported = gr.Button(i18n("Upload"), variant="primary")
+                if not os.name == "nt":
+                    upload_exported = gr.Button(i18n("Upload"), variant="primary")
 
             def toggle_visible(checkbox):
                 return {"visible": checkbox, "__type__": "update"}
