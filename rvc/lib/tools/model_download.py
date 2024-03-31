@@ -361,4 +361,3 @@ def model_download_pipeline(url):
         result = search_pth_index(extract_folder_path)
     else:
         message = "Error"
-        sys.exit()
