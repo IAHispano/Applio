@@ -18,7 +18,6 @@ from rvc.train.process.model_information import model_information
 from rvc.train.process.extract_small_model import extract_small_model
 
 from rvc.infer.infer import infer_pipeline
-from rvc.lib.tools.tts import tts_pipeline
 
 from rvc.lib.tools.analyzer import analyze_audio
 
@@ -156,15 +155,19 @@ def run_tts_script(
     clean_strength,
     export_format,
 ):
+    tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
 
     if os.path.exists(output_tts_path):
         os.remove(output_tts_path)
 
-    tts_pipeline(
-        tts_text, 
-        tts_voice, 
+    command_tts = [
+        "python",
+        tts_script_path,
+        tts_text,
+        tts_voice,
         output_tts_path,
-    )
+    ]
+    subprocess.run(command_tts)
 
     infer_pipeline(
         f0up_key,
