@@ -744,12 +744,12 @@ def train_tab():
                 inputs=[],
                 outputs=[train_button, stop_train_button],
             )
-
-            upload_exported.click(
-                fn=upload_to_google_drive,
-                inputs=[pth_dropdown_export, index_dropdown_export],
-                outputs=[],
-            )
+            if not os.name == "nt":
+                upload_exported.click(
+                    fn=upload_to_google_drive,
+                    inputs=[pth_dropdown_export, index_dropdown_export],
+                    outputs=[],
+                )
 
             pth_dropdown_export.change(
                 fn=export_pth,
