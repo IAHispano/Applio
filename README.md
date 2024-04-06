@@ -1,5 +1,5 @@
 <h1 align="center">
-  <a href="http://atlasos.net" target="_blank"><img src="https://github.com/IAHispano/Applio/assets/133521603/a5cc5c72-ed68-48a5-954f-db9f1dc4e7de" alt="Applio"></a>
+  <a href="https://applio.org" target="_blank"><img src="https://github.com/IAHispano/Applio/assets/133521603/a5cc5c72-ed68-48a5-954f-db9f1dc4e7de" alt="Applio"></a>
 </h1>
   
 <p align="center">
