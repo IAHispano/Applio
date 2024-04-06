@@ -1,13 +1,14 @@
 <h1 align="center">
   <a href="http://atlasos.net" target="_blank"><img src="https://github.com/IAHispano/Applio/assets/133521603/a5cc5c72-ed68-48a5-954f-db9f1dc4e7de" alt="Applio"></a>
 </h1>
-  <p align="center">
+  
+<p align="center">
     <img alt="Contributors" src="https://img.shields.io/github/contributors/iahispano/applio?style=for-the-badge&color=00AA68" />
     <img alt="Release" src="https://img.shields.io/github/release/iahispano/applio?style=for-the-badge&color=00AA68" />
     <img alt="Stars" src="https://img.shields.io/github/stars/iahispano/applio?style=for-the-badge&color=00AA68" />
     <img alt="Fork" src="https://img.shields.io/github/forks/iahispano/applio?style=for-the-badge&color=00AA68" />
     <img alt="Issues" src="https://img.shields.io/github/issues/iahispano/applio?style=for-the-badge&color=00AA68" />
-  </p>
+</p>
   
 <p align="center">Voice cloning tool meticulously optimized for unrivaled power, modularity, and a user-friendly experience.</p>
 
@@ -29,7 +30,6 @@
   <a href="https://colab.research.google.com/github/iahispano/applio/blob/master/assets/Applio.ipynb" target="_blank">🔎 Google Colab</a>
 </p>
 
-
 ## Content Table
 - [**Installation**](#installation)
   - [Windows](#windows)
@@ -44,7 +44,7 @@
   - [Contributors](#contributors)
 
 ## Installation
-Download the latest version from [GitHub Releases](https://github.com/IAHispano/Applio-RVC-Fork/releases) or use [Precompiled Versions](https://huggingface.co/IAHispano/applio/tree/main/Applio%20V3%20Precompiled).
+Download the latest version from [GitHub Releases](https://github.com/IAHispano/Applio-RVC-Fork/releases) or use the [Compiled Versions](https://huggingface.co/IAHispano/Applio/tree/main/Compiled).
 
 ### Windows
 ```bash
