@@ -594,7 +594,6 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
 
     if rank == 0:
         if epoch > 1:
-            print(hps.overtraining_threshold)
             print(
                 f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
             )
