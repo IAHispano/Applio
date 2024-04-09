@@ -34,11 +34,11 @@
 - [**Installation**](#installation)
   - [Windows](#windows)
   - [Linux](#linux)
-  - [Makefile](#makefile-for-platforms-such-as-paperspace)
+  - [Makefile](#makefile)
 - [**Usage**](#usage)
   - [Windows](#windows-1)
   - [Linux](#linux-1)
-  - [Makefile](#makefile-for-platforms-such-as-paperspace-1)
+  - [Makefile](#makefile-1)
 - [**Repository Enhancements**](#repository-enhancements)
 - [**Credits**](#credits)
   - [Contributors](#contributors)
@@ -52,12 +52,14 @@ Download the latest version from [GitHub Releases](https://github.com/IAHispano/
 ```
 
 ### Linux
+Certain Linux-based operating systems may encounter complications with the installer. In such instances, we suggest installing the `requirements.txt` within a Python environment version 3.9 to 3.11.
 ```bash
 chmod +x run-install.sh
 ./run-install.sh
 ```
 
-### Makefile (for platforms such as [Paperspace](https://www.paperspace.com/))
+### Makefile
+For platforms such as [Paperspace](https://www.paperspace.com/)
 ```
 make run-install
 ```
@@ -76,7 +78,8 @@ chmod +x run-applio.sh
 ./run-applio.sh
 ```
 
-### Makefile (for platforms such as [Paperspace](https://www.paperspace.com/))
+### Makefile
+For platforms such as [Paperspace](https://www.paperspace.com/)
 ```
 make run-applio
 ```
