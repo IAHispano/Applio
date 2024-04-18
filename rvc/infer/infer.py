@@ -27,7 +27,6 @@ from rvc.configs.config import Config
 
 logging.getLogger("fairseq").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 config = Config()
 hubert_model = None
@@ -73,17 +72,7 @@ def convert_audio_format(input_path, output_path, output_format):
         if output_format != "WAV":
             print(f"Converting audio to {output_format} format...")
             audio, sample_rate = librosa.load(input_path, sr=None)
-            common_sample_rates = [
-                8000,
-                11025,
-                12000,
-                16000,
-                22050,
-                24000,
-                32000,
-                44100,
-                48000,
-            ]
+            common_sample_rates = [8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000]
             target_sr = min(common_sample_rates, key=lambda x: abs(x - sample_rate))
             audio = librosa.resample(audio, orig_sr=sample_rate, target_sr=target_sr)
             sf.write(output_path, audio, target_sr, format=output_format.lower())
@@ -297,9 +286,9 @@ def infer_pipeline(
             f0_file=None,
             f0_method=f0method,
             file_index=index_path,
-            index_rate=index_rate,
-            rms_mix_rate=rms_mix_rate,
-            protect=protect,
+            index_rate=float(index_rate),
+            rms_mix_rate=float(rms_mix_rate),
+            protect=float(protect),
             hop_length=hop_length,
             output_path=audio_output_path,
             split_audio=split_audio,
@@ -312,9 +301,7 @@ def infer_pipeline(
             if cleaned_audio is not None:
                 sf.write(audio_output_path, cleaned_audio, tgt_sr, format="WAV")
 
-        output_path_format = audio_output_path.replace(
-            ".wav", f".{export_format.lower()}"
-        )
+        output_path_format = audio_output_path.replace(".wav", f".{export_format.lower()}")
         audio_output_path = convert_audio_format(
             audio_output_path, output_path_format, export_format
         )
