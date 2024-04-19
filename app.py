@@ -102,6 +102,13 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
         lang_tab()
         restart_tab()
 
+def launch_gradio(port):
+    Applio.launch(
+        favicon_path="assets/ICON.ico",
+        share="--share" in sys.argv,
+        inbrowser="--open" in sys.argv,
+        server_port=port,
+    )
 
 if __name__ == "__main__":
     port = 6969
@@ -110,9 +117,17 @@ if __name__ == "__main__":
         if port_index < len(sys.argv):
             port = int(sys.argv[port_index])
 
-    Applio.launch(
-        favicon_path="assets/ICON.ico",
-        share="--share" in sys.argv,
-        inbrowser="--open" in sys.argv,
-        server_port=port,
-    )
+        launch_gradio(port)
+
+    else:
+        # if launch fails, decrement port number and try again (up to 10 times)
+        for i in range(10):
+            try:
+                launch_gradio(port)
+                break
+            except OSError:
+                print("Failed to launch on port", port, "- trying again...")
+                port -= 1
+            except Exception as e:
+                print(f'Unexpected error during launch: {e}')
+                break
