@@ -29,7 +29,7 @@ class RichPresenceManager:
         if self.rpc:
             self.rpc.update(
                 state="applio.org",
-                details="Ultimate voice cloning tool.",
+                details="Open ecosystem for voice cloning",
                 buttons=[
                     {"label": "Home", "url": "https://applio.org"},
                     {"label": "Download", "url": "https://applio.org/download"},
