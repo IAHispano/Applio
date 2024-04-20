@@ -73,9 +73,7 @@ def run_infer_script(
         clean_strength,
         export_format,
     )
-    return f"File {input_path} inferred successfully.", output_path.replace(
-        ".wav", f".{export_format.lower()}"
-    )
+    return f"File {input_path} inferred successfully.", output_path.replace(".wav", f".{export_format.lower()}")
 
 
 # Batch infer
@@ -190,9 +188,7 @@ def run_tts_script(
         export_format,
     )
 
-    return f"Text {tts_text} synthesized successfully.", output_rvc_path.replace(
-        ".wav", f".{export_format.lower()}"
-    )
+    return f"Text {tts_text} synthesized successfully.", output_rvc_path.replace(".wav", f".{export_format.lower()}")
 
 
 # Preprocess
@@ -365,9 +361,7 @@ def run_model_extract_script(
     pth_path, model_name, sampling_rate, pitch_guidance, rvc_version, epoch, step
 ):
     f0 = 1 if str(pitch_guidance) == "True" else 0
-    extract_small_model(
-        pth_path, model_name, sampling_rate, f0, rvc_version, epoch, step
-    )
+    extract_small_model(pth_path, model_name, sampling_rate, f0, rvc_version, epoch, step)
     return f"Model {model_name} extracted successfully."
 
 
@@ -1084,7 +1078,7 @@ def parse_arguments():
 
     # Parser for 'api' mode
     api_parser = subparsers.add_parser("api", help="Run the API")
-    api_parser.add_argument("--ip", type=str, help="IP address", default="127.0.0.1")
+    api_parser.add_argument("--host", type=str, help="Host address", default="127.0.0.1")
     api_parser.add_argument("--port", type=str, help="Port", default="8000")
 
     return parser.parse_args()
@@ -1183,12 +1177,12 @@ def main():
                 str(args.batch_size),
                 str(args.gpu),
                 str(args.pitch_guidance),
+                str(args.overtraining_detector),
+                str(args.overtraining_threshold),
                 str(args.pretrained),
                 str(args.custom_pretrained),
                 str(args.g_pretrained_path),
                 str(args.d_pretrained_path),
-                str(args.overtraining_detector),
-                str(args.overtraining_threshold),
             )
         elif args.mode == "index":
             run_index_script(
@@ -1235,7 +1229,7 @@ def main():
             )
         elif args.mode == "api":
             run_api_script(
-                str(args.ip),
+                str(args.host),
                 str(args.port),
             )
     except Exception as error:
