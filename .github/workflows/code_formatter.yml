@@ -28,7 +28,7 @@ jobs:
 
       - name: Run Black
         # run: black $(git ls-files '*.py')
-        run: black .
+        run: black . --exclude="*.ipynb"
 
       - name: Commit Back
         continue-on-error: true

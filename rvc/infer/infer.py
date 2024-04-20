@@ -27,6 +27,7 @@ from rvc.configs.config import Config
 
 logging.getLogger("fairseq").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 config = Config()
 hubert_model = None
