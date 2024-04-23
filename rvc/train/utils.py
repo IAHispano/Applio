@@ -5,6 +5,23 @@ import torch
 import argparse
 import numpy as np
 from scipy.io.wavfile import read
+from collections import OrderedDict
+
+
+def replace_keys_in_dict(d, old_key_part, new_key_part):
+    if isinstance(d, OrderedDict):
+        updated_dict = OrderedDict()
+    else:
+        updated_dict = {}
+    for key, value in d.items():
+        if isinstance(key, str):
+            new_key = key.replace(old_key_part, new_key_part)
+        else:
+            new_key = key
+        if isinstance(value, dict):
+            value = replace_keys_in_dict(value, old_key_part, new_key_part)
+        updated_dict[new_key] = value
+    return updated_dict
 
 
 def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
@@ -46,6 +63,9 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
 
 def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path):
     print(f"Saved model '{checkpoint_path}' (epoch {iteration})")
+    checkpoint_old_version_path = os.path.join(
+        os.path.dirname(checkpoint_path), f"{os.path.basename(checkpoint_path)}_old_version.pth"
+    )
     if hasattr(model, "module"):
         state_dict = model.module.state_dict()
     else:
@@ -59,6 +79,19 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
         },
         checkpoint_path,
     )
+    checkpoint = torch.load(checkpoint_path, map_location=torch.device("cpu"))
+    torch.save(
+        replace_keys_in_dict(
+            replace_keys_in_dict(
+                checkpoint, ".parametrizations.weight.original1", ".weight_v"
+            ),
+            ".parametrizations.weight.original0",
+            ".weight_g",
+        ),
+        checkpoint_old_version_path,
+    )
+    os.remove(checkpoint_path)
+    os.rename(checkpoint_old_version_path, checkpoint_path)
 
 
 def summarize(
