@@ -64,7 +64,7 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
 def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path):
     print(f"Saved model '{checkpoint_path}' (epoch {iteration})")
     checkpoint_old_version_path = os.path.join(
-        os.path.dirname(checkpoint_path), f"{os.path.basename(checkpoint_path)}_old_version.pth"
+        os.path.dirname(checkpoint_path), f"{os.path.splitext(os.path.basename(checkpoint_path))[0]}_old_version.pth"
     )
     if hasattr(model, "module"):
         state_dict = model.module.state_dict()
