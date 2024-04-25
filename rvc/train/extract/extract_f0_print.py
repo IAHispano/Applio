@@ -134,7 +134,7 @@ class FeatureInput:
             from rvc.lib.rmvpe import RMVPE
 
             self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, hop_length=hop_length, device="cpu")
-        return self.model_rmvpe.infer_from_audio(x, thred=0.0)
+        return self.model_rmvpe.infer_from_audio(x, thred=0.03)
 
     def get_f0_method_dict(self):
         return {
