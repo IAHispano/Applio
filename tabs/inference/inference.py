@@ -542,7 +542,7 @@ def inference_tab():
         return {"visible": checkbox, "__type__": "update"}
 
     def toggle_visible_hop_length(f0method):
-        if f0method == "crepe" or f0method == "crepe-tiny" or f0method == "rmvpe":
+        if f0method == "crepe" or f0method == "crepe-tiny":
             return {"visible": True, "__type__": "update"}
         return {"visible": False, "__type__": "update"}
 

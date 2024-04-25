@@ -129,17 +129,20 @@ class FeatureInput:
         )
         return pyworld.stonemask(x.astype(np.double), *f0_spectral, self.fs)
 
-    def get_rmvpe(self, x, hop_length):
+    def get_rmvpe(self, x):
         if not hasattr(self, "model_rmvpe"):
             from rvc.lib.rmvpe import RMVPE
 
-            self.model_rmvpe = RMVPE(
-                "rmvpe.pt", is_half=False, hop_length=hop_length, device="cpu"
-            )
+            self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cpu")
         return self.model_rmvpe.infer_from_audio(x, thred=0.03)
 
     def get_f0_method_dict(self):
-        return {"pm": self.get_pm, "harvest": self.get_harvest, "dio": self.get_dio}
+        return {
+            "pm": self.get_pm,
+            "harvest": self.get_harvest,
+            "dio": self.get_dio,
+            "rmvpe": self.get_rmvpe,
+        }
 
     def compute_f0(self, path, f0_method, hop_length):
         x = load_audio(path, self.fs)
@@ -153,8 +156,6 @@ class FeatureInput:
             )
         elif f0_method == "crepe":
             f0 = self.mncrepe(f0_method, x, p_len, hop_length)
-        elif f0_method == "rmvpe":
-            f0 = self.get_rmvpe(x, hop_length=hop_length)
         return f0
 
     def coarse_f0(self, f0):

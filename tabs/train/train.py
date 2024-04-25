@@ -630,7 +630,6 @@ def train_tab():
                 if (
                     f0method == "crepe"
                     or f0method == "crepe-tiny"
-                    or f0method == "rmvpe"
                 ):
                     return {"visible": True, "__type__": "update"}
                 return {"visible": False, "__type__": "update"}
