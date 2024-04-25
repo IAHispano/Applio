@@ -463,7 +463,7 @@ class MelSpectrogram(torch.nn.Module):
 
 
 class RMVPE:
-    def __init__(self, model_path, is_half, device=None):
+    def __init__(self, model_path, is_half, hop_length, device=None):
         self.resample_kernel = {}
         model = E2E(4, 1, (2, 2))
         ckpt = torch.load(model_path, map_location="cpu")
@@ -474,11 +474,12 @@ class RMVPE:
         self.model = model
         self.resample_kernel = {}
         self.is_half = is_half
+        self.hop_length = hop_length
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
         self.mel_extractor = MelSpectrogram(
-            is_half, 128, 16000, 1024, 160, None, 30, 8000
+            is_half, 128, 16000, 1024, hop_length, None, 30, 8000
         ).to(device)
         self.model = self.model.to(device)
         cents_mapping = 20 * np.arange(360) + 1997.3794084376191
