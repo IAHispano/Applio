@@ -137,11 +137,7 @@ class FeatureInput:
         return self.model_rmvpe.infer_from_audio(x, thred=0.03)
 
     def get_f0_method_dict(self):
-        return {
-            "pm": self.get_pm,
-            "harvest": self.get_harvest,
-            "dio": self.get_dio
-        }
+        return {"pm": self.get_pm, "harvest": self.get_harvest, "dio": self.get_dio}
 
     def compute_f0(self, path, f0_method, hop_length):
         x = load_audio(path, self.fs)

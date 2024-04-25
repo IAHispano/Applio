@@ -6,6 +6,7 @@ from librosa.filters import mel
 from librosa.util import pad_center
 from scipy.signal import get_window
 
+
 class STFT(torch.nn.Module):
     def __init__(
         self, filter_length=1024, hop_length=64, win_length=None, window="hann"

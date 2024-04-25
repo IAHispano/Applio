@@ -214,7 +214,12 @@ class VC(object):
                 if hasattr(self, "model_rmvpe") == False:
                     from rvc.lib.rmvpe import RMVPE
 
-                    self.model_rmvpe = RMVPE("rmvpe.pt", is_half=self.is_half, hop_length=hop_length, device=self.device)
+                    self.model_rmvpe = RMVPE(
+                        "rmvpe.pt",
+                        is_half=self.is_half,
+                        hop_length=hop_length,
+                        device=self.device,
+                    )
                 f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
                 f0 = f0[1:]
             elif method == "fcpe":
@@ -302,7 +307,12 @@ class VC(object):
             if hasattr(self, "model_rmvpe") == False:
                 from rvc.lib.rmvpe import RMVPE
 
-                self.model_rmvpe = RMVPE("rmvpe.pt", is_half=self.is_half, hop_length=hop_length, device=self.device)
+                self.model_rmvpe = RMVPE(
+                    "rmvpe.pt",
+                    is_half=self.is_half,
+                    hop_length=hop_length,
+                    device=self.device,
+                )
             f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
         elif f0_method == "fcpe":
             self.model_fcpe = FCPEF0Predictor(
