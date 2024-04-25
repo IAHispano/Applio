@@ -12,7 +12,6 @@ def prettify_date(date_str):
         return "Invalid date format"
 
 
-
 def model_information(path):
     model_data = torch.load(path, map_location="cpu")
 
@@ -23,16 +22,12 @@ def model_information(path):
     sr = model_data.get("sr", "None")
     f0 = model_data.get("f0", "None")
     version = model_data.get("version", "None")
-    creation_date = model_data.get(
-        "creation_date", "None"
-    )
+    creation_date = model_data.get("creation_date", "None")
     model_hash = model_data.get("model_hash", None)
 
     pitch_guidance = "True" if f0 == 1 else "False"
 
-    creation_date_str = (
-        prettify_date(creation_date) if creation_date else "None"
-    )
+    creation_date_str = prettify_date(creation_date) if creation_date else "None"
 
     return (
         f"Epochs: {epochs}\n"

@@ -133,15 +133,13 @@ class FeatureInput:
         if not hasattr(self, "model_rmvpe"):
             from rvc.lib.rmvpe import RMVPE
 
-            self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, hop_length=hop_length, device="cpu")
+            self.model_rmvpe = RMVPE(
+                "rmvpe.pt", is_half=False, hop_length=hop_length, device="cpu"
+            )
         return self.model_rmvpe.infer_from_audio(x, thred=0.0)
 
     def get_f0_method_dict(self):
-        return {
-            "pm": self.get_pm,
-            "harvest": self.get_harvest,
-            "dio": self.get_dio
-        }
+        return {"pm": self.get_pm, "harvest": self.get_harvest, "dio": self.get_dio}
 
     def compute_f0(self, path, f0_method, hop_length):
         x = load_audio(path, self.fs)
