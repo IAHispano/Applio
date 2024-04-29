@@ -882,7 +882,6 @@ def parse_arguments():
         "--gpu",
         type=str,
         help="GPU number",
-        choices=[str(i) for i in range(0, 11)],
         default="0",
     )
     train_parser.add_argument(
