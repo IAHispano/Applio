@@ -26,8 +26,27 @@ def replace_keys_in_dict(d, old_key_part, new_key_part):
 
 def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
     assert os.path.isfile(checkpoint_path)
-    checkpoint_dict = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint_old_dict = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint_new_version_path = os.path.join(
+        os.path.dirname(checkpoint_path),
+        f"{os.path.splitext(os.path.basename(checkpoint_path))[0]}_new_version.pth",
+    )
 
+    torch.save(
+        replace_keys_in_dict(
+            replace_keys_in_dict(
+                checkpoint_old_dict, ".weight_v", ".parametrizations.weight.original1"
+            ),
+            ".weight_g",
+            ".parametrizations.weight.original0",
+        ),
+        checkpoint_new_version_path,
+    )
+
+    os.remove(checkpoint_path)
+    os.rename(checkpoint_new_version_path, checkpoint_path)
+
+    checkpoint_dict = torch.load(checkpoint_path, map_location="cpu")
     saved_state_dict = checkpoint_dict["model"]
     if hasattr(model, "module"):
         state_dict = model.module.state_dict()
