@@ -55,7 +55,11 @@ def run_infer_script(
     clean_strength,
     export_format,
     embedder_model,
+    upscale_audio,
 ):
+    f0autotune = "True" if str(f0autotune) == "True" else "False"
+    clean_audio = "True" if str(clean_audio) == "True" else "False"
+    upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     infer_pipeline(
         f0up_key,
         filter_radius,
@@ -74,6 +78,7 @@ def run_infer_script(
         clean_strength,
         export_format,
         embedder_model,
+        upscale_audio,
     )
     return f"File {input_path} inferred successfully.", output_path.replace(
         ".wav", f".{export_format.lower()}"
@@ -99,7 +104,11 @@ def run_batch_infer_script(
     clean_strength,
     export_format,
     embedder_model,
+    upscale_audio,
 ):
+    f0autotune = "True" if str(f0autotune) == "True" else "False"
+    clean_audio = "True" if str(clean_audio) == "True" else "False"
+    upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     audio_files = [
         f for f in os.listdir(input_folder) if f.endswith((".mp3", ".wav", ".flac"))
     ]
@@ -135,6 +144,7 @@ def run_batch_infer_script(
                 clean_strength,
                 export_format,
                 embedder_model,
+                upscale_audio,
             )
 
     return f"Files from {input_folder} inferred successfully."
@@ -161,7 +171,11 @@ def run_tts_script(
     clean_strength,
     export_format,
     embedder_model,
+    upscale_audio,
 ):
+    f0autotune = "True" if str(f0autotune) == "True" else "False"
+    clean_audio = "True" if str(clean_audio) == "True" else "False"
+    upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
 
     if os.path.exists(output_tts_path):
@@ -194,6 +208,7 @@ def run_tts_script(
         clean_strength,
         export_format,
         embedder_model,
+        upscale_audio,
     )
 
     return f"Text {tts_text} synthesized successfully.", output_rvc_path.replace(
@@ -553,6 +568,13 @@ def parse_arguments():
         choices=["contentvec", "hubert"],
         default="hubert",
     )
+    infer_parser.add_argument(
+        "--upscale_audio",
+        type=str,
+        help="Enable audio upscaling",
+        choices=["True", "False"],
+        default="False",
+    )
 
     # Parser for 'batch_infer' mode
     batch_infer_parser = subparsers.add_parser(
@@ -670,6 +692,13 @@ def parse_arguments():
         help="Embedder model",
         choices=["contentvec", "hubert"],
         default="hubert",
+    )
+    batch_infer_parser.add_argument(
+        "--upscale_audio",
+        type=str,
+        help="Enable audio upscaling",
+        choices=["True", "False"],
+        default="False",
     )
 
     # Parser for 'tts' mode
@@ -795,6 +824,13 @@ def parse_arguments():
         help="Embedder model",
         choices=["contentvec", "hubert"],
         default="hubert",
+    )
+    tts_parser.add_argument(
+        "--upscale_audio",
+        type=str,
+        help="Enable audio upscaling",
+        choices=["True", "False"],
+        default="False",
     )
 
     # Parser for 'preprocess' mode
@@ -1155,6 +1191,7 @@ def main():
                 str(args.clean_strength),
                 str(args.export_format),
                 str(args.embedder_model),
+                str(args.upscale_audio),
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(
@@ -1175,6 +1212,7 @@ def main():
                 str(args.clean_strength),
                 str(args.export_format),
                 str(args.embedder_model),
+                str(args.upscale_audio),
             )
         elif args.mode == "tts":
             run_tts_script(
@@ -1197,6 +1235,7 @@ def main():
                 str(args.clean_strength),
                 str(args.export_format),
                 str(args.embedder_model),
+                str(args.upscale_audio),
             )
         elif args.mode == "preprocess":
             run_preprocess_script(

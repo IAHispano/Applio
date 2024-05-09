@@ -6,6 +6,7 @@
 *.pth
 *.index
 *.wav
+*.bin
 
 rvc/train/train_pid.txt
 logs
