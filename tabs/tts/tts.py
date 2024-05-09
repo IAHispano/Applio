@@ -275,29 +275,35 @@ def tts_tab():
                 value=128,
                 interactive=True,
             )
-            with gr.Column():
-                f0method = gr.Radio(
-                    label=i18n("Pitch extraction algorithm"),
-                    info=i18n(
-                        "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
-                    ),
-                    choices=[
-                        "pm",
-                        "harvest",
-                        "dio",
-                        "crepe",
-                        "crepe-tiny",
-                        "rmvpe",
-                        "fcpe",
-                        "hybrid[rmvpe+fcpe]",
-                    ],
-                    value="rmvpe",
-                    interactive=True,
-                )
+            f0method = gr.Radio(
+                label=i18n("Pitch extraction algorithm"),
+                info=i18n(
+                    "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
+                ),
+                choices=[
+                    "pm",
+                    "harvest",
+                    "dio",
+                    "crepe",
+                    "crepe-tiny",
+                    "rmvpe",
+                    "fcpe",
+                    "hybrid[rmvpe+fcpe]",
+                ],
+                value="rmvpe",
+                interactive=True,
+            )
+            embedder_model = gr.Radio(
+                label=i18n("Embedder Model"),
+                info=i18n("Select the embedder model to use for the conversion."),
+                choices=["hubert", "contentvec"],
+                value="hubert",
+                interactive=True,
+            )
 
     convert_button1 = gr.Button(i18n("Convert"))
 
-    with gr.Row():  # Defines output info + output audio download after conversion
+    with gr.Row():
         vc_output1 = gr.Textbox(
             label=i18n("Output Information"),
             info=i18n("The output information will be displayed here."),
@@ -343,6 +349,7 @@ def tts_tab():
             clean_audio,
             clean_strength,
             export_format,
+            embedder_model,
         ],
         outputs=[vc_output1, vc_output2],
     )

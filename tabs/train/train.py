@@ -354,6 +354,13 @@ def train_tab():
                     value="rmvpe",
                     interactive=True,
                 )
+                embedder_model = gr.Radio(
+                    label=i18n("Embedder Model"),
+                    info=i18n("Select the embedder model to use for the conversion."),
+                    choices=["hubert", "contentvec"],
+                    value="hubert",
+                    interactive=True,
+                )
 
         extract_output_info = gr.Textbox(
             label=i18n("Output Information"),
@@ -365,7 +372,14 @@ def train_tab():
         extract_button = gr.Button(i18n("Extract Features"))
         extract_button.click(
             run_extract_script,
-            [model_name, rvc_version, f0method, hop_length, sampling_rate],
+            [
+                model_name,
+                rvc_version,
+                f0method,
+                hop_length,
+                sampling_rate,
+                embedder_model,
+            ],
             extract_output_info,
             api_name="extract_features",
         )

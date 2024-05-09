@@ -3,35 +3,23 @@ import sys
 import tqdm
 import torch
 import torch.nn.functional as F
-import fairseq
 import soundfile as sf
 import numpy as np
 
-import logging
-
-logging.getLogger("fairseq").setLevel(logging.WARNING)
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+from rvc.lib.utils import load_embedding
 
 device = sys.argv[1]
 n_parts = int(sys.argv[2])
 i_part = int(sys.argv[3])
+i_gpu = sys.argv[4]
+exp_dir = sys.argv[5]
+os.environ["CUDA_VISIBLE_DEVICES"] = str(i_gpu)
+version = sys.argv[6]
+is_half = bool(sys.argv[7])
+embedder_model = sys.argv[8]
 
-if len(sys.argv) == 7:
-    exp_dir, version, is_half = sys.argv[4], sys.argv[5], bool(sys.argv[6])
-else:
-    i_gpu, exp_dir = sys.argv[4], sys.argv[5]
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(i_gpu)
-    version, is_half = sys.argv[6], bool(sys.argv[7])
-
-
-def forward_dml(ctx, x, scale):
-    ctx.scale = scale
-    res = x.clone().detach()
-    return res
-
-
-fairseq.modules.grad_multiply.GradMultiply.forward = forward_dml
-
-model_path = "hubert_base.pt"
 
 wav_path = f"{exp_dir}/1_16k_wavs"
 out_path = f"{exp_dir}/3_feature256" if version == "v1" else f"{exp_dir}/3_feature768"
@@ -52,10 +40,7 @@ def read_wave(wav_path, normalize=False):
 
 
 print("Starting feature extraction...")
-models, saved_cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task(
-    [model_path],
-    suffix="",
-)
+models, saved_cfg, task = load_embedding(embedder_model)
 model = models[0]
 model = model.to(device)
 if device not in ["mps", "cpu"]:

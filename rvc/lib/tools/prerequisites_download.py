@@ -43,6 +43,7 @@ pretraineds_v2_list = [
 
 models_list = [
     "hubert_base.pt",
+    "contentvec_base.pt"
     "rmvpe.pt",
     "fcpe.pt",
     # "rmvpe.onnx"

@@ -348,7 +348,6 @@ def inference_tab():
                     value=128,
                     interactive=True,
                 )
-            with gr.Column():
                 f0method = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
                     info=i18n(
@@ -365,6 +364,13 @@ def inference_tab():
                         "hybrid[rmvpe+fcpe]",
                     ],
                     value="rmvpe",
+                    interactive=True,
+                )
+                embedder_model = gr.Radio(
+                    label=i18n("Embedder Model"),
+                    info=i18n("Select the embedder model to use for the conversion."),
+                    choices=["hubert", "contentvec"],
+                    value="hubert",
                     interactive=True,
                 )
 
@@ -511,7 +517,6 @@ def inference_tab():
                     value=128,
                     interactive=True,
                 )
-            with gr.Column():
                 f0method_batch = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
                     info=i18n(
@@ -528,6 +533,13 @@ def inference_tab():
                         "hybrid[rmvpe+fcpe]",
                     ],
                     value="rmvpe",
+                    interactive=True,
+                )
+                embedder_model_bacth = gr.Radio(
+                    label=i18n("Embedder Model"),
+                    info=i18n("Select the embedder model to use for the conversion."),
+                    choices=["hubert", "contentvec"],
+                    value="hubert",
                     interactive=True,
                 )
 
@@ -616,6 +628,7 @@ def inference_tab():
             clean_audio,
             clean_strength,
             export_format,
+            embedder_model,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -638,6 +651,7 @@ def inference_tab():
             clean_audio_batch,
             clean_strength_batch,
             export_format_batch,
+            embedder_model_bacth,
         ],
         outputs=[vc_output3],
     )

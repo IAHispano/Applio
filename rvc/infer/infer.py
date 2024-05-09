@@ -16,7 +16,6 @@ from scipy.io import wavfile
 import noisereduce as nr
 from rvc.lib.utils import load_audio
 from rvc.lib.tools.split_audio import process_audio, merge_audio
-from fairseq import checkpoint_utils
 from rvc.lib.infer_pack.models import (
     SynthesizerTrnMs256NSFsid,
     SynthesizerTrnMs256NSFsid_nono,
@@ -24,8 +23,8 @@ from rvc.lib.infer_pack.models import (
     SynthesizerTrnMs768NSFsid_nono,
 )
 from rvc.configs.config import Config
+from rvc.lib.utils import load_embedding
 
-logging.getLogger("fairseq").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 
@@ -39,12 +38,9 @@ version = None
 n_spk = None
 
 
-def load_hubert():
+def load_hubert(embedder_model):
     global hubert_model
-    models, _, _ = checkpoint_utils.load_model_ensemble_and_task(
-        ["hubert_base.pt"],
-        suffix="",
-    )
+    models, _, _ = load_embedding(embedder_model)
     hubert_model = models[0]
     hubert_model = hubert_model.to(config.device)
     if config.is_half:
@@ -92,7 +88,7 @@ def convert_audio_format(input_path, output_path, output_format):
         print(f"Failed to convert audio to {output_format} format: {error}")
 
 
-def vc_single(
+def voice_conversion(
     sid=0,
     input_audio_path=None,
     f0_up_key=None,
@@ -108,6 +104,8 @@ def vc_single(
     split_audio=False,
     f0autotune=False,
     filter_radius=None,
+    embedder_model=None,
+
 ):
     global tgt_sr, net_g, vc, hubert_model, version
 
@@ -120,7 +118,7 @@ def vc_single(
             audio /= audio_max
 
         if not hubert_model:
-            load_hubert()
+            load_hubert(embedder_model)
         if_f0 = cpt.get("f0", 1)
 
         file_index = (
@@ -149,7 +147,7 @@ def vc_single(
                 ]
             try:
                 for path in paths:
-                    vc_single(
+                    voice_conversion(
                         sid,
                         path,
                         f0_up_key,
@@ -164,6 +162,7 @@ def vc_single(
                         path,
                         False,
                         f0autotune,
+                        embedder_model
                     )
             except Exception as error:
                 print(error)
@@ -264,6 +263,8 @@ def get_vc(weight_root, sid):
         net_g = net_g.float()
     vc = VC(tgt_sr, config)
     n_spk = cpt["config"][-3]
+    
+
 
 
 def infer_pipeline(
@@ -283,6 +284,7 @@ def infer_pipeline(
     clean_audio,
     clean_strength,
     export_format,
+    embedder_model,
 ):
     global tgt_sr, net_g, vc, cpt
 
@@ -290,7 +292,7 @@ def infer_pipeline(
 
     try:
         start_time = time.time()
-        vc_single(
+        voice_conversion(
             sid=0,
             input_audio_path=audio_input_path,
             f0_up_key=f0up_key,
@@ -305,6 +307,7 @@ def infer_pipeline(
             split_audio=split_audio,
             f0autotune=f0autotune,
             filter_radius=filter_radius,
+            embedder_model=embedder_model,
         )
 
         if clean_audio == "True":
