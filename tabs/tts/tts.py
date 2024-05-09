@@ -304,7 +304,7 @@ def tts_tab():
             )
             embedder_model = gr.Radio(
                 label=i18n("Embedder Model"),
-                info=i18n("Select the embedder model to use for the conversion."),
+                info=i18n("Model used for learning speaker embedding."),
                 choices=["hubert", "contentvec"],
                 value="hubert",
                 interactive=True,

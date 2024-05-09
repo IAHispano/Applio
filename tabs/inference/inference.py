@@ -377,7 +377,7 @@ def inference_tab():
                 )
                 embedder_model = gr.Radio(
                     label=i18n("Embedder Model"),
-                    info=i18n("Select the embedder model to use for the conversion."),
+                    info=i18n("Model used for learning speaker embedding."),
                     choices=["hubert", "contentvec"],
                     value="hubert",
                     interactive=True,
@@ -385,7 +385,7 @@ def inference_tab():
 
         convert_button1 = gr.Button(i18n("Convert"))
 
-        with gr.Row():  # Defines output info + output audio download after conversion
+        with gr.Row():
             vc_output1 = gr.Textbox(
                 label=i18n("Output Information"),
                 info=i18n("The output information will be displayed here."),
@@ -555,7 +555,7 @@ def inference_tab():
                 )
                 embedder_model_bacth = gr.Radio(
                     label=i18n("Embedder Model"),
-                    info=i18n("Select the embedder model to use for the conversion."),
+                    info=i18n("Model used for learning speaker embedding."),
                     choices=["hubert", "contentvec"],
                     value="hubert",
                     interactive=True,
@@ -563,7 +563,7 @@ def inference_tab():
 
         convert_button2 = gr.Button(i18n("Convert"))
 
-        with gr.Row():  # Defines output info + output audio download after conversion
+        with gr.Row():
             vc_output3 = gr.Textbox(
                 label=i18n("Output Information"),
                 info=i18n("The output information will be displayed here."),

@@ -36,6 +36,8 @@
   "The RVC version of the model.": "The RVC version of the model.",
   "Preprocess Dataset": "Preprocess Dataset",
 
+  "Embedder Model": "Embedder Model",
+  "Model used for learning speaker embedding.": "Model used for learning speaker embedding.",
   "Extract": "Extract",
   "Hop Length": "Hop Length",
   "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy.": "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy.",
@@ -74,7 +76,6 @@
   "Overtraining Detector Settings": "Overtraining Detector Settings",
   "Overtraining Threshold": "Overtraining Threshold",
   "Set the maximum number of epochs you want your model to stop training if no improvement is detected.": "Set the maximum number of epochs you want your model to stop training if no improvement is detected.",
-
 
   "Start Training": "Start Training",
   "Stop Training & Restart Applio": "Stop Training & Restart Applio",
