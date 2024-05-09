@@ -13,6 +13,7 @@ sys.path.append(now_dir)
 
 from rvc.infer.pipeline import VC
 from scipy.io import wavfile
+from audio_upscaler import upscale
 import noisereduce as nr
 from rvc.lib.utils import load_audio
 from rvc.lib.tools.split_audio import process_audio, merge_audio
@@ -283,6 +284,7 @@ def infer_pipeline(
     clean_audio,
     clean_strength,
     export_format,
+    upscale_audio,
 ):
     global tgt_sr, net_g, vc, cpt
 
@@ -311,6 +313,9 @@ def infer_pipeline(
             cleaned_audio = remove_audio_noise(audio_output_path, clean_strength)
             if cleaned_audio is not None:
                 sf.write(audio_output_path, cleaned_audio, tgt_sr, format="WAV")
+        
+        if upscale_audio:
+            upscale(audio_output_path, audio_output_path)
 
         output_path_format = audio_output_path.replace(
             ".wav", f".{export_format.lower()}"

@@ -54,6 +54,7 @@ def run_infer_script(
     clean_audio,
     clean_strength,
     export_format,
+    upscale_audio,
 ):
     infer_pipeline(
         f0up_key,
@@ -72,6 +73,7 @@ def run_infer_script(
         clean_audio,
         clean_strength,
         export_format,
+        upscale_audio,
     )
     return f"File {input_path} inferred successfully.", output_path.replace(
         ".wav", f".{export_format.lower()}"
@@ -96,6 +98,7 @@ def run_batch_infer_script(
     clean_audio,
     clean_strength,
     export_format,
+    upscale_audio,
 ):
     audio_files = [
         f for f in os.listdir(input_folder) if f.endswith((".mp3", ".wav", ".flac"))
@@ -131,6 +134,7 @@ def run_batch_infer_script(
                 clean_audio,
                 clean_strength,
                 export_format,
+                upscale_audio,
             )
 
     return f"Files from {input_folder} inferred successfully."
@@ -156,6 +160,7 @@ def run_tts_script(
     clean_audio,
     clean_strength,
     export_format,
+    upscale_audio,
 ):
     tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
 
@@ -188,6 +193,7 @@ def run_tts_script(
         clean_audio,
         clean_strength,
         export_format,
+        upscale_audio,
     )
 
     return f"Text {tts_text} synthesized successfully.", output_rvc_path.replace(
