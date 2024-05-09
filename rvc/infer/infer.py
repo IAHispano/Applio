@@ -314,7 +314,7 @@ def infer_pipeline(
             if cleaned_audio is not None:
                 sf.write(audio_output_path, cleaned_audio, tgt_sr, format="WAV")
         
-        if upscale_audio:
+        if upscale_audio == "True":
             upscale(audio_output_path, audio_output_path)
 
         output_path_format = audio_output_path.replace(

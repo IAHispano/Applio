@@ -56,6 +56,9 @@ def run_infer_script(
     export_format,
     upscale_audio,
 ):
+    f0autotune = "True" if str(f0autotune) == "True" else "False"
+    clean_audio = "True" if str(clean_audio) == "True" else "False"
+    upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     infer_pipeline(
         f0up_key,
         filter_radius,
@@ -100,6 +103,9 @@ def run_batch_infer_script(
     export_format,
     upscale_audio,
 ):
+    f0autotune = "True" if str(f0autotune) == "True" else "False"
+    clean_audio = "True" if str(clean_audio) == "True" else "False"
+    upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     audio_files = [
         f for f in os.listdir(input_folder) if f.endswith((".mp3", ".wav", ".flac"))
     ]
@@ -162,6 +168,9 @@ def run_tts_script(
     export_format,
     upscale_audio,
 ):
+    f0autotune = "True" if str(f0autotune) == "True" else "False"
+    clean_audio = "True" if str(clean_audio) == "True" else "False"
+    upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
 
     if os.path.exists(output_tts_path):
