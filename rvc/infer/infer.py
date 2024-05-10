@@ -106,7 +106,6 @@ def voice_conversion(
     f0autotune=False,
     filter_radius=None,
     embedder_model=None,
-
 ):
     global tgt_sr, net_g, vc, hubert_model, version
 
@@ -163,7 +162,7 @@ def voice_conversion(
                         path,
                         False,
                         f0autotune,
-                        embedder_model
+                        embedder_model,
                     )
             except Exception as error:
                 print(error)
@@ -264,8 +263,6 @@ def get_vc(weight_root, sid):
         net_g = net_g.float()
     vc = VC(tgt_sr, config)
     n_spk = cpt["config"][-3]
-    
-
 
 
 def infer_pipeline(
@@ -316,7 +313,7 @@ def infer_pipeline(
             cleaned_audio = remove_audio_noise(audio_output_path, clean_strength)
             if cleaned_audio is not None:
                 sf.write(audio_output_path, cleaned_audio, tgt_sr, format="WAV")
-        
+
         if upscale_audio == "True":
             upscale(audio_output_path, audio_output_path)
 
