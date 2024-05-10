@@ -7,6 +7,7 @@ version_config_list = [
     "v1/40000.json",
     "v1/48000.json",
     "v2/48000.json",
+    "v2/44100.json",
     "v2/32000.json",
 ]
 

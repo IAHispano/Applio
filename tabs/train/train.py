@@ -299,7 +299,7 @@ def train_tab():
                 sampling_rate = gr.Radio(
                     label=i18n("Sampling Rate"),
                     info=i18n("The sampling rate of the audio files."),
-                    choices=["32000", "40000", "48000"],
+                    choices=["32000", "40000", "44100", "48000"],
                     value="40000",
                     interactive=True,
                 )

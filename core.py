@@ -845,7 +845,7 @@ def parse_arguments():
         "--sampling_rate",
         type=str,
         help="Sampling rate",
-        choices=["32000", "40000", "48000"],
+        choices=["32000", "40000", "44100", "48000"],
     )
 
     # Parser for 'extract' mode
@@ -887,7 +887,7 @@ def parse_arguments():
         "--sampling_rate",
         type=str,
         help="Sampling rate",
-        choices=["32000", "40000", "48000"],
+        choices=["32000", "40000", "44100", "48000"],
     )
     extract_parser.add_argument(
         "--embedder_model",
@@ -942,7 +942,7 @@ def parse_arguments():
         "--sampling_rate",
         type=str,
         help="Sampling rate",
-        choices=["32000", "40000", "48000"],
+        choices=["32000", "40000", "44100", "48000"],
     )
     train_parser.add_argument(
         "--batch_size",

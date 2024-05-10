@@ -1,15 +1,12 @@
 *.exe
 *.pt
 *.onnx
-*pth
 *.pyc
 *.pth
 *.index
-*.wav
 *.bin
 
 rvc/train/train_pid.txt
-logs
 env
 venv
 .venv

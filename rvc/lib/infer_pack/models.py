@@ -627,6 +627,7 @@ class GeneratorNSF(torch.nn.Module):
 sr2sr = {
     "32k": 32000,
     "40k": 40000,
+    "44k": 44100,
     "48k": 48000,
 }
 
