@@ -36,6 +36,8 @@
   "The RVC version of the model.": "मॉडल का RVC वर्शन।",
   "Preprocess Dataset": "डेटासेट का पूर्व-प्रसंस्करण करें",
 
+  "Embedder Model": "एम्बेडर मॉडल",
+  "Model used for learning speaker embedding.": "स्पीकर एम्बेडिंग सीखने के लिए उपयोग किया जाने वाला मॉडल।",
   "Extract": "एक्सट्रैक्ट",
   "Hop Length": "हॉप लंबाई",
   "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy.": "यह अवधी को दर्शाती है जिसे सिस्टम को पिच में महत्वपूर्ण बदलाव के लिए ले जाना पड़ता है। कम हॉप लंबाई को अनुमान लगाने में अधिक समय लगता है लेकिन उच्च पिच सटीकता मिलती है।",
@@ -69,10 +71,23 @@
   "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential.": "पिच मार्गदर्शन को नियोजित करके, मूल आवाज़ के स्वर को प्रतिबिंबित करना संभव हो जाता है। यह सुविधा गायन और अन्य परिदृश्य के लिए विशेष रूप से मूल्यवान है जहाँ मूल राग या पिच पैटर्न को संरक्षित करना आवश्यक है।",
   "Utilize pretrained models when training your own. This approach reduces training duration and enhances overall quality.": "अपना खुद का प्रशिक्षण करते समय पूर्व प्रशिक्षित मॉडलों का उपयोग करें। यह दृष्टिकोण प्रशिक्षण की अवधि कम करता है और समग्र गुणवत्ता को बढ़ाता है।",
   "Extract Features": "विशेषताएँ निकालें",
+  "Overtraining Detector": "ओवरट्रेनिंग डिटेक्टर",
+  "Detect overtraining to prevent the model from learning the training data too well and losing the ability to generalize to new data.": "मॉडल को प्रशिक्षण डेटा को बहुत अच्छी तरह से सीखने और नए डेटा को सामान्य बनाने की क्षमता खोने से रोकने के लिए ओवरट्रेनिंग का पता लगाएं।",
+  "Overtraining Detector Settings": "ओवरट्रेनिंग डिटेक्टर सेटिंग्स",
+  "Overtraining Threshold": "ओवरट्रेनिंग थ्रेशोल्ड",
+  "Set the maximum number of epochs you want your model to stop training if no improvement is detected.": "यदि कोई सुधार नहीं पाया जाता है, तो आप अपने मॉडल को प्रशिक्षण बंद करने के लिए अधिकतम युगों की संख्या निर्धारित करें।",
 
   "Start Training": "प्रशिक्षण शुरू करें",
   "Stop Training & Restart Applio": "प्रशिक्षण रोकें और Applio को पुनः आरंभ करें",
   "Generate Index": "इंडेक्स बनाएँ",
+
+  "Export Model": "मॉडल निर्यात करें",
+  "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "'अपलोड' बटन केवल गूगल कोलाब के लिए है: निर्यात की गई फ़ाइलों को आपके Google ड्राइव में ApplioExported फ़ोल्डर में अपलोड करता है।",
+  "Exported Pth file": "निर्यात की गई Pth फ़ाइल",
+  "Exported Index file": "निर्यात की गई इंडेक्स फ़ाइल",
+  "Select the pth file to be exported": "निर्यात की जाने वाली pth फ़ाइल का चयन करें",
+  "Select the index file to be exported": "निर्यात की जाने वाली इंडेक्स फ़ाइल का चयन करें",
+  "Upload": "अपलोड करें",
 
   "Voice Model": "आवाज़ का मॉडल",
   "Select the voice model to use for the conversion.": "रूपांतरण के लिए उपयोग करने के लिए आवाज मॉडल का चयन करें।",
@@ -123,8 +138,6 @@
   "Enter output path": "आउटपुट पथ दर्ज करें",
 
   "Get information about the audio": "ऑडियो के बारे में जानकारी प्राप्त करें",
-  "Information about the audio file": "ऑडियो फ़ाइल के बारे में जानकारी",
-  "Waiting for information...": "सूचना के लिए प्रतीक्षा कर रहा हूँ...",
 
   "## Voice Blender": "## Voice Blender",
   "Select two voice models, set your desired blend percentage, and blend them into an entirely new voice.": "दो आवाज़ के मॉडल का चयन करें, अपना वांछित मिश्रित प्रतिशत सेट करें, और उन्हें एक पूर्ण रूप से नई आवाज़ में सम्मिश्रित करें।",
@@ -167,6 +180,10 @@
   "Download Model": "मॉडल डाउनलोड करें",
   "## Drop files": "## ड्रॉप फ़ाइलें",
   "Drag your .pth file and .index file into this space. Drag one and then the other.": "अपनी .pth फ़ाइल और .index फ़ाइल को इस स्थान पर ड्रैग करें। एक को ड्रैग करें और फिर दूसरे को ड्रैग करें।",
+  "## Search Model": "## मॉडल खोजें",
+  "Search": "खोज",
+  "Introduce the model name to search.": "खोज करने के लिए मॉडल का नाम बताएं।",
+  "We couldn't find models by that name.": "हमें उस नाम से मॉडल नहीं मिला।",
 
   "TTS Voices": "TTS Voices",
   "Select the TTS voice to use for the conversion.": "रूपांतरण के लिए उपयोग करने के लिए TTS वॉयस का चयन करें।",
@@ -181,6 +198,9 @@
   "It will activate the possibility of displaying the current Applio activity in Discord.": "यह डिस्कॉर्ड में वर्तमान Applio गतिविधि प्रदर्शित करने की संभावना को सक्रिय करेगा।",
   "Enable Applio integration with applio.org/models using flask": "flask का उपयोग करके applio.org/models के साथ Applio एकीकरण को सक्षम करें",
   "It will activate the possibility of downloading models with a click from the website.": "यह वेबसाइट से एक क्लिक से मॉडल डाउनलोड करने की संभावना को सक्रिय करेगा।",
+  "Enable fake GPU": "नकली GPU सक्षम करें",
+  "Training is currently unsupported due to the absence of a GPU. To activate the training tab, navigate to the settings tab and enable the 'Fake GPU' option.": "GPU की अनुपस्थिति के कारण प्रशिक्षण वर्तमान में असमर्थित है। प्रशिक्षण टैब को सक्रिय करने के लिए, सेटिंग टैब पर नेविगेट करें और 'नकली GPU' विकल्प को सक्षम करें।",
+  "Activates the train tab. However, please note that this device lacks GPU capabilities, hence training is not supported. This option is only for testing purposes. (This option will restart Applio)": "ट्रेन टैब को सक्रिय करता है। हालांकि, कृपया ध्यान दें कि इस डिवाइस में GPU क्षमताएं नहीं हैं, इसलिए प्रशिक्षण समर्थित नहीं है। यह विकल्प केवल परीक्षण उद्देश्यों के लिए है। (यह विकल्प Applio को पुनरारंभ करेगा)",
   "Theme": "थीम",
   "Select the theme you want to use. (Requires restarting Applio)": "वह थीम चुनें जिसका आप उपयोग करना चाहते हैं। (Applio को पुनरारंभ करने की आवश्यकता है)",
   "Language": "भाषा",
