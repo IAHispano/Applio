@@ -290,6 +290,10 @@ def infer_pipeline(
     get_vc(model_path, 0)
 
     try:
+
+        if upscale_audio == "True":
+            upscale(audio_input_path, audio_input_path)
+
         start_time = time.time()
         voice_conversion(
             sid=0,
@@ -313,9 +317,6 @@ def infer_pipeline(
             cleaned_audio = remove_audio_noise(audio_output_path, clean_strength)
             if cleaned_audio is not None:
                 sf.write(audio_output_path, cleaned_audio, tgt_sr, format="WAV")
-
-        if upscale_audio == "True":
-            upscale(audio_output_path, audio_output_path)
 
         output_path_format = audio_output_path.replace(
             ".wav", f".{export_format.lower()}"
