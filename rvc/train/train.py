@@ -72,7 +72,6 @@ torch.backends.cudnn.benchmark = False
 global_step = 0
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 last_loss_gen_all = 0
-epochs_since_last_lowest = 0
 
 
 class EpochRecorder:
@@ -284,12 +283,11 @@ def run(
 
 
 def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers, cache):
-    global global_step, last_loss_gen_all, lowest_value, epochs_since_last_lowest
+    global global_step, last_loss_gen_all, lowest_value
 
     if epoch == 1:
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
         last_loss_gen_all = 0.0
-        epochs_since_last_lowest = 0
 
     net_g, net_d = nets
     optim_g, optim_d = optims
@@ -579,12 +577,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             )
 
     if hps.overtraining_detector == 1:
-        if lowest_value["value"] < last_loss_gen_all:
-            epochs_since_last_lowest += 1
-        else:
-            epochs_since_last_lowest = 0
-
-        if epochs_since_last_lowest >= hps.overtraining_threshold:
+        if epoch >= (lowest_value["epoch"] + hps.overtraining_threshold):
             print(
                 "Stopping training due to possible overtraining. Lowest generator loss: {} at epoch {}, step {}".format(
                     lowest_value["value"], lowest_value["epoch"], lowest_value["step"]
@@ -595,7 +588,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
     if rank == 0:
         if epoch > 1:
             print(
-                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
+                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {lowest_value['epoch'] + hps.overtraining_threshold - epoch}"
             )
         else:
             print(
