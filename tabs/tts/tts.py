@@ -148,7 +148,7 @@ def tts_tab():
         label=i18n("TTS Speed"),
         info=i18n("Increase or decrease TTS speed"),
         value=0,
-        interactive=True
+        interactive=True,
     )
 
     tts_text = gr.Textbox(
