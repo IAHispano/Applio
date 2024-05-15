@@ -169,6 +169,8 @@
   "Introduce the model name to search.": "Introduzca el nombre del modelo a buscar.",
   "We couldn't find models by that name.": "No pudimos encontrar modelos con ese nombre.",
   "TTS Voices": "Voces TTS",
+  "TTS Speed": "Velocidad TTS",
+  "Increase or decrease TTS speed": "Aumentar o disminuir la velocidad de TTS",
   "Select the TTS voice to use for the conversion.": "Seleccione la voz TTS que se utilizará para la conversión.",
   "Text to Synthesize": "Texto para sintetizar",
   "Enter the text to synthesize.": "Introduzca el texto que desea sintetizar.",

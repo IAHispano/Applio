@@ -186,6 +186,8 @@
   "We couldn't find models by that name.": "We couldn't find models by that name.",
 
   "TTS Voices": "TTS Voices",
+  "TTS Speed": "TTS Speed",
+  "Increase or decrease TTS speed.": "Increase or decrease TTS speed.",
   "Select the TTS voice to use for the conversion.": "Select the TTS voice to use for the conversion.",
   "Text to Synthesize": "Text to Synthesize",
   "Enter the text to synthesize.": "Enter the text to synthesize.",

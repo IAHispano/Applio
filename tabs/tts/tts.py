@@ -141,6 +141,16 @@ def tts_tab():
         value=None,
     )
 
+    tts_rate = gr.Slider(
+        minimum=-100,
+        maximum=100,
+        step=1,
+        label=i18n("TTS Speed"),
+        info=i18n("Increase or decrease TTS speed"),
+        value=0,
+        interactive=True
+    )
+
     tts_text = gr.Textbox(
         label=i18n("Text to Synthesize"),
         info=i18n("Enter the text to synthesize."),
@@ -342,6 +352,7 @@ def tts_tab():
         inputs=[
             tts_text,
             tts_voice,
+            tts_rate,
             pitch,
             filter_radius,
             index_rate,

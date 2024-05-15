@@ -154,6 +154,7 @@ def run_batch_infer_script(
 def run_tts_script(
     tts_text,
     tts_voice,
+    tts_rate,
     f0up_key,
     filter_radius,
     index_rate,
@@ -186,6 +187,7 @@ def run_tts_script(
         tts_script_path,
         tts_text,
         tts_voice,
+        str(tts_rate),
         output_tts_path,
     ]
     subprocess.run(command_tts)
@@ -715,6 +717,13 @@ def parse_arguments():
         choices=locales,
     )
     tts_parser.add_argument(
+        "--tts_rate",
+        type=str,
+        help="Increase or decrease TTS speed",
+        choices=[str(i) for i in range(-100, 100)],
+        default="0",
+    )
+    tts_parser.add_argument(
         "--f0up_key",
         type=str,
         help="Value for f0up_key",
@@ -1218,6 +1227,7 @@ def main():
             run_tts_script(
                 str(args.tts_text),
                 str(args.tts_voice),
+                str(args.tts_rate),
                 str(args.f0up_key),
                 str(args.filter_radius),
                 str(args.index_rate),
