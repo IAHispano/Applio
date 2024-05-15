@@ -2,6 +2,7 @@ import torch
 import sys
 import os
 import datetime
+import glob
 
 from utils import (
     get_hparams,
@@ -584,7 +585,9 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 )
             )
             os._exit(2333333)
-
+            
+    best_epoch = lowest_value['epoch'] + hps.overtraining_threshold - epoch
+    
     if rank == 0:
         if epoch > 1:
             print(
@@ -595,6 +598,31 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()}"
             )
         last_loss_gen_all = loss_gen_all
+        
+    if best_epoch == hps.overtraining_threshold:
+        # Önceki model dosyalarını sil
+        old_model_files = glob.glob(os.path.join(hps.model_dir, "{}_{}e_{}s_best_epoch.pth".format(hps.name, "*", "*")))
+        for file in old_model_files:
+            os.remove(file)
+
+        if hasattr(net_g, "module"):
+            ckpt = net_g.module.state_dict()
+        else:
+            ckpt = net_g.state_dict()
+
+        extract_model(
+            ckpt,
+            hps.sample_rate,
+            hps.if_f0,
+            hps.name,
+            os.path.join(
+                hps.model_dir, "{}_{}e_{}s_best_epoch.pth".format(hps.name, epoch, global_step)
+            ),
+            epoch,
+            global_step,
+            hps.version,
+            hps,
+        )    
 
     if epoch >= hps.total_epoch and rank == 0:
         print(
