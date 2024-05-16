@@ -118,11 +118,8 @@ def main():
 
     if hps.sync_graph == 1:
         print(
-            "Sync graph enabled! As sync graph is enabled, the model will be trained for 1 epoch only. When the graphs are synced, the model will be trained for the epochs specified earlier."
+            "Sync graph is now activated! With sync graph enabled, the model undergoes a single epoch of training. Once the graphs are synchronized, training proceeds for the previously specified number of epochs."
         )
-        print()
-
-        print("Starting test training to sync graph...")
         hps.custom_total_epoch = 1
         hps.custom_save_every_weights = "1"
         start()
@@ -185,8 +182,7 @@ def main():
                             os.remove(item_path)
                     os.rmdir(folder_path)
 
-        print()
-        print("Sync graph completed!")
+        print("Successfully synchronized graphs!")
         hps.custom_total_epoch = hps.total_epoch
         hps.custom_save_every_weights = hps.save_every_weights
         start()
