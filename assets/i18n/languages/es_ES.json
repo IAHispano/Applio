@@ -71,6 +71,8 @@
   "Overtraining Detector Settings": "Configuraciones del Detector de Sobreentrenamiento",
   "Overtraining Threshold": "Umbral de Sobreentrenamiento",
   "Set the maximum number of epochs you want your model to stop training if no improvement is detected.": "Establezca el número máximo de épocas para que su modelo deje de entrenar si no se detecta ninguna mejora.",
+  "Sync Graph": "Sincronizar gráfico",
+  "Synchronize the graph of the tensorbaord. Only enable this setting if you are training a new model.": "Sincronice el gráfico del tensorbaord. Solo active esta configuración si está entrenando un nuevo modelo.",
   "Start Training": "Empezar a entrenar",
   "Stop Training & Restart Applio": "Detener el entrenamiento y reiniciar Applio",
   "Generate Index": "Generar índice",

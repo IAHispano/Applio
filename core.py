@@ -306,6 +306,7 @@ def run_train_script(
     overtraining_threshold,
     pretrained,
     custom_pretrained,
+    sync_graph,
     g_pretrained_path=None,
     d_pretrained_path=None,
 ):
@@ -313,6 +314,7 @@ def run_train_script(
     latest = 1 if str(save_only_latest) == "True" else 0
     save_every = 1 if str(save_every_weights) == "True" else 0
     detector = 1 if str(overtraining_detector) == "True" else 0
+    sync = 1 if str(sync_graph) == "True" else 0
 
     if str(pretrained) == "True":
         if str(custom_pretrained) == "False":
@@ -363,6 +365,8 @@ def run_train_script(
                 detector,
                 "-ot",
                 overtraining_threshold,
+                "-sg",
+                sync,
             ],
         ),
     ]
@@ -1015,6 +1019,13 @@ def parse_arguments():
         choices=[str(i) for i in range(1, 101)],
         default="50",
     )
+    train_parser.add_argument(
+        "--sync_graph",
+        type=str,
+        help="Sync graph",
+        choices=["True", "False"],
+        default="False",
+    )
 
     # Parser for 'index' mode
     index_parser = subparsers.add_parser("index", help="Generate index file")
@@ -1278,6 +1289,7 @@ def main():
                 str(args.overtraining_threshold),
                 str(args.pretrained),
                 str(args.custom_pretrained),
+                str(args.sync_graph),
                 str(args.g_pretrained_path),
                 str(args.d_pretrained_path),
             )

@@ -476,6 +476,14 @@ def train_tab():
                 value=False,
                 interactive=True,
             )
+            sync_graph = gr.Checkbox(
+                label=i18n("Sync Graph"),
+                info=i18n(
+                    "Synchronize the graph of the tensorbaord. Only enable this setting if you are training a new model."
+                ),
+                value=False,
+                interactive=True,
+            )
 
         with gr.Row():
             with gr.Column(visible=False) as pretrained_custom_settings:
@@ -565,6 +573,7 @@ def train_tab():
                     overtraining_threshold,
                     pretrained,
                     custom_pretrained,
+                    sync_graph,
                     g_pretrained_path,
                     d_pretrained_path,
                 ],
