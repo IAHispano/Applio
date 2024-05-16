@@ -129,12 +129,16 @@ def main():
 
         logs_path = os.path.join(now_dir, "logs")
         model_config_file = os.path.join(now_dir, "logs", hps.name, "config.json")
-        rvc_config_file = os.path.join(now_dir, "rvc", "configs", hps.version, str(hps.sample_rate) + ".json")
+        rvc_config_file = os.path.join(
+            now_dir, "rvc", "configs", hps.version, str(hps.sample_rate) + ".json"
+        )
         if not os.path.exists(rvc_config_file):
-            rvc_config_file = os.path.join(now_dir, "rvc", "configs", "v1", str(hps.sample_rate) + ".json")
-        
+            rvc_config_file = os.path.join(
+                now_dir, "rvc", "configs", "v1", str(hps.sample_rate) + ".json"
+            )
+
         pattern = rf"{os.path.basename(hps.name)}_1e_(\d+)s\.pth"
-        
+
         for filename in os.listdir(logs_path):
             match = re.match(pattern, filename)
             if match:
@@ -147,12 +151,20 @@ def main():
             config_data["train"]["log_interval"] = steps
 
             with open(config_file, "w", encoding="utf8") as json_file:
-                json.dump(config_data, json_file, indent=2, separators=(',', ': '), ensure_ascii=False)
+                json.dump(
+                    config_data,
+                    json_file,
+                    indent=2,
+                    separators=(",", ": "),
+                    ensure_ascii=False,
+                )
 
         edit_config(model_config_file)
         edit_config(rvc_config_file)
 
-        for root, dirs, files in os.walk(os.path.join(now_dir, "logs", hps.name), topdown=False):
+        for root, dirs, files in os.walk(
+            os.path.join(now_dir, "logs", hps.name), topdown=False
+        ):
             for name in files:
                 file_path = os.path.join(root, name)
                 file_name, file_extension = os.path.splitext(name)
@@ -160,10 +172,12 @@ def main():
                     os.remove(file_path)
                 elif ("D" in name or "G" in name) and file_extension == ".pth":
                     os.remove(file_path)
-                elif ("added" in name or "trained" in name) and file_extension == ".index":
+                elif (
+                    "added" in name or "trained" in name
+                ) and file_extension == ".index":
                     os.remove(file_path)
             for name in dirs:
-                if name == 'eval':
+                if name == "eval":
                     folder_path = os.path.join(root, name)
                     for item in os.listdir(folder_path):
                         item_path = os.path.join(folder_path, item)
@@ -180,6 +194,7 @@ def main():
         hps.custom_total_epoch = hps.total_epoch
         hps.custom_save_every_weights = hps.save_every_weights
         start()
+
 
 def run(
     rank,
