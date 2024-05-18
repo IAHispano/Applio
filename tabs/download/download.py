@@ -89,8 +89,8 @@ def download_pretrained_model(model, sample_rate):
     pretraineds_custom_path = os.path.join("rvc", "pretraineds", "pretraineds_custom")
     os.makedirs(pretraineds_custom_path, exist_ok=True)
     
-    d_url = f"https://huggingface.co/{paths["D"]}"
-    g_url = f"https://huggingface.co/{paths["G"]}"
+    d_url = f"https://huggingface.co/{paths['D']}"
+    g_url = f"https://huggingface.co/{paths['G']}"
     
     gr.Info("Downloading Pretrained Model...")
     print("Downloading Pretrained Model...")
