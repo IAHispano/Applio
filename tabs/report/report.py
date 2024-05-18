@@ -72,8 +72,8 @@ def report_tab():
             )
 
     start_button.click(
-        toggle_button_label,
-        start_button,
-        [start_button, video_component],
+        fn=toggle_button_label,
+        inputs=[start_button],
+        outputs=[start_button, video_component],
         js=record_button_js,
     )

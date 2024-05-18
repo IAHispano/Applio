@@ -323,9 +323,9 @@ def train_tab():
         with gr.Row():
             preprocess_button = gr.Button(i18n("Preprocess Dataset"))
             preprocess_button.click(
-                run_preprocess_script,
-                [model_name, dataset_path, sampling_rate],
-                preprocess_output_info,
+                fn=run_preprocess_script,
+                inputs=[model_name, dataset_path, sampling_rate],
+                outpus=[preprocess_output_info],
                 api_name="preprocess_dataset",
             )
 
@@ -371,8 +371,8 @@ def train_tab():
         )
         extract_button = gr.Button(i18n("Extract Features"))
         extract_button.click(
-            run_extract_script,
-            [
+            fn=run_extract_script,
+            inputs=[
                 model_name,
                 rvc_version,
                 f0method,
@@ -380,7 +380,7 @@ def train_tab():
                 sampling_rate,
                 embedder_model,
             ],
-            extract_output_info,
+            outputs=[extract_output_info],
             api_name="extract_features",
         )
 
@@ -557,8 +557,8 @@ def train_tab():
         with gr.Row():
             train_button = gr.Button(i18n("Start Training"))
             train_button.click(
-                run_train_script,
-                [
+                fn=run_train_script,
+                inputs=[
                     model_name,
                     rvc_version,
                     save_every_epoch,
@@ -577,7 +577,7 @@ def train_tab():
                     g_pretrained_path,
                     d_pretrained_path,
                 ],
-                train_output_info,
+                outputs=[train_output_info],
                 api_name="start_training",
             )
 
@@ -592,9 +592,9 @@ def train_tab():
 
             index_button = gr.Button(i18n("Generate Index"))
             index_button.click(
-                run_index_script,
-                [model_name, rvc_version],
-                train_output_info,
+                fn=run_index_script,
+                inputs=[model_name, rvc_version],
+                outputs=[train_output_info],
                 api_name="generate_index",
             )
 

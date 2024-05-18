@@ -118,9 +118,9 @@ def download_tab():
         )
         model_download_button = gr.Button(i18n("Download Model"))
         model_download_button.click(
-            run_download_script,
-            [model_link],
-            model_download_output_info,
+            fn=run_download_script,
+            inputs=[model_link],
+            outputs=[model_download_output_info],
             api_name="model_download",
         )
         gr.Markdown(value=i18n("## Drop files"))
@@ -145,9 +145,9 @@ def download_tab():
         search_table = gr.Dataframe(datatype="markdown")
         search = gr.Button(i18n("Search"))
         search.click(
-            search_models,
-            [search_name],
-            search_table,
+            fn=search_models,
+            inputs=[search_name],
+            outputs=[search_table],
         )
         search_name.submit(search_models, [search_name], search_table)
         gr.Markdown(value=i18n("## Download Pretrained Models"))
@@ -173,6 +173,7 @@ def download_tab():
         )
         download_pretrained = gr.Button(i18n("Download"))
         download_pretrained.click(
-            download_pretrained_model,
-            [pretrained_model, pretrained_sample_rate],
+            fn=download_pretrained_model,
+            inputs=[pretrained_model, pretrained_sample_rate],
+            outputs=[],
         )
