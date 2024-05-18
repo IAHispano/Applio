@@ -624,13 +624,6 @@ class GeneratorNSF(torch.nn.Module):
         return self
 
 
-sr2sr = {
-    "32000": 32000,
-    "40000": 40000,
-    "48000": 48000,
-}
-
-
 class SynthesizerTrnMs256NSFsid(nn.Module):
     def __init__(
         self,
@@ -655,8 +648,6 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
         **kwargs
     ):
         super(SynthesizerTrnMs256NSFsid, self).__init__()
-        if isinstance(sr, str):
-            sr = sr2sr[sr]
         self.spec_channels = spec_channels
         self.inter_channels = inter_channels
         self.hidden_channels = hidden_channels
