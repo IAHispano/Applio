@@ -115,7 +115,7 @@
   "Clean your audio output using noise detection algorithms, recommended for speaking audios.": "Clean your audio output using noise detection algorithms, recommended for speaking audios.",
   "Clean Strength": "Clean Strength",
   "Upscale Audio": "Upscale Audio",
-  "Upscale the audio to a higher quality, recommended for low-quality audios. (Only use it if the audio duration is less than 10 seconds)": "Upscale the audio to a higher quality, recommended for low-quality audios. (Only use it if the audio duration is less than 10 seconds)",
+  "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)": "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)",
   "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed.": "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed.",
   "Pitch": "Pitch",
   "Set the pitch of the audio, the higher the value, the higher the pitch.": "Set the pitch of the audio, the higher the value, the higher the pitch.",

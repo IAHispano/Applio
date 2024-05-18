@@ -107,7 +107,7 @@
   "Clean your audio output using noise detection algorithms, recommended for speaking audios.": "Limpie su salida de audio utilizando algoritmos de detección de ruido, recomendados para audios hablados.",
   "Clean Strength": "Fuerza de limpieza",
   "Upscale Audio": "Audio de alta calidad",
-  "Upscale the audio to a higher quality, recommended for low-quality audios. (Only use it if the audio duration is less than 10 seconds)": "Mejore la calidad del audio a una calidad superior, recomendado para audios de baja calidad. (Sólo úselo si la duración del audio es inferior a 10 segundos)",
+  "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)": "Mejore la calidad del audio a una calidad superior, recomendado para audios de baja calidad. (Podría tardar más en procesar el audio)",
   "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed.": "Establezca el nivel de limpieza en el audio que desee, cuanto más lo aumente, más se limpiará, pero es posible que el audio esté más comprimido.",
   "Pitch": "Tono",
   "Set the pitch of the audio, the higher the value, the higher the pitch.": "Establezca el tono del audio, cuanto mayor sea el valor, mayor será el tono.",
