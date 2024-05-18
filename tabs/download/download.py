@@ -160,7 +160,7 @@ def download_tab():
         )
         pretrained_sample_rate = gr.Dropdown(
                 label=i18n("Sampling Rate"),
-                info=i18n("And select the sample rate."),
+                info=i18n("And select the sampling rate."),
                 choices=get_pretrained_sample_rates(pretrained_model.value),
                 value="40k",
                 interactive=True,

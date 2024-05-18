@@ -225,7 +225,7 @@ def tts_tab():
             upscale_audio = gr.Checkbox(
                 label=i18n("Upscale Audio"),
                 info=i18n(
-                    "Upscale the audio to a higher quality, recommended for low-quality audios."
+                    "Upscale the audio to a higher quality, recommended for low-quality audios. (Only use it if the audio duration is less than 10 seconds)"
                 ),
                 visible=True,
                 value=False,
