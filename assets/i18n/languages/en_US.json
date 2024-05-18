@@ -186,6 +186,9 @@
   "Search": "Search",
   "Introduce the model name to search.": "Introduce the model name to search.",
   "We couldn't find models by that name.": "We couldn't find models by that name.",
+  "## Download Pretrained Models": "## Download Pretrained Models",
+  "Select the pretrained model you want to download.": "Select the pretrained model you want to download.",
+  "And select the sampling rate": "And select the sampling rate.",
 
   "TTS Voices": "TTS Voices",
   "TTS Speed": "TTS Speed",
