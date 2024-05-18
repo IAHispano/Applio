@@ -805,8 +805,6 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         **kwargs
     ):
         super(SynthesizerTrnMs768NSFsid, self).__init__()
-        if isinstance(sr, str):
-            sr = sr
         self.spec_channels = spec_channels
         self.inter_channels = inter_channels
         self.hidden_channels = hidden_channels
