@@ -325,7 +325,7 @@ def train_tab():
             preprocess_button.click(
                 fn=run_preprocess_script,
                 inputs=[model_name, dataset_path, sampling_rate],
-                outpus=[preprocess_output_info],
+                outputs=[preprocess_output_info],
                 api_name="preprocess_dataset",
             )
 
