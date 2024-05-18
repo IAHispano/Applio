@@ -6,6 +6,10 @@
 *.pth
 *.index
 *.wav
+*.mp3
+*.flac
+*.ogg
+*.m4a
 *.bin
 
 rvc/train/train_pid.txt
