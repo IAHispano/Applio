@@ -70,35 +70,44 @@ def search_models(name):
 
 json_url = "https://huggingface.co/IAHispano/Applio/raw/main/pretrains.json"
 
+
 def fetch_pretrained_data():
     response = requests.get(json_url)
     response.raise_for_status()
     return response.json()
 
+
 def get_pretrained_list():
     data = fetch_pretrained_data()
     return list(data.keys())
 
+
 def get_pretrained_sample_rates(model):
     data = fetch_pretrained_data()
     return list(data[model].keys())
+
 
 def download_pretrained_model(model, sample_rate):
     data = fetch_pretrained_data()
     paths = data[model][sample_rate]
     pretraineds_custom_path = os.path.join("rvc", "pretraineds", "pretraineds_custom")
     os.makedirs(pretraineds_custom_path, exist_ok=True)
-    
+
     d_url = f"https://huggingface.co/{paths['D']}"
     g_url = f"https://huggingface.co/{paths['G']}"
-    
+
     gr.Info("Downloading Pretrained Model...")
     print("Downloading Pretrained Model...")
     wget.download(d_url, out=pretraineds_custom_path)
     wget.download(g_url, out=pretraineds_custom_path)
 
+
 def update_sample_rate_dropdown(model):
-    return {"choices": get_pretrained_sample_rates(model), "value": get_pretrained_sample_rates(model)[0], "__type__": "update"}
+    return {
+        "choices": get_pretrained_sample_rates(model),
+        "value": get_pretrained_sample_rates(model)[0],
+        "__type__": "update",
+    }
 
 
 def download_tab():
@@ -152,19 +161,19 @@ def download_tab():
         search_name.submit(search_models, [search_name], search_table)
         gr.Markdown(value=i18n("## Download Pretrained Models"))
         pretrained_model = gr.Dropdown(
-                label=i18n("Pretrained"),
-                info=i18n("Select the pretrained model you want to download."),
-                choices=get_pretrained_list(),
-                value="Titan",
-                interactive=True,
+            label=i18n("Pretrained"),
+            info=i18n("Select the pretrained model you want to download."),
+            choices=get_pretrained_list(),
+            value="Titan",
+            interactive=True,
         )
         pretrained_sample_rate = gr.Dropdown(
-                label=i18n("Sampling Rate"),
-                info=i18n("And select the sample rate."),
-                choices=get_pretrained_sample_rates(pretrained_model.value),
-                value="40k",
-                interactive=True,
-                allow_custom_value=True,
+            label=i18n("Sampling Rate"),
+            info=i18n("And select the sample rate."),
+            choices=get_pretrained_sample_rates(pretrained_model.value),
+            value="40k",
+            interactive=True,
+            allow_custom_value=True,
         )
         pretrained_model.change(
             update_sample_rate_dropdown,
