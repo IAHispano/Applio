@@ -55,6 +55,7 @@ def run_infer_script(
     clean_strength,
     export_format,
     embedder_model,
+    embedder_model_custom,
     upscale_audio,
 ):
     f0autotune = "True" if str(f0autotune) == "True" else "False"
@@ -78,6 +79,7 @@ def run_infer_script(
         clean_strength,
         export_format,
         embedder_model,
+        embedder_model_custom,
         upscale_audio,
     )
     return f"File {input_path} inferred successfully.", output_path.replace(
@@ -104,6 +106,7 @@ def run_batch_infer_script(
     clean_strength,
     export_format,
     embedder_model,
+    embedder_model_custom,
     upscale_audio,
 ):
     f0autotune = "True" if str(f0autotune) == "True" else "False"
@@ -144,6 +147,7 @@ def run_batch_infer_script(
                 clean_strength,
                 export_format,
                 embedder_model,
+                embedder_model_custom,
                 upscale_audio,
             )
 
@@ -154,6 +158,7 @@ def run_batch_infer_script(
 def run_tts_script(
     tts_text,
     tts_voice,
+    tts_rate,
     f0up_key,
     filter_radius,
     index_rate,
@@ -171,6 +176,7 @@ def run_tts_script(
     clean_strength,
     export_format,
     embedder_model,
+    embedder_model_custom,
     upscale_audio,
 ):
     f0autotune = "True" if str(f0autotune) == "True" else "False"
@@ -186,6 +192,7 @@ def run_tts_script(
         tts_script_path,
         tts_text,
         tts_voice,
+        str(tts_rate),
         output_tts_path,
     ]
     subprocess.run(command_tts)
@@ -208,6 +215,7 @@ def run_tts_script(
         clean_strength,
         export_format,
         embedder_model,
+        embedder_model_custom,
         upscale_audio,
     )
 
@@ -241,7 +249,13 @@ def run_preprocess_script(model_name, dataset_path, sampling_rate):
 
 # Extract
 def run_extract_script(
-    model_name, rvc_version, f0method, hop_length, sampling_rate, embedder_model
+    model_name,
+    rvc_version,
+    f0method,
+    hop_length,
+    sampling_rate,
+    embedder_model,
+    embedder_model_custom,
 ):
     model_path = os.path.join(logs_path, model_name)
     extract_f0_script_path = os.path.join(
@@ -277,6 +291,7 @@ def run_extract_script(
                 rvc_version,
                 "True",
                 embedder_model,
+                embedder_model_custom,
             ],
         ),
     ]
@@ -304,6 +319,7 @@ def run_train_script(
     overtraining_threshold,
     pretrained,
     custom_pretrained,
+    sync_graph,
     g_pretrained_path=None,
     d_pretrained_path=None,
 ):
@@ -311,6 +327,7 @@ def run_train_script(
     latest = 1 if str(save_only_latest) == "True" else 0
     save_every = 1 if str(save_every_weights) == "True" else 0
     detector = 1 if str(overtraining_detector) == "True" else 0
+    sync = 1 if str(sync_graph) == "True" else 0
 
     if str(pretrained) == "True":
         if str(custom_pretrained) == "False":
@@ -361,6 +378,8 @@ def run_train_script(
                 detector,
                 "-ot",
                 overtraining_threshold,
+                "-sg",
+                sync,
             ],
         ),
     ]
@@ -565,8 +584,14 @@ def parse_arguments():
         "--embedder_model",
         type=str,
         help="Embedder model",
-        choices=["contentvec", "hubert"],
+        choices=["contentvec", "hubert", "custom"],
         default="hubert",
+    )
+    infer_parser.add_argument(
+        "--embedder_model_custom",
+        type=str,
+        help="Custom Embedder model",
+        default=None,
     )
     infer_parser.add_argument(
         "--upscale_audio",
@@ -690,8 +715,14 @@ def parse_arguments():
         "--embedder_model",
         type=str,
         help="Embedder model",
-        choices=["contentvec", "hubert"],
+        choices=["contentvec", "hubert", "custom"],
         default="hubert",
+    )
+    batch_infer_parser.add_argument(
+        "--embedder_model_custom",
+        type=str,
+        help="Custom Embedder model",
+        default=None,
     )
     batch_infer_parser.add_argument(
         "--upscale_audio",
@@ -713,6 +744,13 @@ def parse_arguments():
         type=str,
         help="Voice to be used",
         choices=locales,
+    )
+    tts_parser.add_argument(
+        "--tts_rate",
+        type=str,
+        help="Increase or decrease TTS speed",
+        choices=[str(i) for i in range(-100, 100)],
+        default="0",
     )
     tts_parser.add_argument(
         "--f0up_key",
@@ -822,8 +860,14 @@ def parse_arguments():
         "--embedder_model",
         type=str,
         help="Embedder model",
-        choices=["contentvec", "hubert"],
+        choices=["contentvec", "hubert", "custom"],
         default="hubert",
+    )
+    tts_parser.add_argument(
+        "--embedder_model_custom",
+        type=str,
+        help="Custom Embedder model",
+        default=None,
     )
     tts_parser.add_argument(
         "--upscale_audio",
@@ -893,8 +937,14 @@ def parse_arguments():
         "--embedder_model",
         type=str,
         help="Embedder model",
-        choices=["contentvec", "hubert"],
+        choices=["contentvec", "hubert", "custom"],
         default="hubert",
+    )
+    extract_parser.add_argument(
+        "--embedder_model_custom",
+        type=str,
+        help="Custom Embedder model",
+        default=None,
     )
 
     # Parser for 'train' mode
@@ -1005,6 +1055,13 @@ def parse_arguments():
         help="Overtraining threshold",
         choices=[str(i) for i in range(1, 101)],
         default="50",
+    )
+    train_parser.add_argument(
+        "--sync_graph",
+        type=str,
+        help="Sync graph",
+        choices=["True", "False"],
+        default="False",
     )
 
     # Parser for 'index' mode
@@ -1191,6 +1248,7 @@ def main():
                 str(args.clean_strength),
                 str(args.export_format),
                 str(args.embedder_model),
+                str(args.embedder_model_custom),
                 str(args.upscale_audio),
             )
         elif args.mode == "batch_infer":
@@ -1212,12 +1270,14 @@ def main():
                 str(args.clean_strength),
                 str(args.export_format),
                 str(args.embedder_model),
+                str(args.embedder_model_custom),
                 str(args.upscale_audio),
             )
         elif args.mode == "tts":
             run_tts_script(
                 str(args.tts_text),
                 str(args.tts_voice),
+                str(args.tts_rate),
                 str(args.f0up_key),
                 str(args.filter_radius),
                 str(args.index_rate),
@@ -1235,6 +1295,7 @@ def main():
                 str(args.clean_strength),
                 str(args.export_format),
                 str(args.embedder_model),
+                str(args.embedder_model_custom),
                 str(args.upscale_audio),
             )
         elif args.mode == "preprocess":
@@ -1251,6 +1312,7 @@ def main():
                 str(args.hop_length),
                 str(args.sampling_rate),
                 str(args.embedder_model),
+                str(args.embedder_model_custom),
             )
         elif args.mode == "train":
             run_train_script(
@@ -1268,6 +1330,7 @@ def main():
                 str(args.overtraining_threshold),
                 str(args.pretrained),
                 str(args.custom_pretrained),
+                str(args.sync_graph),
                 str(args.g_pretrained_path),
                 str(args.d_pretrained_path),
             )

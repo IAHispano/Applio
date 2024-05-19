@@ -6,9 +6,12 @@ import edge_tts
 async def main():
     text = sys.argv[1]
     voice = sys.argv[2]
-    output_file = sys.argv[3]
+    rate = int(sys.argv[3])
+    output_file = sys.argv[4]
 
-    await edge_tts.Communicate(text, voice).save(output_file)
+    rates = f"+{rate}%" if rate >= 0 else f"{rate}%"
+
+    await edge_tts.Communicate(text, voice, rate=rates).save(output_file)
     print(f"TTS with {voice} completed. Output TTS file: '{output_file}'")
 
 

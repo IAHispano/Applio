@@ -23,8 +23,8 @@ def model_information_tab():
         )
         model_information_button = gr.Button(i18n("See Model Information"))
         model_information_button.click(
-            run_model_information_script,
-            [model_name],
-            model_information_output_info,
+            fn=run_model_information_script,
+            inputs=[model_name],
+            outputs=[model_information_output_info],
             api_name="model_information",
         )

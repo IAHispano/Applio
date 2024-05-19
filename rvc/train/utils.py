@@ -243,6 +243,13 @@ def get_hparams():
         default=50,
         help="overtraining_threshold",
     )
+    parser.add_argument(
+        "-sg",
+        "--sync-graph",
+        type=int,
+        required=True,
+        help="Sync graph or not, 1 or 0",
+    )
 
     args = parser.parse_args()
     name = args.experiment_dir
@@ -268,6 +275,7 @@ def get_hparams():
     hparams.data.training_files = f"{experiment_dir}/filelist.txt"
     hparams.overtraining_detector = args.overtraining_detector
     hparams.overtraining_threshold = args.overtraining_threshold
+    hparams.sync_graph = args.sync_graph
     return hparams
 
 

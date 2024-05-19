@@ -3,6 +3,8 @@ import sys
 import os
 import datetime
 import glob
+import json
+import re
 
 from utils import (
     get_hparams,
@@ -90,6 +92,22 @@ class EpochRecorder:
 
 
 def main():
+    def start():
+        children = []
+        pid_file_path = os.path.join(now_dir, "rvc", "train", "train_pid.txt")
+        with open(pid_file_path, "w") as pid_file:
+            for i in range(n_gpus):
+                subproc = mp.Process(
+                    target=run,
+                    args=(i, n_gpus, hps),
+                )
+                children.append(subproc)
+                subproc.start()
+                pid_file.write(str(subproc.pid) + "\n")
+
+        for i in range(n_gpus):
+            children[i].join()
+
     n_gpus = torch.cuda.device_count()
 
     if torch.cuda.is_available() == False and torch.backends.mps.is_available() == True:
@@ -97,20 +115,81 @@ def main():
     if n_gpus < 1:
         print("GPU not detected, reverting to CPU (not recommended)")
         n_gpus = 1
-    children = []
-    pid_file_path = os.path.join(now_dir, "rvc", "train", "train_pid.txt")
-    with open(pid_file_path, "w") as pid_file:
-        for i in range(n_gpus):
-            subproc = mp.Process(
-                target=run,
-                args=(i, n_gpus, hps),
-            )
-            children.append(subproc)
-            subproc.start()
-            pid_file.write(str(subproc.pid) + "\n")
 
-    for i in range(n_gpus):
-        children[i].join()
+    if hps.sync_graph == 1:
+        print(
+            "Sync graph is now activated! With sync graph enabled, the model undergoes a single epoch of training. Once the graphs are synchronized, training proceeds for the previously specified number of epochs."
+        )
+        hps.custom_total_epoch = 1
+        hps.custom_save_every_weights = "1"
+        start()
+
+        logs_path = os.path.join(now_dir, "logs")
+        model_config_file = os.path.join(now_dir, "logs", hps.name, "config.json")
+        rvc_config_file = os.path.join(
+            now_dir, "rvc", "configs", hps.version, str(hps.sample_rate) + ".json"
+        )
+        if not os.path.exists(rvc_config_file):
+            rvc_config_file = os.path.join(
+                now_dir, "rvc", "configs", "v1", str(hps.sample_rate) + ".json"
+            )
+
+        pattern = rf"{os.path.basename(hps.name)}_1e_(\d+)s\.pth"
+
+        for filename in os.listdir(logs_path):
+            match = re.match(pattern, filename)
+            if match:
+                steps = int(match.group(1))
+
+        def edit_config(config_file):
+            with open(config_file, "r", encoding="utf8") as json_file:
+                config_data = json.load(json_file)
+
+            config_data["train"]["log_interval"] = steps
+
+            with open(config_file, "w", encoding="utf8") as json_file:
+                json.dump(
+                    config_data,
+                    json_file,
+                    indent=2,
+                    separators=(",", ": "),
+                    ensure_ascii=False,
+                )
+
+        edit_config(model_config_file)
+        edit_config(rvc_config_file)
+
+        for root, dirs, files in os.walk(
+            os.path.join(now_dir, "logs", hps.name), topdown=False
+        ):
+            for name in files:
+                file_path = os.path.join(root, name)
+                file_name, file_extension = os.path.splitext(name)
+                if file_extension == ".0":
+                    os.remove(file_path)
+                elif ("D" in name or "G" in name) and file_extension == ".pth":
+                    os.remove(file_path)
+                elif (
+                    "added" in name or "trained" in name
+                ) and file_extension == ".index":
+                    os.remove(file_path)
+            for name in dirs:
+                if name == "eval":
+                    folder_path = os.path.join(root, name)
+                    for item in os.listdir(folder_path):
+                        item_path = os.path.join(folder_path, item)
+                        if os.path.isfile(item_path):
+                            os.remove(item_path)
+                    os.rmdir(folder_path)
+
+        print("Successfully synchronized graphs!")
+        hps.custom_total_epoch = hps.total_epoch
+        hps.custom_save_every_weights = hps.save_every_weights
+        start()
+    else:
+        hps.custom_total_epoch = hps.total_epoch
+        hps.custom_save_every_weights = hps.save_every_weights
+        start()
 
 
 def run(
@@ -558,7 +637,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             os.path.join(hps.model_dir, "D_" + checkpoint_suffix),
         )
 
-        if rank == 0 and hps.save_every_weights == "1":
+        if rank == 0 and hps.custom_save_every_weights == "1":
             if hasattr(net_g, "module"):
                 ckpt = net_g.module.state_dict()
             else:
@@ -624,7 +703,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             hps,
         )    
 
-    if epoch >= hps.total_epoch and rank == 0:
+    if epoch >= hps.custom_total_epoch and rank == 0:
         print(
             f"Training has been successfully completed with {epoch} epoch, {global_step} steps and {round(loss_gen_all.item(), 3)} loss gen."
         )

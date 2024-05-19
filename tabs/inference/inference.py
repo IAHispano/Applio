@@ -21,7 +21,11 @@ sys.path.append(now_dir)
 
 model_root = os.path.join(now_dir, "logs")
 audio_root = os.path.join(now_dir, "assets", "audios")
+custom_embedder_root = os.path.join(now_dir, "rvc", "embedders", "embedders_custom")
 
+os.makedirs(custom_embedder_root, exist_ok=True)
+
+custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
 model_root_relative = os.path.relpath(model_root, now_dir)
 audio_root_relative = os.path.relpath(audio_root, now_dir)
 
@@ -67,6 +71,13 @@ audio_paths = [
     and "_output" not in name
 ]
 
+custom_embedders = [
+    os.path.join(dirpath, filename)
+    for dirpath, _, filenames in os.walk(custom_embedder_root_relative)
+    for filename in filenames
+    if filename.endswith(".pt")
+]
+
 
 def output_path_fn(input_audio_path):
     original_name_without_extension = os.path.basename(input_audio_path).rsplit(".", 1)[
@@ -104,10 +115,19 @@ def change_choices():
         and "_output" not in name
     ]
 
+    custom_embedder = [
+        os.path.join(dirpath, filename)
+        for dirpath, _, filenames in os.walk(custom_embedder_root_relative)
+        for filename in filenames
+        if filename.endswith(".pt")
+    ]
+
     return (
         {"choices": sorted(names), "__type__": "update"},
         {"choices": sorted(indexes_list), "__type__": "update"},
         {"choices": sorted(audio_paths), "__type__": "update"},
+        {"choices": sorted(custom_embedder), "__type__": "update"},
+        {"choices": sorted(custom_embedder), "__type__": "update"},
     )
 
 
@@ -162,6 +182,25 @@ def match_index(model_file_value):
             if os.path.dirname(index_file) == model_folder:
                 return index_file
     return ""
+
+
+def save_drop_custom_embedder(dropbox):
+    if ".pt" not in dropbox:
+        gr.Info(
+            i18n("The file you dropped is not a valid embedder file. Please try again.")
+        )
+    else:
+        file_name = os.path.basename(dropbox)
+        custom_embedder_path = os.path.join(custom_embedder_root, file_name)
+        if os.path.exists(custom_embedder_path):
+            os.remove(custom_embedder_path)
+        os.rename(dropbox, custom_embedder_path)
+        gr.Info(
+            i18n(
+                "Click the refresh button to see the embedder file in the dropdown menu."
+            )
+        )
+    return None
 
 
 # Inference tab
@@ -287,7 +326,7 @@ def inference_tab():
                 upscale_audio = gr.Checkbox(
                     label=i18n("Upscale Audio"),
                     info=i18n(
-                        "Upscale the audio to a higher quality, recommended for low-quality audios."
+                        "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)"
                     ),
                     visible=True,
                     value=False,
@@ -378,10 +417,27 @@ def inference_tab():
                 embedder_model = gr.Radio(
                     label=i18n("Embedder Model"),
                     info=i18n("Model used for learning speaker embedding."),
-                    choices=["hubert", "contentvec"],
+                    choices=["hubert", "contentvec", "custom"],
                     value="hubert",
                     interactive=True,
                 )
+                with gr.Column(visible=False) as embedder_custom:
+                    with gr.Accordion(i18n("Custom Embedder"), open=True):
+                        embedder_upload_custom = gr.File(
+                            label=i18n("Upload Custom Embedder"),
+                            type="filepath",
+                            interactive=True,
+                        )
+                        embedder_custom_refresh = gr.Button(i18n("Refresh"))
+                        embedder_model_custom = gr.Dropdown(
+                            label=i18n("Custom Embedder"),
+                            info=i18n(
+                                "Select the custom embedder to use for the conversion."
+                            ),
+                            choices=sorted(custom_embedders),
+                            interactive=True,
+                            allow_custom_value=True,
+                        )
 
         convert_button1 = gr.Button(i18n("Convert"))
 
@@ -465,7 +521,7 @@ def inference_tab():
                 upscale_audio_batch = gr.Checkbox(
                     label=i18n("Upscale Audio"),
                     info=i18n(
-                        "Upscale the audio to a higher quality, recommended for low-quality audios."
+                        "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)"
                     ),
                     visible=True,
                     value=False,
@@ -556,10 +612,27 @@ def inference_tab():
                 embedder_model_bacth = gr.Radio(
                     label=i18n("Embedder Model"),
                     info=i18n("Model used for learning speaker embedding."),
-                    choices=["hubert", "contentvec"],
+                    choices=["hubert", "contentvec", "custom"],
                     value="hubert",
                     interactive=True,
                 )
+                with gr.Column(visible=False) as embedder_custom_bacth:
+                    with gr.Accordion(i18n("Custom Embedder"), open=True):
+                        embedder_upload_custom_bacth = gr.File(
+                            label=i18n("Upload Custom Embedder"),
+                            type="filepath",
+                            interactive=True,
+                        )
+                        embedder_custom_refresh_bacth = gr.Button(i18n("Refresh"))
+                        embedder_model_custom_bacth = gr.Dropdown(
+                            label=i18n("Custom Embedder"),
+                            info=i18n(
+                                "Select the custom embedder to use for the conversion."
+                            ),
+                            choices=sorted(custom_embedders),
+                            interactive=True,
+                            allow_custom_value=True,
+                        )
 
         convert_button2 = gr.Button(i18n("Convert"))
 
@@ -574,6 +647,11 @@ def inference_tab():
 
     def toggle_visible_hop_length(f0method):
         if f0method == "crepe" or f0method == "crepe-tiny":
+            return {"visible": True, "__type__": "update"}
+        return {"visible": False, "__type__": "update"}
+
+    def toggle_visible_embedder_custom(embedder_model):
+        if embedder_model == "custom":
             return {"visible": True, "__type__": "update"}
         return {"visible": False, "__type__": "update"}
 
@@ -600,7 +678,13 @@ def inference_tab():
     refresh_button.click(
         fn=change_choices,
         inputs=[],
-        outputs=[model_file, index_file, audio],
+        outputs=[
+            model_file,
+            index_file,
+            audio,
+            embedder_model_custom,
+            embedder_model_custom_bacth,
+        ],
     )
     audio.change(
         fn=output_path_fn,
@@ -627,6 +711,48 @@ def inference_tab():
         inputs=[],
         outputs=[],
     )
+    embedder_model.change(
+        fn=toggle_visible_embedder_custom,
+        inputs=[embedder_model],
+        outputs=[embedder_custom],
+    )
+    embedder_upload_custom.upload(
+        fn=save_drop_custom_embedder,
+        inputs=[embedder_upload_custom],
+        outputs=[embedder_upload_custom],
+    )
+    embedder_custom_refresh.click(
+        fn=change_choices,
+        inputs=[],
+        outputs=[
+            model_file,
+            index_file,
+            audio,
+            embedder_model_custom,
+            embedder_model_custom_bacth,
+        ],
+    )
+    embedder_model_bacth.change(
+        fn=toggle_visible_embedder_custom,
+        inputs=[embedder_model_bacth],
+        outputs=[embedder_custom_bacth],
+    )
+    embedder_upload_custom_bacth.upload(
+        fn=save_drop_custom_embedder,
+        inputs=[embedder_upload_custom_bacth],
+        outputs=[embedder_upload_custom_bacth],
+    )
+    embedder_custom_refresh_bacth.click(
+        fn=change_choices,
+        inputs=[],
+        outputs=[
+            model_file,
+            index_file,
+            audio,
+            embedder_model_custom,
+            embedder_model_custom_bacth,
+        ],
+    )
     convert_button1.click(
         fn=run_infer_script,
         inputs=[
@@ -647,6 +773,7 @@ def inference_tab():
             clean_strength,
             export_format,
             embedder_model,
+            embedder_model_custom,
             upscale_audio,
         ],
         outputs=[vc_output1, vc_output2],
@@ -671,6 +798,7 @@ def inference_tab():
             clean_strength_batch,
             export_format_batch,
             embedder_model_bacth,
+            embedder_model_custom_bacth,
             upscale_audio_batch,
         ],
         outputs=[vc_output3],

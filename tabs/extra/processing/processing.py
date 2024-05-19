@@ -31,8 +31,8 @@ def processing():
         )
         model_view_button = gr.Button(i18n("View"), variant="primary")
         model_view_button.click(
-            run_model_information_script,
-            [model_view_model_path],
-            model_view_output_info,
+            fn=run_model_information_script,
+            inputs=[model_view_model_path],
+            outputs=[model_view_output_info],
             api_name="model_info",
         )
