@@ -17,6 +17,11 @@ sys.path.append(now_dir)
 
 model_root = os.path.join(now_dir, "logs")
 model_root_relative = os.path.relpath(model_root, now_dir)
+custom_embedder_root = os.path.join(now_dir, "rvc", "embedders", "embedders_custom")
+
+os.makedirs(custom_embedder_root, exist_ok=True)
+
+custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
 
 names = [
     os.path.join(root, file)
@@ -33,6 +38,13 @@ indexes_list = [
     for root, _, files in os.walk(model_root_relative, topdown=False)
     for name in files
     if name.endswith(".index") and "trained" not in name
+]
+
+custom_embedders =  [
+    os.path.join(dirpath, filename)
+    for dirpath, _, filenames in os.walk(custom_embedder_root_relative)
+    for filename in filenames
+    if filename.endswith(".pt")
 ]
 
 
@@ -53,9 +65,18 @@ def change_choices():
         for name in files
         if name.endswith(".index") and "trained" not in name
     ]
+
+    custom_embedders =  [
+        os.path.join(dirpath, filename)
+        for dirpath, _, filenames in os.walk(custom_embedder_root_relative)
+        for filename in filenames
+        if filename.endswith(".pt")
+    ]
     return (
         {"choices": sorted(names), "__type__": "update"},
         {"choices": sorted(indexes_list), "__type__": "update"},
+        {"choices": sorted(custom_embedders), "__type__": "update"},
+        {"choices": sorted(custom_embedders), "__type__": "update"},
     )
 
 
@@ -86,7 +107,28 @@ def match_index(model_file_value):
                 return index_file
     return ""
 
+def save_drop_custom_embedder(dropbox):
+    if ".pt" not in dropbox:
+        gr.Info(
+            i18n(
+                "The file you dropped is not a valid embedder file. Please try again."
+            )
+        )
+    else:
+        file_name = os.path.basename(dropbox)
+        custom_embedder_path = os.path.join(custom_embedder_root, file_name)
+        if os.path.exists(custom_embedder_path):
+            os.remove(custom_embedder_path)
+        os.rename(dropbox, custom_embedder_path)
+        gr.Info(
+            i18n(
+                "Click the refresh button to see the embedder file in the dropdown menu."
+            )
+        )
+    return None
 
+
+# TTS tab
 def tts_tab():
     default_weight = random.choice(names) if names else ""
     with gr.Row():
@@ -315,10 +357,25 @@ def tts_tab():
             embedder_model = gr.Radio(
                 label=i18n("Embedder Model"),
                 info=i18n("Model used for learning speaker embedding."),
-                choices=["hubert", "contentvec"],
+                choices=["hubert", "contentvec", "custom"],
                 value="hubert",
                 interactive=True,
             )
+            with gr.Column(visible=False) as embedder_custom:
+                with gr.Accordion(i18n("Custom Embedder"), open=True):
+                    embedder_upload_custom = gr.File(
+                            label=i18n("Upload Custom Embedder"),
+                            type="filepath",
+                            interactive=True,
+                        )
+                    embedder_custom_refresh = gr.Button(i18n("Refresh"))
+                    embedder_model_custom = gr.Dropdown(
+                        label=i18n("Custom Embedder"),
+                        info=i18n("Select the custom embedder to use for the conversion."),
+                        choices=sorted(custom_embedders),
+                        interactive=True,
+                        allow_custom_value=True,
+                    ) 
 
     convert_button1 = gr.Button(i18n("Convert"))
 
@@ -331,6 +388,11 @@ def tts_tab():
 
     def toggle_visible(checkbox):
         return {"visible": checkbox, "__type__": "update"}
+    
+    def toggle_visible_embedder_custom(embedder_model):
+        if embedder_model == "custom":
+            return {"visible": True, "__type__": "update"}
+        return {"visible": False, "__type__": "update"}
 
     clean_audio.change(
         fn=toggle_visible,
@@ -346,6 +408,21 @@ def tts_tab():
         fn=process_input,
         inputs=[txt_file],
         outputs=[tts_text, txt_file],
+    )
+    embedder_model.change(
+        fn=toggle_visible_embedder_custom,
+        inputs=[embedder_model],
+        outputs=[embedder_custom],
+    )
+    embedder_upload_custom.upload(
+        fn=save_drop_custom_embedder,
+        inputs=[embedder_upload_custom],
+        outputs=[embedder_upload_custom],
+    )
+    embedder_custom_refresh.click(
+        fn=change_choices,
+        inputs=[],
+        outputs=[model_file, index_file, embedder_model_custom],
     )
     convert_button1.click(
         fn=run_tts_script,
@@ -370,6 +447,7 @@ def tts_tab():
             clean_strength,
             export_format,
             embedder_model,
+            embedder_model_custom,
             upscale_audio,
         ],
         outputs=[vc_output1, vc_output2],

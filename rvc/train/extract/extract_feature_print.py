@@ -19,6 +19,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = str(i_gpu)
 version = sys.argv[6]
 is_half = bool(sys.argv[7])
 embedder_model = sys.argv[8]
+embedder_model_custom = sys.argv[9]
 
 
 wav_path = f"{exp_dir}/1_16k_wavs"
@@ -40,7 +41,7 @@ def read_wave(wav_path, normalize=False):
 
 
 print("Starting feature extraction...")
-models, saved_cfg, task = load_embedding(embedder_model)
+models, saved_cfg, task = load_embedding(embedder_model, embedder_model_custom)
 model = models[0]
 model = model.to(device)
 if device not in ["mps", "cpu"]:

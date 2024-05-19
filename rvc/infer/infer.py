@@ -39,9 +39,9 @@ version = None
 n_spk = None
 
 
-def load_hubert(embedder_model):
+def load_hubert(embedder_model, embedder_model_custom):
     global hubert_model
-    models, _, _ = load_embedding(embedder_model)
+    models, _, _ = load_embedding(embedder_model, embedder_model_custom)
     hubert_model = models[0]
     hubert_model = hubert_model.to(config.device)
     if config.is_half:
@@ -106,6 +106,7 @@ def voice_conversion(
     f0autotune=False,
     filter_radius=None,
     embedder_model=None,
+    embedder_model_custom=None,
 ):
     global tgt_sr, net_g, vc, hubert_model, version
 
@@ -118,7 +119,7 @@ def voice_conversion(
             audio /= audio_max
 
         if not hubert_model:
-            load_hubert(embedder_model)
+            load_hubert(embedder_model, embedder_model_custom)
         if_f0 = cpt.get("f0", 1)
 
         file_index = (
@@ -163,6 +164,7 @@ def voice_conversion(
                         False,
                         f0autotune,
                         embedder_model,
+                        embedder_model_custom,
                     )
             except Exception as error:
                 print(error)
@@ -255,7 +257,6 @@ def get_vc(weight_root, sid):
         else:
             net_g = SynthesizerTrnMs768NSFsid_nono(*cpt["config"])
     del net_g.enc_q
-    print(net_g.load_state_dict(cpt["weight"], strict=False))
     net_g.eval().to(config.device)
     if config.is_half:
         net_g = net_g.half()
@@ -283,6 +284,7 @@ def infer_pipeline(
     clean_strength,
     export_format,
     embedder_model,
+    embedder_model_custom,
     upscale_audio,
 ):
     global tgt_sr, net_g, vc, cpt
@@ -311,6 +313,7 @@ def infer_pipeline(
             f0autotune=f0autotune,
             filter_radius=filter_radius,
             embedder_model=embedder_model,
+            embedder_model_custom=embedder_model_custom,
         )
 
         if clean_audio == "True":
