@@ -679,7 +679,6 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
         last_loss_gen_all = loss_gen_all
         
     if best_epoch == hps.overtraining_threshold:
-        # Önceki model dosyalarını sil
         old_model_files = glob.glob(os.path.join(hps.model_dir, "{}_{}e_{}s_best_epoch.pth".format(hps.name, "*", "*")))
         for file in old_model_files:
             os.remove(file)
