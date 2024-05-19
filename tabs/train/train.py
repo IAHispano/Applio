@@ -66,8 +66,11 @@ pretraineds_custom_path = os.path.join(
 
 pretraineds_custom_path_relative = os.path.relpath(pretraineds_custom_path, now_dir)
 
-if not os.path.exists(pretraineds_custom_path_relative):
-    os.makedirs(pretraineds_custom_path_relative)
+custom_embedder_root = os.path.join(now_dir, "rvc", "embedders", "embedders_custom")
+custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
+
+os.makedirs(custom_embedder_root, exist_ok=True)
+os.makedirs(pretraineds_custom_path_relative, exist_ok=True)
 
 
 def get_pretrained_list(suffix):
@@ -136,6 +139,20 @@ def refresh_models_and_datasets():
     )
 
 
+# Refresh Custom Pretraineds
+def get_embedder_custom_list():
+    return [
+        os.path.join(dirpath, filename)
+        for dirpath, _, filenames in os.walk(custom_embedder_root_relative)
+        for filename in filenames
+        if filename.endswith(".pt")
+    ]
+
+
+def refresh_custom_embedder_list():
+    return {"choices": sorted(get_embedder_custom_list()), "__type__": "update"}
+
+
 # Drop Model
 def save_drop_model(dropbox):
     if ".pth" not in dropbox:
@@ -186,6 +203,26 @@ def save_drop_dataset_audio(dropbox, dataset_name):
             relative_dataset_path = os.path.relpath(dataset_path, now_dir)
 
             return None, relative_dataset_path
+
+
+# Drop Custom Embedder
+def save_drop_custom_embedder(dropbox):
+    if ".pt" not in dropbox:
+        gr.Info(
+            i18n("The file you dropped is not a valid embedder file. Please try again.")
+        )
+    else:
+        file_name = os.path.basename(dropbox)
+        custom_embedder_path = os.path.join(custom_embedder_root, file_name)
+        if os.path.exists(custom_embedder_path):
+            os.remove(custom_embedder_path)
+        os.rename(dropbox, custom_embedder_path)
+        gr.Info(
+            i18n(
+                "Click the refresh button to see the embedder file in the dropdown menu."
+            )
+        )
+    return None
 
 
 # Export
@@ -357,10 +394,27 @@ def train_tab():
                 embedder_model = gr.Radio(
                     label=i18n("Embedder Model"),
                     info=i18n("Model used for learning speaker embedding."),
-                    choices=["hubert", "contentvec"],
+                    choices=["hubert", "contentvec", "custom"],
                     value="hubert",
                     interactive=True,
                 )
+                with gr.Column(visible=False) as embedder_custom:
+                    with gr.Accordion(i18n("Custom Embedder"), open=True):
+                        embedder_upload_custom = gr.File(
+                            label=i18n("Upload Custom Embedder"),
+                            type="filepath",
+                            interactive=True,
+                        )
+                        embedder_custom_refresh = gr.Button(i18n("Refresh"))
+                        embedder_model_custom = gr.Dropdown(
+                            label=i18n("Custom Embedder"),
+                            info=i18n(
+                                "Select the custom embedder to use for the conversion."
+                            ),
+                            choices=sorted(get_embedder_custom_list()),
+                            interactive=True,
+                            allow_custom_value=True,
+                        )
 
         extract_output_info = gr.Textbox(
             label=i18n("Output Information"),
@@ -379,6 +433,7 @@ def train_tab():
                 hop_length,
                 sampling_rate,
                 embedder_model,
+                embedder_model_custom,
             ],
             outputs=[extract_output_info],
             api_name="extract_features",
@@ -696,6 +751,11 @@ def train_tab():
                         "Prerequisites downloaded successfully, you may now start preprocessing."
                     )
 
+            def toggle_visible_embedder_custom(embedder_model):
+                if embedder_model == "custom":
+                    return {"visible": True, "__type__": "update"}
+                return {"visible": False, "__type__": "update"}
+
             rvc_version.change(
                 fn=download_prerequisites,
                 inputs=[rvc_version],
@@ -724,6 +784,22 @@ def train_tab():
                 fn=toggle_visible_hop_length,
                 inputs=[f0method],
                 outputs=[hop_length],
+            )
+
+            embedder_model.change(
+                fn=toggle_visible_embedder_custom,
+                inputs=[embedder_model],
+                outputs=[embedder_custom],
+            )
+            embedder_upload_custom.upload(
+                fn=save_drop_custom_embedder,
+                inputs=[embedder_upload_custom],
+                outputs=[embedder_upload_custom],
+            )
+            embedder_custom_refresh.click(
+                fn=refresh_custom_embedder_list,
+                inputs=[],
+                outputs=[embedder_model_custom],
             )
 
             pretrained.change(

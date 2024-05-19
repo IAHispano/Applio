@@ -2,6 +2,7 @@ import torch
 import sys
 import os
 import datetime
+import glob
 import json
 import re
 
@@ -74,7 +75,6 @@ torch.backends.cudnn.benchmark = False
 global_step = 0
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 last_loss_gen_all = 0
-epochs_since_last_lowest = 0
 
 
 class EpochRecorder:
@@ -363,12 +363,11 @@ def run(
 
 
 def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers, cache):
-    global global_step, last_loss_gen_all, lowest_value, epochs_since_last_lowest
+    global global_step, last_loss_gen_all, lowest_value
 
     if epoch == 1:
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
         last_loss_gen_all = 0.0
-        epochs_since_last_lowest = 0
 
     net_g, net_d = nets
     optim_g, optim_d = optims
@@ -658,12 +657,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             )
 
     if hps.overtraining_detector == 1:
-        if lowest_value["value"] < last_loss_gen_all:
-            epochs_since_last_lowest += 1
-        else:
-            epochs_since_last_lowest = 0
-
-        if epochs_since_last_lowest >= hps.overtraining_threshold:
+        if epoch >= (lowest_value["epoch"] + hps.overtraining_threshold):
             print(
                 "Stopping training due to possible overtraining. Lowest generator loss: {} at epoch {}, step {}".format(
                     lowest_value["value"], lowest_value["epoch"], lowest_value["step"]
@@ -671,16 +665,47 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             )
             os._exit(2333333)
 
+    best_epoch = lowest_value["epoch"] + hps.overtraining_threshold - epoch
+
     if rank == 0:
         if epoch > 1:
             print(
-                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
+                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {lowest_value['epoch'] + hps.overtraining_threshold - epoch}"
             )
         else:
             print(
                 f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()}"
             )
         last_loss_gen_all = loss_gen_all
+
+    if best_epoch == hps.overtraining_threshold:
+        old_model_files = glob.glob(
+            os.path.join(
+                hps.model_dir, "{}_{}e_{}s_best_epoch.pth".format(hps.name, "*", "*")
+            )
+        )
+        for file in old_model_files:
+            os.remove(file)
+
+        if hasattr(net_g, "module"):
+            ckpt = net_g.module.state_dict()
+        else:
+            ckpt = net_g.state_dict()
+
+        extract_model(
+            ckpt,
+            hps.sample_rate,
+            hps.if_f0,
+            hps.name,
+            os.path.join(
+                hps.model_dir,
+                "{}_{}e_{}s_best_epoch.pth".format(hps.name, epoch, global_step),
+            ),
+            epoch,
+            global_step,
+            hps.version,
+            hps,
+        )
 
     if epoch >= hps.custom_total_epoch and rank == 0:
         print(
