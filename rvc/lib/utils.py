@@ -12,6 +12,7 @@ logging.getLogger("fairseq").setLevel(logging.WARNING)
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+
 def load_audio(file, sampling_rate):
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
@@ -52,7 +53,7 @@ def load_embedding(embedder_model, custom_embedder=None):
         model_path = embedding_list[embedder_model]
         if not os.path.exists(model_path):
             print("Custom embedder not found. Using the default embedder.")
-            model_path = embedding_list["hubert"]   
+            model_path = embedding_list["hubert"]
 
     models = checkpoint_utils.load_model_ensemble_and_task(
         [model_path],

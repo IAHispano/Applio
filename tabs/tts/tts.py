@@ -40,7 +40,7 @@ indexes_list = [
     if name.endswith(".index") and "trained" not in name
 ]
 
-custom_embedders =  [
+custom_embedders = [
     os.path.join(dirpath, filename)
     for dirpath, _, filenames in os.walk(custom_embedder_root_relative)
     for filename in filenames
@@ -66,7 +66,7 @@ def change_choices():
         if name.endswith(".index") and "trained" not in name
     ]
 
-    custom_embedders =  [
+    custom_embedders = [
         os.path.join(dirpath, filename)
         for dirpath, _, filenames in os.walk(custom_embedder_root_relative)
         for filename in filenames
@@ -107,12 +107,11 @@ def match_index(model_file_value):
                 return index_file
     return ""
 
+
 def save_drop_custom_embedder(dropbox):
     if ".pt" not in dropbox:
         gr.Info(
-            i18n(
-                "The file you dropped is not a valid embedder file. Please try again."
-            )
+            i18n("The file you dropped is not a valid embedder file. Please try again.")
         )
     else:
         file_name = os.path.basename(dropbox)
@@ -364,18 +363,20 @@ def tts_tab():
             with gr.Column(visible=False) as embedder_custom:
                 with gr.Accordion(i18n("Custom Embedder"), open=True):
                     embedder_upload_custom = gr.File(
-                            label=i18n("Upload Custom Embedder"),
-                            type="filepath",
-                            interactive=True,
-                        )
+                        label=i18n("Upload Custom Embedder"),
+                        type="filepath",
+                        interactive=True,
+                    )
                     embedder_custom_refresh = gr.Button(i18n("Refresh"))
                     embedder_model_custom = gr.Dropdown(
                         label=i18n("Custom Embedder"),
-                        info=i18n("Select the custom embedder to use for the conversion."),
+                        info=i18n(
+                            "Select the custom embedder to use for the conversion."
+                        ),
                         choices=sorted(custom_embedders),
                         interactive=True,
                         allow_custom_value=True,
-                    ) 
+                    )
 
     convert_button1 = gr.Button(i18n("Convert"))
 
@@ -388,7 +389,7 @@ def tts_tab():
 
     def toggle_visible(checkbox):
         return {"visible": checkbox, "__type__": "update"}
-    
+
     def toggle_visible_embedder_custom(embedder_model):
         if embedder_model == "custom":
             return {"visible": True, "__type__": "update"}
