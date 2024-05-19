@@ -20,9 +20,9 @@ version = sys.argv[6]
 is_half = bool(sys.argv[7])
 embedder_model = sys.argv[8]
 try:
-  embedder_model_custom = sys.argv[9]
+    embedder_model_custom = sys.argv[9]
 except:
-  embedder_model_custom = None
+    embedder_model_custom = None
 
 
 wav_path = f"{exp_dir}/1_16k_wavs"
