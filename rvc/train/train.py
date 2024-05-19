@@ -664,9 +664,9 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 )
             )
             os._exit(2333333)
-            
-    best_epoch = lowest_value['epoch'] + hps.overtraining_threshold - epoch
-    
+
+    best_epoch = lowest_value["epoch"] + hps.overtraining_threshold - epoch
+
     if rank == 0:
         if epoch > 1:
             print(
@@ -677,9 +677,13 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()}"
             )
         last_loss_gen_all = loss_gen_all
-        
+
     if best_epoch == hps.overtraining_threshold:
-        old_model_files = glob.glob(os.path.join(hps.model_dir, "{}_{}e_{}s_best_epoch.pth".format(hps.name, "*", "*")))
+        old_model_files = glob.glob(
+            os.path.join(
+                hps.model_dir, "{}_{}e_{}s_best_epoch.pth".format(hps.name, "*", "*")
+            )
+        )
         for file in old_model_files:
             os.remove(file)
 
@@ -694,13 +698,14 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             hps.if_f0,
             hps.name,
             os.path.join(
-                hps.model_dir, "{}_{}e_{}s_best_epoch.pth".format(hps.name, epoch, global_step)
+                hps.model_dir,
+                "{}_{}e_{}s_best_epoch.pth".format(hps.name, epoch, global_step),
             ),
             epoch,
             global_step,
             hps.version,
             hps,
-        )    
+        )
 
     if epoch >= hps.custom_total_epoch and rank == 0:
         print(
