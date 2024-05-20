@@ -4,6 +4,7 @@ import regex as re
 import shutil
 import datetime
 import random
+import json
 
 from core import (
     run_infer_script,
@@ -202,6 +203,17 @@ def save_drop_custom_embedder(dropbox):
         )
     return None
 
+# Read from config function
+def read_config_value(key, default):
+    config_file = os.path.join(now_dir, "assets", 'startup_settings.json')
+    if os.path.exists(config_file):
+        with open(config_file, "r") as file:
+            config_data = json.load(file)
+            if key in config_data:
+                value = config_data[key]
+                if value:
+                    return value
+    return default
 
 # Inference tab
 def inference_tab():
@@ -282,7 +294,7 @@ def inference_tab():
                     label=i18n("Export Format"),
                     info=i18n("Select the format to export the audio."),
                     choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
-                    value="WAV",
+                    value=read_config_value("export_format", "WAV"),
                     interactive=True,
                 )
                 split_audio = gr.Checkbox(
@@ -291,7 +303,7 @@ def inference_tab():
                         "Split the audio into chunks for inference to obtain better results in some cases."
                     ),
                     visible=True,
-                    value=False,
+                    value=read_config_value("split_audio", False),
                     interactive=True,
                 )
                 autotune = gr.Checkbox(
@@ -300,7 +312,7 @@ def inference_tab():
                         "Apply a soft autotune to your inferences, recommended for singing conversions."
                     ),
                     visible=True,
-                    value=False,
+                    value=read_config_value("autotune", False),
                     interactive=True,
                 )
                 clean_audio = gr.Checkbox(
@@ -309,7 +321,7 @@ def inference_tab():
                         "Clean your audio output using noise detection algorithms, recommended for speaking audios."
                     ),
                     visible=True,
-                    value=False,
+                    value=read_config_value("clean_audio", False),
                     interactive=True,
                 )
                 clean_strength = gr.Slider(
@@ -320,7 +332,7 @@ def inference_tab():
                         "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
                     ),
                     visible=False,
-                    value=0.5,
+                    value=read_config_value("clean_strength", "0.5"),
                     interactive=True,
                 )
                 upscale_audio = gr.Checkbox(
@@ -329,7 +341,7 @@ def inference_tab():
                         "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)"
                     ),
                     visible=True,
-                    value=False,
+                    value=read_config_value("upscale_audio", False),
                     interactive=True,
                 )
                 pitch = gr.Slider(
@@ -340,7 +352,7 @@ def inference_tab():
                     info=i18n(
                         "Set the pitch of the audio, the higher the value, the higher the pitch."
                     ),
-                    value=0,
+                    value=read_config_value("pitch", "0"),
                     interactive=True,
                 )
                 filter_radius = gr.Slider(
@@ -350,7 +362,7 @@ def inference_tab():
                     info=i18n(
                         "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
                     ),
-                    value=3,
+                    value=read_config_value("filter_radius", "3"),
                     step=1,
                     interactive=True,
                 )
@@ -361,7 +373,7 @@ def inference_tab():
                     info=i18n(
                         "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
                     ),
-                    value=0.75,
+                    value=read_config_value("index_rate", "0.75"),
                     interactive=True,
                 )
                 rms_mix_rate = gr.Slider(
@@ -371,7 +383,7 @@ def inference_tab():
                     info=i18n(
                         "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
                     ),
-                    value=1,
+                    value=read_config_value("rms_mix_rate", "1"),
                     interactive=True,
                 )
                 protect = gr.Slider(
@@ -381,7 +393,7 @@ def inference_tab():
                     info=i18n(
                         "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
                     ),
-                    value=0.5,
+                    value=read_config_value("protect", "0.5"),
                     interactive=True,
                 )
                 hop_length = gr.Slider(
@@ -393,7 +405,7 @@ def inference_tab():
                         "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
                     ),
                     visible=False,
-                    value=128,
+                    value=read_config_value("hop_length", "128"),
                     interactive=True,
                 )
                 f0method = gr.Radio(
@@ -411,14 +423,14 @@ def inference_tab():
                         "fcpe",
                         "hybrid[rmvpe+fcpe]",
                     ],
-                    value="rmvpe",
+                    value=read_config_value("f0_method", "rmvpe"),
                     interactive=True,
                 )
                 embedder_model = gr.Radio(
                     label=i18n("Embedder Model"),
                     info=i18n("Model used for learning speaker embedding."),
                     choices=["hubert", "contentvec", "custom"],
-                    value="hubert",
+                    value=read_config_value("embedder_model", "hubert"),
                     interactive=True,
                 )
                 with gr.Column(visible=False) as embedder_custom:
@@ -456,7 +468,7 @@ def inference_tab():
                     label=i18n("Input Folder"),
                     info=i18n("Select the folder containing the audios to convert."),
                     placeholder=i18n("Enter input path"),
-                    value=os.path.join(now_dir, "assets", "audios"),
+                    value=read_config_value("input_folder_batch", os.path.join(now_dir, "assets", "audios")),
                     interactive=True,
                 )
                 output_folder_batch = gr.Textbox(
@@ -465,7 +477,7 @@ def inference_tab():
                         "Select the folder where the output audios will be saved."
                     ),
                     placeholder=i18n("Enter output path"),
-                    value=os.path.join(now_dir, "assets", "audios"),
+                    value=read_config_value("output_folder_batch", os.path.join(now_dir, "assets", "audios")),
                     interactive=True,
                 )
         with gr.Accordion(i18n("Advanced Settings"), open=False):
@@ -477,7 +489,7 @@ def inference_tab():
                     label=i18n("Export Format"),
                     info=i18n("Select the format to export the audio."),
                     choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
-                    value="WAV",
+                    value=read_config_value("export_format_batch", "WAV"),
                     interactive=True,
                 )
                 split_audio_batch = gr.Checkbox(
@@ -486,7 +498,7 @@ def inference_tab():
                         "Split the audio into chunks for inference to obtain better results in some cases."
                     ),
                     visible=True,
-                    value=False,
+                    value=read_config_value("split_audio_batch", False),
                     interactive=True,
                 )
                 autotune_batch = gr.Checkbox(
@@ -495,7 +507,7 @@ def inference_tab():
                         "Apply a soft autotune to your inferences, recommended for singing conversions."
                     ),
                     visible=True,
-                    value=False,
+                    value=read_config_value("autotune_batch", False),
                     interactive=True,
                 )
                 clean_audio_batch = gr.Checkbox(
@@ -504,7 +516,7 @@ def inference_tab():
                         "Clean your audio output using noise detection algorithms, recommended for speaking audios."
                     ),
                     visible=True,
-                    value=False,
+                    value=read_config_value("clean_audio_batch", False),
                     interactive=True,
                 )
                 clean_strength_batch = gr.Slider(
@@ -515,7 +527,7 @@ def inference_tab():
                         "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
                     ),
                     visible=False,
-                    value=0.5,
+                    value=read_config_value("clean_strength_batch", "0.5"),
                     interactive=True,
                 )
                 upscale_audio_batch = gr.Checkbox(
@@ -524,7 +536,7 @@ def inference_tab():
                         "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)"
                     ),
                     visible=True,
-                    value=False,
+                    value=read_config_value("upscale_audio_batch", False),
                     interactive=True,
                 )
                 pitch_batch = gr.Slider(
@@ -535,7 +547,7 @@ def inference_tab():
                     info=i18n(
                         "Set the pitch of the audio, the higher the value, the higher the pitch."
                     ),
-                    value=0,
+                    value=read_config_value("pitch_batch", "0"),
                     interactive=True,
                 )
                 filter_radius_batch = gr.Slider(
@@ -545,7 +557,7 @@ def inference_tab():
                     info=i18n(
                         "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
                     ),
-                    value=3,
+                    value=read_config_value("filter_radius_batch", "3"),
                     step=1,
                     interactive=True,
                 )
@@ -556,7 +568,7 @@ def inference_tab():
                     info=i18n(
                         "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
                     ),
-                    value=0.75,
+                    value=read_config_value("index_rate_batch", "0.75"),
                     interactive=True,
                 )
                 rms_mix_rate_batch = gr.Slider(
@@ -566,7 +578,7 @@ def inference_tab():
                     info=i18n(
                         "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
                     ),
-                    value=1,
+                    value=read_config_value("rms_mix_rate_batch", "1"),
                     interactive=True,
                 )
                 protect_batch = gr.Slider(
@@ -576,7 +588,7 @@ def inference_tab():
                     info=i18n(
                         "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
                     ),
-                    value=0.5,
+                    value=read_config_value("protect_batch", "0.5"),
                     interactive=True,
                 )
                 hop_length_batch = gr.Slider(
@@ -588,7 +600,7 @@ def inference_tab():
                         "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
                     ),
                     visible=False,
-                    value=128,
+                    value=read_config_value("hop_length_batch", "128"),
                     interactive=True,
                 )
                 f0method_batch = gr.Radio(
@@ -606,25 +618,25 @@ def inference_tab():
                         "fcpe",
                         "hybrid[rmvpe+fcpe]",
                     ],
-                    value="rmvpe",
+                    value=read_config_value("f0_method_batch", "rmvpe"),
                     interactive=True,
                 )
-                embedder_model_bacth = gr.Radio(
+                embedder_model_batch = gr.Radio(
                     label=i18n("Embedder Model"),
                     info=i18n("Model used for learning speaker embedding."),
                     choices=["hubert", "contentvec", "custom"],
-                    value="hubert",
+                    value=read_config_value("embedder_model_batch", "hubert"),
                     interactive=True,
                 )
-                with gr.Column(visible=False) as embedder_custom_bacth:
+                with gr.Column(visible=False) as embedder_custom_batch:
                     with gr.Accordion(i18n("Custom Embedder"), open=True):
-                        embedder_upload_custom_bacth = gr.File(
+                        embedder_upload_custom_batch = gr.File(
                             label=i18n("Upload Custom Embedder"),
                             type="filepath",
                             interactive=True,
                         )
-                        embedder_custom_refresh_bacth = gr.Button(i18n("Refresh"))
-                        embedder_model_custom_bacth = gr.Dropdown(
+                        embedder_custom_refresh_batch = gr.Button(i18n("Refresh"))
+                        embedder_model_custom_batch = gr.Dropdown(
                             label=i18n("Custom Embedder"),
                             info=i18n(
                                 "Select the custom embedder to use for the conversion."
@@ -683,7 +695,7 @@ def inference_tab():
             index_file,
             audio,
             embedder_model_custom,
-            embedder_model_custom_bacth,
+            embedder_model_custom_batch,
         ],
     )
     audio.change(
@@ -729,20 +741,20 @@ def inference_tab():
             index_file,
             audio,
             embedder_model_custom,
-            embedder_model_custom_bacth,
+            embedder_model_custom_batch,
         ],
     )
-    embedder_model_bacth.change(
+    embedder_model_batch.change(
         fn=toggle_visible_embedder_custom,
-        inputs=[embedder_model_bacth],
-        outputs=[embedder_custom_bacth],
+        inputs=[embedder_model_batch],
+        outputs=[embedder_custom_batch],
     )
-    embedder_upload_custom_bacth.upload(
+    embedder_upload_custom_batch.upload(
         fn=save_drop_custom_embedder,
-        inputs=[embedder_upload_custom_bacth],
-        outputs=[embedder_upload_custom_bacth],
+        inputs=[embedder_upload_custom_batch],
+        outputs=[embedder_upload_custom_batch],
     )
-    embedder_custom_refresh_bacth.click(
+    embedder_custom_refresh_batch.click(
         fn=change_choices,
         inputs=[],
         outputs=[
@@ -750,7 +762,7 @@ def inference_tab():
             index_file,
             audio,
             embedder_model_custom,
-            embedder_model_custom_bacth,
+            embedder_model_custom_batch,
         ],
     )
     convert_button1.click(
@@ -797,8 +809,8 @@ def inference_tab():
             clean_audio_batch,
             clean_strength_batch,
             export_format_batch,
-            embedder_model_bacth,
-            embedder_model_custom_bacth,
+            embedder_model_batch,
+            embedder_model_custom_batch,
             upscale_audio_batch,
         ],
         outputs=[vc_output3],
