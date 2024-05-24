@@ -42,6 +42,7 @@
   - [Linux](#linux-1)
   - [Makefile](#makefile-1)
 - [**Repository Enhancements**](#repository-enhancements)
+- [**Commercial Usage**](#commercial-usage)
 - [**References**](#references)
   - [Contributors](#contributors)
 
@@ -117,11 +118,9 @@ This repository has undergone significant enhancements to improve its functional
 
 These enhancements contribute to a more robust and scalable codebase, making the repository more accessible for contributors and users alike.
 
-## Contributions
-- **Backend Contributions:** If you want to contribute to the backend, make your pull requests [here](https://github.com/blaise-tk/RVC_CLI).
-- **Frontend Contributions:** For interface or script-related contributions, feel free to contribute to this repository.
-
-We appreciate all contributions ❤️
+## Commercial Usage
+We follow the [MIT license](./LICENSE) for this project. If you intend to use Applio for commercial purposes, please contact us first to ensure the ethical use of the tool. You can reach us at support@applio.org. Additionally, we would appreciate it if you consider making a donation to support the ongoing development and maintenance of Applio. 
+Thank you for your cooperation and support!
 
 ## References
 - [gradio-screen-recorder](https://huggingface.co/spaces/gstaff/gradio-screen-recorder) by gstaff
