@@ -609,22 +609,22 @@ def inference_tab():
                     value="rmvpe",
                     interactive=True,
                 )
-                embedder_model_bacth = gr.Radio(
+                embedder_model_batch = gr.Radio(
                     label=i18n("Embedder Model"),
                     info=i18n("Model used for learning speaker embedding."),
                     choices=["hubert", "contentvec", "custom"],
                     value="hubert",
                     interactive=True,
                 )
-                with gr.Column(visible=False) as embedder_custom_bacth:
+                with gr.Column(visible=False) as embedder_custom_batch:
                     with gr.Accordion(i18n("Custom Embedder"), open=True):
-                        embedder_upload_custom_bacth = gr.File(
+                        embedder_upload_custom_batch = gr.File(
                             label=i18n("Upload Custom Embedder"),
                             type="filepath",
                             interactive=True,
                         )
-                        embedder_custom_refresh_bacth = gr.Button(i18n("Refresh"))
-                        embedder_model_custom_bacth = gr.Dropdown(
+                        embedder_custom_refresh_batch = gr.Button(i18n("Refresh"))
+                        embedder_model_custom_batch = gr.Dropdown(
                             label=i18n("Custom Embedder"),
                             info=i18n(
                                 "Select the custom embedder to use for the conversion."
@@ -683,7 +683,7 @@ def inference_tab():
             index_file,
             audio,
             embedder_model_custom,
-            embedder_model_custom_bacth,
+            embedder_model_custom_batch,
         ],
     )
     audio.change(
@@ -729,20 +729,20 @@ def inference_tab():
             index_file,
             audio,
             embedder_model_custom,
-            embedder_model_custom_bacth,
+            embedder_model_custom_batch,
         ],
     )
-    embedder_model_bacth.change(
+    embedder_model_batch.change(
         fn=toggle_visible_embedder_custom,
-        inputs=[embedder_model_bacth],
-        outputs=[embedder_custom_bacth],
+        inputs=[embedder_model_batch],
+        outputs=[embedder_custom_batch],
     )
-    embedder_upload_custom_bacth.upload(
+    embedder_upload_custom_batch.upload(
         fn=save_drop_custom_embedder,
-        inputs=[embedder_upload_custom_bacth],
-        outputs=[embedder_upload_custom_bacth],
+        inputs=[embedder_upload_custom_batch],
+        outputs=[embedder_upload_custom_batch],
     )
-    embedder_custom_refresh_bacth.click(
+    embedder_custom_refresh_batch.click(
         fn=change_choices,
         inputs=[],
         outputs=[
@@ -750,7 +750,7 @@ def inference_tab():
             index_file,
             audio,
             embedder_model_custom,
-            embedder_model_custom_bacth,
+            embedder_model_custom_batch,
         ],
     )
     convert_button1.click(
@@ -797,8 +797,8 @@ def inference_tab():
             clean_audio_batch,
             clean_strength_batch,
             export_format_batch,
-            embedder_model_bacth,
-            embedder_model_custom_bacth,
+            embedder_model_batch,
+            embedder_model_custom_batch,
             upscale_audio_batch,
         ],
         outputs=[vc_output3],
