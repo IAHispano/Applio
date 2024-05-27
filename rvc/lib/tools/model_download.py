@@ -294,8 +294,11 @@ def model_download_pipeline(url):
                     "logs",
                     os.path.normpath(model_name),
                 )
-
                 success = extract_and_show_progress(zipfile_path, extract_folder_path)
+
+                macosx_path = os.path.join(extract_folder_path, "__MACOSX")
+                if os.path.exists(macosx_path):
+                    shutil.rmtree(macosx_path)
 
                 subfolders = [
                     f
