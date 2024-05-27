@@ -17,7 +17,11 @@ experiment_directory = sys.argv[1]
 input_root = sys.argv[2]
 sampling_rate = int(sys.argv[3])
 percentage = float(sys.argv[4])
-num_processes = cpu_count()
+
+try:
+    num_processes = int(sys.argv[5])
+except ValueError:
+    num_processes = cpu_count()
 
 import multiprocessing
 

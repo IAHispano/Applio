@@ -17,12 +17,16 @@ from rvc.lib.utils import load_audio
 
 exp_dir = sys.argv[1]
 f0_method = sys.argv[2]
-num_processes = cpu_count()
 
 try:
     hop_length = int(sys.argv[3])
 except ValueError:
     hop_length = 128
+
+try:
+    num_processes = int(sys.argv[4])
+except ValueError:
+    num_processes = cpu_count()
 
 DoFormant = False
 Quefrency = 1.0

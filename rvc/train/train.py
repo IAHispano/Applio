@@ -667,17 +667,6 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
 
         best_epoch = lowest_value["epoch"] + hps.overtraining_threshold - epoch
 
-        if rank == 0:
-            if epoch > 1:
-                print(
-                    f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {lowest_value['epoch'] + hps.overtraining_threshold - epoch}"
-                )
-            else:
-                print(
-                    f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()}"
-                )
-            last_loss_gen_all = loss_gen_all
-
         if best_epoch == hps.overtraining_threshold:
             old_model_files = glob.glob(
                 os.path.join(
@@ -707,6 +696,21 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 hps.version,
                 hps,
             )
+
+    if rank == 0:
+        if epoch > 1 and hps.overtraining_detector == 1:
+            print(
+                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {lowest_value['epoch'] + hps.overtraining_threshold - epoch}"
+            )
+        elif epoch > 1 and hps.overtraining_detector == 0:
+            print(
+                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
+            )
+        else:
+            print(
+                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()}"
+            )
+        last_loss_gen_all = loss_gen_all
 
     if epoch >= hps.custom_total_epoch and rank == 0:
         print(
