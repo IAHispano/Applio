@@ -47,12 +47,12 @@ def load_embedding(embedder_model, custom_embedder=None):
         model_path = custom_embedder
         if not custom_embedder and os.path.exists(custom_embedder):
             print("Custom embedder not found. Using the default embedder.")
-            model_path = embedding_list["hubert"]
+            model_path = embedding_list["contentvec"]
     else:
         model_path = embedding_list[embedder_model]
         if not os.path.exists(model_path):
             print("Custom embedder not found. Using the default embedder.")
-            model_path = embedding_list["hubert"]
+            model_path = embedding_list["contentvec"]
 
     models = checkpoint_utils.load_model_ensemble_and_task(
         [model_path],
