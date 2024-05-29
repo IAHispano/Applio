@@ -295,31 +295,26 @@ def run(
             if rank == 0:
                 print(f"Loaded pretrained_G {hps.pretrainG}")
             if hasattr(net_g, "module"):
-                print(
-                    net_g.module.load_state_dict(
-                        torch.load(hps.pretrainG, map_location="cpu")["model"]
-                    )
+                net_g.module.load_state_dict(
+                    torch.load(hps.pretrainG, map_location="cpu")["model"]
                 )
+
             else:
-                print(
-                    net_g.load_state_dict(
-                        torch.load(hps.pretrainG, map_location="cpu")["model"]
-                    )
+                net_g.load_state_dict(
+                    torch.load(hps.pretrainG, map_location="cpu")["model"]
                 )
+
         if hps.pretrainD != "":
             if rank == 0:
                 print(f"Loaded pretrained_D {hps.pretrainD}")
             if hasattr(net_d, "module"):
-                print(
-                    net_d.module.load_state_dict(
-                        torch.load(hps.pretrainD, map_location="cpu")["model"]
-                    )
+                net_d.module.load_state_dict(
+                    torch.load(hps.pretrainD, map_location="cpu")["model"]
                 )
+
             else:
-                print(
-                    net_d.load_state_dict(
-                        torch.load(hps.pretrainD, map_location="cpu")["model"]
-                    )
+                net_d.load_state_dict(
+                    torch.load(hps.pretrainD, map_location="cpu")["model"]
                 )
 
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(

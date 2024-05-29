@@ -59,7 +59,7 @@ if len(todo) == 0:
         "An error occurred in the feature extraction, make sure you have provided the audios correctly."
     )
 else:
-    print(f"{len(todo)}")
+    # print(f"{len(todo)}")
     with tqdm.tqdm(total=len(todo)) as pbar:
         for idx, file in enumerate(todo):
             try:
@@ -89,7 +89,7 @@ else:
                     if np.isnan(feats).sum() == 0:
                         np.save(out_file_path, feats, allow_pickle=False)
                     else:
-                        print(f"{file} - contains nan")
+                        print(f"{file} is invalid")
                     pbar.set_description(f"Processing {file} {feats.shape}")
             except Exception as error:
                 print(error)
