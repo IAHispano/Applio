@@ -66,6 +66,7 @@
   "Pitch Guidance": "Guía de tono",
   "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential.": "Al emplear la guía de tono, es factible reflejar la entonación de la voz original, incluido su tono. Esta característica es particularmente valiosa para cantar y otros escenarios en los que es esencial preservar la melodía original o el patrón de tono.",
   "Utilize pretrained models when training your own. This approach reduces training duration and enhances overall quality.": "Utilice modelos preentrenados al entrenar los suyos propios. Este enfoque reduce la duración del entrenamiento y mejora la calidad general.",
+  "Extract": "Extracción",
   "Extract Features": "Extraer características",
   "Overtraining Detector": "Detector de Sobreentrenamiento",
   "Detect overtraining to prevent the model from learning the training data too well and losing the ability to generalize to new data.": "Detectar el sobreentrenamiento para evitar que el modelo aprenda demasiado bien los datos de entrenamiento y pierda la capacidad de generalizar a nuevos datos.",
