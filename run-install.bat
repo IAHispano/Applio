@@ -21,7 +21,7 @@ if not exist "%cd%\env.zip" (
 
 if not exist "%cd%\env.zip" (
     echo Download failed, trying with the powershell method
-    powershell -Command "& {Invoke-WebRequest -Uri '%URL_EXTRA%/env.zip' -OutFile 'mingit.zip'}"
+    powershell -Command "& {Invoke-WebRequest -Uri '%URL_EXTRA%/env.zip' -OutFile 'env.zip'}"
 )
 
 if not exist "%cd%\env" (
