@@ -20,6 +20,7 @@ from configs.config import Config
 
 
 from multiprocessing import Manager as M
+
 mm = M()
 
 
