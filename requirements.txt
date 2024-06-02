@@ -38,3 +38,8 @@ pypresence
 beautifulsoup4
 flask
 local-attention
+
+# GUI
+FreeSimpleGUI
+sounddevice
+torchfcpe
