@@ -214,9 +214,9 @@ class FeatureInput:
 if __name__ == "__main__":
     feature_input = FeatureInput()
     paths = []
-    input_root = f"{exp_dir}/1_16k_wavs"
-    output_root1 = f"{exp_dir}/2a_f0"
-    output_root2 = f"{exp_dir}/2b-f0nsf"
+    input_root = f"{exp_dir}/sliced_audios_16k"
+    output_root1 = f"{exp_dir}/f0"
+    output_root2 = f"{exp_dir}/f0_voiced"
 
     os.makedirs(output_root1, exist_ok=True)
     os.makedirs(output_root2, exist_ok=True)

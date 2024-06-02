@@ -5,7 +5,6 @@
 *.pyc
 *.pth
 *.index
-*.wav
 *.mp3
 *.flac
 *.ogg
@@ -13,7 +12,6 @@
 *.bin
 
 rvc/train/train_pid.txt
-logs
 env
 venv
 .venv

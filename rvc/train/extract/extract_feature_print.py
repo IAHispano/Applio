@@ -25,8 +25,8 @@ except:
     embedder_model_custom = None
 
 
-wav_path = f"{exp_dir}/1_16k_wavs"
-out_path = f"{exp_dir}/3_feature256" if version == "v1" else f"{exp_dir}/3_feature768"
+wav_path = f"{exp_dir}/sliced_audios_16k"
+out_path = f"{exp_dir}/v1_extracted" if version == "v1" else f"{exp_dir}/v2_extracted"
 os.makedirs(out_path, exist_ok=True)
 
 
