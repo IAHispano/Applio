@@ -1,4 +1,4 @@
-name: Test all processes (Preprocess, Extract & Train)
+name: Test preprocess and extract
 on: [push, pull_request]
 jobs:
   build:
