@@ -26,7 +26,7 @@ jobs:
           pip install -r requirements.txt
       - name: Test Preprocess
         run: |
-          python core.py preprocess --model_name "Evaluate" --model_path "logs/mute/0_gt_wavs" --sample_rate "48000"
+          python core.py preprocess --model_name "Evaluate" --dataset_path "logs/mute/0_gt_wavs" --sample_rate "48000"
       - name: Test Extract
         run: |
           python core.py extract --model_name "Evaluate" --sample_rate "48000"
