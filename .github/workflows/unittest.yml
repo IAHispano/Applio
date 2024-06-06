@@ -1,5 +1,5 @@
-name: Unit Test
-on: [ push, pull_request ]
+name: Test all processes (Preprocess, Extract & Train)
+on: [push, pull_request]
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -10,27 +10,23 @@ jobs:
       fail-fast: true
 
     steps:
-    - uses: actions/checkout@master
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt -y install ffmpeg
-        sudo apt -y install -qq aria2
-        aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/hubert_base.pt -d ./ -o rvc/embedders/hubert_base.pt
-        python -m pip install --upgrade pip
-        python -m pip install --upgrade setuptools
-        python -m pip install --upgrade wheel
-        pip install torch torchvision torchaudio
-        pip install -r requirements.txt
-    - name: Test step 1 & 2
-      run: |
-        mkdir -p logs/mi-test
-        touch logs/mi-test/preprocess.log
-        python rvc/train/preprocess/preprocess.py logs/mi-test logs/mute/0_gt_wavs 48000 3.7 1
-        touch logs/mi-test/extract_f0_feature.log
-        python rvc/train/extract/extract_f0_print.py logs/mi-test pm 64 1
-        python rvc/train/extract/extract_feature_print.py cpu 1 0 0 logs/mi-test v1 True contentvec
+      - uses: actions/checkout@master
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt -y install ffmpeg
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade setuptools
+          python -m pip install --upgrade wheel
+          pip install torch torchvision torchaudio
+          pip install -r requirements.txt
+      - name: Test Preprocess
+        run: |
+          python core.py preprocess --model_name "Evaluate" --model_path "logs/mute/0_gt_wavs" --sample_rate "48000"
+      - name: Test Extract
+        run: |
+          python core.py extract --model_name "Evaluate" --sample_rate "48000"
