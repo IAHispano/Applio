@@ -61,7 +61,7 @@ executables_list = ["ffmpeg.exe", "ffprobe.exe"]
 folder_mapping_list = {
     "pretrained_v1/": "rvc/pretraineds/pretrained_v1/",
     "pretrained_v2/": "rvc/pretraineds/pretrained_v2/",
-    "embedders/": "rvc/embedders/",
+    "embedders/": "rvc/embedders/embedders_custom/",
 }
 
 
