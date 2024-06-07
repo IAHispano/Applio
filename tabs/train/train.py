@@ -417,7 +417,12 @@ def train_tab():
                 embedder_model = gr.Radio(
                     label=i18n("Embedder Model"),
                     info=i18n("Model used for learning speaker embedding."),
-                    choices=["contentvec", "custom"],
+                    choices=[
+                        "contentvec",
+                        "japanese-hubert-base",
+                        "chinese-hubert-large",
+                        "custom",
+                    ],
                     value="contentvec",
                     interactive=True,
                 )
