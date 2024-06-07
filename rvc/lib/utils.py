@@ -40,7 +40,7 @@ def format_title(title):
 def load_embedding(embedder_model, custom_embedder=None):
     embedder_root = os.path.join(now_dir, "rvc", "embedders")
     embedding_list = {
-        "contentvec": os.path.join(embedder_root, "hubert_base.pt"),
+        "contentvec": os.path.join(embedder_root, "contentvec_base.pt"),
     }
 
     if embedder_model == "custom":
