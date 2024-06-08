@@ -27,14 +27,14 @@ def generate_config(rvc_version, sampling_rate, model_path):
             f.write("\n")
 
 
-def generate_filelist(f0_method, model_path, rvc_version, sampling_rate):
+def generate_filelist(pitch_guidance, model_path, rvc_version, sampling_rate):
     gt_wavs_dir = f"{model_path}/sliced_audios"
     feature_dir = (
         f"{model_path}/v1_extracted"
         if rvc_version == "v1"
         else f"{model_path}/v2_extracted"
     )
-    if f0_method:
+    if pitch_guidance == 1:
         f0_dir = f"{model_path}/f0"
         f0nsf_dir = f"{model_path}/f0_voiced"
         names = (
@@ -49,13 +49,13 @@ def generate_filelist(f0_method, model_path, rvc_version, sampling_rate):
         )
     options = []
     for name in names:
-        if f0_method:
+        if pitch_guidance == 1:
             options.append(
                 f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{f0_dir}/{name}.wav.npy|{f0nsf_dir}/{name}.wav.npy|0"
             )
         else:
             options.append(f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|0")
-    if f0_method:
+    if pitch_guidance == 1:
         for _ in range(2):
             options.append(
                 f"{current_directory}/logs/mute/sliced_audios/mute{sampling_rate}.wav|{current_directory}/logs/mute/{rvc_version}_extracted/mute.npy|{current_directory}/logs/mute/f0/mute.wav.npy|{current_directory}/logs/mute/f0_voiced/mute.wav.npy|0"

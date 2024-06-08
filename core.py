@@ -253,6 +253,7 @@ def run_extract_script(
     model_name,
     rvc_version,
     f0method,
+    pitch_guidance,
     hop_length,
     cpu_cores,
     sampling_rate,
@@ -301,8 +302,9 @@ def run_extract_script(
     subprocess.run(command_1)
     subprocess.run(command_2)
 
+    f0 = 1 if str(pitch_guidance) == "True" else 0
     generate_config(rvc_version, sampling_rate, model_path)
-    generate_filelist(f0method, model_path, rvc_version, sampling_rate)
+    generate_filelist(f0, model_path, rvc_version, sampling_rate)
     return f"Model {model_name} extracted successfully."
 
 
@@ -948,6 +950,13 @@ def parse_arguments():
         default="rmvpe",
     )
     extract_parser.add_argument(
+        "--pitch_guidance",
+        type=str,
+        help="Pitch guidance",
+        choices=["True", "False"],
+        default="True",
+    )
+    extract_parser.add_argument(
         "--hop_length",
         type=str,
         help="Value for hop_length",
@@ -1356,6 +1365,7 @@ def main():
                 str(args.model_name),
                 str(args.rvc_version),
                 str(args.f0method),
+                str(args.pitch_guidance),
                 str(args.hop_length),
                 str(args.cpu_cores),
                 str(args.sampling_rate),
