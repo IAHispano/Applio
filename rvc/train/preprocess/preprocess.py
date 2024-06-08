@@ -44,8 +44,8 @@ class PreProcess:
         self.max_amplitude = 0.9
         self.alpha = 0.75
         self.exp_dir = exp_dir
-        self.gt_wavs_dir = f"{exp_dir}/0_gt_wavs"
-        self.wavs16k_dir = f"{exp_dir}/1_16k_wavs"
+        self.gt_wavs_dir = f"{exp_dir}/sliced_audios"
+        self.wavs16k_dir = f"{exp_dir}/sliced_audios_16k"
         os.makedirs(self.exp_dir, exist_ok=True)
         os.makedirs(self.gt_wavs_dir, exist_ok=True)
         os.makedirs(self.wavs16k_dir, exist_ok=True)

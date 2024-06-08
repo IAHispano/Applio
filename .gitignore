@@ -1,18 +1,17 @@
 *.exe
 *.pt
 *.onnx
-*pth
 *.pyc
 *.pth
 *.index
-*.wav
 *.mp3
 *.flac
 *.ogg
 *.m4a
 *.bin
+*.wav
+*.txt
 
-rvc/train/train_pid.txt
 logs
 env
 venv

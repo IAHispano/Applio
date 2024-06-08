@@ -24,9 +24,10 @@ jobs:
           python -m pip install --upgrade wheel
           pip install torch torchvision torchaudio
           pip install -r requirements.txt
+          python core.py prerequisites --models "True"
       - name: Test Preprocess
         run: |
-          python core.py preprocess --model_name "Evaluate" --dataset_path "logs/mute/0_gt_wavs" --sampling_rate "48000"
+          python core.py preprocess --model_name "Evaluate" --dataset_path "logs/mute/sliced_audios" --sampling_rate "48000"
       - name: Test Extract
         run: |
           python core.py extract --model_name "Evaluate" --sampling_rate "48000"
