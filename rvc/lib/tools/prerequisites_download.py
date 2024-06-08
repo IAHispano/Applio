@@ -51,7 +51,7 @@ embedders_list = [
     (
         "embedders/",
         [
-            "hubert_base.pt",
+            "contentvec_base.pt",
         ],
     ),
 ]

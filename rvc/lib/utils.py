@@ -4,6 +4,7 @@ import numpy as np
 import re
 import unicodedata
 from fairseq import checkpoint_utils
+import wget
 
 import logging
 
@@ -40,7 +41,14 @@ def format_title(title):
 def load_embedding(embedder_model, custom_embedder=None):
     embedder_root = os.path.join(now_dir, "rvc", "embedders")
     embedding_list = {
-        "contentvec": os.path.join(embedder_root, "hubert_base.pt"),
+        "contentvec": os.path.join(embedder_root, "contentvec_base.pt"),
+        "japanese-hubert-base": os.path.join(embedder_root, "japanese-hubert-base.pt"),
+        "chinese-hubert-large": os.path.join(embedder_root, "chinese-hubert-large.pt"),
+    }
+
+    online_embedders = {
+        "japanese-hubert-base": "https://huggingface.co/rinna/japanese-hubert-base/resolve/main/fairseq/model.pt",
+        "chinese-hubert-large": "https://huggingface.co/TencentGameMate/chinese-hubert-large/resolve/main/chinese-hubert-large-fairseq-ckpt.pt",
     }
 
     if embedder_model == "custom":
@@ -50,8 +58,13 @@ def load_embedding(embedder_model, custom_embedder=None):
             model_path = embedding_list["contentvec"]
     else:
         model_path = embedding_list[embedder_model]
-        if not os.path.exists(model_path):
-            print("Custom embedder not found. Using the default embedder.")
+        if embedder_model in online_embedders:
+            model_path = embedding_list[embedder_model]
+            url = online_embedders[embedder_model]
+            print(f"\nDownloading {url} to {model_path}...")
+            wget.download(url, out=model_path)
+        else:
+            print("Embedder not found. Using the default embedder.")
             model_path = embedding_list["contentvec"]
 
     models = checkpoint_utils.load_model_ensemble_and_task(
