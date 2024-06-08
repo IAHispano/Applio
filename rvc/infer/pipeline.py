@@ -14,7 +14,7 @@ import re
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.lib.FCPEF0Predictor import FCPEF0Predictor
+from rvc.lib.predictor.FCPE import FCPEF0Predictor
 
 bh, ah = signal.butter(N=5, Wn=48, btype="high", fs=16000)
 
@@ -212,7 +212,7 @@ class VC(object):
                 )
             elif method == "rmvpe":
                 if hasattr(self, "model_rmvpe") == False:
-                    from rvc.lib.rmvpe import RMVPE
+                    from rvc.lib.predictor.RMVPE import RMVPE
 
                     self.model_rmvpe = RMVPE(
                         "rmvpe.pt", is_half=self.is_half, device=self.device
@@ -302,7 +302,7 @@ class VC(object):
             )
         elif f0_method == "rmvpe":
             if hasattr(self, "model_rmvpe") == False:
-                from rvc.lib.rmvpe import RMVPE
+                from rvc.lib.predictor.RMVPE import RMVPE
 
                 self.model_rmvpe = RMVPE(
                     "rmvpe.pt", is_half=self.is_half, device=self.device
