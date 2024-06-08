@@ -32,7 +32,7 @@
   "The sampling rate of the audio files.": "La frecuencia de muestreo de los archivos de audio.",
   "RVC Version": "Versión RVC",
   "The RVC version of the model.": "La versión RVC del modelo.",
-  "Preprocess Dataset": "Conjunto de datos de preprocesamiento",
+  "Preprocess Dataset": "Preprocesar dataset",
   "Embedder Model": "Modelo de incrustación",
   "Model used for learning speaker embedding.": "Modelo utilizado para aprender la incrustación del hablante.",
   "Hop Length": "Longitud del salto",
