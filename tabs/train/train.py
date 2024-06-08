@@ -414,6 +414,14 @@ def train_tab():
                     value="rmvpe",
                     interactive=True,
                 )
+                pitch_guidance_extract = gr.Checkbox(
+                    label=i18n("Pitch Guidance"),
+                    info=i18n(
+                        "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential."
+                    ),
+                    value=True,
+                    interactive=True,
+                )
                 embedder_model = gr.Radio(
                     label=i18n("Embedder Model"),
                     info=i18n("Model used for learning speaker embedding."),
@@ -458,6 +466,7 @@ def train_tab():
                 model_name,
                 rvc_version,
                 f0method,
+                pitch_guidance_extract,
                 hop_length,
                 cpu_cores_extract,
                 sampling_rate,

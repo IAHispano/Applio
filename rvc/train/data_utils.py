@@ -210,15 +210,13 @@ class TextAudioLoader(torch.utils.data.Dataset):
         self.lengths = lengths
 
     def get_sid(self, sid):
-        sid = os.path.basename(os.path.dirname(sid))
-
         try:
-            sid = torch.LongTensor([int("".join(filter(str.isdigit, sid)))])
+            sid = torch.LongTensor([int(sid)])
         except ValueError as error:
             print(f"Error converting speaker ID '{sid}' to integer. Exception: {error}")
             sid = torch.LongTensor([0])
-
         return sid
+
 
     def get_audio_text_pair(self, audiopath_and_text):
         file = audiopath_and_text[0]
