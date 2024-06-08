@@ -54,7 +54,6 @@ def load_embedding(embedder_model, custom_embedder=None):
     if embedder_model == "custom":
         model_path = custom_embedder
         if not custom_embedder and os.path.exists(custom_embedder):
-            print("Custom embedder not found. Using the default embedder.")
             model_path = embedding_list["contentvec"]
     else:
         model_path = embedding_list[embedder_model]
@@ -64,7 +63,6 @@ def load_embedding(embedder_model, custom_embedder=None):
             print(f"\nDownloading {url} to {model_path}...")
             wget.download(url, out=model_path)
         else:
-            print("Embedder not found. Using the default embedder.")
             model_path = embedding_list["contentvec"]
 
     models = checkpoint_utils.load_model_ensemble_and_task(
