@@ -217,7 +217,6 @@ class TextAudioLoader(torch.utils.data.Dataset):
             sid = torch.LongTensor([0])
         return sid
 
-
     def get_audio_text_pair(self, audiopath_and_text):
         file = audiopath_and_text[0]
         phone = audiopath_and_text[1]
