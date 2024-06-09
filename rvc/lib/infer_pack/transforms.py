@@ -1,8 +1,8 @@
-import torch
-from torch.nn import functional as F
+from typing import Optional
 
 import numpy as np
-
+import torch
+from torch.nn import functional as F
 
 DEFAULT_MIN_BIN_WIDTH = 1e-3
 DEFAULT_MIN_BIN_HEIGHT = 1e-3
@@ -10,13 +10,13 @@ DEFAULT_MIN_DERIVATIVE = 1e-3
 
 
 def piecewise_rational_quadratic_transform(
-    inputs,
-    unnormalized_widths,
-    unnormalized_heights,
-    unnormalized_derivatives,
-    inverse=False,
-    tails=None,
-    tail_bound=1.0,
+    inputs: torch.Tensor,
+    unnormalized_widths: torch.Tensor,
+    unnormalized_heights: torch.Tensor,
+    unnormalized_derivatives: torch.Tensor,
+    inverse: bool = False,
+    tails: Optional[str] = None,
+    tail_bound: float = 1.0,
     min_bin_width=DEFAULT_MIN_BIN_WIDTH,
     min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
     min_derivative=DEFAULT_MIN_DERIVATIVE,
@@ -48,13 +48,13 @@ def searchsorted(bin_locations, inputs, eps=1e-6):
 
 
 def unconstrained_rational_quadratic_spline(
-    inputs,
-    unnormalized_widths,
-    unnormalized_heights,
-    unnormalized_derivatives,
-    inverse=False,
-    tails="linear",
-    tail_bound=1.0,
+    inputs: torch.Tensor,
+    unnormalized_widths: torch.Tensor,
+    unnormalized_heights: torch.Tensor,
+    unnormalized_derivatives: torch.Tensor,
+    inverse: bool = False,
+    tails: str = "linear",
+    tail_bound: float = 1.0,
     min_bin_width=DEFAULT_MIN_BIN_WIDTH,
     min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
     min_derivative=DEFAULT_MIN_DERIVATIVE,
@@ -98,11 +98,11 @@ def unconstrained_rational_quadratic_spline(
 
 
 def rational_quadratic_spline(
-    inputs,
-    unnormalized_widths,
-    unnormalized_heights,
-    unnormalized_derivatives,
-    inverse=False,
+    inputs: torch.Tensor,
+    unnormalized_widths: torch.Tensor,
+    unnormalized_heights: torch.Tensor,
+    unnormalized_derivatives: torch.Tensor,
+    inverse: bool = False,
     left=0.0,
     right=1.0,
     bottom=0.0,

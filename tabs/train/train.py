@@ -12,7 +12,7 @@ from core import (
     run_prerequisites_script,
 )
 from rvc.configs.config import max_vram_gpu, get_gpu_info
-from rvc.lib.utils import format_title
+from rvc.utils import format_title
 from tabs.settings.restart import restart_applio
 
 i18n = I18nAuto()
@@ -40,7 +40,7 @@ pretraineds_v1 = [
 ]
 
 folder_mapping = {
-    "pretrained_v1/": "rvc/pretraineds/pretrained_v1/",
+    "pretrained_v1/": "rvc/models/pretraineds/pretrained_v1/",
 }
 
 sup_audioext = {
@@ -66,7 +66,7 @@ pretraineds_custom_path = os.path.join(
 
 pretraineds_custom_path_relative = os.path.relpath(pretraineds_custom_path, now_dir)
 
-custom_embedder_root = os.path.join(now_dir, "rvc", "embedders", "embedders_custom")
+custom_embedder_root = os.path.join(now_dir, "rvc", "models", "embedders", "embedders_custom")
 custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
 
 os.makedirs(custom_embedder_root, exist_ok=True)

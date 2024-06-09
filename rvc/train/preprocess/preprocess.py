@@ -1,6 +1,7 @@
 from multiprocessing import cpu_count
 import os
 import sys
+import time
 
 from scipy import signal
 from scipy.io import wavfile
@@ -10,7 +11,7 @@ import numpy as np
 now_directory = os.getcwd()
 sys.path.append(now_directory)
 
-from rvc.lib.utils import load_audio
+from rvc.utils import load_audio
 from rvc.train.slicer import Slicer
 
 experiment_directory = sys.argv[1]
@@ -122,10 +123,12 @@ class PreProcess:
 
 
 def preprocess_training_set(input_root, sr, num_processes, exp_dir, per):
+    start_time = time.time()
     pp = PreProcess(sr, exp_dir, per)
-    print("Starting preprocessing...")
+    print(f"Starting preprocess with {num_processes} cores...")
     pp.process_audio_multiprocessing_input_directory(input_root, num_processes)
-    print("Preprocessing completed!")
+    elapsed_time = time.time() - start_time
+    print(f"Preprocess completed in {elapsed_time:.2f} seconds.")
 
 
 if __name__ == "__main__":

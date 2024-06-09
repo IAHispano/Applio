@@ -1,7 +1,10 @@
+import torch
 import torch.nn as nn
-import torch, numpy as np
 import torch.nn.functional as F
+import numpy as np
+
 from librosa.filters import mel
+from typing import List
 
 
 class BiGRU(nn.Module):
@@ -86,12 +89,12 @@ class Encoder(nn.Module):
         self.out_size = in_size
         self.out_channel = out_channels
 
-    def forward(self, x):
-        concat_tensors = []
+    def forward(self, x: torch.Tensor):
+        concat_tensors: List[torch.Tensor] = []
         x = self.bn(x)
         for i in range(self.n_encoders):
-            _, x = self.layers[i](x)
-            concat_tensors.append(_)
+            t, x = self.layers[i](x)
+            concat_tensors.append(t)
         return x, concat_tensors
 
 
@@ -118,7 +121,7 @@ class ResEncoderBlock(nn.Module):
             return x
 
 
-class Intermediate(nn.Module):  #
+class Intermediate(nn.Module):
     def __init__(self, in_channels, out_channels, n_inters, n_blocks, momentum=0.01):
         super(Intermediate, self).__init__()
         self.n_inters = n_inters
@@ -245,6 +248,10 @@ class E2E(nn.Module):
                 nn.Dropout(0.25),
                 nn.Sigmoid(),
             )
+        else:
+            self.fc = nn.Sequential(
+                nn.Linear(3 * nn.N_MELS, nn.N_CLASS), nn.Dropout(0.25), nn.Sigmoid()
+            )
 
     def forward(self, mel):
         mel = mel.transpose(-1, -2).unsqueeze(1)
@@ -314,7 +321,7 @@ class MelSpectrogram(torch.nn.Module):
                 magnitude = F.pad(magnitude, (0, 0, 0, size - resize))
             magnitude = magnitude[:, :size, :] * self.win_length / win_length_new
         mel_output = torch.matmul(self.mel_basis, magnitude)
-        if self.is_half == True:
+        if self.is_half:
             mel_output = mel_output.half()
         log_mel_spec = torch.log(torch.clamp(mel_output, min=self.clamp))
         return log_mel_spec
@@ -327,7 +334,7 @@ class RMVPE:
         ckpt = torch.load(model_path, map_location="cpu")
         model.load_state_dict(ckpt)
         model.eval()
-        if is_half == True:
+        if is_half:
             model = model.half()
         self.model = model
         self.resample_kernel = {}
@@ -340,7 +347,7 @@ class RMVPE:
         ).to(device)
         self.model = self.model.to(device)
         cents_mapping = 20 * np.arange(360) + 1997.3794084376191
-        self.cents_mapping = np.pad(cents_mapping, (4, 4))  # 368
+        self.cents_mapping = np.pad(cents_mapping, (4, 4))
 
     def mel2hidden(self, mel):
         with torch.no_grad():

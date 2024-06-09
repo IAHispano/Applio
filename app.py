@@ -1,7 +1,6 @@
 import gradio as gr
 import sys
 import os
-import logging
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -31,14 +30,17 @@ from assets.discord_presence import RPCManager
 from assets.flask.server import start_flask, load_config_flask
 from core import run_prerequisites_script
 
+# Disable logging
+import logging
+logging.getLogger("uvicorn").setLevel(logging.WARNING)
+
 run_prerequisites_script("False", "True", "True", "True")
 
 i18n = I18nAuto()
 if load_config_presence() == True:
     RPCManager.start_presence()
 installation_checker.check_installation()
-logging.getLogger("uvicorn").disabled = True
-logging.getLogger("fairseq").disabled = True
+
 if load_config_flask() == True:
     print("Starting Flask server")
     start_flask()

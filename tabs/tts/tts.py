@@ -17,7 +17,9 @@ sys.path.append(now_dir)
 
 model_root = os.path.join(now_dir, "logs")
 model_root_relative = os.path.relpath(model_root, now_dir)
-custom_embedder_root = os.path.join(now_dir, "rvc", "embedders", "embedders_custom")
+custom_embedder_root = os.path.join(
+    now_dir, "rvc", "models", "embedders", "embedders_custom"
+)
 
 os.makedirs(custom_embedder_root, exist_ok=True)
 
@@ -168,7 +170,7 @@ def tts_tab():
                 outputs=[index_file],
             )
 
-    json_path = os.path.join("rvc", "lib", "tools", "tts_voices.json")
+    json_path = os.path.join("rvc", "tools", "tts_voices.json")
     with open(json_path, "r") as file:
         tts_voices_data = json.load(file)
 

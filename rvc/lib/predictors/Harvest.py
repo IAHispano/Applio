@@ -1,9 +1,9 @@
-from rvc.lib.predictor.F0Predictor import F0Predictor
+from rvc.lib.predictors.F0Predictor import F0Predictor
 import pyworld
 import numpy as np
 
 
-class DioF0Predictor(F0Predictor):
+class HarvestF0Predictor(F0Predictor):
     def __init__(self, hop_length=512, f0_min=50, f0_max=1100, sampling_rate=44100):
         self.hop_length = hop_length
         self.f0_min = f0_min
@@ -39,7 +39,7 @@ class DioF0Predictor(F0Predictor):
                     for k in range(i, frame_number):
                         ip_data[k] = last_value
             else:
-                ip_data[i] = data[i]  # 这里可能存在一个没有必要的拷贝
+                ip_data[i] = data[i]
                 last_value = data[i]
 
         return ip_data[:, 0], vuv_vector[:, 0]
@@ -58,22 +58,20 @@ class DioF0Predictor(F0Predictor):
     def compute_f0(self, wav, p_len=None):
         if p_len is None:
             p_len = wav.shape[0] // self.hop_length
-        f0, t = pyworld.dio(
+        f0, t = pyworld.harvest(
             wav.astype(np.double),
             fs=self.sampling_rate,
-            f0_floor=self.f0_min,
             f0_ceil=self.f0_max,
+            f0_floor=self.f0_min,
             frame_period=1000 * self.hop_length / self.sampling_rate,
         )
-        f0 = pyworld.stonemask(wav.astype(np.double), f0, t, self.sampling_rate)
-        for index, pitch in enumerate(f0):
-            f0[index] = round(pitch, 1)
+        f0 = pyworld.stonemask(wav.astype(np.double), f0, t, self.fs)
         return self.interpolate_f0(self.resize_f0(f0, p_len))[0]
 
     def compute_f0_uv(self, wav, p_len=None):
         if p_len is None:
             p_len = wav.shape[0] // self.hop_length
-        f0, t = pyworld.dio(
+        f0, t = pyworld.harvest(
             wav.astype(np.double),
             fs=self.sampling_rate,
             f0_floor=self.f0_min,
@@ -81,6 +79,4 @@ class DioF0Predictor(F0Predictor):
             frame_period=1000 * self.hop_length / self.sampling_rate,
         )
         f0 = pyworld.stonemask(wav.astype(np.double), f0, t, self.sampling_rate)
-        for index, pitch in enumerate(f0):
-            f0[index] = round(pitch, 1)
         return self.interpolate_f0(self.resize_f0(f0, p_len))

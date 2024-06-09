@@ -4,7 +4,7 @@ import numpy as np
 import re
 import os
 
-from rvc.lib.utils import format_title
+from rvc.utils import format_title
 
 
 def process_audio(file_path):

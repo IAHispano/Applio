@@ -1,8 +1,7 @@
 import math
-import numpy as np
 import torch
-from torch import nn
 from torch.nn import functional as F
+from typing import List, Optional
 
 
 def init_weights(m, mean=0.0, std=0.01):
@@ -22,23 +21,11 @@ def convert_pad_shape(pad_shape):
 
 
 def kl_divergence(m_p, logs_p, m_q, logs_q):
-    """KL(P||Q)"""
     kl = (logs_q - logs_p) - 0.5
     kl += (
         0.5 * (torch.exp(2.0 * logs_p) + ((m_p - m_q) ** 2)) * torch.exp(-2.0 * logs_q)
     )
     return kl
-
-
-def rand_gumbel(shape):
-    """Sample from the Gumbel distribution, protect from overflows."""
-    uniform_samples = torch.rand(shape) * 0.99998 + 0.00001
-    return -torch.log(-torch.log(uniform_samples))
-
-
-def rand_gumbel_like(x):
-    g = rand_gumbel(x.size()).to(dtype=x.dtype, device=x.device)
-    return g
 
 
 def slice_segments(x, ids_str, segment_size=4):
@@ -85,18 +72,6 @@ def get_timing_signal_1d(length, channels, min_timescale=1.0, max_timescale=1.0e
     return signal
 
 
-def add_timing_signal_1d(x, min_timescale=1.0, max_timescale=1.0e4):
-    b, channels, length = x.size()
-    signal = get_timing_signal_1d(length, channels, min_timescale, max_timescale)
-    return x + signal.to(dtype=x.dtype, device=x.device)
-
-
-def cat_timing_signal_1d(x, min_timescale=1.0, max_timescale=1.0e4, axis=1):
-    b, channels, length = x.size()
-    signal = get_timing_signal_1d(length, channels, min_timescale, max_timescale)
-    return torch.cat([x, signal.to(dtype=x.dtype, device=x.device)], axis)
-
-
 def subsequent_mask(length):
     mask = torch.tril(torch.ones(length, length)).unsqueeze(0).unsqueeze(0)
     return mask
@@ -112,10 +87,8 @@ def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
     return acts
 
 
-def convert_pad_shape(pad_shape):
-    l = pad_shape[::-1]
-    pad_shape = [item for sublist in l for item in sublist]
-    return pad_shape
+def convert_pad_shape(pad_shape: List[List[int]]) -> List[int]:
+    return torch.tensor(pad_shape).flip(0).reshape(-1).int().tolist()
 
 
 def shift_1d(x):
@@ -123,32 +96,14 @@ def shift_1d(x):
     return x
 
 
-def sequence_mask(length, max_length=None):
+def sequence_mask(length: torch.Tensor, max_length: Optional[int] = None):
     if max_length is None:
         max_length = length.max()
     x = torch.arange(max_length, dtype=length.dtype, device=length.device)
     return x.unsqueeze(0) < length.unsqueeze(1)
 
 
-def generate_path(duration, mask):
-    """
-    duration: [b, 1, t_x]
-    mask: [b, 1, t_y, t_x]
-    """
-    device = duration.device
-
-    b, _, t_y, t_x = mask.shape
-    cum_duration = torch.cumsum(duration, -1)
-
-    cum_duration_flat = cum_duration.view(b * t_x)
-    path = sequence_mask(cum_duration_flat, t_y).to(mask.dtype)
-    path = path.view(b, t_x, t_y)
-    path = path - F.pad(path, convert_pad_shape([[0, 0], [1, 0], [0, 0]]))[:, :-1]
-    path = path.unsqueeze(1).transpose(2, 3) * mask
-    return path
-
-
-def clip_grad_value_(parameters, clip_value, norm_type=2):
+def clip_grad_value(parameters, clip_value, norm_type=2):
     if isinstance(parameters, torch.Tensor):
         parameters = [parameters]
     parameters = list(filter(lambda p: p.grad is not None, parameters))

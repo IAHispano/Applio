@@ -8,9 +8,9 @@ from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
 
 
-from . import commons
-from .commons import init_weights, get_padding
-from .transforms import piecewise_rational_quadratic_transform
+from rvc.lib.infer_pack import commons
+from rvc.lib.infer_pack.commons import init_weights, get_padding
+from rvc.lib.infer_pack.transforms import piecewise_rational_quadratic_transform
 
 
 LRELU_SLOPE = 0.1
@@ -85,46 +85,45 @@ class ConvReluNorm(nn.Module):
 
 class DDSConv(nn.Module):
     def __init__(self, channels, kernel_size, n_layers, p_dropout=0.0):
-        super().__init__()
+        super(DDSConv, self).__init__()
         self.channels = channels
         self.kernel_size = kernel_size
         self.n_layers = n_layers
         self.p_dropout = p_dropout
 
-        self.drop = nn.Dropout(p_dropout)
-        self.convs_sep = nn.ModuleList()
-        self.convs_1x1 = nn.ModuleList()
-        self.norms_1 = nn.ModuleList()
-        self.norms_2 = nn.ModuleList()
+        layers = []
         for i in range(n_layers):
             dilation = kernel_size**i
-            padding = (kernel_size * dilation - dilation) // 2
-            self.convs_sep.append(
-                nn.Conv1d(
-                    channels,
-                    channels,
-                    kernel_size,
-                    groups=channels,
-                    dilation=dilation,
-                    padding=padding,
+            padding = (kernel_size - 1) * dilation // 2
+            layers.append(
+                nn.Sequential(
+                    nn.Conv1d(
+                        channels,
+                        channels,
+                        kernel_size,
+                        groups=channels,
+                        dilation=dilation,
+                        padding=padding,
+                    ),
+                    LayerNorm(channels),
+                    nn.GELU(),
+                    nn.Conv1d(channels, channels, 1),
+                    LayerNorm(channels),
+                    nn.GELU(),
+                    nn.Dropout(p_dropout),
                 )
             )
-            self.convs_1x1.append(nn.Conv1d(channels, channels, 1))
-            self.norms_1.append(LayerNorm(channels))
-            self.norms_2.append(LayerNorm(channels))
+
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, x, x_mask, g=None):
         if g is not None:
             x = x + g
-        for i in range(self.n_layers):
-            y = self.convs_sep[i](x * x_mask)
-            y = self.norms_1[i](y)
-            y = F.gelu(y)
-            y = self.convs_1x1[i](y)
-            y = self.norms_2[i](y)
-            y = F.gelu(y)
-            y = self.drop(y)
+
+        for layer in self.layers:
+            y = layer(x * x_mask)
             x = x + y
+
         return x * x_mask
 
 

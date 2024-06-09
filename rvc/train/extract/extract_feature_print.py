@@ -5,10 +5,11 @@ import torch
 import torch.nn.functional as F
 import soundfile as sf
 import numpy as np
+import time
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
-from rvc.lib.utils import load_embedding
+from rvc.utils import load_embedding
 
 device = sys.argv[1]
 n_parts = int(sys.argv[2])
@@ -44,6 +45,10 @@ def read_wave(wav_path, normalize=False):
 
 
 print("Starting feature extraction...")
+
+start_time = time.time()
+
+
 models, saved_cfg, task = load_embedding(embedder_model, embedder_model_custom)
 model = models[0]
 model = model.to(device)
@@ -95,4 +100,5 @@ else:
                 print(error)
             pbar.update(1)
 
-    print("Feature extraction completed successfully!")
+    elapsed_time = time.time() - start_time
+    print(f"Feature extraction completed in {elapsed_time:.2f} seconds.")

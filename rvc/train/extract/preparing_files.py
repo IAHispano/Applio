@@ -1,6 +1,5 @@
 import os
-import json
-import pathlib
+import shutil
 from random import shuffle
 
 from rvc.configs.config import Config
@@ -10,22 +9,10 @@ current_directory = os.getcwd()
 
 
 def generate_config(rvc_version, sampling_rate, model_path):
-    if rvc_version == "v1" or sampling_rate == "40000":
-        config_path = f"v1/{sampling_rate}.json"
-    else:
-        config_path = f"v2/{sampling_rate}.json"
+    config_path = os.path.join("rvc", "configs", rvc_version, f"{sampling_rate}.json")
     config_save_path = os.path.join(model_path, "config.json")
-    if not pathlib.Path(config_save_path).exists():
-        with open(config_save_path, "w", encoding="utf-8") as f:
-            json.dump(
-                config.json_config[config_path],
-                f,
-                ensure_ascii=False,
-                indent=4,
-                sort_keys=True,
-            )
-            f.write("\n")
-
+    if not os.path.exists(config_save_path):
+        shutil.copyfile(config_path, config_save_path)
 
 def generate_filelist(pitch_guidance, model_path, rvc_version, sampling_rate):
     gt_wavs_dir = f"{model_path}/sliced_audios"

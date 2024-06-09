@@ -12,7 +12,7 @@ from core import (
 
 from assets.i18n.i18n import I18nAuto
 
-from rvc.lib.utils import format_title
+from rvc.utils import format_title
 
 i18n = I18nAuto()
 
@@ -21,7 +21,7 @@ sys.path.append(now_dir)
 
 model_root = os.path.join(now_dir, "logs")
 audio_root = os.path.join(now_dir, "assets", "audios")
-custom_embedder_root = os.path.join(now_dir, "rvc", "embedders", "embedders_custom")
+custom_embedder_root = os.path.join(now_dir, "rvc", "models", "embedders", "embedders_custom")
 
 os.makedirs(custom_embedder_root, exist_ok=True)
 

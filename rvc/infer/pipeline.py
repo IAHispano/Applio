@@ -1,4 +1,4 @@
-import numpy as np, parselmouth, torch, pdb, sys, os
+import numpy as np, parselmouth, torch, sys, os
 from time import time as ttime
 import torch.nn.functional as F
 import torchcrepe
@@ -7,14 +7,13 @@ import scipy.signal as signal
 import pyworld, os, faiss, librosa, torchcrepe
 from scipy import signal
 from functools import lru_cache
-import random
 import gc
 import re
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.lib.predictor.FCPE import FCPEF0Predictor
+from rvc.lib.predictors.FCPE import FCPEF0Predictor
 
 bh, ah = signal.butter(N=5, Wn=48, btype="high", fs=16000)
 
@@ -130,7 +129,7 @@ class VC(object):
         f0_max,
         p_len,
         hop_length,
-        model="full",
+        model,
     ):
         x = x.astype(np.float32)
         x /= np.quantile(np.abs(x), 0.999)
@@ -162,32 +161,6 @@ class VC(object):
         f0 = np.nan_to_num(target)
         return f0
 
-    def get_f0_official_crepe_computation(
-        self,
-        x,
-        f0_min,
-        f0_max,
-        model="full",
-    ):
-        batch_size = 512
-        audio = torch.tensor(np.copy(x))[None].float()
-        f0, pd = torchcrepe.predict(
-            audio,
-            self.sr,
-            self.window,
-            f0_min,
-            f0_max,
-            model,
-            batch_size=batch_size,
-            device=self.device,
-            return_periodicity=True,
-        )
-        pd = torchcrepe.filter.median(pd, 3)
-        f0 = torchcrepe.filter.mean(f0, 3)
-        f0[pd < 0.1] = 0
-        f0 = f0[0].cpu().numpy()
-        return f0
-
     def get_f0_hybrid_computation(
         self,
         methods_str,
@@ -208,11 +181,11 @@ class VC(object):
             f0 = None
             if method == "crepe":
                 f0 = self.get_f0_crepe_computation(
-                    x, f0_min, f0_max, p_len, int(hop_length)
+                    x, f0_min, f0_max, p_len, int(hop_length), "full"
                 )
             elif method == "rmvpe":
                 if hasattr(self, "model_rmvpe") == False:
-                    from rvc.lib.predictor.RMVPE import RMVPE
+                    from rvc.lib.predictors.RMVPE import RMVPE
 
                     self.model_rmvpe = RMVPE(
                         "rmvpe.pt", is_half=self.is_half, device=self.device
@@ -294,7 +267,7 @@ class VC(object):
             f0 = signal.medfilt(f0, 3)
         elif f0_method == "crepe":
             f0 = self.get_f0_crepe_computation(
-                x, f0_min, f0_max, p_len, int(hop_length)
+                x, f0_min, f0_max, p_len, int(hop_length), "full"
             )
         elif f0_method == "crepe-tiny":
             f0 = self.get_f0_crepe_computation(
@@ -302,7 +275,7 @@ class VC(object):
             )
         elif f0_method == "rmvpe":
             if hasattr(self, "model_rmvpe") == False:
-                from rvc.lib.predictor.RMVPE import RMVPE
+                from rvc.lib.predictors.RMVPE import RMVPE
 
                 self.model_rmvpe = RMVPE(
                     "rmvpe.pt", is_half=self.is_half, device=self.device

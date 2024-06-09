@@ -293,7 +293,7 @@ def run(
         global_step = 0
         if hps.pretrainG != "":
             if rank == 0:
-                print(f"Loaded pretrained_G {hps.pretrainG}")
+                print(f"{hps.pretrainG} generator pretrained loaded")
             if hasattr(net_g, "module"):
                 net_g.module.load_state_dict(
                     torch.load(hps.pretrainG, map_location="cpu")["model"]
@@ -306,7 +306,7 @@ def run(
 
         if hps.pretrainD != "":
             if rank == 0:
-                print(f"Loaded pretrained_D {hps.pretrainD}")
+                print(f"{hps.pretrainD} discriminator pretrained loaded")
             if hasattr(net_d, "module"):
                 net_d.module.load_state_dict(
                     torch.load(hps.pretrainD, map_location="cpu")["model"]
@@ -529,7 +529,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
         optim_d.zero_grad()
         scaler.scale(loss_disc).backward()
         scaler.unscale_(optim_d)
-        grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
+        grad_norm_d = commons.clip_grad_value(net_d.parameters(), None)
         scaler.step(optim_d)
 
         with autocast(enabled=hps.train.fp16_run):
@@ -554,7 +554,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
         optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()
         scaler.unscale_(optim_g)
-        grad_norm_g = commons.clip_grad_value_(net_g.parameters(), None)
+        grad_norm_g = commons.clip_grad_value(net_g.parameters(), None)
         scaler.step(optim_g)
         scaler.update()
 

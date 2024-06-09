@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import numpy as np
 import pyworld
 import torchcrepe
@@ -12,7 +13,7 @@ current_directory = os.getcwd()
 sys.path.append(current_directory)
 
 
-from rvc.lib.utils import load_audio
+from rvc.utils import load_audio
 
 
 exp_dir = sys.argv[1]
@@ -135,7 +136,7 @@ class FeatureInput:
 
     def get_rmvpe(self, x):
         if not hasattr(self, "model_rmvpe"):
-            from rvc.lib.predictor.RMVPE import RMVPE
+            from rvc.lib.predictors.RMVPE import RMVPE
 
             self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cpu")
         return self.model_rmvpe.infer_from_audio(x, thred=0.03)
@@ -183,8 +184,7 @@ class FeatureInput:
             print("There are no paths to process.")
             return
         with tqdm.tqdm(total=len(paths), leave=True, position=thread_n) as pbar:
-            description = f"Thread {thread_n} | Hop-Length {hop_length}"
-            pbar.set_description(description)
+            pbar.set_description(f"Core {thread_n}")
 
             for idx, (inp_path, opt_path1, opt_path2) in enumerate(paths):
                 try:
@@ -229,7 +229,10 @@ if __name__ == "__main__":
         paths.append([input_path, output_path1, output_path2])
 
     processes = []
-    print("Using f0 method: " + f0_method)
+    print(f"Starting extraction with {num_processes} cores and {f0_method}...")
+
+    start_time = time.time()
+
     for i in range(num_processes):
         p = Process(
             target=feature_input.process_paths,
@@ -239,3 +242,5 @@ if __name__ == "__main__":
         p.start()
     for i in range(num_processes):
         processes[i].join()
+    elapsed_time = time.time() - start_time
+    print(f"F0 extraction completed in {elapsed_time:.2f} seconds.")
