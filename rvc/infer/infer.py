@@ -289,7 +289,7 @@ class VoiceConverter:
 
         try:
             start_time = time.time()
-            print(f"Converting audio: '{audio_input_path}'...")
+            print(f"Converting audio '{audio_input_path}'...")
             if upscale_audio == "True":
                 upscale(audio_input_path, audio_input_path)
                 
@@ -330,7 +330,7 @@ class VoiceConverter:
 
             elapsed_time = time.time() - start_time
             print(
-                f"Conversion completed. Output file: '{audio_output_path}' in {elapsed_time:.2f} seconds."
+                f"Conversion completed at '{audio_output_path}' in {elapsed_time:.2f} seconds."
             )
 
         except Exception as error:
