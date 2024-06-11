@@ -304,11 +304,9 @@ class Pipeline:
                     x, f0_min, f0_max, p_len, int(hop_length)
                 )
             elif method == "rmvpe":
-                if hasattr(self, "model_rmvpe") == False:
-
-                    self.model_rmvpe = RMVPE0Predictor(
-                        "rmvpe.pt", is_half=self.is_half, device=self.device
-                    )
+                self.model_rmvpe = RMVPE0Predictor(
+                    "rmvpe.pt", is_half=self.is_half, device=self.device
+                )
                 f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
                 f0 = f0[1:]
             elif method == "fcpe":
@@ -405,10 +403,9 @@ class Pipeline:
                 x, self.f0_min, self.f0_max, p_len, int(hop_length), "tiny"
             )
         elif f0_method == "rmvpe":
-            if hasattr(self, "model_rmvpe") == False:
-                self.model_rmvpe = RMVPE0Predictor(
-                    "rmvpe.pt", is_half=self.is_half, device=self.device
-                )
+            self.model_rmvpe = RMVPE0Predictor(
+                "rmvpe.pt", is_half=self.is_half, device=self.device
+            )
             f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
         elif f0_method == "fcpe":
             self.model_fcpe = FCPEF0Predictor(
