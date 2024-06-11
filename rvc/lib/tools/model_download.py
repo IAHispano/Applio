@@ -335,10 +335,11 @@ def model_download_pipeline(url):
                                     os.rename(
                                         os.path.join(extract_folder_path, item),
                                         os.path.join(
-                                            extract_folder_path, new_file_name + ".index"
-                                            ),
+                                            extract_folder_path,
+                                            new_file_name + ".index",
+                                        ),
                                     )
-                            
+
                         else:
                             if "_nprobe_1_" in item and "_v2" in item:
                                 file_name = item.split("_nprobe_1_")[1].split("_v2")[0]
@@ -352,10 +353,10 @@ def model_download_pipeline(url):
                                     os.rename(
                                         os.path.join(extract_folder_path, item),
                                         os.path.join(
-                                            extract_folder_path, new_file_name + ".index"
-                                            ),
+                                            extract_folder_path,
+                                            new_file_name + ".index",
+                                        ),
                                     )
-
 
                 if success:
                     print(f"Model {model_name} downloaded!")
