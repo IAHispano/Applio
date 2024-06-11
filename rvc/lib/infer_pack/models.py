@@ -15,6 +15,29 @@ has_xpu = bool(hasattr(torch, "xpu") and torch.xpu.is_available())
 
 
 class TextEncoder256(nn.Module):
+    """Text Encoder with 256 embedding dimension.
+
+    Args:
+        out_channels (int): Output channels of the encoder.
+        hidden_channels (int): Hidden channels of the encoder.
+        filter_channels (int): Filter channels of the encoder.
+        n_heads (int): Number of attention heads.
+        n_layers (int): Number of encoder layers.
+        kernel_size (int): Kernel size of the convolutional layers.
+        p_dropout (float): Dropout probability.
+        f0 (bool, optional): Whether to use F0 embedding. Defaults to True.
+
+    Inputs:
+        phone (torch.Tensor): Phoneme tensor with shape (batch_size, length, 256).
+        pitch (torch.Tensor, optional): Pitch tensor with shape (batch_size, length). Defaults to None.
+        lengths (torch.Tensor): Lengths of the input sequences.
+
+    Outputs:
+        m (torch.Tensor): Mean tensor with shape (batch_size, out_channels, length).
+        logs (torch.Tensor): Log variance tensor with shape (batch_size, out_channels, length).
+        x_mask (torch.Tensor): Mask tensor with shape (batch_size, 1, length).
+    """
+
     def __init__(
         self,
         out_channels,
@@ -69,6 +92,29 @@ class TextEncoder256(nn.Module):
 
 
 class TextEncoder768(nn.Module):
+    """Text Encoder with 768 embedding dimension.
+
+    Args:
+        out_channels (int): Output channels of the encoder.
+        hidden_channels (int): Hidden channels of the encoder.
+        filter_channels (int): Filter channels of the encoder.
+        n_heads (int): Number of attention heads.
+        n_layers (int): Number of encoder layers.
+        kernel_size (int): Kernel size of the convolutional layers.
+        p_dropout (float): Dropout probability.
+        f0 (bool, optional): Whether to use F0 embedding. Defaults to True.
+
+    Inputs:
+        phone (torch.Tensor): Phoneme tensor with shape (batch_size, length, 768).
+        pitch (torch.Tensor, optional): Pitch tensor with shape (batch_size, length). Defaults to None.
+        lengths (torch.Tensor): Lengths of the input sequences.
+
+    Outputs:
+        m (torch.Tensor): Mean tensor with shape (batch_size, out_channels, length).
+        logs (torch.Tensor): Log variance tensor with shape (batch_size, out_channels, length).
+        x_mask (torch.Tensor): Mask tensor with shape (batch_size, 1, length).
+    """
+
     def __init__(
         self,
         out_channels,
@@ -121,6 +167,27 @@ class TextEncoder768(nn.Module):
 
 
 class ResidualCouplingBlock(nn.Module):
+    """Residual Coupling Block for normalizing flow.
+
+    Args:
+        channels (int): Number of channels in the input.
+        hidden_channels (int): Number of hidden channels in the coupling layer.
+        kernel_size (int): Kernel size of the convolutional layers.
+        dilation_rate (int): Dilation rate of the convolutional layers.
+        n_layers (int): Number of layers in the coupling layer.
+        n_flows (int, optional): Number of coupling layers in the block. Defaults to 4.
+        gin_channels (int, optional): Number of channels for the global conditioning input. Defaults to 0.
+
+    Inputs:
+        x (torch.Tensor): Input tensor with shape (batch_size, channels, length).
+        x_mask (torch.Tensor): Mask tensor with shape (batch_size, 1, length).
+        g (torch.Tensor, optional): Global conditioning input with shape (batch_size, gin_channels, 1). Defaults to None.
+        reverse (bool, optional): Whether to reverse the flow. Defaults to False.
+
+    Outputs:
+        x (torch.Tensor): Output tensor with shape (batch_size, channels, length).
+    """
+
     def __init__(
         self,
         channels,
@@ -171,10 +238,12 @@ class ResidualCouplingBlock(nn.Module):
         return x
 
     def remove_weight_norm(self):
+        """Removes weight normalization from the coupling layers."""
         for i in range(self.n_flows):
             self.flows[i * 2].remove_weight_norm()
 
     def __prepare_scriptable__(self):
+        """Prepares the module for scripting."""
         for i in range(self.n_flows):
             for hook in self.flows[i * 2]._forward_pre_hooks.values():
                 if (
@@ -187,6 +256,29 @@ class ResidualCouplingBlock(nn.Module):
 
 
 class PosteriorEncoder(nn.Module):
+    """Posterior Encoder for inferring latent representation.
+
+    Args:
+        in_channels (int): Number of channels in the input.
+        out_channels (int): Number of channels in the output.
+        hidden_channels (int): Number of hidden channels in the encoder.
+        kernel_size (int): Kernel size of the convolutional layers.
+        dilation_rate (int): Dilation rate of the convolutional layers.
+        n_layers (int): Number of layers in the encoder.
+        gin_channels (int, optional): Number of channels for the global conditioning input. Defaults to 0.
+
+    Inputs:
+        x (torch.Tensor): Input tensor with shape (batch_size, in_channels, length).
+        x_lengths (torch.Tensor): Lengths of the input sequences.
+        g (torch.Tensor, optional): Global conditioning input with shape (batch_size, gin_channels, 1). Defaults to None.
+
+    Outputs:
+        z (torch.Tensor): Latent representation with shape (batch_size, out_channels, length).
+        m (torch.Tensor): Mean tensor with shape (batch_size, out_channels, length).
+        logs (torch.Tensor): Log variance tensor with shape (batch_size, out_channels, length).
+        x_mask (torch.Tensor): Mask tensor with shape (batch_size, 1, length).
+    """
+
     def __init__(
         self,
         in_channels,
@@ -230,9 +322,11 @@ class PosteriorEncoder(nn.Module):
         return z, m, logs, x_mask
 
     def remove_weight_norm(self):
+        """Removes weight normalization from the encoder."""
         self.enc.remove_weight_norm()
 
     def __prepare_scriptable__(self):
+        """Prepares the module for scripting."""
         for hook in self.enc._forward_pre_hooks.values():
             if (
                 hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
@@ -243,6 +337,26 @@ class PosteriorEncoder(nn.Module):
 
 
 class Generator(torch.nn.Module):
+    """Generator for synthesizing audio.
+
+    Args:
+        initial_channel (int): Number of channels in the initial convolutional layer.
+        resblock (str): Type of residual block to use (1 or 2).
+        resblock_kernel_sizes (list): Kernel sizes of the residual blocks.
+        resblock_dilation_sizes (list): Dilation rates of the residual blocks.
+        upsample_rates (list): Upsampling rates.
+        upsample_initial_channel (int): Number of channels in the initial upsampling layer.
+        upsample_kernel_sizes (list): Kernel sizes of the upsampling layers.
+        gin_channels (int, optional): Number of channels for the global conditioning input. Defaults to 0.
+
+    Inputs:
+        x (torch.Tensor): Input tensor with shape (batch_size, initial_channel, length).
+        g (torch.Tensor, optional): Global conditioning input with shape (batch_size, gin_channels, length). Defaults to None.
+
+    Outputs:
+        x (torch.Tensor): Output tensor with shape (batch_size, 1, length).
+    """
+
     def __init__(
         self,
         initial_channel,
@@ -312,12 +426,9 @@ class Generator(torch.nn.Module):
         return x
 
     def __prepare_scriptable__(self):
+        """Prepares the module for scripting."""
         for l in self.ups:
             for hook in l._forward_pre_hooks.values():
-                # The hook we want to remove is an instance of WeightNorm class, so
-                # normally we would do `if isinstance(...)` but this class is not accessible
-                # because of shadowing, so we check the module name directly.
-                # https://github.com/pytorch/pytorch/blob/be0ca00c5ce260eb5bcec3237357f7a30cc08983/torch/nn/utils/__init__.py#L3
                 if (
                     hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
                     and hook.__class__.__name__ == "WeightNorm"
@@ -334,6 +445,7 @@ class Generator(torch.nn.Module):
         return self
 
     def remove_weight_norm(self):
+        """Removes weight normalization from the upsampling and residual blocks."""
         for l in self.ups:
             remove_weight_norm(l)
         for l in self.resblocks:
@@ -341,19 +453,24 @@ class Generator(torch.nn.Module):
 
 
 class SineGen(torch.nn.Module):
-    """Definition of sine generator
-    SineGen(samp_rate, harmonic_num = 0,
-            sine_amp = 0.1, noise_std = 0.003,
-            voiced_threshold = 0,
-            flag_for_pulse=False)
-    samp_rate: sampling rate in Hz
-    harmonic_num: number of harmonic overtones (default 0)
-    sine_amp: amplitude of sine-wavefrom (default 0.1)
-    noise_std: std of Gaussian noise (default 0.003)
-    voiced_thoreshold: F0 threshold for U/V classification (default 0)
-    flag_for_pulse: this SinGen is used inside PulseGen (default False)
-    Note: when flag_for_pulse is True, the first time step of a voiced
-        segment is always sin(torch.pi) or cos(0)
+    """Sine wave generator.
+
+    Args:
+        samp_rate (int): Sampling rate in Hz.
+        harmonic_num (int, optional): Number of harmonic overtones. Defaults to 0.
+        sine_amp (float, optional): Amplitude of sine waveform. Defaults to 0.1.
+        noise_std (float, optional): Standard deviation of Gaussian noise. Defaults to 0.003.
+        voiced_threshold (float, optional): F0 threshold for voiced/unvoiced classification. Defaults to 0.
+        flag_for_pulse (bool, optional): Whether this SineGen is used inside PulseGen. Defaults to False.
+
+    Inputs:
+        f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
+        upp (int): Upsampling factor.
+
+    Outputs:
+        sine_waves (torch.Tensor): Sine wave tensor with shape (batch_size, length, dim).
+        uv (torch.Tensor): Voiced/unvoiced tensor with shape (batch_size, length, 1).
+        noise (torch.Tensor): Noise tensor with shape (batch_size, length, dim).
     """
 
     def __init__(
@@ -374,19 +491,30 @@ class SineGen(torch.nn.Module):
         self.voiced_threshold = voiced_threshold
 
     def _f02uv(self, f0):
+        """Converts F0 to voiced/unvoiced signal.
+
+        Args:
+            f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
+
+        Returns:
+            uv (torch.Tensor): Voiced/unvoiced tensor with shape (batch_size, length, 1).
+        """
         # generate uv signal
         uv = torch.ones_like(f0)
         uv = uv * (f0 > self.voiced_threshold)
-        if uv.device.type == "privateuseone":  # for DirectML
-            uv = uv.float()
         return uv
 
     def forward(self, f0: torch.Tensor, upp: int):
-        """sine_tensor, uv = forward(f0)
-        input F0: tensor(batchsize=1, length, dim=1)
-                  f0 for unvoiced steps should be 0
-        output sine_tensor: tensor(batchsize=1, length, dim)
-        output uv: tensor(batchsize=1, length, 1)
+        """Generates sine waves.
+
+        Args:
+            f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
+            upp (int): Upsampling factor.
+
+        Returns:
+            sine_waves (torch.Tensor): Sine wave tensor with shape (batch_size, length, dim).
+            uv (torch.Tensor): Voiced/unvoiced tensor with shape (batch_size, length, 1).
+            noise (torch.Tensor): Noise tensor with shape (batch_size, length, dim).
         """
         with torch.no_grad():
             f0 = f0[:, None].transpose(1, 2)
@@ -435,21 +563,24 @@ class SineGen(torch.nn.Module):
 
 
 class SourceModuleHnNSF(torch.nn.Module):
-    """SourceModule for hn-nsf
-    SourceModule(sampling_rate, harmonic_num=0, sine_amp=0.1,
-                 add_noise_std=0.003, voiced_threshod=0)
-    sampling_rate: sampling_rate in Hz
-    harmonic_num: number of harmonic above F0 (default: 0)
-    sine_amp: amplitude of sine source signal (default: 0.1)
-    add_noise_std: std of additive Gaussian noise (default: 0.003)
-        note that amplitude of noise in unvoiced is decided
-        by sine_amp
-    voiced_threshold: threhold to set U/V given F0 (default: 0)
-    Sine_source, noise_source = SourceModuleHnNSF(F0_sampled)
-    F0_sampled (batchsize, length, 1)
-    Sine_source (batchsize, length, 1)
-    noise_source (batchsize, length 1)
-    uv (batchsize, length, 1)
+    """Source Module for harmonic-plus-noise excitation.
+
+    Args:
+        sampling_rate (int): Sampling rate in Hz.
+        harmonic_num (int, optional): Number of harmonics above F0. Defaults to 0.
+        sine_amp (float, optional): Amplitude of sine source signal. Defaults to 0.1.
+        add_noise_std (float, optional): Standard deviation of additive Gaussian noise. Defaults to 0.003.
+        voiced_threshod (float, optional): Threshold to set voiced/unvoiced given F0. Defaults to 0.
+        is_half (bool, optional): Whether to use half precision. Defaults to True.
+
+    Inputs:
+        x (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
+        upp (int): Upsampling factor.
+
+    Outputs:
+        sine_merge (torch.Tensor): Merged source harmonics with shape (batch_size, length, 1).
+        None (None): Placeholder for noise source.
+        None (None): Placeholder for voiced/unvoiced signal.
     """
 
     def __init__(
@@ -477,21 +608,47 @@ class SourceModuleHnNSF(torch.nn.Module):
         # self.ddtype:int = -1
 
     def forward(self, x: torch.Tensor, upp: int = 1):
-        # if self.ddtype ==-1:
-        #     self.ddtype = self.l_linear.weight.dtype
+        """Generates the source excitation.
+
+        Args:
+            x (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
+            upp (int): Upsampling factor.
+
+        Returns:
+            sine_merge (torch.Tensor): Merged source harmonics with shape (batch_size, length, 1).
+            None (None): Placeholder for noise source.
+            None (None): Placeholder for voiced/unvoiced signal.
+        """
         sine_wavs, uv, _ = self.l_sin_gen(x, upp)
-        # print(x.dtype,sine_wavs.dtype,self.l_linear.weight.dtype)
-        # if self.is_half:
-        #     sine_wavs = sine_wavs.half()
-        # sine_merge = self.l_tanh(self.l_linear(sine_wavs.to(x)))
-        # print(sine_wavs.dtype,self.ddtype)
-        # if sine_wavs.dtype != self.l_linear.weight.dtype:
         sine_wavs = sine_wavs.to(dtype=self.l_linear.weight.dtype)
         sine_merge = self.l_tanh(self.l_linear(sine_wavs))
         return sine_merge, None, None  # noise, uv
 
 
 class GeneratorNSF(torch.nn.Module):
+    """Generator for synthesizing audio using the NSF (Neural Source Filter) approach.
+
+    Args:
+        initial_channel (int): Number of channels in the initial convolutional layer.
+        resblock (str): Type of residual block to use (1 or 2).
+        resblock_kernel_sizes (list): Kernel sizes of the residual blocks.
+        resblock_dilation_sizes (list): Dilation rates of the residual blocks.
+        upsample_rates (list): Upsampling rates.
+        upsample_initial_channel (int): Number of channels in the initial upsampling layer.
+        upsample_kernel_sizes (list): Kernel sizes of the upsampling layers.
+        gin_channels (int): Number of channels for the global conditioning input.
+        sr (int): Sampling rate.
+        is_half (bool, optional): Whether to use half precision. Defaults to False.
+
+    Inputs:
+        x (torch.Tensor): Input tensor with shape (batch_size, initial_channel, length).
+        f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
+        g (torch.Tensor, optional): Global conditioning input with shape (batch_size, gin_channels, length). Defaults to None.
+
+    Outputs:
+        x (torch.Tensor): Output tensor with shape (batch_size, 1, length).
+    """
+
     def __init__(
         self,
         initial_channel,
@@ -566,13 +723,21 @@ class GeneratorNSF(torch.nn.Module):
         self.lrelu_slope = modules.LRELU_SLOPE
 
     def forward(self, x, f0, g: Optional[torch.Tensor] = None):
+        """Generates audio using the NSF approach.
+        Args:
+            x (torch.Tensor): Input tensor with shape (batch_size, initial_channel, length).
+            f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
+            g (torch.Tensor, optional): Global conditioning input with shape (batch_size, gin_channels, length). Defaults to None.
+
+        Returns:
+            x (torch.Tensor): Output tensor with shape (batch_size, 1, length).
+        """
         har_source, noi_source, uv = self.m_source(f0, self.upp)
         har_source = har_source.transpose(1, 2)
         x = self.conv_pre(x)
         if g is not None:
             x = x + self.cond(g)
         # torch.jit.script() does not support direct indexing of torch modules
-        # That's why I wrote this
         for i, (ups, noise_convs) in enumerate(zip(self.ups, self.noise_convs)):
             if i < self.num_upsamples:
                 x = F.leaky_relu(x, self.lrelu_slope)
@@ -587,8 +752,7 @@ class GeneratorNSF(torch.nn.Module):
                             xs = resblock(x)
                         else:
                             xs += resblock(x)
-                # This assertion cannot be ignored! \
-                # If ignored, it will cause torch.jit.script() compilation errors
+                # This assertion cannot be ignored, if ignored, it will cause torch.jit.script() compilation errors
                 assert isinstance(xs, torch.Tensor)
                 x = xs / self.num_kernels
         x = F.leaky_relu(x)
@@ -597,6 +761,7 @@ class GeneratorNSF(torch.nn.Module):
         return x
 
     def remove_weight_norm(self):
+        """Removes weight normalization from the upsampling and residual blocks."""
         for l in self.ups:
             remove_weight_norm(l)
         for l in self.resblocks:
@@ -605,10 +770,6 @@ class GeneratorNSF(torch.nn.Module):
     def __prepare_scriptable__(self):
         for l in self.ups:
             for hook in l._forward_pre_hooks.values():
-                # The hook we want to remove is an instance of WeightNorm class, so
-                # normally we would do `if isinstance(...)` but this class is not accessible
-                # because of shadowing, so we check the module name directly.
-                # https://github.com/pytorch/pytorch/blob/be0ca00c5ce260eb5bcec3237357f7a30cc08983/torch/nn/utils/__init__.py#L3
                 if (
                     hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
                     and hook.__class__.__name__ == "WeightNorm"
@@ -625,6 +786,31 @@ class GeneratorNSF(torch.nn.Module):
 
 
 class SynthesizerTrnMs256NSFsid(nn.Module):
+    """
+    SynthesizerTrnMs256NSFsid model.
+
+    Args:
+        spec_channels (int): Number of channels in the spectrogram.
+        segment_size (int): Size of the audio segment.
+        inter_channels (int): Number of channels in the intermediate layers.
+        hidden_channels (int): Number of channels in the hidden layers.
+        filter_channels (int): Number of channels in the filter layers.
+        n_heads (int): Number of attention heads.
+        n_layers (int): Number of layers in the encoder.
+        kernel_size (int): Size of the convolution kernel.
+        p_dropout (float): Dropout probability.
+        resblock (str): Type of residual block.
+        resblock_kernel_sizes (list): Kernel sizes for the residual blocks.
+        resblock_dilation_sizes (list): Dilation sizes for the residual blocks.
+        upsample_rates (list): Upsampling rates for the decoder.
+        upsample_initial_channel (int): Number of channels in the initial upsampling layer.
+        upsample_kernel_sizes (list): Kernel sizes for the upsampling layers.
+        spk_embed_dim (int): Dimension of the speaker embedding.
+        gin_channels (int): Number of channels in the global conditioning vector.
+        sr (int): Sampling rate of the audio.
+        kwargs: Additional keyword arguments.
+    """
+
     def __init__(
         self,
         spec_channels,
@@ -664,7 +850,6 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
         self.upsample_kernel_sizes = upsample_kernel_sizes
         self.segment_size = segment_size
         self.gin_channels = gin_channels
-        # self.hop_length = hop_length#
         self.spk_embed_dim = spk_embed_dim
         self.enc_p = TextEncoder256(
             inter_channels,
@@ -702,16 +887,13 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
         self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
 
     def remove_weight_norm(self):
+        """Removes weight normalization from the model."""
         self.dec.remove_weight_norm()
         self.flow.remove_weight_norm()
         self.enc_q.remove_weight_norm()
 
     def __prepare_scriptable__(self):
         for hook in self.dec._forward_pre_hooks.values():
-            # The hook we want to remove is an instance of WeightNorm class, so
-            # normally we would do `if isinstance(...)` but this class is not accessible
-            # because of shadowing, so we check the module name directly.
-            # https://github.com/pytorch/pytorch/blob/be0ca00c5ce260eb5bcec3237357f7a30cc08983/torch/nn/utils/__init__.py#L3
             if (
                 hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
                 and hook.__class__.__name__ == "WeightNorm"
@@ -742,18 +924,30 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
         y: torch.Tensor,
         y_lengths: torch.Tensor,
         ds: Optional[torch.Tensor] = None,
-    ):  # 这里ds是id，[bs,1]
-        # print(1,pitch.shape)#[bs,t]
-        g = self.emb_g(ds).unsqueeze(-1)  # [b, 256, 1]##1是t，广播的
+    ):
+        """
+        Forward pass of the model.
+
+        Args:
+            phone (torch.Tensor): Phoneme sequence.
+            phone_lengths (torch.Tensor): Lengths of the phoneme sequences.
+            pitch (torch.Tensor): Pitch sequence.
+            pitchf (torch.Tensor): Fine-grained pitch sequence.
+            y (torch.Tensor): Target spectrogram.
+            y_lengths (torch.Tensor): Lengths of the target spectrograms.
+            ds (torch.Tensor, optional): Speaker embedding. Defaults to None.
+
+        Returns:
+            tuple: Output audio, sliced ids, mask for phoneme sequence, mask for target spectrogram, and intermediate outputs.
+        """
+        g = self.emb_g(ds).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
         z_slice, ids_slice = commons.rand_slice_segments(
             z, y_lengths, self.segment_size
         )
-        # print(-1,pitchf.shape,ids_slice,self.segment_size,self.hop_length,self.segment_size//self.hop_length)
         pitchf = commons.slice_segments2(pitchf, ids_slice, self.segment_size)
-        # print(-2,pitchf.shape,z_slice.shape)
         o = self.dec(z_slice, pitchf, g=g)
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 
@@ -767,6 +961,20 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
         sid: torch.Tensor,
         rate: Optional[torch.Tensor] = None,
     ):
+        """
+        Inference of the model.
+
+        Args:
+            phone (torch.Tensor): Phoneme sequence.
+            phone_lengths (torch.Tensor): Lengths of the phoneme sequences.
+            pitch (torch.Tensor): Pitch sequence.
+            nsff0 (torch.Tensor): Fine-grained pitch sequence.
+            sid (torch.Tensor): Speaker embedding.
+            rate (torch.Tensor, optional): Rate for time-stretching. Defaults to None.
+
+        Returns:
+            tuple: Output audio, mask for phoneme sequence, and intermediate outputs.
+        """
         g = self.emb_g(sid).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
         z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
@@ -782,6 +990,31 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
 
 
 class SynthesizerTrnMs768NSFsid(nn.Module):
+    """
+    SynthesizerTrnMs768NSFsid model.
+
+    Args:
+        spec_channels (int): Number of channels in the spectrogram.
+        segment_size (int): Size of the audio segment.
+        inter_channels (int): Number of channels in the intermediate layers.
+        hidden_channels (int): Number of channels in the hidden layers.
+        filter_channels (int): Number of channels in the filter layers.
+        n_heads (int): Number of attention heads.
+        n_layers (int): Number of layers in the encoder.
+        kernel_size (int): Size of the convolution kernel.
+        p_dropout (float): Dropout probability.
+        resblock (str): Type of residual block.
+        resblock_kernel_sizes (list): Kernel sizes for the residual blocks.
+        resblock_dilation_sizes (list): Dilation sizes for the residual blocks.
+        upsample_rates (list): Upsampling rates for the decoder.
+        upsample_initial_channel (int): Number of channels in the initial upsampling layer.
+        upsample_kernel_sizes (list): Kernel sizes for the upsampling layers.
+        spk_embed_dim (int): Dimension of the speaker embedding.
+        gin_channels (int): Number of channels in the global conditioning vector.
+        sr (int): Sampling rate of the audio.
+        kwargs: Additional keyword arguments.
+    """
+
     def __init__(
         self,
         spec_channels,
@@ -821,7 +1054,6 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         self.upsample_kernel_sizes = upsample_kernel_sizes
         self.segment_size = segment_size
         self.gin_channels = gin_channels
-        # self.hop_length = hop_length#
         self.spk_embed_dim = spk_embed_dim
         self.enc_p = TextEncoder768(
             inter_channels,
@@ -859,16 +1091,13 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
 
     def remove_weight_norm(self):
+        """Removes weight normalization from the model."""
         self.dec.remove_weight_norm()
         self.flow.remove_weight_norm()
         self.enc_q.remove_weight_norm()
 
     def __prepare_scriptable__(self):
         for hook in self.dec._forward_pre_hooks.values():
-            # The hook we want to remove is an instance of WeightNorm class, so
-            # normally we would do `if isinstance(...)` but this class is not accessible
-            # because of shadowing, so we check the module name directly.
-            # https://github.com/pytorch/pytorch/blob/be0ca00c5ce260eb5bcec3237357f7a30cc08983/torch/nn/utils/__init__.py#L3
             if (
                 hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
                 and hook.__class__.__name__ == "WeightNorm"
@@ -890,20 +1119,30 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         return self
 
     @torch.jit.ignore
-    def forward(
-        self, phone, phone_lengths, pitch, pitchf, y, y_lengths, ds
-    ):  # 这里ds是id，[bs,1]
-        # print(1,pitch.shape)#[bs,t]
-        g = self.emb_g(ds).unsqueeze(-1)  # [b, 256, 1]##1是t，广播的
+    def forward(self, phone, phone_lengths, pitch, pitchf, y, y_lengths, ds):
+        """
+        Forward pass of the model.
+
+        Args:
+            phone (torch.Tensor): Phoneme sequence.
+            phone_lengths (torch.Tensor): Lengths of the phoneme sequences.
+            pitch (torch.Tensor): Pitch sequence.
+            pitchf (torch.Tensor): Fine-grained pitch sequence.
+            y (torch.Tensor): Target spectrogram.
+            y_lengths (torch.Tensor): Lengths of the target spectrograms.
+            ds (torch.Tensor): Speaker embedding.
+
+        Returns:
+            tuple: Output audio, sliced ids, mask for phoneme sequence, mask for target spectrogram, and intermediate outputs.
+        """
+        g = self.emb_g(ds).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
         z_slice, ids_slice = commons.rand_slice_segments(
             z, y_lengths, self.segment_size
         )
-        # print(-1,pitchf.shape,ids_slice,self.segment_size,self.hop_length,self.segment_size//self.hop_length)
         pitchf = commons.slice_segments2(pitchf, ids_slice, self.segment_size)
-        # print(-2,pitchf.shape,z_slice.shape)
         o = self.dec(z_slice, pitchf, g=g)
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 
@@ -917,6 +1156,20 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         sid: torch.Tensor,
         rate: Optional[torch.Tensor] = None,
     ):
+        """
+        Inference of the model.
+
+        Args:
+            phone (torch.Tensor): Phoneme sequence.
+            phone_lengths (torch.Tensor): Lengths of the phoneme sequences.
+            pitch (torch.Tensor): Pitch sequence.
+            nsff0 (torch.Tensor): Fine-grained pitch sequence.
+            sid (torch.Tensor): Speaker embedding.
+            rate (torch.Tensor, optional): Rate for time-stretching. Defaults to None.
+
+        Returns:
+            tuple: Output audio, mask for phoneme sequence, and intermediate outputs.
+        """
         g = self.emb_g(sid).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
         z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
@@ -931,6 +1184,31 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
 
 
 class SynthesizerTrnMs256NSFsid_nono(nn.Module):
+    """
+    SynthesizerTrnMs256NSFsid_nono model.
+
+    Args:
+        spec_channels (int): Number of channels in the spectrogram.
+        segment_size (int): Size of the audio segment.
+        inter_channels (int): Number of channels in the intermediate layers.
+        hidden_channels (int): Number of channels in the hidden layers.
+        filter_channels (int): Number of channels in the filter layers.
+        n_heads (int): Number of attention heads.
+        n_layers (int): Number of layers in the encoder.
+        kernel_size (int): Size of the convolution kernel.
+        p_dropout (float): Dropout probability.
+        resblock (str): Type of residual block.
+        resblock_kernel_sizes (list): Kernel sizes for the residual blocks.
+        resblock_dilation_sizes (list): Dilation sizes for the residual blocks.
+        upsample_rates (list): Upsampling rates for the decoder.
+        upsample_initial_channel (int): Number of channels in the initial upsampling layer.
+        upsample_kernel_sizes (list): Kernel sizes for the upsampling layers.
+        spk_embed_dim (int): Dimension of the speaker embedding.
+        gin_channels (int): Number of channels in the global conditioning vector.
+        sr (int): Sampling rate of the audio.
+        kwargs: Additional keyword arguments.
+    """
+
     def __init__(
         self,
         spec_channels,
@@ -970,7 +1248,6 @@ class SynthesizerTrnMs256NSFsid_nono(nn.Module):
         self.upsample_kernel_sizes = upsample_kernel_sizes
         self.segment_size = segment_size
         self.gin_channels = gin_channels
-        # self.hop_length = hop_length#
         self.spk_embed_dim = spk_embed_dim
         self.enc_p = TextEncoder256(
             inter_channels,
@@ -1007,16 +1284,13 @@ class SynthesizerTrnMs256NSFsid_nono(nn.Module):
         self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
 
     def remove_weight_norm(self):
+        """Removes weight normalization from the model."""
         self.dec.remove_weight_norm()
         self.flow.remove_weight_norm()
         self.enc_q.remove_weight_norm()
 
     def __prepare_scriptable__(self):
         for hook in self.dec._forward_pre_hooks.values():
-            # The hook we want to remove is an instance of WeightNorm class, so
-            # normally we would do `if isinstance(...)` but this class is not accessible
-            # because of shadowing, so we check the module name directly.
-            # https://github.com/pytorch/pytorch/blob/be0ca00c5ce260eb5bcec3237357f7a30cc08983/torch/nn/utils/__init__.py#L3
             if (
                 hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
                 and hook.__class__.__name__ == "WeightNorm"
@@ -1038,8 +1312,21 @@ class SynthesizerTrnMs256NSFsid_nono(nn.Module):
         return self
 
     @torch.jit.ignore
-    def forward(self, phone, phone_lengths, y, y_lengths, ds):  # 这里ds是id，[bs,1]
-        g = self.emb_g(ds).unsqueeze(-1)  # [b, 256, 1]##1是t，广播的
+    def forward(self, phone, phone_lengths, y, y_lengths, ds):
+        """
+        Forward pass of the model.
+
+        Args:
+            phone (torch.Tensor): Phoneme sequence.
+            phone_lengths (torch.Tensor): Lengths of the phoneme sequences.
+            y (torch.Tensor): Target spectrogram.
+            y_lengths (torch.Tensor): Lengths of the target spectrograms.
+            ds (torch.Tensor): Speaker embedding.
+
+        Returns:
+            tuple: Output audio, sliced ids, mask for phoneme sequence, mask for target spectrogram, and intermediate outputs.
+        """
+        g = self.emb_g(ds).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, None, phone_lengths)
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
@@ -1057,6 +1344,18 @@ class SynthesizerTrnMs256NSFsid_nono(nn.Module):
         sid: torch.Tensor,
         rate: Optional[torch.Tensor] = None,
     ):
+        """
+        Inference of the model.
+
+        Args:
+            phone (torch.Tensor): Phoneme sequence.
+            phone_lengths (torch.Tensor): Lengths of the phoneme sequences.
+            sid (torch.Tensor): Speaker embedding.
+            rate (torch.Tensor, optional): Rate for time-stretching. Defaults to None.
+
+        Returns:
+            tuple: Output audio, mask for phoneme sequence, and intermediate outputs.
+        """
         g = self.emb_g(sid).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, None, phone_lengths)
         z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
@@ -1070,6 +1369,31 @@ class SynthesizerTrnMs256NSFsid_nono(nn.Module):
 
 
 class SynthesizerTrnMs768NSFsid_nono(nn.Module):
+    """
+    SynthesizerTrnMs768NSFsid_nono model.
+
+    Args:
+        spec_channels (int): Number of channels in the spectrogram.
+        segment_size (int): Size of the audio segment.
+        inter_channels (int): Number of channels in the intermediate layers.
+        hidden_channels (int): Number of channels in the hidden layers.
+        filter_channels (int): Number of channels in the filter layers.
+        n_heads (int): Number of attention heads.
+        n_layers (int): Number of layers in the encoder.
+        kernel_size (int): Size of the convolution kernel.
+        p_dropout (float): Dropout probability.
+        resblock (str): Type of residual block.
+        resblock_kernel_sizes (list): Kernel sizes for the residual blocks.
+        resblock_dilation_sizes (list): Dilation sizes for the residual blocks.
+        upsample_rates (list): Upsampling rates for the decoder.
+        upsample_initial_channel (int): Number of channels in the initial upsampling layer.
+        upsample_kernel_sizes (list): Kernel sizes for the upsampling layers.
+        spk_embed_dim (int): Dimension of the speaker embedding.
+        gin_channels (int): Number of channels in the global conditioning vector.
+        sr (int): Sampling rate of the audio.
+        kwargs: Additional keyword arguments.
+    """
+
     def __init__(
         self,
         spec_channels,
@@ -1092,6 +1416,7 @@ class SynthesizerTrnMs768NSFsid_nono(nn.Module):
         sr=None,
         **kwargs
     ):
+
         super(SynthesizerTrnMs768NSFsid_nono, self).__init__()
         self.spec_channels = spec_channels
         self.inter_channels = inter_channels
@@ -1109,7 +1434,6 @@ class SynthesizerTrnMs768NSFsid_nono(nn.Module):
         self.upsample_kernel_sizes = upsample_kernel_sizes
         self.segment_size = segment_size
         self.gin_channels = gin_channels
-        # self.hop_length = hop_length#
         self.spk_embed_dim = spk_embed_dim
         self.enc_p = TextEncoder768(
             inter_channels,
@@ -1146,16 +1470,13 @@ class SynthesizerTrnMs768NSFsid_nono(nn.Module):
         self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
 
     def remove_weight_norm(self):
+        """Removes weight normalization from the model."""
         self.dec.remove_weight_norm()
         self.flow.remove_weight_norm()
         self.enc_q.remove_weight_norm()
 
     def __prepare_scriptable__(self):
         for hook in self.dec._forward_pre_hooks.values():
-            # The hook we want to remove is an instance of WeightNorm class, so
-            # normally we would do `if isinstance(...)` but this class is not accessible
-            # because of shadowing, so we check the module name directly.
-            # https://github.com/pytorch/pytorch/blob/be0ca00c5ce260eb5bcec3237357f7a30cc08983/torch/nn/utils/__init__.py#L3
             if (
                 hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
                 and hook.__class__.__name__ == "WeightNorm"
@@ -1209,11 +1530,22 @@ class SynthesizerTrnMs768NSFsid_nono(nn.Module):
 
 
 class MultiPeriodDiscriminator(torch.nn.Module):
+    """
+    Multi-period discriminator.
+
+    This class implements a multi-period discriminator, which is used to
+    discriminate between real and fake audio signals. The discriminator
+    is composed of a series of convolutional layers that are applied to
+    the input signal at different periods.
+
+    Args:
+        use_spectral_norm (bool): Whether to use spectral normalization.
+            Defaults to False.
+    """
+
     def __init__(self, use_spectral_norm=False):
         super(MultiPeriodDiscriminator, self).__init__()
         periods = [2, 3, 5, 7, 11, 17]
-        # periods = [3, 5, 7, 11, 17, 23, 37]
-
         discs = [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
         discs = discs + [
             DiscriminatorP(i, use_spectral_norm=use_spectral_norm) for i in periods
@@ -1221,15 +1553,25 @@ class MultiPeriodDiscriminator(torch.nn.Module):
         self.discriminators = nn.ModuleList(discs)
 
     def forward(self, y, y_hat):
-        y_d_rs = []  #
+        """
+        Forward pass of the multi-period discriminator.
+
+        Args:
+            y (torch.Tensor): Real audio signal.
+            y_hat (torch.Tensor): Fake audio signal.
+
+        Returns:
+            tuple: A tuple containing the outputs of the discriminator for
+                the real and fake signals, and the feature maps for each
+                discriminator.
+        """
+        y_d_rs = []
         y_d_gs = []
         fmap_rs = []
         fmap_gs = []
         for i, d in enumerate(self.discriminators):
             y_d_r, fmap_r = d(y)
             y_d_g, fmap_g = d(y_hat)
-            # for j in range(len(fmap_r)):
-            #     print(i,j,y.shape,y_hat.shape,fmap_r[j].shape,fmap_g[j].shape)
             y_d_rs.append(y_d_r)
             y_d_gs.append(y_d_g)
             fmap_rs.append(fmap_r)
@@ -1239,9 +1581,21 @@ class MultiPeriodDiscriminator(torch.nn.Module):
 
 
 class MultiPeriodDiscriminatorV2(torch.nn.Module):
+    """
+    Multi-period discriminator V2.
+
+    This class implements a multi-period discriminator V2, which is used
+    to discriminate between real and fake audio signals. The discriminator
+    is composed of a series of convolutional layers that are applied to
+    the input signal at different periods.
+
+    Args:
+        use_spectral_norm (bool): Whether to use spectral normalization.
+            Defaults to False.
+    """
+
     def __init__(self, use_spectral_norm=False):
         super(MultiPeriodDiscriminatorV2, self).__init__()
-        # periods = [2, 3, 5, 7, 11, 17]
         periods = [2, 3, 5, 7, 11, 17, 23, 37]
 
         discs = [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
@@ -1251,6 +1605,18 @@ class MultiPeriodDiscriminatorV2(torch.nn.Module):
         self.discriminators = nn.ModuleList(discs)
 
     def forward(self, y, y_hat):
+        """
+        Forward pass of the multi-period discriminator V2.
+
+        Args:
+            y (torch.Tensor): Real audio signal.
+            y_hat (torch.Tensor): Fake audio signal.
+
+        Returns:
+            tuple: A tuple containing the outputs of the discriminator for
+                the real and fake signals, and the feature maps for each
+                discriminator.
+        """
         y_d_rs = []
         y_d_gs = []
         fmap_rs = []
@@ -1258,8 +1624,6 @@ class MultiPeriodDiscriminatorV2(torch.nn.Module):
         for i, d in enumerate(self.discriminators):
             y_d_r, fmap_r = d(y)
             y_d_g, fmap_g = d(y_hat)
-            # for j in range(len(fmap_r)):
-            #     print(i,j,y.shape,y_hat.shape,fmap_r[j].shape,fmap_g[j].shape)
             y_d_rs.append(y_d_r)
             y_d_gs.append(y_d_g)
             fmap_rs.append(fmap_r)
@@ -1269,6 +1633,18 @@ class MultiPeriodDiscriminatorV2(torch.nn.Module):
 
 
 class DiscriminatorS(torch.nn.Module):
+    """
+    Discriminator for the short-term component.
+
+    This class implements a discriminator for the short-term component
+    of the audio signal. The discriminator is composed of a series of
+    convolutional layers that are applied to the input signal.
+
+    Args:
+        use_spectral_norm (bool): Whether to use spectral normalization.
+            Defaults to False.
+    """
+
     def __init__(self, use_spectral_norm=False):
         super(DiscriminatorS, self).__init__()
         norm_f = weight_norm if use_spectral_norm == False else spectral_norm
@@ -1285,6 +1661,16 @@ class DiscriminatorS(torch.nn.Module):
         self.conv_post = norm_f(Conv1d(1024, 1, 3, 1, padding=1))
 
     def forward(self, x):
+        """
+        Forward pass of the discriminator.
+
+        Args:
+            x (torch.Tensor): Input audio signal.
+
+        Returns:
+            tuple: A tuple containing the output of the discriminator and
+                the feature maps for each convolutional layer.
+        """
         fmap = []
 
         for l in self.convs:
@@ -1299,6 +1685,23 @@ class DiscriminatorS(torch.nn.Module):
 
 
 class DiscriminatorP(torch.nn.Module):
+    """
+    Discriminator for the long-term component.
+
+    This class implements a discriminator for the long-term component
+    of the audio signal. The discriminator is composed of a series of
+    convolutional layers that are applied to the input signal at a given
+    period.
+
+    Args:
+        period (int): Period of the discriminator.
+        kernel_size (int): Kernel size of the convolutional layers.
+            Defaults to 5.
+        stride (int): Stride of the convolutional layers. Defaults to 3.
+        use_spectral_norm (bool): Whether to use spectral normalization.
+            Defaults to False.
+    """
+
     def __init__(self, period, kernel_size=5, stride=3, use_spectral_norm=False):
         super(DiscriminatorP, self).__init__()
         self.period = period
@@ -1356,6 +1759,16 @@ class DiscriminatorP(torch.nn.Module):
         self.conv_post = norm_f(Conv2d(1024, 1, (3, 1), 1, padding=(1, 0)))
 
     def forward(self, x):
+        """
+        Forward pass of the discriminator.
+
+        Args:
+            x (torch.Tensor): Input audio signal.
+
+        Returns:
+            tuple: A tuple containing the output of the discriminator and
+                the feature maps for each convolutional layer.
+        """
         fmap = []
 
         # 1d to 2d

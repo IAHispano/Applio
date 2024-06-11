@@ -91,11 +91,6 @@ def convert_pad_shape(pad_shape: List[List[int]]) -> List[int]:
     return torch.tensor(pad_shape).flip(0).reshape(-1).int().tolist()
 
 
-def shift_1d(x):
-    x = F.pad(x, convert_pad_shape([[0, 0], [0, 0], [1, 0]]))[:, :, :-1]
-    return x
-
-
 def sequence_mask(length: torch.Tensor, max_length: Optional[int] = None):
     if max_length is None:
         max_length = length.max()

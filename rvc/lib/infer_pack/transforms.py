@@ -21,6 +21,28 @@ def piecewise_rational_quadratic_transform(
     min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
     min_derivative=DEFAULT_MIN_DERIVATIVE,
 ):
+    """Piecewise rational quadratic transform.
+
+    This is a more general transformation than the standard rational quadratic spline.
+    This transform maps the input tensor to the output tensor through a series of
+    piecewise rational quadratic functions.
+
+    Args:
+        inputs: The input tensor.
+        unnormalized_widths: The unnormalized widths of the bins.
+        unnormalized_heights: The unnormalized heights of the bins.
+        unnormalized_derivatives: The unnormalized derivatives at the bin boundaries.
+        inverse: Whether to compute the inverse transform.
+        tails: The type of tails to use. If None, no tails are used. If "linear",
+            the tails are linear.
+        tail_bound: The bound of the tails.
+        min_bin_width: The minimum width of the bins.
+        min_bin_height: The minimum height of the bins.
+        min_derivative: The minimum derivative at the bin boundaries.
+
+    Returns:
+        The output tensor and the log absolute determinant of the Jacobian.
+    """
     if tails is None:
         spline_fn = rational_quadratic_spline
         spline_kwargs = {}
@@ -43,6 +65,22 @@ def piecewise_rational_quadratic_transform(
 
 
 def searchsorted(bin_locations, inputs, eps=1e-6):
+    """Searchsorted function for PyTorch.
+
+    This function finds the indices into a sorted array `bin_locations` such that,
+    if the corresponding element in `inputs` were inserted before the index, the
+    array would still be sorted.
+
+    Args:
+        bin_locations: The sorted array.
+        inputs: The input tensor.
+        eps: A small value added to the last element of `bin_locations` to ensure
+            that the searchsorted function returns the correct index when `inputs`
+            is equal to the last element of `bin_locations`.
+
+    Returns:
+        The indices into `bin_locations`.
+    """
     bin_locations[..., -1] += eps
     return torch.sum(inputs[..., None] >= bin_locations, dim=-1) - 1
 
@@ -59,6 +97,27 @@ def unconstrained_rational_quadratic_spline(
     min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
     min_derivative=DEFAULT_MIN_DERIVATIVE,
 ):
+    """Unconstrained rational quadratic spline.
+
+    This is a variant of the rational quadratic spline that allows the input and
+    output to be unbounded. It achieves this by using linear tails outside the
+    bounded interval.
+
+    Args:
+        inputs: The input tensor.
+        unnormalized_widths: The unnormalized widths of the bins.
+        unnormalized_heights: The unnormalized heights of the bins.
+        unnormalized_derivatives: The unnormalized derivatives at the bin boundaries.
+        inverse: Whether to compute the inverse transform.
+        tails: The type of tails to use. Must be "linear".
+        tail_bound: The bound of the tails.
+        min_bin_width: The minimum width of the bins.
+        min_bin_height: The minimum height of the bins.
+        min_derivative: The minimum derivative at the bin boundaries.
+
+    Returns:
+        The output tensor and the log absolute determinant of the Jacobian.
+    """
     inside_interval_mask = (inputs >= -tail_bound) & (inputs <= tail_bound)
     outside_interval_mask = ~inside_interval_mask
 
@@ -111,6 +170,31 @@ def rational_quadratic_spline(
     min_bin_height=DEFAULT_MIN_BIN_HEIGHT,
     min_derivative=DEFAULT_MIN_DERIVATIVE,
 ):
+    """Rational quadratic spline.
+
+    This function implements the rational quadratic spline transform. The
+    transform is defined by a series of piecewise rational quadratic functions,
+    which are parameterized by the widths, heights, and derivatives of the bins.
+    The transform is invertible, and the inverse transform is also implemented
+    in this function.
+
+    Args:
+        inputs: The input tensor.
+        unnormalized_widths: The unnormalized widths of the bins.
+        unnormalized_heights: The unnormalized heights of the bins.
+        unnormalized_derivatives: The unnormalized derivatives at the bin boundaries.
+        inverse: Whether to compute the inverse transform.
+        left: The left boundary of the input domain.
+        right: The right boundary of the input domain.
+        bottom: The bottom boundary of the output domain.
+        top: The top boundary of the output domain.
+        min_bin_width: The minimum width of the bins.
+        min_bin_height: The minimum height of the bins.
+        min_derivative: The minimum derivative at the bin boundaries.
+
+    Returns:
+        The output tensor and the log absolute determinant of the Jacobian.
+    """
     if torch.min(inputs) < left or torch.max(inputs) > right:
         raise ValueError("Input to a transform is not within its domain")
 

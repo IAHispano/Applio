@@ -1,4 +1,5 @@
 import math
+
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -17,6 +18,14 @@ LRELU_SLOPE = 0.1
 
 
 class LayerNorm(nn.Module):
+    """Layer normalization module.
+
+    Args:
+        channels (int): Number of channels.
+        eps (float, optional): Epsilon value for numerical stability. Defaults to 1e-5.
+
+    """
+
     def __init__(self, channels, eps=1e-5):
         super().__init__()
         self.channels = channels
@@ -26,12 +35,33 @@ class LayerNorm(nn.Module):
         self.beta = nn.Parameter(torch.zeros(channels))
 
     def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, channels, time_steps).
+
+        Returns:
+            torch.Tensor: Layer-normalized tensor of shape (batch_size, channels, time_steps).
+
+        """
         x = x.transpose(1, -1)
         x = F.layer_norm(x, (self.channels,), self.gamma, self.beta, self.eps)
         return x.transpose(1, -1)
 
 
 class ConvReluNorm(nn.Module):
+    """Convolutional layer with ReLU activation and layer normalization.
+
+    Args:
+        in_channels (int): Number of input channels.
+        hidden_channels (int): Number of hidden channels.
+        out_channels (int): Number of output channels.
+        kernel_size (int): Size of the convolutional kernel.
+        n_layers (int): Number of convolutional layers.
+        p_dropout (float): Dropout probability.
+
+    """
+
     def __init__(
         self,
         in_channels,
@@ -74,6 +104,16 @@ class ConvReluNorm(nn.Module):
         self.proj.bias.data.zero_()
 
     def forward(self, x, x_mask):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, in_channels, time_steps).
+            x_mask (torch.Tensor): Mask tensor of shape (batch_size, 1, time_steps).
+
+        Returns:
+            torch.Tensor: Output tensor of shape (batch_size, out_channels, time_steps).
+
+        """
         x_org = x
         for i in range(self.n_layers):
             x = self.conv_layers[i](x * x_mask)
@@ -84,6 +124,15 @@ class ConvReluNorm(nn.Module):
 
 
 class DDSConv(nn.Module):
+    """Dilated depth-separable convolution module.
+
+    Args:
+        channels (int): Number of channels.
+        kernel_size (int): Size of the convolutional kernel.
+        n_layers (int): Number of convolutional layers.
+        p_dropout (float, optional): Dropout probability. Defaults to 0.0.
+
+    """
     def __init__(self, channels, kernel_size, n_layers, p_dropout=0.0):
         super(DDSConv, self).__init__()
         self.channels = channels
@@ -117,6 +166,18 @@ class DDSConv(nn.Module):
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x, x_mask, g=None):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, channels, time_steps).
+            x_mask (torch.Tensor): Mask tensor of shape (batch_size, 1, time_steps).
+            g (torch.Tensor, optional): Conditioning tensor of shape (batch_size, gin_channels, time_steps).
+                Defaults to None.
+
+        Returns:
+            torch.Tensor: Output tensor of shape (batch_size, channels, time_steps).
+
+        """
         if g is not None:
             x = x + g
 
@@ -128,6 +189,18 @@ class DDSConv(nn.Module):
 
 
 class WN(torch.nn.Module):
+    """Weight-normalized convolution module.
+
+    Args:
+        hidden_channels (int): Number of hidden channels.
+        kernel_size (int): Size of the convolutional kernel.
+        dilation_rate (int): Dilation rate of the convolution.
+        n_layers (int): Number of convolutional layers.
+        gin_channels (int, optional): Number of conditioning channels. Defaults to 0.
+        p_dropout (float, optional): Dropout probability. Defaults to 0.
+
+    """
+
     def __init__(
         self,
         hidden_channels,
@@ -184,6 +257,18 @@ class WN(torch.nn.Module):
             self.res_skip_layers.append(res_skip_layer)
 
     def forward(self, x, x_mask, g=None, **kwargs):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, hidden_channels, time_steps).
+            x_mask (torch.Tensor): Mask tensor of shape (batch_size, 1, time_steps).
+            g (torch.Tensor, optional): Conditioning tensor of shape (batch_size, gin_channels, time_steps).
+                Defaults to None.
+
+        Returns:
+            torch.Tensor: Output tensor of shape (batch_size, hidden_channels, time_steps).
+
+        """
         output = torch.zeros_like(x)
         n_channels_tensor = torch.IntTensor([self.hidden_channels])
 
@@ -211,6 +296,7 @@ class WN(torch.nn.Module):
         return output * x_mask
 
     def remove_weight_norm(self):
+        """Remove weight normalization from the module."""
         if self.gin_channels != 0:
             torch.nn.utils.remove_weight_norm(self.cond_layer)
         for l in self.in_layers:
@@ -220,6 +306,15 @@ class WN(torch.nn.Module):
 
 
 class ResBlock1(torch.nn.Module):
+    """Residual block with three dilated convolutional layers.
+
+    Args:
+        channels (int): Number of channels.
+        kernel_size (int, optional): Size of the convolutional kernel. Defaults to 3.
+        dilation (tuple, optional): Dilation rates of the convolutional layers. Defaults to (1, 3, 5).
+
+    """
+
     def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5)):
         super(ResBlock1, self).__init__()
         self.convs1 = nn.ModuleList(
@@ -295,6 +390,17 @@ class ResBlock1(torch.nn.Module):
         self.convs2.apply(init_weights)
 
     def forward(self, x, x_mask=None):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, channels, time_steps).
+            x_mask (torch.Tensor, optional): Mask tensor of shape (batch_size, 1, time_steps).
+                Defaults to None.
+
+        Returns:
+            torch.Tensor: Output tensor of shape (batch_size, channels, time_steps).
+
+        """
         for c1, c2 in zip(self.convs1, self.convs2):
             xt = F.leaky_relu(x, LRELU_SLOPE)
             if x_mask is not None:
@@ -310,6 +416,7 @@ class ResBlock1(torch.nn.Module):
         return x
 
     def remove_weight_norm(self):
+        """Remove weight normalization from the module."""
         for l in self.convs1:
             remove_weight_norm(l)
         for l in self.convs2:
@@ -317,6 +424,15 @@ class ResBlock1(torch.nn.Module):
 
 
 class ResBlock2(torch.nn.Module):
+    """Residual block with two dilated convolutional layers.
+
+    Args:
+        channels (int): Number of channels.
+        kernel_size (int, optional): Size of the convolutional kernel. Defaults to 3.
+        dilation (tuple, optional): Dilation rates of the convolutional layers. Defaults to (1, 3).
+
+    """
+
     def __init__(self, channels, kernel_size=3, dilation=(1, 3)):
         super(ResBlock2, self).__init__()
         self.convs = nn.ModuleList(
@@ -346,6 +462,17 @@ class ResBlock2(torch.nn.Module):
         self.convs.apply(init_weights)
 
     def forward(self, x, x_mask=None):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, channels, time_steps).
+            x_mask (torch.Tensor, optional): Mask tensor of shape (batch_size, 1, time_steps).
+                Defaults to None.
+
+        Returns:
+            torch.Tensor: Output tensor of shape (batch_size, channels, time_steps).
+
+        """
         for c in self.convs:
             xt = F.leaky_relu(x, LRELU_SLOPE)
             if x_mask is not None:
@@ -357,12 +484,31 @@ class ResBlock2(torch.nn.Module):
         return x
 
     def remove_weight_norm(self):
+        """Remove weight normalization from the module."""
         for l in self.convs:
             remove_weight_norm(l)
 
 
 class Log(nn.Module):
+    """Logarithm module for flow-based models.
+
+    This module computes the logarithm of the input and its log determinant.
+    During reverse, it computes the exponential of the input.
+    """
+
     def forward(self, x, x_mask, reverse=False, **kwargs):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+            x_mask (torch.Tensor): Mask tensor.
+            reverse (bool, optional): Whether to reverse the operation. Defaults to False.
+
+        Returns:
+            tuple:
+                - torch.Tensor: Output tensor.
+                - torch.Tensor: Log determinant tensor.
+        """
         if not reverse:
             y = torch.log(torch.clamp_min(x, 1e-5)) * x_mask
             logdet = torch.sum(-y, [1, 2])
@@ -373,7 +519,23 @@ class Log(nn.Module):
 
 
 class Flip(nn.Module):
+    """Flip module for flow-based models.
+
+    This module flips the input along the time dimension.
+    """
+
     def forward(self, x, *args, reverse=False, **kwargs):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+            reverse (bool, optional): Whether to reverse the operation. Defaults to False.
+
+        Returns:
+            tuple:
+                - torch.Tensor: Output tensor.
+                - torch.Tensor: Log determinant tensor.
+        """
         x = torch.flip(x, [1])
         if not reverse:
             logdet = torch.zeros(x.size(0)).to(dtype=x.dtype, device=x.device)
@@ -383,6 +545,15 @@ class Flip(nn.Module):
 
 
 class ElementwiseAffine(nn.Module):
+    """Elementwise affine transformation module for flow-based models.
+
+    This module performs an elementwise affine transformation on the input.
+
+    Args:
+        channels (int): Number of channels.
+
+    """
+
     def __init__(self, channels):
         super().__init__()
         self.channels = channels
@@ -390,6 +561,18 @@ class ElementwiseAffine(nn.Module):
         self.logs = nn.Parameter(torch.zeros(channels, 1))
 
     def forward(self, x, x_mask, reverse=False, **kwargs):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+            x_mask (torch.Tensor): Mask tensor.
+            reverse (bool, optional): Whether to reverse the operation. Defaults to False.
+
+        Returns:
+            tuple:
+                - torch.Tensor: Output tensor.
+                - torch.Tensor: Log determinant tensor.
+        """
         if not reverse:
             y = self.m + torch.exp(self.logs) * x
             y = y * x_mask
@@ -401,6 +584,20 @@ class ElementwiseAffine(nn.Module):
 
 
 class ResidualCouplingLayer(nn.Module):
+    """Residual coupling layer for flow-based models.
+
+    Args:
+        channels (int): Number of channels.
+        hidden_channels (int): Number of hidden channels.
+        kernel_size (int): Size of the convolutional kernel.
+        dilation_rate (int): Dilation rate of the convolution.
+        n_layers (int): Number of convolutional layers.
+        p_dropout (float, optional): Dropout probability. Defaults to 0.
+        gin_channels (int, optional): Number of conditioning channels. Defaults to 0.
+        mean_only (bool, optional): Whether to use mean-only coupling. Defaults to False.
+
+    """
+
     def __init__(
         self,
         channels,
@@ -436,6 +633,20 @@ class ResidualCouplingLayer(nn.Module):
         self.post.bias.data.zero_()
 
     def forward(self, x, x_mask, g=None, reverse=False):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, channels, time_steps).
+            x_mask (torch.Tensor): Mask tensor of shape (batch_size, 1, time_steps).
+            g (torch.Tensor, optional): Conditioning tensor of shape (batch_size, gin_channels, time_steps).
+                Defaults to None.
+            reverse (bool, optional): Whether to reverse the operation. Defaults to False.
+
+        Returns:
+            tuple:
+                - torch.Tensor: Output tensor of shape (batch_size, channels, time_steps).
+                - torch.Tensor: Log determinant tensor.
+        """
         x0, x1 = torch.split(x, [self.half_channels] * 2, 1)
         h = self.pre(x0) * x_mask
         h = self.enc(h, x_mask, g=g)
@@ -457,10 +668,25 @@ class ResidualCouplingLayer(nn.Module):
             return x
 
     def remove_weight_norm(self):
+        """Remove weight normalization from the module."""
         self.enc.remove_weight_norm()
 
 
 class ConvFlow(nn.Module):
+    """Convolutional flow layer for flow-based models.
+
+    Args:
+        in_channels (int): Number of input channels.
+        filter_channels (int): Number of filter channels.
+        kernel_size (int): Size of the convolutional kernel.
+        n_layers (int): Number of convolutional layers.
+        num_bins (int, optional): Number of bins for the piecewise rational quadratic transform.
+            Defaults to 10.
+        tail_bound (float, optional): Tail bound for the piecewise rational quadratic transform.
+            Defaults to 5.0.
+
+    """
+
     def __init__(
         self,
         in_channels,
@@ -488,6 +714,21 @@ class ConvFlow(nn.Module):
         self.proj.bias.data.zero_()
 
     def forward(self, x, x_mask, g=None, reverse=False):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, in_channels, time_steps).
+            x_mask (torch.Tensor): Mask tensor of shape (batch_size, 1, time_steps).
+            g (torch.Tensor, optional): Conditioning tensor of shape (batch_size, gin_channels, time_steps).
+                Defaults to None.
+            reverse (bool, optional): Whether to reverse the operation. Defaults to False.
+
+        Returns:
+            tuple:
+                - torch.Tensor: Output tensor of shape (batch_size, in_channels, time_steps).
+                - torch.Tensor: Log determinant tensor.
+
+        """
         x0, x1 = torch.split(x, [self.half_channels] * 2, 1)
         h = self.pre(x0)
         h = self.convs(h, x_mask, g=g)

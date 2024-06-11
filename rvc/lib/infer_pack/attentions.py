@@ -8,6 +8,26 @@ from rvc.lib.infer_pack.modules import LayerNorm
 
 
 class Encoder(nn.Module):
+    """
+    Encoder module for the Transformer model.
+
+    Args:
+        hidden_channels (int): Number of hidden channels in the encoder.
+        filter_channels (int): Number of filter channels in the feed-forward network.
+        n_heads (int): Number of attention heads.
+        n_layers (int): Number of encoder layers.
+        kernel_size (int, optional): Kernel size of the convolution layers in the feed-forward network. Defaults to 1.
+        p_dropout (float, optional): Dropout probability. Defaults to 0.0.
+        window_size (int, optional): Window size for relative positional encoding. Defaults to 10.
+
+    Inputs:
+        x (torch.Tensor): Input tensor of shape (batch_size, hidden_channels, time_steps).
+        x_mask (torch.Tensor): Mask tensor of shape (batch_size, time_steps), indicating valid time steps.
+
+    Returns:
+        torch.Tensor: Encoded tensor of shape (batch_size, hidden_channels, time_steps).
+    """
+
     def __init__(
         self,
         hidden_channels,
@@ -71,6 +91,29 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
+    """
+    Decoder module for the Transformer model.
+
+    Args:
+        hidden_channels (int): Number of hidden channels in the decoder.
+        filter_channels (int): Number of filter channels in the feed-forward network.
+        n_heads (int): Number of attention heads.
+        n_layers (int): Number of decoder layers.
+        kernel_size (int, optional): Kernel size of the convolution layers in the feed-forward network. Defaults to 1.
+        p_dropout (float, optional): Dropout probability. Defaults to 0.0.
+        proximal_bias (bool, optional): Whether to use proximal bias in self-attention. Defaults to False.
+        proximal_init (bool, optional): Whether to initialize the key projection weights the same as query projection weights. Defaults to True.
+
+    Inputs:
+        x (torch.Tensor): Decoder input tensor of shape (batch_size, hidden_channels, time_steps).
+        x_mask (torch.Tensor): Mask tensor of shape (batch_size, time_steps), indicating valid time steps.
+        h (torch.Tensor): Encoder output tensor of shape (batch_size, hidden_channels, time_steps).
+        h_mask (torch.Tensor): Mask tensor of shape (batch_size, time_steps), indicating valid time steps.
+
+    Returns:
+        torch.Tensor: Decoded tensor of shape (batch_size, hidden_channels, time_steps).
+    """
+
     def __init__(
         self,
         hidden_channels,
@@ -157,6 +200,29 @@ class Decoder(nn.Module):
 
 
 class MultiHeadAttention(nn.Module):
+    """
+    Multi-head attention module with optional relative positional encoding and proximal bias.
+
+    Args:
+        channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        n_heads (int): Number of attention heads.
+        p_dropout (float, optional): Dropout probability. Defaults to 0.0.
+        window_size (int, optional): Window size for relative positional encoding. Defaults to None.
+        heads_share (bool, optional): Whether to share relative positional embeddings across heads. Defaults to True.
+        block_length (int, optional): Block length for local attention. Defaults to None.
+        proximal_bias (bool, optional): Whether to use proximal bias in self-attention. Defaults to False.
+        proximal_init (bool, optional): Whether to initialize the key projection weights the same as query projection weights. Defaults to False.
+
+    Inputs:
+        x (torch.Tensor): Query tensor of shape (batch_size, channels, time_steps).
+        c (torch.Tensor): Key and value tensor of shape (batch_size, channels, time_steps).
+        attn_mask (torch.Tensor, optional): Attention mask tensor of shape (batch_size, time_steps, time_steps). Defaults to None.
+
+    Returns:
+        torch.Tensor: Attention output tensor of shape (batch_size, out_channels, time_steps).
+    """
+
     def __init__(
         self,
         channels,
@@ -341,6 +407,26 @@ class MultiHeadAttention(nn.Module):
 
 
 class FFN(nn.Module):
+    """
+    Feed-forward network module.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        filter_channels (int): Number of filter channels in the convolution layers.
+        kernel_size (int): Kernel size of the convolution layers.
+        p_dropout (float, optional): Dropout probability. Defaults to 0.0.
+        activation (str, optional): Activation function to use. Defaults to None.
+        causal (bool, optional): Whether to use causal padding in the convolution layers. Defaults to False.
+
+    Inputs:
+        x (torch.Tensor): Input tensor of shape (batch_size, in_channels, time_steps).
+        x_mask (torch.Tensor): Mask tensor of shape (batch_size, time_steps), indicating valid time steps.
+
+    Returns:
+        torch.Tensor: Output tensor of shape (batch_size, out_channels, time_steps).
+    """
+
     def __init__(
         self,
         in_channels,
