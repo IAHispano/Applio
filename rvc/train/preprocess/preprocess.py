@@ -2,7 +2,8 @@ from multiprocessing import cpu_count
 import os
 import sys
 import time
-
+from typing import List, Tuple
+import multiprocessing
 from scipy import signal
 from scipy.io import wavfile
 import librosa
@@ -14,21 +15,32 @@ sys.path.append(now_directory)
 from rvc.utils import load_audio
 from rvc.train.slicer import Slicer
 
+# Load command line arguments
 experiment_directory = sys.argv[1]
 input_root = sys.argv[2]
 sampling_rate = int(sys.argv[3])
 percentage = float(sys.argv[4])
+num_processes = int(sys.argv[5]) if len(sys.argv) > 5 else cpu_count()
 
-try:
-    num_processes = int(sys.argv[5])
-except ValueError:
-    num_processes = cpu_count()
+# Define constants
+OVERLAP = 0.3
+TAIL = percentage + OVERLAP
+MAX_AMPLITUDE = 0.9
+ALPHA = 0.75
+HIGH_PASS_CUTOFF = 48
 
-import multiprocessing
+# Define directory paths
+GT_WAVS_DIR = f"{experiment_directory}/sliced_audios"
+WAVS16K_DIR = f"{experiment_directory}/sliced_audios_16k"
+
+# Create directories if they don't exist
+os.makedirs(experiment_directory, exist_ok=True)
+os.makedirs(GT_WAVS_DIR, exist_ok=True)
+os.makedirs(WAVS16K_DIR, exist_ok=True)
 
 
 class PreProcess:
-    def __init__(self, sr, exp_dir, per=3.0):
+    def __init__(self, sr: int, exp_dir: str, per: float):
         self.slicer = Slicer(
             sr=sr,
             threshold=-42,
@@ -38,29 +50,22 @@ class PreProcess:
             max_sil_kept=500,
         )
         self.sr = sr
-        self.b_high, self.a_high = signal.butter(N=5, Wn=48, btype="high", fs=self.sr)
+        self.b_high, self.a_high = signal.butter(
+            N=5, Wn=HIGH_PASS_CUTOFF, btype="high", fs=self.sr
+        )
         self.per = per
-        self.overlap = 0.3
-        self.tail = self.per + self.overlap
-        self.max_amplitude = 0.9
-        self.alpha = 0.75
         self.exp_dir = exp_dir
-        self.gt_wavs_dir = f"{exp_dir}/sliced_audios"
-        self.wavs16k_dir = f"{exp_dir}/sliced_audios_16k"
-        os.makedirs(self.exp_dir, exist_ok=True)
-        os.makedirs(self.gt_wavs_dir, exist_ok=True)
-        os.makedirs(self.wavs16k_dir, exist_ok=True)
 
-    def normalize_and_write(self, tmp_audio, idx0, idx1):
+    def normalize_and_write(self, tmp_audio: np.ndarray, idx0: int, idx1: int):
         tmp_max = np.abs(tmp_audio).max()
         if tmp_max > 2.5:
             print(f"{idx0}-{idx1}-{tmp_max}-filtered")
             return
-        tmp_audio = (tmp_audio / tmp_max * (self.max_amplitude * self.alpha)) + (
-            1 - self.alpha
+        tmp_audio = (tmp_audio / tmp_max * (MAX_AMPLITUDE * ALPHA)) + (
+            1 - ALPHA
         ) * tmp_audio
         wavfile.write(
-            f"{self.gt_wavs_dir}/{idx0}_{idx1}.wav",
+            f"{GT_WAVS_DIR}/{idx0}_{idx1}.wav",
             self.sr,
             tmp_audio.astype(np.float32),
         )
@@ -68,12 +73,12 @@ class PreProcess:
             tmp_audio, orig_sr=self.sr, target_sr=16000
         )  # , res_type="soxr_vhq"
         wavfile.write(
-            f"{self.wavs16k_dir}/{idx0}_{idx1}.wav",
+            f"{WAVS16K_DIR}/{idx0}_{idx1}.wav",
             16000,
             tmp_audio.astype(np.float32),
         )
 
-    def process_audio(self, path, idx0):
+    def process_audio(self, path: str, idx0: int):
         try:
             audio = load_audio(path, self.sr)
             audio = signal.lfilter(self.b_high, self.a_high, audio)
@@ -81,10 +86,10 @@ class PreProcess:
             idx1 = 0
             for audio_segment in self.slicer.slice(audio):
                 i = 0
-                while 1:
-                    start = int(self.sr * (self.per - self.overlap) * i)
+                while True:
+                    start = int(self.sr * (self.per - OVERLAP) * i)
                     i += 1
-                    if len(audio_segment[start:]) > self.tail * self.sr:
+                    if len(audio_segment[start:]) > TAIL * self.sr:
                         tmp_audio = audio_segment[
                             start : start + int(self.per * self.sr)
                         ]
@@ -98,31 +103,30 @@ class PreProcess:
         except Exception as error:
             print(f"{path}: {error}")
 
-    def process_audio_multiprocessing(self, infos):
+    def process_audio_multiprocessing(self, infos: List[Tuple[str, int]]):
         for path, idx0 in infos:
             self.process_audio(path, idx0)
 
-    def process_audio_multiprocessing_input_directory(self, input_root, num_processes):
+    def process_audio_multiprocessing_input_directory(
+        self, input_root: str, num_processes: int
+    ):
         try:
             infos = [
                 (f"{input_root}/{name}", idx)
                 for idx, name in enumerate(sorted(list(os.listdir(input_root))))
             ]
-            processes = []
-            for i in range(num_processes):
-                p = multiprocessing.Process(
-                    target=self.process_audio_multiprocessing,
-                    args=(infos[i::num_processes],),
+            with multiprocessing.Pool(processes=num_processes) as pool:
+                pool.map(
+                    self.process_audio_multiprocessing,
+                    [infos[i::num_processes] for i in range(num_processes)],
                 )
-                processes.append(p)
-                p.start()
-            for i in range(num_processes):
-                processes[i].join()
         except Exception as error:
             print(error)
 
 
-def preprocess_training_set(input_root, sr, num_processes, exp_dir, per):
+def preprocess_training_set(
+    input_root: str, sr: int, num_processes: int, exp_dir: str, per: float
+):
     start_time = time.time()
     pp = PreProcess(sr, exp_dir, per)
     print(f"Starting preprocess with {num_processes} cores...")
