@@ -751,8 +751,10 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
 
     # Print training progress
     if rank == 0:
-        lowest_value_rounded = float(lowest_value['value'])  # Convert to float
-        lowest_value_rounded = round(lowest_value_rounded, 1)  # Round to 1 decimal place
+        lowest_value_rounded = float(lowest_value["value"])  # Convert to float
+        lowest_value_rounded = round(
+            lowest_value_rounded, 3
+        )  # Round to 3 decimal place
 
         if epoch > 1 and hps.overtraining_detector == 1:
             print(
@@ -768,14 +770,17 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             )
         last_loss_gen_all = loss_gen_all
 
-
     # Save the final model
     if epoch >= hps.custom_total_epoch and rank == 0:
+        lowest_value_rounded = float(lowest_value["value"])  # Convert to float
+        lowest_value_rounded = round(
+            lowest_value_rounded, 3
+        )  # Round to 3 decimal place
         print(
             f"Training has been successfully completed with {epoch} epoch, {global_step} steps and {round(loss_gen_all.item(), 3)} loss gen."
         )
         print(
-            f"Lowest generator loss: {lowest_value['value']} at epoch {lowest_value['epoch']}, step {lowest_value['step']}"
+            f"Lowest generator loss: {lowest_value_rounded} at epoch {lowest_value['epoch']}, step {lowest_value['step']}"
         )
 
         pid_file_path = os.path.join(now_dir, "rvc", "train", "train_pid.txt")
