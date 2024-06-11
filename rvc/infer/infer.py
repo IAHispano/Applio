@@ -25,17 +25,33 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
 class VoiceConverter:
+    """
+    A class for performing voice conversion using the Retrieval-Based Voice Conversion (RVC) method.
+    """
+
     def __init__(self):
-        self.config = Config()
-        self.hubert_model = None
-        self.tgt_sr = None
-        self.net_g = None
-        self.vc = None
-        self.cpt = None
-        self.version = None
-        self.n_spk = None
+        """
+        Initializes the VoiceConverter with default configuration, and sets up models and parameters.
+        """
+        self.config = Config()  # Load RVC configuration
+        self.hubert_model = (
+            None  # Initialize the Hubert model (for embedding extraction)
+        )
+        self.tgt_sr = None  # Target sampling rate for the output audio
+        self.net_g = None  # Generator network for voice conversion
+        self.vc = None  # Voice conversion pipeline instance
+        self.cpt = None  # Checkpoint for loading model weights
+        self.version = None  # Model version
+        self.n_spk = None  # Number of speakers in the model
 
     def load_hubert(self, embedder_model, embedder_model_custom):
+        """
+        Loads the HuBERT model for speaker embedding extraction.
+
+        Args:
+            embedder_model: Path to the pre-trained embedder model.
+            embedder_model_custom: Path to a custom embedder model (if any).
+        """
         models, _, _ = load_embedding(embedder_model, embedder_model_custom)
         self.hubert_model = models[0].to(self.config.device)
         self.hubert_model = (
@@ -47,6 +63,16 @@ class VoiceConverter:
 
     @staticmethod
     def remove_audio_noise(input_audio_path, reduction_strength=0.7):
+        """
+        Removes noise from an audio file using the NoiseReduce library.
+
+        Args:
+            input_audio_path: Path to the input audio file.
+            reduction_strength: Strength of noise reduction (0.0 to 1.0).
+
+        Returns:
+            The audio data with noise reduced, or None if an error occurs.
+        """
         try:
             rate, data = wavfile.read(input_audio_path)
             reduced_noise = nr.reduce_noise(
@@ -59,6 +85,17 @@ class VoiceConverter:
 
     @staticmethod
     def convert_audio_format(input_path, output_path, output_format):
+        """
+        Converts an audio file to a specified output format.
+
+        Args:
+            input_path: Path to the input audio file.
+            output_path: Path for the output audio file.
+            output_format: Desired output format (e.g., "MP3", "WAV").
+
+        Returns:
+            The path to the converted audio file, or None if conversion fails.
+        """
         try:
             if output_format != "WAV":
                 print(f"Converting audio to {output_format} format...")
@@ -103,6 +140,32 @@ class VoiceConverter:
         embedder_model=None,
         embedder_model_custom=None,
     ):
+        """
+        Performs voice conversion on the input audio using the loaded model and settings.
+
+        Args:
+            sid: Speaker ID for the target voice.
+            input_audio_path: Path to the input audio file.
+            f0_up_key: Pitch shift value in semitones.
+            f0_file: Path to an external F0 file for pitch guidance.
+            f0_method: F0 estimation method to use.
+            file_index: Path to the FAISS index for speaker embedding retrieval.
+            index_rate: Weighting factor for speaker embedding retrieval.
+            resample_sr: Target sampling rate for resampling.
+            rms_mix_rate: Mixing ratio for adjusting RMS levels.
+            protect: Protection level for preserving the original pitch.
+            hop_length: Hop length for F0 estimation.
+            output_path: Path for saving the converted audio.
+            split_audio: Whether to split the audio into segments for processing.
+            f0autotune: Whether to apply autotune to the F0 contour.
+            filter_radius: Radius for median filtering of the F0 contour.
+            embedder_model: Path to the embedder model.
+            embedder_model_custom: Path to a custom embedder model.
+
+        Returns:
+            A tuple containing the target sampling rate and the converted audio data,
+            or an error message if conversion fails.
+        """
         f0_up_key = int(f0_up_key)
         try:
             audio = load_audio(input_audio_path, 16000)
@@ -204,6 +267,13 @@ class VoiceConverter:
             print(error)
 
     def get_vc(self, weight_root, sid):
+        """
+        Loads the voice conversion model and sets up the pipeline.
+
+        Args:
+            weight_root: Path to the model weight file.
+            sid: Speaker ID (currently not used).
+        """
         if sid == "" or sid == []:
             if self.hubert_model is not None:
                 print("clean_empty_cache")
@@ -285,6 +355,30 @@ class VoiceConverter:
         embedder_model_custom,
         upscale_audio,
     ):
+        """
+        Main inference pipeline for voice conversion.
+
+        Args:
+            f0up_key: Pitch shift value.
+            filter_radius: Filter radius for F0 smoothing.
+            index_rate: Speaker embedding retrieval rate.
+            rms_mix_rate: RMS mixing ratio.
+            protect: Pitch protection level.
+            hop_length: Hop length for F0 estimation.
+            f0method: F0 estimation method.
+            audio_input_path: Input audio file path.
+            audio_output_path: Output audio file path.
+            model_path: Model weight file path.
+            index_path: FAISS index file path.
+            split_audio: Whether to split audio.
+            f0autotune: Whether to apply autotune.
+            clean_audio: Whether to apply noise reduction.
+            clean_strength: Noise reduction strength.
+            export_format: Output audio format.
+            embedder_model: Embedder model path.
+            embedder_model_custom: Custom embedder model path.
+            upscale_audio: Whether to upscale audio.
+        """
         self.get_vc(model_path, 0)
 
         try:
@@ -292,7 +386,7 @@ class VoiceConverter:
             print(f"Converting audio '{audio_input_path}'...")
             if upscale_audio == "True":
                 upscale(audio_input_path, audio_input_path)
-                
+
             self.voice_conversion(
                 sid=0,
                 input_audio_path=audio_input_path,

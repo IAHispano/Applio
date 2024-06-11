@@ -32,6 +32,10 @@ input_audio_path2wav = {}
 
 
 class AudioProcessor:
+    """
+    A class for processing audio signals, specifically for adjusting RMS levels.
+    """
+
     def change_rms(
         source_audio: np.ndarray,
         source_rate: int,
@@ -41,6 +45,16 @@ class AudioProcessor:
     ) -> np.ndarray:
         """
         Adjust the RMS level of target_audio to match the RMS of source_audio, with a given blending rate.
+
+        Args:
+            source_audio: The source audio signal as a NumPy array.
+            source_rate: The sampling rate of the source audio.
+            target_audio: The target audio signal to adjust.
+            target_rate: The sampling rate of the target audio.
+            rate: The blending rate between the source and target RMS levels.
+
+        Returns:
+            The adjusted target audio signal with RMS level modified to match the source audio.
         """
         # Calculate RMS of both audio data
         rms1 = librosa.feature.rms(
@@ -76,11 +90,27 @@ class AudioProcessor:
 
 
 class Autotune:
+    """
+    A class for applying autotune to a given fundamental frequency (F0) contour.
+    """
+
     def __init__(self, ref_freqs):
+        """
+        Initializes the Autotune class with a set of reference frequencies.
+
+        Args:
+            ref_freqs: A list of reference frequencies representing musical notes.
+        """
         self.ref_freqs = ref_freqs
         self.note_dict = self.generate_interpolated_frequencies()
 
     def generate_interpolated_frequencies(self):
+        """
+        Generates a dictionary of interpolated frequencies between reference frequencies.
+
+        Returns:
+            A list of interpolated frequencies, including the original reference frequencies.
+        """
         note_dict = []
         for i in range(len(self.ref_freqs) - 1):
             freq_low = self.ref_freqs[i]
@@ -93,6 +123,15 @@ class Autotune:
         return note_dict
 
     def autotune_f0(self, f0):
+        """
+        Autotunes a given F0 contour by snapping each frequency to the closest reference frequency.
+
+        Args:
+            f0: The input F0 contour as a NumPy array.
+
+        Returns:
+            The autotuned F0 contour.
+        """
         autotuned_f0 = np.zeros_like(f0)
         for i, freq in enumerate(f0):
             closest_note = min(self.note_dict, key=lambda x: abs(x - freq))
@@ -101,7 +140,19 @@ class Autotune:
 
 
 class Pipeline:
+    """
+    The main pipeline class for performing voice conversion, including preprocessing, F0 estimation,
+    voice conversion using a model, and post-processing.
+    """
+
     def __init__(self, tgt_sr, config):
+        """
+        Initializes the Pipeline class with target sampling rate and configuration parameters.
+
+        Args:
+            tgt_sr: The target sampling rate for the output audio.
+            config: A configuration object containing various parameters for the pipeline.
+        """
         self.x_pad = config.x_pad
         self.x_query = config.x_query
         self.x_center = config.x_center
@@ -140,6 +191,19 @@ class Pipeline:
     @staticmethod
     @lru_cache
     def get_f0_harvest(input_audio_path, fs, f0max, f0min, frame_period):
+        """
+        Estimates the fundamental frequency (F0) of a given audio file using the Harvest algorithm.
+
+        Args:
+            input_audio_path: Path to the input audio file.
+            fs: Sampling rate of the audio file.
+            f0max: Maximum F0 value to consider.
+            f0min: Minimum F0 value to consider.
+            frame_period: Frame period in milliseconds for F0 analysis.
+
+        Returns:
+            The estimated F0 contour as a NumPy array.
+        """
         audio = input_audio_path2wav[input_audio_path]
         f0, t = pyworld.harvest(
             audio,
@@ -160,6 +224,20 @@ class Pipeline:
         hop_length,
         model="full",
     ):
+        """
+        Estimates the fundamental frequency (F0) of a given audio signal using the Crepe model.
+
+        Args:
+            x: The input audio signal as a NumPy array.
+            f0_min: Minimum F0 value to consider.
+            f0_max: Maximum F0 value to consider.
+            p_len: Desired length of the F0 output.
+            hop_length: Hop length for the Crepe model.
+            model: Crepe model size to use ("full" or "tiny").
+
+        Returns:
+            The estimated F0 contour as a NumPy array.
+        """
         x = x.astype(np.float32)
         x /= np.quantile(np.abs(x), 0.999)
         audio = torch.from_numpy(x).to(self.device, copy=True)
@@ -198,6 +276,20 @@ class Pipeline:
         p_len,
         hop_length,
     ):
+        """
+        Estimates the fundamental frequency (F0) using a hybrid approach combining multiple methods.
+
+        Args:
+            methods_str: A string specifying the methods to combine (e.g., "hybrid[crepe+rmvpe]").
+            x: The input audio signal as a NumPy array.
+            f0_min: Minimum F0 value to consider.
+            f0_max: Maximum F0 value to consider.
+            p_len: Desired length of the F0 output.
+            hop_length: Hop length for F0 estimation methods.
+
+        Returns:
+            The estimated F0 contour as a NumPy array, obtained by combining the specified methods.
+        """
         methods_str = re.search("hybrid\[(.+)\]", methods_str)
         if methods_str:
             methods = [method.strip() for method in methods_str.group(1).split("+")]
@@ -255,6 +347,23 @@ class Pipeline:
         f0autotune,
         inp_f0=None,
     ):
+        """
+        Estimates the fundamental frequency (F0) of a given audio signal using various methods.
+
+        Args:
+            input_audio_path: Path to the input audio file.
+            x: The input audio signal as a NumPy array.
+            p_len: Desired length of the F0 output.
+            f0_up_key: Key to adjust the pitch of the F0 contour.
+            f0_method: Method to use for F0 estimation (e.g., "pm", "harvest", "crepe").
+            filter_radius: Radius for median filtering the F0 contour.
+            hop_length: Hop length for F0 estimation methods.
+            f0autotune: Whether to apply autotune to the F0 contour.
+            inp_f0: Optional input F0 contour to use instead of estimating.
+
+        Returns:
+            A tuple containing the quantized F0 contour and the original F0 contour.
+        """
         global input_audio_path2wav
         if f0_method == "pm":
             f0 = (
@@ -292,7 +401,9 @@ class Pipeline:
         elif f0_method == "crepe":
             f0 = self.get_f0_crepe(x, self.f0_min, self.f0_max, p_len, int(hop_length))
         elif f0_method == "crepe-tiny":
-            f0 = self.get_f0_crepe(x, self.f0_min, self.f0_max, p_len, int(hop_length), "tiny")
+            f0 = self.get_f0_crepe(
+                x, self.f0_min, self.f0_max, p_len, int(hop_length), "tiny"
+            )
         elif f0_method == "rmvpe":
             if hasattr(self, "model_rmvpe") == False:
                 self.model_rmvpe = RMVPE0Predictor(
@@ -364,6 +475,25 @@ class Pipeline:
         version,
         protect,
     ):
+        """
+        Performs voice conversion on a given audio segment.
+
+        Args:
+            model: The feature extractor model.
+            net_g: The generative model for synthesizing speech.
+            sid: Speaker ID for the target voice.
+            audio0: The input audio segment.
+            pitch: Quantized F0 contour for pitch guidance.
+            pitchf: Original F0 contour for pitch guidance.
+            index: FAISS index for speaker embedding retrieval.
+            big_npy: Speaker embeddings stored in a NumPy array.
+            index_rate: Blending rate for speaker embedding retrieval.
+            version: Model version ("v1" or "v2").
+            protect: Protection level for preserving the original pitch.
+
+        Returns:
+            The voice-converted audio segment.
+        """
         feats = torch.from_numpy(audio0)
         if self.is_half:
             feats = feats.half()
@@ -465,6 +595,33 @@ class Pipeline:
         f0autotune,
         f0_file=None,
     ):
+        """
+        The main pipeline function for performing voice conversion.
+
+        Args:
+            model: The feature extractor model.
+            net_g: The generative model for synthesizing speech.
+            sid: Speaker ID for the target voice.
+            audio: The input audio signal.
+            input_audio_path: Path to the input audio file.
+            f0_up_key: Key to adjust the pitch of the F0 contour.
+            f0_method: Method to use for F0 estimation.
+            file_index: Path to the FAISS index file for speaker embedding retrieval.
+            index_rate: Blending rate for speaker embedding retrieval.
+            pitch_guidance: Whether to use pitch guidance during voice conversion.
+            filter_radius: Radius for median filtering the F0 contour.
+            tgt_sr: Target sampling rate for the output audio.
+            resample_sr: Resampling rate for the output audio.
+            rms_mix_rate: Blending rate for adjusting the RMS level of the output audio.
+            version: Model version.
+            protect: Protection level for preserving the original pitch.
+            hop_length: Hop length for F0 estimation methods.
+            f0autotune: Whether to apply autotune to the F0 contour.
+            f0_file: Path to a file containing an F0 contour to use.
+
+        Returns:
+            The voice-converted audio signal.
+        """
         if file_index != "" and os.path.exists(file_index) == True and index_rate != 0:
             try:
                 index = faiss.read_index(file_index)
