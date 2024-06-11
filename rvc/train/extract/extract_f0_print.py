@@ -136,9 +136,9 @@ class FeatureInput:
 
     def get_rmvpe(self, x):
         if not hasattr(self, "model_rmvpe"):
-            from rvc.lib.predictors.RMVPE import RMVPE
+            from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 
-            self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cpu")
+            self.model_rmvpe = RMVPE0Predictor("rmvpe.pt", is_half=False, device="cpu")
         return self.model_rmvpe.infer_from_audio(x, thred=0.03)
 
     def get_f0_method_dict(self):

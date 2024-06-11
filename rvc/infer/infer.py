@@ -6,7 +6,7 @@ import soundfile as sf
 import librosa
 import noisereduce as nr
 from scipy.io import wavfile
-from rvc.infer.pipeline import VC
+from rvc.infer.pipeline import Pipeline as VC
 from audio_upscaler import upscale
 from rvc.utils import load_audio, load_embedding
 from rvc.tools.split_audio import process_audio, merge_audio
