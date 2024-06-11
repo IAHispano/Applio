@@ -102,21 +102,24 @@ class Autotune:
 
 class Pipeline:
     def __init__(self, tgt_sr, config):
-        self.x_pad, self.x_query, self.x_center, self.x_max, self.is_half = (
-            config.x_pad,
-            config.x_query,
-            config.x_center,
-            config.x_max,
-            config.is_half,
-        )
-        self.sr = 16000
+        self.x_pad = config.x_pad
+        self.x_query = config.x_query
+        self.x_center = config.x_center
+        self.x_max = config.x_max
+        self.is_half = config.is_half
+        self.sample_rate = 16000
         self.window = 160
-        self.t_pad = self.sr * self.x_pad
+        self.t_pad = self.sample_rate * self.x_pad
         self.t_pad_tgt = tgt_sr * self.x_pad
         self.t_pad2 = self.t_pad * 2
-        self.t_query = self.sr * self.x_query
-        self.t_center = self.sr * self.x_center
-        self.t_max = self.sr * self.x_max
+        self.t_query = self.sample_rate * self.x_query
+        self.t_center = self.sample_rate * self.x_center
+        self.t_max = self.sample_rate * self.x_max
+        self.time_step = self.window / self.sample_rate * 1000
+        self.f0_min = 50
+        self.f0_max = 1100
+        self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
+        self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
         self.device = config.device
         self.ref_freqs = [
             65.41,
@@ -133,7 +136,7 @@ class Pipeline:
         ]
         self.autotune = Autotune(self.ref_freqs)
         self.note_dict = self.autotune.note_dict
-    
+
     @staticmethod
     @lru_cache
     def get_f0_harvest(input_audio_path, fs, f0max, f0min, frame_period):
@@ -166,7 +169,7 @@ class Pipeline:
         audio = audio.detach()
         pitch: Tensor = torchcrepe.predict(
             audio,
-            self.sr,
+            self.sample_rate,
             hop_length,
             f0_min,
             f0_max,
@@ -223,7 +226,7 @@ class Pipeline:
                     f0_max=int(f0_max),
                     dtype=torch.float32,
                     device=self.device,
-                    sampling_rate=self.sr,
+                    sampling_rate=self.sample_rate,
                     threshold=0.03,
                 )
                 f0 = self.model_fcpe.compute_f0(x, p_len=p_len)
@@ -253,19 +256,14 @@ class Pipeline:
         inp_f0=None,
     ):
         global input_audio_path2wav
-        time_step = self.window / self.sr * 1000
-        f0_min = 50
-        f0_max = 1100
-        f0_mel_min = 1127 * np.log(1 + f0_min / 700)
-        f0_mel_max = 1127 * np.log(1 + f0_max / 700)
         if f0_method == "pm":
             f0 = (
-                parselmouth.Sound(x, self.sr)
+                parselmouth.Sound(x, self.sample_rate)
                 .to_pitch_ac(
-                    time_step=time_step / 1000,
+                    time_step=self.time_step / 1000,
                     voicing_threshold=0.6,
-                    pitch_floor=f0_min,
-                    pitch_ceiling=f0_max,
+                    pitch_floor=self.f0_min,
+                    pitch_ceiling=self.f0_max,
                 )
                 .selected_array["frequency"]
             )
@@ -276,27 +274,25 @@ class Pipeline:
                 )
         elif f0_method == "harvest":
             input_audio_path2wav[input_audio_path] = x.astype(np.double)
-            f0 = self.get_f0_harvest(input_audio_path, self.sr, f0_max, f0_min, 10)
+            f0 = self.get_f0_harvest(
+                input_audio_path, self.sample_rate, self.f0_max, self.f0_min, 10
+            )
             if int(filter_radius) > 2:
                 f0 = signal.medfilt(f0, 3)
         elif f0_method == "dio":
             f0, t = pyworld.dio(
                 x.astype(np.double),
-                fs=self.sr,
-                f0_ceil=f0_max,
-                f0_floor=f0_min,
+                fs=self.sample_rate,
+                f0_ceil=self.f0_max,
+                f0_floor=self.f0_min,
                 frame_period=10,
             )
-            f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sr)
+            f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sample_rate)
             f0 = signal.medfilt(f0, 3)
         elif f0_method == "crepe":
-            f0 = self.get_f0_crepe(
-                x, f0_min, f0_max, p_len, int(hop_length)
-            )
+            f0 = self.get_f0_crepe(x, self.f0_min, self.f0_max, p_len, int(hop_length))
         elif f0_method == "crepe-tiny":
-            f0 = self.get_f0_crepe(
-                x, f0_min, f0_max, p_len, int(hop_length), "tiny"
-            )
+            f0 = self.get_f0_crepe(x, self.f0_min, self.f0_max, p_len, int(hop_length), "tiny")
         elif f0_method == "rmvpe":
             if hasattr(self, "model_rmvpe") == False:
                 self.model_rmvpe = RMVPE0Predictor(
@@ -306,11 +302,11 @@ class Pipeline:
         elif f0_method == "fcpe":
             self.model_fcpe = FCPEF0Predictor(
                 "fcpe.pt",
-                f0_min=int(f0_min),
-                f0_max=int(f0_max),
+                f0_min=int(self.f0_min),
+                f0_max=int(self.f0_max),
                 dtype=torch.float32,
                 device=self.device,
-                sampling_rate=self.sr,
+                sampling_rate=self.sample_rate,
                 threshold=0.03,
             )
             f0 = self.model_fcpe.compute_f0(x, p_len=p_len)
@@ -321,8 +317,8 @@ class Pipeline:
             f0 = self.get_f0_hybrid(
                 f0_method,
                 x,
-                f0_min,
-                f0_max,
+                self.f0_min,
+                self.f0_max,
                 p_len,
                 hop_length,
             )
@@ -331,7 +327,7 @@ class Pipeline:
             f0 = Autotune.autotune_f0(self, f0)
 
         f0 *= pow(2, f0_up_key / 12)
-        tf0 = self.sr // self.window
+        tf0 = self.sample_rate // self.window
         if inp_f0 is not None:
             delta_t = np.round(
                 (inp_f0[:, 0].max() - inp_f0[:, 0].min()) * tf0 + 1
@@ -345,8 +341,8 @@ class Pipeline:
             ]
         f0bak = f0.copy()
         f0_mel = 1127 * np.log(1 + f0 / 700)
-        f0_mel[f0_mel > 0] = (f0_mel[f0_mel > 0] - f0_mel_min) * 254 / (
-            f0_mel_max - f0_mel_min
+        f0_mel[f0_mel > 0] = (f0_mel[f0_mel > 0] - self.f0_mel_min) * 254 / (
+            self.f0_mel_max - self.f0_mel_min
         ) + 1
         f0_mel[f0_mel <= 1] = 1
         f0_mel[f0_mel > 255] = 255
@@ -354,7 +350,7 @@ class Pipeline:
 
         return f0_coarse, f0bak
 
-    def vc(
+    def voice_conversion(
         self,
         model,
         net_g,
@@ -458,7 +454,7 @@ class Pipeline:
         f0_method,
         file_index,
         index_rate,
-        if_f0,
+        pitch_guidance,
         filter_radius,
         tgt_sr,
         resample_sr,
@@ -512,7 +508,7 @@ class Pipeline:
                 print(error)
         sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
         pitch, pitchf = None, None
-        if if_f0 == 1:
+        if pitch_guidance == 1:
             pitch, pitchf = self.get_f0(
                 input_audio_path,
                 audio_pad,
@@ -532,9 +528,9 @@ class Pipeline:
             pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
         for t in opt_ts:
             t = t // self.window * self.window
-            if if_f0 == 1:
+            if pitch_guidance == 1:
                 audio_opt.append(
-                    self.vc(
+                    self.voice_conversion(
                         model,
                         net_g,
                         sid,
@@ -550,7 +546,7 @@ class Pipeline:
                 )
             else:
                 audio_opt.append(
-                    self.vc(
+                    self.voice_conversion(
                         model,
                         net_g,
                         sid,
@@ -565,9 +561,9 @@ class Pipeline:
                     )[self.t_pad_tgt : -self.t_pad_tgt]
                 )
             s = t
-        if if_f0 == 1:
+        if pitch_guidance == 1:
             audio_opt.append(
-                self.vc(
+                self.voice_conversion(
                     model,
                     net_g,
                     sid,
@@ -583,7 +579,7 @@ class Pipeline:
             )
         else:
             audio_opt.append(
-                self.vc(
+                self.voice_conversion(
                     model,
                     net_g,
                     sid,
@@ -600,9 +596,9 @@ class Pipeline:
         audio_opt = np.concatenate(audio_opt)
         if rms_mix_rate != 1:
             audio_opt = AudioProcessor.change_rms(
-                audio, 16000, audio_opt, tgt_sr, rms_mix_rate
+                audio, self.sample_rate, audio_opt, tgt_sr, rms_mix_rate
             )
-        if resample_sr >= 16000 and tgt_sr != resample_sr:
+        if resample_sr >= self.sample_rate and tgt_sr != resample_sr:
             audio_opt = librosa.resample(
                 audio_opt, orig_sr=tgt_sr, target_sr=resample_sr
             )
