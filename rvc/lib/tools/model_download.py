@@ -323,35 +323,39 @@ def model_download_pipeline(url):
                             )
                     else:
                         if "v2" not in item:
-                            file_name = item.split("_nprobe_1_")[1].split("_v1")[0]
-                            if file_name != model_name:
-                                new_file_name = (
-                                    item.split("_nprobe_1_")[0]
-                                    + "_nprobe_1_"
-                                    + model_name
-                                    + "_v1"
-                                )
-                                os.rename(
-                                    os.path.join(extract_folder_path, item),
-                                    os.path.join(
-                                        extract_folder_path, new_file_name + ".index"
-                                    ),
-                                )
+                            if "_nprobe_1_" in item and "_v1" in item:
+                                file_name = item.split("_nprobe_1_")[1].split("_v1")[0]
+                                if file_name != model_name:
+                                    new_file_name = (
+                                        item.split("_nprobe_1_")[0]
+                                        + "_nprobe_1_"
+                                        + model_name
+                                        + "_v1"
+                                    )
+                                    os.rename(
+                                        os.path.join(extract_folder_path, item),
+                                        os.path.join(
+                                            extract_folder_path, new_file_name + ".index"
+                                            ),
+                                    )
+                            
                         else:
-                            file_name = item.split("_nprobe_1_")[1].split("_v2")[0]
-                            if file_name != model_name:
-                                new_file_name = (
-                                    item.split("_nprobe_1_")[0]
-                                    + "_nprobe_1_"
-                                    + model_name
-                                    + "_v2"
-                                )
-                                os.rename(
-                                    os.path.join(extract_folder_path, item),
-                                    os.path.join(
-                                        extract_folder_path, new_file_name + ".index"
-                                    ),
-                                )
+                            if "_nprobe_1_" in item and "_v2" in item:
+                                file_name = item.split("_nprobe_1_")[1].split("_v2")[0]
+                                if file_name != model_name:
+                                    new_file_name = (
+                                        item.split("_nprobe_1_")[0]
+                                        + "_nprobe_1_"
+                                        + model_name
+                                        + "_v2"
+                                    )
+                                    os.rename(
+                                        os.path.join(extract_folder_path, item),
+                                        os.path.join(
+                                            extract_folder_path, new_file_name + ".index"
+                                            ),
+                                    )
+
 
                 if success:
                     print(f"Model {model_name} downloaded!")
