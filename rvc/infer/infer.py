@@ -10,7 +10,7 @@ from rvc.infer.pipeline import Pipeline as VC
 from audio_upscaler import upscale
 from rvc.utils import load_audio, load_embedding
 from rvc.tools.split_audio import process_audio, merge_audio
-from rvc.lib.infer_pack.models import (
+from rvc.lib.infer_pack.synthesizers import (
     SynthesizerTrnMs256NSFsid,
     SynthesizerTrnMs256NSFsid_nono,
     SynthesizerTrnMs768NSFsid,

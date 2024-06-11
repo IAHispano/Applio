@@ -52,17 +52,20 @@ from rvc.lib.infer_pack import commons
 
 hps = get_hparams()
 if hps.version == "v1":
-    from rvc.lib.infer_pack.models import MultiPeriodDiscriminator
-    from rvc.lib.infer_pack.models import SynthesizerTrnMs256NSFsid as RVC_Model_f0
-    from rvc.lib.infer_pack.models import (
+    from rvc.lib.infer_pack.discriminators import MultiPeriodDiscriminator
+    from rvc.lib.infer_pack.synthesizers import (
+        SynthesizerTrnMs256NSFsid as RVC_Model_f0,
         SynthesizerTrnMs256NSFsid_nono as RVC_Model_nof0,
     )
 elif hps.version == "v2":
-    from rvc.lib.infer_pack.models import (
-        SynthesizerTrnMs768NSFsid as RVC_Model_f0,
-        SynthesizerTrnMs768NSFsid_nono as RVC_Model_nof0,
+    from rvc.lib.infer_pack.discriminators import (
         MultiPeriodDiscriminatorV2 as MultiPeriodDiscriminator,
     )
+    from rvc.lib.infer_pack.synthesizers import (
+        SynthesizerTrnMs768NSFsid as RVC_Model_f0,
+        SynthesizerTrnMs768NSFsid_nono as RVC_Model_nof0,
+    )
+
 
 os.environ["CUDA_VISIBLE_DEVICES"] = hps.gpus.replace("-", ",")
 n_gpus = len(hps.gpus.split("-"))
