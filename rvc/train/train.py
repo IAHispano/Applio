@@ -79,6 +79,7 @@ class EpochRecorder:
     """
     Records the time elapsed per epoch.
     """
+
     def __init__(self):
         self.last_time = ttime()
 
@@ -329,7 +330,7 @@ def run(
         global_step = 0
         if hps.pretrainG != "":
             if rank == 0:
-                print(f"{hps.pretrainG} generator pretrained loaded")
+                print(f"Loaded pretrained (G) '{hps.pretrainG}'")
             if hasattr(net_g, "module"):
                 net_g.module.load_state_dict(
                     torch.load(hps.pretrainG, map_location="cpu")["model"]
@@ -342,7 +343,7 @@ def run(
 
         if hps.pretrainD != "":
             if rank == 0:
-                print(f"{hps.pretrainD} discriminator pretrained loaded")
+                print(f"Loaded pretrained (D) '{hps.pretrainD}'")
             if hasattr(net_d, "module"):
                 net_d.module.load_state_dict(
                     torch.load(hps.pretrainD, map_location="cpu")["model"]
@@ -750,19 +751,23 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
 
     # Print training progress
     if rank == 0:
+        lowest_value_rounded = float(lowest_value['value'])  # Convert to float
+        lowest_value_rounded = round(lowest_value_rounded, 1)  # Round to 1 decimal place
+
         if epoch > 1 and hps.overtraining_detector == 1:
             print(
-                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {lowest_value['epoch'] + hps.overtraining_threshold - epoch}"
+                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {lowest_value['epoch'] + hps.overtraining_threshold - epoch}"
             )
         elif epoch > 1 and hps.overtraining_detector == 0:
             print(
-                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
+                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
             )
         else:
             print(
                 f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()}"
             )
         last_loss_gen_all = loss_gen_all
+
 
     # Save the final model
     if epoch >= hps.custom_total_epoch and rank == 0:
