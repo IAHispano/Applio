@@ -354,6 +354,7 @@ class VoiceConverter:
         embedder_model,
         embedder_model_custom,
         upscale_audio,
+        f0_file
     ):
         """
         Main inference pipeline for voice conversion.
@@ -391,7 +392,7 @@ class VoiceConverter:
                 sid=0,
                 input_audio_path=audio_input_path,
                 f0_up_key=f0up_key,
-                f0_file=None,
+                f0_file=f0_file,
                 f0_method=f0method,
                 file_index=index_path,
                 index_rate=float(index_rate),

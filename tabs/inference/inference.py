@@ -21,7 +21,9 @@ sys.path.append(now_dir)
 
 model_root = os.path.join(now_dir, "logs")
 audio_root = os.path.join(now_dir, "assets", "audios")
-custom_embedder_root = os.path.join(now_dir, "rvc", "models", "embedders", "embedders_custom")
+custom_embedder_root = os.path.join(
+    now_dir, "rvc", "models", "embedders", "embedders_custom"
+)
 
 os.makedirs(custom_embedder_root, exist_ok=True)
 
@@ -443,6 +445,10 @@ def inference_tab():
                             interactive=True,
                             allow_custom_value=True,
                         )
+                f0_file = gr.File(
+                    label=i18n("F0 Curve"),
+                    visible=True,
+                )
 
         convert_button1 = gr.Button(i18n("Convert"))
 
@@ -626,6 +632,10 @@ def inference_tab():
                     value="contentvec",
                     interactive=True,
                 )
+                f0_file_batch = gr.File(
+                    label=i18n("F0 Curve"),
+                    visible=True,
+                )
                 with gr.Column(visible=False) as embedder_custom_batch:
                     with gr.Accordion(i18n("Custom Embedder"), open=True):
                         embedder_upload_custom_batch = gr.File(
@@ -785,6 +795,7 @@ def inference_tab():
             embedder_model,
             embedder_model_custom,
             upscale_audio,
+            f0_file
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -810,6 +821,7 @@ def inference_tab():
             embedder_model_batch,
             embedder_model_custom_batch,
             upscale_audio_batch,
+            f0_file_batch
         ],
         outputs=[vc_output3],
     )

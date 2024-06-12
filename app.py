@@ -13,15 +13,14 @@ from tabs.report.report import report_tab
 from tabs.download.download import download_tab
 from tabs.tts.tts import tts_tab
 from tabs.voice_blender.voice_blender import voice_blender_tab
-from tabs.settings.presence import presence_tab, load_config_presence
-from tabs.settings.flask_server import flask_server_tab
-from tabs.settings.fake_gpu import fake_gpu_tab, gpu_available, load_fake_gpu
-from tabs.settings.themes import theme_tab
 from tabs.plugins.plugins import plugins_tab
 from tabs.settings.version import version_tab
 from tabs.settings.lang import lang_tab
 from tabs.settings.restart import restart_tab
-
+from tabs.settings.presence import presence_tab, load_config_presence
+from tabs.settings.flask_server import flask_server_tab
+from tabs.settings.fake_gpu import fake_gpu_tab, gpu_available, load_fake_gpu
+from tabs.settings.themes import theme_tab
 # Assets
 import assets.themes.loadThemes as loadThemes
 from assets.i18n.i18n import I18nAuto

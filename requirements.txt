@@ -24,6 +24,9 @@ torch==2.1.1
 torchcrepe==0.0.22
 torchvision==0.16.1
 einops
+audioflux 
+libf0 
+torchfcpe
 
 # Visualization
 matplotlib==3.7.2

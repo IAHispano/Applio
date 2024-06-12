@@ -384,6 +384,10 @@ def tts_tab():
                         interactive=True,
                         allow_custom_value=True,
                     )
+            f0_file = gr.File(
+                label=i18n("F0 Curve"),
+                visible=True,
+            )
 
     convert_button1 = gr.Button(i18n("Convert"))
 
@@ -457,6 +461,7 @@ def tts_tab():
             embedder_model,
             embedder_model_custom,
             upscale_audio,
+            f0_file,
         ],
         outputs=[vc_output1, vc_output2],
     )

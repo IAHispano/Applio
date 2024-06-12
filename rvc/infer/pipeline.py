@@ -590,7 +590,7 @@ class Pipeline:
         protect,
         hop_length,
         f0autotune,
-        f0_file=None,
+        f0_file,
     ):
         """
         The main pipeline function for performing voice conversion.

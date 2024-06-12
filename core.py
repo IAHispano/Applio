@@ -59,6 +59,7 @@ def run_infer_script(
     embedder_model,
     embedder_model_custom,
     upscale_audio,
+    f0_file,
 ):
     f0autotune = "True" if str(f0autotune) == "True" else "False"
     clean_audio = "True" if str(clean_audio) == "True" else "False"
@@ -83,6 +84,7 @@ def run_infer_script(
         embedder_model,
         embedder_model_custom,
         upscale_audio,
+        f0_file,
     )
     return f"File {input_path} inferred successfully.", output_path.replace(
         ".wav", f".{export_format.lower()}"
@@ -110,6 +112,7 @@ def run_batch_infer_script(
     embedder_model,
     embedder_model_custom,
     upscale_audio,
+    f0_file,
 ):
     f0autotune = "True" if str(f0autotune) == "True" else "False"
     clean_audio = "True" if str(clean_audio) == "True" else "False"
@@ -151,6 +154,7 @@ def run_batch_infer_script(
                 embedder_model,
                 embedder_model_custom,
                 upscale_audio,
+                f0_file,
             )
 
     return f"Files from {input_folder} inferred successfully."
@@ -180,6 +184,7 @@ def run_tts_script(
     embedder_model,
     embedder_model_custom,
     upscale_audio,
+    f0_file,
 ):
     f0autotune = "True" if str(f0autotune) == "True" else "False"
     clean_audio = "True" if str(clean_audio) == "True" else "False"
@@ -219,6 +224,7 @@ def run_tts_script(
         embedder_model,
         embedder_model_custom,
         upscale_audio,
+        f0_file,
     )
 
     return f"Text {tts_text} synthesized successfully.", output_rvc_path.replace(
@@ -614,6 +620,12 @@ def parse_arguments():
         choices=["True", "False"],
         default="False",
     )
+    infer_parser.add_argument(
+        "--f0_file",
+        type=str,
+        help="Path to the f0 file",
+        default=None,
+    )
 
     # Parser for 'batch_infer' mode
     batch_infer_parser = subparsers.add_parser(
@@ -749,6 +761,12 @@ def parse_arguments():
         help="Enable audio upscaling",
         choices=["True", "False"],
         default="False",
+    )
+    batch_infer_parser.add_argument(
+        "--f0_file",
+        type=str,
+        help="Path to the f0 file",
+        default=None,
     )
 
     # Parser for 'tts' mode
@@ -899,6 +917,12 @@ def parse_arguments():
         help="Enable audio upscaling",
         choices=["True", "False"],
         default="False",
+    )
+    tts_parser.add_argument(
+        "--f0_file",
+        type=str,
+        help="Path to the f0 file",
+        default=None,
     )
 
     # Parser for 'preprocess' mode
@@ -1307,6 +1331,7 @@ def main():
                 str(args.embedder_model),
                 str(args.embedder_model_custom),
                 str(args.upscale_audio),
+                str(args.f0_file),
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(
@@ -1329,6 +1354,7 @@ def main():
                 str(args.embedder_model),
                 str(args.embedder_model_custom),
                 str(args.upscale_audio),
+                str(args.f0_file),
             )
         elif args.mode == "tts":
             run_tts_script(
@@ -1354,6 +1380,7 @@ def main():
                 str(args.embedder_model),
                 str(args.embedder_model_custom),
                 str(args.upscale_audio),
+                str(args.f0_file),
             )
         elif args.mode == "preprocess":
             run_preprocess_script(
