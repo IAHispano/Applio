@@ -120,9 +120,7 @@ class F0Extractor:
                 F_max=self.f0_max,
             )
         elif method == "torchcrepe":
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-
-            wav16k_torch = torch.FloatTensor(self.wav16k).unsqueeze(0).to(device)
+            wav16k_torch = torch.FloatTensor(self.wav16k).unsqueeze(0).to(config.device)
             f0 = torchcrepe.predict(
                 wav16k_torch,
                 sample_rate=16000,
@@ -130,18 +128,17 @@ class F0Extractor:
                 batch_size=512,
                 fmin=self.f0_min,
                 fmax=self.f0_max,
-                device=device,
+                device=config.device,
             )
             f0 = f0[0].cpu().numpy()
         elif method == "torchfcpe":
-            device = "cuda" if torch.cuda.is_available() else "cpu"
             audio = librosa.to_mono(self.x)
             audio_length = len(audio)
             f0_target_length = (audio_length // self.hop_length) + 1
             audio = (
-                torch.from_numpy(audio).float().unsqueeze(0).unsqueeze(-1).to(device)
+                torch.from_numpy(audio).float().unsqueeze(0).unsqueeze(-1).to(config.device)
             )
-            model = torchfcpe.spawn_bundled_infer_model(device=device)
+            model = torchfcpe.spawn_bundled_infer_model(device=config.device)
 
             f0 = model.infer(
                 audio,
@@ -155,7 +152,6 @@ class F0Extractor:
             )
             f0 = f0.squeeze().cpu().numpy()
         elif method == "rmvpe":
-            device = "cuda" if torch.cuda.is_available() else "cpu"
             model_rmvpe = RMVPE0Predictor(
                 "rmvpe.pt",
                 is_half=config.is_half,
