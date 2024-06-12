@@ -12,6 +12,7 @@
 *.wav
 *.txt
 *.zip
+*.png
 
 logs
 env

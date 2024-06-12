@@ -1,6 +1,6 @@
 import librosa
 import gradio as gr
-import pathlib
+import os
 from matplotlib import pyplot as plt
 
 from rvc.lib.predictors.F0Extractor import F0Extractor
@@ -12,6 +12,8 @@ i18n = I18nAuto()
 
 def extract_f0_curve(audio_path: str, method: str) -> tuple:
     print("Extracting F0 Curve...")
+    image_path = os.path.join("logs", "f0_plot.png")
+    txt_path = os.path.join("logs", "f0_curve.txt")
     y, sr = librosa.load(audio_path, sr=None)
     hop_length = 160
 
@@ -26,16 +28,16 @@ def extract_f0_curve(audio_path: str, method: str) -> tuple:
     plt.title(method)
     plt.xlabel("Time (frames)")
     plt.ylabel("Frequency (Hz)")
-    plt.savefig("f0_plot.png")
+    plt.savefig(image_path)
     plt.close()
 
-    with open("f0_curve.txt", "w") as txtfile:
+    with open(txt_path, "w") as txtfile:
         for i, f0_value in enumerate(f0):
             frequency = i * sr / hop_length
             txtfile.write(f"{frequency},{f0_value}\n")
 
     print("F0 Curve extracted successfully!")
-    return "f0_plot.png", "f0_curve.txt"
+    return image_path, txt_path
 
 
 def f0_extractor_tab():
