@@ -46,13 +46,13 @@ def run_infer_script(
     rms_mix_rate,
     protect,
     hop_length,
-    f0method,
+    f0_method,
     input_path,
     output_path,
     pth_path,
     index_path,
     split_audio,
-    f0autotune,
+    f0_autotune,
     clean_audio,
     clean_strength,
     export_format,
@@ -61,7 +61,7 @@ def run_infer_script(
     upscale_audio,
     f0_file,
 ):
-    f0autotune = "True" if str(f0autotune) == "True" else "False"
+    f0_autotune = "True" if str(f0_autotune) == "True" else "False"
     clean_audio = "True" if str(clean_audio) == "True" else "False"
     upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     infer_pipeline(
@@ -71,13 +71,13 @@ def run_infer_script(
         rms_mix_rate,
         protect,
         hop_length,
-        f0method,
+        f0_method,
         input_path,
         output_path,
         pth_path,
         index_path,
         split_audio,
-        f0autotune,
+        f0_autotune,
         clean_audio,
         clean_strength,
         export_format,
@@ -99,13 +99,13 @@ def run_batch_infer_script(
     rms_mix_rate,
     protect,
     hop_length,
-    f0method,
+    f0_method,
     input_folder,
     output_folder,
     pth_path,
     index_path,
     split_audio,
-    f0autotune,
+    f0_autotune,
     clean_audio,
     clean_strength,
     export_format,
@@ -114,7 +114,7 @@ def run_batch_infer_script(
     upscale_audio,
     f0_file,
 ):
-    f0autotune = "True" if str(f0autotune) == "True" else "False"
+    f0_autotune = "True" if str(f0_autotune) == "True" else "False"
     clean_audio = "True" if str(clean_audio) == "True" else "False"
     upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     audio_files = [
@@ -141,13 +141,13 @@ def run_batch_infer_script(
                 rms_mix_rate,
                 protect,
                 hop_length,
-                f0method,
+                f0_method,
                 input_path,
                 output_path,
                 pth_path,
                 index_path,
                 split_audio,
-                f0autotune,
+                f0_autotune,
                 clean_audio,
                 clean_strength,
                 export_format,
@@ -171,13 +171,13 @@ def run_tts_script(
     rms_mix_rate,
     protect,
     hop_length,
-    f0method,
+    f0_method,
     output_tts_path,
     output_rvc_path,
     pth_path,
     index_path,
     split_audio,
-    f0autotune,
+    f0_autotune,
     clean_audio,
     clean_strength,
     export_format,
@@ -186,7 +186,7 @@ def run_tts_script(
     upscale_audio,
     f0_file,
 ):
-    f0autotune = "True" if str(f0autotune) == "True" else "False"
+    f0_autotune = "True" if str(f0_autotune) == "True" else "False"
     clean_audio = "True" if str(clean_audio) == "True" else "False"
     upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
@@ -211,13 +211,13 @@ def run_tts_script(
         rms_mix_rate,
         protect,
         hop_length,
-        f0method,
+        f0_method,
         output_tts_path,
         output_rvc_path,
         pth_path,
         index_path,
         split_audio,
-        f0autotune,
+        f0_autotune,
         clean_audio,
         clean_strength,
         export_format,
@@ -260,7 +260,7 @@ def run_preprocess_script(model_name, dataset_path, sampling_rate, cpu_cores):
 def run_extract_script(
     model_name,
     rvc_version,
-    f0method,
+    f0_method,
     pitch_guidance,
     hop_length,
     cpu_cores,
@@ -283,7 +283,7 @@ def run_extract_script(
             str,
             [
                 model_path,
-                f0method,
+                f0_method,
                 hop_length,
                 cpu_cores,
             ],
@@ -534,9 +534,9 @@ def parse_arguments():
         default="128",
     )
     infer_parser.add_argument(
-        "--f0method",
+        "--f0_method",
         type=str,
-        help="Value for f0method",
+        help="Value for f0_method",
         choices=[
             "pm",
             "harvest",
@@ -568,7 +568,7 @@ def parse_arguments():
         default="False",
     )
     infer_parser.add_argument(
-        "--f0autotune",
+        "--f0_autotune",
         type=str,
         help="Enable autotune",
         choices=["True", "False"],
@@ -674,9 +674,9 @@ def parse_arguments():
         default="128",
     )
     batch_infer_parser.add_argument(
-        "--f0method",
+        "--f0_method",
         type=str,
-        help="Value for f0method",
+        help="Value for f0_method",
         choices=[
             "pm",
             "harvest",
@@ -710,7 +710,7 @@ def parse_arguments():
         default="False",
     )
     batch_infer_parser.add_argument(
-        "--f0autotune",
+        "--f0_autotune",
         type=str,
         help="Enable autotune",
         choices=["True", "False"],
@@ -832,9 +832,9 @@ def parse_arguments():
         default="128",
     )
     tts_parser.add_argument(
-        "--f0method",
+        "--f0_method",
         type=str,
-        help="Value for f0method",
+        help="Value for f0_method",
         choices=[
             "pm",
             "harvest",
@@ -866,7 +866,7 @@ def parse_arguments():
         default="False",
     )
     tts_parser.add_argument(
-        "--f0autotune",
+        "--f0_autotune",
         type=str,
         help="Enable autotune",
         choices=["True", "False"],
@@ -962,9 +962,9 @@ def parse_arguments():
         default="v2",
     )
     extract_parser.add_argument(
-        "--f0method",
+        "--f0_method",
         type=str,
-        help="Value for f0method",
+        help="Value for f0_method",
         choices=[
             "pm",
             "harvest",
@@ -1318,13 +1318,13 @@ def main():
                 str(args.rms_mix_rate),
                 str(args.protect),
                 str(args.hop_length),
-                str(args.f0method),
+                str(args.f0_method),
                 str(args.input_path),
                 str(args.output_path),
                 str(args.pth_path),
                 str(args.index_path),
                 str(args.split_audio),
-                str(args.f0autotune),
+                str(args.f0_autotune),
                 str(args.clean_audio),
                 str(args.clean_strength),
                 str(args.export_format),
@@ -1341,13 +1341,13 @@ def main():
                 str(args.rms_mix_rate),
                 str(args.protect),
                 str(args.hop_length),
-                str(args.f0method),
+                str(args.f0_method),
                 str(args.input_folder),
                 str(args.output_folder),
                 str(args.pth_path),
                 str(args.index_path),
                 str(args.split_audio),
-                str(args.f0autotune),
+                str(args.f0_autotune),
                 str(args.clean_audio),
                 str(args.clean_strength),
                 str(args.export_format),
@@ -1367,13 +1367,13 @@ def main():
                 str(args.rms_mix_rate),
                 str(args.protect),
                 str(args.hop_length),
-                str(args.f0method),
+                str(args.f0_method),
                 str(args.output_tts_path),
                 str(args.output_rvc_path),
                 str(args.pth_path),
                 str(args.index_path),
                 str(args.split_audio),
-                str(args.f0autotune),
+                str(args.f0_autotune),
                 str(args.clean_audio),
                 str(args.clean_strength),
                 str(args.export_format),
@@ -1393,7 +1393,7 @@ def main():
             run_extract_script(
                 str(args.model_name),
                 str(args.rvc_version),
-                str(args.f0method),
+                str(args.f0_method),
                 str(args.pitch_guidance),
                 str(args.hop_length),
                 str(args.cpu_cores),
