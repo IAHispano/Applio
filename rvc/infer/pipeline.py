@@ -342,7 +342,7 @@ class Pipeline:
         f0_method,
         filter_radius,
         hop_length,
-        f0autotune,
+        f0_autotune,
         inp_f0=None,
     ):
         """
@@ -356,7 +356,7 @@ class Pipeline:
             f0_method: Method to use for F0 estimation (e.g., "pm", "harvest", "crepe").
             filter_radius: Radius for median filtering the F0 contour.
             hop_length: Hop length for F0 estimation methods.
-            f0autotune: Whether to apply autotune to the F0 contour.
+            f0_autotune: Whether to apply autotune to the F0 contour.
             inp_f0: Optional input F0 contour to use instead of estimating.
 
         Returns:
@@ -431,7 +431,7 @@ class Pipeline:
                 hop_length,
             )
 
-        if f0autotune == "True":
+        if f0_autotune == "True":
             f0 = Autotune.autotune_f0(self, f0)
 
         f0 *= pow(2, f0_up_key / 12)
@@ -589,7 +589,7 @@ class Pipeline:
         version,
         protect,
         hop_length,
-        f0autotune,
+        f0_autotune,
         f0_file,
     ):
         """
@@ -613,7 +613,7 @@ class Pipeline:
             version: Model version.
             protect: Protection level for preserving the original pitch.
             hop_length: Hop length for F0 estimation methods.
-            f0autotune: Whether to apply autotune to the F0 contour.
+            f0_autotune: Whether to apply autotune to the F0 contour.
             f0_file: Path to a file containing an F0 contour to use.
 
         Returns:
@@ -671,7 +671,7 @@ class Pipeline:
                 f0_method,
                 filter_radius,
                 hop_length,
-                f0autotune,
+                f0_autotune,
                 inp_f0,
             )
             pitch = pitch[:p_len]

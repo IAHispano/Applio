@@ -40,7 +40,7 @@ locales = list({voice["Locale"] for voice in voices_data})
 
 # Infer
 def run_infer_script(
-    f0up_key,
+    f0_up_key,
     filter_radius,
     index_rate,
     rms_mix_rate,
@@ -65,7 +65,7 @@ def run_infer_script(
     clean_audio = "True" if str(clean_audio) == "True" else "False"
     upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     infer_pipeline(
-        f0up_key,
+        f0_up_key,
         filter_radius,
         index_rate,
         rms_mix_rate,
@@ -93,7 +93,7 @@ def run_infer_script(
 
 # Batch infer
 def run_batch_infer_script(
-    f0up_key,
+    f0_up_key,
     filter_radius,
     index_rate,
     rms_mix_rate,
@@ -135,7 +135,7 @@ def run_batch_infer_script(
             print(f"Inferring {input_path}...")
 
             infer_pipeline(
-                f0up_key,
+                f0_up_key,
                 filter_radius,
                 index_rate,
                 rms_mix_rate,
@@ -165,7 +165,7 @@ def run_tts_script(
     tts_text,
     tts_voice,
     tts_rate,
-    f0up_key,
+    f0_up_key,
     filter_radius,
     index_rate,
     rms_mix_rate,
@@ -205,7 +205,7 @@ def run_tts_script(
     subprocess.run(command_tts)
 
     infer_pipeline(
-        f0up_key,
+        f0_up_key,
         filter_radius,
         index_rate,
         rms_mix_rate,
@@ -492,9 +492,9 @@ def parse_arguments():
     # Parser for 'infer' mode
     infer_parser = subparsers.add_parser("infer", help="Run inference")
     infer_parser.add_argument(
-        "--f0up_key",
+        "--f0_up_key",
         type=str,
-        help="Value for f0up_key",
+        help="Value for f0_up_key",
         choices=[str(i) for i in range(-24, 25)],
         default="0",
     )
@@ -632,9 +632,9 @@ def parse_arguments():
         "batch_infer", help="Run batch inference"
     )
     batch_infer_parser.add_argument(
-        "--f0up_key",
+        "--f0_up_key",
         type=str,
-        help="Value for f0up_key",
+        help="Value for f0_up_key",
         choices=[str(i) for i in range(-24, 25)],
         default="0",
     )
@@ -790,9 +790,9 @@ def parse_arguments():
         default="0",
     )
     tts_parser.add_argument(
-        "--f0up_key",
+        "--f0_up_key",
         type=str,
-        help="Value for f0up_key",
+        help="Value for f0_up_key",
         choices=[str(i) for i in range(-24, 25)],
         default="0",
     )
@@ -1312,7 +1312,7 @@ def main():
     try:
         if args.mode == "infer":
             run_infer_script(
-                str(args.f0up_key),
+                str(args.f0_up_key),
                 str(args.filter_radius),
                 str(args.index_rate),
                 str(args.rms_mix_rate),
@@ -1335,7 +1335,7 @@ def main():
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(
-                str(args.f0up_key),
+                str(args.f0_up_key),
                 str(args.filter_radius),
                 str(args.index_rate),
                 str(args.rms_mix_rate),
@@ -1361,7 +1361,7 @@ def main():
                 str(args.tts_text),
                 str(args.tts_voice),
                 str(args.tts_rate),
-                str(args.f0up_key),
+                str(args.f0_up_key),
                 str(args.filter_radius),
                 str(args.index_rate),
                 str(args.rms_mix_rate),

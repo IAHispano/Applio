@@ -398,7 +398,7 @@ def inference_tab():
                     value=128,
                     interactive=True,
                 )
-                f0method = gr.Radio(
+                f0_method = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
                     info=i18n(
                         "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
@@ -602,7 +602,7 @@ def inference_tab():
                     value=128,
                     interactive=True,
                 )
-                f0method_batch = gr.Radio(
+                f0_method_batch = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
                     info=i18n(
                         "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
@@ -665,8 +665,8 @@ def inference_tab():
     def toggle_visible(checkbox):
         return {"visible": checkbox, "__type__": "update"}
 
-    def toggle_visible_hop_length(f0method):
-        if f0method == "crepe" or f0method == "crepe-tiny":
+    def toggle_visible_hop_length(f0_method):
+        if f0_method == "crepe" or f0_method == "crepe-tiny":
             return {"visible": True, "__type__": "update"}
         return {"visible": False, "__type__": "update"}
 
@@ -685,14 +685,14 @@ def inference_tab():
         inputs=[clean_audio_batch],
         outputs=[clean_strength_batch],
     )
-    f0method.change(
+    f0_method.change(
         fn=toggle_visible_hop_length,
-        inputs=[f0method],
+        inputs=[f0_method],
         outputs=[hop_length],
     )
-    f0method_batch.change(
+    f0_method_batch.change(
         fn=toggle_visible_hop_length,
-        inputs=[f0method_batch],
+        inputs=[f0_method_batch],
         outputs=[hop_length_batch],
     )
     refresh_button.click(
@@ -782,7 +782,7 @@ def inference_tab():
             rms_mix_rate,
             protect,
             hop_length,
-            f0method,
+            f0_method,
             audio,
             output_path,
             model_file,
@@ -808,7 +808,7 @@ def inference_tab():
             rms_mix_rate_batch,
             protect_batch,
             hop_length_batch,
-            f0method_batch,
+            f0_method_batch,
             input_folder_batch,
             output_folder_batch,
             model_file,

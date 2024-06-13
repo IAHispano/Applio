@@ -337,7 +337,7 @@ def tts_tab():
                 value=128,
                 interactive=True,
             )
-            f0method = gr.Radio(
+            f0_method = gr.Radio(
                 label=i18n("Pitch extraction algorithm"),
                 info=i18n(
                     "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
@@ -448,7 +448,7 @@ def tts_tab():
             rms_mix_rate,
             protect,
             hop_length,
-            f0method,
+            f0_method,
             output_tts_path,
             output_rvc_path,
             model_file,

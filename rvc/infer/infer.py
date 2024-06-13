@@ -135,7 +135,7 @@ class VoiceConverter:
         hop_length=None,
         output_path=None,
         split_audio=False,
-        f0autotune=False,
+        f0_autotune=False,
         filter_radius=None,
         embedder_model=None,
         embedder_model_custom=None,
@@ -157,7 +157,7 @@ class VoiceConverter:
             hop_length: Hop length for F0 estimation.
             output_path: Path for saving the converted audio.
             split_audio: Whether to split the audio into segments for processing.
-            f0autotune: Whether to apply autotune to the F0 contour.
+            f0_autotune: Whether to apply autotune to the F0 contour.
             filter_radius: Radius for median filtering of the F0 contour.
             embedder_model: Path to the embedder model.
             embedder_model_custom: Path to a custom embedder model.
@@ -220,7 +220,7 @@ class VoiceConverter:
                             hop_length,
                             path,
                             False,
-                            f0autotune,
+                            f0_autotune,
                             filter_radius,
                             embedder_model,
                             embedder_model_custom,
@@ -254,7 +254,7 @@ class VoiceConverter:
                     self.version,
                     protect,
                     hop_length,
-                    f0autotune,
+                    f0_autotune,
                     f0_file=f0_file,
                 )
 
@@ -335,19 +335,19 @@ class VoiceConverter:
 
     def infer_pipeline(
         self,
-        f0up_key,
+        f0_up_key,
         filter_radius,
         index_rate,
         rms_mix_rate,
         protect,
         hop_length,
-        f0method,
+        f0_method,
         audio_input_path,
         audio_output_path,
         model_path,
         index_path,
         split_audio,
-        f0autotune,
+        f0_autotune,
         clean_audio,
         clean_strength,
         export_format,
@@ -360,19 +360,19 @@ class VoiceConverter:
         Main inference pipeline for voice conversion.
 
         Args:
-            f0up_key: Pitch shift value.
+            f0_up_key: Pitch shift value.
             filter_radius: Filter radius for F0 smoothing.
             index_rate: Speaker embedding retrieval rate.
             rms_mix_rate: RMS mixing ratio.
             protect: Pitch protection level.
             hop_length: Hop length for F0 estimation.
-            f0method: F0 estimation method.
+            f0_method: F0 estimation method.
             audio_input_path: Input audio file path.
             audio_output_path: Output audio file path.
             model_path: Model weight file path.
             index_path: FAISS index file path.
             split_audio: Whether to split audio.
-            f0autotune: Whether to apply autotune.
+            f0_autotune: Whether to apply autotune.
             clean_audio: Whether to apply noise reduction.
             clean_strength: Noise reduction strength.
             export_format: Output audio format.
@@ -391,9 +391,9 @@ class VoiceConverter:
             self.voice_conversion(
                 sid=0,
                 input_audio_path=audio_input_path,
-                f0_up_key=f0up_key,
+                f0_up_key=f0_up_key,
                 f0_file=f0_file,
-                f0_method=f0method,
+                f0_method=f0_method,
                 file_index=index_path,
                 index_rate=float(index_rate),
                 rms_mix_rate=float(rms_mix_rate),
@@ -401,7 +401,7 @@ class VoiceConverter:
                 hop_length=hop_length,
                 output_path=audio_output_path,
                 split_audio=split_audio,
-                f0autotune=f0autotune,
+                f0_autotune=f0_autotune,
                 filter_radius=filter_radius,
                 embedder_model=embedder_model,
                 embedder_model_custom=embedder_model_custom,
