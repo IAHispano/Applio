@@ -8,7 +8,7 @@ from rvc.lib.algorithm.normalization import LayerNorm
 from rvc.lib.algorithm.attentions import FFN, MultiHeadAttention
 
 
-class Encoder(torch.torch.nn.Module):
+class Encoder(torch.nn.Module):
     """
     Encoder module for the Transformer model.
 
@@ -311,8 +311,8 @@ class PosteriorEncoder(torch.nn.Module):
         """Prepares the module for scripting."""
         for hook in self.enc._forward_pre_hooks.values():
             if (
-                hook.__module__ == "torch.torch.nn.utils.parametrizations.weight_norm"
+                hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
                 and hook.__class__.__name__ == "WeightNorm"
             ):
-                torch.torch.nn.utils.remove_weight_norm(self.enc)
+                torch.nn.utils.remove_weight_norm(self.enc)
         return self
