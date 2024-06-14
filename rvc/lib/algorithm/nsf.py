@@ -1,8 +1,5 @@
 import math
 import torch
-from torch import nn
-from torch.nn import functional as F
-from torch.nn import Conv1d, ConvTranspose1d
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
 from typing import Optional
@@ -120,18 +117,18 @@ class GeneratorNSF(torch.nn.Module):
         self.m_source = SourceModuleHnNSF(
             sampling_rate=sr, harmonic_num=0, is_half=is_half
         )
-        self.noise_convs = nn.ModuleList()
-        self.conv_pre = Conv1d(
+        self.noise_convs = torch.nn.ModuleList()
+        self.conv_pre = torch.nn.Conv1d(
             initial_channel, upsample_initial_channel, 7, 1, padding=3
         )
         resblock = ResBlock1 if resblock == "1" else ResBlock2
 
-        self.ups = nn.ModuleList()
+        self.ups = torch.nn.ModuleList()
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):
             c_cur = upsample_initial_channel // (2 ** (i + 1))
             self.ups.append(
                 weight_norm(
-                    ConvTranspose1d(
+                    torch.nn.ConvTranspose1d(
                         upsample_initial_channel // (2**i),
                         upsample_initial_channel // (2 ** (i + 1)),
                         k,
@@ -143,7 +140,7 @@ class GeneratorNSF(torch.nn.Module):
             if i + 1 < len(upsample_rates):
                 stride_f0 = math.prod(upsample_rates[i + 1 :])
                 self.noise_convs.append(
-                    Conv1d(
+                    torch.nn.Conv1d(
                         1,
                         c_cur,
                         kernel_size=stride_f0 * 2,
@@ -152,9 +149,9 @@ class GeneratorNSF(torch.nn.Module):
                     )
                 )
             else:
-                self.noise_convs.append(Conv1d(1, c_cur, kernel_size=1))
+                self.noise_convs.append(torch.nn.Conv1d(1, c_cur, kernel_size=1))
 
-        self.resblocks = nn.ModuleList()
+        self.resblocks = torch.nn.ModuleList()
         for i in range(len(self.ups)):
             ch = upsample_initial_channel // (2 ** (i + 1))
             for j, (k, d) in enumerate(
@@ -162,11 +159,11 @@ class GeneratorNSF(torch.nn.Module):
             ):
                 self.resblocks.append(resblock(ch, k, d))
 
-        self.conv_post = Conv1d(ch, 1, 7, 1, padding=3, bias=False)
+        self.conv_post = torch.nn.Conv1d(ch, 1, 7, 1, padding=3, bias=False)
         self.ups.apply(init_weights)
 
         if gin_channels != 0:
-            self.cond = nn.Conv1d(gin_channels, upsample_initial_channel, 1)
+            self.cond = torch.nn.Conv1d(gin_channels, upsample_initial_channel, 1)
 
         self.upp = math.prod(upsample_rates)
 
@@ -190,7 +187,7 @@ class GeneratorNSF(torch.nn.Module):
         # torch.jit.script() does not support direct indexing of torch modules
         for i, (ups, noise_convs) in enumerate(zip(self.ups, self.noise_convs)):
             if i < self.num_upsamples:
-                x = F.leaky_relu(x, self.lrelu_slope)
+                x = torch.nn.functional.leaky_relu(x, self.lrelu_slope)
                 x = ups(x)
                 x_source = noise_convs(har_source)
                 x = x + x_source
@@ -205,7 +202,7 @@ class GeneratorNSF(torch.nn.Module):
                 # This assertion cannot be ignored, if ignored, it will cause torch.jit.script() compilation errors
                 assert isinstance(xs, torch.Tensor)
                 x = xs / self.num_kernels
-        x = F.leaky_relu(x)
+        x = torch.nn.functional.leaky_relu(x)
         x = self.conv_post(x)
         x = torch.tanh(x)
         return x

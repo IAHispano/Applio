@@ -1,7 +1,4 @@
 import torch
-from torch import nn
-from torch.nn import functional as F
-from torch.nn import Conv1d, Conv2d
 from torch.nn.utils.parametrizations import spectral_norm, weight_norm
 
 from rvc.lib.algorithm.commons import get_padding
@@ -29,7 +26,7 @@ class MultiPeriodDiscriminator(torch.nn.Module):
         discs = discs + [
             DiscriminatorP(i, use_spectral_norm=use_spectral_norm) for i in periods
         ]
-        self.discriminators = nn.ModuleList(discs)
+        self.discriminators = torch.nn.ModuleList(discs)
 
     def forward(self, y, y_hat):
         """
@@ -81,7 +78,7 @@ class MultiPeriodDiscriminatorV2(torch.nn.Module):
         discs = discs + [
             DiscriminatorP(i, use_spectral_norm=use_spectral_norm) for i in periods
         ]
-        self.discriminators = nn.ModuleList(discs)
+        self.discriminators = torch.nn.ModuleList(discs)
 
     def forward(self, y, y_hat):
         """
@@ -127,17 +124,17 @@ class DiscriminatorS(torch.nn.Module):
     def __init__(self, use_spectral_norm=False):
         super(DiscriminatorS, self).__init__()
         norm_f = weight_norm if use_spectral_norm == False else spectral_norm
-        self.convs = nn.ModuleList(
+        self.convs = torch.nn.ModuleList(
             [
-                norm_f(Conv1d(1, 16, 15, 1, padding=7)),
-                norm_f(Conv1d(16, 64, 41, 4, groups=4, padding=20)),
-                norm_f(Conv1d(64, 256, 41, 4, groups=16, padding=20)),
-                norm_f(Conv1d(256, 1024, 41, 4, groups=64, padding=20)),
-                norm_f(Conv1d(1024, 1024, 41, 4, groups=256, padding=20)),
-                norm_f(Conv1d(1024, 1024, 5, 1, padding=2)),
+                norm_f(torch.nn.Conv1d(1, 16, 15, 1, padding=7)),
+                norm_f(torch.nn.Conv1d(16, 64, 41, 4, groups=4, padding=20)),
+                norm_f(torch.nn.Conv1d(64, 256, 41, 4, groups=16, padding=20)),
+                norm_f(torch.nn.Conv1d(256, 1024, 41, 4, groups=64, padding=20)),
+                norm_f(torch.nn.Conv1d(1024, 1024, 41, 4, groups=256, padding=20)),
+                norm_f(torch.nn.Conv1d(1024, 1024, 5, 1, padding=2)),
             ]
         )
-        self.conv_post = norm_f(Conv1d(1024, 1, 3, 1, padding=1))
+        self.conv_post = norm_f(torch.nn.Conv1d(1024, 1, 3, 1, padding=1))
 
     def forward(self, x):
         """
@@ -154,7 +151,7 @@ class DiscriminatorS(torch.nn.Module):
 
         for l in self.convs:
             x = l(x)
-            x = F.leaky_relu(x, LRELU_SLOPE)
+            x = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
             fmap.append(x)
         x = self.conv_post(x)
         fmap.append(x)
@@ -189,10 +186,10 @@ class DiscriminatorP(torch.nn.Module):
         in_channels = [1, 32, 128, 512, 1024]
         out_channels = [32, 128, 512, 1024, 1024]
 
-        self.convs = nn.ModuleList(
+        self.convs = torch.nn.ModuleList(
             [
                 norm_f(
-                    Conv2d(
+                    torch.nn.Conv2d(
                         in_ch,
                         out_ch,
                         (kernel_size, 1),
@@ -204,7 +201,7 @@ class DiscriminatorP(torch.nn.Module):
             ]
         )
 
-        self.conv_post = norm_f(Conv2d(1024, 1, (3, 1), 1, padding=(1, 0)))
+        self.conv_post = norm_f(torch.nn.Conv2d(1024, 1, (3, 1), 1, padding=(1, 0)))
 
     def forward(self, x):
         """
@@ -223,11 +220,11 @@ class DiscriminatorP(torch.nn.Module):
         b, c, t = x.shape
         if t % self.period != 0:  # pad first
             n_pad = self.period - (t % self.period)
-            x = F.pad(x, (0, n_pad), "reflect")
+            x = torch.nn.functional.pad(x, (0, n_pad), "reflect")
         x = x.view(b, c, -1, self.period)
 
         for conv in self.convs:
-            x = F.leaky_relu(conv(x), LRELU_SLOPE)
+            x = torch.nn.functional.leaky_relu(conv(x), LRELU_SLOPE)
             fmap.append(x)
 
         x = self.conv_post(x)

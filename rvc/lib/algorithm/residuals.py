@@ -1,9 +1,7 @@
 from typing import Optional
 import torch
-from torch import nn
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
-from torch.nn import functional as F
 
 from rvc.lib.algorithm.modules import WN
 from rvc.lib.algorithm.commons import get_padding, init_weights
@@ -23,7 +21,7 @@ class ResBlock1(torch.nn.Module):
 
     def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5)):
         super(ResBlock1, self).__init__()
-        self.convs1 = nn.ModuleList(
+        self.convs1 = torch.nn.ModuleList(
             [
                 weight_norm(
                     torch.nn.Conv1d(
@@ -59,7 +57,7 @@ class ResBlock1(torch.nn.Module):
         )
         self.convs1.apply(init_weights)
 
-        self.convs2 = nn.ModuleList(
+        self.convs2 = torch.nn.ModuleList(
             [
                 weight_norm(
                     torch.nn.Conv1d(
@@ -108,11 +106,11 @@ class ResBlock1(torch.nn.Module):
 
         """
         for c1, c2 in zip(self.convs1, self.convs2):
-            xt = F.leaky_relu(x, LRELU_SLOPE)
+            xt = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
             if x_mask is not None:
                 xt = xt * x_mask
             xt = c1(xt)
-            xt = F.leaky_relu(xt, LRELU_SLOPE)
+            xt = torch.nn.functional.leaky_relu(xt, LRELU_SLOPE)
             if x_mask is not None:
                 xt = xt * x_mask
             xt = c2(xt)
@@ -141,7 +139,7 @@ class ResBlock2(torch.nn.Module):
 
     def __init__(self, channels, kernel_size=3, dilation=(1, 3)):
         super(ResBlock2, self).__init__()
-        self.convs = nn.ModuleList(
+        self.convs = torch.nn.ModuleList(
             [
                 weight_norm(
                     torch.nn.Conv1d(
@@ -180,7 +178,7 @@ class ResBlock2(torch.nn.Module):
 
         """
         for c in self.convs:
-            xt = F.leaky_relu(x, LRELU_SLOPE)
+            xt = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
             if x_mask is not None:
                 xt = xt * x_mask
             xt = c(xt)
@@ -195,7 +193,7 @@ class ResBlock2(torch.nn.Module):
             remove_weight_norm(l)
 
 
-class Log(nn.Module):
+class Log(torch.nn.Module):
     """Logarithm module for flow-based models.
 
     This module computes the logarithm of the input and its log determinant.
@@ -224,7 +222,7 @@ class Log(nn.Module):
             return x
 
 
-class Flip(nn.Module):
+class Flip(torch.nn.Module):
     """Flip module for flow-based models.
 
     This module flips the input along the time dimension.
@@ -250,7 +248,7 @@ class Flip(nn.Module):
             return x
 
 
-class ElementwiseAffine(nn.Module):
+class ElementwiseAffine(torch.nn.Module):
     """Elementwise affine transformation module for flow-based models.
 
     This module performs an elementwise affine transformation on the input.
@@ -263,8 +261,8 @@ class ElementwiseAffine(nn.Module):
     def __init__(self, channels):
         super().__init__()
         self.channels = channels
-        self.m = nn.Parameter(torch.zeros(channels, 1))
-        self.logs = nn.Parameter(torch.zeros(channels, 1))
+        self.m = torch.nn.Parameter(torch.zeros(channels, 1))
+        self.logs = torch.nn.Parameter(torch.zeros(channels, 1))
 
     def forward(self, x, x_mask, reverse=False, **kwargs):
         """Forward pass.
@@ -289,7 +287,7 @@ class ElementwiseAffine(nn.Module):
             return x
 
 
-class ResidualCouplingBlock(nn.Module):
+class ResidualCouplingBlock(torch.nn.Module):
     """Residual Coupling Block for normalizing flow.
 
     Args:
@@ -330,7 +328,7 @@ class ResidualCouplingBlock(nn.Module):
         self.n_flows = n_flows
         self.gin_channels = gin_channels
 
-        self.flows = nn.ModuleList()
+        self.flows = torch.nn.ModuleList()
         for i in range(n_flows):
             self.flows.append(
                 ResidualCouplingLayer(
@@ -378,7 +376,7 @@ class ResidualCouplingBlock(nn.Module):
         return self
 
 
-class ResidualCouplingLayer(nn.Module):
+class ResidualCouplingLayer(torch.nn.Module):
     """Residual coupling layer for flow-based models.
 
     Args:
@@ -414,7 +412,7 @@ class ResidualCouplingLayer(nn.Module):
         self.half_channels = channels // 2
         self.mean_only = mean_only
 
-        self.pre = nn.Conv1d(self.half_channels, hidden_channels, 1)
+        self.pre = torch.nn.Conv1d(self.half_channels, hidden_channels, 1)
         self.enc = WN(
             hidden_channels,
             kernel_size,
@@ -423,7 +421,7 @@ class ResidualCouplingLayer(nn.Module):
             p_dropout=p_dropout,
             gin_channels=gin_channels,
         )
-        self.post = nn.Conv1d(hidden_channels, self.half_channels * (2 - mean_only), 1)
+        self.post = torch.nn.Conv1d(hidden_channels, self.half_channels * (2 - mean_only), 1)
         self.post.weight.data.zero_()
         self.post.bias.data.zero_()
 

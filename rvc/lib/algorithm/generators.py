@@ -1,6 +1,4 @@
 import torch
-from torch import nn
-from torch.nn import functional as F
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
 from typing import Optional
@@ -49,7 +47,7 @@ class Generator(torch.nn.Module):
         )
         resblock = ResBlock1 if resblock == "1" else ResBlock2
 
-        self.ups = nn.ModuleList()
+        self.ups = torch.nn.ModuleList()
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):
             self.ups.append(
                 weight_norm(
@@ -63,7 +61,7 @@ class Generator(torch.nn.Module):
                 )
             )
 
-        self.resblocks = nn.ModuleList()
+        self.resblocks = torch.nn.ModuleList()
         for i in range(len(self.ups)):
             ch = upsample_initial_channel // (2 ** (i + 1))
             for j, (k, d) in enumerate(
@@ -75,7 +73,7 @@ class Generator(torch.nn.Module):
         self.ups.apply(init_weights)
 
         if gin_channels != 0:
-            self.cond = nn.Conv1d(gin_channels, upsample_initial_channel, 1)
+            self.cond = torch.nn.Conv1d(gin_channels, upsample_initial_channel, 1)
 
     def forward(self, x: torch.Tensor, g: Optional[torch.Tensor] = None):
         x = self.conv_pre(x)
@@ -83,7 +81,7 @@ class Generator(torch.nn.Module):
             x = x + self.cond(g)
 
         for i in range(self.num_upsamples):
-            x = F.leaky_relu(x, LRELU_SLOPE)
+            x = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
             x = self.ups[i](x)
             xs = None
             for j in range(self.num_kernels):
@@ -92,7 +90,7 @@ class Generator(torch.nn.Module):
                 else:
                     xs += self.resblocks[i * self.num_kernels + j](x)
             x = xs / self.num_kernels
-        x = F.leaky_relu(x)
+        x = torch.nn.functional.leaky_relu(x)
         x = self.conv_post(x)
         x = torch.tanh(x)
 
@@ -206,17 +204,17 @@ class SineGen(torch.nn.Module):
             rad_values[:, 0, :] = rad_values[:, 0, :] + rand_ini
             tmp_over_one = torch.cumsum(rad_values, 1)
             tmp_over_one *= upp
-            tmp_over_one = F.interpolate(
+            tmp_over_one = torch.nn.functional.interpolate(
                 tmp_over_one.transpose(2, 1),
                 scale_factor=float(upp),
                 mode="linear",
                 align_corners=True,
             ).transpose(2, 1)
-            rad_values = F.interpolate(
+            rad_values = torch.nn.functional.interpolate(
                 rad_values.transpose(2, 1), scale_factor=float(upp), mode="nearest"
             ).transpose(
                 2, 1
-            )  #######
+            ) 
             tmp_over_one %= 1
             tmp_over_one_idx = (tmp_over_one[:, 1:, :] - tmp_over_one[:, :-1, :]) < 0
             cumsum_shift = torch.zeros_like(rad_values)
@@ -226,7 +224,7 @@ class SineGen(torch.nn.Module):
             )
             sine_waves = sine_waves * self.sine_amp
             uv = self._f02uv(f0)
-            uv = F.interpolate(
+            uv = torch.nn.functional.interpolate(
                 uv.transpose(2, 1), scale_factor=float(upp), mode="nearest"
             ).transpose(2, 1)
             noise_amp = uv * self.noise_std + (1 - uv) * self.sine_amp / 3

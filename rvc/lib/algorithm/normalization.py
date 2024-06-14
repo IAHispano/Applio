@@ -1,5 +1,4 @@
 import torch
-from torch.nn import functional as F
 
 
 
@@ -31,5 +30,5 @@ class LayerNorm(torch.nn.Module):
 
         """
         x = x.transpose(1, -1)
-        x = F.layer_norm(x, (self.channels,), self.gamma, self.beta, self.eps)
+        x = torch.nn.functional.layer_norm(x, (self.channels,), self.gamma, self.beta, self.eps)
         return x.transpose(1, -1)

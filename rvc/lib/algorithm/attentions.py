@@ -1,6 +1,5 @@
 import math
 import torch
-from torch.nn import functional as F
 
 from rvc.lib.algorithm.commons import convert_pad_shape
 
@@ -93,6 +92,7 @@ class MultiHeadAttention(torch.nn.Module):
         return x
 
     def attention(self, query, key, value, mask=None):
+        # reshape [b, d, t] -> [b, n_h, t, d_k]
         b, d, t_s, t_t = (*key.size(), query.size(2))
         query = query.view(b, self.n_heads, self.k_channels, t_t).transpose(2, 3)
         key = key.view(b, self.n_heads, self.k_channels, t_s).transpose(2, 3)
@@ -126,7 +126,7 @@ class MultiHeadAttention(torch.nn.Module):
                     .tril(self.block_length)
                 )
                 scores = scores.masked_fill(block_mask == 0, -1e4)
-        p_attn = F.softmax(scores, dim=-1)
+        p_attn = torch.nn.functional.softmax(scores, dim=-1) # [b, n_h, t_t, t_s]
         p_attn = self.drop(p_attn)
         output = torch.matmul(p_attn, value)
         if self.window_size is not None:
@@ -137,7 +137,7 @@ class MultiHeadAttention(torch.nn.Module):
             output = output + self._matmul_with_relative_values(
                 relative_weights, value_relative_embeddings
             )
-        output = output.transpose(2, 3).contiguous().view(b, d, t_t)
+        output = output.transpose(2, 3).contiguous().view(b, d, t_t) # [b, n_h, t_t, d_k] -> [b, d, t_t]
         return output, p_attn
 
     def _matmul_with_relative_values(self, x, y):
@@ -159,11 +159,12 @@ class MultiHeadAttention(torch.nn.Module):
         return ret
 
     def _get_relative_embeddings(self, relative_embeddings, length):
+        # Pad first before slice to avoid using cond ops.
         pad_length = max(length - (self.window_size + 1), 0)
         slice_start_position = max((self.window_size + 1) - length, 0)
         slice_end_position = slice_start_position + 2 * length - 1
         if pad_length > 0:
-            padded_relative_embeddings = F.pad(
+            padded_relative_embeddings = torch.nn.functional.pad(
                 relative_embeddings,
                 convert_pad_shape([[0, 0], [pad_length, pad_length], [0, 0]]),
             )
@@ -181,10 +182,18 @@ class MultiHeadAttention(torch.nn.Module):
         """
         batch, heads, length, _ = x.size()
 
-        x = F.pad(x, convert_pad_shape([[0, 0], [0, 0], [0, 0], [0, 1]]))
-        x_flat = x.view([batch, heads, length * 2 * length])
-        x_flat = F.pad(x_flat, convert_pad_shape([[0, 0], [0, 0], [0, length - 1]]))
+        # Concat columns of pad to shift from relative to absolute indexing.
+        x = torch.nn.functional.pad(
+            x, convert_pad_shape([[0, 0], [0, 0], [0, 0], [0, 1]])
+        )
 
+        # Concat extra elements so to add up to shape (len+1, 2*len-1).
+        x_flat = x.view([batch, heads, length * 2 * length])
+        x_flat = torch.nn.functional.pad(
+            x_flat, convert_pad_shape([[0, 0], [0, 0], [0, length - 1]])
+        )
+
+        # Reshape and slice out the padded elements.
         x_final = x_flat.view([batch, heads, length + 1, 2 * length - 1])[
             :, :, :length, length - 1 :
         ]
@@ -196,13 +205,25 @@ class MultiHeadAttention(torch.nn.Module):
         ret: [b, h, l, 2*l-1]
         """
         batch, heads, length, _ = x.size()
-        x = F.pad(x, convert_pad_shape([[0, 0], [0, 0], [0, 0], [0, length - 1]]))
+        # padd along column
+        x = torch.nn.functional.pad(
+            x, convert_pad_shape([[0, 0], [0, 0], [0, 0], [0, length - 1]])
+        )
         x_flat = x.view([batch, heads, length**2 + length * (length - 1)])
-        x_flat = F.pad(x_flat, convert_pad_shape([[0, 0], [0, 0], [length, 0]]))
+        # add 0's in the beginning that will skew the elements after reshape
+        x_flat = torch.nn.functional.pad(
+            x_flat, convert_pad_shape([[0, 0], [0, 0], [length, 0]])
+        )
         x_final = x_flat.view([batch, heads, length, 2 * length])[:, :, :, 1:]
         return x_final
 
     def _attention_bias_proximal(self, length):
+        """Bias for self-attention to encourage attention to close positions.
+        Args:
+          length: an integer scalar.
+        Returns:
+          a Tensor with shape [1, 1, length, length]
+        """
         r = torch.arange(length, dtype=torch.float32)
         diff = torch.unsqueeze(r, 0) - torch.unsqueeze(r, 1)
         return torch.unsqueeze(torch.unsqueeze(-torch.log1p(torch.abs(diff)), 0), 0)
@@ -273,7 +294,7 @@ class FFN(torch.nn.Module):
         pad_l = self.kernel_size - 1
         pad_r = 0
         padding = [[0, 0], [0, 0], [pad_l, pad_r]]
-        x = F.pad(x, convert_pad_shape(padding))
+        x = torch.nn.functional.pad(x, convert_pad_shape(padding))
         return x
 
     def _same_padding(self, x):
@@ -282,5 +303,5 @@ class FFN(torch.nn.Module):
         pad_l = (self.kernel_size - 1) // 2
         pad_r = self.kernel_size // 2
         padding = [[0, 0], [0, 0], [pad_l, pad_r]]
-        x = F.pad(x, convert_pad_shape(padding))
+        x = torch.nn.functional.pad(x, convert_pad_shape(padding))
         return x
