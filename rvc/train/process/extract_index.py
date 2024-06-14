@@ -51,7 +51,7 @@ try:
     index_trained.train(big_npy)
 
     index_filename_trained = (
-        f"trained_IVF{n_ivf}_Flat_nprobe_{index_ivf_trained.nprobe}_{version}.index"
+        f"trained_{version}.index"
     )
     index_filepath_trained = os.path.join(exp_dir, index_filename_trained)
 
@@ -66,7 +66,7 @@ try:
     index_added.train(big_npy)
 
     index_filename_added = (
-        f"added_IVF{n_ivf}_Flat_nprobe_{index_ivf_added.nprobe}_{version}.index"
+        f"added_{version}.index"
     )
     index_filepath_added = os.path.join(exp_dir, index_filename_added)
 
