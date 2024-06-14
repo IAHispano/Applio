@@ -29,8 +29,6 @@ class Config:
     def __init__(self):
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
         self.is_half = self.device != "cpu"
-        self.use_jit = False
-        self.n_cpu = os.cpu_count() if not torch.cuda.is_available() else 0
         self.gpu_name = (
             torch.cuda.get_device_name(int(self.device.split(":")[-1]))
             if self.device.startswith("cuda")
@@ -38,13 +36,13 @@ class Config:
         )
         self.json_config = self.load_config_json()
         self.gpu_mem = None
-        self.instead = ""
         self.x_pad, self.x_query, self.x_center, self.x_max = self.device_config()
 
     def load_config_json(self) -> dict:
         configs = {}
         for config_file in version_config_paths:
-            with open(f"rvc/configs/{config_file}", "r") as f:
+            config_path = os.path.join("rvc", "configs", config_file)
+            with open(config_path, "r") as f:
                 configs[config_file] = json.load(f)
         return configs
 
@@ -66,13 +64,23 @@ class Config:
             "preprocess.py",
         )
         for config_path in version_config_paths:
-            config = json.loads(config_path.read_text())
-            config["train"]["fp16_run"] = False
-            config_path.write_text(json.dumps(config))
+            full_config_path = os.path.join("rvc", "configs", config_path)
+            print(f"Trying to open config file: {full_config_path}")
+            try:
+                with open(full_config_path, "r") as f:
+                    config = json.load(f)
+                config["train"]["fp16_run"] = False
+                with open(full_config_path, "w") as f:
+                    json.dump(config, f, indent=4)
+            except FileNotFoundError:
+                print(f"File not found: {full_config_path}")
 
-            if preprocess_path.exists():
-                preprocess_content = preprocess_path.read_text().replace("3.7", "3.0")
-                preprocess_path.write_text(preprocess_content)
+            if os.path.exists(preprocess_path):
+                with open(preprocess_path, "r") as f:
+                    preprocess_content = f.read()
+                preprocess_content = preprocess_content.replace("3.7", "3.0")
+                with open(preprocess_path, "w") as f:
+                    f.write(preprocess_content)
         print("Overwritten preprocess and config.json to use FP32.")
 
     def device_config(self) -> tuple:
