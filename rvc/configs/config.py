@@ -65,7 +65,6 @@ class Config:
         )
         for config_path in version_config_paths:
             full_config_path = os.path.join("rvc", "configs", config_path)
-            print(f"Trying to open config file: {full_config_path}")
             try:
                 with open(full_config_path, "r") as f:
                     config = json.load(f)
