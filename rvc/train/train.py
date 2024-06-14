@@ -77,6 +77,11 @@ global_step = 0
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 last_loss_gen_all = 0
 
+# Disable logging
+import logging
+
+logging.getLogger("torch").setLevel(logging.ERROR)
+
 
 class EpochRecorder:
     """

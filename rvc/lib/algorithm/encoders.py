@@ -4,7 +4,8 @@ from torch import nn
 from typing import Optional
 
 from rvc.lib.algorithm.commons import sequence_mask
-from rvc.lib.algorithm.norms import WN, LayerNorm
+from rvc.lib.algorithm.modules import WN
+from rvc.lib.algorithm.normalization import LayerNorm
 from rvc.lib.algorithm.attentions import FFN, MultiHeadAttention
 
 

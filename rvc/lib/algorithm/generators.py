@@ -9,6 +9,7 @@ from typing import Optional
 from rvc.lib.algorithm.residuals import LRELU_SLOPE, ResBlock1, ResBlock2
 from rvc.lib.algorithm.commons import init_weights
 
+
 class Generator(torch.nn.Module):
     """Generator for synthesizing audio.
 
@@ -233,4 +234,3 @@ class SineGen(torch.nn.Module):
             noise = noise_amp * torch.randn_like(sine_waves)
             sine_waves = sine_waves * uv + noise
         return sine_waves, uv, noise
-

@@ -6,7 +6,7 @@ from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
 from torch.nn import functional as F
 
-from rvc.lib.algorithm.norms import WN
+from rvc.lib.algorithm.modules import WN
 from rvc.lib.algorithm.commons import get_padding, init_weights
 
 LRELU_SLOPE = 0.1

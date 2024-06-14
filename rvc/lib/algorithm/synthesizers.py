@@ -8,6 +8,7 @@ from rvc.lib.algorithm.commons import slice_segments2, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock
 from rvc.lib.algorithm.encoders import TextEncoder256, TextEncoder768, PosteriorEncoder
 
+
 class SynthesizerTrnMs256NSFsid(nn.Module):
     """
     SynthesizerTrnMs256NSFsid model.
@@ -167,9 +168,7 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
-        z_slice, ids_slice = rand_slice_segments(
-            z, y_lengths, self.segment_size
-        )
+        z_slice, ids_slice = rand_slice_segments(z, y_lengths, self.segment_size)
         pitchf = slice_segments2(pitchf, ids_slice, self.segment_size)
         o = self.dec(z_slice, pitchf, g=g)
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
@@ -362,9 +361,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
-        z_slice, ids_slice = rand_slice_segments(
-            z, y_lengths, self.segment_size
-        )
+        z_slice, ids_slice = rand_slice_segments(z, y_lengths, self.segment_size)
         pitchf = slice_segments2(pitchf, ids_slice, self.segment_size)
         o = self.dec(z_slice, pitchf, g=g)
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
@@ -553,9 +550,7 @@ class SynthesizerTrnMs256NSFsid_nono(nn.Module):
         m_p, logs_p, x_mask = self.enc_p(phone, None, phone_lengths)
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
-        z_slice, ids_slice = rand_slice_segments(
-            z, y_lengths, self.segment_size
-        )
+        z_slice, ids_slice = rand_slice_segments(z, y_lengths, self.segment_size)
         o = self.dec(z_slice, g=g)
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 
@@ -726,9 +721,7 @@ class SynthesizerTrnMs768NSFsid_nono(nn.Module):
         m_p, logs_p, x_mask = self.enc_p(phone, None, phone_lengths)
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
-        z_slice, ids_slice = rand_slice_segments(
-            z, y_lengths, self.segment_size
-        )
+        z_slice, ids_slice = rand_slice_segments(z, y_lengths, self.segment_size)
         o = self.dec(z_slice, g=g)
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
 

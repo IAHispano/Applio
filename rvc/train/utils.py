@@ -6,7 +6,9 @@ import argparse
 import numpy as np
 from scipy.io.wavfile import read
 from collections import OrderedDict
+import matplotlib.pylab as plt
 
+MATPLOTLIB_FLAG = False
 
 def replace_keys_in_dict(d, old_key_part, new_key_part):
     """
@@ -205,8 +207,13 @@ def plot_spectrogram_to_numpy(spectrogram):
     Returns:
         numpy.ndarray: The NumPy array representing the plot.
     """
-    import matplotlib.pylab as plt
-    import numpy as np
+    global MATPLOTLIB_FLAG
+    if not MATPLOTLIB_FLAG:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        MATPLOTLIB_FLAG = True
+
 
     fig, ax = plt.subplots(figsize=(10, 2))
     im = ax.imshow(spectrogram, aspect="auto", origin="lower", interpolation="none")
