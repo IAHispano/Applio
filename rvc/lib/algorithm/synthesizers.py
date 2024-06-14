@@ -1,5 +1,4 @@
 import torch
-from torch import nn
 from typing import Optional
 
 from rvc.lib.algorithm.nsf import GeneratorNSF
@@ -9,7 +8,7 @@ from rvc.lib.algorithm.residuals import ResidualCouplingBlock
 from rvc.lib.algorithm.encoders import TextEncoder256, TextEncoder768, PosteriorEncoder
 
 
-class SynthesizerTrnMs256NSFsid(nn.Module):
+class SynthesizerTrnMs256NSFsid(torch.nn.Module):
     """
     SynthesizerTrnMs256NSFsid model.
 
@@ -108,7 +107,7 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
         self.flow = ResidualCouplingBlock(
             inter_channels, hidden_channels, 5, 1, 3, gin_channels=gin_channels
         )
-        self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
+        self.emb_g = torch.nn.Embedding(self.spk_embed_dim, gin_channels)
 
     def remove_weight_norm(self):
         """Removes weight normalization from the model."""
@@ -211,7 +210,7 @@ class SynthesizerTrnMs256NSFsid(nn.Module):
         return o, x_mask, (z, z_p, m_p, logs_p)
 
 
-class SynthesizerTrnMs768NSFsid(nn.Module):
+class SynthesizerTrnMs768NSFsid(torch.nn.Module):
     """
     SynthesizerTrnMs768NSFsid model.
 
@@ -310,7 +309,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         self.flow = ResidualCouplingBlock(
             inter_channels, hidden_channels, 5, 1, 3, gin_channels=gin_channels
         )
-        self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
+        self.emb_g = torch.nn.Embedding(self.spk_embed_dim, gin_channels)
 
     def remove_weight_norm(self):
         """Removes weight normalization from the model."""
@@ -403,7 +402,7 @@ class SynthesizerTrnMs768NSFsid(nn.Module):
         return o, x_mask, (z, z_p, m_p, logs_p)
 
 
-class SynthesizerTrnMs256NSFsid_nono(nn.Module):
+class SynthesizerTrnMs256NSFsid_nono(torch.nn.Module):
     """
     SynthesizerTrnMs256NSFsid_nono model.
 
@@ -501,7 +500,7 @@ class SynthesizerTrnMs256NSFsid_nono(nn.Module):
         self.flow = ResidualCouplingBlock(
             inter_channels, hidden_channels, 5, 1, 3, gin_channels=gin_channels
         )
-        self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
+        self.emb_g = torch.nn.Embedding(self.spk_embed_dim, gin_channels)
 
     def remove_weight_norm(self):
         """Removes weight normalization from the model."""
@@ -586,7 +585,7 @@ class SynthesizerTrnMs256NSFsid_nono(nn.Module):
         return o, x_mask, (z, z_p, m_p, logs_p)
 
 
-class SynthesizerTrnMs768NSFsid_nono(nn.Module):
+class SynthesizerTrnMs768NSFsid_nono(torch.nn.Module):
     """
     SynthesizerTrnMs768NSFsid_nono model.
 
@@ -685,7 +684,7 @@ class SynthesizerTrnMs768NSFsid_nono(nn.Module):
         self.flow = ResidualCouplingBlock(
             inter_channels, hidden_channels, 5, 1, 3, gin_channels=gin_channels
         )
-        self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
+        self.emb_g = torch.nn.Embedding(self.spk_embed_dim, gin_channels)
 
     def remove_weight_norm(self):
         """Removes weight normalization from the model."""

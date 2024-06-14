@@ -1,7 +1,6 @@
 from typing import Optional
 import torch
 from torch import nn
-from torch.nn import Conv1d
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
 from torch.nn import functional as F
@@ -27,7 +26,7 @@ class ResBlock1(torch.nn.Module):
         self.convs1 = nn.ModuleList(
             [
                 weight_norm(
-                    Conv1d(
+                    torch.nn.Conv1d(
                         channels,
                         channels,
                         kernel_size,
@@ -37,7 +36,7 @@ class ResBlock1(torch.nn.Module):
                     )
                 ),
                 weight_norm(
-                    Conv1d(
+                    torch.nn.Conv1d(
                         channels,
                         channels,
                         kernel_size,
@@ -47,7 +46,7 @@ class ResBlock1(torch.nn.Module):
                     )
                 ),
                 weight_norm(
-                    Conv1d(
+                    torch.nn.Conv1d(
                         channels,
                         channels,
                         kernel_size,
@@ -63,7 +62,7 @@ class ResBlock1(torch.nn.Module):
         self.convs2 = nn.ModuleList(
             [
                 weight_norm(
-                    Conv1d(
+                    torch.nn.Conv1d(
                         channels,
                         channels,
                         kernel_size,
@@ -73,7 +72,7 @@ class ResBlock1(torch.nn.Module):
                     )
                 ),
                 weight_norm(
-                    Conv1d(
+                    torch.nn.Conv1d(
                         channels,
                         channels,
                         kernel_size,
@@ -83,7 +82,7 @@ class ResBlock1(torch.nn.Module):
                     )
                 ),
                 weight_norm(
-                    Conv1d(
+                    torch.nn.Conv1d(
                         channels,
                         channels,
                         kernel_size,
@@ -145,7 +144,7 @@ class ResBlock2(torch.nn.Module):
         self.convs = nn.ModuleList(
             [
                 weight_norm(
-                    Conv1d(
+                    torch.nn.Conv1d(
                         channels,
                         channels,
                         kernel_size,
@@ -155,7 +154,7 @@ class ResBlock2(torch.nn.Module):
                     )
                 ),
                 weight_norm(
-                    Conv1d(
+                    torch.nn.Conv1d(
                         channels,
                         channels,
                         kernel_size,

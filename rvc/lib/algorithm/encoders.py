@@ -1,6 +1,5 @@
 import math
 import torch
-from torch import nn
 from typing import Optional
 
 from rvc.lib.algorithm.commons import sequence_mask
@@ -9,7 +8,7 @@ from rvc.lib.algorithm.normalization import LayerNorm
 from rvc.lib.algorithm.attentions import FFN, MultiHeadAttention
 
 
-class Encoder(nn.Module):
+class Encoder(torch.torch.nn.Module):
     """
     Encoder module for the Transformer model.
 
@@ -50,11 +49,11 @@ class Encoder(nn.Module):
         self.p_dropout = p_dropout
         self.window_size = window_size
 
-        self.drop = nn.Dropout(p_dropout)
-        self.attn_layers = nn.ModuleList()
-        self.norm_layers_1 = nn.ModuleList()
-        self.ffn_layers = nn.ModuleList()
-        self.norm_layers_2 = nn.ModuleList()
+        self.drop = torch.nn.Dropout(p_dropout)
+        self.attn_layers = torch.nn.ModuleList()
+        self.norm_layers_1 = torch.nn.ModuleList()
+        self.ffn_layers = torch.nn.ModuleList()
+        self.norm_layers_2 = torch.nn.ModuleList()
         for i in range(self.n_layers):
             self.attn_layers.append(
                 MultiHeadAttention(
@@ -92,7 +91,7 @@ class Encoder(nn.Module):
         return x
 
 
-class TextEncoder256(nn.Module):
+class TextEncoder256(torch.nn.Module):
     """Text Encoder with 256 embedding dimension.
 
     Args:
@@ -135,10 +134,10 @@ class TextEncoder256(nn.Module):
         self.n_layers = n_layers
         self.kernel_size = kernel_size
         self.p_dropout = float(p_dropout)
-        self.emb_phone = nn.Linear(256, hidden_channels)
-        self.lrelu = nn.LeakyReLU(0.1, inplace=True)
+        self.emb_phone = torch.nn.Linear(256, hidden_channels)
+        self.lrelu = torch.nn.LeakyReLU(0.1, inplace=True)
         if f0 == True:
-            self.emb_pitch = nn.Embedding(256, hidden_channels)  # pitch 256
+            self.emb_pitch = torch.nn.Embedding(256, hidden_channels)  # pitch 256
         self.encoder = Encoder(
             hidden_channels,
             filter_channels,
@@ -147,7 +146,7 @@ class TextEncoder256(nn.Module):
             kernel_size,
             float(p_dropout),
         )
-        self.proj = nn.Conv1d(hidden_channels, out_channels * 2, 1)
+        self.proj = torch.nn.Conv1d(hidden_channels, out_channels * 2, 1)
 
     def forward(
         self, phone: torch.Tensor, pitch: Optional[torch.Tensor], lengths: torch.Tensor
@@ -167,7 +166,7 @@ class TextEncoder256(nn.Module):
         return m, logs, x_mask
 
 
-class TextEncoder768(nn.Module):
+class TextEncoder768(torch.nn.Module):
     """Text Encoder with 768 embedding dimension.
 
     Args:
@@ -210,10 +209,10 @@ class TextEncoder768(nn.Module):
         self.n_layers = n_layers
         self.kernel_size = kernel_size
         self.p_dropout = float(p_dropout)
-        self.emb_phone = nn.Linear(768, hidden_channels)
-        self.lrelu = nn.LeakyReLU(0.1, inplace=True)
+        self.emb_phone = torch.nn.Linear(768, hidden_channels)
+        self.lrelu = torch.nn.LeakyReLU(0.1, inplace=True)
         if f0 == True:
-            self.emb_pitch = nn.Embedding(256, hidden_channels)  # pitch 256
+            self.emb_pitch = torch.nn.Embedding(256, hidden_channels)  # pitch 256
         self.encoder = Encoder(
             hidden_channels,
             filter_channels,
@@ -222,7 +221,7 @@ class TextEncoder768(nn.Module):
             kernel_size,
             float(p_dropout),
         )
-        self.proj = nn.Conv1d(hidden_channels, out_channels * 2, 1)
+        self.proj = torch.nn.Conv1d(hidden_channels, out_channels * 2, 1)
 
     def forward(self, phone: torch.Tensor, pitch: torch.Tensor, lengths: torch.Tensor):
         if pitch is None:
@@ -240,7 +239,7 @@ class TextEncoder768(nn.Module):
         return m, logs, x_mask
 
 
-class PosteriorEncoder(nn.Module):
+class PosteriorEncoder(torch.nn.Module):
     """Posterior Encoder for inferring latent representation.
 
     Args:
@@ -283,7 +282,7 @@ class PosteriorEncoder(nn.Module):
         self.n_layers = n_layers
         self.gin_channels = gin_channels
 
-        self.pre = nn.Conv1d(in_channels, hidden_channels, 1)
+        self.pre = torch.nn.Conv1d(in_channels, hidden_channels, 1)
         self.enc = WN(
             hidden_channels,
             kernel_size,
@@ -291,7 +290,7 @@ class PosteriorEncoder(nn.Module):
             n_layers,
             gin_channels=gin_channels,
         )
-        self.proj = nn.Conv1d(hidden_channels, out_channels * 2, 1)
+        self.proj = torch.nn.Conv1d(hidden_channels, out_channels * 2, 1)
 
     def forward(
         self, x: torch.Tensor, x_lengths: torch.Tensor, g: Optional[torch.Tensor] = None
@@ -312,8 +311,8 @@ class PosteriorEncoder(nn.Module):
         """Prepares the module for scripting."""
         for hook in self.enc._forward_pre_hooks.values():
             if (
-                hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
+                hook.__module__ == "torch.torch.nn.utils.parametrizations.weight_norm"
                 and hook.__class__.__name__ == "WeightNorm"
             ):
-                torch.nn.utils.remove_weight_norm(self.enc)
+                torch.torch.nn.utils.remove_weight_norm(self.enc)
         return self

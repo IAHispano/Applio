@@ -1,5 +1,4 @@
 import torch
-from torch import nn
 from rvc.lib.algorithm.commons import fused_add_tanh_sigmoid_multiply
 
 class WN(torch.nn.Module):
@@ -35,7 +34,7 @@ class WN(torch.nn.Module):
 
         self.in_layers = torch.nn.ModuleList()
         self.res_skip_layers = torch.nn.ModuleList()
-        self.drop = nn.Dropout(p_dropout)
+        self.drop = torch.nn.Dropout(p_dropout)
 
         if gin_channels != 0:
             cond_layer = torch.nn.Conv1d(

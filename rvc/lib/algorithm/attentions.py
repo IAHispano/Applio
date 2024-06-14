@@ -1,12 +1,11 @@
 import math
 import torch
-from torch import nn
 from torch.nn import functional as F
 
 from rvc.lib.algorithm.commons import convert_pad_shape
 
 
-class MultiHeadAttention(nn.Module):
+class MultiHeadAttention(torch.nn.Module):
     """
     Multi-head attention module with optional relative positional encoding and proximal bias.
 
@@ -57,27 +56,27 @@ class MultiHeadAttention(nn.Module):
         self.attn = None
 
         self.k_channels = channels // n_heads
-        self.conv_q = nn.Conv1d(channels, channels, 1)
-        self.conv_k = nn.Conv1d(channels, channels, 1)
-        self.conv_v = nn.Conv1d(channels, channels, 1)
-        self.conv_o = nn.Conv1d(channels, out_channels, 1)
-        self.drop = nn.Dropout(p_dropout)
+        self.conv_q = torch.nn.Conv1d(channels, channels, 1)
+        self.conv_k = torch.nn.Conv1d(channels, channels, 1)
+        self.conv_v = torch.nn.Conv1d(channels, channels, 1)
+        self.conv_o = torch.nn.Conv1d(channels, out_channels, 1)
+        self.drop = torch.nn.Dropout(p_dropout)
 
         if window_size is not None:
             n_heads_rel = 1 if heads_share else n_heads
             rel_stddev = self.k_channels**-0.5
-            self.emb_rel_k = nn.Parameter(
+            self.emb_rel_k = torch.nn.Parameter(
                 torch.randn(n_heads_rel, window_size * 2 + 1, self.k_channels)
                 * rel_stddev
             )
-            self.emb_rel_v = nn.Parameter(
+            self.emb_rel_v = torch.nn.Parameter(
                 torch.randn(n_heads_rel, window_size * 2 + 1, self.k_channels)
                 * rel_stddev
             )
 
-        nn.init.xavier_uniform_(self.conv_q.weight)
-        nn.init.xavier_uniform_(self.conv_k.weight)
-        nn.init.xavier_uniform_(self.conv_v.weight)
+        torch.nn.init.xavier_uniform_(self.conv_q.weight)
+        torch.nn.init.xavier_uniform_(self.conv_k.weight)
+        torch.nn.init.xavier_uniform_(self.conv_v.weight)
         if proximal_init:
             with torch.no_grad():
                 self.conv_k.weight.copy_(self.conv_q.weight)
@@ -209,7 +208,7 @@ class MultiHeadAttention(nn.Module):
         return torch.unsqueeze(torch.unsqueeze(-torch.log1p(torch.abs(diff)), 0), 0)
 
 
-class FFN(nn.Module):
+class FFN(torch.nn.Module):
     """
     Feed-forward network module.
 
@@ -254,9 +253,9 @@ class FFN(nn.Module):
         else:
             self.padding = self._same_padding
 
-        self.conv_1 = nn.Conv1d(in_channels, filter_channels, kernel_size)
-        self.conv_2 = nn.Conv1d(filter_channels, out_channels, kernel_size)
-        self.drop = nn.Dropout(p_dropout)
+        self.conv_1 = torch.nn.Conv1d(in_channels, filter_channels, kernel_size)
+        self.conv_2 = torch.nn.Conv1d(filter_channels, out_channels, kernel_size)
+        self.drop = torch.nn.Dropout(p_dropout)
 
     def forward(self, x, x_mask):
         x = self.conv_1(self.padding(x * x_mask))

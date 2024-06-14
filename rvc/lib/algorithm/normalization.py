@@ -1,14 +1,9 @@
-import math
-
 import torch
-from torch import nn
 from torch.nn import functional as F
 
 
-from rvc.lib.algorithm.transforms import piecewise_rational_quadratic_transform
 
-
-class LayerNorm(nn.Module):
+class LayerNorm(torch.nn.Module):
     """Layer normalization module.
 
     Args:
@@ -22,8 +17,8 @@ class LayerNorm(nn.Module):
         self.channels = channels
         self.eps = eps
 
-        self.gamma = nn.Parameter(torch.ones(channels))
-        self.beta = nn.Parameter(torch.zeros(channels))
+        self.gamma = torch.nn.Parameter(torch.ones(channels))
+        self.beta = torch.nn.Parameter(torch.zeros(channels))
 
     def forward(self, x):
         """Forward pass.
