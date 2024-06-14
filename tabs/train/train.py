@@ -795,7 +795,7 @@ def train_tab():
                     gr.Info(
                         "Downloading prerequisites... Please wait till it finishes to start preprocessing."
                     )
-                    run_prerequisites_script("True", "False", "True", "True")
+                    run_prerequisites_script("True", "False", "True")
                     gr.Info(
                         "Prerequisites downloaded successfully, you may now start preprocessing."
                     )

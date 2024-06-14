@@ -33,7 +33,7 @@ from core import run_prerequisites_script
 import logging
 logging.getLogger("uvicorn").setLevel(logging.WARNING)
 
-run_prerequisites_script("False", "True", "True", "True")
+run_prerequisites_script("False", "True", "True")
 
 i18n = I18nAuto()
 if load_config_presence() == True:

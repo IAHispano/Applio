@@ -58,7 +58,6 @@ embedders_list = [
     ),
 ]
 
-executables_list = ["ffmpeg.exe", "ffprobe.exe"]
 
 folder_mapping_list = {
     "pretrained_v1/": "rvc/models/pretraineds/pretrained_v1/",
@@ -113,13 +112,10 @@ def download_mapping_files(list):
             future.result()
 
 
-def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
+def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models):
     if models == "True":
         download_files(models_list)
         download_mapping_files(embedders_list)
-
-    if exe == "True" and os.name == "nt":
-        download_files(executables_list)
 
     if pretraineds_v1 == "True":
         download_mapping_files(pretraineds_v1_list)

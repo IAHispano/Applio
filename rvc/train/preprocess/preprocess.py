@@ -71,7 +71,7 @@ class PreProcess:
         )
         tmp_audio = librosa.resample(
             tmp_audio, orig_sr=self.sr, target_sr=16000
-        )  # , res_type="soxr_vhq"
+        )
         wavfile.write(
             f"{WAVS16K_DIR}/{idx0}_{idx1}.wav",
             16000,
