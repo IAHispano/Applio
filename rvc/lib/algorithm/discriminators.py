@@ -4,8 +4,8 @@ from torch.nn import functional as F
 from torch.nn import Conv1d, Conv2d
 from torch.nn.utils.parametrizations import spectral_norm, weight_norm
 
-from rvc.lib.infer_pack.commons import get_padding
-from rvc.lib.infer_pack.residuals import LRELU_SLOPE
+from rvc.lib.algorithm.commons import get_padding
+from rvc.lib.algorithm.residuals import LRELU_SLOPE
 
 class MultiPeriodDiscriminator(torch.nn.Module):
     """

@@ -3,9 +3,9 @@ import torch
 from torch import nn
 from typing import Optional
 
-from rvc.lib.infer_pack.commons import sequence_mask
-from rvc.lib.infer_pack.modules import WN, LayerNorm
-from rvc.lib.infer_pack.attentions import FFN, MultiHeadAttention
+from rvc.lib.algorithm.commons import sequence_mask
+from rvc.lib.algorithm.modules import WN, LayerNorm
+from rvc.lib.algorithm.attentions import FFN, MultiHeadAttention
 
 
 class Encoder(nn.Module):

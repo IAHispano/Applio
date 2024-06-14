@@ -9,9 +9,9 @@ sys.path.append(now_dir)
 
 from rvc.configs.config import Config
 
-from rvc.tools.prerequisites_download import prequisites_download_pipeline
+from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
 from rvc.train.extract.preparing_files import generate_config, generate_filelist
-from rvc.tools.pretrained_selector import pretrained_selector
+from rvc.lib.tools.pretrained_selector import pretrained_selector
 
 from rvc.train.process.model_blender import model_blender
 from rvc.train.process.model_information import model_information
@@ -21,19 +21,20 @@ from rvc.infer.infer import VoiceConverter
 
 infer_pipeline = VoiceConverter().infer_pipeline
 
-from rvc.tools.analyzer import analyze_audio
+from rvc.lib.tools.analyzer import analyze_audio
 
-from rvc.tools.launch_tensorboard import launch_tensorboard_pipeline
+from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
 
-from rvc.tools.model_download import model_download_pipeline
+from rvc.lib.tools.model_download import model_download_pipeline
 
 config = Config()
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")
 
 # Get TTS Voices -> https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4
-with open(os.path.join("rvc", "tools", "tts_voices.json"), "r") as f:
+with open(os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r") as f:
     voices_data = json.load(f)
+    
 
 locales = list({voice["Locale"] for voice in voices_data})
 

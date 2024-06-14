@@ -8,9 +8,9 @@ import noisereduce as nr
 from scipy.io import wavfile
 from rvc.infer.pipeline import Pipeline as VC
 from audio_upscaler import upscale
-from rvc.utils import load_audio, load_embedding
-from rvc.tools.split_audio import process_audio, merge_audio
-from rvc.lib.infer_pack.synthesizers import (
+from rvc.lib.utils import load_audio, load_embedding
+from rvc.lib.tools.split_audio import process_audio, merge_audio
+from rvc.lib.algorithm.synthesizers import (
     SynthesizerTrnMs256NSFsid,
     SynthesizerTrnMs256NSFsid_nono,
     SynthesizerTrnMs768NSFsid,

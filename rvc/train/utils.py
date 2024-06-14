@@ -4,8 +4,35 @@ import json
 import torch
 import argparse
 import numpy as np
-import safetensors
 from scipy.io.wavfile import read
+from collections import OrderedDict
+
+
+def replace_keys_in_dict(d, old_key_part, new_key_part):
+    """
+    Replaces keys in a dictionary recursively.
+
+    Args:
+        d (dict or OrderedDict): The dictionary to update.
+        old_key_part (str): The part of the key to replace.
+        new_key_part (str): The new part of the key.
+
+    Returns:
+        dict or OrderedDict: The updated dictionary.
+    """
+    if isinstance(d, OrderedDict):
+        updated_dict = OrderedDict()
+    else:
+        updated_dict = {}
+    for key, value in d.items():
+        if isinstance(key, str):
+            new_key = key.replace(old_key_part, new_key_part)
+        else:
+            new_key = key
+        if isinstance(value, dict):
+            value = replace_keys_in_dict(value, old_key_part, new_key_part)
+        updated_dict[new_key] = value
+    return updated_dict
 
 
 def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
@@ -22,25 +49,32 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
         tuple: A tuple containing the model, optimizer, learning rate, and iteration.
     """
     assert os.path.isfile(checkpoint_path)
-    
-    if checkpoint_path.endswith(".pth"):
-        checkpoint_dict = torch.load(checkpoint_path, map_location="cpu")
-    elif checkpoint_path.endswith(".safetensors"):
-        checkpoint_dict = safetensors.torch.load_file(checkpoint_path, device="cpu")
-    
-    else:
-        raise ValueError(
-            f"Unsupported checkpoint file extension: {os.path.splitext(checkpoint_path)[1]}"
-        )
+    checkpoint_old_dict = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint_new_version_path = os.path.join(
+        os.path.dirname(checkpoint_path),
+        f"{os.path.splitext(os.path.basename(checkpoint_path))[0]}_new_version.pth",
+    )
 
-    # Handle potential key mismatch (e.g., "module." prefix)
-    # Note: This might not be necessary if your model uses "module." consistently
+    torch.save(
+        replace_keys_in_dict(
+            replace_keys_in_dict(
+                checkpoint_old_dict, ".weight_v", ".parametrizations.weight.original1"
+            ),
+            ".weight_g",
+            ".parametrizations.weight.original0",
+        ),
+        checkpoint_new_version_path,
+    )
+
+    os.remove(checkpoint_path)
+    os.rename(checkpoint_new_version_path, checkpoint_path)
+
+    checkpoint_dict = torch.load(checkpoint_path, map_location="cpu")
     saved_state_dict = checkpoint_dict["model"]
     if hasattr(model, "module"):
         state_dict = model.module.state_dict()
     else:
         state_dict = model.state_dict()
-
     new_state_dict = {}
     for k, v in state_dict.items():
         try:
@@ -56,8 +90,6 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
         except:
             print("%s is not in the checkpoint", k)
             new_state_dict[k] = v
-
-    # Load the state dict
     if hasattr(model, "module"):
         model.module.load_state_dict(new_state_dict, strict=False)
     else:
@@ -82,12 +114,16 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
         iteration (int): The current iteration.
         checkpoint_path (str): The path to save the checkpoint to.
     """
+    print(f"Saved model '{checkpoint_path}' (epoch {iteration})")
+    checkpoint_old_version_path = os.path.join(
+        os.path.dirname(checkpoint_path),
+        f"{os.path.splitext(os.path.basename(checkpoint_path))[0]}_old_version.pth",
+    )
     if hasattr(model, "module"):
         state_dict = model.module.state_dict()
     else:
         state_dict = model.state_dict()
-
-    safetensors.torch.save_file(
+    torch.save(
         {
             "model": state_dict,
             "iteration": iteration,
@@ -96,7 +132,19 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
         },
         checkpoint_path,
     )
-    print(f"Saved model '{checkpoint_path}' (epoch {iteration})")
+    checkpoint = torch.load(checkpoint_path, map_location=torch.device("cpu"))
+    torch.save(
+        replace_keys_in_dict(
+            replace_keys_in_dict(
+                checkpoint, ".parametrizations.weight.original1", ".weight_v"
+            ),
+            ".parametrizations.weight.original0",
+            ".weight_g",
+        ),
+        checkpoint_old_version_path,
+    )
+    os.remove(checkpoint_path)
+    os.rename(checkpoint_old_version_path, checkpoint_path)
 
 
 def summarize(

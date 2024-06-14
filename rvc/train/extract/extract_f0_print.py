@@ -12,7 +12,7 @@ from multiprocessing import Pool
 current_directory = os.getcwd()
 sys.path.append(current_directory)
 
-from rvc.utils import load_audio
+from rvc.lib.utils import load_audio
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 
 

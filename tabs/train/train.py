@@ -12,7 +12,7 @@ from core import (
     run_prerequisites_script,
 )
 from rvc.configs.config import max_vram_gpu, get_gpu_info
-from rvc.utils import format_title
+from rvc.lib.utils import format_title
 from tabs.settings.restart import restart_applio
 
 i18n = I18nAuto()

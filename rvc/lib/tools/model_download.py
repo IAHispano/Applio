@@ -12,8 +12,8 @@ from urllib.parse import unquote, urlencode, parse_qs, urlparse
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.utils import format_title
-from rvc.tools import gdown
+from rvc.lib.utils import format_title
+from rvc.lib.tools import gdown
 
 
 def find_folder_parent(search_dir, folder_name):

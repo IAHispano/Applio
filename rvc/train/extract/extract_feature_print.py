@@ -9,7 +9,7 @@ import time
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
-from rvc.utils import load_embedding
+from rvc.lib.utils import load_embedding
 
 device = sys.argv[1]
 n_parts = int(sys.argv[2])

@@ -5,8 +5,8 @@ from torch import nn
 from torch.nn import functional as F
 
 
-from rvc.lib.infer_pack.transforms import piecewise_rational_quadratic_transform
-from rvc.lib.infer_pack.commons import fused_add_tanh_sigmoid_multiply
+from rvc.lib.algorithm.transforms import piecewise_rational_quadratic_transform
+from rvc.lib.algorithm.commons import fused_add_tanh_sigmoid_multiply
 
 
 class LayerNorm(nn.Module):

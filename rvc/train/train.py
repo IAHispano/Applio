@@ -48,20 +48,20 @@ from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 
 from rvc.train.process.extract_model import extract_model
 
-from rvc.lib.infer_pack import commons
+from rvc.lib.algorithm import commons
 
 hps = get_hparams()
 if hps.version == "v1":
-    from rvc.lib.infer_pack.discriminators import MultiPeriodDiscriminator
-    from rvc.lib.infer_pack.synthesizers import (
+    from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
+    from rvc.lib.algorithm.synthesizers import (
         SynthesizerTrnMs256NSFsid as RVC_Model_f0,
         SynthesizerTrnMs256NSFsid_nono as RVC_Model_nof0,
     )
 elif hps.version == "v2":
-    from rvc.lib.infer_pack.discriminators import (
+    from rvc.lib.algorithm.discriminators import (
         MultiPeriodDiscriminatorV2 as MultiPeriodDiscriminator,
     )
-    from rvc.lib.infer_pack.synthesizers import (
+    from rvc.lib.algorithm.synthesizers import (
         SynthesizerTrnMs768NSFsid as RVC_Model_f0,
         SynthesizerTrnMs768NSFsid_nono as RVC_Model_nof0,
     )

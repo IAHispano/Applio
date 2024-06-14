@@ -2,11 +2,11 @@ import torch
 from torch import nn
 from typing import Optional
 
-from rvc.lib.infer_pack.nsf import GeneratorNSF
-from rvc.lib.infer_pack.generators import Generator
-from rvc.lib.infer_pack.commons import slice_segments2, rand_slice_segments
-from rvc.lib.infer_pack.residuals import ResidualCouplingBlock
-from rvc.lib.infer_pack.encoders import TextEncoder256, TextEncoder768, PosteriorEncoder
+from rvc.lib.algorithm.nsf import GeneratorNSF
+from rvc.lib.algorithm.generators import Generator
+from rvc.lib.algorithm.commons import slice_segments2, rand_slice_segments
+from rvc.lib.algorithm.residuals import ResidualCouplingBlock
+from rvc.lib.algorithm.encoders import TextEncoder256, TextEncoder768, PosteriorEncoder
 
 class SynthesizerTrnMs256NSFsid(nn.Module):
     """

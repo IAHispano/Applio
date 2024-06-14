@@ -9,11 +9,8 @@ exp_dir = sys.argv[1]
 version = sys.argv[2]
 
 try:
-    if version == "v1":
-        feature_dir = os.path.join(exp_dir, "v1_extracted")
-    elif version == "v2":
-        feature_dir = os.path.join(exp_dir, "v2_extracted")
-
+    feature_dir = os.path.join(exp_dir, f"{version}_extracted")
+ 
     npys = []
     listdir_res = sorted(os.listdir(feature_dir))
 

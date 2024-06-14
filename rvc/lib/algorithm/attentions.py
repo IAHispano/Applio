@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from rvc.lib.infer_pack.commons import convert_pad_shape
+from rvc.lib.algorithm.commons import convert_pad_shape
 
 
 class MultiHeadAttention(nn.Module):

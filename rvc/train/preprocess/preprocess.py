@@ -12,7 +12,7 @@ import numpy as np
 now_directory = os.getcwd()
 sys.path.append(now_directory)
 
-from rvc.utils import load_audio
+from rvc.lib.utils import load_audio
 from rvc.train.slicer import Slicer
 
 # Load command line arguments

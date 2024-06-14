@@ -170,7 +170,7 @@ def tts_tab():
                 outputs=[index_file],
             )
 
-    json_path = os.path.join("rvc", "tools", "tts_voices.json")
+    json_path = os.path.join("rvc", "lib", "tools", "tts_voices.json")
     with open(json_path, "r") as file:
         tts_voices_data = json.load(file)
 
