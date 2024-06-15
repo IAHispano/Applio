@@ -1,5 +1,6 @@
 import os, sys
-import librosa
+import ffmpeg
+import numpy as np
 import re
 import unicodedata
 from fairseq import checkpoint_utils
@@ -15,11 +16,15 @@ sys.path.append(now_dir)
 def load_audio(file, sampling_rate):
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        audio, sr = librosa.load(file, sr=sampling_rate, mono=True)
+        out, _ = (
+            ffmpeg.input(file, threads=0)
+            .output("-", format="f32le", acodec="pcm_f32le", ac=1, ar=sampling_rate)
+            .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
+        )
     except Exception as error:
         raise RuntimeError(f"Failed to load audio: {error}")
 
-    return audio
+    return np.frombuffer(out, np.float32).flatten()
 
 
 def format_title(title):

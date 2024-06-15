@@ -18,6 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
+          sudo apt -y install ffmpeg
           python -m pip install --upgrade pip
           python -m pip install --upgrade setuptools
           python -m pip install --upgrade wheel

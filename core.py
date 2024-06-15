@@ -453,8 +453,8 @@ def run_download_script(model_link):
 
 
 # Prerequisites
-def run_prerequisites_script(pretraineds_v1, pretraineds_v2, models):
-    prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models)
+def run_prerequisites_script(pretraineds_v1, pretraineds_v2, models, exe):
+    prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe)
     return "Prerequisites installed successfully."
 
 
@@ -1277,6 +1277,13 @@ def parse_arguments():
         default="True",
         help="Donwload models",
     )
+    prerequisites_parser.add_argument(
+        "--exe",
+        type=str,
+        choices=["True", "False"],
+        default="True",
+        help="Download executables",
+    )
 
     # Parser for 'audio_analyzer' mode
     audio_analyzer = subparsers.add_parser("audio_analyzer", help="Run audio analyzer")
@@ -1453,6 +1460,7 @@ def main():
                 str(args.pretraineds_v1),
                 str(args.pretraineds_v2),
                 str(args.models),
+                str(args.exe),
             )
         elif args.mode == "audio_analyzer":
             run_audio_analyzer_script(
