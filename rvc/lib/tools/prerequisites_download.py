@@ -44,9 +44,13 @@ pretraineds_v2_list = [
 ]
 
 models_list = [
-    "rmvpe.pt",
-    "fcpe.pt",
-    # "rmvpe.onnx"
+    (
+        "predictors/",
+        [
+            "rmvpe.pt",
+            "fcpe.pt",
+        ],
+    ),
 ]
 
 embedders_list = [
@@ -58,11 +62,11 @@ embedders_list = [
     ),
 ]
 
-
 folder_mapping_list = {
     "pretrained_v1/": "rvc/models/pretraineds/pretrained_v1/",
     "pretrained_v2/": "rvc/models/pretraineds/pretrained_v2/",
     "embedders/": "rvc/models/embedders/",
+    "predictors/": "rvc/models/predictors/",
 }
 
 
@@ -114,7 +118,7 @@ def download_mapping_files(list):
 
 def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models):
     if models == "True":
-        download_files(models_list)
+        download_mapping_files(models_list)
         download_mapping_files(embedders_list)
 
     if pretraineds_v1 == "True":

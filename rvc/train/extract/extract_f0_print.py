@@ -21,6 +21,7 @@ f0_method = sys.argv[2]
 hop_length = int(sys.argv[3])
 num_processes = int(sys.argv[4])
 
+
 # Define a class for f0 extraction
 class FeatureInput:
     def __init__(self, sample_rate=16000, hop_size=160):
@@ -121,7 +122,11 @@ class FeatureInput:
         return pyworld.stonemask(x.astype(np.double), *f0_spectral, self.fs)
 
     def get_rmvpe(self, x):
-        model_rmvpe = RMVPE0Predictor("rmvpe.pt", is_half=False, device="cpu")
+        model_rmvpe = RMVPE0Predictor(
+            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
+            is_half=False,
+            device="cpu",
+        )
         return model_rmvpe.infer_from_audio(x, thred=0.03)
 
     # Helper function to get f0 method dictionary

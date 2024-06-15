@@ -11,11 +11,14 @@ import resampy
 import torch
 import torchcrepe
 import torchfcpe
+import os
 
 # from tools.anyf0.rmvpe import RMVPE
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 from rvc.configs.config import Config
+
 config = Config()
+
 
 @dataclasses.dataclass
 class F0Extractor:
@@ -136,7 +139,11 @@ class F0Extractor:
             audio_length = len(audio)
             f0_target_length = (audio_length // self.hop_length) + 1
             audio = (
-                torch.from_numpy(audio).float().unsqueeze(0).unsqueeze(-1).to(config.device)
+                torch.from_numpy(audio)
+                .float()
+                .unsqueeze(0)
+                .unsqueeze(-1)
+                .to(config.device)
             )
             model = torchfcpe.spawn_bundled_infer_model(device=config.device)
 
@@ -153,7 +160,7 @@ class F0Extractor:
             f0 = f0.squeeze().cpu().numpy()
         elif method == "rmvpe":
             model_rmvpe = RMVPE0Predictor(
-                "rmvpe.pt",
+                os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
                 is_half=config.is_half,
                 device=config.device,
                 # hop_length=80
