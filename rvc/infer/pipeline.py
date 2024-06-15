@@ -326,7 +326,6 @@ class Pipeline:
                 gc.collect()
             f0_computation_stack.append(f0)
 
-        print(f"Calculating hybrid median f0 from the stack of {str(methods)}")
         f0_computation_stack = [fc for fc in f0_computation_stack if fc is not None]
         f0_median_hybrid = None
         if len(f0_computation_stack) == 1:
