@@ -1,7 +1,9 @@
 import torch
 from typing import Optional
 
-from rvc.lib.algorithm.nsf import GeneratorNSF
+from rvc.lib.algorithm.nsf_hifigan import GeneratorNSF_HIFIGAN
+from rvc.lib.algorithm.nsf_bigvgan import GeneratorNSF_BIGVGAN
+
 from rvc.lib.algorithm.generators import Generator
 from rvc.lib.algorithm.commons import slice_segments2, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock
@@ -54,6 +56,7 @@ class SynthesizerV1_F0(torch.nn.Module):
         spk_embed_dim,
         gin_channels,
         sr,
+        vocoder_type="hifigan", # hifigan or bigvgan
         **kwargs
     ):
         super(SynthesizerV1_F0, self).__init__()
@@ -83,18 +86,31 @@ class SynthesizerV1_F0(torch.nn.Module):
             kernel_size,
             float(p_dropout),
         )
-        self.dec = GeneratorNSF(
-            inter_channels,
-            resblock,
-            resblock_kernel_sizes,
-            resblock_dilation_sizes,
-            upsample_rates,
-            upsample_initial_channel,
-            upsample_kernel_sizes,
-            gin_channels=gin_channels,
-            sr=sr,
-            is_half=kwargs["is_half"],
-        )
+        if vocoder_type == "hifigan":
+            self.dec = GeneratorNSF_HIFIGAN(
+                inter_channels,
+                resblock,
+                resblock_kernel_sizes,
+                resblock_dilation_sizes,
+                upsample_rates,
+                upsample_initial_channel,
+                upsample_kernel_sizes,
+                gin_channels=gin_channels,
+                sr=sr,
+                is_half=kwargs["is_half"],
+            )
+        elif vocoder_type == "bigvgan":
+            self.dec = GeneratorNSF_BIGVGAN(
+                resblock_kernel_sizes=resblock_kernel_sizes,
+                resblock_dilation_sizes=resblock_dilation_sizes,
+                upsample_rates=upsample_rates,
+                upsample_kernel_sizes=upsample_kernel_sizes,
+                upsample_input=inter_channels,
+                upsample_initial_channel=upsample_initial_channel,
+                sampling_rate=sr,
+                spk_dim=gin_channels,
+            )
+        print(f"Using vocoder {vocoder_type}")
         self.enc_q = PosteriorEncoder(
             spec_channels,
             inter_channels,
@@ -256,6 +272,7 @@ class SynthesizerV2_F0(torch.nn.Module):
         spk_embed_dim,
         gin_channels,
         sr,
+        vocoder_type="hifigan", # hifigan or bigvgan
         **kwargs
     ):
         super(SynthesizerV2_F0, self).__init__()
@@ -285,18 +302,31 @@ class SynthesizerV2_F0(torch.nn.Module):
             kernel_size,
             float(p_dropout),
         )
-        self.dec = GeneratorNSF(
-            inter_channels,
-            resblock,
-            resblock_kernel_sizes,
-            resblock_dilation_sizes,
-            upsample_rates,
-            upsample_initial_channel,
-            upsample_kernel_sizes,
-            gin_channels=gin_channels,
-            sr=sr,
-            is_half=kwargs["is_half"],
-        )
+        if vocoder_type == "hifigan":
+            self.dec = GeneratorNSF_HIFIGAN(
+                inter_channels,
+                resblock,
+                resblock_kernel_sizes,
+                resblock_dilation_sizes,
+                upsample_rates,
+                upsample_initial_channel,
+                upsample_kernel_sizes,
+                gin_channels=gin_channels,
+                sr=sr,
+                is_half=kwargs["is_half"],
+            )
+        elif vocoder_type == "bigvgan":
+            self.dec = GeneratorNSF_BIGVGAN(
+                resblock_kernel_sizes=resblock_kernel_sizes,
+                resblock_dilation_sizes=resblock_dilation_sizes,
+                upsample_rates=upsample_rates,
+                upsample_kernel_sizes=upsample_kernel_sizes,
+                upsample_input=inter_channels,
+                upsample_initial_channel=upsample_initial_channel,
+                sampling_rate=sr,
+                spk_dim=gin_channels,
+            )
+        print(f"Using vocoder {vocoder_type}")
         self.enc_q = PosteriorEncoder(
             spec_channels,
             inter_channels,
