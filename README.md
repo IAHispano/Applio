@@ -1,5 +1,5 @@
 <h1 align="center">
-  <a href="https://applio.org" target="_blank"><img src="https://github.com/IAHispano/Applio/assets/133521603/97cce90b-cbb4-40a7-b9b1-583d2998a78d" alt="Applio"></a>
+  <a href="https://applio.org" target="_blank"><img src="https://github.com/IAHispano/Applio/assets/133521603/f2b71a51-062f-45b5-b4e5-6283d9cdef17" alt="Applio"></a>
 </h1>
 
 <p align="center">
