@@ -1,8 +1,8 @@
 import torch
 from rvc.lib.algorithm.commons import fused_add_tanh_sigmoid_multiply
 
-class WN(torch.nn.Module):
-    """Weight-normalized convolution module.
+class WaveNet(torch.nn.Module):
+    """WaveNet residual blocks as used in WaveGlow
 
     Args:
         hidden_channels (int): Number of hidden channels.
@@ -23,7 +23,7 @@ class WN(torch.nn.Module):
         gin_channels=0,
         p_dropout=0,
     ):
-        super(WN, self).__init__()
+        super(WaveNet, self).__init__()
         assert kernel_size % 2 == 1
         self.hidden_channels = hidden_channels
         self.kernel_size = (kernel_size,)

@@ -3,7 +3,7 @@ import torch
 from typing import Optional
 
 from rvc.lib.algorithm.commons import sequence_mask
-from rvc.lib.algorithm.modules import WN
+from rvc.lib.algorithm.modules import WaveNet
 from rvc.lib.algorithm.normalization import LayerNorm
 from rvc.lib.algorithm.attentions import FFN, MultiHeadAttention
 
@@ -283,7 +283,7 @@ class PosteriorEncoder(torch.nn.Module):
         self.gin_channels = gin_channels
 
         self.pre = torch.nn.Conv1d(in_channels, hidden_channels, 1)
-        self.enc = WN(
+        self.enc = WaveNet(
             hidden_channels,
             kernel_size,
             dilation_rate,

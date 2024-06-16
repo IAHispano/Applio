@@ -3,7 +3,7 @@ import torch
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
 
-from rvc.lib.algorithm.modules import WN
+from rvc.lib.algorithm.modules import WaveNet
 from rvc.lib.algorithm.commons import get_padding, init_weights
 
 LRELU_SLOPE = 0.1
@@ -413,7 +413,7 @@ class ResidualCouplingLayer(torch.nn.Module):
         self.mean_only = mean_only
 
         self.pre = torch.nn.Conv1d(self.half_channels, hidden_channels, 1)
-        self.enc = WN(
+        self.enc = WaveNet(
             hidden_channels,
             kernel_size,
             dilation_rate,
