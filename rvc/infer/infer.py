@@ -275,63 +275,64 @@ class VoiceConverter:
             sid: Speaker ID (currently not used).
         """
         if sid == "" or sid == []:
-            if self.hubert_model is not None:
-                print("clean_empty_cache")
-                del self.net_g, self.n_spk, self.vc, self.hubert_model, self.tgt_sr
-                self.hubert_model = self.net_g = self.n_spk = self.vc = (
-                    self.hubert_model
-                ) = self.tgt_sr = None
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-
-            if_f0 = self.cpt.get("f0", 1)
-            self.version = self.cpt.get("version", "v1")
-            if self.version == "v1":
-                if if_f0 == 1:
-                    self.net_g = SynthesizerV1_F0(
-                        *self.cpt["config"], is_half=self.config.is_half
-                    )
-                else:
-                    self.net_g = SynthesizerV1_NoF0(*self.cpt["config"])
-            elif self.version == "v2":
-                if if_f0 == 1:
-                    self.net_g = SynthesizerV2_F0(
-                        *self.cpt["config"], is_half=self.config.is_half
-                    )
-                else:
-                    self.net_g = SynthesizerV2_NoF0(*self.cpt["config"])
-            del self.net_g, self.cpt
+            self.cleanup_model()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
-            self.cpt = None
 
-        person = weight_root
-        self.cpt = torch.load(person, map_location="cpu")
-        self.tgt_sr = self.cpt["config"][-1]
-        self.cpt["config"][-3] = self.cpt["weight"]["emb_g.weight"].shape[0]
-        if_f0 = self.cpt.get("f0", 1)
+        self.load_model(weight_root)
 
-        self.version = self.cpt.get("version", "v1")
-        if self.version == "v1":
-            if if_f0 == 1:
-                self.net_g = SynthesizerV1_F0(
-                    *self.cpt["config"], is_half=self.config.is_half
-                )
-            else:
-                self.net_g = SynthesizerV1_NoF0(*self.cpt["config"])
-        elif self.version == "v2":
-            if if_f0 == 1:
-                self.net_g = SynthesizerV2_F0(
-                    *self.cpt["config"], is_half=self.config.is_half
-                )
-            else:
-                self.net_g = SynthesizerV2_NoF0(*self.cpt["config"])
-        del self.net_g.enc_q
-        self.net_g.load_state_dict(self.cpt["weight"], strict=False)
-        self.net_g.eval().to(self.config.device)
-        self.net_g = self.net_g.half() if self.config.is_half else self.net_g.float()
-        self.vc = VC(self.tgt_sr, self.config)
-        self.n_spk = self.cpt["config"][-3]
+        if self.cpt is not None:
+            self.setup_network()
+            self.setup_vc_instance()
+
+    def cleanup_model(self):
+        if self.hubert_model is not None:
+            print("clean_empty_cache")
+            del self.net_g, self.n_spk, self.vc, self.hubert_model, self.tgt_sr
+            self.hubert_model = self.net_g = self.n_spk = self.vc = self.tgt_sr = None
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+        del self.net_g, self.cpt
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        self.cpt = None
+
+    def load_model(self, weight_root):
+        self.cpt = (
+            torch.load(weight_root, map_location="cpu")
+            if os.path.isfile(weight_root)
+            else None
+        )
+
+    def setup_network(self):
+        if self.cpt is not None:
+            self.tgt_sr = self.cpt["config"][-1]
+            self.cpt["config"][-3] = self.cpt["weight"]["emb_g.weight"].shape[0]
+            if_f0 = self.cpt.get("f0", 1)
+
+            self.version = self.cpt.get("version", "v1")
+            synthesizer_class = {
+                ("v1", 0): SynthesizerV1_NoF0,
+                ("v1", 1): SynthesizerV1_F0,
+                ("v2", 0): SynthesizerV2_NoF0,
+                ("v2", 1): SynthesizerV2_F0,
+            }.get((self.version, if_f0), SynthesizerV1_NoF0)
+
+            self.net_g = synthesizer_class(
+                *self.cpt["config"], is_half=self.config.is_half
+            )
+            del self.net_g.enc_q
+            self.net_g.load_state_dict(self.cpt["weight"], strict=False)
+            self.net_g.eval().to(self.config.device)
+            self.net_g = (
+                self.net_g.half() if self.config.is_half else self.net_g.float()
+            )
+
+    def setup_vc_instance(self):
+        if self.cpt is not None:
+            self.vc = VC(self.tgt_sr, self.config)
+            self.n_spk = self.cpt["config"][-3]
 
     def infer_pipeline(
         self,
@@ -354,7 +355,7 @@ class VoiceConverter:
         embedder_model,
         embedder_model_custom,
         upscale_audio,
-        f0_file
+        f0_file,
     ):
         """
         Main inference pipeline for voice conversion.
