@@ -11,10 +11,10 @@ from audio_upscaler import upscale
 from rvc.lib.utils import load_audio, load_embedding
 from rvc.lib.tools.split_audio import process_audio, merge_audio
 from rvc.lib.algorithm.synthesizers import (
-    SynthesizerTrnMs256NSFsid,
-    SynthesizerTrnMs256NSFsid_nono,
-    SynthesizerTrnMs768NSFsid,
-    SynthesizerTrnMs768NSFsid_nono,
+    SynthesizerV1_F0,
+    SynthesizerV1_NoF0,
+    SynthesizerV2_F0,
+    SynthesizerV2_NoF0,
 )
 from rvc.configs.config import Config
 
@@ -288,18 +288,18 @@ class VoiceConverter:
             self.version = self.cpt.get("version", "v1")
             if self.version == "v1":
                 if if_f0 == 1:
-                    self.net_g = SynthesizerTrnMs256NSFsid(
+                    self.net_g = SynthesizerV1_F0(
                         *self.cpt["config"], is_half=self.config.is_half
                     )
                 else:
-                    self.net_g = SynthesizerTrnMs256NSFsid_nono(*self.cpt["config"])
+                    self.net_g = SynthesizerV1_NoF0(*self.cpt["config"])
             elif self.version == "v2":
                 if if_f0 == 1:
-                    self.net_g = SynthesizerTrnMs768NSFsid(
+                    self.net_g = SynthesizerV2_F0(
                         *self.cpt["config"], is_half=self.config.is_half
                     )
                 else:
-                    self.net_g = SynthesizerTrnMs768NSFsid_nono(*self.cpt["config"])
+                    self.net_g = SynthesizerV2_NoF0(*self.cpt["config"])
             del self.net_g, self.cpt
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
@@ -314,18 +314,18 @@ class VoiceConverter:
         self.version = self.cpt.get("version", "v1")
         if self.version == "v1":
             if if_f0 == 1:
-                self.net_g = SynthesizerTrnMs256NSFsid(
+                self.net_g = SynthesizerV1_F0(
                     *self.cpt["config"], is_half=self.config.is_half
                 )
             else:
-                self.net_g = SynthesizerTrnMs256NSFsid_nono(*self.cpt["config"])
+                self.net_g = SynthesizerV1_NoF0(*self.cpt["config"])
         elif self.version == "v2":
             if if_f0 == 1:
-                self.net_g = SynthesizerTrnMs768NSFsid(
+                self.net_g = SynthesizerV2_F0(
                     *self.cpt["config"], is_half=self.config.is_half
                 )
             else:
-                self.net_g = SynthesizerTrnMs768NSFsid_nono(*self.cpt["config"])
+                self.net_g = SynthesizerV2_NoF0(*self.cpt["config"])
         del self.net_g.enc_q
         self.net_g.load_state_dict(self.cpt["weight"], strict=False)
         self.net_g.eval().to(self.config.device)

@@ -53,18 +53,14 @@ from rvc.lib.algorithm import commons
 hps = get_hparams()
 if hps.version == "v1":
     from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
-    from rvc.lib.algorithm.synthesizers import (
-        SynthesizerTrnMs256NSFsid as RVC_Model_f0,
-        SynthesizerTrnMs256NSFsid_nono as RVC_Model_nof0,
-    )
+    from rvc.lib.algorithm.synthesizers import SynthesizerV1_F0 as RVC_Model_f0
+    from rvc.lib.algorithm.synthesizers import SynthesizerV1_NoF0 as RVC_Model_nof0
 elif hps.version == "v2":
     from rvc.lib.algorithm.discriminators import (
         MultiPeriodDiscriminatorV2 as MultiPeriodDiscriminator,
     )
-    from rvc.lib.algorithm.synthesizers import (
-        SynthesizerTrnMs768NSFsid as RVC_Model_f0,
-        SynthesizerTrnMs768NSFsid_nono as RVC_Model_nof0,
-    )
+    from rvc.lib.algorithm.synthesizers import SynthesizerV2_F0 as RVC_Model_f0
+    from rvc.lib.algorithm.synthesizers import SynthesizerV2_NoF0 as RVC_Model_nof0
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = hps.gpus.replace("-", ",")

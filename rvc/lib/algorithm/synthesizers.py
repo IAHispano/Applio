@@ -5,12 +5,12 @@ from rvc.lib.algorithm.nsf import GeneratorNSF
 from rvc.lib.algorithm.generators import Generator
 from rvc.lib.algorithm.commons import slice_segments2, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock
-from rvc.lib.algorithm.encoders import TextEncoder256, TextEncoder768, PosteriorEncoder
+from rvc.lib.algorithm.encoders import TextEncoderV1, TextEncoderV2, PosteriorEncoder
 
 
-class SynthesizerTrnMs256NSFsid(torch.nn.Module):
+class SynthesizerV1_F0(torch.nn.Module):
     """
-    SynthesizerTrnMs256NSFsid model.
+    SynthesizerV1_F0 model.
 
     Args:
         spec_channels (int): Number of channels in the spectrogram.
@@ -56,7 +56,7 @@ class SynthesizerTrnMs256NSFsid(torch.nn.Module):
         sr,
         **kwargs
     ):
-        super(SynthesizerTrnMs256NSFsid, self).__init__()
+        super(SynthesizerV1_F0, self).__init__()
         self.spec_channels = spec_channels
         self.inter_channels = inter_channels
         self.hidden_channels = hidden_channels
@@ -74,7 +74,7 @@ class SynthesizerTrnMs256NSFsid(torch.nn.Module):
         self.segment_size = segment_size
         self.gin_channels = gin_channels
         self.spk_embed_dim = spk_embed_dim
-        self.enc_p = TextEncoder256(
+        self.enc_p = TextEncoderV1(
             inter_channels,
             hidden_channels,
             filter_channels,
@@ -210,9 +210,9 @@ class SynthesizerTrnMs256NSFsid(torch.nn.Module):
         return o, x_mask, (z, z_p, m_p, logs_p)
 
 
-class SynthesizerTrnMs768NSFsid(torch.nn.Module):
+class SynthesizerV2_F0(torch.nn.Module):
     """
-    SynthesizerTrnMs768NSFsid model.
+    SynthesizerV2_F0 model.
 
     Args:
         spec_channels (int): Number of channels in the spectrogram.
@@ -258,7 +258,7 @@ class SynthesizerTrnMs768NSFsid(torch.nn.Module):
         sr,
         **kwargs
     ):
-        super(SynthesizerTrnMs768NSFsid, self).__init__()
+        super(SynthesizerV2_F0, self).__init__()
         self.spec_channels = spec_channels
         self.inter_channels = inter_channels
         self.hidden_channels = hidden_channels
@@ -276,7 +276,7 @@ class SynthesizerTrnMs768NSFsid(torch.nn.Module):
         self.segment_size = segment_size
         self.gin_channels = gin_channels
         self.spk_embed_dim = spk_embed_dim
-        self.enc_p = TextEncoder768(
+        self.enc_p = TextEncoderV2(
             inter_channels,
             hidden_channels,
             filter_channels,
@@ -402,9 +402,9 @@ class SynthesizerTrnMs768NSFsid(torch.nn.Module):
         return o, x_mask, (z, z_p, m_p, logs_p)
 
 
-class SynthesizerTrnMs256NSFsid_nono(torch.nn.Module):
+class SynthesizerV1_NoF0(torch.nn.Module):
     """
-    SynthesizerTrnMs256NSFsid_nono model.
+    SynthesizerV1_NoF0 model.
 
     Args:
         spec_channels (int): Number of channels in the spectrogram.
@@ -450,7 +450,7 @@ class SynthesizerTrnMs256NSFsid_nono(torch.nn.Module):
         sr=None,
         **kwargs
     ):
-        super(SynthesizerTrnMs256NSFsid_nono, self).__init__()
+        super(SynthesizerV1_NoF0, self).__init__()
         self.spec_channels = spec_channels
         self.inter_channels = inter_channels
         self.hidden_channels = hidden_channels
@@ -468,7 +468,7 @@ class SynthesizerTrnMs256NSFsid_nono(torch.nn.Module):
         self.segment_size = segment_size
         self.gin_channels = gin_channels
         self.spk_embed_dim = spk_embed_dim
-        self.enc_p = TextEncoder256(
+        self.enc_p = TextEncoderV1(
             inter_channels,
             hidden_channels,
             filter_channels,
@@ -585,9 +585,9 @@ class SynthesizerTrnMs256NSFsid_nono(torch.nn.Module):
         return o, x_mask, (z, z_p, m_p, logs_p)
 
 
-class SynthesizerTrnMs768NSFsid_nono(torch.nn.Module):
+class SynthesizerV2_NoF0(torch.nn.Module):
     """
-    SynthesizerTrnMs768NSFsid_nono model.
+    SynthesizerV2_NoF0 model.
 
     Args:
         spec_channels (int): Number of channels in the spectrogram.
@@ -634,7 +634,7 @@ class SynthesizerTrnMs768NSFsid_nono(torch.nn.Module):
         **kwargs
     ):
 
-        super(SynthesizerTrnMs768NSFsid_nono, self).__init__()
+        super(SynthesizerV2_NoF0, self).__init__()
         self.spec_channels = spec_channels
         self.inter_channels = inter_channels
         self.hidden_channels = hidden_channels
@@ -652,7 +652,7 @@ class SynthesizerTrnMs768NSFsid_nono(torch.nn.Module):
         self.segment_size = segment_size
         self.gin_channels = gin_channels
         self.spk_embed_dim = spk_embed_dim
-        self.enc_p = TextEncoder768(
+        self.enc_p = TextEncoderV2(
             inter_channels,
             hidden_channels,
             filter_channels,

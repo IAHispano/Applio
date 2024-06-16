@@ -91,7 +91,7 @@ class Encoder(torch.nn.Module):
         return x
 
 
-class TextEncoder256(torch.nn.Module):
+class TextEncoderV1(torch.nn.Module):
     """Text Encoder with 256 embedding dimension.
 
     Args:
@@ -126,7 +126,7 @@ class TextEncoder256(torch.nn.Module):
         p_dropout,
         f0=True,
     ):
-        super(TextEncoder256, self).__init__()
+        super(TextEncoderV1, self).__init__()
         self.out_channels = out_channels
         self.hidden_channels = hidden_channels
         self.filter_channels = filter_channels
@@ -166,7 +166,7 @@ class TextEncoder256(torch.nn.Module):
         return m, logs, x_mask
 
 
-class TextEncoder768(torch.nn.Module):
+class TextEncoderV2(torch.nn.Module):
     """Text Encoder with 768 embedding dimension.
 
     Args:
@@ -201,7 +201,7 @@ class TextEncoder768(torch.nn.Module):
         p_dropout,
         f0=True,
     ):
-        super(TextEncoder768, self).__init__()
+        super(TextEncoderV2, self).__init__()
         self.out_channels = out_channels
         self.hidden_channels = hidden_channels
         self.filter_channels = filter_channels
