@@ -1,13 +1,13 @@
 <h1 align="center">
-  <a href="https://applio.org" target="_blank"><img src="https://github.com/IAHispano/Applio/assets/133521603/a5cc5c72-ed68-48a5-954f-db9f1dc4e7de" alt="Applio"></a>
+  <a href="https://applio.org" target="_blank"><img src="https://github.com/IAHispano/Applio/assets/133521603/97cce90b-cbb4-40a7-b9b1-583d2998a78d" alt="Applio"></a>
 </h1>
-  
+
 <p align="center">
-    <img alt="Contributors" src="https://img.shields.io/github/contributors/iahispano/applio?style=for-the-badge&color=00AA68" />
-    <img alt="Release" src="https://img.shields.io/github/release/iahispano/applio?style=for-the-badge&color=00AA68" />
-    <img alt="Stars" src="https://img.shields.io/github/stars/iahispano/applio?style=for-the-badge&color=00AA68" />
-    <img alt="Fork" src="https://img.shields.io/github/forks/iahispano/applio?style=for-the-badge&color=00AA68" />
-    <img alt="Issues" src="https://img.shields.io/github/issues/iahispano/applio?style=for-the-badge&color=00AA68" />
+    <img alt="Contributors" src="https://img.shields.io/github/contributors/iahispano/applio?style=for-the-badge&color=FFFFFF" />
+    <img alt="Release" src="https://img.shields.io/github/release/iahispano/applio?style=for-the-badge&color=FFFFFF" />
+    <img alt="Stars" src="https://img.shields.io/github/stars/iahispano/applio?style=for-the-badge&color=FFFFFF" />
+    <img alt="Fork" src="https://img.shields.io/github/forks/iahispano/applio?style=for-the-badge&color=FFFFFF" />
+    <img alt="Issues" src="https://img.shields.io/github/issues/iahispano/applio?style=for-the-badge&color=FFFFFF" />
 </p>
   
 <p align="center">VITS-based Voice Conversion focused on simplicity, quality and performance</p>
