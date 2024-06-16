@@ -1,6 +1,7 @@
 <h1 align="center">
-  <a href="https://applio.org" target="_blank"><img src="https://github.com/IAHispano/Applio/assets/133521603/f2b71a51-062f-45b5-b4e5-6283d9cdef17" alt="Applio"></a>
+  <a href="https://applio.org" target="_blank"><img src="https://github.com/IAHispano/Applio/assets/133521603/78e975d8-b07f-47ba-ab23-5a31592f322a" alt="Applio"></a>
 </h1>
+
 
 <p align="center">
     <img alt="Contributors" src="https://img.shields.io/github/contributors/iahispano/applio?style=for-the-badge&color=FFFFFF" />
