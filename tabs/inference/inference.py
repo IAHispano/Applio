@@ -3,7 +3,6 @@ import gradio as gr
 import regex as re
 import shutil
 import datetime
-import random
 
 from core import (
     run_infer_script,
@@ -188,6 +187,8 @@ def match_index(model_file_value):
                 return index_file
             elif match and match.group(1) in os.path.basename(index_file):
                 return index_file
+            elif model_name in os.path.basename(index_file):
+                return index_file
     return ""
 
 
@@ -212,7 +213,7 @@ def save_drop_custom_embedder(dropbox):
 
 # Inference tab
 def inference_tab():
-    default_weight = random.choice(names) if names else None
+    default_weight = names[0] if names else None
     with gr.Row():
         with gr.Row():
             model_file = gr.Dropdown(
