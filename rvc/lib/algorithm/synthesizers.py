@@ -454,7 +454,7 @@ class SynthesizerV3_F0(torch.nn.Module):
         sr,
         **kwargs,
     ):
-        super(SynthesizerV2_F0, self).__init__()
+        super(SynthesizerV3_F0, self).__init__()
         self.spec_channels = spec_channels
         self.inter_channels = inter_channels
         self.hidden_channels = hidden_channels
