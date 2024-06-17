@@ -166,6 +166,7 @@
   "Output of the pth file": "Output of the pth file",
 
   "Extract F0 Curve": "Extract F0 Curve",
+  "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.",
 
   "# How to Report an Issue on GitHub": "# How to Report an Issue on GitHub",
   "1. Click on the 'Record Screen' button below to start recording the issue you are experiencing.": "1. Click on the 'Record Screen' button below to start recording the issue you are experiencing.",

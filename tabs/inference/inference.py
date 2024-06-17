@@ -446,7 +446,7 @@ def inference_tab():
                             allow_custom_value=True,
                         )
                 f0_file = gr.File(
-                    label=i18n("F0 Curve"),
+                    label=i18n("The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."),
                     visible=True,
                 )
 
@@ -633,7 +633,7 @@ def inference_tab():
                     interactive=True,
                 )
                 f0_file_batch = gr.File(
-                    label=i18n("F0 Curve"),
+                    label=i18n("The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."),
                     visible=True,
                 )
                 with gr.Column(visible=False) as embedder_custom_batch:
