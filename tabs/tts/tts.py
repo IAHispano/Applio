@@ -112,6 +112,8 @@ def match_index(model_file_value):
                 return index_file
             elif match and match.group(1) in os.path.basename(index_file):
                 return index_file
+            elif model_name in os.path.basename(index_file):
+                return index_file
     return ""
 
 
