@@ -4,12 +4,18 @@ import os
 
 
 version_config_paths = [
+    # v1
     os.path.join("v1", "32000.json"),
     os.path.join("v1", "40000.json"),
     os.path.join("v1", "48000.json"),
-    os.path.join("v2", "48000.json"),
-    os.path.join("v2", "40000.json"),
+    # v2
     os.path.join("v2", "32000.json"),
+    os.path.join("v2", "40000.json"),
+    os.path.join("v2", "48000.json"),
+    # v3
+    os.path.join("v3", "32000.json"),
+    os.path.join("v3", "40000.json"),
+    os.path.join("v3", "48000.json"),
 ]
 
 
@@ -27,7 +33,7 @@ def singleton(cls):
 @singleton
 class Config:
     def __init__(self):
-        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.device = "cpu"
         self.is_half = self.device != "cpu"
         self.gpu_name = (
             torch.cuda.get_device_name(int(self.device.split(":")[-1]))

@@ -325,7 +325,7 @@ class DiscriminatorR(torch.nn.Module):
             hop_length=hop_length,
             win_length=win_length,
             center=False,
-            return_complex=False,
+            return_complex=True,
         )  # [B, F, TT, 2]
         mag = torch.norm(x, p=2, dim=-1)  # [B, F, TT]
 
