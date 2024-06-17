@@ -10,6 +10,7 @@ version = sys.argv[2]
 
 try:
     feature_dir = os.path.join(exp_dir, f"{version}_extracted")
+    model_name = os.path.basename(exp_dir)
  
     npys = []
     listdir_res = sorted(os.listdir(feature_dir))
@@ -51,7 +52,7 @@ try:
     index_trained.train(big_npy)
 
     index_filename_trained = (
-        f"trained_{version}.index"
+        f"trained_{model_name}_{version}.index"
     )
     index_filepath_trained = os.path.join(exp_dir, index_filename_trained)
 
@@ -66,7 +67,7 @@ try:
     index_added.train(big_npy)
 
     index_filename_added = (
-        f"added_{version}.index"
+        f"added_{model_name}_{version}.index"
     )
     index_filepath_added = os.path.join(exp_dir, index_filename_added)
 

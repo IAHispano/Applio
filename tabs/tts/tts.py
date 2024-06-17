@@ -103,9 +103,14 @@ def process_input(file_path):
 def match_index(model_file_value):
     if model_file_value:
         model_folder = os.path.dirname(model_file_value)
+        model_name = os.path.basename(model_file_value)
         index_files = get_indexes()
+        pattern = r"^(.*?)_"
+        match = re.match(pattern, model_name)
         for index_file in index_files:
             if os.path.dirname(index_file) == model_folder:
+                return index_file
+            elif match and match.group(1) in os.path.basename(index_file):
                 return index_file
     return ""
 
