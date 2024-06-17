@@ -27,7 +27,7 @@ except:
 
 
 wav_path = f"{exp_dir}/sliced_audios_16k"
-out_path = f"{exp_dir}/v1_extracted" if version == "v1" else f"{exp_dir}/v2_extracted"
+out_path = f"{exp_dir}/{version}_extracted"
 os.makedirs(out_path, exist_ok=True)
 
 
