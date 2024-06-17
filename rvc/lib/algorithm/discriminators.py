@@ -5,7 +5,7 @@ from rvc.lib.algorithm.commons import get_padding
 from rvc.lib.algorithm.residuals import LRELU_SLOPE
 
 
-class MultiPeriodDiscriminator(torch.nn.Module):
+class MultiPeriodDiscriminatorV1(torch.nn.Module):
     """
     Multi-period discriminator.
 
@@ -20,7 +20,7 @@ class MultiPeriodDiscriminator(torch.nn.Module):
     """
 
     def __init__(self, use_spectral_norm=False):
-        super(MultiPeriodDiscriminator, self).__init__()
+        super(MultiPeriodDiscriminatorV1, self).__init__()
         periods = [2, 3, 5, 7, 11, 17]
         discs = [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
         discs = discs + [
@@ -100,6 +100,50 @@ class MultiPeriodDiscriminatorV2(torch.nn.Module):
         for i, d in enumerate(self.discriminators):
             y_d_r, fmap_r = d(y)
             y_d_g, fmap_g = d(y_hat)
+            y_d_rs.append(y_d_r)
+            y_d_gs.append(y_d_g)
+            fmap_rs.append(fmap_r)
+            fmap_gs.append(fmap_g)
+
+        return y_d_rs, y_d_gs, fmap_rs, fmap_gs
+
+
+# used in bigvgan
+class MultiPeriodDiscriminatorV3(torch.nn.Module):
+    def __init__(self, use_spectral_norm=False):
+        super(MultiPeriodDiscriminatorV3, self).__init__()
+        # periods = [2, 3, 5, 7, 11, 17]
+        periods = [2, 3, 5, 7, 11, 17, 23, 37]
+        resolution = [
+            (1024, 120, 600),
+            (2048, 240, 1200),
+            (4096, 480, 2400),
+            (512, 50, 240),
+        ]
+
+        # scale discriminator
+        discs = [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
+        # multi-period discriminator
+        discs = discs + [
+            DiscriminatorP(i, use_spectral_norm=use_spectral_norm) for i in periods
+        ]
+        # multi-resolution discriminator
+        discs = discs + [
+            DiscriminatorR(resolution=r, use_spectral_norm=use_spectral_norm)
+            for r in resolution
+        ]
+        self.discriminators = torch.nn.ModuleList(discs)
+
+    def forward(self, y, y_hat):
+        y_d_rs = []  #
+        y_d_gs = []
+        fmap_rs = []
+        fmap_gs = []
+        for i, d in enumerate(self.discriminators):
+            y_d_r, fmap_r = d(y)
+            y_d_g, fmap_g = d(y_hat)
+            # for j in range(len(fmap_r)):
+            #     print(i,j,y.shape,y_hat.shape,fmap_r[j].shape,fmap_g[j].shape)
             y_d_rs.append(y_d_r)
             y_d_gs.append(y_d_g)
             fmap_rs.append(fmap_r)
@@ -232,3 +276,57 @@ class DiscriminatorP(torch.nn.Module):
         x = torch.flatten(x, 1, -1)
 
         return x, fmap
+
+
+class DiscriminatorR(torch.nn.Module):
+    def __init__(self, resolution, use_spectral_norm=False):
+        super(DiscriminatorR, self).__init__()
+
+        self.resolution = resolution
+        norm_f = weight_norm if not use_spectral_norm else spectral_norm
+
+        self.convs = torch.nn.ModuleList(
+            [
+                norm_f(torch.nn.Conv2d(1, 32, (3, 9), padding=(1, 4))),
+                norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4))),
+                norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4))),
+                norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4))),
+                norm_f(torch.nn.Conv2d(32, 32, (3, 3), padding=(1, 1))),
+            ]
+        )
+        self.conv_post = norm_f(torch.nn.Conv2d(32, 1, (3, 3), padding=(1, 1)))
+
+    def forward(self, x):
+        fmap = []
+
+        x = self.spectrogram(x)
+        x = x.unsqueeze(1)
+        for l in self.convs:
+            x = l(x)
+            x = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
+            fmap.append(x)
+        x = self.conv_post(x)
+        fmap.append(x)
+        x = torch.flatten(x, 1, -1)
+
+        return x, fmap
+
+    def spectrogram(self, x):
+        n_fft, hop_length, win_length = self.resolution
+        x = torch.nn.functional.pad(
+            x,
+            (int((n_fft - hop_length) / 2), int((n_fft - hop_length) / 2)),
+            mode="reflect",
+        )
+        x = x.squeeze(1)
+        x = torch.stft(
+            x,
+            n_fft=n_fft,
+            hop_length=hop_length,
+            win_length=win_length,
+            center=False,
+            return_complex=False,
+        )  # [B, F, TT, 2]
+        mag = torch.norm(x, p=2, dim=-1)  # [B, F, TT]
+
+        return mag

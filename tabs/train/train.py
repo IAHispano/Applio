@@ -344,7 +344,7 @@ def train_tab():
                 rvc_version = gr.Radio(
                     label=i18n("RVC Version"),
                     info=i18n("The RVC version of the model."),
-                    choices=["v1", "v2"],
+                    choices=["v1", "v2", "v3"],
                     value="v2",
                     interactive=True,
                 )

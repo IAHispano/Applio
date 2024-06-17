@@ -15,6 +15,7 @@ from rvc.lib.algorithm.synthesizers import (
     SynthesizerV1_NoF0,
     SynthesizerV2_F0,
     SynthesizerV2_NoF0,
+    SynthesizerV3_F0
 )
 from rvc.configs.config import Config
 
@@ -317,6 +318,8 @@ class VoiceConverter:
                 ("v1", 1): SynthesizerV1_F0,
                 ("v2", 0): SynthesizerV2_NoF0,
                 ("v2", 1): SynthesizerV2_F0,
+                ("v3", 0): SynthesizerV2_NoF0,
+                ("v3", 1): SynthesizerV3_F0,
             }.get((self.version, if_f0), SynthesizerV1_NoF0)
 
             self.net_g = synthesizer_class(
