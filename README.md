@@ -122,7 +122,7 @@ make run-applio
 
 ## Technical Information
 
-Applio uses an enhanced version of the Recovery Based Voice Conversion (RVC) model, a powerful technique for transforming the voice of an audio signal to sound like another person. This advanced implementation of RVC in Applio enables high-quality voice conversion while maintaining simplicity and performance.
+Applio uses an enhanced version of the Retrieval-based Voice Conversion (RVC) model, a powerful technique for transforming the voice of an audio signal to sound like another person. This advanced implementation of RVC in Applio enables high-quality voice conversion while maintaining simplicity and performance.
 
 ### 0. Pre-Learning: Key Concepts in Speech Processing and Voice Conversion
 
