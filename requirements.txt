@@ -23,8 +23,7 @@ numba==0.56.4; sys_platform == 'darwin' or sys_platform == 'win32'
 torch==2.1.1
 torchcrepe==0.0.22
 torchvision==0.16.1
-einops
-audioflux 
+einops 
 libf0 
 torchfcpe
 
