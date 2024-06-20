@@ -17,7 +17,9 @@ sys.path.append(now_dir)
 
 model_root = os.path.join(now_dir, "logs")
 model_root_relative = os.path.relpath(model_root, now_dir)
-custom_embedder_root = os.path.join(now_dir, "rvc", "embedders", "embedders_custom")
+custom_embedder_root = os.path.join(
+    now_dir, "rvc", "models", "embedders", "embedders_custom"
+)
 
 os.makedirs(custom_embedder_root, exist_ok=True)
 
@@ -101,9 +103,16 @@ def process_input(file_path):
 def match_index(model_file_value):
     if model_file_value:
         model_folder = os.path.dirname(model_file_value)
+        model_name = os.path.basename(model_file_value)
         index_files = get_indexes()
+        pattern = r"^(.*?)_"
+        match = re.match(pattern, model_name)
         for index_file in index_files:
             if os.path.dirname(index_file) == model_folder:
+                return index_file
+            elif match and match.group(1) in os.path.basename(index_file):
+                return index_file
+            elif model_name in os.path.basename(index_file):
                 return index_file
     return ""
 
@@ -335,7 +344,7 @@ def tts_tab():
                 value=128,
                 interactive=True,
             )
-            f0method = gr.Radio(
+            f0_method = gr.Radio(
                 label=i18n("Pitch extraction algorithm"),
                 info=i18n(
                     "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
@@ -382,6 +391,10 @@ def tts_tab():
                         interactive=True,
                         allow_custom_value=True,
                     )
+            f0_file = gr.File(
+                label=i18n("The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."),
+                visible=True,
+            )
 
     convert_button1 = gr.Button(i18n("Convert"))
 
@@ -442,7 +455,7 @@ def tts_tab():
             rms_mix_rate,
             protect,
             hop_length,
-            f0method,
+            f0_method,
             output_tts_path,
             output_rvc_path,
             model_file,
@@ -455,6 +468,7 @@ def tts_tab():
             embedder_model,
             embedder_model_custom,
             upscale_audio,
+            f0_file,
         ],
         outputs=[vc_output1, vc_output2],
     )

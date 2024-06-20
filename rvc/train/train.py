@@ -30,7 +30,6 @@ import torch.multiprocessing as mp
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
 
-
 from data_utils import (
     DistributedBucketSampler,
     TextAudioCollate,
@@ -49,25 +48,23 @@ from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 
 from rvc.train.process.extract_model import extract_model
 
-from rvc.lib.infer_pack import commons
+from rvc.lib.algorithm import commons
 
 hps = get_hparams()
 if hps.version == "v1":
-    from rvc.lib.infer_pack.models import MultiPeriodDiscriminator
-    from rvc.lib.infer_pack.models import SynthesizerTrnMs256NSFsid as RVC_Model_f0
-    from rvc.lib.infer_pack.models import (
-        SynthesizerTrnMs256NSFsid_nono as RVC_Model_nof0,
-    )
+    from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
+    from rvc.lib.algorithm.synthesizers import SynthesizerV1_F0 as RVC_Model_f0
+    from rvc.lib.algorithm.synthesizers import SynthesizerV1_NoF0 as RVC_Model_nof0
 elif hps.version == "v2":
-    from rvc.lib.infer_pack.models import (
-        SynthesizerTrnMs768NSFsid as RVC_Model_f0,
-        SynthesizerTrnMs768NSFsid_nono as RVC_Model_nof0,
+    from rvc.lib.algorithm.discriminators import (
         MultiPeriodDiscriminatorV2 as MultiPeriodDiscriminator,
     )
+    from rvc.lib.algorithm.synthesizers import SynthesizerV2_F0 as RVC_Model_f0
+    from rvc.lib.algorithm.synthesizers import SynthesizerV2_NoF0 as RVC_Model_nof0
+
 
 os.environ["CUDA_VISIBLE_DEVICES"] = hps.gpus.replace("-", ",")
 n_gpus = len(hps.gpus.split("-"))
-
 
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
@@ -76,12 +73,27 @@ global_step = 0
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 last_loss_gen_all = 0
 
+# Disable logging
+import logging
+
+logging.getLogger("torch").setLevel(logging.ERROR)
+
 
 class EpochRecorder:
+    """
+    Records the time elapsed per epoch.
+    """
+
     def __init__(self):
         self.last_time = ttime()
 
     def record(self):
+        """
+        Records the elapsed time and returns a formatted string.
+
+        Returns:
+            str: Formatted string containing the current time and training speed.
+        """
         now_time = ttime()
         elapsed_time = now_time - self.last_time
         self.last_time = now_time
@@ -92,7 +104,14 @@ class EpochRecorder:
 
 
 def main():
+    """
+    Main function to start the training process.
+    """
+
     def start():
+        """
+        Starts the training process with multi-GPU support.
+        """
         children = []
         pid_file_path = os.path.join(now_dir, "rvc", "train", "train_pid.txt")
         with open(pid_file_path, "w") as pid_file:
@@ -124,6 +143,7 @@ def main():
         hps.custom_save_every_weights = "1"
         start()
 
+        # Synchronize graphs by modifying config files
         logs_path = os.path.join(now_dir, "logs")
         model_config_file = os.path.join(now_dir, "logs", hps.name, "config.json")
         rvc_config_file = os.path.join(
@@ -142,6 +162,12 @@ def main():
                 steps = int(match.group(1))
 
         def edit_config(config_file):
+            """
+            Edits the config file to synchronize graphs.
+
+            Args:
+                config_file (str): Path to the config file.
+            """
             with open(config_file, "r", encoding="utf8") as json_file:
                 config_data = json.load(json_file)
 
@@ -159,6 +185,7 @@ def main():
         edit_config(model_config_file)
         edit_config(rvc_config_file)
 
+        # Clean up unnecessary files
         for root, dirs, files in os.walk(
             os.path.join(now_dir, "logs", hps.name), topdown=False
         ):
@@ -197,6 +224,14 @@ def run(
     n_gpus,
     hps,
 ):
+    """
+    Runs the training loop on a specific GPU.
+
+    Args:
+        rank (int): Rank of the current GPU.
+        n_gpus (int): Total number of GPUs.
+        hps (Namespace): Hyperparameters.
+    """
     global global_step
     if rank == 0:
         writer = SummaryWriter(log_dir=hps.model_dir)
@@ -211,6 +246,7 @@ def run(
     if torch.cuda.is_available():
         torch.cuda.set_device(rank)
 
+    # Create datasets and dataloaders
     if hps.if_f0 == 1:
         train_dataset = TextAudioLoaderMultiNSFsid(hps.data)
     else:
@@ -239,6 +275,8 @@ def run(
         persistent_workers=True,
         prefetch_factor=8,
     )
+
+    # Initialize models and optimizers
     if hps.if_f0 == 1:
         net_g = RVC_Model_f0(
             hps.data.filter_length // 2 + 1,
@@ -271,6 +309,8 @@ def run(
         betas=hps.train.betas,
         eps=hps.train.eps,
     )
+
+    # Wrap models with DDP
     if torch.cuda.is_available():
         net_g = DDP(net_g, device_ids=[rank])
         net_d = DDP(net_d, device_ids=[rank])
@@ -278,6 +318,7 @@ def run(
         net_g = DDP(net_g)
         net_d = DDP(net_d)
 
+    # Load checkpoint if available
     try:
         print("Starting training...")
         _, _, _, epoch_str = load_checkpoint(
@@ -293,7 +334,7 @@ def run(
         global_step = 0
         if hps.pretrainG != "":
             if rank == 0:
-                print(f"Loaded pretrained_G {hps.pretrainG}")
+                print(f"Loaded pretrained (G) '{hps.pretrainG}'")
             if hasattr(net_g, "module"):
                 net_g.module.load_state_dict(
                     torch.load(hps.pretrainG, map_location="cpu")["model"]
@@ -306,7 +347,7 @@ def run(
 
         if hps.pretrainD != "":
             if rank == 0:
-                print(f"Loaded pretrained_D {hps.pretrainD}")
+                print(f"Loaded pretrained (D) '{hps.pretrainD}'")
             if hasattr(net_d, "module"):
                 net_d.module.load_state_dict(
                     torch.load(hps.pretrainD, map_location="cpu")["model"]
@@ -317,6 +358,7 @@ def run(
                     torch.load(hps.pretrainD, map_location="cpu")["model"]
                 )
 
+    # Initialize schedulers and scaler
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
         optim_g, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
     )
@@ -358,6 +400,20 @@ def run(
 
 
 def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers, cache):
+    """
+    Trains and evaluates the model for one epoch.
+
+    Args:
+        rank (int): Rank of the current GPU.
+        epoch (int): Current epoch number.
+        hps (Namespace): Hyperparameters.
+        nets (list): List of models [net_g, net_d].
+        optims (list): List of optimizers [optim_g, optim_d].
+        scaler (GradScaler): Gradient scaler for mixed precision training.
+        loaders (list): List of dataloaders [train_loader, eval_loader].
+        writers (list): List of TensorBoard writers [writer, writer_eval].
+        cache (list): List to cache data in GPU memory.
+    """
     global global_step, last_loss_gen_all, lowest_value
 
     if epoch == 1:
@@ -375,6 +431,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
     net_g.train()
     net_d.train()
 
+    # Data caching
     if hps.if_cache_data_in_gpu == True:
         data_iterator = cache
         if cache == []:
@@ -476,6 +533,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
             wave = wave.cuda(rank, non_blocking=True)
 
+        # Forward pass
         with autocast(enabled=hps.train.fp16_run):
             if hps.if_f0 == 1:
                 (
@@ -526,12 +584,15 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(
                     y_d_hat_r, y_d_hat_g
                 )
+
+        # Discriminator backward and update
         optim_d.zero_grad()
         scaler.scale(loss_disc).backward()
         scaler.unscale_(optim_d)
-        grad_norm_d = commons.clip_grad_value_(net_d.parameters(), None)
+        grad_norm_d = commons.clip_grad_value(net_d.parameters(), None)
         scaler.step(optim_d)
 
+        # Generator backward and update
         with autocast(enabled=hps.train.fp16_run):
             y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
             with autocast(enabled=False):
@@ -554,10 +615,11 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
         optim_g.zero_grad()
         scaler.scale(loss_gen_all).backward()
         scaler.unscale_(optim_g)
-        grad_norm_g = commons.clip_grad_value_(net_g.parameters(), None)
+        grad_norm_g = commons.clip_grad_value(net_g.parameters(), None)
         scaler.step(optim_g)
         scaler.update()
 
+        # Logging and checkpointing
         if rank == 0:
             if global_step % hps.train.log_interval == 0:
                 lr = optim_g.param_groups[0]["lr"]
@@ -608,11 +670,9 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                     scalars=scalar_dict,
                 )
 
-                # optim_g.step()
-                # optim_d.step()
-
         global_step += 1
 
+    # Save checkpoint
     if epoch % hps.save_every_epoch == 0 and rank == 0:
         checkpoint_suffix = "{}.pth".format(
             global_step if hps.if_latest == 0 else 2333333
@@ -651,6 +711,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 hps,
             )
 
+    # Overtraining detection and best model saving
     if hps.overtraining_detector == 1:
         if epoch >= (lowest_value["epoch"] + hps.overtraining_threshold):
             print(
@@ -692,14 +753,20 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 hps,
             )
 
+    # Print training progress
     if rank == 0:
+        lowest_value_rounded = float(lowest_value["value"])  # Convert to float
+        lowest_value_rounded = round(
+            lowest_value_rounded, 3
+        )  # Round to 3 decimal place
+
         if epoch > 1 and hps.overtraining_detector == 1:
             print(
-                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {lowest_value['epoch'] + hps.overtraining_threshold - epoch}"
+                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {lowest_value['epoch'] + hps.overtraining_threshold - epoch}"
             )
         elif epoch > 1 and hps.overtraining_detector == 0:
             print(
-                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value['value']} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
+                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
             )
         else:
             print(
@@ -707,12 +774,17 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             )
         last_loss_gen_all = loss_gen_all
 
+    # Save the final model
     if epoch >= hps.custom_total_epoch and rank == 0:
+        lowest_value_rounded = float(lowest_value["value"])  # Convert to float
+        lowest_value_rounded = round(
+            lowest_value_rounded, 3
+        )  # Round to 3 decimal place
         print(
             f"Training has been successfully completed with {epoch} epoch, {global_step} steps and {round(loss_gen_all.item(), 3)} loss gen."
         )
         print(
-            f"Lowest generator loss: {lowest_value['value']} at epoch {lowest_value['epoch']}, step {lowest_value['step']}"
+            f"Lowest generator loss: {lowest_value_rounded} at epoch {lowest_value['epoch']}, step {lowest_value['step']}"
         )
 
         pid_file_path = os.path.join(now_dir, "rvc", "train", "train_pid.txt")

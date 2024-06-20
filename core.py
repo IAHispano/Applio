@@ -17,7 +17,9 @@ from rvc.train.process.model_blender import model_blender
 from rvc.train.process.model_information import model_information
 from rvc.train.process.extract_small_model import extract_small_model
 
-from rvc.infer.infer import infer_pipeline
+from rvc.infer.infer import VoiceConverter
+
+infer_pipeline = VoiceConverter().infer_pipeline
 
 from rvc.lib.tools.analyzer import analyze_audio
 
@@ -29,58 +31,61 @@ config = Config()
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")
 
-# Get TTS Voices
+# Get TTS Voices -> https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4
 with open(os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r") as f:
     voices_data = json.load(f)
+    
 
 locales = list({voice["Locale"] for voice in voices_data})
 
 
 # Infer
 def run_infer_script(
-    f0up_key,
+    f0_up_key,
     filter_radius,
     index_rate,
     rms_mix_rate,
     protect,
     hop_length,
-    f0method,
+    f0_method,
     input_path,
     output_path,
     pth_path,
     index_path,
     split_audio,
-    f0autotune,
+    f0_autotune,
     clean_audio,
     clean_strength,
     export_format,
     embedder_model,
     embedder_model_custom,
     upscale_audio,
+    f0_file,
 ):
-    f0autotune = "True" if str(f0autotune) == "True" else "False"
+    f0_autotune = "True" if str(f0_autotune) == "True" else "False"
     clean_audio = "True" if str(clean_audio) == "True" else "False"
     upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     infer_pipeline(
-        f0up_key,
+        f0_up_key,
         filter_radius,
         index_rate,
         rms_mix_rate,
         protect,
         hop_length,
-        f0method,
+        f0_method,
         input_path,
         output_path,
         pth_path,
         index_path,
         split_audio,
-        f0autotune,
+        f0_autotune,
         clean_audio,
         clean_strength,
         export_format,
         embedder_model,
         embedder_model_custom,
         upscale_audio,
+        f0_file,
     )
     return f"File {input_path} inferred successfully.", output_path.replace(
         ".wav", f".{export_format.lower()}"
@@ -89,27 +94,28 @@ def run_infer_script(
 
 # Batch infer
 def run_batch_infer_script(
-    f0up_key,
+    f0_up_key,
     filter_radius,
     index_rate,
     rms_mix_rate,
     protect,
     hop_length,
-    f0method,
+    f0_method,
     input_folder,
     output_folder,
     pth_path,
     index_path,
     split_audio,
-    f0autotune,
+    f0_autotune,
     clean_audio,
     clean_strength,
     export_format,
     embedder_model,
     embedder_model_custom,
     upscale_audio,
+    f0_file,
 ):
-    f0autotune = "True" if str(f0autotune) == "True" else "False"
+    f0_autotune = "True" if str(f0_autotune) == "True" else "False"
     clean_audio = "True" if str(clean_audio) == "True" else "False"
     upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     audio_files = [
@@ -130,25 +136,26 @@ def run_batch_infer_script(
             print(f"Inferring {input_path}...")
 
             infer_pipeline(
-                f0up_key,
+                f0_up_key,
                 filter_radius,
                 index_rate,
                 rms_mix_rate,
                 protect,
                 hop_length,
-                f0method,
+                f0_method,
                 input_path,
                 output_path,
                 pth_path,
                 index_path,
                 split_audio,
-                f0autotune,
+                f0_autotune,
                 clean_audio,
                 clean_strength,
                 export_format,
                 embedder_model,
                 embedder_model_custom,
                 upscale_audio,
+                f0_file,
             )
 
     return f"Files from {input_folder} inferred successfully."
@@ -159,27 +166,28 @@ def run_tts_script(
     tts_text,
     tts_voice,
     tts_rate,
-    f0up_key,
+    f0_up_key,
     filter_radius,
     index_rate,
     rms_mix_rate,
     protect,
     hop_length,
-    f0method,
+    f0_method,
     output_tts_path,
     output_rvc_path,
     pth_path,
     index_path,
     split_audio,
-    f0autotune,
+    f0_autotune,
     clean_audio,
     clean_strength,
     export_format,
     embedder_model,
     embedder_model_custom,
     upscale_audio,
+    f0_file,
 ):
-    f0autotune = "True" if str(f0autotune) == "True" else "False"
+    f0_autotune = "True" if str(f0_autotune) == "True" else "False"
     clean_audio = "True" if str(clean_audio) == "True" else "False"
     upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
@@ -198,25 +206,26 @@ def run_tts_script(
     subprocess.run(command_tts)
 
     infer_pipeline(
-        f0up_key,
+        f0_up_key,
         filter_radius,
         index_rate,
         rms_mix_rate,
         protect,
         hop_length,
-        f0method,
+        f0_method,
         output_tts_path,
         output_rvc_path,
         pth_path,
         index_path,
         split_audio,
-        f0autotune,
+        f0_autotune,
         clean_audio,
         clean_strength,
         export_format,
         embedder_model,
         embedder_model_custom,
         upscale_audio,
+        f0_file,
     )
 
     return f"Text {tts_text} synthesized successfully.", output_rvc_path.replace(
@@ -252,7 +261,7 @@ def run_preprocess_script(model_name, dataset_path, sampling_rate, cpu_cores):
 def run_extract_script(
     model_name,
     rvc_version,
-    f0method,
+    f0_method,
     pitch_guidance,
     hop_length,
     cpu_cores,
@@ -275,7 +284,7 @@ def run_extract_script(
             str,
             [
                 model_path,
-                f0method,
+                f0_method,
                 hop_length,
                 cpu_cores,
             ],
@@ -484,9 +493,9 @@ def parse_arguments():
     # Parser for 'infer' mode
     infer_parser = subparsers.add_parser("infer", help="Run inference")
     infer_parser.add_argument(
-        "--f0up_key",
+        "--f0_up_key",
         type=str,
-        help="Value for f0up_key",
+        help="Value for f0_up_key",
         choices=[str(i) for i in range(-24, 25)],
         default="0",
     )
@@ -526,9 +535,9 @@ def parse_arguments():
         default="128",
     )
     infer_parser.add_argument(
-        "--f0method",
+        "--f0_method",
         type=str,
-        help="Value for f0method",
+        help="Value for f0_method",
         choices=[
             "pm",
             "harvest",
@@ -560,7 +569,7 @@ def parse_arguments():
         default="False",
     )
     infer_parser.add_argument(
-        "--f0autotune",
+        "--f0_autotune",
         type=str,
         help="Enable autotune",
         choices=["True", "False"],
@@ -612,15 +621,21 @@ def parse_arguments():
         choices=["True", "False"],
         default="False",
     )
+    infer_parser.add_argument(
+        "--f0_file",
+        type=str,
+        help="Path to the f0 file",
+        default=None,
+    )
 
     # Parser for 'batch_infer' mode
     batch_infer_parser = subparsers.add_parser(
         "batch_infer", help="Run batch inference"
     )
     batch_infer_parser.add_argument(
-        "--f0up_key",
+        "--f0_up_key",
         type=str,
-        help="Value for f0up_key",
+        help="Value for f0_up_key",
         choices=[str(i) for i in range(-24, 25)],
         default="0",
     )
@@ -660,9 +675,9 @@ def parse_arguments():
         default="128",
     )
     batch_infer_parser.add_argument(
-        "--f0method",
+        "--f0_method",
         type=str,
-        help="Value for f0method",
+        help="Value for f0_method",
         choices=[
             "pm",
             "harvest",
@@ -696,7 +711,7 @@ def parse_arguments():
         default="False",
     )
     batch_infer_parser.add_argument(
-        "--f0autotune",
+        "--f0_autotune",
         type=str,
         help="Enable autotune",
         choices=["True", "False"],
@@ -748,6 +763,12 @@ def parse_arguments():
         choices=["True", "False"],
         default="False",
     )
+    batch_infer_parser.add_argument(
+        "--f0_file",
+        type=str,
+        help="Path to the f0 file",
+        default=None,
+    )
 
     # Parser for 'tts' mode
     tts_parser = subparsers.add_parser("tts", help="Run TTS")
@@ -770,9 +791,9 @@ def parse_arguments():
         default="0",
     )
     tts_parser.add_argument(
-        "--f0up_key",
+        "--f0_up_key",
         type=str,
-        help="Value for f0up_key",
+        help="Value for f0_up_key",
         choices=[str(i) for i in range(-24, 25)],
         default="0",
     )
@@ -812,9 +833,9 @@ def parse_arguments():
         default="128",
     )
     tts_parser.add_argument(
-        "--f0method",
+        "--f0_method",
         type=str,
-        help="Value for f0method",
+        help="Value for f0_method",
         choices=[
             "pm",
             "harvest",
@@ -846,7 +867,7 @@ def parse_arguments():
         default="False",
     )
     tts_parser.add_argument(
-        "--f0autotune",
+        "--f0_autotune",
         type=str,
         help="Enable autotune",
         choices=["True", "False"],
@@ -897,6 +918,12 @@ def parse_arguments():
         help="Enable audio upscaling",
         choices=["True", "False"],
         default="False",
+    )
+    tts_parser.add_argument(
+        "--f0_file",
+        type=str,
+        help="Path to the f0 file",
+        default=None,
     )
 
     # Parser for 'preprocess' mode
@@ -936,9 +963,9 @@ def parse_arguments():
         default="v2",
     )
     extract_parser.add_argument(
-        "--f0method",
+        "--f0_method",
         type=str,
-        help="Value for f0method",
+        help="Value for f0_method",
         choices=[
             "pm",
             "harvest",
@@ -1286,72 +1313,75 @@ def main():
     try:
         if args.mode == "infer":
             run_infer_script(
-                str(args.f0up_key),
+                str(args.f0_up_key),
                 str(args.filter_radius),
                 str(args.index_rate),
                 str(args.rms_mix_rate),
                 str(args.protect),
                 str(args.hop_length),
-                str(args.f0method),
+                str(args.f0_method),
                 str(args.input_path),
                 str(args.output_path),
                 str(args.pth_path),
                 str(args.index_path),
                 str(args.split_audio),
-                str(args.f0autotune),
+                str(args.f0_autotune),
                 str(args.clean_audio),
                 str(args.clean_strength),
                 str(args.export_format),
                 str(args.embedder_model),
                 str(args.embedder_model_custom),
                 str(args.upscale_audio),
+                str(args.f0_file),
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(
-                str(args.f0up_key),
+                str(args.f0_up_key),
                 str(args.filter_radius),
                 str(args.index_rate),
                 str(args.rms_mix_rate),
                 str(args.protect),
                 str(args.hop_length),
-                str(args.f0method),
+                str(args.f0_method),
                 str(args.input_folder),
                 str(args.output_folder),
                 str(args.pth_path),
                 str(args.index_path),
                 str(args.split_audio),
-                str(args.f0autotune),
+                str(args.f0_autotune),
                 str(args.clean_audio),
                 str(args.clean_strength),
                 str(args.export_format),
                 str(args.embedder_model),
                 str(args.embedder_model_custom),
                 str(args.upscale_audio),
+                str(args.f0_file),
             )
         elif args.mode == "tts":
             run_tts_script(
                 str(args.tts_text),
                 str(args.tts_voice),
                 str(args.tts_rate),
-                str(args.f0up_key),
+                str(args.f0_up_key),
                 str(args.filter_radius),
                 str(args.index_rate),
                 str(args.rms_mix_rate),
                 str(args.protect),
                 str(args.hop_length),
-                str(args.f0method),
+                str(args.f0_method),
                 str(args.output_tts_path),
                 str(args.output_rvc_path),
                 str(args.pth_path),
                 str(args.index_path),
                 str(args.split_audio),
-                str(args.f0autotune),
+                str(args.f0_autotune),
                 str(args.clean_audio),
                 str(args.clean_strength),
                 str(args.export_format),
                 str(args.embedder_model),
                 str(args.embedder_model_custom),
                 str(args.upscale_audio),
+                str(args.f0_file),
             )
         elif args.mode == "preprocess":
             run_preprocess_script(
@@ -1364,7 +1394,7 @@ def main():
             run_extract_script(
                 str(args.model_name),
                 str(args.rvc_version),
-                str(args.f0method),
+                str(args.f0_method),
                 str(args.pitch_guidance),
                 str(args.hop_length),
                 str(args.cpu_cores),

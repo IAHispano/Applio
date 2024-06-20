@@ -40,7 +40,7 @@ pretraineds_v1 = [
 ]
 
 folder_mapping = {
-    "pretrained_v1/": "rvc/pretraineds/pretrained_v1/",
+    "pretrained_v1/": "rvc/models/pretraineds/pretrained_v1/",
 }
 
 sup_audioext = {
@@ -66,7 +66,7 @@ pretraineds_custom_path = os.path.join(
 
 pretraineds_custom_path_relative = os.path.relpath(pretraineds_custom_path, now_dir)
 
-custom_embedder_root = os.path.join(now_dir, "rvc", "embedders", "embedders_custom")
+custom_embedder_root = os.path.join(now_dir, "rvc", "models", "embedders", "embedders_custom")
 custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
 
 os.makedirs(custom_embedder_root, exist_ok=True)
@@ -405,7 +405,7 @@ def train_tab():
             )
         with gr.Row():
             with gr.Column():
-                f0method = gr.Radio(
+                f0_method = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
                     info=i18n(
                         "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
@@ -465,7 +465,7 @@ def train_tab():
             inputs=[
                 model_name,
                 rvc_version,
-                f0method,
+                f0_method,
                 pitch_guidance_extract,
                 hop_length,
                 cpu_cores_extract,
@@ -754,8 +754,8 @@ def train_tab():
             def toggle_visible(checkbox):
                 return {"visible": checkbox, "__type__": "update"}
 
-            def toggle_visible_hop_length(f0method):
-                if f0method == "crepe" or f0method == "crepe-tiny":
+            def toggle_visible_hop_length(f0_method):
+                if f0_method == "crepe" or f0_method == "crepe-tiny":
                     return {"visible": True, "__type__": "update"}
                 return {"visible": False, "__type__": "update"}
 
@@ -829,9 +829,9 @@ def train_tab():
                 outputs=[upload_audio_dataset, dataset_path],
             )
 
-            f0method.change(
+            f0_method.change(
                 fn=toggle_visible_hop_length,
-                inputs=[f0method],
+                inputs=[f0_method],
                 outputs=[hop_length],
             )
 

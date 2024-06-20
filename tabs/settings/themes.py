@@ -1,8 +1,5 @@
 import os
 import sys
-import base64
-import pathlib
-import tempfile
 import gradio as gr
 
 from assets.i18n.i18n import I18nAuto

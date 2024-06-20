@@ -11,6 +11,9 @@
 *.bin
 *.wav
 *.txt
+*.zip
+*.png
+*.safetensors
 
 logs
 env

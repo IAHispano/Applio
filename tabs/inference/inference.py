@@ -3,7 +3,6 @@ import gradio as gr
 import regex as re
 import shutil
 import datetime
-import random
 
 from core import (
     run_infer_script,
@@ -21,7 +20,9 @@ sys.path.append(now_dir)
 
 model_root = os.path.join(now_dir, "logs")
 audio_root = os.path.join(now_dir, "assets", "audios")
-custom_embedder_root = os.path.join(now_dir, "rvc", "embedders", "embedders_custom")
+custom_embedder_root = os.path.join(
+    now_dir, "rvc", "models", "embedders", "embedders_custom"
+)
 
 os.makedirs(custom_embedder_root, exist_ok=True)
 
@@ -177,9 +178,16 @@ def delete_outputs():
 def match_index(model_file_value):
     if model_file_value:
         model_folder = os.path.dirname(model_file_value)
+        model_name = os.path.basename(model_file_value)
         index_files = get_indexes()
+        pattern = r"^(.*?)_"
+        match = re.match(pattern, model_name)
         for index_file in index_files:
             if os.path.dirname(index_file) == model_folder:
+                return index_file
+            elif match and match.group(1) in os.path.basename(index_file):
+                return index_file
+            elif model_name in os.path.basename(index_file):
                 return index_file
     return ""
 
@@ -205,7 +213,7 @@ def save_drop_custom_embedder(dropbox):
 
 # Inference tab
 def inference_tab():
-    default_weight = random.choice(names) if names else None
+    default_weight = names[0] if names else None
     with gr.Row():
         with gr.Row():
             model_file = gr.Dropdown(
@@ -396,7 +404,7 @@ def inference_tab():
                     value=128,
                     interactive=True,
                 )
-                f0method = gr.Radio(
+                f0_method = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
                     info=i18n(
                         "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
@@ -443,6 +451,10 @@ def inference_tab():
                             interactive=True,
                             allow_custom_value=True,
                         )
+                f0_file = gr.File(
+                    label=i18n("The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."),
+                    visible=True,
+                )
 
         convert_button1 = gr.Button(i18n("Convert"))
 
@@ -596,7 +608,7 @@ def inference_tab():
                     value=128,
                     interactive=True,
                 )
-                f0method_batch = gr.Radio(
+                f0_method_batch = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
                     info=i18n(
                         "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
@@ -625,6 +637,10 @@ def inference_tab():
                     ],
                     value="contentvec",
                     interactive=True,
+                )
+                f0_file_batch = gr.File(
+                    label=i18n("The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."),
+                    visible=True,
                 )
                 with gr.Column(visible=False) as embedder_custom_batch:
                     with gr.Accordion(i18n("Custom Embedder"), open=True):
@@ -655,8 +671,8 @@ def inference_tab():
     def toggle_visible(checkbox):
         return {"visible": checkbox, "__type__": "update"}
 
-    def toggle_visible_hop_length(f0method):
-        if f0method == "crepe" or f0method == "crepe-tiny":
+    def toggle_visible_hop_length(f0_method):
+        if f0_method == "crepe" or f0_method == "crepe-tiny":
             return {"visible": True, "__type__": "update"}
         return {"visible": False, "__type__": "update"}
 
@@ -675,14 +691,14 @@ def inference_tab():
         inputs=[clean_audio_batch],
         outputs=[clean_strength_batch],
     )
-    f0method.change(
+    f0_method.change(
         fn=toggle_visible_hop_length,
-        inputs=[f0method],
+        inputs=[f0_method],
         outputs=[hop_length],
     )
-    f0method_batch.change(
+    f0_method_batch.change(
         fn=toggle_visible_hop_length,
-        inputs=[f0method_batch],
+        inputs=[f0_method_batch],
         outputs=[hop_length_batch],
     )
     refresh_button.click(
@@ -772,7 +788,7 @@ def inference_tab():
             rms_mix_rate,
             protect,
             hop_length,
-            f0method,
+            f0_method,
             audio,
             output_path,
             model_file,
@@ -785,6 +801,7 @@ def inference_tab():
             embedder_model,
             embedder_model_custom,
             upscale_audio,
+            f0_file
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -797,7 +814,7 @@ def inference_tab():
             rms_mix_rate_batch,
             protect_batch,
             hop_length_batch,
-            f0method_batch,
+            f0_method_batch,
             input_folder_batch,
             output_folder_batch,
             model_file,
@@ -810,6 +827,7 @@ def inference_tab():
             embedder_model_batch,
             embedder_model_custom_batch,
             upscale_audio_batch,
+            f0_file_batch
         ],
         outputs=[vc_output3],
     )

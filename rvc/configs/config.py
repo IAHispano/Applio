@@ -2,139 +2,122 @@ import torch
 import json
 import os
 
-version_config_list = [
-    "v1/32000.json",
-    "v1/40000.json",
-    "v1/48000.json",
-    "v2/48000.json",
-    "v2/32000.json",
+
+version_config_paths = [
+    os.path.join("v1", "32000.json"),
+    os.path.join("v1", "40000.json"),
+    os.path.join("v1", "48000.json"),
+    os.path.join("v2", "48000.json"),
+    os.path.join("v2", "40000.json"),
+    os.path.join("v2", "32000.json"),
 ]
 
 
-def singleton_variable(func):
-    def wrapper(*args, **kwargs):
-        if not wrapper.instance:
-            wrapper.instance = func(*args, **kwargs)
-        return wrapper.instance
+def singleton(cls):
+    instances = {}
 
-    wrapper.instance = None
-    return wrapper
+    def get_instance(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+
+    return get_instance
 
 
-@singleton_variable
+@singleton
 class Config:
     def __init__(self):
-        self.device = "cuda:0"
-        self.is_half = True
-        self.use_jit = False
-        self.n_cpu = 0
-        self.gpu_name = None
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.is_half = self.device != "cpu"
+        self.gpu_name = (
+            torch.cuda.get_device_name(int(self.device.split(":")[-1]))
+            if self.device.startswith("cuda")
+            else None
+        )
         self.json_config = self.load_config_json()
         self.gpu_mem = None
-        self.instead = ""
         self.x_pad, self.x_query, self.x_center, self.x_max = self.device_config()
 
-    @staticmethod
-    def load_config_json() -> dict:
-        d = {}
-        for config_file in version_config_list:
-            with open(f"rvc/configs/{config_file}", "r") as f:
-                d[config_file] = json.load(f)
-        return d
+    def load_config_json(self) -> dict:
+        configs = {}
+        for config_file in version_config_paths:
+            config_path = os.path.join("rvc", "configs", config_file)
+            with open(config_path, "r") as f:
+                configs[config_file] = json.load(f)
+        return configs
 
-    @staticmethod
-    def has_mps() -> bool:
-        if not torch.backends.mps.is_available():
-            return False
-        try:
-            torch.zeros(1).to(torch.device("mps"))
-            return True
-        except Exception:
-            return False
+    def has_mps(self) -> bool:
+        # Check if Metal Performance Shaders are available - for macOS 12.3+.
+        return torch.backends.mps.is_available()
 
-    @staticmethod
-    def has_xpu() -> bool:
-        if hasattr(torch, "xpu") and torch.xpu.is_available():
-            return True
-        else:
-            return False
+    def has_xpu(self) -> bool:
+        # Check if XPU is available.
+        return hasattr(torch, "xpu") and torch.xpu.is_available()
 
     def use_fp32_config(self):
-        print(
-            f"Using FP32 config instead of FP16 due to GPU compatibility ({self.gpu_name})"
+        preprocess_path = os.path.join(
+            os.path.dirname(__file__),
+            os.pardir,
+            "rvc",
+            "train",
+            "preprocess",
+            "preprocess.py",
         )
-        for config_file in version_config_list:
-            self.json_config[config_file]["train"]["fp16_run"] = False
-            with open(f"rvc/configs/{config_file}", "r") as f:
-                strr = f.read().replace("true", "false")
-            with open(f"rvc/configs/{config_file}", "w") as f:
-                f.write(strr)
-        with open("rvc/train/preprocess/preprocess.py", "r") as f:
-            strr = f.read().replace("3.7", "3.0")
-        with open("rvc/train/preprocess/preprocess.py", "w") as f:
-            f.write(strr)
+        for config_path in version_config_paths:
+            full_config_path = os.path.join("rvc", "configs", config_path)
+            try:
+                with open(full_config_path, "r") as f:
+                    config = json.load(f)
+                config["train"]["fp16_run"] = False
+                with open(full_config_path, "w") as f:
+                    json.dump(config, f, indent=4)
+            except FileNotFoundError:
+                print(f"File not found: {full_config_path}")
+
+            if os.path.exists(preprocess_path):
+                with open(preprocess_path, "r") as f:
+                    preprocess_content = f.read()
+                preprocess_content = preprocess_content.replace("3.7", "3.0")
+                with open(preprocess_path, "w") as f:
+                    f.write(preprocess_content)
+        print("Overwritten preprocess and config.json to use FP32.")
 
     def device_config(self) -> tuple:
-        if torch.cuda.is_available():
-            if self.has_xpu():
-                self.device = self.instead = "xpu:0"
-                self.is_half = True
-            i_device = int(self.device.split(":")[-1])
-            self.gpu_name = torch.cuda.get_device_name(i_device)
-            if (
-                ("16" in self.gpu_name and "V100" not in self.gpu_name.upper())
-                or "P40" in self.gpu_name.upper()
-                or "P10" in self.gpu_name.upper()
-                or "1060" in self.gpu_name
-                or "1070" in self.gpu_name
-                or "1080" in self.gpu_name
-            ):
-                self.is_half = False
-                self.use_fp32_config()
-            self.gpu_mem = int(
-                torch.cuda.get_device_properties(i_device).total_memory
-                / 1024
-                / 1024
-                / 1024
-                + 0.4
-            )
-            if self.gpu_mem <= 4:
-                with open("rvc/train/preprocess/preprocess.py", "r") as f:
-                    strr = f.read().replace("3.7", "3.0")
-                with open("rvc/train/preprocess/preprocess.py", "w") as f:
-                    f.write(strr)
+        if self.device.startswith("cuda"):
+            self.set_cuda_config()
         elif self.has_mps():
-            print("No supported Nvidia GPU found")
-            self.device = self.instead = "mps"
+            self.device = "mps"
             self.is_half = False
             self.use_fp32_config()
         else:
-            print("No supported Nvidia GPU found")
-            self.device = self.instead = "cpu"
+            self.device = "cpu"
             self.is_half = False
             self.use_fp32_config()
 
-        if self.n_cpu == 0:
-            self.n_cpu = os.cpu_count()
-
-        if self.is_half:
-            x_pad = 3
-            x_query = 10
-            x_center = 60
-            x_max = 65
-        else:
-            x_pad = 1
-            x_query = 6
-            x_center = 38
-            x_max = 41
-
+        # Configuration for 6GB GPU memory
+        x_pad, x_query, x_center, x_max = (
+            (3, 10, 60, 65) if self.is_half else (1, 6, 38, 41)
+        )
         if self.gpu_mem is not None and self.gpu_mem <= 4:
-            x_pad = 1
-            x_query = 5
-            x_center = 30
-            x_max = 32
+            # Configuration for 5GB GPU memory
+            x_pad, x_query, x_center, x_max = (1, 5, 30, 32)
 
         return x_pad, x_query, x_center, x_max
+
+    def set_cuda_config(self):
+        i_device = int(self.device.split(":")[-1])
+        self.gpu_name = torch.cuda.get_device_name(i_device)
+        low_end_gpus = ["16", "P40", "P10", "1060", "1070", "1080"]
+        if (
+            any(gpu in self.gpu_name for gpu in low_end_gpus)
+            and "V100" not in self.gpu_name.upper()
+        ):
+            self.is_half = False
+            self.use_fp32_config()
+
+        self.gpu_mem = torch.cuda.get_device_properties(i_device).total_memory // (
+            1024**3
+        )
 
 
 def max_vram_gpu(gpu):

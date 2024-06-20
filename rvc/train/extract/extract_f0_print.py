@@ -1,38 +1,28 @@
 import os
 import sys
-import numpy as np
+import time
+import tqdm
+import torch
 import pyworld
 import torchcrepe
-import torch
 import parselmouth
-import tqdm
-from multiprocessing import Process, cpu_count
+import numpy as np
+from multiprocessing import Pool
 
 current_directory = os.getcwd()
 sys.path.append(current_directory)
 
-
 from rvc.lib.utils import load_audio
+from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 
 
 exp_dir = sys.argv[1]
 f0_method = sys.argv[2]
-
-try:
-    hop_length = int(sys.argv[3])
-except ValueError:
-    hop_length = 128
-
-try:
-    num_processes = int(sys.argv[4])
-except ValueError:
-    num_processes = cpu_count()
-
-DoFormant = False
-Quefrency = 1.0
-Timbre = 1.0
+hop_length = int(sys.argv[3])
+num_processes = int(sys.argv[4])
 
 
+# Define a class for f0 extraction
 class FeatureInput:
     def __init__(self, sample_rate=16000, hop_size=160):
         self.fs = sample_rate
@@ -46,50 +36,49 @@ class FeatureInput:
         self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
 
-    def mncrepe(self, method, x, p_len, hop_length):
-        f0 = None
-        torch_device_index = 0
-        torch_device = (
-            torch.device(f"cuda:{torch_device_index % torch.cuda.device_count()}")
-            if torch.cuda.is_available()
-            else (
-                torch.device("mps")
-                if torch.backends.mps.is_available()
-                else torch.device("cpu")
-            )
-        )
+    # Define a function to extract f0 using various methods
+    def compute_f0(self, path, f0_method, hop_length):
+        x = load_audio(path, self.fs)
+        p_len = x.shape[0] // self.hop
 
-        audio = torch.from_numpy(x.astype(np.float32)).to(torch_device, copy=True)
-        audio /= torch.quantile(torch.abs(audio), 0.999)
-        audio = torch.unsqueeze(audio, dim=0)
-        if audio.ndim == 2 and audio.shape[0] > 1:
-            audio = torch.mean(audio, dim=0, keepdim=True).detach()
-        audio = audio.detach()
-
-        if method == "crepe":
-            pitch = torchcrepe.predict(
-                audio,
-                self.fs,
-                hop_length,
-                self.f0_min,
-                self.f0_max,
-                "full",
-                batch_size=hop_length * 2,
-                device=torch_device,
-                pad=True,
+        if f0_method == "crepe":
+            f0 = self.mncrepe(f0_method, x, p_len, hop_length)
+        elif f0_method in self.f0_method_dict:
+            f0 = (
+                self.f0_method_dict[f0_method](x, p_len)
+                if f0_method == "pm"
+                else self.f0_method_dict[f0_method](x)
             )
-            p_len = p_len or x.shape[0] // hop_length
-            source = np.array(pitch.squeeze(0).cpu().float().numpy())
-            source[source < 0.001] = np.nan
-            target = np.interp(
-                np.arange(0, len(source) * p_len, len(source)) / p_len,
-                np.arange(0, len(source)),
-                source,
-            )
-            f0 = np.nan_to_num(target)
-
         return f0
 
+    # Define a function to extract f0 using CREPE
+    def mncrepe(self, method, x, p_len, hop_length):
+        audio = torch.from_numpy(x.astype(np.float32)).to(self.device, copy=True)
+        audio /= torch.quantile(torch.abs(audio), 0.999)
+        audio = torch.unsqueeze(audio, dim=0)
+
+        pitch = torchcrepe.predict(
+            audio,
+            self.fs,
+            hop_length,
+            self.f0_min,
+            self.f0_max,
+            "full",
+            batch_size=hop_length * 2,
+            device=self.device,
+            pad=True,
+        )
+
+        source = np.array(pitch.squeeze(0).cpu().float().numpy())
+        source[source < 0.001] = np.nan
+        target = np.interp(
+            np.arange(0, len(source) * p_len, len(source)) / p_len,
+            np.arange(0, len(source)),
+            source,
+        )
+        return np.nan_to_num(target)
+
+    # Define functions for different f0 extraction methods
     def get_pm(self, x, p_len):
         f0 = (
             parselmouth.Sound(x, self.fs)
@@ -101,7 +90,6 @@ class FeatureInput:
             )
             .selected_array["frequency"]
         )
-
         return np.pad(
             f0,
             [
@@ -134,12 +122,14 @@ class FeatureInput:
         return pyworld.stonemask(x.astype(np.double), *f0_spectral, self.fs)
 
     def get_rmvpe(self, x):
-        if not hasattr(self, "model_rmvpe"):
-            from rvc.lib.predictor.RMVPE import RMVPE
+        model_rmvpe = RMVPE0Predictor(
+            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
+            is_half=False,
+            device="cpu",
+        )
+        return model_rmvpe.infer_from_audio(x, thred=0.03)
 
-            self.model_rmvpe = RMVPE("rmvpe.pt", is_half=False, device="cpu")
-        return self.model_rmvpe.infer_from_audio(x, thred=0.03)
-
+    # Helper function to get f0 method dictionary
     def get_f0_method_dict(self):
         return {
             "pm": self.get_pm,
@@ -148,27 +138,12 @@ class FeatureInput:
             "rmvpe": self.get_rmvpe,
         }
 
-    def compute_f0(self, path, f0_method, hop_length):
-        x = load_audio(path, self.fs)
-        p_len = x.shape[0] // self.hop
-
-        if f0_method in self.f0_method_dict:
-            f0 = (
-                self.f0_method_dict[f0_method](x, p_len)
-                if f0_method == "pm"
-                else self.f0_method_dict[f0_method](x)
-            )
-        elif f0_method == "crepe":
-            f0 = self.mncrepe(f0_method, x, p_len, hop_length)
-        return f0
-
+    # Define a function to convert f0 to coarse f0
     def coarse_f0(self, f0):
         f0_mel = 1127 * np.log(1 + f0 / 700)
         f0_mel[f0_mel > 0] = (f0_mel[f0_mel > 0] - self.f0_mel_min) * (
             self.f0_bin - 2
         ) / (self.f0_mel_max - self.f0_mel_min) + 1
-
-        # use 0 or 1
         f0_mel[f0_mel <= 1] = 1
         f0_mel[f0_mel > self.f0_bin - 1] = self.f0_bin - 1
         f0_coarse = np.rint(f0_mel).astype(int)
@@ -178,39 +153,23 @@ class FeatureInput:
         )
         return f0_coarse
 
-    def process_paths(self, paths, f0_method, hop_length, thread_n):
-        if len(paths) == 0:
-            print("There are no paths to process.")
+    # Define a function to process a single audio file
+    def process_file(self, file_info):
+        inp_path, opt_path1, opt_path2 = file_info
+
+        if os.path.exists(opt_path1 + ".npy") and os.path.exists(opt_path2 + ".npy"):
             return
-        with tqdm.tqdm(total=len(paths), leave=True, position=thread_n) as pbar:
-            description = f"Thread {thread_n} | Hop-Length {hop_length}"
-            pbar.set_description(description)
 
-            for idx, (inp_path, opt_path1, opt_path2) in enumerate(paths):
-                try:
-                    if os.path.exists(opt_path1 + ".npy") and os.path.exists(
-                        opt_path2 + ".npy"
-                    ):
-                        pbar.update(1)
-                        continue
-
-                    feature_pit = self.compute_f0(inp_path, f0_method, hop_length)
-                    np.save(
-                        opt_path2,
-                        feature_pit,
-                        allow_pickle=False,
-                    )  # nsf
-                    coarse_pit = self.coarse_f0(feature_pit)
-                    np.save(
-                        opt_path1,
-                        coarse_pit,
-                        allow_pickle=False,
-                    )  # ori
-                    pbar.update(1)
-                except Exception as error:
-                    print(f"f0fail-{idx}-{inp_path}-{error}")
+        try:
+            feature_pit = self.compute_f0(inp_path, f0_method, hop_length)
+            np.save(opt_path2, feature_pit, allow_pickle=False)
+            coarse_pit = self.coarse_f0(feature_pit)
+            np.save(opt_path1, coarse_pit, allow_pickle=False)
+        except Exception as error:
+            print(f"f0fail-{inp_path}-{error}")
 
 
+# Define the main function
 if __name__ == "__main__":
     feature_input = FeatureInput()
     paths = []
@@ -220,6 +179,7 @@ if __name__ == "__main__":
 
     os.makedirs(output_root1, exist_ok=True)
     os.makedirs(output_root2, exist_ok=True)
+
     for name in sorted(list(os.listdir(input_root))):
         input_path = f"{input_root}/{name}"
         if "spec" in input_path:
@@ -228,14 +188,15 @@ if __name__ == "__main__":
         output_path2 = f"{output_root2}/{name}"
         paths.append([input_path, output_path1, output_path2])
 
-    processes = []
-    print("Using f0 method: " + f0_method)
-    for i in range(num_processes):
-        p = Process(
-            target=feature_input.process_paths,
-            args=(paths[i::num_processes], f0_method, hop_length, i),
-        )
-        processes.append(p)
-        p.start()
-    for i in range(num_processes):
-        processes[i].join()
+    print(f"Starting extraction with {num_processes} cores and {f0_method}...")
+
+    start_time = time.time()
+
+    # Use multiprocessing Pool for parallel processing with progress bar
+    with tqdm.tqdm(total=len(paths), desc="F0 Extraction") as pbar:
+        with Pool(processes=num_processes) as pool:
+            for _ in pool.imap_unordered(feature_input.process_file, paths):
+                pbar.update()
+
+    elapsed_time = time.time() - start_time
+    print(f"F0 extraction completed in {elapsed_time:.2f} seconds.")

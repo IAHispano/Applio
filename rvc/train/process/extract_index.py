@@ -9,11 +9,9 @@ exp_dir = sys.argv[1]
 version = sys.argv[2]
 
 try:
-    if version == "v1":
-        feature_dir = os.path.join(exp_dir, "v1_extracted")
-    elif version == "v2":
-        feature_dir = os.path.join(exp_dir, "v2_extracted")
-
+    feature_dir = os.path.join(exp_dir, f"{version}_extracted")
+    model_name = os.path.basename(exp_dir)
+ 
     npys = []
     listdir_res = sorted(os.listdir(feature_dir))
 
@@ -54,7 +52,7 @@ try:
     index_trained.train(big_npy)
 
     index_filename_trained = (
-        f"trained_IVF{n_ivf}_Flat_nprobe_{index_ivf_trained.nprobe}_{version}.index"
+        f"trained_{model_name}_{version}.index"
     )
     index_filepath_trained = os.path.join(exp_dir, index_filename_trained)
 
@@ -69,7 +67,7 @@ try:
     index_added.train(big_npy)
 
     index_filename_added = (
-        f"added_IVF{n_ivf}_Flat_nprobe_{index_ivf_added.nprobe}_{version}.index"
+        f"added_{model_name}_{version}.index"
     )
     index_filepath_added = os.path.join(exp_dir, index_filename_added)
 

@@ -1,4 +1,4 @@
-from rvc.lib.predictor.F0Predictor import F0Predictor
+from rvc.lib.predictors.F0Predictor import F0Predictor
 import parselmouth
 import numpy as np
 
@@ -39,7 +39,7 @@ class PMF0Predictor(F0Predictor):
                     for k in range(i, frame_number):
                         ip_data[k] = last_value
             else:
-                ip_data[i] = data[i]  # 这里可能存在一个没有必要的拷贝
+                ip_data[i] = data[i]
                 last_value = data[i]
 
         return ip_data[:, 0], vuv_vector[:, 0]
