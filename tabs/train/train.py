@@ -66,7 +66,9 @@ pretraineds_custom_path = os.path.join(
 
 pretraineds_custom_path_relative = os.path.relpath(pretraineds_custom_path, now_dir)
 
-custom_embedder_root = os.path.join(now_dir, "rvc", "models", "embedders", "embedders_custom")
+custom_embedder_root = os.path.join(
+    now_dir, "rvc", "models", "embedders", "embedders_custom"
+)
 custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
 
 os.makedirs(custom_embedder_root, exist_ok=True)

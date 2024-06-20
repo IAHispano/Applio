@@ -21,6 +21,7 @@ from tabs.settings.presence import presence_tab, load_config_presence
 from tabs.settings.flask_server import flask_server_tab
 from tabs.settings.fake_gpu import fake_gpu_tab, gpu_available, load_fake_gpu
 from tabs.settings.themes import theme_tab
+
 # Assets
 import assets.themes.loadThemes as loadThemes
 from assets.i18n.i18n import I18nAuto
@@ -31,6 +32,7 @@ from core import run_prerequisites_script
 
 # Disable logging
 import logging
+
 logging.getLogger("uvicorn").setLevel(logging.WARNING)
 
 run_prerequisites_script("False", "True", "True", "True")

@@ -212,9 +212,7 @@ class SineGen(torch.nn.Module):
             ).transpose(2, 1)
             rad_values = torch.nn.functional.interpolate(
                 rad_values.transpose(2, 1), scale_factor=float(upp), mode="nearest"
-            ).transpose(
-                2, 1
-            ) 
+            ).transpose(2, 1)
             tmp_over_one %= 1
             tmp_over_one_idx = (tmp_over_one[:, 1:, :] - tmp_over_one[:, :-1, :]) < 0
             cumsum_shift = torch.zeros_like(rad_values)

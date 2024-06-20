@@ -1,7 +1,6 @@
 import torch
 
 
-
 class LayerNorm(torch.nn.Module):
     """Layer normalization module.
 
@@ -30,5 +29,7 @@ class LayerNorm(torch.nn.Module):
 
         """
         x = x.transpose(1, -1)
-        x = torch.nn.functional.layer_norm(x, (self.channels,), self.gamma, self.beta, self.eps)
+        x = torch.nn.functional.layer_norm(
+            x, (self.channels,), self.gamma, self.beta, self.eps
+        )
         return x.transpose(1, -1)

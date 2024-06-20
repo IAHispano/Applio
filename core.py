@@ -34,7 +34,7 @@ logs_path = os.path.join(current_script_directory, "logs")
 # Get TTS Voices -> https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4
 with open(os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r") as f:
     voices_data = json.load(f)
-    
+
 
 locales = list({voice["Locale"] for voice in voices_data})
 

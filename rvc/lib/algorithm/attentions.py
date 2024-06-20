@@ -126,7 +126,7 @@ class MultiHeadAttention(torch.nn.Module):
                     .tril(self.block_length)
                 )
                 scores = scores.masked_fill(block_mask == 0, -1e4)
-        p_attn = torch.nn.functional.softmax(scores, dim=-1) # [b, n_h, t_t, t_s]
+        p_attn = torch.nn.functional.softmax(scores, dim=-1)  # [b, n_h, t_t, t_s]
         p_attn = self.drop(p_attn)
         output = torch.matmul(p_attn, value)
         if self.window_size is not None:
@@ -137,7 +137,9 @@ class MultiHeadAttention(torch.nn.Module):
             output = output + self._matmul_with_relative_values(
                 relative_weights, value_relative_embeddings
             )
-        output = output.transpose(2, 3).contiguous().view(b, d, t_t) # [b, n_h, t_t, d_k] -> [b, d, t_t]
+        output = (
+            output.transpose(2, 3).contiguous().view(b, d, t_t)
+        )  # [b, n_h, t_t, d_k] -> [b, d, t_t]
         return output, p_attn
 
     def _matmul_with_relative_values(self, x, y):

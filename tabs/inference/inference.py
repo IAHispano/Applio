@@ -452,7 +452,9 @@ def inference_tab():
                             allow_custom_value=True,
                         )
                 f0_file = gr.File(
-                    label=i18n("The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."),
+                    label=i18n(
+                        "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."
+                    ),
                     visible=True,
                 )
 
@@ -639,7 +641,9 @@ def inference_tab():
                     interactive=True,
                 )
                 f0_file_batch = gr.File(
-                    label=i18n("The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."),
+                    label=i18n(
+                        "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."
+                    ),
                     visible=True,
                 )
                 with gr.Column(visible=False) as embedder_custom_batch:
@@ -801,7 +805,7 @@ def inference_tab():
             embedder_model,
             embedder_model_custom,
             upscale_audio,
-            f0_file
+            f0_file,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -827,7 +831,7 @@ def inference_tab():
             embedder_model_batch,
             embedder_model_custom_batch,
             upscale_audio_batch,
-            f0_file_batch
+            f0_file_batch,
         ],
         outputs=[vc_output3],
     )

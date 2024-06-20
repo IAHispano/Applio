@@ -392,7 +392,9 @@ def tts_tab():
                         allow_custom_value=True,
                     )
             f0_file = gr.File(
-                label=i18n("The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."),
+                label=i18n(
+                    "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."
+                ),
                 visible=True,
             )
 
