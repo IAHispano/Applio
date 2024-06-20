@@ -421,7 +421,9 @@ class ResidualCouplingLayer(torch.nn.Module):
             p_dropout=p_dropout,
             gin_channels=gin_channels,
         )
-        self.post = torch.nn.Conv1d(hidden_channels, self.half_channels * (2 - mean_only), 1)
+        self.post = torch.nn.Conv1d(
+            hidden_channels, self.half_channels * (2 - mean_only), 1
+        )
         self.post.weight.data.zero_()
         self.post.bias.data.zero_()
 

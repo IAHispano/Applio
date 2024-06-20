@@ -14,6 +14,7 @@ def generate_config(rvc_version, sampling_rate, model_path):
     if not os.path.exists(config_save_path):
         shutil.copyfile(config_path, config_save_path)
 
+
 def generate_filelist(pitch_guidance, model_path, rvc_version, sampling_rate):
     gt_wavs_dir = f"{model_path}/sliced_audios"
     feature_dir = (

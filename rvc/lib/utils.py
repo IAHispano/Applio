@@ -7,6 +7,7 @@ from fairseq import checkpoint_utils
 import wget
 
 import logging
+
 logging.getLogger("fairseq").setLevel(logging.WARNING)
 
 now_dir = os.getcwd()
@@ -38,7 +39,7 @@ def format_title(title):
 
 
 def load_embedding(embedder_model, custom_embedder=None):
-    
+
     embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
     embedding_list = {
         "contentvec": os.path.join(embedder_root, "contentvec_base.pt"),

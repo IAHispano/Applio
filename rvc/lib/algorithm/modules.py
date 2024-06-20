@@ -1,6 +1,7 @@
 import torch
 from rvc.lib.algorithm.commons import fused_add_tanh_sigmoid_multiply
 
+
 class WaveNet(torch.nn.Module):
     """WaveNet residual blocks as used in WaveGlow
 
@@ -58,13 +59,13 @@ class WaveNet(torch.nn.Module):
                 in_layer, name="weight"
             )
             self.in_layers.append(in_layer)
-            
+
             # last one is not necessary
             if i < n_layers - 1:
                 res_skip_channels = 2 * hidden_channels
             else:
                 res_skip_channels = hidden_channels
-            
+
             res_skip_layer = torch.nn.Conv1d(hidden_channels, res_skip_channels, 1)
             res_skip_layer = torch.nn.utils.parametrizations.weight_norm(
                 res_skip_layer, name="weight"
