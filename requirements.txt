@@ -19,7 +19,7 @@ audio_upscaler==0.1.4
 git+https://github.com/IAHispano/fairseq; sys_platform == 'linux'
 fairseq==0.12.2; sys_platform == 'darwin' or sys_platform == 'win32'
 numba; sys_platform == 'linux'
-numba==0.56.4; sys_platform == 'darwin' or sys_platform == 'win32'
+numba==0.57.0; sys_platform == 'darwin' or sys_platform == 'win32'
 torch==2.1.1
 torchcrepe==0.0.22
 torchvision==0.16.1
