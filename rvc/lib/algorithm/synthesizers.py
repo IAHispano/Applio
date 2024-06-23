@@ -509,7 +509,8 @@ class SynthesizerV3_F0(torch.nn.Module):
         """Removes weight normalization from the model."""
         self.dec.remove_weight_norm()
         self.flow.remove_weight_norm()
-        self.enc_q.remove_weight_norm()
+        if hasattr(self, "enc_q"):
+            self.enc_q.remove_weight_norm()
 
     def __prepare_scriptable__(self):
         for hook in self.dec._forward_pre_hooks.values():
@@ -585,6 +586,7 @@ class SynthesizerV3_F0(torch.nn.Module):
         """
         g = self.emb_g(sid).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
+        x_mask = x_mask.transpose(1, 2)
         z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
         if rate is not None:
             head = int(z_p.shape[2] * (1.0 - rate.item()))
