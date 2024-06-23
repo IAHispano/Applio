@@ -228,7 +228,64 @@ class MultiHeadAttention(torch.nn.Module):
         diff = torch.unsqueeze(r, 0) - torch.unsqueeze(r, 1)
         return torch.unsqueeze(torch.unsqueeze(-torch.log1p(torch.abs(diff)), 0), 0)
 
+class FFNV2(torch.nn.Module):
+    def __init__(self, in_channels, out_channels, filter_channels, kernel_size, p_dropout=0.0, activation: str = None,
+                 causal=False):
+        super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.filter_channels = filter_channels
+        self.kernel_size = kernel_size
+        self.p_dropout = p_dropout
+        self.activation = activation
+        self.causal = causal
+        self.is_activation = True if activation == "gelu" else False
 
+        self.conv_1 = torch.nn.Conv1d(in_channels, filter_channels, kernel_size)
+        self.conv_2 = torch.nn.Conv1d(filter_channels, out_channels, kernel_size)
+        self.drop = torch.nn.Dropout(p_dropout)
+
+    def apply_padding(self, x: torch.Tensor, x_mask: torch.Tensor) -> torch.Tensor:
+        if self.causal:
+            padding = self._causal_padding(x * x_mask.unsqueeze(-1))
+        else:
+            padding = self._same_padding(x * x_mask.unsqueeze(-1))
+        return padding
+
+    def forward(self, x: torch.Tensor, x_mask: torch.Tensor):
+        x_padded = self.apply_padding(x, x_mask)
+
+        x = x_padded.transpose(1, 2)
+        x = self.conv_1(x)
+        x = x.transpose(1, 2)
+        if self.is_activation:
+            x = torch.nn.functional.gelu(x)
+        else:
+            x = torch.nn.functional.relu(x)
+        x = self.drop(x)
+
+        x_padded = self.apply_padding(x, x_mask)
+
+        x = x_padded.transpose(1, 2)
+        x = self.conv_2(x)
+        x = x.transpose(1, 2)
+        return x * x_mask.unsqueeze(-1)
+
+    def _causal_padding(self, x):
+        if self.kernel_size == 1:
+            return x
+        pad_l: int = self.kernel_size - 1
+        pad_r: int = 0
+        x = torch.nn.functional.pad(x, [0, 0, pad_l, pad_r, 0, 0])
+        return x
+
+    def _same_padding(self, x):
+        if self.kernel_size == 1:
+            return x
+        pad_l: int = (self.kernel_size - 1) // 2
+        pad_r: int = self.kernel_size // 2
+        x = torch.nn.functional.pad(x, [0, 0, pad_l, pad_r, 0, 0])
+        return x
 class FFN(torch.nn.Module):
     """
     Feed-forward network module.
