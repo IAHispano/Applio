@@ -5,6 +5,7 @@ import datetime
 import glob
 import json
 import re
+from collections import OrderedDict
 
 from utils import (
     get_hparams,
@@ -341,14 +342,20 @@ def run(
         if hps.pretrainG != "":
             if rank == 0:
                 print(f"Loaded pretrained (G) '{hps.pretrainG}'")
+            state_dict_g = torch.load(hps.pretrainG, map_location="cpu")["model"]
             if hasattr(net_g, "module"):
                 net_g.module.load_state_dict(
-                    torch.load(hps.pretrainG, map_location="cpu")["model"]
+                    state_dict_g
                 )
-
             else:
+                excluded_keys = {"emb_g.weight"}
+                new_sd = OrderedDict()
+                for k, v in state_dict_g.items():
+                    if k not in excluded_keys:
+                        new_sd[k] = v
+                state_dict_g = new_sd
                 net_g.load_state_dict(
-                    torch.load(hps.pretrainG, map_location="cpu")["model"]
+                    state_dict_g
                 )
 
         if hps.pretrainD != "":
