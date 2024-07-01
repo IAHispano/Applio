@@ -252,31 +252,30 @@ class TextEncoderV2(torch.nn.Module):
         self.p_dropout = float(p_dropout)
         self.emb_phone = torch.nn.Linear(768, hidden_channels)
         self.lrelu = torch.nn.LeakyReLU(0.1, inplace=True)
-        if f0 == True:
-            self.emb_pitch = torch.nn.Embedding(256, hidden_channels)  # pitch 256
         self.encoder = EncoderV2(
             hidden_channels,
             filter_channels,
             n_heads,
             n_layers,
             kernel_size,
-            float(p_dropout),
+            p_dropout,
         )
         self.proj = torch.nn.Conv1d(hidden_channels, out_channels * 2, 1)
+        if f0 is True:
+            self.emb_pitch = torch.nn.Embedding(256, hidden_channels)
 
     def forward(self, phone: torch.Tensor, pitch: torch.Tensor, lengths: torch.Tensor):
         if pitch is None:
             x = self.emb_phone(phone)
         else:
             x = self.emb_phone(phone) + self.emb_pitch(pitch)
-        x = x * math.sqrt(self.hidden_channels)
+        x = x * math.sqrt(self.hidden_channels)  # [b, t, h]
         x = self.lrelu(x)
         x_mask = sequence_mask(lengths, x.size(1)).to(x.dtype)
         x = self.encoder(x, x_mask)
         x_mask = x_mask.unsqueeze(-1)
         stats = self.proj(x.transpose(1, 2)).transpose(1, 2) * x_mask
         stats = stats.transpose(1, 2)
-
         m, logs = torch.split(stats, self.out_channels, dim=1)
         return m, logs, x_mask
 

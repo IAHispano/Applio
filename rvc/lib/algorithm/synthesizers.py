@@ -472,6 +472,7 @@ class SynthesizerV3_F0(torch.nn.Module):
         self.segment_size = segment_size
         self.gin_channels = gin_channels
         self.spk_embed_dim = spk_embed_dim
+        self.emb_g = torch.nn.Embedding(self.spk_embed_dim, gin_channels)
         self.enc_p = TextEncoderV2(
             inter_channels,
             hidden_channels,
@@ -503,7 +504,6 @@ class SynthesizerV3_F0(torch.nn.Module):
         self.flow = ResidualCouplingBlock(
             inter_channels, hidden_channels, 5, 1, 3, gin_channels=gin_channels
         )
-        self.emb_g = torch.nn.Embedding(self.spk_embed_dim, gin_channels)
 
     def remove_weight_norm(self):
         """Removes weight normalization from the model."""
@@ -551,11 +551,13 @@ class SynthesizerV3_F0(torch.nn.Module):
         Returns:
             tuple: Output audio, sliced ids, mask for phoneme sequence, mask for target spectrogram, and intermediate outputs.
         """
-        g = self.emb_g(ds).unsqueeze(-1)
+        g = self.emb_g(ds).unsqueeze(-1)  # [b, 256, 1]
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
         z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
         z_p = self.flow(z, y_mask, g=g)
-        z_slice, ids_slice = rand_slice_segments(z, y_lengths, self.segment_size)
+        z_slice, ids_slice = rand_slice_segments(
+            z, y_lengths, self.segment_size
+        )
         pitchf = slice_segments2(pitchf, ids_slice, self.segment_size)
         o = self.dec(z_slice, pitchf, g=g)
         return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
