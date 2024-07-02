@@ -33,7 +33,7 @@ def singleton(cls):
 @singleton
 class Config:
     def __init__(self):
-        self.device = "cpu"
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
         self.is_half = self.device != "cpu"
         self.gpu_name = (
             torch.cuda.get_device_name(int(self.device.split(":")[-1]))
