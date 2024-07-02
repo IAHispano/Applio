@@ -334,9 +334,16 @@ class PosteriorEncoder(torch.nn.Module):
         self.proj = torch.nn.Conv1d(hidden_channels, out_channels * 2, 1)
 
     def forward(
-        self, x: torch.Tensor, x_lengths: torch.Tensor, g: Optional[torch.Tensor] = None
+            self, x: torch.Tensor, x_lengths: torch.Tensor, g: Optional[torch.Tensor] = None
     ):
-        x_mask = torch.unsqueeze(sequence_mask(x_lengths, x.size(2)), 1).to(x.dtype)
+        """
+        Perform forward pass of network
+        Specifically, perform operations to calculate a mean and log variance vector
+        representing a latent distribution conditioned on x
+        """
+        x_mask = torch.unsqueeze(sequence_mask(x_lengths, x.size(2)), 1).to(
+            x.dtype
+        )
         x = self.pre(x) * x_mask
         x = self.enc(x, x_mask, g=g)
         stats = self.proj(x) * x_mask
@@ -345,7 +352,6 @@ class PosteriorEncoder(torch.nn.Module):
         return z, m, logs, x_mask
 
     def remove_weight_norm(self):
-        """Removes weight normalization from the encoder."""
         self.enc.remove_weight_norm()
 
     def __prepare_scriptable__(self):

@@ -285,15 +285,13 @@ class DiscriminatorR(torch.nn.Module):
         self.resolution = resolution
         norm_f = weight_norm if not use_spectral_norm else spectral_norm
 
-        self.convs = torch.nn.ModuleList(
-            [
-                norm_f(torch.nn.Conv2d(1, 32, (3, 9), padding=(1, 4))),
-                norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4))),
-                norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4))),
-                norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4))),
-                norm_f(torch.nn.Conv2d(32, 32, (3, 3), padding=(1, 1))),
-            ]
-        )
+        self.convs = torch.nn.ModuleList([
+            norm_f(torch.nn.Conv2d(1, 32, (3, 9), padding=(1, 4))),
+            norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4))),
+            norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4))),
+            norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4))),
+            norm_f(torch.nn.Conv2d(32, 32, (3, 3), padding=(1, 1))),
+        ])
         self.conv_post = norm_f(torch.nn.Conv2d(32, 1, (3, 3), padding=(1, 1)))
 
     def forward(self, x):
@@ -313,20 +311,10 @@ class DiscriminatorR(torch.nn.Module):
 
     def spectrogram(self, x):
         n_fft, hop_length, win_length = self.resolution
-        x = torch.nn.functional.pad(
-            x,
-            (int((n_fft - hop_length) / 2), int((n_fft - hop_length) / 2)),
-            mode="reflect",
-        )
+        x = torch.nn.functional.pad(x, (int((n_fft - hop_length) / 2), int((n_fft - hop_length) / 2)), mode='reflect')
         x = x.squeeze(1)
-        x = torch.stft(
-            x,
-            n_fft=n_fft,
-            hop_length=hop_length,
-            win_length=win_length,
-            center=False,
-            return_complex=True,
-        )  # [B, F, TT, 2]
+        x = torch.stft(x, n_fft=n_fft, hop_length=hop_length, win_length=win_length, center=False,
+                       return_complex=False)  # [B, F, TT, 2]
         mag = torch.norm(x, p=2, dim=-1)  # [B, F, TT]
 
         return mag

@@ -1,38 +1,52 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 
-from torch.nn.utils.parametrizations import weight_norm
+from torch.nn import Conv1d
+from torch.nn import ConvTranspose1d
+from torch.nn.utils import weight_norm
 from torch.nn.utils import remove_weight_norm
 
 from rvc.lib.algorithm.alias.act import SnakeAlias
-from rvc.lib.algorithm.commons import init_weights, get_padding
+
+
+def init_weights(m, mean=0.0, std=0.01):
+    classname = m.__class__.__name__
+    if classname.find("Conv") != -1:
+        m.weight.data.normal_(mean, std)
+
+
+def get_padding(kernel_size, dilation=1):
+    return int((kernel_size * dilation - dilation) / 2)
 
 
 class SineGen(torch.nn.Module):
-    """
-    Definition of sine generator.
+    """Definition of sine generator
+    SineGen(samp_rate, harmonic_num = 0,
+            sine_amp = 0.1, noise_std = 0.003,
+            voiced_threshold = 0,
+            flag_for_pulse=False)
 
-    Args:
-        samp_rate (int): Sampling rate in Hz.
-        harmonic_num (int, optional): Number of harmonic overtones. Defaults to 0.
-        sine_amp (float, optional): Amplitude of sine-waveform. Defaults to 0.1.
-        noise_std (float, optional): Standard deviation of Gaussian noise. Defaults to 0.003.
-        voiced_threshold (float, optional): F0 threshold for U/V classification. Defaults to 0.
-        flag_for_pulse (bool, optional): This SinGen is used inside PulseGen. Defaults to False.
+    samp_rate: sampling rate in Hz
+    harmonic_num: number of harmonic overtones (default 0)
+    sine_amp: amplitude of sine-wavefrom (default 0.1)
+    noise_std: std of Gaussian noise (default 0.003)
+    voiced_thoreshold: F0 threshold for U/V classification (default 0)
+    flag_for_pulse: this SinGen is used inside PulseGen (default False)
 
-    Note:
-        When flag_for_pulse is True, the first time step of a voiced segment is always sin(np.pi) or cos(0).
+    Note: when flag_for_pulse is True, the first time step of a voiced
+        segment is always sin(np.pi) or cos(0)
     """
 
     def __init__(
-        self,
-        samp_rate,
-        harmonic_num=0,
-        sine_amp=0.1,
-        noise_std=0.003,
-        voiced_threshold=0,
-        flag_for_pulse=False,
+            self,
+            samp_rate,
+            harmonic_num=0,
+            sine_amp=0.1,
+            noise_std=0.003,
+            voiced_threshold=0,
+            flag_for_pulse=False,
     ):
         super(SineGen, self).__init__()
         self.sine_amp = sine_amp
@@ -44,36 +58,17 @@ class SineGen(torch.nn.Module):
         self.flag_for_pulse = flag_for_pulse
 
     def _f02uv(self, f0):
-        """
-        Generate uv signal from f0.
-
-        Args:
-            f0 (torch.Tensor): F0 values.
-
-        Returns:
-            torch.Tensor: UV signal.
-        """
         # generate uv signal
         uv = torch.ones_like(f0)
         uv = uv * (f0 > self.voiced_threshold)
         return uv
 
     def _f02sine(self, f0_values):
-        """
-        Convert f0 values to sine waveforms.
-
-        Args:
-            f0_values (torch.Tensor): F0 values (batchsize, length, dim), where dim indicates fundamental tone and overtones.
-
-        Returns:
-            torch.Tensor: Sine waveforms.
+        """f0_values: (batchsize, length, dim)
+        where dim indicates fundamental tone and overtones
         """
         # convert to F0 in rad. The interger part n can be ignored
         # because 2 * np.pi * n doesn't affect phase
-        # Ensure sampling_rate is a number
-        self.sampling_rate = float(self.sampling_rate)
-
-        # Perform the division and modulo operation
         rad_values = (f0_values / self.sampling_rate) % 1
 
         # initial phase noise (no noise for fundamental component)
@@ -130,15 +125,11 @@ class SineGen(torch.nn.Module):
         return sines
 
     def forward(self, f0):
-        """
-        Generate sine waveforms and uv signal from F0.
-
-        Args:
-            f0 (torch.Tensor): F0 values (batchsize=1, length, dim=1), f0 for unvoiced steps should be 0.
-
-        Returns:
-            tuple: (sine_tensor, uv), where sine_tensor is the generated sine waveforms (batchsize=1, length, dim)
-            and uv is the uv signal (batchsize=1, length, 1).
+        """sine_tensor, uv = forward(f0)
+        input F0: tensor(batchsize=1, length, dim=1)
+                  f0 for unvoiced steps should be 0
+        output sine_tensor: tensor(batchsize=1, length, dim)
+        output uv: tensor(batchsize=1, length, 1)
         """
         with torch.no_grad():
             f0_buf = torch.zeros(f0.shape[0], f0.shape[1], self.dim, device=f0.device)
@@ -169,22 +160,12 @@ class SineGen(torch.nn.Module):
 
 
 class SourceModuleHnNSF(torch.nn.Module):
-    """
-    Module for generating source waveforms from F0.
-
-    Args:
-        sampling_rate (int, optional): Sampling rate. Defaults to 32000.
-        sine_amp (float, optional): Amplitude of sine waveforms. Defaults to 0.1.
-        add_noise_std (float, optional): Standard deviation of added noise. Defaults to 0.003.
-        voiced_threshod (float, optional): Threshold for voiced/unvoiced classification. Defaults to 0.
-    """
-
     def __init__(
-        self,
-        sampling_rate=32000,
-        sine_amp=0.1,
-        add_noise_std=0.003,
-        voiced_threshod=0,
+            self,
+            sampling_rate=32000,
+            sine_amp=0.1,
+            add_noise_std=0.003,
+            voiced_threshod=0,
     ):
         super(SourceModuleHnNSF, self).__init__()
         harmonic_num = 10
@@ -198,147 +179,58 @@ class SourceModuleHnNSF(torch.nn.Module):
 
         # to merge source harmonics into a single excitation
         self.l_tanh = torch.nn.Tanh()
-        self.register_buffer(
-            "merge_w",
-            torch.FloatTensor(
-                [
-                    [
-                        0.2942,
-                        -0.2243,
-                        0.0033,
-                        -0.0056,
-                        -0.0020,
-                        -0.0046,
-                        0.0221,
-                        -0.0083,
-                        -0.0241,
-                        -0.0036,
-                        -0.0581,
-                    ]
-                ]
-            ),
-        )
-        self.register_buffer("merge_b", torch.FloatTensor([0.0008]))
+        self.register_buffer('merge_w', torch.FloatTensor([[
+            0.2942, -0.2243, 0.0033, -0.0056, -0.0020, -0.0046,
+            0.0221, -0.0083, -0.0241, -0.0036, -0.0581]]))
+        self.register_buffer('merge_b', torch.FloatTensor([0.0008]))
 
     def forward(self, x):
         """
-        Generate source waveforms from F0.
-
-        Args:
-            x (torch.Tensor): F0 values (batchsize, length, 1).
-
-        Returns:
-            torch.Tensor: Sine source waveforms (batchsize, length, 1).
+        Sine_source = SourceModuleHnNSF(F0_sampled)
+        F0_sampled (batchsize, length, 1)
+        Sine_source (batchsize, length, 1)
         """
         # source for harmonic branch
         sine_wavs = self.l_sin_gen(x)
-        sine_wavs = nn.functional.linear(sine_wavs, self.merge_w) + self.merge_b
+        self.merge_w = self.merge_w.to(sine_wavs.dtype) #added
+        sine_wavs = nn.functional.linear(
+            sine_wavs, self.merge_w) + self.merge_b
         sine_merge = self.l_tanh(sine_wavs)
         return sine_merge
 
 
 class AMPBlock(torch.nn.Module):
-    """
-    Anti-aliased multi-periodicity composition block.
-
-    Args:
-        channels (int): Number of channels.
-        kernel_size (int, optional): Kernel size of convolutions. Defaults to 3.
-        dilation (tuple, optional): Dilations of convolutions. Defaults to (1, 3, 5).
-    """
-
     def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5)):
         super(AMPBlock, self).__init__()
-        self.convs1 = nn.ModuleList(
-            [
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=dilation[0],
-                        padding=get_padding(kernel_size, dilation[0]),
-                    )
-                ),
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=dilation[1],
-                        padding=get_padding(kernel_size, dilation[1]),
-                    )
-                ),
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=dilation[2],
-                        padding=get_padding(kernel_size, dilation[2]),
-                    )
-                ),
-            ]
-        )
+        self.convs1 = nn.ModuleList([
+            weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=dilation[0],
+                               padding=get_padding(kernel_size, dilation[0]))),
+            weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=dilation[1],
+                               padding=get_padding(kernel_size, dilation[1]))),
+            weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=dilation[2],
+                               padding=get_padding(kernel_size, dilation[2])))
+        ])
         self.convs1.apply(init_weights)
 
-        self.convs2 = nn.ModuleList(
-            [
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=1,
-                        padding=get_padding(kernel_size, 1),
-                    )
-                ),
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=1,
-                        padding=get_padding(kernel_size, 1),
-                    )
-                ),
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=1,
-                        padding=get_padding(kernel_size, 1),
-                    )
-                ),
-            ]
-        )
+        self.convs2 = nn.ModuleList([
+            weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=1,
+                               padding=get_padding(kernel_size, 1))),
+            weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=1,
+                               padding=get_padding(kernel_size, 1))),
+            weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=1,
+                               padding=get_padding(kernel_size, 1)))
+        ])
         self.convs2.apply(init_weights)
 
         # total number of conv layers
         self.num_layers = len(self.convs1) + len(self.convs2)
 
         # periodic nonlinearity with snakebeta function and anti-aliasing
-        self.activations = nn.ModuleList(
-            [SnakeAlias(channels) for _ in range(self.num_layers)]
-        )
+        self.activations = nn.ModuleList([
+            SnakeAlias(channels) for _ in range(self.num_layers)
+        ])
 
     def forward(self, x):
-        """
-        Apply AMP block to input.
-
-        Args:
-            x (torch.Tensor): Input tensor.
-
-        Returns:
-            torch.Tensor: Output tensor.
-        """
         acts1, acts2 = self.activations[::2], self.activations[1::2]
         for c1, c2, a1, a2 in zip(self.convs1, self.convs2, acts1, acts2):
             xt = a1(x)
@@ -349,9 +241,6 @@ class AMPBlock(torch.nn.Module):
         return x
 
     def remove_weight_norm(self):
-        """
-        Remove weight normalization from all convolution layers.
-        """
         for l in self.convs1:
             remove_weight_norm(l)
         for l in self.convs2:
@@ -359,16 +248,12 @@ class AMPBlock(torch.nn.Module):
 
 
 class SpeakerAdapter(nn.Module):
-    """
-    Speaker adaptation module.
 
-    Args:
-        speaker_dim (int): Dimension of speaker embedding.
-        adapter_dim (int): Dimension of adapter.
-        epsilon (float, optional): Small value to prevent division by zero. Defaults to 1e-5.
-    """
-
-    def __init__(self, speaker_dim, adapter_dim, epsilon=1e-5):
+    def __init__(self,
+                 speaker_dim,
+                 adapter_dim,
+                 epsilon=1e-5
+                 ):
         super(SpeakerAdapter, self).__init__()
         self.speaker_dim = speaker_dim
         self.adapter_dim = adapter_dim
@@ -378,25 +263,12 @@ class SpeakerAdapter(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        """
-        Initialize weights of the adaptation module.
-        """
         torch.nn.init.constant_(self.W_scale.weight, 0.0)
         torch.nn.init.constant_(self.W_scale.bias, 1.0)
         torch.nn.init.constant_(self.W_bias.weight, 0.0)
         torch.nn.init.constant_(self.W_bias.bias, 0.0)
 
     def forward(self, x, speaker_embedding):
-        """
-        Apply speaker adaptation to input.
-
-        Args:
-            x (torch.Tensor): Input tensor.
-            speaker_embedding (torch.Tensor): Speaker embedding.
-
-        Returns:
-            torch.Tensor: Adapted input tensor.
-        """
         x = x.transpose(1, -1)
         mean = x.mean(dim=-1, keepdim=True)
         var = ((x - mean) ** 2).mean(dim=-1, keepdim=True)
@@ -410,43 +282,22 @@ class SpeakerAdapter(nn.Module):
         return y
 
 
-class GeneratorNSF_BIGVGAN(torch.nn.Module):
-    """
-    BigVGAN generator with anti-aliased periodic activation for resblocks.
-
-    Args:
-        resblock_kernel_sizes (list): Kernel sizes for residual blocks.
-        resblock_dilation_sizes (list): Dilations for residual blocks.
-        upsample_rates (list): Upsampling rates for transposed convolutions.
-        upsample_kernel_sizes (list): Kernel sizes for transposed convolutions.
-        upsample_input (int): Input dimension for upsampling.
-        upsample_initial_channel (int): Initial number of channels for upsampling.
-        sampling_rate (int): Sampling rate.
-        spk_dim (int): Dimension of speaker embedding.
-    """
-
-    def __init__(
-        self,
-        resblock_kernel_sizes,
-        resblock_dilation_sizes,
-        upsample_rates,
-        upsample_kernel_sizes,
-        upsample_input,
-        upsample_initial_channel,
-        sampling_rate,
-        spk_dim,
-    ):
-        super(GeneratorNSF_BIGVGAN, self).__init__()
+class GeneratorBigVgan(torch.nn.Module):
+    # this is our main BigVGAN model. Applies anti-aliased periodic activation for resblocks.
+    def __init__(self, resblock_kernel_sizes, resblock_dilation_sizes,
+                 upsample_rates, upsample_kernel_sizes, upsample_input,
+                 upsample_initial_channel, sampling_rate, spk_dim):
+        super(GeneratorBigVgan, self).__init__()
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)
         # speaker adaper, 256 should change by what speaker encoder you use
         self.adapter = SpeakerAdapter(spk_dim, upsample_input)
         # pre conv
-        self.conv_pre = torch.nn.Conv1d(
-            upsample_input, upsample_initial_channel, 7, 1, padding=3
-        )
+        self.conv_pre = Conv1d(upsample_input,
+                               upsample_initial_channel, 7, 1, padding=3)
         # nsf
-        self.f0_upsamp = torch.nn.Upsample(scale_factor=np.prod(upsample_rates))
+        self.f0_upsamp = torch.nn.Upsample(
+            scale_factor=np.prod(upsample_rates))
         self.m_source = SourceModuleHnNSF(sampling_rate=sampling_rate)
         self.noise_convs = nn.ModuleList()
         # transposed conv-based upsamplers. does not apply anti-aliasing
@@ -456,21 +307,20 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
             # base
             self.ups.append(
                 weight_norm(
-                    torch.nn.ConvTranspose1d(
-                        upsample_initial_channel // (2**i),
+                    ConvTranspose1d(
+                        upsample_initial_channel // (2 ** i),
                         upsample_initial_channel // (2 ** (i + 1)),
                         k,
                         u,
-                        padding=(k - u) // 2,
-                    )
+                        padding=(k - u) // 2)
                 )
             )
             # nsf
             if i + 1 < len(upsample_rates):
-                stride_f0 = np.prod(upsample_rates[i + 1 :])
+                stride_f0 = np.prod(upsample_rates[i + 1:])
                 stride_f0 = int(stride_f0)
                 self.noise_convs.append(
-                    torch.nn.Conv1d(
+                    Conv1d(
                         1,
                         upsample_initial_channel // (2 ** (i + 1)),
                         kernel_size=stride_f0 * 2,
@@ -480,7 +330,8 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
                 )
             else:
                 self.noise_convs.append(
-                    torch.nn.Conv1d(1, upsample_initial_channel // (2 ** (i + 1)), kernel_size=1)
+                    Conv1d(1, upsample_initial_channel //
+                           (2 ** (i + 1)), kernel_size=1)
                 )
 
         # residual blocks using anti-aliased multi-periodicity composition modules (AMP)
@@ -492,22 +343,11 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
 
         # post conv
         self.activation_post = SnakeAlias(ch)
-        self.conv_post = torch.nn.Conv1d(ch, 1, 7, 1, padding=3, bias=False)
+        self.conv_post = Conv1d(ch, 1, 7, 1, padding=3, bias=False)
         # weight initialization
         self.ups.apply(init_weights)
 
     def forward(self, x, f0, g):
-        """
-        Generate audio from F0, noise, and speaker embedding.
-
-        Args:
-            x (torch.Tensor): Noise input.
-            f0 (torch.Tensor): F0 values.
-            g (torch.Tensor): Speaker embedding.
-
-        Returns:
-            torch.Tensor: Generated audio.
-        """
         if g.size(-1) == 1:
             speaker_embedding = g.squeeze(-1)
         else:
@@ -517,7 +357,7 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
         # adapter
         x = self.adapter(x, speaker_embedding=speaker_embedding)
         x = self.conv_pre(x)
-        x = x * torch.tanh(torch.nn.functional.softplus(x))
+        x = x * torch.tanh(F.softplus(x))
         # nsf
         f0 = f0[:, None]
         f0 = self.f0_upsamp(f0).transpose(1, 2)
@@ -528,6 +368,7 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
             # upsampling
             x = self.ups[i](x)
             # nsf
+            #har_source = har_source.to(torch.float32)
             x_source = self.noise_convs[i](har_source)
             x = x + x_source
             # AMP blocks
@@ -546,36 +387,18 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
         return x
 
     def remove_weight_norm(self):
-        """
-        Remove weight normalization from all layers.
-        """
         for l in self.ups:
             remove_weight_norm(l)
         for l in self.resblocks:
             l.remove_weight_norm()
 
     def eval(self, inference=False):
-        """
-        Set model to evaluation mode.
-
-        Args:
-            inference (bool, optional): Whether to remove weight normalization for inference. Defaults to False.
-        """
-        super(GeneratorNSF_BIGVGAN, self).eval()
+        super(GeneratorBigVgan, self).eval()
         # don't remove weight norm while validation in training loop
         if inference:
             self.remove_weight_norm()
 
     def pitch2source(self, f0):
-        """
-        Generate source waveform from F0.
-
-        Args:
-            f0 (torch.Tensor): F0 values.
-
-        Returns:
-            torch.Tensor: Source waveform.
-        """
         f0 = f0[:, None]
         f0 = self.f0_upsamp(f0).transpose(1, 2)  # [1,len,1]
         har_source = self.m_source(f0)
@@ -583,15 +406,6 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
         return har_source
 
     def source2wav(self, audio):
-        """
-        Convert audio tensor to wav data.
-
-        Args:
-            audio (torch.Tensor): Audio tensor.
-
-        Returns:
-            numpy.ndarray: Wav data.
-        """
         MAX_WAV_VALUE = 32768.0
         audio = audio.squeeze()
         audio = MAX_WAV_VALUE * audio
@@ -600,21 +414,10 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
         return audio.cpu().detach().numpy()
 
     def inference(self, x, har_source, g):
-        """
-        Generate audio from noise, source waveform, and speaker embedding during inference.
-
-        Args:
-            x (torch.Tensor): Noise input.
-            har_source (torch.Tensor): Source waveform.
-            g (torch.Tensor): Speaker embedding.
-
-        Returns:
-            torch.Tensor: Generated audio.
-        """
         # adapter
         x = self.adapter(x, g)
         x = self.conv_pre(x)
-        x = x * torch.tanh(torch.nn.functional.softplus(x))
+        x = x * torch.tanh(F.softplus(x))
 
         for i in range(self.num_upsamples):
             # upsampling
