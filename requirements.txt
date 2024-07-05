@@ -1,4 +1,7 @@
 # General dependencies
+pip==22.0; sys_platform == 'darwin'
+wheel; sys_platform == 'darwin'
+PyYAML; sys_platform == 'darwin'
 ffmpeg-python>=0.2.0
 numpy==1.23.5
 requests==2.32.0
@@ -16,10 +19,12 @@ noisereduce
 audio_upscaler==0.1.4
 
 # Machine learning
+omegaconf==2.0.5; sys_platform == 'darwin'
 git+https://github.com/IAHispano/fairseq; sys_platform == 'linux'
 fairseq==0.12.2; sys_platform == 'darwin' or sys_platform == 'win32'
 numba; sys_platform == 'linux'
 numba==0.57.0; sys_platform == 'darwin' or sys_platform == 'win32'
+torchaudio==2.1.1
 torch==2.1.1
 torchcrepe==0.0.23
 torchvision==0.16.1
@@ -33,6 +38,8 @@ tensorboard
 gradio==4.36.0
 
 # Miscellaneous
+certifi==2023.07.22; sys_platform == 'darwin'
+antlr4-python3-runtime==4.8; sys_platform == 'darwin'
 ffmpy==0.3.1
 tensorboardX
 edge-tts==6.1.9
