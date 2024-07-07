@@ -29,6 +29,7 @@
     "inter_channels": 192,
     "hidden_channels": 192,
     "filter_channels": 768,
+    "text_enc_hidden_dim": 256,
     "n_heads": 2,
     "n_layers": 6,
     "kernel_size": 3,

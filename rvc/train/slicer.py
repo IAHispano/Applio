@@ -62,9 +62,6 @@ class Slicer:
             waveform (numpy.ndarray): The waveform to slice.
             begin (int): Start frame index.
             end (int): End frame index.
-
-        Returns:
-            numpy.ndarray: The sliced waveform.
         """
         start_idx = begin * self.hop_size
         if len(waveform.shape) > 1:
@@ -80,9 +77,6 @@ class Slicer:
 
         Args:
             waveform (numpy.ndarray): The waveform to slice.
-
-        Returns:
-            list: A list of sliced waveforms.
         """
         # Calculate RMS for each frame
         samples = waveform.mean(axis=0) if len(waveform.shape) > 1 else waveform
@@ -216,9 +210,6 @@ def get_rms(
         frame_length (int, optional): The length of the frame in samples. Defaults to 2048.
         hop_length (int, optional): The hop length between frames in samples. Defaults to 512.
         pad_mode (str, optional): The padding mode used for the waveform. Defaults to "constant".
-
-    Returns:
-        numpy.ndarray: The RMS values for each frame.
     """
     padding = (int(frame_length // 2), int(frame_length // 2))
     y = np.pad(y, padding, mode=pad_mode)

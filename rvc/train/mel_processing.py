@@ -11,9 +11,6 @@ def dynamic_range_compression_torch(x, C=1, clip_val=1e-5):
         x (torch.Tensor): Input tensor.
         C (float, optional): Scaling factor. Defaults to 1.
         clip_val (float, optional): Minimum value for clamping. Defaults to 1e-5.
-
-    Returns:
-        torch.Tensor: Compressed tensor.
     """
     return torch.log(torch.clamp(x, min=clip_val) * C)
 
@@ -25,9 +22,6 @@ def dynamic_range_decompression_torch(x, C=1):
     Args:
         x (torch.Tensor): Input tensor.
         C (float, optional): Scaling factor. Defaults to 1.
-
-    Returns:
-        torch.Tensor: Decompressed tensor.
     """
     return torch.exp(x) / C
 
@@ -38,9 +32,6 @@ def spectral_normalize_torch(magnitudes):
 
     Args:
         magnitudes (torch.Tensor): Magnitude spectrogram.
-
-    Returns:
-        torch.Tensor: Normalized spectrogram.
     """
     return dynamic_range_compression_torch(magnitudes)
 
@@ -51,9 +42,6 @@ def spectral_de_normalize_torch(magnitudes):
 
     Args:
         magnitudes (torch.Tensor): Normalized spectrogram.
-
-    Returns:
-        torch.Tensor: De-normalized spectrogram.
     """
     return dynamic_range_decompression_torch(magnitudes)
 
@@ -72,9 +60,6 @@ def spectrogram_torch(y, n_fft, hop_size, win_size, center=False):
         hop_size (int): Hop size between frames.
         win_size (int): Window size.
         center (bool, optional): Whether to center the window. Defaults to False.
-
-    Returns:
-        torch.Tensor: Magnitude spectrogram.
     """
     global hann_window
     dtype_device = str(y.dtype) + "_" + str(y.device)
@@ -120,9 +105,6 @@ def spec_to_mel_torch(spec, n_fft, num_mels, sampling_rate, fmin, fmax):
         sampling_rate (int): Sampling rate of the audio signal.
         fmin (float): Minimum frequency.
         fmax (float): Maximum frequency.
-
-    Returns:
-        torch.Tensor: Mel-spectrogram.
     """
     global mel_basis
     dtype_device = str(spec.dtype) + "_" + str(spec.device)
@@ -156,9 +138,6 @@ def mel_spectrogram_torch(
         fmin (float): Minimum frequency.
         fmax (float): Maximum frequency.
         center (bool, optional): Whether to center the window. Defaults to False.
-
-    Returns:
-        torch.Tensor: Mel-spectrogram.
     """
     spec = spectrogram_torch(y, n_fft, hop_size, win_size, center)
 

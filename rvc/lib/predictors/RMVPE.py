@@ -20,9 +20,6 @@ class ConvBlockRes(nn.Module):
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
         momentum (float): Momentum for batch normalization.
-
-    Returns:
-        torch.Tensor: Output tensor after convolutional operations.
     """
 
     def __init__(self, in_channels, out_channels, momentum=0.01):
@@ -73,9 +70,6 @@ class ResEncoderBlock(nn.Module):
         kernel_size (tuple): Size of the average pooling kernel.
         n_blocks (int): Number of convolutional blocks in the block.
         momentum (float): Momentum for batch normalization.
-
-    Returns:
-        torch.Tensor: Output tensor after convolutional operations.
     """
 
     def __init__(
@@ -113,9 +107,6 @@ class Encoder(nn.Module):
         n_blocks (int): Number of convolutional blocks in each encoder block.
         out_channels (int): Number of output channels for the first encoder block.
         momentum (float): Momentum for batch normalization.
-
-    Returns:
-        torch.Tensor: Output tensor after encoding.
     """
 
     def __init__(
@@ -166,9 +157,6 @@ class Intermediate(nn.Module):
         n_inters (int): Number of convolutional blocks in the intermediate layer.
         n_blocks (int): Number of convolutional blocks in each intermediate block.
         momentum (float): Momentum for batch normalization.
-
-    Returns:
-        torch.Tensor: Output tensor after intermediate layer operations.
     """
 
     def __init__(self, in_channels, out_channels, n_inters, n_blocks, momentum=0.01):
@@ -200,9 +188,6 @@ class ResDecoderBlock(nn.Module):
         stride (tuple): Stride for transposed convolution.
         n_blocks (int): Number of convolutional blocks in the block.
         momentum (float): Momentum for batch normalization.
-
-    Returns:
-        torch.Tensor: Output tensor after decoder block operations.
     """
 
     def __init__(self, in_channels, out_channels, stride, n_blocks=1, momentum=0.01):
@@ -246,9 +231,6 @@ class Decoder(nn.Module):
         stride (tuple): Stride for transposed convolution.
         n_blocks (int): Number of convolutional blocks in each decoder block.
         momentum (float): Momentum for batch normalization.
-
-    Returns:
-        torch.Tensor: Output tensor after decoding.
     """
 
     def __init__(self, in_channels, n_decoders, stride, n_blocks, momentum=0.01):
@@ -280,9 +262,6 @@ class DeepUnet(nn.Module):
         inter_layers (int): Number of convolutional blocks in the intermediate layer.
         in_channels (int): Number of input channels.
         en_out_channels (int): Number of output channels for the first encoder block.
-
-    Returns:
-        torch.Tensor: Output tensor after DeepUnet operations.
     """
 
     def __init__(
@@ -328,9 +307,6 @@ class E2E(nn.Module):
         inter_layers (int): Number of convolutional blocks in the intermediate layer.
         in_channels (int): Number of input channels.
         en_out_channels (int): Number of output channels for the first encoder block.
-
-    Returns:
-        torch.Tensor: Output tensor with predicted salience values.
     """
 
     def __init__(
@@ -387,9 +363,6 @@ class MelSpectrogram(torch.nn.Module):
         mel_fmin (int, optional): Minimum frequency for the Mel filter bank. Defaults to 0.
         mel_fmax (int, optional): Maximum frequency for the Mel filter bank. Defaults to None.
         clamp (float, optional): Minimum value for clamping the Mel-spectrogram. Defaults to 1e-5.
-
-    Returns:
-        torch.Tensor: Mel-spectrogram features.
     """
 
     def __init__(
@@ -467,12 +440,6 @@ class RMVPE0Predictor:
         model_path (str): Path to the RMVPE0 model file.
         is_half (bool): Whether to use half-precision floating-point numbers.
         device (str, optional): Device to use for computation. Defaults to None, which uses CUDA if available.
-
-    Attributes:
-        model (nn.Module): The RMVPE0 model.
-        mel_extractor (MelSpectrogram): Mel-spectrogram extractor.
-        cents_mapping (np.ndarray): Mapping from salience index to cents.
-        device (str): Device used for computation.
     """
 
     def __init__(self, model_path, is_half, device=None):
@@ -486,8 +453,6 @@ class RMVPE0Predictor:
         self.model = model
         self.resample_kernel = {}
         self.is_half = is_half
-        if device is None:
-            device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
         self.mel_extractor = MelSpectrogram(
             is_half, N_MELS, 16000, 1024, 160, None, 30, 8000
@@ -502,9 +467,6 @@ class RMVPE0Predictor:
 
         Args:
             mel (torch.Tensor): Mel-spectrogram features.
-
-        Returns:
-            torch.Tensor: Hidden representation.
         """
         with torch.no_grad():
             n_frames = mel.shape[-1]
@@ -521,9 +483,6 @@ class RMVPE0Predictor:
         Args:
             hidden (np.ndarray): Hidden representation.
             thred (float, optional): Threshold for salience. Defaults to 0.03.
-
-        Returns:
-            np.ndarray: F0 values.
         """
         cents_pred = self.to_local_average_cents(hidden, thred=thred)
         f0 = 10 * (2 ** (cents_pred / 1200))
@@ -537,9 +496,6 @@ class RMVPE0Predictor:
         Args:
             audio (np.ndarray): Audio signal.
             thred (float, optional): Threshold for salience. Defaults to 0.03.
-
-        Returns:
-            np.ndarray: F0 values.
         """
         audio = torch.from_numpy(audio).float().to(self.device).unsqueeze(0)
         mel = self.mel_extractor(audio, center=True)
@@ -557,9 +513,6 @@ class RMVPE0Predictor:
         Args:
             salience (np.ndarray): Salience values.
             thred (float, optional): Threshold for salience. Defaults to 0.05.
-
-        Returns:
-            np.ndarray: Local average cents.
         """
         center = np.argmax(salience, axis=1)
         salience = np.pad(salience, ((0, 0), (4, 4)))
@@ -590,9 +543,6 @@ class BiGRU(nn.Module):
         input_features (int): Number of input features.
         hidden_features (int): Number of hidden features.
         num_layers (int): Number of GRU layers.
-
-    Returns:
-        torch.Tensor: Output tensor after BiGRU operations.
     """
 
     def __init__(self, input_features, hidden_features, num_layers):

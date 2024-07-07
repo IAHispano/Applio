@@ -52,9 +52,6 @@ class AudioProcessor:
             target_audio: The target audio signal to adjust.
             target_rate: The sampling rate of the target audio.
             rate: The blending rate between the source and target RMS levels.
-
-        Returns:
-            The adjusted target audio signal with RMS level modified to match the source audio.
         """
         # Calculate RMS of both audio data
         rms1 = librosa.feature.rms(
@@ -107,9 +104,6 @@ class Autotune:
     def generate_interpolated_frequencies(self):
         """
         Generates a dictionary of interpolated frequencies between reference frequencies.
-
-        Returns:
-            A list of interpolated frequencies, including the original reference frequencies.
         """
         note_dict = []
         for i in range(len(self.ref_freqs) - 1):
@@ -128,9 +122,6 @@ class Autotune:
 
         Args:
             f0: The input F0 contour as a NumPy array.
-
-        Returns:
-            The autotuned F0 contour.
         """
         autotuned_f0 = np.zeros_like(f0)
         for i, freq in enumerate(f0):
@@ -200,9 +191,6 @@ class Pipeline:
             f0max: Maximum F0 value to consider.
             f0min: Minimum F0 value to consider.
             frame_period: Frame period in milliseconds for F0 analysis.
-
-        Returns:
-            The estimated F0 contour as a NumPy array.
         """
         audio = input_audio_path2wav[input_audio_path]
         f0, t = pyworld.harvest(
@@ -234,9 +222,6 @@ class Pipeline:
             p_len: Desired length of the F0 output.
             hop_length: Hop length for the Crepe model.
             model: Crepe model size to use ("full" or "tiny").
-
-        Returns:
-            The estimated F0 contour as a NumPy array.
         """
         x = x.astype(np.float32)
         x /= np.quantile(np.abs(x), 0.999)
@@ -286,9 +271,6 @@ class Pipeline:
             f0_max: Maximum F0 value to consider.
             p_len: Desired length of the F0 output.
             hop_length: Hop length for F0 estimation methods.
-
-        Returns:
-            The estimated F0 contour as a NumPy array, obtained by combining the specified methods.
         """
         methods_str = re.search("hybrid\[(.+)\]", methods_str)
         if methods_str:
@@ -359,9 +341,6 @@ class Pipeline:
             hop_length: Hop length for F0 estimation methods.
             f0_autotune: Whether to apply autotune to the F0 contour.
             inp_f0: Optional input F0 contour to use instead of estimating.
-
-        Returns:
-            A tuple containing the quantized F0 contour and the original F0 contour.
         """
         global input_audio_path2wav
         if f0_method == "pm":
@@ -490,9 +469,6 @@ class Pipeline:
             index_rate: Blending rate for speaker embedding retrieval.
             version: Model version ("v1" or "v2").
             protect: Protection level for preserving the original pitch.
-
-        Returns:
-            The voice-converted audio segment.
         """
         feats = torch.from_numpy(audio0)
         if self.is_half:
@@ -618,9 +594,6 @@ class Pipeline:
             hop_length: Hop length for F0 estimation methods.
             f0_autotune: Whether to apply autotune to the F0 contour.
             f0_file: Path to a file containing an F0 contour to use.
-
-        Returns:
-            The voice-converted audio signal.
         """
         if file_index != "" and os.path.exists(file_index) == True and index_rate != 0:
             try:

@@ -24,9 +24,6 @@ def get_padding(kernel_size, dilation=1):
     Args:
         kernel_size: The size of the kernel.
         dilation: The dilation of the convolution.
-
-    Returns:
-        The padding needed for the convolution.
     """
     return int((kernel_size * dilation - dilation) / 2)
 
@@ -36,10 +33,7 @@ def convert_pad_shape(pad_shape):
     Convert the pad shape to a list of integers.
 
     Args:
-        pad_shape: The pad shape.
-
-    Returns:
-        A list of integers representing the pad shape.
+        pad_shape: The pad shape..
     """
     l = pad_shape[::-1]
     pad_shape = [item for sublist in l for item in sublist]
@@ -55,9 +49,6 @@ def kl_divergence(m_p, logs_p, m_q, logs_q):
         logs_p: The log of the standard deviation of the first distribution.
         m_q: The mean of the second distribution.
         logs_q: The log of the standard deviation of the second distribution.
-
-    Returns:
-        The KL divergence between the two distributions.
     """
     kl = (logs_q - logs_p) - 0.5
     kl += (
@@ -74,9 +65,6 @@ def slice_segments(x, ids_str, segment_size=4):
         x: The tensor to slice.
         ids_str: The starting indices of the segments.
         segment_size: The size of each segment.
-
-    Returns:
-        A tensor containing the sliced segments.
     """
     ret = torch.zeros_like(x[:, :, :segment_size])
     for i in range(x.size(0)):
@@ -94,9 +82,6 @@ def slice_segments2(x, ids_str, segment_size=4):
         x: The tensor to slice.
         ids_str: The starting indices of the segments.
         segment_size: The size of each segment.
-
-    Returns:
-        A tensor containing the sliced segments.
     """
     ret = torch.zeros_like(x[:, :segment_size])
     for i in range(x.size(0)):
@@ -114,9 +99,6 @@ def rand_slice_segments(x, x_lengths=None, segment_size=4):
         x: The tensor to slice.
         x_lengths: The lengths of the sequences.
         segment_size: The size of each segment.
-
-    Returns:
-        A tensor containing the sliced segments and the starting indices of the segments.
     """
     b, d, t = x.size()
     if x_lengths is None:
@@ -136,9 +118,6 @@ def get_timing_signal_1d(length, channels, min_timescale=1.0, max_timescale=1.0e
         channels: The number of channels of the signal.
         min_timescale: The minimum timescale.
         max_timescale: The maximum timescale.
-
-    Returns:
-        A 1D timing signal.
     """
     position = torch.arange(length, dtype=torch.float)
     num_timescales = channels // 2
@@ -161,9 +140,6 @@ def subsequent_mask(length):
 
     Args:
         length: The length of the sequence.
-
-    Returns:
-        A subsequent mask.
     """
     mask = torch.tril(torch.ones(length, length)).unsqueeze(0).unsqueeze(0)
     return mask
@@ -178,9 +154,6 @@ def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
         input_a: The first input tensor.
         input_b: The second input tensor.
         n_channels: The number of channels.
-
-    Returns:
-        The result of the fused operation.
     """
     n_channels_int = n_channels[0]
     in_act = input_a + input_b
@@ -196,9 +169,6 @@ def convert_pad_shape(pad_shape: List[List[int]]) -> List[int]:
 
     Args:
         pad_shape: The pad shape.
-
-    Returns:
-        A list of integers representing the pad shape.
     """
     return torch.tensor(pad_shape).flip(0).reshape(-1).int().tolist()
 
@@ -210,9 +180,6 @@ def sequence_mask(length: torch.Tensor, max_length: Optional[int] = None):
     Args:
         length: The lengths of the sequences.
         max_length: The maximum length of the sequences.
-
-    Returns:
-        A sequence mask.
     """
     if max_length is None:
         max_length = length.max()
@@ -228,9 +195,6 @@ def clip_grad_value(parameters, clip_value, norm_type=2):
         parameters: The list of parameters to clip.
         clip_value: The maximum value of the gradients.
         norm_type: The type of norm to use for clipping.
-
-    Returns:
-        The total norm of the clipped gradients.
     """
     if isinstance(parameters, torch.Tensor):
         parameters = [parameters]

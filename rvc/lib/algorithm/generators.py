@@ -19,13 +19,6 @@ class Generator(torch.nn.Module):
         upsample_initial_channel (int): Number of channels in the initial upsampling layer.
         upsample_kernel_sizes (list): Kernel sizes of the upsampling layers.
         gin_channels (int, optional): Number of channels for the global conditioning input. Defaults to 0.
-
-    Inputs:
-        x (torch.Tensor): Input tensor with shape (batch_size, initial_channel, length).
-        g (torch.Tensor, optional): Global conditioning input with shape (batch_size, gin_channels, length). Defaults to None.
-
-    Outputs:
-        x (torch.Tensor): Output tensor with shape (batch_size, 1, length).
     """
 
     def __init__(
@@ -133,15 +126,6 @@ class SineGen(torch.nn.Module):
         noise_std (float, optional): Standard deviation of Gaussian noise. Defaults to 0.003.
         voiced_threshold (float, optional): F0 threshold for voiced/unvoiced classification. Defaults to 0.
         flag_for_pulse (bool, optional): Whether this SineGen is used inside PulseGen. Defaults to False.
-
-    Inputs:
-        f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
-        upp (int): Upsampling factor.
-
-    Outputs:
-        sine_waves (torch.Tensor): Sine wave tensor with shape (batch_size, length, dim).
-        uv (torch.Tensor): Voiced/unvoiced tensor with shape (batch_size, length, 1).
-        noise (torch.Tensor): Noise tensor with shape (batch_size, length, dim).
     """
 
     def __init__(
@@ -165,10 +149,7 @@ class SineGen(torch.nn.Module):
         """Converts F0 to voiced/unvoiced signal.
 
         Args:
-            f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
-
-        Returns:
-            uv (torch.Tensor): Voiced/unvoiced tensor with shape (batch_size, length, 1).
+            f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1)..
         """
         # generate uv signal
         uv = torch.ones_like(f0)
@@ -181,11 +162,6 @@ class SineGen(torch.nn.Module):
         Args:
             f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
             upp (int): Upsampling factor.
-
-        Returns:
-            sine_waves (torch.Tensor): Sine wave tensor with shape (batch_size, length, dim).
-            uv (torch.Tensor): Voiced/unvoiced tensor with shape (batch_size, length, 1).
-            noise (torch.Tensor): Noise tensor with shape (batch_size, length, dim).
         """
         with torch.no_grad():
             f0 = f0[:, None].transpose(1, 2)

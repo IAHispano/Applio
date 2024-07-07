@@ -9,188 +9,60 @@ from rvc.lib.algorithm.commons import get_padding, init_weights
 LRELU_SLOPE = 0.1
 
 
-class ResBlock1(torch.nn.Module):
-    """Residual block with three dilated convolutional layers.
+# Helper functions
+def create_conv1d_layer(channels, kernel_size, dilation):
+    return weight_norm(
+        torch.nn.Conv1d(
+            channels,
+            channels,
+            kernel_size,
+            1,
+            dilation=dilation,
+            padding=get_padding(kernel_size, dilation),
+        )
+    )
 
-    Args:
-        channels (int): Number of channels.
-        kernel_size (int, optional): Size of the convolutional kernel. Defaults to 3.
-        dilation (tuple, optional): Dilation rates of the convolutional layers. Defaults to (1, 3, 5).
 
-    """
+def apply_mask(tensor, mask):
+    return tensor * mask if mask is not None else tensor
 
-    def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5)):
-        super(ResBlock1, self).__init__()
+
+class ResBlockBase(torch.nn.Module):
+    def __init__(self, channels, kernel_size, dilations):
+        super(ResBlockBase, self).__init__()
         self.convs1 = torch.nn.ModuleList(
-            [
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=dilation[0],
-                        padding=get_padding(kernel_size, dilation[0]),
-                    )
-                ),
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=dilation[1],
-                        padding=get_padding(kernel_size, dilation[1]),
-                    )
-                ),
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=dilation[2],
-                        padding=get_padding(kernel_size, dilation[2]),
-                    )
-                ),
-            ]
+            [create_conv1d_layer(channels, kernel_size, d) for d in dilations]
         )
         self.convs1.apply(init_weights)
 
         self.convs2 = torch.nn.ModuleList(
-            [
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=1,
-                        padding=get_padding(kernel_size, 1),
-                    )
-                ),
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=1,
-                        padding=get_padding(kernel_size, 1),
-                    )
-                ),
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=1,
-                        padding=get_padding(kernel_size, 1),
-                    )
-                ),
-            ]
+            [create_conv1d_layer(channels, kernel_size, 1) for _ in dilations]
         )
         self.convs2.apply(init_weights)
 
     def forward(self, x, x_mask=None):
-        """Forward pass.
-
-        Args:
-            x (torch.Tensor): Input tensor of shape (batch_size, channels, time_steps).
-            x_mask (torch.Tensor, optional): Mask tensor of shape (batch_size, 1, time_steps).
-                Defaults to None.
-
-        Returns:
-            torch.Tensor: Output tensor of shape (batch_size, channels, time_steps).
-
-        """
         for c1, c2 in zip(self.convs1, self.convs2):
             xt = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
-            if x_mask is not None:
-                xt = xt * x_mask
-            xt = c1(xt)
-            xt = torch.nn.functional.leaky_relu(xt, LRELU_SLOPE)
-            if x_mask is not None:
-                xt = xt * x_mask
+            xt = apply_mask(xt, x_mask)
+            xt = torch.nn.functional.leaky_relu(c1(xt), LRELU_SLOPE)
+            xt = apply_mask(xt, x_mask)
             xt = c2(xt)
             x = xt + x
-        if x_mask is not None:
-            x = x * x_mask
-        return x
+        return apply_mask(x, x_mask)
 
     def remove_weight_norm(self):
-        """Remove weight normalization from the module."""
-        for l in self.convs1:
-            remove_weight_norm(l)
-        for l in self.convs2:
-            remove_weight_norm(l)
+        for conv in self.convs1 + self.convs2:
+            remove_weight_norm(conv)
 
 
-class ResBlock2(torch.nn.Module):
-    """Residual block with two dilated convolutional layers.
+class ResBlock1(ResBlockBase):
+    def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5)):
+        super(ResBlock1, self).__init__(channels, kernel_size, dilation)
 
-    Args:
-        channels (int): Number of channels.
-        kernel_size (int, optional): Size of the convolutional kernel. Defaults to 3.
-        dilation (tuple, optional): Dilation rates of the convolutional layers. Defaults to (1, 3).
 
-    """
-
+class ResBlock2(ResBlockBase):
     def __init__(self, channels, kernel_size=3, dilation=(1, 3)):
-        super(ResBlock2, self).__init__()
-        self.convs = torch.nn.ModuleList(
-            [
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=dilation[0],
-                        padding=get_padding(kernel_size, dilation[0]),
-                    )
-                ),
-                weight_norm(
-                    torch.nn.Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=dilation[1],
-                        padding=get_padding(kernel_size, dilation[1]),
-                    )
-                ),
-            ]
-        )
-        self.convs.apply(init_weights)
-
-    def forward(self, x, x_mask=None):
-        """Forward pass.
-
-        Args:
-            x (torch.Tensor): Input tensor of shape (batch_size, channels, time_steps).
-            x_mask (torch.Tensor, optional): Mask tensor of shape (batch_size, 1, time_steps).
-                Defaults to None.
-
-        Returns:
-            torch.Tensor: Output tensor of shape (batch_size, channels, time_steps).
-
-        """
-        for c in self.convs:
-            xt = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
-            if x_mask is not None:
-                xt = xt * x_mask
-            xt = c(xt)
-            x = xt + x
-        if x_mask is not None:
-            x = x * x_mask
-        return x
-
-    def remove_weight_norm(self):
-        """Remove weight normalization from the module."""
-        for l in self.convs:
-            remove_weight_norm(l)
+        super(ResBlock2, self).__init__(channels, kernel_size, dilation)
 
 
 class Log(torch.nn.Module):
@@ -207,11 +79,6 @@ class Log(torch.nn.Module):
             x (torch.Tensor): Input tensor.
             x_mask (torch.Tensor): Mask tensor.
             reverse (bool, optional): Whether to reverse the operation. Defaults to False.
-
-        Returns:
-            tuple:
-                - torch.Tensor: Output tensor.
-                - torch.Tensor: Log determinant tensor.
         """
         if not reverse:
             y = torch.log(torch.clamp_min(x, 1e-5)) * x_mask
@@ -234,11 +101,6 @@ class Flip(torch.nn.Module):
         Args:
             x (torch.Tensor): Input tensor.
             reverse (bool, optional): Whether to reverse the operation. Defaults to False.
-
-        Returns:
-            tuple:
-                - torch.Tensor: Output tensor.
-                - torch.Tensor: Log determinant tensor.
         """
         x = torch.flip(x, [1])
         if not reverse:
@@ -271,11 +133,6 @@ class ElementwiseAffine(torch.nn.Module):
             x (torch.Tensor): Input tensor.
             x_mask (torch.Tensor): Mask tensor.
             reverse (bool, optional): Whether to reverse the operation. Defaults to False.
-
-        Returns:
-            tuple:
-                - torch.Tensor: Output tensor.
-                - torch.Tensor: Log determinant tensor.
         """
         if not reverse:
             y = self.m + torch.exp(self.logs) * x
@@ -298,15 +155,6 @@ class ResidualCouplingBlock(torch.nn.Module):
         n_layers (int): Number of layers in the coupling layer.
         n_flows (int, optional): Number of coupling layers in the block. Defaults to 4.
         gin_channels (int, optional): Number of channels for the global conditioning input. Defaults to 0.
-
-    Inputs:
-        x (torch.Tensor): Input tensor with shape (batch_size, channels, length).
-        x_mask (torch.Tensor): Mask tensor with shape (batch_size, 1, length).
-        g (torch.Tensor, optional): Global conditioning input with shape (batch_size, gin_channels, 1). Defaults to None.
-        reverse (bool, optional): Whether to reverse the flow. Defaults to False.
-
-    Outputs:
-        x (torch.Tensor): Output tensor with shape (batch_size, channels, length).
     """
 
     def __init__(
@@ -388,7 +236,6 @@ class ResidualCouplingLayer(torch.nn.Module):
         p_dropout (float, optional): Dropout probability. Defaults to 0.
         gin_channels (int, optional): Number of conditioning channels. Defaults to 0.
         mean_only (bool, optional): Whether to use mean-only coupling. Defaults to False.
-
     """
 
     def __init__(
@@ -436,11 +283,6 @@ class ResidualCouplingLayer(torch.nn.Module):
             g (torch.Tensor, optional): Conditioning tensor of shape (batch_size, gin_channels, time_steps).
                 Defaults to None.
             reverse (bool, optional): Whether to reverse the operation. Defaults to False.
-
-        Returns:
-            tuple:
-                - torch.Tensor: Output tensor of shape (batch_size, channels, time_steps).
-                - torch.Tensor: Log determinant tensor.
         """
         x0, x1 = torch.split(x, [self.half_channels] * 2, 1)
         h = self.pre(x0) * x_mask

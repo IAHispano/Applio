@@ -18,14 +18,6 @@ class MultiHeadAttention(torch.nn.Module):
         block_length (int, optional): Block length for local attention. Defaults to None.
         proximal_bias (bool, optional): Whether to use proximal bias in self-attention. Defaults to False.
         proximal_init (bool, optional): Whether to initialize the key projection weights the same as query projection weights. Defaults to False.
-
-    Inputs:
-        x (torch.Tensor): Query tensor of shape (batch_size, channels, time_steps).
-        c (torch.Tensor): Key and value tensor of shape (batch_size, channels, time_steps).
-        attn_mask (torch.Tensor, optional): Attention mask tensor of shape (batch_size, time_steps, time_steps). Defaults to None.
-
-    Returns:
-        torch.Tensor: Attention output tensor of shape (batch_size, out_channels, time_steps).
     """
 
     def __init__(
@@ -222,9 +214,7 @@ class MultiHeadAttention(torch.nn.Module):
     def _attention_bias_proximal(self, length):
         """Bias for self-attention to encourage attention to close positions.
         Args:
-          length: an integer scalar.
-        Returns:
-          a Tensor with shape [1, 1, length, length]
+            length: an integer scalar.
         """
         r = torch.arange(length, dtype=torch.float32)
         diff = torch.unsqueeze(r, 0) - torch.unsqueeze(r, 1)
@@ -243,13 +233,6 @@ class FFN(torch.nn.Module):
         p_dropout (float, optional): Dropout probability. Defaults to 0.0.
         activation (str, optional): Activation function to use. Defaults to None.
         causal (bool, optional): Whether to use causal padding in the convolution layers. Defaults to False.
-
-    Inputs:
-        x (torch.Tensor): Input tensor of shape (batch_size, in_channels, time_steps).
-        x_mask (torch.Tensor): Mask tensor of shape (batch_size, time_steps), indicating valid time steps.
-
-    Returns:
-        torch.Tensor: Output tensor of shape (batch_size, out_channels, time_steps).
     """
 
     def __init__(

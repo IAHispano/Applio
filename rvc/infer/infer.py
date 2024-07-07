@@ -10,12 +10,7 @@ from rvc.infer.pipeline import Pipeline as VC
 from audio_upscaler import upscale
 from rvc.lib.utils import load_audio, load_embedding
 from rvc.lib.tools.split_audio import process_audio, merge_audio
-from rvc.lib.algorithm.synthesizers import (
-    SynthesizerV1_F0,
-    SynthesizerV1_NoF0,
-    SynthesizerV2_F0,
-    SynthesizerV2_NoF0,
-)
+from rvc.lib.algorithm.synthesizers import Synthesizer
 from rvc.configs.config import Config
 
 import logging
@@ -43,6 +38,7 @@ class VoiceConverter:
         self.cpt = None  # Checkpoint for loading model weights
         self.version = None  # Model version
         self.n_spk = None  # Number of speakers in the model
+        self.use_f0 = None  # Whether the model uses F0
 
     def load_hubert(self, embedder_model, embedder_model_custom):
         """
@@ -69,9 +65,6 @@ class VoiceConverter:
         Args:
             input_audio_path: Path to the input audio file.
             reduction_strength: Strength of noise reduction (0.0 to 1.0).
-
-        Returns:
-            The audio data with noise reduced, or None if an error occurs.
         """
         try:
             rate, data = wavfile.read(input_audio_path)
@@ -92,9 +85,6 @@ class VoiceConverter:
             input_path: Path to the input audio file.
             output_path: Path for the output audio file.
             output_format: Desired output format (e.g., "MP3", "WAV").
-
-        Returns:
-            The path to the converted audio file, or None if conversion fails.
         """
         try:
             if output_format != "WAV":
@@ -161,10 +151,6 @@ class VoiceConverter:
             filter_radius: Radius for median filtering of the F0 contour.
             embedder_model: Path to the embedder model.
             embedder_model_custom: Path to a custom embedder model.
-
-        Returns:
-            A tuple containing the target sampling rate and the converted audio data,
-            or an error message if conversion fails.
         """
         f0_up_key = int(f0_up_key)
         try:
@@ -176,7 +162,6 @@ class VoiceConverter:
 
             if not self.hubert_model:
                 self.load_hubert(embedder_model, embedder_model_custom)
-            if_f0 = self.cpt.get("f0", 1)
 
             file_index = (
                 file_index.strip()
@@ -246,7 +231,7 @@ class VoiceConverter:
                     f0_method,
                     file_index,
                     index_rate,
-                    if_f0,
+                    self.use_f0,
                     filter_radius,
                     self.tgt_sr,
                     resample_sr,
@@ -309,18 +294,15 @@ class VoiceConverter:
         if self.cpt is not None:
             self.tgt_sr = self.cpt["config"][-1]
             self.cpt["config"][-3] = self.cpt["weight"]["emb_g.weight"].shape[0]
-            if_f0 = self.cpt.get("f0", 1)
+            self.use_f0 = self.cpt.get("f0", 1)
 
             self.version = self.cpt.get("version", "v1")
-            synthesizer_class = {
-                ("v1", 0): SynthesizerV1_NoF0,
-                ("v1", 1): SynthesizerV1_F0,
-                ("v2", 0): SynthesizerV2_NoF0,
-                ("v2", 1): SynthesizerV2_F0,
-            }.get((self.version, if_f0), SynthesizerV1_NoF0)
-
-            self.net_g = synthesizer_class(
-                *self.cpt["config"], is_half=self.config.is_half
+            self.text_enc_hidden_dim = 768 if self.version == "v2" else 256
+            self.net_g = Synthesizer(
+                *self.cpt["config"],
+                use_f0=self.use_f0,
+                text_enc_hidden_dim=self.text_enc_hidden_dim,
+                is_half=self.config.is_half,
             )
             del self.net_g.enc_q
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)
