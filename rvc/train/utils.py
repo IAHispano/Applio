@@ -283,6 +283,9 @@ def get_hparams():
         "-v", "--version", type=str, required=True, help="model version"
     )
     parser.add_argument(
+        "-vc", "--voc_type", type=str, default="hifigan", required=True, help="vocoder type"
+    )
+    parser.add_argument(
         "-f0",
         "--if_f0",
         type=int,
@@ -340,6 +343,7 @@ def get_hparams():
     hparams.pretrainG = args.pretrainG
     hparams.pretrainD = args.pretrainD
     hparams.version = args.version
+    hparams.voc_type = args.voc_type
     hparams.gpus = args.gpus
     hparams.batch_size = args.batch_size
     hparams.sample_rate = args.sample_rate

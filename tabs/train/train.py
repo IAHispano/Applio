@@ -350,7 +350,12 @@ def train_tab():
                     value="v2",
                     interactive=True,
                 )
-
+                voc_type = gr.Radio(
+                    label=i18n("Vocoder"),
+                    choices=["hifigan", "bigvgan"],
+                    value="hifigan",
+                    interactive=True,
+                )
                 cpu_cores_preprocess = gr.Slider(
                     1,
                     64,
@@ -666,6 +671,7 @@ def train_tab():
                 inputs=[
                     model_name,
                     rvc_version,
+                    voc_type,
                     save_every_epoch,
                     save_only_latest,
                     save_every_weights,

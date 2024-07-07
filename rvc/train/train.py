@@ -274,6 +274,7 @@ def run(
         use_f0=hps.if_f0 == 1,
         is_half=hps.train.fp16_run,
         sr=hps.sample_rate,
+        voc_type=hps.voc_type,
     )
     if torch.cuda.is_available():
         net_g = net_g.cuda(rank)

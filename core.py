@@ -322,6 +322,7 @@ def run_extract_script(
 def run_train_script(
     model_name,
     rvc_version,
+    voc_type,
     save_every_epoch,
     save_only_latest,
     save_every_weights,
@@ -383,6 +384,8 @@ def run_train_script(
                 os.path.join(logs_path, model_name),
                 "-v",
                 rvc_version,
+                "-vc",
+                voc_type,
                 "-l",
                 latest,
                 "-c",
@@ -1038,6 +1041,13 @@ def parse_arguments():
         default="v2",
     )
     train_parser.add_argument(
+        "--voc_type",
+        type=str,
+        help="Type of the vocoder",
+        choices=["hifigan", "bigvgan"],
+        default="hifigan",
+    )
+    train_parser.add_argument(
         "--save_every_epoch",
         type=str,
         help="Save every epoch",
@@ -1407,6 +1417,7 @@ def main():
             run_train_script(
                 str(args.model_name),
                 str(args.rvc_version),
+                str(args.voc_type),
                 str(args.save_every_epoch),
                 str(args.save_only_latest),
                 str(args.save_every_weights),
