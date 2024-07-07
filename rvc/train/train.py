@@ -244,7 +244,7 @@ def run(
 
     train_sampler = DistributedBucketSampler(
         train_dataset,
-        hps.train.batch_size * n_gpus,
+        hps.batch_size * n_gpus,
         [100, 200, 300, 400, 500, 600, 700, 800, 900],
         num_replicas=n_gpus,
         rank=rank,
@@ -355,7 +355,7 @@ def run(
     scaler = GradScaler(enabled=hps.train.fp16_run)
 
     cache = []
-    for epoch in range(epoch_str, hps.train.epochs + 1):
+    for epoch in range(epoch_str, hps.total_epoch + 1):
         if rank == 0:
             train_and_evaluate(
                 rank,

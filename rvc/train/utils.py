@@ -341,7 +341,7 @@ def get_hparams():
     hparams.pretrainD = args.pretrainD
     hparams.version = args.version
     hparams.gpus = args.gpus
-    hparams.train.batch_size = args.batch_size
+    hparams.batch_size = args.batch_size
     hparams.sample_rate = args.sample_rate
     hparams.if_f0 = args.if_f0
     hparams.if_latest = args.if_latest
