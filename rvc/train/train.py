@@ -267,7 +267,6 @@ def run(
     )
 
     # Initialize models and optimizers
-    print("text_enc_hidden_dim: ", hps.model.text_enc_hidden_dim)
     net_g = Synthesizer(
         hps.data.filter_length // 2 + 1,
         hps.train.segment_size // hps.data.hop_length,
