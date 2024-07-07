@@ -38,7 +38,7 @@ tensorboard
 gradio==4.36.0
 
 # Miscellaneous
-certifi==2023.07.22; sys_platform == 'darwin'
+certifi==2024.7.4; sys_platform == 'darwin'
 antlr4-python3-runtime==4.8; sys_platform == 'darwin'
 ffmpy==0.3.1
 tensorboardX
