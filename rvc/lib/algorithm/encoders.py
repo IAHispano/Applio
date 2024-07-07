@@ -20,13 +20,6 @@ class Encoder(torch.nn.Module):
         kernel_size (int, optional): Kernel size of the convolution layers in the feed-forward network. Defaults to 1.
         p_dropout (float, optional): Dropout probability. Defaults to 0.0.
         window_size (int, optional): Window size for relative positional encoding. Defaults to 10.
-
-    Inputs:
-        x (torch.Tensor): Input tensor of shape (batch_size, hidden_channels, time_steps).
-        x_mask (torch.Tensor): Mask tensor of shape (batch_size, time_steps), indicating valid time steps.
-
-    Returns:
-        torch.Tensor: Encoded tensor of shape (batch_size, hidden_channels, time_steps).
     """
 
     def __init__(
@@ -91,8 +84,8 @@ class Encoder(torch.nn.Module):
         return x
 
 
-class TextEncoderV1(torch.nn.Module):
-    """Text Encoder with 256 embedding dimension.
+class TextEncoder(torch.nn.Module):
+    """Text Encoder with configurable embedding dimension.
 
     Args:
         out_channels (int): Output channels of the encoder.
@@ -102,17 +95,8 @@ class TextEncoderV1(torch.nn.Module):
         n_layers (int): Number of encoder layers.
         kernel_size (int): Kernel size of the convolutional layers.
         p_dropout (float): Dropout probability.
+        embedding_dim (int): Embedding dimension for phone embeddings (v1 = 256, v2 = 768).
         f0 (bool, optional): Whether to use F0 embedding. Defaults to True.
-
-    Inputs:
-        phone (torch.Tensor): Phoneme tensor with shape (batch_size, length, 256).
-        pitch (torch.Tensor, optional): Pitch tensor with shape (batch_size, length). Defaults to None.
-        lengths (torch.Tensor): Lengths of the input sequences.
-
-    Outputs:
-        m (torch.Tensor): Mean tensor with shape (batch_size, out_channels, length).
-        logs (torch.Tensor): Log variance tensor with shape (batch_size, out_channels, length).
-        x_mask (torch.Tensor): Mask tensor with shape (batch_size, 1, length).
     """
 
     def __init__(
@@ -124,9 +108,10 @@ class TextEncoderV1(torch.nn.Module):
         n_layers,
         kernel_size,
         p_dropout,
+        embedding_dim,
         f0=True,
     ):
-        super(TextEncoderV1, self).__init__()
+        super(TextEncoder, self).__init__()
         self.out_channels = out_channels
         self.hidden_channels = hidden_channels
         self.filter_channels = filter_channels
@@ -134,10 +119,10 @@ class TextEncoderV1(torch.nn.Module):
         self.n_layers = n_layers
         self.kernel_size = kernel_size
         self.p_dropout = float(p_dropout)
-        self.emb_phone = torch.nn.Linear(256, hidden_channels)
+        self.emb_phone = torch.nn.Linear(embedding_dim, hidden_channels)
         self.lrelu = torch.nn.LeakyReLU(0.1, inplace=True)
-        if f0 == True:
-            self.emb_pitch = torch.nn.Embedding(256, hidden_channels)  # pitch 256
+        if f0:
+            self.emb_pitch = torch.nn.Embedding(256, hidden_channels)
         self.encoder = Encoder(
             hidden_channels,
             filter_channels,
@@ -166,79 +151,6 @@ class TextEncoderV1(torch.nn.Module):
         return m, logs, x_mask
 
 
-class TextEncoderV2(torch.nn.Module):
-    """Text Encoder with 768 embedding dimension.
-
-    Args:
-        out_channels (int): Output channels of the encoder.
-        hidden_channels (int): Hidden channels of the encoder.
-        filter_channels (int): Filter channels of the encoder.
-        n_heads (int): Number of attention heads.
-        n_layers (int): Number of encoder layers.
-        kernel_size (int): Kernel size of the convolutional layers.
-        p_dropout (float): Dropout probability.
-        f0 (bool, optional): Whether to use F0 embedding. Defaults to True.
-
-    Inputs:
-        phone (torch.Tensor): Phoneme tensor with shape (batch_size, length, 768).
-        pitch (torch.Tensor, optional): Pitch tensor with shape (batch_size, length). Defaults to None.
-        lengths (torch.Tensor): Lengths of the input sequences.
-
-    Outputs:
-        m (torch.Tensor): Mean tensor with shape (batch_size, out_channels, length).
-        logs (torch.Tensor): Log variance tensor with shape (batch_size, out_channels, length).
-        x_mask (torch.Tensor): Mask tensor with shape (batch_size, 1, length).
-    """
-
-    def __init__(
-        self,
-        out_channels,
-        hidden_channels,
-        filter_channels,
-        n_heads,
-        n_layers,
-        kernel_size,
-        p_dropout,
-        f0=True,
-    ):
-        super(TextEncoderV2, self).__init__()
-        self.out_channels = out_channels
-        self.hidden_channels = hidden_channels
-        self.filter_channels = filter_channels
-        self.n_heads = n_heads
-        self.n_layers = n_layers
-        self.kernel_size = kernel_size
-        self.p_dropout = float(p_dropout)
-        self.emb_phone = torch.nn.Linear(768, hidden_channels)
-        self.lrelu = torch.nn.LeakyReLU(0.1, inplace=True)
-        if f0 == True:
-            self.emb_pitch = torch.nn.Embedding(256, hidden_channels)  # pitch 256
-        self.encoder = Encoder(
-            hidden_channels,
-            filter_channels,
-            n_heads,
-            n_layers,
-            kernel_size,
-            float(p_dropout),
-        )
-        self.proj = torch.nn.Conv1d(hidden_channels, out_channels * 2, 1)
-
-    def forward(self, phone: torch.Tensor, pitch: torch.Tensor, lengths: torch.Tensor):
-        if pitch is None:
-            x = self.emb_phone(phone)
-        else:
-            x = self.emb_phone(phone) + self.emb_pitch(pitch)
-        x = x * math.sqrt(self.hidden_channels)  # [b, t, h]
-        x = self.lrelu(x)
-        x = torch.transpose(x, 1, -1)  # [b, h, t]
-        x_mask = torch.unsqueeze(sequence_mask(lengths, x.size(2)), 1).to(x.dtype)
-        x = self.encoder(x * x_mask, x_mask)
-        stats = self.proj(x) * x_mask
-
-        m, logs = torch.split(stats, self.out_channels, dim=1)
-        return m, logs, x_mask
-
-
 class PosteriorEncoder(torch.nn.Module):
     """Posterior Encoder for inferring latent representation.
 
@@ -250,17 +162,6 @@ class PosteriorEncoder(torch.nn.Module):
         dilation_rate (int): Dilation rate of the convolutional layers.
         n_layers (int): Number of layers in the encoder.
         gin_channels (int, optional): Number of channels for the global conditioning input. Defaults to 0.
-
-    Inputs:
-        x (torch.Tensor): Input tensor with shape (batch_size, in_channels, length).
-        x_lengths (torch.Tensor): Lengths of the input sequences.
-        g (torch.Tensor, optional): Global conditioning input with shape (batch_size, gin_channels, 1). Defaults to None.
-
-    Outputs:
-        z (torch.Tensor): Latent representation with shape (batch_size, out_channels, length).
-        m (torch.Tensor): Mean tensor with shape (batch_size, out_channels, length).
-        logs (torch.Tensor): Log variance tensor with shape (batch_size, out_channels, length).
-        x_mask (torch.Tensor): Mask tensor with shape (batch_size, 1, length).
     """
 
     def __init__(

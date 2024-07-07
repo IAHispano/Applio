@@ -12,7 +12,6 @@ class WaveNet(torch.nn.Module):
         n_layers (int): Number of convolutional layers.
         gin_channels (int, optional): Number of conditioning channels. Defaults to 0.
         p_dropout (float, optional): Dropout probability. Defaults to 0.
-
     """
 
     def __init__(
@@ -80,9 +79,6 @@ class WaveNet(torch.nn.Module):
             x_mask (torch.Tensor): Mask tensor of shape (batch_size, 1, time_steps).
             g (torch.Tensor, optional): Conditioning tensor of shape (batch_size, gin_channels, time_steps).
                 Defaults to None.
-
-        Returns:
-            torch.Tensor: Output tensor of shape (batch_size, hidden_channels, time_steps).
 
         """
         output = torch.zeros_like(x)

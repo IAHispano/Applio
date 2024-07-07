@@ -19,9 +19,6 @@ def replace_keys_in_dict(d, old_key_part, new_key_part):
         d (dict or OrderedDict): The dictionary to update.
         old_key_part (str): The part of the key to replace.
         new_key_part (str): The new part of the key.
-
-    Returns:
-        dict or OrderedDict: The updated dictionary.
     """
     if isinstance(d, OrderedDict):
         updated_dict = OrderedDict()
@@ -47,9 +44,6 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
         model (torch.nn.Module): The model to load the checkpoint into.
         optimizer (torch.optim.Optimizer, optional): The optimizer to load the state from. Defaults to None.
         load_opt (int, optional): Whether to load the optimizer state. Defaults to 1.
-
-    Returns:
-        tuple: A tuple containing the model, optimizer, learning rate, and iteration.
     """
     assert os.path.isfile(checkpoint_path)
     checkpoint_old_dict = torch.load(checkpoint_path, map_location="cpu")
@@ -188,9 +182,6 @@ def latest_checkpoint_path(dir_path, regex="G_*.pth"):
     Args:
         dir_path (str): The directory to search for checkpoints.
         regex (str, optional): The regular expression to match checkpoint files. Defaults to "G_*.pth".
-
-    Returns:
-        str: The path to the latest checkpoint file.
     """
     f_list = glob.glob(os.path.join(dir_path, regex))
     f_list.sort(key=lambda f: int("".join(filter(str.isdigit, f))))
@@ -204,9 +195,6 @@ def plot_spectrogram_to_numpy(spectrogram):
 
     Args:
         spectrogram (numpy.ndarray): The spectrogram to plot.
-
-    Returns:
-        numpy.ndarray: The NumPy array representing the plot.
     """
     global MATPLOTLIB_FLAG
     if not MATPLOTLIB_FLAG:
@@ -235,9 +223,6 @@ def load_wav_to_torch(full_path):
 
     Args:
         full_path (str): The path to the WAV file.
-
-    Returns:
-        tuple: A tuple containing the audio tensor and the sampling rate.
     """
     sampling_rate, data = read(full_path)
     return torch.FloatTensor(data.astype(np.float32)), sampling_rate
@@ -250,9 +235,6 @@ def load_filepaths_and_text(filename, split="|"):
     Args:
         filename (str): The path to the file.
         split (str, optional): The delimiter used to split the lines. Defaults to "|".
-
-    Returns:
-        list: A list of tuples containing filepaths and text.
     """
     with open(filename, encoding="utf-8") as f:
         filepaths_and_text = [line.strip().split(split) for line in f]
@@ -262,9 +244,6 @@ def load_filepaths_and_text(filename, split="|"):
 def get_hparams():
     """
     Parses command line arguments and loads hyperparameters from a configuration file.
-
-    Returns:
-        HParams: An object containing the hyperparameters.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -362,7 +341,7 @@ def get_hparams():
     hparams.pretrainD = args.pretrainD
     hparams.version = args.version
     hparams.gpus = args.gpus
-    hparams.train.batch_size = args.batch_size
+    hparams.batch_size = args.batch_size
     hparams.sample_rate = args.sample_rate
     hparams.if_f0 = args.if_f0
     hparams.if_latest = args.if_latest

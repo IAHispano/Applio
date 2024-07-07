@@ -22,11 +22,10 @@ class MultiPeriodDiscriminator(torch.nn.Module):
     def __init__(self, use_spectral_norm=False):
         super(MultiPeriodDiscriminator, self).__init__()
         periods = [2, 3, 5, 7, 11, 17]
-        discs = [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
-        discs = discs + [
-            DiscriminatorP(i, use_spectral_norm=use_spectral_norm) for i in periods
-        ]
-        self.discriminators = torch.nn.ModuleList(discs)
+        self.discriminators = torch.nn.ModuleList(
+            [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
+            + [DiscriminatorP(p, use_spectral_norm=use_spectral_norm) for p in periods]
+        )
 
     def forward(self, y, y_hat):
         """
@@ -35,17 +34,9 @@ class MultiPeriodDiscriminator(torch.nn.Module):
         Args:
             y (torch.Tensor): Real audio signal.
             y_hat (torch.Tensor): Fake audio signal.
-
-        Returns:
-            tuple: A tuple containing the outputs of the discriminator for
-                the real and fake signals, and the feature maps for each
-                discriminator.
         """
-        y_d_rs = []
-        y_d_gs = []
-        fmap_rs = []
-        fmap_gs = []
-        for i, d in enumerate(self.discriminators):
+        y_d_rs, y_d_gs, fmap_rs, fmap_gs = [], [], [], []
+        for d in self.discriminators:
             y_d_r, fmap_r = d(y)
             y_d_g, fmap_g = d(y_hat)
             y_d_rs.append(y_d_r)
@@ -73,12 +64,10 @@ class MultiPeriodDiscriminatorV2(torch.nn.Module):
     def __init__(self, use_spectral_norm=False):
         super(MultiPeriodDiscriminatorV2, self).__init__()
         periods = [2, 3, 5, 7, 11, 17, 23, 37]
-
-        discs = [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
-        discs = discs + [
-            DiscriminatorP(i, use_spectral_norm=use_spectral_norm) for i in periods
-        ]
-        self.discriminators = torch.nn.ModuleList(discs)
+        self.discriminators = torch.nn.ModuleList(
+            [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
+            + [DiscriminatorP(p, use_spectral_norm=use_spectral_norm) for p in periods]
+        )
 
     def forward(self, y, y_hat):
         """
@@ -87,17 +76,9 @@ class MultiPeriodDiscriminatorV2(torch.nn.Module):
         Args:
             y (torch.Tensor): Real audio signal.
             y_hat (torch.Tensor): Fake audio signal.
-
-        Returns:
-            tuple: A tuple containing the outputs of the discriminator for
-                the real and fake signals, and the feature maps for each
-                discriminator.
         """
-        y_d_rs = []
-        y_d_gs = []
-        fmap_rs = []
-        fmap_gs = []
-        for i, d in enumerate(self.discriminators):
+        y_d_rs, y_d_gs, fmap_rs, fmap_gs = [], [], [], []
+        for d in self.discriminators:
             y_d_r, fmap_r = d(y)
             y_d_g, fmap_g = d(y_hat)
             y_d_rs.append(y_d_r)
@@ -115,15 +96,11 @@ class DiscriminatorS(torch.nn.Module):
     This class implements a discriminator for the short-term component
     of the audio signal. The discriminator is composed of a series of
     convolutional layers that are applied to the input signal.
-
-    Args:
-        use_spectral_norm (bool): Whether to use spectral normalization.
-            Defaults to False.
     """
 
     def __init__(self, use_spectral_norm=False):
         super(DiscriminatorS, self).__init__()
-        norm_f = weight_norm if use_spectral_norm == False else spectral_norm
+        norm_f = spectral_norm if use_spectral_norm else weight_norm
         self.convs = torch.nn.ModuleList(
             [
                 norm_f(torch.nn.Conv1d(1, 16, 15, 1, padding=7)),
@@ -142,21 +119,14 @@ class DiscriminatorS(torch.nn.Module):
 
         Args:
             x (torch.Tensor): Input audio signal.
-
-        Returns:
-            tuple: A tuple containing the output of the discriminator and
-                the feature maps for each convolutional layer.
         """
         fmap = []
-
-        for l in self.convs:
-            x = l(x)
-            x = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
+        for conv in self.convs:
+            x = torch.nn.functional.leaky_relu(conv(x), LRELU_SLOPE)
             fmap.append(x)
         x = self.conv_post(x)
         fmap.append(x)
         x = torch.flatten(x, 1, -1)
-
         return x, fmap
 
 
@@ -209,16 +179,10 @@ class DiscriminatorP(torch.nn.Module):
 
         Args:
             x (torch.Tensor): Input audio signal.
-
-        Returns:
-            tuple: A tuple containing the output of the discriminator and
-                the feature maps for each convolutional layer.
         """
         fmap = []
-
-        # 1D to 2D conversion
         b, c, t = x.shape
-        if t % self.period != 0:  # pad first
+        if t % self.period != 0:
             n_pad = self.period - (t % self.period)
             x = torch.nn.functional.pad(x, (0, n_pad), "reflect")
         x = x.view(b, c, -1, self.period)
@@ -230,5 +194,4 @@ class DiscriminatorP(torch.nn.Module):
         x = self.conv_post(x)
         fmap.append(x)
         x = torch.flatten(x, 1, -1)
-
         return x, fmap

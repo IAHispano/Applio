@@ -46,9 +46,6 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
 
         Args:
             sid (str): Speaker ID.
-
-        Returns:
-            torch.LongTensor: Speaker ID as a LongTensor.
         """
         try:
             sid = torch.LongTensor([int(sid)])
@@ -63,9 +60,6 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
 
         Args:
             audiopath_and_text (list): List containing audio path, text, pitch, pitchf, and speaker ID.
-
-        Returns:
-            tuple: Tuple containing the spectrogram, waveform, phoneme labels, pitch, pitchf, and speaker ID.
         """
         file = audiopath_and_text[0]
         phone = audiopath_and_text[1]
@@ -100,9 +94,6 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
             phone (str): Path to phoneme label file.
             pitch (str): Path to pitch label file.
             pitchf (str): Path to pitchf label file.
-
-        Returns:
-            tuple: Tuple containing the phoneme labels, pitch, and pitchf.
         """
         phone = np.load(phone)
         phone = np.repeat(phone, 2, axis=0)
@@ -123,9 +114,6 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
 
         Args:
             filename (str): Path to audio file.
-
-        Returns:
-            tuple: Tuple containing the spectrogram and waveform.
         """
         audio, sampling_rate = load_wav_to_torch(filename)
         if sampling_rate != self.sampling_rate:
@@ -169,18 +157,12 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
 
         Args:
             index (int): Index of the data sample.
-
-        Returns:
-            tuple: Tuple containing the spectrogram, waveform, phoneme labels, pitch, pitchf, and speaker ID.
         """
         return self.get_audio_text_pair(self.audiopaths_and_text[index])
 
     def __len__(self):
         """
         Returns the length of the dataset.
-
-        Returns:
-            int: Length of the dataset.
         """
         return len(self.audiopaths_and_text)
 
@@ -202,9 +184,6 @@ class TextAudioCollateMultiNSFsid:
 
         Args:
             batch (list): List of data samples.
-
-        Returns:
-            tuple: Tuple containing the collated data.
         """
         _, ids_sorted_decreasing = torch.sort(
             torch.LongTensor([x[0].size(1) for x in batch]), dim=0, descending=True
@@ -308,9 +287,6 @@ class TextAudioLoader(torch.utils.data.Dataset):
 
         Args:
             sid (str): Speaker ID.
-
-        Returns:
-            torch.LongTensor: Speaker ID as a LongTensor.
         """
         try:
             sid = torch.LongTensor([int(sid)])
@@ -325,9 +301,6 @@ class TextAudioLoader(torch.utils.data.Dataset):
 
         Args:
             audiopath_and_text (list): List containing audio path, text, and speaker ID.
-
-        Returns:
-            tuple: Tuple containing the spectrogram, waveform, phoneme labels, and speaker ID.
         """
         file = audiopath_and_text[0]
         phone = audiopath_and_text[1]
@@ -353,9 +326,6 @@ class TextAudioLoader(torch.utils.data.Dataset):
 
         Args:
             phone (str): Path to phoneme label file.
-
-        Returns:
-            torch.FloatTensor: Phoneme labels.
         """
         phone = np.load(phone)
         phone = np.repeat(phone, 2, axis=0)
@@ -370,9 +340,6 @@ class TextAudioLoader(torch.utils.data.Dataset):
 
         Args:
             filename (str): Path to audio file.
-
-        Returns:
-            tuple: Tuple containing the spectrogram and waveform.
         """
         audio, sampling_rate = load_wav_to_torch(filename)
         if sampling_rate != self.sampling_rate:
@@ -416,18 +383,12 @@ class TextAudioLoader(torch.utils.data.Dataset):
 
         Args:
             index (int): Index of the data sample.
-
-        Returns:
-            tuple: Tuple containing the spectrogram, waveform, phoneme labels, and speaker ID.
         """
         return self.get_audio_text_pair(self.audiopaths_and_text[index])
 
     def __len__(self):
         """
         Returns the length of the dataset.
-
-        Returns:
-            int: Length of the dataset.
         """
         return len(self.audiopaths_and_text)
 
@@ -449,9 +410,6 @@ class TextAudioCollate:
 
         Args:
             batch (list): List of data samples.
-
-        Returns:
-            tuple: Tuple containing the collated data.
         """
         _, ids_sorted_decreasing = torch.sort(
             torch.LongTensor([x[0].size(1) for x in batch]), dim=0, descending=True
@@ -536,9 +494,6 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
     def _create_buckets(self):
         """
         Creates buckets of data samples based on length.
-
-        Returns:
-            tuple: Tuple containing the buckets and number of samples per bucket.
         """
         buckets = [[] for _ in range(len(self.boundaries) - 1)]
         for i in range(len(self.lengths)):
@@ -565,9 +520,6 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
     def __iter__(self):
         """
         Iterates over batches of data samples.
-
-        Returns:
-            iterator: Iterator over batches.
         """
         g = torch.Generator()
         g.manual_seed(self.epoch)
@@ -622,9 +574,6 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
             x (int): Length to find the bucket for.
             lo (int, optional): Lower bound of the search range. Defaults to 0.
             hi (int, optional): Upper bound of the search range. Defaults to None.
-
-        Returns:
-            int: Bucket index for the given length.
         """
         if hi is None:
             hi = len(self.boundaries) - 1
@@ -643,8 +592,5 @@ class DistributedBucketSampler(torch.utils.data.distributed.DistributedSampler):
     def __len__(self):
         """
         Returns the length of the sampler.
-
-        Returns:
-            int: Length of the sampler.
         """
         return self.num_samples // self.batch_size
