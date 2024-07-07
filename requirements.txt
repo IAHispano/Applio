@@ -1,5 +1,5 @@
 # General dependencies
-pip==22.0; sys_platform == 'darwin'
+pip==23.3; sys_platform == 'darwin'
 wheel; sys_platform == 'darwin'
 PyYAML; sys_platform == 'darwin'
 ffmpeg-python>=0.2.0
