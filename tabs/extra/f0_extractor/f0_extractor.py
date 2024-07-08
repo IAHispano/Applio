@@ -49,7 +49,7 @@ def f0_extractor_tab():
                 info=i18n(
                     "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
                 ),
-                choices=["dio", "harvest", "pyin", "crepe", "fcpe", "rmvpe"],
+                choices=["crepe", "fcpe", "rmvpe"],
                 value="rmvpe",
             )
         button = gr.Button(i18n("Extract F0 Curve"), variant="primary")

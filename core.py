@@ -540,9 +540,6 @@ def parse_arguments():
         type=str,
         help="Value for f0_method",
         choices=[
-            "pm",
-            "harvest",
-            "dio",
             "crepe",
             "crepe-tiny",
             "rmvpe",
@@ -680,9 +677,6 @@ def parse_arguments():
         type=str,
         help="Value for f0_method",
         choices=[
-            "pm",
-            "harvest",
-            "dio",
             "crepe",
             "crepe-tiny",
             "rmvpe",
@@ -838,9 +832,6 @@ def parse_arguments():
         type=str,
         help="Value for f0_method",
         choices=[
-            "pm",
-            "harvest",
-            "dio",
             "crepe",
             "crepe-tiny",
             "rmvpe",
@@ -968,9 +959,6 @@ def parse_arguments():
         type=str,
         help="Value for f0_method",
         choices=[
-            "pm",
-            "harvest",
-            "dio",
             "crepe",
             "crepe-tiny",
             "rmvpe",

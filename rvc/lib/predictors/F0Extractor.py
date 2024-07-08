@@ -3,7 +3,6 @@ import pathlib
 import libf0
 import librosa
 import numpy as np
-import pyworld as pw
 import resampy
 import torch
 import torchcrepe
@@ -41,35 +40,7 @@ class F0Extractor:
     def extract_f0(self) -> np.ndarray:
         f0 = None
         method = self.method
-        if method == "dio":
-            _f0, t = pw.dio(
-                self.x.astype("double"),
-                self.sample_rate,
-                f0_floor=self.f0_min,
-                f0_ceil=self.f0_max,
-                channels_in_octave=2,
-                frame_period=(1000 * self.hop_size),
-            )
-            f0 = pw.stonemask(self.x.astype("double"), _f0, t, self.sample_rate)
-            f0 = f0.astype("float")
-        elif method == "harvest":
-            f0, _ = pw.harvest(
-                self.x.astype("double"),
-                self.sample_rate,
-                f0_floor=self.f0_min,
-                f0_ceil=self.f0_max,
-                frame_period=(1000 * self.hop_size),
-            )
-            f0 = f0.astype("float")
-        elif method == "pyin":
-            f0, _, _ = librosa.pyin(
-                y=self.wav16k,
-                fmin=self.f0_min,
-                fmax=self.f0_max,
-                sr=16000,
-                hop_length=80,
-            )
-        elif method == "crepe":
+        if method == "crepe":
             wav16k_torch = torch.FloatTensor(self.wav16k).unsqueeze(0).to(config.device)
             f0 = torchcrepe.predict(
                 wav16k_torch,

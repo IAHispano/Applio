@@ -4,9 +4,7 @@ import re
 import sys
 import torch
 import torch.nn.functional as F
-import parselmouth
 import torchcrepe
-import pyworld
 import faiss
 import librosa
 import numpy as np
@@ -179,30 +177,6 @@ class Pipeline:
         self.autotune = Autotune(self.ref_freqs)
         self.note_dict = self.autotune.note_dict
 
-    @staticmethod
-    @lru_cache
-    def get_f0_harvest(input_audio_path, fs, f0max, f0min, frame_period):
-        """
-        Estimates the fundamental frequency (F0) of a given audio file using the Harvest algorithm.
-
-        Args:
-            input_audio_path: Path to the input audio file.
-            fs: Sampling rate of the audio file.
-            f0max: Maximum F0 value to consider.
-            f0min: Minimum F0 value to consider.
-            frame_period: Frame period in milliseconds for F0 analysis.
-        """
-        audio = input_audio_path2wav[input_audio_path]
-        f0, t = pyworld.harvest(
-            audio,
-            fs=fs,
-            f0_ceil=f0max,
-            f0_floor=f0min,
-            frame_period=frame_period,
-        )
-        f0 = pyworld.stonemask(audio, f0, t, fs)
-        return f0
-
     def get_f0_crepe(
         self,
         x,
@@ -336,47 +310,14 @@ class Pipeline:
             x: The input audio signal as a NumPy array.
             p_len: Desired length of the F0 output.
             f0_up_key: Key to adjust the pitch of the F0 contour.
-            f0_method: Method to use for F0 estimation (e.g., "pm", "harvest", "crepe").
+            f0_method: Method to use for F0 estimation (e.g., "crepe").
             filter_radius: Radius for median filtering the F0 contour.
             hop_length: Hop length for F0 estimation methods.
             f0_autotune: Whether to apply autotune to the F0 contour.
             inp_f0: Optional input F0 contour to use instead of estimating.
         """
         global input_audio_path2wav
-        if f0_method == "pm":
-            f0 = (
-                parselmouth.Sound(x, self.sample_rate)
-                .to_pitch_ac(
-                    time_step=self.time_step / 1000,
-                    voicing_threshold=0.6,
-                    pitch_floor=self.f0_min,
-                    pitch_ceiling=self.f0_max,
-                )
-                .selected_array["frequency"]
-            )
-            pad_size = (p_len - len(f0) + 1) // 2
-            if pad_size > 0 or p_len - len(f0) - pad_size > 0:
-                f0 = np.pad(
-                    f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
-                )
-        elif f0_method == "harvest":
-            input_audio_path2wav[input_audio_path] = x.astype(np.double)
-            f0 = self.get_f0_harvest(
-                input_audio_path, self.sample_rate, self.f0_max, self.f0_min, 10
-            )
-            if int(filter_radius) > 2:
-                f0 = signal.medfilt(f0, 3)
-        elif f0_method == "dio":
-            f0, t = pyworld.dio(
-                x.astype(np.double),
-                fs=self.sample_rate,
-                f0_ceil=self.f0_max,
-                f0_floor=self.f0_min,
-                frame_period=10,
-            )
-            f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sample_rate)
-            f0 = signal.medfilt(f0, 3)
-        elif f0_method == "crepe":
+        if f0_method == "crepe":
             f0 = self.get_f0_crepe(x, self.f0_min, self.f0_max, p_len, int(hop_length))
         elif f0_method == "crepe-tiny":
             f0 = self.get_f0_crepe(
