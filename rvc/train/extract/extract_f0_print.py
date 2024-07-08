@@ -22,6 +22,7 @@ num_processes = int(sys.argv[4])
 
 class FeatureInput:
     """Class for F0 extraction."""
+
     def __init__(self, sample_rate=16000, hop_size=160):
         self.fs = sample_rate
         self.hop = hop_size
