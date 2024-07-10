@@ -8,8 +8,15 @@ config = Config()
 current_directory = os.getcwd()
 
 
-def generate_config(rvc_version, sampling_rate, model_path):
-    config_path = os.path.join("rvc", "configs", rvc_version, f"{sampling_rate}.json")
+def generate_config(rvc_version, voc_type, sampling_rate, model_path):
+    if rvc_version == "v2":
+        config_path = os.path.join(
+            "rvc", "configs", rvc_version, voc_type, f"{sampling_rate}.json"
+        )
+    elif rvc_version == "v1":
+        config_path = os.path.join(
+            "rvc", "configs", rvc_version, f"{sampling_rate}.json"
+        )
     config_save_path = os.path.join(model_path, "config.json")
     if not os.path.exists(config_save_path):
         shutil.copyfile(config_path, config_save_path)

@@ -136,9 +136,14 @@ def main():
         # Synchronize graphs by modifying config files
         logs_path = os.path.join(now_dir, "logs")
         model_config_file = os.path.join(now_dir, "logs", hps.name, "config.json")
-        rvc_config_file = os.path.join(
-            now_dir, "rvc", "configs", hps.version, str(hps.sample_rate) + ".json"
-        )
+        if hps.version == "v2":
+            rvc_config_file = os.path.join(
+                now_dir, "rvc", "configs", hps.version, hps.voc_type, str(hps.sample_rate) + ".json"
+            )
+        elif hps.version == "v1":
+            rvc_config_file = os.path.join(
+                now_dir, "rvc", "configs", hps.version, str(hps.sample_rate) + ".json"
+            )
         if not os.path.exists(rvc_config_file):
             rvc_config_file = os.path.join(
                 now_dir, "rvc", "configs", "v1", str(hps.sample_rate) + ".json"
