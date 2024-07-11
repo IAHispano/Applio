@@ -5,7 +5,7 @@ from typing import Optional
 from rvc.lib.algorithm.commons import sequence_mask
 from rvc.lib.algorithm.modules import WaveNet
 from rvc.lib.algorithm.normalization import LayerNorm
-from rvc.lib.algorithm.attentions import FFN, FFNV2, MultiHeadAttention
+from rvc.lib.algorithm.attentions import FFN, MultiHeadAttention
 
 
 class Encoder(torch.nn.Module):
@@ -59,26 +59,17 @@ class Encoder(torch.nn.Module):
                 )
             )
             self.norm_layers_1.append(LayerNorm(hidden_channels))
-            if vocoder_type == "hifigan":
-                self.ffn_layers.append(
-                    FFN(
-                        hidden_channels,
-                        hidden_channels,
-                        filter_channels,
-                        kernel_size,
-                        p_dropout=p_dropout,
-                    )
+            self.ffn_layers.append(
+                FFN(
+                    hidden_channels,
+                    hidden_channels,
+                    filter_channels,
+                    kernel_size,
+                    p_dropout=p_dropout,
+                    vocoder_type=vocoder_type,
                 )
-            else:
-                self.ffn_layers.append(
-                    FFNV2(
-                        hidden_channels,
-                        hidden_channels,
-                        filter_channels,
-                        kernel_size,
-                        p_dropout=p_dropout,
-                    )
-                )
+            )
+
             self.norm_layers_2.append(LayerNorm(hidden_channels))
 
     def forward(self, x, x_mask):
