@@ -106,16 +106,28 @@ def check_new_folders():
             print(f"New plugin {new_folder} found, installing it...")
 
             if os.path.exists(os.path.join(complete_path, "requirements.txt")):
-                subprocess.run(
-                    [
-                        os.path.join("env", "python.exe"),
-                        "-m",
-                        "pip",
-                        "install",
-                        "-r",
-                        os.path.join(complete_path, "requirements.txt"),
-                    ]
-                )
+                if os.name == "nt":
+                    subprocess.run(
+                        [
+                            os.path.join("env", "python.exe"),
+                            "-m",
+                            "pip",
+                            "install",
+                            "-r",
+                            os.path.join(complete_path, "requirements.txt"),
+                        ]
+                    )
+                else:
+                    subprocess.run(
+                        [
+                            "python",
+                            "-m",
+                            "pip",
+                            "install",
+                            "-r",
+                            os.path.join(complete_path, "requirements.txt"),
+                        ]
+                    )
             else:
                 print("No requirements.txt file found in the plugin folder.")
         print("Plugins checked and installed! Restarting applio to apply the changes.")
