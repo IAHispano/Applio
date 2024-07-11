@@ -297,7 +297,11 @@ class VoiceConverter:
             self.use_f0 = self.cpt.get("f0", 1)
 
             self.version = self.cpt.get("version", "v1")
-            self.text_enc_hidden_dim = 768 if self.version == "v2" else 256
+            self.text_enc_hidden_dim = 768 if not self.version == "v1" else 256
+            if self.version == "v3":
+                self.voc_type = "bigvgan"
+            else:
+                self.voc_type = self.cpt.get("voc_type", "hifigan")
             self.net_g = Synthesizer(
                 *self.cpt["config"],
                 use_f0=self.use_f0,
