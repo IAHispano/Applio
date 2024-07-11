@@ -31,6 +31,7 @@ class Encoder(torch.nn.Module):
         kernel_size=1,
         p_dropout=0.0,
         window_size=10,
+        vocoder_type="hifigan",
         **kwargs
     ):
         super().__init__()
@@ -58,15 +59,26 @@ class Encoder(torch.nn.Module):
                 )
             )
             self.norm_layers_1.append(LayerNorm(hidden_channels))
-            self.ffn_layers.append(
-                FFN(
-                    hidden_channels,
-                    hidden_channels,
-                    filter_channels,
-                    kernel_size,
-                    p_dropout=p_dropout,
+            if vocoder_type == "hifigan":
+                self.ffn_layers.append(
+                    FFN(
+                        hidden_channels,
+                        hidden_channels,
+                        filter_channels,
+                        kernel_size,
+                        p_dropout=p_dropout,
+                    )
                 )
-            )
+            else:
+                self.ffn_layers.append(
+                    FFNV2(
+                        hidden_channels,
+                        hidden_channels,
+                        filter_channels,
+                        kernel_size,
+                        p_dropout=p_dropout,
+                    )
+                )
             self.norm_layers_2.append(LayerNorm(hidden_channels))
 
     def forward(self, x, x_mask):
@@ -83,61 +95,8 @@ class Encoder(torch.nn.Module):
         x = x * x_mask
         return x
 
-class EncoderV2(torch.nn.Module):
-    def __init__(self, hidden_channels, filter_channels, n_heads, n_layers, kernel_size=1, p_dropout=0.0,
-                 window_size=10, **kwargs):
-        super().__init__()
-        self.hidden_channels = hidden_channels
-        self.filter_channels = filter_channels
-        self.n_heads = n_heads
-        self.n_layers = int(n_layers)
-        self.kernel_size = kernel_size
-        self.p_dropout = p_dropout
-        self.window_size = window_size
 
-        self.drop = torch.nn.Dropout(p_dropout)
-        self.attn_layers = torch.nn.ModuleList()
-        self.norm_layers_1 = torch.nn.ModuleList()
-        self.ffn_layers = torch.nn.ModuleList()
-        self.norm_layers_2 = torch.nn.ModuleList()
-        for i in range(self.n_layers):
-            self.attn_layers.append(
-                torch.nn.MultiheadAttention(hidden_channels, n_heads, dropout=p_dropout, batch_first=True))
-            self.norm_layers_1.append(torch.nn.LayerNorm(hidden_channels))
-            self.ffn_layers.append(
-                FFNV2(hidden_channels, hidden_channels, filter_channels, kernel_size, p_dropout=p_dropout))
-            self.norm_layers_2.append(torch.nn.LayerNorm(hidden_channels))
-
-    def forward(self, x, x_mask):
-        attn_mask = x_mask.unsqueeze(1) * x_mask.unsqueeze(2)
-        attn_mask = attn_mask[0]
-        attn_mask = attn_mask == 0
-        x = x * x_mask.unsqueeze(-1)
-        for attn_layer, norm_layer_1, ffn_layer, norm_layer_2 in zip(self.attn_layers, self.norm_layers_1,
-                                                                     self.ffn_layers, self.norm_layers_2):
-            y, _ = attn_layer(x, x, x, attn_mask=attn_mask)
-            y = self.drop(y)
-            x = norm_layer_1(x + y)
-            y = ffn_layer(x, x_mask)
-            y = self.drop(y)
-            x = norm_layer_2(x + y)
-        x = x * x_mask.unsqueeze(-1)
-        return x
 class TextEncoder(torch.nn.Module):
-    """Text Encoder with configurable embedding dimension.
-
-    Args:
-        out_channels (int): Output channels of the encoder.
-        hidden_channels (int): Hidden channels of the encoder.
-        filter_channels (int): Filter channels of the encoder.
-        n_heads (int): Number of attention heads.
-        n_layers (int): Number of encoder layers.
-        kernel_size (int): Kernel size of the convolutional layers.
-        p_dropout (float): Dropout probability.
-        embedding_dim (int): Embedding dimension for phone embeddings (v1 = 256, v2 = 768).
-        f0 (bool, optional): Whether to use F0 embedding. Defaults to True.
-    """
-
     def __init__(
         self,
         out_channels,
@@ -148,6 +107,7 @@ class TextEncoder(torch.nn.Module):
         kernel_size,
         p_dropout,
         embedding_dim,
+        vocoder_type="hifigan",
         f0=True,
     ):
         super(TextEncoder, self).__init__()
@@ -157,68 +117,19 @@ class TextEncoder(torch.nn.Module):
         self.n_heads = n_heads
         self.n_layers = n_layers
         self.kernel_size = kernel_size
-        self.p_dropout = float(p_dropout)
+        self.p_dropout = p_dropout
         self.emb_phone = torch.nn.Linear(embedding_dim, hidden_channels)
         self.lrelu = torch.nn.LeakyReLU(0.1, inplace=True)
-        if f0:
-            self.emb_pitch = torch.nn.Embedding(256, hidden_channels)
         self.encoder = Encoder(
             hidden_channels,
             filter_channels,
             n_heads,
             n_layers,
             kernel_size,
-            float(p_dropout),
-        )
-        self.proj = torch.nn.Conv1d(hidden_channels, out_channels * 2, 1)
-
-    def forward(
-        self, phone: torch.Tensor, pitch: Optional[torch.Tensor], lengths: torch.Tensor
-    ):
-        if pitch is None:
-            x = self.emb_phone(phone)
-        else:
-            x = self.emb_phone(phone) + self.emb_pitch(pitch)
-        x = x * math.sqrt(self.hidden_channels)  # [b, t, h]
-        x = self.lrelu(x)
-        x = torch.transpose(x, 1, -1)  # [b, h, t]
-        x_mask = torch.unsqueeze(sequence_mask(lengths, x.size(2)), 1).to(x.dtype)
-        x = self.encoder(x * x_mask, x_mask)
-        stats = self.proj(x) * x_mask
-
-        m, logs = torch.split(stats, self.out_channels, dim=1)
-        return m, logs, x_mask
-class TextEncoderV2(torch.nn.Module):
-    def __init__(
-        self,
-        out_channels,
-        hidden_channels,
-        filter_channels,
-        n_heads,
-        n_layers,
-        kernel_size,
-        p_dropout,
-        embedding_dim,
-        f0=True,
-    ):
-        super(TextEncoderV2, self).__init__()
-        self.out_channels = out_channels
-        self.hidden_channels = hidden_channels
-        self.filter_channels = filter_channels
-        self.n_heads = n_heads
-        self.n_layers = n_layers
-        self.kernel_size = kernel_size
-        self.p_dropout = float(p_dropout)
-        self.emb_phone = torch.nn.Linear(embedding_dim, hidden_channels)
-        self.lrelu = torch.nn.LeakyReLU(0.1, inplace=True)
-        self.encoder = EncoderV2(
-            hidden_channels,
-            filter_channels,
-            n_heads,
-            n_layers,
-            kernel_size,
             p_dropout,
+            vocoder_type,
         )
+
         self.proj = torch.nn.Conv1d(hidden_channels, out_channels * 2, 1)
         if f0:
             self.emb_pitch = torch.nn.Embedding(256, hidden_channels)
@@ -239,6 +150,8 @@ class TextEncoderV2(torch.nn.Module):
         x_mask = x_mask.transpose(1, 2)
         m, logs = torch.split(stats, self.out_channels, dim=1)
         return m, logs, x_mask
+
+
 class PosteriorEncoder(torch.nn.Module):
     """Posterior Encoder for inferring latent representation.
 

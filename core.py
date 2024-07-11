@@ -262,7 +262,7 @@ def run_preprocess_script(model_name, dataset_path, sampling_rate, cpu_cores):
 def run_extract_script(
     model_name,
     rvc_version,
-    voc_type,
+    vocoder_type,
     f0_method,
     pitch_guidance,
     hop_length,
@@ -314,7 +314,7 @@ def run_extract_script(
     subprocess.run(command_2)
 
     f0 = 1 if str(pitch_guidance) == "True" else 0
-    generate_config(rvc_version, voc_type, sampling_rate, model_path)
+    generate_config(rvc_version, vocoder_type, sampling_rate, model_path)
     generate_filelist(f0, model_path, rvc_version, sampling_rate)
     return f"Model {model_name} extracted successfully."
 
@@ -323,7 +323,7 @@ def run_extract_script(
 def run_train_script(
     model_name,
     rvc_version,
-    voc_type,
+    vocoder_type,
     save_every_epoch,
     save_only_latest,
     save_every_weights,
@@ -386,7 +386,7 @@ def run_train_script(
                 "-v",
                 rvc_version,
                 "-vc",
-                voc_type,
+                vocoder_type,
                 "-l",
                 latest,
                 "-c",
@@ -968,7 +968,7 @@ def parse_arguments():
         default="v2",
     )
     train_parser.add_argument(
-        "--voc_type",
+        "--vocoder_type",
         type=str,
         help="Type of the vocoder",
         choices=["hifigan", "bigvgan"],
@@ -1049,7 +1049,7 @@ def parse_arguments():
         default="v2",
     )
     train_parser.add_argument(
-        "--voc_type",
+        "--vocoder_type",
         type=str,
         help="Type of the vocoder",
         choices=["hifigan", "bigvgan"],
@@ -1413,7 +1413,7 @@ def main():
             run_extract_script(
                 str(args.model_name),
                 str(args.rvc_version),
-                str(args.voc_type),
+                str(args.vocoder_type),
                 str(args.f0_method),
                 str(args.pitch_guidance),
                 str(args.hop_length),
@@ -1426,7 +1426,7 @@ def main():
             run_train_script(
                 str(args.model_name),
                 str(args.rvc_version),
-                str(args.voc_type),
+                str(args.vocoder_type),
                 str(args.save_every_epoch),
                 str(args.save_only_latest),
                 str(args.save_every_weights),

@@ -8,10 +8,10 @@ config = Config()
 current_directory = os.getcwd()
 
 
-def generate_config(rvc_version, voc_type, sampling_rate, model_path):
+def generate_config(rvc_version, vocoder_type, sampling_rate, model_path):
     if rvc_version == "v2":
         config_path = os.path.join(
-            "rvc", "configs", rvc_version, voc_type, f"{sampling_rate}.json"
+            "rvc", "configs", rvc_version, vocoder_type, f"{sampling_rate}.json"
         )
     elif rvc_version == "v1":
         config_path = os.path.join(

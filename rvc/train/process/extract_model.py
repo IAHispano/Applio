@@ -57,7 +57,7 @@ def extract_model(ckpt, sr, if_f0, name, model_dir, epoch, step, version, hps):
         opt["f0"] = if_f0
         opt["version"] = version
         opt["creation_date"] = datetime.datetime.now().isoformat()
-        opt["voc_type"] = hps.voc_type
+        opt["vocoder_type"] = hps.vocoder_type
         hash_input = f"{str(ckpt)} {epoch} {step} {datetime.datetime.now().isoformat()}"
         model_hash = hashlib.sha256(hash_input.encode()).hexdigest()
         opt["model_hash"] = model_hash

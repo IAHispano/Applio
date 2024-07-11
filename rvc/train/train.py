@@ -138,7 +138,7 @@ def main():
         model_config_file = os.path.join(now_dir, "logs", hps.name, "config.json")
         if hps.version == "v2":
             rvc_config_file = os.path.join(
-                now_dir, "rvc", "configs", hps.version, hps.voc_type, str(hps.sample_rate) + ".json"
+                now_dir, "rvc", "configs", hps.version, hps.vocoder_type, str(hps.sample_rate) + ".json"
             )
         elif hps.version == "v1":
             rvc_config_file = os.path.join(
@@ -279,7 +279,7 @@ def run(
         use_f0=hps.if_f0 == 1,
         is_half=hps.train.fp16_run,
         sr=hps.sample_rate,
-        voc_type=hps.voc_type,
+        vocoder_type=hps.vocoder_type,
     )
     if torch.cuda.is_available():
         net_g = net_g.cuda(rank)

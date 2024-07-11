@@ -6,7 +6,8 @@ from rvc.lib.algorithm.nsf_bigvgan import GeneratorNSF_BIGVGAN
 from rvc.lib.algorithm.generators import Generator
 from rvc.lib.algorithm.commons import slice_segments2, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock
-from rvc.lib.algorithm.encoders import TextEncoder, TextEncoderV2, PosteriorEncoder
+from rvc.lib.algorithm.encoders import TextEncoder, PosteriorEncoder
+
 
 class Synthesizer(torch.nn.Module):
     """
@@ -58,7 +59,7 @@ class Synthesizer(torch.nn.Module):
         sr,
         use_f0,
         text_enc_hidden_dim,
-        voc_type="hifigan",
+        vocoder_type="hifigan",
         **kwargs
     ):
         super(Synthesizer, self).__init__()
@@ -80,36 +81,22 @@ class Synthesizer(torch.nn.Module):
         self.gin_channels = gin_channels
         self.spk_embed_dim = spk_embed_dim
         self.use_f0 = use_f0
-        self.voc_type = voc_type
-
-        if voc_type == "hifigan":
-            self.enc_p = TextEncoder(
-                inter_channels,
-                hidden_channels,
-                filter_channels,
-                n_heads,
-                n_layers,
-                kernel_size,
-                float(p_dropout),
-                text_enc_hidden_dim,
-                f0=use_f0,
-            )
-        elif voc_type == "bigvgan":
-            self.enc_p = TextEncoderV2(
-                inter_channels,
-                hidden_channels,
-                filter_channels,
-                n_heads,
-                n_layers,
-                kernel_size,
-                float(p_dropout),
-                text_enc_hidden_dim,
-                f0=use_f0,
-            )
-        
+        self.vocoder_type = vocoder_type
+        self.enc_p = TextEncoder(
+            inter_channels,
+            hidden_channels,
+            filter_channels,
+            n_heads,
+            n_layers,
+            kernel_size,
+            float(p_dropout),
+            text_enc_hidden_dim,
+            vocoder_type=vocoder_type,
+            f0=use_f0,
+        )
 
         if use_f0:
-            if voc_type == "hifigan":
+            if vocoder_type == "hifigan":
                 self.dec = GeneratorNSF_HIFIGAN(
                     inter_channels,
                     resblock,
@@ -122,7 +109,7 @@ class Synthesizer(torch.nn.Module):
                     sr=sr,
                     is_half=kwargs["is_half"],
                 )
-            elif voc_type == "bigvgan":
+            elif vocoder_type == "bigvgan":
                 self.dec = GeneratorNSF_BIGVGAN(
                     resblock_kernel_sizes=resblock_kernel_sizes,
                     resblock_dilation_sizes=resblock_dilation_sizes,
