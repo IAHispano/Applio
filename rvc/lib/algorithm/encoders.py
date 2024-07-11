@@ -112,13 +112,13 @@ class TextEncoder(torch.nn.Module):
         self.emb_phone = torch.nn.Linear(embedding_dim, hidden_channels)
         self.lrelu = torch.nn.LeakyReLU(0.1, inplace=True)
         self.encoder = Encoder(
-            hidden_channels,
-            filter_channels,
-            n_heads,
-            n_layers,
-            kernel_size,
-            p_dropout,
-            vocoder_type,
+            hidden_channels=hidden_channels,
+            filter_channels=filter_channels,
+            n_heads=n_heads,
+            n_layers=n_layers,
+            kernel_size=kernel_size,
+            p_dropout=p_dropout,
+            vocoder_type=vocoder_type,
         )
 
         self.proj = torch.nn.Conv1d(hidden_channels, out_channels * 2, 1)
