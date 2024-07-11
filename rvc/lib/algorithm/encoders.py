@@ -220,7 +220,7 @@ class TextEncoderV2(torch.nn.Module):
             p_dropout,
         )
         self.proj = torch.nn.Conv1d(hidden_channels, out_channels * 2, 1)
-        if f0 is True:
+        if f0:
             self.emb_pitch = torch.nn.Embedding(256, hidden_channels)
 
     def forward(self, phone: torch.Tensor, pitch: torch.Tensor, lengths: torch.Tensor):
