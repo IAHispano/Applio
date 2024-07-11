@@ -54,7 +54,12 @@ class Config:
         # Check if XPU is available.
         return hasattr(torch, "xpu") and torch.xpu.is_available()
 
-    def use_fp32_config(self):
+    def set_precision(self, precision):
+        if precision not in ["fp32", "fp16"]:
+            raise ValueError("Invalid precision type. Must be 'fp32' or 'fp16'.")
+
+        fp16_run_value = precision == "fp16"
+        preprocess_target_version = "3.7" if precision == "fp16" else "3.0"
         preprocess_path = os.path.join(
             os.path.dirname(__file__),
             os.pardir,
@@ -63,24 +68,43 @@ class Config:
             "preprocess",
             "preprocess.py",
         )
+
         for config_path in version_config_paths:
             full_config_path = os.path.join("rvc", "configs", config_path)
             try:
                 with open(full_config_path, "r") as f:
                     config = json.load(f)
-                config["train"]["fp16_run"] = False
+                config["train"]["fp16_run"] = fp16_run_value
                 with open(full_config_path, "w") as f:
                     json.dump(config, f, indent=4)
             except FileNotFoundError:
                 print(f"File not found: {full_config_path}")
 
-            if os.path.exists(preprocess_path):
-                with open(preprocess_path, "r") as f:
-                    preprocess_content = f.read()
-                preprocess_content = preprocess_content.replace("3.7", "3.0")
-                with open(preprocess_path, "w") as f:
-                    f.write(preprocess_content)
-        print("Overwritten preprocess and config.json to use FP32.")
+        if os.path.exists(preprocess_path):
+            with open(preprocess_path, "r") as f:
+                preprocess_content = f.read()
+            preprocess_content = preprocess_content.replace(
+                "3.0" if precision == "fp16" else "3.7", preprocess_target_version
+            )
+            with open(preprocess_path, "w") as f:
+                f.write(preprocess_content)
+
+        return f"Overwritten preprocess and config.json to use {precision}."
+
+    def get_precision(self):
+        if not version_config_paths:
+            raise FileNotFoundError("No configuration paths provided.")
+
+        full_config_path = os.path.join("rvc", "configs", version_config_paths[0])
+        try:
+            with open(full_config_path, "r") as f:
+                config = json.load(f)
+            fp16_run_value = config["train"].get("fp16_run", False)
+            precision = "fp16" if fp16_run_value else "fp32"
+            return precision
+        except FileNotFoundError:
+            print(f"File not found: {full_config_path}")
+            return None
 
     def device_config(self) -> tuple:
         if self.device.startswith("cuda"):
@@ -88,11 +112,11 @@ class Config:
         elif self.has_mps():
             self.device = "mps"
             self.is_half = False
-            self.use_fp32_config()
+            self.set_precision("fp32")
         else:
             self.device = "cpu"
             self.is_half = False
-            self.use_fp32_config()
+            self.set_precision("fp32")
 
         # Configuration for 6GB GPU memory
         x_pad, x_query, x_center, x_max = (
@@ -113,7 +137,7 @@ class Config:
             and "V100" not in self.gpu_name.upper()
         ):
             self.is_half = False
-            self.use_fp32_config()
+            self.set_precision("fp32")
 
         self.gpu_mem = torch.cuda.get_device_properties(i_device).total_memory // (
             1024**3
