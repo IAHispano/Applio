@@ -10,7 +10,7 @@ run-install:
 	apt-get -y install build-essential python3-dev ffmpeg
 	pip install --upgrade setuptools wheel
 	pip install pip==24.0
-	pip install faiss-gpu fairseq gradio praat-parselmouth pyworld numpy==1.23.5 numba==0.56.4 librosa==0.9.1
+	pip install faiss-gpu fairseq gradio ffmpeg praat-parselmouth pyworld numpy==1.23.5 numba==0.56.4 librosa==0.9.1
 	pip install -r requirements.txt
 	pip install --upgrade lxml
 	apt-get update
