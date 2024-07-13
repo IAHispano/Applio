@@ -4,7 +4,10 @@
     "seed": 1234,
     "epochs": 20000,
     "learning_rate": 1e-4,
-    "betas": [0.8, 0.99],
+    "betas": [
+      0.8,
+      0.99
+    ],
     "eps": 1e-9,
     "batch_size": 4,
     "fp16_run": true,
@@ -35,11 +38,41 @@
     "kernel_size": 3,
     "p_dropout": 0,
     "resblock": "1",
-    "resblock_kernel_sizes": [3,7,11],
-    "resblock_dilation_sizes": [[1,3,5], [1,3,5], [1,3,5]],
-    "upsample_rates": [10,10,2,2],
+    "resblock_kernel_sizes": [
+      3,
+      7,
+      11
+    ],
+    "resblock_dilation_sizes": [
+      [
+        1,
+        3,
+        5
+      ],
+      [
+        1,
+        3,
+        5
+      ],
+      [
+        1,
+        3,
+        5
+      ]
+    ],
+    "upsample_rates": [
+      10,
+      10,
+      2,
+      2
+    ],
     "upsample_initial_channel": 512,
-    "upsample_kernel_sizes": [16,16,4,4],
+    "upsample_kernel_sizes": [
+      16,
+      16,
+      4,
+      4
+    ],
     "use_spectral_norm": false,
     "gin_channels": 256,
     "spk_embed_dim": 109
