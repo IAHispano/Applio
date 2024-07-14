@@ -42,7 +42,7 @@ class Encoder(torch.nn.Module):
         self.kernel_size = kernel_size
         self.p_dropout = p_dropout
         self.window_size = window_size
-
+        self.vocoder_type = vocoder_type
         self.drop = torch.nn.Dropout(p_dropout)
         self.attn_layers = torch.nn.ModuleList()
         self.norm_layers_1 = torch.nn.ModuleList()
@@ -72,19 +72,41 @@ class Encoder(torch.nn.Module):
 
             self.norm_layers_2.append(LayerNorm(hidden_channels))
 
-    def forward(self, x, x_mask):
-        attn_mask = x_mask.unsqueeze(2) * x_mask.unsqueeze(-1)
-        x = x * x_mask
-        for i in range(self.n_layers):
-            y = self.attn_layers[i](x, x, attn_mask)
-            y = self.drop(y)
-            x = self.norm_layers_1[i](x + y)
+        if self.vocoder_type == "hifigan":
+            def forward(self, x, x_mask):
+                attn_mask = x_mask.unsqueeze(1) * x_mask.unsqueeze(2)
+                attn_mask = attn_mask[0]
+                attn_mask = attn_mask == 0
+                x = x * x_mask.unsqueeze(-1)
+                for attn_layer, norm_layer_1, ffn_layer, norm_layer_2 in zip(
+                    self.attn_layers,
+                    self.norm_layers_1,
+                    self.ffn_layers,
+                    self.norm_layers_2,
+                ):
+                    y, _ = attn_layer(x, x, x, attn_mask=attn_mask)
+                    y = self.drop(y)
+                    x = norm_layer_1(x + y)
+                    y = ffn_layer(x, x_mask)
+                    y = self.drop(y)
+                    x = norm_layer_2(x + y)
+                x = x * x_mask.unsqueeze(-1)
+                return x
 
-            y = self.ffn_layers[i](x, x_mask)
-            y = self.drop(y)
-            x = self.norm_layers_2[i](x + y)
-        x = x * x_mask
-        return x
+        elif self.vocoder_type == "bigvgan":
+            def forward(self, x, x_mask):
+                attn_mask = x_mask.unsqueeze(2) * x_mask.unsqueeze(-1)
+                x = x * x_mask
+                for i in range(self.n_layers):
+                    y = self.attn_layers[i](x, x, attn_mask)
+                    y = self.drop(y)
+                    x = self.norm_layers_1[i](x + y)
+
+                    y = self.ffn_layers[i](x, x_mask)
+                    y = self.drop(y)
+                    x = self.norm_layers_2[i](x + y)
+                x = x * x_mask
+                return x
 
 
 class TextEncoder(torch.nn.Module):
