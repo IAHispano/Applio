@@ -19,13 +19,6 @@ class Generator(torch.nn.Module):
         upsample_initial_channel (int): Number of channels in the initial upsampling layer.
         upsample_kernel_sizes (list): Kernel sizes of the upsampling layers.
         gin_channels (int, optional): Number of channels for the global conditioning input. Defaults to 0.
-
-    Inputs:
-        x (torch.Tensor): Input tensor with shape (batch_size, initial_channel, length).
-        g (torch.Tensor, optional): Global conditioning input with shape (batch_size, gin_channels, length). Defaults to None.
-
-    Outputs:
-        x (torch.Tensor): Output tensor with shape (batch_size, 1, length).
     """
 
     def __init__(

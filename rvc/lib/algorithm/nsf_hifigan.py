@@ -18,15 +18,6 @@ class SineGen(torch.nn.Module):
         noise_std (float, optional): Standard deviation of Gaussian noise. Defaults to 0.003.
         voiced_threshold (float, optional): F0 threshold for voiced/unvoiced classification. Defaults to 0.
         flag_for_pulse (bool, optional): Whether this SineGen is used inside PulseGen. Defaults to False.
-
-    Inputs:
-        f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
-        upp (int): Upsampling factor.
-
-    Outputs:
-        sine_waves (torch.Tensor): Sine wave tensor with shape (batch_size, length, dim).
-        uv (torch.Tensor): Voiced/unvoiced tensor with shape (batch_size, length, 1).
-        noise (torch.Tensor): Noise tensor with shape (batch_size, length, dim).
     """
 
     def __init__(
@@ -51,9 +42,6 @@ class SineGen(torch.nn.Module):
 
         Args:
             f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
-
-        Returns:
-            uv (torch.Tensor): Voiced/unvoiced tensor with shape (batch_size, length, 1).
         """
         # generate uv signal
         uv = torch.ones_like(f0)
@@ -66,11 +54,6 @@ class SineGen(torch.nn.Module):
         Args:
             f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
             upp (int): Upsampling factor.
-
-        Returns:
-            sine_waves (torch.Tensor): Sine wave tensor with shape (batch_size, length, dim).
-            uv (torch.Tensor): Voiced/unvoiced tensor with shape (batch_size, length, 1).
-            noise (torch.Tensor): Noise tensor with shape (batch_size, length, dim).
         """
         with torch.no_grad():
             f0 = f0[:, None].transpose(1, 2)
@@ -126,15 +109,6 @@ class SourceModuleHnNSF(torch.nn.Module):
         add_noise_std (float, optional): Standard deviation of additive Gaussian noise. Defaults to 0.003.
         voiced_threshod (float, optional): Threshold to set voiced/unvoiced given F0. Defaults to 0.
         is_half (bool, optional): Whether to use half precision. Defaults to True.
-
-    Inputs:
-        x (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
-        upp (int): Upsampling factor.
-
-    Outputs:
-        sine_merge (torch.Tensor): Merged source harmonics with shape (batch_size, length, 1).
-        None (None): Placeholder for noise source.
-        None (None): Placeholder for voiced/unvoiced signal.
     """
 
     def __init__(
@@ -167,11 +141,6 @@ class SourceModuleHnNSF(torch.nn.Module):
         Args:
             x (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
             upp (int): Upsampling factor.
-
-        Returns:
-            sine_merge (torch.Tensor): Merged source harmonics with shape (batch_size, length, 1).
-            None (None): Placeholder for noise source.
-            None (None): Placeholder for voiced/unvoiced signal.
         """
         sine_wavs, uv, _ = self.l_sin_gen(x, upp)
         sine_wavs = sine_wavs.to(dtype=self.l_linear.weight.dtype)
@@ -193,14 +162,6 @@ class GeneratorNSF_HIFIGAN(torch.nn.Module):
         gin_channels (int): Number of channels for the global conditioning input.
         sr (int): Sampling rate.
         is_half (bool, optional): Whether to use half precision. Defaults to False.
-
-    Inputs:
-        x (torch.Tensor): Input tensor with shape (batch_size, initial_channel, length).
-        f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
-        g (torch.Tensor, optional): Global conditioning input with shape (batch_size, gin_channels, length). Defaults to None.
-
-    Outputs:
-        x (torch.Tensor): Output tensor with shape (batch_size, 1, length).
     """
 
     def __init__(
@@ -278,13 +239,11 @@ class GeneratorNSF_HIFIGAN(torch.nn.Module):
 
     def forward(self, x, f0, g: Optional[torch.Tensor] = None):
         """Generates audio using the NSF approach.
+        
         Args:
             x (torch.Tensor): Input tensor with shape (batch_size, initial_channel, length).
             f0 (torch.Tensor): F0 tensor with shape (batch_size, length, 1).
             g (torch.Tensor, optional): Global conditioning input with shape (batch_size, gin_channels, length). Defaults to None.
-
-        Returns:
-            x (torch.Tensor): Output tensor with shape (batch_size, 1, length).
         """
         har_source, noi_source, uv = self.m_source(f0, self.upp)
         har_source = har_source.transpose(1, 2)

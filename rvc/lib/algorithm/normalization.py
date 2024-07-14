@@ -8,7 +8,6 @@ class LayerNorm(torch.nn.Module):
     Args:
         channels (int): Number of channels.
         eps (float, optional): Epsilon value for numerical stability. Defaults to 1e-5.
-
     """
 
     def __init__(self, channels, eps=1e-5):
@@ -24,10 +23,6 @@ class LayerNorm(torch.nn.Module):
 
         Args:
             x (torch.Tensor): Input tensor of shape (batch_size, channels, time_steps).
-
-        Returns:
-            torch.Tensor: Layer-normalized tensor of shape (batch_size, channels, time_steps).
-
         """
         x = x.transpose(1, -1)
         x = torch.nn.functional.layer_norm(x, (self.channels,), self.gamma, self.beta, self.eps)
