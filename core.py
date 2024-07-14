@@ -19,7 +19,7 @@ from rvc.train.process.extract_small_model import extract_small_model
 
 from rvc.infer.infer import VoiceConverter
 
-infer_pipeline = VoiceConverter().infer_pipeline
+infer_pipeline = VoiceConverter()
 
 from rvc.lib.tools.analyzer import analyze_audio
 
@@ -66,27 +66,27 @@ def run_infer_script(
     f0_autotune = "True" if str(f0_autotune) == "True" else "False"
     clean_audio = "True" if str(clean_audio) == "True" else "False"
     upscale_audio = "True" if str(upscale_audio) == "True" else "False"
-    infer_pipeline(
-        f0_up_key,
-        filter_radius,
-        index_rate,
-        rms_mix_rate,
-        protect,
-        hop_length,
-        f0_method,
-        input_path,
-        output_path,
-        pth_path,
-        index_path,
-        split_audio,
-        f0_autotune,
-        clean_audio,
-        clean_strength,
-        export_format,
-        embedder_model,
-        embedder_model_custom,
-        upscale_audio,
-        f0_file,
+    infer_pipeline.convert_audio(
+        f0_up_key=f0_up_key,
+        filter_radius=filter_radius,
+        index_rate=index_rate,
+        rms_mix_rate=rms_mix_rate,
+        protect=protect,
+        hop_length=hop_length,
+        f0_method=f0_method,
+        audio_input_path=input_path,
+        audio_output_path=output_path,
+        model_path=pth_path,
+        index_path=index_path,
+        split_audio=split_audio,
+        f0_autotune=f0_autotune,
+        clean_audio=clean_audio,
+        clean_strength=clean_strength,
+        export_format=export_format,
+        embedder_model=embedder_model,
+        embedder_model_custom=embedder_model_custom,
+        upscale_audio=upscale_audio,
+        f0_file=f0_file,
     )
     return f"File {input_path} inferred successfully.", output_path.replace(
         ".wav", f".{export_format.lower()}"
@@ -136,27 +136,27 @@ def run_batch_infer_script(
             )
             print(f"Inferring {input_path}...")
 
-            infer_pipeline(
-                f0_up_key,
-                filter_radius,
-                index_rate,
-                rms_mix_rate,
-                protect,
-                hop_length,
-                f0_method,
-                input_path,
-                output_path,
-                pth_path,
-                index_path,
-                split_audio,
-                f0_autotune,
-                clean_audio,
-                clean_strength,
-                export_format,
-                embedder_model,
-                embedder_model_custom,
-                upscale_audio,
-                f0_file,
+            infer_pipeline.convert_audio(
+                f0_up_key=f0_up_key,
+                filter_radius=filter_radius,
+                index_rate=index_rate,
+                rms_mix_rate=rms_mix_rate,
+                protect=protect,
+                hop_length=hop_length,
+                f0_method=f0_method,
+                audio_input_path=input_path,
+                audio_output_path=output_path,
+                model_path=pth_path,
+                index_path=index_path,
+                split_audio=split_audio,
+                f0_autotune=f0_autotune,
+                clean_audio=clean_audio,
+                clean_strength=clean_strength,
+                export_format=export_format,
+                embedder_model=embedder_model,
+                embedder_model_custom=embedder_model_custom,
+                upscale_audio=upscale_audio,
+                f0_file=f0_file,
             )
 
     return f"Files from {input_folder} inferred successfully."
@@ -206,27 +206,27 @@ def run_tts_script(
     ]
     subprocess.run(command_tts)
 
-    infer_pipeline(
-        f0_up_key,
-        filter_radius,
-        index_rate,
-        rms_mix_rate,
-        protect,
-        hop_length,
-        f0_method,
-        output_tts_path,
-        output_rvc_path,
-        pth_path,
-        index_path,
-        split_audio,
-        f0_autotune,
-        clean_audio,
-        clean_strength,
-        export_format,
-        embedder_model,
-        embedder_model_custom,
-        upscale_audio,
-        f0_file,
+    infer_pipeline.convert_audio(
+        f0_up_key=f0_up_key,
+        filter_radius=filter_radius,
+        index_rate=index_rate,
+        rms_mix_rate=rms_mix_rate,
+        protect=protect,
+        hop_length=hop_length,
+        f0_method=f0_method,
+        audio_input_path=output_tts_path,
+        audio_output_path=output_rvc_path,
+        model_path=pth_path,
+        index_path=index_path,
+        split_audio=split_audio,
+        f0_autotune=f0_autotune,
+        clean_audio=clean_audio,
+        clean_strength=clean_strength,
+        export_format=export_format,
+        embedder_model=embedder_model,
+        embedder_model_custom=embedder_model_custom,
+        upscale_audio=upscale_audio,
+        f0_file=f0_file,
     )
 
     return f"Text {tts_text} synthesized successfully.", output_rvc_path.replace(
