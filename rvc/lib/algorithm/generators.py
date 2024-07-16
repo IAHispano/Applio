@@ -1,10 +1,4 @@
 import torch
-#start Zluda changes
-torch.backends.cudnn.enabled = False
-torch.backends.cuda.enable_flash_sdp(False)
-torch.backends.cuda.enable_math_sdp(True)
-torch.backends.cuda.enable_mem_efficient_sdp(False)
-#end Zluda changes
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
 from typing import Optional

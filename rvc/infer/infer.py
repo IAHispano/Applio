@@ -2,12 +2,6 @@ import os
 import sys
 import time
 import torch
-#start Zluda changes
-torch.backends.cudnn.enabled = False
-torch.backends.cuda.enable_flash_sdp(False)
-torch.backends.cuda.enable_math_sdp(True)
-torch.backends.cuda.enable_mem_efficient_sdp(False)
-#end Zluda changes
 import librosa
 import logging
 import numpy as np

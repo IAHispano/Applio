@@ -1,9 +1,4 @@
 import torch
-#start Zluda changes
-torch.backends.cudnn.enabled = False
-torch.backends.cuda.enable_flash_sdp(False)
-torch.backends.cuda.enable_math_sdp(True)
-torch.backends.cuda.enable_mem_efficient_sdp(False)
 cpu_device = torch.device("cpu")
 #end Zluda changes
 from rvc.lib.algorithm.commons import fused_add_tanh_sigmoid_multiply
