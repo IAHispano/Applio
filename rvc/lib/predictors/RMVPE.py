@@ -1,4 +1,12 @@
 import torch
+#start Zluda changes
+torch.backends.cudnn.enabled = False
+torch.backends.cuda.enable_flash_sdp(False)
+torch.backends.cuda.enable_math_sdp(True)
+torch.backends.cuda.enable_mem_efficient_sdp(False)
+cpu_device = torch.device("cpu")
+#end Zluda changes
+
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
@@ -408,15 +416,32 @@ class MelSpectrogram(torch.nn.Module):
             self.hann_window[keyshift_key] = torch.hann_window(win_length_new).to(
                 audio.device
             )
-        fft = torch.stft(
-            audio,
-            n_fft=n_fft_new,
-            hop_length=hop_length_new,
-            win_length=win_length_new,
-            window=self.hann_window[keyshift_key],
-            center=center,
-            return_complex=True,
-        )
+        # Zluda fall-back to CPU for FFTs since HIP SDK has no cuFFT alternative
+        if audio.device.type == "cuda" and torch.cuda.get_device_name(audio.device.index).endswith("[ZLUDA]"):
+            print('Zluda fft')
+            fft = torch.stft(
+                audio.to(cpu_device),
+                n_fft=n_fft_new,
+                hop_length=hop_length_new,
+                win_length=win_length_new,
+                window=self.hann_window[keyshift_key].to(cpu_device),
+                center=center,
+                return_complex=True,
+            )
+            fft = fft.to(audio.device)
+        else:
+            # Normal CUDA or CPU originally
+            print('Normal fft')
+            fft = torch.stft(
+                audio,
+                n_fft=n_fft_new,
+                hop_length=hop_length_new,
+                win_length=win_length_new,
+                window=self.hann_window[keyshift_key],
+                center=center,
+                return_complex=True,
+            )
+
         magnitude = torch.sqrt(fft.real.pow(2) + fft.imag.pow(2))
         if keyshift != 0:
             size = self.n_fft // 2 + 1

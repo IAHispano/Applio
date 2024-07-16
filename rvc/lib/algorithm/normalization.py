@@ -1,4 +1,10 @@
 import torch
+#start Zluda changes
+torch.backends.cudnn.enabled = False
+torch.backends.cuda.enable_flash_sdp(False)
+torch.backends.cuda.enable_math_sdp(True)
+torch.backends.cuda.enable_mem_efficient_sdp(False)
+#end Zluda changes
 
 
 class LayerNorm(torch.nn.Module):

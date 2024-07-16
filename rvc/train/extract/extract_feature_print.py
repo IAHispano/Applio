@@ -2,6 +2,12 @@ import os
 import sys
 import tqdm
 import torch
+#start Zluda changes
+torch.backends.cudnn.enabled = False
+torch.backends.cuda.enable_flash_sdp(False)
+torch.backends.cuda.enable_math_sdp(True)
+torch.backends.cuda.enable_mem_efficient_sdp(False)
+#end Zluda changes
 import torch.nn.functional as F
 import soundfile as sf
 import numpy as np
