@@ -76,7 +76,8 @@ def spectrogram_torch(y, n_fft, hop_size, win_size, center=False):
         mode="reflect",
     )
     y = y.squeeze(1)
-    #Zluda fall-back to CPU for FFTs since HIP SDK has no cuFFT alternative
+
+    # Zluda fall-back to CPU for FFTs since HIP SDK has no cuFFT alternative
     if y.device.type == "cuda" and torch.cuda.get_device_name(y.device.index).endswith("[ZLUDA]"):
         spec = torch.stft(
             y.to(cpu_device),

@@ -1,6 +1,5 @@
 import torch
 cpu_device = torch.device("cpu")
-#end Zluda changes
 from rvc.lib.algorithm.commons import fused_add_tanh_sigmoid_multiply
 
 
@@ -100,13 +99,11 @@ class WaveNet(torch.nn.Module):
                 g_l = g[:, cond_offset : cond_offset + 2 * self.hidden_channels, :]
             else:
                 g_l = torch.zeros_like(x_in)
-            #preventing HIP crash by using CPU instead of CUDA
+            # Preventing HIP crash by using CPU instead of CUDA
             if is_zluda == 1:
-                print('zluda fused multiply')
                 acts = fused_add_tanh_sigmoid_multiply(x_in.to(cpu_device), g_l.to(cpu_device), n_channels_tensor.to(cpu_device))
                 acts = acts.to(x.device)
             else:
-                print('normal fused multiply')
                 acts = fused_add_tanh_sigmoid_multiply(x_in, g_l, n_channels_tensor)
                 
             acts = self.drop(acts)

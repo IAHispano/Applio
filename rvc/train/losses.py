@@ -1,5 +1,6 @@
 import torch
 
+
 def feature_loss(fmap_r, fmap_g):
     """
     Compute the feature loss between reference and generated feature maps.

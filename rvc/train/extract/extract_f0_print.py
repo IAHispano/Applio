@@ -3,7 +3,6 @@ import sys
 import time
 import tqdm
 import torch
-import pyworld
 import torchcrepe
 import numpy as np
 from multiprocessing import Pool
