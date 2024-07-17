@@ -34,7 +34,9 @@ class VoiceConverter:
         Initializes the VoiceConverter with default configuration, and sets up models and parameters.
         """
         self.config = Config()  # Load RVC configuration
-        self.hubert_model = None # Initialize the Hubert model (for embedding extraction)
+        self.hubert_model = (
+            None  # Initialize the Hubert model (for embedding extraction)
+        )
         self.tgt_sr = None  # Target sampling rate for the output audio
         self.net_g = None  # Generator network for voice conversion
         self.vc = None  # Voice conversion pipeline instance
