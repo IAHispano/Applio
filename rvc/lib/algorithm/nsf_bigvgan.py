@@ -8,18 +8,8 @@ from torch.nn import ConvTranspose1d
 from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils import remove_weight_norm
 
-from rvc.lib.algorithm.alias.act import SnakeAlias
-
-
-def init_weights(m, mean=0.0, std=0.01):
-    classname = m.__class__.__name__
-    if classname.find("Conv") != -1:
-        m.weight.data.normal_(mean, std)
-
-
-def get_padding(kernel_size, dilation=1):
-    return int((kernel_size * dilation - dilation) / 2)
-
+from .alias.act import SnakeAlias
+from .commons import init_weights, get_padding
 
 class SineGen(torch.nn.Module):
     """Definition of sine generator
@@ -40,13 +30,13 @@ class SineGen(torch.nn.Module):
     """
 
     def __init__(
-            self,
-            samp_rate,
-            harmonic_num=0,
-            sine_amp=0.1,
-            noise_std=0.003,
-            voiced_threshold=0,
-            flag_for_pulse=False,
+        self,
+        samp_rate,
+        harmonic_num=0,
+        sine_amp=0.1,
+        noise_std=0.003,
+        voiced_threshold=0,
+        flag_for_pulse=False,
     ):
         super(SineGen, self).__init__()
         self.sine_amp = sine_amp
@@ -158,17 +148,35 @@ class SineGen(torch.nn.Module):
             sine_waves = sine_waves * uv + noise
         return sine_waves
 
-
 class SourceModuleHnNSF(torch.nn.Module):
+    """SourceModule for hn-nsf
+    SourceModule(sampling_rate, harmonic_num=0, sine_amp=0.1,
+                 add_noise_std=0.003, voiced_threshod=0)
+    sampling_rate: sampling_rate in Hz
+    harmonic_num: number of harmonic above F0 (default: 0)
+    sine_amp: amplitude of sine source signal (default: 0.1)
+    add_noise_std: std of additive Gaussian noise (default: 0.003)
+        note that amplitude of noise in unvoiced is decided
+        by sine_amp
+    voiced_threshold: threhold to set U/V given F0 (default: 0)
+
+    Sine_source, noise_source = SourceModuleHnNSF(F0_sampled)
+    F0_sampled (batchsize, length, 1)
+    Sine_source (batchsize, length, 1)
+    noise_source (batchsize, length 1)
+    uv (batchsize, length, 1)
+    """
+
     def __init__(
-            self,
-            sampling_rate=32000,
-            sine_amp=0.1,
-            add_noise_std=0.003,
-            voiced_threshod=0,
+        self,
+        sampling_rate,
+        harmonic_num=0,
+        sine_amp=0.1,
+        add_noise_std=0.003,
+        voiced_threshod=0,
     ):
         super(SourceModuleHnNSF, self).__init__()
-        harmonic_num = 10
+
         self.sine_amp = sine_amp
         self.noise_std = add_noise_std
 
@@ -192,12 +200,10 @@ class SourceModuleHnNSF(torch.nn.Module):
         """
         # source for harmonic branch
         sine_wavs = self.l_sin_gen(x)
-        self.merge_w = self.merge_w.to(sine_wavs.dtype) #added
         sine_wavs = nn.functional.linear(
             sine_wavs, self.merge_w) + self.merge_b
         sine_merge = self.l_tanh(sine_wavs)
         return sine_merge
-
 
 class AMPBlock(torch.nn.Module):
     def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5)):
@@ -290,15 +296,11 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
         super(GeneratorNSF_BIGVGAN, self).__init__()
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)
-        # speaker adaper, 256 should change by what speaker encoder you use
         self.adapter = SpeakerAdapter(spk_dim, upsample_input)
-        # pre conv
-        self.conv_pre = Conv1d(upsample_input,
-                               upsample_initial_channel, 7, 1, padding=3)
-        # nsf
-        self.f0_upsamp = torch.nn.Upsample(
-            scale_factor=np.prod(upsample_rates))
-        self.m_source = SourceModuleHnNSF(sampling_rate=sampling_rate)
+        self.conv_pre = Conv1d(upsample_input, upsample_initial_channel, 7, 1, padding=3)
+        
+        self.f0_upsamp = torch.nn.Upsample(scale_factor=np.prod(upsample_rates))
+        self.m_source = SourceModuleHnNSF(sampling_rate=sampling_rate, harmonic_num=10)
         self.noise_convs = nn.ModuleList()
         # transposed conv-based upsamplers. does not apply anti-aliasing
         self.ups = nn.ModuleList()
@@ -368,9 +370,9 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
             # upsampling
             x = self.ups[i](x)
             # nsf
+            #har_source = har_source.to(torch.float32)
             x_source = self.noise_convs[i](har_source.half())
             x = x + x_source
-
             # AMP blocks
             xs = None
             for j in range(self.num_kernels):
