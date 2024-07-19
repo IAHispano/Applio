@@ -59,13 +59,15 @@ class Encoder(torch.nn.Module):
                         window_size=window_size,
                     )
                 )
+                self.norm_layers_1.append(LayerNorm(hidden_channels))
             elif vocoder_type == "bigvgan":
                 self.attn_layers.append(
                     torch.nn.MultiheadAttention(
                         hidden_channels, n_heads, dropout=p_dropout, batch_first=True
                     )
                 )
-            self.norm_layers_1.append(LayerNorm(hidden_channels))
+                self.norm_layers_1.append(torch.nn.LayerNorm(hidden_channels))
+            
             if vocoder_type == "hifigan":
                 self.ffn_layers.append(
                     FFN(
@@ -76,6 +78,7 @@ class Encoder(torch.nn.Module):
                         p_dropout=p_dropout,
                     )
                 )
+                self.norm_layers_2.append(LayerNorm(hidden_channels))
             elif vocoder_type == "bigvgan":
                 self.ffn_layers.append(
                     FFNV2(
@@ -86,8 +89,9 @@ class Encoder(torch.nn.Module):
                         p_dropout=p_dropout,
                     )
                 )
+                self.norm_layers_2.append(torch.nn.LayerNorm(hidden_channels))
 
-            self.norm_layers_2.append(LayerNorm(hidden_channels))
+            
 
     def forward(self, x, x_mask):
         if self.vocoder_type == "hifigan":
