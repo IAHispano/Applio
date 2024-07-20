@@ -1,5 +1,6 @@
 import torch
 cpu_device = torch.device("cpu")
+from rvc.lib.algorithm.commons import fused_add_tanh_sigmoid_multiply_zluda
 from rvc.lib.algorithm.commons import fused_add_tanh_sigmoid_multiply
 
 
@@ -101,8 +102,7 @@ class WaveNet(torch.nn.Module):
                 g_l = torch.zeros_like(x_in)
             # Preventing HIP crash by using CPU instead of CUDA
             if is_zluda == 1:
-                acts = fused_add_tanh_sigmoid_multiply(x_in.to(cpu_device), g_l.to(cpu_device), n_channels_tensor.to(cpu_device))
-                acts = acts.to(x.device)
+                acts = fused_add_tanh_sigmoid_multiply_zluda(x_in, g_l, n_channels_tensor)
             else:
                 acts = fused_add_tanh_sigmoid_multiply(x_in, g_l, n_channels_tensor)
                 
