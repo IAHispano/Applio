@@ -47,3 +47,5 @@ pypresence
 beautifulsoup4
 flask
 local-attention
+nnAudio
+soxr
