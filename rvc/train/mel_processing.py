@@ -1,4 +1,5 @@
 import torch
+cpu_device = torch.device("cpu")
 import torch.utils.data
 from librosa.filters import mel as librosa_mel_fn
 
@@ -76,19 +77,35 @@ def spectrogram_torch(y, n_fft, hop_size, win_size, center=False):
     )
     y = y.squeeze(1)
 
-    spec = torch.stft(
-        y,
-        n_fft,
-        hop_length=hop_size,
-        win_length=win_size,
-        window=hann_window[wnsize_dtype_device],
-        center=center,
-        pad_mode="reflect",
-        normalized=False,
-        onesided=True,
-        return_complex=True,
-    )
-
+    # Zluda fall-back to CPU for FFTs since HIP SDK has no cuFFT alternative
+    if y.device.type == "cuda" and torch.cuda.get_device_name(y.device.index).endswith("[ZLUDA]"):
+        spec = torch.stft(
+            y.to(cpu_device),
+            n_fft,
+            hop_length=hop_size,
+            win_length=win_size,
+            window=hann_window[wnsize_dtype_device].to(cpu_device),
+            center=center,
+            pad_mode="reflect",
+            normalized=False,
+            onesided=True,
+            return_complex=True,
+        )
+        spec = spec.to(y.device)
+    else:
+        spec = torch.stft(
+            y,
+            n_fft,
+            hop_length=hop_size,
+            win_length=win_size,
+            window=hann_window[wnsize_dtype_device],
+            center=center,
+            pad_mode="reflect",
+            normalized=False,
+            onesided=True,
+            return_complex=True,
+        )
+        
     spec = torch.sqrt(spec.real.pow(2) + spec.imag.pow(2) + 1e-6)
 
     return spec

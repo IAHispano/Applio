@@ -1,6 +1,5 @@
 import torch
 
-
 class LayerNorm(torch.nn.Module):
     """Layer normalization module.
 

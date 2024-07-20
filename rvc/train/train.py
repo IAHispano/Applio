@@ -236,6 +236,13 @@ def run(
     if torch.cuda.is_available():
         torch.cuda.set_device(rank)
 
+    if torch.cuda.is_available() and torch.cuda.get_device_name("cuda:0").endswith("[ZLUDA]"):
+        print("Disabling CUDNN for traning with Zluda")
+        torch.backends.cudnn.enabled = False
+        torch.backends.cuda.enable_flash_sdp(False)
+        torch.backends.cuda.enable_math_sdp(True)
+        torch.backends.cuda.enable_mem_efficient_sdp(False)
+
     # Create datasets and dataloaders
     if hps.if_f0 == 1:
         train_dataset = TextAudioLoaderMultiNSFsid(hps.data)
