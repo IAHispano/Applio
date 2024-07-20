@@ -28,6 +28,15 @@
         "mel_fmin": 0.0,
         "mel_fmax": null
     },
+    "mssbcqtd": {
+        "filters": 128,
+        "max_filters": 1024,
+        "filters_scale": 1,
+        "dilations": [1, 2, 4],
+        "hop_lengths": [512, 256, 256],
+        "n_octaves": [9, 9, 9],
+        "bins_per_octaves": [24, 36, 48]
+    },
     "model": {
         "inter_channels": 192,
         "hidden_channels": 192,

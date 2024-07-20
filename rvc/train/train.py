@@ -52,6 +52,8 @@ from rvc.train.process.extract_model import extract_model
 from rvc.lib.algorithm import commons
 from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
 from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminatorV2
+from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminatorV3
+from rvc.train.mel_processing import MultiScaleMelSpectrogramLoss
 from rvc.lib.algorithm.synthesizers import Synthesizer
 
 hps = get_hparams()
@@ -286,7 +288,13 @@ def run(
     if hps.version == "v1":
         net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm)
     else:
-        net_d = MultiPeriodDiscriminatorV2(hps.model.use_spectral_norm)
+        if hps.vocoder_type == "bigvgan":
+            hps.mssbcqtd["sample_rate"] = hps.data.sampling_rate
+            hps.mssbcqtd["is_san"] = False
+            net_d = MultiPeriodDiscriminatorV3(hps.mssbcqtd, hps.model.use_spectral_norm)
+        else:
+            net_d = MultiPeriodDiscriminatorV2(hps.model.use_spectral_norm)
+        
     if torch.cuda.is_available():
         net_d = net_d.cuda(rank)
     optim_g = torch.optim.AdamW(
@@ -419,6 +427,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
         writer = writers[0]
 
     train_loader.batch_sampler.set_epoch(epoch)
+
+    fn_mel_loss_multiscale = MultiScaleMelSpectrogramLoss(sampling_rate=hps.data.sampling_rate)
 
     net_g.train()
     net_d.train()
@@ -591,7 +601,9 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             with autocast(enabled=hps.train.fp16_run):
                 y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
                 with autocast(enabled=False):
-                    loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
+                    #loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
+
+                    loss_mel = fn_mel_loss_multiscale(y_hat, wave) * hps.train.c_mel
                     loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
                     loss_fm = feature_loss(fmap_r, fmap_g)
                     loss_gen, losses_gen = generator_loss(y_d_hat_g)
