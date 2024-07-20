@@ -57,7 +57,7 @@ class Synthesizer(torch.nn.Module):
         gin_channels,
         sr,
         use_f0,
-        text_enc_hidden_dim,
+        text_enc_hidden_dim=768,
         **kwargs
     ):
         super(Synthesizer, self).__init__()
