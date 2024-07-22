@@ -311,7 +311,7 @@ Your cooperation and support are greatly appreciated. Thank you!
 Applio is possible to these projects and those cited in their references.
 
 - [gradio-screen-recorder](https://huggingface.co/spaces/gstaff/gradio-screen-recorder) by gstaff
-- [RVC_CLI](https://github.com/blaise-tk/RVC_CLI) by blaise-tk
+- [rvc-cli](https://github.com/blaise-tk/rvc-cli) by blaisewf
 
 ### Contributors
 
