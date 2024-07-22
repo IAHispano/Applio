@@ -236,7 +236,7 @@ def run(
     if torch.cuda.is_available():
         torch.cuda.set_device(rank)
 
-    if torch.cuda.is_available() and torch.cuda.get_device_name("cuda:0").endswith("[ZLUDA]"):
+    if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):
         print("Disabling CUDNN for traning with Zluda")
         torch.backends.cudnn.enabled = False
         torch.backends.cuda.enable_flash_sdp(False)

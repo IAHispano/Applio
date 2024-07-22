@@ -163,7 +163,7 @@ def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
     return acts
 
 # Same as previous, but without jit.script
-def fused_add_tanh_sigmoid_multiply_zluda(input_a, input_b, n_channels):
+def fused_add_tanh_sigmoid_multiply_no_jit(input_a, input_b, n_channels):
     """
     Fused add tanh sigmoid multiply operation.
 

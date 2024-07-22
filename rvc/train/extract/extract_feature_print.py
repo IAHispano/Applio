@@ -53,7 +53,7 @@ models, saved_cfg, task = load_embedding(embedder_model, embedder_model_custom)
 model = models[0]
 model = model.to(device)
 
-if torch.cuda.is_available() and torch.cuda.get_device_name("cuda:0").endswith("[ZLUDA]"):
+if torch.cuda.is_available() and torch.cuda.get_device_name(device.index).endswith("[ZLUDA]"):
     print("Disabling CUDNN for Zluda")
     torch.backends.cudnn.enabled = False
     torch.backends.cuda.enable_flash_sdp(False)
