@@ -124,7 +124,7 @@ if __name__ == "__main__":
         input_path = os.path.join(input_root, name)
         output_path1 = os.path.join(output_root1, name)
         output_path2 = os.path.join(output_root2, name)
-        np_arr = load_audio(input_path, 16000) #self.fs?
+        np_arr = load_audio(input_path, 16000)  # self.fs?
         paths.append([input_path, output_path1, output_path2, np_arr])
 
     print(f"Starting extraction with {num_processes} cores and {f0_method}...")
