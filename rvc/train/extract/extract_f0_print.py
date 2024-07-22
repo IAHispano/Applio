@@ -31,16 +31,20 @@ class FeatureInput:
         self.f0_min = 50.0
         self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
+        self.model_rmvpe = RMVPE0Predictor(
+            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
+            is_half=False,
+            device="cpu",
+        )
 
-    def compute_f0(self, path, f0_method, hop_length):
+    def compute_f0(self, np_arr, f0_method, hop_length):
         """Extract F0 using the specified method."""
-        x = load_audio(path, self.fs)
-        p_len = x.shape[0] // self.hop
+        p_len = np_arr.shape[0] // self.hop
 
         if f0_method == "crepe":
-            f0 = self.get_crepe(x, p_len, hop_length)
+            f0 = self.get_crepe(np_arr, p_len, hop_length)
         elif f0_method == "rmvpe":
-            f0 = self.get_rmvpe(x)
+            f0 = self.model_rmvpe.infer_from_audio(np_arr, thred=0.03)
         else:
             raise ValueError(f"Unknown F0 method: {f0_method}")
 
@@ -73,15 +77,6 @@ class FeatureInput:
         )
         return np.nan_to_num(target)
 
-    def get_rmvpe(self, x):
-        """Extract F0 using RMVPE."""
-        model_rmvpe = RMVPE0Predictor(
-            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-            is_half=False,
-            device="cpu",
-        )
-        return model_rmvpe.infer_from_audio(x, thred=0.03)
-
     def coarse_f0(self, f0):
         """Convert F0 to coarse F0."""
         f0_mel = 1127 * np.log(1 + f0 / 700)
@@ -99,13 +94,13 @@ class FeatureInput:
 
     def process_file(self, file_info):
         """Process a single audio file for F0 extraction."""
-        inp_path, opt_path1, opt_path2 = file_info
+        inp_path, opt_path1, opt_path2, np_arr = file_info
 
         if os.path.exists(opt_path1 + ".npy") and os.path.exists(opt_path2 + ".npy"):
             return
 
         try:
-            feature_pit = self.compute_f0(inp_path, f0_method, hop_length)
+            feature_pit = self.compute_f0(np_arr, f0_method, hop_length)
             np.save(opt_path2, feature_pit, allow_pickle=False)
             coarse_pit = self.coarse_f0(feature_pit)
             np.save(opt_path1, coarse_pit, allow_pickle=False)
@@ -129,7 +124,8 @@ if __name__ == "__main__":
         input_path = os.path.join(input_root, name)
         output_path1 = os.path.join(output_root1, name)
         output_path2 = os.path.join(output_root2, name)
-        paths.append([input_path, output_path1, output_path2])
+        np_arr = load_audio(input_path, 16000) #self.fs?
+        paths.append([input_path, output_path1, output_path2, np_arr])
 
     print(f"Starting extraction with {num_processes} cores and {f0_method}...")
 
