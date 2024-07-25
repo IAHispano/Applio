@@ -523,6 +523,14 @@ def train_tab():
                         value=False,
                         interactive=True,
                     )
+                    save_low = gr.Checkbox(
+                        label=i18n("Save Lowest detected"),
+                        info=i18n(
+                            "Enabling this setting will result in saving a copy of the model with a 'low' prefix for the latest detected lowest value."
+                        ),
+                        value=False,
+                        interactive=True,
+                    )
                     save_every_weights = gr.Checkbox(
                         label=i18n("Save Every Weights"),
                         info=i18n(
@@ -668,6 +676,7 @@ def train_tab():
                     rvc_version,
                     save_every_epoch,
                     save_only_latest,
+                    save_low,
                     save_every_weights,
                     total_epoch,
                     sampling_rate,

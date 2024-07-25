@@ -707,6 +707,28 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 hps,
             )
 
+    # save lowest epoch
+    if hps.if_lowest == 1 and epoch == lowest_value["epoch"] and epoch >= 10:
+        print("New Low found")
+        if hasattr(net_g, "module"):
+            ckpt = net_g.module.state_dict()
+        else:
+            ckpt = net_g.state_dict()
+
+        extract_model(
+                ckpt,
+                hps.sample_rate,
+                hps.if_f0,
+                hps.name,
+                os.path.join(
+                    hps.model_dir, "{}_low.pth".format(hps.name)
+                ),
+                epoch,
+                global_step,
+                hps.version,
+                hps,
+    )
+
     # Overtraining detection and best model saving
     if hps.overtraining_detector == 1:
         if epoch >= (lowest_value["epoch"] + hps.overtraining_threshold):

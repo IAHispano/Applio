@@ -297,6 +297,13 @@ def get_hparams():
         help="if only save the latest G/D pth file, 1 or 0",
     )
     parser.add_argument(
+        "-low",
+        "--if_lowest",
+        type=int,
+        required=True,
+        help="if only save the low pth file, 1 or 0",
+    )
+    parser.add_argument(
         "-c",
         "--if_cache_data_in_gpu",
         type=int,
@@ -345,6 +352,7 @@ def get_hparams():
     hparams.sample_rate = args.sample_rate
     hparams.if_f0 = args.if_f0
     hparams.if_latest = args.if_latest
+    hparams.if_lowest = args.if_lowest
     hparams.save_every_weights = args.save_every_weights
     hparams.if_cache_data_in_gpu = args.if_cache_data_in_gpu
     hparams.data.training_files = f"{experiment_dir}/filelist.txt"

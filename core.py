@@ -324,6 +324,7 @@ def run_train_script(
     rvc_version,
     save_every_epoch,
     save_only_latest,
+    save_low,
     save_every_weights,
     total_epoch,
     sampling_rate,
@@ -341,6 +342,7 @@ def run_train_script(
 ):
     f0 = 1 if str(pitch_guidance) == "True" else 0
     latest = 1 if str(save_only_latest) == "True" else 0
+    lowest = 1 if str(save_low) == "True" else 0
     save_every = 1 if str(save_every_weights) == "True" else 0
     detector = 1 if str(overtraining_detector) == "True" else 0
     sync = 1 if str(sync_graph) == "True" else 0
@@ -385,6 +387,8 @@ def run_train_script(
                 rvc_version,
                 "-l",
                 latest,
+                "-low",
+                lowest,
                 "-c",
                 cache_data,
                 "-sw",
