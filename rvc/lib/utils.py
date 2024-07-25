@@ -44,12 +44,14 @@ def load_embedding(embedder_model, custom_embedder=None):
 
     embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
     embedding_list = {
+        "hubert": os.path.join(embedder_root, "hubert_base.pt"),
         "contentvec": os.path.join(embedder_root, "contentvec_base.pt"),
         "japanese-hubert-base": os.path.join(embedder_root, "japanese-hubert-base.pt"),
         "chinese-hubert-large": os.path.join(embedder_root, "chinese-hubert-large.pt"),
     }
 
     online_embedders = {
+        "hubert": "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/hubert_base.pt",
         "japanese-hubert-base": "https://huggingface.co/rinna/japanese-hubert-base/resolve/main/fairseq/model.pt",
         "chinese-hubert-large": "https://huggingface.co/TencentGameMate/chinese-hubert-large/resolve/main/chinese-hubert-large-fairseq-ckpt.pt",
     }
