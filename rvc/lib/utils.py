@@ -15,15 +15,14 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 
-def load_audio(file, sampling_rate):
+def load_audio(file, sample_rate):
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
         audio, sr = sf.read(file)
         if len(audio.shape) > 1:
             audio = librosa.to_mono(audio.T)
-        if sr != sampling_rate:
-            audio = librosa.resample(audio, orig_sr=sr, target_sr=sampling_rate)
-
+        if sr != sample_rate:
+            audio = librosa.resample(audio, orig_sr=sr, target_sr=sample_rate)
     except Exception as error:
         raise RuntimeError(f"Failed to load audio: {error}")
 
@@ -41,7 +40,6 @@ def format_title(title):
 
 
 def load_embedding(embedder_model, custom_embedder=None):
-
     embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
     embedding_list = {
         "contentvec": os.path.join(embedder_root, "contentvec_base.pt"),

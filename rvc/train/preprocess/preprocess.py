@@ -15,10 +15,10 @@ sys.path.append(now_directory)
 from rvc.lib.utils import load_audio
 from rvc.train.slicer import Slicer
 
-# Load command line arguments
-experiment_directory = sys.argv[1]
-input_root = sys.argv[2]
-sampling_rate = int(sys.argv[3])
+# Parse command line arguments
+experiment_directory = str(sys.argv[1])
+input_root = str(sys.argv[2])
+sample_rate = int(sys.argv[3])
 percentage = float(sys.argv[4])
 num_processes = int(sys.argv[5]) if len(sys.argv) > 5 else cpu_count()
 
@@ -135,5 +135,5 @@ def preprocess_training_set(
 
 if __name__ == "__main__":
     preprocess_training_set(
-        input_root, sampling_rate, num_processes, experiment_directory, percentage
+        input_root, sample_rate, num_processes, experiment_directory, percentage
     )

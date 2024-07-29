@@ -5,8 +5,9 @@ import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 from multiprocessing import cpu_count
 
-exp_dir = sys.argv[1]
-version = sys.argv[2]
+# Parse command line arguments
+exp_dir = str(sys.argv[1])
+version = str(sys.argv[2])
 
 try:
     feature_dir = os.path.join(exp_dir, f"{version}_extracted")

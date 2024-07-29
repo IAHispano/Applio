@@ -4,6 +4,7 @@ import time
 import torch
 import librosa
 import logging
+import traceback
 import numpy as np
 import soundfile as sf
 import noisereduce as nr
@@ -45,7 +46,7 @@ class VoiceConverter:
         self.n_spk = None  # Number of speakers in the model
         self.use_f0 = None  # Whether the model uses F0
 
-    def load_hubert(self, embedder_model, embedder_model_custom):
+    def load_hubert(self, embedder_model: str, embedder_model_custom: str = None):
         """
         Loads the HuBERT model for speaker embedding extraction.
 
@@ -117,28 +118,28 @@ class VoiceConverter:
 
     def convert_audio(
         self,
-        audio_input_path,
-        audio_output_path,
-        model_path,
-        index_path,
-        sid=0,
-        f0_up_key=None,
-        f0_file=None,
-        f0_method=None,
-        index_rate=None,
-        resample_sr=0,
-        rms_mix_rate=None,
-        protect=None,
-        hop_length=None,
-        split_audio=False,
-        f0_autotune=False,
-        filter_radius=None,
-        embedder_model=None,
-        embedder_model_custom=None,
-        clean_audio=False,
-        clean_strength=0.7,
-        export_format="WAV",
-        upscale_audio=False,
+        audio_input_path: str,
+        audio_output_path: str,
+        model_path: str,
+        index_path: str,
+        embedder_model: str,
+        pitch: int,
+        f0_file: str,
+        f0_method: str,
+        index_rate: float,
+        volume_envelope: int,
+        protect: float,
+        hop_length: int,
+        split_audio: bool,
+        f0_autotune: bool,
+        filter_radius: int,
+        embedder_model_custom: str,
+        clean_audio: bool,
+        clean_strength: float,
+        export_format: str,
+        upscale_audio: bool,
+        resample_sr: int = 0,
+        sid: int = 0,
     ):
         """
         Performs voice conversion on the input audio.
@@ -149,12 +150,12 @@ class VoiceConverter:
             model_path (str): Path to the voice conversion model.
             index_path (str): Path to the index file.
             sid (int, optional): Speaker ID. Default is 0.
-            f0_up_key (str, optional): Key for F0 up-sampling. Default is None.
+            pitch (str, optional): Key for F0 up-sampling. Default is None.
             f0_file (str, optional): Path to the F0 file. Default is None.
             f0_method (str, optional): Method for F0 extraction. Default is None.
             index_rate (float, optional): Rate for index matching. Default is None.
             resample_sr (int, optional): Resample sampling rate. Default is 0.
-            rms_mix_rate (float, optional): RMS mix rate. Default is None.
+            volume_envelope (float, optional): RMS mix rate. Default is None.
             protect (float, optional): Protection rate for certain audio segments. Default is None.
             hop_length (int, optional): Hop length for audio processing. Default is None.
             split_audio (bool, optional): Whether to split the audio for processing. Default is False.
@@ -166,6 +167,7 @@ class VoiceConverter:
             clean_strength (float, optional): Strength of the audio cleaning. Default is 0.7.
             export_format (str, optional): Format for exporting the audio. Default is "WAV".
             upscale_audio (bool, optional): Whether to upscale the audio. Default is False.
+
         """
         self.get_vc(model_path, sid)
 
@@ -173,7 +175,7 @@ class VoiceConverter:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
 
-            if upscale_audio == "True":
+            if upscale_audio == True:
                 upscale(audio_input_path, audio_input_path)
 
             audio = load_audio(audio_input_path, 16000)
@@ -197,7 +199,7 @@ class VoiceConverter:
             if self.tgt_sr != resample_sr >= 16000:
                 self.tgt_sr = resample_sr
 
-            if split_audio == "True":
+            if split_audio:
                 result, new_dir_path = process_audio(audio_input_path)
                 if result == "Error":
                     return "Error with Split Audio", None
@@ -215,31 +217,32 @@ class VoiceConverter:
                 try:
                     for path in paths:
                         self.convert_audio(
-                            path,
-                            path,
-                            model_path,
-                            index_path,
-                            sid,
-                            f0_up_key,
-                            None,
-                            f0_method,
-                            index_rate,
-                            resample_sr,
-                            rms_mix_rate,
-                            protect,
-                            hop_length,
-                            False,
-                            f0_autotune,
-                            filter_radius,
-                            embedder_model,
-                            embedder_model_custom,
-                            clean_audio,
-                            clean_strength,
-                            export_format,
-                            upscale_audio,
+                            audio_input_path=path,
+                            audio_output_path=path,
+                            model_path=model_path,
+                            index_path=index_path,
+                            sid=sid,
+                            pitch=pitch,
+                            f0_file=None,
+                            f0_method=f0_method,
+                            index_rate=index_rate,
+                            resample_sr=resample_sr,
+                            volume_envelope=volume_envelope,
+                            protect=protect,
+                            hop_length=hop_length,
+                            split_audio=False,
+                            f0_autotune=f0_autotune,
+                            filter_radius=filter_radius,
+                            embedder_model=embedder_model,
+                            embedder_model_custom=embedder_model_custom,
+                            clean_audio=clean_audio,
+                            clean_strength=clean_strength,
+                            export_format=export_format,
+                            upscale_audio=upscale_audio,
                         )
                 except Exception as error:
-                    print(error)
+                    print(f"Error in processing split audio segment: {error}")
+                    print(traceback.format_exc())
                     return f"Error {error}"
                 print("Finished processing segmented audio, now merging audio...")
                 merge_timestamps_file = os.path.join(
@@ -250,31 +253,31 @@ class VoiceConverter:
                 os.remove(merge_timestamps_file)
             else:
                 audio_opt = self.vc.pipeline(
-                    self.hubert_model,
-                    self.net_g,
-                    sid,
-                    audio,
-                    audio_input_path,
-                    f0_up_key,
-                    f0_method,
-                    file_index,
-                    index_rate,
-                    self.use_f0,
-                    filter_radius,
-                    self.tgt_sr,
-                    resample_sr,
-                    rms_mix_rate,
-                    self.version,
-                    protect,
-                    hop_length,
-                    f0_autotune,
+                    model=self.hubert_model,
+                    net_g=self.net_g,
+                    sid=sid,
+                    audio=audio,
+                    input_audio_path=audio_input_path,
+                    pitch=pitch,
+                    f0_method=f0_method,
+                    file_index=file_index,
+                    index_rate=index_rate,
+                    pitch_guidance=self.use_f0,
+                    filter_radius=filter_radius,
+                    tgt_sr=self.tgt_sr,
+                    resample_sr=resample_sr,
+                    volume_envelope=volume_envelope,
+                    version=self.version,
+                    protect=protect,
+                    hop_length=hop_length,
+                    f0_autotune=f0_autotune,
                     f0_file=f0_file,
                 )
 
             if audio_output_path:
                 sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
 
-            if clean_audio == "True":
+            if clean_audio:
                 cleaned_audio = self.remove_audio_noise(
                     audio_output_path, clean_strength
                 )
@@ -297,6 +300,7 @@ class VoiceConverter:
 
         except Exception as error:
             print(f"Voice conversion failed: {error}")
+            print(traceback.format_exc())
 
     def get_vc(self, weight_root, sid):
         """

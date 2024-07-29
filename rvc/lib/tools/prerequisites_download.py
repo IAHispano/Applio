@@ -120,20 +120,24 @@ def download_mapping_files(list):
 
 
 def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
-    if models == "True":
+    if models == True:
         download_mapping_files(models_list)
         download_mapping_files(embedders_list)
 
-    if exe == "True" and os.name == "nt":
-        download_files(executables_list)
+    if exe == True:
+        if os.name == "nt":
+            download_files(executables_list)
+        else:
+            print("Executable files are only available for Windows")
 
-    if pretraineds_v1 == "True":
+    if pretraineds_v1 == True:
         download_mapping_files(pretraineds_v1_list)
 
-    if pretraineds_v2 == "True":
+    if pretraineds_v2 == True:
         download_mapping_files(pretraineds_v2_list)
 
-    clear_console()  # Clear the console after all downloads are completed
+    # Clear the console after all downloads are completed
+    clear_console()  
 
 
 def clear_console():

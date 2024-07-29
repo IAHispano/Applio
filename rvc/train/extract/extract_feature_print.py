@@ -11,20 +11,22 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 from rvc.lib.utils import load_embedding
 
-device = sys.argv[1]
+# Parse command line arguments
+device = str(sys.argv[1])
 n_parts = int(sys.argv[2])
 i_part = int(sys.argv[3])
-i_gpu = sys.argv[4]
-exp_dir = sys.argv[5]
-os.environ["CUDA_VISIBLE_DEVICES"] = str(i_gpu)
-version = sys.argv[6]
+i_gpu = int(sys.argv[4])
+exp_dir = str(sys.argv[5])
+version = str(sys.argv[6])
 is_half = bool(sys.argv[7])
-embedder_model = sys.argv[8]
+embedder_model = str(sys.argv[8])
+
 try:
-    embedder_model_custom = sys.argv[9]
+    embedder_model_custom = str(sys.argv[9])
 except:
     embedder_model_custom = None
 
+os.environ["CUDA_VISIBLE_DEVICES"] = str(i_gpu)
 
 wav_path = f"{exp_dir}/sliced_audios_16k"
 out_path = f"{exp_dir}/v1_extracted" if version == "v1" else f"{exp_dir}/v2_extracted"

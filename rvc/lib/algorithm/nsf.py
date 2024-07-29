@@ -14,7 +14,7 @@ class SourceModuleHnNSF(torch.nn.Module):
     Source Module for harmonic-plus-noise excitation.
 
     Args:
-        sampling_rate (int): Sampling rate in Hz.
+        sample_rate (int): Sampling rate in Hz.
         harmonic_num (int, optional): Number of harmonics above F0. Defaults to 0.
         sine_amp (float, optional): Amplitude of sine source signal. Defaults to 0.1.
         add_noise_std (float, optional): Standard deviation of additive Gaussian noise. Defaults to 0.003.
@@ -24,7 +24,7 @@ class SourceModuleHnNSF(torch.nn.Module):
 
     def __init__(
         self,
-        sampling_rate,
+        sample_rate,
         harmonic_num=0,
         sine_amp=0.1,
         add_noise_std=0.003,
@@ -38,7 +38,7 @@ class SourceModuleHnNSF(torch.nn.Module):
         self.is_half = is_half
 
         self.l_sin_gen = SineGen(
-            sampling_rate, harmonic_num, sine_amp, add_noise_std, voiced_threshod
+            sample_rate, harmonic_num, sine_amp, add_noise_std, voiced_threshod
         )
         self.l_linear = torch.nn.Linear(harmonic_num + 1, 1)
         self.l_tanh = torch.nn.Tanh()
@@ -86,7 +86,7 @@ class GeneratorNSF(torch.nn.Module):
         self.num_upsamples = len(upsample_rates)
         self.f0_upsamp = torch.nn.Upsample(scale_factor=math.prod(upsample_rates))
         self.m_source = SourceModuleHnNSF(
-            sampling_rate=sr, harmonic_num=0, is_half=is_half
+            sample_rate=sr, harmonic_num=0, is_half=is_half
         )
 
         self.conv_pre = torch.nn.Conv1d(
