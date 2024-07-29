@@ -21,7 +21,15 @@ def replace_keys_in_dict(d, old_key_part, new_key_part):
     return updated_dict
 
 
-def extract_small_model(path: str, name: str, sr: int, pitch_guidance: bool, version: str, epoch: int, step: int):
+def extract_small_model(
+    path: str,
+    name: str,
+    sr: int,
+    pitch_guidance: bool,
+    version: str,
+    epoch: int,
+    step: int,
+):
     try:
         ckpt = torch.load(path, map_location="cpu")
         pth_file = f"{name}.pth"

@@ -800,7 +800,6 @@ def inference_tab():
             f0_file,
             embedder_model,
             embedder_model_custom,
-            
         ],
         outputs=[vc_output1, vc_output2],
     )

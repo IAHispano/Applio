@@ -137,7 +137,7 @@ def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
         download_mapping_files(pretraineds_v2_list)
 
     # Clear the console after all downloads are completed
-    clear_console()  
+    clear_console()
 
 
 def clear_console():
