@@ -142,7 +142,7 @@ class SineGen(torch.nn.Module):
         self.noise_std = noise_std
         self.harmonic_num = harmonic_num
         self.dim = self.harmonic_num + 1
-        self.sampling_rate = samp_rate
+        self.sample_rate = samp_rate
         self.voiced_threshold = voiced_threshold
 
     def _f02uv(self, f0):
@@ -172,7 +172,7 @@ class SineGen(torch.nn.Module):
                 f0_buf[:, :, idx + 1] = f0_buf[:, :, 0] * (
                     idx + 2
                 )  # idx + 2: the (idx+1)-th overtone, (idx+2)-th harmonic
-            rad_values = (f0_buf / float(self.sampling_rate)) % 1
+            rad_values = (f0_buf / float(self.sample_rate)) % 1
             rand_ini = torch.rand(
                 f0_buf.shape[0], f0_buf.shape[2], device=f0_buf.device
             )

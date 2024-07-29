@@ -14,8 +14,8 @@ from rvc.lib.utils import load_audio
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 
 # Parse command line arguments
-exp_dir = sys.argv[1]
-f0_method = sys.argv[2]
+exp_dir = str(sys.argv[1])
+f0_method = str(sys.argv[2])
 hop_length = int(sys.argv[3])
 num_processes = int(sys.argv[4])
 

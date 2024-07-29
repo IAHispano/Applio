@@ -18,7 +18,7 @@ def replace_keys_in_dict(d, old_key_part, new_key_part):
     return updated_dict
 
 
-def extract_model(ckpt, sr, if_f0, name, model_dir, epoch, step, version, hps):
+def extract_model(ckpt, sr, pitch_guidance, name, model_dir, epoch, step, version, hps):
     try:
         print(f"Saved model '{model_dir}' (epoch {epoch} and step {step})")
         pth_file = f"{name}_{epoch}e_{step}s.pth"
@@ -48,13 +48,13 @@ def extract_model(ckpt, sr, if_f0, name, model_dir, epoch, step, version, hps):
             hps.model.upsample_kernel_sizes,
             hps.model.spk_embed_dim,
             hps.model.gin_channels,
-            hps.data.sampling_rate,
+            hps.data.sample_rate,
         ]
 
         opt["epoch"] = epoch
         opt["step"] = step
         opt["sr"] = sr
-        opt["f0"] = if_f0
+        opt["f0"] = pitch_guidance
         opt["version"] = version
         opt["creation_date"] = datetime.datetime.now().isoformat()
 

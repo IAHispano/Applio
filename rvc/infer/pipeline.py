@@ -274,7 +274,7 @@ class Pipeline:
                     f0_max=int(f0_max),
                     dtype=torch.float32,
                     device=self.device,
-                    sampling_rate=self.sample_rate,
+                    sample_rate=self.sample_rate,
                     threshold=0.03,
                 )
                 f0 = self.model_fcpe.compute_f0(x, p_len=p_len)
@@ -295,7 +295,7 @@ class Pipeline:
         input_audio_path,
         x,
         p_len,
-        f0_up_key,
+        pitch,
         f0_method,
         filter_radius,
         hop_length,
@@ -309,7 +309,7 @@ class Pipeline:
             input_audio_path: Path to the input audio file.
             x: The input audio signal as a NumPy array.
             p_len: Desired length of the F0 output.
-            f0_up_key: Key to adjust the pitch of the F0 contour.
+            pitch: Key to adjust the pitch of the F0 contour.
             f0_method: Method to use for F0 estimation (e.g., "crepe").
             filter_radius: Radius for median filtering the F0 contour.
             hop_length: Hop length for F0 estimation methods.
@@ -337,7 +337,7 @@ class Pipeline:
                 f0_max=int(self.f0_max),
                 dtype=torch.float32,
                 device=self.device,
-                sampling_rate=self.sample_rate,
+                sample_rate=self.sample_rate,
                 threshold=0.03,
             )
             f0 = self.model_fcpe.compute_f0(x, p_len=p_len)
@@ -357,7 +357,7 @@ class Pipeline:
         if f0_autotune == "True":
             f0 = Autotune.autotune_f0(self, f0)
 
-        f0 *= pow(2, f0_up_key / 12)
+        f0 *= pow(2, pitch / 12)
         tf0 = self.sample_rate // self.window
         if inp_f0 is not None:
             delta_t = np.round(
@@ -497,7 +497,7 @@ class Pipeline:
         sid,
         audio,
         input_audio_path,
-        f0_up_key,
+        pitch,
         f0_method,
         file_index,
         index_rate,
@@ -505,7 +505,7 @@ class Pipeline:
         filter_radius,
         tgt_sr,
         resample_sr,
-        rms_mix_rate,
+        volume_envelope,
         version,
         protect,
         hop_length,
@@ -521,7 +521,7 @@ class Pipeline:
             sid: Speaker ID for the target voice.
             audio: The input audio signal.
             input_audio_path: Path to the input audio file.
-            f0_up_key: Key to adjust the pitch of the F0 contour.
+            pitch: Key to adjust the pitch of the F0 contour.
             f0_method: Method to use for F0 estimation.
             file_index: Path to the FAISS index file for speaker embedding retrieval.
             index_rate: Blending rate for speaker embedding retrieval.
@@ -529,7 +529,7 @@ class Pipeline:
             filter_radius: Radius for median filtering the F0 contour.
             tgt_sr: Target sampling rate for the output audio.
             resample_sr: Resampling rate for the output audio.
-            rms_mix_rate: Blending rate for adjusting the RMS level of the output audio.
+            volume_envelope: Blending rate for adjusting the RMS level of the output audio.
             version: Model version.
             protect: Protection level for preserving the original pitch.
             hop_length: Hop length for F0 estimation methods.
@@ -578,13 +578,12 @@ class Pipeline:
             except Exception as error:
                 print(error)
         sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
-        pitch, pitchf = None, None
-        if pitch_guidance == 1:
+        if pitch_guidance == True:
             pitch, pitchf = self.get_f0(
                 input_audio_path,
                 audio_pad,
                 p_len,
-                f0_up_key,
+                pitch,
                 f0_method,
                 filter_radius,
                 hop_length,
@@ -599,7 +598,7 @@ class Pipeline:
             pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
         for t in opt_ts:
             t = t // self.window * self.window
-            if pitch_guidance == 1:
+            if pitch_guidance == True:
                 audio_opt.append(
                     self.voice_conversion(
                         model,
@@ -632,7 +631,7 @@ class Pipeline:
                     )[self.t_pad_tgt : -self.t_pad_tgt]
                 )
             s = t
-        if pitch_guidance == 1:
+        if pitch_guidance == True:
             audio_opt.append(
                 self.voice_conversion(
                     model,
@@ -665,9 +664,9 @@ class Pipeline:
                 )[self.t_pad_tgt : -self.t_pad_tgt]
             )
         audio_opt = np.concatenate(audio_opt)
-        if rms_mix_rate != 1:
+        if volume_envelope != 1:
             audio_opt = AudioProcessor.change_rms(
-                audio, self.sample_rate, audio_opt, tgt_sr, rms_mix_rate
+                audio, self.sample_rate, audio_opt, tgt_sr, volume_envelope
             )
         if resample_sr >= self.sample_rate and tgt_sr != resample_sr:
             audio_opt = librosa.resample(

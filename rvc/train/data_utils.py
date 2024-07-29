@@ -18,11 +18,11 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
     def __init__(self, hparams):
         self.audiopaths_and_text = load_filepaths_and_text(hparams.training_files)
         self.max_wav_value = hparams.max_wav_value
-        self.sampling_rate = hparams.sampling_rate
+        self.sample_rate = hparams.sample_rate
         self.filter_length = hparams.filter_length
         self.hop_length = hparams.hop_length
         self.win_length = hparams.win_length
-        self.sampling_rate = hparams.sampling_rate
+        self.sample_rate = hparams.sample_rate
         self.min_text_len = getattr(hparams, "min_text_len", 1)
         self.max_text_len = getattr(hparams, "max_text_len", 5000)
         self._filter()
@@ -115,11 +115,11 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
         Args:
             filename (str): Path to audio file.
         """
-        audio, sampling_rate = load_wav_to_torch(filename)
-        if sampling_rate != self.sampling_rate:
+        audio, sample_rate = load_wav_to_torch(filename)
+        if sample_rate != self.sample_rate:
             raise ValueError(
                 "{} SR doesn't match target {} SR".format(
-                    sampling_rate, self.sampling_rate
+                    sample_rate, self.sample_rate
                 )
             )
         audio_norm = audio
@@ -256,11 +256,11 @@ class TextAudioLoader(torch.utils.data.Dataset):
     def __init__(self, hparams):
         self.audiopaths_and_text = load_filepaths_and_text(hparams.training_files)
         self.max_wav_value = hparams.max_wav_value
-        self.sampling_rate = hparams.sampling_rate
+        self.sample_rate = hparams.sample_rate
         self.filter_length = hparams.filter_length
         self.hop_length = hparams.hop_length
         self.win_length = hparams.win_length
-        self.sampling_rate = hparams.sampling_rate
+        self.sample_rate = hparams.sample_rate
         self.min_text_len = getattr(hparams, "min_text_len", 1)
         self.max_text_len = getattr(hparams, "max_text_len", 5000)
         self._filter()
@@ -341,11 +341,11 @@ class TextAudioLoader(torch.utils.data.Dataset):
         Args:
             filename (str): Path to audio file.
         """
-        audio, sampling_rate = load_wav_to_torch(filename)
-        if sampling_rate != self.sampling_rate:
+        audio, sample_rate = load_wav_to_torch(filename)
+        if sample_rate != self.sample_rate:
             raise ValueError(
                 "{} SR doesn't match target {} SR".format(
-                    sampling_rate, self.sampling_rate
+                    sample_rate, self.sample_rate
                 )
             )
         audio_norm = audio

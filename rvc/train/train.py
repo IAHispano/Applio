@@ -5,9 +5,10 @@ import datetime
 import glob
 import json
 import re
+from distutils.util import strtobool
 
 from utils import (
-    get_hparams,
+    HParams,
     plot_spectrogram_to_numpy,
     summarize,
     load_checkpoint,
@@ -54,10 +55,34 @@ from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
 from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminatorV2
 from rvc.lib.algorithm.synthesizers import Synthesizer
 
-hps = get_hparams()
+# Parse command line arguments
+model_name = sys.argv[1]
+save_every_epoch = int(sys.argv[2])
+total_epoch = int(sys.argv[3])
+pretrainG = sys.argv[4]
+pretrainD = sys.argv[5]
+version = sys.argv[6]
+gpus = sys.argv[7]
+batch_size = int(sys.argv[8])
+sample_rate = int(sys.argv[9])
+pitch_guidance = strtobool(sys.argv[10])
+save_only_latest = strtobool(sys.argv[11])
+save_every_weights = strtobool(sys.argv[12])
+cache_data_in_gpu = strtobool(sys.argv[13])
+overtraining_detector = strtobool(sys.argv[14])
+overtraining_threshold = int(sys.argv[15])
+sync_graph = strtobool(sys.argv[16])
 
-os.environ["CUDA_VISIBLE_DEVICES"] = hps.gpus.replace("-", ",")
-n_gpus = len(hps.gpus.split("-"))
+experiment_dir = os.path.join("logs", model_name)
+config_save_path = os.path.join(experiment_dir, "config.json")
+
+with open(config_save_path, "r") as f:
+    config = json.load(f)
+config = HParams(**config)
+config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
+
+os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
+n_gpus = len(gpus.split("-"))
 
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
@@ -108,7 +133,17 @@ def main():
             for i in range(n_gpus):
                 subproc = mp.Process(
                     target=run,
-                    args=(i, n_gpus, hps),
+                    args=(
+                        i,
+                        n_gpus,
+                        experiment_dir,
+                        pretrainG,
+                        pretrainD,
+                        pitch_guidance,
+                        custom_total_epoch,
+                        custom_save_every_weights,
+                        config,
+                    ),
                 )
                 children.append(subproc)
                 subproc.start()
@@ -125,28 +160,28 @@ def main():
         print("GPU not detected, reverting to CPU (not recommended)")
         n_gpus = 1
 
-    if hps.sync_graph == 1:
+    print(f"Value of sg {sync_graph}")
+    if sync_graph:
         print(
             "Sync graph is now activated! With sync graph enabled, the model undergoes a single epoch of training. Once the graphs are synchronized, training proceeds for the previously specified number of epochs."
         )
-        hps.custom_total_epoch = 1
-        hps.custom_save_every_weights = "1"
+        custom_total_epoch = 1
+        custom_save_every_weights = True
         start()
 
         # Synchronize graphs by modifying config files
-        logs_path = os.path.join(now_dir, "logs")
-        model_config_file = os.path.join(now_dir, "logs", hps.name, "config.json")
+        model_config_file = os.path.join(experiment_dir, "config.json")
         rvc_config_file = os.path.join(
-            now_dir, "rvc", "configs", hps.version, str(hps.sample_rate) + ".json"
+            now_dir, "rvc", "configs", version, str(sample_rate) + ".json"
         )
         if not os.path.exists(rvc_config_file):
             rvc_config_file = os.path.join(
-                now_dir, "rvc", "configs", "v1", str(hps.sample_rate) + ".json"
+                now_dir, "rvc", "configs", "v1", str(sample_rate) + ".json"
             )
 
-        pattern = rf"{os.path.basename(hps.name)}_1e_(\d+)s\.pth"
+        pattern = rf"{os.path.basename(model_name)}_1e_(\d+)s\.pth"
 
-        for filename in os.listdir(logs_path):
+        for filename in os.listdir(experiment_dir):
             match = re.match(pattern, filename)
             if match:
                 steps = int(match.group(1))
@@ -177,7 +212,7 @@ def main():
 
         # Clean up unnecessary files
         for root, dirs, files in os.walk(
-            os.path.join(now_dir, "logs", hps.name), topdown=False
+            os.path.join(now_dir, "logs", model_name), topdown=False
         ):
             for name in files:
                 file_path = os.path.join(root, name)
@@ -200,19 +235,25 @@ def main():
                     os.rmdir(folder_path)
 
         print("Successfully synchronized graphs!")
-        hps.custom_total_epoch = hps.total_epoch
-        hps.custom_save_every_weights = hps.save_every_weights
+        custom_total_epoch = total_epoch
+        custom_save_every_weights = save_every_weights
         start()
     else:
-        hps.custom_total_epoch = hps.total_epoch
-        hps.custom_save_every_weights = hps.save_every_weights
+        custom_total_epoch = total_epoch
+        custom_save_every_weights = save_every_weights
         start()
 
 
 def run(
     rank,
     n_gpus,
-    hps,
+    experiment_dir,
+    pretrainG,
+    pretrainD,
+    pitch_guidance,
+    custom_total_epoch,
+    custom_save_every_weights,
+    config,
 ):
     """
     Runs the training loop on a specific GPU.
@@ -220,41 +261,43 @@ def run(
     Args:
         rank (int): Rank of the current GPU.
         n_gpus (int): Total number of GPUs.
-        hps (Namespace): Hyperparameters.
     """
     global global_step
     if rank == 0:
-        writer = SummaryWriter(log_dir=hps.model_dir)
-        writer_eval = SummaryWriter(log_dir=os.path.join(hps.model_dir, "eval"))
+        writer = SummaryWriter(log_dir=experiment_dir)
+        writer_eval = SummaryWriter(log_dir=os.path.join(experiment_dir, "eval"))
 
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
     dist.init_process_group(
         backend="gloo", init_method="env://", world_size=n_gpus, rank=rank
     )
-    torch.manual_seed(hps.train.seed)
+    torch.manual_seed(config.train.seed)
     if torch.cuda.is_available():
         torch.cuda.set_device(rank)
 
     # Create datasets and dataloaders
-    if hps.if_f0 == 1:
-        train_dataset = TextAudioLoaderMultiNSFsid(hps.data)
+    if pitch_guidance == True:
+        train_dataset = TextAudioLoaderMultiNSFsid(config.data)
+    elif pitch_guidance == False:
+        train_dataset = TextAudioLoader(config.data)
     else:
-        train_dataset = TextAudioLoader(hps.data)
+        raise ValueError(f"Unexpected value for pitch_guidance: {pitch_guidance}")
 
     train_sampler = DistributedBucketSampler(
         train_dataset,
-        hps.batch_size * n_gpus,
+        batch_size * n_gpus,
         [100, 200, 300, 400, 500, 600, 700, 800, 900],
         num_replicas=n_gpus,
         rank=rank,
         shuffle=True,
     )
 
-    if hps.if_f0 == 1:
+    if pitch_guidance == True:
         collate_fn = TextAudioCollateMultiNSFsid()
-    else:
+    elif pitch_guidance == False:
         collate_fn = TextAudioCollate()
+
     train_loader = DataLoader(
         train_dataset,
         num_workers=4,
@@ -268,32 +311,32 @@ def run(
 
     # Initialize models and optimizers
     net_g = Synthesizer(
-        hps.data.filter_length // 2 + 1,
-        hps.train.segment_size // hps.data.hop_length,
-        **hps.model,
-        use_f0=hps.if_f0 == 1,
-        is_half=hps.train.fp16_run,
-        sr=hps.sample_rate,
+        config.data.filter_length // 2 + 1,
+        config.train.segment_size // config.data.hop_length,
+        **config.model,
+        use_f0=pitch_guidance == True,
+        is_half=config.train.fp16_run,
+        sr=sample_rate,
     )
     if torch.cuda.is_available():
         net_g = net_g.cuda(rank)
-    if hps.version == "v1":
-        net_d = MultiPeriodDiscriminator(hps.model.use_spectral_norm)
+    if version == "v1":
+        net_d = MultiPeriodDiscriminator(config.model.use_spectral_norm)
     else:
-        net_d = MultiPeriodDiscriminatorV2(hps.model.use_spectral_norm)
+        net_d = MultiPeriodDiscriminatorV2(config.model.use_spectral_norm)
     if torch.cuda.is_available():
         net_d = net_d.cuda(rank)
     optim_g = torch.optim.AdamW(
         net_g.parameters(),
-        hps.train.learning_rate,
-        betas=hps.train.betas,
-        eps=hps.train.eps,
+        config.train.learning_rate,
+        betas=config.train.betas,
+        eps=config.train.eps,
     )
     optim_d = torch.optim.AdamW(
         net_d.parameters(),
-        hps.train.learning_rate,
-        betas=hps.train.betas,
-        eps=hps.train.eps,
+        config.train.learning_rate,
+        betas=config.train.betas,
+        eps=config.train.eps,
     )
 
     # Wrap models with DDP
@@ -308,84 +351,100 @@ def run(
     try:
         print("Starting training...")
         _, _, _, epoch_str = load_checkpoint(
-            latest_checkpoint_path(hps.model_dir, "D_*.pth"), net_d, optim_d
+            latest_checkpoint_path(experiment_dir, "D_*.pth"), net_d, optim_d
         )
         _, _, _, epoch_str = load_checkpoint(
-            latest_checkpoint_path(hps.model_dir, "G_*.pth"), net_g, optim_g
+            latest_checkpoint_path(experiment_dir, "G_*.pth"), net_g, optim_g
         )
         global_step = (epoch_str - 1) * len(train_loader)
 
     except:
         epoch_str = 1
         global_step = 0
-        if hps.pretrainG != "":
+        if pretrainG != "":
             if rank == 0:
-                print(f"Loaded pretrained (G) '{hps.pretrainG}'")
+                print(f"Loaded pretrained (G) '{pretrainG}'")
             if hasattr(net_g, "module"):
                 net_g.module.load_state_dict(
-                    torch.load(hps.pretrainG, map_location="cpu")["model"]
+                    torch.load(pretrainG, map_location="cpu")["model"]
                 )
 
             else:
                 net_g.load_state_dict(
-                    torch.load(hps.pretrainG, map_location="cpu")["model"]
+                    torch.load(pretrainG, map_location="cpu")["model"]
                 )
 
-        if hps.pretrainD != "":
+        if pretrainD != "":
             if rank == 0:
-                print(f"Loaded pretrained (D) '{hps.pretrainD}'")
+                print(f"Loaded pretrained (D) '{pretrainD}'")
             if hasattr(net_d, "module"):
                 net_d.module.load_state_dict(
-                    torch.load(hps.pretrainD, map_location="cpu")["model"]
+                    torch.load(pretrainD, map_location="cpu")["model"]
                 )
 
             else:
                 net_d.load_state_dict(
-                    torch.load(hps.pretrainD, map_location="cpu")["model"]
+                    torch.load(pretrainD, map_location="cpu")["model"]
                 )
 
     # Initialize schedulers and scaler
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
-        optim_g, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
+        optim_g, gamma=config.train.lr_decay, last_epoch=epoch_str - 2
     )
     scheduler_d = torch.optim.lr_scheduler.ExponentialLR(
-        optim_d, gamma=hps.train.lr_decay, last_epoch=epoch_str - 2
+        optim_d, gamma=config.train.lr_decay, last_epoch=epoch_str - 2
     )
 
-    scaler = GradScaler(enabled=hps.train.fp16_run)
+    scaler = GradScaler(enabled=config.train.fp16_run)
 
     cache = []
-    for epoch in range(epoch_str, hps.total_epoch + 1):
+    for epoch in range(epoch_str, total_epoch + 1):
         if rank == 0:
             train_and_evaluate(
                 rank,
                 epoch,
-                hps,
+                config,
                 [net_g, net_d],
                 [optim_g, optim_d],
                 scaler,
                 [train_loader, None],
                 [writer, writer_eval],
                 cache,
+                custom_save_every_weights,
+                custom_total_epoch,
             )
         else:
             train_and_evaluate(
                 rank,
                 epoch,
-                hps,
+                config,
                 [net_g, net_d],
                 [optim_g, optim_d],
                 scaler,
                 [train_loader, None],
                 None,
                 cache,
+                custom_save_every_weights,
+                custom_total_epoch,
             )
 
         scheduler_g.step()
         scheduler_d.step()
 
 
-def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers, cache):
+def train_and_evaluate(
+    rank,
+    epoch,
+    hps,
+    nets,
+    optims,
+    scaler,
+    loaders,
+    writers,
+    cache,
+    custom_save_every_weights,
+    custom_total_epoch,
+):
     """
     Trains and evaluates the model for one epoch.
 
@@ -418,11 +477,11 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
     net_d.train()
 
     # Data caching
-    if hps.if_cache_data_in_gpu == True:
+    if cache_data_in_gpu == True:
         data_iterator = cache
         if cache == []:
             for batch_idx, info in enumerate(train_loader):
-                if hps.if_f0 == 1:
+                if pitch_guidance == True:
                     (
                         phone,
                         phone_lengths,
@@ -434,7 +493,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                         wave_lengths,
                         sid,
                     ) = info
-                else:
+                elif pitch_guidance == False:
                     (
                         phone,
                         phone_lengths,
@@ -447,7 +506,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 if torch.cuda.is_available():
                     phone = phone.cuda(rank, non_blocking=True)
                     phone_lengths = phone_lengths.cuda(rank, non_blocking=True)
-                    if hps.if_f0 == 1:
+                    if pitch_guidance == True:
                         pitch = pitch.cuda(rank, non_blocking=True)
                         pitchf = pitchf.cuda(rank, non_blocking=True)
                     sid = sid.cuda(rank, non_blocking=True)
@@ -455,7 +514,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                     spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
                     wave = wave.cuda(rank, non_blocking=True)
                     wave_lengths = wave_lengths.cuda(rank, non_blocking=True)
-                if hps.if_f0 == 1:
+                if pitch_guidance == True:
                     cache.append(
                         (
                             batch_idx,
@@ -472,7 +531,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                             ),
                         )
                     )
-                else:
+                elif pitch_guidance == False:
                     cache.append(
                         (
                             batch_idx,
@@ -495,7 +554,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
     epoch_recorder = EpochRecorder()
     with tqdm(total=len(train_loader), leave=False) as pbar:
         for batch_idx, info in data_iterator:
-            if hps.if_f0 == 1:
+            if pitch_guidance == True:
                 (
                     phone,
                     phone_lengths,
@@ -507,12 +566,12 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                     wave_lengths,
                     sid,
                 ) = info
-            else:
+            elif pitch_guidance == False:
                 phone, phone_lengths, spec, spec_lengths, wave, wave_lengths, sid = info
-            if (hps.if_cache_data_in_gpu == False) and torch.cuda.is_available():
+            if (cache_data_in_gpu == False) and torch.cuda.is_available():
                 phone = phone.cuda(rank, non_blocking=True)
                 phone_lengths = phone_lengths.cuda(rank, non_blocking=True)
-                if hps.if_f0 == 1:
+                if pitch_guidance == True:
                     pitch = pitch.cuda(rank, non_blocking=True)
                     pitchf = pitchf.cuda(rank, non_blocking=True)
                 sid = sid.cuda(rank, non_blocking=True)
@@ -521,8 +580,8 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                 wave = wave.cuda(rank, non_blocking=True)
 
             # Forward pass
-            with autocast(enabled=hps.train.fp16_run):
-                if hps.if_f0 == 1:
+            with autocast(enabled=config.train.fp16_run):
+                if pitch_guidance == True:
                     (
                         y_hat,
                         ids_slice,
@@ -532,7 +591,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                     ) = net_g(
                         phone, phone_lengths, pitch, pitchf, spec, spec_lengths, sid
                     )
-                else:
+                elif pitch_guidance == False:
                     (
                         y_hat,
                         ids_slice,
@@ -542,30 +601,30 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
                     ) = net_g(phone, phone_lengths, spec, spec_lengths, sid)
                 mel = spec_to_mel_torch(
                     spec,
-                    hps.data.filter_length,
-                    hps.data.n_mel_channels,
-                    hps.data.sampling_rate,
-                    hps.data.mel_fmin,
-                    hps.data.mel_fmax,
+                    config.data.filter_length,
+                    config.data.n_mel_channels,
+                    config.data.sample_rate,
+                    config.data.mel_fmin,
+                    config.data.mel_fmax,
                 )
                 y_mel = commons.slice_segments(
-                    mel, ids_slice, hps.train.segment_size // hps.data.hop_length
+                    mel, ids_slice, config.train.segment_size // config.data.hop_length
                 )
                 with autocast(enabled=False):
                     y_hat_mel = mel_spectrogram_torch(
                         y_hat.float().squeeze(1),
-                        hps.data.filter_length,
-                        hps.data.n_mel_channels,
-                        hps.data.sampling_rate,
-                        hps.data.hop_length,
-                        hps.data.win_length,
-                        hps.data.mel_fmin,
-                        hps.data.mel_fmax,
+                        config.data.filter_length,
+                        config.data.n_mel_channels,
+                        config.data.sample_rate,
+                        config.data.hop_length,
+                        config.data.win_length,
+                        config.data.mel_fmin,
+                        config.data.mel_fmax,
                     )
-                if hps.train.fp16_run == True:
+                if config.train.fp16_run == True:
                     y_hat_mel = y_hat_mel.half()
                 wave = commons.slice_segments(
-                    wave, ids_slice * hps.data.hop_length, hps.train.segment_size
+                    wave, ids_slice * config.data.hop_length, config.train.segment_size
                 )
 
                 y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
@@ -582,11 +641,13 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             scaler.step(optim_d)
 
             # Generator backward and update
-            with autocast(enabled=hps.train.fp16_run):
+            with autocast(enabled=config.train.fp16_run):
                 y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
                 with autocast(enabled=False):
-                    loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-                    loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * hps.train.c_kl
+                    loss_mel = F.l1_loss(y_mel, y_hat_mel) * config.train.c_mel
+                    loss_kl = (
+                        kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
+                    )
                     loss_fm = feature_loss(fmap_r, fmap_g)
                     loss_gen, losses_gen = generator_loss(y_d_hat_g)
                     loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
@@ -610,7 +671,7 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
 
             # Logging and checkpointing
             if rank == 0:
-                if global_step % hps.train.log_interval == 0:
+                if global_step % config.train.log_interval == 0:
                     lr = optim_g.param_groups[0]["lr"]
                     # print("Epoch: {} [{:.0f}%]".format(epoch, 100.0 * batch_idx / len(train_loader)))
 
@@ -669,47 +730,48 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             pbar.update(1)
 
     # Save checkpoint
-    if epoch % hps.save_every_epoch == 0 and rank == 0:
+    if epoch % save_every_epoch == False and rank == 0:
         checkpoint_suffix = "{}.pth".format(
-            global_step if hps.if_latest == 0 else 2333333
+            global_step if save_only_latest == False else 2333333
         )
         save_checkpoint(
             net_g,
             optim_g,
-            hps.train.learning_rate,
+            config.train.learning_rate,
             epoch,
-            os.path.join(hps.model_dir, "G_" + checkpoint_suffix),
+            os.path.join(experiment_dir, "G_" + checkpoint_suffix),
         )
         save_checkpoint(
             net_d,
             optim_d,
-            hps.train.learning_rate,
+            config.train.learning_rate,
             epoch,
-            os.path.join(hps.model_dir, "D_" + checkpoint_suffix),
+            os.path.join(experiment_dir, "D_" + checkpoint_suffix),
         )
 
-        if rank == 0 and hps.custom_save_every_weights == "1":
+        if rank == 0 and custom_save_every_weights == True:
             if hasattr(net_g, "module"):
                 ckpt = net_g.module.state_dict()
             else:
                 ckpt = net_g.state_dict()
             extract_model(
                 ckpt,
-                hps.sample_rate,
-                hps.if_f0 == 1,
-                hps.name,
+                sample_rate,
+                pitch_guidance == True,
+                model_name,
                 os.path.join(
-                    hps.model_dir, "{}_{}e_{}s.pth".format(hps.name, epoch, global_step)
+                    experiment_dir,
+                    "{}_{}e_{}s.pth".format(model_name, epoch, global_step),
                 ),
                 epoch,
                 global_step,
-                hps.version,
+                version,
                 hps,
             )
 
     # Overtraining detection and best model saving
-    if hps.overtraining_detector == 1:
-        if epoch >= (lowest_value["epoch"] + hps.overtraining_threshold):
+    if overtraining_detector == True:
+        if epoch >= (lowest_value["epoch"] + overtraining_threshold):
             print(
                 "Stopping training due to possible overtraining. Lowest generator loss: {} at epoch {}, step {}".format(
                     lowest_value["value"], lowest_value["epoch"], lowest_value["step"]
@@ -717,13 +779,13 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             )
             os._exit(2333333)
 
-        best_epoch = lowest_value["epoch"] + hps.overtraining_threshold - epoch
+        best_epoch = lowest_value["epoch"] + overtraining_threshold - epoch
 
-        if best_epoch == hps.overtraining_threshold:
+        if best_epoch == overtraining_threshold:
             old_model_files = glob.glob(
                 os.path.join(
-                    hps.model_dir,
-                    "{}_{}e_{}s_best_epoch.pth".format(hps.name, "*", "*"),
+                    experiment_dir,
+                    "{}_{}e_{}s_best_epoch.pth".format(model_name, "*", "*"),
                 )
             )
             for file in old_model_files:
@@ -736,16 +798,16 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
 
             extract_model(
                 ckpt,
-                hps.sample_rate,
-                hps.if_f0 == 1,
-                hps.name,
+                sample_rate,
+                pitch_guidance == True,
+                model_name,
                 os.path.join(
-                    hps.model_dir,
-                    "{}_{}e_{}s_best_epoch.pth".format(hps.name, epoch, global_step),
+                    experiment_dir,
+                    "{}_{}e_{}s_best_epoch.pth".format(model_name, epoch, global_step),
                 ),
                 epoch,
                 global_step,
-                hps.version,
+                version,
                 hps,
             )
 
@@ -756,22 +818,22 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
             lowest_value_rounded, 3
         )  # Round to 3 decimal place
 
-        if epoch > 1 and hps.overtraining_detector == 1:
+        if epoch > 1 and overtraining_detector == True:
             print(
-                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {lowest_value['epoch'] + hps.overtraining_threshold - epoch}"
+                f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {lowest_value['epoch'] + overtraining_threshold - epoch}"
             )
-        elif epoch > 1 and hps.overtraining_detector == 0:
+        elif epoch > 1 and overtraining_detector == False:
             print(
-                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
+                f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
             )
         else:
             print(
-                f"{hps.name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()}"
+                f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()}"
             )
         last_loss_gen_all = loss_gen_all
 
     # Save the final model
-    if epoch >= hps.custom_total_epoch and rank == 0:
+    if epoch >= custom_total_epoch and rank == 0:
         lowest_value_rounded = float(lowest_value["value"])  # Convert to float
         lowest_value_rounded = round(
             lowest_value_rounded, 3
@@ -793,15 +855,16 @@ def train_and_evaluate(rank, epoch, hps, nets, optims, scaler, loaders, writers,
 
         extract_model(
             ckpt,
-            hps.sample_rate,
-            hps.if_f0 == 1,
-            hps.name,
+            sample_rate,
+            pitch_guidance == True,
+            model_name,
             os.path.join(
-                hps.model_dir, "{}_{}e_{}s.pth".format(hps.name, epoch, global_step)
+                experiment_dir,
+                "{}_{}e_{}s.pth".format(model_name, epoch, global_step),
             ),
             epoch,
             global_step,
-            hps.version,
+            config,
             hps,
         )
         sleep(1)
