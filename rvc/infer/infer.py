@@ -233,12 +233,13 @@ class VoiceConverter:
                             split_audio=False,
                             f0_autotune=f0_autotune,
                             filter_radius=filter_radius,
+                            export_format=export_format,
+                            upscale_audio=upscale_audio,
                             embedder_model=embedder_model,
                             embedder_model_custom=embedder_model_custom,
                             clean_audio=clean_audio,
                             clean_strength=clean_strength,
-                            export_format=export_format,
-                            upscale_audio=upscale_audio,
+                            
                         )
                 except Exception as error:
                     print(f"Error in processing split audio segment: {error}")
