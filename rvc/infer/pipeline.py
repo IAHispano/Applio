@@ -9,14 +9,17 @@ import faiss
 import librosa
 import numpy as np
 from scipy import signal
-from functools import lru_cache
 from torch import Tensor
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
+
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 from rvc.lib.predictors.FCPE import FCPEF0Predictor
 
+import logging
+
+logging.getLogger("faiss").setLevel(logging.WARNING)
 
 # Constants for high-pass filter
 FILTER_ORDER = 5

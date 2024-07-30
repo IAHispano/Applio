@@ -35,6 +35,7 @@ from core import run_prerequisites_script
 import logging
 
 logging.getLogger("uvicorn").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 run_prerequisites_script(False, True, True, True)
 
