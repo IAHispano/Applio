@@ -136,6 +136,6 @@ if __name__ == "__main__":
             except OSError:
                 print("Failed to launch on port", port, "- trying again...")
                 port -= 1
-            except Exception as e:
-                print(f"Unexpected error during launch: {e}")
+            except Exception as error:
+                print(f"An error occurred launching Gradio: {error}")
                 break

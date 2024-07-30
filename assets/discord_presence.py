@@ -20,8 +20,8 @@ class RichPresenceManager:
                 print(error)
                 self.rpc = None
                 self.running = False
-            except Exception as e:
-                print(f"Error: Unable to connect to Rich Presence. {e}")
+            except Exception as error:
+                print(f"An error occurred connecting to Discord: {error}")
                 self.rpc = None
                 self.running = False
 

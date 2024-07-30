@@ -1515,7 +1515,7 @@ def main():
                 port=args.port,
             )
     except Exception as error:
-        print(f"Error: {error}")
+        print(f"An error occurred during execution: {error}")
 
         import traceback
 

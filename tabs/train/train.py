@@ -284,7 +284,7 @@ def upload_to_google_drive(pth_path, index_path):
                 shutil.copy2(file_path, google_drive_file_path)
                 gr.Info("File uploaded successfully.")
             except Exception as error:
-                print(error)
+                print(f"An error occurred uploading to Google Drive: {error}")
                 gr.Info("Error uploading to Google Drive")
 
     upload_file(pth_path)

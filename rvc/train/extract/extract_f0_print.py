@@ -105,7 +105,7 @@ class FeatureInput:
             coarse_pit = self.coarse_f0(feature_pit)
             np.save(opt_path1, coarse_pit, allow_pickle=False)
         except Exception as error:
-            print(f"F0 extraction failed for {inp_path}: {error}")
+            print(f"An error occurred extracting file {inp_path}: {error}")
 
 
 if __name__ == "__main__":

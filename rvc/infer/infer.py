@@ -23,6 +23,7 @@ from rvc.configs.config import Config
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("faiss").setLevel(logging.WARNING)
 
 
 class VoiceConverter:
@@ -79,7 +80,7 @@ class VoiceConverter:
             )
             return reduced_noise
         except Exception as error:
-            print(f"Error cleaning audio: {error}")
+            print(f"An error occurred removing audio noise: {error}")
             return None
 
     @staticmethod
@@ -114,7 +115,7 @@ class VoiceConverter:
                 sf.write(output_path, audio, target_sr, format=output_format.lower())
             return output_path
         except Exception as error:
-            print(f"Failed to convert audio to {output_format} format: {error}")
+            print(f"An error occurred converting the audio format: {error}")
 
     def convert_audio(
         self,
@@ -241,7 +242,7 @@ class VoiceConverter:
                             clean_strength=clean_strength,
                         )
                 except Exception as error:
-                    print(f"Error in processing split audio segment: {error}")
+                    print(f"An error occurred processing the segmented audio: {error}")
                     print(traceback.format_exc())
                     return f"Error {error}"
                 print("Finished processing segmented audio, now merging audio...")
@@ -299,7 +300,7 @@ class VoiceConverter:
             )
 
         except Exception as error:
-            print(f"Voice conversion failed: {error}")
+            print(f"An error occurred during audio conversion: {error}")
             print(traceback.format_exc())
 
     def get_vc(self, weight_root, sid):

@@ -84,4 +84,4 @@ def extract_model(ckpt, sr, pitch_guidance, name, model_dir, epoch, step, versio
         os.rename(pth_file_old_version_path, model_dir)
 
     except Exception as error:
-        print(error)
+        print(f"An error occurred extracting the model: {error}")

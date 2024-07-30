@@ -99,7 +99,7 @@ class PreProcess:
                         break
                 self.normalize_and_write(tmp_audio, idx0, idx1)
         except Exception as error:
-            print(f"{path}: {error}")
+            print(f"An error occurred on {path} path: {error}")
 
     def process_audio_multiprocessing(self, infos: List[Tuple[str, int]]):
         for path, idx0 in infos:
@@ -119,7 +119,7 @@ class PreProcess:
                     [infos[i::num_processes] for i in range(num_processes)],
                 )
         except Exception as error:
-            print(error)
+            print(f"An error occurred on {input_root} path: {error}")
 
 
 def preprocess_training_set(

@@ -180,4 +180,4 @@ def extract_small_model(
         os.remove(pth_file_old_version_path)
         os.rename(pth_file_old_version_path, pth_file)
     except Exception as error:
-        print(error)
+        print(f"An error occurred extracting the model: {error}")

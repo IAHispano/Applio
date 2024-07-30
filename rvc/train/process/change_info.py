@@ -11,4 +11,4 @@ def change_info(path, info, name):
         torch.save(ckpt, f"logs/{name}/{name}")
         return "Success."
     except Exception as error:
-        print(error)
+        print(f"An error occurred changing the info: {error}")

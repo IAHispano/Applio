@@ -76,8 +76,7 @@ try:
     print(f"Saved index file '{index_filepath_added}'")
 
 except Exception as error:
-    print(f"Failed to train index: {error}")
-    if "one array to concatenate" in str(error):
-        print(
-            "If you are running this code in a virtual environment, make sure you have enough GPU available to generate the Index file."
-        )
+    print(f"An error occurred extracting the index: {error}")
+    print(
+        "If you are running this code in a virtual environment, make sure you have enough GPU available to generate the Index file."
+    )

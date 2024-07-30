@@ -76,7 +76,7 @@ def download_from_url(url):
                         fuzzy=True,
                     )
                 except Exception as error:
-                    error_message = str(error)
+                    error_message = str(f"An error occurred downloading the file: {error}")
                     if (
                         "Too many users have viewed or downloaded this file recently"
                         in error_message
@@ -132,8 +132,8 @@ def download_from_url(url):
                 else:
                     os.chdir(file_path)
                     return None
-            except Exception as e:
-                print(e)
+            except Exception as error:
+                print(f"An error occurred downloading the file: {error}")
                 os.chdir(file_path)
                 return None
 
@@ -238,7 +238,7 @@ def download_from_url(url):
                 wget.download(url)
             except Exception as error:
                 os.chdir(now_dir)
-                print(error)
+                print(f"An error occurred downloading the file: {error}")
                 return None
 
         for currentPath, _, zipFiles in os.walk(zips_path):
@@ -265,7 +265,7 @@ def extract_and_show_progress(zipfile_path, unzips_path):
         os.remove(zipfile_path)
         return True
     except Exception as error:
-        print(error)
+        print(f"An error occurred extracting the zip file: {error}")
         return False
 
 
