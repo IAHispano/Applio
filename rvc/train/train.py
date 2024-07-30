@@ -731,7 +731,9 @@ def train_and_evaluate(
 
     # Save checkpoint
     if epoch % save_every_epoch == False and rank == 0:
-        checkpoint_suffix = f"{global_step if save_only_latest == False else 2333333}.pth"
+        checkpoint_suffix = (
+            f"{global_step if save_only_latest == False else 2333333}.pth"
+        )
         save_checkpoint(
             net_g,
             optim_g,

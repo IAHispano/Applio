@@ -18,6 +18,7 @@ from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 from rvc.lib.predictors.FCPE import FCPEF0Predictor
 
 import logging
+
 logging.getLogger("faiss").setLevel(logging.WARNING)
 
 # Constants for high-pass filter
