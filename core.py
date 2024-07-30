@@ -3,90 +3,96 @@ import sys
 import json
 import argparse
 import subprocess
-
+from functools import lru_cache
+from distutils.util import strtobool
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.configs.config import Config
-
-from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
-from rvc.train.extract.preparing_files import generate_config, generate_filelist
-from rvc.lib.tools.pretrained_selector import pretrained_selector
-
-from rvc.train.process.model_blender import model_blender
-from rvc.train.process.model_information import model_information
-from rvc.train.process.extract_small_model import extract_small_model
-
-from rvc.infer.infer import VoiceConverter
-
-infer_pipeline = VoiceConverter().infer_pipeline
-
-from rvc.lib.tools.analyzer import analyze_audio
-
-from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
-
-from rvc.lib.tools.model_download import model_download_pipeline
-
-config = Config()
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")
 
-# Get TTS Voices -> https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4
-with open(os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r") as f:
-    voices_data = json.load(f)
+from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
+from rvc.train.extract.preparing_files import generate_config, generate_filelist
+from rvc.train.process.model_blender import model_blender
+from rvc.train.process.model_information import model_information
+from rvc.train.process.extract_small_model import extract_small_model
+from rvc.lib.tools.analyzer import analyze_audio
+from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
+from rvc.lib.tools.model_download import model_download_pipeline
 
-
-locales = list({voice["Locale"] for voice in voices_data})
 python = sys.executable
+
+
+# Get TTS Voices -> https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4
+@lru_cache(maxsize=1)  # Cache only one result since the file is static
+def load_voices_data():
+    with open(os.path.join("rvc", "lib", "tools", "tts_voices.json")) as f:
+        return json.load(f)
+
+
+voices_data = load_voices_data()
+locales = list({voice["Locale"] for voice in voices_data})
+
+
+@lru_cache(maxsize=None)
+def import_voice_converter():
+    from rvc.infer.infer import VoiceConverter
+
+    return VoiceConverter()
+
+
+@lru_cache(maxsize=1)
+def get_config():
+    from rvc.configs.config import Config
+
+    return Config()
 
 
 # Infer
 def run_infer_script(
-    f0_up_key,
-    filter_radius,
-    index_rate,
-    rms_mix_rate,
-    protect,
-    hop_length,
-    f0_method,
-    input_path,
-    output_path,
-    pth_path,
-    index_path,
-    split_audio,
-    f0_autotune,
-    clean_audio,
-    clean_strength,
-    export_format,
-    embedder_model,
-    embedder_model_custom,
-    upscale_audio,
-    f0_file,
+    pitch: int,
+    filter_radius: int,
+    index_rate: float,
+    volume_envelope: int,
+    protect: float,
+    hop_length: int,
+    f0_method: str,
+    input_path: str,
+    output_path: str,
+    pth_path: str,
+    index_path: str,
+    split_audio: bool,
+    f0_autotune: bool,
+    clean_audio: bool,
+    clean_strength: float,
+    export_format: str,
+    upscale_audio: bool,
+    f0_file: str,
+    embedder_model: str,
+    embedder_model_custom: str = None,
 ):
-    f0_autotune = "True" if str(f0_autotune) == "True" else "False"
-    clean_audio = "True" if str(clean_audio) == "True" else "False"
-    upscale_audio = "True" if str(upscale_audio) == "True" else "False"
-    infer_pipeline(
-        f0_up_key,
-        filter_radius,
-        index_rate,
-        rms_mix_rate,
-        protect,
-        hop_length,
-        f0_method,
-        input_path,
-        output_path,
-        pth_path,
-        index_path,
-        split_audio,
-        f0_autotune,
-        clean_audio,
-        clean_strength,
-        export_format,
-        embedder_model,
-        embedder_model_custom,
-        upscale_audio,
-        f0_file,
+    infer_pipeline = import_voice_converter()
+    infer_pipeline.convert_audio(
+        pitch=pitch,
+        filter_radius=filter_radius,
+        index_rate=index_rate,
+        volume_envelope=volume_envelope,
+        protect=protect,
+        hop_length=hop_length,
+        f0_method=f0_method,
+        audio_input_path=input_path,
+        audio_output_path=output_path,
+        model_path=pth_path,
+        index_path=index_path,
+        split_audio=split_audio,
+        f0_autotune=f0_autotune,
+        clean_audio=clean_audio,
+        clean_strength=clean_strength,
+        export_format=export_format,
+        upscale_audio=upscale_audio,
+        f0_file=f0_file,
+        embedder_model=embedder_model,
+        embedder_model_custom=embedder_model_custom,
     )
     return f"File {input_path} inferred successfully.", output_path.replace(
         ".wav", f".{export_format.lower()}"
@@ -95,30 +101,27 @@ def run_infer_script(
 
 # Batch infer
 def run_batch_infer_script(
-    f0_up_key,
-    filter_radius,
-    index_rate,
-    rms_mix_rate,
-    protect,
-    hop_length,
-    f0_method,
-    input_folder,
-    output_folder,
-    pth_path,
-    index_path,
-    split_audio,
-    f0_autotune,
-    clean_audio,
-    clean_strength,
-    export_format,
-    embedder_model,
-    embedder_model_custom,
-    upscale_audio,
-    f0_file,
+    pitch: int,
+    filter_radius: int,
+    index_rate: float,
+    volume_envelope: int,
+    protect: float,
+    hop_length: int,
+    f0_method: str,
+    input_folder: str,
+    output_folder: str,
+    pth_path: str,
+    index_path: str,
+    split_audio: bool,
+    f0_autotune: bool,
+    clean_audio: bool,
+    clean_strength: float,
+    export_format: str,
+    upscale_audio: bool,
+    f0_file: str,
+    embedder_model: str,
+    embedder_model_custom: str = None,
 ):
-    f0_autotune = "True" if str(f0_autotune) == "True" else "False"
-    clean_audio = "True" if str(clean_audio) == "True" else "False"
-    upscale_audio = "True" if str(upscale_audio) == "True" else "False"
     audio_files = [
         f for f in os.listdir(input_folder) if f.endswith((".mp3", ".wav", ".flac"))
     ]
@@ -134,29 +137,29 @@ def run_batch_infer_script(
                 output_folder,
                 f"{output_file_name}_output{os.path.splitext(audio_file)[1]}",
             )
+            infer_pipeline = import_voice_converter()
             print(f"Inferring {input_path}...")
-
-            infer_pipeline(
-                f0_up_key,
-                filter_radius,
-                index_rate,
-                rms_mix_rate,
-                protect,
-                hop_length,
-                f0_method,
-                input_path,
-                output_path,
-                pth_path,
-                index_path,
-                split_audio,
-                f0_autotune,
-                clean_audio,
-                clean_strength,
-                export_format,
-                embedder_model,
-                embedder_model_custom,
-                upscale_audio,
-                f0_file,
+            infer_pipeline.convert_audio(
+                pitch=pitch,
+                filter_radius=filter_radius,
+                index_rate=index_rate,
+                volume_envelope=volume_envelope,
+                protect=protect,
+                hop_length=hop_length,
+                f0_method=f0_method,
+                audio_input_path=input_path,
+                audio_output_path=output_path,
+                model_path=pth_path,
+                index_path=index_path,
+                split_audio=split_audio,
+                f0_autotune=f0_autotune,
+                clean_audio=clean_audio,
+                clean_strength=clean_strength,
+                export_format=export_format,
+                upscale_audio=upscale_audio,
+                f0_file=f0_file,
+                embedder_model=embedder_model,
+                embedder_model_custom=embedder_model_custom,
             )
 
     return f"Files from {input_folder} inferred successfully."
@@ -164,33 +167,31 @@ def run_batch_infer_script(
 
 # TTS
 def run_tts_script(
-    tts_text,
-    tts_voice,
-    tts_rate,
-    f0_up_key,
-    filter_radius,
-    index_rate,
-    rms_mix_rate,
-    protect,
-    hop_length,
-    f0_method,
-    output_tts_path,
-    output_rvc_path,
-    pth_path,
-    index_path,
-    split_audio,
-    f0_autotune,
-    clean_audio,
-    clean_strength,
-    export_format,
-    embedder_model,
-    embedder_model_custom,
-    upscale_audio,
-    f0_file,
+    tts_text: str,
+    tts_voice: str,
+    tts_rate: int,
+    pitch: int,
+    filter_radius: int,
+    index_rate: float,
+    volume_envelope: int,
+    protect: float,
+    hop_length: int,
+    f0_method: str,
+    output_tts_path: str,
+    output_rvc_path: str,
+    pth_path: str,
+    index_path: str,
+    split_audio: bool,
+    f0_autotune: bool,
+    clean_audio: bool,
+    clean_strength: float,
+    export_format: str,
+    upscale_audio: bool,
+    f0_file: str,
+    embedder_model: str,
+    embedder_model_custom: str = None,
 ):
-    f0_autotune = "True" if str(f0_autotune) == "True" else "False"
-    clean_audio = "True" if str(clean_audio) == "True" else "False"
-    upscale_audio = "True" if str(upscale_audio) == "True" else "False"
+
     tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
 
     if os.path.exists(output_tts_path):
@@ -201,32 +202,32 @@ def run_tts_script(
         tts_script_path,
         tts_text,
         tts_voice,
-        str(tts_rate),
+        tts_rate,
         output_tts_path,
     ]
     subprocess.run(command_tts)
-
-    infer_pipeline(
-        f0_up_key,
-        filter_radius,
-        index_rate,
-        rms_mix_rate,
-        protect,
-        hop_length,
-        f0_method,
-        output_tts_path,
-        output_rvc_path,
-        pth_path,
-        index_path,
-        split_audio,
-        f0_autotune,
-        clean_audio,
-        clean_strength,
-        export_format,
-        embedder_model,
-        embedder_model_custom,
-        upscale_audio,
-        f0_file,
+    infer_pipeline = import_voice_converter()
+    infer_pipeline.convert_audio(
+        pitch=pitch,
+        filter_radius=filter_radius,
+        index_rate=index_rate,
+        volume_envelope=volume_envelope,
+        protect=protect,
+        hop_length=hop_length,
+        f0_method=f0_method,
+        audio_input_path=output_tts_path,
+        audio_output_path=output_rvc_path,
+        model_path=pth_path,
+        index_path=index_path,
+        split_audio=split_audio,
+        f0_autotune=f0_autotune,
+        clean_audio=clean_audio,
+        clean_strength=clean_strength,
+        export_format=export_format,
+        upscale_audio=upscale_audio,
+        f0_file=f0_file,
+        embedder_model=embedder_model,
+        embedder_model_custom=embedder_model_custom,
     )
 
     return f"Text {tts_text} synthesized successfully.", output_rvc_path.replace(
@@ -235,7 +236,10 @@ def run_tts_script(
 
 
 # Preprocess
-def run_preprocess_script(model_name, dataset_path, sampling_rate, cpu_cores):
+def run_preprocess_script(
+    model_name: str, dataset_path: str, sample_rate: int, cpu_cores: int
+):
+    config = get_config()
     per = 3.0 if config.is_half else 3.7
     preprocess_script_path = os.path.join("rvc", "train", "preprocess", "preprocess.py")
     command = [
@@ -246,13 +250,12 @@ def run_preprocess_script(model_name, dataset_path, sampling_rate, cpu_cores):
             [
                 os.path.join(logs_path, model_name),
                 dataset_path,
-                sampling_rate,
+                sample_rate,
                 per,
                 cpu_cores,
             ],
         ),
     ]
-
     os.makedirs(os.path.join(logs_path, model_name), exist_ok=True)
     subprocess.run(command)
     return f"Model {model_name} preprocessed successfully."
@@ -260,17 +263,17 @@ def run_preprocess_script(model_name, dataset_path, sampling_rate, cpu_cores):
 
 # Extract
 def run_extract_script(
-    model_name,
-    rvc_version,
-    vocoder_type,
-    f0_method,
-    pitch_guidance,
-    hop_length,
-    cpu_cores,
-    sampling_rate,
-    embedder_model,
-    embedder_model_custom,
+    model_name: str,
+    rvc_version: str,
+    f0_method: str,
+    pitch_guidance: bool,
+    hop_length: int,
+    cpu_cores: int,
+    sample_rate: int,
+    embedder_model: str,
+    embedder_model_custom: str = None,
 ):
+    config = get_config()
     model_path = os.path.join(logs_path, model_name)
     extract_f0_script_path = os.path.join(
         "rvc", "train", "extract", "extract_f0_print.py"
@@ -292,6 +295,7 @@ def run_extract_script(
             ],
         ),
     ]
+
     command_2 = [
         python,
         extract_feature_script_path,
@@ -299,12 +303,12 @@ def run_extract_script(
             str,
             [
                 config.device,
-                "1",
-                "0",
-                "0",
+                1,
+                0,
+                0,
                 model_path,
                 rvc_version,
-                "True",
+                config.is_half,
                 embedder_model,
                 embedder_model_custom,
             ],
@@ -313,44 +317,39 @@ def run_extract_script(
     subprocess.run(command_1)
     subprocess.run(command_2)
 
-    f0 = 1 if str(pitch_guidance) == "True" else 0
-    generate_config(rvc_version, vocoder_type, sampling_rate, model_path)
-    generate_filelist(f0, model_path, rvc_version, sampling_rate)
+    generate_config(rvc_version, sample_rate, model_path)
+    generate_filelist(pitch_guidance, model_path, rvc_version, sample_rate)
     return f"Model {model_name} extracted successfully."
 
 
 # Train
 def run_train_script(
-    model_name,
-    rvc_version,
-    vocoder_type,
-    save_every_epoch,
-    save_only_latest,
-    save_every_weights,
-    total_epoch,
-    sampling_rate,
-    batch_size,
-    gpu,
-    pitch_guidance,
-    overtraining_detector,
-    overtraining_threshold,
-    pretrained,
-    custom_pretrained,
-    sync_graph,
-    cache_data_in_gpu,
-    g_pretrained_path=None,
-    d_pretrained_path=None,
+    model_name: str,
+    rvc_version: str,
+    vocoder_type: str,  
+    save_every_epoch: int,
+    save_only_latest: bool,
+    save_every_weights: bool,
+    total_epoch: int,
+    sample_rate: int,
+    batch_size: int,
+    gpu: int,
+    pitch_guidance: bool,
+    overtraining_detector: bool,
+    overtraining_threshold: int,
+    pretrained: bool,
+    sync_graph: bool,
+    cache_data_in_gpu: bool,
+    custom_pretrained: bool = False,
+    g_pretrained_path: str = None,
+    d_pretrained_path: str = None,
 ):
-    f0 = 1 if str(pitch_guidance) == "True" else 0
-    latest = 1 if str(save_only_latest) == "True" else 0
-    save_every = 1 if str(save_every_weights) == "True" else 0
-    detector = 1 if str(overtraining_detector) == "True" else 0
-    sync = 1 if str(sync_graph) == "True" else 0
-    cache_data = 1 if str(cache_data_in_gpu) == "True" else 0
 
-    if str(pretrained) == "True":
-        if str(custom_pretrained) == "False":
-            pg, pd = pretrained_selector(f0)[rvc_version][sampling_rate]
+    if pretrained == True:
+        from rvc.lib.tools.pretrained_selector import pretrained_selector
+
+        if custom_pretrained == False:
+            pg, pd = pretrained_selector(pitch_guidance)[rvc_version][sample_rate]
         else:
             if g_pretrained_path is None or d_pretrained_path is None:
                 raise ValueError(
@@ -367,51 +366,34 @@ def run_train_script(
         *map(
             str,
             [
-                "-se",
-                save_every_epoch,
-                "-te",
-                total_epoch,
-                "-pg",
-                pg,
-                "-pd",
-                pd,
-                "-sr",
-                sampling_rate,
-                "-bs",
-                batch_size,
-                "-g",
-                gpu,
-                "-e",
-                os.path.join(logs_path, model_name),
-                "-v",
-                rvc_version,
-                "-vc",
+                model_name,
                 vocoder_type,
-                "-l",
-                latest,
-                "-c",
-                cache_data,
-                "-sw",
-                save_every,
-                "-f0",
-                f0,
-                "-od",
-                detector,
-                "-ot",
+                save_every_epoch,
+                total_epoch,
+                pg,
+                pd,
+                rvc_version,
+                gpu,
+                batch_size,
+                sample_rate,
+                pitch_guidance,
+                save_only_latest,
+                save_every_weights,
+                cache_data_in_gpu,
+                overtraining_detector,
                 overtraining_threshold,
-                "-sg",
-                sync,
+                sync_graph,
             ],
         ),
     ]
-
+    print(command)
     subprocess.run(command)
     run_index_script(model_name, rvc_version)
     return f"Model {model_name} trained successfully."
 
 
 # Index
-def run_index_script(model_name, rvc_version):
+def run_index_script(model_name: str, rvc_version: str):
     index_script_path = os.path.join("rvc", "train", "process", "extract_index.py")
     command = [
         python,
@@ -426,22 +408,29 @@ def run_index_script(model_name, rvc_version):
 
 # Model extract
 def run_model_extract_script(
-    pth_path, model_name, sampling_rate, pitch_guidance, rvc_version, epoch, step
+    pth_path: str,
+    model_name: str,
+    sample_rate: int,
+    pitch_guidance: bool,
+    rvc_version: str,
+    epoch: int,
+    step: int,
 ):
-    f0 = 1 if str(pitch_guidance) == "True" else 0
     extract_small_model(
-        pth_path, model_name, sampling_rate, f0, rvc_version, epoch, step
+        pth_path, model_name, sample_rate, pitch_guidance, rvc_version, epoch, step
     )
     return f"Model {model_name} extracted successfully."
 
 
 # Model information
-def run_model_information_script(pth_path):
+def run_model_information_script(pth_path: str):
     print(model_information(pth_path))
 
 
 # Model blender
-def run_model_blender_script(model_name, pth_path_1, pth_path_2, ratio):
+def run_model_blender_script(
+    model_name: str, pth_path_1: str, pth_path_2: str, ratio: float
+):
     message, model_blended = model_blender(model_name, pth_path_1, pth_path_2, ratio)
     return message, model_blended
 
@@ -452,19 +441,23 @@ def run_tensorboard_script():
 
 
 # Download
-def run_download_script(model_link):
+def run_download_script(model_link: str):
     model_download_pipeline(model_link)
     return f"Model downloaded successfully."
 
 
 # Prerequisites
-def run_prerequisites_script(pretraineds_v1, pretraineds_v2, models, exe):
+def run_prerequisites_script(
+    pretraineds_v1: bool, pretraineds_v2: bool, models: bool, exe: bool
+):
     prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe)
     return "Prerequisites installed successfully."
 
 
 # Audio analyzer
-def run_audio_analyzer_script(input_path, save_plot_path="logs/audio_analysis.png"):
+def run_audio_analyzer_script(
+    input_path: str, save_plot_path: str = "logs/audio_analysis.png"
+):
     audio_info, plot_path = analyze_audio(input_path, save_plot_path)
     print(
         f"Audio info of {input_path}: {audio_info}",
@@ -474,7 +467,7 @@ def run_audio_analyzer_script(input_path, save_plot_path="logs/audio_analysis.pn
 
 
 # API
-def run_api_script(ip, port):
+def run_api_script(ip: str, port: int):
     command = [
         "env/Scripts/uvicorn.exe" if os.name == "nt" else "uvicorn",
         "api:app",
@@ -497,56 +490,62 @@ def parse_arguments():
 
     # Parser for 'infer' mode
     infer_parser = subparsers.add_parser("infer", help="Run inference")
-    infer_parser.add_argument(
-        "--f0_up_key",
-        type=str,
-        help="Value for f0_up_key",
-        choices=[str(i) for i in range(-24, 25)],
-        default="0",
+    pitch_description = (
+        "Set the pitch of the audio. Higher values result in a higher pitch."
     )
+    infer_parser.add_argument(
+        "--pitch",
+        type=int,
+        help=pitch_description,
+        choices=range(-24, 25),
+        default=0,
+    )
+    filter_radius_description = "Apply median filtering to the extracted pitch values if this value is greater than or equal to three. This can help reduce breathiness in the output audio."
     infer_parser.add_argument(
         "--filter_radius",
-        type=str,
-        help="Value for filter_radius",
-        choices=[str(i) for i in range(11)],
-        default="3",
+        type=int,
+        help=filter_radius_description,
+        choices=range(11),
+        default=3,
     )
+    index_rate_description = "Control the influence of the index file on the output. Higher values mean stronger influence. Lower values can help reduce artifacts but may result in less accurate voice cloning."
     infer_parser.add_argument(
         "--index_rate",
-        type=str,
-        help="Value for index_rate",
-        choices=[str(i / 10) for i in range(11)],
-        default="0.3",
+        type=float,
+        help=index_rate_description,
+        choices=[(i / 10) for i in range(11)],
+        default=0.3,
     )
+    volume_envelope_description = "Control the blending of the output's volume envelope. A value of 1 means the output envelope is fully used."
     infer_parser.add_argument(
-        "--rms_mix_rate",
-        type=str,
-        help="Value for rms_mix_rate",
-        choices=[str(i / 10) for i in range(11)],
-        default="1",
+        "--volume_envelope",
+        type=float,
+        help=volume_envelope_description,
+        choices=[(i / 10) for i in range(11)],
+        default=1,
     )
+    protect_description = "Protect consonants and breathing sounds from artifacts. A value of 0.5 offers the strongest protection, while lower values may reduce the protection level but potentially mitigate the indexing effect."
     infer_parser.add_argument(
         "--protect",
-        type=str,
-        help="Value for protect",
-        choices=[str(i / 10) for i in range(6)],
-        default="0.33",
+        type=float,
+        help=protect_description,
+        choices=[(i / 10) for i in range(6)],
+        default=0.33,
     )
+    hop_length_description = "Only applicable for the Crepe pitch extraction method. Determines the time it takes for the system to react to a significant pitch change. Smaller values require more processing time but can lead to better pitch accuracy."
     infer_parser.add_argument(
         "--hop_length",
-        type=str,
-        help="Value for hop_length",
-        choices=[str(i) for i in range(1, 513)],
-        default="128",
+        type=int,
+        help=hop_length_description,
+        choices=range(1, 513),
+        default=128,
     )
+    f0_method_description = "Choose the pitch extraction algorithm for the conversion. 'rmvpe' is the default and generally recommended."
     infer_parser.add_argument(
         "--f0_method",
         type=str,
-        help="Value for f0_method",
+        help=f0_method_description,
         choices=[
-            "pm",
-            "harvest",
-            "dio",
             "crepe",
             "crepe-tiny",
             "rmvpe",
@@ -558,53 +557,73 @@ def parse_arguments():
         ],
         default="rmvpe",
     )
-    infer_parser.add_argument("--input_path", type=str, help="Input path")
-    infer_parser.add_argument("--output_path", type=str, help="Output path")
-    infer_parser.add_argument("--pth_path", type=str, help="Path to the .pth file")
     infer_parser.add_argument(
-        "--index_path",
+        "--input_path",
         type=str,
-        help="Path to the .index file",
+        help="Full path to the input audio file.",
+        required=True,
     )
+    infer_parser.add_argument(
+        "--output_path",
+        type=str,
+        help="Full path to the output audio file.",
+        required=True,
+    )
+    pth_path_description = "Full path to the RVC model file (.pth)."
+    infer_parser.add_argument(
+        "--pth_path", type=str, help=pth_path_description, required=True
+    )
+    index_path_description = "Full path to the index file (.index)."
+    infer_parser.add_argument(
+        "--index_path", type=str, help=index_path_description, required=True
+    )
+    split_audio_description = "Split the audio into smaller segments before inference. This can improve the quality of the output for longer audio files."
     infer_parser.add_argument(
         "--split_audio",
-        type=str,
-        help="Enable split audio",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=split_audio_description,
+        default=False,
     )
+    f0_autotune_description = "Apply a light autotune to the inferred audio. Particularly useful for singing voice conversions."
     infer_parser.add_argument(
         "--f0_autotune",
-        type=str,
-        help="Enable autotune",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=f0_autotune_description,
+        default=False,
     )
+    clean_audio_description = "Clean the output audio using noise reduction algorithms. Recommended for speech conversions."
     infer_parser.add_argument(
         "--clean_audio",
-        type=str,
-        help="Enable clean audio",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=clean_audio_description,
+        default=False,
     )
+    clean_strength_description = "Adjust the intensity of the audio cleaning process. Higher values result in stronger cleaning, but may lead to a more compressed sound."
     infer_parser.add_argument(
         "--clean_strength",
-        type=str,
-        help="Value for clean_strength",
-        choices=[str(i / 10) for i in range(11)],
-        default="0.7",
+        type=float,
+        help=clean_strength_description,
+        choices=[(i / 10) for i in range(11)],
+        default=0.7,
     )
+    export_format_description = "Select the desired output audio format."
     infer_parser.add_argument(
         "--export_format",
         type=str,
-        help="Export format",
+        help=export_format_description,
         choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
         default="WAV",
+    )
+    embedder_model_description = (
+        "Choose the model used for generating speaker embeddings."
     )
     infer_parser.add_argument(
         "--embedder_model",
         type=str,
-        help="Embedder model",
+        help=embedder_model_description,
         choices=[
             "contentvec",
             "japanese-hubert-base",
@@ -613,80 +632,81 @@ def parse_arguments():
         ],
         default="contentvec",
     )
+    embedder_model_custom_description = "Specify the path to a custom model for speaker embedding. Only applicable if 'embedder_model' is set to 'custom'."
     infer_parser.add_argument(
         "--embedder_model_custom",
         type=str,
-        help="Custom Embedder model",
+        help=embedder_model_custom_description,
         default=None,
     )
+    upscale_audio_description = "Upscale the input audio to a higher quality before processing. This can improve the overall quality of the output, especially for low-quality input audio."
     infer_parser.add_argument(
         "--upscale_audio",
-        type=str,
-        help="Enable audio upscaling",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=upscale_audio_description,
+        default=False,
     )
+    f0_file_description = "Full path to an external F0 file (.f0). This allows you to use pre-computed pitch values for the input audio."
     infer_parser.add_argument(
         "--f0_file",
         type=str,
-        help="Path to the f0 file",
+        help=f0_file_description,
         default=None,
     )
 
     # Parser for 'batch_infer' mode
     batch_infer_parser = subparsers.add_parser(
-        "batch_infer", help="Run batch inference"
+        "batch_infer",
+        help="Run batch inference",
     )
     batch_infer_parser.add_argument(
-        "--f0_up_key",
-        type=str,
-        help="Value for f0_up_key",
-        choices=[str(i) for i in range(-24, 25)],
-        default="0",
+        "--pitch",
+        type=int,
+        help=pitch_description,
+        choices=range(-24, 25),
+        default=0,
     )
     batch_infer_parser.add_argument(
         "--filter_radius",
-        type=str,
-        help="Value for filter_radius",
-        choices=[str(i) for i in range(11)],
-        default="3",
+        type=int,
+        help=filter_radius_description,
+        choices=range(11),
+        default=3,
     )
     batch_infer_parser.add_argument(
         "--index_rate",
-        type=str,
-        help="Value for index_rate",
-        choices=[str(i / 10) for i in range(11)],
-        default="0.3",
+        type=float,
+        help=index_rate_description,
+        choices=[(i / 10) for i in range(11)],
+        default=0.3,
     )
     batch_infer_parser.add_argument(
-        "--rms_mix_rate",
-        type=str,
-        help="Value for rms_mix_rate",
-        choices=[str(i / 10) for i in range(11)],
-        default="1",
+        "--volume_envelope",
+        type=float,
+        help=volume_envelope_description,
+        choices=[(i / 10) for i in range(11)],
+        default=1,
     )
     batch_infer_parser.add_argument(
         "--protect",
-        type=str,
-        help="Value for protect",
-        choices=[str(i / 10) for i in range(6)],
-        default="0.33",
+        type=float,
+        help=protect_description,
+        choices=[(i / 10) for i in range(6)],
+        default=0.33,
     )
     batch_infer_parser.add_argument(
         "--hop_length",
-        type=str,
-        help="Value for hop_length",
-        choices=[str(i) for i in range(1, 513)],
-        default="128",
+        type=int,
+        help=hop_length_description,
+        choices=range(1, 513),
+        default=128,
     )
     batch_infer_parser.add_argument(
         "--f0_method",
         type=str,
-        help="Value for f0_method",
+        help=f0_method_description,
         choices=[
-            "pm",
-            "harvest",
-            "dio",
             "crepe",
             "crepe-tiny",
             "rmvpe",
@@ -698,55 +718,63 @@ def parse_arguments():
         ],
         default="rmvpe",
     )
-    batch_infer_parser.add_argument("--input_folder", type=str, help="Input folder")
-    batch_infer_parser.add_argument("--output_folder", type=str, help="Output folder")
     batch_infer_parser.add_argument(
-        "--pth_path", type=str, help="Path to the .pth file"
+        "--input_folder",
+        type=str,
+        help="Path to the folder containing input audio files.",
+        required=True,
     )
     batch_infer_parser.add_argument(
-        "--index_path",
+        "--output_folder",
         type=str,
-        help="Path to the .index file",
+        help="Path to the folder for saving output audio files.",
+        required=True,
+    )
+    batch_infer_parser.add_argument(
+        "--pth_path", type=str, help=pth_path_description, required=True
+    )
+    batch_infer_parser.add_argument(
+        "--index_path", type=str, help=index_path_description, required=True
     )
     batch_infer_parser.add_argument(
         "--split_audio",
-        type=str,
-        help="Enable split audio",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=split_audio_description,
+        default=False,
     )
     batch_infer_parser.add_argument(
         "--f0_autotune",
-        type=str,
-        help="Enable autotune",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=f0_autotune_description,
+        default=False,
     )
     batch_infer_parser.add_argument(
         "--clean_audio",
-        type=str,
-        help="Enable clean audio",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=clean_audio_description,
+        default=False,
     )
     batch_infer_parser.add_argument(
         "--clean_strength",
-        type=str,
-        help="Value for clean_strength",
-        choices=[str(i / 10) for i in range(11)],
-        default="0.7",
+        type=float,
+        help=clean_strength_description,
+        choices=[(i / 10) for i in range(11)],
+        default=0.7,
     )
     batch_infer_parser.add_argument(
         "--export_format",
         type=str,
-        help="Export format",
+        help=export_format_description,
         choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
         default="WAV",
     )
     batch_infer_parser.add_argument(
         "--embedder_model",
         type=str,
-        help="Embedder model",
+        help=embedder_model_description,
         choices=[
             "contentvec",
             "japanese-hubert-base",
@@ -758,93 +786,89 @@ def parse_arguments():
     batch_infer_parser.add_argument(
         "--embedder_model_custom",
         type=str,
-        help="Custom Embedder model",
+        help=embedder_model_custom_description,
         default=None,
     )
     batch_infer_parser.add_argument(
         "--upscale_audio",
-        type=str,
-        help="Enable audio upscaling",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=upscale_audio_description,
+        default=False,
     )
     batch_infer_parser.add_argument(
         "--f0_file",
         type=str,
-        help="Path to the f0 file",
+        help=f0_file_description,
         default=None,
     )
 
     # Parser for 'tts' mode
-    tts_parser = subparsers.add_parser("tts", help="Run TTS")
+    tts_parser = subparsers.add_parser("tts", help="Run TTS inference")
     tts_parser.add_argument(
-        "--tts_text",
-        type=str,
-        help="Text to be synthesized",
+        "--tts_text", type=str, help="Text to be synthesized", required=True
     )
     tts_parser.add_argument(
         "--tts_voice",
         type=str,
-        help="Voice to be used",
+        help="Voice to be used for TTS synthesis.",
         choices=locales,
+        required=True,
     )
     tts_parser.add_argument(
         "--tts_rate",
-        type=str,
-        help="Increase or decrease TTS speed",
-        choices=[str(i) for i in range(-100, 100)],
-        default="0",
+        type=int,
+        help="Control the speaking rate of the TTS. Values range from -100 (slower) to 100 (faster).",
+        choices=range(-100, 101),
+        default=0,
     )
     tts_parser.add_argument(
-        "--f0_up_key",
-        type=str,
-        help="Value for f0_up_key",
-        choices=[str(i) for i in range(-24, 25)],
-        default="0",
+        "--pitch",
+        type=int,
+        help=pitch_description,
+        choices=range(-24, 25),
+        default=0,
     )
     tts_parser.add_argument(
         "--filter_radius",
-        type=str,
-        help="Value for filter_radius",
-        choices=[str(i) for i in range(11)],
-        default="3",
+        type=int,
+        help=filter_radius_description,
+        choices=range(11),
+        default=3,
     )
     tts_parser.add_argument(
         "--index_rate",
-        type=str,
-        help="Value for index_rate",
-        choices=[str(i / 10) for i in range(11)],
-        default="0.3",
+        type=float,
+        help=index_rate_description,
+        choices=[(i / 10) for i in range(11)],
+        default=0.3,
     )
     tts_parser.add_argument(
-        "--rms_mix_rate",
-        type=str,
-        help="Value for rms_mix_rate",
-        choices=[str(i / 10) for i in range(11)],
-        default="1",
+        "--volume_envelope",
+        type=float,
+        help=volume_envelope_description,
+        choices=[(i / 10) for i in range(11)],
+        default=1,
     )
     tts_parser.add_argument(
         "--protect",
-        type=str,
-        help="Value for protect",
-        choices=[str(i / 10) for i in range(6)],
-        default="0.33",
+        type=float,
+        help=protect_description,
+        choices=[(i / 10) for i in range(6)],
+        default=0.33,
     )
     tts_parser.add_argument(
         "--hop_length",
-        type=str,
-        help="Value for hop_length",
-        choices=[str(i) for i in range(1, 513)],
-        default="128",
+        type=int,
+        help=hop_length_description,
+        choices=range(1, 513),
+        default=128,
     )
     tts_parser.add_argument(
         "--f0_method",
         type=str,
-        help="Value for f0_method",
+        help=f0_method_description,
         choices=[
-            "pm",
-            "harvest",
-            "dio",
             "crepe",
             "crepe-tiny",
             "rmvpe",
@@ -856,53 +880,63 @@ def parse_arguments():
         ],
         default="rmvpe",
     )
-    tts_parser.add_argument("--output_tts_path", type=str, help="Output tts path")
-    tts_parser.add_argument("--output_rvc_path", type=str, help="Output rvc path")
-    tts_parser.add_argument("--pth_path", type=str, help="Path to the .pth file")
     tts_parser.add_argument(
-        "--index_path",
+        "--output_tts_path",
         type=str,
-        help="Path to the .index file",
+        help="Full path to save the synthesized TTS audio.",
+        required=True,
+    )
+    tts_parser.add_argument(
+        "--output_rvc_path",
+        type=str,
+        help="Full path to save the voice-converted audio using the synthesized TTS.",
+        required=True,
+    )
+    tts_parser.add_argument(
+        "--pth_path", type=str, help=pth_path_description, required=True
+    )
+    tts_parser.add_argument(
+        "--index_path", type=str, help=index_path_description, required=True
     )
     tts_parser.add_argument(
         "--split_audio",
-        type=str,
-        help="Enable split audio",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=split_audio_description,
+        default=False,
     )
     tts_parser.add_argument(
         "--f0_autotune",
-        type=str,
-        help="Enable autotune",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=f0_autotune_description,
+        default=False,
     )
     tts_parser.add_argument(
         "--clean_audio",
-        type=str,
-        help="Enable clean audio",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=clean_audio_description,
+        default=False,
     )
     tts_parser.add_argument(
         "--clean_strength",
-        type=str,
-        help="Value for clean_strength",
-        choices=[str(i / 10) for i in range(11)],
-        default="0.7",
+        type=float,
+        help=clean_strength_description,
+        choices=[(i / 10) for i in range(11)],
+        default=0.7,
     )
     tts_parser.add_argument(
         "--export_format",
         type=str,
-        help="Export format",
+        help=export_format_description,
         choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
         default="WAV",
     )
     tts_parser.add_argument(
         "--embedder_model",
         type=str,
-        help="Embedder model",
+        help=embedder_model_description,
         choices=[
             "contentvec",
             "japanese-hubert-base",
@@ -914,74 +948,66 @@ def parse_arguments():
     tts_parser.add_argument(
         "--embedder_model_custom",
         type=str,
-        help="Custom Embedder model",
+        help=embedder_model_custom_description,
         default=None,
     )
     tts_parser.add_argument(
         "--upscale_audio",
-        type=str,
-        help="Enable audio upscaling",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=upscale_audio_description,
+        default=False,
     )
     tts_parser.add_argument(
         "--f0_file",
         type=str,
-        help="Path to the f0 file",
+        help=f0_file_description,
         default=None,
     )
 
     # Parser for 'preprocess' mode
-    preprocess_parser = subparsers.add_parser("preprocess", help="Run preprocessing")
-    preprocess_parser.add_argument("--model_name", type=str, help="Name of the model")
-    preprocess_parser.add_argument(
-        "--dataset_path",
-        type=str,
-        help="Path to the dataset",
+    preprocess_parser = subparsers.add_parser(
+        "preprocess", help="Preprocess a dataset for training."
     )
     preprocess_parser.add_argument(
-        "--sampling_rate",
-        type=str,
-        help="Sampling rate",
-        choices=["32000", "40000", "48000"],
+        "--model_name", type=str, help="Name of the model to be trained.", required=True
+    )
+    preprocess_parser.add_argument(
+        "--dataset_path", type=str, help="Path to the dataset directory.", required=True
+    )
+    preprocess_parser.add_argument(
+        "--sample_rate",
+        type=int,
+        help="Target sampling rate for the audio data.",
+        choices=[32000, 40000, 48000],
+        required=True,
     )
     preprocess_parser.add_argument(
         "--cpu_cores",
-        type=str,
-        help="Number of CPU cores to use",
-        choices=[str(i) for i in range(1, 64)],
-        default=None,
+        type=int,
+        help="Number of CPU cores to use for preprocessing.",
+        choices=range(1, 65),
     )
 
     # Parser for 'extract' mode
-    extract_parser = subparsers.add_parser("extract", help="Run extract")
+    extract_parser = subparsers.add_parser(
+        "extract", help="Extract features from a dataset."
+    )
     extract_parser.add_argument(
-        "--model_name",
-        type=str,
-        help="Name of the model",
+        "--model_name", type=str, help="Name of the model.", required=True
     )
     extract_parser.add_argument(
         "--rvc_version",
         type=str,
-        help="Version of the model",
+        help="Version of the RVC model ('v1' or 'v2').",
         choices=["v1", "v2"],
         default="v2",
-    )
-    train_parser.add_argument(
-        "--vocoder_type",
-        type=str,
-        help="Type of the vocoder",
-        choices=["hifigan", "bigvgan"],
-        default="hifigan",
     )
     extract_parser.add_argument(
         "--f0_method",
         type=str,
-        help="Value for f0_method",
+        help="Pitch extraction method to use.",
         choices=[
-            "pm",
-            "harvest",
-            "dio",
             "crepe",
             "crepe-tiny",
             "rmvpe",
@@ -990,35 +1016,36 @@ def parse_arguments():
     )
     extract_parser.add_argument(
         "--pitch_guidance",
-        type=str,
-        help="Pitch guidance",
-        choices=["True", "False"],
-        default="True",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Enable or disable pitch guidance during feature extraction.",
+        default=True,
     )
     extract_parser.add_argument(
         "--hop_length",
-        type=str,
-        help="Value for hop_length",
-        choices=[str(i) for i in range(1, 513)],
-        default="128",
+        type=int,
+        help="Hop length for feature extraction. Only applicable for Crepe pitch extraction.",
+        choices=range(1, 513),
+        default=128,
     )
     extract_parser.add_argument(
         "--cpu_cores",
-        type=str,
-        help="Number of CPU cores to use",
-        choices=[str(i) for i in range(1, 64)],
+        type=int,
+        help="Number of CPU cores to use for feature extraction (optional).",
+        choices=range(1, 65),
         default=None,
     )
     extract_parser.add_argument(
-        "--sampling_rate",
-        type=str,
-        help="Sampling rate",
-        choices=["32000", "40000", "48000"],
+        "--sample_rate",
+        type=int,
+        help="Target sampling rate for the audio data.",
+        choices=[32000, 40000, 48000],
+        required=True,
     )
     extract_parser.add_argument(
         "--embedder_model",
         type=str,
-        help="Embedder model",
+        help=embedder_model_description,
         choices=[
             "contentvec",
             "japanese-hubert-base",
@@ -1030,294 +1057,298 @@ def parse_arguments():
     extract_parser.add_argument(
         "--embedder_model_custom",
         type=str,
-        help="Custom Embedder model",
+        help=embedder_model_custom_description,
         default=None,
     )
 
     # Parser for 'train' mode
-    train_parser = subparsers.add_parser("train", help="Run training")
+    train_parser = subparsers.add_parser("train", help="Train an RVC model.")
     train_parser.add_argument(
-        "--model_name",
-        type=str,
-        help="Name of the model",
-    )
-    train_parser.add_argument(
-        "--rvc_version",
-        type=str,
-        help="Version of the model",
-        choices=["v1", "v2"],
-        default="v2",
+        "--model_name", type=str, help="Name of the model to be trained.", required=True
     )
     train_parser.add_argument(
         "--vocoder_type",
         type=str,
-        help="Type of the vocoder",
+        help="Type of vocoder to use for training.",
         choices=["hifigan", "bigvgan"],
-        default="hifigan",
+        required=True,
+    )
+    train_parser.add_argument(
+        "--rvc_version",
+        type=str,
+        help="Version of the RVC model to train ('v1' or 'v2').",
+        choices=["v1", "v2"],
+        default="v2",
     )
     train_parser.add_argument(
         "--save_every_epoch",
-        type=str,
-        help="Save every epoch",
-        choices=[str(i) for i in range(1, 101)],
+        type=int,
+        help="Save the model every specified number of epochs.",
+        choices=range(1, 101),
+        required=True,
     )
     train_parser.add_argument(
         "--save_only_latest",
-        type=str,
-        help="Save weight only at last epoch",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Save only the latest model checkpoint.",
+        default=False,
     )
     train_parser.add_argument(
         "--save_every_weights",
-        type=str,
-        help="Save weight every epoch",
-        choices=["True", "False"],
-        default="True",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Save model weights every epoch.",
+        default=True,
     )
     train_parser.add_argument(
         "--total_epoch",
-        type=str,
-        help="Total epoch",
-        choices=[str(i) for i in range(1, 10001)],
-        default="1000",
+        type=int,
+        help="Total number of epochs to train for.",
+        choices=range(1, 10001),
+        default=1000,
     )
     train_parser.add_argument(
-        "--sampling_rate",
-        type=str,
-        help="Sampling rate",
-        choices=["32000", "40000", "48000"],
+        "--sample_rate",
+        type=int,
+        help="Sampling rate of the training data.",
+        choices=[32000, 40000, 48000],
+        required=True,
     )
     train_parser.add_argument(
         "--batch_size",
-        type=str,
-        help="Batch size",
-        choices=[str(i) for i in range(1, 51)],
-        default="8",
+        type=int,
+        help="Batch size for training.",
+        choices=range(1, 51),
+        default=8,
     )
     train_parser.add_argument(
         "--gpu",
         type=str,
-        help="GPU number",
+        help="GPU device to use for training (e.g., '0').",
         default="0",
     )
     train_parser.add_argument(
         "--pitch_guidance",
-        type=str,
-        help="Pitch guidance",
-        choices=["True", "False"],
-        default="True",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Enable or disable pitch guidance during training.",
+        default=True,
     )
     train_parser.add_argument(
         "--pretrained",
-        type=str,
-        help="Pretrained",
-        choices=["True", "False"],
-        default="True",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Use a pretrained model for initialization.",
+        default=True,
     )
     train_parser.add_argument(
         "--custom_pretrained",
-        type=str,
-        help="Custom pretrained",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Use a custom pretrained model.",
+        default=False,
     )
     train_parser.add_argument(
         "--g_pretrained_path",
         type=str,
         nargs="?",
         default=None,
-        help="Path to the pretrained G file",
+        help="Path to the pretrained generator model file.",
     )
     train_parser.add_argument(
         "--d_pretrained_path",
         type=str,
         nargs="?",
         default=None,
-        help="Path to the pretrained D file",
+        help="Path to the pretrained discriminator model file.",
     )
     train_parser.add_argument(
         "--overtraining_detector",
-        type=str,
-        help="Overtraining detector",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Enable overtraining detection.",
+        default=False,
     )
     train_parser.add_argument(
         "--overtraining_threshold",
-        type=str,
-        help="Overtraining threshold",
-        choices=[str(i) for i in range(1, 101)],
-        default="50",
+        type=int,
+        help="Threshold for overtraining detection.",
+        choices=range(1, 101),
+        default=50,
     )
     train_parser.add_argument(
         "--sync_graph",
-        type=str,
-        help="Sync graph",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Enable graph synchronization for distributed training.",
+        default=False,
     )
     train_parser.add_argument(
         "--cache_data_in_gpu",
-        type=str,
-        help="Cache data in GPU",
-        choices=["True", "False"],
-        default="False",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Cache training data in GPU memory.",
+        default=False,
     )
 
     # Parser for 'index' mode
-    index_parser = subparsers.add_parser("index", help="Generate index file")
+    index_parser = subparsers.add_parser(
+        "index", help="Generate an index file for an RVC model."
+    )
     index_parser.add_argument(
-        "--model_name",
-        type=str,
-        help="Name of the model",
+        "--model_name", type=str, help="Name of the model.", required=True
     )
     index_parser.add_argument(
         "--rvc_version",
         type=str,
-        help="Version of the model",
+        help="Version of the RVC model ('v1' or 'v2').",
         choices=["v1", "v2"],
         default="v2",
     )
 
     # Parser for 'model_extract' mode
-    model_extract_parser = subparsers.add_parser("model_extract", help="Extract model")
-    model_extract_parser.add_argument(
-        "--pth_path",
-        type=str,
-        help="Path to the .pth file",
+    model_extract_parser = subparsers.add_parser(
+        "model_extract", help="Extract a specific epoch from a trained model."
     )
     model_extract_parser.add_argument(
-        "--model_name",
-        type=str,
-        help="Name of the model",
+        "--pth_path", type=str, help="Path to the main .pth model file.", required=True
     )
     model_extract_parser.add_argument(
-        "--sampling_rate",
-        type=str,
-        help="Sampling rate",
-        choices=["40000", "48000"],
+        "--model_name", type=str, help="Name of the model.", required=True
+    )
+    model_extract_parser.add_argument(
+        "--sample_rate",
+        type=int,
+        help="Sampling rate of the extracted model.",
+        choices=[32000, 40000, 48000],
+        required=True,
     )
     model_extract_parser.add_argument(
         "--pitch_guidance",
-        type=str,
-        help="Pitch guidance",
-        choices=["True", "False"],
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Enable or disable pitch guidance for the extracted model.",
+        required=True,
     )
     model_extract_parser.add_argument(
         "--rvc_version",
         type=str,
-        help="Version of the model",
+        help="Version of the extracted RVC model ('v1' or 'v2').",
         choices=["v1", "v2"],
         default="v2",
     )
     model_extract_parser.add_argument(
         "--epoch",
-        type=str,
-        help="Epochs of the model",
-        choices=[str(i) for i in range(1, 10001)],
+        type=int,
+        help="Epoch number to extract from the model.",
+        choices=range(1, 10001),
+        required=True,
     )
     model_extract_parser.add_argument(
         "--step",
         type=str,
-        help="Steps of the model",
+        help="Step number to extract from the model (optional).",
+        required=False,
     )
 
     # Parser for 'model_information' mode
     model_information_parser = subparsers.add_parser(
-        "model_information", help="Print model information"
+        "model_information", help="Display information about a trained model."
     )
     model_information_parser.add_argument(
-        "--pth_path",
-        type=str,
-        help="Path to the .pth file",
+        "--pth_path", type=str, help="Path to the .pth model file.", required=True
     )
 
     # Parser for 'model_blender' mode
     model_blender_parser = subparsers.add_parser(
-        "model_blender", help="Fuse two models"
+        "model_blender", help="Fuse two RVC models together."
     )
     model_blender_parser.add_argument(
-        "--model_name",
-        type=str,
-        help="Name of the model",
+        "--model_name", type=str, help="Name of the new fused model.", required=True
     )
     model_blender_parser.add_argument(
         "--pth_path_1",
         type=str,
-        help="Path to the first .pth file",
+        help="Path to the first .pth model file.",
+        required=True,
     )
     model_blender_parser.add_argument(
         "--pth_path_2",
         type=str,
-        help="Path to the second .pth file",
+        help="Path to the second .pth model file.",
+        required=True,
     )
     model_blender_parser.add_argument(
         "--ratio",
-        type=str,
-        help="Value for blender ratio",
-        choices=[str(i / 10) for i in range(11)],
-        default="0.5",
+        type=float,
+        help="Ratio for blending the two models (0.0 to 1.0).",
+        choices=[(i / 10) for i in range(11)],
+        default=0.5,
     )
 
     # Parser for 'tensorboard' mode
-    subparsers.add_parser("tensorboard", help="Run tensorboard")
+    subparsers.add_parser(
+        "tensorboard", help="Launch TensorBoard for monitoring training progress."
+    )
 
     # Parser for 'download' mode
-    download_parser = subparsers.add_parser("download", help="Download models")
+    download_parser = subparsers.add_parser(
+        "download", help="Download a model from a provided link."
+    )
     download_parser.add_argument(
-        "--model_link",
-        type=str,
-        help="Link of the model",
+        "--model_link", type=str, help="Direct link to the model file.", required=True
     )
 
     # Parser for 'prerequisites' mode
     prerequisites_parser = subparsers.add_parser(
-        "prerequisites", help="Install prerequisites"
+        "prerequisites", help="Install prerequisites for RVC."
     )
     prerequisites_parser.add_argument(
         "--pretraineds_v1",
-        type=str,
-        choices=["True", "False"],
-        default="True",
-        help="Download pretrained models for v1",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        default=True,
+        help="Download pretrained models for RVC v1.",
     )
     prerequisites_parser.add_argument(
         "--pretraineds_v2",
-        type=str,
-        choices=["True", "False"],
-        default="True",
-        help="Download pretrained models for v2",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        default=True,
+        help="Download pretrained models for RVC v2.",
     )
     prerequisites_parser.add_argument(
         "--models",
-        type=str,
-        choices=["True", "False"],
-        default="True",
-        help="Donwload models",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        default=True,
+        help="Download additional models.",
     )
     prerequisites_parser.add_argument(
         "--exe",
-        type=str,
-        choices=["True", "False"],
-        default="True",
-        help="Download executables",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        default=True,
+        help="Download required executables.",
     )
 
     # Parser for 'audio_analyzer' mode
-    audio_analyzer = subparsers.add_parser("audio_analyzer", help="Run audio analyzer")
+    audio_analyzer = subparsers.add_parser(
+        "audio_analyzer", help="Analyze an audio file."
+    )
     audio_analyzer.add_argument(
-        "--input_path",
-        type=str,
-        help="Path to the input audio file",
+        "--input_path", type=str, help="Path to the input audio file.", required=True
     )
 
     # Parser for 'api' mode
-    api_parser = subparsers.add_parser("api", help="Run the API")
+    api_parser = subparsers.add_parser("api", help="Start the RVC API server.")
     api_parser.add_argument(
-        "--host", type=str, help="Host address", default="127.0.0.1"
+        "--host", type=str, help="Host address for the API server.", default="127.0.0.1"
     )
-    api_parser.add_argument("--port", type=str, help="Port", default="8000")
+    api_parser.add_argument(
+        "--port", type=int, help="Port for the API server.", default=8000
+    )
 
     return parser.parse_args()
 
@@ -1332,168 +1363,171 @@ def main():
     try:
         if args.mode == "infer":
             run_infer_script(
-                str(args.f0_up_key),
-                str(args.filter_radius),
-                str(args.index_rate),
-                str(args.rms_mix_rate),
-                str(args.protect),
-                str(args.hop_length),
-                str(args.f0_method),
-                str(args.input_path),
-                str(args.output_path),
-                str(args.pth_path),
-                str(args.index_path),
-                str(args.split_audio),
-                str(args.f0_autotune),
-                str(args.clean_audio),
-                str(args.clean_strength),
-                str(args.export_format),
-                str(args.embedder_model),
-                str(args.embedder_model_custom),
-                str(args.upscale_audio),
-                str(args.f0_file),
+                pitch=args.pitch,
+                filter_radius=args.filter_radius,
+                index_rate=args.index_rate,
+                volume_envelope=args.volume_envelope,
+                protect=args.protect,
+                hop_length=args.hop_length,
+                f0_method=args.f0_method,
+                input_path=args.input_path,
+                output_path=args.output_path,
+                pth_path=args.pth_path,
+                index_path=args.index_path,
+                split_audio=args.split_audio,
+                f0_autotune=args.f0_autotune,
+                clean_audio=args.clean_audio,
+                clean_strength=args.clean_strength,
+                export_format=args.export_format,
+                embedder_model=args.embedder_model,
+                embedder_model_custom=args.embedder_model_custom,
+                upscale_audio=args.upscale_audio,
+                f0_file=args.f0_file,
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(
-                str(args.f0_up_key),
-                str(args.filter_radius),
-                str(args.index_rate),
-                str(args.rms_mix_rate),
-                str(args.protect),
-                str(args.hop_length),
-                str(args.f0_method),
-                str(args.input_folder),
-                str(args.output_folder),
-                str(args.pth_path),
-                str(args.index_path),
-                str(args.split_audio),
-                str(args.f0_autotune),
-                str(args.clean_audio),
-                str(args.clean_strength),
-                str(args.export_format),
-                str(args.embedder_model),
-                str(args.embedder_model_custom),
-                str(args.upscale_audio),
-                str(args.f0_file),
+                pitch=args.pitch,
+                filter_radius=args.filter_radius,
+                index_rate=args.index_rate,
+                volume_envelope=args.volume_envelope,
+                protect=args.protect,
+                hop_length=args.hop_length,
+                f0_method=args.f0_method,
+                input_folder=args.input_folder,
+                output_folder=args.output_folder,
+                pth_path=args.pth_path,
+                index_path=args.index_path,
+                split_audio=args.split_audio,
+                f0_autotune=args.f0_autotune,
+                clean_audio=args.clean_audio,
+                clean_strength=args.clean_strength,
+                export_format=args.export_format,
+                embedder_model=args.embedder_model,
+                embedder_model_custom=args.embedder_model_custom,
+                upscale_audio=args.upscale_audio,
+                f0_file=args.f0_file,
             )
         elif args.mode == "tts":
             run_tts_script(
-                str(args.tts_text),
-                str(args.tts_voice),
-                str(args.tts_rate),
-                str(args.f0_up_key),
-                str(args.filter_radius),
-                str(args.index_rate),
-                str(args.rms_mix_rate),
-                str(args.protect),
-                str(args.hop_length),
-                str(args.f0_method),
-                str(args.output_tts_path),
-                str(args.output_rvc_path),
-                str(args.pth_path),
-                str(args.index_path),
-                str(args.split_audio),
-                str(args.f0_autotune),
-                str(args.clean_audio),
-                str(args.clean_strength),
-                str(args.export_format),
-                str(args.embedder_model),
-                str(args.embedder_model_custom),
-                str(args.upscale_audio),
-                str(args.f0_file),
+                tts_text=args.tts_text,
+                tts_voice=args.tts_voice,
+                tts_rate=args.tts_rate,
+                pitch=args.pitch,
+                filter_radius=args.filter_radius,
+                index_rate=args.index_rate,
+                volume_envelope=args.volume_envelope,
+                protect=args.protect,
+                hop_length=args.hop_length,
+                f0_method=args.f0_method,
+                input_path=args.input_path,
+                output_path=args.output_path,
+                pth_path=args.pth_path,
+                index_path=args.index_path,
+                split_audio=args.split_audio,
+                f0_autotune=args.f0_autotune,
+                clean_audio=args.clean_audio,
+                clean_strength=args.clean_strength,
+                export_format=args.export_format,
+                embedder_model=args.embedder_model,
+                embedder_model_custom=args.embedder_model_custom,
+                upscale_audio=args.upscale_audio,
+                f0_file=args.f0_file,
             )
         elif args.mode == "preprocess":
             run_preprocess_script(
-                str(args.model_name),
-                str(args.dataset_path),
-                str(args.sampling_rate),
-                str(args.cpu_cores),
+                model_name=args.model_name,
+                dataset_path=args.dataset_path,
+                sample_rate=args.sample_rate,
+                cpu_cores=args.cpu_cores,
             )
         elif args.mode == "extract":
             run_extract_script(
-                str(args.model_name),
-                str(args.rvc_version),
-                str(args.vocoder_type),
-                str(args.f0_method),
-                str(args.pitch_guidance),
-                str(args.hop_length),
-                str(args.cpu_cores),
-                str(args.sampling_rate),
-                str(args.embedder_model),
-                str(args.embedder_model_custom),
+                model_name=args.model_name,
+                rvc_version=args.rvc_version,
+                f0_method=args.f0_method,
+                pitch_guidance=args.pitch_guidance,
+                hop_length=args.hop_length,
+                cpu_cores=args.cpu_cores,
+                sample_rate=args.sample_rate,
+                embedder_model=args.embedder_model,
+                embedder_model_custom=args.embedder_model_custom,
             )
         elif args.mode == "train":
             run_train_script(
-                str(args.model_name),
-                str(args.rvc_version),
-                str(args.vocoder_type),
-                str(args.save_every_epoch),
-                str(args.save_only_latest),
-                str(args.save_every_weights),
-                str(args.total_epoch),
-                str(args.sampling_rate),
-                str(args.batch_size),
-                str(args.gpu),
-                str(args.pitch_guidance),
-                str(args.overtraining_detector),
-                str(args.overtraining_threshold),
-                str(args.pretrained),
-                str(args.custom_pretrained),
-                str(args.sync_graph),
-                str(args.cache_data_in_gpu),
-                str(args.g_pretrained_path),
-                str(args.d_pretrained_path),
+                model_name=args.model_name,
+                vocoder_type=args.vocoder_type,
+                rvc_version=args.rvc_version,
+                save_every_epoch=args.save_every_epoch,
+                save_only_latest=args.save_only_latest,
+                save_every_weights=args.save_every_weights,
+                total_epoch=args.total_epoch,
+                sample_rate=args.sample_rate,
+                batch_size=args.batch_size,
+                gpu=args.gpu,
+                pitch_guidance=args.pitch_guidance,
+                overtraining_detector=args.overtraining_detector,
+                overtraining_threshold=args.overtraining_threshold,
+                pretrained=args.pretrained,
+                custom_pretrained=args.custom_pretrained,
+                sync_graph=args.sync_graph,
+                cache_data_in_gpu=args.cache_data_in_gpu,
+                g_pretrained_path=args.g_pretrained_path,
+                d_pretrained_path=args.d_pretrained_path,
             )
         elif args.mode == "index":
             run_index_script(
-                str(args.model_name),
-                str(args.rvc_version),
+                model_name=args.model_name,
+                rvc_version=args.rvc_version,
             )
         elif args.mode == "model_extract":
             run_model_extract_script(
-                str(args.pth_path),
-                str(args.model_name),
-                str(args.sampling_rate),
-                str(args.pitch_guidance),
-                str(args.rvc_version),
-                str(args.epoch),
-                str(args.step),
+                pth_path=args.pth_path,
+                model_name=args.model_name,
+                sample_rate=args.sample_rate,
+                pitch_guidance=args.pitch_guidance,
+                rvc_version=args.rvc_version,
+                epoch=args.epoch,
+                step=args.step,
             )
         elif args.mode == "model_information":
             run_model_information_script(
-                str(args.pth_path),
+                pth_path=args.pth_path,
             )
         elif args.mode == "model_blender":
             run_model_blender_script(
-                str(args.model_name),
-                str(args.pth_path_1),
-                str(args.pth_path_2),
-                str(args.ratio),
+                model_name=args.model_name,
+                pth_path_1=args.pth_path_1,
+                pth_path_2=args.pth_path_2,
+                ratio=args.ratio,
             )
         elif args.mode == "tensorboard":
             run_tensorboard_script()
         elif args.mode == "download":
             run_download_script(
-                str(args.model_link),
+                model_link=args.model_link,
             )
         elif args.mode == "prerequisites":
             run_prerequisites_script(
-                str(args.pretraineds_v1),
-                str(args.pretraineds_v2),
-                str(args.models),
-                str(args.exe),
+                pretraineds_v1=args.pretraineds_v1,
+                pretraineds_v2=args.pretraineds_v2,
+                models=args.models,
+                exe=args.exe,
             )
         elif args.mode == "audio_analyzer":
             run_audio_analyzer_script(
-                str(args.input_path),
+                input_path=args.input_path,
             )
         elif args.mode == "api":
             run_api_script(
-                str(args.host),
-                str(args.port),
+                ip=args.host,
+                port=args.port,
             )
     except Exception as error:
         print(f"Error: {error}")
+
+        import traceback
+
+        traceback.print_exc()
 
 
 if __name__ == "__main__":
