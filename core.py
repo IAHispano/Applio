@@ -349,7 +349,9 @@ def run_train_script(
         from rvc.lib.tools.pretrained_selector import pretrained_selector
 
         if custom_pretrained == False:
-            pg, pd = pretrained_selector(bool(pitch_guidance))[str(rvc_version)][int(sample_rate)]
+            pg, pd = pretrained_selector(bool(pitch_guidance))[str(rvc_version)][
+                int(sample_rate)
+            ]
         else:
             if g_pretrained_path is None or d_pretrained_path is None:
                 raise ValueError(
