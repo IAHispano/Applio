@@ -6,6 +6,7 @@ import torch
 import torchcrepe
 import numpy as np
 from multiprocessing import Pool
+from functools import partial
 
 current_directory = os.getcwd()
 sys.path.append(current_directory)
@@ -92,7 +93,7 @@ class FeatureInput:
         )
         return f0_coarse
 
-    def process_file(self, file_info):
+    def process_file(self, file_info, f0_method, hop_length):
         """Process a single audio file for F0 extraction."""
         inp_path, opt_path1, opt_path2, np_arr = file_info
 
@@ -108,7 +109,7 @@ class FeatureInput:
             print(f"An error occurred extracting file {inp_path}: {error}")
 
 
-if __name__ == "__main__":
+def main(exp_dir, f0_method, hop_length, num_processes):
     feature_input = FeatureInput()
     paths = []
     input_root = os.path.join(exp_dir, "sliced_audios_16k")
@@ -133,9 +134,18 @@ if __name__ == "__main__":
 
     # Use multiprocessing Pool for parallel processing with progress bar
     with tqdm.tqdm(total=len(paths), desc="F0 Extraction") as pbar:
-        with Pool(processes=num_processes) as pool:
-            for _ in pool.imap_unordered(feature_input.process_file, paths):
-                pbar.update()
+        pool = Pool(processes=num_processes)
+        process_file_partial = partial(
+            feature_input.process_file, f0_method=f0_method, hop_length=hop_length
+        )
+        for _ in pool.imap_unordered(process_file_partial, paths):
+            pbar.update()
+        pool.close()
+        pool.join()
 
     elapsed_time = time.time() - start_time
     print(f"F0 extraction completed in {elapsed_time:.2f} seconds.")
+
+
+if __name__ == "__main__":
+    main(exp_dir, f0_method, hop_length, num_processes)
