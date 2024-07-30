@@ -73,7 +73,8 @@ overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
 sync_graph = strtobool(sys.argv[16])
 
-experiment_dir = os.path.join("logs", model_name)
+current_dir = os.getcwd()
+experiment_dir = os.path.join(current_dir, "logs", model_name)
 config_save_path = os.path.join(experiment_dir, "config.json")
 
 with open(config_save_path, "r") as f:
@@ -160,8 +161,7 @@ def main():
         print("GPU not detected, reverting to CPU (not recommended)")
         n_gpus = 1
 
-    print(f"Value of sg {sync_graph}")
-    if sync_graph:
+    if sync_graph == True:
         print(
             "Sync graph is now activated! With sync graph enabled, the model undergoes a single epoch of training. Once the graphs are synchronized, training proceeds for the previously specified number of epochs."
         )
@@ -731,9 +731,7 @@ def train_and_evaluate(
 
     # Save checkpoint
     if epoch % save_every_epoch == False and rank == 0:
-        checkpoint_suffix = "{}.pth".format(
-            global_step if save_only_latest == False else 2333333
-        )
+        checkpoint_suffix = f"{global_step if save_only_latest == False else 2333333}.pth"
         save_checkpoint(
             net_g,
             optim_g,
@@ -755,18 +753,18 @@ def train_and_evaluate(
             else:
                 ckpt = net_g.state_dict()
             extract_model(
-                ckpt,
-                sample_rate,
-                pitch_guidance == True,
-                model_name,
-                os.path.join(
+                ckpt=ckpt,
+                sr=sample_rate,
+                pitch_guidance=pitch_guidance == True,
+                name=model_name,
+                model_dir=os.path.join(
                     experiment_dir,
-                    "{}_{}e_{}s.pth".format(model_name, epoch, global_step),
+                    f"{model_name}_{epoch}e_{global_step}s.pth",
                 ),
-                epoch,
-                global_step,
-                version,
-                hps,
+                epoch=epoch,
+                step=global_step,
+                version=version,
+                hps=hps,
             )
 
     # Overtraining detection and best model saving
@@ -797,18 +795,18 @@ def train_and_evaluate(
                 ckpt = net_g.state_dict()
 
             extract_model(
-                ckpt,
-                sample_rate,
-                pitch_guidance == True,
-                model_name,
-                os.path.join(
+                ckpt=ckpt,
+                sr=sample_rate,
+                pitch_guidance=pitch_guidance == True,
+                name=model_name,
+                model_dir=os.path.join(
                     experiment_dir,
-                    "{}_{}e_{}s_best_epoch.pth".format(model_name, epoch, global_step),
+                    f"{model_name}_{epoch}e_{global_step}s_best_epoch.pth",
                 ),
-                epoch,
-                global_step,
-                version,
-                hps,
+                epoch=epoch,
+                step=global_step,
+                version=version,
+                hps=hps,
             )
 
     # Print training progress
@@ -854,18 +852,18 @@ def train_and_evaluate(
             ckpt = net_g.state_dict()
 
         extract_model(
-            ckpt,
-            sample_rate,
-            pitch_guidance == True,
-            model_name,
-            os.path.join(
+            ckpt=ckpt,
+            sr=sample_rate,
+            pitch_guidance=pitch_guidance == True,
+            name=model_name,
+            model_dir=os.path.join(
                 experiment_dir,
-                "{}_{}e_{}s.pth".format(model_name, epoch, global_step),
+                f"{model_name}_{epoch}e_{global_step}s.pth",
             ),
-            epoch,
-            global_step,
-            config,
-            hps,
+            epoch=epoch,
+            step=global_step,
+            version=version,
+            hps=hps,
         )
         sleep(1)
         os._exit(2333333)
