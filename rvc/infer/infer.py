@@ -239,7 +239,6 @@ class VoiceConverter:
                             embedder_model_custom=embedder_model_custom,
                             clean_audio=clean_audio,
                             clean_strength=clean_strength,
-                            
                         )
                 except Exception as error:
                     print(f"Error in processing split audio segment: {error}")

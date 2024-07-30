@@ -22,7 +22,9 @@ def generate_config(rvc_version: str, vocoder_type: str, sample_rate: int, model
         shutil.copyfile(config_path, config_save_path)
 
 
-def generate_filelist(pitch_guidance: bool, model_path: str, rvc_version: str, sample_rate: int):
+def generate_filelist(
+    pitch_guidance: bool, model_path: str, rvc_version: str, sample_rate: int
+):
     gt_wavs_dir = f"{model_path}/sliced_audios"
     feature_dir = (
         f"{model_path}/v1_extracted"

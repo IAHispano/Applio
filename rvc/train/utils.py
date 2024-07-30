@@ -238,6 +238,7 @@ def load_filepaths_and_text(filename, split="|"):
         filepaths_and_text = [line.strip().split(split) for line in f]
     return filepaths_and_text
 
+
 class HParams:
     """
     A class for storing and accessing hyperparameters.

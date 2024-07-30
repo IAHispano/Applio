@@ -2,6 +2,7 @@ import os
 import torch
 from collections import OrderedDict
 
+
 def extract(ckpt):
     a = ckpt["model"]
     opt = OrderedDict()
@@ -12,15 +13,16 @@ def extract(ckpt):
         opt["weight"][key] = a[key]
     return opt
 
+
 def model_blender(name, path1, path2, ratio):
     try:
         message = f"Model {path1} and {path2} are merged with alpha {ratio}."
         ckpt1 = torch.load(path1, map_location="cpu")
         ckpt2 = torch.load(path2, map_location="cpu")
-        
+
         if ckpt1["sr"] != ckpt2["sr"]:
             return "The sample rates of the two models are not the same."
-        
+
         cfg = ckpt1["config"]
         cfg_f0 = ckpt1["f0"]
         cfg_version = ckpt1["version"]

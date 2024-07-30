@@ -118,9 +118,7 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
         audio, sample_rate = load_wav_to_torch(filename)
         if sample_rate != self.sample_rate:
             raise ValueError(
-                "{} SR doesn't match target {} SR".format(
-                    sample_rate, self.sample_rate
-                )
+                "{} SR doesn't match target {} SR".format(sample_rate, self.sample_rate)
             )
         audio_norm = audio
         audio_norm = audio_norm.unsqueeze(0)
@@ -344,9 +342,7 @@ class TextAudioLoader(torch.utils.data.Dataset):
         audio, sample_rate = load_wav_to_torch(filename)
         if sample_rate != self.sample_rate:
             raise ValueError(
-                "{} SR doesn't match target {} SR".format(
-                    sample_rate, self.sample_rate
-                )
+                "{} SR doesn't match target {} SR".format(sample_rate, self.sample_rate)
             )
         audio_norm = audio
         audio_norm = audio_norm.unsqueeze(0)
