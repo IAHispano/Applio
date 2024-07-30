@@ -21,9 +21,9 @@ def replace_keys_in_dict(d, old_key_part, new_key_part):
 def extract_model(ckpt, sr, pitch_guidance, name, model_dir, epoch, step, version, hps):
     try:
         print(f"Saved model '{model_dir}' (epoch {epoch} and step {step})")
-        
+
         model_dir_path = os.path.dirname(model_dir)
-        os.makedirs(model_dir_path, exist_ok=True) 
+        os.makedirs(model_dir_path, exist_ok=True)
 
         pth_file = f"{name}_{epoch}e_{step}s.pth"
         pth_file_old_version_path = os.path.join(
@@ -67,7 +67,7 @@ def extract_model(ckpt, sr, pitch_guidance, name, model_dir, epoch, step, versio
         model_hash = hashlib.sha256(hash_input.encode()).hexdigest()
         opt["model_hash"] = model_hash
 
-        torch.save(opt, os.path.join(model_dir_path, pth_file)) 
+        torch.save(opt, os.path.join(model_dir_path, pth_file))
 
         model = torch.load(model_dir, map_location=torch.device("cpu"))
         torch.save(
