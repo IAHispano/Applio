@@ -21,10 +21,15 @@ def replace_keys_in_dict(d, old_key_part, new_key_part):
 def extract_model(ckpt, sr, pitch_guidance, name, model_dir, epoch, step, version, hps):
     try:
         print(f"Saved model '{model_dir}' (epoch {epoch} and step {step})")
+        
+        model_dir_path = os.path.dirname(model_dir)
+        os.makedirs(model_dir_path, exist_ok=True) 
+
         pth_file = f"{name}_{epoch}e_{step}s.pth"
         pth_file_old_version_path = os.path.join(
-            model_dir, f"{pth_file}_old_version.pth"
+            model_dir_path, f"{pth_file}_old_version.pth"
         )
+
         opt = OrderedDict(
             weight={
                 key: value.half() for key, value in ckpt.items() if "enc_q" not in key
@@ -62,7 +67,7 @@ def extract_model(ckpt, sr, pitch_guidance, name, model_dir, epoch, step, versio
         model_hash = hashlib.sha256(hash_input.encode()).hexdigest()
         opt["model_hash"] = model_hash
 
-        torch.save(opt, model_dir)
+        torch.save(opt, os.path.join(model_dir_path, pth_file)) 
 
         model = torch.load(model_dir, map_location=torch.device("cpu"))
         torch.save(
