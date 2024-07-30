@@ -410,6 +410,7 @@ def run_index_script(model_name: str, rvc_version: str):
 def run_model_extract_script(
     pth_path: str,
     model_name: str,
+    vocoder_type: str,
     sample_rate: int,
     pitch_guidance: bool,
     rvc_version: str,
@@ -417,7 +418,7 @@ def run_model_extract_script(
     step: int,
 ):
     extract_small_model(
-        pth_path, model_name, sample_rate, pitch_guidance, rvc_version, epoch, step
+        path=pth_path, name=model_name, vocoder_type=vocoder_type, sample_rate=sample_rate, pitch_guidance=pitch_guidance, rvc_version=rvc_version, epoch=epoch, step=step
     )
     return f"Model {model_name} extracted successfully."
 
@@ -1218,6 +1219,13 @@ def parse_arguments():
         "--model_name", type=str, help="Name of the model.", required=True
     )
     model_extract_parser.add_argument(
+        "--vocoder_type",
+        type=str,
+        help="Type of vocoder to use for the extracted model.",
+        choices=["hifigan", "bigvgan"],
+        required=True,
+    )
+    model_extract_parser.add_argument(
         "--sample_rate",
         type=int,
         help="Sampling rate of the extracted model.",
@@ -1483,6 +1491,7 @@ def main():
             run_model_extract_script(
                 pth_path=args.pth_path,
                 model_name=args.model_name,
+                vocoder_type=args.vocoder_type,
                 sample_rate=args.sample_rate,
                 pitch_guidance=args.pitch_guidance,
                 rvc_version=args.rvc_version,

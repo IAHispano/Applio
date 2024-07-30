@@ -186,7 +186,7 @@ def main():
                 vocoder_type,
                 str(sample_rate) + ".json",
             )
-            
+
         model_config_file = os.path.join(experiment_dir, "config.json")
         if not os.path.exists(rvc_config_file):
             rvc_config_file = os.path.join(
@@ -785,18 +785,19 @@ def train_and_evaluate(
             else:
                 ckpt = net_g.state_dict()
             extract_model(
-                ckpt,
-                sample_rate,
-                pitch_guidance == True,
-                model_name,
-                os.path.join(
+                ckpt=ckpt,
+                sr=sample_rate,
+                pitch_guidance=pitch_guidance == True,
+                name=model_name,
+                model_dir=os.path.join(
                     experiment_dir,
                     "{}_{}e_{}s.pth".format(model_name, epoch, global_step),
                 ),
-                epoch,
-                global_step,
-                version,
-                hps,
+                vocoder_type=vocoder_type,
+                epoch=epoch,
+                step=global_step,
+                version=version,
+                hps=hps,
             )
 
     # Overtraining detection and best model saving
@@ -827,18 +828,19 @@ def train_and_evaluate(
                 ckpt = net_g.state_dict()
 
             extract_model(
-                ckpt,
-                sample_rate,
-                pitch_guidance == True,
-                model_name,
-                os.path.join(
+                ckpt=ckpt,
+                sr=sample_rate,
+                pitch_guidance=pitch_guidance == True,
+                name=model_name,
+                model_dir=os.path.join(
                     experiment_dir,
                     "{}_{}e_{}s_best_epoch.pth".format(model_name, epoch, global_step),
                 ),
-                epoch,
-                global_step,
-                version,
-                hps,
+                vocoder_type=vocoder_type,
+                epoch=epoch,
+                step=global_step,
+                version=version,
+                hps=hps,
             )
 
     # Print training progress
@@ -884,18 +886,19 @@ def train_and_evaluate(
             ckpt = net_g.state_dict()
 
         extract_model(
-            ckpt,
-            sample_rate,
-            pitch_guidance == True,
-            model_name,
-            os.path.join(
+            ckpt=ckpt,
+            sr=sample_rate,
+            pitch_guidance=pitch_guidance == True,
+            name=model_name,
+            model_dir=os.path.join(
                 experiment_dir,
                 "{}_{}e_{}s.pth".format(model_name, epoch, global_step),
             ),
-            epoch,
-            global_step,
-            config,
-            hps,
+            vocoder_type=vocoder_type,
+            epoch=epoch,
+            step=global_step,
+            version=version,
+            hps=hps,
         )
         sleep(1)
         os._exit(2333333)

@@ -18,7 +18,7 @@ def replace_keys_in_dict(d, old_key_part, new_key_part):
     return updated_dict
 
 
-def extract_model(ckpt, sr, pitch_guidance, name, model_dir, epoch, step, version, hps):
+def extract_model(ckpt, sr, pitch_guidance, name, model_dir, vocoder_type, epoch, step, version, hps):
     try:
         print(f"Saved model '{model_dir}' (epoch {epoch} and step {step})")
         pth_file = f"{name}_{epoch}e_{step}s.pth"
@@ -57,7 +57,7 @@ def extract_model(ckpt, sr, pitch_guidance, name, model_dir, epoch, step, versio
         opt["f0"] = pitch_guidance
         opt["version"] = version
         opt["creation_date"] = datetime.datetime.now().isoformat()
-        opt["vocoder_type"] = hps.vocoder_type
+        opt["vocoder_type"] = vocoder_type
         hash_input = f"{str(ckpt)} {epoch} {step} {datetime.datetime.now().isoformat()}"
         model_hash = hashlib.sha256(hash_input.encode()).hexdigest()
         opt["model_hash"] = model_hash
