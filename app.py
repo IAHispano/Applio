@@ -21,6 +21,7 @@ from tabs.settings.presence import presence_tab, load_config_presence
 from tabs.settings.flask_server import flask_server_tab
 from tabs.settings.fake_gpu import fake_gpu_tab, gpu_available, load_fake_gpu
 from tabs.settings.themes import theme_tab
+from tabs.settings.precision import precision_tab
 
 # Assets
 import assets.themes.loadThemes as loadThemes
@@ -35,7 +36,7 @@ import logging
 
 logging.getLogger("uvicorn").setLevel(logging.WARNING)
 
-run_prerequisites_script("False", "True", "True", "True")
+run_prerequisites_script(False, True, True, True)
 
 i18n = I18nAuto()
 if load_config_presence() == True:
@@ -98,6 +99,7 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
     with gr.Tab(i18n("Settings")):
         presence_tab()
         flask_server_tab()
+        precision_tab()
         if not gpu_available():
             fake_gpu_tab()
         theme_tab()

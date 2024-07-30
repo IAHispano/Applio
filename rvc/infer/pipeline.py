@@ -4,9 +4,7 @@ import re
 import sys
 import torch
 import torch.nn.functional as F
-import parselmouth
 import torchcrepe
-import pyworld
 import faiss
 import librosa
 import numpy as np
@@ -179,30 +177,6 @@ class Pipeline:
         self.autotune = Autotune(self.ref_freqs)
         self.note_dict = self.autotune.note_dict
 
-    @staticmethod
-    @lru_cache
-    def get_f0_harvest(input_audio_path, fs, f0max, f0min, frame_period):
-        """
-        Estimates the fundamental frequency (F0) of a given audio file using the Harvest algorithm.
-
-        Args:
-            input_audio_path: Path to the input audio file.
-            fs: Sampling rate of the audio file.
-            f0max: Maximum F0 value to consider.
-            f0min: Minimum F0 value to consider.
-            frame_period: Frame period in milliseconds for F0 analysis.
-        """
-        audio = input_audio_path2wav[input_audio_path]
-        f0, t = pyworld.harvest(
-            audio,
-            fs=fs,
-            f0_ceil=f0max,
-            f0_floor=f0min,
-            frame_period=frame_period,
-        )
-        f0 = pyworld.stonemask(audio, f0, t, fs)
-        return f0
-
     def get_f0_crepe(
         self,
         x,
@@ -300,7 +274,7 @@ class Pipeline:
                     f0_max=int(f0_max),
                     dtype=torch.float32,
                     device=self.device,
-                    sampling_rate=self.sample_rate,
+                    sample_rate=self.sample_rate,
                     threshold=0.03,
                 )
                 f0 = self.model_fcpe.compute_f0(x, p_len=p_len)
@@ -321,7 +295,7 @@ class Pipeline:
         input_audio_path,
         x,
         p_len,
-        f0_up_key,
+        pitch,
         f0_method,
         filter_radius,
         hop_length,
@@ -335,48 +309,15 @@ class Pipeline:
             input_audio_path: Path to the input audio file.
             x: The input audio signal as a NumPy array.
             p_len: Desired length of the F0 output.
-            f0_up_key: Key to adjust the pitch of the F0 contour.
-            f0_method: Method to use for F0 estimation (e.g., "pm", "harvest", "crepe").
+            pitch: Key to adjust the pitch of the F0 contour.
+            f0_method: Method to use for F0 estimation (e.g., "crepe").
             filter_radius: Radius for median filtering the F0 contour.
             hop_length: Hop length for F0 estimation methods.
             f0_autotune: Whether to apply autotune to the F0 contour.
             inp_f0: Optional input F0 contour to use instead of estimating.
         """
         global input_audio_path2wav
-        if f0_method == "pm":
-            f0 = (
-                parselmouth.Sound(x, self.sample_rate)
-                .to_pitch_ac(
-                    time_step=self.time_step / 1000,
-                    voicing_threshold=0.6,
-                    pitch_floor=self.f0_min,
-                    pitch_ceiling=self.f0_max,
-                )
-                .selected_array["frequency"]
-            )
-            pad_size = (p_len - len(f0) + 1) // 2
-            if pad_size > 0 or p_len - len(f0) - pad_size > 0:
-                f0 = np.pad(
-                    f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
-                )
-        elif f0_method == "harvest":
-            input_audio_path2wav[input_audio_path] = x.astype(np.double)
-            f0 = self.get_f0_harvest(
-                input_audio_path, self.sample_rate, self.f0_max, self.f0_min, 10
-            )
-            if int(filter_radius) > 2:
-                f0 = signal.medfilt(f0, 3)
-        elif f0_method == "dio":
-            f0, t = pyworld.dio(
-                x.astype(np.double),
-                fs=self.sample_rate,
-                f0_ceil=self.f0_max,
-                f0_floor=self.f0_min,
-                frame_period=10,
-            )
-            f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sample_rate)
-            f0 = signal.medfilt(f0, 3)
-        elif f0_method == "crepe":
+        if f0_method == "crepe":
             f0 = self.get_f0_crepe(x, self.f0_min, self.f0_max, p_len, int(hop_length))
         elif f0_method == "crepe-tiny":
             f0 = self.get_f0_crepe(
@@ -396,7 +337,7 @@ class Pipeline:
                 f0_max=int(self.f0_max),
                 dtype=torch.float32,
                 device=self.device,
-                sampling_rate=self.sample_rate,
+                sample_rate=self.sample_rate,
                 threshold=0.03,
             )
             f0 = self.model_fcpe.compute_f0(x, p_len=p_len)
@@ -416,7 +357,7 @@ class Pipeline:
         if f0_autotune == "True":
             f0 = Autotune.autotune_f0(self, f0)
 
-        f0 *= pow(2, f0_up_key / 12)
+        f0 *= pow(2, pitch / 12)
         tf0 = self.sample_rate // self.window
         if inp_f0 is not None:
             delta_t = np.round(
@@ -556,7 +497,7 @@ class Pipeline:
         sid,
         audio,
         input_audio_path,
-        f0_up_key,
+        pitch,
         f0_method,
         file_index,
         index_rate,
@@ -564,7 +505,7 @@ class Pipeline:
         filter_radius,
         tgt_sr,
         resample_sr,
-        rms_mix_rate,
+        volume_envelope,
         version,
         protect,
         hop_length,
@@ -580,7 +521,7 @@ class Pipeline:
             sid: Speaker ID for the target voice.
             audio: The input audio signal.
             input_audio_path: Path to the input audio file.
-            f0_up_key: Key to adjust the pitch of the F0 contour.
+            pitch: Key to adjust the pitch of the F0 contour.
             f0_method: Method to use for F0 estimation.
             file_index: Path to the FAISS index file for speaker embedding retrieval.
             index_rate: Blending rate for speaker embedding retrieval.
@@ -588,7 +529,7 @@ class Pipeline:
             filter_radius: Radius for median filtering the F0 contour.
             tgt_sr: Target sampling rate for the output audio.
             resample_sr: Resampling rate for the output audio.
-            rms_mix_rate: Blending rate for adjusting the RMS level of the output audio.
+            volume_envelope: Blending rate for adjusting the RMS level of the output audio.
             version: Model version.
             protect: Protection level for preserving the original pitch.
             hop_length: Hop length for F0 estimation methods.
@@ -637,13 +578,12 @@ class Pipeline:
             except Exception as error:
                 print(error)
         sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
-        pitch, pitchf = None, None
-        if pitch_guidance == 1:
+        if pitch_guidance == True:
             pitch, pitchf = self.get_f0(
                 input_audio_path,
                 audio_pad,
                 p_len,
-                f0_up_key,
+                pitch,
                 f0_method,
                 filter_radius,
                 hop_length,
@@ -658,7 +598,7 @@ class Pipeline:
             pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
         for t in opt_ts:
             t = t // self.window * self.window
-            if pitch_guidance == 1:
+            if pitch_guidance == True:
                 audio_opt.append(
                     self.voice_conversion(
                         model,
@@ -691,7 +631,7 @@ class Pipeline:
                     )[self.t_pad_tgt : -self.t_pad_tgt]
                 )
             s = t
-        if pitch_guidance == 1:
+        if pitch_guidance == True:
             audio_opt.append(
                 self.voice_conversion(
                     model,
@@ -724,9 +664,9 @@ class Pipeline:
                 )[self.t_pad_tgt : -self.t_pad_tgt]
             )
         audio_opt = np.concatenate(audio_opt)
-        if rms_mix_rate != 1:
+        if volume_envelope != 1:
             audio_opt = AudioProcessor.change_rms(
-                audio, self.sample_rate, audio_opt, tgt_sr, rms_mix_rate
+                audio, self.sample_rate, audio_opt, tgt_sr, volume_envelope
             )
         if resample_sr >= self.sample_rate and tgt_sr != resample_sr:
             audio_opt = librosa.resample(

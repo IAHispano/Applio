@@ -410,9 +410,6 @@ def inference_tab():
                         "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
                     ),
                     choices=[
-                        "pm",
-                        "harvest",
-                        "dio",
                         "crepe",
                         "crepe-tiny",
                         "rmvpe",
@@ -616,9 +613,6 @@ def inference_tab():
                         "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
                     ),
                     choices=[
-                        "pm",
-                        "harvest",
-                        "dio",
                         "crepe",
                         "crepe-tiny",
                         "rmvpe",
@@ -802,10 +796,11 @@ def inference_tab():
             clean_audio,
             clean_strength,
             export_format,
-            embedder_model,
-            embedder_model_custom,
             upscale_audio,
             f0_file,
+            embedder_model,
+            embedder_model_custom,
+            
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -828,10 +823,10 @@ def inference_tab():
             clean_audio_batch,
             clean_strength_batch,
             export_format_batch,
-            embedder_model_batch,
-            embedder_model_custom_batch,
             upscale_audio_batch,
             f0_file_batch,
+            embedder_model_batch,
+            embedder_model_custom_batch,
         ],
         outputs=[vc_output3],
     )

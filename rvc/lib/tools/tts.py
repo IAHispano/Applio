@@ -4,10 +4,11 @@ import edge_tts
 
 
 async def main():
-    text = sys.argv[1]
-    voice = sys.argv[2]
+    # Parse command line arguments
+    text = str(sys.argv[1])
+    voice = str(sys.argv[2])
     rate = int(sys.argv[3])
-    output_file = sys.argv[4]
+    output_file = str(sys.argv[4])
 
     rates = f"+{rate}%" if rate >= 0 else f"{rate}%"
 

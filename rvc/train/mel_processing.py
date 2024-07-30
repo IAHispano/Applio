@@ -98,7 +98,7 @@ def spectrogram_torch(y, n_fft, hop_size, win_size, center=False):
     return spec
 
 
-def spec_to_mel_torch(spec, n_fft, num_mels, sampling_rate, fmin, fmax):
+def spec_to_mel_torch(spec, n_fft, num_mels, sample_rate, fmin, fmax):
     """
     Convert a spectrogram to a mel-spectrogram.
 
@@ -106,7 +106,7 @@ def spec_to_mel_torch(spec, n_fft, num_mels, sampling_rate, fmin, fmax):
         spec (torch.Tensor): Magnitude spectrogram.
         n_fft (int): FFT window size.
         num_mels (int): Number of mel frequency bins.
-        sampling_rate (int): Sampling rate of the audio signal.
+        sample_rate (int): Sampling rate of the audio signal.
         fmin (float): Minimum frequency.
         fmax (float): Maximum frequency.
     """
@@ -115,7 +115,7 @@ def spec_to_mel_torch(spec, n_fft, num_mels, sampling_rate, fmin, fmax):
     fmax_dtype_device = str(fmax) + "_" + dtype_device
     if fmax_dtype_device not in mel_basis:
         mel = librosa_mel_fn(
-            sr=sampling_rate, n_fft=n_fft, n_mels=num_mels, fmin=fmin, fmax=fmax
+            sr=sample_rate, n_fft=n_fft, n_mels=num_mels, fmin=fmin, fmax=fmax
         )
         mel_basis[fmax_dtype_device] = torch.from_numpy(mel).to(
             dtype=spec.dtype, device=spec.device
@@ -127,7 +127,7 @@ def spec_to_mel_torch(spec, n_fft, num_mels, sampling_rate, fmin, fmax):
 
 
 def mel_spectrogram_torch(
-    y, n_fft, num_mels, sampling_rate, hop_size, win_size, fmin, fmax, center=False
+    y, n_fft, num_mels, sample_rate, hop_size, win_size, fmin, fmax, center=False
 ):
     """
     Compute the mel-spectrogram of a signal.
@@ -136,7 +136,7 @@ def mel_spectrogram_torch(
         y (torch.Tensor): Input signal.
         n_fft (int): FFT window size.
         num_mels (int): Number of mel frequency bins.
-        sampling_rate (int): Sampling rate of the audio signal.
+        sample_rate (int): Sampling rate of the audio signal.
         hop_size (int): Hop size between frames.
         win_size (int): Window size.
         fmin (float): Minimum frequency.
@@ -145,7 +145,7 @@ def mel_spectrogram_torch(
     """
     spec = spectrogram_torch(y, n_fft, hop_size, win_size, center)
 
-    melspec = spec_to_mel_torch(spec, n_fft, num_mels, sampling_rate, fmin, fmax)
+    melspec = spec_to_mel_torch(spec, n_fft, num_mels, sample_rate, fmin, fmax)
 
     return melspec
 

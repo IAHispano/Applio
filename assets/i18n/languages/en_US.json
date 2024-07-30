@@ -217,6 +217,9 @@
   "Select the theme you want to use. (Requires restarting Applio)": "Select the theme you want to use. (Requires restarting Applio)",
   "Language": "Language",
   "Select the language you want to use. (Requires restarting Applio)": "Select the language you want to use. (Requires restarting Applio)",
+  "Precision": "Precision",
+  "Select the precision you want to use for training and inference.": "Select the precision you want to use for training and inference.",
+  "Update precision": "Update precision",
 
   "Plugin Installer": "Plugin Installer",
   "Drag your plugin.zip to install it": "Drag your plugin.zip to install it",

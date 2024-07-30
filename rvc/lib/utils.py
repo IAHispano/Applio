@@ -1,5 +1,6 @@
 import os, sys
-import ffmpeg
+import librosa
+import soundfile as sf
 import numpy as np
 import re
 import unicodedata
@@ -14,18 +15,18 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 
-def load_audio(file, sampling_rate):
+def load_audio(file, sample_rate):
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        out, _ = (
-            ffmpeg.input(file, threads=0)
-            .output("-", format="f32le", acodec="pcm_f32le", ac=1, ar=sampling_rate)
-            .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
-        )
+        audio, sr = sf.read(file)
+        if len(audio.shape) > 1:
+            audio = librosa.to_mono(audio.T)
+        if sr != sample_rate:
+            audio = librosa.resample(audio, orig_sr=sr, target_sr=sample_rate)
     except Exception as error:
         raise RuntimeError(f"Failed to load audio: {error}")
 
-    return np.frombuffer(out, np.float32).flatten()
+    return audio.flatten()
 
 
 def format_title(title):
@@ -39,7 +40,6 @@ def format_title(title):
 
 
 def load_embedding(embedder_model, custom_embedder=None):
-
     embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
     embedding_list = {
         "contentvec": os.path.join(embedder_root, "contentvec_base.pt"),

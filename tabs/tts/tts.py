@@ -350,9 +350,6 @@ def tts_tab():
                     "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
                 ),
                 choices=[
-                    "pm",
-                    "harvest",
-                    "dio",
                     "crepe",
                     "crepe-tiny",
                     "rmvpe",
@@ -467,10 +464,10 @@ def tts_tab():
             clean_audio,
             clean_strength,
             export_format,
-            embedder_model,
-            embedder_model_custom,
             upscale_audio,
             f0_file,
+            embedder_model,
+            embedder_model_custom,
         ],
         outputs=[vc_output1, vc_output2],
     )
