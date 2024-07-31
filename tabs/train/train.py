@@ -472,7 +472,6 @@ def train_tab():
             inputs=[
                 model_name,
                 rvc_version,
-                vocoder_type,
                 f0_method,
                 pitch_guidance_extract,
                 hop_length,
