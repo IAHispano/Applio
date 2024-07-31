@@ -298,7 +298,6 @@ def run(
     elif pitch_guidance == False:
         collate_fn = TextAudioCollate()
 
-    # Define the train_loader here
     train_loader = DataLoader(
         train_dataset,
         num_workers=4,
@@ -319,66 +318,14 @@ def run(
         is_half=config.train.fp16_run,
         sr=sample_rate,
     )
-
-    net_d = (
-        MultiPeriodDiscriminatorV2(config.model.use_spectral_norm)
-        if version == "v2"
-        else MultiPeriodDiscriminator(config.model.use_spectral_norm)
-    )
-
-    # IMPORTANT:  Place any parameter modifications to your model BEFORE creating DDP
     if torch.cuda.is_available():
         net_g = net_g.cuda(rank)
-        net_d = net_d.cuda(rank)
-
-    if pretrainG != "":
-        if rank == 0:
-            print(f"Loaded pretrained (G) '{pretrainG}'")
-        if hasattr(net_g, "module"):
-            net_g.module.load_state_dict(
-                torch.load(pretrainG, map_location="cpu")["model"]
-            )
-
-        else:
-            net_g.load_state_dict(torch.load(pretrainG, map_location="cpu")["model"])
-
-        # Check for non-contiguous tensors after loading pretrained G
-        for name, param in net_g.named_parameters():
-            if not param.is_contiguous():
-                print(f"Making '{name}' contiguous...")
-                if hasattr(net_g, "module"):
-                    net_g.module.state_dict()[name] = param.contiguous()
-                else:
-                    net_g.state_dict()[name] = param.contiguous()
-
-    if pretrainD != "":
-        if rank == 0:
-            print(f"Loaded pretrained (D) '{pretrainD}'")
-        if hasattr(net_d, "module"):
-            net_d.module.load_state_dict(
-                torch.load(pretrainD, map_location="cpu")["model"]
-            )
-
-        else:
-            net_d.load_state_dict(torch.load(pretrainD, map_location="cpu")["model"])
-
-        # Check for non-contiguous tensors after loading pretrained D
-        for name, param in net_d.named_parameters():
-            if not param.is_contiguous():
-                print(f"Making '{name}' contiguous...")
-                if hasattr(net_d, "module"):
-                    net_d.module.state_dict()[name] = param.contiguous()
-                else:
-                    net_d.state_dict()[name] = param.contiguous()
-
-    # Now wrap models with DDP after parameter modifications
-    if torch.cuda.is_available():
-        net_g = DDP(net_g, device_ids=[rank])
-        net_d = DDP(net_d, device_ids=[rank])
+    if version == "v1":
+        net_d = MultiPeriodDiscriminator(config.model.use_spectral_norm)
     else:
-        net_g = DDP(net_g)
-        net_d = DDP(net_d)
-
+        net_d = MultiPeriodDiscriminatorV2(config.model.use_spectral_norm)
+    if torch.cuda.is_available():
+        net_d = net_d.cuda(rank)
     optim_g = torch.optim.AdamW(
         net_g.parameters(),
         config.train.learning_rate,
@@ -391,6 +338,14 @@ def run(
         betas=config.train.betas,
         eps=config.train.eps,
     )
+
+    # Wrap models with DDP
+    if torch.cuda.is_available():
+        net_g = DDP(net_g, device_ids=[rank])
+        net_d = DDP(net_d, device_ids=[rank])
+    else:
+        net_g = DDP(net_g)
+        net_d = DDP(net_d)
 
     # Load checkpoint if available
     try:
@@ -406,6 +361,31 @@ def run(
     except:
         epoch_str = 1
         global_step = 0
+        if pretrainG != "":
+            if rank == 0:
+                print(f"Loaded pretrained (G) '{pretrainG}'")
+            if hasattr(net_g, "module"):
+                net_g.module.load_state_dict(
+                    torch.load(pretrainG, map_location="cpu")["model"]
+                )
+
+            else:
+                net_g.load_state_dict(
+                    torch.load(pretrainG, map_location="cpu")["model"]
+                )
+
+        if pretrainD != "":
+            if rank == 0:
+                print(f"Loaded pretrained (D) '{pretrainD}'")
+            if hasattr(net_d, "module"):
+                net_d.module.load_state_dict(
+                    torch.load(pretrainD, map_location="cpu")["model"]
+                )
+
+            else:
+                net_d.load_state_dict(
+                    torch.load(pretrainD, map_location="cpu")["model"]
+                )
 
     # Initialize schedulers and scaler
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
