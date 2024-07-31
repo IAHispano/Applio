@@ -266,6 +266,7 @@ def run_preprocess_script(
 def run_extract_script(
     model_name: str,
     rvc_version: str,
+    vocoder_type: str,
     f0_method: str,
     pitch_guidance: bool,
     hop_length: int,
@@ -318,7 +319,7 @@ def run_extract_script(
     subprocess.run(command_1)
     subprocess.run(command_2)
 
-    generate_config(rvc_version, sample_rate, model_path)
+    generate_config(rvc_version=rvc_version, vocoder_type=vocoder_type, sample_rate=sample_rate, model_path=model_path)
     generate_filelist(pitch_guidance, model_path, rvc_version, sample_rate)
     return f"Model {model_name} extracted successfully."
 
@@ -1007,6 +1008,13 @@ def parse_arguments():
         default="v2",
     )
     extract_parser.add_argument(
+        "--vocoder_type",
+        type=str,
+        help="Type of vocoder to use for training.",
+        choices=["hifigan", "bigvgan", "bigvsan"],
+        required=True,
+    )
+    extract_parser.add_argument(
         "--f0_method",
         type=str,
         help="Pitch extraction method to use.",
@@ -1454,6 +1462,7 @@ def main():
             run_extract_script(
                 model_name=args.model_name,
                 rvc_version=args.rvc_version,
+                vocoder_type=args.vocoder_type,
                 f0_method=args.f0_method,
                 pitch_guidance=args.pitch_guidance,
                 hop_length=args.hop_length,
