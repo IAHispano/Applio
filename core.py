@@ -1073,7 +1073,7 @@ def parse_arguments():
         "--vocoder_type",
         type=str,
         help="Type of vocoder to use for training.",
-        choices=["hifigan", "bigvgan"],
+        choices=["hifigan", "bigvgan", "bigvsan"],
         required=True,
     )
     train_parser.add_argument(

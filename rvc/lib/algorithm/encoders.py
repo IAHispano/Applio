@@ -60,7 +60,7 @@ class Encoder(torch.nn.Module):
                     )
                 )
                 self.norm_layers_1.append(LayerNorm(hidden_channels))
-            elif vocoder_type == "bigvgan":
+            elif vocoder_type in ["bigvgan", "bigvsan"]:
                 self.attn_layers.append(
                     torch.nn.MultiheadAttention(
                         hidden_channels, n_heads, dropout=p_dropout, batch_first=True
@@ -79,7 +79,7 @@ class Encoder(torch.nn.Module):
                     )
                 )
                 self.norm_layers_2.append(LayerNorm(hidden_channels))
-            elif vocoder_type == "bigvgan":
+            elif vocoder_type in ["bigvgan", "bigvsan"]:
                 self.ffn_layers.append(
                     FFNV2(
                         hidden_channels,
@@ -107,7 +107,7 @@ class Encoder(torch.nn.Module):
                 x = self.norm_layers_2[i](x + y)
             x = x * x_mask
 
-        elif self.vocoder_type == "bigvgan":
+        elif self.vocoder_type in ["bigvgan", "bigvsan"]:
             attn_mask = x_mask.unsqueeze(1) * x_mask.unsqueeze(2)
             attn_mask = attn_mask[0]
             attn_mask = attn_mask == 0
@@ -181,7 +181,7 @@ class TextEncoder(torch.nn.Module):
             stats = self.proj(x) * x_mask
             m, logs = torch.split(stats, self.out_channels, dim=1)
 
-        elif self.vocoder_type == "bigvgan":
+        elif self.vocoder_type in ["bigvgan", "bigvsan"]:
             if pitch is None:
                 x = self.emb_phone(phone)
             else:

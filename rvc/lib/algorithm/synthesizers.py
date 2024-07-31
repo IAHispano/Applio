@@ -109,7 +109,7 @@ class Synthesizer(torch.nn.Module):
                     sr=sr,
                     is_half=kwargs["is_half"],
                 )
-            elif vocoder_type == "bigvgan":
+            elif vocoder_type in ["bigvgan", "bigvsan"]:
                 self.dec = GeneratorNSF_BIGVGAN(
                     resblock_kernel_sizes=resblock_kernel_sizes,
                     resblock_dilation_sizes=resblock_dilation_sizes,

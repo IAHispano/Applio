@@ -10,6 +10,8 @@ current_directory = os.getcwd()
 
 def generate_config(rvc_version: str, vocoder_type: str, sample_rate: int, model_path: str):
     if rvc_version == "v2":
+        if vocoder_type == "bigvsan":
+            vocoder_type = "bigvgan"
         config_path = os.path.join(
             "rvc", "configs", rvc_version, vocoder_type, f"{sample_rate}.json"
         )

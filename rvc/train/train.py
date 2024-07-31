@@ -183,7 +183,7 @@ def main():
                 "rvc",
                 "configs",
                 version,
-                vocoder_type,
+                "bigvgan" if vocoder_type == "bigvsan" else vocoder_type,
                 str(sample_rate) + ".json",
             )
 
@@ -338,9 +338,9 @@ def run(
     if version == "v1":
         net_d = MultiPeriodDiscriminator(config.model.use_spectral_norm)
     else:
-        if vocoder_type == "bigvgan":
+        if vocoder_type in ["bigvgan", "bigvsan"]:
             config.mssbcqtd["sample_rate"] = config.data.sampling_rate
-            config.mssbcqtd["is_san"] = False
+            config.mssbcqtd["is_san"] = vocoder_type == "bigvsan"
             net_d = MultiPeriodDiscriminatorV3(
                 config.mssbcqtd, config.model.use_spectral_norm
             )
