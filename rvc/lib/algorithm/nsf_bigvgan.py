@@ -8,8 +8,8 @@ from torch.nn import ConvTranspose1d
 from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils import remove_weight_norm
 
-from .alias.act import SnakeAlias
-from .commons import init_weights, get_padding
+from rvc.lib.algorithm.alias.act import SnakeAlias
+from rvc.lib.algorithm.commons import init_weights, get_padding
 
 class SineGen(torch.nn.Module):
     """Definition of sine generator
@@ -371,7 +371,7 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
             x = self.ups[i](x)
             # nsf
             #har_source = har_source.to(torch.float32)
-            x_source = self.noise_convs[i](har_source.half())
+            x_source = self.noise_convs[i](har_source.to(torch.float32))
             x = x + x_source
             # AMP blocks
             xs = None

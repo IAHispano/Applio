@@ -1,12 +1,12 @@
 import torch
 import typing
-from typing import List, Tuple
-from torch.nn.utils.parametrizations import spectral_norm, weight_norm
 from nnAudio import features
 from torchaudio.transforms import Resample
+from torch.nn.utils.parametrizations import spectral_norm, weight_norm
+
 from rvc.lib.algorithm.commons import get_padding
 from rvc.lib.algorithm.residuals import LRELU_SLOPE
-from .san_modules import SANConv2d, SANConv1d
+from rvc.lib.algorithm.san_modules import SANConv2d, SANConv1d
 
 class MultiPeriodDiscriminator(torch.nn.Module):
     """
