@@ -297,7 +297,7 @@ class MultiPeriodDiscriminatorV3(torch.nn.Module):
         is_san = getattr(hps, "is_san", False)
         sample_rate = getattr(hps, "sample_rate", False)
         
-        discs = discs + [
+        discs = [
             DiscriminatorP(i, use_spectral_norm=use_spectral_norm) for i in periods
         ]
         discs = discs + [
