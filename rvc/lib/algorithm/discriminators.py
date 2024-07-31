@@ -6,7 +6,7 @@ from nnAudio import features
 from torchaudio.transforms import Resample
 from rvc.lib.algorithm.commons import get_padding
 from rvc.lib.algorithm.residuals import LRELU_SLOPE
-from .san_modules import SANConv2d
+from .san_modules import SANConv2d, SANConv1d
 
 class MultiPeriodDiscriminator(torch.nn.Module):
     """
@@ -341,7 +341,7 @@ class DiscriminatorS(torch.nn.Module):
     convolutional layers that are applied to the input signal.
     """
 
-    def __init__(self, use_spectral_norm=False):
+    def __init__(self, use_spectral_norm=False, is_san=False):
         super(DiscriminatorS, self).__init__()
         norm_f = spectral_norm if use_spectral_norm else weight_norm
         self.convs = torch.nn.ModuleList(
@@ -354,9 +354,13 @@ class DiscriminatorS(torch.nn.Module):
                 norm_f(torch.nn.Conv1d(1024, 1024, 5, 1, padding=2)),
             ]
         )
-        self.conv_post = norm_f(torch.nn.Conv1d(1024, 1, 3, 1, padding=1))
+        if is_san:
+            self.conv_post = SANConv1d(1024, 1, 3, 1, padding=1)
+        else:
+            self.conv_post = norm_f(torch.nn.Conv1d(1024, 1, 3, 1, padding=1))
+        
 
-    def forward(self, x):
+    def forward(self, x, is_san=False):
         """
         Forward pass of the discriminator.
 
@@ -367,9 +371,19 @@ class DiscriminatorS(torch.nn.Module):
         for conv in self.convs:
             x = torch.nn.functional.leaky_relu(conv(x), LRELU_SLOPE)
             fmap.append(x)
-        x = self.conv_post(x)
-        fmap.append(x)
-        x = torch.flatten(x, 1, -1)
+        if is_san:
+            x = self.conv_post(x, is_san=is_san)
+        else:
+            x = self.conv_post(x)
+        if is_san:
+            x_fun, x_dir = x
+            fmap.append(x_fun)
+            x_fun = torch.flatten(x_fun, 1, -1)
+            x_dir = torch.flatten(x_dir, 1, -1)
+            x = [x_fun, x_dir]
+        else:
+            fmap.append(x)
+            x = torch.flatten(x, 1, -1)
         return x, fmap
 
 
@@ -391,7 +405,7 @@ class DiscriminatorP(torch.nn.Module):
             Defaults to False.
     """
 
-    def __init__(self, period, kernel_size=5, stride=3, use_spectral_norm=False):
+    def __init__(self, period, kernel_size=5, stride=3, use_spectral_norm=False, is_san=False):
         super(DiscriminatorP, self).__init__()
         self.period = period
         norm_f = spectral_norm if use_spectral_norm else weight_norm
@@ -413,10 +427,13 @@ class DiscriminatorP(torch.nn.Module):
                 for in_ch, out_ch in zip(in_channels, out_channels)
             ]
         )
+        if is_san:
+            self.conv_post = SANConv2d(1024, 1, kernel_size=(3, 1), stride=1, padding=(1, 0))
+        else:
+            self.conv_post = norm_f(torch.nn.Conv2d(1024, 1, (3, 1), 1, padding=(1, 0)))
 
-        self.conv_post = norm_f(torch.nn.Conv2d(1024, 1, (3, 1), 1, padding=(1, 0)))
 
-    def forward(self, x):
+    def forward(self, x, is_san=False):
         """
         Forward pass of the discriminator.
 
@@ -434,13 +451,23 @@ class DiscriminatorP(torch.nn.Module):
             x = torch.nn.functional.leaky_relu(conv(x), LRELU_SLOPE)
             fmap.append(x)
 
-        x = self.conv_post(x)
-        fmap.append(x)
-        x = torch.flatten(x, 1, -1)
+        if is_san:
+            x = self.conv_post(x, is_san=is_san)
+        else:
+            x = self.conv_post(x)
+        if is_san:
+            x_fun, x_dir = x
+            fmap.append(x_fun)
+            x_fun = torch.flatten(x_fun, 1, -1)
+            x_dir = torch.flatten(x_dir, 1, -1)
+            x = [x_fun, x_dir]
+        else:
+            fmap.append(x)
+            x = torch.flatten(x, 1, -1)
         return x, fmap
 
 class DiscriminatorR(torch.nn.Module):
-    def __init__(self, resolution, use_spectral_norm=False):
+    def __init__(self, resolution, use_spectral_norm=False, is_san=False):
         super(DiscriminatorR, self).__init__()
 
         self.resolution = resolution
@@ -453,9 +480,13 @@ class DiscriminatorR(torch.nn.Module):
             norm_f(torch.nn.Conv2d(32, 32, (3, 9), stride=(1, 2), padding=(1, 4))),
             norm_f(torch.nn.Conv2d(32, 32, (3, 3), padding=(1, 1))),
         ])
-        self.conv_post = norm_f(torch.nn.Conv2d(32, 1, (3, 3), padding=(1, 1)))
+        if is_san:
+            self.conv_post = SANConv2d(32, 1, kernel_size=(3, 3), stride=1, padding=(1, 1))
+        else:
+            self.conv_post = norm_f(torch.nn.Conv2d(32, 1, (3, 3), padding=(1, 1)))
+        
 
-    def forward(self, x):
+    def forward(self, x, is_san=False):
         fmap = []
 
         x = self.spectrogram(x)
@@ -464,10 +495,19 @@ class DiscriminatorR(torch.nn.Module):
             x = l(x)
             x = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
             fmap.append(x)
-        x = self.conv_post(x)
-        fmap.append(x)
-        x = torch.flatten(x, 1, -1)
-
+        if is_san:
+            x = self.conv_post(x, is_san=is_san)
+        else:
+            x = self.conv_post(x)
+        if is_san:
+            x_fun, x_dir = x
+            fmap.append(x_fun)
+            x_fun = torch.flatten(x_fun, 1, -1)
+            x_dir = torch.flatten(x_dir, 1, -1)
+            x = [x_fun, x_dir]
+        else:
+            fmap.append(x)
+            x = torch.flatten(x, 1, -1)
         return x, fmap
 
     def spectrogram(self, x):
