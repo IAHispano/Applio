@@ -371,7 +371,7 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
             x = self.ups[i](x)
             # nsf
             #har_source = har_source.to(torch.float32)
-            x_source = self.noise_convs[i](har_source.half())
+            x_source = self.noise_convs[i](har_source.to(torch.float32))
             x = x + x_source
             # AMP blocks
             xs = None

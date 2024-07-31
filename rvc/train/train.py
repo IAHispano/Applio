@@ -99,7 +99,7 @@ last_loss_gen_all = 0
 import logging
 
 logging.getLogger("torch").setLevel(logging.ERROR)
-
+logging.getLogger("nnAudio").setLevel(logging.ERROR)
 
 class EpochRecorder:
     """
