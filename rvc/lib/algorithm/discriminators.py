@@ -22,9 +22,9 @@ class MultiPeriodDiscriminator(torch.nn.Module):
             Defaults to False.
     """
 
-    def __init__(self, use_spectral_norm=False):
+    def __init__(self, hps, use_spectral_norm=False):
         super(MultiPeriodDiscriminator, self).__init__()
-        periods = [2, 3, 5, 7, 11, 17]
+        periods = getattr(hps, "mpd", [2, 3, 5, 7, 11, 17])
         self.discriminators = torch.nn.ModuleList(
             [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
             + [DiscriminatorP(p, use_spectral_norm=use_spectral_norm) for p in periods]
@@ -64,9 +64,9 @@ class MultiPeriodDiscriminatorV2(torch.nn.Module):
             Defaults to False.
     """
 
-    def __init__(self, use_spectral_norm=False):
+    def __init__(self, hps,use_spectral_norm=False):
         super(MultiPeriodDiscriminatorV2, self).__init__()
-        periods = [2, 3, 5, 7, 11, 17, 23, 37]
+        periods = getattr(hps, "mpd", [2, 3, 5, 7, 11, 17, 23, 37])
         self.discriminators = torch.nn.ModuleList(
             [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
             + [DiscriminatorP(p, use_spectral_norm=use_spectral_norm) for p in periods]
@@ -283,7 +283,7 @@ class MultiPeriodDiscriminatorV3(torch.nn.Module):
     def __init__(self, hps, use_spectral_norm=False):
         super(MultiPeriodDiscriminatorV3, self).__init__()
         # periods = [2, 3, 5, 7, 11, 17]
-        periods = [2, 3, 5, 7, 11, 17, 23, 37]
+        periods = getattr(hps, "mpd", [2, 3, 5, 7, 11, 17, 23, 37])#[2, 3, 5, 7, 11, 17, 23, 37]
         # Using default values
         filters = getattr(hps, "filters", 32)
         max_filters = getattr(hps, "max_filters", 1024)

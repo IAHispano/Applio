@@ -28,6 +28,7 @@
     "mel_fmin": 0.0,
     "mel_fmax": null
   },
+  "mpd": [2, 3, 5, 7, 11, 17],
   "model": {
     "inter_channels": 192,
     "hidden_channels": 192,

@@ -352,7 +352,7 @@ def train_tab():
                 )
                 vocoder_type = gr.Radio(
                     label=i18n("Vocoder"),
-                    choices=["hifigan", "bigvgan"],
+                    choices=["hifigan", "bigvgan", "bivgsan"],
                     value="hifigan",
                     interactive=True,
                 )

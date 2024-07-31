@@ -339,13 +339,14 @@ def run(
         net_d = MultiPeriodDiscriminator(config.model.use_spectral_norm)
     else:
         if vocoder_type in ["bigvgan", "bigvsan"]:
+            config.mssbcqtd["mpd"] = config.mpd
             config.mssbcqtd["sample_rate"] = config.data.sampling_rate
             config.mssbcqtd["is_san"] = vocoder_type == "bigvsan"
             net_d = MultiPeriodDiscriminatorV3(
                 config.mssbcqtd, config.model.use_spectral_norm
             )
         else:
-            net_d = MultiPeriodDiscriminatorV2(config.model.use_spectral_norm)
+            net_d = MultiPeriodDiscriminatorV2(config, config.model.use_spectral_norm)
 
     if torch.cuda.is_available():
         net_d = net_d.cuda(rank)
