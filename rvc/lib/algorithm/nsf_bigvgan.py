@@ -43,7 +43,7 @@ class SineGen(torch.nn.Module):
         self.noise_std = noise_std
         self.harmonic_num = harmonic_num
         self.dim = self.harmonic_num + 1
-        self.sampling_rate = float(samp_rate)
+        self.sample_rate = float(samp_rate)
         self.voiced_threshold = voiced_threshold
         self.flag_for_pulse = flag_for_pulse
 
@@ -59,7 +59,7 @@ class SineGen(torch.nn.Module):
         """
         # convert to F0 in rad. The interger part n can be ignored
         # because 2 * np.pi * n doesn't affect phase
-        rad_values = (f0_values / self.sampling_rate) % 1
+        rad_values = (f0_values / self.sample_rate) % 1
 
         # initial phase noise (no noise for fundamental component)
         rand_ini = torch.rand(
@@ -150,9 +150,9 @@ class SineGen(torch.nn.Module):
 
 class SourceModuleHnNSF(torch.nn.Module):
     """SourceModule for hn-nsf
-    SourceModule(sampling_rate, harmonic_num=0, sine_amp=0.1,
+    SourceModule(sample_rate, harmonic_num=0, sine_amp=0.1,
                  add_noise_std=0.003, voiced_threshod=0)
-    sampling_rate: sampling_rate in Hz
+    sample_rate: sample_rate in Hz
     harmonic_num: number of harmonic above F0 (default: 0)
     sine_amp: amplitude of sine source signal (default: 0.1)
     add_noise_std: std of additive Gaussian noise (default: 0.003)
@@ -169,7 +169,7 @@ class SourceModuleHnNSF(torch.nn.Module):
 
     def __init__(
         self,
-        sampling_rate,
+        sample_rate,
         harmonic_num=0,
         sine_amp=0.1,
         add_noise_std=0.003,
@@ -182,7 +182,7 @@ class SourceModuleHnNSF(torch.nn.Module):
 
         # to produce sine waveforms
         self.l_sin_gen = SineGen(
-            sampling_rate, harmonic_num, sine_amp, add_noise_std, voiced_threshod
+            sample_rate, harmonic_num, sine_amp, add_noise_std, voiced_threshod
         )
 
         # to merge source harmonics into a single excitation
@@ -292,7 +292,7 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
     # this is our main BigVGAN model. Applies anti-aliased periodic activation for resblocks.
     def __init__(self, resblock_kernel_sizes, resblock_dilation_sizes,
                  upsample_rates, upsample_kernel_sizes, upsample_input,
-                 upsample_initial_channel, sampling_rate, spk_dim):
+                 upsample_initial_channel, sample_rate, spk_dim):
         super(GeneratorNSF_BIGVGAN, self).__init__()
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)
@@ -300,7 +300,7 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
         self.conv_pre = Conv1d(upsample_input, upsample_initial_channel, 7, 1, padding=3)
         
         self.f0_upsamp = torch.nn.Upsample(scale_factor=np.prod(upsample_rates))
-        self.m_source = SourceModuleHnNSF(sampling_rate=sampling_rate, harmonic_num=10)
+        self.m_source = SourceModuleHnNSF(sample_rate=sample_rate, harmonic_num=10)
         self.noise_convs = nn.ModuleList()
         # transposed conv-based upsamplers. does not apply anti-aliasing
         self.ups = nn.ModuleList()

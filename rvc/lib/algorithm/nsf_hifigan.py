@@ -34,7 +34,7 @@ class SineGen(torch.nn.Module):
         self.noise_std = noise_std
         self.harmonic_num = harmonic_num
         self.dim = self.harmonic_num + 1
-        self.sampling_rate = samp_rate
+        self.sample_rate = samp_rate
         self.voiced_threshold = voiced_threshold
 
     def _f02uv(self, f0):
@@ -64,7 +64,7 @@ class SineGen(torch.nn.Module):
                 f0_buf[:, :, idx + 1] = f0_buf[:, :, 0] * (
                     idx + 2
                 )  # idx + 2: the (idx+1)-th overtone, (idx+2)-th harmonic
-            rad_values = (f0_buf / float(self.sampling_rate)) % 1
+            rad_values = (f0_buf / float(self.sample_rate)) % 1
             rand_ini = torch.rand(
                 f0_buf.shape[0], f0_buf.shape[2], device=f0_buf.device
             )
@@ -103,7 +103,7 @@ class SourceModuleHnNSF(torch.nn.Module):
     """Source Module for harmonic-plus-noise excitation.
 
     Args:
-        sampling_rate (int): Sampling rate in Hz.
+        sample_rate (int): Sampling rate in Hz.
         harmonic_num (int, optional): Number of harmonics above F0. Defaults to 0.
         sine_amp (float, optional): Amplitude of sine source signal. Defaults to 0.1.
         add_noise_std (float, optional): Standard deviation of additive Gaussian noise. Defaults to 0.003.
@@ -113,7 +113,7 @@ class SourceModuleHnNSF(torch.nn.Module):
 
     def __init__(
         self,
-        sampling_rate,
+        sample_rate,
         harmonic_num=0,
         sine_amp=0.1,
         add_noise_std=0.003,
@@ -127,7 +127,7 @@ class SourceModuleHnNSF(torch.nn.Module):
         self.is_half = is_half
         # to produce sine waveforms
         self.l_sin_gen = SineGen(
-            sampling_rate, harmonic_num, sine_amp, add_noise_std, voiced_threshod
+            sample_rate, harmonic_num, sine_amp, add_noise_std, voiced_threshod
         )
 
         # to merge source harmonics into a single excitation
@@ -183,7 +183,7 @@ class GeneratorNSF_HIFIGAN(torch.nn.Module):
 
         self.f0_upsamp = torch.nn.Upsample(scale_factor=math.prod(upsample_rates))
         self.m_source = SourceModuleHnNSF(
-            sampling_rate=sr, harmonic_num=0, is_half=is_half
+            sample_rate=sr, harmonic_num=0, is_half=is_half
         )
         self.noise_convs = torch.nn.ModuleList()
         self.conv_pre = torch.nn.Conv1d(

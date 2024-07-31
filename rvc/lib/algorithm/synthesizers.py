@@ -117,7 +117,7 @@ class Synthesizer(torch.nn.Module):
                     upsample_kernel_sizes=upsample_kernel_sizes,
                     upsample_input=inter_channels,
                     upsample_initial_channel=upsample_initial_channel,
-                    sampling_rate=sr,
+                    sample_rate=sr,
                     spk_dim=gin_channels,
                 )
         else:

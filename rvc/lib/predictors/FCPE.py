@@ -22,13 +22,13 @@ os.environ["LRU_CACHE_CAPACITY"] = "3"
 
 
 def load_wav_to_torch(full_path, target_sr=None, return_empty_on_exception=False):
-    sampling_rate = None
+    sample_rate = None
     try:
-        data, sampling_rate = sf.read(full_path, always_2d=True)  # than soundfile.
+        data, sample_rate = sf.read(full_path, always_2d=True)  # than soundfile.
     except Exception as error:
         print(f"'{full_path}' failed to load with {error}")
         if return_empty_on_exception:
-            return [], sampling_rate or target_sr or 48000
+            return [], sample_rate or target_sr or 48000
         else:
             raise Exception(error)
 
@@ -55,16 +55,16 @@ def load_wav_to_torch(full_path, target_sr=None, return_empty_on_exception=False
     if (
         torch.isinf(data) | torch.isnan(data)
     ).any() and return_empty_on_exception:  # resample will crash with inf/NaN inputs. return_empty_on_exception will return empty arr instead of except
-        return [], sampling_rate or target_sr or 48000
-    if target_sr is not None and sampling_rate != target_sr:
+        return [], sample_rate or target_sr or 48000
+    if target_sr is not None and sample_rate != target_sr:
         data = torch.from_numpy(
             librosa.core.resample(
-                data.numpy(), orig_sr=sampling_rate, target_sr=target_sr
+                data.numpy(), orig_sr=sample_rate, target_sr=target_sr
             )
         )
-        sampling_rate = target_sr
+        sample_rate = target_sr
 
-    return data, sampling_rate
+    return data, sample_rate
 
 
 def dynamic_range_compression(x, C=1, clip_val=1e-5):
@@ -108,7 +108,7 @@ class STFT:
         self.hann_window = {}
 
     def get_mel(self, y, keyshift=0, speed=1, center=False, train=False):
-        sampling_rate = self.target_sr
+        sample_rate = self.target_sr
         n_mels = self.n_mels
         n_fft = self.n_fft
         win_size = self.win_size
@@ -131,7 +131,7 @@ class STFT:
         mel_basis_key = str(fmax) + "_" + str(y.device)
         if mel_basis_key not in mel_basis:
             mel = librosa_mel_fn(
-                sr=sampling_rate, n_fft=n_fft, n_mels=n_mels, fmin=fmin, fmax=fmax
+                sr=sample_rate, n_fft=n_fft, n_mels=n_mels, fmin=fmin, fmax=fmax
             )
             mel_basis[mel_basis_key] = torch.from_numpy(mel).float().to(y.device)
 
@@ -842,14 +842,14 @@ class Wav2Mel:
 
     def __init__(self, args, device=None, dtype=torch.float32):
         # self.args = args
-        self.sampling_rate = args.mel.sampling_rate
+        self.sample_rate = args.mel.sample_rate
         self.hop_size = args.mel.hop_size
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
         self.dtype = dtype
         self.stft = STFT(
-            args.mel.sampling_rate,
+            args.mel.sample_rate,
             args.mel.num_mels,
             args.mel.n_fft,
             args.mel.win_size,
@@ -868,13 +868,13 @@ class Wav2Mel:
     def extract_mel(self, audio, sample_rate, keyshift=0, train=False):
         audio = audio.to(self.dtype).to(self.device)
         # resample
-        if sample_rate == self.sampling_rate:
+        if sample_rate == self.sample_rate:
             audio_res = audio
         else:
             key_str = str(sample_rate)
             if key_str not in self.resample_kernel:
                 self.resample_kernel[key_str] = Resample(
-                    sample_rate, self.sampling_rate, lowpass_filter_width=128
+                    sample_rate, self.sample_rate, lowpass_filter_width=128
                 )
             self.resample_kernel[key_str] = (
                 self.resample_kernel[key_str].to(self.dtype).to(self.device)
@@ -932,7 +932,7 @@ class FCPEF0Predictor(F0Predictor):
         f0_max=1100,
         dtype=torch.float32,
         device=None,
-        sampling_rate=44100,
+        sample_rate=44100,
         threshold=0.05,
     ):
         self.fcpe = FCPEInfer(model_path, device=device, dtype=dtype)
@@ -944,7 +944,7 @@ class FCPEF0Predictor(F0Predictor):
         else:
             self.device = device
         self.threshold = threshold
-        self.sampling_rate = sampling_rate
+        self.sample_rate = sample_rate
         self.dtype = dtype
         self.name = "fcpe"
 
@@ -977,7 +977,7 @@ class FCPEF0Predictor(F0Predictor):
         elif ndim == 2:
             return results[0]
 
-    def post_process(self, x, sampling_rate, f0, pad_to):
+    def post_process(self, x, sample_rate, f0, pad_to):
         if isinstance(f0, np.ndarray):
             f0 = torch.from_numpy(f0).float().to(x.device)
 
@@ -993,8 +993,8 @@ class FCPEF0Predictor(F0Predictor):
         # 去掉0频率, 并线性插值
         nzindex = torch.nonzero(f0).squeeze()
         f0 = torch.index_select(f0, dim=0, index=nzindex).cpu().numpy()
-        time_org = self.hop_length / sampling_rate * nzindex.cpu().numpy()
-        time_frame = np.arange(pad_to) * self.hop_length / sampling_rate
+        time_org = self.hop_length / sample_rate * nzindex.cpu().numpy()
+        time_frame = np.arange(pad_to) * self.hop_length / sample_rate
 
         vuv_vector = F.interpolate(vuv_vector[None, None, :], size=pad_to)[0][0]
 
@@ -1019,18 +1019,18 @@ class FCPEF0Predictor(F0Predictor):
         if p_len is None:
             print("fcpe p_len is None")
             p_len = x.shape[0] // self.hop_length
-        f0 = self.fcpe(x, sr=self.sampling_rate, threshold=self.threshold)[0, :, 0]
+        f0 = self.fcpe(x, sr=self.sample_rate, threshold=self.threshold)[0, :, 0]
         if torch.all(f0 == 0):
             rtn = f0.cpu().numpy() if p_len is None else np.zeros(p_len)
             return rtn, rtn
-        return self.post_process(x, self.sampling_rate, f0, p_len)[0]
+        return self.post_process(x, self.sample_rate, f0, p_len)[0]
 
     def compute_f0_uv(self, wav, p_len=None):
         x = torch.FloatTensor(wav).to(self.dtype).to(self.device)
         if p_len is None:
             p_len = x.shape[0] // self.hop_length
-        f0 = self.fcpe(x, sr=self.sampling_rate, threshold=self.threshold)[0, :, 0]
+        f0 = self.fcpe(x, sr=self.sample_rate, threshold=self.threshold)[0, :, 0]
         if torch.all(f0 == 0):
             rtn = f0.cpu().numpy() if p_len is None else np.zeros(p_len)
             return rtn, rtn
-        return self.post_process(x, self.sampling_rate, f0, p_len)
+        return self.post_process(x, self.sample_rate, f0, p_len)

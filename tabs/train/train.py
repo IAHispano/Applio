@@ -335,7 +335,7 @@ def train_tab():
                         )
 
             with gr.Column():
-                sampling_rate = gr.Radio(
+                sample_rate = gr.Radio(
                     label=i18n("Sampling Rate"),
                     info=i18n("The sampling rate of the audio files."),
                     choices=["32000", "40000", "48000"],
@@ -380,7 +380,7 @@ def train_tab():
             preprocess_button = gr.Button(i18n("Preprocess Dataset"))
             preprocess_button.click(
                 fn=run_preprocess_script,
-                inputs=[model_name, dataset_path, sampling_rate, cpu_cores_preprocess],
+                inputs=[model_name, dataset_path, sample_rate, cpu_cores_preprocess],
                 outputs=[preprocess_output_info],
                 api_name="preprocess_dataset",
             )
@@ -477,7 +477,7 @@ def train_tab():
                 pitch_guidance_extract,
                 hop_length,
                 cpu_cores_extract,
-                sampling_rate,
+                sample_rate,
                 embedder_model,
                 embedder_model_custom,
             ],
@@ -677,7 +677,7 @@ def train_tab():
                     save_only_latest,
                     save_every_weights,
                     total_epoch,
-                    sampling_rate,
+                    sample_rate,
                     batch_size,
                     gpu,
                     pitch_guidance,

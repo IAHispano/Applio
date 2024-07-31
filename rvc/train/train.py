@@ -340,7 +340,7 @@ def run(
     else:
         if vocoder_type in ["bigvgan", "bigvsan"]:
             config.mssbcqtd["mpd"] = config.mpd
-            config.mssbcqtd["sample_rate"] = config.data.sampling_rate
+            config.mssbcqtd["sample_rate"] = config.data.sample_rate
             config.mssbcqtd["is_san"] = vocoder_type == "bigvsan"
             net_d = MultiPeriodDiscriminatorV3(
                 config.mssbcqtd, config.model.use_spectral_norm
@@ -498,7 +498,7 @@ def train_and_evaluate(
     train_loader.batch_sampler.set_epoch(epoch)
 
     fn_mel_loss_multiscale = MultiScaleMelSpectrogramLoss(
-        sampling_rate=hps.data.sampling_rate
+        sample_rate=hps.data.sample_rate
     )
 
     net_g.train()

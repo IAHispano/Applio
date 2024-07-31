@@ -180,7 +180,7 @@ class MultiScaleMelSpectrogramLoss(torch.nn.Module):
 
     def __init__(
         self,
-        sampling_rate: int = 24000,
+        sample_rate: int = 24000,
         n_mels: List[int] = [5, 10, 20, 40, 80, 160, 320],
         window_lengths: List[int] = [32, 64, 128, 256, 512, 1024, 2048],
         loss_fn: typing.Callable = torch.nn.L1Loss(),
@@ -195,7 +195,7 @@ class MultiScaleMelSpectrogramLoss(torch.nn.Module):
         window_type: str = "hann",
     ):
         super().__init__()
-        self.sampling_rate = sampling_rate
+        self.sample_rate = sample_rate
 
         STFTParams = namedtuple(
             "STFTParams",
@@ -282,7 +282,7 @@ class MultiScaleMelSpectrogramLoss(torch.nn.Module):
 
         nf = magnitude.shape[2]
         mel_basis = self.get_mel_filters(
-            self.sampling_rate, 2 * (nf - 1), n_mels, fmin, fmax
+            self.sample_rate, 2 * (nf - 1), n_mels, fmin, fmax
         )
         mel_basis = torch.from_numpy(mel_basis).to(wav.device)
         mel_spectrogram = magnitude.transpose(2, -1) @ mel_basis.T
