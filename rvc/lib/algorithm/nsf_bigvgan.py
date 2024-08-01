@@ -207,9 +207,9 @@ class SourceModuleHnNSF(torch.nn.Module):
                         -0.0581,
                     ]
                 ]
-            ),
+            ).half(),
         )
-        self.register_buffer("merge_b", torch.FloatTensor([0.0008]))
+        self.register_buffer("merge_b", torch.FloatTensor([0.0008]).half())
 
     def forward(self, x):
         """
@@ -407,11 +407,11 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
                         kernel_size=stride_f0 * 2,
                         stride=stride_f0,
                         padding=stride_f0 // 2,
-                    )
+                    ).half()
                 )
             else:
                 self.noise_convs.append(
-                    Conv1d(1, upsample_initial_channel // (2 ** (i + 1)), kernel_size=1)
+                    Conv1d(1, upsample_initial_channel // (2 ** (i + 1)), kernel_size=1).half() 
                 )
 
         # residual blocks using anti-aliased multi-periodicity composition modules (AMP)
