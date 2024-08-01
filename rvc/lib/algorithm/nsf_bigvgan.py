@@ -11,6 +11,7 @@ from torch.nn.utils import remove_weight_norm
 from rvc.lib.algorithm.alias.act import SnakeAlias
 from rvc.lib.algorithm.commons import init_weights, get_padding
 
+
 class SineGen(torch.nn.Module):
     """Definition of sine generator
     SineGen(samp_rate, harmonic_num = 0,
@@ -148,6 +149,7 @@ class SineGen(torch.nn.Module):
             sine_waves = sine_waves * uv + noise
         return sine_waves
 
+
 class SourceModuleHnNSF(torch.nn.Module):
     """SourceModule for hn-nsf
     SourceModule(sample_rate, harmonic_num=0, sine_amp=0.1,
@@ -187,10 +189,27 @@ class SourceModuleHnNSF(torch.nn.Module):
 
         # to merge source harmonics into a single excitation
         self.l_tanh = torch.nn.Tanh()
-        self.register_buffer('merge_w', torch.FloatTensor([[
-            0.2942, -0.2243, 0.0033, -0.0056, -0.0020, -0.0046,
-            0.0221, -0.0083, -0.0241, -0.0036, -0.0581]]))
-        self.register_buffer('merge_b', torch.FloatTensor([0.0008]))
+        self.register_buffer(
+            "merge_w",
+            torch.FloatTensor(
+                [
+                    [
+                        0.2942,
+                        -0.2243,
+                        0.0033,
+                        -0.0056,
+                        -0.0020,
+                        -0.0046,
+                        0.0221,
+                        -0.0083,
+                        -0.0241,
+                        -0.0036,
+                        -0.0581,
+                    ]
+                ]
+            ),
+        )
+        self.register_buffer("merge_b", torch.FloatTensor([0.0008]))
 
     def forward(self, x):
         """
@@ -200,41 +219,94 @@ class SourceModuleHnNSF(torch.nn.Module):
         """
         # source for harmonic branch
         sine_wavs = self.l_sin_gen(x)
-        sine_wavs = nn.functional.linear(
-            sine_wavs, self.merge_w) + self.merge_b
+        sine_wavs = sine_wavs.half()  # Convert sine_wavs to half-precision
+        sine_wavs = nn.functional.linear(sine_wavs, self.merge_w) + self.merge_b
         sine_merge = self.l_tanh(sine_wavs)
         return sine_merge
+
 
 class AMPBlock(torch.nn.Module):
     def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5)):
         super(AMPBlock, self).__init__()
-        self.convs1 = nn.ModuleList([
-            weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=dilation[0],
-                               padding=get_padding(kernel_size, dilation[0]))),
-            weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=dilation[1],
-                               padding=get_padding(kernel_size, dilation[1]))),
-            weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=dilation[2],
-                               padding=get_padding(kernel_size, dilation[2])))
-        ])
+        self.convs1 = nn.ModuleList(
+            [
+                weight_norm(
+                    Conv1d(
+                        channels,
+                        channels,
+                        kernel_size,
+                        1,
+                        dilation=dilation[0],
+                        padding=get_padding(kernel_size, dilation[0]),
+                    )
+                ),
+                weight_norm(
+                    Conv1d(
+                        channels,
+                        channels,
+                        kernel_size,
+                        1,
+                        dilation=dilation[1],
+                        padding=get_padding(kernel_size, dilation[1]),
+                    )
+                ),
+                weight_norm(
+                    Conv1d(
+                        channels,
+                        channels,
+                        kernel_size,
+                        1,
+                        dilation=dilation[2],
+                        padding=get_padding(kernel_size, dilation[2]),
+                    )
+                ),
+            ]
+        )
         self.convs1.apply(init_weights)
 
-        self.convs2 = nn.ModuleList([
-            weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=1,
-                               padding=get_padding(kernel_size, 1))),
-            weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=1,
-                               padding=get_padding(kernel_size, 1))),
-            weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=1,
-                               padding=get_padding(kernel_size, 1)))
-        ])
+        self.convs2 = nn.ModuleList(
+            [
+                weight_norm(
+                    Conv1d(
+                        channels,
+                        channels,
+                        kernel_size,
+                        1,
+                        dilation=1,
+                        padding=get_padding(kernel_size, 1),
+                    )
+                ),
+                weight_norm(
+                    Conv1d(
+                        channels,
+                        channels,
+                        kernel_size,
+                        1,
+                        dilation=1,
+                        padding=get_padding(kernel_size, 1),
+                    )
+                ),
+                weight_norm(
+                    Conv1d(
+                        channels,
+                        channels,
+                        kernel_size,
+                        1,
+                        dilation=1,
+                        padding=get_padding(kernel_size, 1),
+                    )
+                ),
+            ]
+        )
         self.convs2.apply(init_weights)
 
         # total number of conv layers
         self.num_layers = len(self.convs1) + len(self.convs2)
 
         # periodic nonlinearity with snakebeta function and anti-aliasing
-        self.activations = nn.ModuleList([
-            SnakeAlias(channels) for _ in range(self.num_layers)
-        ])
+        self.activations = nn.ModuleList(
+            [SnakeAlias(channels) for _ in range(self.num_layers)]
+        )
 
     def forward(self, x):
         acts1, acts2 = self.activations[::2], self.activations[1::2]
@@ -255,11 +327,7 @@ class AMPBlock(torch.nn.Module):
 
 class SpeakerAdapter(nn.Module):
 
-    def __init__(self,
-                 speaker_dim,
-                 adapter_dim,
-                 epsilon=1e-5
-                 ):
+    def __init__(self, speaker_dim, adapter_dim, epsilon=1e-5):
         super(SpeakerAdapter, self).__init__()
         self.speaker_dim = speaker_dim
         self.adapter_dim = adapter_dim
@@ -290,15 +358,25 @@ class SpeakerAdapter(nn.Module):
 
 class GeneratorNSF_BIGVGAN(torch.nn.Module):
     # this is our main BigVGAN model. Applies anti-aliased periodic activation for resblocks.
-    def __init__(self, resblock_kernel_sizes, resblock_dilation_sizes,
-                 upsample_rates, upsample_kernel_sizes, upsample_input,
-                 upsample_initial_channel, sample_rate, spk_dim):
+    def __init__(
+        self,
+        resblock_kernel_sizes,
+        resblock_dilation_sizes,
+        upsample_rates,
+        upsample_kernel_sizes,
+        upsample_input,
+        upsample_initial_channel,
+        sample_rate,
+        spk_dim,
+    ):
         super(GeneratorNSF_BIGVGAN, self).__init__()
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)
         self.adapter = SpeakerAdapter(spk_dim, upsample_input)
-        self.conv_pre = Conv1d(upsample_input, upsample_initial_channel, 7, 1, padding=3)
-        
+        self.conv_pre = Conv1d(
+            upsample_input, upsample_initial_channel, 7, 1, padding=3
+        )
+
         self.f0_upsamp = torch.nn.Upsample(scale_factor=np.prod(upsample_rates))
         self.m_source = SourceModuleHnNSF(sample_rate=sample_rate, harmonic_num=10)
         self.noise_convs = nn.ModuleList()
@@ -310,16 +388,17 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
             self.ups.append(
                 weight_norm(
                     ConvTranspose1d(
-                        upsample_initial_channel // (2 ** i),
+                        upsample_initial_channel // (2**i),
                         upsample_initial_channel // (2 ** (i + 1)),
                         k,
                         u,
-                        padding=(k - u) // 2)
+                        padding=(k - u) // 2,
+                    )
                 )
             )
             # nsf
             if i + 1 < len(upsample_rates):
-                stride_f0 = np.prod(upsample_rates[i + 1:])
+                stride_f0 = np.prod(upsample_rates[i + 1 :])
                 stride_f0 = int(stride_f0)
                 self.noise_convs.append(
                     Conv1d(
@@ -332,8 +411,7 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
                 )
             else:
                 self.noise_convs.append(
-                    Conv1d(1, upsample_initial_channel //
-                           (2 ** (i + 1)), kernel_size=1)
+                    Conv1d(1, upsample_initial_channel // (2 ** (i + 1)), kernel_size=1)
                 )
 
         # residual blocks using anti-aliased multi-periodicity composition modules (AMP)
@@ -370,8 +448,7 @@ class GeneratorNSF_BIGVGAN(torch.nn.Module):
             # upsampling
             x = self.ups[i](x)
             # nsf
-            #har_source = har_source.to(torch.float32)
-            x_source = self.noise_convs[i](har_source.to(torch.float32))
+            x_source = self.noise_convs[i](har_source.half())
             x = x + x_source
             # AMP blocks
             xs = None
