@@ -1,8 +1,8 @@
 import torch
 from typing import Optional
 
-from rvc.lib.algorithm.nsf_hifigan import GeneratorNSF_HIFIGAN
-from rvc.lib.algorithm.nsf_bigvgan import GeneratorNSF_BIGVGAN
+from rvc.lib.algorithm.vocoders.nsf_hifigan import GeneratorNSF_HIFIGAN
+from rvc.lib.algorithm.vocoders.nsf_bigvgan import GeneratorNSF_BIGVGAN
 from rvc.lib.algorithm.generators import Generator
 from rvc.lib.algorithm.commons import slice_segments2, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock

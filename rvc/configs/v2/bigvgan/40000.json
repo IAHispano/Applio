@@ -26,7 +26,9 @@
         "mel_fmin": 50.0,
         "mel_fmax": 20000.0
     },
-    "mpd": [2, 3, 5, 7, 11, 17, 23, 37],
+    "mpd": {
+        "periods": [2, 3, 5, 7, 11, 17, 23, 37]
+    },
     "mssbcqtd": {
         "filters": 128,
         "max_filters": 1024,

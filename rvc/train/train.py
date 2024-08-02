@@ -51,9 +51,7 @@ from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from rvc.train.process.extract_model import extract_model
 
 from rvc.lib.algorithm import commons
-from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
-from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminatorV2
-from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminatorV3
+
 from rvc.train.mel_processing import MultiScaleMelSpectrogramLoss
 from rvc.lib.algorithm.synthesizers import Synthesizer
 
@@ -87,6 +85,42 @@ config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
 
 os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
 n_gpus = len(gpus.split("-"))
+
+from rvc.lib.algorithm.discriminators.sub.__init__ import (
+    DiscriminatorP,
+    DiscriminatorS,
+    DiscriminatorB,
+    DiscriminatorCQT
+)
+from rvc.lib.algorithm.discriminators.discriminator import CombinedDiscriminator
+supported_discriminators = {
+    "mpd": DiscriminatorP,
+    "msd": DiscriminatorS,
+    "mbd": DiscriminatorB,
+    "mssbcqtd": DiscriminatorCQT,
+}
+discriminators = dict()
+
+for key in config.model.discriminators:
+    key = str(key)
+    if key == "mssbcqtd":
+        config.mssbcqtd["sample_rate"] = config.data.sample_rate
+        
+    vocoder_type = getattr(config, "vocoder_type", None)
+    if vocoder_type == "bigvsan":
+        if hasattr(config, key):
+            args = getattr(config, key)
+            discriminators[key] = supported_discriminators[key](**args, is_san=True)
+        else:
+            discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm)
+    else:
+        if hasattr(config, key):
+            args = getattr(config, key)
+            discriminators[key] = supported_discriminators[key](**args)
+        else:
+            discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm)
+print(list(discriminators.values()))
+MultiDiscriminator = CombinedDiscriminator(list(discriminators.values()))
 
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
@@ -335,18 +369,8 @@ def run(
     )
     if torch.cuda.is_available():
         net_g = net_g.cuda(rank)
-    if version == "v1":
-        net_d = MultiPeriodDiscriminator(config.model.use_spectral_norm)
-    else:
-        if vocoder_type in ["bigvgan", "bigvsan"]:
-            config.mssbcqtd["mpd"] = config.mpd
-            config.mssbcqtd["sample_rate"] = config.data.sample_rate
-            config.mssbcqtd["is_san"] = vocoder_type == "bigvsan"
-            net_d = MultiPeriodDiscriminatorV3(
-                config.mssbcqtd, config.model.use_spectral_norm
-            )
-        else:
-            net_d = MultiPeriodDiscriminatorV2(config, config.model.use_spectral_norm)
+
+    net_d = MultiDiscriminator
 
     if torch.cuda.is_available():
         net_d = net_d.cuda(rank)
