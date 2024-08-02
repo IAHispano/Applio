@@ -52,8 +52,8 @@ def process_audio(file_path):
 
         return "Finish", new_dir_path
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    except Exception as error:
+        print(f"An error occurred splitting the audio: {error}")
         return "Error", None
 
 
@@ -103,5 +103,5 @@ def merge_audio(timestamps_file):
         # print(f"Exported merged file: {merged_filename}\n")
         return merged_audio.frame_rate, merged_audio_np
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
+    except Exception as error:
+        print(f"An error occurred splitting the audio: {error}")

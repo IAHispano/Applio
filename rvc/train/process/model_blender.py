@@ -63,5 +63,5 @@ def model_blender(name, path1, path2, ratio):
         print(message)
         return message, os.path.join("logs", "%s.pth" % name)
     except Exception as error:
-        print(error)
+        print(f"An error occurred blending the models: {error}")
         return error

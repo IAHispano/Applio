@@ -99,7 +99,7 @@ else:
                         print(f"{file} is invalid")
                     pbar.set_description(f"Processing {file} {feats.shape}")
             except Exception as error:
-                print(error)
+                print(f"An error occurred processing {file}: {error}")
             pbar.update(1)
 
     elapsed_time = time.time() - start_time

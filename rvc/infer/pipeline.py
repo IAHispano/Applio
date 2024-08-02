@@ -544,7 +544,7 @@ class Pipeline:
                 index = faiss.read_index(file_index)
                 big_npy = index.reconstruct_n(0, index.ntotal)
             except Exception as error:
-                print(error)
+                print(f"An error occurred reading the FAISS index: {error}")
                 index = big_npy = None
         else:
             index = big_npy = None
@@ -579,7 +579,7 @@ class Pipeline:
                     inp_f0.append([float(i) for i in line.split(",")])
                 inp_f0 = np.array(inp_f0, dtype="float32")
             except Exception as error:
-                print(error)
+                print(f"An error occurred reading the F0 file: {error}")
         sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
         if pitch_guidance == True:
             pitch, pitchf = self.get_f0(

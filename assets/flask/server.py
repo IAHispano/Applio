@@ -3,60 +3,58 @@ import socket
 import subprocess
 import time
 import requests
-import sys
 import json
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
-config_file = os.path.join(now_dir, "assets", "config.json")
-env_path = os.path.join(now_dir, "env", "python.exe")
-
-host = "localhost"
-port = 8000
-
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.settimeout(2)
+# Constants
+NOW_DIR = os.getcwd()
+CONFIG_FILE = os.path.join(NOW_DIR, "assets", "config.json")
+ENV_PATH = os.path.join(NOW_DIR, "env", "python.exe")
+FLASK_SCRIPT_PATH = os.path.join(NOW_DIR, "assets", "flask", "routes.py")
+HOST = "localhost"
+PORT = 8000
+TIMEOUT = 2
 
 
+# Functions
 def start_flask():
+    """
+    Starts the Flask server if it's not already running.
+    """
     try:
-        sock.connect((host, port))
-        print(
-            f"Something is listening on port {port}; Probably the Flask server is already running."
-        )
-        print("Trying to start it anyway")
-        sock.close()
-        requests.post("http://localhost:8000/shutdown")
-        time.sleep(3)
-        script_path = os.path.join(now_dir, "assets", "flask", "routes.py")
+        # Check if Flask server is already running
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(TIMEOUT)
+            sock.connect((HOST, PORT))
+            print("Flask server is already running. Trying to restart it.")
+            requests.post("http://localhost:8000/shutdown")
+            time.sleep(3)
+
+    except socket.timeout:
+        # Start the Flask server
         try:
             subprocess.Popen(
-                [env_path, script_path], creationflags=subprocess.CREATE_NEW_CONSOLE
+                [ENV_PATH, FLASK_SCRIPT_PATH],
+                creationflags=subprocess.CREATE_NEW_CONSOLE,
             )
-        except Exception as e:
-            print(f"Failed to start the Flask server")
-            print(e)
-    except Exception as e:
-        sock.close()
-        script_path = os.path.join(now_dir, "assets", "flask", "routes.py")
-        try:
-            subprocess.Popen(
-                [env_path, script_path], creationflags=subprocess.CREATE_NEW_CONSOLE
-            )
-        except Exception as e:
-            print("Failed to start the Flask server")
-            print(e)
+        except Exception as error:
+            print(f"An error occurred starting the Flask server: {error}")
 
 
 def load_config_flask():
-    with open(config_file, "r") as file:
+    """
+    Loads the Flask server configuration from the config.json file.
+    """
+    with open(CONFIG_FILE, "r") as file:
         config = json.load(file)
         return config["flask_server"]
 
 
 def save_config(value):
-    with open(config_file, "r", encoding="utf8") as file:
+    """
+    Saves the Flask server configuration to the config.json file.
+    """
+    with open(CONFIG_FILE, "r", encoding="utf8") as file:
         config = json.load(file)
         config["flask_server"] = value
-    with open(config_file, "w", encoding="utf8") as file:
+    with open(CONFIG_FILE, "w", encoding="utf8") as file:
         json.dump(config, file, indent=2)

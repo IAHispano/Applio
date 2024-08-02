@@ -127,7 +127,7 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
             try:
                 spec = torch.load(spec_filename)
             except Exception as error:
-                print(f"{spec_filename}: {error}")
+                print(f"An error occurred getting spec from {spec_filename}: {error}")
                 spec = spectrogram_torch(
                     audio_norm,
                     self.filter_length,
@@ -351,7 +351,7 @@ class TextAudioLoader(torch.utils.data.Dataset):
             try:
                 spec = torch.load(spec_filename)
             except Exception as error:
-                print(f"{spec_filename}: {error}")
+                print(f"An error occurred getting spec from {spec_filename}: {error}")
                 spec = spectrogram_torch(
                     audio_norm,
                     self.filter_length,
