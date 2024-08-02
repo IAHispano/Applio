@@ -44,7 +44,6 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
         load_opt (int, optional): Whether to load the optimizer state. Defaults to 1.
     """
     assert os.path.isfile(checkpoint_path)
-""" removed
     checkpoint_old_dict = torch.load(checkpoint_path, map_location="cpu")
     checkpoint_new_version_path = os.path.join(
         os.path.dirname(checkpoint_path),
@@ -86,12 +85,10 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
         except:
             print("%s is not in the checkpoint", k)
             new_state_dict[k] = v
-""" 
-    checkpoint_dict = torch.load(checkpoint_path, map_location="cpu")           
     if hasattr(model, "module"):
-        model.module.load_state_dict(checkpoint_dict["model"], strict=False)
+        model.module.load_state_dict(new_state_dict, strict=False)
     else:
-        model.load_state_dict(checkpoint_dict["model"], strict=False)
+        model.load_state_dict(new_state_dict, strict=False)
 
     iteration = checkpoint_dict["iteration"]
     learning_rate = checkpoint_dict["learning_rate"]
