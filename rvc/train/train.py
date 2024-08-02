@@ -125,6 +125,7 @@ def main():
     """
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
+
     def start():
         """
         Starts the training process with multi-GPU support.
