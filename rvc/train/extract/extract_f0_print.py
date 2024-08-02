@@ -152,8 +152,8 @@ def main(exp_dir, f0_method, hop_length, num_processes, gpus):
                     feature_input = FeatureInput(device=device)
                     part_paths = paths[idx::num_gpus]
                     process_partials.append((feature_input, part_paths))
-                except Exception as e:
-                    print(f"Oops, there was an issue initializing GPU {device} ({e}). Maybe you don't have a GPU? No worries, switching to CPU for now.")
+                except Exception as error:
+                    print(f"Oops, there was an issue initializing GPU {device} ({error}). Maybe you don't have a GPU? No worries, switching to CPU for now.")
                     feature_input = FeatureInput(device="cpu")
                     part_paths = paths[idx::num_gpus]
                     process_partials.append((feature_input, part_paths))

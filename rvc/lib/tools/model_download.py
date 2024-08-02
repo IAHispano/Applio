@@ -380,6 +380,6 @@ def model_download_pipeline(url: str):
             return result
         else:
             return "Error"
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+    except Exception as error:
+        print(f"An unexpected error occurred: {error}")
         return "Error"
