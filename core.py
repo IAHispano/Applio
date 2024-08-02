@@ -267,7 +267,7 @@ def run_preprocess_script(
     return f"Model {model_name} preprocessed successfully."
 
 
-# Extract
+# Extract 
 def run_extract_script(
     model_name: str,
     rvc_version: str,
@@ -310,13 +310,9 @@ def run_extract_script(
         *map(
             str,
             [
-                config.device,
-                1,
-                0,
-                0,
                 model_path,
                 rvc_version,
-                config.is_half,
+                gpu,
                 embedder_model,
                 embedder_model_custom,
             ],
