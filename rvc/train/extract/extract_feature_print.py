@@ -63,20 +63,18 @@ def process_file(
 
     # Adjust dtype based on the device
     dtype = torch.float16 if device.startswith("cuda") else torch.float32
-    feats = feats.to(dtype)
+    feats = feats.to(dtype).to(device)
 
-    padding_mask = torch.BoolTensor(feats.shape).fill_(False).to(dtype)
+    padding_mask = torch.BoolTensor(feats.shape).fill_(False).to(dtype).to(device)
 
     inputs = {
-        "source": feats.to(device),
-        "padding_mask": padding_mask.to(device),
+        "source": feats,
+        "padding_mask": padding_mask,
         "output_layer": 9 if version == "v1" else 12,
     }
 
     with torch.no_grad():
-        # Ensure the model is in the correct dtype
-        if device.startswith("cuda"):
-            model = model.to(dtype)
+        model = model.to(device).to(dtype)
 
         logits = model.extract_features(**inputs)
         feats = model.final_proj(logits[0]) if version == "v1" else logits[0]
@@ -143,7 +141,7 @@ def main():
             file,
             wav_path,
             out_path,
-            model.to(device).half() if device.startswith("cuda") else model.to(device),
+            model,
             device,
             version,
             saved_cfg,
