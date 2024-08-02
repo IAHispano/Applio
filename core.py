@@ -199,12 +199,17 @@ def run_tts_script(
         os.remove(output_tts_path)
 
     command_tts = [
-        python,
-        tts_script_path,
-        tts_text,
-        tts_voice,
-        tts_rate,
-        output_tts_path,
+        *map(
+            str,
+            [
+                python,
+                tts_script_path,
+                tts_text,
+                tts_voice,
+                tts_rate,
+                output_tts_path,
+            ],
+        ),
     ]
     subprocess.run(command_tts)
     infer_pipeline = import_voice_converter()
