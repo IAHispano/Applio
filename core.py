@@ -267,7 +267,7 @@ def run_preprocess_script(
     return f"Model {model_name} preprocessed successfully."
 
 
-# Extract 
+# Extract
 def run_extract_script(
     model_name: str,
     rvc_version: str,
