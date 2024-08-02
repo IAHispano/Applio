@@ -21,6 +21,8 @@ hop_length = int(sys.argv[3])
 num_processes = int(sys.argv[4])
 gpus = str(sys.argv[5])  # - = Use CPU
 
+os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
+
 
 class FeatureInput:
     """Class for F0 extraction."""

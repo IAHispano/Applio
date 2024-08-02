@@ -311,13 +311,9 @@ def run_extract_script(
         *map(
             str,
             [
-                config.device,
-                1,
-                0,
-                0,
                 model_path,
                 rvc_version,
-                config.is_half,
+                gpu,
                 embedder_model,
                 embedder_model_custom,
             ],
