@@ -461,6 +461,12 @@ class RMVPE0Predictor:
         self.resample_kernel = {}
         self.is_half = is_half
         self.device = device
+        if "cuda" in self.device and torch.cuda.get_device_name(self.device).endswith("[ZLUDA]"):
+            torch.backends.cudnn.enabled = False
+            torch.backends.cuda.enable_flash_sdp(False)
+            torch.backends.cuda.enable_math_sdp(True)
+            torch.backends.cuda.enable_mem_efficient_sdp(False)
+        
         self.mel_extractor = MelSpectrogram(
             is_half, N_MELS, 16000, 1024, 160, None, 30, 8000
         ).to(device)
