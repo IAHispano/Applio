@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch.nn.utils.parametrizations import spectral_norm, weight_norm
 from infer.lib.infer_pack.san_modules import SANConv1d
 
-LRELU_SLOPE = 0.1
+from rvc.lib.algorithm.residuals import LRELU_SLOPE
 
 
 class DiscriminatorS(torch.nn.Module):
