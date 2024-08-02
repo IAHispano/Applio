@@ -382,77 +382,96 @@ def train_tab():
 
     with gr.Accordion(i18n("Extract")):
         with gr.Row():
-            hop_length = gr.Slider(
-                1,
-                512,
-                128,
-                step=1,
-                label=i18n("Hop Length"),
+            f0_method = gr.Radio(
+                label=i18n("Pitch extraction algorithm"),
                 info=i18n(
-                    "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
+                    "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
                 ),
-                visible=False,
+                choices=["crepe", "crepe-tiny", "rmvpe"],
+                value="rmvpe",
                 interactive=True,
             )
-            cpu_cores_extract = gr.Slider(
-                1,
-                64,
-                cpu_count(),
-                step=1,
-                label=i18n("CPU Cores"),
-                info=i18n(
-                    "The number of CPU cores to use in the index extraction process. The default setting are your cpu cores, which is recommended for most cases."
-                ),
+
+            embedder_model = gr.Radio(
+                label=i18n("Embedder Model"),
+                info=i18n("Model used for learning speaker embedding."),
+                choices=[
+                    "contentvec",
+                    "japanese-hubert-base",
+                    "chinese-hubert-large",
+                    "custom",
+                ],
+                value="contentvec",
                 interactive=True,
             )
-        with gr.Row():
-            with gr.Column():
-                f0_method = gr.Radio(
-                    label=i18n("Pitch extraction algorithm"),
-                    info=i18n(
-                        "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
-                    ),
-                    choices=["crepe", "crepe-tiny", "rmvpe"],
-                    value="rmvpe",
-                    interactive=True,
-                )
-                pitch_guidance_extract = gr.Checkbox(
-                    label=i18n("Pitch Guidance"),
-                    info=i18n(
-                        "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential."
-                    ),
-                    value=True,
-                    interactive=True,
-                )
-                embedder_model = gr.Radio(
-                    label=i18n("Embedder Model"),
-                    info=i18n("Model used for learning speaker embedding."),
-                    choices=[
-                        "contentvec",
-                        "japanese-hubert-base",
-                        "chinese-hubert-large",
-                        "custom",
-                    ],
-                    value="contentvec",
-                    interactive=True,
-                )
-                with gr.Column(visible=False) as embedder_custom:
-                    with gr.Accordion(i18n("Custom Embedder"), open=True):
-                        embedder_upload_custom = gr.File(
-                            label=i18n("Upload Custom Embedder"),
-                            type="filepath",
-                            interactive=True,
-                        )
-                        embedder_custom_refresh = gr.Button(i18n("Refresh"))
-                        embedder_model_custom = gr.Dropdown(
-                            label=i18n("Custom Embedder"),
-                            info=i18n(
-                                "Select the custom embedder to use for the conversion."
-                            ),
-                            choices=sorted(get_embedder_custom_list()),
-                            interactive=True,
-                            allow_custom_value=True,
-                        )
+        hop_length = gr.Slider(
+            1,
+            512,
+            128,
+            step=1,
+            label=i18n("Hop Length"),
+            info=i18n(
+                "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
+            ),
+            visible=False,
+            interactive=True,
+        )
+        pitch_guidance_extract = gr.Checkbox(
+            label=i18n("Pitch Guidance"),
+            info=i18n(
+                "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential."
+            ),
+            value=True,
+            interactive=True,
+        )
+
+        with gr.Accordion(i18n("We prioritize running the model extraction on the GPU for faster performance. If you prefer to use the CPU, simply leave the GPU field blank."), open=False):
+            with gr.Row():
+                with gr.Column():
+                    cpu_cores_extract = gr.Slider(
+                        1,
+                        64,
+                        cpu_count(),
+                        step=1,
+                        label=i18n("CPU Cores"),
+                        info=i18n(
+                            "The number of CPU cores to use in the index extraction process. The default setting are your cpu cores, which is recommended for most cases."
+                        ),
+                        interactive=True,
+                    )
+
+                with gr.Column():
+                    gpu_extract = gr.Textbox(
+                        label=i18n("GPU Number"),
+                        info=i18n(
+                            "Specify the number of GPUs you wish to utilize for training by entering them separated by hyphens (-)."
+                        ),
+                        placeholder=i18n("0 to ∞ separated by -"),
+                        value="0",
+                        interactive=True,
+                    )
+                    gr.Textbox(
+                        label=i18n("GPU Information"),
+                        info=i18n("The GPU information will be displayed here."),
+                        value=get_gpu_info(),
+                        interactive=False,
+                    )
+
+            with gr.Column(visible=False) as embedder_custom:
+                with gr.Accordion(i18n("Custom Embedder"), open=True):
+                    embedder_upload_custom = gr.File(
+                        label=i18n("Upload Custom Embedder"),
+                        type="filepath",
+                        interactive=True,
+                    )
+                    embedder_custom_refresh = gr.Button(i18n("Refresh"))
+                    embedder_model_custom = gr.Dropdown(
+                        label=i18n("Custom Embedder"),
+                        info=i18n("Select the custom embedder to use for the conversion."),
+                        choices=sorted(get_embedder_custom_list()),
+                        interactive=True,
+                        allow_custom_value=True,
+                    )
 
         extract_output_info = gr.Textbox(
             label=i18n("Output Information"),
@@ -471,6 +490,7 @@ def train_tab():
                 pitch_guidance_extract,
                 hop_length,
                 cpu_cores_extract,
+                gpu_extract,
                 sampling_rate,
                 embedder_model,
                 embedder_model_custom,

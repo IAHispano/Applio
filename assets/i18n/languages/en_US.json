@@ -71,6 +71,7 @@
   "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential.": "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential.",
   "Utilize pretrained models when training your own. This approach reduces training duration and enhances overall quality.": "Utilize pretrained models when training your own. This approach reduces training duration and enhances overall quality.",
   "Extract Features": "Extract Features",
+  "We prioritize running the model extraction on the GPU for faster performance. If you prefer to use the CPU, simply leave the GPU field blank.": "We prioritize running the model extraction on the GPU for faster performance. If you prefer to use the CPU, simply leave the GPU field blank.",
   "Overtraining Detector": "Overtraining Detector",
   "Detect overtraining to prevent the model from learning the training data too well and losing the ability to generalize to new data.": "Detect overtraining to prevent the model from learning the training data too well and losing the ability to generalize to new data.",
   "Overtraining Detector Settings": "Overtraining Detector Settings",
