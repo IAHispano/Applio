@@ -1,5 +1,9 @@
 import torch
-from rvc.lib.algorithm.commons import fused_add_tanh_sigmoid_multiply
+cpu_device = torch.device("cpu")
+from rvc.lib.algorithm.commons import (
+    fused_add_tanh_sigmoid_multiply_no_jit,
+    fused_add_tanh_sigmoid_multiply,
+)
 
 
 class WaveNet(torch.nn.Module):
@@ -86,7 +90,9 @@ class WaveNet(torch.nn.Module):
 
         if g is not None:
             g = self.cond_layer(g)
-
+        
+        is_zluda = x.device.type == "cuda" and torch.cuda.get_device_name(x.device.index).endswith("[ZLUDA]")
+            
         for i in range(self.n_layers):
             x_in = self.in_layers[i](x)
             if g is not None:
@@ -94,8 +100,12 @@ class WaveNet(torch.nn.Module):
                 g_l = g[:, cond_offset : cond_offset + 2 * self.hidden_channels, :]
             else:
                 g_l = torch.zeros_like(x_in)
-
-            acts = fused_add_tanh_sigmoid_multiply(x_in, g_l, n_channels_tensor)
+            # Preventing HIP crash by not using jit-decorated function
+            if is_zluda:
+                acts = fused_add_tanh_sigmoid_multiply_no_jit(x_in, g_l, n_channels_tensor)
+            else:
+                acts = fused_add_tanh_sigmoid_multiply(x_in, g_l, n_channels_tensor)
+                
             acts = self.drop(acts)
 
             res_skip_acts = self.res_skip_layers[i](acts)

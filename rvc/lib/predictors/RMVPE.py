@@ -408,6 +408,12 @@ class MelSpectrogram(torch.nn.Module):
             self.hann_window[keyshift_key] = torch.hann_window(win_length_new).to(
                 audio.device
             )
+        # Zluda fall-back to CPU for FFTs since HIP SDK has no cuFFT alternative
+        source_device = audio.device
+        if audio.device.type == "cuda" and torch.cuda.get_device_name(audio.device.index).endswith("[ZLUDA]"):
+            audio = audio.to("cpu")
+            self.hann_window[keyshift_key] = self.hann_window[keyshift_key].to("cpu")
+            
         fft = torch.stft(
             audio,
             n_fft=n_fft_new,
@@ -416,7 +422,8 @@ class MelSpectrogram(torch.nn.Module):
             window=self.hann_window[keyshift_key],
             center=center,
             return_complex=True,
-        )
+        ).to(source_device)
+
         magnitude = torch.sqrt(fft.real.pow(2) + fft.imag.pow(2))
         if keyshift != 0:
             size = self.n_fft // 2 + 1
@@ -454,6 +461,12 @@ class RMVPE0Predictor:
         self.resample_kernel = {}
         self.is_half = is_half
         self.device = device
+        if "cuda" in self.device and torch.cuda.get_device_name(self.device).endswith("[ZLUDA]"):
+            torch.backends.cudnn.enabled = False
+            torch.backends.cuda.enable_flash_sdp(False)
+            torch.backends.cuda.enable_math_sdp(True)
+            torch.backends.cuda.enable_mem_efficient_sdp(False)
+        
         self.mel_extractor = MelSpectrogram(
             is_half, N_MELS, 16000, 1024, 160, None, 30, 8000
         ).to(device)
