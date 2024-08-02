@@ -425,7 +425,12 @@ def train_tab():
             interactive=True,
         )
 
-        with gr.Accordion(i18n("We prioritize running the model extraction on the GPU for faster performance. If you prefer to use the CPU, simply leave the GPU field blank."), open=False):
+        with gr.Accordion(
+            i18n(
+                "We prioritize running the model extraction on the GPU for faster performance. If you prefer to use the CPU, simply leave the GPU field blank."
+            ),
+            open=False,
+        ):
             with gr.Row():
                 with gr.Column():
                     cpu_cores_extract = gr.Slider(
@@ -467,7 +472,9 @@ def train_tab():
                     embedder_custom_refresh = gr.Button(i18n("Refresh"))
                     embedder_model_custom = gr.Dropdown(
                         label=i18n("Custom Embedder"),
-                        info=i18n("Select the custom embedder to use for the conversion."),
+                        info=i18n(
+                            "Select the custom embedder to use for the conversion."
+                        ),
                         choices=sorted(get_embedder_custom_list()),
                         interactive=True,
                         allow_custom_value=True,
