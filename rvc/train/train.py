@@ -101,24 +101,22 @@ supported_discriminators = {
 }
 discriminators = dict()
 
-for key in config.model.discriminators:
+for key, value in config.model.discriminators.items():
     key = str(key)
     if key == "mssbcqtd":
         config.mssbcqtd["sample_rate"] = config.data.sample_rate
-        
+    
     vocoder_type = getattr(config, "vocoder_type", None)
     if vocoder_type == "bigvsan":
-        if hasattr(config, key):
-            args = getattr(config, key)
-            discriminators[key] = supported_discriminators[key](**args, is_san=True)
-        else:
-            discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm)
+        if value is True:
+            discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm, is_san=True)
+        elif isinstance(value, dict):
+            discriminators[key] = supported_discriminators[key](**value, is_san=True)
     else:
-        if hasattr(config, key):
-            args = getattr(config, key)
-            discriminators[key] = supported_discriminators[key](**args)
-        else:
+        if value is True:
             discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm)
+        elif isinstance(value, dict):
+            discriminators[key] = supported_discriminators[key](**value)
 print(list(discriminators.values()))
 MultiDiscriminator = CombinedDiscriminator(list(discriminators.values()))
 

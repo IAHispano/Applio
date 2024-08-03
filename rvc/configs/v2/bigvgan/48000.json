@@ -25,18 +25,6 @@
         "mel_fmin": 0.0,
         "mel_fmax": null
     },
-    "mpd": {
-        "periods": [2, 3, 5, 7, 11, 17, 23, 37]
-    },
-    "mssbcqtd": {
-        "filters": 128,
-        "max_filters": 1024,
-        "filters_scale": 1,
-        "dilations": [1, 2, 4],
-        "hop_lengths": [512, 256, 256],
-        "n_octaves": [9, 9, 9],
-        "bins_per_octaves": [24, 36, 48]
-    },
     "model": {
         "inter_channels": 192,
         "hidden_channels": 192,
@@ -58,6 +46,20 @@
         "upsample_kernel_sizes": [24, 20, 4, 4],
         "use_spectral_norm": false,
         "gin_channels": 256,
-        "spk_embed_dim": 109
+        "spk_embed_dim": 109,
+        "discriminators": {
+            "mpd": {
+                "periods": [2, 3, 5, 7, 11, 17, 23, 37]
+            },
+            "mssbcqtd": {
+                "filters": 128,
+                "max_filters": 1024,
+                "filters_scale": 1,
+                "dilations": [1, 2, 4],
+                "hop_lengths": [512, 256, 256],
+                "n_octaves": [9, 9, 9],
+                "bins_per_octaves": [24, 36, 48]
+            }
+        }
     }
 }
