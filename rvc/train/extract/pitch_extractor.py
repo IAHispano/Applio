@@ -145,7 +145,7 @@ def main(exp_dir, f0_method, hop_length, num_processes, gpus):
         gpus = gpus.split("-")
         num_gpus = len(gpus)
         process_partials = []
-        pbar = tqdm.tqdm(total=len(paths), desc="F0 Extraction")
+        pbar = tqdm.tqdm(total=len(paths), desc="Pitch Extraction")
 
         for idx, gpu in enumerate(gpus):
             device = f"cuda:{gpu}"
@@ -175,7 +175,7 @@ def main(exp_dir, f0_method, hop_length, num_processes, gpus):
     else:
         # Use multiprocessing Pool for parallel processing with progress bar
         feature_input = FeatureInput(device="cpu")
-        with tqdm.tqdm(total=len(paths), desc="F0 Extraction") as pbar:
+        with tqdm.tqdm(total=len(paths), desc="Pitch Extraction") as pbar:
             pool = Pool(processes=num_processes)
             process_file_partial = partial(
                 feature_input.process_file, f0_method=f0_method, hop_length=hop_length
@@ -186,7 +186,7 @@ def main(exp_dir, f0_method, hop_length, num_processes, gpus):
             pool.join()
 
     elapsed_time = time.time() - start_time
-    print(f"F0 extraction completed in {elapsed_time:.2f} seconds.")
+    print(f"Pitch extraction completed in {elapsed_time:.2f} seconds.")
 
 
 if __name__ == "__main__":

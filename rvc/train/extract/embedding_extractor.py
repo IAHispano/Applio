@@ -133,7 +133,7 @@ def main():
         print("No audio files found. Make sure you have provided the audios correctly.")
         sys.exit(1)
 
-    pbar = tqdm.tqdm(total=len(paths), desc="Feature Extraction")
+    pbar = tqdm.tqdm(total=len(paths), desc="Embedding Extraction")
 
     # Create a list of tasks to be processed
     tasks = [
@@ -161,7 +161,7 @@ def main():
 
     pbar.close()
     elapsed_time = time.time() - start_time
-    print(f"Feature extraction completed in {elapsed_time:.2f} seconds.")
+    print(f"Embedding extraction completed in {elapsed_time:.2f} seconds.")
 
 
 if __name__ == "__main__":

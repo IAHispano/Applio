@@ -282,16 +282,14 @@ def run_extract_script(
 ):
     config = get_config()
     model_path = os.path.join(logs_path, model_name)
-    extract_f0_script_path = os.path.join(
-        "rvc", "train", "extract", "extract_f0_print.py"
-    )
-    extract_feature_script_path = os.path.join(
-        "rvc", "train", "extract", "extract_feature_print.py"
+    pitch_extractor = os.path.join("rvc", "train", "extract", "pitch_extractor.py")
+    embedding_extractor = os.path.join(
+        "rvc", "train", "extract", "embedding_extractor.py"
     )
 
     command_1 = [
         python,
-        extract_f0_script_path,
+        pitch_extractor,
         *map(
             str,
             [
@@ -306,7 +304,7 @@ def run_extract_script(
 
     command_2 = [
         python,
-        extract_feature_script_path,
+        embedding_extractor,
         *map(
             str,
             [
