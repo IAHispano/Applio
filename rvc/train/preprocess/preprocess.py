@@ -6,6 +6,7 @@ import numpy as np
 from scipy import signal
 from scipy.io import wavfile
 from multiprocessing import cpu_count, Pool
+from pydub import AudioSegment
 
 now_directory = os.getcwd()
 sys.path.append(now_directory)
@@ -107,6 +108,12 @@ class PreProcess:
 
     def process_audio_file(self, file_path_idx):
         file_path, idx0 = file_path_idx
+        # Convert the audio file to WAV format using pydub if necessary
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext not in [".wav"]:
+            audio = AudioSegment.from_file(file_path)
+            file_path = os.path.join("/tmp", f"{idx0}.wav")
+            audio.export(file_path, format="wav")
         self.process_audio(file_path, idx0)
 
     def process_audio_multiprocessing_input_directory(
@@ -116,7 +123,7 @@ class PreProcess:
         files = [
             (os.path.join(input_root, f), idx)
             for idx, f in enumerate(os.listdir(input_root))
-            if f.endswith(".wav")
+            if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg"))
         ]
 
         # Create the directories if they don't exist
