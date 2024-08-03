@@ -1,7 +1,13 @@
-from typing import Optional
+
+import os
+import sys
 import torch
+from typing import Optional
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 
 from rvc.lib.algorithm.modules import WaveNet
 from rvc.lib.algorithm.commons import get_padding, init_weights

@@ -6,7 +6,7 @@ import torch.nn as nn
 from nnAudio import features
 from torch.nn.utils.parametrizations import weight_norm
 from torchaudio.transforms import Resample
-from infer.lib.infer_pack.san_modules import SANConv2d
+from rvc.lib.algorithm.layers.san import SANConv2d
 
 
 class DiscriminatorCQT(nn.Module):

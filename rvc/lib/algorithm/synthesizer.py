@@ -1,12 +1,19 @@
 import torch
 from typing import Optional
 
-from rvc.lib.algorithm.vocoders.nsf_hifigan import GeneratorNSF_HIFIGAN
-from rvc.lib.algorithm.vocoders.nsf_bigvgan import GeneratorNSF_BIGVGAN
-from rvc.lib.algorithm.generators import Generator
+import sys
+import os
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+
+from rvc.lib.algorithm.generators.hifigan.hifigan import HiFiGAN
+from rvc.lib.algorithm.generators.bigvgan.bigvgan import BigVGAN
+from rvc.lib.algorithm.generators.generator import Generator
 from rvc.lib.algorithm.commons import slice_segments2, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock
-from rvc.lib.algorithm.encoders import TextEncoder, PosteriorEncoder
+from rvc.lib.algorithm.encoders.text import TextEncoder
+from rvc.lib.algorithm.encoders.posterior import PosteriorEncoder
 
 
 class Synthesizer(torch.nn.Module):
@@ -97,7 +104,7 @@ class Synthesizer(torch.nn.Module):
 
         if use_f0:
             if vocoder_type == "hifigan":
-                self.dec = GeneratorNSF_HIFIGAN(
+                self.dec = HiFiGAN(
                     inter_channels,
                     resblock,
                     resblock_kernel_sizes,
@@ -110,7 +117,7 @@ class Synthesizer(torch.nn.Module):
                     is_half=kwargs["is_half"],
                 )
             elif vocoder_type in ["bigvgan", "bigvsan"]:
-                self.dec = GeneratorNSF_BIGVGAN(
+                self.dec = BigVGAN(
                     resblock_kernel_sizes=resblock_kernel_sizes,
                     resblock_dilation_sizes=resblock_dilation_sizes,
                     upsample_rates=upsample_rates,

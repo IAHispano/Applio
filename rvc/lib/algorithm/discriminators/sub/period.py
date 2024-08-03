@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.parametrizations import weight_norm, spectral_norm
-from infer.lib.infer_pack.san_modules import SANConv2d
+from rvc.lib.algorithm.layers.san import SANConv2d
 from rvc.lib.algorithm.residuals import LRELU_SLOPE
 
 

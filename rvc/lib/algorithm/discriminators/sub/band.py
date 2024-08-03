@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch.nn.utils.parametrizations import weight_norm
 from torchaudio.transforms import Spectrogram
-from infer.lib.infer_pack.san_modules import SANConv2d
+from rvc.lib.algorithm.layers.san import SANConv2d
 
 
 class DiscriminatorB(nn.Module):

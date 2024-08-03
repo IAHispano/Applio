@@ -3,6 +3,12 @@ from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
 from typing import Optional
 
+import sys
+import os
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+
 from rvc.lib.algorithm.residuals import LRELU_SLOPE, ResBlock1, ResBlock2
 from rvc.lib.algorithm.commons import init_weights
 
@@ -38,7 +44,7 @@ class Generator(torch.nn.Module):
         self.conv_pre = torch.nn.Conv1d(
             initial_channel, upsample_initial_channel, 7, 1, padding=3
         )
-        resblock = ResBlock1 if resblock == "1" else ResBlock2
+        resblock = ResBlock1 if resblock == 1 else ResBlock2
 
         self.ups = torch.nn.ModuleList()
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):

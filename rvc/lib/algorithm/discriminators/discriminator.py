@@ -1,4 +1,6 @@
 import torch.nn as nn
+
+
 class CombinedDiscriminator(nn.Module):
     def __init__(self, discriminators):
         super().__init__()

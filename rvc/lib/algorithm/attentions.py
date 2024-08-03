@@ -1,6 +1,12 @@
 import math
 import torch
 
+import sys
+import os
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+
 from rvc.lib.algorithm.commons import convert_pad_shape
 
 

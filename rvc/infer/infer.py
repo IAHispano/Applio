@@ -18,7 +18,7 @@ sys.path.append(now_dir)
 from rvc.infer.pipeline import Pipeline as VC
 from rvc.lib.utils import load_audio, load_embedding
 from rvc.lib.tools.split_audio import process_audio, merge_audio
-from rvc.lib.algorithm.synthesizers import Synthesizer
+from rvc.lib.algorithm.synthesizer import Synthesizer
 from rvc.configs.config import Config
 
 logging.getLogger("httpx").setLevel(logging.WARNING)

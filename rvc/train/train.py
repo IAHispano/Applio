@@ -53,7 +53,7 @@ from rvc.train.process.extract_model import extract_model
 from rvc.lib.algorithm import commons
 
 from rvc.train.mel_processing import MultiScaleMelSpectrogramLoss
-from rvc.lib.algorithm.synthesizers import Synthesizer
+from rvc.lib.algorithm.synthesizer import Synthesizer
 
 # Parse command line arguments
 model_name = sys.argv[1]
