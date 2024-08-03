@@ -12,8 +12,7 @@ import noisereduce as nr
 from scipy.io import wavfile
 from audio_upscaler import upscale
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from rvc.infer.pipeline import Pipeline as VC
 from rvc.lib.utils import load_audio, load_embedding

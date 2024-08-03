@@ -16,8 +16,7 @@ from rvc.lib.utils import format_title
 from tabs.settings.restart import restart_applio
 
 i18n = I18nAuto()
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 pretraineds_v1 = [
     (

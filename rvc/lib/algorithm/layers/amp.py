@@ -7,8 +7,7 @@ from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils import remove_weight_norm
 
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.alias.act import SnakeAlias
 from rvc.lib.algorithm.commons import init_weights, get_padding

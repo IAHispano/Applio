@@ -1,8 +1,7 @@
 import sys
 import os
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 
 class InstallationError(Exception):

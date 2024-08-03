@@ -1,18 +1,15 @@
+import os
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-
 from torch.nn import Conv1d
 from torch.nn import ConvTranspose1d
 from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils import remove_weight_norm
 
-import sys
-import os
-
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.alias.act import SnakeAlias
 from rvc.lib.algorithm.commons import init_weights

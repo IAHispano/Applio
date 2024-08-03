@@ -2,8 +2,7 @@ import gradio as gr
 import sys
 import os
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 # Tabs
 from tabs.inference.inference import inference_tab

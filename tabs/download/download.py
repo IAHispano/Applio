@@ -12,8 +12,7 @@ from rvc.lib.utils import format_title
 
 i18n = I18nAuto()
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 gradio_temp_dir = os.path.join(tempfile.gettempdir(), "gradio")
 

@@ -3,8 +3,7 @@ import json
 from pathlib import Path
 from locale import getdefaultlocale
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 
 class I18nAuto:

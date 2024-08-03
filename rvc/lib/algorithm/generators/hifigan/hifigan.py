@@ -7,8 +7,7 @@ from typing import Optional
 import sys
 import os
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.residuals import LRELU_SLOPE, ResBlock1, ResBlock2
 from rvc.lib.algorithm.commons import init_weights

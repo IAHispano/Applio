@@ -9,8 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import unquote, urlencode, parse_qs, urlparse
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from rvc.lib.utils import format_title
 from rvc.lib.tools import gdown

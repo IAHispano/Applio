@@ -1,11 +1,9 @@
+import os
+import sys
 import torch
 from typing import Optional
 
-import sys
-import os
-
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.commons import sequence_mask
 from rvc.lib.algorithm.modules import WaveNet

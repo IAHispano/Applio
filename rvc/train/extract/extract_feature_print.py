@@ -7,8 +7,7 @@ import soundfile as sf
 import numpy as np
 import time
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from rvc.lib.utils import load_embedding
 from rvc.configs.config import Config

@@ -5,8 +5,7 @@ import json
 from assets.i18n.i18n import I18nAuto
 from assets.discord_presence import RPCManager
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 i18n = I18nAuto()
 config_file = os.path.join(now_dir, "assets", "config.json")

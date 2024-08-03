@@ -3,8 +3,7 @@ import sys
 import torch
 from typing import Optional
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.commons import fused_add_tanh_sigmoid_multiply
 

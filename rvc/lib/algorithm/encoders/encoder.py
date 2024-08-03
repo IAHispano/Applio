@@ -4,8 +4,7 @@ import torch
 import sys
 import os
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.normalization import LayerNorm
 from rvc.lib.algorithm.attentions import FFN, FFNV2, MultiHeadAttention

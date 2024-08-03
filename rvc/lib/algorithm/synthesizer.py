@@ -1,11 +1,9 @@
+import os
+import sys
 import torch
 from typing import Optional
 
-import sys
-import os
-
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.generators.hifigan.hifigan import HiFiGAN
 from rvc.lib.algorithm.generators.bigvgan.bigvgan import BigVGAN

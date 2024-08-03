@@ -11,8 +11,7 @@ import logging
 
 logging.getLogger("fairseq").setLevel(logging.WARNING)
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 
 def load_audio(file, sample_rate):

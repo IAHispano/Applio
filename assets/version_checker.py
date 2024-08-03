@@ -2,8 +2,7 @@ import os, sys
 import json
 import requests
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 config_file = os.path.join(now_dir, "assets", "config.json")
 
