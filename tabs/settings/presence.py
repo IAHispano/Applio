@@ -8,7 +8,7 @@ from assets.discord_presence import RPCManager
 sys.path.append(os.getcwd())
 
 i18n = I18nAuto()
-config_file = os.path.join(now_dir, "assets", "config.json")
+config_file = os.path.join(os.getcwd(), "assets", "config.json")
 
 
 def load_config_presence():

@@ -13,7 +13,7 @@ class InstallationError(Exception):
 def check_installation():
     try:
         system_drive = os.getenv("SystemDrive")
-        current_drive = os.path.splitdrive(now_dir)[0]
+        current_drive = os.path.splitdrive(os.getcwd())[0]
         if current_drive.upper() != system_drive.upper():
             raise InstallationError(
                 f"Error: Current working directory is not on the default system drive ({system_drive}). Please move Applio in the correct drive."
@@ -21,16 +21,16 @@ def check_installation():
     except:
         pass
     else:
-        if "OneDrive" in now_dir:
+        if "OneDrive" in os.getcwd():
             raise InstallationError(
                 "Error: Current working directory is on OneDrive. Please move Applio in another folder."
             )
-        elif " " in now_dir:
+        elif " " in os.getcwd():
             raise InstallationError(
                 "Error: Current working directory contains spaces. Please move Applio in another folder."
             )
         try:
-            now_dir.encode("ascii")
+            os.getcwd().encode("ascii")
         except UnicodeEncodeError:
             raise InstallationError(
                 "Error: Current working directory contains non-ASCII characters. Please move Applio in another folder."

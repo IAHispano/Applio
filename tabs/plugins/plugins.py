@@ -25,7 +25,7 @@ def plugins_tab():
             outputs=[dropbox],
         )
 
-    for plugin in os.listdir(os.path.join(now_dir, "tabs", "plugins", "installed")):
+    for plugin in os.listdir(os.path.join(os.getcwd(), "tabs", "plugins", "installed")):
         plugin_main = f"tabs.plugins.installed.{plugin}.plugin"
         plugin_import = importlib.import_module(plugin_main)
 

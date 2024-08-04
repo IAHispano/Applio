@@ -7,7 +7,7 @@ sys.path.append(os.getcwd())
 
 i18n = I18nAuto()
 
-config_file = os.path.join(now_dir, "assets", "config.json")
+config_file = os.path.join(os.getcwd(), "assets", "config.json")
 
 
 def get_language_settings():

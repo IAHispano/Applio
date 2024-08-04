@@ -4,7 +4,7 @@ import requests
 
 sys.path.append(os.getcwd())
 
-config_file = os.path.join(now_dir, "assets", "config.json")
+config_file = os.path.join(os.getcwd(), "assets", "config.json")
 
 
 def load_local_version():

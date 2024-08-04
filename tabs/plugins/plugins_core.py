@@ -12,10 +12,10 @@ sys.path.append(os.getcwd())
 
 from tabs.settings.restart import restart_applio
 
-plugins_path = os.path.join(now_dir, "tabs", "plugins", "installed")
+plugins_path = os.path.join(os.getcwd(), "tabs", "plugins", "installed")
 if not os.path.exists(plugins_path):
     os.makedirs(plugins_path)
-json_file_path = os.path.join(now_dir, "assets", "config.json")
+json_file_path = os.path.join(os.getcwd(), "assets", "config.json")
 current_folders = os.listdir(plugins_path)
 
 

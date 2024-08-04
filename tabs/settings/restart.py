@@ -2,8 +2,7 @@ import gradio as gr
 import os
 import sys
 
-now_dir = os.getcwd()
-pid_file_path = os.path.join(now_dir, "rvc", "train", "train_pid.txt")
+pid_file_path = os.path.join(os.getcwd(), "rvc", "train", "train_pid.txt")
 
 
 def restart_applio():

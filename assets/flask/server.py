@@ -6,10 +6,9 @@ import requests
 import json
 
 # Constants
-NOW_DIR = os.getcwd()
-CONFIG_FILE = os.path.join(NOW_DIR, "assets", "config.json")
-ENV_PATH = os.path.join(NOW_DIR, "env", "python.exe")
-FLASK_SCRIPT_PATH = os.path.join(NOW_DIR, "assets", "flask", "routes.py")
+CONFIG_FILE = os.path.join(os.getcwd(), "assets", "config.json")
+ENV_PATH = os.path.join(os.getcwd(), "env", "python.exe")
+FLASK_SCRIPT_PATH = os.path.join(os.getcwd(), "assets", "flask", "routes.py")
 HOST = "localhost"
 PORT = 8000
 TIMEOUT = 2

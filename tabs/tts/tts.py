@@ -14,15 +14,15 @@ i18n = I18nAuto()
 
 sys.path.append(os.getcwd())
 
-model_root = os.path.join(now_dir, "logs")
-model_root_relative = os.path.relpath(model_root, now_dir)
+model_root = os.path.join(os.getcwd(), "logs")
+model_root_relative = os.path.relpath(model_root, os.getcwd())
 custom_embedder_root = os.path.join(
-    now_dir, "rvc", "models", "embedders", "embedders_custom"
+    os.getcwd(), "rvc", "models", "embedders", "embedders_custom"
 )
 
 os.makedirs(custom_embedder_root, exist_ok=True)
 
-custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
+custom_embedder_root_relative = os.path.relpath(custom_embedder_root, os.getcwd())
 
 names = [
     os.path.join(root, file)
@@ -217,13 +217,13 @@ def tts_tab():
             output_tts_path = gr.Textbox(
                 label=i18n("Output Path for TTS Audio"),
                 placeholder=i18n("Enter output path"),
-                value=os.path.join(now_dir, "assets", "audios", "tts_output.wav"),
+                value=os.path.join(os.getcwd(), "assets", "audios", "tts_output.wav"),
                 interactive=True,
             )
             output_rvc_path = gr.Textbox(
                 label=i18n("Output Path for RVC Audio"),
                 placeholder=i18n("Enter output path"),
-                value=os.path.join(now_dir, "assets", "audios", "tts_rvc_output.wav"),
+                value=os.path.join(os.getcwd(), "assets", "audios", "tts_rvc_output.wav"),
                 interactive=True,
             )
             export_format = gr.Radio(

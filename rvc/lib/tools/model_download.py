@@ -22,7 +22,7 @@ def find_folder_parent(search_dir, folder_name):
     return None
 
 
-file_path = find_folder_parent(now_dir, "logs")
+file_path = find_folder_parent(os.getcwd(), "logs")
 zips_path = os.path.join(file_path, "zips")
 
 
@@ -82,16 +82,16 @@ def download_from_url(url):
                         "Too many users have viewed or downloaded this file recently"
                         in error_message
                     ):
-                        os.chdir(now_dir)
+                        os.chdir(os.getcwd())
                         return "too much use"
                     elif (
                         "Cannot retrieve the public link of the file." in error_message
                     ):
-                        os.chdir(now_dir)
+                        os.chdir(os.getcwd())
                         return "private link"
                     else:
                         print(error_message)
-                        os.chdir(now_dir)
+                        os.chdir(os.getcwd())
                         return None
         elif "disk.yandex.ru" in url:
             base_url = "https://cloud-api.yandex.net/v1/disk/public/resources/download?"
@@ -187,7 +187,7 @@ def download_from_url(url):
                             print("\n")
 
             else:
-                os.chdir(now_dir)
+                os.chdir(os.getcwd())
                 return None
         elif "/tree/main" in url:
             os.chdir(zips_path)
@@ -206,7 +206,7 @@ def download_from_url(url):
 
                     wget.download(url)
             else:
-                os.chdir(now_dir)
+                os.chdir(os.getcwd())
                 return None
         elif "applio.org" in url:
             parts = url.split("/")
@@ -238,7 +238,7 @@ def download_from_url(url):
                 os.chdir(zips_path)
                 wget.download(url)
             except Exception as error:
-                os.chdir(now_dir)
+                os.chdir(os.getcwd())
                 print(f"An error occurred downloading the file: {error}")
                 return None
 
@@ -251,10 +251,10 @@ def download_from_url(url):
                 realPath = os.path.join(currentPath, Files)
                 os.rename(realPath, nameFile + "." + extensionFile)
 
-        os.chdir(now_dir)
+        os.chdir(os.getcwd())
         return "downloaded"
 
-    os.chdir(now_dir)
+    os.chdir(os.getcwd())
     return None
 
 

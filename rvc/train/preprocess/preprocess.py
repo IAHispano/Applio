@@ -7,8 +7,7 @@ from scipy import signal
 from scipy.io import wavfile
 from multiprocessing import cpu_count, Pool
 
-now_directory = os.getcwd()
-sys.path.append(now_directory)
+sys.path.append(os.getcwd())
 
 from rvc.lib.utils import load_audio
 from rvc.train.slicer import Slicer

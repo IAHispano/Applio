@@ -3,13 +3,12 @@ import os
 import importlib
 import gradio as gr
 
-now_dir = os.getcwd()
 
 folder = os.path.dirname(os.path.abspath(__file__))
 folder = os.path.dirname(folder)
 folder = os.path.dirname(folder)
 folder = os.path.join(folder, "assets", "themes")
-config_file = os.path.join(now_dir, "assets", "config.json")
+config_file = os.path.join(os.getcwd(), "assets", "config.json")
 
 import sys
 

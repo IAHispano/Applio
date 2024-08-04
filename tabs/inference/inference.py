@@ -17,17 +17,17 @@ i18n = I18nAuto()
 
 sys.path.append(os.getcwd())
 
-model_root = os.path.join(now_dir, "logs")
-audio_root = os.path.join(now_dir, "assets", "audios")
+model_root = os.path.join(os.getcwd(), "logs")
+audio_root = os.path.join(os.getcwd(), "assets", "audios")
 custom_embedder_root = os.path.join(
-    now_dir, "rvc", "models", "embedders", "embedders_custom"
+    os.getcwd(), "rvc", "models", "embedders", "embedders_custom"
 )
 
 os.makedirs(custom_embedder_root, exist_ok=True)
 
-custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
-model_root_relative = os.path.relpath(model_root, now_dir)
-audio_root_relative = os.path.relpath(audio_root, now_dir)
+custom_embedder_root_relative = os.path.relpath(custom_embedder_root, os.getcwd())
+model_root_relative = os.path.relpath(model_root, os.getcwd())
+audio_root_relative = os.path.relpath(audio_root, os.getcwd())
 
 sup_audioext = {
     "wav",
@@ -281,7 +281,7 @@ def inference_tab():
                     value=(
                         output_path_fn(audio_paths[0])
                         if audio_paths
-                        else os.path.join(now_dir, "assets", "audios", "output.wav")
+                        else os.path.join(os.getcwd(), "assets", "audios", "output.wav")
                     ),
                     interactive=True,
                 )
@@ -471,7 +471,7 @@ def inference_tab():
                     label=i18n("Input Folder"),
                     info=i18n("Select the folder containing the audios to convert."),
                     placeholder=i18n("Enter input path"),
-                    value=os.path.join(now_dir, "assets", "audios"),
+                    value=os.path.join(os.getcwd(), "assets", "audios"),
                     interactive=True,
                 )
                 output_folder_batch = gr.Textbox(
@@ -480,7 +480,7 @@ def inference_tab():
                         "Select the folder where the output audios will be saved."
                     ),
                     placeholder=i18n("Enter output path"),
-                    value=os.path.join(now_dir, "assets", "audios"),
+                    value=os.path.join(os.getcwd(), "assets", "audios"),
                     interactive=True,
                 )
         with gr.Accordion(i18n("Advanced Settings"), open=False):

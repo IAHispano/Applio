@@ -29,8 +29,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-now_dir = os.getcwd()
-sys.path.append(os.path.join(now_dir))
+sys.path.append(os.path.join(os.getcwd()))
 
 from data_utils import (
     DistributedBucketSampler,
@@ -74,8 +73,7 @@ overtraining_detector = strtobool(sys.argv[15])
 overtraining_threshold = int(sys.argv[16])
 sync_graph = strtobool(sys.argv[17])
 
-current_dir = os.getcwd()
-experiment_dir = os.path.join(current_dir, "logs", model_name)
+experiment_dir = os.path.join(os.getcwd(), "logs", model_name)
 config_save_path = os.path.join(experiment_dir, "config.json")
 
 with open(config_save_path, "r") as f:
@@ -209,11 +207,11 @@ def main():
         # Synchronize graphs by modifying config files
         if version == "v1":
             rvc_config_file = os.path.join(
-                now_dir, "rvc", "configs", version, str(sample_rate) + ".json"
+                os.getcwd(), "rvc", "configs", version, str(sample_rate) + ".json"
             )
         elif version == "v2":
             rvc_config_file = os.path.join(
-                now_dir,
+                os.getcwd(),
                 "rvc",
                 "configs",
                 version,
@@ -224,7 +222,7 @@ def main():
         model_config_file = os.path.join(experiment_dir, "config.json")
         if not os.path.exists(rvc_config_file):
             rvc_config_file = os.path.join(
-                now_dir, "rvc", "configs", "v1", str(sample_rate) + ".json"
+                os.getcwd(), "rvc", "configs", "v1", str(sample_rate) + ".json"
             )
 
         pattern = rf"{os.path.basename(model_name)}_1e_(\d+)s\.pth"
@@ -260,7 +258,7 @@ def main():
 
         # Clean up unnecessary files
         for root, dirs, files in os.walk(
-            os.path.join(now_dir, "logs", model_name), topdown=False
+            os.path.join(os.getcwd(), "logs", model_name), topdown=False
         ):
             for name in files:
                 file_path = os.path.join(root, name)
