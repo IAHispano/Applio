@@ -1,28 +1,23 @@
-from __future__ import print_function
-
-import json
 import os
-import os.path as osp
 import re
-import warnings
-from six.moves import urllib_parse
-import shutil
+import six
 import sys
+import json
+import tqdm
+import time
+import shutil
+import warnings
 import tempfile
 import textwrap
-import time
-
 import requests
-import six
-import tqdm
+from six.moves import urllib_parse
 
 
 def indent(text, prefix):
-    def prefixed_lines():
-        for line in text.splitlines(True):
-            yield (prefix + line if line.strip() else line)
-
-    return "".join(prefixed_lines())
+    """Indent each non-empty line of text with the given prefix."""
+    return "".join(
+        (prefix + line if line.strip() else line) for line in text.splitlines(True)
+    )
 
 
 class FileURLRetrievalError(Exception):
@@ -36,24 +31,26 @@ class FolderContentsMaximumLimitError(Exception):
 def parse_url(url, warning=True):
     """Parse URLs especially for Google Drive links.
 
-    file_id: ID of file on Google Drive.
-    is_download_link: Flag if it is download link of Google Drive.
+    Args:
+        url: URL to parse.
+        warning: Whether to warn if the URL is not a download link.
+
+    Returns:
+        A tuple (file_id, is_download_link), where file_id is the ID of the
+        file on Google Drive, and is_download_link is a flag indicating
+        whether the URL is a download link.
     """
     parsed = urllib_parse.urlparse(url)
     query = urllib_parse.parse_qs(parsed.query)
-    is_gdrive = parsed.hostname in ["drive.google.com", "docs.google.com"]
+    is_gdrive = parsed.hostname in ("drive.google.com", "docs.google.com")
     is_download_link = parsed.path.endswith("/uc")
 
     if not is_gdrive:
-        return is_gdrive, is_download_link
+        return None, is_download_link
 
-    file_id = None
-    if "id" in query:
-        file_ids = query["id"]
-        if len(file_ids) == 1:
-            file_id = file_ids[0]
-    else:
-        patterns = [
+    file_id = query.get("id", [None])[0]
+    if file_id is None:
+        for pattern in (
             r"^/file/d/(.*?)/(edit|view)$",
             r"^/file/u/[0-9]+/d/(.*?)/(edit|view)$",
             r"^/document/d/(.*?)/(edit|htmlview|view)$",
@@ -62,62 +59,56 @@ def parse_url(url, warning=True):
             r"^/presentation/u/[0-9]+/d/(.*?)/(edit|htmlview|view)$",
             r"^/spreadsheets/d/(.*?)/(edit|htmlview|view)$",
             r"^/spreadsheets/u/[0-9]+/d/(.*?)/(edit|htmlview|view)$",
-        ]
-        for pattern in patterns:
+        ):
             match = re.match(pattern, parsed.path)
             if match:
-                file_id = match.groups()[0]
+                file_id = match.group(1)
                 break
 
     if warning and not is_download_link:
         warnings.warn(
             "You specified a Google Drive link that is not the correct link "
             "to download a file. You might want to try `--fuzzy` option "
-            "or the following url: {url}".format(
-                url="https://drive.google.com/uc?id={}".format(file_id)
-            )
+            f"or the following url: https://drive.google.com/uc?id={file_id}"
         )
 
     return file_id, is_download_link
 
 
 CHUNK_SIZE = 512 * 1024  # 512KB
-home = osp.expanduser("~")
+HOME = os.path.expanduser("~")
 
 
 def get_url_from_gdrive_confirmation(contents):
-    url = ""
-    m = re.search(r'href="(\/uc\?export=download[^"]+)', contents)
-    if m:
-        url = "https://docs.google.com" + m.groups()[0]
-        url = url.replace("&amp;", "&")
-        return url
+    """Extract the download URL from a Google Drive confirmation page."""
+    for pattern in (
+        r'href="(\/uc\?export=download[^"]+)',
+        r'href="/open\?id=([^"]+)"',
+        r'"downloadUrl":"([^"]+)',
+    ):
+        match = re.search(pattern, contents)
+        if match:
+            url = match.group(1)
+            if pattern == r'href="/open\?id=([^"]+)"':
+                uuid = re.search(
+                    r'<input\s+type="hidden"\s+name="uuid"\s+value="([^"]+)"',
+                    contents,
+                ).group(1)
+                url = (
+                    "https://drive.usercontent.google.com/download?id="
+                    + url
+                    + "&confirm=t&uuid="
+                    + uuid
+                )
+            elif pattern == r'"downloadUrl":"([^"]+)':
+                url = url.replace("\\u003d", "=").replace("\\u0026", "&")
+            else:
+                url = "https://docs.google.com" + url.replace("&", "&")
+            return url
 
-    m = re.search(r'href="/open\?id=([^"]+)"', contents)
-    if m:
-        url = m.groups()[0]
-        uuid = re.search(
-            r'<input\s+type="hidden"\s+name="uuid"\s+value="([^"]+)"', contents
-        )
-        uuid = uuid.groups()[0]
-        url = (
-            "https://drive.usercontent.google.com/download?id="
-            + url
-            + "&confirm=t&uuid="
-            + uuid
-        )
-        return url
-
-    m = re.search(r'"downloadUrl":"([^"]+)', contents)
-    if m:
-        url = m.groups()[0]
-        url = url.replace("\\u003d", "=")
-        url = url.replace("\\u0026", "&")
-        return url
-
-    m = re.search(r'<p class="uc-error-subcaption">(.*)</p>', contents)
-    if m:
-        error = m.groups()[0]
+    match = re.search(r'<p class="uc-error-subcaption">(.*)</p>', contents)
+    if match:
+        error = match.group(1)
         raise FileURLRetrievalError(error)
 
     raise FileURLRetrievalError(
@@ -128,8 +119,8 @@ def get_url_from_gdrive_confirmation(contents):
 
 
 def _get_session(proxy, use_cookies, return_cookies_file=False):
+    """Create a requests session with optional proxy and cookie handling."""
     sess = requests.session()
-
     sess.headers.update(
         {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6)"}
     )
@@ -138,18 +129,14 @@ def _get_session(proxy, use_cookies, return_cookies_file=False):
         sess.proxies = {"http": proxy, "https": proxy}
         print("Using proxy:", proxy, file=sys.stderr)
 
-    # Load cookies if exists
-    cookies_file = osp.join(home, ".cache/gdown/cookies.json")
-    if osp.exists(cookies_file) and use_cookies:
+    cookies_file = os.path.join(HOME, ".cache/gdown/cookies.json")
+    if os.path.exists(cookies_file) and use_cookies:
         with open(cookies_file) as f:
             cookies = json.load(f)
         for k, v in cookies:
             sess.cookies[k] = v
 
-    if return_cookies_file:
-        return sess, cookies_file
-    else:
-        return sess
+    return (sess, cookies_file) if return_cookies_file else sess
 
 
 def download(
@@ -206,7 +193,7 @@ def download(
     if not (id is None) ^ (url is None):
         raise ValueError("Either url or id has to be specified")
     if id is not None:
-        url = "https://drive.google.com/uc?id={id}".format(id=id)
+        url = f"https://drive.google.com/uc?id={id}"
 
     url_origin = url
 
@@ -218,7 +205,7 @@ def download(
 
     if fuzzy and gdrive_file_id:
         # overwrite the url with fuzzy match of a file id
-        url = "https://drive.google.com/uc?id={id}".format(id=gdrive_file_id)
+        url = f"https://drive.google.com/uc?id={gdrive_file_id}"
         url_origin = url
         is_gdrive_download_link = True
 
@@ -227,56 +214,32 @@ def download(
 
         if url == url_origin and res.status_code == 500:
             # The file could be Google Docs or Spreadsheets.
-            url = "https://drive.google.com/open?id={id}".format(id=gdrive_file_id)
+            url = f"https://drive.google.com/open?id={gdrive_file_id}"
             continue
 
         if res.headers["Content-Type"].startswith("text/html"):
-            m = re.search("<title>(.+)</title>", res.text)
-            if m and m.groups()[0].endswith(" - Google Docs"):
-                url = (
-                    "https://docs.google.com/document/d/{id}/export"
-                    "?format={format}".format(
-                        id=gdrive_file_id,
-                        format="docx" if format is None else format,
-                    )
-                )
-                continue
-            elif m and m.groups()[0].endswith(" - Google Sheets"):
-                url = (
-                    "https://docs.google.com/spreadsheets/d/{id}/export"
-                    "?format={format}".format(
-                        id=gdrive_file_id,
-                        format="xlsx" if format is None else format,
-                    )
-                )
-                continue
-            elif m and m.groups()[0].endswith(" - Google Slides"):
-                url = (
-                    "https://docs.google.com/presentation/d/{id}/export"
-                    "?format={format}".format(
-                        id=gdrive_file_id,
-                        format="pptx" if format is None else format,
-                    )
-                )
-                continue
+            title = re.search("<title>(.+)</title>", res.text)
+            if title:
+                title = title.group(1)
+                if title.endswith(" - Google Docs"):
+                    url = f"https://docs.google.com/document/d/{gdrive_file_id}/export?format={'docx' if format is None else format}"
+                    continue
+                if title.endswith(" - Google Sheets"):
+                    url = f"https://docs.google.com/spreadsheets/d/{gdrive_file_id}/export?format={'xlsx' if format is None else format}"
+                    continue
+                if title.endswith(" - Google Slides"):
+                    url = f"https://docs.google.com/presentation/d/{gdrive_file_id}/export?format={'pptx' if format is None else format}"
+                    continue
         elif (
             "Content-Disposition" in res.headers
             and res.headers["Content-Disposition"].endswith("pptx")
-            and format not in {None, "pptx"}
+            and format not in (None, "pptx")
         ):
-            url = (
-                "https://docs.google.com/presentation/d/{id}/export"
-                "?format={format}".format(
-                    id=gdrive_file_id,
-                    format="pptx" if format is None else format,
-                )
-            )
+            url = f"https://docs.google.com/presentation/d/{gdrive_file_id}/export?format={'pptx' if format is None else format}"
             continue
 
         if use_cookies:
-            if not osp.exists(osp.dirname(cookies_file)):
-                os.makedirs(osp.dirname(cookies_file))
-            # Save cookies
+            os.makedirs(os.path.dirname(cookies_file), exist_ok=True)
             with open(cookies_file, "w") as f:
                 cookies = [
                     (k, v)
@@ -296,53 +259,47 @@ def download(
             url = get_url_from_gdrive_confirmation(res.text)
         except FileURLRetrievalError as e:
             message = (
-                "Failed to retrieve file url:\n\n{}\n\n"
+                "Failed to retrieve file url:\n\n"
+                "{}\n\n" 
                 "You may still be able to access the file from the browser:"
-                "\n\n\t{}\n\n"
+                f"\n\n\t{url_origin}\n\n"
                 "but Gdown can't. Please check connections and permissions."
-            ).format(
-                indent("\n".join(textwrap.wrap(str(e))), prefix="\t"),
-                url_origin,
-            )
+            ).format(indent("\n".join(textwrap.wrap(str(e))), prefix="\t"))
             raise FileURLRetrievalError(message)
 
     if gdrive_file_id and is_gdrive_download_link:
-        content_disposition = six.moves.urllib_parse.unquote(
-            res.headers["Content-Disposition"]
-        )
-
-        m = re.search(r"filename\*=UTF-8''(.*)", content_disposition)
-        if not m:
-            m = re.search(r'filename=["\']?(.*?)["\']?$', content_disposition)
-        filename_from_url = m.groups()[0]
-        filename_from_url = filename_from_url.replace(osp.sep, "_")
+        content_disposition = urllib_parse.unquote(res.headers["Content-Disposition"])
+        filename_from_url = (
+            re.search(r"filename\*=UTF-8''(.*)", content_disposition)
+            or re.search(r'filename=["\']?(.*?)["\']?$', content_disposition)
+        ).group(1)
+        filename_from_url = filename_from_url.replace(os.path.sep, "_")
     else:
-        filename_from_url = osp.basename(url)
+        filename_from_url = os.path.basename(url)
 
-    if output is None:
-        output = filename_from_url
+    output = output or filename_from_url
 
     output_is_path = isinstance(output, six.string_types)
-    if output_is_path and output.endswith(osp.sep):
-        if not osp.exists(output):
-            os.makedirs(output)
-        output = osp.join(output, filename_from_url)
+    if output_is_path and output.endswith(os.path.sep):
+        os.makedirs(output, exist_ok=True)
+        output = os.path.join(output, filename_from_url)
 
     if output_is_path:
-        existing_tmp_files = []
-        for file in os.listdir(osp.dirname(output) or "."):
-            if file.startswith(osp.basename(output)):
-                existing_tmp_files.append(osp.join(osp.dirname(output), file))
+        temp_dir = os.path.dirname(output) or "."
+        prefix = os.path.basename(output)
+        existing_tmp_files = [
+            os.path.join(temp_dir, file)
+            for file in os.listdir(temp_dir)
+            if file.startswith(prefix)
+        ]
         if resume and existing_tmp_files:
-            if len(existing_tmp_files) != 1:
+            if len(existing_tmp_files) > 1:
                 print(
                     "There are multiple temporary files to resume:",
                     file=sys.stderr,
                 )
-                print("\n")
                 for file in existing_tmp_files:
-                    print("\t", file, file=sys.stderr)
-                print("\n")
+                    print(f"\t{file}", file=sys.stderr)
                 print(
                     "Please remove them except one to resume downloading.",
                     file=sys.stderr,
@@ -351,12 +308,8 @@ def download(
             tmp_file = existing_tmp_files[0]
         else:
             resume = False
-            # mkstemp is preferred, but does not work on Windows
-            # https://github.com/wkentaro/gdown/issues/153
             tmp_file = tempfile.mktemp(
-                suffix=tempfile.template,
-                prefix=osp.basename(output),
-                dir=osp.dirname(output),
+                suffix=tempfile.template, prefix=prefix, dir=temp_dir
             )
         f = open(tmp_file, "ab")
     else:
@@ -364,28 +317,20 @@ def download(
         f = output
 
     if tmp_file is not None and f.tell() != 0:
-        headers = {"Range": "bytes={}-".format(f.tell())}
+        headers = {"Range": f"bytes={f.tell()}-"}
         res = sess.get(url, headers=headers, stream=True, verify=verify)
 
     if not quiet:
-        # print("Downloading...", file=sys.stderr)
         if resume:
             print("Resume:", tmp_file, file=sys.stderr)
-        # if url_origin != url:
-        #     print("From (original):", url_origin, file=sys.stderr)
-        #     print("From (redirected):", url, file=sys.stderr)
-        # else:
-        #     print("From:", url, file=sys.stderr)
         print(
             "To:",
-            osp.abspath(output) if output_is_path else output,
+            os.path.abspath(output) if output_is_path else output,
             file=sys.stderr,
         )
 
     try:
-        total = res.headers.get("Content-Length")
-        if total is not None:
-            total = int(total)
+        total = int(res.headers.get("Content-Length", 0))
         if not quiet:
             pbar = tqdm.tqdm(total=total, unit="B", unit_scale=True)
         t_start = time.time()
