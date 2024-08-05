@@ -171,4 +171,8 @@ def get_gpu_info():
     return gpu_info
 
 def get_number_of_gpus():
-    return torch.cuda.device_count() if torch.cuda.is_available() else 0
+    if torch.cuda.is_available():
+        num_gpus = torch.cuda.device_count()
+        return '-'.join(map(str, range(num_gpus)))
+    else:
+        return "0"
