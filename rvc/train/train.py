@@ -102,7 +102,7 @@ discriminators = dict()
 for key, value in config.model.discriminators.items():
     key = str(key)
     if key == "mssbcqtd":
-        config.mssbcqtd["sample_rate"] = config.data.sample_rate
+        value["sample_rate"] = config.data.sample_rate
     
     vocoder_type = getattr(config, "vocoder_type", None)
     if vocoder_type == "bigvsan":
