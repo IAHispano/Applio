@@ -11,7 +11,7 @@ from core import (
     run_index_script,
     run_prerequisites_script,
 )
-from rvc.configs.config import max_vram_gpu, get_gpu_info
+from rvc.configs.config import max_vram_gpu, get_gpu_info, get_number_of_gpus
 from rvc.lib.utils import format_title
 from tabs.settings.restart import restart_applio
 
@@ -452,7 +452,7 @@ def train_tab():
                             "Specify the number of GPUs you wish to utilize for training by entering them separated by hyphens (-)."
                         ),
                         placeholder=i18n("0 to ∞ separated by -"),
-                        value="0",
+                        value=str(get_number_of_gpus()),
                         interactive=True,
                     )
                     gr.Textbox(
@@ -646,7 +646,7 @@ def train_tab():
                                 "Specify the number of GPUs you wish to utilize for training by entering them separated by hyphens (-)."
                             ),
                             placeholder=i18n("0 to ∞ separated by -"),
-                            value="0",
+                            value=str(get_number_of_gpus()),
                             interactive=True,
                         )
                         gr.Textbox(
