@@ -225,12 +225,12 @@ def main():
                 os.getcwd(), "rvc", "configs", "v1", str(sample_rate) + ".json"
             )
 
-        pattern = rf"{os.path.basename(model_name)}_1e_(\d+)s\.pth"
+        pattern = rf"{os.path.basename(model_name)}_(\d+)e_(\d+)s\.pth"
 
         for filename in os.listdir(experiment_dir):
             match = re.match(pattern, filename)
             if match:
-                steps = int(match.group(1))
+                steps = int(match.group(2))
 
         def edit_config(config_file):
             """
