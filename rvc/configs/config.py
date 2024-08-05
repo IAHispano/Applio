@@ -170,9 +170,10 @@ def get_gpu_info():
         gpu_info = "Unfortunately, there is no compatible GPU available to support your training."
     return gpu_info
 
+
 def get_number_of_gpus():
     if torch.cuda.is_available():
         num_gpus = torch.cuda.device_count()
-        return '-'.join(map(str, range(num_gpus)))
+        return "-".join(map(str, range(num_gpus)))
     else:
         return "-"
