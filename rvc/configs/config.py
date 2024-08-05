@@ -175,4 +175,4 @@ def get_number_of_gpus():
         num_gpus = torch.cuda.device_count()
         return '-'.join(map(str, range(num_gpus)))
     else:
-        return "0"
+        return "-"
