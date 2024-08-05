@@ -673,7 +673,6 @@ def train_and_evaluate(
             if rank == 0:
                 if global_step % config.train.log_interval == 0:
                     lr = optim_g.param_groups[0]["lr"]
-                    # print("Epoch: {} [{:.0f}%]".format(epoch, 100.0 * batch_idx / len(train_loader)))
 
                     if loss_mel > 75:
                         loss_mel = 75
@@ -694,22 +693,9 @@ def train_and_evaluate(
                             "loss/g/kl": loss_kl,
                         }
                     )
-
-                    scalar_dict.update(
-                        {"loss/g/{}".format(i): v for i, v in enumerate(losses_gen)}
-                    )
-                    scalar_dict.update(
-                        {
-                            "loss/d_r/{}".format(i): v
-                            for i, v in enumerate(losses_disc_r)
-                        }
-                    )
-                    scalar_dict.update(
-                        {
-                            "loss/d_g/{}".format(i): v
-                            for i, v in enumerate(losses_disc_g)
-                        }
-                    )
+                    scalar_dict.update({f"loss/g/{i}": v for i, v in enumerate(losses_gen)})
+                    scalar_dict.update({f"loss/d_r/{i}": v for i, v in enumerate(losses_disc_r)})
+                    scalar_dict.update({f"loss/d_g/{i}": v for i, v in enumerate(losses_disc_g)})
                     image_dict = {
                         "slice/mel_org": plot_spectrogram_to_numpy(
                             y_mel[0].data.cpu().numpy()
@@ -773,9 +759,7 @@ def train_and_evaluate(
     if overtraining_detector == True:
         if epoch >= (lowest_value["epoch"] + overtraining_threshold):
             print(
-                "Stopping training due to possible overtraining. Lowest generator loss: {} at epoch {}, step {}".format(
-                    lowest_value["value"], lowest_value["epoch"], lowest_value["step"]
-                )
+                f"Stopping training due to possible overtraining. Lowest generator loss: {lowest_value["value"]} at epoch {lowest_value["epoch"]}, step {lowest_value["step"]}"
             )
             os._exit(2333333)
 
@@ -785,7 +769,7 @@ def train_and_evaluate(
             old_model_files = glob.glob(
                 os.path.join(
                     experiment_dir,
-                    "{}_{}e_{}s_best_epoch.pth".format(model_name, "*", "*"),
+                    f"{model_name}_*e_*s_best_epoch.pth"
                 )
             )
             for file in old_model_files:

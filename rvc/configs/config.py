@@ -163,7 +163,7 @@ def get_gpu_info():
                 torch.cuda.get_device_properties(i).total_memory / 1024 / 1024 / 1024
                 + 0.4
             )
-            gpu_infos.append("%s: %s %s GB" % (i, gpu_name, mem))
+            gpu_infos.append(f"{i}: {gpu_name} ({mem} GB)")
     if len(gpu_infos) > 0:
         gpu_info = "\n".join(gpu_infos)
     else:
