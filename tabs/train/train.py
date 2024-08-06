@@ -351,17 +351,42 @@ def train_tab():
                     interactive=True,
                 )
 
-                cpu_cores_preprocess = gr.Slider(
-                    1,
-                    64,
-                    cpu_count(),
-                    step=1,
-                    label=i18n("CPU Cores"),
-                    info=i18n(
-                        "The number of CPU cores to utilize. The default setting are your cpu cores, which is recommended for most cases."
-                    ),
-                    interactive=True,
-                )
+        with gr.Accordion(
+            i18n(
+                "We prioritize running the model preprocessing on the GPU for faster performance. If you prefer to use the CPU, simply leave the GPU field blank."
+            ),
+            open=False,
+        ):
+            with gr.Row():
+                with gr.Column():
+                    cpu_cores_preprocess = gr.Slider(
+                        1,
+                        64,
+                        cpu_count(),
+                        step=1,
+                        label=i18n("CPU Cores"),
+                        info=i18n(
+                            "The number of CPU cores to use in the preprocess. The default setting are your cpu cores, which is recommended for most cases."
+                        ),
+                        interactive=True,
+                    )
+
+                with gr.Column():
+                    gpu_preprocess = gr.Textbox(
+                        label=i18n("GPU Number"),
+                        info=i18n(
+                            "Specify the number of GPUs you wish to utilize for preprocess by entering them separated by hyphens (-). For the time being, using multi-gpu will not have a significant effect."
+                        ),
+                        placeholder=i18n("0 to ∞ separated by -"),
+                        value=str(get_number_of_gpus()),
+                        interactive=True,
+                    )
+                    gr.Textbox(
+                        label=i18n("GPU Information"),
+                        info=i18n("The GPU information will be displayed here."),
+                        value=get_gpu_info(),
+                        interactive=False,
+                    )
 
         preprocess_output_info = gr.Textbox(
             label=i18n("Output Information"),
@@ -375,7 +400,13 @@ def train_tab():
             preprocess_button = gr.Button(i18n("Preprocess Dataset"))
             preprocess_button.click(
                 fn=run_preprocess_script,
-                inputs=[model_name, dataset_path, sampling_rate, cpu_cores_preprocess],
+                inputs=[
+                    model_name,
+                    dataset_path,
+                    sampling_rate,
+                    cpu_cores_preprocess,
+                    gpu_preprocess,
+                ],
                 outputs=[preprocess_output_info],
                 api_name="preprocess_dataset",
             )
@@ -440,7 +471,7 @@ def train_tab():
                         step=1,
                         label=i18n("CPU Cores"),
                         info=i18n(
-                            "The number of CPU cores to use in the index extraction process. The default setting are your cpu cores, which is recommended for most cases."
+                            "The number of CPU cores to use in the extraction process. The default setting are your cpu cores, which is recommended for most cases."
                         ),
                         interactive=True,
                     )
@@ -449,7 +480,7 @@ def train_tab():
                     gpu_extract = gr.Textbox(
                         label=i18n("GPU Number"),
                         info=i18n(
-                            "Specify the number of GPUs you wish to utilize for training by entering them separated by hyphens (-)."
+                            "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-)."
                         ),
                         placeholder=i18n("0 to ∞ separated by -"),
                         value=str(get_number_of_gpus()),

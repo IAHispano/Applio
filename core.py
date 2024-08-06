@@ -243,7 +243,7 @@ def run_tts_script(
 
 # Preprocess
 def run_preprocess_script(
-    model_name: str, dataset_path: str, sample_rate: int, cpu_cores: int
+    model_name: str, dataset_path: str, sample_rate: int, cpu_cores: int, gpu: int
 ):
     config = get_config()
     per = 3.0 if config.is_half else 3.7
@@ -259,6 +259,7 @@ def run_preprocess_script(
                 sample_rate,
                 per,
                 cpu_cores,
+                gpu,
             ],
         ),
     ]
@@ -989,6 +990,12 @@ def parse_arguments():
         help="Number of CPU cores to use for preprocessing.",
         choices=range(1, 65),
     )
+    preprocess_parser.add_argument(
+        "--gpu",
+        type=int,
+        help="GPU device to use for feature extraction (optional).",
+        default="-",
+    )
 
     # Parser for 'extract' mode
     extract_parser = subparsers.add_parser(
@@ -1439,6 +1446,7 @@ def main():
                 dataset_path=args.dataset_path,
                 sample_rate=args.sample_rate,
                 cpu_cores=args.cpu_cores,
+                gpu=args.gpu,
             )
         elif args.mode == "extract":
             run_extract_script(
