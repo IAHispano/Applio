@@ -10,6 +10,8 @@ import numpy as np
 import multiprocessing
 from pydub import AudioSegment
 
+multiprocessing.set_start_method("spawn", force=True)
+
 now_directory = os.getcwd()
 sys.path.append(now_directory)
 
@@ -25,7 +27,7 @@ SAMPLE_RATE_16K = 16000
 
 
 class PreProcess:
-    def __init__(self, sr: int, exp_dir: str, per: float, device: str):
+    def __init__(self, sr: int, exp_dir: str, per: float):
         self.slicer = Slicer(
             sr=sr,
             threshold=-42,
@@ -40,7 +42,7 @@ class PreProcess:
         )
         self.per = per
         self.exp_dir = exp_dir
-        self.device = device
+        self.device = "cpu"
         self.gt_wavs_dir = os.path.join(exp_dir, "sliced_audios")
         self.wavs16k_dir = os.path.join(exp_dir, "sliced_audios_16k")
         os.makedirs(self.gt_wavs_dir, exist_ok=True)
@@ -110,29 +112,17 @@ class PreProcess:
         self.process_audio(file_path, idx0)
 
 
-def worker_init(device):
-    torch.cuda.set_device(device)
-
-
 def preprocess_training_set(
     input_root: str,
     sr: int,
     num_processes: int,
     exp_dir: str,
     per: float,
-    gpu_devices: str,
 ):
     start_time = time.time()
-    if gpu_devices == "-" or not torch.cuda.is_available():
-        device = "cpu"
-        gpus = []
-    else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = gpu_devices.replace("-", ",")
-        gpus = [int(gpu) for gpu in gpu_devices.split("-")]
-        device = f"cuda:{gpus[0]}"
 
-    pp = PreProcess(sr, exp_dir, per, device)
-    print(f"Starting preprocess with {num_processes} processes on {device}...")
+    pp = PreProcess(sr, exp_dir, per)
+    print(f"Starting preprocess with {num_processes} processes...")
 
     files = [
         (os.path.join(input_root, f), idx)
@@ -140,26 +130,15 @@ def preprocess_training_set(
         if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg"))
     ]
 
-    if gpus:
-        num_gpus = len(gpus)
-        ctx = multiprocessing.get_context("spawn")
-        for idx, gpu in enumerate(gpus):
-            part_files = files[idx::num_gpus]
-            with ctx.Pool(
-                processes=num_processes, initializer=worker_init, initargs=(gpu,)
-            ) as pool:
-                pool.map(pp.process_audio_file, part_files)
-    else:
-        ctx = multiprocessing.get_context("spawn")
-        with ctx.Pool(processes=num_processes) as pool:
-            pool.map(pp.process_audio_file, files)
+    ctx = multiprocessing.get_context("spawn")
+    with ctx.Pool(processes=num_processes) as pool:
+        pool.map(pp.process_audio_file, files)
 
     elapsed_time = time.time() - start_time
     print(f"Preprocess completed in {elapsed_time:.2f} seconds.")
 
 
 if __name__ == "__main__":
-    multiprocessing.set_start_method("spawn", force=True)
     experiment_directory = str(sys.argv[1])
     input_root = str(sys.argv[2])
     sample_rate = int(sys.argv[3])
@@ -167,7 +146,6 @@ if __name__ == "__main__":
     num_processes = (
         int(sys.argv[5]) if len(sys.argv) > 5 else multiprocessing.cpu_count()
     )
-    gpus = sys.argv[6] if len(sys.argv) > 6 else "-"
 
     preprocess_training_set(
         input_root,
@@ -175,5 +153,4 @@ if __name__ == "__main__":
         num_processes,
         experiment_directory,
         percentage,
-        gpus,
     )
