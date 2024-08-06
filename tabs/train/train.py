@@ -676,6 +676,15 @@ def train_tab():
                             ),
                             interactive=True,
                         )
+                kmeans = gr.Radio(
+                    label=i18n("Index Algorithm"),
+                    info=i18n(
+                        "KMeans is a clustering algorithm that divides the dataset into K clusters. This setting is particularly useful for large datasets."
+                    ),
+                    choices=["Auto", "Faiss", "KMeans"],
+                    value="Auto",
+                    interactive=True,
+                )
 
         with gr.Row():
             train_output_info = gr.Textbox(
@@ -705,6 +714,7 @@ def train_tab():
                     overtraining_threshold,
                     pretrained,
                     sync_graph,
+                    kmeans,
                     cache_dataset_in_gpu,
                     custom_pretrained,
                     g_pretrained_path,
@@ -726,7 +736,7 @@ def train_tab():
             index_button = gr.Button(i18n("Generate Index"))
             index_button.click(
                 fn=run_index_script,
-                inputs=[model_name, rvc_version],
+                inputs=[model_name, rvc_version, kmeans],
                 outputs=[train_output_info],
                 api_name="generate_index",
             )
