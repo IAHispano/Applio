@@ -126,7 +126,7 @@ class PreProcess:
         self.process_audio(file_path, idx0)
 
     def process_audio_multiprocessing_input_directory(
-        self, input_root: str, num_processes: int
+        self, input_root: str, num_processes: int, gpus: list
     ):
         # Get list of files
         files = [
@@ -139,9 +139,24 @@ class PreProcess:
         os.makedirs(GT_WAVS_DIR, exist_ok=True)
         os.makedirs(WAVS16K_DIR, exist_ok=True)
 
-        # Use multiprocessing to process files
-        with Pool(processes=num_processes) as pool:
-            pool.map(self.process_audio_file, files)
+        if gpus:
+            num_gpus = len(gpus)
+            process_partials = []
+            for idx, gpu in enumerate(gpus):
+                device = f"cuda:{gpu}"
+                part_files = files[idx::num_gpus]
+                pp = PreProcess(self.sr, self.exp_dir, self.per, device)
+                process_partials.append((pp, part_files))
+
+            # Process each part with the corresponding GPU
+            for pp, part_files in process_partials:
+                with Pool(processes=num_processes) as pool:
+                    pool.map(pp.process_audio_file, part_files)
+
+        else:
+            # Use multiprocessing Pool for parallel processing
+            with Pool(processes=num_processes) as pool:
+                pool.map(self.process_audio_file, files)
 
 
 def preprocess_training_set(
@@ -155,12 +170,14 @@ def preprocess_training_set(
     start_time = time.time()
     if gpu_devices == "-" or not torch.cuda.is_available():
         device = "cpu"
+        gpus = []
     else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = gpu_devices
+        os.environ["CUDA_VISIBLE_DEVICES"] = gpu_devices.replace("-", ",")
+        gpus = gpu_devices.split("-")
         device = "cuda"
     pp = PreProcess(sr, exp_dir, per, device)
     print(f"Starting preprocess with {num_processes} cores on {device}...")
-    pp.process_audio_multiprocessing_input_directory(input_root, num_processes)
+    pp.process_audio_multiprocessing_input_directory(input_root, num_processes, gpus)
     elapsed_time = time.time() - start_time
     print(f"Preprocess completed in {elapsed_time:.2f} seconds.")
 

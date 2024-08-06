@@ -67,7 +67,7 @@
   "GPU Number": "GPU Number",
   "0 to ∞ separated by -": "0 to ∞ separated by -",
   "The GPU information will be displayed here.": "The GPU information will be displayed here.",
-  "Specify the number of GPUs you wish to utilize for preprocess by entering them separated by hyphens (-). For the time being, using multi-gpu will not have a significant effect.": "Specify the number of GPUs you wish to utilize for preprocess by entering them separated by hyphens (-). For the time being, using multi-gpu will not have a significant effect.",
+  "Specify the number of GPUs you wish to utilize for preprocess by entering them separated by hyphens (-). At the moment, using multi-gpu will not have a significant effect.": "Specify the number of GPUs you wish to utilize for preprocess by entering them separated by hyphens (-). At the moment, using multi-gpu will not have a significant effect.",
   "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-).": "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-).",
   "The number of CPU cores to use in the preprocess. The default setting are your cpu cores, which is recommended for most cases.": "The number of CPU cores to use in the preprocess. The default setting are your cpu cores, which is recommended for most cases.",
   "The number of CPU cores to use in the extraction process. The default setting are your cpu cores, which is recommended for most cases.": "The number of CPU cores to use in the extraction process. The default setting are your cpu cores, which is recommended for most cases.",

@@ -375,7 +375,7 @@ def train_tab():
                     gpu_preprocess = gr.Textbox(
                         label=i18n("GPU Number"),
                         info=i18n(
-                            "Specify the number of GPUs you wish to utilize for preprocess by entering them separated by hyphens (-). For the time being, using multi-gpu will not have a significant effect."
+                            "Specify the number of GPUs you wish to utilize for preprocess by entering them separated by hyphens (-). At the moment, using multi-gpu will not have a significant effect."
                         ),
                         placeholder=i18n("0 to ∞ separated by -"),
                         value=str(get_number_of_gpus()),
