@@ -693,9 +693,15 @@ def train_and_evaluate(
                             "loss/g/kl": loss_kl,
                         }
                     )
-                    scalar_dict.update({f"loss/g/{i}": v for i, v in enumerate(losses_gen)})
-                    scalar_dict.update({f"loss/d_r/{i}": v for i, v in enumerate(losses_disc_r)})
-                    scalar_dict.update({f"loss/d_g/{i}": v for i, v in enumerate(losses_disc_g)})
+                    scalar_dict.update(
+                        {f"loss/g/{i}": v for i, v in enumerate(losses_gen)}
+                    )
+                    scalar_dict.update(
+                        {f"loss/d_r/{i}": v for i, v in enumerate(losses_disc_r)}
+                    )
+                    scalar_dict.update(
+                        {f"loss/d_g/{i}": v for i, v in enumerate(losses_disc_g)}
+                    )
                     image_dict = {
                         "slice/mel_org": plot_spectrogram_to_numpy(
                             y_mel[0].data.cpu().numpy()
@@ -759,7 +765,7 @@ def train_and_evaluate(
     if overtraining_detector == True:
         if epoch >= (lowest_value["epoch"] + overtraining_threshold):
             print(
-                f"Stopping training due to possible overtraining. Lowest generator loss: {lowest_value["value"]} at epoch {lowest_value["epoch"]}, step {lowest_value["step"]}"
+                f"Stopping training due to possible overtraining. Lowest generator loss: {lowest_value['value']} at epoch {lowest_value['epoch']}, step {lowest_value['step']}"
             )
             os._exit(2333333)
 
@@ -767,10 +773,7 @@ def train_and_evaluate(
 
         if best_epoch == overtraining_threshold:
             old_model_files = glob.glob(
-                os.path.join(
-                    experiment_dir,
-                    f"{model_name}_*e_*s_best_epoch.pth"
-                )
+                os.path.join(experiment_dir, f"{model_name}_*e_*s_best_epoch.pth")
             )
             for file in old_model_files:
                 os.remove(file)
