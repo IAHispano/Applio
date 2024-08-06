@@ -5,11 +5,19 @@ from random import shuffle
 from rvc.configs.config import Config
 
 config = Config()
-current_directory = os.getcwd()
 
 
-def generate_config(rvc_version: str, sample_rate: int, model_path: str):
-    config_path = os.path.join("rvc", "configs", rvc_version, f"{sample_rate}.json")
+def generate_config(rvc_version: str, vocoder_type: str, sample_rate: int, model_path: str):
+    if rvc_version == "v2":
+        if vocoder_type == "bigvsan":
+            vocoder_type = "bigvgan"
+        config_path = os.path.join(
+            "rvc", "configs", rvc_version, vocoder_type, f"{sample_rate}.json"
+        )
+    elif rvc_version == "v1":
+        config_path = os.path.join(
+            "rvc", "configs", rvc_version, f"{sample_rate}.json"
+        )
     config_save_path = os.path.join(model_path, "config.json")
     if not os.path.exists(config_save_path):
         shutil.copyfile(config_path, config_save_path)
@@ -48,12 +56,12 @@ def generate_filelist(
     if pitch_guidance == 1:
         for _ in range(2):
             options.append(
-                f"{current_directory}/logs/mute/sliced_audios/mute{sample_rate}.wav|{current_directory}/logs/mute/{rvc_version}_extracted/mute.npy|{current_directory}/logs/mute/f0/mute.wav.npy|{current_directory}/logs/mute/f0_voiced/mute.wav.npy|0"
+                f"{os.getcwd()}/logs/mute/sliced_audios/mute{sample_rate}.wav|{os.getcwd()}/logs/mute/{rvc_version}_extracted/mute.npy|{os.getcwd()}/logs/mute/f0/mute.wav.npy|{os.getcwd()}/logs/mute/f0_voiced/mute.wav.npy|0"
             )
     else:
         for _ in range(2):
             options.append(
-                f"{current_directory}/logs/mute/sliced_audios/mute{sample_rate}.wav|{current_directory}/logs/mute/{rvc_version}_extracted/mute.npy|0"
+                f"{os.getcwd()}/logs/mute/sliced_audios/mute{sample_rate}.wav|{os.getcwd()}/logs/mute/{rvc_version}_extracted/mute.npy|0"
             )
     shuffle(options)
     with open(f"{model_path}/filelist.txt", "w") as f:

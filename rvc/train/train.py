@@ -29,8 +29,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-now_dir = os.getcwd()
-sys.path.append(os.path.join(now_dir))
+sys.path.append(os.path.join(os.getcwd()))
 
 from data_utils import (
     DistributedBucketSampler,
@@ -51,30 +50,30 @@ from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from rvc.train.process.extract_model import extract_model
 
 from rvc.lib.algorithm import commons
-from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
-from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminatorV2
-from rvc.lib.algorithm.synthesizers import Synthesizer
+
+from rvc.train.mel_processing import MultiScaleMelSpectrogramLoss
+from rvc.lib.algorithm.synthesizer import Synthesizer
 
 # Parse command line arguments
 model_name = sys.argv[1]
-save_every_epoch = int(sys.argv[2])
-total_epoch = int(sys.argv[3])
-pretrainG = sys.argv[4]
-pretrainD = sys.argv[5]
-version = sys.argv[6]
-gpus = sys.argv[7]
-batch_size = int(sys.argv[8])
-sample_rate = int(sys.argv[9])
-pitch_guidance = strtobool(sys.argv[10])
-save_only_latest = strtobool(sys.argv[11])
-save_every_weights = strtobool(sys.argv[12])
-cache_data_in_gpu = strtobool(sys.argv[13])
-overtraining_detector = strtobool(sys.argv[14])
-overtraining_threshold = int(sys.argv[15])
-sync_graph = strtobool(sys.argv[16])
+vocoder_type = str(sys.argv[2])
+save_every_epoch = int(sys.argv[3])
+total_epoch = int(sys.argv[4])
+pretrainG = sys.argv[5]
+pretrainD = sys.argv[6]
+version = sys.argv[7]
+gpus = sys.argv[8]
+batch_size = int(sys.argv[9])
+sample_rate = int(sys.argv[10])
+pitch_guidance = strtobool(sys.argv[11])
+save_only_latest = strtobool(sys.argv[12])
+save_every_weights = strtobool(sys.argv[13])
+cache_data_in_gpu = strtobool(sys.argv[14])
+overtraining_detector = strtobool(sys.argv[15])
+overtraining_threshold = int(sys.argv[16])
+sync_graph = strtobool(sys.argv[17])
 
-current_dir = os.getcwd()
-experiment_dir = os.path.join(current_dir, "logs", model_name)
+experiment_dir = os.path.join(os.getcwd(), "logs", model_name)
 config_save_path = os.path.join(experiment_dir, "config.json")
 
 with open(config_save_path, "r") as f:
@@ -84,6 +83,40 @@ config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
 
 os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
 n_gpus = len(gpus.split("-"))
+
+from rvc.lib.algorithm.discriminators.sub.__init__ import (
+    DiscriminatorP,
+    DiscriminatorS,
+    DiscriminatorB,
+    DiscriminatorCQT
+)
+from rvc.lib.algorithm.discriminators.discriminator import CombinedDiscriminator
+supported_discriminators = {
+    "mpd": DiscriminatorP,
+    "msd": DiscriminatorS,
+    "mbd": DiscriminatorB,
+    "mssbcqtd": DiscriminatorCQT,
+}
+discriminators = dict()
+
+for key, value in config.model.discriminators.items():
+    key = str(key)
+    if key == "mssbcqtd":
+        value["sample_rate"] = config.data.sample_rate
+    
+    vocoder_type = getattr(config, "vocoder_type", None)
+    if vocoder_type == "bigvsan":
+        if value is True:
+            discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm, is_san=True)
+        elif isinstance(value, dict):
+            discriminators[key] = supported_discriminators[key](**value, is_san=True)
+    else:
+        if value is True:
+            discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm)
+        elif isinstance(value, dict):
+            discriminators[key] = supported_discriminators[key](**value)
+print(list(discriminators.values()))
+MultiDiscriminator = CombinedDiscriminator(list(discriminators.values()))
 
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
@@ -96,7 +129,7 @@ last_loss_gen_all = 0
 import logging
 
 logging.getLogger("torch").setLevel(logging.ERROR)
-
+logging.getLogger("nnAudio").setLevel(logging.ERROR)
 
 class EpochRecorder:
     """
@@ -172,13 +205,24 @@ def main():
         start()
 
         # Synchronize graphs by modifying config files
+        if version == "v1":
+            rvc_config_file = os.path.join(
+                os.getcwd(), "rvc", "configs", version, str(sample_rate) + ".json"
+            )
+        elif version == "v2":
+            rvc_config_file = os.path.join(
+                os.getcwd(),
+                "rvc",
+                "configs",
+                version,
+                "bigvgan" if vocoder_type == "bigvsan" else vocoder_type,
+                str(sample_rate) + ".json",
+            )
+
         model_config_file = os.path.join(experiment_dir, "config.json")
-        rvc_config_file = os.path.join(
-            now_dir, "rvc", "configs", version, str(sample_rate) + ".json"
-        )
         if not os.path.exists(rvc_config_file):
             rvc_config_file = os.path.join(
-                now_dir, "rvc", "configs", "v1", str(sample_rate) + ".json"
+                os.getcwd(), "rvc", "configs", "v1", str(sample_rate) + ".json"
             )
 
         pattern = rf"{os.path.basename(model_name)}_(\d+)e_(\d+)s\.pth"
@@ -214,7 +258,7 @@ def main():
 
         # Clean up unnecessary files
         for root, dirs, files in os.walk(
-            os.path.join(now_dir, "logs", model_name), topdown=False
+            os.path.join(os.getcwd(), "logs", model_name), topdown=False
         ):
             for name in files:
                 file_path = os.path.join(root, name)
@@ -317,13 +361,13 @@ def run(
         use_f0=pitch_guidance == True,
         is_half=config.train.fp16_run,
         sr=sample_rate,
+        vocoder_type=vocoder_type,
     )
     if torch.cuda.is_available():
         net_g = net_g.cuda(rank)
-    if version == "v1":
-        net_d = MultiPeriodDiscriminator(config.model.use_spectral_norm)
-    else:
-        net_d = MultiPeriodDiscriminatorV2(config.model.use_spectral_norm)
+
+    net_d = MultiDiscriminator
+
     if torch.cuda.is_available():
         net_d = net_d.cuda(rank)
     optim_g = torch.optim.AdamW(
@@ -472,6 +516,10 @@ def train_and_evaluate(
         writer = writers[0]
 
     train_loader.batch_sampler.set_epoch(epoch)
+
+    fn_mel_loss_multiscale = MultiScaleMelSpectrogramLoss(
+        sample_rate=hps.data.sample_rate
+    )
 
     net_g.train()
     net_d.train()
@@ -644,10 +692,13 @@ def train_and_evaluate(
             with autocast(enabled=config.train.fp16_run):
                 y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
                 with autocast(enabled=False):
-                    loss_mel = F.l1_loss(y_mel, y_hat_mel) * config.train.c_mel
+                    # loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
+
+                    loss_mel = fn_mel_loss_multiscale(y_hat, wave) * config.train.c_mel
                     loss_kl = (
                         kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
                     )
+
                     loss_fm = feature_loss(fmap_r, fmap_g)
                     loss_gen, losses_gen = generator_loss(y_d_hat_g)
                     loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
@@ -755,6 +806,7 @@ def train_and_evaluate(
                     experiment_dir,
                     f"{model_name}_{epoch}e_{global_step}s.pth",
                 ),
+                vocoder_type=vocoder_type,
                 epoch=epoch,
                 step=global_step,
                 version=version,
@@ -792,6 +844,7 @@ def train_and_evaluate(
                     experiment_dir,
                     f"{model_name}_{epoch}e_{global_step}s_best_epoch.pth",
                 ),
+                vocoder_type=vocoder_type,
                 epoch=epoch,
                 step=global_step,
                 version=version,
@@ -849,6 +902,7 @@ def train_and_evaluate(
                 experiment_dir,
                 f"{model_name}_{epoch}e_{global_step}s.pth",
             ),
+            vocoder_type=vocoder_type,
             epoch=epoch,
             step=global_step,
             version=version,

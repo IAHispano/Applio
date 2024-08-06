@@ -7,9 +7,12 @@ version_config_paths = [
     os.path.join("v1", "32000.json"),
     os.path.join("v1", "40000.json"),
     os.path.join("v1", "48000.json"),
-    os.path.join("v2", "48000.json"),
-    os.path.join("v2", "40000.json"),
-    os.path.join("v2", "32000.json"),
+    os.path.join(os.path.join("v2", "hifigan"), "48000.json"),
+    os.path.join(os.path.join("v2", "hifigan"), "40000.json"),
+    os.path.join(os.path.join("v2", "hifigan"), "32000.json"),
+    os.path.join(os.path.join("v2", "bigvgan"), "48000.json"),
+    os.path.join(os.path.join("v2", "bigvgan"), "40000.json"),
+    os.path.join(os.path.join("v2", "bigvgan"), "32000.json"),
 ]
 
 

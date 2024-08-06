@@ -1,11 +1,17 @@
+import os
+import sys
 import torch
 from typing import Optional
 
-from rvc.lib.algorithm.nsf import GeneratorNSF
-from rvc.lib.algorithm.generators import Generator
+sys.path.append(os.getcwd())
+
+from rvc.lib.algorithm.generators.hifigan.hifigan import HiFiGAN
+from rvc.lib.algorithm.generators.bigvgan.bigvgan import BigVGAN
+from rvc.lib.algorithm.generators.generator import Generator
 from rvc.lib.algorithm.commons import slice_segments2, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock
-from rvc.lib.algorithm.encoders import TextEncoder, PosteriorEncoder
+from rvc.lib.algorithm.encoders.text import TextEncoder
+from rvc.lib.algorithm.encoders.posterior import PosteriorEncoder
 
 
 class Synthesizer(torch.nn.Module):
@@ -57,6 +63,7 @@ class Synthesizer(torch.nn.Module):
         gin_channels,
         sr,
         use_f0,
+        vocoder_type="hifigan",
         text_enc_hidden_dim=768,
         **kwargs
     ):
@@ -79,7 +86,7 @@ class Synthesizer(torch.nn.Module):
         self.gin_channels = gin_channels
         self.spk_embed_dim = spk_embed_dim
         self.use_f0 = use_f0
-
+        self.vocoder_type = vocoder_type
         self.enc_p = TextEncoder(
             inter_channels,
             hidden_channels,
@@ -89,22 +96,35 @@ class Synthesizer(torch.nn.Module):
             kernel_size,
             float(p_dropout),
             text_enc_hidden_dim,
+            vocoder_type=vocoder_type,
             f0=use_f0,
         )
 
         if use_f0:
-            self.dec = GeneratorNSF(
-                inter_channels,
-                resblock,
-                resblock_kernel_sizes,
-                resblock_dilation_sizes,
-                upsample_rates,
-                upsample_initial_channel,
-                upsample_kernel_sizes,
-                gin_channels=gin_channels,
-                sr=sr,
-                is_half=kwargs["is_half"],
-            )
+            if vocoder_type == "hifigan":
+                self.dec = HiFiGAN(
+                    inter_channels,
+                    resblock,
+                    resblock_kernel_sizes,
+                    resblock_dilation_sizes,
+                    upsample_rates,
+                    upsample_initial_channel,
+                    upsample_kernel_sizes,
+                    gin_channels=gin_channels,
+                    sr=sr,
+                    is_half=kwargs["is_half"],
+                )
+            elif vocoder_type in ["bigvgan", "bigvsan"]:
+                self.dec = BigVGAN(
+                    resblock_kernel_sizes=resblock_kernel_sizes,
+                    resblock_dilation_sizes=resblock_dilation_sizes,
+                    upsample_rates=upsample_rates,
+                    upsample_kernel_sizes=upsample_kernel_sizes,
+                    upsample_input=inter_channels,
+                    upsample_initial_channel=upsample_initial_channel,
+                    sample_rate=sr,
+                    spk_dim=gin_channels,
+                )
         else:
             self.dec = Generator(
                 inter_channels,

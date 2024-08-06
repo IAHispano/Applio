@@ -6,8 +6,7 @@ import subprocess
 from functools import lru_cache
 from distutils.util import strtobool
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")
@@ -272,6 +271,7 @@ def run_preprocess_script(
 def run_extract_script(
     model_name: str,
     rvc_version: str,
+    vocoder_type: str,
     f0_method: str,
     pitch_guidance: bool,
     hop_length: int,
@@ -320,7 +320,7 @@ def run_extract_script(
     subprocess.run(command_1)
     subprocess.run(command_2)
 
-    generate_config(rvc_version, sample_rate, model_path)
+    generate_config(rvc_version=rvc_version, vocoder_type=vocoder_type, sample_rate=sample_rate, model_path=model_path)
     generate_filelist(pitch_guidance, model_path, rvc_version, sample_rate)
     return f"Model {model_name} extracted successfully."
 
@@ -329,6 +329,7 @@ def run_extract_script(
 def run_train_script(
     model_name: str,
     rvc_version: str,
+    vocoder_type: str,  
     save_every_epoch: int,
     save_only_latest: bool,
     save_every_weights: bool,
@@ -371,6 +372,7 @@ def run_train_script(
             str,
             [
                 model_name,
+                vocoder_type,
                 save_every_epoch,
                 total_epoch,
                 pg,
@@ -412,6 +414,7 @@ def run_index_script(model_name: str, rvc_version: str):
 def run_model_extract_script(
     pth_path: str,
     model_name: str,
+    vocoder_type: str,
     sample_rate: int,
     pitch_guidance: bool,
     rvc_version: str,
@@ -419,7 +422,7 @@ def run_model_extract_script(
     step: int,
 ):
     extract_small_model(
-        pth_path, model_name, sample_rate, pitch_guidance, rvc_version, epoch, step
+        path=pth_path, name=model_name, vocoder_type=vocoder_type, sample_rate=sample_rate, pitch_guidance=pitch_guidance, rvc_version=rvc_version, epoch=epoch, step=step
     )
     return f"Model {model_name} extracted successfully."
 
@@ -1012,6 +1015,13 @@ def parse_arguments():
         default="v2",
     )
     extract_parser.add_argument(
+        "--vocoder_type",
+        type=str,
+        help="Type of vocoder to use for training.",
+        choices=["hifigan", "bigvgan", "bigvsan"],
+        required=True,
+    )
+    extract_parser.add_argument(
         "--f0_method",
         type=str,
         help="Pitch extraction method to use.",
@@ -1079,6 +1089,13 @@ def parse_arguments():
     train_parser = subparsers.add_parser("train", help="Train an RVC model.")
     train_parser.add_argument(
         "--model_name", type=str, help="Name of the model to be trained.", required=True
+    )
+    train_parser.add_argument(
+        "--vocoder_type",
+        type=str,
+        help="Type of vocoder to use for training.",
+        choices=["hifigan", "bigvgan", "bigvsan"],
+        required=True,
     )
     train_parser.add_argument(
         "--rvc_version",
@@ -1223,6 +1240,13 @@ def parse_arguments():
     )
     model_extract_parser.add_argument(
         "--model_name", type=str, help="Name of the model.", required=True
+    )
+    model_extract_parser.add_argument(
+        "--vocoder_type",
+        type=str,
+        help="Type of vocoder to use for the extracted model.",
+        choices=["hifigan", "bigvgan"],
+        required=True,
     )
     model_extract_parser.add_argument(
         "--sample_rate",
@@ -1452,6 +1476,7 @@ def main():
             run_extract_script(
                 model_name=args.model_name,
                 rvc_version=args.rvc_version,
+                vocoder_type=args.vocoder_type,
                 f0_method=args.f0_method,
                 pitch_guidance=args.pitch_guidance,
                 hop_length=args.hop_length,
@@ -1464,6 +1489,7 @@ def main():
         elif args.mode == "train":
             run_train_script(
                 model_name=args.model_name,
+                vocoder_type=args.vocoder_type,
                 rvc_version=args.rvc_version,
                 save_every_epoch=args.save_every_epoch,
                 save_only_latest=args.save_only_latest,
@@ -1491,6 +1517,7 @@ def main():
             run_model_extract_script(
                 pth_path=args.pth_path,
                 model_name=args.model_name,
+                vocoder_type=args.vocoder_type,
                 sample_rate=args.sample_rate,
                 pitch_guidance=args.pitch_guidance,
                 rvc_version=args.rvc_version,

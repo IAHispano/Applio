@@ -10,8 +10,7 @@ import numpy as np
 from multiprocessing import cpu_count, Pool
 from pydub import AudioSegment
 
-now_directory = os.getcwd()
-sys.path.append(now_directory)
+sys.path.append(os.getcwd())
 
 from rvc.lib.utils import load_audio
 from rvc.train.slicer import Slicer

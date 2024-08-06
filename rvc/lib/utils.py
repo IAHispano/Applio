@@ -11,8 +11,7 @@ import logging
 
 logging.getLogger("fairseq").setLevel(logging.WARNING)
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 
 def load_audio(file, sample_rate):
@@ -40,7 +39,7 @@ def format_title(title):
 
 
 def load_embedding(embedder_model, custom_embedder=None):
-    embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
+    embedder_root = os.path.join(os.getcwd(), "rvc", "models", "embedders")
     embedding_list = {
         "contentvec": os.path.join(embedder_root, "contentvec_base.pt"),
         "japanese-hubert-base": os.path.join(embedder_root, "japanese-hubert-base.pt"),

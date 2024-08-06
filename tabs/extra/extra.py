@@ -3,8 +3,7 @@ import gradio as gr
 import os
 import sys
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from tabs.extra.processing.processing import processing_tab
 from tabs.extra.analyzer.analyzer import analyzer_tab

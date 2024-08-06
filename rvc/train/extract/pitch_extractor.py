@@ -8,8 +8,7 @@ import numpy as np
 from multiprocessing import Pool
 from functools import partial
 
-current_directory = os.getcwd()
-sys.path.append(current_directory)
+sys.path.append(os.getcwd())
 
 from rvc.lib.utils import load_audio
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor

@@ -12,8 +12,7 @@ from rvc.lib.utils import format_title
 
 i18n = I18nAuto()
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 gradio_temp_dir = os.path.join(tempfile.gettempdir(), "gradio")
 
@@ -39,7 +38,7 @@ def save_drop_model(dropbox):
                 model_name = format_title(
                     file_name.split("_nprobe_1_")[1].split("_v2")[0]
                 )
-        model_path = os.path.join(now_dir, "logs", model_name)
+        model_path = os.path.join(os.getcwd(), "logs", model_name)
         if not os.path.exists(model_path):
             os.makedirs(model_path)
         if os.path.exists(os.path.join(model_path, file_name)):

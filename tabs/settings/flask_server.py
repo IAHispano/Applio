@@ -4,8 +4,7 @@ import gradio as gr
 from assets.i18n.i18n import I18nAuto
 import requests
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from assets.flask.server import start_flask, load_config_flask, save_config
 

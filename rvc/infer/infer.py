@@ -12,13 +12,12 @@ import noisereduce as nr
 from scipy.io import wavfile
 from audio_upscaler import upscale
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from rvc.infer.pipeline import Pipeline as VC
 from rvc.lib.utils import load_audio, load_embedding
 from rvc.lib.tools.split_audio import process_audio, merge_audio
-from rvc.lib.algorithm.synthesizers import Synthesizer
+from rvc.lib.algorithm.synthesizer import Synthesizer
 from rvc.configs.config import Config
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -360,12 +359,14 @@ class VoiceConverter:
             self.use_f0 = self.cpt.get("f0", 1)
 
             self.version = self.cpt.get("version", "v1")
-            self.text_enc_hidden_dim = 768 if self.version == "v2" else 256
+            self.text_enc_hidden_dim = 768 if not self.version == "v1" else 256
+            self.vocoder_type = self.cpt.get("vocoder_type", "hifigan")
             self.net_g = Synthesizer(
                 *self.cpt["config"],
                 use_f0=self.use_f0,
                 text_enc_hidden_dim=self.text_enc_hidden_dim,
                 is_half=self.config.is_half,
+                vocoder_type=self.vocoder_type
             )
             del self.net_g.enc_q
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)
