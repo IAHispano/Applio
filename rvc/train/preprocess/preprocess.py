@@ -1,10 +1,12 @@
 import os
 import sys
 import time
-import librosa
-import numpy as np
+import torchaudio
+import torch
+from torch import nn
 from scipy import signal
 from scipy.io import wavfile
+import numpy as np
 from multiprocessing import cpu_count, Pool
 from pydub import AudioSegment
 
@@ -19,6 +21,7 @@ input_root = str(sys.argv[2])
 sample_rate = int(sys.argv[3])
 percentage = float(sys.argv[4])
 num_processes = int(sys.argv[5]) if len(sys.argv) > 5 else cpu_count()
+gpus = sys.argv[6] if len(sys.argv) > 6 else "-"
 
 # Define constants
 OVERLAP = 0.3
@@ -34,7 +37,7 @@ WAVS16K_DIR = os.path.join(experiment_directory, "sliced_audios_16k")
 
 
 class PreProcess:
-    def __init__(self, sr: int, exp_dir: str, per: float):
+    def __init__(self, sr: int, exp_dir: str, per: float, device: str):
         self.slicer = Slicer(
             sr=sr,
             threshold=-42,
@@ -49,19 +52,21 @@ class PreProcess:
         )
         self.per = per
         self.exp_dir = exp_dir
+        self.device = device
 
-    def _normalize_audio(self, audio: np.ndarray):
+    def _normalize_audio(self, audio: torch.Tensor):
         """Normalizes the audio to the desired amplitude."""
-        tmp_max = np.abs(audio).max()
+        tmp_max = torch.abs(audio).max()
         if tmp_max > 2.5:
             return None  # Indicate audio should be filtered out
         return (audio / tmp_max * (MAX_AMPLITUDE * ALPHA)) + (1 - ALPHA) * audio
 
-    def _write_audio(self, audio: np.ndarray, filename: str, sr: int):
+    def _write_audio(self, audio: torch.Tensor, filename: str, sr: int):
         """Writes the audio to a WAV file."""
+        audio = audio.cpu().numpy()
         wavfile.write(filename, sr, audio.astype(np.float32))
 
-    def process_audio_segment(self, audio_segment: np.ndarray, idx0: int, idx1: int):
+    def process_audio_segment(self, audio_segment: torch.Tensor, idx0: int, idx1: int):
         """Processes a single audio segment."""
         normalized_audio = self._normalize_audio(audio_segment)
         if normalized_audio is None:
@@ -73,9 +78,10 @@ class PreProcess:
         self._write_audio(normalized_audio, gt_wav_path, self.sr)
 
         # Resample and write 16kHz audio
-        audio_16k = librosa.resample(
-            normalized_audio, orig_sr=self.sr, target_sr=SAMPLE_RATE_16K
-        )
+        resampler = torchaudio.transforms.Resample(
+            orig_freq=self.sr, new_freq=SAMPLE_RATE_16K
+        ).to(self.device)
+        audio_16k = resampler(normalized_audio.float())
         wav_16k_path = os.path.join(WAVS16K_DIR, f"{idx0}_{idx1}.wav")
         self._write_audio(audio_16k, wav_16k_path, SAMPLE_RATE_16K)
 
@@ -83,10 +89,13 @@ class PreProcess:
         """Processes a single audio file."""
         try:
             audio = load_audio(path, self.sr)
-            audio = signal.lfilter(self.b_high, self.a_high, audio)
+            audio = torch.tensor(
+                signal.lfilter(self.b_high, self.a_high, audio), device=self.device
+            ).float()
 
             idx1 = 0
-            for audio_segment in self.slicer.slice(audio):
+            for audio_segment in self.slicer.slice(audio.cpu().numpy()):
+                audio_segment = torch.tensor(audio_segment, device=self.device).float()
                 i = 0
                 while True:
                     start = int(self.sr * (self.per - OVERLAP) * i)
@@ -135,11 +144,21 @@ class PreProcess:
 
 
 def preprocess_training_set(
-    input_root: str, sr: int, num_processes: int, exp_dir: str, per: float
+    input_root: str,
+    sr: int,
+    num_processes: int,
+    exp_dir: str,
+    per: float,
+    gpu_devices: str,
 ):
     start_time = time.time()
-    pp = PreProcess(sr, exp_dir, per)
-    print(f"Starting preprocess with {num_processes} cores...")
+    if gpu_devices == "-" or not torch.cuda.is_available():
+        device = "cpu"
+    else:
+        os.environ["CUDA_VISIBLE_DEVICES"] = gpu_devices
+        device = "cuda"
+    pp = PreProcess(sr, exp_dir, per, device)
+    print(f"Starting preprocess with {num_processes} cores on {device}...")
     pp.process_audio_multiprocessing_input_directory(input_root, num_processes)
     elapsed_time = time.time() - start_time
     print(f"Preprocess completed in {elapsed_time:.2f} seconds.")
@@ -147,5 +166,10 @@ def preprocess_training_set(
 
 if __name__ == "__main__":
     preprocess_training_set(
-        input_root, sample_rate, num_processes, experiment_directory, percentage
+        input_root,
+        sample_rate,
+        num_processes,
+        experiment_directory,
+        percentage,
+        gpus,
     )
