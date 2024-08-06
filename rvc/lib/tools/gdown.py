@@ -260,7 +260,7 @@ def download(
         except FileURLRetrievalError as e:
             message = (
                 "Failed to retrieve file url:\n\n"
-                "{}\n\n" 
+                "{}\n\n"
                 "You may still be able to access the file from the browser:"
                 f"\n\n\t{url_origin}\n\n"
                 "but Gdown can't. Please check connections and permissions."
