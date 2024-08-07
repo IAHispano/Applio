@@ -28,7 +28,11 @@ try:
     np.random.shuffle(big_npy_idx)
     big_npy = big_npy[big_npy_idx]
 
-    if big_npy.shape[0] > 2e5 and index_algorithm == "Auto" or index_algorithm == "KMeans":
+    if (
+        big_npy.shape[0] > 2e5
+        and index_algorithm == "Auto"
+        or index_algorithm == "KMeans"
+    ):
         big_npy = (
             MiniBatchKMeans(
                 n_clusters=10000,
