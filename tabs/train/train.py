@@ -409,7 +409,7 @@ def train_tab():
                 inputs=[
                     model_name,
                     dataset_path,
-                    sampling_rate,
+                    sample_rate,
                     cpu_cores_preprocess,
                     gpu_preprocess,
                 ],
