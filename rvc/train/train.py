@@ -104,7 +104,7 @@ for key, value in config.model.discriminators.items():
     key = str(key)
     if key == "mssbcqtd":
         value["sample_rate"] = config.data.sample_rate
-    
+    print(key, value)
     if vocoder_type == "bigvsan":
         if isinstance(value, dict):
             discriminators[key] = supported_discriminators[key](**value, is_san=True)
