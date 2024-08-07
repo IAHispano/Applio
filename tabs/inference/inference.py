@@ -49,12 +49,6 @@ sup_audioext = {
     "ac3",
 }
 
-presets = {
-    i18n("Default"): {"pitch": 0, "filter_radius": 3, "index_rate": 0.75, "rms_mix_rate": 1, "protect": 0.5},
-    i18n("Music"): {"pitch": 0, "filter_radius": 3, "index_rate": 0.75, "rms_mix_rate": 0, "protect": 0.33},
-    i18n("Good for Anything"): {"pitch": 0, "filter_radius": 3, "index_rate": 0.75, "rms_mix_rate": 0.3, "protect": 0.33},
-}
-
 names = [
     os.path.join(root, file)
     for root, _, files in os.walk(model_root_relative, topdown=False)
@@ -89,9 +83,8 @@ custom_embedders = [
 ]
 
 def update_sliders(preset):
-    if preset == "Custom":
-        return 0, 3, 0.75, 1, 0.5
-    values = presets[preset]
+    with open(os.path.join(PRESETS_DIR, f"{preset}.json"), 'r', encoding='utf-8') as json_file:
+        values = json.load(json_file)
     return values["pitch"], values["filter_radius"], values["index_rate"], values["rms_mix_rate"], values["protect"]
 
 def export_presets(presets, file_path):
@@ -128,7 +121,7 @@ def import_presets_button(file_path):
     return [], {}, "No file selected for import."
 
 def list_json_files(directory):
-    return [f for f in os.listdir(directory) if f.endswith('.json')]
+    return [f.rsplit('.', 1)[0] for f in os.listdir(directory) if f.endswith('.json')]
 
 def refresh_presets():
     json_files = list_json_files(PRESETS_DIR)
@@ -401,24 +394,6 @@ def inference_tab():
                     value=False,
                     interactive=True,
                 )
-                preset_radio = gr.Radio(
-                    label=i18n("Select Preset"),
-                    info=i18n("Select a preset or create a custom one."),
-                    choices=list(presets.keys()) + ["Custom"],
-                    value="Default",
-                    interactive=True,
-                )
-                with gr.Row():
-                    preset_dropdown = gr.Dropdown(
-                        label=i18n("Select Custom Preset"),
-                        choices=list(presets.keys()),
-                        interactive=True,
-                        visible=False
-                    )
-                    refresh_button = gr.Button(i18n("Refresh Presets"), visible=False)
-                import_file = gr.File(label=i18n("Select file to import"), file_count="single", type="filepath", interactive=True, visible=False)
-                import_file.change(import_presets_button, inputs=import_file, outputs=[preset_dropdown])
-                refresh_button.click(refresh_presets, outputs=preset_dropdown)
                 pitch = gr.Slider(
                     minimum=-24,
                     maximum=24,
@@ -471,16 +446,22 @@ def inference_tab():
                     value=0.5,
                     interactive=True,
                 )
-                with gr.Row():
-                    preset_name_input = gr.Textbox(label=i18n("Preset Name"), placeholder=i18n("Enter preset name"), visible=False)
-                    export_button = gr.Button(i18n("Export Preset"), visible=False)
-                export_button.click(export_presets_button, inputs=[preset_name_input, pitch, filter_radius, index_rate, rms_mix_rate, protect], outputs=[])
-                preset_radio.change(update_visibility, inputs=preset_radio, outputs=[preset_dropdown, import_file, preset_name_input, export_button, refresh_button])
-                preset_radio.change(
-                    fn=update_sliders,
-                    inputs=[preset_radio],
-                    outputs=[pitch, filter_radius, index_rate, rms_mix_rate, protect],
-                )
+                with gr.Accordion(i18n("Preset Settings"), open=False):
+                    with gr.Row():
+                        preset_dropdown = gr.Dropdown(
+                            label=i18n("Select Custom Preset"),
+                            choices=list_json_files(PRESETS_DIR),
+                            interactive=True
+                        )
+                        refresh_button = gr.Button(i18n("Refresh Presets"))
+                    import_file = gr.File(label=i18n("Select file to import"), file_count="single", type="filepath", interactive=True)
+                    import_file.change(import_presets_button, inputs=import_file, outputs=[preset_dropdown])
+                    refresh_button.click(refresh_presets, outputs=preset_dropdown)
+                    preset_dropdown.change(update_sliders, inputs=preset_dropdown, outputs=[pitch, filter_radius, index_rate, rms_mix_rate, protect])
+                    with gr.Row():
+                        preset_name_input = gr.Textbox(label=i18n("Preset Name"), placeholder=i18n("Enter preset name"))
+                        export_button = gr.Button(i18n("Export Preset"))
+                    export_button.click(export_presets_button, inputs=[preset_name_input, pitch, filter_radius, index_rate, rms_mix_rate, protect], outputs=[])
                 hop_length = gr.Slider(
                     minimum=1,
                     maximum=512,
@@ -632,24 +613,6 @@ def inference_tab():
                     value=False,
                     interactive=True,
                 )
-                preset_radio = gr.Radio(
-                    label=i18n("Select Preset"),
-                    info=i18n("Select a preset or create a custom one."),
-                    choices=list(presets.keys()) + ["Custom"],
-                    value="Default",
-                    interactive=True,
-                )
-                with gr.Row():
-                    preset_dropdown = gr.Dropdown(
-                        label=i18n("Select Custom Preset"),
-                        choices=list(presets.keys()),
-                        interactive=True,
-                        visible=False
-                    )
-                    refresh_button = gr.Button(i18n("Refresh Presets"), visible=False)
-                import_file = gr.File(label=i18n("Select file to import"), file_count="single", type="filepath", interactive=True, visible=False)
-                import_file.change(import_presets_button, inputs=import_file, outputs=[preset_dropdown])
-                refresh_button.click(refresh_presets, outputs=preset_dropdown)
                 pitch_batch = gr.Slider(
                     minimum=-24,
                     maximum=24,
@@ -702,16 +665,22 @@ def inference_tab():
                     value=0.5,
                     interactive=True,
                 )
-                with gr.Row():
-                    preset_name_input = gr.Textbox(label=i18n("Preset Name"), placeholder=i18n("Enter preset name"), visible=False)
-                    export_button = gr.Button(i18n("Export Preset"), visible=False)
-                export_button.click(export_presets_button, inputs=[preset_name_input, pitch_batch, filter_radius_batch, index_rate_batch, rms_mix_rate_batch, protect_batch], outputs=[])
-                preset_radio.change(update_visibility, inputs=preset_radio, outputs=[preset_dropdown, import_file, preset_name_input, export_button, refresh_button])
-                preset_radio.change(
-                    fn=update_sliders,
-                    inputs=[preset_radio],
-                    outputs=[pitch_batch, filter_radius_batch, index_rate_batch, rms_mix_rate_batch, protect_batch],
-                )
+                with gr.Accordion(i18n("Preset Settings"), open=False):
+                    with gr.Row():
+                        preset_dropdown = gr.Dropdown(
+                            label=i18n("Select Custom Preset"),
+                            choices=list_json_files(PRESETS_DIR),
+                            interactive=True
+                        )
+                        refresh_button = gr.Button(i18n("Refresh Presets"))
+                    import_file = gr.File(label=i18n("Select file to import"), file_count="single", type="filepath", interactive=True)
+                    import_file.change(import_presets_button, inputs=import_file, outputs=[preset_dropdown])
+                    refresh_button.click(refresh_presets, outputs=preset_dropdown)
+                    preset_dropdown.change(update_sliders, inputs=preset_dropdown, outputs=[pitch_batch, filter_radius_batch, index_rate_batch, rms_mix_rate_batch, protect_batch])
+                    with gr.Row():
+                        preset_name_input = gr.Textbox(label=i18n("Preset Name"), placeholder=i18n("Enter preset name"))
+                        export_button = gr.Button(i18n("Export Preset"))
+                    export_button.click(export_presets_button, inputs=[preset_name_input, pitch, filter_radius, index_rate, rms_mix_rate, protect], outputs=[])
                 hop_length_batch = gr.Slider(
                     minimum=1,
                     maximum=512,
