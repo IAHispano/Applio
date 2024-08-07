@@ -340,7 +340,7 @@ def run_train_script(
     overtraining_threshold: int,
     pretrained: bool,
     sync_graph: bool,
-    kmeans: str,
+    index_algorithm: str,
     cache_data_in_gpu: bool,
     custom_pretrained: bool = False,
     g_pretrained_path: str = None,
@@ -390,19 +390,19 @@ def run_train_script(
         ),
     ]
     subprocess.run(command)
-    run_index_script(model_name, rvc_version, kmeans)
+    run_index_script(model_name, rvc_version, index_algorithm)
     return f"Model {model_name} trained successfully."
 
 
 # Index
-def run_index_script(model_name: str, rvc_version: str, kmeans: str):
+def run_index_script(model_name: str, rvc_version: str, index_algorithm: str):
     index_script_path = os.path.join("rvc", "train", "process", "extract_index.py")
     command = [
         python,
         index_script_path,
         os.path.join(logs_path, model_name),
         rvc_version,
-        kmeans,
+        index_algorithm,
     ]
 
     subprocess.run(command)
@@ -1209,11 +1209,12 @@ def parse_arguments():
         default="v2",
     )
     index_parser.add_argument(
-        "--faiss_kmeans",
+        "--index_algorithm",
         type=str,
         choices=["Auto", "Faiss", "KMeans"],
         help="Choose the method for generating the index file.",
         default="Auto",
+        required=False,
     )
 
     # Parser for 'model_extract' mode
@@ -1487,7 +1488,7 @@ def main():
             run_index_script(
                 model_name=args.model_name,
                 rvc_version=args.rvc_version,
-                kmeans=args.kmeans,
+                index_algorithm=args.index_algorithm,
             )
         elif args.mode == "model_extract":
             run_model_extract_script(
