@@ -781,15 +781,12 @@ def train_and_evaluate(
         float: Updated smoothed value.
         """
         if not smoothed_loss_history:
-            # If the list is empty, initialize with the first value
             smoothed_value = new_value
         else:
-            # Update the smoothed value
             smoothed_value = smoothing * smoothed_loss_history[-1] + (1 - smoothing) * new_value
         smoothed_loss_history.append(smoothed_value)
         return smoothed_value
 
-    # Inside the training loop
     if overtraining_detector:
         # Add the current loss to the history
         current_loss = float(lowest_value["value"])
