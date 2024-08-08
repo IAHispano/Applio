@@ -1,40 +1,53 @@
 import torch
 
 
-def feature_loss(fmap_r, fmap_g):
+def feature_loss(fmap_r, fmap_g, is_san=False):
     """
     Compute the feature loss between reference and generated feature maps.
 
     Args:
         fmap_r (list of torch.Tensor): List of reference feature maps.
         fmap_g (list of torch.Tensor): List of generated feature maps.
+        is_san (bool): Whether to use the SAN loss calculation. Defaults to False.
     """
     loss = 0
     for dr, dg in zip(fmap_r, fmap_g):
         for rl, gl in zip(dr, dg):
-            rl = rl.float().detach()
-            gl = gl.float()
+            if not is_san:
+                rl = rl.float().detach()
+                gl = gl.float()
             loss += torch.mean(torch.abs(rl - gl))
 
     return loss * 2
 
 
-def discriminator_loss(disc_real_outputs, disc_generated_outputs):
+def discriminator_loss(disc_real_outputs, disc_generated_outputs, is_san=False):
     """
     Compute the discriminator loss for real and generated outputs.
 
     Args:
         disc_real_outputs (list of torch.Tensor): List of discriminator outputs for real samples.
         disc_generated_outputs (list of torch.Tensor): List of discriminator outputs for generated samples.
+        is_san (bool): Whether to use the SAN loss calculation. Defaults to False.
     """
     loss = 0
     r_losses = []
     g_losses = []
     for dr, dg in zip(disc_real_outputs, disc_generated_outputs):
-        dr = dr.float()
-        dg = dg.float()
-        r_loss = torch.mean((1 - dr) ** 2)
-        g_loss = torch.mean(dg**2)
+        if is_san:
+            dr_fun, dr_dir = dr
+            dg_fun, dg_dir = dg
+            r_loss_fun = torch.mean(torch.nn.functional.softplus(1-dr_fun)**2)
+            g_loss_fun = torch.mean(torch.nn.functional.softplus(dg_fun)**2)
+            r_loss_dir = torch.mean(torch.nn.functional.softplus(1-dr_dir)**2)
+            g_loss_dir = torch.mean(-torch.nn.functional.softplus(1-dg_dir)**2)
+            r_loss = r_loss_fun + r_loss_dir
+            g_loss = g_loss_fun + g_loss_dir
+        else:
+            dr = dr.float()
+            dg = dg.float()
+            r_loss = torch.mean((1 - dr) ** 2)
+            g_loss = torch.mean(dg**2)
         loss += r_loss + g_loss
         r_losses.append(r_loss.item())
         g_losses.append(g_loss.item())
@@ -42,18 +55,22 @@ def discriminator_loss(disc_real_outputs, disc_generated_outputs):
     return loss, r_losses, g_losses
 
 
-def generator_loss(disc_outputs):
+def generator_loss(disc_outputs, is_san=False):
     """
     Compute the generator loss based on discriminator outputs.
 
     Args:
         disc_outputs (list of torch.Tensor): List of discriminator outputs for generated samples.
+        is_san (bool): Whether to use the SAN loss calculation. Defaults to False.
     """
     loss = 0
     gen_losses = []
     for dg in disc_outputs:
-        dg = dg.float()
-        l = torch.mean((1 - dg) ** 2)
+        if is_san:
+            l = torch.mean(torch.nn.functional.softplus(1 - dg) ** 2)
+        else:
+            dg = dg.float()
+            l = torch.mean((1 - dg) ** 2)
         gen_losses.append(l)
         loss += l
 

@@ -99,7 +99,7 @@ supported_discriminators = {
     "mssbcqtd": MultiScaleSubbandCQTDiscriminator,
 }
 discriminators = dict()
-
+is_san = vocoder_type == "bigvsan"
 for key, value in config.model.discriminators.items():
     key = str(key)
     if key == "mssbcqtd":
@@ -108,7 +108,7 @@ for key, value in config.model.discriminators.items():
         value["use_spectral_norm"] = config.model.use_spectral_norm
     
     
-    if vocoder_type == "bigvsan":
+    if is_san:
         if value is True:
             discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm, is_san=True)
         else:
@@ -681,7 +681,7 @@ def train_and_evaluate(
                 y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
                 with autocast(enabled=False):
                     loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(
-                        y_d_hat_r, y_d_hat_g
+                        y_d_hat_r, y_d_hat_g, is_san=is_san
                     )
 
             # Discriminator backward and update
@@ -702,8 +702,8 @@ def train_and_evaluate(
                         kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
                     )
 
-                    loss_fm = feature_loss(fmap_r, fmap_g)
-                    loss_gen, losses_gen = generator_loss(y_d_hat_g)
+                    loss_fm = feature_loss(fmap_r, fmap_g, is_san=is_san)
+                    loss_gen, losses_gen = generator_loss(y_d_hat_g, is_san=is_san)
                     loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
 
                     if loss_gen_all < lowest_value["value"]:
