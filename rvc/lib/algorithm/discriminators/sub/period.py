@@ -9,6 +9,7 @@ from rvc.lib.algorithm.residuals import LRELU_SLOPE
 class DiscriminatorP(nn.Module):
     def __init__(self, periods, kernel_size=5, stride=3, is_san=False, use_spectral_norm=False):
         super(DiscriminatorP, self).__init__()
+        self.is_san = is_san
         self.period = periods
         self.use_spectral_norm = use_spectral_norm
         norm_f = weight_norm if use_spectral_norm == False else spectral_norm
@@ -66,7 +67,7 @@ class DiscriminatorP(nn.Module):
                 nn.Conv2d(1024, 1, kernel_size=(3, 1), stride=1, padding=(1, 0))
             )
 
-    def forward(self, x, is_san=False):
+    def forward(self, x):
         fmap = []
         b, c, t = x.shape
         if t % self.period != 0:
@@ -78,11 +79,11 @@ class DiscriminatorP(nn.Module):
             x = layer(x)
             x = F.leaky_relu(x, LRELU_SLOPE)
             fmap.append(x)
-        if is_san:
-            x = self.conv_post(x, is_san=is_san)
+        if self.is_san:
+            x = self.conv_post(x, is_san=self.is_san)
         else:
             x = self.conv_post(x)
-        if is_san:
+        if self.is_san:
             x_fun, x_dir = x
             fmap.append(x_fun)
             x_fun = torch.flatten(x_fun, 1, -1)

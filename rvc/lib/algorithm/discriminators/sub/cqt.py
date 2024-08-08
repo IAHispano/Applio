@@ -27,7 +27,7 @@ class DiscriminatorCQT(nn.Module):
         is_san=False,
     ):
         super().__init__()
-
+        self.is_san = is_san
         self.filters = filters
         self.max_filters = max_filters
         self.filters_scale = filters_scale
@@ -142,7 +142,7 @@ class DiscriminatorCQT(nn.Module):
             ((kernel_size[1] - 1) * dilation[1]) // 2,
         )
 
-    def forward(self, x, is_san=False):
+    def forward(self, x):
         fmap = []
 
         if self.cqtd_normalize_volume:
@@ -181,12 +181,12 @@ class DiscriminatorCQT(nn.Module):
             latent_z = self.activation(latent_z)
             fmap.append(latent_z)
 
-        if is_san:
-            x = self.conv_post(latent_z, is_san=is_san)
+        if self.is_san:
+            x = self.conv_post(latent_z, is_san=self.is_san)
         else:
             x = self.conv_post(latent_z)
 
-        if is_san:
+        if self.is_san:
             x_fun, x_dir = x
             fmap.append(x_fun)
             x_fun = torch.flatten(x_fun, 1, -1)

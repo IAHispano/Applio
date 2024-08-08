@@ -11,6 +11,7 @@ class DiscriminatorS(torch.nn.Module):
     def __init__(self, use_spectral_norm=False, is_san=False):
         super(DiscriminatorS, self).__init__()
         norm_f = weight_norm if not use_spectral_norm else spectral_norm
+        self.is_san = is_san
         self.convs = nn.ModuleList(
             [
                 norm_f(nn.Conv1d(1, 128, 15, 1, padding=7)),
@@ -27,17 +28,17 @@ class DiscriminatorS(torch.nn.Module):
         else:
             self.conv_post = weight_norm(nn.Conv1d(1024, 1, 3, 1, padding=1))
 
-    def forward(self, x, is_san=False):
+    def forward(self, x):
         fmap = []
         for layer in self.convs:
             x = layer(x)
             x = F.leaky_relu(x, LRELU_SLOPE)
             fmap.append(x)
-        if is_san:
-            x = self.conv_post(x, is_san=is_san)
+        if self.is_san:
+            x = self.conv_post(x, is_san=self.is_san)
         else:
             x = self.conv_post(x)
-        if is_san:
+        if self.is_san:
             x_fun, x_dir = x
             fmap.append(x_fun)
             x_fun = torch.flatten(x_fun, 1, -1)

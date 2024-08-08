@@ -23,6 +23,7 @@ class DiscriminatorB(nn.Module):
         is_san=False,
     ):
         super().__init__()
+        self.is_san = is_san
         self.window_length = window_length
         self.hop_factor = hop_factor
         self.spec_fn = Spectrogram(
@@ -79,7 +80,7 @@ class DiscriminatorB(nn.Module):
         x_bands = [x[..., b[0] : b[1]] for b in self.bands]
         return x_bands
 
-    def forward(self, x: torch.Tensor, is_san: bool = False):
+    def forward(self, x: torch.Tensor):
         x_bands = self.spectrogram(x.squeeze(1))
         fmap = []
         x = []
@@ -93,12 +94,12 @@ class DiscriminatorB(nn.Module):
             x.append(band)
 
         x = torch.cat(x, dim=-1)
-        if is_san:
-            x = self.conv_post(x, is_san=is_san)
+        if self.is_san:
+            x = self.conv_post(x, is_san=self.is_san)
         else:
             x = self.conv_post(x)
 
-        if is_san:
+        if self.is_san:
             x_fun, x_dir = x
             fmap.append(x_fun)
             x_fun = torch.flatten(x_fun, 1, -1)
