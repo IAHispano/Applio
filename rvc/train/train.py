@@ -115,6 +115,7 @@ for key, value in config.model.discriminators.items():
             discriminators[key] = supported_discriminators[key](**value)
         elif value is True:
             discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm)
+print(discriminators)
 print(list(discriminators.values()))
 MultiDiscriminator = CombinedDiscriminator(list(discriminators.values()))
 
