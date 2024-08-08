@@ -224,10 +224,10 @@ class MultiScaleSubbandCQTDiscriminator(nn.Module):
                     dilations=dilations,
                     in_channels=in_channels,
                     out_channels=out_channels,
-                    hop_length=hop_lengths[i],
+                    hop_lengths=hop_lengths[i],
                     n_octaves=n_octaves[i],
                     sample_rate=sample_rate,
-                    bins_per_octave=bins_per_octaves[i],
+                    bins_per_octaves=bins_per_octaves[i],
                     is_san=is_san,
                 )
                 for i in range(len(hop_lengths))
