@@ -1,0 +1,7 @@
+{
+    "pitch": 0,
+    "filter_radius": 3,
+    "index_rate": 0.75,
+    "rms_mix_rate": 0.25,
+    "protect": 0.33
+}
