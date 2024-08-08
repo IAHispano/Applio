@@ -7,9 +7,9 @@ from rvc.lib.algorithm.residuals import LRELU_SLOPE
 
 
 class DiscriminatorP(nn.Module):
-    def __init__(self, period, kernel_size=5, stride=3, is_san=False, use_spectral_norm=False):
+    def __init__(self, periods, kernel_size=5, stride=3, is_san=False, use_spectral_norm=False):
         super(DiscriminatorP, self).__init__()
-        self.period = period
+        self.period = periods
         self.use_spectral_norm = use_spectral_norm
         norm_f = weight_norm if use_spectral_norm == False else spectral_norm
         self.convs = nn.ModuleList(
