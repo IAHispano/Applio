@@ -105,18 +105,20 @@ for key, value in config.model.discriminators.items():
     key = str(key)
     if key == "mssbcqtd":
         value["sample_rate"] = config.data.sample_rate
+    else:
+        value["use_spectral_norm"] = config.model.use_spectral_norm
     
     
     if vocoder_type == "bigvsan":
         if value is True:
             discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm, is_san=True)
         else:
-            discriminators[key] = supported_discriminators[key](**value, use_spectral_norm=config.model.use_spectral_norm, is_san=True)
+            discriminators[key] = supported_discriminators[key](**value, is_san=True)
     else:
         if value is True:
             discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm)
         else:
-            discriminators[key] = supported_discriminators[key](**value, use_spectral_norm=config.model.use_spectral_norm)
+            discriminators[key] = supported_discriminators[key](**value)
 print(list(discriminators.values()))
 MultiDiscriminator = CombinedDiscriminator(list(discriminators.values()))
 
