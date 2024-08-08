@@ -90,6 +90,7 @@ from rvc.lib.algorithm.discriminators.sub.__init__ import (
     DiscriminatorB,
     DiscriminatorCQT
 )
+
 print(config)
 from rvc.lib.algorithm.discriminators.discriminator import CombinedDiscriminator
 supported_discriminators = {
@@ -104,19 +105,18 @@ for key, value in config.model.discriminators.items():
     key = str(key)
     if key == "mssbcqtd":
         value["sample_rate"] = config.data.sample_rate
-    print(f"{key} -- {value} -- {type(key)}/{type(value)}")
+    
+    
     if vocoder_type == "bigvsan":
-        if isinstance(value, dict):
-            discriminators[key] = supported_discriminators[key](**value, is_san=True)
-            print(discriminators)
-        elif value is True:
+        if value is True:
             discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm, is_san=True)
+        else:
+            discriminators[key] = supported_discriminators[key](**value, is_san=True)
     else:
-        if isinstance(value, dict):
-            discriminators[key] = supported_discriminators[key](**value)
-        elif value is True:
+        if value is True:
             discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm)
-print(discriminators)
+        else:
+            discriminators[key] = supported_discriminators[key](**value)
 print(list(discriminators.values()))
 MultiDiscriminator = CombinedDiscriminator(list(discriminators.values()))
 
