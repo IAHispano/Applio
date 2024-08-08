@@ -266,8 +266,8 @@ def run(
         rank (int): Rank of the current GPU.
         n_gpus (int): Total number of GPUs.
     """
-    global global_step, smoothed_loss
-    smoothed_loss = None
+    global global_step
+    
     if rank == 0:
         writer = SummaryWriter(log_dir=experiment_dir)
         writer_eval = SummaryWriter(log_dir=os.path.join(experiment_dir, "eval"))
