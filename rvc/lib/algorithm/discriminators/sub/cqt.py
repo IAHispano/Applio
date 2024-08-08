@@ -7,7 +7,8 @@ from nnAudio import features
 from torch.nn.utils.parametrizations import weight_norm
 from torchaudio.transforms import Resample
 from rvc.lib.algorithm.layers.san import SANConv2d
-
+import logging
+logging.getLogger("nnAudio").setLevel(logging.DEBUG)
 
 class DiscriminatorCQT(nn.Module):
     def __init__(

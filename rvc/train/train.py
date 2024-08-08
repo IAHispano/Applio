@@ -91,7 +91,6 @@ from rvc.lib.algorithm.discriminators.sub.__init__ import (
     MultiScaleSubbandCQTDiscriminator
 )
 
-print(config)
 from rvc.lib.algorithm.discriminators.discriminator import CombinedDiscriminator
 supported_discriminators = {
     "mpd": MultiPeriodDiscriminator,
@@ -119,7 +118,7 @@ for key, value in config.model.discriminators.items():
             discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm)
         else:
             discriminators[key] = supported_discriminators[key](**value)
-print(list(discriminators.values()))
+
 MultiDiscriminator = CombinedDiscriminator(list(discriminators.values()))
 
 torch.backends.cudnn.deterministic = False
@@ -133,7 +132,7 @@ last_loss_gen_all = 0
 import logging
 
 logging.getLogger("torch").setLevel(logging.ERROR)
-logging.getLogger("nnAudio").setLevel(logging.ERROR)
+logging.getLogger("nnAudio").setLevel(logging.DEBUG)
 
 class EpochRecorder:
     """
