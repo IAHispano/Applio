@@ -181,10 +181,7 @@ class DiscriminatorCQT(nn.Module):
             latent_z = self.activation(latent_z)
             fmap.append(latent_z)
 
-        if self.is_san:
-            x = self.conv_post(latent_z, is_san=self.is_san)
-        else:
-            x = self.conv_post(latent_z)
+        x = self.conv_post(latent_z)
 
         if self.is_san:
             x_fun, x_dir = x

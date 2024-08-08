@@ -94,10 +94,7 @@ class DiscriminatorB(nn.Module):
             x.append(band)
 
         x = torch.cat(x, dim=-1)
-        if self.is_san:
-            x = self.conv_post(x, is_san=self.is_san)
-        else:
-            x = self.conv_post(x)
+        x = self.conv_post(x)
 
         if self.is_san:
             x_fun, x_dir = x

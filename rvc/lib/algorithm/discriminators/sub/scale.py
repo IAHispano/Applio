@@ -34,10 +34,7 @@ class DiscriminatorS(torch.nn.Module):
             x = layer(x)
             x = F.leaky_relu(x, LRELU_SLOPE)
             fmap.append(x)
-        if self.is_san:
-            x = self.conv_post(x, is_san=self.is_san)
-        else:
-            x = self.conv_post(x)
+        x = self.conv_post(x)
         if self.is_san:
             x_fun, x_dir = x
             fmap.append(x_fun)
