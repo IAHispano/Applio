@@ -214,7 +214,7 @@ class MultiScaleSubbandCQTDiscriminator(nn.Module):
         is_san=False,
     ):
         super().__init__()
-
+        self.is_san = is_san
         self.discriminators = nn.ModuleList(
             [
                 DiscriminatorCQT(
@@ -235,7 +235,7 @@ class MultiScaleSubbandCQTDiscriminator(nn.Module):
         )
 
     def forward(
-        self, y, y_hat, is_san=False
+        self, y, y_hat
     ) -> Tuple[
         List[torch.Tensor],
         List[torch.Tensor],
@@ -248,8 +248,8 @@ class MultiScaleSubbandCQTDiscriminator(nn.Module):
         fmap_gs = []
 
         for disc in self.discriminators:
-            y_d_r, fmap_r = disc(y, is_san=is_san)
-            y_d_g, fmap_g = disc(y_hat, is_san=is_san)
+            y_d_r, fmap_r = disc(y, is_san=self.is_san)
+            y_d_g, fmap_g = disc(y_hat, is_san=self.is_san)
             y_d_rs.append(y_d_r)
             fmap_rs.append(fmap_r)
             y_d_gs.append(y_d_g)

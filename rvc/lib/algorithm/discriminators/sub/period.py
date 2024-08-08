@@ -97,18 +97,19 @@ class DiscriminatorP(nn.Module):
 class MultiPeriodDiscriminator(torch.nn.Module):
     def __init__(self, periods=[2, 3, 5, 7, 11], is_san=False):
         super(MultiPeriodDiscriminator, self).__init__()
+        self.is_san = is_san
         self.discriminators = nn.ModuleList(
             [DiscriminatorP(p, is_san=is_san) for p in periods]
         )
 
-    def forward(self, y, y_hat, is_san=False):
+    def forward(self, y, y_hat):
         y_d_rs = []
         y_d_gs = []
         fmap_rs = []
         fmap_gs = []
         for d in self.discriminators:
-            y_d_r, fmap_r = d(y, is_san=is_san)
-            y_d_g, fmap_g = d(y_hat, is_san=is_san)
+            y_d_r, fmap_r = d(y, is_san=self.is_san)
+            y_d_g, fmap_g = d(y_hat, is_san=self.is_san)
             y_d_rs.append(y_d_r)
             fmap_rs.append(fmap_r)
             y_d_gs.append(y_d_g)

@@ -85,19 +85,19 @@ os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
 n_gpus = len(gpus.split("-"))
 
 from rvc.lib.algorithm.discriminators.sub.__init__ import (
-    DiscriminatorP,
-    DiscriminatorS,
-    DiscriminatorB,
-    DiscriminatorCQT
+    MultiPeriodDiscriminator,
+    MultiScaleDiscriminator,
+    MultiBandDiscriminator,
+    MultiScaleSubbandCQTDiscriminator
 )
 
 print(config)
 from rvc.lib.algorithm.discriminators.discriminator import CombinedDiscriminator
 supported_discriminators = {
-    "mpd": DiscriminatorP,
-    "msd": DiscriminatorS,
-    "mbd": DiscriminatorB,
-    "mssbcqtd": DiscriminatorCQT,
+    "mpd": MultiPeriodDiscriminator,
+    "msd": MultiScaleDiscriminator,
+    "mbd": MultiBandDiscriminator,
+    "mssbcqtd": MultiScaleSubbandCQTDiscriminator,
 }
 discriminators = dict()
 

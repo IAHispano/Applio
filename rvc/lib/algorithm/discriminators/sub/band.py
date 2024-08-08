@@ -120,12 +120,13 @@ class MultiBandDiscriminator(nn.Module):
         """
         super().__init__()
         # fft_sizes (list[int]): Tuple of window lengths for FFT. Defaults to [2048, 1024, 512] if not set in h.
+        self.is_san = is_san
         self.discriminators = nn.ModuleList(
             [DiscriminatorB(window_length=w, is_san=is_san) for w in fft_sizes]
         )
 
     def forward(
-        self, y, y_hat, is_san=False
+        self, y, y_hat
     ) -> Tuple[
         List[torch.Tensor],
         List[torch.Tensor],
@@ -138,8 +139,8 @@ class MultiBandDiscriminator(nn.Module):
         fmap_gs = []
 
         for d in self.discriminators:
-            y_d_r, fmap_r = d(x=y, is_san=is_san)
-            y_d_g, fmap_g = d(x=y_hat, is_san=is_san)
+            y_d_r, fmap_r = d(x=y, is_san=self.is_san)
+            y_d_g, fmap_g = d(x=y_hat, is_san=self.is_san)
             y_d_rs.append(y_d_r)
             fmap_rs.append(fmap_r)
             y_d_gs.append(y_d_g)
