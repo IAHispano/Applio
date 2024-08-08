@@ -18,9 +18,9 @@ class DiscriminatorCQT(nn.Module):
         dilations,
         in_channels,
         out_channels,
-        hop_length,
+        hop_lengths,
         n_octaves,
-        bins_per_octave,
+        bins_per_octaves,
         sample_rate,
         cqtd_normalize_volume=False,
         is_san=False,
@@ -37,9 +37,9 @@ class DiscriminatorCQT(nn.Module):
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.fs = sample_rate
-        self.hop_length = hop_length
+        self.hop_length = hop_lengths
         self.n_octaves = n_octaves
-        self.bins_per_octave = bins_per_octave
+        self.bins_per_octave = bins_per_octaves
 
         self.cqt_transform = features.cqt.CQT2010v2(
             sr=self.fs * 2,
