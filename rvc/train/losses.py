@@ -66,13 +66,24 @@ def generator_loss(disc_outputs, is_san=False):
     loss = 0
     gen_losses = []
     for dg in disc_outputs:
-        if is_san:
-            l = torch.mean(torch.nn.functional.softplus(1 - dg) ** 2)
+        if isinstance(dg, list):
+            sub_loss = 0
+            for sub_dg in dg:
+                if is_san:
+                    l = torch.mean(torch.nn.functional.softplus(1 - sub_dg) ** 2)
+                else:
+                    l = torch.mean((1 - sub_dg.float()) ** 2)
+                sub_loss += l
+            gen_losses.append(sub_loss)
+            loss += sub_loss
         else:
-            dg = dg.float()
-            l = torch.mean((1 - dg) ** 2)
-        gen_losses.append(l)
-        loss += l
+            if is_san:
+                l = torch.mean(torch.nn.functional.softplus(1 - dg) ** 2)
+            else:
+                dg = dg.float()
+                l = torch.mean((1 - dg) ** 2)
+            gen_losses.append(l)
+            loss += l
 
     return loss, gen_losses
 
