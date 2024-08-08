@@ -140,8 +140,8 @@ class MultiBandDiscriminator(nn.Module):
         fmap_gs = []
 
         for d in self.discriminators:
-            y_d_r, fmap_r = d(x=y, is_san=self.is_san)
-            y_d_g, fmap_g = d(x=y_hat, is_san=self.is_san)
+            y_d_r, fmap_r = d(x=y)
+            y_d_g, fmap_g = d(x=y_hat)
             y_d_rs.append(y_d_r)
             fmap_rs.append(fmap_r)
             y_d_gs.append(y_d_g)
