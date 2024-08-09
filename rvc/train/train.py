@@ -96,7 +96,6 @@ smoothed_loss_gen_history = []
 loss_disc_history = []
 smoothed_loss_disc_history = []
 training_file_path = f"{experiment_dir}/training_data.json"
-overtrain_save_epoch = 0
 
 # Disable logging
 import logging
@@ -137,7 +136,6 @@ def main():
         """
         Starts the training process with multi-GPU support.
         """
-        global training_file_path
         children = []
         pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
         with open(pid_file_path, "w") as pid_file:
