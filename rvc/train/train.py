@@ -91,8 +91,12 @@ torch.backends.cudnn.benchmark = False
 global_step = 0
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 last_loss_gen_all = 0
-loss_history = []
-smoothed_loss_history = []
+loss_gen_history = []
+smoothed_loss_gen_history = []
+loss_disc_history = []
+smoothed_loss_disc_history = []
+training_file_path = f"{experiment_dir}/training_data.json"
+overtrain_save_epoch = 0
 
 # Disable logging
 import logging
@@ -125,6 +129,7 @@ def main():
     """
     Main function to start the training process.
     """
+    global training_file_path, last_loss_gen_all, lowest_value, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
 
@@ -132,6 +137,7 @@ def main():
         """
         Starts the training process with multi-GPU support.
         """
+        global training_file_path
         children = []
         pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
         with open(pid_file_path, "w") as pid_file:
@@ -156,6 +162,54 @@ def main():
 
         for i in range(n_gpus):
             children[i].join()
+
+    def load_from_json(file_path):
+        """
+        Load data from a JSON file.
+
+        Args:
+            file_path (str): The path to the JSON file.
+
+        Returns:
+            Tuple: A tuple containing the following lists:
+                - loss_disc_history (list): The loss discriminator history.
+                - smoothed_loss_disc_history (list): The smoothed loss discriminator history.
+                - loss_gen_history (list): The loss generator history.
+                - smoothed_loss_gen_history (list): The smoothed loss generator history.
+        """
+        if os.path.exists(file_path):
+            with open(file_path, "r") as f:
+                data = json.load(f)
+                return (
+                    data.get("loss_disc_history", []),
+                    data.get("smoothed_loss_disc_history", []),
+                    data.get("loss_gen_history", []),
+                    data.get("smoothed_loss_gen_history", []),
+                )
+        return [], [], [], []
+
+    def continue_overtrain_detector(training_file_path):
+        """
+        Continues the overtrain detector by loading the training history from a JSON file.
+
+        Parameters:
+            training_file_path (str): The file path of the JSON file containing the training history.
+
+        Returns:
+            tuple: A tuple containing the following training history:
+                - loss_disc_history (list): The history of discriminator loss.
+                - smoothed_loss_disc_history (list): The history of smoothed discriminator loss.
+                - loss_gen_history (list): The history of generator loss.
+                - smoothed_loss_gen_history (list): The history of smoothed generator loss.
+        """
+        if overtraining_detector:
+            if os.path.exists(training_file_path):
+                (
+                    loss_disc_history,
+                    smoothed_loss_disc_history,
+                    loss_gen_history,
+                    smoothed_loss_gen_history,
+                ) = load_from_json(training_file_path)
 
     n_gpus = torch.cuda.device_count()
 
@@ -241,10 +295,12 @@ def main():
         print("Successfully synchronized graphs!")
         custom_total_epoch = total_epoch
         custom_save_every_weights = save_every_weights
+        continue_overtrain_detector(training_file_path)
         start()
     else:
         custom_total_epoch = total_epoch
         custom_save_every_weights = save_every_weights
+        continue_overtrain_detector(training_file_path)
         start()
 
 
@@ -462,7 +518,7 @@ def train_and_evaluate(
         writers (list): List of TensorBoard writers [writer, writer_eval].
         cache (list): List to cache data in GPU memory.
     """
-    global global_step, last_loss_gen_all, lowest_value, smoothed_loss_history, loss_history
+    global global_step
 
     if epoch == 1:
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
@@ -791,27 +847,77 @@ def train_and_evaluate(
         smoothed_loss_history.append(smoothed_value)
         return smoothed_value
 
+    def save_to_json(
+        file_path,
+        loss_disc_history,
+        smoothed_loss_disc_history,
+        loss_gen_history,
+        smoothed_loss_gen_history,
+    ):
+        """
+        Save the training history to a JSON file.
+        """
+        data = {
+            "loss_disc_history": loss_disc_history,
+            "smoothed_loss_disc_history": smoothed_loss_disc_history,
+            "loss_gen_history": loss_gen_history,
+            "smoothed_loss_gen_history": smoothed_loss_gen_history,
+        }
+        with open(file_path, "w") as f:
+            json.dump(data, f)
+
     if overtraining_detector:
         # Add the current loss to the history
-        current_loss = float(lowest_value["value"])
-        loss_history.append(current_loss)
+        current_loss_disc = float(loss_disc)
+        loss_disc_history.append(current_loss_disc)
 
-        # Update the smoothed loss history
-        smoothed_value = update_exponential_moving_average(
-            smoothed_loss_history, current_loss
+        # Update smoothed loss history with loss_disc
+        smoothed_value_disc = update_exponential_moving_average(
+            smoothed_loss_disc_history, current_loss_disc
         )
 
-        # Check for overtraining with the smoothed loss
-        is_overtraining, consecutive_increases = check_overtraining(
-            smoothed_loss_history, overtraining_threshold
+        # Check overtraining with smoothed loss_disc
+        is_overtraining_disc, consecutive_increases_disc = check_overtraining(
+            smoothed_loss_disc_history, overtraining_threshold
         )
-        if is_overtraining and consecutive_increases == overtraining_threshold:
+
+        # Add the current loss_gen to the history
+        current_loss_gen = float(lowest_value["value"])
+        loss_gen_history.append(current_loss_gen)
+
+        # Update the smoothed loss_gen history
+        smoothed_value_gen = update_exponential_moving_average(
+            smoothed_loss_gen_history, current_loss_gen
+        )
+
+        # Check for overtraining with the smoothed loss_gen
+        is_overtraining, consecutive_increases_gen = check_overtraining(
+            smoothed_loss_gen_history, overtraining_threshold
+        )
+        # Save the data in the JSON file if the epoch is divisible by save_every_epoch
+        if epoch % save_every_epoch == 0:
+            save_to_json(
+                training_file_path,
+                loss_disc_history,
+                smoothed_loss_disc_history,
+                loss_gen_history,
+                smoothed_loss_gen_history,
+            )
+
+        if (
+            is_overtraining
+            and consecutive_increases_gen == overtraining_threshold
+            or is_overtraining_disc
+            and consecutive_increases_disc == overtraining_threshold
+        ):
             print(
-                f"Overtraining detected at epoch {epoch} with smoothed loss {smoothed_value}"
+                f"Overtraining detected at epoch {epoch} with smoothed loss_g {smoothed_value_gen} and loss_d {smoothed_value_disc}"
             )
             os._exit(2333333)
         else:
-            print(f"New best epoch {epoch} with smoothed loss {smoothed_value}")
+            print(
+                f"New best epoch {epoch} with smoothed loss_g {smoothed_value_gen} and loss_d {smoothed_value_disc}"
+            )
             old_model_files = glob.glob(
                 os.path.join(experiment_dir, f"{model_name}_*e_*s_best_epoch.pth")
             )
@@ -846,9 +952,10 @@ def train_and_evaluate(
         )  # Round to 3 decimal place
 
         if epoch > 1 and overtraining_detector == True:
-            remaining_epochs = overtraining_threshold - consecutive_increases
+            remaining_epochs_gen = overtraining_threshold - consecutive_increases_gen
+            remaining_epochs_disc = overtraining_threshold - consecutive_increases_disc
             print(
-                f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {remaining_epochs} | smoothed_loss={smoothed_loss_history[-1]:.3f}"
+                f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: g/total: {remaining_epochs_gen} d/total: {remaining_epochs_disc} | smoothed_loss_gen={smoothed_loss_gen_history[-1]:.3f} | smoothed_loss_disc={smoothed_loss_disc_history[-1]:.3f}"
             )
         elif epoch > 1 and overtraining_detector == False:
             print(
