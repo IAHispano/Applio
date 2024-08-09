@@ -91,6 +91,8 @@ torch.backends.cudnn.benchmark = False
 global_step = 0
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 last_loss_gen_all = 0
+loss_history = []
+smoothed_loss_history = []
 
 # Disable logging
 import logging
@@ -265,6 +267,7 @@ def run(
         n_gpus (int): Total number of GPUs.
     """
     global global_step
+    
     if rank == 0:
         writer = SummaryWriter(log_dir=experiment_dir)
         writer_eval = SummaryWriter(log_dir=os.path.join(experiment_dir, "eval"))
@@ -459,7 +462,7 @@ def train_and_evaluate(
         writers (list): List of TensorBoard writers [writer, writer_eval].
         cache (list): List to cache data in GPU memory.
     """
-    global global_step, last_loss_gen_all, lowest_value
+    global global_step, last_loss_gen_all, lowest_value, smoothed_loss_history, loss_history
 
     if epoch == 1:
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
@@ -741,37 +744,64 @@ def train_and_evaluate(
             os.path.join(experiment_dir, "D_" + checkpoint_suffix),
         )
 
-        if rank == 0 and custom_save_every_weights == True:
-            if hasattr(net_g, "module"):
-                ckpt = net_g.module.state_dict()
+    def check_overtraining(smoothed_loss_history, threshold=3):
+        """
+        Checks for overtraining based on the smoothed loss history.
+        
+        Args:
+        smoothed_loss_history (list): List of smoothed losses for each epoch.
+        threshold (int): Number of consecutive epochs with increasing loss to consider overtraining.
+        
+        Returns:
+        tuple: (bool, int) where the first value indicates if there is overtraining and the second value is the number of consecutive epochs with increasing loss.
+        """
+        if len(smoothed_loss_history) < threshold:
+            return (False, 0)
+        
+        consecutive_increases = 0
+        
+        for i in range(-threshold, -1):
+            if smoothed_loss_history[i] <= smoothed_loss_history[i + 1]:
+                consecutive_increases += 1
             else:
-                ckpt = net_g.state_dict()
-            extract_model(
-                ckpt=ckpt,
-                sr=sample_rate,
-                pitch_guidance=pitch_guidance == True,
-                name=model_name,
-                model_dir=os.path.join(
-                    experiment_dir,
-                    f"{model_name}_{epoch}e_{global_step}s.pth",
-                ),
-                epoch=epoch,
-                step=global_step,
-                version=version,
-                hps=hps,
-            )
+                consecutive_increases = 0
+        
+        return (consecutive_increases >= threshold, consecutive_increases)
 
-    # Overtraining detection and best model saving
-    if overtraining_detector == True:
-        if epoch >= (lowest_value["epoch"] + overtraining_threshold):
-            print(
-                f"Stopping training due to possible overtraining. Lowest generator loss: {lowest_value['value']} at epoch {lowest_value['epoch']}, step {lowest_value['step']}"
-            )
+    def update_exponential_moving_average(smoothed_loss_history, new_value, smoothing=0.987):
+        """
+        Updates the exponential moving average with a new value.
+        
+        Args:
+        smoothed_loss_history (list): List of smoothed values.
+        new_value (float): New value to be added.
+        smoothing (float): Smoothing factor.
+        
+        Returns:
+        float: Updated smoothed value.
+        """
+        if not smoothed_loss_history:
+            smoothed_value = new_value
+        else:
+            smoothed_value = smoothing * smoothed_loss_history[-1] + (1 - smoothing) * new_value
+        smoothed_loss_history.append(smoothed_value)
+        return smoothed_value
+
+    if overtraining_detector:
+        # Add the current loss to the history
+        current_loss = float(lowest_value["value"])
+        loss_history.append(current_loss)
+        
+        # Update the smoothed loss history
+        smoothed_value = update_exponential_moving_average(smoothed_loss_history, current_loss)
+        
+        # Check for overtraining with the smoothed loss
+        is_overtraining, consecutive_increases = check_overtraining(smoothed_loss_history, overtraining_threshold)
+        if is_overtraining and consecutive_increases == overtraining_threshold:
+            print(f"Overtraining detected at epoch {epoch} with smoothed loss {smoothed_value}")
             os._exit(2333333)
-
-        best_epoch = lowest_value["epoch"] + overtraining_threshold - epoch
-
-        if best_epoch == overtraining_threshold:
+        else:
+            print(f"New best epoch {epoch} with smoothed loss {smoothed_value}")
             old_model_files = glob.glob(
                 os.path.join(experiment_dir, f"{model_name}_*e_*s_best_epoch.pth")
             )
@@ -806,8 +836,9 @@ def train_and_evaluate(
         )  # Round to 3 decimal place
 
         if epoch > 1 and overtraining_detector == True:
+            remaining_epochs = overtraining_threshold - consecutive_increases
             print(
-                f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {lowest_value['epoch'] + overtraining_threshold - epoch}"
+                f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: {remaining_epochs} | smoothed_loss={smoothed_loss_history[-1]:.3f}"
             )
         elif epoch > 1 and overtraining_detector == False:
             print(
