@@ -267,7 +267,7 @@ def run(
         n_gpus (int): Total number of GPUs.
     """
     global global_step
-    
+
     if rank == 0:
         writer = SummaryWriter(log_dir=experiment_dir)
         writer_eval = SummaryWriter(log_dir=os.path.join(experiment_dir, "eval"))
@@ -747,43 +747,47 @@ def train_and_evaluate(
     def check_overtraining(smoothed_loss_history, threshold=3):
         """
         Checks for overtraining based on the smoothed loss history.
-        
+
         Args:
         smoothed_loss_history (list): List of smoothed losses for each epoch.
         threshold (int): Number of consecutive epochs with increasing loss to consider overtraining.
-        
+
         Returns:
         tuple: (bool, int) where the first value indicates if there is overtraining and the second value is the number of consecutive epochs with increasing loss.
         """
         if len(smoothed_loss_history) < threshold:
             return (False, 0)
-        
+
         consecutive_increases = 0
-        
+
         for i in range(-threshold, -1):
             if smoothed_loss_history[i] <= smoothed_loss_history[i + 1]:
                 consecutive_increases += 1
             else:
                 consecutive_increases = 0
-        
+
         return (consecutive_increases >= threshold, consecutive_increases)
 
-    def update_exponential_moving_average(smoothed_loss_history, new_value, smoothing=0.987):
+    def update_exponential_moving_average(
+        smoothed_loss_history, new_value, smoothing=0.987
+    ):
         """
         Updates the exponential moving average with a new value.
-        
+
         Args:
         smoothed_loss_history (list): List of smoothed values.
         new_value (float): New value to be added.
         smoothing (float): Smoothing factor.
-        
+
         Returns:
         float: Updated smoothed value.
         """
         if not smoothed_loss_history:
             smoothed_value = new_value
         else:
-            smoothed_value = smoothing * smoothed_loss_history[-1] + (1 - smoothing) * new_value
+            smoothed_value = (
+                smoothing * smoothed_loss_history[-1] + (1 - smoothing) * new_value
+            )
         smoothed_loss_history.append(smoothed_value)
         return smoothed_value
 
@@ -791,14 +795,20 @@ def train_and_evaluate(
         # Add the current loss to the history
         current_loss = float(lowest_value["value"])
         loss_history.append(current_loss)
-        
+
         # Update the smoothed loss history
-        smoothed_value = update_exponential_moving_average(smoothed_loss_history, current_loss)
-        
+        smoothed_value = update_exponential_moving_average(
+            smoothed_loss_history, current_loss
+        )
+
         # Check for overtraining with the smoothed loss
-        is_overtraining, consecutive_increases = check_overtraining(smoothed_loss_history, overtraining_threshold)
+        is_overtraining, consecutive_increases = check_overtraining(
+            smoothed_loss_history, overtraining_threshold
+        )
         if is_overtraining and consecutive_increases == overtraining_threshold:
-            print(f"Overtraining detected at epoch {epoch} with smoothed loss {smoothed_value}")
+            print(
+                f"Overtraining detected at epoch {epoch} with smoothed loss {smoothed_value}"
+            )
             os._exit(2333333)
         else:
             print(f"New best epoch {epoch} with smoothed loss {smoothed_value}")
