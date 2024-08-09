@@ -511,27 +511,27 @@ def inference_tab():
                     interactive=True,
                 )
                 preset_dropdown.change(
-                        update_sliders,
-                        inputs=preset_dropdown,
-                        outputs=[
-                            pitch,
-                            filter_radius,
-                            index_rate,
-                            rms_mix_rate,
-                            protect,
-                        ],
-                    )
+                    update_sliders,
+                    inputs=preset_dropdown,
+                    outputs=[
+                        pitch,
+                        filter_radius,
+                        index_rate,
+                        rms_mix_rate,
+                        protect,
+                    ],
+                )
                 export_button.click(
-                        export_presets_button,
-                        inputs=[
-                            preset_name_input,
-                            pitch,
-                            filter_radius,
-                            index_rate,
-                            rms_mix_rate,
-                            protect,
-                        ],
-                    )
+                    export_presets_button,
+                    inputs=[
+                        preset_name_input,
+                        pitch,
+                        filter_radius,
+                        index_rate,
+                        rms_mix_rate,
+                        protect,
+                    ],
+                )
                 hop_length = gr.Slider(
                     minimum=1,
                     maximum=512,
@@ -762,28 +762,28 @@ def inference_tab():
                     interactive=True,
                 )
                 preset_dropdown.change(
-                        update_sliders,
-                        inputs=preset_dropdown,
-                        outputs=[
-                            pitch_batch,
-                            filter_radius_batch,
-                            index_rate_batch,
-                            rms_mix_rate_batch,
-                            protect_batch,
-                        ],
-                    )
+                    update_sliders,
+                    inputs=preset_dropdown,
+                    outputs=[
+                        pitch_batch,
+                        filter_radius_batch,
+                        index_rate_batch,
+                        rms_mix_rate_batch,
+                        protect_batch,
+                    ],
+                )
                 export_button.click(
-                        export_presets_button,
-                        inputs=[
-                            preset_name_input,
-                            pitch,
-                            filter_radius,
-                            index_rate,
-                            rms_mix_rate,
-                            protect,
-                        ],
-                        outputs=[],
-                    )
+                    export_presets_button,
+                    inputs=[
+                        preset_name_input,
+                        pitch,
+                        filter_radius,
+                        index_rate,
+                        rms_mix_rate,
+                        protect,
+                    ],
+                    outputs=[],
+                )
                 hop_length_batch = gr.Slider(
                     minimum=1,
                     maximum=512,
