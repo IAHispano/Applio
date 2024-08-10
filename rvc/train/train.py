@@ -894,7 +894,7 @@ def train_and_evaluate(
             smoothed_loss_gen_history, overtraining_threshold
         )
         # Save the data in the JSON file if the epoch is divisible by save_every_epoch
-        if epoch % save_every_epoch == 0 and rank == 0:
+        if epoch % save_every_epoch == 0:
             save_to_json(
                 training_file_path,
                 loss_disc_history,
