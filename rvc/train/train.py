@@ -96,6 +96,7 @@ smoothed_loss_gen_history = []
 loss_disc_history = []
 smoothed_loss_disc_history = []
 training_file_path = f"{experiment_dir}/training_data.json"
+overtrain_save_epoch = 0
 
 # Disable logging
 import logging
@@ -128,7 +129,7 @@ def main():
     """
     Main function to start the training process.
     """
-    global training_file_path, last_loss_gen_all, lowest_value, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch
+    global training_file_path, last_loss_gen_all, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
 
@@ -136,6 +137,7 @@ def main():
         """
         Starts the training process with multi-GPU support.
         """
+        global training_file_path
         children = []
         pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
         with open(pid_file_path, "w") as pid_file:
@@ -484,7 +486,6 @@ def run(
                 custom_save_every_weights,
                 custom_total_epoch,
             )
-
         scheduler_g.step()
         scheduler_d.step()
 
@@ -516,7 +517,7 @@ def train_and_evaluate(
         writers (list): List of TensorBoard writers [writer, writer_eval].
         cache (list): List to cache data in GPU memory.
     """
-    global global_step
+    global global_step, lowest_value, loss_disc
 
     if epoch == 1:
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
@@ -864,7 +865,7 @@ def train_and_evaluate(
         with open(file_path, "w") as f:
             json.dump(data, f)
 
-    if overtraining_detector:
+    if overtraining_detector and rank == 0:
         # Add the current loss to the history
         current_loss_disc = float(loss_disc)
         loss_disc_history.append(current_loss_disc)
@@ -893,7 +894,7 @@ def train_and_evaluate(
             smoothed_loss_gen_history, overtraining_threshold
         )
         # Save the data in the JSON file if the epoch is divisible by save_every_epoch
-        if epoch % save_every_epoch == 0:
+        if epoch % save_every_epoch == 0 and rank == 0:
             save_to_json(
                 training_file_path,
                 loss_disc_history,
@@ -909,12 +910,12 @@ def train_and_evaluate(
             and consecutive_increases_disc == overtraining_threshold
         ):
             print(
-                f"Overtraining detected at epoch {epoch} with smoothed loss_g {smoothed_value_gen} and loss_d {smoothed_value_disc}"
+                f"Overtraining detected at epoch {epoch} with smoothed loss_g {smoothed_value_gen:.3f} and loss_d {smoothed_value_disc:.3f}"
             )
             os._exit(2333333)
         else:
             print(
-                f"New best epoch {epoch} with smoothed loss_g {smoothed_value_gen} and loss_d {smoothed_value_disc}"
+                f"New best epoch {epoch} with smoothed loss_g {smoothed_value_gen:.3f} and loss_d {smoothed_value_disc:.3f}"
             )
             old_model_files = glob.glob(
                 os.path.join(experiment_dir, f"{model_name}_*e_*s_best_epoch.pth")
