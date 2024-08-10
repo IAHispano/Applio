@@ -7,6 +7,7 @@ import torchcrepe
 import numpy as np
 from multiprocessing import Pool
 from functools import partial
+import concurrent.futures
 
 current_directory = os.getcwd()
 sys.path.append(current_directory)
@@ -168,8 +169,20 @@ def main(exp_dir, f0_method, hop_length, num_processes, gpus):
                 process_partials.append((feature_input, part_paths))
 
         # Process each part with the corresponding GPU or CPU
-        for feature_input, part_paths in process_partials:
-            feature_input.process_files(part_paths, f0_method, hop_length, pbar)
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(
+                    FeatureInput.process_files,
+                    feature_input,
+                    part_paths,
+                    f0_method,
+                    hop_length,
+                    pbar,
+                )
+                for feature_input, part_paths in process_partials
+            ]
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
         pbar.close()
 
     else:
