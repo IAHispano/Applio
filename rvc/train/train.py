@@ -95,7 +95,7 @@ loss_gen_history = []
 smoothed_loss_gen_history = []
 loss_disc_history = []
 smoothed_loss_disc_history = []
-training_file_path = f"{experiment_dir}/training_data.json"
+training_file_path = os.path.join(experiment_dir, "training_data.json")
 overtrain_save_epoch = 0
 
 # Disable logging
@@ -169,13 +169,6 @@ def main():
 
         Args:
             file_path (str): The path to the JSON file.
-
-        Returns:
-            Tuple: A tuple containing the following lists:
-                - loss_disc_history (list): The loss discriminator history.
-                - smoothed_loss_disc_history (list): The smoothed loss discriminator history.
-                - loss_gen_history (list): The loss generator history.
-                - smoothed_loss_gen_history (list): The smoothed loss generator history.
         """
         if os.path.exists(file_path):
             with open(file_path, "r") as f:
@@ -192,15 +185,8 @@ def main():
         """
         Continues the overtrain detector by loading the training history from a JSON file.
 
-        Parameters:
+        Args:
             training_file_path (str): The file path of the JSON file containing the training history.
-
-        Returns:
-            tuple: A tuple containing the following training history:
-                - loss_disc_history (list): The history of discriminator loss.
-                - smoothed_loss_disc_history (list): The history of smoothed discriminator loss.
-                - loss_gen_history (list): The history of generator loss.
-                - smoothed_loss_gen_history (list): The history of smoothed generator loss.
         """
         if overtraining_detector:
             if os.path.exists(training_file_path):
@@ -807,9 +793,6 @@ def train_and_evaluate(
         smoothed_loss_history (list): List of smoothed losses for each epoch.
         threshold (int): Number of consecutive epochs with insignificant changes to consider overtraining.
         tolerance (float): The tolerance level to consider a change insignificant.
-
-        Returns:
-        tuple: (bool, int) where the first value indicates if there is overtraining and the second value is the number of consecutive epochs with insignificant changes.
         """
         if len(smoothed_loss_history) < threshold:
             return (False, 0)
@@ -837,9 +820,6 @@ def train_and_evaluate(
         smoothed_loss_history (list): List of smoothed values.
         new_value (float): New value to be added.
         smoothing (float): Smoothing factor.
-
-        Returns:
-        float: Updated smoothed value.
         """
         if not smoothed_loss_history:
             smoothed_value = new_value
