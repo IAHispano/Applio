@@ -58,7 +58,7 @@ def load_embedding(embedder_model, custom_embedder=None):
             model_path = embedding_list["contentvec"]
     else:
         model_path = embedding_list[embedder_model]
-        if embedder_model in online_embedders:  
+        if embedder_model in online_embedders:
             if not os.path.exists(model_path):
                 url = online_embedders[embedder_model]
                 print(f"\nDownloading {url} to {model_path}...")
