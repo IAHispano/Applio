@@ -791,13 +791,14 @@ def train_and_evaluate(
 
         Args:
         smoothed_loss_history (list): List of smoothed losses for each epoch.
-        threshold (int): Number of consecutive epochs with insignificant changes to consider overtraining.
+        threshold (int): Number of consecutive epochs with insignificant changes or increases to consider overtraining.
         tolerance (float): The tolerance level to consider a change insignificant.
         """
         if len(smoothed_loss_history) < threshold:
             return (False, 0)
 
         consecutive_insignificant_changes = 0
+        consecutive_increases = 0
 
         for i in range(-threshold, -1):
             if abs(smoothed_loss_history[i] - smoothed_loss_history[i + 1]) < tolerance:
@@ -805,9 +806,15 @@ def train_and_evaluate(
             else:
                 consecutive_insignificant_changes = 0
 
+            if smoothed_loss_history[i + 1] > smoothed_loss_history[i]:
+                consecutive_increases += 1
+            else:
+                consecutive_increases = 0
+
         return (
-            consecutive_insignificant_changes >= threshold,
-            consecutive_insignificant_changes,
+            consecutive_insignificant_changes >= threshold
+            or consecutive_increases >= threshold,
+            max(consecutive_insignificant_changes, consecutive_increases),
         )
 
     def update_exponential_moving_average(
