@@ -357,42 +357,17 @@ def train_tab():
                 )
 
 
-        with gr.Accordion(
-            i18n(
-                "We prioritize running the model preprocessing on the GPU for faster performance. If you prefer to use the CPU, simply leave the GPU field blank."
-            ),
-            open=False,
-        ):
-            with gr.Row():
-                with gr.Column():
-                    cpu_cores_preprocess = gr.Slider(
-                        1,
-                        64,
-                        cpu_count(),
-                        step=1,
-                        label=i18n("CPU Cores"),
-                        info=i18n(
-                            "The number of CPU cores to use in the preprocess. The default setting are your cpu cores, which is recommended for most cases."
-                        ),
-                        interactive=True,
-                    )
-
-                with gr.Column():
-                    gpu_preprocess = gr.Textbox(
-                        label=i18n("GPU Number"),
-                        info=i18n(
-                            "Specify the number of GPUs you wish to utilize for preprocess by entering them separated by hyphens (-). For the time being, using multi-gpu will not have a significant effect."
-                        ),
-                        placeholder=i18n("0 to ∞ separated by -"),
-                        value=str(get_number_of_gpus()),
-                        interactive=True,
-                    )
-                    gr.Textbox(
-                        label=i18n("GPU Information"),
-                        info=i18n("The GPU information will be displayed here."),
-                        value=get_gpu_info(),
-                        interactive=False,
-                    )
+                cpu_cores_preprocess = gr.Slider(
+                    1,
+                    64,
+                    cpu_count(),
+                    step=1,
+                    label=i18n("CPU Cores"),
+                    info=i18n(
+                        "The number of CPU cores to use in the preprocess. The default setting are your cpu cores, which is recommended for most cases."
+                    ),
+                    interactive=True,
+                )
 
         preprocess_output_info = gr.Textbox(
             label=i18n("Output Information"),
@@ -411,7 +386,6 @@ def train_tab():
                     dataset_path,
                     sample_rate,
                     cpu_cores_preprocess,
-                    gpu_preprocess,
                 ],
                 outputs=[preprocess_output_info],
                 api_name="preprocess_dataset",
@@ -714,6 +688,15 @@ def train_tab():
                             ),
                             interactive=True,
                         )
+                index_algorithm = gr.Radio(
+                    label=i18n("Index Algorithm"),
+                    info=i18n(
+                        "KMeans is a clustering algorithm that divides the dataset into K clusters. This setting is particularly useful for large datasets."
+                    ),
+                    choices=["Auto", "Faiss", "KMeans"],
+                    value="Auto",
+                    interactive=True,
+                )
 
         with gr.Row():
             train_output_info = gr.Textbox(
@@ -744,6 +727,7 @@ def train_tab():
                     overtraining_threshold,
                     pretrained,
                     sync_graph,
+                    index_algorithm,
                     cache_dataset_in_gpu,
                     custom_pretrained,
                     g_pretrained_path,
@@ -765,7 +749,7 @@ def train_tab():
             index_button = gr.Button(i18n("Generate Index"))
             index_button.click(
                 fn=run_index_script,
-                inputs=[model_name, rvc_version],
+                inputs=[model_name, rvc_version, index_algorithm],
                 outputs=[train_output_info],
                 api_name="generate_index",
             )

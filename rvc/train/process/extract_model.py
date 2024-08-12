@@ -25,7 +25,11 @@ def extract_model(ckpt, sr, pitch_guidance, name, model_dir, vocoder_type, epoch
         model_dir_path = os.path.dirname(model_dir)
         os.makedirs(model_dir_path, exist_ok=True)
 
-        pth_file = f"{name}_{epoch}e_{step}s.pth"
+        if "best_epoch" in model_dir:
+            pth_file = f"{name}_{epoch}e_{step}s_best_epoch.pth"
+        else:
+            pth_file = f"{name}_{epoch}e_{step}s.pth"
+
         pth_file_old_version_path = os.path.join(
             model_dir_path, f"{pth_file}_old_version.pth"
         )

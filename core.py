@@ -242,7 +242,7 @@ def run_tts_script(
 
 # Preprocess
 def run_preprocess_script(
-    model_name: str, dataset_path: str, sample_rate: int, cpu_cores: int, gpu: int
+    model_name: str, dataset_path: str, sample_rate: int, cpu_cores: int
 ):
     config = get_config()
     per = 3.0 if config.is_half else 3.7
@@ -258,7 +258,6 @@ def run_preprocess_script(
                 sample_rate,
                 per,
                 cpu_cores,
-                gpu,
             ],
         ),
     ]
@@ -342,6 +341,7 @@ def run_train_script(
     overtraining_threshold: int,
     pretrained: bool,
     sync_graph: bool,
+    index_algorithm: str,
     cache_data_in_gpu: bool,
     custom_pretrained: bool = False,
     g_pretrained_path: str = None,
@@ -392,18 +392,19 @@ def run_train_script(
         ),
     ]
     subprocess.run(command)
-    run_index_script(model_name, rvc_version)
+    run_index_script(model_name, rvc_version, index_algorithm)
     return f"Model {model_name} trained successfully."
 
 
 # Index
-def run_index_script(model_name: str, rvc_version: str):
+def run_index_script(model_name: str, rvc_version: str, index_algorithm: str):
     index_script_path = os.path.join("rvc", "train", "process", "extract_index.py")
     command = [
         python,
         index_script_path,
         os.path.join(logs_path, model_name),
         rvc_version,
+        index_algorithm,
     ]
 
     subprocess.run(command)
@@ -993,12 +994,6 @@ def parse_arguments():
         help="Number of CPU cores to use for preprocessing.",
         choices=range(1, 65),
     )
-    preprocess_parser.add_argument(
-        "--gpu",
-        type=int,
-        help="GPU device to use for feature extraction (optional).",
-        default="-",
-    )
 
     # Parser for 'extract' mode
     extract_parser = subparsers.add_parser(
@@ -1229,6 +1224,14 @@ def parse_arguments():
         help="Version of the RVC model ('v1' or 'v2').",
         choices=["v1", "v2"],
         default="v2",
+    )
+    index_parser.add_argument(
+        "--index_algorithm",
+        type=str,
+        choices=["Auto", "Faiss", "KMeans"],
+        help="Choose the method for generating the index file.",
+        default="Auto",
+        required=False,
     )
 
     # Parser for 'model_extract' mode
@@ -1470,7 +1473,6 @@ def main():
                 dataset_path=args.dataset_path,
                 sample_rate=args.sample_rate,
                 cpu_cores=args.cpu_cores,
-                gpu=args.gpu,
             )
         elif args.mode == "extract":
             run_extract_script(
@@ -1512,6 +1514,7 @@ def main():
             run_index_script(
                 model_name=args.model_name,
                 rvc_version=args.rvc_version,
+                index_algorithm=args.index_algorithm,
             )
         elif args.mode == "model_extract":
             run_model_extract_script(
