@@ -32,12 +32,10 @@ prepare_install() {
                 exit 1
             fi
         fi
-
         $py -m venv .venv
         . .venv/bin/activate
-        python -m ensurepip
-        # Update pip within the virtual environment
-        pip3 install --upgrade pip
+        echo "Installing pip version less than 24.1..."
+        python -m pip install "pip<24.1"
         echo
         echo "Installing Applio dependencies..."
         python -m pip install -r requirements.txt
