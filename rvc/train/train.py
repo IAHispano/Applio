@@ -707,12 +707,15 @@ def train_and_evaluate(
                             )
 
             optim_g.zero_grad()
-            scaler.scale(loss_gen_all).backward()
+            scaled_loss = scaler.scale(loss_gen_all)
+            grads = torch.autograd.grad(scaled_loss, net_g.parameters(), create_graph=True)
+            for param, grad in zip(net_g.parameters(), grads):
+                if grad is not None:
+                    param.grad = grad
             scaler.unscale_(optim_g)
             grad_norm_g = commons.clip_grad_value(net_g.parameters(), None)
             scaler.step(optim_g)
             scaler.update()
-
             # Logging and checkpointing
             if rank == 0:
                 if global_step % config.train.log_interval == 0:
