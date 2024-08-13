@@ -787,20 +787,17 @@ def train_and_evaluate(
             os.path.join(experiment_dir, "D_" + checkpoint_suffix),
         )
 
-    def check_overtraining(smoothed_loss_history, threshold=3, tolerance=0.001):
+    def check_overtraining(smoothed_loss_history, threshold):
         """
         Checks for overtraining based on the smoothed loss history.
 
         Args:
         smoothed_loss_history (list): List of smoothed losses for each epoch.
         threshold (int): Number of consecutive epochs with insignificant changes or increases to consider overtraining.
-        tolerance (float): The tolerance level to consider a change insignificant.
         """
         if len(smoothed_loss_history) < threshold + 1:
             return False
         for i in range(-threshold, -1):
-            if abs(smoothed_loss_history[i] - smoothed_loss_history[i + 1]) < tolerance:
-                return True
             if smoothed_loss_history[i + 1] > smoothed_loss_history[i]:
                 return True
         return False
@@ -856,7 +853,7 @@ def train_and_evaluate(
 
         # Check overtraining with smoothed loss_disc
         is_overtraining_disc = check_overtraining(
-            smoothed_loss_disc_history, overtraining_threshold * 3, tolerance=0.00001
+            smoothed_loss_disc_history, overtraining_threshold * 3
         )
         if is_overtraining_disc:
             consecutive_increases_disc += 1
