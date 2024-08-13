@@ -503,11 +503,13 @@ def train_and_evaluate(
         writers (list): List of TensorBoard writers [writer, writer_eval].
         cache (list): List to cache data in GPU memory.
     """
-    global global_step, lowest_value, loss_disc
+    global global_step, lowest_value, loss_disc, consecutive_increases_gen, consecutive_increases_disc
 
     if epoch == 1:
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
         last_loss_gen_all = 0.0
+        consecutive_increases_gen = 0
+        consecutive_increases_disc = 0
 
     net_g, net_d = nets
     optim_g, optim_d = optims
@@ -785,7 +787,7 @@ def train_and_evaluate(
             os.path.join(experiment_dir, "D_" + checkpoint_suffix),
         )
 
-    def check_overtraining(smoothed_loss_history, threshold=3, tolerance=0.01):
+    def check_overtraining(smoothed_loss_history, threshold=3, tolerance=0.02):
         """
         Checks for overtraining based on the smoothed loss history.
 
@@ -794,28 +796,14 @@ def train_and_evaluate(
         threshold (int): Number of consecutive epochs with insignificant changes or increases to consider overtraining.
         tolerance (float): The tolerance level to consider a change insignificant.
         """
-        if len(smoothed_loss_history) < threshold:
-            return (False, 0)
-
-        consecutive_insignificant_changes = 0
-        consecutive_increases = 0
-
+        if len(smoothed_loss_history) < threshold + 1:
+            return False
         for i in range(-threshold, -1):
             if abs(smoothed_loss_history[i] - smoothed_loss_history[i + 1]) < tolerance:
-                consecutive_insignificant_changes += 1
-            else:
-                consecutive_insignificant_changes = 0
-
+                return True
             if smoothed_loss_history[i + 1] > smoothed_loss_history[i]:
-                consecutive_increases += 1
-            else:
-                consecutive_increases = 0
-
-        return (
-            consecutive_insignificant_changes >= threshold
-            or consecutive_increases >= threshold,
-            max(consecutive_insignificant_changes, consecutive_increases),
-        )
+                return True
+        return False
 
     def update_exponential_moving_average(
         smoothed_loss_history, new_value, smoothing=0.987
@@ -856,7 +844,7 @@ def train_and_evaluate(
         with open(file_path, "w") as f:
             json.dump(data, f)
 
-    if overtraining_detector and rank == 0:
+    if overtraining_detector and rank == 0 and epoch > 1:
         # Add the current loss to the history
         current_loss_disc = float(loss_disc)
         loss_disc_history.append(current_loss_disc)
@@ -867,10 +855,11 @@ def train_and_evaluate(
         )
 
         # Check overtraining with smoothed loss_disc
-        is_overtraining_disc, consecutive_increases_disc = check_overtraining(
-            smoothed_loss_disc_history, overtraining_threshold
+        is_overtraining_disc = check_overtraining(
+            smoothed_loss_disc_history, overtraining_threshold * 2
         )
-
+        if is_overtraining_disc:
+            consecutive_increases_disc += 1
         # Add the current loss_gen to the history
         current_loss_gen = float(lowest_value["value"])
         loss_gen_history.append(current_loss_gen)
@@ -881,9 +870,11 @@ def train_and_evaluate(
         )
 
         # Check for overtraining with the smoothed loss_gen
-        is_overtraining, consecutive_increases_gen = check_overtraining(
+        is_overtraining_gen = check_overtraining(
             smoothed_loss_gen_history, overtraining_threshold
         )
+        if is_overtraining_gen:
+            consecutive_increases_gen += 1
         # Save the data in the JSON file if the epoch is divisible by save_every_epoch
         if epoch % save_every_epoch == 0:
             save_to_json(
@@ -895,10 +886,10 @@ def train_and_evaluate(
             )
 
         if (
-            is_overtraining
+            is_overtraining_gen
             and consecutive_increases_gen == overtraining_threshold
             or is_overtraining_disc
-            and consecutive_increases_disc == overtraining_threshold
+            and consecutive_increases_disc == (overtraining_threshold * 2)
         ):
             print(
                 f"Overtraining detected at epoch {epoch} with smoothed loss_g {smoothed_value_gen:.3f} and loss_d {smoothed_value_disc:.3f}"
@@ -943,7 +934,9 @@ def train_and_evaluate(
 
         if epoch > 1 and overtraining_detector == True:
             remaining_epochs_gen = overtraining_threshold - consecutive_increases_gen
-            remaining_epochs_disc = overtraining_threshold - consecutive_increases_disc
+            remaining_epochs_disc = (
+                overtraining_threshold * 2
+            ) - consecutive_increases_disc
             print(
                 f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: g/total: {remaining_epochs_gen} d/total: {remaining_epochs_disc} | smoothed_loss_gen={smoothed_loss_gen_history[-1]:.3f} | smoothed_loss_disc={smoothed_loss_disc_history[-1]:.3f}"
             )
