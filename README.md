@@ -270,7 +270,7 @@ Despite the advancements in Retrieval-Based Voice Conversion, several challenges
 
 ## Repository Enhancements
 
-This repository has undergone significant enhancements to improve its functionality and maintainability:
+This repository offers several enhancements compared to other alternatives in the speech-to-speech domain:
 
 - **Modular Codebase:** Restructured codebase for better organization, readability, and maintenance.
 - **Hop Length Implementation:** Improved efficiency and performance, especially on Crepe (formerly Mangio-Crepe), thanks to [@Mangio621](https://github.com/Mangio621/Mangio-RVC-Fork).
@@ -311,7 +311,7 @@ Your cooperation and support are greatly appreciated. Thank you!
 Applio is possible to these projects and those cited in their references.
 
 - [gradio-screen-recorder](https://huggingface.co/spaces/gstaff/gradio-screen-recorder) by gstaff
-- [rvc-cli](https://github.com/blaise-tk/rvc-cli) by blaisewf
+- [rvc-cli](https://github.com/blaisewf/rvc-cli) by blaisewf
 
 ### Contributors
 
