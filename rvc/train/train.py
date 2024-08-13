@@ -787,20 +787,28 @@ def train_and_evaluate(
             os.path.join(experiment_dir, "D_" + checkpoint_suffix),
         )
 
-    def check_overtraining(smoothed_loss_history, threshold):
+    def check_overtraining(smoothed_loss_history, threshold, epsilon=1e-4):
         """
         Checks for overtraining based on the smoothed loss history.
 
         Args:
         smoothed_loss_history (list): List of smoothed losses for each epoch.
         threshold (int): Number of consecutive epochs with insignificant changes or increases to consider overtraining.
+        epsilon (float): The maximum change considered insignificant.
+
+        Returns:
+        bool: True if overtraining is detected, False otherwise.
         """
         if len(smoothed_loss_history) < threshold + 1:
             return False
+
         for i in range(-threshold, -1):
             if smoothed_loss_history[i + 1] > smoothed_loss_history[i]:
                 return True
-        return False
+            if abs(smoothed_loss_history[i + 1] - smoothed_loss_history[i]) >= epsilon:
+                return False
+
+        return True
 
     def update_exponential_moving_average(
         smoothed_loss_history, new_value, smoothing=0.987
