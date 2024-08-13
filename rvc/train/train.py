@@ -787,7 +787,7 @@ def train_and_evaluate(
             os.path.join(experiment_dir, "D_" + checkpoint_suffix),
         )
 
-    def check_overtraining(smoothed_loss_history, threshold=3, tolerance=1.0):
+    def check_overtraining(smoothed_loss_history, threshold=3, tolerance=0.001):
         """
         Checks for overtraining based on the smoothed loss history.
 
@@ -856,10 +856,12 @@ def train_and_evaluate(
 
         # Check overtraining with smoothed loss_disc
         is_overtraining_disc = check_overtraining(
-            smoothed_loss_disc_history, overtraining_threshold * 2
+            smoothed_loss_disc_history, overtraining_threshold * 3, tolerance=0.00001
         )
         if is_overtraining_disc:
             consecutive_increases_disc += 1
+        else:
+            consecutive_increases_disc = 0
         # Add the current loss_gen to the history
         current_loss_gen = float(lowest_value["value"])
         loss_gen_history.append(current_loss_gen)
@@ -875,6 +877,8 @@ def train_and_evaluate(
         )
         if is_overtraining_gen:
             consecutive_increases_gen += 1
+        else:
+            consecutive_increases_gen = 0
         # Save the data in the JSON file if the epoch is divisible by save_every_epoch
         if epoch % save_every_epoch == 0:
             save_to_json(
@@ -889,7 +893,7 @@ def train_and_evaluate(
             is_overtraining_gen
             and consecutive_increases_gen == overtraining_threshold
             or is_overtraining_disc
-            and consecutive_increases_disc == (overtraining_threshold * 2)
+            and consecutive_increases_disc == (overtraining_threshold * 3)
         ):
             print(
                 f"Overtraining detected at epoch {epoch} with smoothed loss_g {smoothed_value_gen:.3f} and loss_d {smoothed_value_disc:.3f}"
@@ -935,7 +939,7 @@ def train_and_evaluate(
         if epoch > 1 and overtraining_detector == True:
             remaining_epochs_gen = overtraining_threshold - consecutive_increases_gen
             remaining_epochs_disc = (
-                overtraining_threshold * 2
+                overtraining_threshold * 3
             ) - consecutive_increases_disc
             print(
                 f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: g/total: {remaining_epochs_gen} d/total: {remaining_epochs_disc} | smoothed_loss_gen={smoothed_value_gen:.3f} | smoothed_loss_disc={smoothed_value_disc:.3f}"
