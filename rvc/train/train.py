@@ -787,7 +787,7 @@ def train_and_evaluate(
             os.path.join(experiment_dir, "D_" + checkpoint_suffix),
         )
 
-    def check_overtraining(smoothed_loss_history, threshold, epsilon=1e-4):
+    def check_overtraining(smoothed_loss_history, threshold, epsilon=0.008):
         """
         Checks for overtraining based on the smoothed loss history.
 
