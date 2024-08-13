@@ -861,7 +861,7 @@ def train_and_evaluate(
 
         # Check overtraining with smoothed loss_disc
         is_overtraining_disc = check_overtraining(
-            smoothed_loss_disc_history, overtraining_threshold * 3
+            smoothed_loss_disc_history, overtraining_threshold * 2
         )
         if is_overtraining_disc:
             consecutive_increases_disc += 1
@@ -898,7 +898,7 @@ def train_and_evaluate(
             is_overtraining_gen
             and consecutive_increases_gen == overtraining_threshold
             or is_overtraining_disc
-            and consecutive_increases_disc == (overtraining_threshold * 3)
+            and consecutive_increases_disc == (overtraining_threshold * 2)
         ):
             print(
                 f"Overtraining detected at epoch {epoch} with smoothed loss_g {smoothed_value_gen:.3f} and loss_d {smoothed_value_disc:.3f}"
@@ -944,7 +944,7 @@ def train_and_evaluate(
         if epoch > 1 and overtraining_detector == True:
             remaining_epochs_gen = overtraining_threshold - consecutive_increases_gen
             remaining_epochs_disc = (
-                overtraining_threshold * 3
+                overtraining_threshold * 2
             ) - consecutive_increases_disc
             print(
                 f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: g/total: {remaining_epochs_gen} d/total: {remaining_epochs_disc} | smoothed_loss_gen={smoothed_value_gen:.3f} | smoothed_loss_disc={smoothed_value_disc:.3f}"
