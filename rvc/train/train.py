@@ -787,7 +787,7 @@ def train_and_evaluate(
             os.path.join(experiment_dir, "D_" + checkpoint_suffix),
         )
 
-    def check_overtraining(smoothed_loss_history, threshold=3, tolerance=0.02):
+    def check_overtraining(smoothed_loss_history, threshold=3, tolerance=0.1):
         """
         Checks for overtraining based on the smoothed loss history.
 
@@ -938,7 +938,7 @@ def train_and_evaluate(
                 overtraining_threshold * 2
             ) - consecutive_increases_disc
             print(
-                f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: g/total: {remaining_epochs_gen} d/total: {remaining_epochs_disc} | smoothed_loss_gen={smoothed_loss_gen_history[-1]:.3f} | smoothed_loss_disc={smoothed_loss_disc_history[-1]:.3f}"
+                f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()} | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}) | Number of epochs remaining for overtraining: g/total: {remaining_epochs_gen} d/total: {remaining_epochs_disc} | smoothed_loss_gen={smoothed_value_gen:.3f} | smoothed_loss_disc={smoothed_value_disc:.3f}"
             )
         elif epoch > 1 and overtraining_detector == False:
             print(
