@@ -878,7 +878,7 @@ def train_and_evaluate(
 
         # Check for overtraining with the smoothed loss_gen
         is_overtraining_gen = check_overtraining(
-            smoothed_loss_gen_history, overtraining_threshold, 0.008
+            smoothed_loss_gen_history, overtraining_threshold, 0.01
         )
         if is_overtraining_gen:
             consecutive_increases_gen += 1
