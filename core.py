@@ -280,16 +280,14 @@ def run_extract_script(
     embedder_model: str,
     embedder_model_custom: str = None,
 ):
-    config = get_config()
+
     model_path = os.path.join(logs_path, model_name)
-    pitch_extractor = os.path.join("rvc", "train", "extract", "pitch_extractor.py")
-    embedding_extractor = os.path.join(
-        "rvc", "train", "extract", "embedding_extractor.py"
-    )
+    extract = os.path.join("rvc", "train", "extract", "extract.py")
+
 
     command_1 = [
         python,
-        pitch_extractor,
+        extract,
         *map(
             str,
             [
@@ -298,26 +296,15 @@ def run_extract_script(
                 hop_length,
                 cpu_cores,
                 gpu,
-            ],
-        ),
-    ]
-
-    command_2 = [
-        python,
-        embedding_extractor,
-        *map(
-            str,
-            [
-                model_path,
                 rvc_version,
-                gpu,
                 embedder_model,
                 embedder_model_custom,
             ],
         ),
     ]
+
+
     subprocess.run(command_1)
-    subprocess.run(command_2)
 
     generate_config(rvc_version, sample_rate, model_path)
     generate_filelist(pitch_guidance, model_path, rvc_version, sample_rate)
