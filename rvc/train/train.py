@@ -401,6 +401,7 @@ def run(
         _, _, _, epoch_str = load_checkpoint(
             latest_checkpoint_path(experiment_dir, "G_*.pth"), net_g, optim_g
         )
+        epoch_str += 1
         global_step = (epoch_str - 1) * len(train_loader)
 
     except:
