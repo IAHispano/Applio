@@ -786,6 +786,25 @@ def train_and_evaluate(
             epoch,
             os.path.join(experiment_dir, "D_" + checkpoint_suffix),
         )
+        if rank == 0 and custom_save_every_weights == True:
+            if hasattr(net_g, "module"):
+                ckpt = net_g.module.state_dict()
+            else:
+                ckpt = net_g.state_dict()
+            extract_model(
+                ckpt=ckpt,
+                sr=sample_rate,
+                pitch_guidance=pitch_guidance == True,
+                name=model_name,
+                model_dir=os.path.join(
+                    experiment_dir,
+                    f"{model_name}_{epoch}e_{global_step}s.pth",
+                ),
+                epoch=epoch,
+                step=global_step,
+                version=version,
+                hps=hps,
+            )
 
     def check_overtraining(smoothed_loss_history, threshold, epsilon=0.004):
         """
