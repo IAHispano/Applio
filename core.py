@@ -284,7 +284,6 @@ def run_extract_script(
     model_path = os.path.join(logs_path, model_name)
     extract = os.path.join("rvc", "train", "extract", "extract.py")
 
-
     command_1 = [
         python,
         extract,
@@ -302,7 +301,6 @@ def run_extract_script(
             ],
         ),
     ]
-
 
     subprocess.run(command_1)
 
