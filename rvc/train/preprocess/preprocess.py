@@ -18,6 +18,13 @@ sys.path.append(now_directory)
 from rvc.lib.utils import load_audio
 from rvc.train.slicer import Slicer
 
+# Remove colab logs
+import logging
+logging.getLogger('pydub').setLevel(logging.WARNING)
+logging.getLogger('numba.core.byteflow').setLevel(logging.WARNING)
+logging.getLogger('numba.core.ssa').setLevel(logging.WARNING)
+logging.getLogger('numba.core.interpreter').setLevel(logging.WARNING)
+
 # Constants
 OVERLAP = 0.3
 MAX_AMPLITUDE = 0.9
