@@ -20,10 +20,11 @@ from rvc.train.slicer import Slicer
 
 # Remove colab logs
 import logging
-logging.getLogger('pydub').setLevel(logging.WARNING)
-logging.getLogger('numba.core.byteflow').setLevel(logging.WARNING)
-logging.getLogger('numba.core.ssa').setLevel(logging.WARNING)
-logging.getLogger('numba.core.interpreter').setLevel(logging.WARNING)
+
+logging.getLogger("pydub").setLevel(logging.WARNING)
+logging.getLogger("numba.core.byteflow").setLevel(logging.WARNING)
+logging.getLogger("numba.core.ssa").setLevel(logging.WARNING)
+logging.getLogger("numba.core.interpreter").setLevel(logging.WARNING)
 
 # Constants
 OVERLAP = 0.3
