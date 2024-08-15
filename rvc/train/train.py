@@ -995,25 +995,28 @@ def train_and_evaluate(
         pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
         os.remove(pid_file_path)
 
-        if hasattr(net_g, "module"):
-            ckpt = net_g.module.state_dict()
-        else:
-            ckpt = net_g.state_dict()
+        if not os.path.exists(
+            os.path.join(experiment_dir, f"{model_name}_{epoch}e_{global_step}s.pth")
+        ):
+            if hasattr(net_g, "module"):
+                ckpt = net_g.module.state_dict()
+            else:
+                ckpt = net_g.state_dict()
 
-        extract_model(
-            ckpt=ckpt,
-            sr=sample_rate,
-            pitch_guidance=pitch_guidance == True,
-            name=model_name,
-            model_dir=os.path.join(
-                experiment_dir,
-                f"{model_name}_{epoch}e_{global_step}s.pth",
-            ),
-            epoch=epoch,
-            step=global_step,
-            version=version,
-            hps=hps,
-        )
+            extract_model(
+                ckpt=ckpt,
+                sr=sample_rate,
+                pitch_guidance=pitch_guidance == True,
+                name=model_name,
+                model_dir=os.path.join(
+                    experiment_dir,
+                    f"{model_name}_{epoch}e_{global_step}s.pth",
+                ),
+                epoch=epoch,
+                step=global_step,
+                version=version,
+                hps=hps,
+            )
         sleep(1)
         os._exit(2333333)
 
