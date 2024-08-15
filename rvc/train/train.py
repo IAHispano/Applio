@@ -137,7 +137,6 @@ def main():
         """
         Starts the training process with multi-GPU support.
         """
-        global training_file_path
         children = []
         pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
         with open(pid_file_path, "w") as pid_file:
