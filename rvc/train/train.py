@@ -139,7 +139,7 @@ def main():
         """
         global training_file_path
         children = []
-        pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
+        pid_file_path = os.path.join(current_dir, "rvc", "train", "train_pid.txt")
         with open(pid_file_path, "w") as pid_file:
             for i in range(n_gpus):
                 subproc = mp.Process(
