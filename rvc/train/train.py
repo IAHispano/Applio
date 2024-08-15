@@ -137,7 +137,6 @@ def main():
         """
         Starts the training process with multi-GPU support.
         """
-        global training_file_path
         children = []
         pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
         with open(pid_file_path, "w") as pid_file:
@@ -440,6 +439,9 @@ def run(
     scheduler_d = torch.optim.lr_scheduler.ExponentialLR(
         optim_d, gamma=config.train.lr_decay, last_epoch=epoch_str - 2
     )
+
+    optim_d.step()
+    optim_g.step()
 
     scaler = GradScaler(enabled=config.train.fp16_run)
 
