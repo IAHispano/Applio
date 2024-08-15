@@ -87,7 +87,7 @@
   "Synchronize the graph of the tensorbaord. Only enable this setting if you are training a new model.": "Synchronize the graph of the tensorbaord. Only enable this setting if you are training a new model.",
 
   "Start Training": "Start Training",
-  "Stop Training & Restart Applio": "Stop Training & Restart Applio",
+  "Stop Training": "Stop Training",
   "Generate Index": "Generate Index",
 
   "Export Model": "Export Model",
