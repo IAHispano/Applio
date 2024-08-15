@@ -362,7 +362,16 @@ def train_tab():
                     ),
                     interactive=True,
                 )
-
+        with gr.Accordion(i18n("advanced settings"), open=False):
+            cut_preprocess = gr.Checkbox(
+                label=i18n("Cut the audio files"),
+                info=i18n(
+                    "Leave RVC's standard audio processing, where it cuts the files."
+                ),
+                value=True,
+                interactive=True,
+                visible=True,
+            )
         preprocess_output_info = gr.Textbox(
             label=i18n("Output Information"),
             info=i18n("The output information will be displayed here."),
@@ -380,6 +389,7 @@ def train_tab():
                     dataset_path,
                     sampling_rate,
                     cpu_cores_preprocess,
+                    cut_preprocess,
                 ],
                 outputs=[preprocess_output_info],
                 api_name="preprocess_dataset",
