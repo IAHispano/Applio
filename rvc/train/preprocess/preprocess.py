@@ -9,6 +9,7 @@ from scipy.io import wavfile
 import numpy as np
 import multiprocessing
 from pydub import AudioSegment
+from distutils.util import strtobool
 
 multiprocessing.set_start_method("spawn", force=True)
 
@@ -152,7 +153,7 @@ if __name__ == "__main__":
     num_processes = (
         int(sys.argv[5]) if len(sys.argv) > 5 else multiprocessing.cpu_count()
     )
-    cut_preprocess = bool(sys.argv[6]) if len(sys.argv) > 6 else True
+    cut_preprocess = strtobool(sys.argv[6])
 
     preprocess_training_set(
         input_root,
