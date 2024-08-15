@@ -137,7 +137,6 @@ def main():
         """
         Starts the training process with multi-GPU support.
         """
-        global training_file_path
         children = []
         pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
         with open(pid_file_path, "w") as pid_file:
@@ -441,6 +440,9 @@ def run(
         optim_d, gamma=config.train.lr_decay, last_epoch=epoch_str - 2
     )
 
+    optim_d.step()
+    optim_g.step()
+
     scaler = GradScaler(enabled=config.train.fp16_run)
 
     cache = []
@@ -523,8 +525,8 @@ def train_and_evaluate(
     net_g.train()
     net_d.train()
 
-    # Data caching
-    if cache_data_in_gpu == True:
+    # Data caching - always make a cache, but preload to gpu only if checked on UI
+    if True:
         data_iterator = cache
         if cache == []:
             for batch_idx, info in enumerate(train_loader):
@@ -550,7 +552,7 @@ def train_and_evaluate(
                         wave_lengths,
                         sid,
                     ) = info
-                if torch.cuda.is_available():
+                if cache_data_in_gpu == True and torch.cuda.is_available():
                     phone = phone.cuda(rank, non_blocking=True)
                     phone_lengths = phone_lengths.cuda(rank, non_blocking=True)
                     if pitch_guidance == True:
@@ -595,8 +597,6 @@ def train_and_evaluate(
                     )
         else:
             shuffle(cache)
-    else:
-        data_iterator = enumerate(train_loader)
 
     epoch_recorder = EpochRecorder()
     with tqdm(total=len(train_loader), leave=False) as pbar:
@@ -625,6 +625,7 @@ def train_and_evaluate(
                 spec = spec.cuda(rank, non_blocking=True)
                 spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
                 wave = wave.cuda(rank, non_blocking=True)
+                wave_lengths = wave_lengths.cuda(rank, non_blocking=True)
 
             # Forward pass
             with autocast(enabled=config.train.fp16_run):
@@ -995,25 +996,28 @@ def train_and_evaluate(
         pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
         os.remove(pid_file_path)
 
-        if hasattr(net_g, "module"):
-            ckpt = net_g.module.state_dict()
-        else:
-            ckpt = net_g.state_dict()
+        if not os.path.exists(
+            os.path.join(experiment_dir, f"{model_name}_{epoch}e_{global_step}s.pth")
+        ):
+            if hasattr(net_g, "module"):
+                ckpt = net_g.module.state_dict()
+            else:
+                ckpt = net_g.state_dict()
 
-        extract_model(
-            ckpt=ckpt,
-            sr=sample_rate,
-            pitch_guidance=pitch_guidance == True,
-            name=model_name,
-            model_dir=os.path.join(
-                experiment_dir,
-                f"{model_name}_{epoch}e_{global_step}s.pth",
-            ),
-            epoch=epoch,
-            step=global_step,
-            version=version,
-            hps=hps,
-        )
+            extract_model(
+                ckpt=ckpt,
+                sr=sample_rate,
+                pitch_guidance=pitch_guidance == True,
+                name=model_name,
+                model_dir=os.path.join(
+                    experiment_dir,
+                    f"{model_name}_{epoch}e_{global_step}s.pth",
+                ),
+                epoch=epoch,
+                step=global_step,
+                version=version,
+                hps=hps,
+            )
         sleep(1)
         os._exit(2333333)
 
