@@ -3,14 +3,10 @@ import os
 import sys
 
 now_dir = os.getcwd()
-pid_file_path = os.path.join(now_dir, "rvc", "train", "train_pid.txt")
 
 
-def restart_applio():
-    if os.name != "nt":
-        os.system("clear")
-    else:
-        os.system("cls")
+def stop_train(model_name: str):
+    pid_file_path = os.path.join(now_dir, "logs", model_name, "train_pid.txt")
     try:
         with open(pid_file_path, "r") as pid_file:
             pids = [int(pid) for pid in pid_file.readlines()]
@@ -19,6 +15,13 @@ def restart_applio():
         os.remove(pid_file_path)
     except:
         pass
+
+
+def restart_applio():
+    if os.name != "nt":
+        os.system("clear")
+    else:
+        os.system("cls")
     python = sys.executable
     os.execl(python, python, *sys.argv)
 
