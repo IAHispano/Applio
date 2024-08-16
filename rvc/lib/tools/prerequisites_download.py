@@ -51,10 +51,7 @@ models_list = [
             "fcpe.pt",
         ],
         "formant/",
-        [
-            "stftpitchshift",
-            "stftpitchshift.exe",
-        ],
+        ["stftpitchshift"],
     ),
 ]
 
@@ -68,7 +65,7 @@ embedders_list = [
 ]
 
 
-executables_list = ["ffmpeg.exe", "ffprobe.exe"]
+executables_list = ["ffmpeg.exe", "ffprobe.exe", "stftpitchshift.exe"]
 
 folder_mapping_list = {
     "pretrained_v1/": "rvc/models/pretraineds/pretrained_v1/",
