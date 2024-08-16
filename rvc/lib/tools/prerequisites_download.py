@@ -50,8 +50,6 @@ models_list = [
             "rmvpe.pt",
             "fcpe.pt",
         ],
-        "formant/",
-        ["stftpitchshift"],
     ),
 ]
 
@@ -64,8 +62,24 @@ embedders_list = [
     ),
 ]
 
-
-executables_list = ["ffmpeg.exe", "ffprobe.exe", "stftpitchshift.exe"]
+linux_executables_list = [
+    (
+        "formant/",
+        [
+            "stftpitchshift",
+        ],
+    ),
+]
+executables_list = [
+    "ffmpeg.exe",
+    "ffprobe.exe",
+    (
+        "formant/",
+        [
+            "stftpitchshift.exe",
+        ],
+    ),
+]
 
 folder_mapping_list = {
     "pretrained_v1/": "rvc/models/pretraineds/pretrained_v1/",
@@ -131,7 +145,7 @@ def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
         if os.name == "nt":
             download_files(executables_list)
         else:
-            print("Executable files are only available for Windows")
+            download_files(linux_executables_list)
 
     if pretraineds_v1 == True:
         download_mapping_files(pretraineds_v1_list)
