@@ -33,7 +33,7 @@ jobs:
       - name: Extract version from config.json
         id: extract-version
         run: |
-          version=$(jq -r '.version' Applio/assets/config.json)
+          version=$(jq -r '.version' ./assets/config.json)
           echo "Version found: $version"
           echo "::set-output name=version::$version"
 
