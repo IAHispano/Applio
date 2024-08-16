@@ -8,6 +8,7 @@ from scipy.io import wavfile
 import numpy as np
 import multiprocessing
 from pydub import AudioSegment
+from distutils.util import strtobool
 
 multiprocessing.set_start_method("spawn", force=True)
 
@@ -81,7 +82,7 @@ class PreProcess:
         wav_16k_path = os.path.join(self.wavs16k_dir, f"{idx0}_{idx1}.wav")
         self._write_audio(audio_16k, wav_16k_path, SAMPLE_RATE_16K)
 
-    def process_audio(self, path: str, idx0: int):
+    def process_audio(self, path: str, idx0: int, cut_preprocess: bool):
         try:
             audio = load_audio(path, self.sr)
             audio = torch.tensor(
@@ -89,34 +90,39 @@ class PreProcess:
             ).float()
 
             idx1 = 0
-            for audio_segment in self.slicer.slice(audio.cpu().numpy()):
-                audio_segment = torch.tensor(audio_segment, device=self.device).float()
-                i = 0
-                while True:
-                    start = int(self.sr * (self.per - OVERLAP) * i)
-                    i += 1
-                    if len(audio_segment[start:]) > (self.per + OVERLAP) * self.sr:
-                        tmp_audio = audio_segment[
-                            start : start + int(self.per * self.sr)
-                        ]
-                        self.process_audio_segment(tmp_audio, idx0, idx1)
-                        idx1 += 1
-                    else:
-                        tmp_audio = audio_segment[start:]
-                        self.process_audio_segment(tmp_audio, idx0, idx1)
-                        idx1 += 1
-                        break
+            if cut_preprocess:
+                for audio_segment in self.slicer.slice(audio.cpu().numpy()):
+                    audio_segment = torch.tensor(
+                        audio_segment, device=self.device
+                    ).float()
+                    i = 0
+                    while True:
+                        start = int(self.sr * (self.per - OVERLAP) * i)
+                        i += 1
+                        if len(audio_segment[start:]) > (self.per + OVERLAP) * self.sr:
+                            tmp_audio = audio_segment[
+                                start : start + int(self.per * self.sr)
+                            ]
+                            self.process_audio_segment(tmp_audio, idx0, idx1)
+                            idx1 += 1
+                        else:
+                            tmp_audio = audio_segment[start:]
+                            self.process_audio_segment(tmp_audio, idx0, idx1)
+                            idx1 += 1
+                            break
+            else:
+                self.process_audio_segment(audio, idx0, idx1)
         except Exception as error:
             print(f"An error occurred on {path} path: {error}")
 
-    def process_audio_file(self, file_path_idx):
+    def process_audio_file(self, file_path_idx, cut_preprocess):
         file_path, idx0 = file_path_idx
         ext = os.path.splitext(file_path)[1].lower()
         if ext not in [".wav"]:
             audio = AudioSegment.from_file(file_path)
             file_path = os.path.join("/tmp", f"{idx0}.wav")
             audio.export(file_path, format="wav")
-        self.process_audio(file_path, idx0)
+        self.process_audio(file_path, idx0, cut_preprocess)
 
 
 def preprocess_training_set(
@@ -125,6 +131,7 @@ def preprocess_training_set(
     num_processes: int,
     exp_dir: str,
     per: float,
+    cut_preprocess: bool,
 ):
     start_time = time.time()
 
@@ -139,7 +146,7 @@ def preprocess_training_set(
 
     ctx = multiprocessing.get_context("spawn")
     with ctx.Pool(processes=num_processes) as pool:
-        pool.map(pp.process_audio_file, files)
+        pool.starmap(pp.process_audio_file, [(file, cut_preprocess) for file in files])
 
     elapsed_time = time.time() - start_time
     print(f"Preprocess completed in {elapsed_time:.2f} seconds.")
@@ -153,6 +160,7 @@ if __name__ == "__main__":
     num_processes = (
         int(sys.argv[5]) if len(sys.argv) > 5 else multiprocessing.cpu_count()
     )
+    cut_preprocess = strtobool(sys.argv[6])
 
     preprocess_training_set(
         input_root,
@@ -160,4 +168,5 @@ if __name__ == "__main__":
         num_processes,
         experiment_directory,
         percentage,
+        cut_preprocess,
     )
