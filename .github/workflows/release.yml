@@ -26,6 +26,10 @@ jobs:
         run: |
           echo "::set-output name=sha::$(git rev-parse --verify --quiet HEAD^)"
 
+      - name: List directory contents
+        run: |
+          ls -R
+
       - name: Extract version from config.json
         id: extract-version
         run: |
