@@ -25,7 +25,8 @@ custom_embedder_root = os.path.join(
     now_dir, "rvc", "models", "embedders", "embedders_custom"
 )
 
-PRESETS_DIR = "assets/presets"
+PRESETS_DIR = os.path.join(now_dir, "assets", "presets")
+FORMANTSHIFT_DIR = os.path.join(now_dir, "assets", "formant_shift")
 
 os.makedirs(custom_embedder_root, exist_ok=True)
 
@@ -97,6 +98,17 @@ def update_sliders(preset):
     )
 
 
+def update_sliders_formant(preset):
+    with open(
+        os.path.join(FORMANTSHIFT_DIR, f"{preset}.json"), "r", encoding="utf-8"
+    ) as json_file:
+        values = json.load(json_file)
+    return (
+        values["formant_qfrency"],
+        values["formant_timbre"],
+    )
+
+
 def export_presets(presets, file_path):
     with open(file_path, "w", encoding="utf-8") as json_file:
         json.dump(presets, json_file, ensure_ascii=False, indent=4)
@@ -150,26 +162,6 @@ def list_json_files(directory):
 def refresh_presets():
     json_files = list_json_files(PRESETS_DIR)
     return gr.update(choices=json_files)
-
-
-def update_visibility(selected_preset):
-    if selected_preset == "Custom":
-        json_files = list_json_files(PRESETS_DIR)
-        return (
-            gr.update(visible=True, choices=json_files),
-            gr.update(visible=True),
-            gr.update(visible=True),
-            gr.update(visible=True),
-            gr.update(visible=True),
-        )
-    else:
-        return (
-            gr.update(visible=False),
-            gr.update(visible=False),
-            gr.update(visible=False),
-            gr.update(visible=False),
-            gr.update(visible=False),
-        )
 
 
 def output_path_fn(input_audio_path):
@@ -303,6 +295,11 @@ def save_drop_custom_embedder(dropbox):
     return None
 
 
+def refresh_formant():
+    json_files = list_json_files(FORMANTSHIFT_DIR)
+    return gr.update(choices=json_files)
+
+
 # Inference tab
 def inference_tab():
     default_weight = names[0] if names else None
@@ -430,6 +427,49 @@ def inference_tab():
                     ),
                     visible=True,
                     value=False,
+                    interactive=True,
+                )
+                formant_shifting = gr.Checkbox(
+                    label=i18n("Formant Shifting Settings"),
+                    info=i18n(
+                        "Enable formant shifting settings. Used for male to female and vice-versa convertions."
+                    ),
+                    value=False,
+                    visible=True,
+                    interactive=True,
+                )
+                with gr.Row():
+                    formant_preset = gr.Dropdown(
+                        label=i18n("Browse presets for formanting"),
+                        info=i18n(
+                            "Presets are located in /assets/formant_shift folder"
+                        ),
+                        choices=list_json_files(FORMANTSHIFT_DIR),
+                        visible=False,
+                        interactive=True,
+                    )
+                    formant_refresh_button = gr.Button(
+                        value="Refresh",
+                        visible=False,
+                    )
+                formant_qfrency = gr.Slider(
+                    value=1.0,
+                    info=i18n("Default value is 1.0"),
+                    label=i18n("Quefrency for formant shifting"),
+                    minimum=0.0,
+                    maximum=16.0,
+                    step=0.1,
+                    visible=False,
+                    interactive=True,
+                )
+                formant_timbre = gr.Slider(
+                    value=1.0,
+                    info=i18n("Default value is 1.0"),
+                    label=i18n("Timbre for formant shifting"),
+                    minimum=0.0,
+                    maximum=16.0,
+                    step=0.1,
+                    visible=False,
                     interactive=True,
                 )
                 with gr.Accordion(i18n("Preset Settings"), open=False):
@@ -685,11 +725,54 @@ def inference_tab():
                     value=False,
                     interactive=True,
                 )
+                formant_shifting_batch = gr.Checkbox(
+                    label=i18n("Formant Shifting Settings"),
+                    info=i18n(
+                        "Enable formant shifting settings. Used for male to female and vice-versa convertions."
+                    ),
+                    value=False,
+                    visible=True,
+                    interactive=True,
+                )
+                with gr.Row():
+                    formant_preset_batch = gr.Dropdown(
+                        label=i18n("Browse presets for formanting"),
+                        info=i18n(
+                            "Presets are located in /assets/formant_shift folder"
+                        ),
+                        choices=list_json_files(FORMANTSHIFT_DIR),
+                        visible=False,
+                        interactive=True,
+                    )
+                    formant_refresh_button_batch = gr.Button(
+                        value="Refresh",
+                        visible=False,
+                        variant="primary",
+                    )
+                formant_qfrency_batch = gr.Slider(
+                    value=1.0,
+                    info=i18n("Default value is 1.0"),
+                    label=i18n("Quefrency for formant shifting"),
+                    minimum=0.0,
+                    maximum=16.0,
+                    step=0.1,
+                    visible=False,
+                    interactive=True,
+                )
+                formant_timbre_batch = gr.Slider(
+                    value=1.0,
+                    info=i18n("Default value is 1.0"),
+                    label=i18n("Timbre for formant shifting"),
+                    minimum=0.0,
+                    maximum=16.0,
+                    step=0.1,
+                    visible=False,
+                    interactive=True,
+                )
                 with gr.Accordion(i18n("Preset Settings"), open=False):
                     with gr.Row():
                         preset_dropdown = gr.Dropdown(
                             label=i18n("Select Custom Preset"),
-                            choices=list_json_files(PRESETS_DIR),
                             interactive=True,
                         )
                         presets_batch_refresh_button = gr.Button(
@@ -874,10 +957,67 @@ def inference_tab():
             return {"visible": True, "__type__": "update"}
         return {"visible": False, "__type__": "update"}
 
+    def toggle_visible_formant_shifting(checkbox):
+        if checkbox:
+            return (
+                gr.update(visible=True),
+                gr.update(visible=True),
+                gr.update(visible=True),
+                gr.update(visible=True),
+            )
+        else:
+            return (
+                gr.update(visible=False),
+                gr.update(visible=False),
+                gr.update(visible=False),
+                gr.update(visible=False),
+            )
+
     clean_audio.change(
         fn=toggle_visible,
         inputs=[clean_audio],
         outputs=[clean_strength],
+    )
+    formant_shifting.change(
+        fn=toggle_visible_formant_shifting,
+        inputs=[formant_shifting],
+        outputs=[
+            formant_preset,
+            formant_refresh_button,
+            formant_qfrency,
+            formant_timbre,
+        ],
+    )
+    formant_shifting_batch.change(
+        fn=toggle_visible_formant_shifting,
+        inputs=[formant_shifting],
+        outputs=[
+            formant_preset_batch,
+            formant_refresh_button_batch,
+            formant_qfrency_batch,
+            formant_timbre_batch,
+        ],
+    )
+    formant_refresh_button.click(
+        fn=refresh_formant,
+        inputs=[],
+        outputs=[formant_preset],
+    )
+    formant_preset.change(
+        fn=update_sliders_formant,
+        inputs=[formant_preset],
+        outputs=[
+            formant_qfrency,
+            formant_timbre,
+        ],
+    )
+    formant_preset_batch.change(
+        fn=update_sliders_formant,
+        inputs=[formant_preset_batch],
+        outputs=[
+            formant_qfrency,
+            formant_timbre,
+        ],
     )
     clean_audio_batch.change(
         fn=toggle_visible,
@@ -995,6 +1135,9 @@ def inference_tab():
             f0_file,
             embedder_model,
             embedder_model_custom,
+            formant_shifting,
+            formant_qfrency,
+            formant_timbre,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -1021,6 +1164,9 @@ def inference_tab():
             f0_file_batch,
             embedder_model_batch,
             embedder_model_custom_batch,
+            formant_shifting_batch,
+            formant_qfrency_batch,
+            formant_timbre_batch,
         ],
         outputs=[vc_output3],
     )
