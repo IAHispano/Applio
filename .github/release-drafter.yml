@@ -31,8 +31,8 @@ template: |
   🚀 Exciting News! Upgrade to the latest and greatest version of Applio, $NEXT_PATCH_VERSION, now available for download!
   
   ### Choose your preferred option:
-  - 🚀 Release: [Download Now](https://github.com/$REPOSITORY/releases/tag/$NEXT_PATCH_VERSION)
-  - 📦 Compiled (Just double click it): [.exe](https://huggingface.co/$REPOSITORY/resolve/main/Compiled/ApplioV$NEXT_PATCH_VERSION.exe) / [.zip](https://huggingface.co/$REPOSITORY/resolve/main/Compiled/ApplioV$NEXT_PATCH_VERSION.zip?download=true)
+  - 🚀 Release: [Download Now](https://github.com/IAHispano/$REPOSITORY/releases/tag/$NEXT_PATCH_VERSION)
+  - 📦 Compiled (Just double click it): [.exe](https://huggingface.co/IAHispano/$REPOSITORY/resolve/main/Compiled/ApplioV$NEXT_PATCH_VERSION.exe) / [.zip](https://huggingface.co/IAHispano/$REPOSITORY/resolve/main/Compiled/ApplioV$NEXT_PATCH_VERSION.zip?download=true)
   
   ### Applio Changelog Highlights:
   $CHANGES
