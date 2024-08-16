@@ -26,29 +26,18 @@ jobs:
         run: |
           echo "::set-output name=sha::$(git rev-parse --verify --quiet HEAD^)"
 
-      - name: List directory contents
-        run: |
-          ls -R
-
-      - name: Extract version from config.json
-        id: extract-version
-        run: |
-          version=$(jq -r '.version' ./assets/config.json)
-          echo "Version found: $version"
-          echo "::set-output name=version::$version"
-
       - name: Detect and tag new version
         id: check-version
         if: steps.check-parent-commit.outputs.sha
         uses: salsify/action-detect-and-tag-new-version@v2.0.3
         with:
-          version-command: echo "${{ steps.extract-version.outputs.version }}"
-
+          version-command: |
+            bash -o pipefail -c "cat ./assets/config.json | jq -r '.version'"
+            
       - name: Publish the release notes
         uses: release-drafter/release-drafter@v5.25.0
-        if: steps.check-version.outputs.tag != ''
         with:
-          publish: true
+          publish: "${{ steps.check-version.outputs.tag != '' }}"
           tag: "${{ steps.check-version.outputs.tag }}"
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
