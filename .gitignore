@@ -16,4 +16,6 @@
 *.safetensors
 
 logs
-/env
+env
+venv
+.venv
