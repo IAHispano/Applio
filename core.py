@@ -71,6 +71,9 @@ def run_infer_script(
     f0_file: str,
     embedder_model: str,
     embedder_model_custom: str = None,
+    formant_shifting: bool = False,
+    formant_qfrency: float = 1.0,
+    formant_timbre: float = 1.0,
 ):
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(
@@ -94,6 +97,9 @@ def run_infer_script(
         f0_file=f0_file,
         embedder_model=embedder_model,
         embedder_model_custom=embedder_model_custom,
+        formant_shifting=formant_shifting,
+        formant_qfrency=formant_qfrency,
+        formant_timbre=formant_timbre,
     )
     return f"File {input_path} inferred successfully.", output_path.replace(
         ".wav", f".{export_format.lower()}"
@@ -122,6 +128,9 @@ def run_batch_infer_script(
     f0_file: str,
     embedder_model: str,
     embedder_model_custom: str = None,
+    formant_shifting: bool = False,
+    formant_qfrency: float = 1.0,
+    formant_timbre: float = 1.0,
 ):
     audio_files = [
         f for f in os.listdir(input_folder) if f.endswith((".mp3", ".wav", ".flac"))
@@ -161,6 +170,9 @@ def run_batch_infer_script(
                 f0_file=f0_file,
                 embedder_model=embedder_model,
                 embedder_model_custom=embedder_model_custom,
+                formant_shifting=formant_shifting,
+                formant_qfrency=formant_qfrency,
+                formant_timbre=formant_timbre,
             )
 
     return f"Files from {input_folder} inferred successfully."
@@ -642,6 +654,31 @@ def parse_arguments():
         help=f0_file_description,
         default=None,
     )
+    formant_shifting_description = "Apply formant shifting to the input audio. This can help adjust the timbre of the voice."
+    infer_parser.add_argument(
+        "--formant_shifting",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=formant_shifting_description,
+        default=False,
+        required=False,
+    )
+    formant_qfrency_description = "Control the frequency of the formant shifting effect. Higher values result in a more pronounced effect."
+    infer_parser.add_argument(
+        "--formant_qfrency",
+        type=float,
+        help=formant_qfrency_description,
+        default=1.0,
+        required=False,
+    )
+    formant_timbre_description = "Control the timbre of the formant shifting effect. Higher values result in a more pronounced effect."
+    infer_parser.add_argument(
+        "--formant_timbre",
+        type=float,
+        help=formant_timbre_description,
+        default=1.0,
+        required=False,
+    )
 
     # Parser for 'batch_infer' mode
     batch_infer_parser = subparsers.add_parser(
@@ -789,6 +826,28 @@ def parse_arguments():
         type=str,
         help=f0_file_description,
         default=None,
+    )
+    batch_infer_parser.add_argument(
+        "--formant_shifting",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=formant_shifting_description,
+        default=False,
+        required=False,
+    )
+    batch_infer_parser.add_argument(
+        "--formant_qfrency",
+        type=float,
+        help=formant_qfrency_description,
+        default=1.0,
+        required=False,
+    )
+    batch_infer_parser.add_argument(
+        "--formant_timbre",
+        type=float,
+        help=formant_timbre_description,
+        default=1.0,
+        required=False,
     )
 
     # Parser for 'tts' mode

@@ -50,6 +50,11 @@ models_list = [
             "rmvpe.pt",
             "fcpe.pt",
         ],
+        "formant/",
+        [
+            "stftpitchshift",
+            "stftpitchshift.exe",
+        ],
     ),
 ]
 
@@ -70,6 +75,7 @@ folder_mapping_list = {
     "pretrained_v2/": "rvc/models/pretraineds/pretrained_v2/",
     "embedders/": "rvc/models/embedders/",
     "predictors/": "rvc/models/predictors/",
+    "formant/": "rvc/models/formant/",
 }
 
 
