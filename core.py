@@ -1178,6 +1178,14 @@ def parse_arguments():
         help="Cache training data in GPU memory.",
         default=False,
     )
+    train_parser.add_argument(
+        "--index_algorithm",
+        type=str,
+        choices=["Auto", "Faiss", "KMeans"],
+        help="Choose the method for generating the index file.",
+        default="Auto",
+        required=False,
+    )
 
     # Parser for 'index' mode
     index_parser = subparsers.add_parser(
@@ -1465,6 +1473,7 @@ def main():
                 pretrained=args.pretrained,
                 custom_pretrained=args.custom_pretrained,
                 sync_graph=args.sync_graph,
+                index_algorithm=args.index_algorithm,
                 cache_data_in_gpu=args.cache_data_in_gpu,
                 g_pretrained_path=args.g_pretrained_path,
                 d_pretrained_path=args.d_pretrained_path,
