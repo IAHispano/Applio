@@ -1002,6 +1002,7 @@ def parse_arguments():
         choices=[True, False],
         help="Cut the dataset into smaller segments for faster preprocessing.",
         default=True,
+        required=False,
     )
 
     # Parser for 'extract' mode
