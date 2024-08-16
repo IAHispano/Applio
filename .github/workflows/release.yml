@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v4.7.1
+        with:
+          python-version: "3.8"
+
+      - name: Check if there is a parent commit
+        id: check-parent-commit
+        run: |
+          echo "::set-output name=sha::$(git rev-parse --verify --quiet HEAD^)"
+
+      - name: Extract version from config.json
+        id: extract-version
+        run: |
+          version=$(jq -r '.version' Applio/assets/config.json)
+          echo "Version found: $version"
+          echo "::set-output name=version::$version"
+
+      - name: Detect and tag new version
+        id: check-version
+        if: steps.check-parent-commit.outputs.sha
+        uses: salsify/action-detect-and-tag-new-version@v2.0.3
+        with:
+          version-command: echo "${{ steps.extract-version.outputs.version }}"
+
+      - name: Publish the release notes
+        uses: release-drafter/release-drafter@v5.25.0
+        if: steps.check-version.outputs.tag != ''
+        with:
+          publish: true
+          tag: "${{ steps.check-version.outputs.tag }}"
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
