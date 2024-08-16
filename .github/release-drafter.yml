@@ -1,0 +1,43 @@
+name-template: '$NEXT_PATCH_VERSION'
+tag-template: '$NEXT_PATCH_VERSION'
+version-template: '$MAJOR.$MINOR.$PATCH'
+categories:
+  - title: ":rocket: Features"
+    label: "enhancement"
+  - title: ":beetle: Fixes"
+    label: "bug"
+  - title: ":fire: Removals and Deprecations"
+    label: "removal"
+  - title: ":racehorse: Performance"
+    label: "performance"
+  - title: ":construction_worker: Continuous Integration"
+    labels:
+      - "ci"
+      - "github_actions"
+  - title: ":books: Documentation"
+    label: "documentation"
+  - title: ":hammer: Refactoring"
+    label: "refactoring"
+  - title: ":package: Dependencies"
+    collapse-after: 1
+    labels:
+      - "dependencies"
+      - "build"
+  - title: ":lipstick: Style"
+    label: "style"
+  - title: ":rotating_light: Testing"
+    label: "testing"
+template: |
+  🚀 Exciting News! Upgrade to the latest and greatest version of Applio, $NEXT_PATCH_VERSION, now available for download!
+  
+  ### Choose your preferred option:
+  - 🚀 Release: [Download Now](https://github.com/$REPOSITORY/releases/tag/$NEXT_PATCH_VERSION)
+  - 📦 Compiled (Just double click it): [.exe](https://huggingface.co/$REPOSITORY/resolve/main/Compiled/ApplioV$NEXT_PATCH_VERSION.exe) / [.zip](https://huggingface.co/$REPOSITORY/resolve/main/Compiled/ApplioV$NEXT_PATCH_VERSION.zip?download=true)
+  
+  ### Applio Changelog Highlights:
+  $CHANGES
+  
+  What features are you hoping to see in our upcoming updates? 🔍 Stay tuned for more exciting improvements!
+
+exclude-labels:
+  - 'skip-changelog'
