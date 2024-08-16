@@ -362,16 +362,15 @@ def train_tab():
                     ),
                     interactive=True,
                 )
-        with gr.Accordion(i18n("advanced settings"), open=False):
-            cut_preprocess = gr.Checkbox(
-                label=i18n("Cut the audio files"),
-                info=i18n(
-                    "Leave RVC's standard audio processing, where it cuts the files."
-                ),
-                value=True,
-                interactive=True,
-                visible=True,
-            )
+                cut_preprocess = gr.Checkbox(
+                    label=i18n("Audio cutting"),
+                    info=i18n(
+                        "It's recommended to deactivate this option if your dataset has already been processed."
+                    ),
+                    value=True,
+                    interactive=True,
+                    visible=True,
+                )
         preprocess_output_info = gr.Textbox(
             label=i18n("Output Information"),
             info=i18n("The output information will be displayed here."),
