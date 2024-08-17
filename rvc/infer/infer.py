@@ -16,7 +16,7 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from rvc.infer.pipeline import Pipeline as VC
-from rvc.lib.utils import load_audio, load_embedding
+from rvc.lib.utils import load_audio_infer, load_embedding
 from rvc.lib.tools.split_audio import process_audio, merge_audio
 from rvc.lib.algorithm.synthesizers import Synthesizer
 from rvc.configs.config import Config
@@ -139,6 +139,9 @@ class VoiceConverter:
         clean_strength: float,
         export_format: str,
         upscale_audio: bool,
+        formant_shifting: bool,
+        formant_qfrency: float,
+        formant_timbre: float,
         resample_sr: int = 0,
         sid: int = 0,
     ):
@@ -168,6 +171,9 @@ class VoiceConverter:
             clean_strength (float, optional): Strength of the audio cleaning. Default is 0.7.
             export_format (str, optional): Format for exporting the audio. Default is "WAV".
             upscale_audio (bool, optional): Whether to upscale the audio. Default is False.
+            formant_shift (bool, optional): Whether to shift the formants. Default is False.
+            formant_qfrency (float, optional): Formant frequency. Default is 1.0.
+            formant_timbre (float, optional): Formant timbre. Default is 1.0.
 
         """
         self.get_vc(model_path, sid)
@@ -179,7 +185,13 @@ class VoiceConverter:
             if upscale_audio == True:
                 upscale(audio_input_path, audio_input_path)
 
-            audio = load_audio(audio_input_path, 16000)
+            audio = load_audio_infer(
+                audio_input_path,
+                16000,
+                formant_shifting,
+                formant_qfrency,
+                formant_timbre,
+            )
             audio_max = np.abs(audio).max() / 0.95
 
             if audio_max > 1:
