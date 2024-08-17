@@ -4,6 +4,7 @@ from tqdm import tqdm
 import requests
 
 url_base = "https://huggingface.co/IAHispano/Applio/resolve/main/Resources"
+
 pretraineds_v1_list = [
     (
         "pretrained_v1/",
@@ -21,7 +22,7 @@ pretraineds_v1_list = [
             "f0G40k.pth",
             "f0G48k.pth",
         ],
-    ),
+    )
 ]
 pretraineds_v2_list = [
     (
@@ -40,50 +41,14 @@ pretraineds_v2_list = [
             "f0G40k.pth",
             "f0G48k.pth",
         ],
-    ),
+    )
 ]
-
-models_list = [
-    (
-        "predictors/",
-        [
-            "rmvpe.pt",
-            "fcpe.pt",
-        ],
-    ),
-]
-
-embedders_list = [
-    (
-        "embedders/",
-        [
-            "contentvec_base.pt",
-        ],
-    ),
-]
-
-linux_executables_list = [
-    (
-        "formant/",
-        [
-            "stftpitchshift",
-        ],
-    ),
-]
+models_list = [("predictors/", ["rmvpe.pt", "fcpe.pt"])]
+embedders_list = [("embedders/", ["contentvec_base.pt"])]
+linux_executables_list = [("formant/", ["stftpitchshift"])]
 executables_list = [
-    (
-        "",
-        [
-            "ffmpeg.exe",
-            "ffprobe.exe",
-        ],
-    ),
-    (
-        "formant/",
-        [
-            "stftpitchshift.exe",
-        ],
-    ),
+    ("", ["ffmpeg.exe", "ffprobe.exe"]),
+    ("formant/", ["stftpitchshift.exe"]),
 ]
 
 folder_mapping_list = {
@@ -95,75 +60,91 @@ folder_mapping_list = {
 }
 
 
-def download_file(url, destination_path, desc):
+def get_total_size(file_list):
+    """
+    Calculate the total size of files to be downloaded by sending HEAD requests to each file's URL.
+    """
+    total_size = 0
+    for remote_folder, files in file_list:
+        for file in files:
+            url = f"{url_base}/{remote_folder}{file}"
+            response = requests.head(url)
+            total_size += int(response.headers.get("content-length", 0))
+    return total_size
+
+
+def download_file(url, destination_path, global_bar):
+    """
+    Download a file from the given URL to the specified destination path,
+    updating the global progress bar as data is downloaded.
+    """
     if not os.path.exists(destination_path):
         os.makedirs(os.path.dirname(destination_path) or ".", exist_ok=True)
         response = requests.get(url, stream=True)
-        total_size = int(response.headers.get("content-length", 0))
         block_size = 1024
-        t = tqdm(total=total_size, unit="iB", unit_scale=True, desc=desc)
         with open(destination_path, "wb") as file:
             for data in response.iter_content(block_size):
-                t.update(len(data))
                 file.write(data)
-        t.close()
-        if total_size != 0 and t.n != total_size:
-            print("ERROR: Something went wrong during the download")
+                global_bar.update(len(data))
 
 
-def download_files(file_list):
+def download_mapping_files(file_mapping_list, global_bar):
+    """
+    Download all files in the provided file mapping list using a thread pool executor,
+    and update the global progress bar as downloads progress.
+    """
     with ThreadPoolExecutor() as executor:
         futures = []
-        for file_name in file_list:
-            destination_path = os.path.join(file_name)
-            url = f"{url_base}/{file_name}"
-            futures.append(
-                executor.submit(download_file, url, destination_path, file_name)
-            )
-        for future in futures:
-            future.result()
-
-
-def download_mapping_files(list):
-    with ThreadPoolExecutor() as executor:
-        futures = []
-        for remote_folder, file_list in list:
+        for remote_folder, file_list in file_mapping_list:
             local_folder = folder_mapping_list.get(remote_folder, "")
             for file in file_list:
                 destination_path = os.path.join(local_folder, file)
                 url = f"{url_base}/{remote_folder}{file}"
                 futures.append(
-                    executor.submit(
-                        download_file, url, destination_path, f"{remote_folder}{file}"
-                    )
+                    executor.submit(download_file, url, destination_path, global_bar)
                 )
         for future in futures:
             future.result()
 
 
+def calculate_total_size(pretraineds_v1, pretraineds_v2, models, exe):
+    """
+    Calculate the total size of all files to be downloaded based on selected categories (pretraineds, models, executables).
+    """
+    total_size = 0
+    if models:
+        total_size += get_total_size(models_list)
+        total_size += get_total_size(embedders_list)
+    if exe:
+        total_size += get_total_size(
+            executables_list if os.name == "nt" else linux_executables_list
+        )
+    if pretraineds_v1:
+        total_size += get_total_size(pretraineds_v1_list)
+    if pretraineds_v2:
+        total_size += get_total_size(pretraineds_v2_list)
+    return total_size
+
+
 def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
-    if models == True:
-        download_mapping_files(models_list)
-        download_mapping_files(embedders_list)
+    """
+    Manage the download pipeline for different categories of files (pretrained models, executables, etc.).
+    A single global progress bar tracks the cumulative progress of all downloads.
+    """
+    total_size = calculate_total_size(pretraineds_v1, pretraineds_v2, models, exe)
 
-    if exe == True:
-        if os.name == "nt":
-            download_mapping_files(executables_list)
-        else:
-            download_mapping_files(linux_executables_list)
-
-    if pretraineds_v1 == True:
-        download_mapping_files(pretraineds_v1_list)
-
-    if pretraineds_v2 == True:
-        download_mapping_files(pretraineds_v2_list)
-
-    # Clear the console after all downloads are completed
-    clear_console()
-
-
-def clear_console():
-    if os.name == "nt":
-        os.system("cls")
-    else:
-        os.system("clear")
+    with tqdm(
+        total=total_size, unit="iB", unit_scale=True, desc="Downloading all files"
+    ) as global_bar:
+        if models:
+            download_mapping_files(models_list, global_bar)
+            download_mapping_files(embedders_list, global_bar)
+        if exe:
+            download_mapping_files(
+                executables_list if os.name == "nt" else linux_executables_list,
+                global_bar,
+            )
+        if pretraineds_v1:
+            download_mapping_files(pretraineds_v1_list, global_bar)
+        if pretraineds_v2:
+            download_mapping_files(pretraineds_v2_list, global_bar)
