@@ -17,13 +17,8 @@ logging.getLogger("fairseq").setLevel(logging.WARNING)
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-platform_stft_mapping = {
-    "linux": os.path.join(now_dir, "rvc", "models", "formant", "stftpitchshift"),
-    "darwin": os.path.join(now_dir, "rvc", "models", "formant", "stftpitchshift"),
-    "win32": os.path.join(now_dir, "rvc", "models", "formant", "stftpitchshift.exe"),
-}
-
-stft = platform_stft_mapping.get(sys.platform)
+base_path = os.path.join(now_dir, "rvc", "models", "formant", "stftpitchshift")
+stft = base_path + ".exe" if sys.platform == "win32" else base_path
 
 
 def load_audio(file, sample_rate):
