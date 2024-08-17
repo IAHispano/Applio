@@ -430,9 +430,9 @@ def inference_tab():
                     interactive=True,
                 )
                 formant_shifting = gr.Checkbox(
-                    label=i18n("Formant Shifting Settings"),
+                    label=i18n("Formant Shifting"),
                     info=i18n(
-                        "Enable formant shifting settings. Used for male to female and vice-versa convertions."
+                        "Enable formant shifting. Used for male to female and vice-versa convertions."
                     ),
                     value=False,
                     visible=True,
@@ -726,9 +726,9 @@ def inference_tab():
                     interactive=True,
                 )
                 formant_shifting_batch = gr.Checkbox(
-                    label=i18n("Formant Shifting Settings"),
+                    label=i18n("Formant Shifting"),
                     info=i18n(
-                        "Enable formant shifting settings. Used for male to female and vice-versa convertions."
+                        "Enable formant shifting. Used for male to female and vice-versa convertions."
                     ),
                     value=False,
                     visible=True,
