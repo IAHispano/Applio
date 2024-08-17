@@ -1,17 +1,19 @@
 import os
-from multiprocessing import cpu_count
-import sys
 import shutil
+import sys
+from multiprocessing import cpu_count
+
 import gradio as gr
+
 from assets.i18n.i18n import I18nAuto
 from core import (
-    run_preprocess_script,
     run_extract_script,
-    run_train_script,
     run_index_script,
+    run_preprocess_script,
     run_prerequisites_script,
+    run_train_script,
 )
-from rvc.configs.config import max_vram_gpu, get_gpu_info, get_number_of_gpus
+from rvc.configs.config import get_gpu_info, get_number_of_gpus, max_vram_gpu
 from rvc.lib.utils import format_title
 from tabs.settings.restart import stop_train
 
@@ -370,11 +372,13 @@ def train_tab():
                     value=True,
                     interactive=True,
                     visible=True,
-                )                
-                no_filters = gr.Checkbox(
-                    label=i18n("No Filters"),
-                    info=i18n("Disables all preprocessing filters."),
-                    value=False,
+                )
+                process_effects = gr.Checkbox(
+                    label=i18n("Process effects"),
+                    info=i18n(
+                        "It's recommended to deactivate this option if your dataset has already been processed."
+                    ),
+                    value=True,
                     interactive=True,
                     visible=True,
                 )
@@ -396,7 +400,7 @@ def train_tab():
                     sampling_rate,
                     cpu_cores_preprocess,
                     cut_preprocess,
-                    no_filters,
+                    process_effects,
                 ],
                 outputs=[preprocess_output_info],
                 api_name="preprocess_dataset",
