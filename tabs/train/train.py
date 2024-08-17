@@ -295,75 +295,72 @@ def upload_to_google_drive(pth_path, index_path):
 
 # Train Tab
 def train_tab():
+    with gr.Row():
+        model_name = gr.Dropdown(
+            label=i18n("Model Name"),
+            info=i18n("Name of the new model."),
+            choices=get_models_list(),
+            value="my-project",
+            interactive=True,
+            allow_custom_value=True,
+        )
+        sampling_rate = gr.Radio(
+            label=i18n("Sampling Rate"),
+            info=i18n("The sampling rate of the audio files."),
+            choices=["32000", "40000", "48000"],
+            value="40000",
+            interactive=True,
+        )
+        rvc_version = gr.Radio(
+            label=i18n("RVC Version"),
+            info=i18n("The RVC version of the model."),
+            choices=["v1", "v2"],
+            value="v2",
+            interactive=True,
+        )
     with gr.Accordion(i18n("Preprocess")):
-        with gr.Row():
-            with gr.Column():
-                model_name = gr.Dropdown(
-                    label=i18n("Model Name"),
-                    info=i18n("Name of the new model."),
-                    choices=get_models_list(),
-                    value="my-project",
+        dataset_path = gr.Dropdown(
+            label=i18n("Dataset Path"),
+            info=i18n("Path to the dataset folder."),
+            # placeholder=i18n("Enter dataset path"),
+            choices=get_datasets_list(),
+            allow_custom_value=True,
+            interactive=True,
+        )
+        dataset_creator = gr.Checkbox(
+            label=i18n("Dataset Creator"),
+            value=False,
+            interactive=True,
+            visible=True,
+        )
+        with gr.Column(visible=False) as dataset_creator_settings:
+            with gr.Accordion(i18n("Dataset Creator")):
+                dataset_name = gr.Textbox(
+                    label=i18n("Dataset Name"),
+                    info=i18n("Name of the new dataset."),
+                    placeholder=i18n("Enter dataset name"),
                     interactive=True,
-                    allow_custom_value=True,
                 )
-                dataset_path = gr.Dropdown(
-                    label=i18n("Dataset Path"),
-                    info=i18n("Path to the dataset folder."),
-                    # placeholder=i18n("Enter dataset path"),
-                    choices=get_datasets_list(),
-                    allow_custom_value=True,
+                upload_audio_dataset = gr.File(
+                    label=i18n("Upload Audio Dataset"),
+                    type="filepath",
                     interactive=True,
                 )
-                refresh = gr.Button(i18n("Refresh"))
-                dataset_creator = gr.Checkbox(
-                    label=i18n("Dataset Creator"),
-                    value=False,
-                    interactive=True,
-                    visible=True,
-                )
+        refresh = gr.Button(i18n("Refresh"))
 
-                with gr.Column(visible=False) as dataset_creator_settings:
-                    with gr.Accordion(i18n("Dataset Creator")):
-                        dataset_name = gr.Textbox(
-                            label=i18n("Dataset Name"),
-                            info=i18n("Name of the new dataset."),
-                            placeholder=i18n("Enter dataset name"),
-                            interactive=True,
-                        )
-                        upload_audio_dataset = gr.File(
-                            label=i18n("Upload Audio Dataset"),
-                            type="filepath",
-                            interactive=True,
-                        )
-
-            with gr.Column():
-                sampling_rate = gr.Radio(
-                    label=i18n("Sampling Rate"),
-                    info=i18n("The sampling rate of the audio files."),
-                    choices=["32000", "40000", "48000"],
-                    value="40000",
-                    interactive=True,
-                )
-
-                rvc_version = gr.Radio(
-                    label=i18n("RVC Version"),
-                    info=i18n("The RVC version of the model."),
-                    choices=["v1", "v2"],
-                    value="v2",
-                    interactive=True,
-                )
-
-                cpu_cores_preprocess = gr.Slider(
-                    1,
-                    64,
-                    cpu_count(),
-                    step=1,
-                    label=i18n("CPU Cores"),
-                    info=i18n(
-                        "The number of CPU cores to use in the preprocess. The default setting are your cpu cores, which is recommended for most cases."
-                    ),
-                    interactive=True,
-                )
+        with gr.Accordion(i18n("Advanced Settings"), open=False):
+            cpu_cores_preprocess = gr.Slider(
+                1,
+                64,
+                cpu_count(),
+                step=1,
+                label=i18n("CPU Cores"),
+                info=i18n(
+                    "The number of CPU cores to use in the preprocess. The default setting are your cpu cores, which is recommended for most cases."
+                ),
+                interactive=True,
+            )
+            with gr.Row():
                 cut_preprocess = gr.Checkbox(
                     label=i18n("Audio cutting"),
                     info=i18n(
