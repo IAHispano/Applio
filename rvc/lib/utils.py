@@ -70,6 +70,7 @@ def load_audio_infer(
                 audio = librosa.resample(audio, orig_sr=sr, target_sr=sample_rate)
     except Exception as error:
         raise RuntimeError(f"An error occurred loading the audio: {error}")
+    return audio.flatten()
 
 
 def format_title(title):
