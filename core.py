@@ -137,43 +137,32 @@ def run_batch_infer_script(
     ]
     print(f"Detected {len(audio_files)} audio files for inference.")
 
-    for audio_file in audio_files:
-        if "_output" in audio_file:
-            pass
-        else:
-            input_path = os.path.join(input_folder, audio_file)
-            output_file_name = os.path.splitext(os.path.basename(audio_file))[0]
-            output_path = os.path.join(
-                output_folder,
-                f"{output_file_name}_output{os.path.splitext(audio_file)[1]}",
-            )
-            infer_pipeline = import_voice_converter()
-            print(f"Inferring {input_path}...")
-            infer_pipeline.convert_audio(
-                pitch=pitch,
-                filter_radius=filter_radius,
-                index_rate=index_rate,
-                volume_envelope=volume_envelope,
-                protect=protect,
-                hop_length=hop_length,
-                f0_method=f0_method,
-                audio_input_path=input_path,
-                audio_output_path=output_path,
-                model_path=pth_path,
-                index_path=index_path,
-                split_audio=split_audio,
-                f0_autotune=f0_autotune,
-                clean_audio=clean_audio,
-                clean_strength=clean_strength,
-                export_format=export_format,
-                upscale_audio=upscale_audio,
-                f0_file=f0_file,
-                embedder_model=embedder_model,
-                embedder_model_custom=embedder_model_custom,
-                formant_shifting=formant_shifting,
-                formant_qfrency=formant_qfrency,
-                formant_timbre=formant_timbre,
-            )
+    infer_pipeline = import_voice_converter()
+    infer_pipeline.convert_audio_batch(
+        pitch=pitch,
+        filter_radius=filter_radius,
+        index_rate=index_rate,
+        volume_envelope=volume_envelope,
+        protect=protect,
+        hop_length=hop_length,
+        f0_method=f0_method,
+        audio_input_paths=input_folder,
+        audio_output_path=output_folder,
+        model_path=pth_path,
+        index_path=index_path,
+        split_audio=split_audio,
+        f0_autotune=f0_autotune,
+        clean_audio=clean_audio,
+        clean_strength=clean_strength,
+        export_format=export_format,
+        upscale_audio=upscale_audio,
+        f0_file=f0_file,
+        embedder_model=embedder_model,
+        embedder_model_custom=embedder_model_custom,
+        formant_shifting=formant_shifting,
+        formant_qfrency=formant_qfrency,
+        formant_timbre=formant_timbre,
+    )
 
     return f"Files from {input_folder} inferred successfully."
 
