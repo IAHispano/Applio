@@ -396,12 +396,15 @@ class VoiceConverter:
             ]
             print(f"Detected {len(audio_files)} audio files for inference.")
             for i, audio_input_path in enumerate(audio_files):
-                print(f"Converting audio '{audio_input_path}'...")
-                audio_input_path = os.path.join(audio_input_paths, audio_input_path)
                 audio_output_paths = os.path.join(
                     audio_output_path,
                     f"{os.path.splitext(os.path.basename(audio_input_path))[0]}_output.{export_format.lower()}",
                 )
+                if os.path.exists(audio_output_paths):
+                    continue
+                print(f"Converting audio '{audio_input_path}'...")
+                audio_input_path = os.path.join(audio_input_paths, audio_input_path)
+
                 if upscale_audio == True:
                     upscale(audio_input_path, audio_input_path)
                 audio = load_audio_infer(
