@@ -260,6 +260,7 @@ def run_preprocess_script(
     sample_rate: int,
     cpu_cores: int,
     cut_preprocess: bool,
+    no_filters: bool,
 ):
     config = get_config()
     per = 3.0 if config.is_half else 3.7
@@ -276,6 +277,7 @@ def run_preprocess_script(
                 per,
                 cpu_cores,
                 cut_preprocess,
+                no_filters,
             ],
         ),
     ]
@@ -1048,6 +1050,14 @@ def parse_arguments():
         default=True,
         required=False,
     )
+    preprocess_parser.add_argument(
+        "--no_filters",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Disable all filters during preprocessing.",
+        default=False,
+        required=False,
+    )
 
     # Parser for 'extract' mode
     extract_parser = subparsers.add_parser(
@@ -1515,6 +1525,7 @@ def main():
                 sample_rate=args.sample_rate,
                 cpu_cores=args.cpu_cores,
                 cut_preprocess=args.cut_preprocess,
+                no_filters=args.no_filters,
             )
         elif args.mode == "extract":
             run_extract_script(

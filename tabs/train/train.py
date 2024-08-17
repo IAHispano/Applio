@@ -370,6 +370,13 @@ def train_tab():
                     value=True,
                     interactive=True,
                     visible=True,
+                )                
+                no_filters = gr.Checkbox(
+                    label=i18n("No Filters"),
+                    info=i18n("Disables all preprocessing filters."),
+                    value=False,
+                    interactive=True,
+                    visible=True,
                 )
         preprocess_output_info = gr.Textbox(
             label=i18n("Output Information"),
@@ -389,6 +396,7 @@ def train_tab():
                     sampling_rate,
                     cpu_cores_preprocess,
                     cut_preprocess,
+                    no_filters,
                 ],
                 outputs=[preprocess_output_info],
                 api_name="preprocess_dataset",

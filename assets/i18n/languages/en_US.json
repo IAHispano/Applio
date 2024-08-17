@@ -19,6 +19,8 @@
   "Preprocess": "Preprocess",
   "Audio cutting": "Audio cutting",
   "It's recommended to deactivate this option if your dataset has already been processed.": "It's recommended to deactivate this option if your dataset has already been processed.",
+  "No Filters": "No Filters",
+  "Disables all preprocessing filters.": "Disables all preprocessing filters.",
   "Model Name": "Model Name",
   "Name of the new model.": "Name of the new model.",
   "Enter model name": "Enter model name",

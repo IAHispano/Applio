@@ -66,8 +66,17 @@ class PreProcess:
         audio = audio.cpu().numpy()
         wavfile.write(filename, sr, audio.astype(np.float32))
 
-    def process_audio_segment(self, audio_segment: torch.Tensor, idx0: int, idx1: int):
-        normalized_audio = self._normalize_audio(audio_segment)
+    def process_audio_segment(
+        self,
+        audio_segment: torch.Tensor,
+        idx0: int,
+        idx1: int,
+        no_filters: bool,
+    ):
+        if no_filters:
+            normalized_audio = audio_segment
+        else:
+            normalized_audio = self._normalize_audio(audio_segment)
         if normalized_audio is None:
             print(f"{idx0}-{idx1}-filtered")
             return
@@ -82,13 +91,17 @@ class PreProcess:
         wav_16k_path = os.path.join(self.wavs16k_dir, f"{idx0}_{idx1}.wav")
         self._write_audio(audio_16k, wav_16k_path, SAMPLE_RATE_16K)
 
-    def process_audio(self, path: str, idx0: int, cut_preprocess: bool):
+    def process_audio(
+        self, path: str, idx0: int, cut_preprocess: bool, no_filters: bool
+    ):
         try:
             audio = load_audio(path, self.sr)
-            audio = torch.tensor(
-                signal.lfilter(self.b_high, self.a_high, audio), device=self.device
-            ).float()
-
+            if no_filters:
+                audio = torch.tensor(audio, device=self.device).float()
+            else:
+                audio = torch.tensor(
+                    signal.lfilter(self.b_high, self.a_high, audio), device=self.device
+                ).float()
             idx1 = 0
             if cut_preprocess:
                 for audio_segment in self.slicer.slice(audio.cpu().numpy()):
@@ -103,26 +116,35 @@ class PreProcess:
                             tmp_audio = audio_segment[
                                 start : start + int(self.per * self.sr)
                             ]
-                            self.process_audio_segment(tmp_audio, idx0, idx1)
+                            self.process_audio_segment(
+                                tmp_audio, idx0, idx1, no_filters
+                            )
                             idx1 += 1
                         else:
                             tmp_audio = audio_segment[start:]
-                            self.process_audio_segment(tmp_audio, idx0, idx1)
+                            self.process_audio_segment(
+                                tmp_audio, idx0, idx1, no_filters
+                            )
                             idx1 += 1
                             break
             else:
-                self.process_audio_segment(audio, idx0, idx1)
+                self.process_audio_segment(audio, idx0, idx1, no_filters)
         except Exception as error:
             print(f"An error occurred on {path} path: {error}")
 
-    def process_audio_file(self, file_path_idx, cut_preprocess):
+    def process_audio_file(self, file_path_idx, cut_preprocess, no_filters):
         file_path, idx0 = file_path_idx
         ext = os.path.splitext(file_path)[1].lower()
         if ext not in [".wav"]:
             audio = AudioSegment.from_file(file_path)
             file_path = os.path.join("/tmp", f"{idx0}.wav")
             audio.export(file_path, format="wav")
-        self.process_audio(file_path, idx0, cut_preprocess)
+        self.process_audio(file_path, idx0, cut_preprocess, no_filters)
+
+
+def process_file(args):
+    pp, file, cut_preprocess, no_filters = args
+    pp.process_audio_file(file, cut_preprocess, no_filters)
 
 
 def preprocess_training_set(
@@ -132,6 +154,7 @@ def preprocess_training_set(
     exp_dir: str,
     per: float,
     cut_preprocess: bool,
+    no_filters: bool,
 ):
     start_time = time.time()
 
@@ -146,7 +169,9 @@ def preprocess_training_set(
 
     ctx = multiprocessing.get_context("spawn")
     with ctx.Pool(processes=num_processes) as pool:
-        pool.starmap(pp.process_audio_file, [(file, cut_preprocess) for file in files])
+        pool.map(
+            process_file, [(pp, file, cut_preprocess, no_filters) for file in files]
+        )
 
     elapsed_time = time.time() - start_time
     print(f"Preprocess completed in {elapsed_time:.2f} seconds.")
@@ -161,6 +186,7 @@ if __name__ == "__main__":
         int(sys.argv[5]) if len(sys.argv) > 5 else multiprocessing.cpu_count()
     )
     cut_preprocess = strtobool(sys.argv[6])
+    no_filters = strtobool(sys.argv[7])
 
     preprocess_training_set(
         input_root,
@@ -169,4 +195,5 @@ if __name__ == "__main__":
         experiment_directory,
         percentage,
         cut_preprocess,
+        no_filters,
     )
