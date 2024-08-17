@@ -370,7 +370,7 @@ def train_tab():
                     value=True,
                     interactive=True,
                     visible=True,
-                )                
+                )
                 no_filters = gr.Checkbox(
                     label=i18n("No Filters"),
                     info=i18n("Disables all preprocessing filters."),
