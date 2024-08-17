@@ -343,6 +343,7 @@ class VoiceConverter:
         formant_timbre: float,
         resample_sr: int = 0,
         sid: int = 0,
+        pid_file_path: str = None,
     ):
         """
         Performs voice conversion on a batch of input audio files.
@@ -373,8 +374,12 @@ class VoiceConverter:
             formant_shift (bool, optional): Whether to shift the formants. Default is False.
             formant_qfrency (float, optional): Formant frequency. Default is 1.0.
             formant_timbre (float, optional): Formant timbre. Default is 1.0.
+            pid_file_path (str, optional): Path to the PID file. Default is None.
 
         """
+        pid = os.getpid()
+        with open(pid_file_path, "w") as pid_file:
+            pid_file.write(str(pid))
         try:
             if not self.hubert_model:
                 self.load_hubert(embedder_model, embedder_model_custom)
@@ -520,6 +525,7 @@ class VoiceConverter:
                 print(f"Conversion completed at '{audio_output_paths}'.")
             elapsed_time = time.time() - start_time
             print(f"Batch conversion completed in {elapsed_time:.2f} seconds.")
+            os.remove(pid_file_path)
         except Exception as error:
             print(f"An error occurred during audio conversion: {error}")
             print(traceback.format_exc())

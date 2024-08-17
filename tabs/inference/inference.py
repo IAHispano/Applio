@@ -13,6 +13,7 @@ from core import (
 from assets.i18n.i18n import I18nAuto
 
 from rvc.lib.utils import format_title
+from tabs.settings.restart import stop_infer
 
 i18n = I18nAuto()
 
@@ -937,6 +938,8 @@ def inference_tab():
                         )
 
         convert_button2 = gr.Button(i18n("Convert"))
+        stop_button = gr.Button(i18n("Stop convert"), visible=False)
+        stop_button.click(fn=stop_infer, inputs=[], outputs=[])
 
         with gr.Row():
             vc_output3 = gr.Textbox(
@@ -956,6 +959,18 @@ def inference_tab():
         if embedder_model == "custom":
             return {"visible": True, "__type__": "update"}
         return {"visible": False, "__type__": "update"}
+
+    def enable_stop_convert_button():
+        return {"visible": False, "__type__": "update"}, {
+            "visible": True,
+            "__type__": "update",
+        }
+
+    def disable_stop_convert_button():
+        return {"visible": True, "__type__": "update"}, {
+            "visible": False,
+            "__type__": "update",
+        }
 
     def toggle_visible_formant_shifting(checkbox):
         if checkbox:
@@ -1169,4 +1184,14 @@ def inference_tab():
             formant_timbre_batch,
         ],
         outputs=[vc_output3],
+    )
+    convert_button2.click(
+        fn=enable_stop_convert_button,
+        inputs=[],
+        outputs=[convert_button2, stop_button],
+    )
+    stop_button.click(
+        fn=disable_stop_convert_button,
+        inputs=[],
+        outputs=[convert_button2, stop_button],
     )

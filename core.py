@@ -136,7 +136,6 @@ def run_batch_infer_script(
         f for f in os.listdir(input_folder) if f.endswith((".mp3", ".wav", ".flac"))
     ]
     print(f"Detected {len(audio_files)} audio files for inference.")
-
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio_batch(
         pitch=pitch,
@@ -162,6 +161,7 @@ def run_batch_infer_script(
         formant_shifting=formant_shifting,
         formant_qfrency=formant_qfrency,
         formant_timbre=formant_timbre,
+        pid_file_path=os.path.join(now_dir, "assets", "infer_pid.txt"),
     )
 
     return f"Files from {input_folder} inferred successfully."
