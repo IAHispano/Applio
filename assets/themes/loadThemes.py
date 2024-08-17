@@ -110,7 +110,7 @@ def load_json():
                 module = importlib.import_module(selected_file[:-3])
                 obtained_class = getattr(module, class_name)
                 instance = obtained_class()
-                print(f"Theme Loaded: {class_name}")
+                print(f"Theme {class_name} successfully loaded.")
                 return instance
             elif selected_file == None and class_name:
                 return class_name
