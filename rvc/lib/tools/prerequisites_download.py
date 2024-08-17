@@ -81,7 +81,10 @@ def download_file(url, destination_path, global_bar):
     Download a file from the given URL to the specified destination path,
     updating the global progress bar as data is downloaded.
     """
-    os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+
+    dir_name = os.path.dirname(destination_path)
+    if dir_name:
+        os.makedirs(dir_name, exist_ok=True)
     response = requests.get(url, stream=True)
     block_size = 1024
     with open(destination_path, "wb") as file:
