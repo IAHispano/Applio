@@ -13,6 +13,7 @@ import tempfile
 import logging
 
 logging.getLogger("fairseq").setLevel(logging.WARNING)
+logging.getLogger("faiss.loader").setLevel(logging.WARNING)
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -40,6 +41,8 @@ def load_audio_infer(
 ):
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+        if not os.path.isfile(file):
+            raise FileNotFoundError(f"File not found: {file}")
         audio, sr = sf.read(file)
         if len(audio.shape) > 1:
             audio = librosa.to_mono(audio.T)

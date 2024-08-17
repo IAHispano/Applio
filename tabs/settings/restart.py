@@ -17,6 +17,18 @@ def stop_train(model_name: str):
         pass
 
 
+def stop_infer():
+    pid_file_path = os.path.join(now_dir, "assets", "infer_pid.txt")
+    try:
+        with open(pid_file_path, "r") as pid_file:
+            pids = [int(pid) for pid in pid_file.readlines()]
+        for pid in pids:
+            os.kill(pid, 9)
+        os.remove(pid_file_path)
+    except:
+        pass
+
+
 def restart_applio():
     if os.name != "nt":
         os.system("clear")
