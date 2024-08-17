@@ -71,8 +71,13 @@ linux_executables_list = [
     ),
 ]
 executables_list = [
-    "ffmpeg.exe",
-    "ffprobe.exe",
+    (
+        "",
+        [
+            "ffmpeg.exe",
+            "ffprobe.exe",
+        ],
+    ),
     (
         "formant/",
         [
@@ -143,9 +148,9 @@ def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
 
     if exe == True:
         if os.name == "nt":
-            download_files(executables_list)
+            download_mapping_files(executables_list)
         else:
-            download_files(linux_executables_list)
+            download_mapping_files(linux_executables_list)
 
     if pretraineds_v1 == True:
         download_mapping_files(pretraineds_v1_list)
