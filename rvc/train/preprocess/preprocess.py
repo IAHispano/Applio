@@ -183,9 +183,11 @@ if __name__ == "__main__":
     input_root = str(sys.argv[2])
     sample_rate = int(sys.argv[3])
     percentage = float(sys.argv[4])
-    num_processes = (
-        int(sys.argv[5]) if len(sys.argv) > 5 else multiprocessing.cpu_count()
-    )
+    num_processes = sys.argv[5]
+    if num_processes.lower() == "none":
+        num_processes = multiprocessing.cpu_count()
+    else:
+        num_processes = int(num_processes)
     cut_preprocess = strtobool(sys.argv[6])
     process_effects = strtobool(sys.argv[7])
 
