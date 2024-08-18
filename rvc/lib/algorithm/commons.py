@@ -57,7 +57,9 @@ def kl_divergence(m_p, logs_p, m_q, logs_q):
     return kl
 
 
-def slice_segments(x: torch.Tensor, ids_str: torch.Tensor, segment_size: int = 4, dim: int = 2):
+def slice_segments(
+    x: torch.Tensor, ids_str: torch.Tensor, segment_size: int = 4, dim: int = 2
+):
     """
     Slice segments from a tensor, handling tensors with different numbers of dimensions.
 
@@ -71,7 +73,7 @@ def slice_segments(x: torch.Tensor, ids_str: torch.Tensor, segment_size: int = 4
         ret = torch.zeros_like(x[:, :segment_size])
     elif dim == 3:
         ret = torch.zeros_like(x[:, :, :segment_size])
-        
+
     for i in range(x.size(0)):
         idx_str = ids_str[i].item()
         idx_end = idx_str + segment_size
@@ -79,9 +81,8 @@ def slice_segments(x: torch.Tensor, ids_str: torch.Tensor, segment_size: int = 4
             ret[i] = x[i, idx_str:idx_end]
         else:
             ret[i] = x[i, :, idx_str:idx_end]
-    
-    return ret
 
+    return ret
 
 
 def rand_slice_segments(x, x_lengths=None, segment_size=4):

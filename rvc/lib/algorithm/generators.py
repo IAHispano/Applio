@@ -71,16 +71,12 @@ class Generator(torch.nn.Module):
                 x = x + self.cond(g)
 
             resblock_idx = 0
-            for _ in range(
-                self.num_upsamples
-            ):
+            for _ in range(self.num_upsamples):
                 x = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
                 x = self.ups_and_resblocks[resblock_idx](x)
                 resblock_idx += 1
                 xs = 0
-                for _ in range(
-                    self.num_kernels
-                ): 
+                for _ in range(self.num_kernels):
                     xs += self.ups_and_resblocks[resblock_idx](x)
                     resblock_idx += 1
                 x = xs / self.num_kernels

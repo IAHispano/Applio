@@ -112,7 +112,7 @@ class DiscriminatorS(torch.nn.Module):
             ]
         )
         self.conv_post = norm_f(torch.nn.Conv1d(1024, 1, 3, 1, padding=1))
-        self.lrelu = torch.nn.LeakyReLU(LRELU_SLOPE) 
+        self.lrelu = torch.nn.LeakyReLU(LRELU_SLOPE)
 
     def forward(self, x):
         """
@@ -123,7 +123,7 @@ class DiscriminatorS(torch.nn.Module):
         """
         fmap = []
         for conv in self.convs:
-            x = self.lrelu(conv(x)) 
+            x = self.lrelu(conv(x))
             fmap.append(x)
         x = self.conv_post(x)
         fmap.append(x)
@@ -173,7 +173,7 @@ class DiscriminatorP(torch.nn.Module):
         )
 
         self.conv_post = norm_f(torch.nn.Conv2d(1024, 1, (3, 1), 1, padding=(1, 0)))
-        self.lrelu = torch.nn.LeakyReLU(LRELU_SLOPE) 
+        self.lrelu = torch.nn.LeakyReLU(LRELU_SLOPE)
 
     def forward(self, x):
         """
