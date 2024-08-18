@@ -9,7 +9,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@main
-
+      
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -22,8 +22,20 @@ jobs:
       
       - name: Create ZIP file
         run: |
-          powershell -Command "
-          Compress-Archive -Path 'D:\a\Applio\Applio\*' -DestinationPath 'D:\a\Applio\Applio.zip'
+          .\env\python.exe -c "
+import os
+import zipfile
+from tqdm import tqdm
+
+def zip_dir(zip_filename, dir_to_zip):
+    with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(dir_to_zip):
+            for file in tqdm(files, desc=f'Compressing {dir_to_zip}', unit='file'):
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, start=dir_to_zip)
+                zipf.write(file_path, arcname)
+
+zip_dir('../Applio.zip', '../Applio')
           "
 
       - name: Upload to Hugging Face Hub
@@ -39,7 +51,7 @@ jobs:
           repo_file_path = 'Applio.zip'
           
           upload_file(
-          path_or_fileobj='Applio.zip',
+          path_or_fileobj='../Applio.zip',
           path_in_repo=repo_file_path,
           repo_id=repo_id,
           token=token
