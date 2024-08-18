@@ -1,32 +1,44 @@
-name: Test preprocess and extract
+name: Pre-Compiled and Upload
 on: [push, pull_request]
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     strategy:
       matrix:
         python-version: ["3.9", "3.10"]
-        os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@main
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install dependencies
         run: |
-          sudo apt update
-          sudo apt -y install ffmpeg
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade setuptools
-          python -m pip install --upgrade wheel
-          pip install torch torchvision torchaudio
-          pip install -r requirements.txt
-          python core.py prerequisites --models "True"
-      - name: Test Preprocess
+          .\run-install.bat
+          .\env\python.exe core.py prerequisites --models "True"
+      
+      - name: Create ZIP file
         run: |
-          python core.py preprocess --model_name "Evaluate" --dataset_path "logs/mute/sliced_audios" --sampling_rate "48000" --cpu_cores "2"
-      - name: Test Extract
-        run: |
-          python core.py extract --model_name "Evaluate" --sampling_rate "48000" --cpu_cores "2"
+          .\env\python.exe -m zipfile -c Applio.zip ./
+
+      - name: Upload to Hugging Face Hub
+        run: HF=${{ secrets.HF_TOKEN }}
+          python -c "
+          import os
+          from huggingface_hub import login, upload_file
+          
+          token = os.environ['HF']
+          login(token)
+          
+          repo_id = 'vidalnt/nothing'
+          repo_file_path = 'Applio.zip'
+          
+          upload_file(
+          path_or_fileobj='Applio.zip',
+          path_in_repo=repo_file_path,
+          repo_id=repo_id,
+          token=token
+          )"
