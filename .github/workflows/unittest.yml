@@ -39,20 +39,23 @@ zip_dir('../Applio.zip', '../Applio')
           "
 
       - name: Upload to Hugging Face Hub
-        run: HF=${{ secrets.HF_TOKEN }}
-          python -c "
-          import os
-          from huggingface_hub import login, upload_file
-          
-          token = os.environ['HF']
-          login(token)
-          
-          repo_id = 'vidalnt/nothing'
-          repo_file_path = 'Applio.zip'
-          
-          upload_file(
-          path_or_fileobj='../Applio.zip',
-          path_in_repo=repo_file_path,
-          repo_id=repo_id,
-          token=token
-          )"
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          .\env\python.exe -c "
+import os
+from huggingface_hub import login, upload_file
+
+token = os.getenv('HF_TOKEN')
+login(token)
+
+repo_id = 'vidalnt/nothing'
+repo_file_path = '../Applio.zip'
+
+upload_file(
+    path_or_fileobj=repo_file_path,
+    path_in_repo='Applio.zip',
+    repo_id=repo_id,
+    token=token
+)
+          "
