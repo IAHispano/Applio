@@ -13,7 +13,6 @@ current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")
 
 from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
-from rvc.train.extract.preparing_files import generate_config, generate_filelist
 from rvc.train.process.model_blender import model_blender
 from rvc.train.process.model_information import model_information
 from rvc.train.process.extract_small_model import extract_small_model
@@ -304,6 +303,8 @@ def run_extract_script(
                 cpu_cores,
                 gpu,
                 rvc_version,
+                pitch_guidance,
+                sample_rate,
                 embedder_model,
                 embedder_model_custom,
             ],
@@ -312,8 +313,6 @@ def run_extract_script(
 
     subprocess.run(command_1)
 
-    generate_config(rvc_version, sample_rate, model_path)
-    generate_filelist(pitch_guidance, model_path, rvc_version, sample_rate)
     return f"Model {model_name} extracted successfully."
 
 

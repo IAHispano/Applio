@@ -89,16 +89,15 @@ torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
 
 global_step = 0
-lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 last_loss_gen_all = 0
+overtrain_save_epoch = 0
 loss_gen_history = []
 smoothed_loss_gen_history = []
 loss_disc_history = []
 smoothed_loss_disc_history = []
+lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 training_file_path = os.path.join(experiment_dir, "training_data.json")
-overtrain_save_epoch = 0
 
-# Disable logging
 import logging
 
 logging.getLogger("torch").setLevel(logging.ERROR)
@@ -525,7 +524,7 @@ def train_and_evaluate(
     net_g.train()
     net_d.train()
 
-    # Data caching - always make a cache, but preload to gpu only if checked on UI
+    # Data caching
     if True:
         data_iterator = cache
         if cache == []:
@@ -813,12 +812,9 @@ def train_and_evaluate(
         Checks for overtraining based on the smoothed loss history.
 
         Args:
-        smoothed_loss_history (list): List of smoothed losses for each epoch.
-        threshold (int): Number of consecutive epochs with insignificant changes or increases to consider overtraining.
-        epsilon (float): The maximum change considered insignificant.
-
-        Returns:
-        bool: True if overtraining is detected, False otherwise.
+            smoothed_loss_history (list): List of smoothed losses for each epoch.
+            threshold (int): Number of consecutive epochs with insignificant changes or increases to consider overtraining.
+            epsilon (float): The maximum change considered insignificant.
         """
         if len(smoothed_loss_history) < threshold + 1:
             return False
@@ -838,9 +834,9 @@ def train_and_evaluate(
         Updates the exponential moving average with a new value.
 
         Args:
-        smoothed_loss_history (list): List of smoothed values.
-        new_value (float): New value to be added.
-        smoothing (float): Smoothing factor.
+            smoothed_loss_history (list): List of smoothed values.
+            new_value (float): New value to be added.
+            smoothing (float): Smoothing factor.
         """
         if not smoothed_loss_history:
             smoothed_value = new_value
@@ -957,10 +953,8 @@ def train_and_evaluate(
 
     # Print training progress
     if rank == 0:
-        lowest_value_rounded = float(lowest_value["value"])  # Convert to float
-        lowest_value_rounded = round(
-            lowest_value_rounded, 3
-        )  # Round to 3 decimal place
+        lowest_value_rounded = float(lowest_value["value"])
+        lowest_value_rounded = round(lowest_value_rounded, 3)
 
         if epoch > 1 and overtraining_detector == True:
             remaining_epochs_gen = overtraining_threshold - consecutive_increases_gen
@@ -982,10 +976,8 @@ def train_and_evaluate(
 
     # Save the final model
     if epoch >= custom_total_epoch and rank == 0:
-        lowest_value_rounded = float(lowest_value["value"])  # Convert to float
-        lowest_value_rounded = round(
-            lowest_value_rounded, 3
-        )  # Round to 3 decimal place
+        lowest_value_rounded = float(lowest_value["value"])
+        lowest_value_rounded = round(lowest_value_rounded, 3)
         print(
             f"Training has been successfully completed with {epoch} epoch, {global_step} steps and {round(loss_gen_all.item(), 3)} loss gen."
         )

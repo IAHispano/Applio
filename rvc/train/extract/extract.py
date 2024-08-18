@@ -15,6 +15,7 @@ now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
 
 from rvc.lib.utils import load_audio, load_embedding
+from rvc.train.extract.preparing_files import generate_config, generate_filelist
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 from rvc.configs.config import Config
 
@@ -305,8 +306,10 @@ if __name__ == "__main__":
     num_processes = int(sys.argv[4])
     gpus = sys.argv[5]
     version = sys.argv[6]
-    embedder_model = sys.argv[7]
-    embedder_model_custom = sys.argv[8] if len(sys.argv) > 8 else None
+    pitch_guidance = sys.argv[7]
+    sample_rate = sys.argv[8]
+    embedder_model = sys.argv[9]
+    embedder_model_custom = sys.argv[9] if len(sys.argv) > 9 else None
 
     # Run Pitch Extraction
     run_pitch_extraction(exp_dir, f0_method, hop_length, num_processes, gpus)
@@ -315,3 +318,7 @@ if __name__ == "__main__":
     run_embedding_extraction(
         exp_dir, version, gpus, embedder_model, embedder_model_custom
     )
+
+    # Run Preparing Files
+    generate_config(version, sample_rate, exp_dir)
+    generate_filelist(pitch_guidance, exp_dir, version, sample_rate)
