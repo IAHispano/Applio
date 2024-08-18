@@ -655,7 +655,10 @@ def train_and_evaluate(
                     config.data.mel_fmax,
                 )
                 y_mel = commons.slice_segments(
-                    mel, ids_slice, config.train.segment_size // config.data.hop_length, dim=3
+                    mel,
+                    ids_slice,
+                    config.train.segment_size // config.data.hop_length,
+                    dim=3,
                 )
                 with autocast(enabled=False):
                     y_hat_mel = mel_spectrogram_torch(
@@ -671,7 +674,10 @@ def train_and_evaluate(
                 if config.train.fp16_run == True:
                     y_hat_mel = y_hat_mel.half()
                 wave = commons.slice_segments(
-                    wave, ids_slice * config.data.hop_length, config.train.segment_size, dim=3
+                    wave,
+                    ids_slice * config.data.hop_length,
+                    config.train.segment_size,
+                    dim=3,
                 )
 
                 y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
