@@ -17,6 +17,7 @@ soundfile==0.12.1
 praat-parselmouth
 noisereduce
 audio_upscaler==0.1.4
+pedalboard
 
 # Machine learning
 omegaconf==2.0.5; sys_platform == 'darwin'
@@ -28,8 +29,8 @@ torchaudio==2.1.1
 torch==2.1.1
 torchcrepe==0.0.23
 torchvision==0.16.1
-einops 
-libf0 
+einops
+libf0
 torchfcpe
 
 # Visualization
