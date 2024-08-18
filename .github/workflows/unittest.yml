@@ -19,6 +19,11 @@ jobs:
         run: |
           .\run-install.bat
           .\env\python.exe core.py prerequisites --models "True"
+
+      - name: Clean up unnecessary files
+      run: |
+          Remove-Item -Path 'LICENSE', 'run-install.bat', 'requirements.txt', '.gitignore' -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path '.github' -Recurse -Force -ErrorAction SilentlyContinue
       
       - name: Create ZIP file
         run: |
