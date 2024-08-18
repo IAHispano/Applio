@@ -21,7 +21,7 @@ jobs:
           .\env\python.exe core.py prerequisites --models "True"
 
       - name: Clean up unnecessary files
-      run: |
+        run: |
           Remove-Item -Path 'LICENSE', 'run-install.bat', 'requirements.txt', '.gitignore' -Force -ErrorAction SilentlyContinue
           Remove-Item -Path '.github' -Recurse -Force -ErrorAction SilentlyContinue
       
