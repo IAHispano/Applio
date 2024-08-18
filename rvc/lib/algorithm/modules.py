@@ -44,26 +44,25 @@ class WaveNet(torch.nn.Module):
                 cond_layer, name="weight"
             )
 
+        dilations = [dilation_rate**i for i in range(n_layers)]
+        paddings = [(kernel_size * d - d) // 2 for d in dilations]
+
         for i in range(n_layers):
-            dilation = dilation_rate**i
-            padding = int((kernel_size * dilation - dilation) / 2)
             in_layer = torch.nn.Conv1d(
                 hidden_channels,
                 2 * hidden_channels,
                 kernel_size,
-                dilation=dilation,
-                padding=padding,
+                dilation=dilations[i],
+                padding=paddings[i],
             )
             in_layer = torch.nn.utils.parametrizations.weight_norm(
                 in_layer, name="weight"
             )
             self.in_layers.append(in_layer)
 
-            # last one is not necessary
-            if i < n_layers - 1:
-                res_skip_channels = 2 * hidden_channels
-            else:
-                res_skip_channels = hidden_channels
+            res_skip_channels = (
+                hidden_channels if i == n_layers - 1 else 2 * hidden_channels
+            )
 
             res_skip_layer = torch.nn.Conv1d(hidden_channels, res_skip_channels, 1)
             res_skip_layer = torch.nn.utils.parametrizations.weight_norm(
@@ -79,7 +78,6 @@ class WaveNet(torch.nn.Module):
             x_mask (torch.Tensor): Mask tensor of shape (batch_size, 1, time_steps).
             g (torch.Tensor, optional): Conditioning tensor of shape (batch_size, gin_channels, time_steps).
                 Defaults to None.
-
         """
         output = torch.zeros_like(x)
         n_channels_tensor = torch.IntTensor([self.hidden_channels])
