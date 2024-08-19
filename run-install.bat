@@ -59,6 +59,11 @@ if not exist "%CONDA_EXECUTABLE%" (
 
 call "%CONDA_ROOT_PREFIX%\_conda.exe" create --no-shortcuts -y -k --prefix "%INSTALL_ENV_DIR%" python=3.9
 
+if exist "%cd%\env\python.exe" (
+    echo Installing pip version less than 24.1...
+    "%cd%\env\python.exe" -m pip install "pip<24.1"
+)
+
 echo Installing the dependencies...
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%"
 pip install --upgrade setuptools

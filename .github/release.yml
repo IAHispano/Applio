@@ -1,0 +1,20 @@
+# .github/release.yml
+
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - blaise.tk
+  categories:
+    - title: Breaking Changes 🛠
+      labels:
+        - Fix
+        - breaking-change
+    - title: Exciting New Features 🎉
+      labels:
+        - Add
+        - enhancement
+    - title: Other Changes
+      labels:
+        - "*"

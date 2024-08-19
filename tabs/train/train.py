@@ -1,19 +1,21 @@
 import os
-from multiprocessing import cpu_count
-import sys
 import shutil
+import sys
+from multiprocessing import cpu_count
+
 import gradio as gr
+
 from assets.i18n.i18n import I18nAuto
 from core import (
-    run_preprocess_script,
     run_extract_script,
-    run_train_script,
     run_index_script,
+    run_preprocess_script,
     run_prerequisites_script,
+    run_train_script,
 )
-from rvc.configs.config import max_vram_gpu, get_gpu_info, get_number_of_gpus
+from rvc.configs.config import get_gpu_info, get_number_of_gpus, max_vram_gpu
 from rvc.lib.utils import format_title
-from tabs.settings.restart import restart_applio
+from tabs.settings.restart import stop_train
 
 i18n = I18nAuto()
 sys.path.append(os.getcwd())
@@ -60,7 +62,7 @@ sup_audioext = {
 
 # Custom Pretraineds
 pretraineds_custom_path = os.path.join(
-    os.getcwd(), "rvc", "pretraineds", "pretraineds_custom"
+    os.getcwd(), "rvc", "models", "pretraineds", "pretraineds_custom"
 )
 
 pretraineds_custom_path_relative = os.path.relpath(pretraineds_custom_path, os.getcwd())
@@ -292,83 +294,96 @@ def upload_to_google_drive(pth_path, index_path):
 
 # Train Tab
 def train_tab():
+    with gr.Row():
+        model_name = gr.Dropdown(
+            label=i18n("Model Name"),
+            info=i18n("Name of the new model."),
+            choices=get_models_list(),
+            value="my-project",
+            interactive=True,
+            allow_custom_value=True,
+        )
+        sample_rate = gr.Radio(
+            label=i18n("Sampling Rate"),
+            info=i18n("The sampling rate of the audio files."),
+            choices=["32000", "40000", "48000"],
+            value="40000",
+            interactive=True,
+        )
+        rvc_version = gr.Radio(
+            label=i18n("RVC Version"),
+            info=i18n("The RVC version of the model."),
+            choices=["v1", "v2"],
+            value="v2",
+            interactive=True,
+        )
+        vocoder_type = gr.Radio(
+            label=i18n("Vocoder"),
+            choices=["hifigan", "bigvgan", "bigvsan"],
+            value="hifigan",
+            interactive=True,
+        )
     with gr.Accordion(i18n("Preprocess")):
-        with gr.Row():
-            with gr.Column():
-                model_name = gr.Dropdown(
-                    label=i18n("Model Name"),
-                    info=i18n("Name of the new model."),
-                    choices=get_models_list(),
-                    value="my-project",
+        dataset_path = gr.Dropdown(
+            label=i18n("Dataset Path"),
+            info=i18n("Path to the dataset folder."),
+            # placeholder=i18n("Enter dataset path"),
+            choices=get_datasets_list(),
+            allow_custom_value=True,
+            interactive=True,
+        )
+        dataset_creator = gr.Checkbox(
+            label=i18n("Dataset Creator"),
+            value=False,
+            interactive=True,
+            visible=True,
+        )
+        with gr.Column(visible=False) as dataset_creator_settings:
+            with gr.Accordion(i18n("Dataset Creator")):
+                dataset_name = gr.Textbox(
+                    label=i18n("Dataset Name"),
+                    info=i18n("Name of the new dataset."),
+                    placeholder=i18n("Enter dataset name"),
                     interactive=True,
-                    allow_custom_value=True,
                 )
-                dataset_path = gr.Dropdown(
-                    label=i18n("Dataset Path"),
-                    info=i18n("Path to the dataset folder."),
-                    # placeholder=i18n("Enter dataset path"),
-                    choices=get_datasets_list(),
-                    allow_custom_value=True,
+                upload_audio_dataset = gr.File(
+                    label=i18n("Upload Audio Dataset"),
+                    type="filepath",
                     interactive=True,
                 )
-                refresh = gr.Button(i18n("Refresh"))
-                dataset_creator = gr.Checkbox(
-                    label=i18n("Dataset Creator"),
-                    value=False,
+        refresh = gr.Button(i18n("Refresh"))
+
+        with gr.Accordion(i18n("Advanced Settings"), open=False):
+            cpu_cores_preprocess = gr.Slider(
+                1,
+                64,
+                cpu_count(),
+                step=1,
+                label=i18n("CPU Cores"),
+                info=i18n(
+                    "The number of CPU cores to use in the preprocess. The default setting are your cpu cores, which is recommended for most cases."
+                ),
+                interactive=True,
+            )
+            with gr.Row():
+                cut_preprocess = gr.Checkbox(
+                    label=i18n("Audio cutting"),
+                    info=i18n(
+                        "It's recommended to deactivate this option if your dataset has already been processed."
+                    ),
+                    value=True,
                     interactive=True,
                     visible=True,
                 )
-
-                with gr.Column(visible=False) as dataset_creator_settings:
-                    with gr.Accordion(i18n("Dataset Creator")):
-                        dataset_name = gr.Textbox(
-                            label=i18n("Dataset Name"),
-                            info=i18n("Name of the new dataset."),
-                            placeholder=i18n("Enter dataset name"),
-                            interactive=True,
-                        )
-                        upload_audio_dataset = gr.File(
-                            label=i18n("Upload Audio Dataset"),
-                            type="filepath",
-                            interactive=True,
-                        )
-
-            with gr.Column():
-                sample_rate = gr.Radio(
-                    label=i18n("Sampling Rate"),
-                    info=i18n("The sampling rate of the audio files."),
-                    choices=["32000", "40000", "48000"],
-                    value="40000",
-                    interactive=True,
-                )
-
-                rvc_version = gr.Radio(
-                    label=i18n("RVC Version"),
-                    info=i18n("The RVC version of the model."),
-                    choices=["v1", "v2"],
-                    value="v2",
-                    interactive=True,
-                )
-                vocoder_type = gr.Radio(
-                    label=i18n("Vocoder"),
-                    choices=["hifigan", "bigvgan", "bigvsan"],
-                    value="hifigan",
-                    interactive=True,
-                )
-
-
-                cpu_cores_preprocess = gr.Slider(
-                    1,
-                    64,
-                    cpu_count(),
-                    step=1,
-                    label=i18n("CPU Cores"),
+                process_effects = gr.Checkbox(
+                    label=i18n("Process effects"),
                     info=i18n(
-                        "The number of CPU cores to use in the preprocess. The default setting are your cpu cores, which is recommended for most cases."
+                        "It's recommended to deactivate this option if your dataset has already been processed."
                     ),
+                    value=True,
                     interactive=True,
+                    visible=True,
                 )
-
         preprocess_output_info = gr.Textbox(
             label=i18n("Output Information"),
             info=i18n("The output information will be displayed here."),
@@ -386,6 +401,8 @@ def train_tab():
                     dataset_path,
                     sample_rate,
                     cpu_cores_preprocess,
+                    cut_preprocess,
+                    process_effects,
                 ],
                 outputs=[preprocess_output_info],
                 api_name="preprocess_dataset",
@@ -737,12 +754,10 @@ def train_tab():
                 api_name="start_training",
             )
 
-            stop_train_button = gr.Button(
-                i18n("Stop Training & Restart Applio"), visible=False
-            )
+            stop_train_button = gr.Button(i18n("Stop Training"), visible=False)
             stop_train_button.click(
-                fn=restart_applio,
-                inputs=[],
+                fn=stop_train,
+                inputs=[model_name],
                 outputs=[],
             )
 

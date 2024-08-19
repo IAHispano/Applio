@@ -6,12 +6,19 @@ import re
 import unicodedata
 from fairseq import checkpoint_utils
 import wget
+import subprocess
+from pydub import AudioSegment
+import tempfile
 
 import logging
 
 logging.getLogger("fairseq").setLevel(logging.WARNING)
+logging.getLogger("faiss.loader").setLevel(logging.WARNING)
 
 sys.path.append(os.getcwd())
+
+base_path = os.path.join(now_dir, "rvc", "models", "formant", "stftpitchshift")
+stft = base_path + ".exe" if sys.platform == "win32" else base_path
 
 
 def load_audio(file, sample_rate):
@@ -25,6 +32,46 @@ def load_audio(file, sample_rate):
     except Exception as error:
         raise RuntimeError(f"An error occurred loading the audio: {error}")
 
+    return audio.flatten()
+
+
+def load_audio_infer(
+    file, sample_rate, formant_shifting, formant_qfrency, formant_timbre
+):
+    try:
+        file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+        if not os.path.isfile(file):
+            raise FileNotFoundError(f"File not found: {file}")
+        audio, sr = sf.read(file)
+        if len(audio.shape) > 1:
+            audio = librosa.to_mono(audio.T)
+        if sr != sample_rate:
+            audio = librosa.resample(audio, orig_sr=sr, target_sr=sample_rate)
+        if formant_shifting:
+            audio = (audio * 32767).astype(np.int16)
+            audio_segment = AudioSegment(
+                audio.tobytes(),
+                frame_rate=sample_rate,
+                sample_width=2,
+                channels=1,
+            )
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+                temp_file_path = temp_file.name
+                audio_segment.export(temp_file_path, format="wav")
+
+            command = (
+                f'{stft} -i "{temp_file_path}" -q "{formant_qfrency}" '
+                f'-t "{formant_timbre}" -o "{temp_file_path}_formatted.wav"'
+            )
+            subprocess.run(command, shell=True)
+            formatted_audio_path = f"{temp_file_path}_formatted.wav"
+            audio, sr = sf.read(formatted_audio_path)
+            if len(audio.shape) > 1:
+                audio = librosa.to_mono(audio.T)
+            if sr != sample_rate:
+                audio = librosa.resample(audio, orig_sr=sr, target_sr=sample_rate)
+    except Exception as error:
+        raise RuntimeError(f"An error occurred loading the audio: {error}")
     return audio.flatten()
 
 

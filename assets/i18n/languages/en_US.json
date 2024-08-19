@@ -3,7 +3,6 @@
   "This section contains some extra utilities that often may be in experimental phases.": "This section contains some extra utilities that often may be in experimental phases.",
   "Output Information": "Output Information",
   "The output information will be displayed here.": "The output information will be displayed here.",
-
   "Inference": "Inference",
   "Train": "Train",
   "Extra": "Extra",
@@ -15,8 +14,10 @@
   "Download": "Download",
   "Report a Bug": "Report a Bug",
   "Settings": "Settings",
-
   "Preprocess": "Preprocess",
+  "Audio cutting": "Audio cutting",
+  "It's recommended to deactivate this option if your dataset has already been processed.": "It's recommended to deactivate this option if your dataset has already been processed.",
+  "Process effects": "Process effects",
   "Model Name": "Model Name",
   "Name of the new model.": "Name of the new model.",
   "Enter model name": "Enter model name",
@@ -35,7 +36,6 @@
   "RVC Version": "RVC Version",
   "The RVC version of the model.": "The RVC version of the model.",
   "Preprocess Dataset": "Preprocess Dataset",
-
   "Embedder Model": "Embedder Model",
   "Model used for learning speaker embedding.": "Model used for learning speaker embedding.",
   "Extract": "Extract",
@@ -85,11 +85,9 @@
   "Set the maximum number of epochs you want your model to stop training if no improvement is detected.": "Set the maximum number of epochs you want your model to stop training if no improvement is detected.",
   "Sync Graph": "Sync Graph",
   "Synchronize the graph of the tensorbaord. Only enable this setting if you are training a new model.": "Synchronize the graph of the tensorbaord. Only enable this setting if you are training a new model.",
-
   "Start Training": "Start Training",
-  "Stop Training & Restart Applio": "Stop Training & Restart Applio",
+  "Stop Training": "Stop Training",
   "Generate Index": "Generate Index",
-
   "Export Model": "Export Model",
   "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.",
   "Exported Pth file": "Exported Pth file",
@@ -97,14 +95,12 @@
   "Select the pth file to be exported": "Select the pth file to be exported",
   "Select the index file to be exported": "Select the index file to be exported",
   "Upload": "Upload",
-
   "Voice Model": "Voice Model",
   "Select the voice model to use for the conversion.": "Select the voice model to use for the conversion.",
   "Index File": "Index File",
   "Select the index file to use for the conversion.": "Select the index file to use for the conversion.",
   "Refresh": "Refresh",
   "Unload Voice": "Unload Voice",
-
   "Single": "Single",
   "Upload Audio": "Upload Audio",
   "Select Audio": "Select Audio",
@@ -124,6 +120,13 @@
   "Upscale Audio": "Upscale Audio",
   "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)": "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)",
   "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed.": "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed.",
+  "Formant Shifting": "Formant Shifting",
+  "Enable formant shifting. Used for male to female and vice-versa convertions.": "Enable formant shifting. Used for male to female and vice-versa convertions.",
+  "Browse presets for formanting": "Browse presets for formanting",
+  "Presets are located in /assets/formant_shift folder": "Presets are located in /assets/formant_shift folder",
+  "Default value is 1.0": "Default value is 1.0",
+  "Quefrency for formant shifting": "Quefrency for formant shifting",
+  "Timbre for formant shifting": "Timbre for formant shifting",
   "Pitch": "Pitch",
   "Set the pitch of the audio, the higher the value, the higher the pitch.": "Set the pitch of the audio, the higher the value, the higher the pitch.",
   "Filter Radius": "Filter Radius",
@@ -136,10 +139,8 @@
   "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.",
   "Pitch extraction algorithm": "Pitch extraction algorithm",
   "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases.": "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases.",
-
   "Convert": "Convert",
   "Export Audio": "Export Audio",
-
   "Batch": "Batch",
   "Input Folder": "Input Folder",
   "Select the folder containing the audios to convert.": "Select the folder containing the audios to convert.",
@@ -147,9 +148,7 @@
   "Output Folder": "Output Folder",
   "Select the folder where the output audios will be saved.": "Select the folder where the output audios will be saved.",
   "Enter output path": "Enter output path",
-
   "Get information about the audio": "Get information about the audio",
-
   "## Voice Blender": "## Voice Blender",
   "Select two voice models, set your desired blend percentage, and blend them into an entirely new voice.": "Select two voice models, set your desired blend percentage, and blend them into an entirely new voice.",
   "Voice Blender": "Voice Blender",
@@ -158,7 +157,6 @@
   "Blend Ratio": "Blend Ratio",
   "Adjusting the position more towards one side or the other will make the model more similar to the first or second.": "Adjusting the position more towards one side or the other will make the model more similar to the first or second.",
   "Fusion": "Fusion",
-
   "Path to Model": "Path to Model",
   "Enter path to model": "Enter path to model",
   "Model information to be placed": "Model information to be placed",
@@ -171,23 +169,18 @@
   "Model conversion": "Model conversion",
   "Pth file": "Pth file",
   "Output of the pth file": "Output of the pth file",
-
   "Extract F0 Curve": "Extract F0 Curve",
   "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.",
-
   "# How to Report an Issue on GitHub": "# How to Report an Issue on GitHub",
   "1. Click on the 'Record Screen' button below to start recording the issue you are experiencing.": "1. Click on the 'Record Screen' button below to start recording the issue you are experiencing.",
   "2. Once you have finished recording the issue, click on the 'Stop Recording' button (the same button, but the label changes depending on whether you are actively recording or not).": "2. Once you have finished recording the issue, click on the 'Stop Recording' button (the same button, but the label changes depending on whether you are actively recording or not).",
   "3. Go to [GitHub Issues](https://github.com/IAHispano/Applio/issues) and click on the 'New Issue' button.": "3. Go to [GitHub Issues](https://github.com/IAHispano/Applio/issues) and click on the 'New Issue' button.",
   "4. Complete the provided issue template, ensuring to include details as needed, and utilize the assets section to upload the recorded file from the previous step.": "4. Complete the provided issue template, ensuring to include details as needed, and utilize the assets section to upload the recorded file from the previous step.",
-
   "Record Screen": "Record Screen",
   "Record": "Record",
   "Stop Recording": "Stop Recording",
-
   "Introduce the model .pth path": "Introduce the model .pth path",
   "See Model Information": "See Model Information",
-
   "## Download Model": "## Download Model",
   "Model Link": "Model Link",
   "Introduce the model link": "Introduce the model link",
@@ -201,7 +194,6 @@
   "## Download Pretrained Models": "## Download Pretrained Models",
   "Select the pretrained model you want to download.": "Select the pretrained model you want to download.",
   "And select the sampling rate": "And select the sampling rate.",
-
   "TTS Voices": "TTS Voices",
   "TTS Speed": "TTS Speed",
   "Increase or decrease TTS speed.": "Increase or decrease TTS speed.",
@@ -212,7 +204,6 @@
   "Enter text to synthesize": "Enter text to synthesize",
   "Output Path for TTS Audio": "Output Path for TTS Audio",
   "Output Path for RVC Audio": "Output Path for RVC Audio",
-
   "Enable Applio integration with Discord presence": "Enable Applio integration with Discord presence",
   "It will activate the possibility of displaying the current Applio activity in Discord.": "It will activate the possibility of displaying the current Applio activity in Discord.",
   "Enable Applio integration with applio.org/models using flask": "Enable Applio integration with applio.org/models using flask",
@@ -227,10 +218,8 @@
   "Precision": "Precision",
   "Select the precision you want to use for training and inference.": "Select the precision you want to use for training and inference.",
   "Update precision": "Update precision",
-
   "Plugin Installer": "Plugin Installer",
   "Drag your plugin.zip to install it": "Drag your plugin.zip to install it",
-
   "Version Checker": "Version Checker",
   "Check which version of Applio is the latest to see if you need to update.": "Check which version of Applio is the latest to see if you need to update.",
   "Check for updates": "Check for updates"

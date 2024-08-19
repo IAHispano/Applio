@@ -4,7 +4,6 @@ about: Create a report to help us improve
 title: "[BUG]"
 labels: ''
 assignees: ''
-
 ---
 
 **Before You Report a Bug**

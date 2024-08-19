@@ -89,7 +89,9 @@ def get_pretrained_sample_rates(model):
 def download_pretrained_model(model, sample_rate):
     data = fetch_pretrained_data()
     paths = data[model][sample_rate]
-    pretraineds_custom_path = os.path.join("rvc", "pretraineds", "pretraineds_custom")
+    pretraineds_custom_path = os.path.join(
+        "rvc", "models", "pretraineds", "pretraineds_custom"
+    )
     os.makedirs(pretraineds_custom_path, exist_ok=True)
 
     d_url = f"https://huggingface.co/{paths['D']}"
