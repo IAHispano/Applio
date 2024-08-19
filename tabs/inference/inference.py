@@ -1563,6 +1563,47 @@ def inference_tab():
             embedder_model_custom_batch,
         ],
     )
+    # Sliders variables
+    reverb_sliders = [
+        reverb_room_size,
+        reverb_damping,
+        reverb_wet_gain,
+        reverb_dry_gain,
+        reverb_width,
+        reverb_freeze_mode,
+    ]
+    pitch_shift_sliders = [pitch_shift_semitones]
+    limiter_sliders = [limiter_threshold, limiter_release_time]
+    gain_sliders = [gain_db]
+    distortion_sliders = [distortion_gain]
+    chorus_sliders = [
+        chorus_rate,
+        chorus_depth,
+        chorus_center_delay,
+        chorus_feedback,
+        chorus_mix,
+    ]
+    bitcrush_sliders = [bitcrush_bit_depth, bitcrush_sample_rate]
+    clipping_sliders = [clipping_threshold]
+    compressor_sliders = [
+        compressor_threshold,
+        compressor_ratio,
+        compressor_attack,
+        compressor_release,
+    ]
+    delay_sliders = [delay_seconds, delay_feedback, delay_mix]
+    sliders = [
+        *reverb_sliders,
+        *pitch_shift_sliders,
+        *limiter_sliders,
+        *gain_sliders,
+        *distortion_sliders,
+        *chorus_sliders,
+        *bitcrush_sliders,
+        *clipping_sliders,
+        *compressor_sliders,
+        *delay_sliders,
+    ]
     convert_button1.click(
         fn=run_infer_script,
         inputs=[
@@ -1591,41 +1632,16 @@ def inference_tab():
             formant_timbre,
             post_process,
             reverb,
-            reverb_room_size,
-            reverb_damping,
-            reverb_wet_gain,
-            reverb_dry_gain,
-            reverb_width,
-            reverb_freeze_mode,
             pitch_shift,
-            pitch_shift_semitones,
             limiter,
-            limiter_threshold,
-            limiter_release_time,
             gain,
-            gain_db,
             distortion,
-            distortion_gain,
             chorus,
-            chorus_rate,
-            chorus_depth,
-            chorus_center_delay,
-            chorus_feedback,
-            chorus_mix,
             bitcrush,
-            bitcrush_bit_depth,
-            bitcrush_sample_rate,
             clipping,
-            clipping_threshold,
             compressor,
-            compressor_threshold,
-            compressor_ratio,
-            compressor_attack,
-            compressor_release,
             delay,
-            delay_seconds,
-            delay_feedback,
-            delay_mix,
+            *sliders,
         ],
         outputs=[vc_output1, vc_output2],
     )

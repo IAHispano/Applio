@@ -229,6 +229,7 @@ class VoiceConverter:
                 mix=delay_mix,
             )
             board.append(delay)
+        audio_input, sample_rate = librosa.load(audio_input, sr=sample_rate)
         return board(audio_input, sample_rate)
 
     def convert_audio(
@@ -258,41 +259,16 @@ class VoiceConverter:
         formant_timbre: float,
         post_process: bool,
         reverb: bool,
-        reverb_room_size: float,
-        reverb_damping: float,
-        reverb_wet_level: float,
-        reverb_dry_level: float,
-        reverb_width: float,
-        reverb_freeze_mode: float,
         pitch_shift: bool,
-        pitch_shift_semitones: int,
         limiter: bool,
-        limiter_threshold: float,
-        limiter_release: float,
         gain: bool,
-        gain_db: float,
         distortion: bool,
-        distortion_gain: float,
         chorus: bool,
-        chorus_rate: float,
-        chorus_depth: float,
-        chorus_delay: float,
-        chorus_feedback: float,
-        chorus_mix: float,
         bitcrush: bool,
-        bitcrush_bit_depth: int,
-        bitcrush_sample_rate: int,
         clipping: bool,
-        clipping_threshold: float,
         compressor: bool,
-        compressor_threshold: float,
-        compressor_ratio: float,
-        compressor_attack: float,
-        compressor_release: float,
         delay: bool,
-        delay_seconds: float,
-        delay_feedback: float,
-        delay_mix: float,
+        sliders: dict,
         resample_sr: int = 0,
         sid: int = 0,
     ):
@@ -326,32 +302,16 @@ class VoiceConverter:
             formant_qfrency (float, optional): Formant frequency. Default is 1.0.
             formant_timbre (float, optional): Formant timbre. Default is 1.0.
             reverb (bool, optional): Whether to apply reverb. Default is False.
-            reverb_room_size (float, optional): Room size for reverb. Default is 0.
-            reverb_damping (float, optional): Damping for reverb. Default is 0.
-            reverb_wet_level (float, optional): Wet level for reverb. Default is 0.
-            reverb_dry_level (float, optional): Dry level for reverb. Default is 0.
-            reverb_width (float, optional): Width for reverb. Default is 0.
-            reverb_freeze_mode (float, optional): Freeze mode for reverb. Default is 0.
             pitch_shift (bool, optional): Whether to apply pitch shift. Default is False.
-            pitch_shift_semitones (int, optional): Number of semitones for pitch shift. Default is 0.
-            limiter (bool, optional): Whether to apply limiter. Default is False.
-            limiter_parameters (list, optional): Parameters for the limiter effect. Default is None.
+            limiter (bool, optional): Whether to apply a limiter. Default is False.
             gain (bool, optional): Whether to apply gain. Default is False.
-            gain_db (float, optional): Gain in decibels. Default is 0.
             distortion (bool, optional): Whether to apply distortion. Default is False.
-            distortion_gain (float, optional): Gain for distortion. Default is 0.
             chorus (bool, optional): Whether to apply chorus. Default is False.
-            chorus_parameters (list, optional): Parameters for the chorus effect. Default is None.
             bitcrush (bool, optional): Whether to apply bitcrush. Default is False.
-            bitcrush_parameters (list, optional): Parameters for the bitcrush effect. Default is None.
             clipping (bool, optional): Whether to apply clipping. Default is False.
-            clipping_threshold (float, optional): Threshold for clipping. Default is 0.
-            compressor (bool, optional): Whether to apply compressor. Default is False.
-            compressor_parameters (list, optional): Parameters for the compressor effect. Default is None.
+            compressor (bool, optional): Whether to apply a compressor. Default is False.
             delay (bool, optional): Whether to apply delay. Default is False.
-            delay_seconds (float, optional): Delay in seconds. Default is 0.
-            delay_feedback (float, optional): Feedback for delay. Default is 0.
-            delay_mix (float, optional): Mix for delay. Default is 0.
+            sliders (dict, optional): Dictionary of effect parameters. Default is None.
         """
         self.get_vc(model_path, sid)
 
@@ -444,41 +404,41 @@ class VoiceConverter:
                         audio_input=audio_opt,
                         sample_rate=self.tgt_sr,
                         reverb=reverb,
-                        reverb_room_size=reverb_room_size,
-                        reverb_damping=reverb_damping,
-                        reverb_wet_level=reverb_wet_level,
-                        reverb_dry_level=reverb_dry_level,
-                        reverb_width=reverb_width,
-                        reverb_freeze_mode=reverb_freeze_mode,
+                        reverb_room_size=sliders[0],
+                        reverb_damping=sliders[1],
+                        reverb_wet_level=sliders[2],
+                        reverb_dry_level=sliders[3],
+                        reverb_width=sliders[4],
+                        reverb_freeze_mode=sliders[5],
                         pitch_shift=pitch_shift,
-                        pitch_shift_semitones=pitch_shift_semitones,
+                        pitch_shift_semitones=sliders[6],
                         limiter=limiter,
-                        limiter_threshold=limiter_threshold,
-                        limiter_release=limiter_release,
+                        limiter_threshold=sliders[7],
+                        limiter_release=sliders[8],
                         gain=gain,
-                        gain_db=gain_db,
+                        gain_db=sliders[9],
                         distortion=distortion,
-                        distortion_gain=distortion_gain,
+                        distortion_gain=sliders[10],
                         chorus=chorus,
-                        chorus_rate=chorus_rate,
-                        chorus_depth=chorus_depth,
-                        chorus_delay=chorus_delay,
-                        chorus_feedback=chorus_feedback,
-                        chorus_mix=chorus_mix,
+                        chorus_rate=sliders[11],
+                        chorus_depth=sliders[12],
+                        chorus_delay=sliders[13],
+                        chorus_feedback=sliders[14],
+                        chorus_mix=sliders[15],
                         bitcrush=bitcrush,
-                        bitcrush_bit_depth=bitcrush_bit_depth,
-                        bitcrush_sample_rate=bitcrush_sample_rate,
+                        bitcrush_bit_depth=sliders[16],
+                        bitcrush_sample_rate=sliders[17],
                         clipping=clipping,
-                        clipping_threshold=clipping_threshold,
+                        clipping_threshold=sliders[18],
                         compressor=compressor,
-                        compressor_threshold=compressor_threshold,
-                        compressor_ratio=compressor_ratio,
-                        compressor_attack=compressor_attack,
-                        compressor_release=compressor_release,
+                        compressor_threshold=sliders[19],
+                        compressor_ratio=sliders[20],
+                        compressor_attack=sliders[21],
+                        compressor_release=sliders[22],
                         delay=delay,
-                        delay_seconds=delay_seconds,
-                        delay_feedback=delay_feedback,
-                        delay_mix=delay_mix,
+                        delay_seconds=sliders[23],
+                        delay_feedback=sliders[24],
+                        delay_mix=sliders[25],
                     )
                 os.remove(merge_timestamps_file)
             else:
@@ -520,41 +480,41 @@ class VoiceConverter:
                     audio_input=audio_output_path,
                     sample_rate=self.tgt_sr,
                     reverb=reverb,
-                    reverb_room_size=reverb_room_size,
-                    reverb_damping=reverb_damping,
-                    reverb_wet_level=reverb_wet_level,
-                    reverb_dry_level=reverb_dry_level,
-                    reverb_width=reverb_width,
-                    reverb_freeze_mode=reverb_freeze_mode,
+                    reverb_room_size=sliders["reverb_room_size"],
+                    reverb_damping=sliders["reverb_damping"],
+                    reverb_wet_level=sliders["reverb_wet_level"],
+                    reverb_dry_level=sliders["reverb_dry_level"],
+                    reverb_width=sliders["reverb_width"],
+                    reverb_freeze_mode=sliders["reverb_freeze_mode"],
                     pitch_shift=pitch_shift,
-                    pitch_shift_semitones=pitch_shift_semitones,
+                    pitch_shift_semitones=sliders["pitch_shift_semitones"],
                     limiter=limiter,
-                    limiter_threshold=limiter_threshold,
-                    limiter_release=limiter_release,
+                    limiter_threshold=sliders["limiter_threshold"],
+                    limiter_release=sliders["limiter_release"],
                     gain=gain,
-                    gain_db=gain_db,
+                    gain_db=sliders["gain_db"],
                     distortion=distortion,
-                    distortion_gain=distortion_gain,
+                    distortion_gain=sliders["distortion_gain"],
                     chorus=chorus,
-                    chorus_rate=chorus_rate,
-                    chorus_depth=chorus_depth,
-                    chorus_delay=chorus_delay,
-                    chorus_feedback=chorus_feedback,
-                    chorus_mix=chorus_mix,
+                    chorus_rate=sliders["chorus_rate"],
+                    chorus_depth=sliders["chorus_depth"],
+                    chorus_delay=sliders["chorus_delay"],
+                    chorus_feedback=sliders["chorus_feedback"],
+                    chorus_mix=sliders["chorus_mix"],
                     bitcrush=bitcrush,
-                    bitcrush_bit_depth=bitcrush_bit_depth,
-                    bitcrush_sample_rate=bitcrush_sample_rate,
+                    bitcrush_bit_depth=sliders["bitcrush_bit_depth"],
+                    bitcrush_sample_rate=sliders["bitcrush_sample_rate"],
                     clipping=clipping,
-                    clipping_threshold=clipping_threshold,
+                    clipping_threshold=sliders["clipping_threshold"],
                     compressor=compressor,
-                    compressor_threshold=compressor_threshold,
-                    compressor_ratio=compressor_ratio,
-                    compressor_attack=compressor_attack,
-                    compressor_release=compressor_release,
+                    compressor_threshold=sliders["compressor_threshold"],
+                    compressor_ratio=sliders["compressor_ratio"],
+                    compressor_attack=sliders["compressor_attack"],
+                    compressor_release=sliders["compressor_release"],
                     delay=delay,
-                    delay_seconds=delay_seconds,
-                    delay_feedback=delay_feedback,
-                    delay_mix=delay_mix,
+                    delay_seconds=sliders["delay_seconds"],
+                    delay_feedback=sliders["delay_feedback"],
+                    delay_mix=sliders["delay_mix"],
                 )
             output_path_format = audio_output_path.replace(
                 ".wav", f".{export_format.lower()}"
