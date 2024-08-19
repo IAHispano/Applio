@@ -511,7 +511,7 @@ def inference_tab():
                     maximum=1,
                     label=i18n("Reverb Wet Gain"),
                     info=i18n("Set the wet gain of the reverb."),
-                    value=0.5,
+                    value=0.33,
                     interactive=True,
                     visible=False,
                 )
@@ -521,7 +521,7 @@ def inference_tab():
                     maximum=1,
                     label=i18n("Reverb Dry Gain"),
                     info=i18n("Set the dry gain of the reverb."),
-                    value=0.5,
+                    value=0.4,
                     interactive=True,
                     visible=False,
                 )
@@ -531,7 +531,7 @@ def inference_tab():
                     maximum=1,
                     label=i18n("Reverb Width"),
                     info=i18n("Set the width of the reverb."),
-                    value=0.5,
+                    value=1.0,
                     interactive=True,
                     visible=False,
                 )
@@ -541,7 +541,7 @@ def inference_tab():
                     maximum=1,
                     label=i18n("Reverb Freeze Mode"),
                     info=i18n("Set the freeze mode of the reverb."),
-                    value=0.5,
+                    value=0.0,
                     interactive=True,
                     visible=False,
                 )
@@ -611,11 +611,11 @@ def inference_tab():
                     visible=False,
                 )
                 distortion_gain = gr.Slider(
-                    minimum=0,
-                    maximum=1,
+                    minimum=-60,
+                    maximum=60,
                     label=i18n("Distortion Gain"),
                     info=i18n("Set the distortion gain."),
-                    value=0.5,
+                    value=25,
                     interactive=True,
                     visible=False,
                 )
@@ -628,10 +628,10 @@ def inference_tab():
                 )
                 chorus_rate = gr.Slider(
                     minimum=0,
-                    maximum=10,
+                    maximum=100,
                     label=i18n("Chorus Rate Hz"),
                     info=i18n("Set the chorus rate Hz."),
-                    value=1.5,
+                    value=1.0,
                     interactive=True,
                     visible=False,
                 )
@@ -641,17 +641,17 @@ def inference_tab():
                     maximum=1,
                     label=i18n("chorus Depth"),
                     info=i18n("Set the chorus depth."),
-                    value=0.7,
+                    value=0.25,
                     interactive=True,
                     visible=False,
                 )
 
                 chorus_center_delay = gr.Slider(
-                    minimum=0,
-                    maximum=100,
+                    minimum=7,
+                    maximum=8,
                     label=i18n("chorus Center Delay ms"),
                     info=i18n("Set the chorus center delay ms."),
-                    value=20,
+                    value=7,
                     interactive=True,
                     visible=False,
                 )
@@ -661,7 +661,7 @@ def inference_tab():
                     maximum=1,
                     label=i18n("chorus Feedback"),
                     info=i18n("Set the chorus feedback."),
-                    value=0.5,
+                    value=0.0,
                     interactive=True,
                     visible=False,
                 )
@@ -684,20 +684,10 @@ def inference_tab():
                 )
                 bitcrush_bit_depth = gr.Slider(
                     minimum=1,
-                    maximum=16,
+                    maximum=32,
                     label=i18n("Bitcrush Bit Depth"),
                     info=i18n("Set the bitcrush bit depth."),
                     value=8,
-                    interactive=True,
-                    visible=False,
-                )
-
-                bitcrush_sample_rate = gr.Slider(
-                    minimum=1,
-                    maximum=44100,
-                    label=i18n("Bitcrush Sample Rate"),
-                    info=i18n("Set the bitcrush sample rate."),
-                    value=44100,
                     interactive=True,
                     visible=False,
                 )
@@ -709,11 +699,11 @@ def inference_tab():
                     visible=False,
                 )
                 clipping_threshold = gr.Slider(
-                    minimum=0,
-                    maximum=1,
+                    minimum=-60,
+                    maximum=0,
                     label=i18n("Clipping Threshold"),
                     info=i18n("Set the clipping threshold."),
-                    value=0.5,
+                    value=-6,
                     interactive=True,
                     visible=False,
                 )
@@ -729,7 +719,7 @@ def inference_tab():
                     maximum=0,
                     label=i18n("Compressor Threshold dB"),
                     info=i18n("Set the compressor threshold dB."),
-                    value=-24,
+                    value=0,
                     interactive=True,
                     visible=False,
                 )
@@ -739,17 +729,17 @@ def inference_tab():
                     maximum=20,
                     label=i18n("Compressor Ratio"),
                     info=i18n("Set the compressor ratio."),
-                    value=12,
+                    value=1,
                     interactive=True,
                     visible=False,
                 )
 
                 compressor_attack = gr.Slider(
-                    minimum=0.01,
+                    minimum=0.0,
                     maximum=100,
                     label=i18n("Compressor Attack ms"),
                     info=i18n("Set the compressor attack ms."),
-                    value=20,
+                    value=1.0,
                     interactive=True,
                     visible=False,
                 )
@@ -759,7 +749,7 @@ def inference_tab():
                     maximum=100,
                     label=i18n("Compressor Release ms"),
                     info=i18n("Set the compressor release ms."),
-                    value=20,
+                    value=100,
                     interactive=True,
                     visible=False,
                 )
@@ -771,8 +761,8 @@ def inference_tab():
                     visible=False,
                 )
                 delay_seconds = gr.Slider(
-                    minimum=0,
-                    maximum=1,
+                    minimum=0.0,
+                    maximum=5.0,
                     label=i18n("Delay Seconds"),
                     info=i18n("Set the delay seconds."),
                     value=0.5,
@@ -781,18 +771,18 @@ def inference_tab():
                 )
 
                 delay_feedback = gr.Slider(
-                    minimum=0,
-                    maximum=1,
+                    minimum=0.0,
+                    maximum=1.0,
                     label=i18n("Delay Feedback"),
                     info=i18n("Set the delay feedback."),
-                    value=0.5,
+                    value=0.0,
                     interactive=True,
                     visible=False,
                 )
 
                 delay_mix = gr.Slider(
-                    minimum=0,
-                    maximum=1,
+                    minimum=0.0,
+                    maximum=1.0,
                     label=i18n("Delay Mix"),
                     info=i18n("Set the delay mix."),
                     value=0.5,
@@ -1330,7 +1320,7 @@ def inference_tab():
         return update_visibility(checkbox, 6)
 
     def bitcrush_visible(checkbox):
-        return update_visibility(checkbox, 2)
+        return update_visibility(checkbox, 1)
 
     def compress_visible(checkbox):
         return update_visibility(checkbox, 4)
@@ -1448,7 +1438,7 @@ def inference_tab():
     bitcrush.change(
         fn=bitcrush_visible,
         inputs=[bitcrush],
-        outputs=[bitcrush_bit_depth, bitcrush_sample_rate],
+        outputs=[bitcrush_bit_depth],
     )
     clipping.change(
         fn=toggle_visible,
@@ -1583,7 +1573,7 @@ def inference_tab():
         chorus_feedback,
         chorus_mix,
     ]
-    bitcrush_sliders = [bitcrush_bit_depth, bitcrush_sample_rate]
+    bitcrush_sliders = [bitcrush_bit_depth]
     clipping_sliders = [clipping_threshold]
     compressor_sliders = [
         compressor_threshold,
