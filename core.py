@@ -159,7 +159,7 @@ def run_batch_infer_script(
         formant_shifting=formant_shifting,
         formant_qfrency=formant_qfrency,
         formant_timbre=formant_timbre,
-        pid_file_path=os.path.join(now_dir, "assets", "infer_pid.txt"),
+        pid_file_path=os.path.join(os.getcwd(), "assets", "infer_pid.txt"),
     )
 
     return f"Files from {input_folder} inferred successfully."

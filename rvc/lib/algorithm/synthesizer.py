@@ -8,7 +8,7 @@ sys.path.append(os.getcwd())
 from rvc.lib.algorithm.generators.hifigan.hifigan import HiFiGAN
 from rvc.lib.algorithm.generators.bigvgan.bigvgan import BigVGAN
 from rvc.lib.algorithm.generators.generator import Generator
-from rvc.lib.algorithm.commons import slice_segments2, rand_slice_segments
+from rvc.lib.algorithm.commons import slice_segments, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock
 from rvc.lib.algorithm.encoders.text import TextEncoder
 from rvc.lib.algorithm.encoders.posterior import PosteriorEncoder

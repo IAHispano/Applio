@@ -17,7 +17,7 @@ logging.getLogger("faiss.loader").setLevel(logging.WARNING)
 
 sys.path.append(os.getcwd())
 
-base_path = os.path.join(now_dir, "rvc", "models", "formant", "stftpitchshift")
+base_path = os.path.join(os.getcwd(), "rvc", "models", "formant", "stftpitchshift")
 stft = base_path + ".exe" if sys.platform == "win32" else base_path
 
 
