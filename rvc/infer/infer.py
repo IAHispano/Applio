@@ -802,7 +802,7 @@ class VoiceConverter:
                         )
                 if post_process:
                     audio_output_paths = self.post_process_audio(
-                        audio_input=audio_output_path,
+                        audio_input=audio_output_paths,
                         sample_rate=self.tgt_sr,
                         reverb=reverb,
                         reverb_room_size=sliders["reverb_room_size"],
