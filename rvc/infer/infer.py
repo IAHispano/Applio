@@ -159,7 +159,6 @@ class VoiceConverter:
         chorus_mix: float,
         bitcrush: bool,
         bitcrush_bit_depth: int,
-        bitcrush_sample_rate: int,
         clipping: bool,
         clipping_threshold: float,
         compressor: bool,
@@ -171,6 +170,7 @@ class VoiceConverter:
         delay_seconds: float,
         delay_feedback: float,
         delay_mix: float,
+        audio_output_path: str,
     ):
         board = Pedalboard()
         if reverb:
@@ -207,9 +207,7 @@ class VoiceConverter:
             )
             board.append(chorus)
         if bitcrush:
-            bitcrush = Bitcrush(
-                bit_depth=bitcrush_bit_depth, sample_rate=bitcrush_sample_rate
-            )
+            bitcrush = Bitcrush(bit_depth=bitcrush_bit_depth)
             board.append(bitcrush)
         if clipping:
             clipping = Clipping(threshold_db=clipping_threshold)
@@ -230,7 +228,9 @@ class VoiceConverter:
             )
             board.append(delay)
         audio_input, sample_rate = librosa.load(audio_input, sr=sample_rate)
-        return board(audio_input, sample_rate)
+        output = board(audio_input, sample_rate)
+        sf.write(audio_output_path, output, sample_rate, format="WAV")
+        return audio_output_path
 
     def convert_audio(
         self,
@@ -399,6 +399,7 @@ class VoiceConverter:
                     f"{os.path.basename(audio_input_path).split('.')[0]}_timestamps.txt",
                 )
                 self.tgt_sr, audio_opt = merge_audio(merge_timestamps_file)
+                os.remove(merge_timestamps_file)
                 if post_process:
                     audio_opt = self.post_process_audio(
                         audio_input=audio_opt,
@@ -427,20 +428,20 @@ class VoiceConverter:
                         chorus_mix=sliders[15],
                         bitcrush=bitcrush,
                         bitcrush_bit_depth=sliders[16],
-                        bitcrush_sample_rate=sliders[17],
                         clipping=clipping,
-                        clipping_threshold=sliders[18],
+                        clipping_threshold=sliders[17],
                         compressor=compressor,
-                        compressor_threshold=sliders[19],
-                        compressor_ratio=sliders[20],
-                        compressor_attack=sliders[21],
-                        compressor_release=sliders[22],
+                        compressor_threshold=sliders[18],
+                        compressor_ratio=sliders[19],
+                        compressor_attack=sliders[20],
+                        compressor_release=sliders[21],
                         delay=delay,
-                        delay_seconds=sliders[23],
-                        delay_feedback=sliders[24],
-                        delay_mix=sliders[25],
+                        delay_seconds=sliders[22],
+                        delay_feedback=sliders[23],
+                        delay_mix=sliders[24],
+                        audio_output_path=audio_output_path,
                     )
-                os.remove(merge_timestamps_file)
+                sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
             else:
                 audio_opt = self.vc.pipeline(
                     model=self.hubert_model,
@@ -476,7 +477,7 @@ class VoiceConverter:
                         audio_output_path, cleaned_audio, self.tgt_sr, format="WAV"
                     )
             if post_process:
-                self.post_process_audio(
+                audio_output_path = self.post_process_audio(
                     audio_input=audio_output_path,
                     sample_rate=self.tgt_sr,
                     reverb=reverb,
@@ -503,7 +504,6 @@ class VoiceConverter:
                     chorus_mix=sliders["chorus_mix"],
                     bitcrush=bitcrush,
                     bitcrush_bit_depth=sliders["bitcrush_bit_depth"],
-                    bitcrush_sample_rate=sliders["bitcrush_sample_rate"],
                     clipping=clipping,
                     clipping_threshold=sliders["clipping_threshold"],
                     compressor=compressor,
@@ -515,6 +515,7 @@ class VoiceConverter:
                     delay_seconds=sliders["delay_seconds"],
                     delay_feedback=sliders["delay_feedback"],
                     delay_mix=sliders["delay_mix"],
+                    audio_output_path=audio_output_path,
                 )
             output_path_format = audio_output_path.replace(
                 ".wav", f".{export_format.lower()}"
@@ -560,6 +561,18 @@ class VoiceConverter:
         resample_sr: int = 0,
         sid: int = 0,
         pid_file_path: str = None,
+        post_process: bool = False,
+        reverb: bool = False,
+        pitch_shift: bool = False,
+        limiter: bool = False,
+        gain: bool = False,
+        distortion: bool = False,
+        chorus: bool = False,
+        bitcrush: bool = False,
+        clipping: bool = False,
+        compressor: bool = False,
+        delay: bool = False,
+        sliders: dict = None,
     ):
         """
         Performs voice conversion on a batch of input audio files.
@@ -591,6 +604,18 @@ class VoiceConverter:
             formant_qfrency (float, optional): Formant frequency. Default is 1.0.
             formant_timbre (float, optional): Formant timbre. Default is 1.0.
             pid_file_path (str, optional): Path to the PID file. Default is None.
+            post_process (bool, optional): Whether to apply post-processing effects. Default is False.
+            reverb (bool, optional): Whether to apply reverb. Default is False.
+            pitch_shift (bool, optional): Whether to apply pitch shift. Default is False.
+            limiter (bool, optional): Whether to apply a limiter. Default is False.
+            gain (bool, optional): Whether to apply gain. Default is False.
+            distortion (bool, optional): Whether to apply distortion. Default is False.
+            chorus (bool, optional): Whether to apply chorus. Default is False.
+            bitcrush (bool, optional): Whether to apply bitcrush. Default is False.
+            clipping (bool, optional): Whether to apply clipping. Default is False.
+            compressor (bool, optional): Whether to apply a compressor. Default is False.
+            delay (bool, optional): Whether to apply delay. Default is False.
+            sliders (dict, optional): Dictionary of effect parameters. Default is None.
 
         """
         pid = os.getpid()
@@ -697,6 +722,50 @@ class VoiceConverter:
                     )
                     self.tgt_sr, audio_opt = merge_audio(merge_timestamps_file)
                     os.remove(merge_timestamps_file)
+                    if post_process:
+                        audio_opt = self.post_process_audio(
+                            audio_input=audio_opt,
+                            sample_rate=self.tgt_sr,
+                            reverb=reverb,
+                            reverb_room_size=sliders[0],
+                            reverb_damping=sliders[1],
+                            reverb_wet_level=sliders[2],
+                            reverb_dry_level=sliders[3],
+                            reverb_width=sliders[4],
+                            reverb_freeze_mode=sliders[5],
+                            pitch_shift=pitch_shift,
+                            pitch_shift_semitones=sliders[6],
+                            limiter=limiter,
+                            limiter_threshold=sliders[7],
+                            limiter_release=sliders[8],
+                            gain=gain,
+                            gain_db=sliders[9],
+                            distortion=distortion,
+                            distortion_gain=sliders[10],
+                            chorus=chorus,
+                            chorus_rate=sliders[11],
+                            chorus_depth=sliders[12],
+                            chorus_delay=sliders[13],
+                            chorus_feedback=sliders[14],
+                            chorus_mix=sliders[15],
+                            bitcrush=bitcrush,
+                            bitcrush_bit_depth=sliders[16],
+                            clipping=clipping,
+                            clipping_threshold=sliders[17],
+                            compressor=compressor,
+                            compressor_threshold=sliders[18],
+                            compressor_ratio=sliders[19],
+                            compressor_attack=sliders[20],
+                            compressor_release=sliders[21],
+                            delay=delay,
+                            delay_seconds=sliders[22],
+                            delay_feedback=sliders[23],
+                            delay_mix=sliders[24],
+                            audio_output_path=audio_output_paths,
+                        )
+                        sf.write(
+                            audio_output_paths, audio_opt, self.tgt_sr, format="WAV"
+                        )
                 else:
                     audio_opt = self.vc.pipeline(
                         model=self.hubert_model,
@@ -731,8 +800,48 @@ class VoiceConverter:
                         sf.write(
                             audio_output_paths, cleaned_audio, self.tgt_sr, format="WAV"
                         )
-
-                output_path_format = audio_output_path.replace(
+                if post_process:
+                    audio_output_paths = self.post_process_audio(
+                        audio_input=audio_output_path,
+                        sample_rate=self.tgt_sr,
+                        reverb=reverb,
+                        reverb_room_size=sliders["reverb_room_size"],
+                        reverb_damping=sliders["reverb_damping"],
+                        reverb_wet_level=sliders["reverb_wet_level"],
+                        reverb_dry_level=sliders["reverb_dry_level"],
+                        reverb_width=sliders["reverb_width"],
+                        reverb_freeze_mode=sliders["reverb_freeze_mode"],
+                        pitch_shift=pitch_shift,
+                        pitch_shift_semitones=sliders["pitch_shift_semitones"],
+                        limiter=limiter,
+                        limiter_threshold=sliders["limiter_threshold"],
+                        limiter_release=sliders["limiter_release"],
+                        gain=gain,
+                        gain_db=sliders["gain_db"],
+                        distortion=distortion,
+                        distortion_gain=sliders["distortion_gain"],
+                        chorus=chorus,
+                        chorus_rate=sliders["chorus_rate"],
+                        chorus_depth=sliders["chorus_depth"],
+                        chorus_delay=sliders["chorus_delay"],
+                        chorus_feedback=sliders["chorus_feedback"],
+                        chorus_mix=sliders["chorus_mix"],
+                        bitcrush=bitcrush,
+                        bitcrush_bit_depth=sliders["bitcrush_bit_depth"],
+                        clipping=clipping,
+                        clipping_threshold=sliders["clipping_threshold"],
+                        compressor=compressor,
+                        compressor_threshold=sliders["compressor_threshold"],
+                        compressor_ratio=sliders["compressor_ratio"],
+                        compressor_attack=sliders["compressor_attack"],
+                        compressor_release=sliders["compressor_release"],
+                        delay=delay,
+                        delay_seconds=sliders["delay_seconds"],
+                        delay_feedback=sliders["delay_feedback"],
+                        delay_mix=sliders["delay_mix"],
+                        audio_output_path=audio_output_paths,
+                    )
+                output_path_format = audio_output_paths.replace(
                     ".wav", f".{export_format.lower()}"
                 )
                 audio_output_paths = self.convert_audio_format(
