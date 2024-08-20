@@ -309,7 +309,7 @@ if __name__ == "__main__":
     pitch_guidance = sys.argv[7]
     sample_rate = sys.argv[8]
     embedder_model = sys.argv[9]
-    embedder_model_custom = sys.argv[9] if len(sys.argv) > 9 else None
+    embedder_model_custom = sys.argv[10] if len(sys.argv) > 10 else None
 
     # Run Pitch Extraction
     run_pitch_extraction(exp_dir, f0_method, hop_length, num_processes, gpus)
