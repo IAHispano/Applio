@@ -428,6 +428,24 @@ def train_tab():
                 value="contentvec",
                 interactive=True,
             )
+
+        with gr.Accordion(
+            i18n("Custom Embedder"), open=True, visible=False
+        ) as embedder_custom:
+            embedder_upload_custom = gr.File(
+                label=i18n("Upload Custom Embedder"),
+                type="filepath",
+                interactive=True,
+            )
+            embedder_custom_refresh = gr.Button(i18n("Refresh"))
+            embedder_model_custom = gr.Dropdown(
+                label=i18n("Custom Embedder"),
+                info=i18n("Select the custom embedder to use for the conversion."),
+                choices=sorted(get_embedder_custom_list()),
+                interactive=True,
+                allow_custom_value=True,
+            )
+
         hop_length = gr.Slider(
             1,
             512,
@@ -484,24 +502,6 @@ def train_tab():
                         info=i18n("The GPU information will be displayed here."),
                         value=get_gpu_info(),
                         interactive=False,
-                    )
-
-            with gr.Column(visible=False) as embedder_custom:
-                with gr.Accordion(i18n("Custom Embedder"), open=True):
-                    embedder_upload_custom = gr.File(
-                        label=i18n("Upload Custom Embedder"),
-                        type="filepath",
-                        interactive=True,
-                    )
-                    embedder_custom_refresh = gr.Button(i18n("Refresh"))
-                    embedder_model_custom = gr.Dropdown(
-                        label=i18n("Custom Embedder"),
-                        info=i18n(
-                            "Select the custom embedder to use for the conversion."
-                        ),
-                        choices=sorted(get_embedder_custom_list()),
-                        interactive=True,
-                        allow_custom_value=True,
                     )
 
         extract_output_info = gr.Textbox(
