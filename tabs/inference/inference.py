@@ -607,8 +607,9 @@ def inference_tab():
                     info=i18n("Model used for learning speaker embedding."),
                     choices=[
                         "contentvec",
+                        "chinese-hubert-base",
                         "japanese-hubert-base",
-                        "chinese-hubert-large",
+                        "korean-hubert-base",
                         "custom",
                     ],
                     value="contentvec",
@@ -906,8 +907,9 @@ def inference_tab():
                     info=i18n("Model used for learning speaker embedding."),
                     choices=[
                         "contentvec",
+                        "chinese-hubert-base",
                         "japanese-hubert-base",
-                        "chinese-hubert-large",
+                        "korean-hubert-base",
                         "custom",
                     ],
                     value="contentvec",

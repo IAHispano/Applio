@@ -90,13 +90,15 @@ def load_embedding(embedder_model, custom_embedder=None):
     embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
     embedding_list = {
         "contentvec": os.path.join(embedder_root, "contentvec_base.pt"),
-        "japanese-hubert-base": os.path.join(embedder_root, "japanese-hubert-base.pt"),
-        "chinese-hubert-large": os.path.join(embedder_root, "chinese-hubert-large.pt"),
+        "chinese-hubert-base": os.path.join(embedder_root, "chinese_hubert_base.pt"),
+        "japanese-hubert-base": os.path.join(embedder_root, "japanese_hubert_base.pt"),
+        "korean-hubert-base": os.path.join(embedder_root, "korean_hubert_base.pt"),
     }
 
     online_embedders = {
-        "japanese-hubert-base": "https://huggingface.co/rinna/japanese-hubert-base/resolve/main/fairseq/model.pt",
-        "chinese-hubert-large": "https://huggingface.co/TencentGameMate/chinese-hubert-large/resolve/main/chinese-hubert-large-fairseq-ckpt.pt",
+        "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/chinese_hubert_base.pt",
+        "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/japanese_hubert_base.pt",
+        "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/korean_hubert_base.pt",
     }
 
     if embedder_model == "custom":
@@ -108,7 +110,7 @@ def load_embedding(embedder_model, custom_embedder=None):
         if embedder_model in online_embedders:
             if not os.path.exists(model_path):
                 url = online_embedders[embedder_model]
-                print(f"\nDownloading {url} to {model_path}...")
+                print(f"Downloading {url} to {model_path}...")
                 wget.download(url, out=model_path)
         else:
             model_path = embedding_list["contentvec"]

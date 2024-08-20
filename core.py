@@ -621,8 +621,9 @@ def parse_arguments():
         help=embedder_model_description,
         choices=[
             "contentvec",
+            "chinese-hubert-base",
             "japanese-hubert-base",
-            "chinese-hubert-large",
+            "korean-hubert-base",
             "custom",
         ],
         default="contentvec",
@@ -797,8 +798,9 @@ def parse_arguments():
         help=embedder_model_description,
         choices=[
             "contentvec",
+            "chinese-hubert-base",
             "japanese-hubert-base",
-            "chinese-hubert-large",
+            "korean-hubert-base",
             "custom",
         ],
         default="contentvec",
@@ -981,8 +983,9 @@ def parse_arguments():
         help=embedder_model_description,
         choices=[
             "contentvec",
+            "chinese-hubert-base",
             "japanese-hubert-base",
-            "chinese-hubert-large",
+            "korean-hubert-base",
             "custom",
         ],
         default="contentvec",
@@ -1112,8 +1115,9 @@ def parse_arguments():
         help=embedder_model_description,
         choices=[
             "contentvec",
+            "chinese-hubert-base",
             "japanese-hubert-base",
-            "chinese-hubert-large",
+            "korean-hubert-base",
             "custom",
         ],
         default="contentvec",
