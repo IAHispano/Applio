@@ -170,7 +170,7 @@ def save_drop_model(dropbox):
         pretrained_path = os.path.join(pretraineds_custom_path_relative, file_name)
         if os.path.exists(pretrained_path):
             os.remove(pretrained_path)
-        os.rename(dropbox, pretrained_path)
+        shutil.copy(dropbox, pretrained_path)
         gr.Info(
             i18n(
                 "Click the refresh button to see the pretrained file in the dropdown menu."
@@ -197,7 +197,7 @@ def save_drop_dataset_audio(dropbox, dataset_name):
             destination_path = os.path.join(dataset_path, audio_file)
             if os.path.exists(destination_path):
                 os.remove(destination_path)
-            os.rename(dropbox, destination_path)
+            shutil.copy(dropbox, destination_path)
             gr.Info(
                 i18n(
                     "The audio file has been successfully added to the dataset. Please click the preprocess button."
@@ -220,7 +220,7 @@ def save_drop_custom_embedder(dropbox):
         custom_embedder_path = os.path.join(custom_embedder_root, file_name)
         if os.path.exists(custom_embedder_path):
             os.remove(custom_embedder_path)
-        os.rename(dropbox, custom_embedder_path)
+        shutil.copy(dropbox, custom_embedder_path)
         gr.Info(
             i18n(
                 "Click the refresh button to see the embedder file in the dropdown menu."

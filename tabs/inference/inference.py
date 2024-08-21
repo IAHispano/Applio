@@ -287,7 +287,7 @@ def save_drop_custom_embedder(dropbox):
         custom_embedder_path = os.path.join(custom_embedder_root, file_name)
         if os.path.exists(custom_embedder_path):
             os.remove(custom_embedder_path)
-        os.rename(dropbox, custom_embedder_path)
+        shutil.copy(dropbox, custom_embedder_path)
         gr.Info(
             i18n(
                 "Click the refresh button to see the embedder file in the dropdown menu."
