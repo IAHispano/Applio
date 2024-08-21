@@ -60,10 +60,13 @@ def load_audio_infer(
                 temp_file_path = temp_file.name
                 audio_segment.export(temp_file_path, format="wav")
 
-            command = (
-                f'{stft} -i "{temp_file_path}" -q "{formant_qfrency}" '
-                f'-t "{formant_timbre}" -o "{temp_file_path}_formatted.wav"'
-            )
+            command = [
+                stft,
+                "-i", temp_file_path,
+                "-q", str(formant_qfrency),
+                "-t", str(formant_timbre),
+                "-o", f"{temp_file_path}_formatted.wav"
+            ]
             subprocess.run(command, shell=True)
             formatted_audio_path = f"{temp_file_path}_formatted.wav"
             audio, sr = sf.read(formatted_audio_path)

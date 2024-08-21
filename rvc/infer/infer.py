@@ -388,6 +388,21 @@ class VoiceConverter:
                             embedder_model_custom=embedder_model_custom,
                             clean_audio=clean_audio,
                             clean_strength=clean_strength,
+                            formant_shifting=formant_shifting,
+                            formant_qfrency=formant_qfrency,
+                            formant_timbre=formant_timbre,
+                            post_process=post_process,
+                            reverb=reverb,
+                            pitch_shift=pitch_shift,
+                            limiter=limiter,
+                            gain=gain,
+                            distortion=distortion,
+                            chorus=chorus,
+                            bitcrush=bitcrush,
+                            clipping=clipping,
+                            compressor=compressor,
+                            delay=delay,
+                            sliders=sliders,
                         )
                 except Exception as error:
                     print(f"An error occurred processing the segmented audio: {error}")
@@ -708,6 +723,21 @@ class VoiceConverter:
                                 embedder_model_custom=embedder_model_custom,
                                 clean_audio=clean_audio,
                                 clean_strength=clean_strength,
+                                formant_shifting=formant_shifting,
+                                formant_qfrency=formant_qfrency,
+                                formant_timbre=formant_timbre,
+                                post_process=post_process,
+                                reverb=reverb,
+                                pitch_shift=pitch_shift,
+                                limiter=limiter,
+                                gain=gain,
+                                distortion=distortion,
+                                chorus=chorus,
+                                bitcrush=bitcrush,
+                                clipping=clipping,
+                                compressor=compressor,
+                                delay=delay,
+                                sliders=sliders,
                             )
                     except Exception as error:
                         print(
