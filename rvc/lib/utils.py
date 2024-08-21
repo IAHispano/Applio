@@ -62,10 +62,14 @@ def load_audio_infer(
 
             command = [
                 stft,
-                "-i", temp_file_path,
-                "-q", str(formant_qfrency),
-                "-t", str(formant_timbre),
-                "-o", f"{temp_file_path}_formatted.wav"
+                "-i",
+                temp_file_path,
+                "-q",
+                str(formant_qfrency),
+                "-t",
+                str(formant_timbre),
+                "-o",
+                f"{temp_file_path}_formatted.wav",
             ]
             subprocess.run(command, shell=True)
             formatted_audio_path = f"{temp_file_path}_formatted.wav"
