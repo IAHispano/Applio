@@ -271,6 +271,14 @@ def run_embedding_extraction(
 
     models, saved_cfg, _ = load_embedding(embedder_model, embedder_model_custom)
     model = models[0]
+    
+    if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):
+        print("Disabling CUDNN for Zluda")
+        torch.backends.cudnn.enabled = False
+        torch.backends.cuda.enable_flash_sdp(False)
+        torch.backends.cuda.enable_math_sdp(True)
+        torch.backends.cuda.enable_mem_efficient_sdp(False)
+        
     devices = [get_device(gpu) for gpu in (gpus.split("-") if gpus != "-" else ["cpu"])]
 
     paths = sorted([file for file in os.listdir(wav_path) if file.endswith(".wav")])
