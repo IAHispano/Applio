@@ -39,7 +39,6 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("faiss").setLevel(logging.WARNING)
 logging.getLogger("faiss.loader").setLevel(logging.WARNING)
 
-
 class VoiceConverter:
     """
     A class for performing voice conversion using the Retrieval-Based Voice Conversion (RVC) method.
@@ -53,7 +52,7 @@ class VoiceConverter:
         self.hubert_model = (
             None  # Initialize the Hubert model (for embedding extraction)
         )
-        self.last_embedder_model = None
+        self.last_embedder_model = None  # Last used embedder model
         self.tgt_sr = None  # Target sampling rate for the output audio
         self.net_g = None  # Generator network for voice conversion
         self.vc = None  # Voice conversion pipeline instance
@@ -70,13 +69,16 @@ class VoiceConverter:
             embedder_model (str): Path to the pre-trained HuBERT model.
             embedder_model_custom (str): Path to the custom HuBERT model.
         """
-        models, _, _ = load_embedding(embedder_model, embedder_model_custom)
-        self.hubert_model = models[0].to(self.config.device)
-        self.hubert_model = (
-            self.hubert_model.half()
-            if self.config.is_half
-            else self.hubert_model.float()
-        )
+        if embedder_model_custom:
+            self.hubert_model = load_embedding(embedder_model_custom)
+        else:
+            self.hubert_model = load_embedding(embedder_model)
+
+        # If a custom model is provided, load it
+        #if embedder_model_custom:
+        #    self.hubert_model.load_state_dict(torch.load(embedder_model_custom))
+        self.hubert_model.to(self.config.device)
+        self.hubert_model = self.hubert_model.half() if self.config.is_half else self.hubert_model.float()
         self.hubert_model.eval()
 
     @staticmethod
@@ -336,7 +338,6 @@ class VoiceConverter:
 
             if not self.hubert_model or embedder_model != self.last_embedder_model:
                 self.load_hubert(embedder_model, embedder_model_custom)
-                self.last_embedder_model = embedder_model
 
             file_index = (
                 index_path.strip()
@@ -641,7 +642,6 @@ class VoiceConverter:
         try:
             if not self.hubert_model or embedder_model != self.last_embedder_model:
                 self.load_hubert(embedder_model, embedder_model_custom)
-                self.last_embedder_model = embedder_model
             self.get_vc(model_path, sid)
             file_index = (
                 index_path.strip()
