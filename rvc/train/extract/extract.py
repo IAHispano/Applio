@@ -272,6 +272,7 @@ def run_embedding_extraction(
     models, saved_cfg, _ = load_embedding(embedder_model, embedder_model_custom)
     model = models[0]
     
+    # Zluda
     if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):
         print("Disabling CUDNN for Zluda")
         torch.backends.cudnn.enabled = False

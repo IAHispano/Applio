@@ -88,6 +88,7 @@ class WaveNet(torch.nn.Module):
         if g is not None:
             g = self.cond_layer(g)
 
+        # Zluda
         is_zluda = x.device.type == "cuda" and torch.cuda.get_device_name().endswith("[ZLUDA]")
 
         for i in range(self.n_layers):
