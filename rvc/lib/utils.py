@@ -109,12 +109,14 @@ def load_embedding(embedder_model, custom_embedder=None):
     }
 
     online_embedders = {
+        "contentvec": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/contentvec_base/pytorch_model.bin",
         "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/chinese_hubert_base/pytorch_model.bin",
         "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/japanese_hubert_base/pytorch_model.bin",
         "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/korean_hubert_base/pytorch_model.bin",
     }
 
     config_files = {
+        "contentvec": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/contentvec_base/config.json",
         "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/chinese_hubert_base/config.json",
         "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/japanese_hubert_base/config.json",
         "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/korean_hubert_base/config.json",
