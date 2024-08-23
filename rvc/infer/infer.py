@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import torch
+from torch import nn
 import librosa
 import logging
 import traceback
@@ -39,6 +40,12 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("faiss").setLevel(logging.WARNING)
 logging.getLogger("faiss.loader").setLevel(logging.WARNING)
 
+from transformers import HubertModel
+
+class HubertModelWithFinalProj(HubertModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
 
 class VoiceConverter:
     """
@@ -69,13 +76,17 @@ class VoiceConverter:
             embedder_model (str): Path to the pre-trained HuBERT model.
             embedder_model_custom (str): Path to the custom HuBERT model.
         """
-        models, _, _ = load_embedding(embedder_model, embedder_model_custom)
-        self.hubert_model = models[0].to(self.config.device)
-        self.hubert_model = (
-            self.hubert_model.half()
-            if self.config.is_half
-            else self.hubert_model.float()
-        )
+        embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
+        if embedder_model == "custom":
+            print('good luck with that') 
+        else:
+            self.hubert_model = HubertModelWithFinalProj.from_pretrained(os.path.join(embedder_root, embedder_model))
+                 
+        # If a custom model is provided, load it
+        #if embedder_model_custom:
+        #    self.hubert_model.load_state_dict(torch.load(embedder_model_custom))
+        self.hubert_model.to(self.config.device)
+        self.hubert_model = self.hubert_model.half() if self.config.is_half else self.hubert_model.float()
         self.hubert_model.eval()
 
     @staticmethod
