@@ -174,6 +174,7 @@ def fused_add_tanh_sigmoid_multiply_no_jit(input_a, input_b, n_channels):
     acts = t_act * s_act
     return acts
 
+
 def convert_pad_shape(pad_shape: List[List[int]]) -> List[int]:
     """
     Convert the pad shape to a list of integers.

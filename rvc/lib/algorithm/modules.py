@@ -3,7 +3,7 @@ from rvc.lib.algorithm.commons import (
     fused_add_tanh_sigmoid_multiply_no_jit,
     fused_add_tanh_sigmoid_multiply,
 )
- 
+
 
 class WaveNet(torch.nn.Module):
     """WaveNet residual blocks as used in WaveGlow
@@ -89,7 +89,9 @@ class WaveNet(torch.nn.Module):
             g = self.cond_layer(g)
 
         # Zluda
-        is_zluda = x.device.type == "cuda" and torch.cuda.get_device_name().endswith("[ZLUDA]")
+        is_zluda = x.device.type == "cuda" and torch.cuda.get_device_name().endswith(
+            "[ZLUDA]"
+        )
 
         for i in range(self.n_layers):
             x_in = self.in_layers[i](x)
@@ -101,7 +103,9 @@ class WaveNet(torch.nn.Module):
 
             # Preventing HIP crash by not using jit-decorated function
             if is_zluda:
-                acts = fused_add_tanh_sigmoid_multiply_no_jit(x_in, g_l, n_channels_tensor)
+                acts = fused_add_tanh_sigmoid_multiply_no_jit(
+                    x_in, g_l, n_channels_tensor
+                )
             else:
                 acts = fused_add_tanh_sigmoid_multiply(x_in, g_l, n_channels_tensor)
 

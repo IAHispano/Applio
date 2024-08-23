@@ -81,7 +81,7 @@ def spectrogram_torch(y, n_fft, hop_size, win_size, center=False):
     if y.device.type == "cuda" and torch.cuda.get_device_name().endswith("[ZLUDA]"):
         y = y.to("cpu")
         hann_window[wnsize_dtype_device] = hann_window[wnsize_dtype_device].to("cpu")
-  
+
     spec = torch.stft(
         y,
         n_fft,
