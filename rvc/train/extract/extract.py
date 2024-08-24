@@ -240,7 +240,7 @@ def process_file_embedding(file, wav_path, out_path, model, device, version):
     feats = read_wave(wav_file_path)
     dtype = torch.float16 if config.is_half else torch.float32
     feats = feats.to(dtype).to(device)
-    model = model.to(device).to(dtype)
+    model = model.to(dtype).to(device)
 
     with torch.no_grad():
         feats = model(feats)["last_hidden_state"]
@@ -261,7 +261,7 @@ def run_embedding_extraction(
     print("Starting embedding extraction...")
     start_time = time.time()
 
-    models = load_embedding(embedder_model, embedder_model_custom)
+    models = load_embedding(embedder_model, embedder_model_custom, version)
 
     # Zluda
     if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):

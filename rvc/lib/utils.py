@@ -8,6 +8,7 @@ import wget
 import subprocess
 from pydub import AudioSegment
 import tempfile
+from torch import nn
 
 import logging
 from transformers import HubertModel
@@ -25,6 +26,11 @@ sys.path.append(now_dir)
 
 base_path = os.path.join(now_dir, "rvc", "models", "formant", "stftpitchshift")
 stft = base_path + ".exe" if sys.platform == "win32" else base_path
+
+class HubertModelWithFinalProj(HubertModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
 
 def load_audio(file, sample_rate):
     try:
@@ -97,7 +103,7 @@ def format_title(title):
     return formatted_title
 
 
-def load_embedding(embedder_model, custom_embedder=None):
+def load_embedding(embedder_model, custom_embedder=None, version="v2"):
     embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
     embedding_list = {
         "contentvec": os.path.join(embedder_root, "contentvec"),
@@ -140,6 +146,9 @@ def load_embedding(embedder_model, custom_embedder=None):
             print(f"Downloading {url} to {model_path}...")
             wget.download(url, out=json_file)
 
-    models = HubertModel.from_pretrained(model_path)
+    if version == "v1":
+        models = HubertModelWithFinalProj.from_pretrained(model_path)
+    else:
+        models = HubertModel.from_pretrained(model_path)
 
     return models
