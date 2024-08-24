@@ -103,7 +103,7 @@ def format_title(title):
     return formatted_title
 
 
-def load_embedding(embedder_model, custom_embedder=None, version="v2"):
+def load_embedding(embedder_model, custom_embedder=None):
     embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
     embedding_list = {
         "contentvec": os.path.join(embedder_root, "contentvec"),
