@@ -69,10 +69,7 @@ class VoiceConverter:
             embedder_model (str): Path to the pre-trained HuBERT model.
             embedder_model_custom (str): Path to the custom HuBERT model.
         """
-        if embedder_model_custom:
-            self.hubert_model = load_embedding(embedder_model_custom)
-        else:
-            self.hubert_model = load_embedding(embedder_model)
+        self.hubert_model = load_embedding(embedder_model, embedder_model_custom)
 
         # If a custom model is provided, load it
         #if embedder_model_custom:
