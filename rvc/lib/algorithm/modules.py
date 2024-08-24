@@ -45,12 +45,8 @@ class WaveNet(nn.Module):
         self.drop = nn.Dropout(p_dropout)
 
         if gin_channels != 0:
-            cond_layer = nn.Conv1d(
-                gin_channels, 2 * hidden_channels * n_layers, 1
-            )
-            self.cond_layer = weight_norm(
-                cond_layer, name="weight"
-            )
+            cond_layer = nn.Conv1d(gin_channels, 2 * hidden_channels * n_layers, 1)
+            self.cond_layer = weight_norm(cond_layer, name="weight")
 
         dilations = [dilation_rate**i for i in range(n_layers)]
         paddings = [(kernel_size * d - d) // 2 for d in dilations]
@@ -63,9 +59,7 @@ class WaveNet(nn.Module):
                 dilation=dilations[i],
                 padding=paddings[i],
             )
-            in_layer = weight_norm(
-                in_layer, name="weight"
-            )
+            in_layer = weight_norm(in_layer, name="weight")
             self.in_layers.append(in_layer)
 
             res_skip_channels = (
@@ -73,9 +67,7 @@ class WaveNet(nn.Module):
             )
 
             res_skip_layer = nn.Conv1d(hidden_channels, res_skip_channels, 1)
-            res_skip_layer = weight_norm(
-                res_skip_layer, name="weight"
-            )
+            res_skip_layer = weight_norm(res_skip_layer, name="weight")
             self.res_skip_layers.append(res_skip_layer)
 
     def forward(self, x, x_mask, g=None, **kwargs):

@@ -270,9 +270,7 @@ class ResidualCouplingLayer(nn.Module):
             p_dropout=p_dropout,
             gin_channels=gin_channels,
         )
-        self.post = nn.Conv1d(
-            hidden_channels, self.half_channels * (2 - mean_only), 1
-        )
+        self.post = nn.Conv1d(hidden_channels, self.half_channels * (2 - mean_only), 1)
         self.post.weight.data.zero_()
         self.post.bias.data.zero_()
 
