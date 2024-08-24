@@ -146,9 +146,5 @@ def load_embedding(embedder_model, custom_embedder=None, version="v2"):
             print(f"Downloading {url} to {model_path}...")
             wget.download(url, out=json_file)
 
-    if version == "v1":
-        models = HubertModelWithFinalProj.from_pretrained(model_path)
-    else:
-        models = HubertModel.from_pretrained(model_path)
-
+    models = HubertModelWithFinalProj.from_pretrained(model_path)
     return models

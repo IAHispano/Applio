@@ -244,6 +244,7 @@ def process_file_embedding(file, wav_path, out_path, model, device, version):
 
     with torch.no_grad():
         feats = model(feats)["last_hidden_state"]
+        feats = model.final_proj(feats[0]).unsqueeze(0) if version == "v1" else feats
 
     feats = feats.squeeze(0).float().cpu().numpy()
     if not np.isnan(feats).any():
