@@ -40,12 +40,6 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("faiss").setLevel(logging.WARNING)
 logging.getLogger("faiss.loader").setLevel(logging.WARNING)
 
-from transformers import HubertModel
-
-class HubertModelWithFinalProj(HubertModel):
-    def __init__(self, config):
-        super().__init__(config)
-        self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
 
 class VoiceConverter:
     """
@@ -60,6 +54,7 @@ class VoiceConverter:
         self.hubert_model = (
             None  # Initialize the Hubert model (for embedding extraction)
         )
+        self.last_embedder_model = None  # Last used embedder model
         self.tgt_sr = None  # Target sampling rate for the output audio
         self.net_g = None  # Generator network for voice conversion
         self.vc = None  # Voice conversion pipeline instance
@@ -76,12 +71,8 @@ class VoiceConverter:
             embedder_model (str): Path to the pre-trained HuBERT model.
             embedder_model_custom (str): Path to the custom HuBERT model.
         """
-        embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
-        if embedder_model == "custom":
-            print('good luck with that') 
-        else:
-            self.hubert_model = HubertModelWithFinalProj.from_pretrained(os.path.join(embedder_root, embedder_model))
-                 
+        self.hubert_model = load_embedding(embedder_model, embedder_model_custom)
+
         # If a custom model is provided, load it
         #if embedder_model_custom:
         #    self.hubert_model.load_state_dict(torch.load(embedder_model_custom))
@@ -344,7 +335,7 @@ class VoiceConverter:
             if audio_max > 1:
                 audio /= audio_max
 
-            if not self.hubert_model:
+            if not self.hubert_model or embedder_model != self.last_embedder_model:
                 self.load_hubert(embedder_model, embedder_model_custom)
 
             file_index = (
@@ -648,7 +639,7 @@ class VoiceConverter:
         with open(pid_file_path, "w") as pid_file:
             pid_file.write(str(pid))
         try:
-            if not self.hubert_model:
+            if not self.hubert_model or embedder_model != self.last_embedder_model:
                 self.load_hubert(embedder_model, embedder_model_custom)
             self.get_vc(model_path, sid)
             file_index = (

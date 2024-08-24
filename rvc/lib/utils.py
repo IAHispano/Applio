@@ -4,13 +4,14 @@ import soundfile as sf
 import numpy as np
 import re
 import unicodedata
-from fairseq import checkpoint_utils
 import wget
 import subprocess
 from pydub import AudioSegment
 import tempfile
+from torch import nn
 
 import logging
+from transformers import HubertModel
 
 logging.getLogger("fairseq").setLevel(logging.WARNING)
 logging.getLogger("faiss.loader").setLevel(logging.WARNING)
@@ -21,6 +22,11 @@ sys.path.append(now_dir)
 base_path = os.path.join(now_dir, "rvc", "models", "formant", "stftpitchshift")
 stft = base_path + ".exe" if sys.platform == "win32" else base_path
 
+
+class HubertModelWithFinalProj(HubertModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
 
 def load_audio(file, sample_rate):
     try:
@@ -96,16 +102,24 @@ def format_title(title):
 def load_embedding(embedder_model, custom_embedder=None):
     embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
     embedding_list = {
-        "contentvec": os.path.join(embedder_root, "contentvec_base.pt"),
-        "chinese-hubert-base": os.path.join(embedder_root, "chinese_hubert_base.pt"),
-        "japanese-hubert-base": os.path.join(embedder_root, "japanese_hubert_base.pt"),
-        "korean-hubert-base": os.path.join(embedder_root, "korean_hubert_base.pt"),
+        "contentvec": os.path.join(embedder_root, "contentvec_base"),
+        "chinese-hubert-base": os.path.join(embedder_root, "chinese_hubert_base"),
+        "japanese-hubert-base": os.path.join(embedder_root, "japanese_hubert_base"),
+        "korean-hubert-base": os.path.join(embedder_root, "korean_hubert_base"),
     }
 
     online_embedders = {
-        "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/chinese_hubert_base.pt",
-        "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/japanese_hubert_base.pt",
-        "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/korean_hubert_base.pt",
+        "contentvec": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/contentvec_base/pytorch_model.bin",
+        "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/chinese_hubert_base/pytorch_model.bin",
+        "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/japanese_hubert_base/pytorch_model.bin",
+        "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/korean_hubert_base/pytorch_model.bin",
+    }
+
+    config_files = {
+        "contentvec": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/contentvec_base/config.json",
+        "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/chinese_hubert_base/config.json",
+        "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/japanese_hubert_base/config.json",
+        "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/korean_hubert_base/config.json",
     }
 
     if embedder_model == "custom":
@@ -114,18 +128,20 @@ def load_embedding(embedder_model, custom_embedder=None):
             model_path = embedding_list["contentvec"]
     else:
         model_path = embedding_list[embedder_model]
-        if embedder_model in online_embedders:
-            if not os.path.exists(model_path):
-                url = online_embedders[embedder_model]
-                print(f"Downloading {url} to {model_path}...")
-                wget.download(url, out=model_path)
-        else:
-            model_path = embedding_list["contentvec"]
+        bin_file = os.path.join(model_path, 'pytorch_model.bin')
+        json_file = os.path.join(model_path, 'config.json')
+        if not os.path.exists(bin_file) or not os.path.exists(json_file):
+            url = online_embedders[embedder_model]
+            print(f"Downloading {url} to {model_path}...")
+            wget.download(url, out=bin_file)
+            url = config_files[embedder_model]
+            print(f"Downloading {url} to {model_path}...")
+            wget.download(url, out=json_file)
 
-    models = checkpoint_utils.load_model_ensemble_and_task(
-        [model_path],
-        suffix="",
-    )
 
-    # print(f"Embedding model {embedder_model} loaded successfully.")
+    if custom_embedder:
+        models = HubertModelWithFinalProj.from_pretrained(os.path.join(embedder_root, custom_embedder))
+    else:
+        models = HubertModelWithFinalProj.from_pretrained(model_path)
+
     return models
