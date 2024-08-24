@@ -102,24 +102,24 @@ def format_title(title):
 def load_embedding(embedder_model, custom_embedder=None):
     embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
     embedding_list = {
-        "contentvec": os.path.join(embedder_root, "contentvec_base"),
+        "contentvec": os.path.join(embedder_root, "contentvec"),
         "chinese-hubert-base": os.path.join(embedder_root, "chinese_hubert_base"),
         "japanese-hubert-base": os.path.join(embedder_root, "japanese_hubert_base"),
         "korean-hubert-base": os.path.join(embedder_root, "korean_hubert_base"),
     }
 
     online_embedders = {
-        "contentvec": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/contentvec_base/pytorch_model.bin",
-        "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/chinese_hubert_base/pytorch_model.bin",
-        "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/japanese_hubert_base/pytorch_model.bin",
-        "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/korean_hubert_base/pytorch_model.bin",
+        "contentvec": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/contentvec/contentvec.bin",
+        "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/chinese_hubert_base/chinese_hubert_base.bin",
+        "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/japanese_hubert_base/japanese_hubert_base.bin",
+        "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/korean_hubert_base/korean_hubert_base.bin",
     }
 
     config_files = {
-        "contentvec": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/contentvec_base/config.json",
-        "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/chinese_hubert_base/config.json",
-        "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/japanese_hubert_base/config.json",
-        "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/new_embedders/korean_hubert_base/config.json",
+        "contentvec": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/contentvec/contentvec_config.json",
+        "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/chinese_hubert_base/chinese_hubert_base_config.json",
+        "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/japanese_hubert_base/japanese_hubert_base_config.json",
+        "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/korean_hubert_base/korean_hubert_base_config.json",
     }
 
     if embedder_model == "custom":
@@ -132,6 +132,7 @@ def load_embedding(embedder_model, custom_embedder=None):
         model_path = embedding_list[embedder_model]
         bin_file = os.path.join(model_path, 'pytorch_model.bin')
         json_file = os.path.join(model_path, 'config.json')
+        os.makedirs(model_path, exist_ok=True)
         if not os.path.exists(bin_file):
             url = online_embedders[embedder_model]
             print(f"Downloading {url} to {model_path}...")

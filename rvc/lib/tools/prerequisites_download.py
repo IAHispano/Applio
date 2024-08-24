@@ -44,7 +44,7 @@ pretraineds_v2_list = [
     )
 ]
 models_list = [("predictors/", ["rmvpe.pt", "fcpe.pt"])]
-embedders_list = [("embedders/contentvec_base", ["pytorch_model.bin", "config.json"])]
+embedders_list = [("embedders/contentvec", ["contentvec.bin", "contentvec_config.json"])]
 linux_executables_list = [("formant/", ["stftpitchshift"])]
 executables_list = [
     ("", ["ffmpeg.exe", "ffprobe.exe"]),
@@ -54,7 +54,7 @@ executables_list = [
 folder_mapping_list = {
     "pretrained_v1/": "rvc/models/pretraineds/pretrained_v1/",
     "pretrained_v2/": "rvc/models/pretraineds/pretrained_v2/",
-    "embedders/contentvec_base/": "rvc/models/embedders/contentvec_base/",
+    "embedders/contentvec/": "rvc/models/embedders/contentvec_base/",
     "predictors/": "rvc/models/predictors/",
     "formant/": "rvc/models/formant/",
 }
