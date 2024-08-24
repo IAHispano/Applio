@@ -427,6 +427,7 @@ class Pipeline:
 
         with torch.no_grad():
             feats = model(feats.to(self.device))["last_hidden_state"]
+            feats = model.final_proj(feats[0]).unsqueeze(0) if version == "v1" else feats
         if protect < 0.5 and pitch != None and pitchf != None:
             feats0 = feats.clone()
         if (
