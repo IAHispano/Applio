@@ -298,6 +298,7 @@ def run_extract_script(
             str,
             [
                 model_path,
+                vocoder_type,
                 f0_method,
                 hop_length,
                 cpu_cores,

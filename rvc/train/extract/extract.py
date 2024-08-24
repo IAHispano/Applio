@@ -301,15 +301,16 @@ def run_embedding_extraction(
 if __name__ == "__main__":
 
     exp_dir = sys.argv[1]
-    f0_method = sys.argv[2]
-    hop_length = int(sys.argv[3])
-    num_processes = int(sys.argv[4])
-    gpus = sys.argv[5]
-    version = sys.argv[6]
-    pitch_guidance = sys.argv[7]
-    sample_rate = sys.argv[8]
-    embedder_model = sys.argv[9]
-    embedder_model_custom = sys.argv[9] if len(sys.argv) > 9 else None
+    vocoder_type = sys.argv[2]
+    f0_method = sys.argv[3]
+    hop_length = int(sys.argv[4])
+    num_processes = int(sys.argv[5])
+    gpus = sys.argv[6]
+    version = sys.argv[7]
+    pitch_guidance = sys.argv[8]
+    sample_rate = sys.argv[9]
+    embedder_model = sys.argv[10]
+    embedder_model_custom = sys.argv[10] if len(sys.argv) > 10 else None
 
     # Run Pitch Extraction
     run_pitch_extraction(exp_dir, f0_method, hop_length, num_processes, gpus)
@@ -320,5 +321,5 @@ if __name__ == "__main__":
     )
 
     # Run Preparing Files
-    generate_config(version, sample_rate, exp_dir)
+    generate_config(version, vocoder_type, sample_rate, exp_dir)
     generate_filelist(pitch_guidance, exp_dir, version, sample_rate)
