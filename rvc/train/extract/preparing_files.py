@@ -44,7 +44,7 @@ def generate_filelist(
         names = gt_wavs_files & feature_files
 
     options = []
-    mute_base_path = os.path.join(current_directory, "logs", "mute")
+    mute_base_path = os.path.join(os.getcwd(), "logs", "mute")
 
     for name in names:
         if pitch_guidance:
