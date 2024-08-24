@@ -240,9 +240,10 @@ def process_file_embedding(file, wav_path, out_path, model, device, version):
     feats = read_wave(wav_file_path)
     dtype = torch.float16 if config.is_half else torch.float32
     feats = feats.to(dtype).to(device)
+    model = model.to(device)
 
     with torch.no_grad():
-        feats = model(feats.to(device))["last_hidden_state"]
+        feats = model(feats)["last_hidden_state"]
 
     feats = feats.squeeze(0).float().cpu().numpy()
     if not np.isnan(feats).any():
