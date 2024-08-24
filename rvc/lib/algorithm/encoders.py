@@ -1,14 +1,17 @@
 import math
 import torch
+from torch import nn
+from torch.nn.utils.weight_norm import remove_weight_norm
+from torch.nn.utils.parametrizations import weight_norm
 from typing import Optional
 
-from rvc.lib.algorithm.commons import sequence_mask
-from rvc.lib.algorithm.modules import WaveNet
-from rvc.lib.algorithm.normalization import LayerNorm
-from rvc.lib.algorithm.attentions import FFN, MultiHeadAttention
+from .attentions import FFN, MultiHeadAttention
+from .commons import sequence_mask
+from .modules import WaveNet
+from .normalization import LayerNorm
 
 
-class Encoder(torch.nn.Module):
+class Encoder(nn.Module):
     """
     Encoder module for the Transformer model.
 
@@ -42,11 +45,11 @@ class Encoder(torch.nn.Module):
         self.p_dropout = p_dropout
         self.window_size = window_size
 
-        self.drop = torch.nn.Dropout(p_dropout)
-        self.attn_layers = torch.nn.ModuleList()
-        self.norm_layers_1 = torch.nn.ModuleList()
-        self.ffn_layers = torch.nn.ModuleList()
-        self.norm_layers_2 = torch.nn.ModuleList()
+        self.drop = nn.Dropout(p_dropout)
+        self.attn_layers = nn.ModuleList()
+        self.norm_layers_1 = nn.ModuleList()
+        self.ffn_layers = nn.ModuleList()
+        self.norm_layers_2 = nn.ModuleList()
         for i in range(self.n_layers):
             self.attn_layers.append(
                 MultiHeadAttention(
@@ -84,7 +87,7 @@ class Encoder(torch.nn.Module):
         return x
 
 
-class TextEncoder(torch.nn.Module):
+class TextEncoder(nn.Module):
     """Text Encoder with configurable embedding dimension.
 
     Args:
@@ -119,10 +122,10 @@ class TextEncoder(torch.nn.Module):
         self.n_layers = n_layers
         self.kernel_size = kernel_size
         self.p_dropout = float(p_dropout)
-        self.emb_phone = torch.nn.Linear(embedding_dim, hidden_channels)
-        self.lrelu = torch.nn.LeakyReLU(0.1, inplace=True)
+        self.emb_phone = nn.Linear(embedding_dim, hidden_channels)
+        self.lrelu = nn.LeakyReLU(0.1, inplace=True)
         if f0:
-            self.emb_pitch = torch.nn.Embedding(256, hidden_channels)
+            self.emb_pitch = nn.Embedding(256, hidden_channels)
         self.encoder = Encoder(
             hidden_channels,
             filter_channels,
@@ -131,7 +134,7 @@ class TextEncoder(torch.nn.Module):
             kernel_size,
             float(p_dropout),
         )
-        self.proj = torch.nn.Conv1d(hidden_channels, out_channels * 2, 1)
+        self.proj = nn.Conv1d(hidden_channels, out_channels * 2, 1)
 
     def forward(
         self, phone: torch.Tensor, pitch: Optional[torch.Tensor], lengths: torch.Tensor
@@ -151,7 +154,7 @@ class TextEncoder(torch.nn.Module):
         return m, logs, x_mask
 
 
-class PosteriorEncoder(torch.nn.Module):
+class PosteriorEncoder(nn.Module):
     """Posterior Encoder for inferring latent representation.
 
     Args:
@@ -183,7 +186,7 @@ class PosteriorEncoder(torch.nn.Module):
         self.n_layers = n_layers
         self.gin_channels = gin_channels
 
-        self.pre = torch.nn.Conv1d(in_channels, hidden_channels, 1)
+        self.pre = nn.Conv1d(in_channels, hidden_channels, 1)
         self.enc = WaveNet(
             hidden_channels,
             kernel_size,
@@ -191,7 +194,7 @@ class PosteriorEncoder(torch.nn.Module):
             n_layers,
             gin_channels=gin_channels,
         )
-        self.proj = torch.nn.Conv1d(hidden_channels, out_channels * 2, 1)
+        self.proj = nn.Conv1d(hidden_channels, out_channels * 2, 1)
 
     def forward(
         self, x: torch.Tensor, x_lengths: torch.Tensor, g: Optional[torch.Tensor] = None
@@ -212,8 +215,8 @@ class PosteriorEncoder(torch.nn.Module):
         """Prepares the module for scripting."""
         for hook in self.enc._forward_pre_hooks.values():
             if (
-                hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
-                and hook.__class__.__name__ == "WeightNorm"
+                hook.__module__ == "weight_norm"
+                and hook.__class__.__name__ == "_WeightNorm"
             ):
-                torch.nn.utils.remove_weight_norm(self.enc)
+                remove_weight_norm(self.enc)
         return self

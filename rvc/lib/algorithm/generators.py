@@ -1,13 +1,15 @@
 import torch
-from torch.nn.utils import remove_weight_norm
+from torch import nn
+from torch.nn import functional as F
+from torch.nn.utils.weight_norm import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
 from typing import Optional
 
-from rvc.lib.algorithm.residuals import LRELU_SLOPE, ResBlock1, ResBlock2
-from rvc.lib.algorithm.commons import init_weights
+from .commons import init_weights
+from .residuals import LRELU_SLOPE, ResBlock1, ResBlock2
 
 
-class Generator(torch.nn.Module):
+class Generator(nn.Module):
     """Generator for synthesizing audio. Optimized for performance and quality.
 
     Args:
@@ -35,16 +37,16 @@ class Generator(torch.nn.Module):
         super(Generator, self).__init__()
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)
-        self.conv_pre = torch.nn.Conv1d(
+        self.conv_pre = nn.Conv1d(
             initial_channel, upsample_initial_channel, 7, 1, padding=3
         )
         resblock = ResBlock1 if resblock == "1" else ResBlock2
 
-        self.ups_and_resblocks = torch.nn.ModuleList()
+        self.ups_and_resblocks = nn.ModuleList()
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):
             self.ups_and_resblocks.append(
                 weight_norm(
-                    torch.nn.ConvTranspose1d(
+                    nn.ConvTranspose1d(
                         upsample_initial_channel // (2**i),
                         upsample_initial_channel // (2 ** (i + 1)),
                         k,
@@ -59,11 +61,11 @@ class Generator(torch.nn.Module):
             ):
                 self.ups_and_resblocks.append(resblock(ch, k, d))
 
-        self.conv_post = torch.nn.Conv1d(ch, 1, 7, 1, padding=3, bias=False)
+        self.conv_post = nn.Conv1d(ch, 1, 7, 1, padding=3, bias=False)
         self.ups_and_resblocks.apply(init_weights)
 
         if gin_channels != 0:
-            self.cond = torch.nn.Conv1d(gin_channels, upsample_initial_channel, 1)
+            self.cond = nn.Conv1d(gin_channels, upsample_initial_channel, 1)
 
         def forward(self, x: torch.Tensor, g: Optional[torch.Tensor] = None):
             x = self.conv_pre(x)
@@ -72,7 +74,7 @@ class Generator(torch.nn.Module):
 
             resblock_idx = 0
             for _ in range(self.num_upsamples):
-                x = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
+                x = F.leaky_relu(x, LRELU_SLOPE)
                 x = self.ups_and_resblocks[resblock_idx](x)
                 resblock_idx += 1
                 xs = 0
@@ -81,7 +83,7 @@ class Generator(torch.nn.Module):
                     resblock_idx += 1
                 x = xs / self.num_kernels
 
-            x = torch.nn.functional.leaky_relu(x)
+            x = F.leaky_relu(x)
             x = self.conv_post(x)
             x = torch.tanh(x)
 
@@ -92,10 +94,10 @@ class Generator(torch.nn.Module):
         for l in self.ups_and_resblocks:
             for hook in l._forward_pre_hooks.values():
                 if (
-                    hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
-                    and hook.__class__.__name__ == "WeightNorm"
+                    hook.__module__ == "weight_norm"
+                    and hook.__class__.__name__ == "_WeightNorm"
                 ):
-                    torch.nn.utils.remove_weight_norm(l)
+                    remove_weight_norm(l)
         return self
 
     def remove_weight_norm(self):
@@ -104,7 +106,7 @@ class Generator(torch.nn.Module):
             remove_weight_norm(l)
 
 
-class SineGen(torch.nn.Module):
+class SineGen(nn.Module):
     """Sine wave generator.
 
     Args:
@@ -168,13 +170,13 @@ class SineGen(torch.nn.Module):
             rad_values[:, 0, :] = rad_values[:, 0, :] + rand_ini
             tmp_over_one = torch.cumsum(rad_values, 1)
             tmp_over_one *= upp
-            tmp_over_one = torch.nn.functional.interpolate(
+            tmp_over_one = F.interpolate(
                 tmp_over_one.transpose(2, 1),
                 scale_factor=float(upp),
                 mode="linear",
                 align_corners=True,
             ).transpose(2, 1)
-            rad_values = torch.nn.functional.interpolate(
+            rad_values = F.interpolate(
                 rad_values.transpose(2, 1), scale_factor=float(upp), mode="nearest"
             ).transpose(2, 1)
             tmp_over_one %= 1
@@ -186,7 +188,7 @@ class SineGen(torch.nn.Module):
             )
             sine_waves = sine_waves * self.sine_amp
             uv = self._f02uv(f0)
-            uv = torch.nn.functional.interpolate(
+            uv = F.interpolate(
                 uv.transpose(2, 1), scale_factor=float(upp), mode="nearest"
             ).transpose(2, 1)
             noise_amp = uv * self.noise_std + (1 - uv) * self.sine_amp / 3

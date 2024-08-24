@@ -1,14 +1,17 @@
 import torch
+from torch import nn
+from torch.nn.utils.weight_norm import remove_weight_norm
+from torch.nn.utils.parametrizations import weight_norm
 from typing import Optional
 
-from rvc.lib.algorithm.nsf import GeneratorNSF
-from rvc.lib.algorithm.generators import Generator
-from rvc.lib.algorithm.commons import slice_segments, rand_slice_segments
-from rvc.lib.algorithm.residuals import ResidualCouplingBlock
-from rvc.lib.algorithm.encoders import TextEncoder, PosteriorEncoder
+from .commons import slice_segments, rand_slice_segments
+from .encoders import TextEncoder, PosteriorEncoder
+from .generators import Generator
+from .nsf import GeneratorNSF
+from .residuals import ResidualCouplingBlock
 
 
-class Synthesizer(torch.nn.Module):
+class Synthesizer(nn.Module):
     """
     Base Synthesizer model.
 
@@ -129,7 +132,7 @@ class Synthesizer(torch.nn.Module):
         self.flow = ResidualCouplingBlock(
             inter_channels, hidden_channels, 5, 1, 3, gin_channels=gin_channels
         )
-        self.emb_g = torch.nn.Embedding(self.spk_embed_dim, gin_channels)
+        self.emb_g = nn.Embedding(self.spk_embed_dim, gin_channels)
 
     def remove_weight_norm(self):
         """Removes weight normalization from the model."""
@@ -140,23 +143,23 @@ class Synthesizer(torch.nn.Module):
     def __prepare_scriptable__(self):
         for hook in self.dec._forward_pre_hooks.values():
             if (
-                hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
-                and hook.__class__.__name__ == "WeightNorm"
+                hook.__module__ == "weight_norm"
+                and hook.__class__.__name__ == "_WeightNorm"
             ):
-                torch.nn.utils.remove_weight_norm(self.dec)
+                remove_weight_norm(self.dec)
         for hook in self.flow._forward_pre_hooks.values():
             if (
-                hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
-                and hook.__class__.__name__ == "WeightNorm"
+                hook.__module__ == "weight_norm"
+                and hook.__class__.__name__ == "_WeightNorm"
             ):
-                torch.nn.utils.remove_weight_norm(self.flow)
+                remove_weight_norm(self.flow)
         if hasattr(self, "enc_q"):
             for hook in self.enc_q._forward_pre_hooks.values():
                 if (
-                    hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
-                    and hook.__class__.__name__ == "WeightNorm"
+                    hook.__module__ == "weight_norm"
+                    and hook.__class__.__name__ == "_WeightNorm"
                 ):
-                    torch.nn.utils.remove_weight_norm(self.enc_q)
+                    remove_weight_norm(self.enc_q)
         return self
 
     @torch.jit.ignore

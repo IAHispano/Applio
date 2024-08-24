@@ -1,5 +1,6 @@
 import math
 import torch
+from torch.nn import functional as F
 from typing import List, Optional
 
 
@@ -123,7 +124,7 @@ def get_timing_signal_1d(length, channels, min_timescale=1.0, max_timescale=1.0e
     )
     scaled_time = position.unsqueeze(0) * inv_timescales.unsqueeze(1)
     signal = torch.cat([torch.sin(scaled_time), torch.cos(scaled_time)], 0)
-    signal = torch.nn.functional.pad(signal, [0, 0, 0, channels % 2])
+    signal = F.pad(signal, [0, 0, 0, channels % 2])
     signal = signal.view(1, channels, length)
     return signal
 
