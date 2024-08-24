@@ -143,13 +143,12 @@ def refresh_models_and_datasets():
     )
 
 
-# Refresh Custom Pretraineds
+# Refresh Custom Embedders
 def get_embedder_custom_list():
     return [
-        os.path.join(dirpath, filename)
-        for dirpath, _, filenames in os.walk(custom_embedder_root_relative)
-        for filename in filenames
-        if filename.endswith(".pt")
+        os.path.join(dirpath, dirname)
+        for dirpath, dirnames, _ in os.walk(custom_embedder_root_relative)
+        for dirname in dirnames
     ]
 
 
@@ -210,24 +209,30 @@ def save_drop_dataset_audio(dropbox, dataset_name):
 
 
 # Drop Custom Embedder
-def save_drop_custom_embedder(dropbox):
-    if ".pt" not in dropbox:
-        gr.Info(
-            i18n("The file you dropped is not a valid embedder file. Please try again.")
-        )
-    else:
-        file_name = os.path.basename(dropbox)
-        custom_embedder_path = os.path.join(custom_embedder_root, file_name)
-        if os.path.exists(custom_embedder_path):
-            os.remove(custom_embedder_path)
-        shutil.copy(dropbox, custom_embedder_path)
-        gr.Info(
-            i18n(
-                "Click the refresh button to see the embedder file in the dropdown menu."
-            )
-        )
-    return None
+def create_folder_and_move_files(folder_name, bin_file, config_file):
+    if not folder_name:
+        return "Folder name must not be empty."
 
+    folder_name = os.path.join(custom_embedder_root, folder_name)
+    os.makedirs(folder_name, exist_ok=True)
+
+    if bin_file:
+        bin_file_path = os.path.join(folder_name, os.path.basename(bin_file))
+        shutil.copy(bin_file, bin_file_path)
+
+    if config_file:
+        config_file_path = os.path.join(folder_name, os.path.basename(config_file))
+        shutil.copy(config_file, config_file_path)
+
+    return f"Files moved to folder {folder_name}"
+
+def refresh_embedders_folders():
+    custom_embedders = [
+        os.path.join(dirpath, dirname)
+        for dirpath, dirnames, _ in os.walk(custom_embedder_root_relative)
+        for dirname in dirnames
+    ]
+    return custom_embedders
 
 # Export
 ## Get Pth and Index Files
@@ -429,23 +434,6 @@ def train_tab():
                 interactive=True,
             )
 
-        with gr.Accordion(
-            i18n("Custom Embedder"), open=True, visible=False
-        ) as embedder_custom:
-            embedder_upload_custom = gr.File(
-                label=i18n("Upload Custom Embedder"),
-                type="filepath",
-                interactive=True,
-            )
-            embedder_custom_refresh = gr.Button(i18n("Refresh"))
-            embedder_model_custom = gr.Dropdown(
-                label=i18n("Custom Embedder"),
-                info=i18n("Select the custom embedder to use for the conversion."),
-                choices=sorted(get_embedder_custom_list()),
-                interactive=True,
-                allow_custom_value=True,
-            )
-
         hop_length = gr.Slider(
             1,
             512,
@@ -458,6 +446,21 @@ def train_tab():
             visible=False,
             interactive=True,
         )
+        with gr.Row(visible=False) as embedder_custom:
+                with gr.Accordion("Custom Embedder", open=True):
+                    with gr.Row():
+                        embedder_model_custom = gr.Dropdown(
+                            label="Select Custom Embedder",
+                            choices=refresh_embedders_folders(),
+                            interactive=True,
+                            allow_custom_value=True
+                        )
+                        refresh_embedders_button = gr.Button("Refresh embedders")
+                    folder_name_input = gr.Textbox(label="Folder Name", interactive=True)
+                    with gr.Row():
+                        bin_file_upload = gr.File(label="Upload .bin", type="filepath", interactive=True)
+                        config_file_upload = gr.File(label="Upload .json", type="filepath", interactive=True)
+                    move_files_button = gr.Button("Move files to custom embedder folder")
         pitch_guidance_extract = gr.Checkbox(
             label=i18n("Pitch Guidance"),
             info=i18n(
@@ -901,17 +904,21 @@ def train_tab():
                 inputs=[embedder_model],
                 outputs=[embedder_custom],
             )
-            embedder_upload_custom.upload(
-                fn=save_drop_custom_embedder,
-                inputs=[embedder_upload_custom],
-                outputs=[embedder_upload_custom],
+            embedder_model.change(
+                fn=toggle_visible_embedder_custom,
+                inputs=[embedder_model],
+                outputs=[embedder_custom],
             )
-            embedder_custom_refresh.click(
-                fn=refresh_custom_embedder_list,
+            move_files_button.click(
+                fn=create_folder_and_move_files,
+                inputs=[folder_name_input, bin_file_upload, config_file_upload],
+                outputs=[]
+            )
+            refresh_embedders_button.click(
+                fn=refresh_embedders_folders,
                 inputs=[],
-                outputs=[embedder_model_custom],
+                outputs=[embedder_model_custom]
             )
-
             pretrained.change(
                 fn=toggle_pretrained,
                 inputs=[pretrained, custom_pretrained],
