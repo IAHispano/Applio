@@ -937,7 +937,7 @@ def inference_tab():
                         folder_name_input = gr.Textbox(label="Folder Name", interactive=True)
                         with gr.Row():
                             bin_file_upload = gr.File(label="Upload .bin", type="filepath", interactive=True)
-                            config_file_upload = gr.File(label="Upload .config", type="filepath", interactive=True)
+                            config_file_upload = gr.File(label="Upload .json", type="filepath", interactive=True)
                         move_files_button = gr.Button("Move files to custom embedder folder")
 
                 f0_file = gr.File(
@@ -1558,7 +1558,7 @@ def inference_tab():
                         folder_name_input_batch = gr.Textbox(label="Folder Name", interactive=True)
                         with gr.Row():
                             bin_file_upload_batch = gr.File(label="Upload .bin", type="filepath", interactive=True)
-                            config_file_upload_batch = gr.File(label="Upload .config", type="filepath", interactive=True)
+                            config_file_upload_batch = gr.File(label="Upload .json", type="filepath", interactive=True)
                         move_files_button_batch = gr.Button("Move files to custom embedder folder")
 
         convert_button2 = gr.Button(i18n("Convert"))

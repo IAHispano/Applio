@@ -125,6 +125,9 @@ def load_embedding(embedder_model, custom_embedder=None):
     if embedder_model == "custom":
         if os.path.exists(custom_embedder):
             model_path = custom_embedder
+        else:
+            print(f"Custom embedder not found: {custom_embedder}, using contentvec")
+            model_path = embedding_list["contentvec"]
     else:
         model_path = embedding_list[embedder_model]
         bin_file = os.path.join(model_path, 'pytorch_model.bin')
