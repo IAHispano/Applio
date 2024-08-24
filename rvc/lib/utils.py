@@ -12,9 +12,14 @@ from torch import nn
 
 import logging
 from transformers import HubertModel
+import warnings
+# Remove this to see warnings about transformers models
+warnings.filterwarnings("ignore")
 
-logging.getLogger("fairseq").setLevel(logging.WARNING)
-logging.getLogger("faiss.loader").setLevel(logging.WARNING)
+logging.getLogger("fairseq").setLevel(logging.ERROR)
+logging.getLogger("faiss.loader").setLevel(logging.ERROR)
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("torch").setLevel(logging.ERROR)
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
