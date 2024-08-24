@@ -123,9 +123,8 @@ def load_embedding(embedder_model, custom_embedder=None):
     }
 
     if embedder_model == "custom":
-        model_path = embedding_list["contentvec"]
-        #if not custom_embedder and os.path.exists(custom_embedder):
-        #    model_path = embedding_list["contentvec"]
+        if os.path.exists(custom_embedder):
+            model_path = custom_embedder
     else:
         model_path = embedding_list[embedder_model]
         bin_file = os.path.join(model_path, 'pytorch_model.bin')
@@ -139,11 +138,6 @@ def load_embedding(embedder_model, custom_embedder=None):
             print(f"Downloading {url} to {model_path}...")
             wget.download(url, out=json_file)
 
-    if embedder_model == "custom":
-        #models = HubertModelWithFinalProj.from_pretrained(os.path.join(embedder_root, "embedders_custom"))
-        print("Not supported yet")
-        models = HubertModelWithFinalProj.from_pretrained(model_path)
-    else:
-        models = HubertModelWithFinalProj.from_pretrained(model_path)
+    models = HubertModelWithFinalProj.from_pretrained(model_path)
 
     return models
