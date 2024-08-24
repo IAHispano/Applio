@@ -106,8 +106,6 @@ for key, value in config.model.discriminators.items():
         value["sample_rate"] = config.data.sample_rate
     else:
         value["use_spectral_norm"] = config.model.use_spectral_norm
-    
-    
     if is_san:
         if value is True:
             discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm, is_san=True)

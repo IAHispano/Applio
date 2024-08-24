@@ -66,13 +66,11 @@ def generate_filelist(
             mute_f0_path = os.path.join(mute_base_path, "f0", "mute.wav.npy")
             mute_f0nsf_path = os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")
             options.append(
-                f"{os.getcwd()}/logs/mute/sliced_audios/mute{sample_rate}.wav|{os.getcwd()}/logs/mute/{rvc_version}_extracted/mute.npy|{os.getcwd()}/logs/mute/f0/mute.wav.npy|{os.getcwd()}/logs/mute/f0_voiced/mute.wav.npy|0"
+                f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|0"
             )
-    else:
-        for _ in range(2):
-            options.append(
-                f"{os.getcwd()}/logs/mute/sliced_audios/mute{sample_rate}.wav|{os.getcwd()}/logs/mute/{rvc_version}_extracted/mute.npy|0"
-            )
+        else:
+            options.append(f"{mute_audio_path}|{mute_feature_path}|0")
+
     shuffle(options)
 
     with open(os.path.join(model_path, "filelist.txt"), "w") as f:
