@@ -104,7 +104,7 @@ jobs:
             --arg version "${{ steps.check-version.outputs.tag }}" \
             --arg user "IAHispano" \
             --arg repo "Applio" \
-            '. + {version: $version, repository: "git+https://github.com/" + $user + "/" + $repo + ".git"}' \
+            '. + {version: $version, repository: ("git+https://github.com/", $user, "/", $repo, ".git") | join("")}' \
             package.json > tmp.$$.json && mv tmp.$$.json package.json
           cat package.json
 
