@@ -43,6 +43,7 @@ jobs:
             echo "No tag found. Exiting."
             tag="3.2.4"
           fi
+          git fetch origin master:refs/remotes/origin/master
           echo $(git tag)
           echo $(git log 3.2.4..HEAD --oneline)
           git log "$tag".."HEAD" --oneline > commits.txt
