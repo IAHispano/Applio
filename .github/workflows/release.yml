@@ -102,9 +102,8 @@ jobs:
           echo '{}' > package.json
           jq \
             --arg version "${{ steps.check-version.outputs.tag }}" \
-            --arg user "IAHispano" \
-            --arg repo "Applio" \
-            '. + {version: $version, repository: {url: "git+https://github.com/" + $user + "/" + $repo + ".git"}}' \
+            --arg url "git+https://github.com/IAHispano/Applio.git" \
+            '. + {version: $version, repository: {url: $url}}' \
             package.json > tmp.$$.json && mv tmp.$$.json package.json
           cat package.json
 
