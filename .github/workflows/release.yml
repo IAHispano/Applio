@@ -95,10 +95,10 @@ jobs:
           echo "Tag: ${{ steps.check-version.outputs.tag }}"
           echo "Changelog: $(cat summarized_changelog.txt)"
           echo "Repository: ${{ github.repository }}"
+          cd D:\a\Applio\Applio\
 
       - name: Publish release using gh-release
         run: |
-          cd D:\a\Applio\Applio\
           tag_name="${{ steps.check-version.outputs.tag }}"
           changelog=$(cat summarized_changelog.txt)
           GH_RELEASE_GITHUB_API_TOKEN=${{ secrets.GITHUB_TOKEN }} npx gh-release \
