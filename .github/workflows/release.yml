@@ -96,6 +96,7 @@ jobs:
           echo "Changelog: $(cat summarized_changelog.txt)"
           echo "Repository: ${{ github.repository }}"
           cd "/home/runner/work/Applio/Applio"
+          ls -l
 
       - name: Publish release using gh-release
         run: |
