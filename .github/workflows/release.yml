@@ -79,7 +79,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.GROQ_API_KEY }}" \
             -d "$json_payload" \
-            -o summarized_changelog.txt
+            | jq -r '.choices[0].message.content' > summarized_changelog.txt
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
