@@ -4,7 +4,7 @@
     "class": "Applio"
   },
   "plugins": [],
-  "discord_presence": true,
+  "discord_presence": false,
   "lang": {
     "override": false,
     "selected_lang": "en_US"
