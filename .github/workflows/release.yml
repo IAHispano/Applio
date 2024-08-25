@@ -95,7 +95,7 @@ jobs:
           echo "Tag: ${{ steps.check-version.outputs.tag }}"
           echo "Changelog: $(cat summarized_changelog.txt)"
           echo "Repository: ${{ github.repository }}"
-          cd D:\a\Applio\Applio\
+          cd "/home/runner/work/Applio/Applio"
 
       - name: Publish release using gh-release
         run: |
@@ -104,7 +104,7 @@ jobs:
           GH_RELEASE_GITHUB_API_TOKEN=${{ secrets.GITHUB_TOKEN }} npx gh-release \
             -t "${tag_name}" \
             -n "Release ${tag_name}" \
-            -c "master" \
+            -c "main" \
             -b "🚀 Exciting News! Upgrade to the latest and greatest version of Applio, ${tag_name}, now available for download!\n\n### Choose your preferred option:\n- 🚀 Release: [Download Now](https://github.com/${{ github.repository }}/releases/tag/${tag_name})\n- 📦 Compiled (Just double click it): [.exe](https://huggingface.co/${{ github.repository }}/resolve/main/Compiled/ApplioV${tag_name}.exe) / [.zip](https://huggingface.co/${{ github.repository }}/resolve/main/Compiled/ApplioV${tag_name}.zip?download=true)\n\n### Applio Changelog Highlights:\n${changelog}\n\nWhat features are you hoping to see in our upcoming updates? 🔍 Stay tuned for more exciting improvements!" \
             -o "${{ github.repository_owner }}" \
             -r "${{ github.repository }}" \
