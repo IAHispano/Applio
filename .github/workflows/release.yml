@@ -75,14 +75,21 @@ jobs:
         run: |
           npm install https://github.com/Vidalnt/gh-release.git
 
+      - name: Debug output
+        run: |
+          echo "Tag: ${{ steps.check-version.outputs.tag }}"
+          echo "Changelog: $(cat summarized_changelog.txt)"
+          echo "Repository: ${{ github.repository }}"
+
       - name: Publish release using gh-release
         run: |
+          tag_name="${{ steps.check-version.outputs.tag }}"
           changelog=$(cat summarized_changelog.txt)
           GH_RELEASE_GITHUB_API_TOKEN=${{ secrets.GITHUB_TOKEN }} npx gh-release \
-            -t "${{ steps.check-version.outputs.tag }}" \
-            -n "Release ${{ steps.check-version.outputs.tag }}" \
+            -t "${tag_name}" \
+            -n "Release ${tag_name}" \
             -c "master" \
-            -b "🚀 Exciting News! Upgrade to the latest and greatest version of Applio, ${{ steps.check-version.outputs.tag }}, now available for download!\n\n### Choose your preferred option:\n- 🚀 Release: [Download Now](https://github.com/${{ github.repository_owner }}/$REPOSITORY/releases/tag/${{ steps.check-version.outputs.tag }})\n- 📦 Compiled (Just double click it): [.exe](https://huggingface.co/${{ github.repository_owner }}/$REPOSITORY/resolve/main/Compiled/ApplioV${{ steps.check-version.outputs.tag }}.exe) / [.zip](https://huggingface.co/${{ github.repository_owner }}/$REPOSITORY/resolve/main/Compiled/ApplioV${{ steps.check-version.outputs.tag }}.zip?download=true)\n\n### Applio Changelog Highlights:\n${changelog}\n\nWhat features are you hoping to see in our upcoming updates? 🔍 Stay tuned for more exciting improvements!" \
+            -b "🚀 Exciting News! Upgrade to the latest and greatest version of Applio, ${tag_name}, now available for download!\n\n### Choose your preferred option:\n- 🚀 Release: [Download Now](https://github.com/${{ github.repository }}/releases/tag/${tag_name})\n- 📦 Compiled (Just double click it): [.exe](https://huggingface.co/${{ github.repository }}/resolve/main/Compiled/ApplioV${tag_name}.exe) / [.zip](https://huggingface.co/${{ github.repository }}/resolve/main/Compiled/ApplioV${tag_name}.zip?download=true)\n\n### Applio Changelog Highlights:\n${changelog}\n\nWhat features are you hoping to see in our upcoming updates? 🔍 Stay tuned for more exciting improvements!" \
             -o "${{ github.repository_owner }}" \
             -r "${{ github.repository }}" \
             -d
