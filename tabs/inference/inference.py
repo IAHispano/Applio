@@ -922,7 +922,7 @@ def inference_tab():
                         "custom",
                     ],
                     value="contentvec",
-                    interactive=True,
+                    interactive=False, # Temporary disable this option
                 )
                 with gr.Column(visible=False) as embedder_custom:
                     with gr.Accordion(i18n("Custom Embedder"), open=True):
@@ -1537,7 +1537,7 @@ def inference_tab():
                         "custom",
                     ],
                     value="contentvec",
-                    interactive=True,
+                    interactive=False, # Temporary disable this option
                 )
                 f0_file_batch = gr.File(
                     label=i18n(
