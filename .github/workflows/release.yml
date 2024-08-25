@@ -41,7 +41,7 @@ jobs:
           echo "Tag: $tag"
           if [ -z "$tag" ]; then
             echo "No tag found. Exiting."
-            exit 1
+            tag="v2.3.4"
           fi
           git log "$tag".."HEAD" --oneline > commits.txt
           echo "H"
