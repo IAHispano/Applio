@@ -32,6 +32,7 @@ torchvision==0.16.1
 einops
 libf0
 torchfcpe
+transformers
 
 # Visualization
 matplotlib==3.7.2
