@@ -43,6 +43,7 @@ jobs:
             echo "No tag found. Exiting."
             tag="3.2.4"
           fi
+          git log v3.2.4.."HEAD" --oneline > commits.txt
           git log "$tag".."HEAD" --oneline > commits.txt
           echo "H"
           cat commits.txt
