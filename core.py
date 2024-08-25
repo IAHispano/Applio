@@ -86,6 +86,8 @@ def run_infer_script(
     delay: bool = False,
     *sliders: list,
 ):
+    if not sliders:
+        sliders = [0] * 25
     infer_pipeline = import_voice_converter()
     additional_params = {
         "reverb_room_size": sliders[0],
@@ -198,6 +200,8 @@ def run_batch_infer_script(
         f for f in os.listdir(input_folder) if f.endswith((".mp3", ".wav", ".flac"))
     ]
     print(f"Detected {len(audio_files)} audio files for inference.")
+    if not sliders:
+        sliders = [0] * 25
     infer_pipeline = import_voice_converter()
     additional_params = {
         "reverb_room_size": sliders[0],
