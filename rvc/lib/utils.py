@@ -13,6 +13,7 @@ from torch import nn
 import logging
 from transformers import HubertModel
 import warnings
+
 # Remove this to see warnings about transformers models
 warnings.filterwarnings("ignore")
 
@@ -27,10 +28,12 @@ sys.path.append(now_dir)
 base_path = os.path.join(now_dir, "rvc", "models", "formant", "stftpitchshift")
 stft = base_path + ".exe" if sys.platform == "win32" else base_path
 
+
 class HubertModelWithFinalProj(HubertModel):
     def __init__(self, config):
         super().__init__(config)
         self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
+
 
 def load_audio(file, sample_rate):
     try:
@@ -134,8 +137,8 @@ def load_embedding(embedder_model, custom_embedder=None):
             model_path = embedding_list["contentvec"]
     else:
         model_path = embedding_list[embedder_model]
-        bin_file = os.path.join(model_path, 'pytorch_model.bin')
-        json_file = os.path.join(model_path, 'config.json')
+        bin_file = os.path.join(model_path, "pytorch_model.bin")
+        json_file = os.path.join(model_path, "config.json")
         os.makedirs(model_path, exist_ok=True)
         if not os.path.exists(bin_file):
             url = online_embedders[embedder_model]

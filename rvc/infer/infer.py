@@ -39,6 +39,7 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("faiss").setLevel(logging.WARNING)
 logging.getLogger("faiss.loader").setLevel(logging.WARNING)
 
+
 class VoiceConverter:
     """
     A class for performing voice conversion using the Retrieval-Based Voice Conversion (RVC) method.
@@ -71,7 +72,11 @@ class VoiceConverter:
         """
         self.hubert_model = load_embedding(embedder_model, embedder_model_custom)
         self.hubert_model.to(self.config.device)
-        self.hubert_model = self.hubert_model.half() if self.config.is_half else self.hubert_model.float()
+        self.hubert_model = (
+            self.hubert_model.half()
+            if self.config.is_half
+            else self.hubert_model.float()
+        )
         self.hubert_model.eval()
 
     @staticmethod
