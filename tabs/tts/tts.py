@@ -371,7 +371,7 @@ def tts_tab():
                     "custom",
                 ],
                 value="contentvec",
-                interactive=False, # Temporary disable this option
+                interactive=False,  # Temporary disable this option
             )
             with gr.Column(visible=False) as embedder_custom:
                 with gr.Accordion(i18n("Custom Embedder"), open=True):
@@ -387,7 +387,7 @@ def tts_tab():
                             "Select the custom embedder to use for the conversion."
                         ),
                         choices=sorted(custom_embedders),
-                        interactive=False, # Temporary disable this option
+                        interactive=False,  # Temporary disable this option
                         allow_custom_value=True,
                     )
             f0_file = gr.File(
