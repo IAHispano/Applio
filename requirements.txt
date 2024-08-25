@@ -21,8 +21,6 @@ pedalboard
 
 # Machine learning
 omegaconf==2.0.5; sys_platform == 'darwin'
-git+https://github.com/IAHispano/fairseq; sys_platform == 'linux'
-fairseq==0.12.2; sys_platform == 'darwin' or sys_platform == 'win32'
 numba; sys_platform == 'linux'
 numba==0.57.0; sys_platform == 'darwin' or sys_platform == 'win32'
 torchaudio==2.1.1
@@ -32,6 +30,7 @@ torchvision==0.16.1
 einops
 libf0
 torchfcpe
+transformers==4.44.2
 
 # Visualization
 matplotlib==3.7.2

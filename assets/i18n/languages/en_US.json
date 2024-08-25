@@ -294,5 +294,12 @@
   "Delay Feedback": "Delay Feedback",
   "Set the delay feedback.": "Set the delay feedback.",
   "Delay Mix": "Delay Mix",
-  "Set the delay mix.": "Set the delay mix."
+  "Set the delay mix.": "Set the delay mix.",
+  "Custom Embedder": "Custom Embedder",
+  "Select Custom Embedder": "Select Custom Embedder",
+  "Refresh embedders": "Refresh embedders",
+  "Folder Name": "Folder Name",
+  "Upload .bin": "Upload .bin",
+  "Upload .json": "Upload .json",
+  "Move files to custom embedder folder": "Move files to custom embedder folder"
 }
