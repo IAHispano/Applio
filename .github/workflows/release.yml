@@ -64,6 +64,8 @@ jobs:
               stop: null
             }')
 
+          echo "json_payload: $json_payload"
+
           curl "https://api.groq.com/openai/v1/chat/completions" \
             -X POST \
             -H "Content-Type: application/json" \
