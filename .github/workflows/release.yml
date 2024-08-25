@@ -59,9 +59,9 @@ jobs:
                   ],
                   "model": "llama-3.1-70b-versatile",
                   "temperature": 0.5,
-                  "max_tokens": 1024,
+                  "max_tokens": 2024,
                   "top_p": 1,
-                  "stream": true,
+                  "stream": false,
                   "stop": null
                 }' \
             > summarized_changelog.txt
