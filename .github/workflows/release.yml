@@ -96,13 +96,17 @@ jobs:
           echo "Changelog: $(cat summarized_changelog.txt)"
           echo "Repository: ${{ github.repository }}"
 
-      - name: Create package.json
+      - name: Create package.json 
         run: |
           cd /home/runner/work/Applio/Applio 
-          echo '{}' > package.json  # Create an empty package.json
-          jq --arg version "${{ steps.check-version.outputs.tag }}" '. + {version: $version}' package.json > tmp.$$.json && mv tmp.$$.json package.json
+          echo '{}' > package.json
+          jq \
+            --arg version "${{ steps.check-version.outputs.tag }}" \
+            --arg user "IAHispano" \
+            --arg repo "Applio" \
+            '. + {version: $version, repository: {type: "git", url: "git+https://github.com/" + $user + "/" + $repo + ".git"}}' \
+            package.json > tmp.$$.json && mv tmp.$$.json package.json
           cat package.json
-          ls -l
 
       - name: Publish release using gh-release
         run: |
