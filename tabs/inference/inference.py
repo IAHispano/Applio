@@ -1919,7 +1919,7 @@ def inference_tab():
         outputs=[]
     )
     refresh_embedders_button.click(
-        fn=refresh_embedders_folders,
+        fn=lambda: gr.update(choices=refresh_embedders_folders()),
         inputs=[],
         outputs=[embedder_model_custom]
     )
@@ -1929,7 +1929,7 @@ def inference_tab():
         outputs=[]
     )
     refresh_embedders_button_batch.click(
-        fn=refresh_embedders_folders,
+        fn=lambda: gr.update(choices=refresh_embedders_folders()),
         inputs=[],
         outputs=[embedder_model_custom_batch]
     )
