@@ -42,29 +42,30 @@ jobs:
       - name: Summarize changelog with Groq API
         id: summarize-changelog
         run: |
+          changelog=$(cat commits.txt)
           curl "https://api.groq.com/openai/v1/chat/completions" \
             -X POST \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${{ secrets.GROQ_API_KEY }}" \
-            -d '{
-                  "messages": [
+            -d "{
+                  \"messages\": [
                     {
-                      "role": "system",
-                      "content": "You will receive a commit history. Your task is to extract and present the top 10% most relevant changes as a concise list, each item preceded by a bullet point (-). Each entry should be as brief as possible, ideally 3 to 4 words, summarizing the key updates and enhancements. Ignore changes related to .yaml files, Git Keep, chore(format), and \"colab.\" Summarize commits like Update ___.py or Fix _____.py as \"Fixing Code Issues\" and include specific details in parentheses if applicable. Merge entries starting with \"Add,\" \"Fix,\" \"Improve,\" or \"Rework\" into a single update with specific details in parentheses. After generating the list, check for duplicates and merge any similar entries. Ensure each entry is distinct, meaningful, and starts with an uppercase letter. Do not include additional commentary or text."
+                      \"role\": \"system\",
+                      \"content\": \"You will receive a commit history. Your task is to extract and present the top 10% most relevant changes as a concise list, each item preceded by a bullet point (-). Each entry should be as brief as possible, ideally 3 to 4 words, summarizing the key updates and enhancements. Ignore changes related to .yaml files, Git Keep, chore(format), and \\\"colab.\\\" Summarize commits like Update ___.py or Fix _____.py as \\\"Fixing Code Issues\\\" and include specific details in parentheses if applicable. Merge entries starting with \\\"Add,\\\" \\\"Fix,\\\" \\\"Improve,\\\" or \\\"Rework\\\" into a single update with specific details in parentheses. After generating the list, check for duplicates and merge any similar entries. Ensure each entry is distinct, meaningful, and starts with an uppercase letter. Do not include additional commentary or text.\"
                     },
                     {
-                      "role": "user",
-                      "content": "'$(cat commits.txt)'"
+                      \"role\": \"user\",
+                      \"content\": \"$changelog\"
                     }
                   ],
-                  "model": "llama-3.1-70b-versatile",
-                  "temperature": 0.5,
-                  "max_tokens": 2024,
-                  "top_p": 1,
-                  "stream": false,
-                  "stop": null
-                }' \
-            > summarized_changelog.txt
+                  \"model\": \"llama-3.1-70b-versatile\",
+                  \"temperature\": 0.5,
+                  \"max_tokens\": 1024,
+                  \"top_p\": 1,
+                  \"stream\": false,
+                  \"stop\": null
+                }" \
+            -o summarized_changelog.txt
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
