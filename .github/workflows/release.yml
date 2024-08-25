@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
@@ -33,11 +33,72 @@ jobs:
         with:
           version-command: |
             bash -o pipefail -c "cat ./assets/config.json | jq -r '.version'"
-            
-      - name: Publish the release notes
-        uses: release-drafter/release-drafter@v5.25.0
+
+      - name: Generate commit history
+        id: generate-commits
+        run: |
+          git log ${{ steps.check-version.outputs.tag }}..HEAD --oneline > commits.txt
+
+      - name: Summarize changelog with Groq API
+        id: summarize-changelog
+        run: |
+          curl "https://api.groq.com/openai/v1/chat/completions" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.GROQ_API_KEY }}" \
+            -d '{
+                  "messages": [
+                    {
+                      "role": "system",
+                      "content": "You will receive a commit history. Your task is to extract and present the top 10% most relevant changes as a concise list, each item preceded by a bullet point (-). Each entry should be as brief as possible, ideally 3 to 4 words, summarizing the key updates and enhancements. Ignore changes related to .yaml files, Git Keep, chore(format), and \"colab.\" Summarize commits like Update ___.py or Fix _____.py as \"Fixing Code Issues\" and include specific details in parentheses if applicable. Merge entries starting with \"Add,\" \"Fix,\" \"Improve,\" or \"Rework\" into a single update with specific details in parentheses. After generating the list, check for duplicates and merge any similar entries. Ensure each entry is distinct, meaningful, and starts with an uppercase letter. Do not include additional commentary or text."
+                    },
+                    {
+                      "role": "user",
+                      "content": "'$(cat commits.txt)'"
+                    }
+                  ],
+                  "model": "llama-3.1-70b-versatile",
+                  "temperature": 0.5,
+                  "max_tokens": 1024,
+                  "top_p": 1,
+                  "stream": true,
+                  "stop": null
+                }' \
+            > summarized_changelog.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          publish: "${{ steps.check-version.outputs.tag != '' }}"
-          tag: "${{ steps.check-version.outputs.tag }}"
+          node-version: 18
+
+      - name: Install gh-release
+        run: |
+          npm install https://github.com/Vidalnt/gh-release.git
+
+      - name: Publish release using gh-release
+        run: |
+          changelog=$(cat summarized_changelog.txt)
+          GH_RELEASE_GITHUB_API_TOKEN=${{ secrets.GITHUB_TOKEN }} npx gh-release \
+            -t "${{ steps.check-version.outputs.tag }}" \
+            -n "Release ${{ steps.check-version.outputs.tag }}" \
+            -c "master" \
+            -b "🚀 Exciting News! Upgrade to the latest and greatest version of Applio, ${{ steps.check-version.outputs.tag }}, now available for download!\n\n### Choose your preferred option:\n- 🚀 Release: [Download Now](https://github.com/${{ github.repository_owner }}/$REPOSITORY/releases/tag/${{ steps.check-version.outputs.tag }})\n- 📦 Compiled (Just double click it): [.exe](https://huggingface.co/${{ github.repository_owner }}/$REPOSITORY/resolve/main/Compiled/ApplioV${{ steps.check-version.outputs.tag }}.exe) / [.zip](https://huggingface.co/${{ github.repository_owner }}/$REPOSITORY/resolve/main/Compiled/ApplioV${{ steps.check-version.outputs.tag }}.zip?download=true)\n\n### Applio Changelog Highlights:\n${changelog}\n\nWhat features are you hoping to see in our upcoming updates? 🔍 Stay tuned for more exciting improvements!" \
+            -o "${{ github.repository_owner }}" \
+            -r "${{ github.repository }}" \
+            -d
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Trigger Pre-Compiled and Upload workflow
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
+            await octokit.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'pre_compiled.yml',
+              ref: context.ref,
+            });
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
