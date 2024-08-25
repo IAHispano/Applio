@@ -18,7 +18,8 @@ from rvc.lib.utils import format_title
 from tabs.settings.restart import stop_train
 
 i18n = I18nAuto()
-sys.path.append(os.getcwd())
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 
 pretraineds_v1 = [
     (
@@ -62,7 +63,7 @@ sup_audioext = {
 
 # Custom Pretraineds
 pretraineds_custom_path = os.path.join(
-    os.getcwd(), "rvc", "models", "pretraineds", "pretraineds_custom"
+    now_dir, "rvc", "models", "pretraineds", "pretraineds_custom"
 )
 
 pretraineds_custom_path_relative = os.path.relpath(pretraineds_custom_path, os.getcwd())
@@ -142,13 +143,12 @@ def refresh_models_and_datasets():
     )
 
 
-# Refresh Custom Pretraineds
+# Refresh Custom Embedders
 def get_embedder_custom_list():
     return [
-        os.path.join(dirpath, filename)
-        for dirpath, _, filenames in os.walk(custom_embedder_root_relative)
-        for filename in filenames
-        if filename.endswith(".pt")
+        os.path.join(dirpath, dirname)
+        for dirpath, dirnames, _ in os.walk(custom_embedder_root_relative)
+        for dirname in dirnames
     ]
 
 
@@ -169,7 +169,7 @@ def save_drop_model(dropbox):
         pretrained_path = os.path.join(pretraineds_custom_path_relative, file_name)
         if os.path.exists(pretrained_path):
             os.remove(pretrained_path)
-        os.rename(dropbox, pretrained_path)
+        shutil.copy(dropbox, pretrained_path)
         gr.Info(
             i18n(
                 "Click the refresh button to see the pretrained file in the dropdown menu."
@@ -196,7 +196,7 @@ def save_drop_dataset_audio(dropbox, dataset_name):
             destination_path = os.path.join(dataset_path, audio_file)
             if os.path.exists(destination_path):
                 os.remove(destination_path)
-            os.rename(dropbox, destination_path)
+            shutil.copy(dropbox, destination_path)
             gr.Info(
                 i18n(
                     "The audio file has been successfully added to the dataset. Please click the preprocess button."
@@ -209,24 +209,30 @@ def save_drop_dataset_audio(dropbox, dataset_name):
 
 
 # Drop Custom Embedder
-def save_drop_custom_embedder(dropbox):
-    if ".pt" not in dropbox:
-        gr.Info(
-            i18n("The file you dropped is not a valid embedder file. Please try again.")
-        )
-    else:
-        file_name = os.path.basename(dropbox)
-        custom_embedder_path = os.path.join(custom_embedder_root, file_name)
-        if os.path.exists(custom_embedder_path):
-            os.remove(custom_embedder_path)
-        os.rename(dropbox, custom_embedder_path)
-        gr.Info(
-            i18n(
-                "Click the refresh button to see the embedder file in the dropdown menu."
-            )
-        )
-    return None
+def create_folder_and_move_files(folder_name, bin_file, config_file):
+    if not folder_name:
+        return "Folder name must not be empty."
 
+    folder_name = os.path.join(custom_embedder_root, folder_name)
+    os.makedirs(folder_name, exist_ok=True)
+
+    if bin_file:
+        bin_file_path = os.path.join(folder_name, os.path.basename(bin_file))
+        shutil.copy(bin_file, bin_file_path)
+
+    if config_file:
+        config_file_path = os.path.join(folder_name, os.path.basename(config_file))
+        shutil.copy(config_file, config_file_path)
+
+    return f"Files moved to folder {folder_name}"
+
+def refresh_embedders_folders():
+    custom_embedders = [
+        os.path.join(dirpath, dirname)
+        for dirpath, dirnames, _ in os.walk(custom_embedder_root_relative)
+        for dirname in dirnames
+    ]
+    return custom_embedders
 
 # Export
 ## Get Pth and Index Files
@@ -425,13 +431,15 @@ def train_tab():
                 info=i18n("Model used for learning speaker embedding."),
                 choices=[
                     "contentvec",
+                    "chinese-hubert-base",
                     "japanese-hubert-base",
-                    "chinese-hubert-large",
+                    "korean-hubert-base",
                     "custom",
                 ],
                 value="contentvec",
-                interactive=True,
+                interactive=False, # Temporary disable this option
             )
+
         hop_length = gr.Slider(
             1,
             512,
@@ -444,6 +452,21 @@ def train_tab():
             visible=False,
             interactive=True,
         )
+        with gr.Row(visible=False) as embedder_custom:
+                with gr.Accordion("Custom Embedder", open=True):
+                    with gr.Row():
+                        embedder_model_custom = gr.Dropdown(
+                            label="Select Custom Embedder",
+                            choices=refresh_embedders_folders(),
+                            interactive=True,
+                            allow_custom_value=True
+                        )
+                        refresh_embedders_button = gr.Button("Refresh embedders")
+                    folder_name_input = gr.Textbox(label="Folder Name", interactive=True)
+                    with gr.Row():
+                        bin_file_upload = gr.File(label="Upload .bin", type="filepath", interactive=True)
+                        config_file_upload = gr.File(label="Upload .json", type="filepath", interactive=True)
+                    move_files_button = gr.Button("Move files to custom embedder folder")
         pitch_guidance_extract = gr.Checkbox(
             label=i18n("Pitch Guidance"),
             info=i18n(
@@ -488,24 +511,6 @@ def train_tab():
                         info=i18n("The GPU information will be displayed here."),
                         value=get_gpu_info(),
                         interactive=False,
-                    )
-
-            with gr.Column(visible=False) as embedder_custom:
-                with gr.Accordion(i18n("Custom Embedder"), open=True):
-                    embedder_upload_custom = gr.File(
-                        label=i18n("Upload Custom Embedder"),
-                        type="filepath",
-                        interactive=True,
-                    )
-                    embedder_custom_refresh = gr.Button(i18n("Refresh"))
-                    embedder_model_custom = gr.Dropdown(
-                        label=i18n("Custom Embedder"),
-                        info=i18n(
-                            "Select the custom embedder to use for the conversion."
-                        ),
-                        choices=sorted(get_embedder_custom_list()),
-                        interactive=True,
-                        allow_custom_value=True,
                     )
 
         extract_output_info = gr.Textbox(
@@ -907,17 +912,21 @@ def train_tab():
                 inputs=[embedder_model],
                 outputs=[embedder_custom],
             )
-            embedder_upload_custom.upload(
-                fn=save_drop_custom_embedder,
-                inputs=[embedder_upload_custom],
-                outputs=[embedder_upload_custom],
+            embedder_model.change(
+                fn=toggle_visible_embedder_custom,
+                inputs=[embedder_model],
+                outputs=[embedder_custom],
             )
-            embedder_custom_refresh.click(
-                fn=refresh_custom_embedder_list,
+            move_files_button.click(
+                fn=create_folder_and_move_files,
+                inputs=[folder_name_input, bin_file_upload, config_file_upload],
+                outputs=[]
+            )
+            refresh_embedders_button.click(
+                fn=refresh_embedders_folders,
                 inputs=[],
-                outputs=[embedder_model_custom],
+                outputs=[embedder_model_custom]
             )
-
             pretrained.change(
                 fn=toggle_pretrained,
                 inputs=[pretrained, custom_pretrained],

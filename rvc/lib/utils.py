@@ -4,22 +4,33 @@ import soundfile as sf
 import numpy as np
 import re
 import unicodedata
-from fairseq import checkpoint_utils
 import wget
 import subprocess
 from pydub import AudioSegment
 import tempfile
+from torch import nn
 
 import logging
+from transformers import HubertModel
+import warnings
+# Remove this to see warnings about transformers models
+warnings.filterwarnings("ignore")
 
-logging.getLogger("fairseq").setLevel(logging.WARNING)
-logging.getLogger("faiss.loader").setLevel(logging.WARNING)
+logging.getLogger("fairseq").setLevel(logging.ERROR)
+logging.getLogger("faiss.loader").setLevel(logging.ERROR)
+logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("torch").setLevel(logging.ERROR)
 
-sys.path.append(os.getcwd())
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 
-base_path = os.path.join(os.getcwd(), "rvc", "models", "formant", "stftpitchshift")
+base_path = os.path.join(now_dir, "rvc", "models", "formant", "stftpitchshift")
 stft = base_path + ".exe" if sys.platform == "win32" else base_path
 
+class HubertModelWithFinalProj(HubertModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
 
 def load_audio(file, sample_rate):
     try:
@@ -59,10 +70,17 @@ def load_audio_infer(
                 temp_file_path = temp_file.name
                 audio_segment.export(temp_file_path, format="wav")
 
-            command = (
-                f'{stft} -i "{temp_file_path}" -q "{formant_qfrency}" '
-                f'-t "{formant_timbre}" -o "{temp_file_path}_formatted.wav"'
-            )
+            command = [
+                stft,
+                "-i",
+                temp_file_path,
+                "-q",
+                str(formant_qfrency),
+                "-t",
+                str(formant_timbre),
+                "-o",
+                f"{temp_file_path}_formatted.wav",
+            ]
             subprocess.run(command, shell=True)
             formatted_audio_path = f"{temp_file_path}_formatted.wav"
             audio, sr = sf.read(formatted_audio_path)
@@ -86,36 +104,47 @@ def format_title(title):
 
 
 def load_embedding(embedder_model, custom_embedder=None):
-    embedder_root = os.path.join(os.getcwd(), "rvc", "models", "embedders")
+    embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
     embedding_list = {
-        "contentvec": os.path.join(embedder_root, "contentvec_base.pt"),
-        "japanese-hubert-base": os.path.join(embedder_root, "japanese-hubert-base.pt"),
-        "chinese-hubert-large": os.path.join(embedder_root, "chinese-hubert-large.pt"),
+        "contentvec": os.path.join(embedder_root, "contentvec"),
+        "chinese-hubert-base": os.path.join(embedder_root, "chinese_hubert_base"),
+        "japanese-hubert-base": os.path.join(embedder_root, "japanese_hubert_base"),
+        "korean-hubert-base": os.path.join(embedder_root, "korean_hubert_base"),
     }
 
     online_embedders = {
-        "japanese-hubert-base": "https://huggingface.co/rinna/japanese-hubert-base/resolve/main/fairseq/model.pt",
-        "chinese-hubert-large": "https://huggingface.co/TencentGameMate/chinese-hubert-large/resolve/main/chinese-hubert-large-fairseq-ckpt.pt",
+        "contentvec": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/contentvec/pytorch_model.bin",
+        "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/chinese_hubert_base/pytorch_model.bin",
+        "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/japanese_hubert_base/pytorch_model.bin",
+        "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/korean_hubert_base/pytorch_model.bin",
+    }
+
+    config_files = {
+        "contentvec": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/contentvec/config.json",
+        "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/chinese_hubert_base/config.json",
+        "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/japanese_hubert_base/config.json",
+        "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/korean_hubert_base/config.json",
     }
 
     if embedder_model == "custom":
-        model_path = custom_embedder
-        if not custom_embedder and os.path.exists(custom_embedder):
+        if os.path.exists(custom_embedder):
+            model_path = custom_embedder
+        else:
+            print(f"Custom embedder not found: {custom_embedder}, using contentvec")
             model_path = embedding_list["contentvec"]
     else:
         model_path = embedding_list[embedder_model]
-        if embedder_model in online_embedders:
-            if not os.path.exists(model_path):
-                url = online_embedders[embedder_model]
-                print(f"\nDownloading {url} to {model_path}...")
-                wget.download(url, out=model_path)
-        else:
-            model_path = embedding_list["contentvec"]
+        bin_file = os.path.join(model_path, 'pytorch_model.bin')
+        json_file = os.path.join(model_path, 'config.json')
+        os.makedirs(model_path, exist_ok=True)
+        if not os.path.exists(bin_file):
+            url = online_embedders[embedder_model]
+            print(f"Downloading {url} to {model_path}...")
+            wget.download(url, out=bin_file)
+        if not os.path.exists(json_file):
+            url = config_files[embedder_model]
+            print(f"Downloading {url} to {model_path}...")
+            wget.download(url, out=json_file)
 
-    models = checkpoint_utils.load_model_ensemble_and_task(
-        [model_path],
-        suffix="",
-    )
-
-    # print(f"Embedding model {embedder_model} loaded successfully.")
+    models = HubertModelWithFinalProj.from_pretrained(model_path)
     return models

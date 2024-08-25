@@ -1,11 +1,8 @@
-import os
-import sys
 import torch
-from typing import Optional
-
-sys.path.append(os.getcwd())
-
-from rvc.lib.algorithm.commons import fused_add_tanh_sigmoid_multiply
+from rvc.lib.algorithm.commons import (
+    fused_add_tanh_sigmoid_multiply_no_jit,
+    fused_add_tanh_sigmoid_multiply,
+)
 
 
 class WaveNet(torch.nn.Module):
@@ -18,7 +15,6 @@ class WaveNet(torch.nn.Module):
         n_layers (int): Number of convolutional layers.
         gin_channels (int, optional): Number of conditioning channels. Defaults to 0.
         p_dropout (float, optional): Dropout probability. Defaults to 0.
-
     """
 
     def __init__(
@@ -37,11 +33,11 @@ class WaveNet(torch.nn.Module):
         self.dilation_rate = dilation_rate
         self.n_layers = n_layers
         self.gin_channels = gin_channels
-        self.p_dropout = float(p_dropout)
+        self.p_dropout = p_dropout
 
         self.in_layers = torch.nn.ModuleList()
         self.res_skip_layers = torch.nn.ModuleList()
-        self.drop = torch.nn.Dropout(float(p_dropout))
+        self.drop = torch.nn.Dropout(p_dropout)
 
         if gin_channels != 0:
             cond_layer = torch.nn.Conv1d(
@@ -77,18 +73,14 @@ class WaveNet(torch.nn.Module):
             )
             self.res_skip_layers.append(res_skip_layer)
 
-    def forward(
-        self, x: torch.Tensor, x_mask: torch.Tensor, g: Optional[torch.Tensor] = None
-    ):
-        """
-        Perform inference of a model.
-        WN is a stack of residual blocks.
-        Specifically, do
-        1. Upsample the input to the target length
-        2. Apply the model (WN)
-        2.1 Apply the conditional layer
-        2.2 Apply the residual blocks
-        3. Downsample to the original length
+    def forward(self, x, x_mask, g=None, **kwargs):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): Input tensor of shape (batch_size, hidden_channels, time_steps).
+            x_mask (torch.Tensor): Mask tensor of shape (batch_size, 1, time_steps).
+            g (torch.Tensor, optional): Conditioning tensor of shape (batch_size, gin_channels, time_steps).
+                Defaults to None.
         """
         output = torch.zeros_like(x)
         n_channels_tensor = torch.IntTensor([self.hidden_channels])
@@ -96,20 +88,30 @@ class WaveNet(torch.nn.Module):
         if g is not None:
             g = self.cond_layer(g)
 
-        for i, (in_layer, res_skip_layer) in enumerate(
-            zip(self.in_layers, self.res_skip_layers)
-        ):
-            x_in = in_layer(x)
+        # Zluda
+        is_zluda = x.device.type == "cuda" and torch.cuda.get_device_name().endswith(
+            "[ZLUDA]"
+        )
+
+        for i in range(self.n_layers):
+            x_in = self.in_layers[i](x)
             if g is not None:
                 cond_offset = i * 2 * self.hidden_channels
                 g_l = g[:, cond_offset : cond_offset + 2 * self.hidden_channels, :]
             else:
                 g_l = torch.zeros_like(x_in)
 
-            acts = fused_add_tanh_sigmoid_multiply(x_in, g_l, n_channels_tensor)
+            # Preventing HIP crash by not using jit-decorated function
+            if is_zluda:
+                acts = fused_add_tanh_sigmoid_multiply_no_jit(
+                    x_in, g_l, n_channels_tensor
+                )
+            else:
+                acts = fused_add_tanh_sigmoid_multiply(x_in, g_l, n_channels_tensor)
+
             acts = self.drop(acts)
 
-            res_skip_acts = res_skip_layer(acts)
+            res_skip_acts = self.res_skip_layers[i](acts)
             if i < self.n_layers - 1:
                 res_acts = res_skip_acts[:, : self.hidden_channels, :]
                 x = (x + res_acts) * x_mask
@@ -119,33 +121,10 @@ class WaveNet(torch.nn.Module):
         return output * x_mask
 
     def remove_weight_norm(self):
+        """Remove weight normalization from the module."""
         if self.gin_channels != 0:
             torch.nn.utils.remove_weight_norm(self.cond_layer)
         for l in self.in_layers:
             torch.nn.utils.remove_weight_norm(l)
         for l in self.res_skip_layers:
             torch.nn.utils.remove_weight_norm(l)
-
-    def __prepare_scriptable__(self):
-        if self.gin_channels != 0:
-            for hook in self.cond_layer._forward_pre_hooks.values():
-                if (
-                    hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
-                    and hook.__class__.__name__ == "WeightNorm"
-                ):
-                    torch.nn.utils.remove_weight_norm(self.cond_layer)
-        for l in self.in_layers:
-            for hook in l._forward_pre_hooks.values():
-                if (
-                    hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
-                    and hook.__class__.__name__ == "WeightNorm"
-                ):
-                    torch.nn.utils.remove_weight_norm(l)
-        for l in self.res_skip_layers:
-            for hook in l._forward_pre_hooks.values():
-                if (
-                    hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
-                    and hook.__class__.__name__ == "WeightNorm"
-                ):
-                    torch.nn.utils.remove_weight_norm(l)
-        return self

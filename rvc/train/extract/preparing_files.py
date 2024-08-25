@@ -4,7 +4,7 @@ from random import shuffle
 from rvc.configs.config import Config
 
 config = Config()
-
+current_directory = os.getcwd()
 
 def generate_config(rvc_version: str, vocoder_type: str, sample_rate: int, model_path: str):
     if rvc_version == "v2":
@@ -44,7 +44,7 @@ def generate_filelist(
         names = gt_wavs_files & feature_files
 
     options = []
-    mute_base_path = os.path.join(os.getcwd(), "logs", "mute")
+    mute_base_path = os.path.join(current_directory, "logs", "mute")
 
     for name in names:
         if pitch_guidance:
