@@ -37,7 +37,13 @@ jobs:
       - name: Generate commit history
         id: generate-commits
         run: |
-          git log ${{ steps.check-version.outputs.tag }}..HEAD --oneline > commits.txt
+          tag="${{ steps.check-version.outputs.tag }}"
+          echo "Tag: $tag"
+          if [ -z "$tag" ]; then
+            echo "No tag found. Exiting."
+            exit 1
+          fi
+          git log "$tag".."HEAD" --oneline > commits.txt
           cat commits.txt
 
       - name: Summarize changelog with Groq API
