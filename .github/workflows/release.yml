@@ -35,6 +35,41 @@ jobs:
           version-command: |
             bash -o pipefail -c "cat ./assets/config.json | jq -r '.version'"
 
+      - name: Create CHANGELOG.md
+        run: |
+          cd /home/runner/work/Applio/Applio
+          cat > CHANGELOG.md << EOF
+## Important Installation Guidelines
+
+### Before You Install Applio
+Please review these essential instructions to ensure a smooth installation:
+
+- **File Location**: Place the Applio files in a dedicated folder on your C drive.
+- **Access Control**: Avoid placing Applio in folders that require elevated privileges.
+- **Administrator Rights**: Do not run the `run-install.bat` script with administrator privileges.
+- **Path Requirements**: Ensure the installation path is free of spaces or special characters.
+- **Security Settings**: Temporarily disable your antivirus and firewall to prevent any issues with missing dependencies during installation.
+
+### Installation Steps
+1. **Download**: Get the .zip file from [this link](https://github.com/IAHispano/Applio/archive/refs/tags/${{ steps.check-version.outputs.tag }}.zip).
+2. **Run the Installer**: Extract the files and execute the `run-install.bat` script.
+3. **Start Applio**: Launch Applio by running the `run-applio.bat` script.
+
+### Prefer a Simpler Installation?
+> [!TIP]
+> For the best experience, we highly recommend using the pre-compiled version. Compiling the code yourself may lead to instabilities.
+
+- **Download Compiled Version**: Get the executable from [this link](https://huggingface.co/IAHispano/Applio/tree/main/Compiled).
+- **Run Applio**: Double-click the downloaded `.exe` file, then open the `run-applio.bat` file.
+
+## What's New in This Release
+- Enhanced extraction workflows for improved performance.
+- Fixed various critical bugs (and introduced a few new ones).
+
+**Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}
+
+EOF
+
       - name: Get commit history and format as a list
         run: |
           previous_tag="${{ steps.check-version.outputs.previous-version }}"
