@@ -95,8 +95,13 @@ jobs:
           echo "Tag: ${{ steps.check-version.outputs.tag }}"
           echo "Changelog: $(cat summarized_changelog.txt)"
           echo "Repository: ${{ github.repository }}"
-          cd "/home/runner/work/Applio/Applio"
-          ls -l
+          
+      - name: Create package.json
+        run: |
+          cd /home/runner/work/Applio/Applio 
+          echo '{}' > package.json  # Create an empty package.json
+          jq --arg version "${{ steps.check-version.outputs.tag }}" '. + {version: $version}' package.json > tmp.$$.json && mv tmp.$$.json package.json
+          cat package.json
 
       - name: Publish release using gh-release
         run: |
