@@ -262,7 +262,7 @@ def run_embedding_extraction(
     print("Starting embedding extraction...")
     start_time = time.time()
 
-    models = load_embedding(embedder_model, embedder_model_custom, version)
+    models = load_embedding(embedder_model, embedder_model_custom)
 
     # Zluda
     if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):

@@ -54,7 +54,7 @@ executables_list = [
 folder_mapping_list = {
     "pretrained_v1/": "rvc/models/pretraineds/pretrained_v1/",
     "pretrained_v2/": "rvc/models/pretraineds/pretrained_v2/",
-    "embedders/contentvec/": "rvc/models/embedders/contentvec_base/",
+    "embedders/contentvec/": "rvc/models/embedders/contentvec/",
     "predictors/": "rvc/models/predictors/",
     "formant/": "rvc/models/formant/",
 }
