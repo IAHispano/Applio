@@ -44,7 +44,7 @@ jobs:
           echo "Fetching commits since: $commit_date"
           curl -s "https://api.github.com/repos/IAHispano/Applio/commits?since=$commit_date&per_page=600" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            | jq -r '.[].sha + " " + .[].commit.message' > commits.txt
+            | jq -r '.[] | .sha + " " + .commit.message' > commits.txt
           cat commits.txt
 
       - name: Summarize changelog with Groq API
