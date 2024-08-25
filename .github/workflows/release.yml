@@ -44,7 +44,9 @@ jobs:
             exit 1
           fi
           git log "$tag".."HEAD" --oneline > commits.txt
+          echo "H"
           cat commits.txt
+        shell: bash
 
       - name: Summarize changelog with Groq API
         id: summarize-changelog
