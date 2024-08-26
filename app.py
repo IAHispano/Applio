@@ -35,29 +35,35 @@ from tabs.settings.precision import precision_tab
 
 # Run prerequisites
 from core import run_prerequisites_script
+
 run_prerequisites_script(False, True, True, True)
 
 # Initialize i18n
 from assets.i18n.i18n import I18nAuto
+
 i18n = I18nAuto()
 
 # Start Discord presence if enabled
 if load_config_presence():
     from assets.discord_presence import RPCManager
+
     RPCManager.start_presence()
 
 # Check installation
 import assets.installation_checker as installation_checker
+
 installation_checker.check_installation()
 
 # Start Flask server if enabled
 from assets.flask.server import start_flask, load_config_flask
+
 if load_config_flask():
     print("Starting Flask server")
     start_flask()
 
 # Load theme
 import assets.themes.loadThemes as loadThemes
+
 my_applio = loadThemes.load_json() or "ParityError/Interstellar"
 
 # Define Gradio interface
@@ -140,7 +146,9 @@ if __name__ == "__main__":
             launch_gradio(port)
             break
         except OSError:
-            print(f"Failed to launch on port {port}, trying again on port {port - 1}...")
+            print(
+                f"Failed to launch on port {port}, trying again on port {port - 1}..."
+            )
             port -= 1
         except Exception as error:
             print(f"An error occurred launching Gradio: {error}")
