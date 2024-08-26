@@ -36,6 +36,7 @@ jobs:
             bash -o pipefail -c "cat ./assets/config.json | jq -r '.version'"
 
       - name: Create CHANGELOG.md
+        if: steps.check-version.outputs.tag
         run: |
           cd /home/runner/work/Applio/Applio
           cat > CHANGELOG.md << EOF
@@ -59,18 +60,15 @@ jobs:
           > [!TIP]
           > For the best experience, we highly recommend using the pre-compiled version. Compiling the code yourself may lead to instabilities.
 
-          - **Download Compiled Version**: Get the executable from [this link](https://huggingface.co/IAHispano/Applio/tree/main/Compiled).
-          - **Run Applio**: Double-click the downloaded \`.exe\` file, then open the \`run-applio.bat\` file.
-
-          ## What's New in This Release
-          - Enhanced extraction workflows for improved performance.
-          - Fixed various critical bugs (and introduced a few new ones).
+          - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/blob/main/Compiled/ApplioV\{{ steps.check-version.outputs.tag \}}.zip).
+          - **Run Applio**: Unzip the zip file and then open \`run-applio.bat\` file.
 
           **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}
 
           EOF
 
       - name: Get commit history and format as a list
+        if: steps.check-version.outputs.tag
         run: |
           previous_tag="${{ steps.check-version.outputs.previous-version }}"
           echo "Previous Tag: $previous_tag"
@@ -84,6 +82,7 @@ jobs:
           cat commits.txt
 
       - name: Summarize changelog with Groq API
+        if: steps.check-version.outputs.tag
         id: summarize-changelog
         run: |
           changelog=$(cat commits.txt)
@@ -93,7 +92,7 @@ jobs:
               messages: [
                 {
                   role: "system",
-                  content: "You will receive a commit history. Your task is to extract and present the top 20% most relevant changes as a concise list, each item preceded by a bullet point (-). Each entry should be as brief as possible, ideally 3 to 4 words, summarizing the key updates and enhancements. Ignore changes related to .yaml files, Git Keep, chore(format), and \"colab.\" Summarize commits like Update ___.py, Fix _____.py, Disable or Delete as \"Fixing Code Issues\" and include specific details in parentheses if applicable. For entries starting with \"Add,\" \"Fix,\" \"Improve,\" or \"Rework,\" ensure they are merged into a single entry, with specific details included in parentheses. After generating the list, thoroughly review it to identify and merge any similar entries, even if they differ slightly in wording. Finally, check the list for any entries that are similar or irrelevant to one another, and either eliminate or merge them as necessary to ensure the list is concise, distinct, and meaningful. Limit the list to a maximum of 5 or 7 items. Each entry should start with an uppercase letter, and no additional commentary or text should be included. Return the list with each item separated by a blank line."
+                  content: "You will receive a commit history. Your task is to extract and present the top 20% most relevant changes as a concise list, each item preceded by a bullet point (-). Each entry should be as brief as possible, ideally 1 to 4 words, summarizing the key updates and enhancements. Ignore changes related to .yaml files, Git Keep, chore(format), and \"colab.\" Summarize commits like Update ___.py, Fix _____.py, Disable, Delete or Merge as \"Fixing Code Issues\" and include specific details in parentheses only if they refer to a specific feature, module, or file name. For entries starting with \"Add,\" \"Fix,\" \"Improve,\" or \"Rework,\" ensure they are merged into a single entry, with specific details included in parentheses. Ensure the details within parentheses are concise and directly relevant to the change, focusing on the affected feature or module. If multiple commits fall under \"Fixing Code Issues,\" consolidate them into one entry, mentioning only the major areas or modules affected without listing every specific fix. After generating the list, thoroughly review it to eliminate duplicates and ensure that each entry is distinct, relevant, and clearly summarized. Limit the list to a maximum of 5 or 7 items. Each entry should start with an uppercase letter, and no additional commentary or text should be included. Return the list with each item separated by a blank line."
                 },
                 {
                   role: "user",
@@ -101,7 +100,7 @@ jobs:
                 }
               ],
               model: "llama-3.1-70b-versatile",
-              temperature: 0.5,
+              temperature: 0.8,
               max_tokens: 1024,
               top_p: 1,
               stream: false,
@@ -118,21 +117,25 @@ jobs:
             | jq -r '.choices[0].message.content' > summarized_changelog.txt
 
       - name: Set up Node.js
+        if: steps.check-version.outputs.tag
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
       - name: Install gh-release
+        if: steps.check-version.outputs.tag
         run: |
           npm install https://github.com/Vidalnt/gh-release.git
 
       - name: Debug output
+        if: steps.check-version.outputs.tag
         run: |
           echo "Tag: ${{ steps.check-version.outputs.tag }}"
           echo "Changelog: $(cat summarized_changelog.txt)"
           echo "Repository: ${{ github.repository }}"
 
       - name: Create package.json 
+        if: steps.check-version.outputs.tag
         run: |
           cd /home/runner/work/Applio/Applio 
           echo '{}' > package.json
@@ -144,6 +147,7 @@ jobs:
           cat package.json
 
       - name: Publish release using gh-release
+        if: steps.check-version.outputs.tag
         run: |
           cd /home/runner/work/Applio/Applio && \
           tag_name="${{ steps.check-version.outputs.tag }}"
@@ -168,8 +172,8 @@ jobs:
             ### Prefer a Simpler Installation?
             > [!TIP]
             > For the best experience, we highly recommend using the pre-compiled version. Compiling the code yourself may lead to instabilities.
-            - **Download Compiled Version**: Get the executable from [this link](https://huggingface.co/IAHispano/Applio/tree/main/Compiled).
-            - **Run Applio**: Double-click the downloaded \`.exe\` file, then open the \`run-applio.bat\` file.
+            - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/blob/main/Compiled/ApplioV\{{ steps.check-version.outputs.tag \}}.zip).
+            - **Run Applio**: Unzip the zip file and then open \`run-applio.bat\` file.
             ## What's New in This Release
             ${changelog}
 
@@ -182,6 +186,7 @@ jobs:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Trigger Pre-Compiled and Upload workflow
+        if: steps.check-version.outputs.tag
         uses: actions/github-script@v6
         with:
           script: |
