@@ -162,7 +162,7 @@ jobs:
             - **Path Requirements**: Ensure the installation path is free of spaces or special characters.
             - **Security Settings**: Temporarily disable your antivirus and firewall to prevent any issues with missing dependencies during installation.
             ### Installation Steps
-            1.**Download**: Get the .zip file from [this link](https://github.com/IAHispano/Applio/archive/refs/tags/${{ steps.check-version.outputs.tag }}.zip).
+            1. **Download**: Get the .zip file from [this link](https://github.com/IAHispano/Applio/archive/refs/tags/${{ steps.check-version.outputs.tag }}.zip).
             2. **Run the Installer**: Extract the files and execute the \`run-install.bat\` script.
             3. **Start Applio**: Launch Applio by running the \`run-applio.bat\` script.
             ### Prefer a Simpler Installation?
@@ -172,7 +172,7 @@ jobs:
             - **Run Applio**: Double-click the downloaded \`.exe\` file, then open the \`run-applio.bat\` file.
             ## What's New in This Release
             ${changelog}
-            
+
             **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}  " \
             -o "Vidalnt" \
             -r "Applio" \
@@ -185,12 +185,11 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
-            await octokit.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'pre_compiled.yml',
-              ref: context.ref,
+            await github.rest.actions.createWorkflowDispatch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'pre_compiled.yml',
+            ref: context.ref,
             });
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
