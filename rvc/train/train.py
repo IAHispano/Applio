@@ -5,6 +5,7 @@ import datetime
 import glob
 import json
 import re
+import random
 from distutils.util import strtobool
 
 from utils import (
@@ -676,7 +677,8 @@ def train_and_evaluate(
                             )
                         )
             else:
-                shuffle(cache)
+                data_iterator = list(enumerate(train_loader))
+                random.shuffle(data_iterator)
         else:
             data_iterator = enumerate(train_loader)
 

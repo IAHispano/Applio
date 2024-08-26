@@ -619,7 +619,7 @@ def train_tab():
                     shuffle_dataset = gr.Checkbox(
                         label=i18n("Shuffle Dataset"),
                         info=i18n(
-                            "Shuffle the dataset to prevent the model from learning the order of the data. (Consumes a lot of RAM)"
+                            "Shuffle the dataset to prevent the model from learning the order of the data."
                         ),
                         value=False,
                         interactive=True,
