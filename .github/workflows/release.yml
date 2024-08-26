@@ -152,16 +152,26 @@ jobs:
             -t "${tag_name}" \
             -n "Release ${tag_name}" \
             -c "main" \
-            -b "🚀 Exciting News! Upgrade to the latest and greatest version of Applio, ${tag_name}, now available for download!
-            
-            ### Choose your preferred option:
-            - 🚀 Release: [Download Now](https://github.com/${{ github.repository }}/releases/tag/${tag_name})
-            - 📦 Compiled (Just double click it): [.exe](https://huggingface.co/${{ github.repository }}/resolve/main/Compiled/ApplioV${tag_name}.exe) / [.zip](https://huggingface.co/${{ github.repository }}/resolve/main/Compiled/ApplioV${tag_name}.zip?download=true)
-            
-            ### Applio Changelog Highlights:
-            ${changelog}
-
-            What features are you hoping to see in our upcoming updates? 🔍 Stay tuned for more exciting improvements!" \
+            -b "## Important Installation Guidelines  \
+            ### Before You Install Applio  \
+            Please review these essential instructions to ensure a smooth installation:  \
+            - **File Location**: Place the Applio files in a dedicated folder on your C drive.  \
+            - **Access Control**: Avoid placing Applio in folders that require elevated privileges.  \
+            - **Administrator Rights**: Do not run the \`run-install.bat\` script with administrator privileges.  \
+            - **Path Requirements**: Ensure the installation path is free of spaces or special characters.  \
+            - **Security Settings**: Temporarily disable your antivirus and firewall to prevent any issues with missing dependencies during installation.  \
+            ### Installation Steps  \
+            1.**Download**: Get the .zip file from [this link](https://github.com/IAHispano/Applio/archive/refs/tags/${{ steps.check-version.outputs.tag }}.zip).  \
+            2. **Run the Installer**: Extract the files and execute the \`run-install.bat\` script.  \
+            3. **Start Applio**: Launch Applio by running the \`run-applio.bat\` script.  \
+            ### Prefer a Simpler Installation?  \
+            > [!TIP]  \
+            > For the best experience, we highly recommend using the pre-compiled version. Compiling the code yourself may lead to instabilities.  \
+            - **Download Compiled Version**: Get the executable from [this link](https://huggingface.co/IAHispano/Applio/tree/main/Compiled).  \
+            - **Run Applio**: Double-click the downloaded \`.exe\` file, then open the \`run-applio.bat\` file.  \
+            ## What's New in This Release  \
+            ${changelog}  \
+            **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}  " \
             -o "Vidalnt" \
             -r "Applio" \
             -w /home/runner/work/Applio/Applio \
