@@ -156,7 +156,8 @@ jobs:
             -o "${{ github.repository_owner }}" \
             -r "${{ github.repository }}" \
             -d \
-            -w /home/runner/work/Applio/Applio
+            -w /home/runner/work/Applio/Applio \
+            -y
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
