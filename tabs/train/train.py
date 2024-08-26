@@ -433,7 +433,7 @@ def train_tab():
                     "custom",
                 ],
                 value="contentvec",
-                interactive=False,  # Temporary disable this option
+                interactive=True,
             )
 
         hop_length = gr.Slider(
