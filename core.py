@@ -440,6 +440,7 @@ def run_train_script(
     sync_graph: bool,
     index_algorithm: str = "Auto",
     cache_data_in_gpu: bool = False,
+    shuffle_dataset: bool = False,
     custom_pretrained: bool = False,
     g_pretrained_path: str = None,
     d_pretrained_path: str = None,
@@ -484,6 +485,7 @@ def run_train_script(
                 overtraining_detector,
                 overtraining_threshold,
                 sync_graph,
+                shuffle_dataset,
             ],
         ),
     ]
@@ -1359,6 +1361,14 @@ def parse_arguments():
         default=False,
     )
     train_parser.add_argument(
+        "--shuffle_dataset",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Shuffle the training dataset.",
+        default=False,
+        required=False,
+    )
+    train_parser.add_argument(
         "--index_algorithm",
         type=str,
         choices=["Auto", "Faiss", "KMeans"],
@@ -1657,6 +1667,7 @@ def main():
                 sync_graph=args.sync_graph,
                 index_algorithm=args.index_algorithm,
                 cache_data_in_gpu=args.cache_data_in_gpu,
+                shuffle_dataset=args.shuffle_dataset,
                 g_pretrained_path=args.g_pretrained_path,
                 d_pretrained_path=args.d_pretrained_path,
             )

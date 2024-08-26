@@ -301,5 +301,7 @@
   "Folder Name": "Folder Name",
   "Upload .bin": "Upload .bin",
   "Upload .json": "Upload .json",
-  "Move files to custom embedder folder": "Move files to custom embedder folder"
+  "Move files to custom embedder folder": "Move files to custom embedder folder",
+  "Shuffle Dataset": "Shuffle Dataset",
+  "Shuffle the dataset to prevent the model from learning the order of the data. (Consumes a lot of RAM)": "Shuffle the dataset to prevent the model from learning the order of the data. (Consumes a lot of RAM)"
 }

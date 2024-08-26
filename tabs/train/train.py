@@ -616,6 +616,14 @@ def train_tab():
                         value=False,
                         interactive=True,
                     )
+                    shuffle_dataset = gr.Checkbox(
+                        label=i18n("Shuffle Dataset"),
+                        info=i18n(
+                            "Shuffle the dataset to prevent the model from learning the order of the data. (Consumes a lot of RAM)"
+                        ),
+                        value=False,
+                        interactive=True,
+                    )
                     pitch_guidance = gr.Checkbox(
                         label=i18n("Pitch Guidance"),
                         info=i18n(
@@ -749,6 +757,7 @@ def train_tab():
                     sync_graph,
                     index_algorithm,
                     cache_dataset_in_gpu,
+                    shuffle_dataset,
                     custom_pretrained,
                     g_pretrained_path,
                     d_pretrained_path,

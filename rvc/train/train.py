@@ -72,6 +72,7 @@ cache_data_in_gpu = strtobool(sys.argv[13])
 overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
 sync_graph = strtobool(sys.argv[16])
+shuffle_dataset = strtobool(sys.argv[17])
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -533,7 +534,7 @@ def train_and_evaluate(
     net_d.train()
 
     # Data caching
-    if True:
+    if cache_data_in_gpu:
         data_iterator = cache
         if cache == []:
             for batch_idx, info in enumerate(train_loader):
@@ -604,6 +605,80 @@ def train_and_evaluate(
                     )
         else:
             shuffle(cache)
+    else:
+        if shuffle_dataset:
+            data_iterator = cache
+            if cache == []:
+                for batch_idx, info in enumerate(train_loader):
+                    if pitch_guidance == True:
+                        (
+                            phone,
+                            phone_lengths,
+                            pitch,
+                            pitchf,
+                            spec,
+                            spec_lengths,
+                            wave,
+                            wave_lengths,
+                            sid,
+                        ) = info
+                    elif pitch_guidance == False:
+                        (
+                            phone,
+                            phone_lengths,
+                            spec,
+                            spec_lengths,
+                            wave,
+                            wave_lengths,
+                            sid,
+                        ) = info
+                    if cache_data_in_gpu == True and torch.cuda.is_available():
+                        phone = phone.cuda(rank, non_blocking=True)
+                        phone_lengths = phone_lengths.cuda(rank, non_blocking=True)
+                        if pitch_guidance == True:
+                            pitch = pitch.cuda(rank, non_blocking=True)
+                            pitchf = pitchf.cuda(rank, non_blocking=True)
+                        sid = sid.cuda(rank, non_blocking=True)
+                        spec = spec.cuda(rank, non_blocking=True)
+                        spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
+                        wave = wave.cuda(rank, non_blocking=True)
+                        wave_lengths = wave_lengths.cuda(rank, non_blocking=True)
+                    if pitch_guidance == True:
+                        cache.append(
+                            (
+                                batch_idx,
+                                (
+                                    phone,
+                                    phone_lengths,
+                                    pitch,
+                                    pitchf,
+                                    spec,
+                                    spec_lengths,
+                                    wave,
+                                    wave_lengths,
+                                    sid,
+                                ),
+                            )
+                        )
+                    elif pitch_guidance == False:
+                        cache.append(
+                            (
+                                batch_idx,
+                                (
+                                    phone,
+                                    phone_lengths,
+                                    spec,
+                                    spec_lengths,
+                                    wave,
+                                    wave_lengths,
+                                    sid,
+                                ),
+                            )
+                        )
+            else:
+                shuffle(cache)
+        else:
+            data_iterator = enumerate(train_loader)
 
     epoch_recorder = EpochRecorder()
     with tqdm(total=len(train_loader), leave=False) as pbar:
