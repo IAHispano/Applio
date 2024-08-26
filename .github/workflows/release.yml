@@ -180,7 +180,7 @@ jobs:
             ### Prefer a Simpler Installation?
             > [!TIP]
             > For the best experience, we highly recommend using the pre-compiled version. Compiling the code yourself may lead to instabilities.
-            - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/blob/main/Compiled/ApplioV\{{ steps.check-version.outputs.tag \}}.zip).
+            - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/blob/main/Compiled/ApplioV${{ steps.check-version.outputs.tag }}.zip).
             - **Run Applio**: Unzip the zip file and then open \`run-applio.bat\` file.
             ## What's New in This Release
             ${changelog}
