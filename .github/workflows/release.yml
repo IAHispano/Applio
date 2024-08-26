@@ -154,7 +154,7 @@ jobs:
             -c "main" \
             -b "🚀 Exciting News! Upgrade to the latest and greatest version of Applio, ${tag_name}, now available for download!\n\n### Choose your preferred option:\n- 🚀 Release: [Download Now](https://github.com/${{ github.repository }}/releases/tag/${tag_name})\n- 📦 Compiled (Just double click it): [.exe](https://huggingface.co/${{ github.repository }}/resolve/main/Compiled/ApplioV${tag_name}.exe) / [.zip](https://huggingface.co/${{ github.repository }}/resolve/main/Compiled/ApplioV${tag_name}.zip?download=true)\n\n### Applio Changelog Highlights:\n${changelog}\n\nWhat features are you hoping to see in our upcoming updates? 🔍 Stay tuned for more exciting improvements!" \
             -o "Vidalnt" \
-            -r "Vidalnt/Applio" \
+            -r "Applio" \
             -d \
             -w /home/runner/work/Applio/Applio \
             -y
