@@ -72,9 +72,17 @@ jobs:
         run: |
           previous_tag="${{ steps.check-version.outputs.previous-version }}"
           echo "Previous Tag: $previous_tag"
-          commit_date=$(curl -s "https://api.github.com/repos/IAHispano/Applio/commits?sha=$previous_tag&per_page=1" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            | jq -r '.[0].commit.committer.date')
+
+          commit_data=$(curl -s "https://api.github.com/repos/IAHispano/Applio/commits?sha=$previous_tag&per_page=1" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}")
+
+          if [[ "$commit_data" == "[]" ]]; then
+            echo "No commits found for tag $previous_tag. Using current date."
+            commit_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ") 
+          else
+            commit_date=$(echo "$commit_data" | jq -r '.[0].commit.committer.date')
+          fi
+
           echo "Fetching commits since: $commit_date"
           curl -s "https://api.github.com/repos/IAHispano/Applio/commits?since=$commit_date&per_page=600" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
