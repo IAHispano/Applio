@@ -1,14 +1,14 @@
-# General dependencies
+# Core dependencies
 pip==23.3; sys_platform == 'darwin'
 wheel; sys_platform == 'darwin'
 PyYAML; sys_platform == 'darwin'
-ffmpeg-python>=0.2.0
 numpy==1.23.5
 requests==2.32.0
 tqdm
 wget
 
 # Audio processing
+ffmpeg-python>=0.2.0
 faiss-cpu==1.7.3
 librosa==0.9.2
 pyworld==0.3.4
@@ -19,25 +19,25 @@ noisereduce
 audio_upscaler==0.1.4
 pedalboard
 
-# Machine learning
+# Machine learning and deep learning
 omegaconf==2.0.5; sys_platform == 'darwin'
 numba; sys_platform == 'linux'
 numba==0.57.0; sys_platform == 'darwin' or sys_platform == 'win32'
-torchaudio==2.1.1
 torch==2.1.1
-torchcrepe==0.0.23
+torchaudio==2.1.1
 torchvision==0.16.1
+torchcrepe==0.0.23
+torchfcpe
 einops
 libf0
-torchfcpe
 transformers==4.44.2
 
-# Visualization
+# Visualization and UI
 matplotlib==3.7.2
 tensorboard
 gradio==4.36.0
 
-# Miscellaneous
+# Miscellaneous utilities
 certifi==2024.7.4; sys_platform == 'darwin'
 antlr4-python3-runtime==4.8; sys_platform == 'darwin'
 ffmpy==0.3.1
