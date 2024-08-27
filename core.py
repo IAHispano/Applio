@@ -1359,6 +1359,7 @@ def parse_arguments():
         type=str,
         help="Model creator name.",
         default=None,
+        required=False,
     )
     train_parser.add_argument(
         "--cache_data_in_gpu",

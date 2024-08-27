@@ -84,6 +84,8 @@ def extract_model(
         model_hash = hashlib.sha256(hash_input.encode()).hexdigest()
         opt["model_hash"] = model_hash
         opt["model_name"] = name
+        if model_creator is None:
+            model_creator = "Unknown"
         opt["author"] = model_creator
         opt["overtrain_info"] = overtrain_info
         opt["dataset_lenght"] = dataset_lenght
