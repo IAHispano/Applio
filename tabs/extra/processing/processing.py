@@ -27,7 +27,7 @@ def processing_tab():
             label=i18n("Output Information"),
             info=i18n("The output information will be displayed here."),
             value="",
-            max_lines=8,
+            max_lines=11,
         )
         model_view_button = gr.Button(i18n("View"), variant="primary")
         model_view_button.click(
