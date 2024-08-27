@@ -533,7 +533,7 @@ def train_and_evaluate(
     net_d.train()
 
     # Data caching
-    if True:
+    if cache_data_in_gpu:
         data_iterator = cache
         if cache == []:
             for batch_idx, info in enumerate(train_loader):
@@ -559,7 +559,7 @@ def train_and_evaluate(
                         wave_lengths,
                         sid,
                     ) = info
-                if cache_data_in_gpu == True and torch.cuda.is_available():
+                if torch.cuda.is_available():
                     phone = phone.cuda(rank, non_blocking=True)
                     phone_lengths = phone_lengths.cuda(rank, non_blocking=True)
                     if pitch_guidance == True:
@@ -604,6 +604,8 @@ def train_and_evaluate(
                     )
         else:
             shuffle(cache)
+    else:
+        data_iterator = enumerate(train_loader)
 
     epoch_recorder = EpochRecorder()
     with tqdm(total=len(train_loader), leave=False) as pbar:
