@@ -63,7 +63,7 @@ jobs:
           - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/blob/main/Compiled/ApplioV${{ steps.check-version.outputs.tag }}.zip).
           - **Run Applio**: Unzip the zip file and then open \`run-applio.bat\` file.
 
-        **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}
+          **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}
 
           EOF
 
