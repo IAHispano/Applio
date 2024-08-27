@@ -608,77 +608,8 @@ def train_and_evaluate(
             shuffle(cache)
     else:
         if shuffle_dataset:
-            data_iterator = cache
-            if cache == []:
-                for batch_idx, info in enumerate(train_loader):
-                    if pitch_guidance == True:
-                        (
-                            phone,
-                            phone_lengths,
-                            pitch,
-                            pitchf,
-                            spec,
-                            spec_lengths,
-                            wave,
-                            wave_lengths,
-                            sid,
-                        ) = info
-                    elif pitch_guidance == False:
-                        (
-                            phone,
-                            phone_lengths,
-                            spec,
-                            spec_lengths,
-                            wave,
-                            wave_lengths,
-                            sid,
-                        ) = info
-                    if cache_data_in_gpu == True and torch.cuda.is_available():
-                        phone = phone.cuda(rank, non_blocking=True)
-                        phone_lengths = phone_lengths.cuda(rank, non_blocking=True)
-                        if pitch_guidance == True:
-                            pitch = pitch.cuda(rank, non_blocking=True)
-                            pitchf = pitchf.cuda(rank, non_blocking=True)
-                        sid = sid.cuda(rank, non_blocking=True)
-                        spec = spec.cuda(rank, non_blocking=True)
-                        spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
-                        wave = wave.cuda(rank, non_blocking=True)
-                        wave_lengths = wave_lengths.cuda(rank, non_blocking=True)
-                    if pitch_guidance == True:
-                        cache.append(
-                            (
-                                batch_idx,
-                                (
-                                    phone,
-                                    phone_lengths,
-                                    pitch,
-                                    pitchf,
-                                    spec,
-                                    spec_lengths,
-                                    wave,
-                                    wave_lengths,
-                                    sid,
-                                ),
-                            )
-                        )
-                    elif pitch_guidance == False:
-                        cache.append(
-                            (
-                                batch_idx,
-                                (
-                                    phone,
-                                    phone_lengths,
-                                    spec,
-                                    spec_lengths,
-                                    wave,
-                                    wave_lengths,
-                                    sid,
-                                ),
-                            )
-                        )
-            else:
-                data_iterator = list(enumerate(train_loader))
-                random.shuffle(data_iterator)
+            data_iterator = list(enumerate(train_loader))
+            random.shuffle(data_iterator)
         else:
             data_iterator = enumerate(train_loader)
 
