@@ -63,11 +63,11 @@ jobs:
           - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/blob/main/Compiled/ApplioV${{ steps.check-version.outputs.tag }}.zip).
           - **Run Applio**: Unzip the zip file and then open \`run-applio.bat\` file.
 
-          **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}
+        **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}
 
           EOF
 
-      - name: Get commit history and format as a list
+      - name: Get commit history
         if: steps.check-version.outputs.tag
         run: |
           previous_tag="${{ steps.check-version.outputs.previous-version }}"
@@ -135,13 +135,6 @@ jobs:
         run: |
           npm install https://github.com/Vidalnt/gh-release.git
 
-      - name: Debug output
-        if: steps.check-version.outputs.tag
-        run: |
-          echo "Tag: ${{ steps.check-version.outputs.tag }}"
-          echo "Changelog: $(cat summarized_changelog.txt)"
-          echo "Repository: ${{ github.repository }}"
-
       - name: Create package.json 
         if: steps.check-version.outputs.tag
         run: |
@@ -154,7 +147,7 @@ jobs:
             package.json > tmp.$$.json && mv tmp.$$.json package.json
           cat package.json
 
-      - name: Publish release using gh-release
+      - name: Publish release
         if: steps.check-version.outputs.tag
         run: |
           cd /home/runner/work/Applio/Applio && \
@@ -182,10 +175,10 @@ jobs:
             > For the best experience, we highly recommend using the pre-compiled version. Compiling the code yourself may lead to instabilities.
             - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/blob/main/Compiled/ApplioV${{ steps.check-version.outputs.tag }}.zip).
             - **Run Applio**: Unzip the zip file and then open \`run-applio.bat\` file.
-            ## What's New in This Release
+          ## What's New in This Release
             ${changelog}
 
-            **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}  " \
+          **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}  " \
             -o "Vidalnt" \
             -r "Applio" \
             -w /home/runner/work/Applio/Applio \
@@ -193,7 +186,7 @@ jobs:
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Trigger Pre-Compiled and Upload workflow
+      - name: Trigger Pre-Compiled
         if: steps.check-version.outputs.tag
         uses: actions/github-script@v6
         with:
