@@ -340,6 +340,21 @@ def run_tts_script(
         f0_file=f0_file,
         embedder_model=embedder_model,
         embedder_model_custom=embedder_model_custom,
+        formant_shifting=None,
+        formant_qfrency=None,
+        formant_timbre=None,
+        post_process=None,
+        reverb=None,
+        pitch_shift=None,
+        limiter=None,
+        gain=None,
+        distortion=None,
+        chorus=None,
+        bitcrush=None,
+        clipping=None,
+        compressor=None,
+        delay=None,
+        sliders=None,
     )
 
     return f"Text {tts_text} synthesized successfully.", output_rvc_path.replace(
