@@ -304,5 +304,5 @@
   "Move files to custom embedder folder": "Move files to custom embedder folder",
   "model information": "model information",
   "Model Creator": "Model Creator",
-  "Name of the model creator.": "Name of the model creator."
+  "Name of the model creator. (Default: Unknown)": "Name of the model creator. (Default: Unknown)"
 }

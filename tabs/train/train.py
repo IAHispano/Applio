@@ -313,7 +313,7 @@ def train_tab():
         )
         model_creator = gr.Dropdown(
             label=i18n("Model Creator"),
-            info=i18n("Name of the model creator."),
+            info=i18n("Name of the model creator. (Default: Unknown)"),
             value=None,
             interactive=True,
             visible=True,
