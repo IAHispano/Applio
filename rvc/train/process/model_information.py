@@ -18,7 +18,7 @@ def model_information(path):
     print(f"Loaded model from {path}")
 
     model_name = model_data.get("model_name", "None")
-    model_creator = model_data.get("model_creator", "None")
+    model_creator = model_data.get("author", "None")
     epochs = model_data.get("epoch", "None")
     steps = model_data.get("step", "None")
     sr = model_data.get("sr", "None")
