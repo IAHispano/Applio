@@ -443,6 +443,7 @@ def run_train_script(
     custom_pretrained: bool = False,
     g_pretrained_path: str = None,
     d_pretrained_path: str = None,
+    model_creator: str = None,
 ):
 
     if pretrained == True:
@@ -484,6 +485,7 @@ def run_train_script(
                 overtraining_detector,
                 overtraining_threshold,
                 sync_graph,
+                model_creator,
             ],
         ),
     ]
@@ -526,6 +528,7 @@ def run_model_extract_script(
 # Model information
 def run_model_information_script(pth_path: str):
     print(model_information(pth_path))
+    return model_information(pth_path)
 
 
 # Model blender
@@ -1352,6 +1355,12 @@ def parse_arguments():
         default=False,
     )
     train_parser.add_argument(
+        "--model_creator",
+        type=str,
+        help="Model creator name.",
+        default=None,
+    )
+    train_parser.add_argument(
         "--cache_data_in_gpu",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
@@ -1655,6 +1664,7 @@ def main():
                 pretrained=args.pretrained,
                 custom_pretrained=args.custom_pretrained,
                 sync_graph=args.sync_graph,
+                model_creator=args.model_creator,
                 index_algorithm=args.index_algorithm,
                 cache_data_in_gpu=args.cache_data_in_gpu,
                 g_pretrained_path=args.g_pretrained_path,

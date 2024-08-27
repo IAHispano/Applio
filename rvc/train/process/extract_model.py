@@ -18,7 +18,20 @@ def replace_keys_in_dict(d, old_key_part, new_key_part):
     return updated_dict
 
 
-def extract_model(ckpt, sr, pitch_guidance, name, model_dir, epoch, step, version, hps):
+def extract_model(
+    ckpt,
+    sr,
+    pitch_guidance,
+    name,
+    model_dir,
+    epoch,
+    step,
+    version,
+    hps,
+    model_creator,
+    overtrain_info,
+    dataset_lenght,
+):
     try:
         print(f"Saved model '{model_dir}' (epoch {epoch} and step {step})")
 
@@ -70,6 +83,10 @@ def extract_model(ckpt, sr, pitch_guidance, name, model_dir, epoch, step, versio
         hash_input = f"{str(ckpt)} {epoch} {step} {datetime.datetime.now().isoformat()}"
         model_hash = hashlib.sha256(hash_input.encode()).hexdigest()
         opt["model_hash"] = model_hash
+        opt["model_name"] = name
+        opt["model_creator"] = model_creator
+        opt["overtrain_info"] = overtrain_info
+        opt["dataset_lenght"] = dataset_lenght
 
         torch.save(opt, os.path.join(model_dir_path, pth_file))
 

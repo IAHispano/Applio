@@ -21,12 +21,11 @@ def extra_tab():
             "This section contains some extra utilities that often may be in experimental phases."
         )
     )
+    with gr.TabItem(i18n("Model information")):
+        processing_tab()
 
     with gr.TabItem(i18n("F0 Curve")):
         f0_extractor_tab()
-
-    with gr.TabItem(i18n("Processing")):
-        processing_tab()
 
     with gr.TabItem(i18n("Audio Analyzer")):
         analyzer_tab()

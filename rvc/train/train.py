@@ -28,6 +28,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
 import torch.multiprocessing as mp
+from pydub import AudioSegment
 
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
@@ -72,10 +73,12 @@ cache_data_in_gpu = strtobool(sys.argv[13])
 overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
 sync_graph = strtobool(sys.argv[16])
+model_creator = sys.argv[17]
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
 config_save_path = os.path.join(experiment_dir, "config.json")
+dataset_path = os.path.join(experiment_dir, "sliced_audios")
 
 with open(config_save_path, "r") as f:
     config = json.load(f)
@@ -97,6 +100,8 @@ loss_disc_history = []
 smoothed_loss_disc_history = []
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 training_file_path = os.path.join(experiment_dir, "training_data.json")
+dataset_duration = 0
+overtrain_info = None
 
 import logging
 
@@ -122,6 +127,24 @@ class EpochRecorder:
         elapsed_time_str = str(datetime.timedelta(seconds=int(elapsed_time)))
         current_time = datetime.datetime.now().strftime("%H:%M:%S")
         return f"time={current_time} | training_speed={elapsed_time_str}"
+
+
+def ms_to_min_sec(ms):
+    seconds = ms // 1000
+    minutes = seconds // 60
+    seconds = seconds % 60
+    return f"{minutes}:{seconds:02}"
+
+
+def get_audio_durations(dataset_path):
+    durations = []
+    for filename in os.listdir(dataset_path):
+        if filename.endswith(".wav"):  # Assumindo que os arquivos de áudio são .wav
+            audio_path = os.path.join(dataset_path, filename)
+            audio = AudioSegment.from_wav(audio_path)
+            duration_ms = len(audio)
+            durations.append(ms_to_min_sec(duration_ms))
+    return durations
 
 
 def main():
@@ -202,6 +225,8 @@ def main():
     if n_gpus < 1:
         print("GPU not detected, reverting to CPU (not recommended)")
         n_gpus = 1
+
+    dataset_duration = get_audio_durations(dataset_path)
 
     if sync_graph == True:
         print(
@@ -821,6 +846,9 @@ def train_and_evaluate(
                 step=global_step,
                 version=version,
                 hps=hps,
+                model_creator=model_creator,
+                overtrain_info=overtrain_info,
+                dataset_lenght=dataset_duration,
             )
 
     def check_overtraining(smoothed_loss_history, threshold, epsilon=0.004):
@@ -917,6 +945,8 @@ def train_and_evaluate(
             consecutive_increases_gen += 1
         else:
             consecutive_increases_gen = 0
+
+        overtrain_info = f"Smoothed loss_g {smoothed_value_gen:.3f} and loss_d {smoothed_value_disc:.3f}"
         # Save the data in the JSON file if the epoch is divisible by save_every_epoch
         if epoch % save_every_epoch == 0:
             save_to_json(
@@ -965,6 +995,9 @@ def train_and_evaluate(
                 step=global_step,
                 version=version,
                 hps=hps,
+                model_creator=model_creator,
+                overtrain_info=overtrain_info,
+                dataset_lenght=dataset_duration,
             )
 
     # Print training progress
@@ -1025,6 +1058,9 @@ def train_and_evaluate(
                 step=global_step,
                 version=version,
                 hps=hps,
+                model_creator=model_creator,
+                overtrain_info=overtrain_info,
+                dataset_lenght=dataset_duration,
             )
         sleep(1)
         os._exit(2333333)
