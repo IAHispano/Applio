@@ -32,7 +32,7 @@ jobs:
         id: get-version
         run: |
           $version = (Get-Content -Path './assets/config.json' | ConvertFrom-Json).version
-          echo "::set-output name=version::$version"
+          echo "version=$version" >> $GITHUB_OUTPUT
       
       - name: Create ZIP file
         run: |
@@ -43,6 +43,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          $version = '${{ steps.get-version.outputs.version }}'
           .\env\python.exe -c "
           import os
           from huggingface_hub import login, upload_file
