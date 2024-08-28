@@ -42,13 +42,14 @@ jobs:
       - name: Upload to Hugging Face Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          version: ${{ steps.get-version.outputs.version }}
         run: |
-          $version = '${{ steps.get-version.outputs.version }}'
           .\env\python.exe -c "
           import os
           from huggingface_hub import login, upload_file
           
           token = os.getenv('HF_TOKEN')
+          version = os.getenv('version')
           login(token)
           repo_id = 'IAHispano/Applio'
           repo_file_path = f'D:/a/Applio/ApplioV{version}.zip'
