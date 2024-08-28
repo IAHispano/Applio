@@ -98,7 +98,6 @@ loss_disc_history = []
 smoothed_loss_disc_history = []
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 training_file_path = os.path.join(experiment_dir, "training_data.json")
-dataset_duration = None
 overtrain_info = None
 
 import logging
@@ -131,7 +130,7 @@ def main():
     """
     Main function to start the training process.
     """
-    global training_file_path, last_loss_gen_all, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch, dataset_duration
+    global training_file_path, last_loss_gen_all, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
 
