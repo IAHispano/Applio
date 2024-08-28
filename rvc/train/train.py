@@ -206,14 +206,17 @@ def main():
     if n_gpus < 1:
         print("GPU not detected, reverting to CPU (not recommended)")
         n_gpus = 1
+    if os.path.exists(os.path.join(experiment_dir, "model_info.json")):
+        with open(os.path.join(experiment_dir, "model_info.json"), "r") as f:
+            data = json.load(f)
+            model_creator = data.get("model_creator", "Unknown")
+            dataset_duration = data.get("total_dataset_duration", None)
 
-    with open(os.path.join(experiment_dir, "model_info.json"), "r") as f:
-        data = json.load(f)
-        model_creator = data.get("model_creator", "Unknown")
-        dataset_duration = data.get("total_dataset_duration", None)
-
-        if model_creator == "":
-            model_creator = "Unknown"
+            if model_creator == "":
+                model_creator = "Unknown"
+    else:
+        model_creator = "Unknown"
+        dataset_duration = None
 
     if sync_graph == True:
         print(
