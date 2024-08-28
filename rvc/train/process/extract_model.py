@@ -1,8 +1,12 @@
-import os
+import os, sys
 import torch
 import hashlib
 import datetime
 from collections import OrderedDict
+import json
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 
 
 def replace_keys_in_dict(d, old_key_part, new_key_part):
@@ -29,7 +33,6 @@ def extract_model(
     version,
     hps,
     overtrain_info,
-    dataset_lenght,
 ):
     try:
         print(f"Saved model '{model_dir}' (epoch {epoch} and step {step})")
@@ -45,6 +48,18 @@ def extract_model(
         pth_file_old_version_path = os.path.join(
             model_dir_path, f"{pth_file}_old_version.pth"
         )
+
+        model_dir_path = os.path.dirname(model_dir)
+        if os.path.exists(os.path.join(model_dir_path, "model_info.json")):
+            with open(os.path.join(model_dir_path, "model_info.json"), "r") as f:
+                data = json.load(f)
+                dataset_lenght = data.get("total_dataset_duration", None)
+        else:
+            dataset_lenght = None
+
+        with open(os.path.join(now_dir, "assets", "config.json"), "w") as f:
+            data = json.load(f)
+            model_author = data.get("model_author", None)
 
         opt = OrderedDict(
             weight={
@@ -84,6 +99,8 @@ def extract_model(
         opt["model_hash"] = model_hash
         opt["overtrain_info"] = overtrain_info
         opt["dataset_lenght"] = dataset_lenght
+        opt["model_name"] = name
+        opt["author"] = model_author
 
         torch.save(opt, os.path.join(model_dir_path, pth_file))
 

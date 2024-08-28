@@ -140,8 +140,8 @@ def main():
         Starts the training process with multi-GPU support.
         """
         children = []
-        pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
-        with open(pid_file_path, "w") as pid_file:
+        pid_data = {"process_pids": []}
+        with open(config_save_path, "w") as pid_file:
             for i in range(n_gpus):
                 subproc = mp.Process(
                     target=run,
@@ -159,7 +159,8 @@ def main():
                 )
                 children.append(subproc)
                 subproc.start()
-                pid_file.write(str(subproc.pid) + "\n")
+                pid_data["process_pids"].append(subproc.pid)
+            json.dump(pid_data, pid_file, indent=4)
 
         for i in range(n_gpus):
             children[i].join()
@@ -205,12 +206,6 @@ def main():
     if n_gpus < 1:
         print("GPU not detected, reverting to CPU (not recommended)")
         n_gpus = 1
-    if os.path.exists(os.path.join(experiment_dir, "model_info.json")):
-        with open(os.path.join(experiment_dir, "model_info.json"), "r") as f:
-            data = json.load(f)
-            dataset_duration = data.get("total_dataset_duration", None)
-    else:
-        dataset_duration = None
 
     if sync_graph == True:
         print(
@@ -833,7 +828,6 @@ def train_and_evaluate(
                 version=version,
                 hps=hps,
                 overtrain_info=overtrain_info,
-                dataset_lenght=dataset_duration,
             )
 
     def check_overtraining(smoothed_loss_history, threshold, epsilon=0.004):
@@ -982,7 +976,6 @@ def train_and_evaluate(
                 version=version,
                 hps=hps,
                 overtrain_info=overtrain_info,
-                dataset_lenght=dataset_duration,
             )
 
     # Print training progress
@@ -1045,7 +1038,6 @@ def train_and_evaluate(
                 version=version,
                 hps=hps,
                 overtrain_info=overtrain_info,
-                dataset_lenght=dataset_duration,
             )
         sleep(1)
         os._exit(2333333)

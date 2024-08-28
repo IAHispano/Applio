@@ -584,6 +584,19 @@ def run_audio_analyzer_script(
     return audio_info, plot_path
 
 
+def run_model_author_script(model_author: str):
+    with open(os.path.join(now_dir, "assets", "config.json"), "r") as f:
+        config = json.load(f)
+
+    config["model_author"] = model_author
+
+    with open(os.path.join(now_dir, "assets", "config.json"), "w") as f:
+        json.dump(config, f, indent=4)
+
+    print(f"Model author set to {model_author}.")
+    return f"Model author set to {model_author}."
+
+
 # API
 def run_api_script(ip: str, port: int):
     command = [
