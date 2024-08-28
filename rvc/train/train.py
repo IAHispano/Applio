@@ -28,7 +28,6 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
 import torch.multiprocessing as mp
-from pydub import AudioSegment
 
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
@@ -73,7 +72,6 @@ cache_data_in_gpu = strtobool(sys.argv[13])
 overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
 sync_graph = strtobool(sys.argv[16])
-model_creator = sys.argv[17]
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -100,7 +98,6 @@ loss_disc_history = []
 smoothed_loss_disc_history = []
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 training_file_path = os.path.join(experiment_dir, "training_data.json")
-dataset_duration = 0
 overtrain_info = None
 
 import logging
@@ -129,24 +126,6 @@ class EpochRecorder:
         return f"time={current_time} | training_speed={elapsed_time_str}"
 
 
-def ms_to_min_sec(ms):
-    seconds = ms // 1000
-    minutes = seconds // 60
-    seconds = seconds % 60
-    return f"{minutes}:{seconds:02}"
-
-
-def get_audio_durations(dataset_path):
-    durations = []
-    for filename in os.listdir(dataset_path):
-        if filename.endswith(".wav"):  # Assumindo que os arquivos de áudio são .wav
-            audio_path = os.path.join(dataset_path, filename)
-            audio = AudioSegment.from_wav(audio_path)
-            duration_ms = len(audio)
-            durations.append(ms_to_min_sec(duration_ms))
-    return durations
-
-
 def main():
     """
     Main function to start the training process.
@@ -160,8 +139,14 @@ def main():
         Starts the training process with multi-GPU support.
         """
         children = []
-        pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
-        with open(pid_file_path, "w") as pid_file:
+        pid_data = {"process_pids": []}
+        with open(config_save_path, "r") as pid_file:
+            try:
+                existing_data = json.load(pid_file)
+                pid_data.update(existing_data)
+            except json.JSONDecodeError:
+                pass
+        with open(config_save_path, "w") as pid_file:
             for i in range(n_gpus):
                 subproc = mp.Process(
                     target=run,
@@ -179,7 +164,8 @@ def main():
                 )
                 children.append(subproc)
                 subproc.start()
-                pid_file.write(str(subproc.pid) + "\n")
+                pid_data["process_pids"].append(subproc.pid)
+            json.dump(pid_data, pid_file, indent=4)
 
         for i in range(n_gpus):
             children[i].join()
@@ -225,8 +211,6 @@ def main():
     if n_gpus < 1:
         print("GPU not detected, reverting to CPU (not recommended)")
         n_gpus = 1
-
-    dataset_duration = get_audio_durations(dataset_path)
 
     if sync_graph == True:
         print(
@@ -833,6 +817,8 @@ def train_and_evaluate(
                 ckpt = net_g.module.state_dict()
             else:
                 ckpt = net_g.state_dict()
+            if overtraining_detector != True:
+                overtrain_info = None
             extract_model(
                 ckpt=ckpt,
                 sr=sample_rate,
@@ -846,9 +832,7 @@ def train_and_evaluate(
                 step=global_step,
                 version=version,
                 hps=hps,
-                model_creator=model_creator,
                 overtrain_info=overtrain_info,
-                dataset_lenght=dataset_duration,
             )
 
     def check_overtraining(smoothed_loss_history, threshold, epsilon=0.004):
@@ -981,7 +965,8 @@ def train_and_evaluate(
                 ckpt = net_g.module.state_dict()
             else:
                 ckpt = net_g.state_dict()
-
+            if overtraining_detector != True:
+                overtrain_info = None
             extract_model(
                 ckpt=ckpt,
                 sr=sample_rate,
@@ -995,9 +980,7 @@ def train_and_evaluate(
                 step=global_step,
                 version=version,
                 hps=hps,
-                model_creator=model_creator,
                 overtrain_info=overtrain_info,
-                dataset_lenght=dataset_duration,
             )
 
     # Print training progress
@@ -1034,8 +1017,11 @@ def train_and_evaluate(
             f"Lowest generator loss: {lowest_value_rounded} at epoch {lowest_value['epoch']}, step {lowest_value['step']}"
         )
 
-        pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
-        os.remove(pid_file_path)
+        pid_file_path = os.path.join(experiment_dir, "config.json")
+        with open(pid_file_path, "w") as f:
+            pid_data = json.load(f)
+            pid_data.pop("process_pids", None)
+            json.dump(pid_data, f, indent=4)
 
         if not os.path.exists(
             os.path.join(experiment_dir, f"{model_name}_{epoch}e_{global_step}s.pth")
@@ -1044,7 +1030,8 @@ def train_and_evaluate(
                 ckpt = net_g.module.state_dict()
             else:
                 ckpt = net_g.state_dict()
-
+            if overtraining_detector != True:
+                overtrain_info = None
             extract_model(
                 ckpt=ckpt,
                 sr=sample_rate,
@@ -1058,9 +1045,7 @@ def train_and_evaluate(
                 step=global_step,
                 version=version,
                 hps=hps,
-                model_creator=model_creator,
                 overtrain_info=overtrain_info,
-                dataset_lenght=dataset_duration,
             )
         sleep(1)
         os._exit(2333333)

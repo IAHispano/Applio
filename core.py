@@ -390,7 +390,6 @@ def run_preprocess_script(
             ],
         ),
     ]
-    os.makedirs(os.path.join(logs_path, model_name), exist_ok=True)
     subprocess.run(command)
     return f"Model {model_name} preprocessed successfully."
 
@@ -458,7 +457,6 @@ def run_train_script(
     custom_pretrained: bool = False,
     g_pretrained_path: str = None,
     d_pretrained_path: str = None,
-    model_creator: str = None,
 ):
 
     if pretrained == True:
@@ -500,7 +498,6 @@ def run_train_script(
                 overtraining_detector,
                 overtraining_threshold,
                 sync_graph,
-                model_creator,
             ],
         ),
     ]
@@ -583,6 +580,19 @@ def run_audio_analyzer_script(
         f"Audio file {input_path} analyzed successfully. Plot saved at: {plot_path}",
     )
     return audio_info, plot_path
+
+
+def run_model_author_script(model_author: str):
+    with open(os.path.join(now_dir, "assets", "config.json"), "r") as f:
+        config = json.load(f)
+
+    config["model_author"] = model_author
+
+    with open(os.path.join(now_dir, "assets", "config.json"), "w") as f:
+        json.dump(config, f, indent=4)
+
+    print(f"Model author set to {model_author}.")
+    return f"Model author set to {model_author}."
 
 
 # API
@@ -1370,13 +1380,6 @@ def parse_arguments():
         default=False,
     )
     train_parser.add_argument(
-        "--model_creator",
-        type=str,
-        help="Model creator name.",
-        default=None,
-        required=False,
-    )
-    train_parser.add_argument(
         "--cache_data_in_gpu",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
@@ -1680,7 +1683,6 @@ def main():
                 pretrained=args.pretrained,
                 custom_pretrained=args.custom_pretrained,
                 sync_graph=args.sync_graph,
-                model_creator=args.model_creator,
                 index_algorithm=args.index_algorithm,
                 cache_data_in_gpu=args.cache_data_in_gpu,
                 g_pretrained_path=args.g_pretrained_path,

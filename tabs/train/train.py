@@ -311,14 +311,6 @@ def train_tab():
             interactive=True,
             allow_custom_value=True,
         )
-        model_creator = gr.Dropdown(
-            label=i18n("Model Creator"),
-            info=i18n("Name of the model creator. (Default: Unknown)"),
-            value=None,
-            interactive=True,
-            visible=True,
-            allow_custom_value=True,
-        )
         sampling_rate = gr.Radio(
             label=i18n("Sampling Rate"),
             info=i18n("The sampling rate of the audio files."),
@@ -760,7 +752,6 @@ def train_tab():
                     custom_pretrained,
                     g_pretrained_path,
                     d_pretrained_path,
-                    model_creator,
                 ],
                 outputs=[train_output_info],
                 api_name="start_training",
