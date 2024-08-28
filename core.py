@@ -374,7 +374,6 @@ def run_preprocess_script(
     config = get_config()
     per = 3.0 if config.is_half else 3.7
     preprocess_script_path = os.path.join("rvc", "train", "preprocess", "preprocess.py")
-    os.makedirs(os.path.join(logs_path, model_name), exist_ok=True)
     command = [
         python,
         preprocess_script_path,
@@ -391,7 +390,6 @@ def run_preprocess_script(
             ],
         ),
     ]
-    os.makedirs(os.path.join(logs_path, model_name), exist_ok=True)
     subprocess.run(command)
     return f"Model {model_name} preprocessed successfully."
 
