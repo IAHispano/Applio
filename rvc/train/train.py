@@ -1018,10 +1018,11 @@ def train_and_evaluate(
         )
 
         pid_file_path = os.path.join(experiment_dir, "config.json")
-        with open(pid_file_path, "w") as f:
-            pid_data = json.load(f)
+        with open(pid_file_path, "r") as pid_file:
+            pid_data = json.load(pid_file)
+        with open(pid_file_path, "w") as pid_file:
             pid_data.pop("process_pids", None)
-            json.dump(pid_data, f, indent=4)
+            json.dump(pid_data, pid_file, indent=4)
 
         if not os.path.exists(
             os.path.join(experiment_dir, f"{model_name}_{epoch}e_{global_step}s.pth")
