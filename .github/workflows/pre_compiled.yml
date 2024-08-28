@@ -28,11 +28,16 @@ jobs:
           Remove-Item -Path 'LICENSE', 'run-install.bat', 'requirements.txt', '.gitignore' -Force -ErrorAction SilentlyContinue
           Remove-Item -Path '.github' -Recurse -Force -ErrorAction SilentlyContinue
       
+      - name: Read version from config.json
+        id: get-version
+        run: |
+          $version = (Get-Content -Path './assets/config.json' | ConvertFrom-Json).version
+          echo "::set-output name=version::$version"
+      
       - name: Create ZIP file
         run: |
-          powershell -Command "
-          Compress-Archive -Path 'D:\a\Applio\Applio\*' -DestinationPath 'D:\a\Applio\Applio.zip'
-          "
+          $version = '${{ steps.get-version.outputs.version }}'
+          Compress-Archive -Path 'D:\a\Applio\Applio\*' -DestinationPath "D:\a\Applio\ApplioV$version.zip"
 
       - name: Upload to Hugging Face Hub
         env:
@@ -45,11 +50,11 @@ jobs:
           token = os.getenv('HF_TOKEN')
           login(token)
           repo_id = 'vidalnt/nothing'
-          repo_file_path = '../Applio.zip'
+          repo_file_path = f'D:/a/Applio/ApplioV{version}.zip'
           
           upload_file(
           path_or_fileobj=repo_file_path,
-          path_in_repo='Applio.zip',
+          path_in_repo=f'Compiled/ApplioV{version}.zip',
           repo_id=repo_id,
           token=token)
           "
