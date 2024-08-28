@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           .\run-install.bat
-          .\env\python.exe core.py prerequisites --models "True" --pretraineds_v2 "True" --exe "True"
+          .\env\python.exe core.py "prerequisites" --models "True" --pretraineds_v2 "True" --exe "True"
 
       - name: Clean up unnecessary files
         run: |
@@ -32,7 +32,7 @@ jobs:
         id: get-version
         run: |
           $version = (Get-Content -Path './assets/config.json' | ConvertFrom-Json).version
-          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "version=$version" >>$GITHUB_OUTPUT
       
       - name: Create ZIP file
         run: |
