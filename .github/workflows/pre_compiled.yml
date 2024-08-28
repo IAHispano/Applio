@@ -32,7 +32,7 @@ jobs:
         id: get-version
         run: |
           $version = (Get-Content -Path './assets/config.json' | ConvertFrom-Json).version
-          echo "version=$version" >>$GITHUB_OUTPUT
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       
       - name: Create ZIP file
         run: |
