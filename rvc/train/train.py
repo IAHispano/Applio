@@ -141,6 +141,12 @@ def main():
         """
         children = []
         pid_data = {"process_pids": []}
+        with open(config_save_path, "r") as pid_file:
+            try:
+                existing_data = json.load(pid_file)
+                pid_data.update(existing_data)
+            except json.JSONDecodeError:
+                pass
         with open(config_save_path, "w") as pid_file:
             for i in range(n_gpus):
                 subproc = mp.Process(
@@ -1012,8 +1018,11 @@ def train_and_evaluate(
             f"Lowest generator loss: {lowest_value_rounded} at epoch {lowest_value['epoch']}, step {lowest_value['step']}"
         )
 
-        pid_file_path = os.path.join(experiment_dir, "train_pid.txt")
-        os.remove(pid_file_path)
+        pid_file_path = os.path.join(experiment_dir, "config.json")
+        with open(pid_file_path, "w") as f:
+            pid_data = json.load(f)
+            pid_data.pop("process_pids", None)
+            json.dump(pid_data, f, indent=4)
 
         if not os.path.exists(
             os.path.join(experiment_dir, f"{model_name}_{epoch}e_{global_step}s.pth")
