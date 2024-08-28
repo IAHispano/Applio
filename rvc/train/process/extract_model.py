@@ -57,7 +57,7 @@ def extract_model(
         else:
             dataset_lenght = None
 
-        with open(os.path.join(now_dir, "assets", "config.json"), "w") as f:
+        with open(os.path.join(now_dir, "assets", "config.json"), "r") as f:
             data = json.load(f)
             model_author = data.get("model_author", None)
 
