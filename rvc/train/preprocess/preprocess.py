@@ -8,6 +8,7 @@ from scipy.io import wavfile
 import numpy as np
 import multiprocessing
 from pydub import AudioSegment
+import json
 from distutils.util import strtobool
 
 multiprocessing.set_start_method("spawn", force=True)
@@ -142,6 +143,36 @@ class PreProcess:
         self.process_audio(file_path, idx0, cut_preprocess, process_effects)
 
 
+def format_duration(seconds):
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    seconds = int(seconds % 60)
+    return f"{hours:02}:{minutes:02}:{seconds:02}"
+
+
+def save_dataset_duration(file_path, dataset_duration=0):
+    try:
+        with open(file_path, "r") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = {}
+
+    formatted_duration = format_duration(dataset_duration)
+    new_data = {
+        "total_dataset_duration": formatted_duration,
+        "total_seconds": dataset_duration,
+    }
+    data.update(new_data)
+
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=4)
+
+
+def get_audio_duration(file_path):
+    audio = AudioSegment.from_file(file_path)
+    return len(audio) / 1000.0
+
+
 def process_file(args):
     pp, file, cut_preprocess, process_effects = args
     pp.process_audio_file(file, cut_preprocess, process_effects)
@@ -166,14 +197,16 @@ def preprocess_training_set(
         for idx, f in enumerate(os.listdir(input_root))
         if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg"))
     ]
-
+    file_paths = [file[0] for file in files]
     ctx = multiprocessing.get_context("spawn")
     with ctx.Pool(processes=num_processes) as pool:
         pool.map(
             process_file,
             [(pp, file, cut_preprocess, process_effects) for file in files],
         )
-
+        durations = pool.map(get_audio_duration, file_paths)
+    total_duration = sum(durations)
+    save_dataset_duration(os.path.join(exp_dir, "model_info.json"), total_duration)
     elapsed_time = time.time() - start_time
     print(f"Preprocess completed in {elapsed_time:.2f} seconds.")
 

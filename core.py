@@ -370,10 +370,19 @@ def run_preprocess_script(
     cpu_cores: int,
     cut_preprocess: bool,
     process_effects: bool,
+    model_creator: str = None,
 ):
     config = get_config()
     per = 3.0 if config.is_half else 3.7
     preprocess_script_path = os.path.join("rvc", "train", "preprocess", "preprocess.py")
+    os.makedirs(os.path.join(logs_path, model_name), exist_ok=True)
+    with open(os.path.join(logs_path, model_name, "model_info.json"), "w") as f:
+        data = {"model_creator": model_creator}
+        json.dump(
+            data,
+            f,
+            indent=4,
+        )
     command = [
         python,
         preprocess_script_path,
@@ -458,7 +467,6 @@ def run_train_script(
     custom_pretrained: bool = False,
     g_pretrained_path: str = None,
     d_pretrained_path: str = None,
-    model_creator: str = None,
 ):
 
     if pretrained == True:
@@ -500,7 +508,6 @@ def run_train_script(
                 overtraining_detector,
                 overtraining_threshold,
                 sync_graph,
-                model_creator,
             ],
         ),
     ]
@@ -1173,6 +1180,13 @@ def parse_arguments():
         default=False,
         required=False,
     )
+    preprocess_parser.add_argument(
+        "--model_creator",
+        type=str,
+        help="Model creator name.",
+        default=None,
+        required=False,
+    )
 
     # Parser for 'extract' mode
     extract_parser = subparsers.add_parser(
@@ -1368,13 +1382,6 @@ def parse_arguments():
         choices=[True, False],
         help="Enable graph synchronization for distributed training.",
         default=False,
-    )
-    train_parser.add_argument(
-        "--model_creator",
-        type=str,
-        help="Model creator name.",
-        default=None,
-        required=False,
     )
     train_parser.add_argument(
         "--cache_data_in_gpu",
@@ -1649,6 +1656,7 @@ def main():
                 cpu_cores=args.cpu_cores,
                 cut_preprocess=args.cut_preprocess,
                 process_effects=args.process_effects,
+                model_creator=args.model_creator,
             )
         elif args.mode == "extract":
             run_extract_script(
@@ -1680,7 +1688,6 @@ def main():
                 pretrained=args.pretrained,
                 custom_pretrained=args.custom_pretrained,
                 sync_graph=args.sync_graph,
-                model_creator=args.model_creator,
                 index_algorithm=args.index_algorithm,
                 cache_data_in_gpu=args.cache_data_in_gpu,
                 g_pretrained_path=args.g_pretrained_path,

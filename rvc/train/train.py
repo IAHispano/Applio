@@ -28,7 +28,6 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torch.distributed as dist
 import torch.multiprocessing as mp
-from pydub import AudioSegment
 
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
@@ -73,7 +72,6 @@ cache_data_in_gpu = strtobool(sys.argv[13])
 overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
 sync_graph = strtobool(sys.argv[16])
-model_creator = sys.argv[17]
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -100,8 +98,9 @@ loss_disc_history = []
 smoothed_loss_disc_history = []
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 training_file_path = os.path.join(experiment_dir, "training_data.json")
-dataset_duration = 0
+dataset_duration = None
 overtrain_info = None
+model_creator = None
 
 import logging
 
@@ -129,29 +128,11 @@ class EpochRecorder:
         return f"time={current_time} | training_speed={elapsed_time_str}"
 
 
-def ms_to_min_sec(ms):
-    seconds = ms // 1000
-    minutes = seconds // 60
-    seconds = seconds % 60
-    return f"{minutes}:{seconds:02}"
-
-
-def get_audio_durations(dataset_path):
-    durations = []
-    for filename in os.listdir(dataset_path):
-        if filename.endswith(".wav"):  # Assumindo que os arquivos de áudio são .wav
-            audio_path = os.path.join(dataset_path, filename)
-            audio = AudioSegment.from_wav(audio_path)
-            duration_ms = len(audio)
-            durations.append(ms_to_min_sec(duration_ms))
-    return durations
-
-
 def main():
     """
     Main function to start the training process.
     """
-    global training_file_path, last_loss_gen_all, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch
+    global training_file_path, last_loss_gen_all, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch, dataset_duration, model_creator
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
 
@@ -226,7 +207,13 @@ def main():
         print("GPU not detected, reverting to CPU (not recommended)")
         n_gpus = 1
 
-    dataset_duration = get_audio_durations(dataset_path)
+    with open(os.path.join(experiment_dir, "model_info.json"), "r") as f:
+        data = json.load(f)
+        model_creator = data.get("model_creator", "Unknown")
+        dataset_duration = data.get("total_dataset_duration", None)
+
+        if model_creator == "":
+            model_creator = "Unknown"
 
     if sync_graph == True:
         print(
@@ -833,6 +820,8 @@ def train_and_evaluate(
                 ckpt = net_g.module.state_dict()
             else:
                 ckpt = net_g.state_dict()
+            if overtraining_detector != True:
+                overtrain_info = None
             extract_model(
                 ckpt=ckpt,
                 sr=sample_rate,
@@ -981,7 +970,8 @@ def train_and_evaluate(
                 ckpt = net_g.module.state_dict()
             else:
                 ckpt = net_g.state_dict()
-
+            if overtraining_detector != True:
+                overtrain_info = None
             extract_model(
                 ckpt=ckpt,
                 sr=sample_rate,
@@ -1044,7 +1034,8 @@ def train_and_evaluate(
                 ckpt = net_g.module.state_dict()
             else:
                 ckpt = net_g.state_dict()
-
+            if overtraining_detector != True:
+                overtrain_info = None
             extract_model(
                 ckpt=ckpt,
                 sr=sample_rate,
