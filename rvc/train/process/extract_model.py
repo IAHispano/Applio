@@ -28,7 +28,6 @@ def extract_model(
     step,
     version,
     hps,
-    model_creator,
     overtrain_info,
     dataset_lenght,
 ):
@@ -83,10 +82,6 @@ def extract_model(
         hash_input = f"{str(ckpt)} {epoch} {step} {datetime.datetime.now().isoformat()}"
         model_hash = hashlib.sha256(hash_input.encode()).hexdigest()
         opt["model_hash"] = model_hash
-        opt["model_name"] = name
-        if model_creator is None:
-            model_creator = "Unknown"
-        opt["author"] = model_creator
         opt["overtrain_info"] = overtrain_info
         opt["dataset_lenght"] = dataset_lenght
 

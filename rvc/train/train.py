@@ -100,7 +100,6 @@ lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 training_file_path = os.path.join(experiment_dir, "training_data.json")
 dataset_duration = None
 overtrain_info = None
-model_creator = None
 
 import logging
 
@@ -132,7 +131,7 @@ def main():
     """
     Main function to start the training process.
     """
-    global training_file_path, last_loss_gen_all, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch, dataset_duration, model_creator
+    global training_file_path, last_loss_gen_all, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch, dataset_duration
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
 
@@ -209,13 +208,8 @@ def main():
     if os.path.exists(os.path.join(experiment_dir, "model_info.json")):
         with open(os.path.join(experiment_dir, "model_info.json"), "r") as f:
             data = json.load(f)
-            model_creator = data.get("model_creator", "Unknown")
             dataset_duration = data.get("total_dataset_duration", None)
-
-            if model_creator == "":
-                model_creator = "Unknown"
     else:
-        model_creator = "Unknown"
         dataset_duration = None
 
     if sync_graph == True:
@@ -838,7 +832,6 @@ def train_and_evaluate(
                 step=global_step,
                 version=version,
                 hps=hps,
-                model_creator=model_creator,
                 overtrain_info=overtrain_info,
                 dataset_lenght=dataset_duration,
             )
@@ -988,7 +981,6 @@ def train_and_evaluate(
                 step=global_step,
                 version=version,
                 hps=hps,
-                model_creator=model_creator,
                 overtrain_info=overtrain_info,
                 dataset_lenght=dataset_duration,
             )
@@ -1052,7 +1044,6 @@ def train_and_evaluate(
                 step=global_step,
                 version=version,
                 hps=hps,
-                model_creator=model_creator,
                 overtrain_info=overtrain_info,
                 dataset_lenght=dataset_duration,
             )

@@ -18,7 +18,6 @@ def model_information(path):
     print(f"Loaded model from {path}")
 
     model_name = model_data.get("model_name", "None")
-    model_creator = model_data.get("author", "None")
     epochs = model_data.get("epoch", "None")
     steps = model_data.get("step", "None")
     sr = model_data.get("sr", "None")
@@ -35,7 +34,6 @@ def model_information(path):
 
     return (
         f"Model Name: {model_name}\n"
-        f"Model Creator: {model_creator}\n"
         f"Epochs: {epochs}\n"
         f"Steps: {steps}\n"
         f"RVC Version: {version}\n"
@@ -43,6 +41,6 @@ def model_information(path):
         f"Pitch Guidance: {pitch_guidance}\n"
         f"Dataset Length: {dataset_lenght}\n"
         f"Creation Date: {creation_date_str}\n"
-        f"Hash (ID): {model_hash}"
+        f"Hash (ID): {model_hash}\n"
         f"Overtrain Info: {overtrain_info}"
     )
