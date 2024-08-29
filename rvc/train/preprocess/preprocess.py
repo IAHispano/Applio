@@ -99,8 +99,8 @@ class PreProcess:
         idx0: int,
         cut_preprocess: bool,
         process_effects: bool,
-        audio_length: float,
     ):
+        audio_length = 0
         try:
             audio = load_audio(path, self.sr)
             audio_length += librosa.get_duration(y=audio, sr=self.sr)
@@ -168,11 +168,9 @@ def save_dataset_duration(file_path, dataset_duration):
 
 
 def process_audio_wrapper(args):
-    pp, file, cut_preprocess, process_effects, audio_length = args
+    pp, file, cut_preprocess, process_effects = args
     file_path, idx0 = file
-    return pp.process_audio(
-        file_path, idx0, cut_preprocess, process_effects, audio_length
-    )
+    return pp.process_audio(file_path, idx0, cut_preprocess, process_effects)
 
 
 def preprocess_training_set(
@@ -185,7 +183,6 @@ def preprocess_training_set(
     process_effects: bool,
 ):
     start_time = time.time()
-    audio_length = 0
     pp = PreProcess(sr, exp_dir, per)
     print(f"Starting preprocess with {num_processes} processes...")
 
@@ -198,10 +195,7 @@ def preprocess_training_set(
     with ctx.Pool(processes=num_processes) as pool:
         audio_length = pool.map(
             process_audio_wrapper,
-            [
-                (pp, file, cut_preprocess, process_effects, audio_length)
-                for file in files
-            ],
+            [(pp, file, cut_preprocess, process_effects) for file in files],
         )
     audio_length = sum(audio_length)
     save_dataset_duration(
