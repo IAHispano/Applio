@@ -10,6 +10,7 @@ import multiprocessing
 from pydub import AudioSegment
 import json
 from distutils.util import strtobool
+import librosa
 
 multiprocessing.set_start_method("spawn", force=True)
 
@@ -93,10 +94,16 @@ class PreProcess:
         self._write_audio(audio_16k, wav_16k_path, SAMPLE_RATE_16K)
 
     def process_audio(
-        self, path: str, idx0: int, cut_preprocess: bool, process_effects: bool
+        self,
+        path: str,
+        idx0: int,
+        cut_preprocess: bool,
+        process_effects: bool,
+        audio_length: float,
     ):
         try:
             audio = load_audio(path, self.sr)
+            audio_length += librosa.get_duration(y=audio, sr=self.sr)
             if process_effects == False:
                 audio = torch.tensor(audio, device=self.device).float()
             else:
@@ -130,17 +137,9 @@ class PreProcess:
                             break
             else:
                 self.process_audio_segment(audio, idx0, idx1, process_effects)
+            return audio_length
         except Exception as error:
             print(f"An error occurred on {path} path: {error}")
-
-    def process_audio_file(self, file_path_idx, cut_preprocess, process_effects):
-        file_path, idx0 = file_path_idx
-        ext = os.path.splitext(file_path)[1].lower()
-        if ext not in [".wav"]:
-            audio = AudioSegment.from_file(file_path)
-            file_path = os.path.join("/tmp", f"{idx0}.wav")
-            audio.export(file_path, format="wav")
-        self.process_audio(file_path, idx0, cut_preprocess, process_effects)
 
 
 def format_duration(seconds):
@@ -150,7 +149,7 @@ def format_duration(seconds):
     return f"{hours:02}:{minutes:02}:{seconds:02}"
 
 
-def save_dataset_duration(file_path, dataset_duration=0):
+def save_dataset_duration(file_path, dataset_duration):
     try:
         with open(file_path, "r") as f:
             data = json.load(f)
@@ -168,14 +167,12 @@ def save_dataset_duration(file_path, dataset_duration=0):
         json.dump(data, f, indent=4)
 
 
-def get_audio_duration(file_path):
-    audio = AudioSegment.from_file(file_path)
-    return len(audio) / 1000.0
-
-
-def process_file(args):
-    pp, file, cut_preprocess, process_effects = args
-    pp.process_audio_file(file, cut_preprocess, process_effects)
+def process_audio_wrapper(args):
+    pp, file, cut_preprocess, process_effects, audio_length = args
+    file_path, idx0 = file
+    return pp.process_audio(
+        file_path, idx0, cut_preprocess, process_effects, audio_length
+    )
 
 
 def preprocess_training_set(
@@ -188,7 +185,7 @@ def preprocess_training_set(
     process_effects: bool,
 ):
     start_time = time.time()
-
+    audio_length = 0
     pp = PreProcess(sr, exp_dir, per)
     print(f"Starting preprocess with {num_processes} processes...")
 
@@ -197,18 +194,23 @@ def preprocess_training_set(
         for idx, f in enumerate(os.listdir(input_root))
         if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg"))
     ]
-    file_paths = [file[0] for file in files]
     ctx = multiprocessing.get_context("spawn")
     with ctx.Pool(processes=num_processes) as pool:
-        pool.map(
-            process_file,
-            [(pp, file, cut_preprocess, process_effects) for file in files],
+        audio_length = pool.map(
+            process_audio_wrapper,
+            [
+                (pp, file, cut_preprocess, process_effects, audio_length)
+                for file in files
+            ],
         )
-        durations = pool.map(get_audio_duration, file_paths)
-    total_duration = sum(durations)
-    save_dataset_duration(os.path.join(exp_dir, "model_info.json"), total_duration)
+    audio_length = sum(audio_length)
+    save_dataset_duration(
+        os.path.join(exp_dir, "model_info.json"), dataset_duration=audio_length
+    )
     elapsed_time = time.time() - start_time
-    print(f"Preprocess completed in {elapsed_time:.2f} seconds.")
+    print(
+        f"Preprocess completed in {elapsed_time:.2f} seconds. Dataset duration: {format_duration(audio_length)}."
+    )
 
 
 if __name__ == "__main__":
