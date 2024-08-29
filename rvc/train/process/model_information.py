@@ -38,7 +38,7 @@ def model_information(path):
         f"Model Creator: {model_author}\n"
         f"Epochs: {epochs}\n"
         f"Steps: {steps}\n"
-        f"RVC Version: {version}\n"
+        f"Model Architecture: {version}\n"
         f"Sampling Rate: {sr}\n"
         f"Pitch Guidance: {pitch_guidance}\n"
         f"Dataset Length: {dataset_lenght}\n"

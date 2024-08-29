@@ -32,8 +32,8 @@
   "Enter dataset path": "Veri kümesi yolunu girin",
   "Sampling Rate": "Örnekleme Hızı",
   "The sampling rate of the audio files.": "Ses dosyalarının örnekleme hızı.",
-  "RVC Version": "RVC Sürümü",
-  "The RVC version of the model.": "Modelin RVC sürümü.",
+  "Model Architecture": "RVC Sürümü",
+  "Version of the model architecture.": "Modelin RVC sürümü.",
   "Preprocess Dataset": "Veri Kümesini İşlem Öncesinden Geçir",
 
   "Embedder Model": "Gömme Modeli",

@@ -30,8 +30,8 @@
     "Enter dataset path": "ഡാറ്റാസെറ്റ് പാത നൽകുക",
     "Sampling Rate": "സാമ്പ്ലിംഗ് റേറ്റ്",
     "The sampling rate of the audio files.": "ഓഡിയോ ഫയലുകളുടെ സാമ്പ്ലിംഗ് റേറ്റ്.",
-    "RVC Version": "RVC പതിപ്പ്",
-    "The RVC version of the model.": "മോഡലിന്റെ RVC പതിപ്പ്.",
+    "Model Architecture": "RVC പതിപ്പ്",
+    "Version of the model architecture.": "മോഡലിന്റെ RVC പതിപ്പ്.",
     "Preprocess Dataset": "ഡാറ്റാസെറ്റ് പ്രൊസെസ് ചെയ്യുക",
 
     "Embedder Model": "Embedder Model",

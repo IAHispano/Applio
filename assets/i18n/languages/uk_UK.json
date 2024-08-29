@@ -32,8 +32,8 @@
   "Enter dataset path": "Введіть шлях до датасету",
   "Sampling Rate": "Частота дискретизації",
   "The sampling rate of the audio files.": "Частота дискретизації аудіофайлів.",
-  "RVC Version": "Версія RVC",
-  "The RVC version of the model.": "Версія моделі RVC.",
+  "Model Architecture": "Версія RVC",
+  "Version of the model architecture.": "Версія моделі RVC.",
   "Preprocess Dataset": "Обробити датасет",
 
   "Embedder Model": "Модель розгортання",

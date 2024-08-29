@@ -17,7 +17,7 @@
   "Dataset Path": "数据集路径",
   "Enter dataset path": "输入数据集路径",
   "Sampling Rate": "采样率",
-  "RVC Version": "RVC 版本",
+  "Model Architecture": "RVC 版本",
   "Preprocess Dataset": "预处理数据集",
   "Extract": "提取",
   "Hop Length": "跳跃长度",

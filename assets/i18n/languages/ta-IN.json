@@ -30,8 +30,8 @@
     "Enter dataset path": "தரவுத்தொகுதி பாதையை உள்ளிடவும்",
     "Sampling Rate": "மாதிரி விகிதம்",
     "The sampling rate of the audio files.": "ஆடியோ கோப்புகளின் மாதிரி விகிதம்.",
-    "RVC Version": "RVC பதிப்பு",
-    "The RVC version of the model.": "மாதிரி RVC பதிப்பு.",
+    "Model Architecture": "RVC பதிப்பு",
+    "Version of the model architecture.": "மாதிரி RVC பதிப்பு.",
     "Preprocess Dataset": "முன்பாகவும் தரவுத்தொகுதி",
 
     "Embedder Model": "உள்ளீடு மாதிரி",
