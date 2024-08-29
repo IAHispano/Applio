@@ -4,6 +4,7 @@ import gradio as gr
 import pandas as pd
 import requests
 import wget
+import json
 from core import run_download_script
 
 from assets.i18n.i18n import I18nAuto
@@ -72,9 +73,29 @@ json_url = "https://huggingface.co/IAHispano/Applio/raw/main/pretrains.json"
 
 
 def fetch_pretrained_data():
-    response = requests.get(json_url)
-    response.raise_for_status()
-    return response.json()
+    pretraineds_custom_path = os.path.join(
+        "rvc", "models", "pretraineds", "pretraineds_custom"
+    )
+    os.makedirs(pretraineds_custom_path, exist_ok=True)
+    try:
+        with open(os.path.join(pretraineds_custom_path, json_url.split("/")[-1]), 'r') as f:
+            data=json.load(f)
+    except:
+        try:
+            response = requests.get(json_url)
+            response.raise_for_status()
+            data = response.json()
+            with open(os.path.join(pretraineds_custom_path, json_url.split("/")[-1]), 'w', encoding="utf-8") as f:
+                json.dump(
+                    data,
+                    f,
+                    indent=2,
+                    separators=(",", ": "),
+                    ensure_ascii=False,
+                )
+        except:
+            data = {"Titan": {"32k": {"D": "null", "G": "null"},},}
+    return data
 
 
 def get_pretrained_list():
