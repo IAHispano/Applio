@@ -78,14 +78,20 @@ def fetch_pretrained_data():
     )
     os.makedirs(pretraineds_custom_path, exist_ok=True)
     try:
-        with open(os.path.join(pretraineds_custom_path, json_url.split("/")[-1]), 'r') as f:
-            data=json.load(f)
+        with open(
+            os.path.join(pretraineds_custom_path, json_url.split("/")[-1]), "r"
+        ) as f:
+            data = json.load(f)
     except:
         try:
             response = requests.get(json_url)
             response.raise_for_status()
             data = response.json()
-            with open(os.path.join(pretraineds_custom_path, json_url.split("/")[-1]), 'w', encoding="utf-8") as f:
+            with open(
+                os.path.join(pretraineds_custom_path, json_url.split("/")[-1]),
+                "w",
+                encoding="utf-8",
+            ) as f:
                 json.dump(
                     data,
                     f,
@@ -94,7 +100,11 @@ def fetch_pretrained_data():
                     ensure_ascii=False,
                 )
         except:
-            data = {"Titan": {"32k": {"D": "null", "G": "null"},},}
+            data = {
+                "Titan": {
+                    "32k": {"D": "null", "G": "null"},
+                },
+            }
     return data
 
 
