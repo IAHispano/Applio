@@ -55,6 +55,7 @@ jobs:
           repo_file_path = f'D:/a/Applio/ApplioV{version}.zip'
           
           upload_file(
+          commit_message=f'{version}',
           path_or_fileobj=repo_file_path,
           path_in_repo=f'Compiled/ApplioV{version}.zip',
           repo_id=repo_id,
