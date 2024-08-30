@@ -190,7 +190,7 @@ def preprocess_training_set(
     )
     elapsed_time = time.time() - start_time
     print(
-        f"Preprocess completed in {elapsed_time:.2f} seconds. Dataset duration: {format_duration(audio_length)}."
+        f"Preprocess completed in {elapsed_time:.2f} seconds on {format_duration(total_audio_length)} seconds of audio."
     )
 
 
