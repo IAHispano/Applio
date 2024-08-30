@@ -107,4 +107,29 @@ jobs:
           print('Changed files:')
           for file in changed_files:
               print(file)
+          with tarfile.open('./CachedGen.tar.gz', 'w:gz') as new_tar:
+              for file in changed_files:
+                  # Compute the new path inside the tar
+                  new_path = os.path.join('usr/local/lib/python3.10/dist-packages', os.path.basename(file))
+                  new_tar.add(file, arcname=new_path)
+                  print(f'Added to tar with new path: {new_path}')
+          "
+      - name: Upload to Hugging Face Hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python -c "
+          import os
+          from huggingface_hub import login, upload_file
+            
+          token = os.getenv('HF_TOKEN')
+          login(token)
+          repo_id = 'vidalnt/nothing'
+          repo_file_path = 'CachedGen.tar.gz'
+            
+          upload_file(
+          path_or_fileobj=repo_file_path,
+          path_in_repo=f'Compiled/{repo_file_path}',
+          repo_id=repo_id,
+          token=token)
           "
