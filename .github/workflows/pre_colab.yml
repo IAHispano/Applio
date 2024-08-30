@@ -40,7 +40,7 @@ jobs:
           
       - name: Install pypresence
         run: |
-          pip install tensorboard tensorboardX
+          pip install tensorboard tensorboardX huggingface_hub
           
       - name: Scan and create new index
         run: |
