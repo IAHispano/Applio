@@ -40,7 +40,7 @@ jobs:
           
       - name: Install pypresence
         run: |
-          pip install tensorboard tensorboardX huggingface_hub
+          pip install -r requirements.txt
           
       - name: Scan and create new index
         run: |
@@ -106,8 +106,11 @@ jobs:
               for file in changed_files:
                   # Compute the new path inside the tar
                   relative_path = os.path.relpath(file, base_dir)
-                  if 'site-packages' in relative_path:
-                      relative_path = relative_path.replace('site-packages', 'dist-packages')
+                  if 'python3.10' in relative_path:
+                      if 'site-packages' not in relative_path:
+                          continue
+                      if 'site-packages' in relative_path:
+                          relative_path = relative_path.replace('site-packages', 'dist-packages')
                   new_path = os.path.join(arc_base_dir, relative_path)
                   new_tar.add(file, arcname=new_path)
                   print(f'Added to tar with new path: {new_path}')
