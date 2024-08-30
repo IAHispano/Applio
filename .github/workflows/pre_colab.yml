@@ -36,7 +36,7 @@ jobs:
                               print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
               print(f'Finished recording filesystem timestamps to {output_file}.')
           
-          scan_and_write(\"/usr/\", \"./usr_files.csv\")"
+          scan_and_write(\"/opt/\", \"./usr_files.csv\")"
           
       - name: Install pypresence
         run: |
@@ -60,7 +60,7 @@ jobs:
                               print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
               print(f'Finished recording filesystem timestamps to {output_file}.')
           
-          scan_and_write(\"/usr/\", \"./usr_files_new.csv\")"
+          scan_and_write(\"/opt/\", \"./usr_files_new.csv\")"
 
       - name: Display initial scan results
         run: |
