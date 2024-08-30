@@ -17,12 +17,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      
-      - name: Print Python executable path
-        run: |
-          which python
-          which python3
-  
 
       - name: Scan and create initial index
         run: |
@@ -46,7 +40,7 @@ jobs:
           
       - name: Install pypresence
         run: |
-          pip install huggingface_hub
+          pip install -r requirements.txt
           
       - name: Scan and create new index
         run: |
