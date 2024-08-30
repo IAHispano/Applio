@@ -42,7 +42,7 @@ jobs:
                               print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
               print(f'Finished recording filesystem timestamps to {output_file}.')
           
-          scan_and_write(\"/opt/pipx/venvs/ansible-core/lib/python3.10/site-packages\", \"./usr_files.csv\")"
+          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.14/x64/bin/python\", \"./usr_files.csv\")"
           
       - name: Install pypresence
         run: |
@@ -66,7 +66,7 @@ jobs:
                               print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
               print(f'Finished recording filesystem timestamps to {output_file}.')
           
-          scan_and_write(\"/opt/pipx/venvs/ansible-core/lib/python3.10/site-packages\", \"./usr_files_new.csv\")"
+          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.14/x64/bin/python\", \"./usr_files_new.csv\")"
           
       - name: Compare files and display changes
         run: |
