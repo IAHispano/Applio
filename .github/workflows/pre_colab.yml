@@ -67,6 +67,10 @@ jobs:
               print(f'Finished recording filesystem timestamps to {output_file}.')
           
           scan_and_write(\"/opt/hostedtoolcache/Python/3.10.14/x64/bin/python\", \"./usr_files_new.csv\")"
+
+      - name: Display initial scan results
+        run: |
+          cat ./usr_files_new.csv
           
       - name: Compare files and display changes
         run: |
