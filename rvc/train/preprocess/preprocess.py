@@ -1,13 +1,10 @@
 import os
 import sys
 import time
-import torchaudio
-import torch
 from scipy import signal
 from scipy.io import wavfile
 import numpy as np
 import multiprocessing
-from pydub import AudioSegment
 import json
 from distutils.util import strtobool
 import librosa
@@ -58,40 +55,37 @@ class PreProcess:
         os.makedirs(self.gt_wavs_dir, exist_ok=True)
         os.makedirs(self.wavs16k_dir, exist_ok=True)
 
-    def _normalize_audio(self, audio: torch.Tensor):
-        tmp_max = torch.abs(audio).max()
+    def _normalize_audio(self, audio: np.ndarray):
+        tmp_max = np.abs(audio).max()
         if tmp_max > 2.5:
             return None
         return (audio / tmp_max * (MAX_AMPLITUDE * ALPHA)) + (1 - ALPHA) * audio
 
-    def _write_audio(self, audio: torch.Tensor, filename: str, sr: int):
-        audio = audio.cpu().numpy()
-        wavfile.write(filename, sr, audio.astype(np.float32))
-
     def process_audio_segment(
         self,
-        audio_segment: torch.Tensor,
+        audio_segment: np.ndarray,
         idx0: int,
         idx1: int,
         process_effects: bool,
     ):
-        if process_effects == False:
-            normalized_audio = audio_segment
-        else:
-            normalized_audio = self._normalize_audio(audio_segment)
+        normalized_audio = (
+            self._normalize_audio(audio_segment) if process_effects else audio_segment
+        )
         if normalized_audio is None:
-            print(f"{idx0}-{idx1}-filtered")
             return
-
-        gt_wav_path = os.path.join(self.gt_wavs_dir, f"{idx0}_{idx1}.wav")
-        self._write_audio(normalized_audio, gt_wav_path, self.sr)
-
-        resampler = torchaudio.transforms.Resample(
-            orig_freq=self.sr, new_freq=SAMPLE_RATE_16K
-        ).to(self.device)
-        audio_16k = resampler(normalized_audio.float())
-        wav_16k_path = os.path.join(self.wavs16k_dir, f"{idx0}_{idx1}.wav")
-        self._write_audio(audio_16k, wav_16k_path, SAMPLE_RATE_16K)
+        wavfile.write(
+            os.path.join(self.gt_wavs_dir, f"{idx0}_{idx1}.wav"),
+            self.sr,
+            normalized_audio.astype(np.float32),
+        )
+        audio_16k = librosa.resample(
+            normalized_audio, orig_sr=self.sr, target_sr=SAMPLE_RATE_16K
+        )
+        wavfile.write(
+            os.path.join(self.wavs16k_dir, f"{idx0}_{idx1}.wav"),
+            SAMPLE_RATE_16K,
+            audio_16k.astype(np.float32),
+        )
 
     def process_audio(
         self,
@@ -103,19 +97,12 @@ class PreProcess:
         audio_length = 0
         try:
             audio = load_audio(path, self.sr)
-            audio_length += librosa.get_duration(y=audio, sr=self.sr)
-            if process_effects == False:
-                audio = torch.tensor(audio, device=self.device).float()
-            else:
-                audio = torch.tensor(
-                    signal.lfilter(self.b_high, self.a_high, audio), device=self.device
-                ).float()
+            audio_length = librosa.get_duration(y=audio, sr=self.sr)
+            if process_effects:
+                audio = signal.lfilter(self.b_high, self.a_high, audio)
             idx1 = 0
             if cut_preprocess:
-                for audio_segment in self.slicer.slice(audio.cpu().numpy()):
-                    audio_segment = torch.tensor(
-                        audio_segment, device=self.device
-                    ).float()
+                for audio_segment in self.slicer.slice(audio):
                     i = 0
                     while True:
                         start = int(self.sr * (self.per - OVERLAP) * i)
@@ -137,9 +124,9 @@ class PreProcess:
                             break
             else:
                 self.process_audio_segment(audio, idx0, idx1, process_effects)
-            return audio_length
-        except Exception as error:
-            print(f"An error occurred on {path} path: {error}")
+        except Exception as e:
+            print(f"Error processing audio: {e}")
+        return audio_length
 
 
 def format_duration(seconds):
