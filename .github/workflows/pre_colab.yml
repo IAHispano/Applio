@@ -75,6 +75,8 @@ jobs:
       - name: Compare files and display changes
         run: |
           python -c "
+          import tarfile
+          import os
           import csv
 
           def compare_files(old_file, new_file):
