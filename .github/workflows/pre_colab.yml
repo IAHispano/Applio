@@ -109,12 +109,14 @@ jobs:
           print('Changed files:')
           for file in changed_files:
               print(file)
-          base_dir = '/opt/hostedtoolcache/Python/3.10.14/x64/lib/'
-          arc_base_dir = 'usr/local/lib/'
+          base_dir = '/opt/hostedtoolcache/Python/3.10.14/x64/'
+          arc_base_dir = 'usr/local/'
           with tarfile.open('./CachedGen.tar.gz', 'w:gz') as new_tar:
               for file in changed_files:
                   # Compute the new path inside the tar
                   relative_path = os.path.relpath(file, base_dir)
+                  if 'site-packages' in relative_path:
+                      relative_path = relative_path.replace('site-packages', 'dist-packages')
                   new_path = os.path.join(arc_base_dir, relative_path)
                   new_tar.add(file, arcname=new_path)
                   print(f'Added to tar with new path: {new_path}')
