@@ -1,0 +1,67 @@
+name: Scan, Install, and Compare
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Scan and create initial index
+        run: |
+          python -c "
+          import csv
+          import os
+          def scan_and_write(base_path, output_file):
+              with open(output_file, 'w', newline='') as f:
+                  writer = csv.writer(f)
+                  for dirpath, dirs, files in os.walk(base_path):
+                      for filename in files:
+                          fname = os.path.join(dirpath, filename)
+                          try:
+                              mtime = os.path.getmtime(fname)
+                              writer.writerow([fname, mtime])
+                          except Exception as e:
+                              print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
+              print(f'Finished recording filesystem timestamps to {output_file}.')
+          
+          scan_and_write(\"/usr/\", \"/content/usr_files.csv\")"
+          
+      - name: Install pypresence
+        run: |
+          pip install pypresence
+          
+      - name: Scan and create new index
+        run: |
+          python -c "
+          import csv
+          import os
+          def scan_and_write(base_path, output_file):
+              with open(output_file, 'w', newline='') as f:
+                  writer = csv.writer(f)
+                  for dirpath, dirs, files in os.walk(base_path):
+                      for filename in files:
+                          fname = os.path.join(dirpath, filename)
+                          try:
+                              mtime = os.path.getmtime(fname)
+                              writer.writerow([fname, mtime])
+                          except Exception as e:
+                              print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
+              print(f'Finished recording filesystem timestamps to {output_file}.')
+          
+          scan_and_write(\"/usr/\", \"/content/usr_files_new.csv\")"
+
+      - name: Display initial scan results
+        run: |
+          cat /content/usr_files.csv
