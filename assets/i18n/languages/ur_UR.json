@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "حتمی صوتی کلوننگ ٹول ، بے مثال طاقت ، ماڈیولریٹی ، اور صارف دوست تجربے کے لئے احتیاط سے بہتر بنایا گیا ہے۔",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "حتمی صوتی کلوننگ ٹول ، بے مثال طاقت ، ماڈیولریٹی ، اور صارف دوست تجربے کے لئے احتیاط سے بہتر بنایا گیا ہے۔",
   "This section contains some extra utilities that often may be in experimental phases.": "اس سیکشن میں کچھ اضافی افادیت شامل ہیں جو اکثر تجرباتی مراحل میں ہوسکتی ہیں۔",
   "Output Information": "آؤٹ پٹ معلومات",
   "The output information will be displayed here.": "آؤٹ پٹ کی معلومات یہاں ظاہر کی جائے گی۔",
@@ -30,8 +30,8 @@
   "Enter dataset path": "ڈیٹا سیٹ کا راستہ درج کریں",
   "Sampling Rate": "نمونے لینے کی شرح",
   "The sampling rate of the audio files.": "آڈیو فائلوں کے نمونے لینے کی شرح۔",
-  "RVC Version": "RVC Version",
-  "The RVC version of the model.": "ماڈل کا آر وی سی ورژن۔",
+  "Model Architecture": "Model Architecture",
+  "Version of the model architecture.": "ماڈل کا آر وی سی ورژن۔",
   "Preprocess Dataset": "پری پروسیس ڈیٹا سیٹ",
   "Extract": "نکالنا",
   "Hop Length": "ہاپ کی لمبائی",

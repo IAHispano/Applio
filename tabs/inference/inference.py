@@ -83,6 +83,7 @@ custom_embedders = [
     for dirname in dirnames
 ]
 
+
 def update_sliders(preset):
     with open(
         os.path.join(PRESETS_DIR, f"{preset}.json"), "r", encoding="utf-8"
@@ -265,6 +266,7 @@ def match_index(model_file_value):
                 return index_file
     return ""
 
+
 def create_folder_and_move_files(folder_name, bin_file, config_file):
     if not folder_name:
         return "Folder name must not be empty."
@@ -282,9 +284,11 @@ def create_folder_and_move_files(folder_name, bin_file, config_file):
 
     return f"Files moved to folder {folder_name}"
 
+
 def refresh_formant():
     json_files = list_json_files(FORMANTSHIFT_DIR)
     return gr.update(choices=json_files)
+
 
 def refresh_embedders_folders():
     custom_embedders = [
@@ -293,6 +297,7 @@ def refresh_embedders_folders():
         for dirname in dirnames
     ]
     return custom_embedders
+
 
 # Inference tab
 def inference_tab():
@@ -922,7 +927,7 @@ def inference_tab():
                         "custom",
                     ],
                     value="contentvec",
-                    interactive=False, # Temporary disable this option
+                    interactive=True,
                 )
                 with gr.Column(visible=False) as embedder_custom:
                     with gr.Accordion(i18n("Custom Embedder"), open=True):
@@ -931,14 +936,28 @@ def inference_tab():
                                 label=i18n("Select Custom Embedder"),
                                 choices=refresh_embedders_folders(),
                                 interactive=True,
-                                allow_custom_value=True
+                                allow_custom_value=True,
                             )
-                            refresh_embedders_button = gr.Button(i18n("Refresh embedders"))
-                        folder_name_input = gr.Textbox(label=i18n("Folder Name"), interactive=True)
+                            refresh_embedders_button = gr.Button(
+                                i18n("Refresh embedders")
+                            )
+                        folder_name_input = gr.Textbox(
+                            label=i18n("Folder Name"), interactive=True
+                        )
                         with gr.Row():
-                            bin_file_upload = gr.File(label=i18n("Upload .bin"), type="filepath", interactive=True)
-                            config_file_upload = gr.File(label=i18n("Upload .json"), type="filepath", interactive=True)
-                        move_files_button = gr.Button(i18n("Move files to custom embedder folder"))
+                            bin_file_upload = gr.File(
+                                label=i18n("Upload .bin"),
+                                type="filepath",
+                                interactive=True,
+                            )
+                            config_file_upload = gr.File(
+                                label=i18n("Upload .json"),
+                                type="filepath",
+                                interactive=True,
+                            )
+                        move_files_button = gr.Button(
+                            i18n("Move files to custom embedder folder")
+                        )
 
                 f0_file = gr.File(
                     label=i18n(
@@ -1537,7 +1556,7 @@ def inference_tab():
                         "custom",
                     ],
                     value="contentvec",
-                    interactive=False, # Temporary disable this option
+                    interactive=True,
                 )
                 f0_file_batch = gr.File(
                     label=i18n(
@@ -1552,14 +1571,28 @@ def inference_tab():
                                 label=i18n("Select Custom Embedder"),
                                 choices=refresh_embedders_folders(),
                                 interactive=True,
-                                allow_custom_value=True
+                                allow_custom_value=True,
                             )
-                            refresh_embedders_button_batch = gr.Button(i18n("Refresh embedders"))
-                        folder_name_input_batch = gr.Textbox(label=i18n("Folder Name"), interactive=True)
+                            refresh_embedders_button_batch = gr.Button(
+                                i18n("Refresh embedders")
+                            )
+                        folder_name_input_batch = gr.Textbox(
+                            label=i18n("Folder Name"), interactive=True
+                        )
                         with gr.Row():
-                            bin_file_upload_batch = gr.File(label=i18n("Upload .bin"), type="filepath", interactive=True)
-                            config_file_upload_batch = gr.File(label=i18n("Upload .json"), type="filepath", interactive=True)
-                        move_files_button_batch = gr.Button(i18n("Move files to custom embedder folder"))
+                            bin_file_upload_batch = gr.File(
+                                label=i18n("Upload .bin"),
+                                type="filepath",
+                                interactive=True,
+                            )
+                            config_file_upload_batch = gr.File(
+                                label=i18n("Upload .json"),
+                                type="filepath",
+                                interactive=True,
+                            )
+                        move_files_button_batch = gr.Button(
+                            i18n("Move files to custom embedder folder")
+                        )
 
         convert_button2 = gr.Button(i18n("Convert"))
         stop_button = gr.Button(i18n("Stop convert"), visible=False)
@@ -1916,22 +1949,26 @@ def inference_tab():
     move_files_button.click(
         fn=create_folder_and_move_files,
         inputs=[folder_name_input, bin_file_upload, config_file_upload],
-        outputs=[]
+        outputs=[],
     )
     refresh_embedders_button.click(
         fn=lambda: gr.update(choices=refresh_embedders_folders()),
         inputs=[],
-        outputs=[embedder_model_custom]
+        outputs=[embedder_model_custom],
     )
     move_files_button_batch.click(
         fn=create_folder_and_move_files,
-        inputs=[folder_name_input_batch, bin_file_upload_batch, config_file_upload_batch],
-        outputs=[]
+        inputs=[
+            folder_name_input_batch,
+            bin_file_upload_batch,
+            config_file_upload_batch,
+        ],
+        outputs=[],
     )
     refresh_embedders_button_batch.click(
         fn=lambda: gr.update(choices=refresh_embedders_folders()),
         inputs=[],
-        outputs=[embedder_model_custom_batch]
+        outputs=[embedder_model_custom_batch],
     )
     # Sliders variables
     reverb_sliders = [

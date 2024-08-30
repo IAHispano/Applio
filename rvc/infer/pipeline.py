@@ -11,7 +11,8 @@ import numpy as np
 from scipy import signal
 from torch import Tensor
 
-sys.path.append(os.getcwd())
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 from rvc.lib.predictors.FCPE import FCPEF0Predictor
@@ -426,7 +427,9 @@ class Pipeline:
 
         with torch.no_grad():
             feats = model(feats.to(self.device))["last_hidden_state"]
-            feats = model.final_proj(feats[0]).unsqueeze(0) if version == "v1" else feats
+            feats = (
+                model.final_proj(feats[0]).unsqueeze(0) if version == "v1" else feats
+            )
         if protect < 0.5 and pitch != None and pitchf != None:
             feats0 = feats.clone()
         if (

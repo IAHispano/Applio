@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "ابزار شبیه سازی صدا نهایی، با دقت برای قدرت بی نظیر، مدولار بودن و تجربه کاربر پسند بهینه شده است.",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "ابزار شبیه سازی صدا نهایی، با دقت برای قدرت بی نظیر، مدولار بودن و تجربه کاربر پسند بهینه شده است.",
   "This section contains some extra utilities that often may be in experimental phases.": "این بخش شامل برخی از ابزارهای اضافی است که اغلب ممکن است در مراحل ازمایشی باشد.",
   "Output Information": "اطلاعات خروجی",
   "The output information will be displayed here.": "اطلاعات خروجی در اینجا نمایش داده خواهد شد.",
@@ -30,8 +30,8 @@
   "Enter dataset path": "وارد کردن مسیر مجموعه داده ها",
   "Sampling Rate": "نرخ نمونه برداری",
   "The sampling rate of the audio files.": "نرخ نمونه برداری از فایل های صوتی.",
-  "RVC Version": "نسخه RVC",
-  "The RVC version of the model.": "نسخه RVC از مدل.",
+  "Model Architecture": "نسخه RVC",
+  "Version of the model architecture.": "نسخه RVC از مدل.",
   "Preprocess Dataset": "مجموعه داده پیش پردازش",
   "Extract": "عصاره",
   "Hop Length": "طول هاپ",

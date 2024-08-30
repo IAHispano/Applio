@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "他の追随を許さないパワー、モジュール性、そしてユーザーフレンドリーな操作性を実現するために綿密に最適化された究極のボイスクローニングツール。",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "他の追随を許さないパワー、モジュール性、そしてユーザーフレンドリーな操作性を実現するために綿密に最適化された究極のボイスクローニングツール。",
   "This section contains some extra utilities that often may be in experimental phases.": "このセクションには、多くの場合、実験段階にある可能性のあるいくつかの追加のユーティリティが含まれています。",
   "Output Information": "出力情報",
   "The output information will be displayed here.": "出力情報がここに表示されます。",
@@ -30,8 +30,8 @@
   "Enter dataset path": "データセットのパスを入力",
   "Sampling Rate": "サンプリングレート",
   "The sampling rate of the audio files.": "オーディオファイルのサンプリングレートです。",
-  "RVC Version": "RVC バージョン",
-  "The RVC version of the model.": "モデルの RVC バージョン。",
+  "Model Architecture": "RVC バージョン",
+  "Version of the model architecture.": "モデルの RVC バージョン。",
   "Preprocess Dataset": "データセットの前処理",
   "Extract": "抽出",
   "Hop Length": "ホップ長(Hop Length)",

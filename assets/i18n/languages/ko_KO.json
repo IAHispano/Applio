@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "타의 추종을 불허하는 성능, 모듈성 및 사용자 친화적인 경험을 위해 세심하게 최적화된 궁극의 음성 복제 도구입니다.",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "타의 추종을 불허하는 성능, 모듈성 및 사용자 친화적인 경험을 위해 세심하게 최적화된 궁극의 음성 복제 도구입니다.",
   "This section contains some extra utilities that often may be in experimental phases.": "이 섹션에는 아직 실험 단계에 있는 추가 유틸리티가 포함되어 있습니다.",
   "Output Information": "출력 정보",
   "The output information will be displayed here.": "출력 정보가 여기에 표시됩니다.",
@@ -30,8 +30,8 @@
   "Enter dataset path": "데이터 세트 경로 입력",
   "Sampling Rate": "샘플링 레이트",
   "The sampling rate of the audio files.": "오디오 파일의 샘플링 레이트입니다.",
-  "RVC Version": "RVC 버전",
-  "The RVC version of the model.": "모델의 RVC 버전입니다.",
+  "Model Architecture": "RVC 버전",
+  "Version of the model architecture.": "모델의 RVC 버전입니다.",
   "Preprocess Dataset": "데이터 세트 사전 처리",
   "Extract": "추출물",
   "Hop Length": "홉 길이",

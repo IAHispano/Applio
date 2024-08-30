@@ -66,7 +66,7 @@ For more detailed instructions, check out the [documentation](https://docs.appli
 
 For commercial purposes, please adhere to the guidelines outlined in the [MIT license](./LICENSE) governing this project. Prior to integrating Applio into your application, we kindly request that you contact us at support@applio.org to ensure ethical use.
 
-Please note, the use of Applio-generated audio files falls under your own responsibility and must always respect applicable copyrights. We encourage you to consider supporting the continuous development and maintenance of Applio through a donation.
+Please note, the use of Applio-generated audio files falls under your own responsibility and must always respect applicable copyrights. We encourage you to consider supporting the continuous development and maintenance of Applio [through a donation](https://ko-fi.com/iahispano).
 
 Your cooperation and support are greatly appreciated. Thank you!
 

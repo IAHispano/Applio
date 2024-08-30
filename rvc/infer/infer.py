@@ -25,7 +25,8 @@ from pedalboard import (
 from scipy.io import wavfile
 from audio_upscaler import upscale
 
-sys.path.append(os.getcwd())
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 
 from rvc.infer.pipeline import Pipeline as VC
 from rvc.lib.utils import load_audio_infer, load_embedding
@@ -37,6 +38,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("faiss").setLevel(logging.WARNING)
 logging.getLogger("faiss.loader").setLevel(logging.WARNING)
+
 
 class VoiceConverter:
     """
@@ -70,7 +72,11 @@ class VoiceConverter:
         """
         self.hubert_model = load_embedding(embedder_model, embedder_model_custom)
         self.hubert_model.to(self.config.device)
-        self.hubert_model = self.hubert_model.half() if self.config.is_half else self.hubert_model.float()
+        self.hubert_model = (
+            self.hubert_model.half()
+            if self.config.is_half
+            else self.hubert_model.float()
+        )
         self.hubert_model.eval()
 
     @staticmethod
@@ -939,8 +945,7 @@ class VoiceConverter:
             self.use_f0 = self.cpt.get("f0", 1)
 
             self.version = self.cpt.get("version", "v1")
-            self.text_enc_hidden_dim = 768 if not self.version == "v1" else 256
-            self.vocoder_type = self.cpt.get("vocoder_type", "hifigan")
+            self.text_enc_hidden_dim = 768 if self.version == "v2" else 256
             self.net_g = Synthesizer(
                 *self.cpt["config"],
                 use_f0=self.use_f0,

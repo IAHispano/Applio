@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "A legjobb hangklónozó eszköz, aprólékosan optimalizálva a páratlan teljesítmény, a modularitás és a felhasználóbarát élmény érdekében.",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "A legjobb hangklónozó eszköz, aprólékosan optimalizálva a páratlan teljesítmény, a modularitás és a felhasználóbarát élmény érdekében.",
   "This section contains some extra utilities that often may be in experimental phases.": "Ez a szakasz néhány további segédprogramot tartalmaz, amelyek gyakran kísérleti fázisban vannak.",
   "Output Information": "Kimeneti információk",
   "The output information will be displayed here.": "A kimeneti információk itt jelennek meg.",
@@ -30,8 +30,8 @@
   "Enter dataset path": "Adja meg az adatkészlet elérési útját",
   "Sampling Rate": "Mintavételi arány",
   "The sampling rate of the audio files.": "Az audiofájlok mintavételi frekvenciája.",
-  "RVC Version": "RVC verzió",
-  "The RVC version of the model.": "A modell RVC verziója.",
+  "Model Architecture": "RVC verzió",
+  "Version of the model architecture.": "A modell RVC verziója.",
   "Preprocess Dataset": "Adatkészlet előfeldolgozása",
   "Extract": "Kivonat",
   "Hop Length": "Komló hossza",

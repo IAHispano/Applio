@@ -1,5 +1,5 @@
 {
-    "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "അനന്തമായ ശക്തി, മോഡുലാരിറ്റി, ഉപയോക്തൃ-സൗഹൃദ അനുഭവത്തിനായി യാഥാർത്ഥ്യമാക്കിയ അത്യുന്നതമായ വോയ്സ് ക്ലോണിങ് ടൂൾ.\n[മലയാളത്തിലേക്ക് വായന: Enes](https://discord.com/users/1140031358006202468)",
+    "VITS-based Voice Conversion focused on simplicity, quality and performance.": "അനന്തമായ ശക്തി, മോഡുലാരിറ്റി, ഉപയോക്തൃ-സൗഹൃദ അനുഭവത്തിനായി യാഥാർത്ഥ്യമാക്കിയ അത്യുന്നതമായ വോയ്സ് ക്ലോണിങ് ടൂൾ.\n[മലയാളത്തിലേക്ക് വായന: Enes](https://discord.com/users/1140031358006202468)",
     "This section contains some extra utilities that often may be in experimental phases.": "ഈ പേരിലെ കൊണ്ടാടാൻ പ്രയോജനപ്രദമായ എന്നതിനാൽ കഴിഞ്ഞത് സാധാരണയായ പോസിക്കുകളിൽ അവസാനിക്കാത്ത ചില യന്ത്രങ്ങൾ ഉള്ളതാണ്.",
     "Output Information": "പ്രണാമം വിവരം",
     "The output information will be displayed here.": "ഇവിടെ പ്രണയ വിവരങ്ങൾ പ്രദശിപ്പിക്കപ്പെടും.",
@@ -30,8 +30,8 @@
     "Enter dataset path": "ഡാറ്റാസെറ്റ് പാത നൽകുക",
     "Sampling Rate": "സാമ്പ്ലിംഗ് റേറ്റ്",
     "The sampling rate of the audio files.": "ഓഡിയോ ഫയലുകളുടെ സാമ്പ്ലിംഗ് റേറ്റ്.",
-    "RVC Version": "RVC പതിപ്പ്",
-    "The RVC version of the model.": "മോഡലിന്റെ RVC പതിപ്പ്.",
+    "Model Architecture": "RVC പതിപ്പ്",
+    "Version of the model architecture.": "മോഡലിന്റെ RVC പതിപ്പ്.",
     "Preprocess Dataset": "ഡാറ്റാസെറ്റ് പ്രൊസെസ് ചെയ്യുക",
 
     "Embedder Model": "Embedder Model",

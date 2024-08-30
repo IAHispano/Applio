@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "终极语音克隆工具，经过精心优化，具有无与伦比的功能、模块化和用户友好的体验。",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "终极语音克隆工具，经过精心优化，具有无与伦比的功能、模块化和用户友好的体验。",
   "This section contains some extra utilities that often may be in experimental phases.": "本节包含一些额外的实用程序，这些实用程序通常处于实验阶段。",
   "Output Information": "输出信息",
   "Inference": "推理",
@@ -17,7 +17,7 @@
   "Dataset Path": "数据集路径",
   "Enter dataset path": "输入数据集路径",
   "Sampling Rate": "采样率",
-  "RVC Version": "RVC 版本",
+  "Model Architecture": "RVC 版本",
   "Preprocess Dataset": "预处理数据集",
   "Extract": "提取",
   "Hop Length": "跳跃长度",

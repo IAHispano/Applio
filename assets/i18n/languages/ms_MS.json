@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "Alat pengklonan suara muktamad, dioptimumkan dengan teliti untuk kuasa yang tiada tandingan, modulariti, dan pengalaman mesra pengguna.",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "Alat pengklonan suara muktamad, dioptimumkan dengan teliti untuk kuasa yang tiada tandingan, modulariti, dan pengalaman mesra pengguna.",
   "This section contains some extra utilities that often may be in experimental phases.": "Bahagian ini mengandungi beberapa utiliti tambahan yang selalunya berada dalam fasa percubaan.",
   "Output Information": "Maklumat Output",
   "The output information will be displayed here.": "Maklumat output akan dipaparkan di sini.",
@@ -30,8 +30,8 @@
   "Enter dataset path": "Memasukkan laluan set data",
   "Sampling Rate": "Kadar Persampelan",
   "The sampling rate of the audio files.": "Kadar pensampelan fail audio.",
-  "RVC Version": "Versi RVC",
-  "The RVC version of the model.": "Versi RVC model.",
+  "Model Architecture": "Versi RVC",
+  "Version of the model architecture.": "Versi RVC model.",
   "Preprocess Dataset": "Set Data Praproses",
   "Extract": "Cabutan",
   "Hop Length": "Panjang Hop",

@@ -1,15 +1,16 @@
 {
-  "theme": {
-    "file": "Applio.py",
-    "class": "Applio"
-  },
-  "plugins": [],
-  "discord_presence": true,
-  "lang": {
-    "override": false,
-    "selected_lang": "en_US"
-  },
-  "flask_server": false,
-  "version": "3.2.4",
-  "fake_gpu": false
+    "theme": {
+        "file": "Applio.py",
+        "class": "Applio"
+    },
+    "plugins": [],
+    "discord_presence": true,
+    "lang": {
+        "override": false,
+        "selected_lang": "en_US"
+    },
+    "flask_server": false,
+    "version": "3.2.4",
+    "fake_gpu": false,
+    "model_author": "None"
 }

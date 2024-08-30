@@ -13,6 +13,7 @@ from torch import nn
 import logging
 from transformers import HubertModel
 import warnings
+
 # Remove this to see warnings about transformers models
 warnings.filterwarnings("ignore")
 
@@ -134,8 +135,8 @@ def load_embedding(embedder_model, custom_embedder=None):
             model_path = embedding_list["contentvec"]
     else:
         model_path = embedding_list[embedder_model]
-        bin_file = os.path.join(model_path, 'pytorch_model.bin')
-        json_file = os.path.join(model_path, 'config.json')
+        bin_file = os.path.join(model_path, "pytorch_model.bin")
+        json_file = os.path.join(model_path, "config.json")
         os.makedirs(model_path, exist_ok=True)
         if not os.path.exists(bin_file):
             url = online_embedders[embedder_model]

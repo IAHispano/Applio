@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "Công cụ nhân bản giọng nói tối ưu, được tối ưu hóa tỉ mỉ cho sức mạnh vô song, tính mô-đun và trải nghiệm thân thiện với người dùng.",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "Công cụ nhân bản giọng nói tối ưu, được tối ưu hóa tỉ mỉ cho sức mạnh vô song, tính mô-đun và trải nghiệm thân thiện với người dùng.",
   "This section contains some extra utilities that often may be in experimental phases.": "Phần này chứa một số tiện ích bổ sung thường có thể đang trong giai đoạn thử nghiệm.",
   "Output Information": "Thông tin đầu ra",
   "The output information will be displayed here.": "Thông tin đầu ra sẽ được hiển thị ở đây.",
@@ -30,8 +30,8 @@
   "Enter dataset path": "Nhập đường dẫn tập dữ liệu",
   "Sampling Rate": "Tỷ lệ lấy mẫu",
   "The sampling rate of the audio files.": "Tốc độ lấy mẫu của các tệp âm thanh.",
-  "RVC Version": "Phiên bản RVC",
-  "The RVC version of the model.": "Phiên bản RVC của mô hình.",
+  "Model Architecture": "Phiên bản RVC",
+  "Version of the model architecture.": "Phiên bản RVC của mô hình.",
   "Preprocess Dataset": "Tập dữ liệu tiền xử lý",
   "Extract": "Trích",
   "Hop Length": "Chiều dài hop",

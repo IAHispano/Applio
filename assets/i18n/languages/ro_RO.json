@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "Cel mai bun instrument de clonare a vocii, optimizat meticulos pentru putere, modularitate și experiență ușor de utilizat.",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "Cel mai bun instrument de clonare a vocii, optimizat meticulos pentru putere, modularitate și experiență ușor de utilizat.",
   "This section contains some extra utilities that often may be in experimental phases.": "Această secțiune conține câteva utilități suplimentare care pot fi adesea în faze experimentale.",
   "Output Information": "Informații despre ieșire",
   "The output information will be displayed here.": "Informațiile de ieșire vor fi afișate aici.",
@@ -30,8 +30,8 @@
   "Enter dataset path": "Introduceți calea setului de date",
   "Sampling Rate": "Rata de eșantionare",
   "The sampling rate of the audio files.": "Rata de eșantionare a fișierelor audio.",
-  "RVC Version": "Versiunea RVC",
-  "The RVC version of the model.": "Versiunea RVC a modelului.",
+  "Model Architecture": "Versiunea RVC",
+  "Version of the model architecture.": "Versiunea RVC a modelului.",
   "Preprocess Dataset": "Set de date preproces",
   "Extract": "Extract",
   "Hop Length": "Lungimea hameiului",

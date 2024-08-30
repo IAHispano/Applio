@@ -226,6 +226,28 @@ def create_folder_and_move_files(folder_name, bin_file, config_file):
 
     return f"Files moved to folder {folder_name}"
 
+
+def refresh_embedders_folders():
+    custom_embedders = [
+        os.path.join(dirpath, dirname)
+        for dirpath, dirnames, _ in os.walk(custom_embedder_root_relative)
+        for dirname in dirnames
+    ]
+    return custom_embedders
+
+    folder_name = os.path.join(custom_embedder_root, folder_name)
+    os.makedirs(folder_name, exist_ok=True)
+
+    if bin_file:
+        bin_file_path = os.path.join(folder_name, os.path.basename(bin_file))
+        shutil.copy(bin_file, bin_file_path)
+
+    if config_file:
+        config_file_path = os.path.join(folder_name, os.path.basename(config_file))
+        shutil.copy(config_file, config_file_path)
+
+    return f"Files moved to folder {folder_name}"
+
 def refresh_embedders_folders():
     custom_embedders = [
         os.path.join(dirpath, dirname)
@@ -317,8 +339,8 @@ def train_tab():
             interactive=True,
         )
         rvc_version = gr.Radio(
-            label=i18n("RVC Version"),
-            info=i18n("The RVC version of the model."),
+            label=i18n("Model Architecture"),
+            info=i18n("Version of the model architecture."),
             choices=["v1", "v2"],
             value="v2",
             interactive=True,
@@ -453,20 +475,24 @@ def train_tab():
             interactive=True,
         )
         with gr.Row(visible=False) as embedder_custom:
-                with gr.Accordion("Custom Embedder", open=True):
-                    with gr.Row():
-                        embedder_model_custom = gr.Dropdown(
-                            label="Select Custom Embedder",
-                            choices=refresh_embedders_folders(),
-                            interactive=True,
-                            allow_custom_value=True
-                        )
-                        refresh_embedders_button = gr.Button("Refresh embedders")
-                    folder_name_input = gr.Textbox(label="Folder Name", interactive=True)
-                    with gr.Row():
-                        bin_file_upload = gr.File(label="Upload .bin", type="filepath", interactive=True)
-                        config_file_upload = gr.File(label="Upload .json", type="filepath", interactive=True)
-                    move_files_button = gr.Button("Move files to custom embedder folder")
+            with gr.Accordion("Custom Embedder", open=True):
+                with gr.Row():
+                    embedder_model_custom = gr.Dropdown(
+                        label="Select Custom Embedder",
+                        choices=refresh_embedders_folders(),
+                        interactive=True,
+                        allow_custom_value=True,
+                    )
+                    refresh_embedders_button = gr.Button("Refresh embedders")
+                folder_name_input = gr.Textbox(label="Folder Name", interactive=True)
+                with gr.Row():
+                    bin_file_upload = gr.File(
+                        label="Upload .bin", type="filepath", interactive=True
+                    )
+                    config_file_upload = gr.File(
+                        label="Upload .json", type="filepath", interactive=True
+                    )
+                move_files_button = gr.Button("Move files to custom embedder folder")
         pitch_guidance_extract = gr.Checkbox(
             label=i18n("Pitch Guidance"),
             info=i18n(
@@ -920,12 +946,10 @@ def train_tab():
             move_files_button.click(
                 fn=create_folder_and_move_files,
                 inputs=[folder_name_input, bin_file_upload, config_file_upload],
-                outputs=[]
+                outputs=[],
             )
             refresh_embedders_button.click(
-                fn=refresh_embedders_folders,
-                inputs=[],
-                outputs=[embedder_model_custom]
+                fn=refresh_embedders_folders, inputs=[], outputs=[embedder_model_custom]
             )
             pretrained.change(
                 fn=toggle_pretrained,

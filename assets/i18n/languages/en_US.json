@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "VITS-based Voice Conversion focused on simplicity, quality and performance.",
   "This section contains some extra utilities that often may be in experimental phases.": "This section contains some extra utilities that often may be in experimental phases.",
   "Output Information": "Output Information",
   "The output information will be displayed here.": "The output information will be displayed here.",
@@ -33,8 +33,8 @@
   "Enter dataset path": "Enter dataset path",
   "Sampling Rate": "Sampling Rate",
   "The sampling rate of the audio files.": "The sampling rate of the audio files.",
-  "RVC Version": "RVC Version",
-  "The RVC version of the model.": "The RVC version of the model.",
+  "Model Architecture": "Model Architecture",
+  "Version of the model architecture.": "Version of the model architecture.",
   "Preprocess Dataset": "Preprocess Dataset",
   "Embedder Model": "Embedder Model",
   "Model used for learning speaker embedding.": "Model used for learning speaker embedding.",
@@ -301,5 +301,8 @@
   "Folder Name": "Folder Name",
   "Upload .bin": "Upload .bin",
   "Upload .json": "Upload .json",
-  "Move files to custom embedder folder": "Move files to custom embedder folder"
+  "Move files to custom embedder folder": "Move files to custom embedder folder",
+  "model information": "model information",
+  "Model Creator": "Model Creator",
+  "Name of the model creator. (Default: Unknown)": "Name of the model creator. (Default: Unknown)"
 }
