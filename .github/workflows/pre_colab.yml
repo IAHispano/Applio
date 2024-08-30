@@ -93,7 +93,7 @@ jobs:
 
               return list(added_files) + list(changed_files)
 
-          changed_files = compare_files('/content/usr_files.csv', '/content/usr_files_new.csv')
+          changed_files = compare_files('./usr_files.csv', './usr_files_new.csv')
           print('Changed files:')
           for file in changed_files:
               print(file)
