@@ -42,7 +42,7 @@ jobs:
                               print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
               print(f'Finished recording filesystem timestamps to {output_file}.')
           
-          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.14/x64/lib\", \"./usr_files.csv\")"
+          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.14/x64\", \"./usr_files.csv\")"
           
       - name: Install pypresence
         run: |
@@ -66,7 +66,7 @@ jobs:
                               print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
               print(f'Finished recording filesystem timestamps to {output_file}.')
           
-          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.14/x64/lib\", \"./usr_files_new.csv\")"
+          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.14/x64\", \"./usr_files_new.csv\")"
 
       - name: Display initial scan results
         run: |
@@ -109,8 +109,8 @@ jobs:
           print('Changed files:')
           for file in changed_files:
               print(file)
-          base_dir = '/opt/hostedtoolcache/Python/3.10.14/x64/lib/python3.10/site-packages'
-          arc_base_dir = 'usr/local/lib/python3.10/dist-packages'
+          base_dir = '/opt/hostedtoolcache/Python/3.10.14/x64/lib/'
+          arc_base_dir = 'usr/local/lib/'
           with tarfile.open('./CachedGen.tar.gz', 'w:gz') as new_tar:
               for file in changed_files:
                   # Compute the new path inside the tar
