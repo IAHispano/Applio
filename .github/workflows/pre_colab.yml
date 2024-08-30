@@ -61,7 +61,40 @@ jobs:
               print(f'Finished recording filesystem timestamps to {output_file}.')
           
           scan_and_write(\"/opt/pipx/venvs/ansible-core/lib/python3.10/site-packages\", \"./usr_files_new.csv\")"
-
-      - name: Display initial scan results
+          
+      - name: Compare files and display changes
         run: |
-          cat ./usr_files.csv
+          python -c "
+          import csv
+
+          def compare_files(old_file, new_file):
+              old_files = {}
+              new_files = {}
+
+              with open(old_file, 'r') as f:
+                  reader = csv.reader(f)
+                  old_files = {rows[0]: rows[1] for rows in reader}
+
+              with open(new_file, 'r') as f:
+                  reader = csv.reader(f)
+                  new_files = {rows[0]: rows[1] for rows in reader}
+
+              removed_files = old_files.keys() - new_files.keys()
+              added_files = new_files.keys() - old_files.keys()
+              unchanged_files = old_files.keys() & new_files.keys()
+
+              changed_files = {f for f in unchanged_files if old_files[f] != new_files[f]}
+
+              for file in removed_files:
+                  print(f'File has been removed: {file}')
+
+              for file in changed_files:
+                  print(f'File has been updated: {file}')
+
+              return list(added_files) + list(changed_files)
+
+          changed_files = compare_files('/content/usr_files.csv', '/content/usr_files_new.csv')
+          print('Changed files:')
+          for file in changed_files:
+              print(file)
+          "
