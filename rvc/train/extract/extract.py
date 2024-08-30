@@ -6,9 +6,8 @@ import torch
 import torchcrepe
 import numpy as np
 import soundfile as sf
-from multiprocessing import Pool
 from functools import partial
-import concurrent.futures
+from multiprocessing import Pool, set_start_method
 import torch.nn.functional as F
 
 now_dir = os.getcwd()
@@ -162,6 +161,15 @@ class FeatureInput:
             pbar.update()
 
 
+def process_files_on_gpu(args):
+    gpu, part_paths, f0_method, hop_length = args
+    device = get_device(gpu)
+    feature_input = FeatureInput(device=device)
+    for path in part_paths:
+        feature_input.process_file(path, f0_method, hop_length)
+    return len(part_paths)
+
+
 def run_pitch_extraction(exp_dir, f0_method, hop_length, num_processes, gpus):
     input_root, *output_roots = setup_paths(exp_dir)
 
@@ -191,26 +199,20 @@ def run_pitch_extraction(exp_dir, f0_method, hop_length, num_processes, gpus):
         process_partials = []
         pbar = tqdm.tqdm(total=len(paths), desc="Pitch Extraction")
 
+        chunk_size = len(paths) // num_gpus
         for idx, gpu in enumerate(gpus):
-            device = get_device(gpu)
-            feature_input = FeatureInput(device=device)
-            part_paths = paths[idx::num_gpus]
-            process_partials.append((feature_input, part_paths))
+            start_idx = idx * chunk_size
+            end_idx = None if idx == num_gpus - 1 else (idx + 1) * chunk_size
+            part_paths = paths[start_idx:end_idx]
+            process_partials.append((gpu, part_paths, f0_method, hop_length))
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = [
-                executor.submit(
-                    FeatureInput.process_files,
-                    feature_input,
-                    part_paths,
-                    f0_method,
-                    hop_length,
-                    pbar,
-                )
-                for feature_input, part_paths in process_partials
-            ]
-            for future in concurrent.futures.as_completed(futures):
-                future.result()
+        set_start_method("spawn", force=True)
+        with Pool(processes=num_gpus) as pool:
+            for processed in pool.imap_unordered(
+                process_files_on_gpu, process_partials
+            ):
+                pbar.update(processed)
+
         pbar.close()
 
     else:
