@@ -46,7 +46,7 @@ jobs:
           
       - name: Install pypresence
         run: |
-          pip install pypresence
+          pip install huggingface_hub
           
       - name: Scan and create new index
         run: |
