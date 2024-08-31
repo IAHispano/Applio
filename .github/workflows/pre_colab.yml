@@ -8,16 +8,21 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.10.12"]
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python 3.10.12
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10.12"
-
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Print Python executable path
+        run: |
+          which python
+          which python3
+    
       - name: Download and extract pre-packaged dependencies
         run: |
           wget https://huggingface.co/vidalnt/nothing/resolve/main/Compiled/copied_packages.tar.gz?download=true -O prepackaged.tar.gz
