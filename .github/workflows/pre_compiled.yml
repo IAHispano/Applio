@@ -3,6 +3,10 @@ name: Pre-Compiled and Upload
 on:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   Windows:
     runs-on: windows-latest
