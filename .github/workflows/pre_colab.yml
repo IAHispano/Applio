@@ -22,7 +22,6 @@ jobs:
         run: |
           wget https://huggingface.co/vidalnt/nothing/resolve/main/Compiled/copied_packages.tar.gz?download=true -O prepackaged.tar.gz
           tar -xzf prepackaged.tar.gz -C /opt/hostedtoolcache/Python/3.10.12/x64/lib/python3.10/site-packages/
-          sudo apt-get install pigz
 
       - name: Record initial state of site-packages
         run: |
@@ -105,7 +104,7 @@ jobs:
           changed_files = compare_files('./usr_files.csv', './usr_files_new.csv')
           base_dir = '/opt/hostedtoolcache/Python/3.10.12/x64/'
           arc_base_dir = 'usr/local/'
-          with tarfile.open('./CachedGen.tar.gz', 'w:gz', use_compress_program='pigz') as new_tar:
+          with tarfile.open('./CachedGen.tar.gz', 'w:gz') as new_tar:
               for file in tqdm(changed_files, desc='Compressing', unit='files'):
                   relative_path = os.path.relpath(file, base_dir)
                   if 'python3.10' in relative_path:
