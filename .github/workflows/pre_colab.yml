@@ -1,10 +1,10 @@
-name: Scan, Install, and Compare
+name: Cache Python Dependencies
 
 on:
   workflow_dispatch:
 
 jobs:
-  build:
+  cache-dependencies:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -17,18 +17,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      
-      - name: Print Python executable path
-        run: |
-          which python
-          which python3
-    
+
       - name: Download and extract pre-packaged dependencies
         run: |
           wget https://huggingface.co/vidalnt/nothing/resolve/main/Compiled/copied_packages.tar.gz?download=true -O prepackaged.tar.gz
           tar -xzf prepackaged.tar.gz -C /opt/hostedtoolcache/Python/3.10.12/x64/lib/python3.10/site-packages/
+          sudo apt-get install pigz
 
-      - name: Scan and create initial index
+      - name: Record initial state of site-packages
         run: |
           python -c "
           import csv
@@ -48,15 +44,11 @@ jobs:
           
           scan_and_write(\"/opt/hostedtoolcache/Python/3.10.12/x64\", \"./usr_files.csv\")"
           
-      - name: Verify extraction
-        run: |
-          ls -la /opt/hostedtoolcache/Python/3.10.12/x64/lib/python3.10/site-packages/
-
-      - name: Install 
+      - name: Install dependencies 
         run: |
           pip install -r requirements.txt
           
-      - name: Scan and create new index
+      - name: Record final state of site-packages
         run: |
           python -c "
           import csv
@@ -76,11 +68,7 @@ jobs:
           
           scan_and_write(\"/opt/hostedtoolcache/Python/3.10.12/x64\", \"./usr_files_new.csv\")"
 
-      - name: Display initial scan results
-        run: |
-          cat ./usr_files_new.csv
-          
-      - name: Compare files and display changes
+      - name: Package changes
         run: |
           python -c "
           import tarfile
@@ -117,7 +105,7 @@ jobs:
           changed_files = compare_files('./usr_files.csv', './usr_files_new.csv')
           base_dir = '/opt/hostedtoolcache/Python/3.10.12/x64/'
           arc_base_dir = 'usr/local/'
-          with tarfile.open('./CachedGen.tar.gz', 'w:gz') as new_tar:
+          with tarfile.open('./CachedGen.tar.gz', 'w:gz', use_compress_program='pigz') as new_tar:
               for file in tqdm(changed_files, desc='Compressing', unit='files'):
                   relative_path = os.path.relpath(file, base_dir)
                   if 'python3.10' in relative_path:
