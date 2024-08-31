@@ -26,7 +26,7 @@ jobs:
       - name: Download and extract pre-packaged dependencies
         run: |
           wget https://huggingface.co/vidalnt/nothing/resolve/main/Compiled/copied_packages.tar.gz?download=true -O prepackaged.tar.gz
-          tar -xzf prepackaged.tar.gz -C /opt/hostedtoolcache/Python/3.10.14/x64/lib/python3.10/site-packages/
+          tar -xzf prepackaged.tar.gz -C /opt/hostedtoolcache/Python/3.10.12/x64/lib/python3.10/site-packages/
 
       - name: Scan and create initial index
         run: |
@@ -46,11 +46,11 @@ jobs:
                               print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
               print(f'Finished recording filesystem timestamps to {output_file}.')
           
-          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.14/x64\", \"./usr_files.csv\")"
+          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.12/x64\", \"./usr_files.csv\")"
           
       - name: Verify extraction
         run: |
-          ls -la /opt/hostedtoolcache/Python/3.10.14/x64/lib/python3.10/site-packages/
+          ls -la /opt/hostedtoolcache/Python/3.10.12/x64/lib/python3.10/site-packages/
 
       - name: Install 
         run: |
@@ -74,7 +74,7 @@ jobs:
                               print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
               print(f'Finished recording filesystem timestamps to {output_file}.')
           
-          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.14/x64\", \"./usr_files_new.csv\")"
+          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.12/x64\", \"./usr_files_new.csv\")"
 
       - name: Display initial scan results
         run: |
@@ -114,7 +114,7 @@ jobs:
               return list(added_files) + list(changed_files)
 
           changed_files = compare_files('./usr_files.csv', './usr_files_new.csv')
-          base_dir = '/opt/hostedtoolcache/Python/3.10.14/x64/'
+          base_dir = '/opt/hostedtoolcache/Python/3.10.12/x64/'
           arc_base_dir = 'usr/local/'
           with tarfile.open('./CachedGen.tar.gz', 'w:gz') as new_tar:
               for file in changed_files:
