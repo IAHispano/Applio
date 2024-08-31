@@ -71,7 +71,6 @@ jobs:
           python -c "
           import tarfile
           import os
-          from tqdm import tqdm
           import csv
 
           def compare_files(old_file, new_file):
@@ -104,7 +103,8 @@ jobs:
           base_dir = '/opt/hostedtoolcache/Python/3.10.14/x64/'
           arc_base_dir = 'usr/local/'
           with tarfile.open('./CachedGen.tar.gz', 'w:gz') as new_tar:
-              for file in tqdm(changed_files, desc='Compressing', unit='files'):
+              for file in changed_files:
+                  # Compute the new path inside the tar
                   relative_path = os.path.relpath(file, base_dir)
                   if 'python3.10' in relative_path:
                       if 'site-packages' not in relative_path:
@@ -113,6 +113,7 @@ jobs:
                           relative_path = relative_path.replace('site-packages', 'dist-packages')
                   new_path = os.path.join(arc_base_dir, relative_path)
                   new_tar.add(file, arcname=new_path)
+                  print(f'Added to tar with new path: {new_path}')
           "
       - name: Upload to Hugging Face Hub
         env:
