@@ -43,7 +43,11 @@ jobs:
           
           scan_and_write(\"/opt/hostedtoolcache/Python/3.10.14/x64\", \"./usr_files.csv\")"
           
-      - name: Install pypresence
+      - name: Verify extraction
+        run: |
+          ls -la /opt/hostedtoolcache/Python/3.10.14/x64/lib/python3.10/site-packages/
+
+      - name: Install 
         run: |
           pip install -r requirements.txt
           
