@@ -29,7 +29,7 @@ jobs:
 
       - name: Clean up unnecessary files
         run: |
-          Remove-Item -Path 'LICENSE', 'run-install.bat', 'requirements.txt', '.gitignore' -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path 'LICENSE', 'run-tensorboard.sh', 'run-install.sh', 'run-applio.sh', 'run-install.bat', 'requirements.txt', '.gitignore' -Force -ErrorAction SilentlyContinue
           Remove-Item -Path '.github' -Recurse -Force -ErrorAction SilentlyContinue
       
       - name: Read version from config.json
@@ -229,7 +229,12 @@ jobs:
           pip install uv
           uv venv .venv
           uv pip install -r requirements.txt
-          
+      
+      - name: Clean up unnecessary files
+        run: |
+          rm -f LICENSE run-tensorboard.bat run-install.bat run-applio.bat run-install.sh requirements.txt .gitignore
+          rm -rf .github
+
       - name: Create ZIP file
         run: |
           zip -r Linux_ApplioV${{ steps.get-version.outputs.version }}.zip .
