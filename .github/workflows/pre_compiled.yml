@@ -227,9 +227,9 @@ jobs:
       - name: Install uv and create virtual environment
         run: |
           pip install uv
-          uv venv .venv > /dev/null 2>&1
-          uv pip install -r requirements.txt > /dev/null 2>&1
-          uv pip uninstall torch torchvision torchaudio -y
+          uv venv .venv
+          uv pip install -r requirements.txt
+          uv pip uninstall torch torchvision torchaudio --y
           uv pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
 
       - name: Create ZIP file
