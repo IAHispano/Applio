@@ -34,6 +34,7 @@ jobs:
       - name: Install uv and create virtual environment
         run: |
           sudo apt-get install -y pigz
+          sudo apt-get install -y pv
           pip install uv huggingface_hub
           uv venv .venv
           uv pip install -r requirements.txt
@@ -86,7 +87,7 @@ jobs:
 
       - name: Create TAR Env
         run: |
-          tar --use-compress-program="pigz --best --recursive | pv" -czvf KaggleV2.tar.gz .venv
+          tar --use-compress-program="pigz --best --recursive | pv" -cvf KaggleV2.tar.gz .venv
 
       - name: Upload Kaggle Env
         env:
