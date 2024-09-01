@@ -41,21 +41,20 @@ class FeatureInput:
         self.device = device
         self.model_rmvpe = None
 
-    def compute_f0(self, np_arr, f0_method, hop_length, fname):
+    def compute_f0(self, np_arr, f0_method, hop_length):
         """Extract F0 using the specified method."""
         if f0_method == "crepe":
-            return self.get_crepe(np_arr, hop_length, fname)
+            return self.get_crepe(np_arr, hop_length)
         elif f0_method == "rmvpe":
             return self.model_rmvpe.infer_from_audio(np_arr, thred=0.03)
         else:
             raise ValueError(f"Unknown F0 method: {f0_method}")
 
-    def get_crepe(self, x, hop_length, fname):
+    def get_crepe(self, x, hop_length):
         """Extract F0 using CREPE."""
         audio = torch.from_numpy(x.astype(np.float32)).to(self.device)
         audio /= torch.quantile(torch.abs(audio), 0.999)
         audio = audio.unsqueeze(0)
-        torch.cuda.synchronize()
         pitch = torchcrepe.predict(
             audio,
             self.fs,
