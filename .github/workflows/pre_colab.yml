@@ -33,6 +33,7 @@ jobs:
 
       - name: Install uv and create virtual environment
         run: |
+          sudo apt-get install -y pigz
           pip install uv
           uv venv .venv
           uv pip install -r requirements.txt
@@ -50,7 +51,7 @@ jobs:
 
       - name: Create ZIP file
         run: |
-          zip -r Linux_ApplioV${{ steps.get-version.outputs.version }}.zip .
+          zip -r -0 -q Linux_ApplioV${{ steps.get-version.outputs.version }}.zip . --filesync --primary-out - | pigz -9 > Linux_ApplioV${{ steps.get-version.outputs.version }}.zip
 
       - name: Upload Linux Compiled
         env:
