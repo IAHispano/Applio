@@ -4,12 +4,13 @@ import time
 from scipy import signal
 from scipy.io import wavfile
 import numpy as np
-import multiprocessing
+import concurrent.futures
+from tqdm import tqdm
 import json
 from distutils.util import strtobool
 import librosa
+import multiprocessing
 
-multiprocessing.set_start_method("spawn", force=True)
 
 now_directory = os.getcwd()
 sys.path.append(now_directory)
@@ -20,7 +21,6 @@ from rvc.train.preprocess.slicer import Slicer
 # Remove colab logs
 import logging
 
-logging.getLogger("pydub").setLevel(logging.WARNING)
 logging.getLogger("numba.core.byteflow").setLevel(logging.WARNING)
 logging.getLogger("numba.core.ssa").setLevel(logging.WARNING)
 logging.getLogger("numba.core.interpreter").setLevel(logging.WARNING)
@@ -44,9 +44,7 @@ class PreProcess:
             max_sil_kept=500,
         )
         self.sr = sr
-        self.b_high, self.a_high = signal.butter(
-            N=5, Wn=HIGH_PASS_CUTOFF, btype="high", fs=self.sr
-        )
+        self.b_high, self.a_high = signal.butter(N=5, Wn=HIGH_PASS_CUTOFF, btype="high", fs=self.sr)
         self.per = per
         self.exp_dir = exp_dir
         self.device = "cpu"
@@ -68,24 +66,13 @@ class PreProcess:
         idx1: int,
         process_effects: bool,
     ):
-        normalized_audio = (
-            self._normalize_audio(audio_segment) if process_effects else audio_segment
-        )
+        normalized_audio = self._normalize_audio(audio_segment) if process_effects else audio_segment
         if normalized_audio is None:
+            print(f"{idx0}-{idx1}-filtered")
             return
-        wavfile.write(
-            os.path.join(self.gt_wavs_dir, f"{idx0}_{idx1}.wav"),
-            self.sr,
-            normalized_audio.astype(np.float32),
-        )
-        audio_16k = librosa.resample(
-            normalized_audio, orig_sr=self.sr, target_sr=SAMPLE_RATE_16K
-        )
-        wavfile.write(
-            os.path.join(self.wavs16k_dir, f"{idx0}_{idx1}.wav"),
-            SAMPLE_RATE_16K,
-            audio_16k.astype(np.float32),
-        )
+        wavfile.write(os.path.join(self.gt_wavs_dir, f"{idx0}_{idx1}.wav"), self.sr, normalized_audio.astype(np.float32))
+        audio_16k = librosa.resample(normalized_audio, orig_sr=self.sr, target_sr=SAMPLE_RATE_16K)
+        wavfile.write(os.path.join(self.wavs16k_dir, f"{idx0}_{idx1}.wav"), SAMPLE_RATE_16K, audio_16k.astype(np.float32))
 
     def process_audio(
         self,
@@ -108,18 +95,12 @@ class PreProcess:
                         start = int(self.sr * (self.per - OVERLAP) * i)
                         i += 1
                         if len(audio_segment[start:]) > (self.per + OVERLAP) * self.sr:
-                            tmp_audio = audio_segment[
-                                start : start + int(self.per * self.sr)
-                            ]
-                            self.process_audio_segment(
-                                tmp_audio, idx0, idx1, process_effects
-                            )
+                            tmp_audio = audio_segment[start : start + int(self.per * self.sr)]
+                            self.process_audio_segment(tmp_audio, idx0, idx1, process_effects)
                             idx1 += 1
                         else:
                             tmp_audio = audio_segment[start:]
-                            self.process_audio_segment(
-                                tmp_audio, idx0, idx1, process_effects
-                            )
+                            self.process_audio_segment(tmp_audio, idx0, idx1, process_effects)
                             idx1 += 1
                             break
             else:
@@ -127,7 +108,6 @@ class PreProcess:
         except Exception as e:
             print(f"Error processing audio: {e}")
         return audio_length
-
 
 def format_duration(seconds):
     hours = int(seconds // 3600)
@@ -178,19 +158,16 @@ def preprocess_training_set(
         for idx, f in enumerate(os.listdir(input_root))
         if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg"))
     ]
-    ctx = multiprocessing.get_context("spawn")
-    with ctx.Pool(processes=num_processes) as pool:
-        audio_length = pool.map(
-            process_audio_wrapper,
-            [(pp, file, cut_preprocess, process_effects) for file in files],
-        )
+    print(f"Number of files: {len(files)}")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_processes) as executor:
+        audio_length = list(tqdm(executor.map(process_audio_wrapper, [(pp, file, cut_preprocess, process_effects) for file in files]), total=len(files)))
     audio_length = sum(audio_length)
     save_dataset_duration(
         os.path.join(exp_dir, "model_info.json"), dataset_duration=audio_length
     )
     elapsed_time = time.time() - start_time
     print(
-        f"Preprocess completed in {elapsed_time:.2f} seconds on {format_duration(audio_length)} seconds of audio."
+        f"Preprocess completed in {elapsed_time:.2f} seconds. Dataset duration: {format_duration(audio_length)}."
     )
 
 
