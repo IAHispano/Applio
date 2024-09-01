@@ -3,8 +3,12 @@ name: Pre-Compiled and Upload
 on:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
+  Windows:
     runs-on: windows-latest
     strategy:
       matrix:
@@ -21,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           .\run-install.bat
-          .\env\python.exe core.py "prerequisites" --models "True" --pretraineds_v2 "True" --exe "True"
+          .\env\python.exe core.py "prerequisites" --models "True" --pretraineds_v1 "False" --pretraineds_v2 "True" --exe "True"
 
       - name: Clean up unnecessary files
         run: |
@@ -39,7 +43,7 @@ jobs:
           $version = '${{ steps.get-version.outputs.version }}'
           Compress-Archive -Path 'D:\a\Applio\Applio\*' -DestinationPath "D:\a\Applio\ApplioV$version.zip"
 
-      - name: Upload to Hugging Face Hub
+      - name: Upload Windows Compiled
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           version: ${{ steps.get-version.outputs.version }}
@@ -55,8 +59,230 @@ jobs:
           repo_file_path = f'D:/a/Applio/ApplioV{version}.zip'
           
           upload_file(
+          commit_message=f'{version}',
           path_or_fileobj=repo_file_path,
           path_in_repo=f'Compiled/ApplioV{version}.zip',
+          repo_id=repo_id,
+          token=token)
+          "
+
+  Colab:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10.12"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download and extract pre-packaged dependencies
+        run: |
+          wget https://huggingface.co/vidalnt/env/resolve/main/tmp_packages.tar.gz?download=true -O prepackaged.tar.gz
+          tar -xzf prepackaged.tar.gz -C /opt/hostedtoolcache/Python/3.10.12/x64/lib/python3.10/site-packages/
+
+      - name: Record initial state of site-packages
+        run: |
+          python -c "
+          import csv
+          import os
+          def scan_and_write(base_path, output_file):
+              with open(output_file, 'w', newline='') as f:
+                  writer = csv.writer(f)
+                  for dirpath, dirs, files in os.walk(base_path):
+                      for filename in files:
+                          fname = os.path.join(dirpath, filename)
+                          try:
+                              mtime = os.path.getmtime(fname)
+                              writer.writerow([fname, mtime])
+                          except Exception as e:
+                              print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
+              print(f'Finished recording filesystem timestamps to {output_file}.')
+          
+          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.12/x64\", \"./usr_files.csv\")"
+          
+      - name: Install dependencies 
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Record final state of site-packages
+        run: |
+          python -c "
+          import csv
+          import os
+          def scan_and_write(base_path, output_file):
+              with open(output_file, 'w', newline='') as f:
+                  writer = csv.writer(f)
+                  for dirpath, dirs, files in os.walk(base_path):
+                      for filename in files:
+                          fname = os.path.join(dirpath, filename)
+                          try:
+                              mtime = os.path.getmtime(fname)
+                              writer.writerow([fname, mtime])
+                          except Exception as e:
+                              print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
+              print(f'Finished recording filesystem timestamps to {output_file}.')
+          
+          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.12/x64\", \"./usr_files_new.csv\")"
+
+      - name: Create TAR file
+        run: |
+          python -c "
+          import tarfile
+          import os
+          from tqdm import tqdm
+          import csv
+
+          def compare_files(old_file, new_file):
+              old_files = {}
+              new_files = {}
+
+              with open(old_file, 'r') as f:
+                  reader = csv.reader(f)
+                  old_files = {rows[0]: rows[1] for rows in reader}
+
+              with open(new_file, 'r') as f:
+                  reader = csv.reader(f)
+                  new_files = {rows[0]: rows[1] for rows in reader}
+
+              removed_files = old_files.keys() - new_files.keys()
+              added_files = new_files.keys() - old_files.keys()
+              unchanged_files = old_files.keys() & new_files.keys()
+
+              changed_files = {f for f in unchanged_files if old_files[f] != new_files[f]}
+
+              for file in removed_files:
+                  print(f'File has been removed: {file}')
+
+              for file in changed_files:
+                  print(f'File has been updated: {file}')
+
+              return list(added_files) + list(changed_files)
+
+          changed_files = compare_files('./usr_files.csv', './usr_files_new.csv')
+          base_dir = '/opt/hostedtoolcache/Python/3.10.12/x64/'
+          arc_base_dir = 'usr/local/'
+          with tarfile.open('./Pnpur.tar.gz', 'w:gz') as new_tar:
+              for file in tqdm(changed_files, desc='Compressing', unit='files'):
+                  relative_path = os.path.relpath(file, base_dir)
+                  if 'python3.10' in relative_path:
+                      if 'site-packages' not in relative_path:
+                          continue
+                      if 'site-packages' in relative_path:
+                          relative_path = relative_path.replace('site-packages', 'dist-packages')
+                  new_path = os.path.join(arc_base_dir, relative_path)
+                  new_tar.add(file, arcname=new_path)
+          "
+      - name: Upload Colab Env
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python -c "
+          import os
+          from huggingface_hub import login, upload_file
+            
+          token = os.getenv('HF_TOKEN')
+          login(token)
+          repo_id = 'vidalnt/nothing'
+          repo_file_path = 'Pnpur.tar.gz'
+            
+          upload_file(
+          path_or_fileobj=repo_file_path,
+          path_in_repo=f'Colab/{repo_file_path}',
+          repo_id=repo_id,
+          token=token)
+          "
+  
+  Linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10.12"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Free up space on runner
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Read version from config.json
+        id: get-version
+        run: |
+          version=$(jq -r '.version' assets/config.json)
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Install uv and create virtual environment
+        run: |
+          pip install uv
+          uv venv .venv > /dev/null 2>&1
+          uv pip install -r requirements.txt > /dev/null 2>&1
+          uv pip uninstall torch torchvision torchaudio -y
+          uv pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
+
+      - name: Create ZIP file
+        run: |
+          zip -r Linux_ApplioV${{ steps.get-version.outputs.version }}.zip .
+
+      - name: Upload Linux Compiled
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          version: ${{ steps.get-version.outputs.version }}
+        run: |
+          python -c "
+          import os
+          from huggingface_hub import login, upload_file
+            
+          token = os.getenv('HF_TOKEN')
+          version = os.getenv('version')
+          login(token)
+          repo_id = 'vidalnt/nothing'
+          repo_file_path = f'Linux_ApplioV{version}.zip'
+            
+          upload_file(
+          commit_message=f'{version}',
+          path_or_fileobj=repo_file_path,
+          path_in_repo=f'Compiled/{repo_file_path}',
+          repo_id=repo_id,
+          token=token)
+          "
+
+      - name: Install imjoy-elfinder
+        run: |
+          uv pip install https://github.com/Vidalnt/imjoy-elfinder.git
+
+      - name: Create TAR Env
+        run: |
+          tar -czvf KaggleV2.tar.gz .venv
+
+      - name: Upload Kaggle Env
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python -c "
+          import os
+          from huggingface_hub import login, upload_file
+            
+          token = os.getenv('HF_TOKEN')
+          login(token)
+          repo_id = 'vidalnt/nothing'
+          repo_file_path = 'KaggleV2.tar.gz'
+            
+          upload_file(
+          path_or_fileobj=repo_file_path,
+          path_in_repo=f'Colab/{repo_file_path}',
           repo_id=repo_id,
           token=token)
           "
