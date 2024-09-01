@@ -29,7 +29,7 @@ jobs:
 
       - name: Clean up unnecessary files
         run: |
-          Remove-Item -Path 'LICENSE', 'run-install.bat', 'requirements.txt', '.gitignore' -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path 'LICENSE', 'run-tensorboard.sh', 'run-install.sh', 'run-applio.sh', 'run-install.bat', 'requirements.txt', '.gitignore' -Force -ErrorAction SilentlyContinue
           Remove-Item -Path '.github' -Recurse -Force -ErrorAction SilentlyContinue
       
       - name: Read version from config.json
@@ -43,7 +43,7 @@ jobs:
           $version = '${{ steps.get-version.outputs.version }}'
           Compress-Archive -Path 'D:\a\Applio\Applio\*' -DestinationPath "D:\a\Applio\ApplioV$version.zip"
 
-      - name: Upload to Hugging Face Hub
+      - name: Upload Windows Compiled
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           version: ${{ steps.get-version.outputs.version }}
@@ -55,7 +55,7 @@ jobs:
           token = os.getenv('HF_TOKEN')
           version = os.getenv('version')
           login(token)
-          repo_id = 'IAHispano/Applio'
+          repo_id = 'vidalnt/nothing'
           repo_file_path = f'D:/a/Applio/ApplioV{version}.zip'
           
           upload_file(
@@ -129,7 +129,7 @@ jobs:
           
           scan_and_write(\"/opt/hostedtoolcache/Python/3.10.12/x64\", \"./usr_files_new.csv\")"
 
-      - name: Create ZIP file
+      - name: Create TAR file
         run: |
           python -c "
           import tarfile
@@ -177,7 +177,7 @@ jobs:
                   new_path = os.path.join(arc_base_dir, relative_path)
                   new_tar.add(file, arcname=new_path)
           "
-      - name: Upload to Hugging Face Hub
+      - name: Upload Colab Env
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
@@ -187,8 +187,101 @@ jobs:
             
           token = os.getenv('HF_TOKEN')
           login(token)
-          repo_id = 'IAHispano/Applio'
+          repo_id = 'vidalnt/nothing'
           repo_file_path = 'Pnpur.tar.gz'
+            
+          upload_file(
+          path_or_fileobj=repo_file_path,
+          path_in_repo=f'Colab/{repo_file_path}',
+          repo_id=repo_id,
+          token=token)
+          "
+  
+  Linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10.12"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Free up space on runner
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Read version from config.json
+        id: get-version
+        run: |
+          version=$(jq -r '.version' assets/config.json)
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Install uv and create virtual environment
+        run: |
+          pip install uv
+          uv venv .venv
+          uv pip install -r requirements.txt
+      
+      - name: Clean up unnecessary files
+        run: |
+          rm -f LICENSE run-tensorboard.bat run-install.bat run-applio.bat run-install.sh requirements.txt .gitignore
+          rm -rf .github
+
+      - name: Create ZIP file
+        run: |
+          zip -r Linux_ApplioV${{ steps.get-version.outputs.version }}.zip .
+
+      - name: Upload Linux Compiled
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          version: ${{ steps.get-version.outputs.version }}
+        run: |
+          python -c "
+          import os
+          from huggingface_hub import login, upload_file
+            
+          token = os.getenv('HF_TOKEN')
+          version = os.getenv('version')
+          login(token)
+          repo_id = 'vidalnt/nothing'
+          repo_file_path = f'Linux_ApplioV{version}.zip'
+            
+          upload_file(
+          commit_message=f'{version}',
+          path_or_fileobj=repo_file_path,
+          path_in_repo=f'Compiled/{repo_file_path}',
+          repo_id=repo_id,
+          token=token)
+          "
+
+      - name: Install imjoy-elfinder
+        run: |
+          uv pip install https://github.com/Vidalnt/imjoy-elfinder.git
+
+      - name: Create TAR Env
+        run: |
+          tar -czvf KaggleV2.tar.gz .venv
+
+      - name: Upload Kaggle Env
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python -c "
+          import os
+          from huggingface_hub import login, upload_file
+            
+          token = os.getenv('HF_TOKEN')
+          login(token)
+          repo_id = 'vidalnt/nothing'
+          repo_file_path = 'KaggleV2.tar.gz'
             
           upload_file(
           path_or_fileobj=repo_file_path,
