@@ -38,6 +38,7 @@ jobs:
           uv venv .venv
           uv pip install -r requirements.txt
           . .venv/bin/activate
+          python core.py "prerequisites" --models "True" --pretraineds_v1 "False" --pretraineds_v2 "True" --exe "False"
           python -m ensurepip
           python -m pip install "pip<24.1"
           python -m pip uninstall torch torchvision torchaudio -y
