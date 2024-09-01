@@ -3,6 +3,7 @@ import gradio as gr
 import regex as re
 import json
 import random
+import shutil
 
 from core import (
     run_tts_script,
@@ -127,7 +128,7 @@ def save_drop_custom_embedder(dropbox):
         custom_embedder_path = os.path.join(custom_embedder_root, file_name)
         if os.path.exists(custom_embedder_path):
             os.remove(custom_embedder_path)
-        os.rename(dropbox, custom_embedder_path)
+        shutil.copy(dropbox, custom_embedder_path)
         gr.Info(
             i18n(
                 "Click the refresh button to see the embedder file in the dropdown menu."
@@ -364,8 +365,9 @@ def tts_tab():
                 info=i18n("Model used for learning speaker embedding."),
                 choices=[
                     "contentvec",
+                    "chinese-hubert-base",
                     "japanese-hubert-base",
-                    "chinese-hubert-large",
+                    "korean-hubert-base",
                     "custom",
                 ],
                 value="contentvec",

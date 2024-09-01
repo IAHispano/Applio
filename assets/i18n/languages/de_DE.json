@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "Ultimatives Tool zum Klonen von Stimmen, das sorgfältig für unübertroffene Leistung, Modularität und Benutzerfreundlichkeit optimiert wurde.",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "Ultimatives Tool zum Klonen von Stimmen, das sorgfältig für unübertroffene Leistung, Modularität und Benutzerfreundlichkeit optimiert wurde.",
   "This section contains some extra utilities that often may be in experimental phases.": "Dieser Abschnitt enthält einige zusätzliche Dienstprogramme, die sich häufig in experimentellen Phasen befinden.",
   "Output Information": "Informationen zur Ausgabe",
   "The output information will be displayed here.": "Hier werden die Ausgabeinformationen angezeigt.",
@@ -30,8 +30,8 @@
   "Enter dataset path": "Datensatz-Pfad eingeben",
   "Sampling Rate": "Samplingrate",
   "The sampling rate of the audio files.": "Die Samplingrate der Audiodateien.",
-  "RVC Version": "RVC-Version",
-  "The RVC version of the model.": "Die RVC-Version des Modells.",
+  "Model Architecture": "RVC-Version",
+  "Version of the model architecture.": "Die RVC-Version des Modells.",
   "Preprocess Dataset": "Datensatz vorverarbeiten",
   "Extract": "Extrahieren",
   "Hop Length": "Sprungweite",

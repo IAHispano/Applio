@@ -1,5 +1,5 @@
 {
-    "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "முழுமையான குரல் குளோனிங் கருவி, அநாகரமாக ஒருமிக்க, பகுக்காதது, பயனர் உருவாக்கத்திற்கு உயரியது.\n[தமிழ் மொழிபெயர்ப்பு: Enes](https://discord.com/users/1140031358006202468)",
+    "VITS-based Voice Conversion focused on simplicity, quality and performance.": "முழுமையான குரல் குளோனிங் கருவி, அநாகரமாக ஒருமிக்க, பகுக்காதது, பயனர் உருவாக்கத்திற்கு உயரியது.\n[தமிழ் மொழிபெயர்ப்பு: Enes](https://discord.com/users/1140031358006202468)",
     "This section contains some extra utilities that often may be in experimental phases.": "இந்த பிரிவில் சேர்ந்துள்ள கொடுமை கருவிகளில் சார்ந்த பல கூட்டுத்தரங்களைக் கொண்டுள்ளது.",
     "Output Information": "வெளியீடு தகவல்",
     "The output information will be displayed here.": "வெளியீடு தகவல் இங்கே காட்டப்படும்.",
@@ -30,8 +30,8 @@
     "Enter dataset path": "தரவுத்தொகுதி பாதையை உள்ளிடவும்",
     "Sampling Rate": "மாதிரி விகிதம்",
     "The sampling rate of the audio files.": "ஆடியோ கோப்புகளின் மாதிரி விகிதம்.",
-    "RVC Version": "RVC பதிப்பு",
-    "The RVC version of the model.": "மாதிரி RVC பதிப்பு.",
+    "Model Architecture": "RVC பதிப்பு",
+    "Version of the model architecture.": "மாதிரி RVC பதிப்பு.",
     "Preprocess Dataset": "முன்பாகவும் தரவுத்தொகுதி",
 
     "Embedder Model": "உள்ளீடு மாதிரி",

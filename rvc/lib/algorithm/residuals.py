@@ -202,7 +202,7 @@ class ResidualCouplingBlock(torch.nn.Module):
             for flow in self.flows:
                 x, _ = flow(x, x_mask, g=g, reverse=reverse)
         else:
-            for flow in self.flows[::-1]:
+            for flow in reversed(self.flows):
                 x = flow.forward(x, x_mask, g=g, reverse=reverse)
         return x
 

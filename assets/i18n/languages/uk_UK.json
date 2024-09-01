@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "Найкращий інструмент для клонування голосу, ретельно оптимізований для неперевершеної потужності, модульності та зручного використання.",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "Найкращий інструмент для клонування голосу, ретельно оптимізований для неперевершеної потужності, модульності та зручного використання.",
   "This section contains some extra utilities that often may be in experimental phases.": "Цей розділ містить деякі додаткові утиліти, які часто можуть перебувати в експериментальних стадіях.",
   "Output Information": "Вихідна інформація",
   "The output information will be displayed here.": "Тут буде відображена вихідна інформація.",
@@ -32,8 +32,8 @@
   "Enter dataset path": "Введіть шлях до датасету",
   "Sampling Rate": "Частота дискретизації",
   "The sampling rate of the audio files.": "Частота дискретизації аудіофайлів.",
-  "RVC Version": "Версія RVC",
-  "The RVC version of the model.": "Версія моделі RVC.",
+  "Model Architecture": "Версія RVC",
+  "Version of the model architecture.": "Версія моделі RVC.",
   "Preprocess Dataset": "Обробити датасет",
 
   "Embedder Model": "Модель розгортання",

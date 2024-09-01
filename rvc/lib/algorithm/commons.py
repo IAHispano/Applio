@@ -57,37 +57,31 @@ def kl_divergence(m_p, logs_p, m_q, logs_q):
     return kl
 
 
-def slice_segments(x, ids_str, segment_size=4):
+def slice_segments(
+    x: torch.Tensor, ids_str: torch.Tensor, segment_size: int = 4, dim: int = 2
+):
     """
-    Slice segments from a tensor.
+    Slice segments from a tensor, handling tensors with different numbers of dimensions.
 
     Args:
-        x: The tensor to slice.
-        ids_str: The starting indices of the segments.
-        segment_size: The size of each segment.
+        x (torch.Tensor): The tensor to slice.
+        ids_str (torch.Tensor): The starting indices of the segments.
+        segment_size (int, optional): The size of each segment. Defaults to 4.
+        dim (int, optional): The dimension to slice across (2D or 3D tensors). Defaults to 2.
     """
-    ret = torch.zeros_like(x[:, :, :segment_size])
+    if dim == 2:
+        ret = torch.zeros_like(x[:, :segment_size])
+    elif dim == 3:
+        ret = torch.zeros_like(x[:, :, :segment_size])
+
     for i in range(x.size(0)):
-        idx_str = ids_str[i]
+        idx_str = ids_str[i].item()
         idx_end = idx_str + segment_size
-        ret[i] = x[i, :, idx_str:idx_end]
-    return ret
+        if dim == 2:
+            ret[i] = x[i, idx_str:idx_end]
+        else:
+            ret[i] = x[i, :, idx_str:idx_end]
 
-
-def slice_segments2(x, ids_str, segment_size=4):
-    """
-    Slice segments from a tensor.
-
-    Args:
-        x: The tensor to slice.
-        ids_str: The starting indices of the segments.
-        segment_size: The size of each segment.
-    """
-    ret = torch.zeros_like(x[:, :segment_size])
-    for i in range(x.size(0)):
-        idx_str = ids_str[i]
-        idx_end = idx_str + segment_size
-        ret[i] = x[i, idx_str:idx_end]
     return ret
 
 
@@ -105,7 +99,7 @@ def rand_slice_segments(x, x_lengths=None, segment_size=4):
         x_lengths = t
     ids_str_max = x_lengths - segment_size + 1
     ids_str = (torch.rand([b]).to(device=x.device) * ids_str_max).to(dtype=torch.long)
-    ret = slice_segments(x, ids_str, segment_size)
+    ret = slice_segments(x, ids_str, segment_size, dim=3)
     return ret, ids_str
 
 
@@ -147,6 +141,24 @@ def subsequent_mask(length):
 
 @torch.jit.script
 def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
+    """
+    Fused add tanh sigmoid multiply operation.
+
+    Args:
+        input_a: The first input tensor.
+        input_b: The second input tensor.
+        n_channels: The number of channels.
+    """
+    n_channels_int = n_channels[0]
+    in_act = input_a + input_b
+    t_act = torch.tanh(in_act[:, :n_channels_int, :])
+    s_act = torch.sigmoid(in_act[:, n_channels_int:, :])
+    acts = t_act * s_act
+    return acts
+
+
+# Zluda, same as previous, but without jit.script
+def fused_add_tanh_sigmoid_multiply_no_jit(input_a, input_b, n_channels):
     """
     Fused add tanh sigmoid multiply operation.
 

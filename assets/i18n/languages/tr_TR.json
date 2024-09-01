@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "Üstün ses kopyalama aracı, rakipsiz güç, modülerlik ve kullanıcı dostu deneyim için özenle optimize edilmiştir.\n[Türkçe çeviri: Enes](https://discord.com/users/1140031358006202468)",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "Üstün ses kopyalama aracı, rakipsiz güç, modülerlik ve kullanıcı dostu deneyim için özenle optimize edilmiştir.\n[Türkçe çeviri: Enes](https://discord.com/users/1140031358006202468)",
   "This section contains some extra utilities that often may be in experimental phases.": "Bu bölümde, genellikle deneysel aşamalarda olabilecek bazı ekstra yardımcı programlar bulunur.",
   "Output Information": "Çıktı Bilgileri",
   "The output information will be displayed here.": "Çıktı bilgileri burada görüntülenecektir.",
@@ -32,8 +32,8 @@
   "Enter dataset path": "Veri kümesi yolunu girin",
   "Sampling Rate": "Örnekleme Hızı",
   "The sampling rate of the audio files.": "Ses dosyalarının örnekleme hızı.",
-  "RVC Version": "RVC Sürümü",
-  "The RVC version of the model.": "Modelin RVC sürümü.",
+  "Model Architecture": "RVC Sürümü",
+  "Version of the model architecture.": "Modelin RVC sürümü.",
   "Preprocess Dataset": "Veri Kümesini İşlem Öncesinden Geçir",
 
   "Embedder Model": "Gömme Modeli",

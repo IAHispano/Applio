@@ -1,5 +1,5 @@
 {
-  "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience.": "Alat kloning suara terbaik, dioptimalkan secara cermat untuk kekuatan tak tertandingi, modularitas, dan pengalaman ramah pengguna.",
+  "VITS-based Voice Conversion focused on simplicity, quality and performance.": "Alat kloning suara terbaik, dioptimalkan secara cermat untuk kekuatan tak tertandingi, modularitas, dan pengalaman ramah pengguna.",
   "This section contains some extra utilities that often may be in experimental phases.": "Bagian ini berisi beberapa utilitas tambahan yang mungkin sering berada dalam tahap percobaan.",
   "Output Information": "informasi keluaran",
 
@@ -26,7 +26,7 @@
   "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Berkas audio telah berhasil ditambahkan ke dataset. Silakan klik tombol praproses.",
   "Enter dataset path": "Masukkan jalur kumpulan data",
   "Sampling Rate": "Tingkat Pengambilan Sampel",
-  "RVC Version": "Versi RVC",
+  "Model Architecture": "Versi RVC",
   "Preprocess Dataset": "Kumpulan Data Praproses",
 
   "Extract": "Ekstrak",

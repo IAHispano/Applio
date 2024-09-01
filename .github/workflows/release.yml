@@ -179,7 +179,7 @@ jobs:
             ${changelog}
 
           **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}  " \
-            -o "Vidalnt" \
+            -o "IAHispano" \
             -r "Applio" \
             -w /home/runner/work/Applio/Applio \
             -y

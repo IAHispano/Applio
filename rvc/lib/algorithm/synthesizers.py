@@ -3,7 +3,7 @@ from typing import Optional
 
 from rvc.lib.algorithm.nsf import GeneratorNSF
 from rvc.lib.algorithm.generators import Generator
-from rvc.lib.algorithm.commons import slice_segments2, rand_slice_segments
+from rvc.lib.algorithm.commons import slice_segments, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock
 from rvc.lib.algorithm.encoders import TextEncoder, PosteriorEncoder
 
@@ -189,7 +189,7 @@ class Synthesizer(torch.nn.Module):
             z_p = self.flow(z, y_mask, g=g)
             z_slice, ids_slice = rand_slice_segments(z, y_lengths, self.segment_size)
             if self.use_f0:
-                pitchf = slice_segments2(pitchf, ids_slice, self.segment_size)
+                pitchf = slice_segments(pitchf, ids_slice, self.segment_size, 2)
                 o = self.dec(z_slice, pitchf, g=g)
             else:
                 o = self.dec(z_slice, g=g)

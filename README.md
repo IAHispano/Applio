@@ -10,7 +10,7 @@
     <img alt="Issues" src="https://img.shields.io/github/issues/iahispano/applio?style=for-the-badge&color=FFFFFF" />
 </p>
 
-<p align="center">VITS-based Voice Conversion focused on simplicity, quality, and performance.</p>
+<p align="center">A simple, high-quality voice conversion tool, focused on ease of use and performance.</p>
 
 <p align="center">
   <a href="https://applio.org" target="_blank">🌐 Website</a>
@@ -34,45 +34,42 @@
 
 ## Introduction
 
-Applio is a powerful VITS-based voice conversion tool designed with a focus on simplicity, quality, and performance. Whether you're an artist experimenting with voice synthesis, a developer building applications, or a researcher exploring new audio technologies, Applio provides an easy-to-use platform that produces high-quality voice transformations with minimal effort. Built to be flexible, Applio can be customized with various plugins and configurations to meet the needs of your project.
+Applio is a powerful voice conversion tool focused on simplicity, quality, and performance. Whether you're an artist, developer, or researcher, Applio offers a straightforward platform for high-quality voice transformations. Its flexible design allows for customization through plugins and configurations, catering to a wide range of projects.
 
 ## Getting Started
 
-To get started with Applio, simply follow these steps:
+### 1. Installation
 
-### 1. Installation:
+Run the installation script based on your operating system:
 
-- Run the installation script based on your operating system:
-  - **Windows:** Double-click on the `run-install.bat` file.
-  - **Linux/macOS:** Execute the `run-install.sh` script.
+- **Windows:** Double-click `run-install.bat`.
+- **Linux/macOS:** Execute `run-install.sh`.
 
-### 2. Running Applio:
+### 2. Running Applio
 
-- After the installation is complete, you can start Applio using the appropriate script:
-  - **Windows:** Double-click on `run-applio.bat`.
-  - **Linux/macOS:** Run the `run-applio.sh` script.
+Start Applio using:
 
-The application will start the Gradio interface, allowing you to interact with Applio in your default browser.
+- **Windows:** Double-click `run-applio.bat`.
+- **Linux/macOS:** Run `run-applio.sh`.
+
+This launches the Gradio interface in your default browser.
 
 ### 3. Optional: TensorBoard Monitoring
 
-- If you want to monitor the training process or visualize data, you can run TensorBoard using:
-  - **Windows:** `run-tensorboard.bat`
-  - **Linux/macOS:** `run-tensorboard.sh`
+To monitor training or visualize data:
 
-For more detailed instructions, check out the [documentation](https://docs.applio.org).
+- **Windows:** Run `run-tensorboard.bat`.
+- **Linux/macOS:** Run `run-tensorboard.sh`.
+
+For more detailed instructions, visit the [documentation](https://docs.applio.org).
 
 ## Commercial Usage
 
-For commercial purposes, please adhere to the guidelines outlined in the [MIT license](./LICENSE) governing this project. Prior to integrating Applio into your application, we kindly request that you contact us at support@applio.org to ensure ethical use.
-
-Please note, the use of Applio-generated audio files falls under your own responsibility and must always respect applicable copyrights. We encourage you to consider supporting the continuous development and maintenance of Applio through a donation.
-
-Your cooperation and support are greatly appreciated. Thank you!
+For commercial use, follow the [MIT license](./LICENSE) and contact us at support@applio.org to ensure ethical use. The use of Applio-generated audio files must comply with applicable copyrights. Consider supporting Applio’s development [through a donation](https://ko-fi.com/iahispano).
 
 ## References
 
-Applio is possible thanks to these projects and those cited in their references.
+Applio is made possible thanks to these projects and their references:
 
 - [gradio-screen-recorder](https://huggingface.co/spaces/gstaff/gradio-screen-recorder) by gstaff
 - [rvc-cli](https://github.com/blaisewf/rvc-cli) by blaisewf

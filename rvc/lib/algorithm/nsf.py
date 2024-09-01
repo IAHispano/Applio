@@ -43,8 +43,8 @@ class SourceModuleHnNSF(torch.nn.Module):
         self.l_linear = torch.nn.Linear(harmonic_num + 1, 1)
         self.l_tanh = torch.nn.Tanh()
 
-    def forward(self, x: torch.Tensor, upp: int = 1):
-        sine_wavs, uv, _ = self.l_sin_gen(x, upp)
+    def forward(self, x: torch.Tensor, upsample_factor: int = 1):
+        sine_wavs, uv, _ = self.l_sin_gen(x, upsample_factor)
         sine_wavs = sine_wavs.to(dtype=self.l_linear.weight.dtype)
         sine_merge = self.l_tanh(self.l_linear(sine_wavs))
         return sine_merge, None, None
@@ -97,13 +97,21 @@ class GeneratorNSF(torch.nn.Module):
         self.ups = torch.nn.ModuleList()
         self.noise_convs = torch.nn.ModuleList()
 
+        channels = [
+            upsample_initial_channel // (2 ** (i + 1))
+            for i in range(len(upsample_rates))
+        ]
+        stride_f0s = [
+            math.prod(upsample_rates[i + 1 :]) if i + 1 < len(upsample_rates) else 1
+            for i in range(len(upsample_rates))
+        ]
+
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):
-            current_channel = upsample_initial_channel // (2 ** (i + 1))
             self.ups.append(
                 weight_norm(
                     torch.nn.ConvTranspose1d(
                         upsample_initial_channel // (2**i),
-                        current_channel,
+                        channels[i],
                         k,
                         u,
                         padding=(k - u) // 2,
@@ -111,30 +119,25 @@ class GeneratorNSF(torch.nn.Module):
                 )
             )
 
-            stride_f0 = (
-                math.prod(upsample_rates[i + 1 :]) if i + 1 < len(upsample_rates) else 1
-            )
             self.noise_convs.append(
                 torch.nn.Conv1d(
                     1,
-                    current_channel,
-                    kernel_size=stride_f0 * 2 if stride_f0 > 1 else 1,
-                    stride=stride_f0,
-                    padding=(stride_f0 // 2 if stride_f0 > 1 else 0),
+                    channels[i],
+                    kernel_size=(stride_f0s[i] * 2 if stride_f0s[i] > 1 else 1),
+                    stride=stride_f0s[i],
+                    padding=(stride_f0s[i] // 2 if stride_f0s[i] > 1 else 0),
                 )
             )
 
         self.resblocks = torch.nn.ModuleList(
             [
-                resblock_cls(upsample_initial_channel // (2 ** (i + 1)), k, d)
+                resblock_cls(channels[i], k, d)
                 for i in range(len(self.ups))
                 for k, d in zip(resblock_kernel_sizes, resblock_dilation_sizes)
             ]
         )
 
-        self.conv_post = torch.nn.Conv1d(
-            current_channel, 1, 7, 1, padding=3, bias=False
-        )
+        self.conv_post = torch.nn.Conv1d(channels[-1], 1, 7, 1, padding=3, bias=False)
         self.ups.apply(init_weights)
 
         if gin_channels != 0:
