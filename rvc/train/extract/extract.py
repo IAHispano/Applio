@@ -98,7 +98,7 @@ class FeatureInput:
 
         try:
             np_arr = load_audio(inp_path, 16000)
-            feature_pit = self.compute_f0(np_arr, f0_method, hop_length, inp_path)
+            feature_pit = self.compute_f0(np_arr, f0_method, hop_length)
             np.save(opt_path2, feature_pit, allow_pickle=False)
             coarse_pit = self.coarse_f0(feature_pit)
             np.save(opt_path1, coarse_pit, allow_pickle=False)
