@@ -3,6 +3,7 @@ import sys
 import time
 import tqdm
 import torch
+
 # Zluda
 if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):
     torch.backends.cudnn.enabled = False
@@ -23,6 +24,7 @@ from rvc.configs.config import Config
 
 # Load config
 config = Config()
+
 
 class FeatureInput:
     """Class for F0 extraction."""
@@ -95,7 +97,7 @@ class FeatureInput:
     def process_file(self, file_info, f0_method, hop_length):
         """Process a single audio file for F0 extraction."""
         inp_path, opt_path1, opt_path2, _ = file_info
-        #print(f"Process file {inp_path}. Class on {self.device}, model is on {self.model_rmvpe.device}")
+        # print(f"Process file {inp_path}. Class on {self.device}, model is on {self.model_rmvpe.device}")
 
         if os.path.exists(opt_path1) and os.path.exists(opt_path2):
             return
@@ -107,13 +109,16 @@ class FeatureInput:
             coarse_pit = self.coarse_f0(feature_pit)
             np.save(opt_path1, coarse_pit, allow_pickle=False)
         except Exception as error:
-            print(f"An error occurred extracting file {inp_path} on {self.device}: {error}")
+            print(
+                f"An error occurred extracting file {inp_path} on {self.device}: {error}"
+            )
 
     def process_files(self, files, f0_method, hop_length, pbar):
         """Process multiple files."""
         for file_info in files:
             self.process_file(file_info, f0_method, hop_length)
             pbar.update(1)
+
 
 def run_pitch_extraction(files, devices, f0_method, hop_length, num_processes):
     print(f"Starting pitch extraction with {num_processes} cores and {f0_method}...")
@@ -128,7 +133,7 @@ def run_pitch_extraction(files, devices, f0_method, hop_length, num_processes):
         part_paths = files[idx::num_gpus]
         process_partials.append((feature_input, part_paths))
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers = num_processes) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_processes) as executor:
         futures = [
             executor.submit(
                 FeatureInput.process_files,
@@ -146,6 +151,7 @@ def run_pitch_extraction(files, devices, f0_method, hop_length, num_processes):
 
     elapsed_time = time.time() - start_time
     print(f"Pitch extraction completed in {elapsed_time:.2f} seconds.")
+
 
 def process_file_embedding(file_info, model, device):
     """Process a single audio file for embedding extraction."""
@@ -168,6 +174,7 @@ def process_file_embedding(file_info, model, device):
     else:
         print(f"{file} contains NaN values and will be skipped.")
 
+
 def run_embedding_extraction(files, devices, embedder_model, embedder_model_custom):
     """Main function to orchestrate the embedding extraction process."""
     print("Starting embedding extraction...")
@@ -178,7 +185,7 @@ def run_embedding_extraction(files, devices, embedder_model, embedder_model_cust
 
     # add multi-threading here?
     for i, file_info in enumerate(files):
-        device = devices[i%len(devices)]
+        device = devices[i % len(devices)]
         try:
             process_file_embedding(file_info, model, device)
         except Exception as error:
@@ -188,6 +195,7 @@ def run_embedding_extraction(files, devices, embedder_model, embedder_model_cust
     pbar.close()
     elapsed_time = time.time() - start_time
     print(f"Embedding extraction completed in {elapsed_time:.2f} seconds.")
+
 
 if __name__ == "__main__":
 
@@ -212,10 +220,12 @@ if __name__ == "__main__":
     for file in glob.glob(os.path.join(wav_path, "*.wav")):
         file_name = os.path.basename(file)
         file_info = [
-            file,   # full path to sliced 16k wav
+            file,  # full path to sliced 16k wav
             os.path.join(exp_dir, "f0", file_name + ".npy"),
             os.path.join(exp_dir, "f0_voiced", file_name + ".npy"),
-            os.path.join(exp_dir, version + "_extracted", file_name.replace("wav", "npy"))
+            os.path.join(
+                exp_dir, version + "_extracted", file_name.replace("wav", "npy")
+            ),
         ]
         files.append(file_info)
 
