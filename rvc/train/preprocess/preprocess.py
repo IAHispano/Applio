@@ -43,7 +43,9 @@ class PreProcess:
             max_sil_kept=500,
         )
         self.sr = sr
-        self.b_high, self.a_high = signal.butter(N=5, Wn=HIGH_PASS_CUTOFF, btype="high", fs=self.sr)
+        self.b_high, self.a_high = signal.butter(
+            N=5, Wn=HIGH_PASS_CUTOFF, btype="high", fs=self.sr
+        )
         self.per = per
         self.exp_dir = exp_dir
         self.device = "cpu"
@@ -65,13 +67,25 @@ class PreProcess:
         idx1: int,
         process_effects: bool,
     ):
-        normalized_audio = self._normalize_audio(audio_segment) if process_effects else audio_segment
+        normalized_audio = (
+            self._normalize_audio(audio_segment) if process_effects else audio_segment
+        )
         if normalized_audio is None:
             print(f"{idx0}-{idx1}-filtered")
             return
-        wavfile.write(os.path.join(self.gt_wavs_dir, f"{idx0}_{idx1}.wav"), self.sr, normalized_audio.astype(np.float32))
-        audio_16k = librosa.resample(normalized_audio, orig_sr=self.sr, target_sr=SAMPLE_RATE_16K)
-        wavfile.write(os.path.join(self.wavs16k_dir, f"{idx0}_{idx1}.wav"), SAMPLE_RATE_16K, audio_16k.astype(np.float32))
+        wavfile.write(
+            os.path.join(self.gt_wavs_dir, f"{idx0}_{idx1}.wav"),
+            self.sr,
+            normalized_audio.astype(np.float32),
+        )
+        audio_16k = librosa.resample(
+            normalized_audio, orig_sr=self.sr, target_sr=SAMPLE_RATE_16K
+        )
+        wavfile.write(
+            os.path.join(self.wavs16k_dir, f"{idx0}_{idx1}.wav"),
+            SAMPLE_RATE_16K,
+            audio_16k.astype(np.float32),
+        )
 
     def process_audio(
         self,
@@ -94,12 +108,18 @@ class PreProcess:
                         start = int(self.sr * (self.per - OVERLAP) * i)
                         i += 1
                         if len(audio_segment[start:]) > (self.per + OVERLAP) * self.sr:
-                            tmp_audio = audio_segment[start : start + int(self.per * self.sr)]
-                            self.process_audio_segment(tmp_audio, idx0, idx1, process_effects)
+                            tmp_audio = audio_segment[
+                                start : start + int(self.per * self.sr)
+                            ]
+                            self.process_audio_segment(
+                                tmp_audio, idx0, idx1, process_effects
+                            )
                             idx1 += 1
                         else:
                             tmp_audio = audio_segment[start:]
-                            self.process_audio_segment(tmp_audio, idx0, idx1, process_effects)
+                            self.process_audio_segment(
+                                tmp_audio, idx0, idx1, process_effects
+                            )
                             idx1 += 1
                             break
             else:
@@ -107,6 +127,7 @@ class PreProcess:
         except Exception as error:
             print(f"Error processing audio: {error}")
         return audio_length
+
 
 def format_duration(seconds):
     hours = int(seconds // 3600)
@@ -159,7 +180,15 @@ def preprocess_training_set(
     ]
     # print(f"Number of files: {len(files)}")
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_processes) as executor:
-        audio_length = list(tqdm(executor.map(process_audio_wrapper, [(pp, file, cut_preprocess, process_effects) for file in files]), total=len(files)))
+        audio_length = list(
+            tqdm(
+                executor.map(
+                    process_audio_wrapper,
+                    [(pp, file, cut_preprocess, process_effects) for file in files],
+                ),
+                total=len(files),
+            )
+        )
     audio_length = sum(audio_length)
     save_dataset_duration(
         os.path.join(exp_dir, "model_info.json"), dataset_duration=audio_length
