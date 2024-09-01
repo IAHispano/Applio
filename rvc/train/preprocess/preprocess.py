@@ -11,7 +11,6 @@ from distutils.util import strtobool
 import librosa
 import multiprocessing
 
-
 now_directory = os.getcwd()
 sys.path.append(now_directory)
 
@@ -105,8 +104,8 @@ class PreProcess:
                             break
             else:
                 self.process_audio_segment(audio, idx0, idx1, process_effects)
-        except Exception as e:
-            print(f"Error processing audio: {e}")
+        except Exception as error:
+            print(f"Error processing audio: {error}")
         return audio_length
 
 def format_duration(seconds):
@@ -158,7 +157,7 @@ def preprocess_training_set(
         for idx, f in enumerate(os.listdir(input_root))
         if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg"))
     ]
-    print(f"Number of files: {len(files)}")
+    # print(f"Number of files: {len(files)}")
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_processes) as executor:
         audio_length = list(tqdm(executor.map(process_audio_wrapper, [(pp, file, cut_preprocess, process_effects) for file in files]), total=len(files)))
     audio_length = sum(audio_length)
