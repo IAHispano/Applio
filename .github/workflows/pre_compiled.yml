@@ -261,7 +261,10 @@ jobs:
           repo_id=repo_id,
           token=token)
           "
-
+      - name: Remove Compiled File
+        run: |
+          rm -f Linux_ApplioV${{ steps.get-version.outputs.version }}.zip
+          
       - name: Install imjoy-elfinder
         run: |
           uv pip install https://github.com/Vidalnt/imjoy-elfinder.git
