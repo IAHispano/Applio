@@ -41,8 +41,13 @@ class F0Extractor:
         f0 = None
         method = self.method
         # Fall back to CPU for ZLUDA as these methods use CUcFFT
-        device = 'cpu' if "cuda" in config.device and torch.cuda.get_device_name().endswith("[ZLUDA]") else config.device
-            
+        device = (
+            "cpu"
+            if "cuda" in config.device
+            and torch.cuda.get_device_name().endswith("[ZLUDA]")
+            else config.device
+        )
+
         if method == "crepe":
             wav16k_torch = torch.FloatTensor(self.wav16k).unsqueeze(0).to(device)
             f0 = torchcrepe.predict(
@@ -60,11 +65,7 @@ class F0Extractor:
             audio_length = len(audio)
             f0_target_length = (audio_length // self.hop_length) + 1
             audio = (
-                torch.from_numpy(audio)
-                .float()
-                .unsqueeze(0)
-                .unsqueeze(-1)
-                .to(device)
+                torch.from_numpy(audio).float().unsqueeze(0).unsqueeze(-1).to(device)
             )
             model = torchfcpe.spawn_bundled_infer_model(device=device)
 
@@ -80,7 +81,7 @@ class F0Extractor:
             )
             f0 = f0.squeeze().cpu().numpy()
         elif method == "rmvpe":
-            is_half = False if device == 'cpu' else config.is_half
+            is_half = False if device == "cpu" else config.is_half
             model_rmvpe = RMVPE0Predictor(
                 os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
                 is_half=is_half,
