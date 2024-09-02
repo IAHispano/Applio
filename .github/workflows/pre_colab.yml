@@ -38,7 +38,7 @@ jobs:
           pip install uv huggingface_hub
           uv venv .venv --python 3.10.12
           uv pip install -r requirements.txt
-          uv pip uninstall torch torchvision torchaudio -y
+          uv pip uninstall torch torchvision torchaudio
           uv pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1
           . .venv/bin/activate
           python core.py "prerequisites" --models "True" --pretraineds_v1 "False" --pretraineds_v2 "True" --exe "False"
