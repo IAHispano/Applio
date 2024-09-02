@@ -36,7 +36,7 @@ jobs:
           sudo apt-get install -y pigz
           sudo apt-get install -y pv
           pip install uv huggingface_hub
-          uv venv .venv
+          uv venv .venv --python 3.10.12
           . .venv/bin/activate
           python -m ensurepip
           python -m pip install -r requirements.txt
