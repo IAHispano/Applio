@@ -40,8 +40,10 @@ jobs:
           uv venv .venv --python 3.10.12
           uv pip install -r requirements.txt
           uv pip uninstall torch torchvision torchaudio
-          uv pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1
           . .venv/bin/activate
+          python -m ensurepip
+          python -m pip install "pip<24.1"
+          python -m pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
           python core.py "prerequisites" --models "True" --pretraineds_v1 "False" --pretraineds_v2 "True" --exe "False"
           deactivate
       
