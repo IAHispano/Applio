@@ -43,7 +43,7 @@ jobs:
           $version = '${{ steps.get-version.outputs.version }}'
           Compress-Archive -Path 'D:\a\Applio\Applio\*' -DestinationPath "D:\a\Applio\ApplioV$version.zip"
 
-      - name: Upload to Hugging Face Hub
+      - name: Upload Windows Compiled
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           version: ${{ steps.get-version.outputs.version }}
@@ -61,7 +61,7 @@ jobs:
           upload_file(
           commit_message=f'{version}',
           path_or_fileobj=repo_file_path,
-          path_in_repo=f'Compiled/ApplioV{version}.zip',
+          path_in_repo=f'Compiled/Windows/ApplioV{version}.zip',
           repo_id=repo_id,
           token=token)
           "
@@ -129,7 +129,7 @@ jobs:
           
           scan_and_write(\"/opt/hostedtoolcache/Python/3.10.12/x64\", \"./usr_files_new.csv\")"
 
-      - name: Create ZIP file
+      - name: Create TAR file
         run: |
           python -c "
           import tarfile
@@ -177,7 +177,7 @@ jobs:
                   new_path = os.path.join(arc_base_dir, relative_path)
                   new_tar.add(file, arcname=new_path)
           "
-      - name: Upload to Hugging Face Hub
+      - name: Upload Colab Env
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
@@ -192,7 +192,7 @@ jobs:
             
           upload_file(
           path_or_fileobj=repo_file_path,
-          path_in_repo=f'Colab/{repo_file_path}',
+          path_in_repo=f'Enviroment/Colab/{repo_file_path}',
           repo_id=repo_id,
           token=token)
           "
