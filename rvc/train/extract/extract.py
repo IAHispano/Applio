@@ -1,8 +1,13 @@
-import os, glob
+import os
 import sys
+import glob
 import time
 import tqdm
 import torch
+import torchcrepe
+import numpy as np
+import concurrent.futures
+import multiprocessing as mp
 
 # Zluda
 if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):
@@ -10,10 +15,6 @@ if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"
     torch.backends.cuda.enable_flash_sdp(False)
     torch.backends.cuda.enable_math_sdp(True)
     torch.backends.cuda.enable_mem_efficient_sdp(False)
-import torchcrepe
-import numpy as np
-import concurrent.futures
-import multiprocessing as mp
 
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
