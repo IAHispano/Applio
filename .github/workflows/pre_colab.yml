@@ -49,6 +49,10 @@ jobs:
         run: |
           rm -f LICENSE run-tensorboard.bat run-install.bat run-applio.bat run-install.sh requirements.txt .gitignore
           rm -rf .github
+          
+      - name: Modify pyvenv.cfg
+        run: |
+          sed -i 's/home = \/opt\/hostedtoolcache\/Python\/3\.10\.12\/x64\/bin/home = \/usr\/bin/' .venv/pyvenv.cfg
 
       - name: Create ZIP file
         run: |
@@ -83,6 +87,10 @@ jobs:
       - name: Install imjoy-elfinder
         run: |
           uv pip install https://github.com/Vidalnt/imjoy-elfinder.git
+
+      - name: Modify pyvenv.cfg
+        run: |
+          sed -i 's/home = \/usr\/bin/home = \/opt\/conda\/bin/' .venv/pyvenv.cfg
 
       - name: Create TAR Env
         run: |
