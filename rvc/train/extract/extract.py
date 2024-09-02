@@ -128,9 +128,7 @@ class FeatureInput:
         def process_file_wrapper(file_info):
             self.process_file(file_info, f0_method, hop_length)
 
-        with tqdm.tqdm(
-            total=len(files), leave=True, position=device_num, desc=device
-        ) as pbar:
+        with tqdm.tqdm(total=len(files), leave=True, position=device_num) as pbar:
             # using multi-threading
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers=n_threads
@@ -144,7 +142,10 @@ class FeatureInput:
 
 
 def run_pitch_extraction(files, devices, f0_method, hop_length, num_processes):
-    print(f"Starting pitch extraction with {num_processes} cores and {f0_method}...")
+    devices_str = ", ".join(devices)
+    print(
+        f"Starting pitch extraction with {num_processes} cores on {devices_str} using {f0_method}..."
+    )
     start_time = time.time()
     fe = FeatureInput()
     # split the task between devices
@@ -195,9 +196,7 @@ def process_file_embedding(
         else:
             print(f"{file} contains NaN values and will be skipped.")
 
-    with tqdm.tqdm(
-        total=len(files), leave=True, position=device_num, desc=device
-    ) as pbar:
+    with tqdm.tqdm(total=len(files), leave=True, position=device_num) as pbar:
         # using multi-threading
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures = [
@@ -211,8 +210,11 @@ def process_file_embedding(
 def run_embedding_extraction(
     files, devices, version, embedder_model, embedder_model_custom
 ):
-    print("Starting embedding extraction...")
     start_time = time.time()
+    devices_str = ", ".join(devices)
+    print(
+        f"Starting embedding extraction with {num_processes} cores on {devices_str}..."
+    )
     # split the task between devices
     ps = []
     num_devices = len(devices)
