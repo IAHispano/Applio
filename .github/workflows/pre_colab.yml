@@ -35,6 +35,7 @@ jobs:
         run: |
           sudo apt-get install -y pigz
           sudo apt-get install -y pv
+          sudo apt-get install -y ffmpeg
           pip install uv huggingface_hub
           uv venv .venv --python 3.10.12
           uv pip install -r requirements.txt
