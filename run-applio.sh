@@ -20,13 +20,17 @@ else
   fi
 fi
 
-PYTHON_EXECUTABLE="$py"
-PYTHON_HOME=$(dirname "$PYTHON_EXECUTABLE")
+PYTHON_HOME=$(dirname $(dirname "$py"))
 
 CURRENT_HOME=$(grep "^home =" .venv/pyvenv.cfg | cut -d "=" -f 2 | xargs)
+
 if [ "$CURRENT_HOME" != "$PYTHON_HOME" ]; then
-  sed -i "s/home =.*/home = $PYTHON_HOME/" .venv/pyvenv.cfg
+  sed -i "s|home =.*|home = $PYTHON_HOME|" .venv/pyvenv.cfg
 fi
+
+VENV_PATH=$(realpath .venv)
+
+find "$VENV_PATH/bin/" -type f -exec sed -i "0,/^VIRTUAL_ENV=/s|VIRTUAL_ENV=.*|VIRTUAL_ENV='$VENV_PATH'|" {} \;
 
 . .venv/bin/activate
 
