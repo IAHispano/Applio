@@ -58,7 +58,7 @@ jobs:
 
       - name: Create ZIP file
         run: |
-          zip -9 -r Linux_ApplioV${{ steps.get-version.outputs.version }}.zip . | pv -s $(du -sb . | awk '{print $1}')
+          zip -9 -r Linux_ApplioV${{ steps.get-version.outputs.version }}.zip .
 
       - name: Upload Linux Compiled
         env:
