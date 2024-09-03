@@ -92,7 +92,15 @@ jobs:
 
       - name: Modify pyvenv.cfg
         run: |
-          sed -i 's/home = \/usr\/bin/home = \/opt\/conda\/bin/' .venv/pyvenv.cfg
+          sed -i 's|^home =.*|home = /opt/conda/bin|' .venv/pyvenv.cfg
+          VENV_PATH='/kaggle/tmp/.venv'
+          find ".venv/bin/" -type f -exec sed -i "0,/^VIRTUAL_ENV=/s|VIRTUAL_ENV=.*|VIRTUAL_ENV='$VENV_PATH'|" {} \;
+      
+      - name: Verify VIRTUAL_ENV update
+        run: |
+          cat .venv/bin/activate
+          cat .venv/pyvenv.cfg
+
 
       - name: Create TAR Env
         run: |
