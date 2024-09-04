@@ -134,7 +134,30 @@ def main():
     global training_file_path, last_loss_gen_all, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
-
+    # Check sample rate
+    first_wav_file = next(
+        (
+            filename
+            for filename in os.listdir(os.path.join(experiment_dir, "sliced_audios"))
+            if filename.endswith(".wav")
+        ),
+        None,
+    )
+    if first_wav_file:
+        audio = os.path.join(experiment_dir, "sliced_audios", first_wav_file)
+        _, sr = load_wav_to_torch(audio)
+        if sr != sample_rate:
+            try:
+                raise ValueError(
+                    f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz)."
+                )
+            except ValueError as e:
+                print(
+                    f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz)."
+                )
+                sys.exit(1)
+    else:
+        print("No wav file found.")
     def start():
         """
         Starts the training process with multi-GPU support.
@@ -407,24 +430,6 @@ def run(
     else:
         net_g = DDP(net_g)
         net_d = DDP(net_d)
-
-    # Check sample rate
-    if rank == 0:
-        first_wav_file = next(
-            (filename for filename in os.listdir(os.path.join(experiment_dir, "sliced_audios")) if filename.endswith(".wav")),
-            None
-        )
-        if first_wav_file:
-            audio = os.path.join(os.path.join(experiment_dir, "sliced_audios"), first_wav_file)
-            _, sr = load_wav_to_torch(audio)
-            if sr != sample_rate:
-                try:
-                    raise ValueError(f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz).")
-                except ValueError as e:
-                    print(f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz).")
-                    sys.exit(1)
-        else:
-            print("No wav file found.")
 
     # Load checkpoint if available
     try:
