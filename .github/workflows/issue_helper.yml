@@ -1,64 +1,46 @@
-name: Issues Helper
+name: Issue Helper
 
 on:
   issues:
     types: [opened, edited]
 
 jobs:
-  close_incomplete_issue:
+  check_issue_template:
     runs-on: ubuntu-latest
     steps:
-      - name: Check if issue follows the template
-        id: issue_check
+      - name: Check Issue Template
         uses: actions/github-script@v6
         with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            const issueBody = context.payload.issue.body || '';
+            const issue = context.payload.issue;
             const requiredSections = [
+              '**Before You Report a Bug**',
               '**Bug Description**',
               '**Steps to Reproduce**',
               '**Expected Behavior**',
+              '**Assets**',
               '**Desktop Details:**',
               '**Additional Context**'
             ];
-
-            const issueValid = requiredSections.every(section => issueBody.includes(section));
-
-            return issueValid;
-
-      - name: Comment and close the issue if it doesn't follow the template
-        if: steps.issue_check.outputs.result == 'false'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const issueNumber = context.issue.number;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            // Add a comment to the issue
-            await github.issues.createComment({
-              owner,
-              repo,
-              issue_number: issueNumber,
-              body: `Hi there! It seems that your issue does not follow our template guidelines.
-
-Please edit your issue to include all required sections:
-
-- **Bug Description**
-- **Steps to Reproduce**
-- **Expected Behavior**
-- **Desktop Details:**
-- **Additional Context**
-
-If you need more help, feel free to join our Discord for support.
-
-This issue will be closed automatically, but you can reopen it once it meets the requirements. Thank you!`
-            });
-
-            // Close the issue
-            await github.issues.update({
-              owner,
-              repo,
-              issue_number: issueNumber,
-              state: 'closed'
-            });
+            
+            const body = issue.body;
+            const missingFields = requiredSections.filter(section => !body.includes(section));
+            
+            if (missingFields.length > 0) {
+              const message = `Thank you for your issue report. However, it appears that your issue description is missing the following required sections:\n${missingFields.map(field => `- ${field}`).join('\n')}\nPlease edit your issue to include all required information using our issue template. This helps us address your concern more effectively.\nIf you need assistance with the template or have any questions, please join our Discord server for support.\nThis issue will be closed automatically. Feel free to reopen it once you've updated it with the required information.`;
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: message
+              });
+              
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+            }
