@@ -796,9 +796,9 @@ class VoiceConverter:
                             delay_mix=sliders[24],
                             audio_output_path=audio_output_paths,
                         )
-                    sf.write(
-                        audio_output_paths, audio_opt, self.tgt_sr, format="WAV"
-                    )
+                        sf.write(
+                            audio_output_paths, audio_opt, self.tgt_sr, format="WAV"
+                        )
                 else:
                     audio_opt = self.vc.pipeline(
                         model=self.hubert_model,
