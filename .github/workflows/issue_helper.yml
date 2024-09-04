@@ -19,34 +19,46 @@ jobs:
               '**Steps to Reproduce**',
               '**Expected Behavior**',
               '**Desktop Details:**',
+              '**Additional Context**'
             ];
 
             const issueValid = requiredSections.every(section => issueBody.includes(section));
 
             return issueValid;
 
-      - name: Close issue if it doesn't follow the template
+      - name: Comment and close the issue if it doesn't follow the template
         if: steps.issue_check.outputs.result == 'false'
-        uses: actions-ecosystem/action-close-issue@v1
+        uses: actions/github-script@v6
         with:
-          issue-number: ${{ github.event.issue.number }}
-          comment: |
-            Hi there! It seems that your issue does not follow our template guidelines. 
+          script: |
+            const issueNumber = context.issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
 
-            Please edit your issue to include all required sections:
+            // Add a comment to the issue
+            await github.issues.createComment({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              body: `Hi there! It seems that your issue does not follow our template guidelines.
 
-            - **Bug Description**
-            - **Steps to Reproduce**
-            - **Expected Behavior**
-            - **Desktop Details:**
+Please edit your issue to include all required sections:
 
-            If you need more help, feel free to join our Discord for support. 
+- **Bug Description**
+- **Steps to Reproduce**
+- **Expected Behavior**
+- **Desktop Details:**
+- **Additional Context**
 
-            This issue will be closed automatically, but you can reopen it once it meets the requirements. Thank you!
+If you need more help, feel free to join our Discord for support.
 
-      - name: Close issue
-        if: steps.issue_check.outputs.result == 'false'
-        uses: peter-evans/close-issue@v2
-        with:
-          issue-number: ${{ github.event.issue.number }}
-          comment: "This issue has been closed because it did not follow the issue template."
+This issue will be closed automatically, but you can reopen it once it meets the requirements. Thank you!`
+            });
+
+            // Close the issue
+            await github.issues.update({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              state: 'closed'
+            });
