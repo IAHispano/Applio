@@ -1,0 +1,52 @@
+name: Issues Helper
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  close_incomplete_issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if issue follows the template
+        id: issue_check
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueBody = context.payload.issue.body || '';
+            const requiredSections = [
+              '**Bug Description**',
+              '**Steps to Reproduce**',
+              '**Expected Behavior**',
+              '**Desktop Details:**',
+            ];
+
+            const issueValid = requiredSections.every(section => issueBody.includes(section));
+
+            return issueValid;
+
+      - name: Close issue if it doesn't follow the template
+        if: steps.issue_check.outputs.result == 'false'
+        uses: actions-ecosystem/action-close-issue@v1
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          comment: |
+            Hi there! It seems that your issue does not follow our template guidelines. 
+
+            Please edit your issue to include all required sections:
+
+            - **Bug Description**
+            - **Steps to Reproduce**
+            - **Expected Behavior**
+            - **Desktop Details:**
+
+            If you need more help, feel free to join our Discord for support. 
+
+            This issue will be closed automatically, but you can reopen it once it meets the requirements. Thank you!
+
+      - name: Close issue
+        if: steps.issue_check.outputs.result == 'false'
+        uses: peter-evans/close-issue@v2
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          comment: "This issue has been closed because it did not follow the issue template."
