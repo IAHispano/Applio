@@ -8,11 +8,11 @@ fi
 
 echo "Checking if python exists"
 if command -v python3.10 > /dev/null 2>&1; then
-  py=$(which python3.10)
+  PYTHON_EXECUTABLE=$(which python3.10)
   echo "Using python3.10"
 else
   if python --version | grep -qE "3\.(7|8|9|10)\."; then
-    py=$(which python)
+    PYTHON_EXECUTABLE=$(which python)
     echo "Using python"
   else
     echo "Please install Python3 or 3.10 manually."
@@ -20,17 +20,17 @@ else
   fi
 fi
 
-PYTHON_HOME=$(dirname $(dirname "$py"))
+PYTHON_HOME=$(dirname $(dirname "$PYTHON_EXECUTABLE"))
 
 CURRENT_HOME=$(grep "^home =" .venv/pyvenv.cfg | cut -d "=" -f 2 | xargs)
 
 if [ "$CURRENT_HOME" != "$PYTHON_HOME" ]; then
   sed -i "s|home =.*|home = $PYTHON_HOME|" .venv/pyvenv.cfg
+  VENV_PATH=$(realpath .venv)
+  find "$VENV_PATH/bin/" -type f -exec sed -i "0,/^VIRTUAL_ENV=/s|VIRTUAL_ENV=.*|VIRTUAL_ENV='$VENV_PATH'|" {} \;
+else
+  echo "Home path in .venv/pyvenv.cfg is already up-to-date"
 fi
-
-VENV_PATH=$(realpath .venv)
-
-find "$VENV_PATH/bin/" -type f -exec sed -i "0,/^VIRTUAL_ENV=/s|VIRTUAL_ENV=.*|VIRTUAL_ENV='$VENV_PATH'|" {} \;
 
 . .venv/bin/activate
 
