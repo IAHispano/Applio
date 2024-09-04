@@ -14,6 +14,7 @@ from utils import (
     load_checkpoint,
     save_checkpoint,
     latest_checkpoint_path,
+    load_wav_to_torch,
 )
 from random import randint, shuffle
 from time import sleep
@@ -406,6 +407,20 @@ def run(
     else:
         net_g = DDP(net_g)
         net_d = DDP(net_d)
+
+    # Check sample rate
+    if rank == 0:
+        first_wav_file = next(
+            (filename for filename in os.listdir(os.path.join(experiment_dir, "sliced_audios")) if filename.endswith(".wav")),
+            None
+        )
+        if first_wav_file:
+            audio = os.path.join(os.path.join(experiment_dir, "sliced_audios"), first_wav_file)
+            _, sr = load_wav_to_torch(audio)
+            if sr != sample_rate:
+                raise ValueError(f"Sample rate mismatch: {sr} != {sample_rate}")
+        else:
+            print("No wav file found.")
 
     # Load checkpoint if available
     try:
