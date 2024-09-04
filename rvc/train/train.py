@@ -418,7 +418,11 @@ def run(
             audio = os.path.join(os.path.join(experiment_dir, "sliced_audios"), first_wav_file)
             _, sr = load_wav_to_torch(audio)
             if sr != sample_rate:
-                raise ValueError(f"Sample rate mismatch: {sr} != {sample_rate}")
+                try:
+                    raise ValueError(f"Error: Sample rate mismatch: {sr} != {sample_rate}")
+                except ValueError as e:
+                    print(f"Error: Sample rate mismatch: {sr} != {sample_rate}")
+                    sys.exit(1)
         else:
             print("No wav file found.")
 
