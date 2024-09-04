@@ -1,6 +1,11 @@
 #!/bin/sh
 printf "\033]0;Applio\007"
 
+if ! command -v python > /dev/null 2>&1 && ! command -v python3 > /dev/null 2>&1; then
+  echo "Error: Python or Python 3 not found. Please install one of them."
+  exit 1
+fi
+
 if [ ! -d ".venv" ]; then
   echo "Error: Virtual environment not found. Please run the installer first."
   exit 1
@@ -10,14 +15,15 @@ echo "Checking if python exists"
 if command -v python3.10 > /dev/null 2>&1; then
   PYTHON_EXECUTABLE=$(which python3.10)
   echo "Using python3.10"
+elif command -v python3 > /dev/null 2>&1; then
+  PYTHON_EXECUTABLE=$(which python3)
+  echo "Using python3"
+elif command -v python > /dev/null 2>&1; then
+  PYTHON_EXECUTABLE=$(which python)
+  echo "Using python"
 else
-  if python --version | grep -qE "3\.(7|8|9|10)\."; then
-    PYTHON_EXECUTABLE=$(which python)
-    echo "Using python"
-  else
-    echo "Please install Python3 or 3.10 manually."
-    exit 1
-  fi
+  echo "Error: Unable to find a suitable Python version."
+  exit 1
 fi
 
 PYTHON_HOME=$(dirname "$PYTHON_EXECUTABLE")
@@ -39,4 +45,4 @@ export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
 
 clear
 
-python app.py --open
+"$PYTHON_EXECUTABLE" app.py --open
