@@ -70,7 +70,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10.12"]
+        python-version: ["3.10"]
 
     steps:
       - uses: actions/checkout@v3
@@ -99,7 +99,7 @@ jobs:
           sudo apt-get install -y pv
           sudo apt-get install -y ffmpeg
           pip install uv huggingface_hub
-          uv venv .venv --python 3.10.12
+          uv venv .venv --python 3.10
           uv pip install -r requirements.txt
           uv pip uninstall torch torchvision torchaudio
           . .venv/bin/activate
