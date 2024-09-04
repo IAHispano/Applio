@@ -20,7 +20,7 @@ else
   fi
 fi
 
-PYTHON_HOME=$(dirname $(dirname "$PYTHON_EXECUTABLE"))
+PYTHON_HOME=$(dirname "$PYTHON_EXECUTABLE")
 
 CURRENT_HOME=$(grep "^home =" .venv/pyvenv.cfg | cut -d "=" -f 2 | xargs)
 
