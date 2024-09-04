@@ -419,9 +419,9 @@ def run(
             _, sr = load_wav_to_torch(audio)
             if sr != sample_rate:
                 try:
-                    raise ValueError(f"Error: Sample rate mismatch: {sr} != {sample_rate}")
+                    raise ValueError(f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz).")
                 except ValueError as e:
-                    print(f"Error: Sample rate mismatch: {sr} != {sample_rate}")
+                    print(f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz).")
                     sys.exit(1)
         else:
             print("No wav file found.")
