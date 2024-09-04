@@ -54,6 +54,7 @@ jobs:
           
       - name: Modify pyvenv.cfg
         run: |
+          sed -i '/^prompt = Applio/d' .venv/pyvenv.cfg
           sed -i 's/home = \/opt\/hostedtoolcache\/Python\/3\.10\.12\/x64\/bin/home = \/usr\/bin/' .venv/pyvenv.cfg
 
       - name: Create ZIP file
