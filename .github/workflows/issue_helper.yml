@@ -15,20 +15,16 @@ jobs:
           script: |
             const issue = context.payload.issue;
             const requiredSections = [
-              '**Before You Report a Bug**',
               '**Bug Description**',
               '**Steps to Reproduce**',
-              '**Expected Behavior**',
-              '**Assets**',
               '**Desktop Details:**',
-              '**Additional Context**'
             ];
             
             const body = issue.body;
             const missingFields = requiredSections.filter(section => !body.includes(section));
             
             if (missingFields.length > 0) {
-              const message = `Thank you for your issue report. However, it appears that your issue description is missing the following required sections:\n${missingFields.map(field => `- ${field}`).join('\n')}\nPlease edit your issue to include all required information using our issue template. This helps us address your concern more effectively.\nIf you need assistance with the template or have any questions, please join our Discord server for support.\nThis issue will be closed automatically. Feel free to reopen it once you've updated it with the required information.`;
+              const message = `Thank you for your issue report. However, it appears that your issue description is missing the following required sections:\n${missingFields.map(field => `- ${field}`).join('\n')}\n\nPlease edit your issue to include all required information using our issue template. This helps us address your concern more effectively.\nIf you need assistance with the template or have any questions, please join our Discord server for support.\n\nThis issue will be closed automatically. Feel free to reopen it once you've updated it with the required information.`;
               
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
