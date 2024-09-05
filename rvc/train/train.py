@@ -135,6 +135,10 @@ def verify_checkpoint_shapes(checkpoint_path, model):
     except RuntimeError:
         print("The sample rate of the pretrain doesn't match the selected one")
         sys.exit(1)
+    else:
+        del checkpoint
+        del checkpoint_state_dict
+        del model_state_dict
 
 
 def main():
