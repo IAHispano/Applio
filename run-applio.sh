@@ -1,6 +1,14 @@
 #!/bin/sh
 printf "\033]0;Applio\007"
 
+# Verifica si el paquete python3.10-venv está instalado y lo instala si es necesario
+if ! dpkg -s python3.10-venv > /dev/null 2>&1; then
+  echo "Installing python3.10-venv..."
+  sudo apt-get update
+  sudo apt-get install -y python3.10-venv
+fi
+
+# Verifica si Python o Python 3 está instalado
 if ! command -v python > /dev/null 2>&1 && ! command -v python3 > /dev/null 2>&1; then
   echo "Error: Python or Python 3 not found. Please install one of them."
   exit 1
