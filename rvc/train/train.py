@@ -127,6 +127,16 @@ class EpochRecorder:
         return f"time={current_time} | training_speed={elapsed_time_str}"
 
 
+def verify_checkpoint_shapes(checkpoint_path, model):
+    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint_state_dict = checkpoint["model"]
+    try:
+        model_state_dict = model.module.load_state_dict(checkpoint_state_dict)
+    except RuntimeError:
+        print("The sample rate of the pretrain doesn't match the selected one")
+        sys.exit(1)
+
+
 def main():
     """
     Main function to start the training process.
@@ -430,7 +440,9 @@ def run(
     else:
         net_g = DDP(net_g)
         net_d = DDP(net_d)
-
+    # check sample rate
+    if rank == 0:
+        verify_checkpoint_shapes(pretrainG, net_g)
     # Load checkpoint if available
     try:
         print("Starting training...")
