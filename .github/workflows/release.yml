@@ -60,8 +60,8 @@ jobs:
           > [!TIP]
           > For the best experience, we highly recommend using the pre-compiled version. Compiling the code yourself may lead to instabilities.
 
-          - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/blob/main/Compiled/ApplioV${{ steps.check-version.outputs.tag }}.zip).
-          - **Run Applio**: Unzip the zip file and then open \`run-applio.bat\` file.
+          - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/resolve/main/Compiled/Windows/ApplioV${{ steps.check-version.outputs.tag }}.zip).
+          - **Run Applio**: Extract the `.zip` file, then open the \`run-applio.bat\` file.
 
           **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}
 
@@ -173,13 +173,13 @@ jobs:
             ### Prefer a Simpler Installation?
             > [!TIP]
             > For the best experience, we highly recommend using the pre-compiled version. Compiling the code yourself may lead to instabilities.
-            - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/blob/main/Compiled/ApplioV${{ steps.check-version.outputs.tag }}.zip).
-            - **Run Applio**: Unzip the zip file and then open \`run-applio.bat\` file.
+            - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/resolve/main/Compiled/Windows/ApplioV${{ steps.check-version.outputs.tag }}.zip).
+            - **Run Applio**: Extract the `.zip` file, then open the \`run-applio.bat\` file.
           ## What's New in This Release
             ${changelog}
 
           **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}  " \
-            -o "IAHispano" \
+            -o "Vidalnt" \
             -r "Applio" \
             -w /home/runner/work/Applio/Applio \
             -y
