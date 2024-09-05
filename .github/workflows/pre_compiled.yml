@@ -98,13 +98,12 @@ jobs:
           sudo apt-get install -y pigz
           sudo apt-get install -y pv
           sudo apt-get install -y ffmpeg
-          pip install uv huggingface_hub
-          uv venv .venv --python 3.10
-          uv pip install -r requirements.txt
-          uv pip uninstall torch torchvision torchaudio
-          . .venv/bin/activate
-          python -m ensurepip
+          pip install virtualenv huggingface_hub
+          virtualenv .venv --python 3.10
+          source venv/bin/activate
           python -m pip install "pip<24.1"
+          python -m pip install -r requirements.txt
+          python -m pip uninstall torch torchvision torchaudio
           python -m pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
           python core.py "prerequisites" --models "True" --pretraineds_v1 "False" --pretraineds_v2 "True" --exe "False"
           deactivate
