@@ -23,7 +23,6 @@ jobs:
 
       - name: Detect and tag new version
         id: check-version
-        if: steps.check-parent-commit.outputs.sha
         uses: salsify/action-detect-and-tag-new-version@v2.0.3
         with:
           tag-template: '{VERSION}'
