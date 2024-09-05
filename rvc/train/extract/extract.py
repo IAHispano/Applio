@@ -1,8 +1,13 @@
-import os, glob
+import os
 import sys
+import glob
 import time
 import tqdm
 import torch
+import torchcrepe
+import numpy as np
+import concurrent.futures
+import multiprocessing as mp
 
 # Zluda
 if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):
@@ -10,9 +15,6 @@ if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"
     torch.backends.cuda.enable_flash_sdp(False)
     torch.backends.cuda.enable_math_sdp(True)
     torch.backends.cuda.enable_mem_efficient_sdp(False)
-import torchcrepe
-import numpy as np
-import concurrent.futures
 
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
@@ -24,6 +26,8 @@ from rvc.configs.config import Config
 
 # Load config
 config = Config()
+
+mp.set_start_method("spawn", force=True)
 
 
 class FeatureInput:
@@ -38,11 +42,7 @@ class FeatureInput:
         self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
         self.device = device
-        self.model_rmvpe = RMVPE0Predictor(
-            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-            is_half=False,
-            device=device,
-        )
+        self.model_rmvpe = None
 
     def compute_f0(self, np_arr, f0_method, hop_length):
         """Extract F0 using the specified method."""
@@ -58,7 +58,6 @@ class FeatureInput:
         audio = torch.from_numpy(x.astype(np.float32)).to(self.device)
         audio /= torch.quantile(torch.abs(audio), 0.999)
         audio = audio.unsqueeze(0)
-
         pitch = torchcrepe.predict(
             audio,
             self.fs,
@@ -67,10 +66,9 @@ class FeatureInput:
             self.f0_max,
             "full",
             batch_size=hop_length * 2,
-            device=self.device,
+            device=audio.device,
             pad=True,
         )
-
         source = pitch.squeeze(0).cpu().float().numpy()
         source[source < 0.001] = np.nan
         target = np.interp(
@@ -97,7 +95,6 @@ class FeatureInput:
     def process_file(self, file_info, f0_method, hop_length):
         """Process a single audio file for F0 extraction."""
         inp_path, opt_path1, opt_path2, _ = file_info
-        # print(f"Process file {inp_path}. Class on {self.device}, model is on {self.model_rmvpe.device}")
 
         if os.path.exists(opt_path1) and os.path.exists(opt_path2):
             return
@@ -113,86 +110,132 @@ class FeatureInput:
                 f"An error occurred extracting file {inp_path} on {self.device}: {error}"
             )
 
-    def process_files(self, files, f0_method, hop_length, pbar):
+    def process_files(
+        self, files, f0_method, hop_length, device_num, device, n_threads
+    ):
         """Process multiple files."""
-        for file_info in files:
+        self.device = device
+        if f0_method == "rmvpe":
+            self.model_rmvpe = RMVPE0Predictor(
+                os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
+                is_half=False,
+                device=device,
+            )
+        else:
+            n_threads = 1
+
+        n_threads = 1 if n_threads == 0 else n_threads
+
+        def process_file_wrapper(file_info):
             self.process_file(file_info, f0_method, hop_length)
-            pbar.update(1)
+
+        with tqdm.tqdm(total=len(files), leave=True, position=device_num) as pbar:
+            # using multi-threading
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=n_threads
+            ) as executor:
+                futures = [
+                    executor.submit(process_file_wrapper, file_info)
+                    for file_info in files
+                ]
+                for future in concurrent.futures.as_completed(futures):
+                    pbar.update(1)
 
 
 def run_pitch_extraction(files, devices, f0_method, hop_length, num_processes):
-    print(f"Starting pitch extraction with {num_processes} cores and {f0_method}...")
+    devices_str = ", ".join(devices)
+    print(
+        f"Starting pitch extraction with {num_processes} cores on {devices_str} using {f0_method}..."
+    )
     start_time = time.time()
-
-    pbar = tqdm.tqdm(total=len(files), desc="Pitch Extraction")
-    num_gpus = len(devices)
-    process_partials = []
-    for idx, gpu in enumerate(devices):
-        device = torch.device(gpu)
-        feature_input = FeatureInput(device=device)
-        part_paths = files[idx::num_gpus]
-        process_partials.append((feature_input, part_paths))
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_processes) as executor:
-        futures = [
-            executor.submit(
-                FeatureInput.process_files,
-                feature_input,
-                part_paths,
+    fe = FeatureInput()
+    # split the task between devices
+    ps = []
+    num_devices = len(devices)
+    for i, device in enumerate(devices):
+        p = mp.Process(
+            target=fe.process_files,
+            args=(
+                files[i::num_devices],
                 f0_method,
                 hop_length,
-                pbar,
-            )
-            for feature_input, part_paths in process_partials
-        ]
-        for future in concurrent.futures.as_completed(futures):
-            future.result()
-    pbar.close()
+                i,
+                device,
+                num_processes // num_devices,
+            ),
+        )
+        ps.append(p)
+        p.start()
+    for i, device in enumerate(devices):
+        ps[i].join()
 
     elapsed_time = time.time() - start_time
     print(f"Pitch extraction completed in {elapsed_time:.2f} seconds.")
 
 
-def process_file_embedding(file_info, model, device):
-    """Process a single audio file for embedding extraction."""
-    wav_file_path, _, _, out_file_path = file_info
-
-    if os.path.exists(out_file_path):
-        return
+def process_file_embedding(
+    files, version, embedder_model, embedder_model_custom, device_num, device, n_threads
+):
     dtype = torch.float16 if config.is_half and "cuda" in device else torch.float32
-    model = model.to(dtype).to(device)
-    feats = torch.from_numpy(load_audio(wav_file_path, 16000)).to(dtype).to(device)
-    feats = feats.view(1, -1)
+    model = load_embedding(embedder_model, embedder_model_custom).to(dtype).to(device)
+    n_threads = 1 if n_threads == 0 else n_threads
 
-    with torch.no_grad():
-        feats = model(feats)["last_hidden_state"]
-        feats = model.final_proj(feats[0]).unsqueeze(0) if version == "v1" else feats
+    def process_file_embedding_wrapper(file_info):
+        wav_file_path, _, _, out_file_path = file_info
+        if os.path.exists(out_file_path):
+            return
+        feats = torch.from_numpy(load_audio(wav_file_path, 16000)).to(dtype).to(device)
+        feats = feats.view(1, -1)
+        with torch.no_grad():
+            feats = model(feats)["last_hidden_state"]
+            feats = (
+                model.final_proj(feats[0]).unsqueeze(0) if version == "v1" else feats
+            )
+        feats = feats.squeeze(0).float().cpu().numpy()
+        if not np.isnan(feats).any():
+            np.save(out_file_path, feats, allow_pickle=False)
+        else:
+            print(f"{file} contains NaN values and will be skipped.")
 
-    feats = feats.squeeze(0).float().cpu().numpy()
-    if not np.isnan(feats).any():
-        np.save(out_file_path, feats, allow_pickle=False)
-    else:
-        print(f"{file} contains NaN values and will be skipped.")
+    with tqdm.tqdm(total=len(files), leave=True, position=device_num) as pbar:
+        # using multi-threading
+        with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
+            futures = [
+                executor.submit(process_file_embedding_wrapper, file_info)
+                for file_info in files
+            ]
+            for future in concurrent.futures.as_completed(futures):
+                pbar.update(1)
 
 
-def run_embedding_extraction(files, devices, embedder_model, embedder_model_custom):
-    """Main function to orchestrate the embedding extraction process."""
-    print("Starting embedding extraction...")
+def run_embedding_extraction(
+    files, devices, version, embedder_model, embedder_model_custom
+):
     start_time = time.time()
-    model = load_embedding(embedder_model, embedder_model_custom)
-
-    pbar = tqdm.tqdm(total=len(files), desc="Embedding Extraction")
-
-    # add multi-threading here?
-    for i, file_info in enumerate(files):
-        device = devices[i % len(devices)]
-        try:
-            process_file_embedding(file_info, model, device)
-        except Exception as error:
-            print(f"An error occurred processing {file_info[0]}: {error}")
-        pbar.update(1)
-
-    pbar.close()
+    devices_str = ", ".join(devices)
+    print(
+        f"Starting embedding extraction with {num_processes} cores on {devices_str}..."
+    )
+    # split the task between devices
+    ps = []
+    num_devices = len(devices)
+    for i, device in enumerate(devices):
+        p = mp.Process(
+            target=process_file_embedding,
+            args=(
+                files[i::num_devices],
+                version,
+                embedder_model,
+                embedder_model_custom,
+                i,
+                device,
+                num_processes // num_devices,
+            ),
+        )
+        ps.append(p)
+        p.start()
+    for i, device in enumerate(devices):
+        ps[i].join()
     elapsed_time = time.time() - start_time
     print(f"Embedding extraction completed in {elapsed_time:.2f} seconds.")
 
@@ -230,12 +273,13 @@ if __name__ == "__main__":
         files.append(file_info)
 
     devices = ["cpu"] if gpus == "-" else [f"cuda:{idx}" for idx in gpus.split("-")]
-
     # Run Pitch Extraction
     run_pitch_extraction(files, devices, f0_method, hop_length, num_processes)
 
     # Run Embedding Extraction
-    run_embedding_extraction(files, devices, embedder_model, embedder_model_custom)
+    run_embedding_extraction(
+        files, devices, version, embedder_model, embedder_model_custom
+    )
 
     # Run Preparing Files
     generate_config(version, sample_rate, exp_dir)
