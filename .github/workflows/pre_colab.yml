@@ -49,7 +49,20 @@ jobs:
       
       - name: Create TAR Env
         run: |
-          tar --use-compress-program="pigz --best --recursive | pv" -cvf KaggleV2.tar.gz .venv
+          tar --use-compress-program="pigz --best --recursive | pv" -cvf KaggleV2.tar.gz .venv \
+          --exclude=".venv/pyvenv.cfg" \
+          --exclude=".venv/bin/activate" \
+          --exclude=".venv/bin/activate.bat" \
+          --exclude=".venv/bin/activate.csh" \
+          --exclude=".venv/bin/activate.fish" \
+          --exclude=".venv/bin/activate.nu" \
+          --exclude=".venv/bin/activate.ps1" \
+          --exclude=".venv/bin/activate_this.py" \
+          --exclude=".venv/bin/deactivate.bat" \
+          --exclude=".venv/bin/pydoc.bat" \
+          --exclude=".venv/bin/python" \
+          --exclude=".venv/bin/python3" \
+          --exclude=".venv/bin/python3.10"
 
       - name: Upload Kaggle Env
         env:
