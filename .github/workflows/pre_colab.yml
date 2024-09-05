@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10.12"]
+        python-version: ["3.10"]
 
     steps:
       - uses: actions/checkout@v3
@@ -36,13 +36,12 @@ jobs:
           sudo apt-get install -y pigz
           sudo apt-get install -y pv
           sudo apt-get install -y ffmpeg
-          pip install uv huggingface_hub
-          uv venv .venv --python 3.10.12
-          uv pip install -r requirements.txt
-          uv pip uninstall torch torchvision torchaudio
-          . .venv/bin/activate
-          python -m ensurepip
+          pip install virtualenv huggingface_hub
+          virtualenv .venv --python 3.10
+          source .venv/bin/activate
           python -m pip install "pip<24.1"
+          python -m pip install -r requirements.txt
+          python -m pip uninstall torch torchvision torchaudio
           python -m pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
           python core.py "prerequisites" --models "True" --pretraineds_v1 "False" --pretraineds_v2 "True" --exe "False"
           deactivate
@@ -55,11 +54,11 @@ jobs:
       - name: Modify pyvenv.cfg
         run: |
           sed -i '/^prompt = Applio/d' .venv/pyvenv.cfg
-          sed -i 's/home = \/opt\/hostedtoolcache\/Python\/3\.10\.12\/x64\/bin/home = \/usr\/bin/' .venv/pyvenv.cfg
+          sed -i 's|^home =.*|home = /usr/bin|' .venv/pyvenv.cfg
 
       - name: Create ZIP file
         run: |
-          zip -9 -r Linux_ApplioV${{ steps.get-version.outputs.version }}.zip .
+          zip -9 -r ApplioV${{ steps.get-version.outputs.version }}.zip .
 
       - name: Upload Linux Compiled
         env:
@@ -74,55 +73,12 @@ jobs:
           version = os.getenv('version')
           login(token)
           repo_id = 'vidalnt/nothing'
-          repo_file_path = f'Linux_ApplioV{version}.zip'
+          repo_file_path = f'ApplioV{version}.zip'
             
           upload_file(
           commit_message=f'{version}',
           path_or_fileobj=repo_file_path,
-          path_in_repo=f'Compiled/{repo_file_path}',
-          repo_id=repo_id,
-          token=token)
-          "
-      - name: Remove Compiled File
-        run: |
-          rm -f Linux_ApplioV${{ steps.get-version.outputs.version }}.zip
-          
-      - name: Install imjoy-elfinder
-        run: |
-          uv pip install https://github.com/Vidalnt/imjoy-elfinder.git
-
-      - name: Modify pyvenv.cfg
-        run: |
-          sed -i 's|^home =.*|home = /opt/conda/bin|' .venv/pyvenv.cfg
-          VENV_PATH='/kaggle/tmp/.venv'
-          find ".venv/bin/" -type f -exec sed -i "0,/^VIRTUAL_ENV=/s|VIRTUAL_ENV=.*|VIRTUAL_ENV='$VENV_PATH'|" {} \;
-      
-      - name: Verify VIRTUAL_ENV update
-        run: |
-          cat .venv/bin/activate
-          cat .venv/pyvenv.cfg
-
-
-      - name: Create TAR Env
-        run: |
-          tar --use-compress-program="pigz --best --recursive | pv" -cvf KaggleV2.tar.gz .venv
-
-      - name: Upload Kaggle Env
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          python -c "
-          import os
-          from huggingface_hub import login, upload_file
-            
-          token = os.getenv('HF_TOKEN')
-          login(token)
-          repo_id = 'vidalnt/nothing'
-          repo_file_path = 'KaggleV2.tar.gz'
-            
-          upload_file(
-          path_or_fileobj=repo_file_path,
-          path_in_repo=f'Colab/{repo_file_path}',
+          path_in_repo=f'Compiled/Linux/ApplioV{version}.zip',
           repo_id=repo_id,
           token=token)
           "
