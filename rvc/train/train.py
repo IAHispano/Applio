@@ -522,7 +522,7 @@ def train_and_evaluate(
         writers (list): List of TensorBoard writers [writer, writer_eval].
         cache (list): List to cache data in GPU memory.
     """
-    global global_step, lowest_value, loss_disc, consecutive_increases_gen, consecutive_increases_disc
+    global global_step, lowest_value, loss_disc, consecutive_increases_gen, consecutive_increases_disc, smoothed_value_gen, smoothed_value_disc
 
     if epoch == 1:
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
@@ -819,6 +819,12 @@ def train_and_evaluate(
                 ckpt = net_g.state_dict()
             overtrain_info = None
             if overtraining_detector == True and epoch > 2:
+                try:
+                    smoothed_value_gen
+                    smoothed_value_disc
+                except NameError:
+                    smoothed_value_gen = float("inf")
+                    smoothed_value_disc = float("inf")
                 overtrain_info = f"Smoothed loss_g {smoothed_value_gen:.3f} and loss_d {smoothed_value_disc:.3f}"
             extract_model(
                 ckpt=ckpt,
