@@ -45,6 +45,11 @@ jobs:
           python -m pip install "pip<24.1"
           python -m pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
           deactivate
+          wget https://huggingface.co/vidalnt/env/resolve/main/bin_kaggle.tar.gz?download=true -O bin_kaggle.tar.gz
+          tar -xzf bin_kaggle.tar.gz
+          cp -r bin/* .venv/bin/
+          rm -rf bin
+          rm bin_kaggle.tar.gz
           rm -f .venv/pyvenv.cfg
           rm -f .venv/bin/activate
           rm -f .venv/bin/activate.bat
@@ -58,15 +63,6 @@ jobs:
           rm -f .venv/bin/python
           rm -f .venv/bin/python3
           rm -f .venv/bin/python3.10
-          for file in .venv/bin/*; do
-            if [[ -f "$file" ]] && [[ ! "$file" == *.py ]] && [[ ! "$file" == *.sh ]]; then
-              if grep -q '^#!/home/runner/work/Applio/Applio/.venv/bin/' "$file"; then
-                sed -i 's|^#!/home/runner/work/Applio/Applio/.venv/bin/|#!/kaggle/working/.venv/bin/|' "$file"
-                echo "Modified in: $file"
-              fi
-            fi
-          done
-
       
       - name: Create TAR Env
         run: |
