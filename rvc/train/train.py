@@ -818,7 +818,7 @@ def train_and_evaluate(
             else:
                 ckpt = net_g.state_dict()
             overtrain_info = None
-            if overtraining_detector == True:
+            if overtraining_detector:
                 try:
                     smoothed_value_gen
                 except NameError:
