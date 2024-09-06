@@ -1,4 +1,5 @@
-"theme": {
+{
+  "theme": {
     "file": "Applio.py",
     "class": "Applio"
   },
