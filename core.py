@@ -455,6 +455,7 @@ def run_train_script(
     index_algorithm: str = "Auto",
     cache_data_in_gpu: bool = False,
     custom_pretrained: bool = False,
+    use_cpu: bool = False,
     g_pretrained_path: str = None,
     d_pretrained_path: str = None,
 ):
@@ -495,6 +496,7 @@ def run_train_script(
                 save_only_latest,
                 save_every_weights,
                 cache_data_in_gpu,
+                use_cpu,
                 overtraining_detector,
                 overtraining_threshold,
                 sync_graph,
@@ -1394,6 +1396,13 @@ def parse_arguments():
         default="Auto",
         required=False,
     )
+    train_parser.add_argument(
+        "--use_cpu",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Force the use of CPU for training.",
+        default=False,
+    )
 
     # Parser for 'index' mode
     index_parser = subparsers.add_parser(
@@ -1685,6 +1694,7 @@ def main():
                 sync_graph=args.sync_graph,
                 index_algorithm=args.index_algorithm,
                 cache_data_in_gpu=args.cache_data_in_gpu,
+                use_cpu=args.use_cpu,
                 g_pretrained_path=args.g_pretrained_path,
                 d_pretrained_path=args.d_pretrained_path,
             )
