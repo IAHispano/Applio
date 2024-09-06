@@ -496,10 +496,10 @@ def run_train_script(
                 save_only_latest,
                 save_every_weights,
                 cache_data_in_gpu,
-                use_cpu,
                 overtraining_detector,
                 overtraining_threshold,
                 sync_graph,
+                use_cpu,
             ],
         ),
     ]
