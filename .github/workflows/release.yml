@@ -149,7 +149,7 @@ jobs:
           changelog=$(cat summarized_changelog.txt)
           GH_RELEASE_GITHUB_API_TOKEN=${{ secrets.GITHUB_TOKEN }} npx gh-release \
             -t "${tag_name}" \
-            -n "Release ${tag_name}" \
+            -n "Applio ${tag_name}" \
             -c "main" \
             -b "## Important Installation Guidelines
 

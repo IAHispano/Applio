@@ -26,6 +26,7 @@ jobs:
         run: |
           .\run-install.bat
           .\env\python.exe core.py "prerequisites" --models "True" --pretraineds_v1 "False" --pretraineds_v2 "True" --exe "True"
+          .\env\python.exe -m pip install fastapi==0.112.4 gradio==4.43.0 gradio-client==1.3.0 pydantic==2.9.0 numpy>=1.24.4
 
       - name: Clean up unnecessary files
         run: |
@@ -106,6 +107,7 @@ jobs:
           python -m ensurepip
           python -m pip install "pip<24.1"
           python -m pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
+          python -m pip install fastapi==0.112.4 gradio==4.43.0 gradio-client==1.3.0 pydantic==2.9.0 numpy>=1.24.4
           deactivate
           rm -f .venv/pyvenv.cfg
           rm -f .venv/bin/activate
@@ -188,6 +190,7 @@ jobs:
       - name: Install dependencies 
         run: |
           pip install -r requirements.txt
+          pip install fastapi==0.112.4 gradio==4.43.0 gradio-client==1.3.0 pydantic==2.9.0 numpy>=1.24.4
           
       - name: Record final state of site-packages
         run: |
