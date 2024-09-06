@@ -818,16 +818,10 @@ def train_and_evaluate(
             else:
                 ckpt = net_g.state_dict()
             overtrain_info = None
-            if overtraining_detector:
-                try:
-                    smoothed_value_gen
-                except NameError:
-                    smoothed_value_gen = float("inf")
-                try:
-                    smoothed_value_disc
-                except NameError:
-                    smoothed_value_disc = float("inf")
+            if overtraining_detector and epoch > 1:
                 overtrain_info = f"Smoothed loss_g {smoothed_value_gen:.3f} and loss_d {smoothed_value_disc:.3f}"
+            else:
+                overtrain_info = ""
             extract_model(
                 ckpt=ckpt,
                 sr=sample_rate,
