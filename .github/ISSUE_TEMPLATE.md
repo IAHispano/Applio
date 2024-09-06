@@ -6,8 +6,7 @@ labels: ''
 assignees: ''
 ---
 
-**Before You Report a Bug**
-Reporting a bug is essential for us to improve our service, but we need detailed information to address the issue effectively. Since every computer setup is unique, there can be various reasons behind a bug. Before reporting, consider potential causes and provide as much detail as possible to help us understand the problem.
+<!--- Before you report a bug: Reporting a bug is essential for us to improve our service, but we need detailed information to address the issue effectively. Since every computer setup is unique, there can be various reasons behind a bug. Before reporting, consider potential causes and provide as much detail as possible to help us understand the problem. --->
 
 **Bug Description**
 Please provide a clear and concise description of the bug.

@@ -40,8 +40,16 @@ class F0Extractor:
     def extract_f0(self) -> np.ndarray:
         f0 = None
         method = self.method
+        # Fall back to CPU for ZLUDA as these methods use CUcFFT
+        device = (
+            "cpu"
+            if "cuda" in config.device
+            and torch.cuda.get_device_name().endswith("[ZLUDA]")
+            else config.device
+        )
+
         if method == "crepe":
-            wav16k_torch = torch.FloatTensor(self.wav16k).unsqueeze(0).to(config.device)
+            wav16k_torch = torch.FloatTensor(self.wav16k).unsqueeze(0).to(device)
             f0 = torchcrepe.predict(
                 wav16k_torch,
                 sample_rate=16000,
@@ -49,7 +57,7 @@ class F0Extractor:
                 batch_size=512,
                 fmin=self.f0_min,
                 fmax=self.f0_max,
-                device=config.device,
+                device=device,
             )
             f0 = f0[0].cpu().numpy()
         elif method == "fcpe":
@@ -57,13 +65,9 @@ class F0Extractor:
             audio_length = len(audio)
             f0_target_length = (audio_length // self.hop_length) + 1
             audio = (
-                torch.from_numpy(audio)
-                .float()
-                .unsqueeze(0)
-                .unsqueeze(-1)
-                .to(config.device)
+                torch.from_numpy(audio).float().unsqueeze(0).unsqueeze(-1).to(device)
             )
-            model = torchfcpe.spawn_bundled_infer_model(device=config.device)
+            model = torchfcpe.spawn_bundled_infer_model(device=device)
 
             f0 = model.infer(
                 audio,
@@ -77,10 +81,11 @@ class F0Extractor:
             )
             f0 = f0.squeeze().cpu().numpy()
         elif method == "rmvpe":
+            is_half = False if device == "cpu" else config.is_half
             model_rmvpe = RMVPE0Predictor(
                 os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-                is_half=config.is_half,
-                device=config.device,
+                is_half=is_half,
+                device=device,
                 # hop_length=80
             )
             f0 = model_rmvpe.infer_from_audio(self.wav16k, thred=0.03)

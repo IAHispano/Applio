@@ -31,6 +31,7 @@ from utils import (
     load_checkpoint,
     save_checkpoint,
     latest_checkpoint_path,
+    load_wav_to_torch,
 )
 
 from data_utils import (
@@ -129,6 +130,20 @@ class EpochRecorder:
         return f"time={current_time} | training_speed={elapsed_time_str}"
 
 
+def verify_checkpoint_shapes(checkpoint_path, model):
+    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint_state_dict = checkpoint["model"]
+    try:
+        model_state_dict = model.module.load_state_dict(checkpoint_state_dict)
+    except RuntimeError:
+        print("The sample rate of the pretrain doesn't match the selected one")
+        sys.exit(1)
+    else:
+        del checkpoint
+        del checkpoint_state_dict
+        del model_state_dict
+
+
 def main():
     """
     Main function to start the training process.
@@ -137,6 +152,30 @@ def main():
 
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
+    # Check sample rate
+    first_wav_file = next(
+        (
+            filename
+            for filename in os.listdir(os.path.join(experiment_dir, "sliced_audios"))
+            if filename.endswith(".wav")
+        ),
+        None,
+    )
+    if first_wav_file:
+        audio = os.path.join(experiment_dir, "sliced_audios", first_wav_file)
+        _, sr = load_wav_to_torch(audio)
+        if sr != sample_rate:
+            try:
+                raise ValueError(
+                    f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz)."
+                )
+            except ValueError as e:
+                print(
+                    f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz)."
+                )
+                sys.exit(1)
+    else:
+        print("No wav file found.")
 
     use_gpu = torch.cuda.is_available() and not use_cpu
     device = torch.device("cuda" if use_gpu else "cpu")
@@ -341,7 +380,10 @@ def run(
         config (object): Configuration object containing training parameters.
         device (torch.device): The device to use for training (CPU or GPU).
     """
-    global global_step
+    global global_step, smoothed_value_gen, smoothed_value_disc
+
+    smoothed_value_gen = 0
+    smoothed_value_disc = 0
 
     if rank == 0:
         writer = SummaryWriter(log_dir=experiment_dir)
@@ -439,7 +481,9 @@ def run(
     else:
         net_g = DDP(net_g)
         net_d = DDP(net_d)
-
+    # check sample rate
+    if rank == 0:
+        verify_checkpoint_shapes(pretrainG, net_g)
     # Load checkpoint if available
     try:
         print("Starting training...")
@@ -559,7 +603,7 @@ def train_and_evaluate(
         cache (list): List to cache data in GPU memory.
         use_cpu (bool): Whether to use CPU for training.
     """
-    global global_step, lowest_value, loss_disc, consecutive_increases_gen, consecutive_increases_disc
+    global global_step, lowest_value, loss_disc, consecutive_increases_gen, consecutive_increases_disc, smoothed_value_gen, smoothed_value_disc
 
     if epoch == 1:
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
@@ -869,8 +913,10 @@ def train_and_evaluate(
                 ckpt = net_g.module.state_dict()
             else:
                 ckpt = net_g.state_dict()
-            if overtraining_detector != True:
-                overtrain_info = None
+            if overtraining_detector and epoch > 1:
+                overtrain_info = f"Smoothed loss_g {smoothed_value_gen:.3f} and loss_d {smoothed_value_disc:.3f}"
+            else:
+                overtrain_info = ""
             extract_model(
                 ckpt=ckpt,
                 sr=sample_rate,

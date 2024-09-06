@@ -6,6 +6,9 @@ numpy==1.23.5
 requests==2.32.0
 tqdm
 wget
+pydantic==2.8.2
+fastapi==0.112.0
+starlette==0.37.2
 
 # Audio processing
 ffmpeg-python>=0.2.0
@@ -35,8 +38,7 @@ transformers==4.44.2
 # Visualization and UI
 matplotlib==3.7.2
 tensorboard
-gradio==4.36.0
-
+gradio==4.43.0
 # Miscellaneous utilities
 certifi==2024.7.4; sys_platform == 'darwin'
 antlr4-python3-runtime==4.8; sys_platform == 'darwin'
