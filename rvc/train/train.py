@@ -821,9 +821,11 @@ def train_and_evaluate(
             if overtraining_detector == True:
                 try:
                     smoothed_value_gen
-                    smoothed_value_disc
                 except NameError:
                     smoothed_value_gen = float("inf")
+                try:
+                    smoothed_value_disc
+                except NameError:
                     smoothed_value_disc = float("inf")
                 overtrain_info = f"Smoothed loss_g {smoothed_value_gen:.3f} and loss_d {smoothed_value_disc:.3f}"
             extract_model(
