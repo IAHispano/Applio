@@ -172,6 +172,7 @@ def main():
                 sys.exit(1)
     else:
         print("No wav file found.")
+
     def start():
         """
         Starts the training process with multi-GPU support.
