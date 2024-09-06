@@ -14,6 +14,7 @@ from utils import (
     load_checkpoint,
     save_checkpoint,
     latest_checkpoint_path,
+    load_wav_to_torch,
 )
 from random import randint, shuffle
 from time import sleep
@@ -126,6 +127,20 @@ class EpochRecorder:
         return f"time={current_time} | training_speed={elapsed_time_str}"
 
 
+def verify_checkpoint_shapes(checkpoint_path, model):
+    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint_state_dict = checkpoint["model"]
+    try:
+        model_state_dict = model.module.load_state_dict(checkpoint_state_dict)
+    except RuntimeError:
+        print("The sample rate of the pretrain doesn't match the selected one")
+        sys.exit(1)
+    else:
+        del checkpoint
+        del checkpoint_state_dict
+        del model_state_dict
+
+
 def main():
     """
     Main function to start the training process.
@@ -133,7 +148,30 @@ def main():
     global training_file_path, last_loss_gen_all, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
-
+    # Check sample rate
+    first_wav_file = next(
+        (
+            filename
+            for filename in os.listdir(os.path.join(experiment_dir, "sliced_audios"))
+            if filename.endswith(".wav")
+        ),
+        None,
+    )
+    if first_wav_file:
+        audio = os.path.join(experiment_dir, "sliced_audios", first_wav_file)
+        _, sr = load_wav_to_torch(audio)
+        if sr != sample_rate:
+            try:
+                raise ValueError(
+                    f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz)."
+                )
+            except ValueError as e:
+                print(
+                    f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz)."
+                )
+                sys.exit(1)
+    else:
+        print("No wav file found.")
     def start():
         """
         Starts the training process with multi-GPU support.
@@ -406,7 +444,9 @@ def run(
     else:
         net_g = DDP(net_g)
         net_d = DDP(net_d)
-
+    # check sample rate
+    if rank == 0:
+        verify_checkpoint_shapes(pretrainG, net_g)
     # Load checkpoint if available
     try:
         print("Starting training...")
