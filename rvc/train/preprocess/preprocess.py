@@ -95,7 +95,7 @@ class PreProcess:
         cut_preprocess: bool,
         process_effects: bool,
         noise_reduction: bool,
-        reduction_strength: float = 0.7,
+        reduction_strength: float,
     ):
         audio_length = 0
         try:
