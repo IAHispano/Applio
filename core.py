@@ -370,6 +370,8 @@ def run_preprocess_script(
     cpu_cores: int,
     cut_preprocess: bool,
     process_effects: bool,
+    noise_reduction: bool,
+    clean_strength: float,
 ):
     config = get_config()
     per = 3.0 if config.is_half else 3.7
@@ -387,6 +389,8 @@ def run_preprocess_script(
                 cpu_cores,
                 cut_preprocess,
                 process_effects,
+                noise_reduction,
+                clean_strength,
             ],
         ),
     ]
@@ -1183,6 +1187,22 @@ def parse_arguments():
         choices=[True, False],
         help="Disable all filters during preprocessing.",
         default=False,
+        required=False,
+    )
+    preprocess_parser.add_argument(
+        "--noise_reduction",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Enable noise reduction during preprocessing.",
+        default=False,
+        required=False,
+    )
+    preprocess_parser.add_argument(
+        "--noise_reduction_strength",
+        type=float,
+        help="Strength of the noise reduction filter.",
+        choices=[(i / 10) for i in range(11)],
+        default=0.7,
         required=False,
     )
 
