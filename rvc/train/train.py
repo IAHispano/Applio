@@ -475,15 +475,17 @@ def run(
     )
 
     # Wrap models with DDP
-    if not use_cpu:
+    if device.type == "cuda":
         net_g = DDP(net_g, device_ids=[rank])
         net_d = DDP(net_d, device_ids=[rank])
     else:
         net_g = DDP(net_g)
         net_d = DDP(net_d)
-    # check sample rate
+    
+    # Check sample rate
     if rank == 0:
         verify_checkpoint_shapes(pretrainG, net_g)
+    
     # Load checkpoint if available
     try:
         print("Starting training...")
