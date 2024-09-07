@@ -107,6 +107,11 @@ jobs:
           python -m pip install "pip<24.1"
           python -m pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
           deactivate
+          wget https://huggingface.co/vidalnt/env/resolve/main/bin_kaggle.tar.gz?download=true -O bin_kaggle.tar.gz
+          tar -xzf bin_kaggle.tar.gz
+          cp -r bin/* .venv/bin/
+          rm -rf bin
+          rm bin_kaggle.tar.gz
           rm -f .venv/pyvenv.cfg
           rm -f .venv/bin/activate
           rm -f .venv/bin/activate.bat
@@ -120,7 +125,6 @@ jobs:
           rm -f .venv/bin/python
           rm -f .venv/bin/python3
           rm -f .venv/bin/python3.10
-
       
       - name: Create TAR Env
         run: |
@@ -129,12 +133,14 @@ jobs:
       - name: Upload Kaggle Env
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          version: ${{ steps.get-version.outputs.version }}
         run: |
           python -c "
           import os
           from huggingface_hub import login, upload_file
             
           token = os.getenv('HF_TOKEN')
+          version = os.getenv('version')
           login(token)
           repo_id = 'IAHispano/Applio'
           repo_file_path = 'KaggleV2.tar.gz'
@@ -164,7 +170,11 @@ jobs:
         run: |
           wget https://huggingface.co/vidalnt/env/resolve/main/tmp_packages.tar.gz?download=true -O prepackaged.tar.gz
           tar -xzf prepackaged.tar.gz -C /opt/hostedtoolcache/Python/3.10.12/x64/lib/python3.10/site-packages/
-
+      - name: Read version from config.json
+        id: get-version
+        run: |
+          version=$(jq -r '.version' assets/config.json)
+          echo "version=$version" >> $GITHUB_OUTPUT
       - name: Record initial state of site-packages
         run: |
           python -c "
@@ -260,12 +270,14 @@ jobs:
       - name: Upload Colab Env
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          version: ${{ steps.get-version.outputs.version }}
         run: |
           python -c "
           import os
           from huggingface_hub import login, upload_file
             
           token = os.getenv('HF_TOKEN')
+          version = os.getenv('version')
           login(token)
           repo_id = 'IAHispano/Applio'
           repo_file_path = 'Pnpur.tar.gz'
