@@ -28,6 +28,7 @@ def model_information(path):
     model_hash = model_data.get("model_hash", None)
     overtrain_info = model_data.get("overtrain_info", "None")
     model_author = model_data.get("author", "None")
+    embedder_model = model_data.get("embedder_model", "None")
 
     pitch_guidance = "True" if f0 == 1 else "False"
 
@@ -45,4 +46,5 @@ def model_information(path):
         f"Creation Date: {creation_date_str}\n"
         f"Hash (ID): {model_hash}\n"
         f"Overtrain Info: {overtrain_info}"
+        f"Embedder Model: {embedder_model}"
     )
