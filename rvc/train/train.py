@@ -453,7 +453,7 @@ def run(
     )
 
     net_g = net_g.to(device)
-    
+
     if version == "v1":
         net_d = MultiPeriodDiscriminator(config.model.use_spectral_norm)
     else:
@@ -481,11 +481,11 @@ def run(
     else:
         net_g = DDP(net_g)
         net_d = DDP(net_d)
-    
+
     # Check sample rate
     if rank == 0:
         verify_checkpoint_shapes(pretrainG, net_g)
-    
+
     # Load checkpoint if available
     try:
         print("Starting training...")
