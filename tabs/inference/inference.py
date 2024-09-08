@@ -2011,40 +2011,8 @@ def inference_tab():
         *compressor_sliders,
         *delay_sliders,
     ]
-    kwargs = {
-        "embedder_model_custom": embedder_model_custom,
-        "embedder_model_custom_batch": embedder_model_custom_batch,
-        "formant_shifting": formant_shifting,
-        "formant_qfrency": formant_qfrency,
-        "formant_timbre": formant_timbre,
-        "formant_shifting_batch": formant_shifting_batch,
-        "formant_qfrency_batch": formant_qfrency_batch,
-        "formant_timbre_batch": formant_timbre_batch,
-        "post_process": post_process,
-        "post_process_batch": post_process_batch,
-        "reverb": reverb,
-        "reverb_batch": reverb_batch,
-        "pitch_shift": pitch_shift,
-        "pitch_shift_batch": pitch_shift_batch,
-        "limiter": limiter,
-        "limiter_batch": limiter_batch,
-        "gain": gain,
-        "gain_batch": gain_batch,
-        "distortion": distortion,
-        "distortion_batch": distortion_batch,
-        "chorus": chorus,
-        "chorus_batch": chorus_batch,
-        "bitcrush": bitcrush,
-        "bitcrush_batch": bitcrush_batch,
-        "clipping": clipping,
-        "clipping_batch": clipping_batch,
-        "compressor": compressor,
-        "compressor_batch": compressor_batch,
-        "delay": delay,
-        "delay_batch": delay_batch,
-    }
     convert_button1.click(
-        fn=lambda *args: run_infer_script(*args, **kwargs),
+        fn=run_infer_script,
         inputs=[
             pitch,
             filter_radius,
@@ -2111,7 +2079,7 @@ def inference_tab():
         *delay_sliders_batch,
     ]
     convert_button2.click(
-        fn=lambda *args: run_batch_infer_script(*args, **kwargs),
+        fn=run_batch_infer_script,
         inputs=[
             pitch_batch,
             filter_radius_batch,
