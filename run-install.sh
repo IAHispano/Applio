@@ -41,7 +41,7 @@ prepare_install() {
         echo "Downloading pre-built .venv..."
         wget -q -O venv.zip "https://huggingface.co/vidalnt/nothing/resolve/main/Compiled/Linux/ApplioV3.2.5.zip?download=true"
         echo "Extracting .venv..."
-        unzip -q venv.zip -d .
+        unzip -q -o venv.zip -d .
         rm venv.zip
         echo "Patching bins"
         find ".venv" -type f -exec sed -i -e 's/\r$//' -e "s|/home/runner/work/Applio/Applio/|$current_dir/|g" -e "s|/.venv/bin/python|/.venv/bin/$(basename $py)|g" {} +
