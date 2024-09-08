@@ -65,5 +65,4 @@ def f0_extractor_tab():
                 f0_method,
             ],
             outputs=[image_output, txt_output],
-            api_name="f0_extract",
         )

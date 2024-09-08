@@ -407,7 +407,6 @@ def train_tab():
                     process_effects,
                 ],
                 outputs=[preprocess_output_info],
-                api_name="preprocess_dataset",
             )
 
     with gr.Accordion(i18n("Extract")):
@@ -536,7 +535,6 @@ def train_tab():
                 embedder_model_custom,
             ],
             outputs=[extract_output_info],
-            api_name="extract_features",
         )
 
     with gr.Accordion(i18n("Train")):
@@ -761,7 +759,6 @@ def train_tab():
                     d_pretrained_path,
                 ],
                 outputs=[train_output_info],
-                api_name="start_training",
             )
 
             stop_train_button = gr.Button(i18n("Stop Training"), visible=False)
@@ -776,7 +773,6 @@ def train_tab():
                 fn=run_index_script,
                 inputs=[model_name, rvc_version, index_algorithm],
                 outputs=[train_output_info],
-                api_name="generate_index",
             )
 
     with gr.Accordion(i18n("Export Model"), open=False):
