@@ -38,12 +38,12 @@ jobs:
           pip install huggingface_hub
           python -m venv .venv
           . .venv/bin/activate
+          python -m ensurepip
           python -m pip install "pip<24.1"
           python -m pip install -r requirements.txt
           python -m pip uninstall torch torchvision torchaudio -y
           python -m pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
           python core.py "prerequisites" --models "True" --pretraineds_v1 "False" --pretraineds_v2 "True" --exe "False"
-          python -m pip cache purge
           find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
           deactivate
           rm -f .venv/pyvenv.cfg
