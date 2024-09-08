@@ -69,23 +69,25 @@ def run_infer_script(
     upscale_audio: bool,
     f0_file: str,
     embedder_model: str,
-    embedder_model_custom: str = None,
-    formant_shifting: bool = False,
-    formant_qfrency: float = 1.0,
-    formant_timbre: float = 1.0,
-    post_process: bool = False,
-    reverb: bool = False,
-    pitch_shift: bool = False,
-    limiter: bool = False,
-    gain: bool = False,
-    distortion: bool = False,
-    chorus: bool = False,
-    bitcrush: bool = False,
-    clipping: bool = False,
-    compressor: bool = False,
-    delay: bool = False,
     *sliders: list,
+    **kwargs,
 ):
+    embedder_model_custom = kwargs.get("embedder_model_custom", None)
+    formant_shifting = kwargs.get("formant_shifting", False)
+    formant_qfrency = kwargs.get("formant_qfrency", 1.0)
+    formant_timbre = kwargs.get("formant_timbre", 1.0)
+    post_process = kwargs.get("post_process", False)
+    reverb = kwargs.get("reverb", False)
+    pitch_shift = kwargs.get("pitch_shift", False)
+    limiter = kwargs.get("limiter", False)
+    gain = kwargs.get("gain", False)
+    distortion = kwargs.get("distortion", False)
+    chorus = kwargs.get("chorus", False)
+    bitcrush = kwargs.get("bitcrush", False)
+    clipping = kwargs.get("clipping", False)
+    compressor = kwargs.get("compressor", False)
+    delay = kwargs.get("delay", False)
+
     if not sliders:
         sliders = [0] * 25
     infer_pipeline = import_voice_converter()
@@ -179,27 +181,28 @@ def run_batch_infer_script(
     upscale_audio: bool,
     f0_file: str,
     embedder_model: str,
-    embedder_model_custom: str = None,
-    formant_shifting: bool = False,
-    formant_qfrency: float = 1.0,
-    formant_timbre: float = 1.0,
-    post_process: bool = False,
-    reverb: bool = False,
-    pitch_shift: bool = False,
-    limiter: bool = False,
-    gain: bool = False,
-    distortion: bool = False,
-    chorus: bool = False,
-    bitcrush: bool = False,
-    clipping: bool = False,
-    compressor: bool = False,
-    delay: bool = False,
     *sliders: list,
+    **kwargs,
 ):
     audio_files = [
         f for f in os.listdir(input_folder) if f.endswith((".mp3", ".wav", ".flac"))
     ]
     print(f"Detected {len(audio_files)} audio files for inference.")
+    embedder_model_custom = kwargs.get("embedder_model_custom_batch", None)
+    formant_shifting = kwargs.get("formant_shifting_batch", False)
+    formant_qfrency = kwargs.get("formant_qfrency_batch", 1.0)
+    formant_timbre = kwargs.get("formant_timbre_batch", 1.0)
+    post_process = kwargs.get("post_process_batch", False)
+    reverb = kwargs.get("reverb_batch", False)
+    pitch_shift = kwargs.get("pitch_shift_batch", False)
+    limiter = kwargs.get("limiter_batch", False)
+    gain = kwargs.get("gain_batch", False)
+    distortion = kwargs.get("distortion_batch", False)
+    chorus = kwargs.get("chorus_batch", False)
+    bitcrush = kwargs.get("bitcrush_batch", False)
+    clipping = kwargs.get("clipping_batch", False)
+    compressor = kwargs.get("compressor_batch", False)
+    delay = kwargs.get("delay_batch", False)
     if not sliders:
         sliders = [0] * 25
     infer_pipeline = import_voice_converter()
