@@ -597,19 +597,6 @@ def run_model_author_script(model_author: str):
     return f"Model author set to {model_author}."
 
 
-# API
-def run_api_script(ip: str, port: int):
-    command = [
-        "env/Scripts/uvicorn.exe" if os.name == "nt" else "uvicorn",
-        "api:app",
-        "--host",
-        ip,
-        "--port",
-        port,
-    ]
-    subprocess.run(command)
-
-
 # Parse arguments
 def parse_arguments():
     parser = argparse.ArgumentParser(
@@ -1561,15 +1548,6 @@ def parse_arguments():
         "--input_path", type=str, help="Path to the input audio file.", required=True
     )
 
-    # Parser for 'api' mode
-    api_parser = subparsers.add_parser("api", help="Start the RVC API server.")
-    api_parser.add_argument(
-        "--host", type=str, help="Host address for the API server.", default="127.0.0.1"
-    )
-    api_parser.add_argument(
-        "--port", type=int, help="Port for the API server.", default=8000
-    )
-
     return parser.parse_args()
 
 
@@ -1741,11 +1719,6 @@ def main():
         elif args.mode == "audio_analyzer":
             run_audio_analyzer_script(
                 input_path=args.input_path,
-            )
-        elif args.mode == "api":
-            run_api_script(
-                ip=args.host,
-                port=args.port,
             )
     except Exception as error:
         print(f"An error occurred during execution: {error}")
