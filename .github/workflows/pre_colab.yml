@@ -57,10 +57,6 @@ jobs:
           rm -f .venv/bin/python
           rm -f .venv/bin/python3
           rm -f .venv/bin/python3.10
-          
-      - name: Modify pyvenv.cfg
-        run: |
-          sed -i '/^prompt = Applio/d' .venv/pyvenv.cfg
 
       - name: Create ZIP file
         run: |
