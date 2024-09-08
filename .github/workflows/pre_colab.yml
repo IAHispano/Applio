@@ -38,11 +38,25 @@ jobs:
           pip install huggingface_hub
           python -m venv .venv
           . .venv/bin/activate
+          python -m ensurepip
           python -m pip install "pip<24.1"
           python -m pip install -r requirements.txt
           python -m pip uninstall torch torchvision torchaudio -y
           python -m pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
           deactivate
+          rm -f .venv/pyvenv.cfg
+          rm -f .venv/bin/activate
+          rm -f .venv/bin/activate.bat
+          rm -f .venv/bin/activate.csh
+          rm -f .venv/bin/activate.fish
+          rm -f .venv/bin/activate.nu
+          rm -f .venv/bin/activate.ps1
+          rm -f .venv/bin/activate_this.py
+          rm -f .venv/bin/deactivate.bat
+          rm -f .venv/bin/pydoc.bat
+          rm -f .venv/bin/python
+          rm -f .venv/bin/python3
+          rm -f .venv/bin/python3.10
           
       - name: Modify pyvenv.cfg
         run: |
