@@ -44,7 +44,7 @@ prepare_install() {
         unzip -q venv.zip -d .
         rm venv.zip
         echo "Patching bins"
-        find "$venv_dir" -type f -exec sed -i -e 's/\r$//' -e "s|/home/runner/work/Applio/Applio/|$current_dir/|g" -e "s|/.venv/bin/python|/.venv/bin/$(basename $py)|g" {} +
+        find ".venv" -type f -exec sed -i -e 's/\r$//' -e "s|/home/runner/work/Applio/Applio/|$current_dir/|g" -e "s|/.venv/bin/python|/.venv/bin/$(basename $py)|g" {} +
         echo "Virtual environment paths fixed."
         finish
     fi
