@@ -659,6 +659,10 @@ class VoiceConverter:
                 if f.endswith((".mp3", ".wav", ".flac", ".m4a", ".ogg", ".opus"))
             ]
             print(f"Detected {len(audio_files)} audio files for inference.")
+            
+            if not os.path.exists(audio_output_path):
+                os.makedirs(audio_output_path)
+
             for i, audio_input_path in enumerate(audio_files):
                 audio_output_paths = os.path.join(
                     audio_output_path,
