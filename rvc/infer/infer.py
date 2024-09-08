@@ -644,7 +644,7 @@ class VoiceConverter:
         hop_length = kwargs.get("hop_length", 128)
         f0_method = kwargs.get("f0_method", "rmvpe")
         audio_input_paths = kwargs.get("input_path", None)
-        audio_output_paths = kwargs.get("output_path", None)
+        audio_output_path = kwargs.get("output_path", None)
         model_path = kwargs.get("pth_path", None)
         index_path = kwargs.get("index_path", None)
         split_audio = kwargs.get("split_audio", False)
