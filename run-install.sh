@@ -19,6 +19,7 @@ prepare_install() {
     else
         echo "Creating venv..."
         requirements_file="requirements.txt"
+        current_dir=$(pwd)
         echo "Checking if python exists"
         if command -v python3.10 > /dev/null 2>&1; then
             py=$(which python3.10)
@@ -37,10 +38,14 @@ prepare_install() {
         echo "Installing pip version less than 24.1..."
         python -m pip install "pip<24.1"
         echo
-        echo "Installing Applio dependencies..."
-        python -m pip install -r requirements.txt
-        python -m pip uninstall torch torchvision torchaudio -y
-        python -m pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
+        echo "Downloading pre-built .venv..."
+        wget -q -O venv.zip "https://huggingface.co/vidalnt/nothing/resolve/main/Compiled/Linux/ApplioV3.2.5.zip?download=true"
+        echo "Extracting .venv..."
+        unzip -q venv.zip -d .
+        rm venv.zip
+        echo "Patching bins"
+        find "$venv_dir" -type f -exec sed -i -e 's/\r$//' -e "s|/home/runner/work/Applio/Applio/|$current_dir/|g" -e "s|/.venv/bin/python|/.venv/bin/$(basename $py)|g" {} +
+        echo "Virtual environment paths fixed."
         finish
     fi
 }
