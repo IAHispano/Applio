@@ -1,25 +1,20 @@
-import os
-import sys
-import json
-import shutil
-import requests
+import os, sys, shutil
 import tempfile
 import gradio as gr
 import pandas as pd
-
-from concurrent.futures import ThreadPoolExecutor
-from tqdm import tqdm
-
-
-now_dir = os.getcwd()
-sys.path.append(now_dir)
-
+import requests
+import wget
+import json
 from core import run_download_script
-from rvc.lib.utils import format_title
 
 from assets.i18n.i18n import I18nAuto
 
+from rvc.lib.utils import format_title
+
 i18n = I18nAuto()
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 
 gradio_temp_dir = os.path.join(tempfile.gettempdir(), "gradio")
 
@@ -123,21 +118,6 @@ def get_pretrained_sample_rates(model):
     return list(data[model].keys())
 
 
-def get_file_size(url):
-    response = requests.head(url)
-    return int(response.headers.get("content-length", 0))
-
-
-def download_file(url, destination_path, progress_bar):
-    os.makedirs(os.path.dirname(destination_path), exist_ok=True)
-    response = requests.get(url, stream=True)
-    block_size = 1024
-    with open(destination_path, "wb") as file:
-        for data in response.iter_content(block_size):
-            file.write(data)
-            progress_bar.update(len(data))
-
-
 def download_pretrained_model(model, sample_rate):
     data = fetch_pretrained_data()
     paths = data[model][sample_rate]
@@ -149,33 +129,10 @@ def download_pretrained_model(model, sample_rate):
     d_url = f"https://huggingface.co/{paths['D']}"
     g_url = f"https://huggingface.co/{paths['G']}"
 
-    total_size = get_file_size(d_url) + get_file_size(g_url)
-
-    gr.Info("Downloading pretrained model...")
-
-    with tqdm(
-        total=total_size, unit="iB", unit_scale=True, desc="Downloading files"
-    ) as progress_bar:
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = [
-                executor.submit(
-                    download_file,
-                    d_url,
-                    os.path.join(pretraineds_custom_path, os.path.basename(paths["D"])),
-                    progress_bar,
-                ),
-                executor.submit(
-                    download_file,
-                    g_url,
-                    os.path.join(pretraineds_custom_path, os.path.basename(paths["G"])),
-                    progress_bar,
-                ),
-            ]
-            for future in futures:
-                future.result()
-
-    gr.Info("Pretrained model downloaded successfully!")
-    print("Pretrained model downloaded successfully!")
+    gr.Info("Downloading Pretrained Model...")
+    print("Downloading Pretrained Model...")
+    wget.download(d_url, out=pretraineds_custom_path)
+    wget.download(g_url, out=pretraineds_custom_path)
 
 
 def update_sample_rate_dropdown(model):

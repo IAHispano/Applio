@@ -1,28 +1,11 @@
-import os
-import re
+import torch
 import sys
+import os
+import datetime
 import glob
 import json
-import torch
-import datetime
-
+import re
 from distutils.util import strtobool
-from random import randint, shuffle
-from time import time as ttime
-from time import sleep
-from tqdm import tqdm
-
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.tensorboard import SummaryWriter
-from torch.cuda.amp import GradScaler, autocast
-from torch.utils.data import DataLoader
-from torch.nn import functional as F
-
-import torch.distributed as dist
-import torch.multiprocessing as mp
-
-now_dir = os.getcwd()
-sys.path.append(os.path.join(now_dir))
 
 from utils import (
     HParams,
@@ -31,8 +14,23 @@ from utils import (
     load_checkpoint,
     save_checkpoint,
     latest_checkpoint_path,
-    load_wav_to_torch,
 )
+from random import randint, shuffle
+from time import sleep
+from time import time as ttime
+from tqdm import tqdm
+
+from torch.cuda.amp import GradScaler, autocast
+
+from torch.nn import functional as F
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+import torch.distributed as dist
+import torch.multiprocessing as mp
+
+now_dir = os.getcwd()
+sys.path.append(os.path.join(now_dir))
 
 from data_utils import (
     DistributedBucketSampler,
@@ -74,7 +72,6 @@ cache_data_in_gpu = strtobool(sys.argv[13])
 overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
 sync_graph = strtobool(sys.argv[16])
-use_cpu = strtobool(sys.argv[17])
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -86,9 +83,8 @@ with open(config_save_path, "r") as f:
 config = HParams(**config)
 config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
 
-if not use_cpu:
-    os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
-n_gpus = len(gpus.split("-")) if not use_cpu else 1
+os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
+n_gpus = len(gpus.split("-"))
 
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
@@ -130,64 +126,17 @@ class EpochRecorder:
         return f"time={current_time} | training_speed={elapsed_time_str}"
 
 
-def verify_checkpoint_shapes(checkpoint_path, model):
-    checkpoint = torch.load(checkpoint_path, map_location="cpu")
-    checkpoint_state_dict = checkpoint["model"]
-    try:
-        model_state_dict = model.module.load_state_dict(checkpoint_state_dict)
-    except RuntimeError:
-        print("The sample rate of the pretrain doesn't match the selected one")
-        sys.exit(1)
-    else:
-        del checkpoint
-        del checkpoint_state_dict
-        del model_state_dict
-
-
 def main():
     """
     Main function to start the training process.
     """
     global training_file_path, last_loss_gen_all, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch
-
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
-    # Check sample rate
-    first_wav_file = next(
-        (
-            filename
-            for filename in os.listdir(os.path.join(experiment_dir, "sliced_audios"))
-            if filename.endswith(".wav")
-        ),
-        None,
-    )
-    if first_wav_file:
-        audio = os.path.join(experiment_dir, "sliced_audios", first_wav_file)
-        _, sr = load_wav_to_torch(audio)
-        if sr != sample_rate:
-            try:
-                raise ValueError(
-                    f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz)."
-                )
-            except ValueError as e:
-                print(
-                    f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz)."
-                )
-                sys.exit(1)
-    else:
-        print("No wav file found.")
-
-    use_gpu = torch.cuda.is_available() and not use_cpu
-    device = torch.device("cuda" if use_gpu else "cpu")
-
-    if use_gpu:
-        n_gpus = torch.cuda.device_count()
-    else:
-        n_gpus = 1
 
     def start():
         """
-        Starts the training process with multi-GPU support or CPU.
+        Starts the training process with multi-GPU support.
         """
         children = []
         pid_data = {"process_pids": []}
@@ -211,7 +160,6 @@ def main():
                         custom_total_epoch,
                         custom_save_every_weights,
                         config,
-                        device,
                     ),
                 )
                 children.append(subproc)
@@ -256,15 +204,11 @@ def main():
                     smoothed_loss_gen_history,
                 ) = load_from_json(training_file_path)
 
-    if use_cpu:
-        n_gpus = 1
-        print("Training with CPU, this will take a long time.")
-    else:
-        n_gpus = torch.cuda.device_count()
+    n_gpus = torch.cuda.device_count()
 
     if torch.cuda.is_available() == False and torch.backends.mps.is_available() == True:
         n_gpus = 1
-    if n_gpus < 1 and not use_cpu:
+    if n_gpus < 1:
         print("GPU not detected, reverting to CPU (not recommended)")
         n_gpus = 1
 
@@ -363,41 +307,24 @@ def run(
     custom_total_epoch,
     custom_save_every_weights,
     config,
-    device,
 ):
     """
-    Runs the training loop on a specific GPU or CPU.
+    Runs the training loop on a specific GPU.
 
     Args:
-        rank (int): The rank of the current process within the distributed training setup.
-        n_gpus (int): The total number of GPUs available for training.
-        experiment_dir (str): The directory where experiment logs and checkpoints will be saved.
-        pretrainG (str): Path to the pre-trained generator model.
-        pretrainD (str): Path to the pre-trained discriminator model.
-        pitch_guidance (bool): Flag indicating whether to use pitch guidance during training.
-        custom_total_epoch (int): The total number of epochs for training.
-        custom_save_every_weights (int): The interval (in epochs) at which to save model weights.
-        config (object): Configuration object containing training parameters.
-        device (torch.device): The device to use for training (CPU or GPU).
+        rank (int): Rank of the current GPU.
+        n_gpus (int): Total number of GPUs.
     """
-    global global_step, smoothed_value_gen, smoothed_value_disc
-
-    smoothed_value_gen = 0
-    smoothed_value_disc = 0
+    global global_step
 
     if rank == 0:
         writer = SummaryWriter(log_dir=experiment_dir)
         writer_eval = SummaryWriter(log_dir=os.path.join(experiment_dir, "eval"))
 
     dist.init_process_group(
-        backend="gloo",
-        init_method="env://",
-        world_size=n_gpus if device.type == "cuda" else 1,
-        rank=rank if device.type == "cuda" else 0,
+        backend="gloo", init_method="env://", world_size=n_gpus, rank=rank
     )
-
     torch.manual_seed(config.train.seed)
-
     if torch.cuda.is_available():
         torch.cuda.set_device(rank)
 
@@ -448,19 +375,17 @@ def run(
         config.train.segment_size // config.data.hop_length,
         **config.model,
         use_f0=pitch_guidance == True,
-        is_half=config.train.fp16_run and device.type == "cuda",
+        is_half=config.train.fp16_run,
         sr=sample_rate,
     )
-
-    net_g = net_g.to(device)
-
+    if torch.cuda.is_available():
+        net_g = net_g.cuda(rank)
     if version == "v1":
         net_d = MultiPeriodDiscriminator(config.model.use_spectral_norm)
     else:
         net_d = MultiPeriodDiscriminatorV2(config.model.use_spectral_norm)
-
-    net_d = net_d.to(device)
-
+    if torch.cuda.is_available():
+        net_d = net_d.cuda(rank)
     optim_g = torch.optim.AdamW(
         net_g.parameters(),
         config.train.learning_rate,
@@ -475,16 +400,12 @@ def run(
     )
 
     # Wrap models with DDP
-    if device.type == "cuda":
+    if torch.cuda.is_available():
         net_g = DDP(net_g, device_ids=[rank])
         net_d = DDP(net_d, device_ids=[rank])
     else:
         net_g = DDP(net_g)
         net_d = DDP(net_d)
-
-    # Check sample rate
-    if rank == 0:
-        verify_checkpoint_shapes(pretrainG, net_g)
 
     # Load checkpoint if available
     try:
@@ -538,7 +459,7 @@ def run(
     optim_d.step()
     optim_g.step()
 
-    scaler = GradScaler(enabled=config.train.fp16_run and not use_cpu)
+    scaler = GradScaler(enabled=config.train.fp16_run)
 
     cache = []
     for epoch in range(epoch_str, total_epoch + 1):
@@ -555,7 +476,6 @@ def run(
                 cache,
                 custom_save_every_weights,
                 custom_total_epoch,
-                use_cpu,
             )
         else:
             train_and_evaluate(
@@ -570,7 +490,6 @@ def run(
                 cache,
                 custom_save_every_weights,
                 custom_total_epoch,
-                use_cpu,
             )
         scheduler_g.step()
         scheduler_d.step()
@@ -588,13 +507,12 @@ def train_and_evaluate(
     cache,
     custom_save_every_weights,
     custom_total_epoch,
-    use_cpu,
 ):
     """
     Trains and evaluates the model for one epoch.
 
     Args:
-        rank (int): Rank of the current process.
+        rank (int): Rank of the current GPU.
         epoch (int): Current epoch number.
         hps (Namespace): Hyperparameters.
         nets (list): List of models [net_g, net_d].
@@ -603,9 +521,8 @@ def train_and_evaluate(
         loaders (list): List of dataloaders [train_loader, eval_loader].
         writers (list): List of TensorBoard writers [writer, writer_eval].
         cache (list): List to cache data in GPU memory.
-        use_cpu (bool): Whether to use CPU for training.
     """
-    global global_step, lowest_value, loss_disc, consecutive_increases_gen, consecutive_increases_disc, smoothed_value_gen, smoothed_value_disc
+    global global_step, lowest_value, loss_disc, consecutive_increases_gen, consecutive_increases_disc
 
     if epoch == 1:
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
@@ -625,7 +542,7 @@ def train_and_evaluate(
     net_d.train()
 
     # Data caching
-    if cache_data_in_gpu and not use_cpu:
+    if cache_data_in_gpu:
         data_iterator = cache
         if cache == []:
             for batch_idx, info in enumerate(train_loader):
@@ -716,11 +633,7 @@ def train_and_evaluate(
                 ) = info
             elif pitch_guidance == False:
                 phone, phone_lengths, spec, spec_lengths, wave, wave_lengths, sid = info
-            if (
-                (cache_data_in_gpu == False)
-                and not use_cpu
-                and torch.cuda.is_available()
-            ):
+            if (cache_data_in_gpu == False) and torch.cuda.is_available():
                 phone = phone.cuda(rank, non_blocking=True)
                 phone_lengths = phone_lengths.cuda(rank, non_blocking=True)
                 if pitch_guidance == True:
@@ -731,20 +644,9 @@ def train_and_evaluate(
                 spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
                 wave = wave.cuda(rank, non_blocking=True)
                 wave_lengths = wave_lengths.cuda(rank, non_blocking=True)
-            elif use_cpu:
-                phone = phone.cpu()
-                phone_lengths = phone_lengths.cpu()
-                if pitch_guidance == True:
-                    pitch = pitch.cpu()
-                    pitchf = pitchf.cpu()
-                sid = sid.cpu()
-                spec = spec.cpu()
-                spec_lengths = spec_lengths.cpu()
-                wave = wave.cpu()
-                wave_lengths = wave_lengths.cpu()
 
             # Forward pass
-            with autocast(enabled=config.train.fp16_run and not use_cpu):
+            with autocast(enabled=config.train.fp16_run):
                 if pitch_guidance == True:
                     (
                         y_hat,
@@ -788,7 +690,7 @@ def train_and_evaluate(
                         config.data.mel_fmin,
                         config.data.mel_fmax,
                     )
-                if config.train.fp16_run == True and not use_cpu:
+                if config.train.fp16_run == True:
                     y_hat_mel = y_hat_mel.half()
                 wave = commons.slice_segments(
                     wave,
@@ -811,7 +713,7 @@ def train_and_evaluate(
             scaler.step(optim_d)
 
             # Generator backward and update
-            with autocast(enabled=config.train.fp16_run and not use_cpu):
+            with autocast(enabled=config.train.fp16_run):
                 y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
                 with autocast(enabled=False):
                     loss_mel = F.l1_loss(y_mel, y_hat_mel) * config.train.c_mel
@@ -915,10 +817,8 @@ def train_and_evaluate(
                 ckpt = net_g.module.state_dict()
             else:
                 ckpt = net_g.state_dict()
-            if overtraining_detector and epoch > 1:
-                overtrain_info = f"Smoothed loss_g {smoothed_value_gen:.3f} and loss_d {smoothed_value_disc:.3f}"
-            else:
-                overtrain_info = ""
+            if overtraining_detector != True:
+                overtrain_info = None
             extract_model(
                 ckpt=ckpt,
                 sr=sample_rate,

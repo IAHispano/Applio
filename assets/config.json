@@ -4,12 +4,12 @@
     "class": "Applio"
   },
   "plugins": [],
-  "discord_presence": true,
+  "discord_presence": false,
   "lang": {
     "override": false,
     "selected_lang": "en_US"
   },
   "flask_server": false,
   "version": "3.2.5",
-  "model_author": "None"
+  "fake_gpu": false
 }
