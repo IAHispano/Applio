@@ -437,7 +437,7 @@ def inference_tab():
                     visible=True,
                     interactive=True,
                 )
-                with gr.Row():
+                with gr.Row(visible=False) as formant_row:
                     formant_preset = gr.Dropdown(
                         label=i18n("Browse presets for formanting"),
                         info=i18n(
@@ -1063,7 +1063,7 @@ def inference_tab():
                     visible=True,
                     interactive=True,
                 )
-                with gr.Row():
+                with gr.Row(visible=False) as formant_row_batch:
                     formant_preset_batch = gr.Dropdown(
                         label=i18n("Browse presets for formanting"),
                         info=i18n(
@@ -1636,9 +1636,11 @@ def inference_tab():
                 gr.update(visible=True),
                 gr.update(visible=True),
                 gr.update(visible=True),
+                gr.update(visible=True),
             )
         else:
             return (
+                gr.update(visible=False),
                 gr.update(visible=False),
                 gr.update(visible=False),
                 gr.update(visible=False),
@@ -1649,7 +1651,7 @@ def inference_tab():
         return [gr.update(visible=checkbox) for _ in range(count)]
 
     def post_process_visible(checkbox):
-        return update_visibility(checkbox, 11)
+        return update_visibility(checkbox, 10)
 
     def reverb_visible(checkbox):
         return update_visibility(checkbox, 6)
@@ -1678,6 +1680,7 @@ def inference_tab():
         fn=toggle_visible_formant_shifting,
         inputs=[formant_shifting],
         outputs=[
+            formant_row,
             formant_preset,
             formant_refresh_button,
             formant_qfrency,
@@ -1688,6 +1691,7 @@ def inference_tab():
         fn=toggle_visible_formant_shifting,
         inputs=[formant_shifting],
         outputs=[
+            formant_row_batch,
             formant_preset_batch,
             formant_refresh_button_batch,
             formant_qfrency_batch,
@@ -1729,7 +1733,6 @@ def inference_tab():
             clipping,
             compressor,
             delay,
-            clean_audio,
         ],
     )
 
@@ -1815,7 +1818,6 @@ def inference_tab():
             clipping_batch,
             compressor_batch,
             delay_batch,
-            clean_audio_batch,
         ],
     )
 
