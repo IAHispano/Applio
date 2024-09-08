@@ -1604,6 +1604,12 @@ def main():
     args = parse_arguments()
 
     try:
+        kwargs = {
+            "formant_shifting": args.formant_shifting,
+            "formant_qfrency": args.formant_qfrency,
+            "formant_timbre": args.formant_timbre,
+            "embedder_model_custom": args.embedder_model_custom,
+        }
         if args.mode == "infer":
             run_infer_script(
                 pitch=args.pitch,
@@ -1623,9 +1629,9 @@ def main():
                 clean_strength=args.clean_strength,
                 export_format=args.export_format,
                 embedder_model=args.embedder_model,
-                embedder_model_custom=args.embedder_model_custom,
                 upscale_audio=args.upscale_audio,
                 f0_file=args.f0_file,
+                **kwargs,
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(

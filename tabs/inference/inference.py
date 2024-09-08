@@ -437,7 +437,7 @@ def inference_tab():
                     visible=True,
                     interactive=True,
                 )
-                with gr.Row():
+                with gr.Row(visible=False) as formant_row:
                     formant_preset = gr.Dropdown(
                         label=i18n("Browse presets for formanting"),
                         info=i18n(
@@ -1063,7 +1063,7 @@ def inference_tab():
                     visible=True,
                     interactive=True,
                 )
-                with gr.Row():
+                with gr.Row(visible=False) as formant_row_batch:
                     formant_preset_batch = gr.Dropdown(
                         label=i18n("Browse presets for formanting"),
                         info=i18n(
@@ -1636,9 +1636,11 @@ def inference_tab():
                 gr.update(visible=True),
                 gr.update(visible=True),
                 gr.update(visible=True),
+                gr.update(visible=True),
             )
         else:
             return (
+                gr.update(visible=False),
                 gr.update(visible=False),
                 gr.update(visible=False),
                 gr.update(visible=False),
@@ -1649,7 +1651,7 @@ def inference_tab():
         return [gr.update(visible=checkbox) for _ in range(count)]
 
     def post_process_visible(checkbox):
-        return update_visibility(checkbox, 11)
+        return update_visibility(checkbox, 10)
 
     def reverb_visible(checkbox):
         return update_visibility(checkbox, 6)
@@ -1678,6 +1680,7 @@ def inference_tab():
         fn=toggle_visible_formant_shifting,
         inputs=[formant_shifting],
         outputs=[
+            formant_row,
             formant_preset,
             formant_refresh_button,
             formant_qfrency,
@@ -1688,6 +1691,7 @@ def inference_tab():
         fn=toggle_visible_formant_shifting,
         inputs=[formant_shifting],
         outputs=[
+            formant_row_batch,
             formant_preset_batch,
             formant_refresh_button_batch,
             formant_qfrency_batch,
@@ -1729,7 +1733,6 @@ def inference_tab():
             clipping,
             compressor,
             delay,
-            clean_audio,
         ],
     )
 
@@ -1815,7 +1818,6 @@ def inference_tab():
             clipping_batch,
             compressor_batch,
             delay_batch,
-            clean_audio_batch,
         ],
     )
 
@@ -2012,36 +2014,36 @@ def inference_tab():
         *delay_sliders,
     ]
     kwargs = {
-        "embedder_model_custom": embedder_model_custom,
-        "embedder_model_custom_batch": embedder_model_custom_batch,
-        "formant_shifting": formant_shifting,
-        "formant_qfrency": formant_qfrency,
-        "formant_timbre": formant_timbre,
-        "formant_shifting_batch": formant_shifting_batch,
-        "formant_qfrency_batch": formant_qfrency_batch,
-        "formant_timbre_batch": formant_timbre_batch,
-        "post_process": post_process,
-        "post_process_batch": post_process_batch,
-        "reverb": reverb,
-        "reverb_batch": reverb_batch,
-        "pitch_shift": pitch_shift,
-        "pitch_shift_batch": pitch_shift_batch,
-        "limiter": limiter,
-        "limiter_batch": limiter_batch,
-        "gain": gain,
-        "gain_batch": gain_batch,
-        "distortion": distortion,
-        "distortion_batch": distortion_batch,
-        "chorus": chorus,
-        "chorus_batch": chorus_batch,
-        "bitcrush": bitcrush,
-        "bitcrush_batch": bitcrush_batch,
-        "clipping": clipping,
-        "clipping_batch": clipping_batch,
-        "compressor": compressor,
-        "compressor_batch": compressor_batch,
-        "delay": delay,
-        "delay_batch": delay_batch,
+        "embedder_model_custom": embedder_model_custom.value,
+        "embedder_model_custom_batch": embedder_model_custom_batch.value,
+        "formant_shifting": formant_shifting.value,
+        "formant_qfrency": formant_qfrency.value,
+        "formant_timbre": formant_timbre.value,
+        "formant_shifting_batch": formant_shifting_batch.value,
+        "formant_qfrency_batch": formant_qfrency_batch.value,
+        "formant_timbre_batch": formant_timbre_batch.value,
+        "post_process": post_process.value,
+        "post_process_batch": post_process_batch.value,
+        "reverb": reverb.value,
+        "reverb_batch": reverb_batch.value,
+        "pitch_shift": pitch_shift.value,
+        "pitch_shift_batch": pitch_shift_batch.value,
+        "limiter": limiter.value,
+        "limiter_batch": limiter_batch.value,
+        "gain": gain.value,
+        "gain_batch": gain_batch.value,
+        "distortion": distortion.value,
+        "distortion_batch": distortion_batch.value,
+        "chorus": chorus.value,
+        "chorus_batch": chorus_batch.value,
+        "bitcrush": bitcrush.value,
+        "bitcrush_batch": bitcrush_batch.value,
+        "clipping": clipping.value,
+        "clipping_batch": clipping_batch.value,
+        "compressor": compressor.value,
+        "compressor_batch": compressor_batch.value,
+        "delay": delay.value,
+        "delay_batch": delay_batch.value,
     }
     convert_button1.click(
         fn=lambda *args: run_infer_script(*args, **kwargs),
