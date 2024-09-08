@@ -69,28 +69,43 @@ def run_infer_script(
     upscale_audio: bool,
     f0_file: str,
     embedder_model: str,
+    embedder_model_custom: str,
+    formant_shifting: bool,
+    formant_qfrency: float,
+    formant_timbre: float,
+    post_process: bool,
+    reverb: bool,
+    pitch_shift: bool,
+    limiter: bool,
+    gain: bool,
+    distortion: bool,
+    chorus: bool,
+    bitcrush: bool,
+    clipping: bool,
+    compressor: bool,
+    delay: bool,
     *sliders: list,
-    **kwargs,
 ):
-    embedder_model_custom = kwargs.get("embedder_model_custom", None)
-    formant_shifting = kwargs.get("formant_shifting", False)
-    formant_qfrency = kwargs.get("formant_qfrency", 1.0)
-    formant_timbre = kwargs.get("formant_timbre", 1.0)
-    post_process = kwargs.get("post_process", False)
-    reverb = kwargs.get("reverb", False)
-    pitch_shift = kwargs.get("pitch_shift", False)
-    limiter = kwargs.get("limiter", False)
-    gain = kwargs.get("gain", False)
-    distortion = kwargs.get("distortion", False)
-    chorus = kwargs.get("chorus", False)
-    bitcrush = kwargs.get("bitcrush", False)
-    clipping = kwargs.get("clipping", False)
-    compressor = kwargs.get("compressor", False)
-    delay = kwargs.get("delay", False)
-
     if not sliders:
         sliders = [0] * 25
     infer_pipeline = import_voice_converter()
+    kwargs = {
+        "embedder_model_custom": embedder_model_custom,
+        "formant_shifting": formant_shifting,
+        "formant_qfrency": formant_qfrency,
+        "formant_timbre": formant_timbre,
+        "post_process": post_process,
+        "reverb": reverb,
+        "pitch_shift": pitch_shift,
+        "limiter": limiter,
+        "gain": gain,
+        "distortion": distortion,
+        "chorus": chorus,
+        "bitcrush": bitcrush,
+        "clipping": clipping,
+        "compressor": compressor,
+        "delay": delay,
+    }
     additional_params = {
         "reverb_room_size": sliders[0],
         "reverb_damping": sliders[1],
@@ -138,22 +153,8 @@ def run_infer_script(
         upscale_audio=upscale_audio,
         f0_file=f0_file,
         embedder_model=embedder_model,
-        embedder_model_custom=embedder_model_custom,
-        formant_shifting=formant_shifting,
-        formant_qfrency=formant_qfrency,
-        formant_timbre=formant_timbre,
-        post_process=post_process,
-        reverb=reverb,
-        pitch_shift=pitch_shift,
-        limiter=limiter,
-        gain=gain,
-        distortion=distortion,
-        chorus=chorus,
-        bitcrush=bitcrush,
-        clipping=clipping,
-        compressor=compressor,
-        delay=delay,
         sliders=additional_params,
+        **kwargs,
     )
     return f"File {input_path} inferred successfully.", output_path.replace(
         ".wav", f".{export_format.lower()}"
@@ -181,28 +182,44 @@ def run_batch_infer_script(
     upscale_audio: bool,
     f0_file: str,
     embedder_model: str,
+    embedder_model_custom: str,
+    formant_shifting: bool,
+    formant_qfrency: float,
+    formant_timbre: float,
+    post_process: bool,
+    reverb: bool,
+    pitch_shift: bool,
+    limiter: bool,
+    gain: bool,
+    distortion: bool,
+    chorus: bool,
+    bitcrush: bool,
+    clipping: bool,
+    compressor: bool,
+    delay: bool,
     *sliders: list,
-    **kwargs,
 ):
     audio_files = [
         f for f in os.listdir(input_folder) if f.endswith((".mp3", ".wav", ".flac"))
     ]
     print(f"Detected {len(audio_files)} audio files for inference.")
-    embedder_model_custom = kwargs.get("embedder_model_custom_batch", None)
-    formant_shifting = kwargs.get("formant_shifting_batch", False)
-    formant_qfrency = kwargs.get("formant_qfrency_batch", 1.0)
-    formant_timbre = kwargs.get("formant_timbre_batch", 1.0)
-    post_process = kwargs.get("post_process_batch", False)
-    reverb = kwargs.get("reverb_batch", False)
-    pitch_shift = kwargs.get("pitch_shift_batch", False)
-    limiter = kwargs.get("limiter_batch", False)
-    gain = kwargs.get("gain_batch", False)
-    distortion = kwargs.get("distortion_batch", False)
-    chorus = kwargs.get("chorus_batch", False)
-    bitcrush = kwargs.get("bitcrush_batch", False)
-    clipping = kwargs.get("clipping_batch", False)
-    compressor = kwargs.get("compressor_batch", False)
-    delay = kwargs.get("delay_batch", False)
+    kwargs = {
+        "embedder_model_custom": embedder_model_custom,
+        "formant_shifting": formant_shifting,
+        "formant_qfrency": formant_qfrency,
+        "formant_timbre": formant_timbre,
+        "post_process": post_process,
+        "reverb": reverb,
+        "pitch_shift": pitch_shift,
+        "limiter": limiter,
+        "gain": gain,
+        "distortion": distortion,
+        "chorus": chorus,
+        "bitcrush": bitcrush,
+        "clipping": clipping,
+        "compressor": compressor,
+        "delay": delay,
+    }
     if not sliders:
         sliders = [0] * 25
     infer_pipeline = import_voice_converter()
@@ -253,23 +270,9 @@ def run_batch_infer_script(
         upscale_audio=upscale_audio,
         f0_file=f0_file,
         embedder_model=embedder_model,
-        embedder_model_custom=embedder_model_custom,
-        formant_shifting=formant_shifting,
-        formant_qfrency=formant_qfrency,
-        formant_timbre=formant_timbre,
         pid_file_path=os.path.join(now_dir, "assets", "infer_pid.txt"),
-        post_process=post_process,
-        reverb=reverb,
-        pitch_shift=pitch_shift,
-        limiter=limiter,
-        gain=gain,
-        distortion=distortion,
-        chorus=chorus,
-        bitcrush=bitcrush,
-        clipping=clipping,
-        compressor=compressor,
-        delay=delay,
         sliders=additional_params,
+        **kwargs,
     )
 
     return f"Files from {input_folder} inferred successfully."

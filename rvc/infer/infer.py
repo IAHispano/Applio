@@ -250,28 +250,14 @@ class VoiceConverter:
         split_audio: bool,
         f0_autotune: bool,
         filter_radius: int,
-        embedder_model_custom: str,
         clean_audio: bool,
         clean_strength: float,
         export_format: str,
         upscale_audio: bool,
-        formant_shifting: bool,
-        formant_qfrency: float,
-        formant_timbre: float,
-        post_process: bool,
-        reverb: bool,
-        pitch_shift: bool,
-        limiter: bool,
-        gain: bool,
-        distortion: bool,
-        chorus: bool,
-        bitcrush: bool,
-        clipping: bool,
-        compressor: bool,
-        delay: bool,
         sliders: dict,
         resample_sr: int = 0,
         sid: int = 0,
+        **kwargs,
     ):
         """
         Performs voice conversion on the input audio.
@@ -299,21 +285,23 @@ class VoiceConverter:
             clean_strength (float, optional): Strength of the audio cleaning. Default is 0.7.
             export_format (str, optional): Format for exporting the audio. Default is "WAV".
             upscale_audio (bool, optional): Whether to upscale the audio. Default is False.
-            formant_shift (bool, optional): Whether to shift the formants. Default is False.
-            formant_qfrency (float, optional): Formant frequency. Default is 1.0.
-            formant_timbre (float, optional): Formant timbre. Default is 1.0.
-            reverb (bool, optional): Whether to apply reverb. Default is False.
-            pitch_shift (bool, optional): Whether to apply pitch shift. Default is False.
-            limiter (bool, optional): Whether to apply a limiter. Default is False.
-            gain (bool, optional): Whether to apply gain. Default is False.
-            distortion (bool, optional): Whether to apply distortion. Default is False.
-            chorus (bool, optional): Whether to apply chorus. Default is False.
-            bitcrush (bool, optional): Whether to apply bitcrush. Default is False.
-            clipping (bool, optional): Whether to apply clipping. Default is False.
-            compressor (bool, optional): Whether to apply a compressor. Default is False.
-            delay (bool, optional): Whether to apply delay. Default is False.
             sliders (dict, optional): Dictionary of effect parameters. Default is None.
         """
+        embedder_model_custom = kwargs.get("embedder_model_custom", None)
+        formant_shifting = kwargs.get("formant_shifting", False)
+        formant_qfrency = kwargs.get("formant_qfrency", 1.0)
+        formant_timbre = kwargs.get("formant_timbre", 1.0)
+        post_process = kwargs.get("post_process", False)
+        reverb = kwargs.get("reverb", False)
+        pitch_shift = kwargs.get("pitch_shift", False)
+        limiter = kwargs.get("limiter", False)
+        gain = kwargs.get("gain", False)
+        distortion = kwargs.get("distortion", False)
+        chorus = kwargs.get("chorus", False)
+        bitcrush = kwargs.get("bitcrush", False)
+        clipping = kwargs.get("clipping", False)
+        compressor = kwargs.get("compressor", False)
+        delay = kwargs.get("delay", False)
         self.get_vc(model_path, sid)
 
         try:
@@ -567,29 +555,15 @@ class VoiceConverter:
         split_audio: bool,
         f0_autotune: bool,
         filter_radius: int,
-        embedder_model_custom: str,
         clean_audio: bool,
         clean_strength: float,
         export_format: str,
         upscale_audio: bool,
-        formant_shifting: bool,
-        formant_qfrency: float,
-        formant_timbre: float,
         resample_sr: int = 0,
         sid: int = 0,
         pid_file_path: str = None,
-        post_process: bool = False,
-        reverb: bool = False,
-        pitch_shift: bool = False,
-        limiter: bool = False,
-        gain: bool = False,
-        distortion: bool = False,
-        chorus: bool = False,
-        bitcrush: bool = False,
-        clipping: bool = False,
-        compressor: bool = False,
-        delay: bool = False,
         sliders: dict = None,
+        **kwargs,
     ):
         """
         Performs voice conversion on a batch of input audio files.
@@ -635,6 +609,21 @@ class VoiceConverter:
             sliders (dict, optional): Dictionary of effect parameters. Default is None.
 
         """
+        embedder_model_custom = kwargs.get("embedder_model_custom", None)
+        formant_shifting = kwargs.get("formant_shifting", False)
+        formant_qfrency = kwargs.get("formant_qfrency", 1.0)
+        formant_timbre = kwargs.get("formant_timbre", 1.0)
+        post_process = kwargs.get("post_process", False)
+        reverb = kwargs.get("reverb", False)
+        pitch_shift = kwargs.get("pitch_shift", False)
+        limiter = kwargs.get("limiter", False)
+        gain = kwargs.get("gain", False)
+        distortion = kwargs.get("distortion", False)
+        chorus = kwargs.get("chorus", False)
+        bitcrush = kwargs.get("bitcrush", False)
+        clipping = kwargs.get("clipping", False)
+        compressor = kwargs.get("compressor", False)
+        delay = kwargs.get("delay", False)
         pid = os.getpid()
         with open(pid_file_path, "w") as pid_file:
             pid_file.write(str(pid))
