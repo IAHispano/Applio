@@ -46,19 +46,7 @@ jobs:
           python core.py "prerequisites" --models "True" --pretraineds_v1 "False" --pretraineds_v2 "True" --exe "False"
           find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
           deactivate
-          rm -f .venv/pyvenv.cfg
-          rm -f .venv/bin/activate
-          rm -f .venv/bin/activate.bat
-          rm -f .venv/bin/activate.csh
-          rm -f .venv/bin/activate.fish
-          rm -f .venv/bin/activate.nu
-          rm -f .venv/bin/activate.ps1
-          rm -f .venv/bin/activate_this.py
-          rm -f .venv/bin/deactivate.bat
-          rm -f .venv/bin/pydoc.bat
-          rm -f .venv/bin/python
-          rm -f .venv/bin/python3
-          rm -f .venv/bin/python3.10
+          rm -f .venv/bin/Activate.ps1 .venv/bin/activate .venv/bin/activate.csh .venv/bin/activate.fish .venv/bin/pip .venv/bin/pip3 .venv/bin/pip3.10 .venv/bin/python .venv/bin/python3 .venv/bin/python3.10
           
       
       - name: Clean up unnecessary files
