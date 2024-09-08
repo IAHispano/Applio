@@ -455,6 +455,7 @@ def run_train_script(
     index_algorithm: str = "Auto",
     cache_data_in_gpu: bool = False,
     custom_pretrained: bool = False,
+    use_cpu: bool = False,
     g_pretrained_path: str = None,
     d_pretrained_path: str = None,
 ):
@@ -498,6 +499,7 @@ def run_train_script(
                 overtraining_detector,
                 overtraining_threshold,
                 sync_graph,
+                use_cpu,
             ],
         ),
     ]
@@ -642,7 +644,7 @@ def parse_arguments():
         "--index_rate",
         type=float,
         help=index_rate_description,
-        choices=[(i / 10) for i in range(11)],
+        choices=[i / 100.0 for i in range(0, 101)],
         default=0.3,
     )
     volume_envelope_description = "Control the blending of the output's volume envelope. A value of 1 means the output envelope is fully used."
@@ -650,7 +652,7 @@ def parse_arguments():
         "--volume_envelope",
         type=float,
         help=volume_envelope_description,
-        choices=[(i / 10) for i in range(11)],
+        choices=[i / 100.0 for i in range(0, 101)],
         default=1,
     )
     protect_description = "Protect consonants and breathing sounds from artifacts. A value of 0.5 offers the strongest protection, while lower values may reduce the protection level but potentially mitigate the indexing effect."
@@ -658,7 +660,7 @@ def parse_arguments():
         "--protect",
         type=float,
         help=protect_description,
-        choices=[(i / 10) for i in range(6)],
+        choices=[i / 1000.0 for i in range(0, 501)],
         default=0.33,
     )
     hop_length_description = "Only applicable for the Crepe pitch extraction method. Determines the time it takes for the system to react to a significant pitch change. Smaller values require more processing time but can lead to better pitch accuracy."
@@ -833,21 +835,21 @@ def parse_arguments():
         "--index_rate",
         type=float,
         help=index_rate_description,
-        choices=[(i / 10) for i in range(11)],
+        choices=[i / 100.0 for i in range(0, 101)],
         default=0.3,
     )
     batch_infer_parser.add_argument(
         "--volume_envelope",
         type=float,
         help=volume_envelope_description,
-        choices=[(i / 10) for i in range(11)],
+        choices=[i / 100.0 for i in range(0, 101)],
         default=1,
     )
     batch_infer_parser.add_argument(
         "--protect",
         type=float,
         help=protect_description,
-        choices=[(i / 10) for i in range(6)],
+        choices=[i / 1000.0 for i in range(0, 501)],
         default=0.33,
     )
     batch_infer_parser.add_argument(
@@ -1394,6 +1396,13 @@ def parse_arguments():
         default="Auto",
         required=False,
     )
+    train_parser.add_argument(
+        "--use_cpu",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help="Force the use of CPU for training.",
+        default=False,
+    )
 
     # Parser for 'index' mode
     index_parser = subparsers.add_parser(
@@ -1685,6 +1694,7 @@ def main():
                 sync_graph=args.sync_graph,
                 index_algorithm=args.index_algorithm,
                 cache_data_in_gpu=args.cache_data_in_gpu,
+                use_cpu=args.use_cpu,
                 g_pretrained_path=args.g_pretrained_path,
                 d_pretrained_path=args.d_pretrained_path,
             )
