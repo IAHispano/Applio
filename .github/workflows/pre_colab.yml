@@ -4,11 +4,75 @@ on:
   workflow_dispatch:
 
 jobs:
-  Linux:
+  Linux-Conda:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.10"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Free up space on runner
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          chmod +x run-install-c.sh
+          ./run-install-c.sh
+          .venv/bin/python core.py "prerequisites" --models "True" --pretraineds_v1 "False" --pretraineds_v2 "True" --exe "True"
+
+      - name: Clean up unnecessary files
+        run: |
+          rm -f LICENSE run-tensorboard.sh run-install.sh run-applio.sh run-install-c.sh requirements.txt .gitignore
+          rm -rf .github .git
+
+      - name: Read version from config.json
+        id: get-version
+        run: |
+          version=$(jq -r '.version' assets/config.json)
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Create ZIP file
+        run: |
+          zip -9 -r ApplioV${{ steps.get-version.outputs.version }}.zip .
+
+      - name: Upload Linux Compiled
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          version: ${{ steps.get-version.outputs.version }}
+        run: |
+          python -c "
+          import os
+          from huggingface_hub import login, upload_file
+
+          token = os.getenv('HF_TOKEN')
+          version = os.getenv('version')
+          login(token)
+          repo_id = 'vidalnt/nothing'
+          repo_file_path = f'ApplioV{version}.zip'
+
+          upload_file(
+          commit_message=f'{version}',
+          path_or_fileobj=repo_file_path,
+          path_in_repo=f'Compiled/Linux/CondaApplioV{version}.zip',
+          repo_id=repo_id,
+          token=token)
+          "
+  Linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10.14"]
 
     steps:
       - uses: actions/checkout@v3
