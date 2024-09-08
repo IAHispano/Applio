@@ -38,7 +38,6 @@ jobs:
           pip install huggingface_hub
           python -m venv .venv
           . .venv/bin/activate
-          python -m ensurepip
           python -m pip install "pip<24.1"
           python -m pip install -r requirements.txt
           python -m pip uninstall torch torchvision torchaudio -y
