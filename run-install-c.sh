@@ -8,7 +8,7 @@ echo
 
 principal=$(pwd)
 CONDA_ROOT_PREFIX="$HOME/Miniconda3"
-INSTALL_ENV_DIR="$principal/env"
+INSTALL_ENV_DIR="$principal/.venv"
 MINICONDA_DOWNLOAD_URL="https://repo.anaconda.com/miniconda/Miniconda3-py39_24.7.1-0-Linux-x86_64.sh"
 CONDA_EXECUTABLE="$CONDA_ROOT_PREFIX/bin/conda"
 
