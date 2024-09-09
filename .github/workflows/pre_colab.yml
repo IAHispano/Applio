@@ -27,6 +27,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          pip install huggingface_hub
           chmod +x run-install-c.sh
           ./run-install-c.sh
           .venv/bin/python core.py "prerequisites" --models "True" --pretraineds_v1 "False" --pretraineds_v2 "True" --exe "True"
