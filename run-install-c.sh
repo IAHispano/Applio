@@ -54,13 +54,11 @@ if [ -f "$INSTALL_ENV_DIR/bin/python" ]; then
 fi
 
 echo "Installing dependencies..."
-
-source "$INSTALL_ENV_DIR/bin/activate" 
+export PATH="$INSTALL_ENV_DIR/bin:$PATH"
 pip install --upgrade setuptools || exit 1
 pip install -r "$principal/requirements.txt" || exit 1
 pip uninstall torch torchvision torchaudio -y
 pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121 || exit 1
-conda deactivate
 echo "Dependencies installation complete."
 echo
 
