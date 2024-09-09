@@ -278,6 +278,7 @@ def run_batch_infer_script(
         upscale_audio=upscale_audio,
         f0_file=f0_file,
         embedder_model=embedder_model,
+        embedder_model_custom=embedder_model_custom,
         pid_file_path=os.path.join(now_dir, "assets", "infer_pid.txt"),
         **kwargs,
     )
