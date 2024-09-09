@@ -38,7 +38,7 @@ else
     echo "Miniconda already installed. Skipping installation."
 fi
 echo
-
+"$CONDA_ROOT_PREFIX/bin/conda" update -n base -c conda-forge conda
 echo "Creating Conda environment..."
 "$CONDA_ROOT_PREFIX/bin/conda" create --no-shortcuts -y -k --prefix "$INSTALL_ENV_DIR" python=3.9
 if [ $? -ne 0 ]; then exit 1; fi
@@ -63,7 +63,7 @@ pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https
 echo "Dependencies installation complete."
 export PATH=$ORIGINAL_PATH
 echo
-
+"$CONDA_ROOT_PREFIX/bin/conda" env export > environment.yml
 echo "Applio has been installed successfully!"
 echo "To start Applio, please run './run-applio.sh'."
 echo
