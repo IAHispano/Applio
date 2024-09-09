@@ -357,8 +357,6 @@ class VoiceConverter:
         self,
         audio_input_paths: str,
         audio_output_path: str,
-        resample_sr: int = 0,
-        sid: int = 0,
         **kwargs,
     ):
         """
@@ -386,13 +384,13 @@ class VoiceConverter:
             ]
             for a in audio_files:
                 new_input = os.path.join(audio_input_paths, a)
-                new_output = a.split(".")[0] + "_output.wav"
+                new_output = os.path.splitext(a)[0] + "_output.wav"
                 new_output = os.path.join(audio_output_path, new_output)
+                if os.path.exists(new_output):
+                    continue
                 self.convert_audio(
-                    new_input,
-                    new_output,
-                    resample_sr,
-                    sid,
+                    audio_input_path=new_input,
+                    audio_output_path=new_output,
                     **kwargs,
                 )
                 print(f"Conversion completed at '{audio_input_paths}'.")
