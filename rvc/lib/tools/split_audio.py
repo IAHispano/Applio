@@ -10,15 +10,12 @@ from rvc.lib.utils import format_title
 
 def process_audio(audio_path, sr=44100, silence_thresh=-70, min_silence_len=750):
     try:
-        # Load the audio
-        y = audio_path
-
         # Convert min_silence_len from ms to frames
         min_silence_frames = int((min_silence_len / 1000) * sr)
 
         # Detect non-silent parts
         intervals = librosa.effects.split(
-            y,
+            audio_path,
             top_db=-silence_thresh,
             frame_length=min_silence_frames,
             hop_length=min_silence_frames // 2,
@@ -29,12 +26,12 @@ def process_audio(audio_path, sr=44100, silence_thresh=-70, min_silence_len=750)
 
         # Add the first silence segment if any
         if intervals[0][0] > 0:
-            segments.append(y[: intervals[0][0]])
+            segments.append(audio_path[: intervals[0][0]])
             timestamps.append((0, intervals[0][0] / sr))
 
         for i, interval in enumerate(intervals):
             start, end = interval
-            chunk = y[start:end]
+            chunk = audio_path[start:end]
 
             segments.append(chunk)
             timestamps.append((start / sr, end / sr))  # Convert to seconds
@@ -43,13 +40,13 @@ def process_audio(audio_path, sr=44100, silence_thresh=-70, min_silence_len=750)
 
             # Add the next silence segment if any
             if i < len(intervals) - 1 and end < intervals[i + 1][0]:
-                segments.append(y[end : intervals[i + 1][0]])
+                segments.append(audio_path[end : intervals[i + 1][0]])
                 timestamps.append((end / sr, intervals[i + 1][0] / sr))
 
         # Add the last silence segment if any
-        if intervals[-1][1] < len(y):
-            segments.append(y[intervals[-1][1] :])
-            timestamps.append((intervals[-1][1] / sr, len(y) / sr))
+        if intervals[-1][1] < len(audio_path):
+            segments.append(audio_path[intervals[-1][1] :])
+            timestamps.append((intervals[-1][1] / sr, len(audio_path) / sr))
 
         print(f"Total segments created: {len(segments)}")
 
