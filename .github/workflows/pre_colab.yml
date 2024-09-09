@@ -53,7 +53,7 @@ jobs:
           rm -rf .github .git
       - name: Create Tar file
         run: |
-          tar --use-compress-program="pigz --best --recursive | pv" -cvf ApplioV${{ steps.get-version.outputs.version }}.tar.gz .
+          tar --exclude=ApplioV${{ steps.get-version.outputs.version }}.tar.gz --use-compress-program="pigz --best --recursive | pv" -cvf ApplioV${{ steps.get-version.outputs.version }}.tar.gz .
       - name: Upload Linux Compiled
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
