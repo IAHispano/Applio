@@ -39,6 +39,7 @@ transformers==4.44.2
 matplotlib==3.7.2
 tensorboard
 gradio==4.43.0
+
 # Miscellaneous utilities
 certifi==2024.7.4; sys_platform == 'darwin'
 antlr4-python3-runtime==4.8; sys_platform == 'darwin'
