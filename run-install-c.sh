@@ -34,7 +34,6 @@ if [ ! -f "$CONDA_EXECUTABLE" ]; then
     fi
     rm miniconda.sh
     echo "Miniconda installation complete."
-    conda init bash 
 else
     echo "Miniconda already installed. Skipping installation."
 fi
@@ -55,12 +54,12 @@ if [ -f "$INSTALL_ENV_DIR/bin/python" ]; then
 fi
 
 echo "Installing dependencies..."
-"$CONDA_ROOT_PREFIX/bin/conda" activate "$INSTALL_ENV_DIR" || exit 1
+# Modify PATH to activate the conda environment
+export PATH="$INSTALL_ENV_DIR/bin:$PATH"
 pip install --upgrade setuptools || exit 1
 pip install -r "$principal/requirements.txt" || exit 1
 pip uninstall torch torchvision torchaudio -y
 pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121 || exit 1
-"$CONDA_ROOT_PREFIX/bin/conda" deactivate
 echo "Dependencies installation complete."
 echo
 
