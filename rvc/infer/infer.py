@@ -264,29 +264,29 @@ class VoiceConverter:
         Performs voice conversion on the input audio.
 
         Args:
+            pitch (int): Key for F0 up-sampling.
+            filter_radius (int): Radius for filtering.
+            index_rate (float): Rate for index matching.
+            volume_envelope (int): RMS mix rate.
+            protect (float): Protection rate for certain audio segments.
+            hop_length (int): Hop length for audio processing.
+            f0_method (str): Method for F0 extraction.
             audio_input_path (str): Path to the input audio file.
             audio_output_path (str): Path to the output audio file.
             model_path (str): Path to the voice conversion model.
             index_path (str): Path to the index file.
-            sid (int, optional): Speaker ID. Default is 0.
-            pitch (str, optional): Key for F0 up-sampling. Default is None.
-            f0_file (str, optional): Path to the F0 file. Default is None.
-            f0_method (str, optional): Method for F0 extraction. Default is None.
-            index_rate (float, optional): Rate for index matching. Default is None.
+            split_audio (bool): Whether to split the audio for processing.
+            f0_autotune (bool): Whether to use F0 autotune.
+            clean_audio (bool): Whether to clean the audio.
+            clean_strength (float): Strength of the audio cleaning.
+            export_format (str): Format for exporting the audio.
+            upscale_audio (bool): Whether to upscale the audio.
+            f0_file (str): Path to the F0 file.
+            embedder_model (str): Path to the embedder model.
+            embedder_model_custom (str): Path to the custom embedder model.
             resample_sr (int, optional): Resample sampling rate. Default is 0.
-            volume_envelope (float, optional): RMS mix rate. Default is None.
-            protect (float, optional): Protection rate for certain audio segments. Default is None.
-            hop_length (int, optional): Hop length for audio processing. Default is None.
-            split_audio (bool, optional): Whether to split the audio for processing. Default is False.
-            f0_autotune (bool, optional): Whether to use F0 autotune. Default is False.
-            filter_radius (int, optional): Radius for filtering. Default is None.
-            embedder_model (str, optional): Path to the embedder model. Default is None.
-            embedder_model_custom (str, optional): Path to the custom embedder model. Default is None.
-            clean_audio (bool, optional): Whether to clean the audio. Default is False.
-            clean_strength (float, optional): Strength of the audio cleaning. Default is 0.7.
-            export_format (str, optional): Format for exporting the audio. Default is "WAV".
-            upscale_audio (bool, optional): Whether to upscale the audio. Default is False.
-            sliders (dict, optional): Dictionary of effect parameters. Default is None.
+            sid (int, optional): Speaker ID. Default is 0.
+            **kwargs: Additional keyword arguments.
         """
         self.get_vc(model_path, sid)
         try:
@@ -412,8 +412,9 @@ class VoiceConverter:
         f0_file: str,
         embedder_model: str,
         embedder_model_custom: str,
-        resample_sr: int = 0,
+        post_process: bool,
         sid: int = 0,
+        resample_sr: int = 0,
         pid_file_path: str = None,
         **kwargs,
     ):
@@ -421,50 +422,34 @@ class VoiceConverter:
         Performs voice conversion on a batch of input audio files.
 
         Args:
-            audio_input_paths (list): List of paths to the input audio files.
+            pitch (int): Key for F0 up-sampling.
+            filter_radius (int): Radius for filtering.
+            index_rate (float): Rate for index matching.
+            volume_envelope (int): RMS mix rate.
+            protect (float): Protection rate for certain audio segments.
+            hop_length (int): Hop length for audio processing.
+            f0_method (str): Method for F0 extraction.
+            audio_input_paths (str): List of paths to the input audio files.
             audio_output_path (str): Path to the output audio file.
             model_path (str): Path to the voice conversion model.
             index_path (str): Path to the index file.
-            sid (int, optional): Speaker ID. Default is 0.
-            pitch (str, optional): Key for F0 up-sampling. Default is None.
-            f0_file (str, optional): Path to the F0 file. Default is None.
-            f0_method (str, optional): Method for F0 extraction. Default is None.
-            index_rate (float, optional): Rate for index matching. Default is None.
+            split_audio (bool): Whether to split the audio for processing.
+            f0_autotune (bool): Whether to use F0 autotune.
+            clean_audio (bool): Whether to clean the audio.
+            clean_strength (float): Strength of the audio cleaning.
+            export_format (str): Format for exporting the audio.
+            upscale_audio (bool): Whether to upscale the audio.
+            f0_file (str): Path to the F0 file.
+            embedder_model (str): Path to the embedder model.
+            embedder_model_custom (str): Path to the custom embedder model.
             resample_sr (int, optional): Resample sampling rate. Default is 0.
-            volume_envelope (float, optional): RMS mix rate. Default is None.
-            protect (float, optional): Protection rate for certain audio segments. Default is None.
-            hop_length (int, optional): Hop length for audio processing. Default is None.
-            split_audio (bool, optional): Whether to split the audio for processing. Default is False.
-            f0_autotune (bool, optional): Whether to use F0 autotune. Default is False.
-            filter_radius (int, optional): Radius for filtering. Default is None.
-            embedder_model (str, optional): Path to the embedder model. Default is None.
-            embedder_model_custom (str, optional): Path to the custom embedder model. Default is None.
-            clean_audio (bool, optional): Whether to clean the audio. Default is False.
-            clean_strength (float, optional): Strength of the audio cleaning. Default is 0.7.
-            export_format (str, optional): Format for exporting the audio. Default is "WAV".
-            upscale_audio (bool, optional): Whether to upscale the audio. Default is False.
-            formant_shift (bool, optional): Whether to shift the formants. Default is False.
-            formant_qfrency (float, optional): Formant frequency. Default is 1.0.
-            formant_timbre (float, optional): Formant timbre. Default is 1.0.
+            sid (int, optional): Speaker ID. Default is 0.
             pid_file_path (str, optional): Path to the PID file. Default is None.
-            post_process (bool, optional): Whether to apply post-processing effects. Default is False.
-            reverb (bool, optional): Whether to apply reverb. Default is False.
-            pitch_shift (bool, optional): Whether to apply pitch shift. Default is False.
-            limiter (bool, optional): Whether to apply a limiter. Default is False.
-            gain (bool, optional): Whether to apply gain. Default is False.
-            distortion (bool, optional): Whether to apply distortion. Default is False.
-            chorus (bool, optional): Whether to apply chorus. Default is False.
-            bitcrush (bool, optional): Whether to apply bitcrush. Default is False.
-            clipping (bool, optional): Whether to apply clipping. Default is False.
-            compressor (bool, optional): Whether to apply a compressor. Default is False.
-            delay (bool, optional): Whether to apply delay. Default is False.
-            sliders (dict, optional): Dictionary of effect parameters. Default is None.
-
+            **kwargs: Additional keyword arguments.
         """
         pid = os.getpid()
         with open(pid_file_path, "w") as pid_file:
             pid_file.write(str(pid))
-        post_process = kwargs.get("post_process", False)
         try:
             if not self.hubert_model or embedder_model != self.last_embedder_model:
                 self.load_hubert(embedder_model, embedder_model_custom)

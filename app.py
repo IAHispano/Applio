@@ -31,6 +31,7 @@ from tabs.settings.presence import presence_tab, load_config_presence
 from tabs.settings.flask_server import flask_server_tab
 from tabs.settings.themes import theme_tab
 from tabs.settings.precision import precision_tab
+from tabs.settings.model_author import model_author_tab
 
 # Run prerequisites
 from core import run_prerequisites_script
@@ -110,6 +111,7 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
         version_tab()
         lang_tab()
         restart_tab()
+        model_author_tab()
 
 
 def launch_gradio(port):
