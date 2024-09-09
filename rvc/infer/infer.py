@@ -500,11 +500,12 @@ class VoiceConverter:
 
                 if clean_audio:
                     sf.write(audio_output_paths, audio_opt, self.tgt_sr, format="WAV")
-                    cleaned_audio = self.remove_audio_noise(audio_opt, clean_strength)
+                    cleaned_audio = self.remove_audio_noise(
+                        audio_output_paths, clean_strength
+                    )
                     if cleaned_audio is not None:
                         audio_opt = cleaned_audio
                 if post_process:
-                    sf.write(audio_output_paths, audio_opt, self.tgt_sr, format="WAV")
                     audio_opt = self.post_process_audio(
                         audio_input=audio_opt,
                         sample_rate=self.tgt_sr,
