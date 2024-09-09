@@ -93,7 +93,6 @@ def run_infer_script(
         "formant_shifting": formant_shifting,
         "formant_qfrency": formant_qfrency,
         "formant_timbre": formant_timbre,
-        "post_process": post_process,
         "reverb": reverb,
         "pitch_shift": pitch_shift,
         "limiter": limiter,
@@ -165,6 +164,7 @@ def run_infer_script(
         f0_file=f0_file,
         embedder_model=embedder_model,
         embedder_model_custom=embedder_model_custom,
+        post_process=post_process,
         **kwargs,
     )
     return f"File {input_path} inferred successfully.", output_path.replace(
@@ -218,7 +218,6 @@ def run_batch_infer_script(
         "formant_shifting": formant_shifting,
         "formant_qfrency": formant_qfrency,
         "formant_timbre": formant_timbre,
-        "post_process": post_process,
         "reverb": reverb,
         "pitch_shift": pitch_shift,
         "limiter": limiter,
@@ -279,6 +278,7 @@ def run_batch_infer_script(
         f0_file=f0_file,
         embedder_model=embedder_model,
         embedder_model_custom=embedder_model_custom,
+        post_process=post_process,
         pid_file_path=os.path.join(now_dir, "assets", "infer_pid.txt"),
         **kwargs,
     )

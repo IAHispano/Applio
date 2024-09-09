@@ -255,6 +255,7 @@ class VoiceConverter:
         f0_file: str,
         embedder_model: str,
         embedder_model_custom: str,
+        post_process: bool = False,
         sid: int = 0,
         resample_sr: int = 0,
         **kwargs,
@@ -288,7 +289,6 @@ class VoiceConverter:
             sliders (dict, optional): Dictionary of effect parameters. Default is None.
         """
         self.get_vc(model_path, sid)
-        post_process = kwargs.get("process_audio", False)
         try:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
