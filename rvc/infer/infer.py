@@ -353,7 +353,7 @@ class VoiceConverter:
                     f0_file=f0_file,
                 )
                 converted_chunks.append(audio_opt)
-                print(f"Converter audio chunk {len(converted_chunks)}")
+                print(f"Converted audio chunk {len(converted_chunks)}")
 
             if split_audio:
                 self.tgt_sr, audio_opt = merge_audio(
@@ -470,7 +470,6 @@ class VoiceConverter:
                 for f in os.listdir(audio_input_paths)
                 if f.endswith((".mp3", ".wav", ".flac", ".m4a", ".ogg", ".opus"))
             ]
-            print(f"Detected {len(audio_files)} audio files for inference.")
             for i, audio_input_path in enumerate(audio_files):
                 audio_output_paths = os.path.join(
                     audio_output_path,
@@ -497,76 +496,20 @@ class VoiceConverter:
                     self.tgt_sr = resample_sr
 
                 if split_audio:
-                    result, new_dir_path = process_audio(audio_input_path)
+                    result, chunks, timestamps = process_audio(audio, self.tgt_sr)
                     if result == "Error":
                         return "Error with Split Audio", None
-
-                    dir_path = (
-                        new_dir_path.strip().strip('"').strip("\n").strip('"').strip()
-                    )
-                    if dir_path:
-                        paths = [
-                            os.path.join(root, name)
-                            for root, _, files in os.walk(dir_path, topdown=False)
-                            for name in files
-                            if name.endswith(".wav") and root == dir_path
-                        ]
-                    try:
-                        for path in paths:
-                            self.convert_audio(
-                                audio_input_path=path,
-                                audio_output_path=path,
-                                model_path=model_path,
-                                index_path=index_path,
-                                sid=sid,
-                                pitch=pitch,
-                                f0_file=None,
-                                f0_method=f0_method,
-                                index_rate=index_rate,
-                                resample_sr=resample_sr,
-                                volume_envelope=volume_envelope,
-                                protect=protect,
-                                hop_length=hop_length,
-                                split_audio=False,
-                                f0_autotune=f0_autotune,
-                                filter_radius=filter_radius,
-                                export_format=export_format,
-                                upscale_audio=upscale_audio,
-                                embedder_model=embedder_model,
-                                embedder_model_custom=embedder_model_custom,
-                                clean_audio=clean_audio,
-                                clean_strength=clean_strength,
-                                **kwargs,
-                            )
-                    except Exception as error:
-                        print(
-                            f"An error occurred processing the segmented audio: {error}"
-                        )
-                        print(traceback.format_exc())
-                        return f"Error {error}"
-                    print("Finished processing segmented audio, now merging audio...")
-                    merge_timestamps_file = os.path.join(
-                        os.path.dirname(new_dir_path),
-                        f"{os.path.basename(audio_input_path).split('.')[0]}_timestamps.txt",
-                    )
-                    self.tgt_sr, audio_opt = merge_audio(merge_timestamps_file)
-                    os.remove(merge_timestamps_file)
-                    if post_process:
-                        audio_opt = self.post_process_audio(
-                            audio_input=audio_opt,
-                            sample_rate=self.tgt_sr,
-                            audio_output_path=audio_output_paths,
-                            **kwargs,
-                        )
-                        sf.write(
-                            audio_output_paths, audio_opt, self.tgt_sr, format="WAV"
-                        )
                 else:
+                    chunks = []
+                    chunks.append(audio)
+
+                converted_chunks = []
+                for c in chunks:
                     audio_opt = self.vc.pipeline(
                         model=self.hubert_model,
                         net_g=self.net_g,
                         sid=sid,
-                        audio=audio,
+                        audio=c,
                         input_audio_path=audio_input_path,
                         pitch=pitch,
                         f0_method=f0_method,
@@ -583,25 +526,31 @@ class VoiceConverter:
                         f0_autotune=f0_autotune,
                         f0_file=f0_file,
                     )
+                    converted_chunks.append(audio_opt)
+                    if split_audio:
+                        print(f"Converted audio chunk {len(converted_chunks)}")
 
-                if audio_output_paths:
-                    sf.write(audio_output_paths, audio_opt, self.tgt_sr, format="WAV")
+                if split_audio:
+                    self.tgt_sr, audio_opt = merge_audio(
+                        converted_chunks, timestamps, self.tgt_sr
+                    )
+                else:
+                    audio_opt = converted_chunks[0]
 
                 if clean_audio:
                     cleaned_audio = self.remove_audio_noise(
                         audio_output_paths, clean_strength
                     )
                     if cleaned_audio is not None:
-                        sf.write(
-                            audio_output_paths, cleaned_audio, self.tgt_sr, format="WAV"
-                        )
+                        sf.write(audio_opt, cleaned_audio, self.tgt_sr, format="WAV")
                 if post_process:
-                    audio_output_paths = self.post_process_audio(
-                        audio_input=audio_output_paths,
+                    audio_opt = self.post_process_audio(
+                        audio_input=audio_opt,
                         sample_rate=self.tgt_sr,
-                        audio_output_path=audio_output_paths,
+                        audio_output_path=audio_opt,
                         **kwargs,
                     )
+                sf.write(audio_output_paths, audio_opt, self.tgt_sr, format="WAV")
                 output_path_format = audio_output_paths.replace(
                     ".wav", f".{export_format.lower()}"
                 )
