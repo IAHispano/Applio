@@ -138,18 +138,8 @@ class VoiceConverter:
         sample_rate,
         **kwargs,
     ):
-        reverb = kwargs.get("reverb", False)
-        pitch_shift = kwargs.get("pitch_shift", False)
-        limiter = kwargs.get("limiter", False)
-        gain = kwargs.get("gain", False)
-        distortion = kwargs.get("distortion", False)
-        chorus = kwargs.get("chorus", False)
-        bitcrush = kwargs.get("bitcrush", False)
-        clipping = kwargs.get("clipping", False)
-        compressor = kwargs.get("compressor", False)
-        delay = kwargs.get("delay", False)
         board = Pedalboard()
-        if reverb:
+        if kwargs.get("reverb", False):
             reverb = Reverb(
                 room_size=kwargs.get("reverb_room_size", 0.5),
                 damping=kwargs.get("reverb_damping", 0.5),
@@ -159,22 +149,22 @@ class VoiceConverter:
                 freeze_mode=kwargs.get("reverb_freeze_mode", 0),
             )
             board.append(reverb)
-        if pitch_shift:
+        if kwargs.get("pitch_shift", False):
             pitch_shift = PitchShift(semitones=kwargs.get("pitch_shift_semitones", 0))
             board.append(pitch_shift)
-        if limiter:
+        if kwargs.get("limiter", False):
             limiter = Limiter(
                 threshold_db=kwargs.get("limiter_threshold", -6),
                 release_ms=kwargs.get("limiter_release", 0.05),
             )
             board.append(limiter)
-        if gain:
+        if kwargs.get("gain", False):
             gain = Gain(gain_db=kwargs.get("gain_db", 0))
             board.append(gain)
-        if distortion:
+        if kwargs.get("distortion", False):
             distortion = Distortion(drive_db=kwargs.get("distortion_gain", 25))
             board.append(distortion)
-        if chorus:
+        if kwargs.get("chorus", False):
             chorus = Chorus(
                 rate_hz=kwargs.get("chorus_rate", 1.0),
                 depth=kwargs.get("chorus_depth", 0.25),
@@ -183,13 +173,13 @@ class VoiceConverter:
                 mix=kwargs.get("chorus_mix", 0.5),
             )
             board.append(chorus)
-        if bitcrush:
+        if kwargs.get("bitcrush", False):
             bitcrush = Bitcrush(bit_depth=kwargs.get("bitcrush_bit_depth", 8))
             board.append(bitcrush)
-        if clipping:
+        if kwargs.get("clipping", False):
             clipping = Clipping(threshold_db=kwargs.get("clipping_threshold", 0))
             board.append(clipping)
-        if compressor:
+        if kwargs.get("compressor", False):
             compressor = Compressor(
                 threshold_db=kwargs.get("compressor_threshold", 0),
                 ratio=kwargs.get("compressor_ratio", 1),
@@ -197,7 +187,7 @@ class VoiceConverter:
                 release_ms=kwargs.get("compressor_release", 100),
             )
             board.append(compressor)
-        if delay:
+        if kwargs.get("delay", False):
             delay = Delay(
                 delay_seconds=kwargs.get("delay_seconds", 0.5),
                 feedback=kwargs.get("delay_feedback", 0.0),
