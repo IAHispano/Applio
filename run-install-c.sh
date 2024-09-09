@@ -38,7 +38,7 @@ else
     echo "Miniconda already installed. Skipping installation."
 fi
 echo
-"$CONDA_ROOT_PREFIX/bin/conda" update -n base -c conda-forge conda
+"$CONDA_ROOT_PREFIX/bin/conda" update -n base -c conda-forge conda -y
 echo "Creating Conda environment..."
 "$CONDA_ROOT_PREFIX/bin/conda" create --no-shortcuts -y -k --prefix "$INSTALL_ENV_DIR" python=3.9
 if [ $? -ne 0 ]; then exit 1; fi
