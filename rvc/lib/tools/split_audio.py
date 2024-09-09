@@ -3,44 +3,53 @@ from pydub import AudioSegment
 import numpy as np
 import re
 import os
+import librosa
 
 from rvc.lib.utils import format_title
 
 
-def process_audio(np_audio, sample_rate=44100, sample_width=4, channels=1):
+def process_audio(audio_path, sr=44100, silence_thresh=-70, min_silence_len=750):
     try:
-        # Convert numpy array to AudioSegment
-        audio_segment = AudioSegment(
-            np_audio.tobytes(),
-            frame_rate=sample_rate,
-            sample_width=sample_width,
-            channels=channels,
-        )
+        # Load the audio
+        y = audio_path
 
-        # Set silence threshold and duration
-        silence_thresh = -70  # dB
-        min_silence_len = 750  # ms, adjust as needed
+        # Convert min_silence_len from ms to frames
+        min_silence_frames = int((min_silence_len / 1000) * sr)
 
         # Detect non-silent parts
-        nonsilent_parts = detect_nonsilent(
-            audio_segment,
-            min_silence_len=min_silence_len,
-            silence_thresh=silence_thresh,
+        intervals = librosa.effects.split(
+            y,
+            top_db=-silence_thresh,
+            frame_length=min_silence_frames,
+            hop_length=min_silence_frames // 2,
         )
 
         segments = []
         timestamps = []
 
-        for i, (start_i, end_i) in enumerate(nonsilent_parts):
-            chunk = audio_segment[start_i:end_i]
+        # Add the first silence segment if any
+        if intervals[0][0] > 0:
+            segments.append(y[: intervals[0][0]])
+            timestamps.append((0, intervals[0][0] / sr))
 
-            # Convert chunk to numpy array
-            chunk_np = np.array(chunk.get_array_of_samples())
+        for i, interval in enumerate(intervals):
+            start, end = interval
+            chunk = y[start:end]
 
-            segments.append(chunk_np)
-            timestamps.append((start_i, end_i))
+            segments.append(chunk)
+            timestamps.append((start / sr, end / sr))  # Convert to seconds
 
             print(f"Segment {i} created!")
+
+            # Add the next silence segment if any
+            if i < len(intervals) - 1 and end < intervals[i + 1][0]:
+                segments.append(y[end : intervals[i + 1][0]])
+                timestamps.append((end / sr, intervals[i + 1][0] / sr))
+
+        # Add the last silence segment if any
+        if intervals[-1][1] < len(y):
+            segments.append(y[intervals[-1][1] :])
+            timestamps.append((intervals[-1][1] / sr, len(y) / sr))
 
         print(f"Total segments created: {len(segments)}")
 
