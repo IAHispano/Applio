@@ -80,18 +80,18 @@ class VoiceConverter:
         self.hubert_model.eval()
 
     @staticmethod
-    def remove_audio_noise(input_audio_path, reduction_strength=0.7):
+    def remove_audio_noise(data, sr, reduction_strength=0.7):
         """
         Removes noise from an audio file using the NoiseReduce library.
 
         Args:
-            input_audio_path (str): Path to the input audio file.
+            data (numpy.ndarray): The audio data as a NumPy array.
+            sr (int): The sample rate of the audio data.
             reduction_strength (float): Strength of the noise reduction. Default is 0.7.
         """
         try:
-            rate, data = wavfile.read(input_audio_path)
             reduced_noise = nr.reduce_noise(
-                y=data, sr=rate, prop_decrease=reduction_strength
+                y=data, sr=sr, prop_decrease=reduction_strength
             )
             return reduced_noise
         except Exception as error:
@@ -200,25 +200,6 @@ class VoiceConverter:
         self,
         audio_input_path: str,
         audio_output_path: str,
-        model_path: str,
-        index_path: str,
-        pitch: int = 0,
-        f0_file: str = None,
-        f0_method: str = "rmvpe",
-        index_rate: float = 0.75,
-        volume_envelope: float = 1,
-        protect: float = 0.5,
-        hop_length: int = 128,
-        split_audio: bool = False,
-        f0_autotune: bool = False,
-        filter_radius: int = 3,
-        embedder_model: str = "contentvec",
-        embedder_model_custom: str = None,
-        clean_audio: bool = False,
-        clean_strength: float = 0.5,
-        export_format: str = "WAV",
-        upscale_audio: bool = False,
-        post_process: bool = False,
         resample_sr: int = 0,
         sid: int = 0,
         **kwargs,
@@ -227,36 +208,18 @@ class VoiceConverter:
         Performs voice conversion on the input audio.
 
         Args:
-            pitch (int): Key for F0 up-sampling.
-            filter_radius (int): Radius for filtering.
-            index_rate (float): Rate for index matching.
-            volume_envelope (int): RMS mix rate.
-            protect (float): Protection rate for certain audio segments.
-            hop_length (int): Hop length for audio processing.
-            f0_method (str): Method for F0 extraction.
             audio_input_path (str): Path to the input audio file.
             audio_output_path (str): Path to the output audio file.
-            model_path (str): Path to the voice conversion model.
-            index_path (str): Path to the index file.
-            split_audio (bool): Whether to split the audio for processing.
-            f0_autotune (bool): Whether to use F0 autotune.
-            clean_audio (bool): Whether to clean the audio.
-            clean_strength (float): Strength of the audio cleaning.
-            export_format (str): Format for exporting the audio.
-            upscale_audio (bool): Whether to upscale the audio.
-            f0_file (str): Path to the F0 file.
-            embedder_model (str): Path to the embedder model.
-            embedder_model_custom (str): Path to the custom embedder model.
             resample_sr (int, optional): Resample sampling rate. Default is 0.
             sid (int, optional): Speaker ID. Default is 0.
             **kwargs: Additional keyword arguments.
         """
-        self.get_vc(model_path, sid)
+        self.get_vc(kwargs.get("model_path"), sid)
         try:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
 
-            if upscale_audio == True:
+            if kwargs.get("upscale_audio"):
                 upscale(audio_input_path, audio_input_path)
             audio = load_audio_infer(
                 audio_input_path,
@@ -268,12 +231,18 @@ class VoiceConverter:
             if audio_max > 1:
                 audio /= audio_max
 
-            if not self.hubert_model or embedder_model != self.last_embedder_model:
-                self.load_hubert(embedder_model, embedder_model_custom)
-                self.last_embedder_model = embedder_model
+            if (
+                not self.hubert_model
+                or kwargs.get("embedder_model") != self.last_embedder_model
+            ):
+                self.load_hubert(
+                    kwargs.get("embedder_model"), kwargs.get("embedder_model_custom")
+                )
+                self.last_embedder_model = kwargs.get("embedder_model")
 
             file_index = (
-                index_path.strip()
+                kwargs.get("index_path")
+                .strip()
                 .strip('"')
                 .strip("\n")
                 .strip('"')
@@ -284,7 +253,7 @@ class VoiceConverter:
             if self.tgt_sr != resample_sr >= 16000:
                 self.tgt_sr = resample_sr
 
-            if split_audio:
+            if kwargs.get("split_audio"):
                 result, chunks, timestamps = process_audio(audio, self.tgt_sr)
                 if result == "Error":
                     return "Error with Split Audio", None
@@ -299,39 +268,38 @@ class VoiceConverter:
                     net_g=self.net_g,
                     sid=sid,
                     audio=c,
-                    pitch=pitch,
-                    f0_method=f0_method,
+                    pitch=kwargs.get("pitch"),
+                    f0_method=kwargs.get("f0_method"),
                     file_index=file_index,
-                    index_rate=index_rate,
+                    index_rate=kwargs.get("index_rate"),
                     pitch_guidance=self.use_f0,
-                    filter_radius=filter_radius,
-                    volume_envelope=volume_envelope,
+                    filter_radius=kwargs.get("filter_radius"),
+                    volume_envelope=kwargs.get("volume_envelope"),
                     version=self.version,
-                    protect=protect,
-                    hop_length=hop_length,
-                    f0_autotune=f0_autotune,
-                    f0_file=f0_file,
+                    protect=kwargs.get("protect"),
+                    hop_length=kwargs.get("hop_length"),
+                    f0_autotune=kwargs.get("f0_autotune"),
+                    f0_file=kwargs.get("f0_file"),
                 )
                 converted_chunks.append(audio_opt)
-                if split_audio:
+                if kwargs.get("split_audio"):
                     print(f"Converted audio chunk {len(converted_chunks)}")
 
-            if split_audio:
+            if kwargs.get("split_audio"):
                 self.tgt_sr, audio_opt = merge_audio(
                     converted_chunks, timestamps, self.tgt_sr
                 )
             else:
                 audio_opt = converted_chunks[0]
 
-            if clean_audio:
-                sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
+            if kwargs.get("clean_audio"):
                 cleaned_audio = self.remove_audio_noise(
-                    audio_output_path, clean_strength
+                    audio_opt, self.tgt_sr, kwargs.get("clean_strength")
                 )
                 if cleaned_audio is not None:
                     audio_opt = cleaned_audio
 
-            if post_process:
+            if kwargs.get("post_process"):
                 audio_opt = self.post_process_audio(
                     audio_input=audio_opt,
                     sample_rate=self.tgt_sr,
@@ -340,10 +308,10 @@ class VoiceConverter:
 
             sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
             output_path_format = audio_output_path.replace(
-                ".wav", f".{export_format.lower()}"
+                ".wav", f".{kwargs.get('export_format').lower()}"
             )
             audio_output_path = self.convert_audio_format(
-                audio_output_path, output_path_format, export_format
+                audio_output_path, output_path_format, kwargs.get("export_format")
             )
 
             elapsed_time = time.time() - start_time
@@ -358,108 +326,52 @@ class VoiceConverter:
         self,
         audio_input_paths: str,
         audio_output_path: str,
-        model_path: str,
-        index_path: str,
-        pitch: int = 0,
-        f0_file: str = None,
-        f0_method: str = "rmvpe",
-        index_rate: float = 0.75,
-        volume_envelope: float = 1,
-        protect: float = 0.5,
-        hop_length: int = 128,
-        split_audio: bool = False,
-        f0_autotune: bool = False,
-        filter_radius: int = 3,
-        embedder_model: str = "contentvec",
-        embedder_model_custom: str = None,
-        clean_audio: bool = False,
-        clean_strength: float = 0.5,
-        export_format: str = "WAV",
-        upscale_audio: bool = False,
-        post_process: bool = False,
         resample_sr: int = 0,
         sid: int = 0,
-        pid_file_path: str = None,
         **kwargs,
     ):
         """
         Performs voice conversion on a batch of input audio files.
 
         Args:
-            pitch (int): Key for F0 up-sampling.
-            filter_radius (int): Radius for filtering.
-            index_rate (float): Rate for index matching.
-            volume_envelope (int): RMS mix rate.
-            protect (float): Protection rate for certain audio segments.
-            hop_length (int): Hop length for audio processing.
-            f0_method (str): Method for F0 extraction.
             audio_input_paths (str): List of paths to the input audio files.
             audio_output_path (str): Path to the output audio file.
-            model_path (str): Path to the voice conversion model.
-            index_path (str): Path to the index file.
-            split_audio (bool): Whether to split the audio for processing.
-            f0_autotune (bool): Whether to use F0 autotune.
-            clean_audio (bool): Whether to clean the audio.
-            clean_strength (float): Strength of the audio cleaning.
-            export_format (str): Format for exporting the audio.
-            upscale_audio (bool): Whether to upscale the audio.
-            f0_file (str): Path to the F0 file.
-            embedder_model (str): Path to the embedder model.
-            embedder_model_custom (str): Path to the custom embedder model.
             resample_sr (int, optional): Resample sampling rate. Default is 0.
             sid (int, optional): Speaker ID. Default is 0.
-            pid_file_path (str, optional): Path to the PID file. Default is None.
             **kwargs: Additional keyword arguments.
         """
         pid = os.getpid()
-        with open(pid_file_path, "w") as pid_file:
-            pid_file.write(str(pid))
-        start_time = time.time()
-        print(f"Converting audio batch '{audio_input_paths}'...")
-        audio_files = [
-            f
-            for f in os.listdir(audio_input_paths)
-            if f.endswith((".mp3", ".wav", ".flac", ".m4a", ".ogg", ".opus"))
-        ]
-        for i, audio_input_path in enumerate(audio_files):
-            audio_output_paths = os.path.join(
-                audio_output_path,
-                f"{os.path.splitext(os.path.basename(audio_input_path))[0]}_output.{export_format.lower()}",
-            )
-            if os.path.exists(audio_output_paths):
-                continue
-            print(f"Converting audio '{audio_input_path}'...")
-            audio_input_path = os.path.join(audio_input_paths, audio_input_path)
-            self.convert_audio(
-                audio_input_path,
-                audio_output_paths,
-                model_path,
-                index_path,
-                pitch,
-                f0_file,
-                f0_method,
-                index_rate,
-                volume_envelope,
-                protect,
-                hop_length,
-                split_audio,
-                f0_autotune,
-                filter_radius,
-                embedder_model,
-                embedder_model_custom,
-                clean_audio,
-                clean_strength,
-                export_format,
-                upscale_audio,
-                post_process,
-                resample_sr,
-                sid,
-                **kwargs,
-            )
-            print(f"Conversion completed at '{audio_output_paths}'.")
-            elapsed_time = time.time() - start_time
-            print(f"Batch conversion completed in {elapsed_time:.2f} seconds.")
-            os.remove(pid_file_path)
+        try:
+            with open(
+                os.path.join(now_dir, "assets", "infer_pid.txt"), "w"
+            ) as pid_file:
+                pid_file.write(str(pid))
+            start_time = time.time()
+            print(f"Converting audio batch '{audio_input_paths}'...")
+            audio_files = [
+                f
+                for f in os.listdir(audio_input_paths)
+                if f.endswith((".mp3", ".wav", ".flac", ".m4a", ".ogg", ".opus"))
+            ]
+            for a in audio_files:
+                new_input = os.path.join(audio_input_paths, a)
+                new_output = a.split(".")[0] + "_output.wav"
+                new_output = os.path.join(audio_output_path, new_output)
+                self.convert_audio(
+                    new_input,
+                    new_output,
+                    resample_sr,
+                    sid,
+                    **kwargs,
+                )
+                print(f"Conversion completed at '{audio_input_paths}'.")
+                elapsed_time = time.time() - start_time
+                print(f"Batch conversion completed in {elapsed_time:.2f} seconds.")
+        except Exception as error:
+            print(f"An error occurred during audio batch conversion: {error}")
+            print(traceback.format_exc())
+        finally:
+            os.remove(os.path.join(now_dir, "assets", "infer_pid.txt"))
 
     def get_vc(self, weight_root, sid):
         """
