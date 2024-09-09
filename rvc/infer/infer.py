@@ -414,117 +414,52 @@ class VoiceConverter:
         pid = os.getpid()
         with open(pid_file_path, "w") as pid_file:
             pid_file.write(str(pid))
-        try:
-            if not self.hubert_model or embedder_model != self.last_embedder_model:
-                self.load_hubert(embedder_model, embedder_model_custom)
-                self.last_embedder_model = embedder_model
-            self.get_vc(model_path, sid)
-            file_index = (
-                index_path.strip()
-                .strip('"')
-                .strip("\n")
-                .strip('"')
-                .strip()
-                .replace("trained", "added")
+        start_time = time.time()
+        print(f"Converting audio batch '{audio_input_paths}'...")
+        audio_files = [
+            f
+            for f in os.listdir(audio_input_paths)
+            if f.endswith((".mp3", ".wav", ".flac", ".m4a", ".ogg", ".opus"))
+        ]
+        for i, audio_input_path in enumerate(audio_files):
+            audio_output_paths = os.path.join(
+                audio_output_path,
+                f"{os.path.splitext(os.path.basename(audio_input_path))[0]}_output.{export_format.lower()}",
             )
-            start_time = time.time()
-            print(f"Converting audio batch '{audio_input_paths}'...")
-            audio_files = [
-                f
-                for f in os.listdir(audio_input_paths)
-                if f.endswith((".mp3", ".wav", ".flac", ".m4a", ".ogg", ".opus"))
-            ]
-            for i, audio_input_path in enumerate(audio_files):
-                audio_output_paths = os.path.join(
-                    audio_output_path,
-                    f"{os.path.splitext(os.path.basename(audio_input_path))[0]}_output.{export_format.lower()}",
-                )
-                if os.path.exists(audio_output_paths):
-                    continue
-                print(f"Converting audio '{audio_input_path}'...")
-                audio_input_path = os.path.join(audio_input_paths, audio_input_path)
-
-                if upscale_audio == True:
-                    upscale(audio_input_path, audio_input_path)
-                audio = load_audio_infer(
-                    audio_input_path,
-                    16000,
-                    **kwargs,
-                )
-                audio_max = np.abs(audio).max() / 0.95
-
-                if audio_max > 1:
-                    audio /= audio_max
-
-                if self.tgt_sr != resample_sr >= 16000:
-                    self.tgt_sr = resample_sr
-
-                if split_audio:
-                    result, chunks, timestamps = process_audio(audio, self.tgt_sr)
-                    if result == "Error":
-                        return "Error with Split Audio", None
-                else:
-                    chunks = []
-                    chunks.append(audio)
-
-                converted_chunks = []
-                for c in chunks:
-                    audio_opt = self.vc.pipeline(
-                        model=self.hubert_model,
-                        net_g=self.net_g,
-                        sid=sid,
-                        audio=c,
-                        pitch=pitch,
-                        f0_method=f0_method,
-                        file_index=file_index,
-                        index_rate=index_rate,
-                        pitch_guidance=self.use_f0,
-                        filter_radius=filter_radius,
-                        volume_envelope=volume_envelope,
-                        version=self.version,
-                        protect=protect,
-                        hop_length=hop_length,
-                        f0_autotune=f0_autotune,
-                        f0_file=f0_file,
-                    )
-                    converted_chunks.append(audio_opt)
-                    if split_audio:
-                        print(f"Converted audio chunk {len(converted_chunks)}")
-
-                if split_audio:
-                    self.tgt_sr, audio_opt = merge_audio(
-                        converted_chunks, timestamps, self.tgt_sr
-                    )
-                else:
-                    audio_opt = converted_chunks[0]
-
-                if clean_audio:
-                    sf.write(audio_output_paths, audio_opt, self.tgt_sr, format="WAV")
-                    cleaned_audio = self.remove_audio_noise(
-                        audio_output_paths, clean_strength
-                    )
-                    if cleaned_audio is not None:
-                        audio_opt = cleaned_audio
-                if post_process:
-                    audio_opt = self.post_process_audio(
-                        audio_input=audio_opt,
-                        sample_rate=self.tgt_sr,
-                        **kwargs,
-                    )
-                sf.write(audio_output_paths, audio_opt, self.tgt_sr, format="WAV")
-                output_path_format = audio_output_paths.replace(
-                    ".wav", f".{export_format.lower()}"
-                )
-                audio_output_paths = self.convert_audio_format(
-                    audio_output_paths, output_path_format, export_format
-                )
-                print(f"Conversion completed at '{audio_output_paths}'.")
+            if os.path.exists(audio_output_paths):
+                continue
+            print(f"Converting audio '{audio_input_path}'...")
+            audio_input_path = os.path.join(audio_input_paths, audio_input_path)
+            self.convert_audio(
+                audio_input_path,
+                audio_output_paths,
+                model_path,
+                index_path,
+                pitch,
+                f0_file,
+                f0_method,
+                index_rate,
+                volume_envelope,
+                protect,
+                hop_length,
+                split_audio,
+                f0_autotune,
+                filter_radius,
+                embedder_model,
+                embedder_model_custom,
+                clean_audio,
+                clean_strength,
+                export_format,
+                upscale_audio,
+                post_process,
+                resample_sr,
+                sid,
+                **kwargs,
+            )
+            print(f"Conversion completed at '{audio_output_paths}'.")
             elapsed_time = time.time() - start_time
             print(f"Batch conversion completed in {elapsed_time:.2f} seconds.")
             os.remove(pid_file_path)
-        except Exception as error:
-            print(f"An error occurred during audio conversion: {error}")
-            print(traceback.format_exc())
 
     def get_vc(self, weight_root, sid):
         """
