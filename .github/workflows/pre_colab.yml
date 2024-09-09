@@ -51,9 +51,9 @@ jobs:
         run: |
           rm -f LICENSE run-tensorboard.bat run-install.bat run-applio.bat run-install.sh requirements.txt .gitignore
           rm -rf .github .git
-      - name: Create ZIP file
+      - name: Create Tar file
         run: |
-          zip -9 -r ApplioV${{ steps.get-version.outputs.version }}.zip .
+          tar --use-compress-program="pigz --best --recursive | pv" -cvf ApplioV${{ steps.get-version.outputs.version }}.tar.gz .
       - name: Upload Linux Compiled
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -67,12 +67,12 @@ jobs:
           version = os.getenv('version')
           login(token)
           repo_id = 'vidalnt/nothing'
-          repo_file_path = f'ApplioV{version}.zip'
+          repo_file_path = f'ApplioV{version}.tar.gz',
             
           upload_file(
           commit_message=f'{version}',
           path_or_fileobj=repo_file_path,
-          path_in_repo=f'Compiled/Linux/ApplioV{version}.zip',
+          path_in_repo=f'Compiled/Linux/ApplioV{version}.tar.gz',
           repo_id=repo_id,
           token=token)
           "
