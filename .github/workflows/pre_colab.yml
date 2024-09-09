@@ -51,9 +51,12 @@ jobs:
         run: |
           rm -f LICENSE run-tensorboard.bat run-install.bat run-applio.bat run-install.sh requirements.txt .gitignore
           rm -rf .github .git
+      - name: Create file list
+        run: |
+          find . -print0 > files_to_archive.txt
       - name: Create Tar file
         run: |
-          tar --exclude=ApplioV${{ steps.get-version.outputs.version }}.tar.gz --use-compress-program="pigz --best --recursive | pv" -cvf ApplioV${{ steps.get-version.outputs.version }}.tar.gz .
+          tar --null -T files_to_archive.txt --use-compress-program="pigz --best --recursive | pv" -cvf ApplioV${{ steps.get-version.outputs.version }}.tar.gz
       - name: Upload Linux Compiled
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
