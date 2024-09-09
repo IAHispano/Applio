@@ -50,8 +50,13 @@ def load_audio(file, sample_rate):
 
 
 def load_audio_infer(
-    file, sample_rate, formant_shifting, formant_qfrency, formant_timbre
+    file,
+    sample_rate,
+    **kwargs,
 ):
+    formant_shifting = kwargs.get("formant_shifting", False)
+    formant_qfrency = kwargs.get("formant_qfrency", 0.8)
+    formant_timbre = kwargs.get("formant_timbre", 0.8)
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
         if not os.path.isfile(file):

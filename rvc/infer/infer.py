@@ -135,44 +135,44 @@ class VoiceConverter:
     @staticmethod
     def post_process_audio(
         audio_input,
-        sample_rate,
-        reverb: bool,
-        reverb_room_size: float,
-        reverb_damping: float,
-        reverb_wet_level: float,
-        reverb_dry_level: float,
-        reverb_width: float,
-        reverb_freeze_mode: float,
-        pitch_shift: bool,
-        pitch_shift_semitones: int,
-        limiter: bool,
-        limiter_threshold: float,
-        limiter_release: float,
-        gain: bool,
-        gain_db: float,
-        distortion: bool,
-        distortion_gain: float,
-        chorus: bool,
-        chorus_rate: float,
-        chorus_depth: float,
-        chorus_delay: float,
-        chorus_feedback: float,
-        chorus_mix: float,
-        bitcrush: bool,
-        bitcrush_bit_depth: int,
-        clipping: bool,
-        clipping_threshold: float,
-        compressor: bool,
-        compressor_threshold: float,
-        compressor_ratio: float,
-        compressor_attack: float,
-        compressor_release: float,
-        delay: bool,
-        delay_seconds: float,
-        delay_feedback: float,
-        delay_mix: float,
         audio_output_path: str,
+        **kwargs,
     ):
+        reverb_room_size = kwargs.get("reverb_room_size", 0.5)
+        reverb_damping = kwargs.get("reverb_damping", 0.5)
+        reverb_wet_level = kwargs.get("reverb_wet_level", 0.33)
+        reverb_dry_level = kwargs.get("reverb_dry_level", 0.4)
+        reverb_width = kwargs.get("reverb_width", 1.0)
+        reverb_freeze_mode = kwargs.get("reverb_freeze_mode", 0)
+        pitch_shift_semitones = kwargs.get("pitch_shift_semitones", 0)
+        limiter_threshold = kwargs.get("limiter_threshold", -6)
+        limiter_release = kwargs.get("limiter_release", 0.05)
+        gain_db = kwargs.get("gain_db", 0)
+        distortion_gain = kwargs.get("distortion_gain", 25)
+        chorus_rate = kwargs.get("chorus_rate", 1.0)
+        chorus_depth = kwargs.get("chorus_depth", 0.25)
+        chorus_delay = kwargs.get("chorus_delay", 7)
+        chorus_feedback = kwargs.get("chorus_feedback", 0.0)
+        chorus_mix = kwargs.get("chorus_mix", 0.5)
+        bitcrush_bit_depth = kwargs.get("bitcrush_bit_depth", 8)
+        clipping_threshold = kwargs.get("clipping_threshold", 0)
+        compressor_threshold = kwargs.get("compressor_threshold", 0)
+        compressor_ratio = kwargs.get("compressor_ratio", 1)
+        compressor_attack = kwargs.get("compressor_attack", 1.0)
+        compressor_release = kwargs.get("compressor_release", 100)
+        delay_seconds = kwargs.get("delay_seconds", 0.5)
+        delay_feedback = kwargs.get("delay_feedback", 0.0)
+        delay_mix = kwargs.get("delay_mix", 0.5)
+        reverb = kwargs.get("reverb", False)
+        pitch_shift = kwargs.get("pitch_shift", False)
+        limiter = kwargs.get("limiter", False)
+        gain = kwargs.get("gain", False)
+        distortion = kwargs.get("distortion", False)
+        chorus = kwargs.get("chorus", False)
+        bitcrush = kwargs.get("bitcrush", False)
+        clipping = kwargs.get("clipping", False)
+        compressor = kwargs.get("compressor", False)
+        delay = kwargs.get("delay", False)
         board = Pedalboard()
         if reverb:
             reverb = Reverb(
@@ -235,6 +235,26 @@ class VoiceConverter:
 
     def convert_audio(
         self,
+        pitch: int,
+        filter_radius: int,
+        index_rate: float,
+        volume_envelope: int,
+        protect: float,
+        hop_length: int,
+        f0_method: str,
+        audio_input_path: str,
+        audio_output_path: str,
+        model_path: str,
+        index_path: str,
+        split_audio: bool,
+        f0_autotune: bool,
+        clean_audio: bool,
+        clean_strength: float,
+        export_format: str,
+        upscale_audio: bool,
+        f0_file: str,
+        embedder_model: str,
+        embedder_model_custom: str,
         sid: int = 0,
         resample_sr: int = 0,
         **kwargs,
@@ -267,67 +287,8 @@ class VoiceConverter:
             upscale_audio (bool, optional): Whether to upscale the audio. Default is False.
             sliders (dict, optional): Dictionary of effect parameters. Default is None.
         """
-        pitch = kwargs.get("pitch", 0)
-        filter_radius = kwargs.get("filter_radius", 3)
-        index_rate = kwargs.get("index_rate", 0.75)
-        volume_envelope = kwargs.get("volume_envelope", 1)
-        protect = kwargs.get("protect", 0.5)
-        hop_length = kwargs.get("hop_length", 128)
-        f0_method = kwargs.get("f0_method", "rmvpe")
-        audio_input_path = kwargs.get("input_path", None)
-        audio_output_path = kwargs.get("output_path", None)
-        model_path = kwargs.get("pth_path", None)
-        index_path = kwargs.get("index_path", None)
-        split_audio = kwargs.get("split_audio", False)
-        f0_autotune = kwargs.get("f0_autotune", False)
-        clean_audio = kwargs.get("clean_audio", False)
-        clean_strength = kwargs.get("clean_strength", 0.7)
-        export_format = kwargs.get("export_format", "WAV")
-        upscale_audio = kwargs.get("upscale_audio", False)
-        f0_file = kwargs.get("f0_file", None)
-        embedder_model = kwargs.get("embedder_model", "contentvec")
-        reverb_room_size = kwargs.get("reverb_room_size", 0.5)
-        reverb_damping = kwargs.get("reverb_damping", 0.5)
-        reverb_wet_level = kwargs.get("reverb_wet_level", 0.33)
-        reverb_dry_level = kwargs.get("reverb_dry_level", 0.4)
-        reverb_width = kwargs.get("reverb_width", 1.0)
-        reverb_freeze_mode = kwargs.get("reverb_freeze_mode", 0)
-        pitch_shift_semitones = kwargs.get("pitch_shift_semitones", 0)
-        limiter_threshold = kwargs.get("limiter_threshold", -6)
-        limiter_release = kwargs.get("limiter_release", 0.05)
-        gain_db = kwargs.get("gain_db", 0)
-        distortion_gain = kwargs.get("distortion_gain", 25)
-        chorus_rate = kwargs.get("chorus_rate", 1.0)
-        chorus_depth = kwargs.get("chorus_depth", 0.25)
-        chorus_delay = kwargs.get("chorus_delay", 7)
-        chorus_feedback = kwargs.get("chorus_feedback", 0.0)
-        chorus_mix = kwargs.get("chorus_mix", 0.5)
-        bitcrush_bit_depth = kwargs.get("bitcrush_bit_depth", 8)
-        clipping_threshold = kwargs.get("clipping_threshold", 0)
-        compressor_threshold = kwargs.get("compressor_threshold", 0)
-        compressor_ratio = kwargs.get("compressor_ratio", 1)
-        compressor_attack = kwargs.get("compressor_attack", 1.0)
-        compressor_release = kwargs.get("compressor_release", 100)
-        delay_seconds = kwargs.get("delay_seconds", 0.5)
-        delay_feedback = kwargs.get("delay_feedback", 0.0)
-        delay_mix = kwargs.get("delay_mix", 0.5)
-        embedder_model_custom = kwargs.get("embedder_model_custom", None)
-        formant_shifting = kwargs.get("formant_shifting", False)
-        formant_qfrency = kwargs.get("formant_qfrency", 1.0)
-        formant_timbre = kwargs.get("formant_timbre", 1.0)
-        post_process = kwargs.get("post_process", False)
-        reverb = kwargs.get("reverb", False)
-        pitch_shift = kwargs.get("pitch_shift", False)
-        limiter = kwargs.get("limiter", False)
-        gain = kwargs.get("gain", False)
-        distortion = kwargs.get("distortion", False)
-        chorus = kwargs.get("chorus", False)
-        bitcrush = kwargs.get("bitcrush", False)
-        clipping = kwargs.get("clipping", False)
-        compressor = kwargs.get("compressor", False)
-        delay = kwargs.get("delay", False)
         self.get_vc(model_path, sid)
-
+        post_process = kwargs.get("process_audio", False)
         try:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
@@ -337,9 +298,7 @@ class VoiceConverter:
             audio = load_audio_infer(
                 audio_input_path,
                 16000,
-                formant_shifting,
-                formant_qfrency,
-                formant_timbre,
+                **kwargs,
             )
             audio_max = np.abs(audio).max() / 0.95
 
@@ -402,44 +361,7 @@ class VoiceConverter:
                             embedder_model_custom=embedder_model_custom,
                             clean_audio=clean_audio,
                             clean_strength=clean_strength,
-                            formant_shifting=formant_shifting,
-                            formant_qfrency=formant_qfrency,
-                            formant_timbre=formant_timbre,
-                            post_process=post_process,
-                            reverb=reverb,
-                            reverb_room_size=reverb_room_size,
-                            reverb_damping=reverb_damping,
-                            reverb_wet_level=reverb_wet_level,
-                            reverb_dry_level=reverb_dry_level,
-                            reverb_width=reverb_width,
-                            reverb_freeze_mode=reverb_freeze_mode,
-                            pitch_shift=pitch_shift,
-                            pitch_shift_semitones=pitch_shift_semitones,
-                            limiter=limiter,
-                            limiter_threshold=limiter_threshold,
-                            limiter_release=limiter_release,
-                            gain=gain,
-                            gain_db=gain_db,
-                            distortion=distortion,
-                            distortion_gain=distortion_gain,
-                            chorus=chorus,
-                            chorus_rate=chorus_rate,
-                            chorus_depth=chorus_depth,
-                            chorus_delay=chorus_delay,
-                            chorus_feedback=chorus_feedback,
-                            chorus_mix=chorus_mix,
-                            bitcrush=bitcrush,
-                            bitcrush_bit_depth=bitcrush_bit_depth,
-                            clipping=clipping,
-                            clipping_threshold=clipping_threshold,
-                            compressor=compressor,
-                            compressor_threshold=compressor_threshold,
-                            compressor_ratio=compressor_ratio,
-                            compressor_attack=compressor_attack,
-                            compressor_release=compressor_release,
-                            delay=delay,
-                            delay_seconds=delay_seconds,
-                            delay_feedback=delay_feedback,
+                            **kwargs,
                         )
                 except Exception as error:
                     print(f"An error occurred processing the segmented audio: {error}")
@@ -456,42 +378,8 @@ class VoiceConverter:
                     audio_opt = self.post_process_audio(
                         audio_input=audio_opt,
                         sample_rate=self.tgt_sr,
-                        reverb=reverb,
-                        reverb_room_size=reverb_room_size,
-                        reverb_damping=reverb_damping,
-                        reverb_wet_level=reverb_wet_level,
-                        reverb_dry_level=reverb_dry_level,
-                        reverb_width=reverb_width,
-                        reverb_freeze_mode=reverb_freeze_mode,
-                        pitch_shift=pitch_shift,
-                        pitch_shift_semitones=pitch_shift_semitones,
-                        limiter=limiter,
-                        limiter_threshold=limiter_threshold,
-                        limiter_release=limiter_release,
-                        gain=gain,
-                        gain_db=gain_db,
-                        distortion=distortion,
-                        distortion_gain=distortion_gain,
-                        chorus=chorus,
-                        chorus_rate=chorus_rate,
-                        chorus_depth=chorus_depth,
-                        chorus_delay=chorus_delay,
-                        chorus_feedback=chorus_feedback,
-                        chorus_mix=chorus_mix,
-                        bitcrush=bitcrush,
-                        bitcrush_bit_depth=bitcrush_bit_depth,
-                        clipping=clipping,
-                        clipping_threshold=clipping_threshold,
-                        compressor=compressor,
-                        compressor_threshold=compressor_threshold,
-                        compressor_ratio=compressor_ratio,
-                        compressor_attack=compressor_attack,
-                        compressor_release=compressor_release,
-                        delay=delay,
-                        delay_seconds=delay_seconds,
-                        delay_feedback=delay_feedback,
-                        delay_mix=delay_mix,
                         audio_output_path=audio_output_path,
+                        **kwargs,
                     )
                 sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
             else:
@@ -532,42 +420,8 @@ class VoiceConverter:
                 audio_output_path = self.post_process_audio(
                     audio_input=audio_output_path,
                     sample_rate=self.tgt_sr,
-                    reverb=reverb,
-                    reverb_room_size=reverb_room_size,
-                    reverb_damping=reverb_damping,
-                    reverb_wet_level=reverb_wet_level,
-                    reverb_dry_level=reverb_dry_level,
-                    reverb_width=reverb_width,
-                    reverb_freeze_mode=reverb_freeze_mode,
-                    pitch_shift=pitch_shift,
-                    pitch_shift_semitones=pitch_shift_semitones,
-                    limiter=limiter,
-                    limiter_threshold=limiter_threshold,
-                    limiter_release=limiter_release,
-                    gain=gain,
-                    gain_db=gain_db,
-                    distortion=distortion,
-                    distortion_gain=distortion_gain,
-                    chorus=chorus,
-                    chorus_rate=chorus_rate,
-                    chorus_depth=chorus_depth,
-                    chorus_delay=chorus_delay,
-                    chorus_feedback=chorus_feedback,
-                    chorus_mix=chorus_mix,
-                    bitcrush=bitcrush,
-                    bitcrush_bit_depth=bitcrush_bit_depth,
-                    clipping=clipping,
-                    clipping_threshold=clipping_threshold,
-                    compressor=compressor,
-                    compressor_threshold=compressor_threshold,
-                    compressor_ratio=compressor_ratio,
-                    compressor_attack=compressor_attack,
-                    compressor_release=compressor_release,
-                    delay=delay,
-                    delay_seconds=delay_seconds,
-                    delay_feedback=delay_feedback,
-                    delay_mix=delay_mix,
                     audio_output_path=audio_output_path,
+                    **kwargs,
                 )
             output_path_format = audio_output_path.replace(
                 ".wav", f".{export_format.lower()}"
@@ -587,6 +441,26 @@ class VoiceConverter:
 
     def convert_audio_batch(
         self,
+        pitch: int,
+        filter_radius: int,
+        index_rate: float,
+        volume_envelope: int,
+        protect: float,
+        hop_length: int,
+        f0_method: str,
+        audio_input_paths: str,
+        audio_output_path: str,
+        model_path: str,
+        index_path: str,
+        split_audio: bool,
+        f0_autotune: bool,
+        clean_audio: bool,
+        clean_strength: float,
+        export_format: str,
+        upscale_audio: bool,
+        f0_file: str,
+        embedder_model: str,
+        embedder_model_custom: str,
         resample_sr: int = 0,
         sid: int = 0,
         pid_file_path: str = None,
@@ -636,68 +510,10 @@ class VoiceConverter:
             sliders (dict, optional): Dictionary of effect parameters. Default is None.
 
         """
-        pitch = kwargs.get("pitch", 0)
-        filter_radius = kwargs.get("filter_radius", 3)
-        index_rate = kwargs.get("index_rate", 0.75)
-        volume_envelope = kwargs.get("volume_envelope", 1)
-        protect = kwargs.get("protect", 0.5)
-        hop_length = kwargs.get("hop_length", 128)
-        f0_method = kwargs.get("f0_method", "rmvpe")
-        audio_input_paths = kwargs.get("input_path", None)
-        audio_output_path = kwargs.get("output_path", None)
-        model_path = kwargs.get("pth_path", None)
-        index_path = kwargs.get("index_path", None)
-        split_audio = kwargs.get("split_audio", False)
-        f0_autotune = kwargs.get("f0_autotune", False)
-        clean_audio = kwargs.get("clean_audio", False)
-        clean_strength = kwargs.get("clean_strength", 0.7)
-        export_format = kwargs.get("export_format", "WAV")
-        upscale_audio = kwargs.get("upscale_audio", False)
-        f0_file = kwargs.get("f0_file", None)
-        embedder_model = kwargs.get("embedder_model", "contentvec")
-        reverb_room_size = kwargs.get("reverb_room_size", 0.5)
-        reverb_damping = kwargs.get("reverb_damping", 0.5)
-        reverb_wet_level = kwargs.get("reverb_wet_level", 0.33)
-        reverb_dry_level = kwargs.get("reverb_dry_level", 0.4)
-        reverb_width = kwargs.get("reverb_width", 1.0)
-        reverb_freeze_mode = kwargs.get("reverb_freeze_mode", 0)
-        pitch_shift_semitones = kwargs.get("pitch_shift_semitones", 0)
-        limiter_threshold = kwargs.get("limiter_threshold", -6)
-        limiter_release = kwargs.get("limiter_release", 0.05)
-        gain_db = kwargs.get("gain_db", 0)
-        distortion_gain = kwargs.get("distortion_gain", 25)
-        chorus_rate = kwargs.get("chorus_rate", 1.0)
-        chorus_depth = kwargs.get("chorus_depth", 0.25)
-        chorus_delay = kwargs.get("chorus_delay", 7)
-        chorus_feedback = kwargs.get("chorus_feedback", 0.0)
-        chorus_mix = kwargs.get("chorus_mix", 0.5)
-        bitcrush_bit_depth = kwargs.get("bitcrush_bit_depth", 8)
-        clipping_threshold = kwargs.get("clipping_threshold", 0)
-        compressor_threshold = kwargs.get("compressor_threshold", 0)
-        compressor_ratio = kwargs.get("compressor_ratio", 1)
-        compressor_attack = kwargs.get("compressor_attack", 1.0)
-        compressor_release = kwargs.get("compressor_release", 100)
-        delay_seconds = kwargs.get("delay_seconds", 0.5)
-        delay_feedback = kwargs.get("delay_feedback", 0.0)
-        delay_mix = kwargs.get("delay_mix", 0.5)
-        embedder_model_custom = kwargs.get("embedder_model_custom", None)
-        formant_shifting = kwargs.get("formant_shifting", False)
-        formant_qfrency = kwargs.get("formant_qfrency", 1.0)
-        formant_timbre = kwargs.get("formant_timbre", 1.0)
-        post_process = kwargs.get("post_process", False)
-        reverb = kwargs.get("reverb", False)
-        pitch_shift = kwargs.get("pitch_shift", False)
-        limiter = kwargs.get("limiter", False)
-        gain = kwargs.get("gain", False)
-        distortion = kwargs.get("distortion", False)
-        chorus = kwargs.get("chorus", False)
-        bitcrush = kwargs.get("bitcrush", False)
-        clipping = kwargs.get("clipping", False)
-        compressor = kwargs.get("compressor", False)
-        delay = kwargs.get("delay", False)
         pid = os.getpid()
         with open(pid_file_path, "w") as pid_file:
             pid_file.write(str(pid))
+        post_process = kwargs.get("post_process", False)
         try:
             if not self.hubert_model or embedder_model != self.last_embedder_model:
                 self.load_hubert(embedder_model, embedder_model_custom)
@@ -734,9 +550,7 @@ class VoiceConverter:
                 audio = load_audio_infer(
                     audio_input_path,
                     16000,
-                    formant_shifting,
-                    formant_qfrency,
-                    formant_timbre,
+                    **kwargs,
                 )
                 audio_max = np.abs(audio).max() / 0.95
 
@@ -786,20 +600,7 @@ class VoiceConverter:
                                 embedder_model_custom=embedder_model_custom,
                                 clean_audio=clean_audio,
                                 clean_strength=clean_strength,
-                                formant_shifting=formant_shifting,
-                                formant_qfrency=formant_qfrency,
-                                formant_timbre=formant_timbre,
-                                post_process=post_process,
-                                reverb=reverb,
-                                pitch_shift=pitch_shift,
-                                limiter=limiter,
-                                gain=gain,
-                                distortion=distortion,
-                                chorus=chorus,
-                                bitcrush=bitcrush,
-                                clipping=clipping,
-                                compressor=compressor,
-                                delay=delay,
+                                **kwargs,
                             )
                     except Exception as error:
                         print(
@@ -818,42 +619,8 @@ class VoiceConverter:
                         audio_opt = self.post_process_audio(
                             audio_input=audio_opt,
                             sample_rate=self.tgt_sr,
-                            reverb=reverb,
-                            reverb_room_size=reverb_room_size,
-                            reverb_damping=reverb_damping,
-                            reverb_wet_level=reverb_wet_level,
-                            reverb_dry_level=reverb_dry_level,
-                            reverb_width=reverb_width,
-                            reverb_freeze_mode=reverb_freeze_mode,
-                            pitch_shift=pitch_shift,
-                            pitch_shift_semitones=pitch_shift_semitones,
-                            limiter=limiter,
-                            limiter_threshold=limiter_threshold,
-                            limiter_release=limiter_release,
-                            gain=gain,
-                            gain_db=gain_db,
-                            distortion=distortion,
-                            distortion_gain=distortion_gain,
-                            chorus=chorus,
-                            chorus_rate=chorus_rate,
-                            chorus_depth=chorus_depth,
-                            chorus_delay=chorus_delay,
-                            chorus_feedback=chorus_feedback,
-                            chorus_mix=chorus_mix,
-                            bitcrush=bitcrush,
-                            bitcrush_bit_depth=bitcrush_bit_depth,
-                            clipping=clipping,
-                            clipping_threshold=clipping_threshold,
-                            compressor=compressor,
-                            compressor_threshold=compressor_threshold,
-                            compressor_ratio=compressor_ratio,
-                            compressor_attack=compressor_attack,
-                            compressor_release=compressor_release,
-                            delay=delay,
-                            delay_seconds=delay_seconds,
-                            delay_feedback=delay_feedback,
-                            delay_mix=delay_mix,
                             audio_output_path=audio_output_paths,
+                            **kwargs,
                         )
                         sf.write(
                             audio_output_paths, audio_opt, self.tgt_sr, format="WAV"
@@ -896,42 +663,8 @@ class VoiceConverter:
                     audio_output_paths = self.post_process_audio(
                         audio_input=audio_output_paths,
                         sample_rate=self.tgt_sr,
-                        reverb=reverb,
-                        reverb_room_size=reverb_room_size,
-                        reverb_damping=reverb_damping,
-                        reverb_wet_level=reverb_wet_level,
-                        reverb_dry_level=reverb_dry_level,
-                        reverb_width=reverb_width,
-                        reverb_freeze_mode=reverb_freeze_mode,
-                        pitch_shift=pitch_shift,
-                        pitch_shift_semitones=pitch_shift_semitones,
-                        limiter=limiter,
-                        limiter_threshold=limiter_threshold,
-                        limiter_release=limiter_release,
-                        gain=gain,
-                        gain_db=gain_db,
-                        distortion=distortion,
-                        distortion_gain=distortion_gain,
-                        chorus=chorus,
-                        chorus_rate=chorus_rate,
-                        chorus_depth=chorus_depth,
-                        chorus_delay=chorus_delay,
-                        chorus_feedback=chorus_feedback,
-                        chorus_mix=chorus_mix,
-                        bitcrush=bitcrush,
-                        bitcrush_bit_depth=bitcrush_bit_depth,
-                        clipping=clipping,
-                        clipping_threshold=clipping_threshold,
-                        compressor=compressor,
-                        compressor_threshold=compressor_threshold,
-                        compressor_ratio=compressor_ratio,
-                        compressor_attack=compressor_attack,
-                        compressor_release=compressor_release,
-                        delay=delay,
-                        delay_seconds=delay_seconds,
-                        delay_feedback=delay_feedback,
-                        delay_mix=delay_mix,
                         audio_output_path=audio_output_paths,
+                        **kwargs,
                     )
                 output_path_format = audio_output_paths.replace(
                     ".wav", f".{export_format.lower()}"

@@ -50,13 +50,74 @@ def get_config():
 
 # Infer
 def run_infer_script(
-    parameters: dict,
+    pitch: int,
+    filter_radius: int,
+    index_rate: float,
+    volume_envelope: int,
+    protect: float,
+    hop_length: int,
+    f0_method: str,
+    input_path: str,
+    output_path: str,
+    pth_path: str,
+    index_path: str,
+    split_audio: bool,
+    f0_autotune: bool,
+    clean_audio: bool,
+    clean_strength: float,
+    export_format: str,
+    upscale_audio: bool,
+    f0_file: str,
+    embedder_model: str,
+    embedder_model_custom: str,
+    formant_shifting: bool,
+    formant_qfrency: float,
+    formant_timbre: float,
+    post_process: bool,
+    reverb: bool,
+    pitch_shift: bool,
+    limiter: bool,
+    gain: bool,
+    distortion: bool,
+    chorus: bool,
+    bitcrush: bool,
+    clipping: bool,
+    compressor: bool,
+    delay: bool,
     *sliders: list,
 ):
     if not sliders:
         sliders = [0] * 25
     infer_pipeline = import_voice_converter()
     kwargs = {
+        "formant_shifting": formant_shifting,
+        "formant_qfrency": formant_qfrency,
+        "formant_timbre": formant_timbre,
+        "post_process": post_process,
+        "reverb": reverb,
+        "pitch_shift": pitch_shift,
+        "limiter": limiter,
+        "gain": gain,
+        "distortion": distortion,
+        "chorus": chorus,
+        "bitcrush": bitcrush,
+        "clipping": clipping,
+        "compressor": compressor,
+        "delay": delay,
+        "formant_shifting": formant_shifting,
+        "formant_qfrency": formant_qfrency,
+        "formant_timbre": formant_timbre,
+        "post_process": post_process,
+        "reverb": reverb,
+        "pitch_shift": pitch_shift,
+        "limiter": limiter,
+        "gain": gain,
+        "distortion": distortion,
+        "chorus": chorus,
+        "bitcrush": bitcrush,
+        "clipping": clipping,
+        "compressor": compressor,
+        "delay": delay,
         "reverb_room_size": sliders[0],
         "reverb_damping": sliders[1],
         "reverb_wet_level": sliders[2],
@@ -83,13 +144,29 @@ def run_infer_script(
         "delay_feedback": sliders[23],
         "delay_mix": sliders[24],
     }
-    combined_params = {**parameters, **kwargs}
     infer_pipeline.convert_audio(
-        **combined_params,
+        pitch=pitch,
+        filter_radius=filter_radius,
+        index_rate=index_rate,
+        volume_envelope=volume_envelope,
+        protect=protect,
+        hop_length=hop_length,
+        f0_method=f0_method,
+        audio_input_path=input_path,
+        audio_output_path=output_path,
+        model_path=pth_path,
+        index_path=index_path,
+        split_audio=split_audio,
+        f0_autotune=f0_autotune,
+        clean_audio=clean_audio,
+        clean_strength=clean_strength,
+        export_format=export_format,
+        upscale_audio=upscale_audio,
+        f0_file=f0_file,
+        embedder_model=embedder_model,
+        embedder_model_custom=embedder_model_custom,
+        **kwargs,
     )
-    input_path = parameters.get("input_path", None)
-    export_format = parameters.get("export_format", "WAV")
-    output_path = parameters.get("output_path", None)
     return f"File {input_path} inferred successfully.", output_path.replace(
         ".wav", f".{export_format.lower()}"
     )
@@ -138,7 +215,6 @@ def run_batch_infer_script(
     ]
     print(f"Detected {len(audio_files)} audio files for inference.")
     kwargs = {
-        "embedder_model_custom": embedder_model_custom,
         "formant_shifting": formant_shifting,
         "formant_qfrency": formant_qfrency,
         "formant_timbre": formant_timbre,
@@ -153,11 +229,6 @@ def run_batch_infer_script(
         "clipping": clipping,
         "compressor": compressor,
         "delay": delay,
-    }
-    if not sliders:
-        sliders = [0] * 25
-    infer_pipeline = import_voice_converter()
-    additional_params = {
         "reverb_room_size": sliders[0],
         "reverb_damping": sliders[1],
         "reverb_wet_level": sliders[2],
@@ -184,6 +255,9 @@ def run_batch_infer_script(
         "delay_feedback": sliders[23],
         "delay_mix": sliders[24],
     }
+    if not sliders:
+        sliders = [0] * 25
+    infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio_batch(
         pitch=pitch,
         filter_radius=filter_radius,
@@ -205,7 +279,6 @@ def run_batch_infer_script(
         f0_file=f0_file,
         embedder_model=embedder_model,
         pid_file_path=os.path.join(now_dir, "assets", "infer_pid.txt"),
-        sliders=additional_params,
         **kwargs,
     )
 
