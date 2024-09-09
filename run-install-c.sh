@@ -34,6 +34,7 @@ if [ ! -f "$CONDA_EXECUTABLE" ]; then
     fi
     rm miniconda.sh
     echo "Miniconda installation complete."
+    conda init bash 
 else
     echo "Miniconda already installed. Skipping installation."
 fi
