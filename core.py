@@ -106,7 +106,6 @@ def run_infer_script(
         "formant_shifting": formant_shifting,
         "formant_qfrency": formant_qfrency,
         "formant_timbre": formant_timbre,
-        "post_process": post_process,
         "reverb": reverb,
         "pitch_shift": pitch_shift,
         "limiter": limiter,
