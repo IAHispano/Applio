@@ -533,7 +533,6 @@ class Pipeline:
         del feats, p_len, padding_mask
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-        print("pipeline converted audio", audio1.shape, audio1.dtype)
         return audio1
 
     def _retrieve_speaker_embeddings(self, feats, index, big_npy, index_rate):
@@ -605,13 +604,6 @@ class Pipeline:
         audio = signal.filtfilt(bh, ah, audio)
         audio_pad = np.pad(audio, (self.window // 2, self.window // 2), mode="reflect")
         opt_ts = []
-        print(
-            "Size check",
-            audio_pad.shape[0],
-            ">",
-            self.t_max,
-            audio_pad.shape[0] > self.t_max,
-        )
         if audio_pad.shape[0] > self.t_max:
             audio_sum = np.zeros_like(audio)
             for i in range(self.window):
@@ -625,7 +617,6 @@ class Pipeline:
                         == np.abs(audio_sum[t - self.t_query : t + self.t_query]).min()
                     )[0][0]
                 )
-        print("opt ts", opt_ts)
         s = 0
         audio_opt = []
         t = None
