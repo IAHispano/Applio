@@ -194,9 +194,7 @@ class VoiceConverter:
                 mix=kwargs.get("delay_mix", 0.5),
             )
             board.append(delay)
-        audio_input, sample_rate = librosa.load(audio_input, sr=sample_rate)
-        output = board(audio_input, sample_rate)
-        return output
+        return board(audio_input, sample_rate)
 
     def convert_audio(
         self,
@@ -301,15 +299,12 @@ class VoiceConverter:
                     net_g=self.net_g,
                     sid=sid,
                     audio=c,
-                    input_audio_path=audio_input_path,
                     pitch=pitch,
                     f0_method=f0_method,
                     file_index=file_index,
                     index_rate=index_rate,
                     pitch_guidance=self.use_f0,
                     filter_radius=filter_radius,
-                    tgt_sr=self.tgt_sr,
-                    resample_sr=resample_sr,
                     volume_envelope=volume_envelope,
                     version=self.version,
                     protect=protect,
@@ -337,9 +332,8 @@ class VoiceConverter:
                     audio_opt = cleaned_audio
 
             if post_process:
-                sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
                 audio_opt = self.post_process_audio(
-                    audio_input=audio_output_path,
+                    audio_input=audio_opt,
                     sample_rate=self.tgt_sr,
                     **kwargs,
                 )
@@ -480,15 +474,12 @@ class VoiceConverter:
                         net_g=self.net_g,
                         sid=sid,
                         audio=c,
-                        input_audio_path=audio_input_path,
                         pitch=pitch,
                         f0_method=f0_method,
                         file_index=file_index,
                         index_rate=index_rate,
                         pitch_guidance=self.use_f0,
                         filter_radius=filter_radius,
-                        tgt_sr=self.tgt_sr,
-                        resample_sr=resample_sr,
                         volume_envelope=volume_envelope,
                         version=self.version,
                         protect=protect,
