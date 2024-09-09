@@ -204,6 +204,7 @@ class VoiceConverter:
                 mix=kwargs.get("delay_mix", 0.5),
             )
             board.append(delay)
+        audio_input, sample_rate = librosa.load(audio_input, sr=sample_rate)
         output = board(audio_input, sample_rate)
         return output
 
@@ -338,13 +339,17 @@ class VoiceConverter:
                 audio_opt = converted_chunks[0]
 
             if clean_audio:
-                cleaned_audio = self.remove_audio_noise(audio_opt, clean_strength)
+                sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
+                cleaned_audio = self.remove_audio_noise(
+                    audio_output_path, clean_strength
+                )
                 if cleaned_audio is not None:
                     audio_opt = cleaned_audio
 
             if post_process:
+                sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
                 audio_opt = self.post_process_audio(
-                    audio_input=audio_opt,
+                    audio_input=audio_output_path,
                     sample_rate=self.tgt_sr,
                     **kwargs,
                 )
@@ -513,10 +518,12 @@ class VoiceConverter:
                     audio_opt = converted_chunks[0]
 
                 if clean_audio:
+                    sf.write(audio_output_paths, audio_opt, self.tgt_sr, format="WAV")
                     cleaned_audio = self.remove_audio_noise(audio_opt, clean_strength)
                     if cleaned_audio is not None:
                         audio_opt = cleaned_audio
                 if post_process:
+                    sf.write(audio_output_paths, audio_opt, self.tgt_sr, format="WAV")
                     audio_opt = self.post_process_audio(
                         audio_input=audio_opt,
                         sample_rate=self.tgt_sr,
