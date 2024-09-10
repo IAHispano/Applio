@@ -294,10 +294,11 @@ if __name__ == "__main__":
     run_embedding_extraction(
         files, devices, version, embedder_model, embedder_model_custom
     )
-    if delete_sliced_audios:
-        shutil.rmtree(os.path.join(exp_dir, "sliced_audios"), ignore_errors=True)
-        shutil.rmtree(os.path.join(exp_dir, "sliced_audios_16k"), ignore_errors=True)
 
     # Run Preparing Files
     generate_config(version, sample_rate, exp_dir)
     generate_filelist(pitch_guidance, exp_dir, version, sample_rate)
+
+    if delete_sliced_audios:
+        shutil.rmtree(os.path.join(exp_dir, "sliced_audios"), ignore_errors=True)
+        shutil.rmtree(os.path.join(exp_dir, "sliced_audios_16k"), ignore_errors=True)
