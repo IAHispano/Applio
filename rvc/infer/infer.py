@@ -380,8 +380,25 @@ class VoiceConverter:
             audio_files = [
                 f
                 for f in os.listdir(audio_input_paths)
-                if f.endswith((".mp3", ".wav", ".flac", ".m4a", ".ogg", ".opus"))
+                if f.endswith(
+                    (
+                        "wav",
+                        "mp3",
+                        "flac",
+                        "ogg",
+                        "opus",
+                        "m4a",
+                        "mp4",
+                        "aac",
+                        "alac",
+                        "wma",
+                        "aiff",
+                        "webm",
+                        "ac3",
+                    )
+                )
             ]
+            print(f"Detected {len(audio_files)} audio files for inference.")
             for a in audio_files:
                 new_input = os.path.join(audio_input_paths, a)
                 new_output = os.path.splitext(a)[0] + "_output.wav"

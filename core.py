@@ -90,6 +90,8 @@ def run_infer_script(
         sliders = [0] * 25
     infer_pipeline = import_voice_converter()
     kwargs = {
+        "audio_input_path": input_path,
+        "audio_output_path": output_path,
         "model_path": pth_path,
         "index_path": index_path,
         "pitch": pitch,
@@ -164,8 +166,6 @@ def run_infer_script(
         "delay_mix": sliders[24],
     }
     infer_pipeline.convert_audio(
-        audio_input_path=input_path,
-        audio_output_path=output_path,
         **kwargs,
     )
     return f"File {input_path} inferred successfully.", output_path.replace(
@@ -211,11 +211,11 @@ def run_batch_infer_script(
     delay: bool,
     *sliders: list,
 ):
-    audio_files = [
-        f for f in os.listdir(input_folder) if f.endswith((".mp3", ".wav", ".flac"))
-    ]
-    print(f"Detected {len(audio_files)} audio files for inference.")
+    if not sliders:
+        sliders = [0] * 25
     kwargs = {
+        "audio_input_paths": input_folder,
+        "audio_output_path": output_folder,
         "model_path": pth_path,
         "index_path": index_path,
         "pitch": pitch,
@@ -278,12 +278,8 @@ def run_batch_infer_script(
         "delay_feedback": sliders[23],
         "delay_mix": sliders[24],
     }
-    if not sliders:
-        sliders = [0] * 25
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio_batch(
-        audio_input_paths=input_folder,
-        audio_output_path=output_folder,
         **kwargs,
     )
 
