@@ -53,10 +53,11 @@ jobs:
       - name: Create file list
         run: |
           find . -depth -print0 | sort -uz > files_to_archive.txt
+          cat files_to_archive.txt | uniq -u > unique_files_to_archive.txt
     
       - name: Create Tar file
         run: |
-          tar --null -T files_to_archive.txt --use-compress-program="pigz --best --recursive" --ignore-failed-read -cvf ApplioV${{ steps.get-version.outputs.version }}.tar.gz
+          tar -cf - --null -T files_to_archive.txt --ignore-failed-read | pigz -9 -p 32 > ApplioV${{ steps.get-version.outputs.version }}.tar.gz
       - name: Upload Linux Compiled
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
