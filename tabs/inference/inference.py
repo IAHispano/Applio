@@ -2035,7 +2035,6 @@ def inference_tab():
         ],
         outputs=[vc_output1, vc_output2],
     )
-    # Batch sliders variables
     convert_button2.click(
         fn=run_batch_infer_script,
         inputs=[
