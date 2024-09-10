@@ -56,7 +56,7 @@ jobs:
           find . -print0 > files_to_archive.txt
       - name: Create Tar file
         run: |
-          tar --null -T files_to_archive.txt --use-compress-program="pigz --best --recursive | pv" -cvf ApplioV${{ steps.get-version.outputs.version }}.tar.gz
+          tar --null -T files_to_archive.txt --use-compress-program="pigz --best --recursive | pv" --ignore-failed-read -cvf ApplioV${{ steps.get-version.outputs.version }}.tar.gz
       - name: Upload Linux Compiled
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
