@@ -386,6 +386,27 @@ def train_tab():
                     interactive=True,
                     visible=True,
                 )
+            with gr.Row():
+                noise_reduction = gr.Checkbox(
+                    label=i18n("Noise Reduction"),
+                    info=i18n(
+                        "It's recommended keep deactivate this option if your dataset has already been processed."
+                    ),
+                    value=False,
+                    interactive=True,
+                    visible=True,
+                )
+                clean_strength = gr.Slider(
+                    minimum=0,
+                    maximum=1,
+                    label=i18n("Noise Reduction Strength"),
+                    info=i18n(
+                        "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
+                    ),
+                    visible=False,
+                    value=0.5,
+                    interactive=True,
+                )
         preprocess_output_info = gr.Textbox(
             label=i18n("Output Information"),
             info=i18n("The output information will be displayed here."),
@@ -405,6 +426,8 @@ def train_tab():
                     cpu_cores_preprocess,
                     cut_preprocess,
                     process_effects,
+                    noise_reduction,
+                    clean_strength,
                 ],
                 outputs=[preprocess_output_info],
             )
@@ -878,6 +901,14 @@ def train_tab():
                     return {"visible": True, "__type__": "update"}
                 return {"visible": False, "__type__": "update"}
 
+            def update_slider_visibility(noise_reduction):
+                return gr.update(visible=noise_reduction)
+
+            noise_reduction.change(
+                fn=update_slider_visibility,
+                inputs=noise_reduction,
+                outputs=clean_strength,
+            )
             rvc_version.change(
                 fn=download_prerequisites,
                 inputs=[rvc_version],

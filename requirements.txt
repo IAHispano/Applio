@@ -21,6 +21,7 @@ praat-parselmouth
 noisereduce
 audio_upscaler==0.1.4
 pedalboard
+stftpitchshift
 
 # Machine learning and deep learning
 omegaconf==2.0.5; sys_platform == 'darwin'

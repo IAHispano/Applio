@@ -45,10 +45,8 @@ pretraineds_v2_list = [
 ]
 models_list = [("predictors/", ["rmvpe.pt", "fcpe.pt"])]
 embedders_list = [("embedders/contentvec/", ["pytorch_model.bin", "config.json"])]
-linux_executables_list = [("formant/", ["stftpitchshift"])]
 executables_list = [
     ("", ["ffmpeg.exe", "ffprobe.exe"]),
-    ("formant/", ["stftpitchshift.exe"]),
 ]
 
 folder_mapping_list = {
@@ -123,10 +121,8 @@ def calculate_total_size(pretraineds_v1, pretraineds_v2, models, exe):
     if models:
         total_size += get_file_size_if_missing(models_list)
         total_size += get_file_size_if_missing(embedders_list)
-    if exe:
-        total_size += get_file_size_if_missing(
-            executables_list if os.name == "nt" else linux_executables_list
-        )
+    if exe and os.name == "nt":
+        total_size += get_file_size_if_missing(executables_list)
     if pretraineds_v1:
         total_size += get_file_size_if_missing(pretraineds_v1_list)
     if pretraineds_v2:
@@ -148,10 +144,13 @@ def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
                 download_mapping_files(models_list, global_bar)
                 download_mapping_files(embedders_list, global_bar)
             if exe:
-                download_mapping_files(
-                    executables_list if os.name == "nt" else linux_executables_list,
-                    global_bar,
-                )
+                if os.name == "nt":
+                    download_mapping_files(
+                        executables_list,
+                        global_bar,
+                    )
+                else:
+                    print("No executables needed")
             if pretraineds_v1:
                 download_mapping_files(pretraineds_v1_list, global_bar)
             if pretraineds_v2:

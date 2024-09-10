@@ -50,8 +50,11 @@ def load_audio(file, sample_rate):
 
 
 def load_audio_infer(
-    file, sample_rate, formant_shifting, formant_qfrency, formant_timbre
+    file,
+    sample_rate,
+    **kwargs,
 ):
+    formant_shifting = kwargs.get("formant_shifting", False)
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
         if not os.path.isfile(file):
@@ -62,38 +65,21 @@ def load_audio_infer(
         if sr != sample_rate:
             audio = librosa.resample(audio, orig_sr=sr, target_sr=sample_rate)
         if formant_shifting:
-            audio = (audio * 32767).astype(np.int16)
-            audio_segment = AudioSegment(
-                audio.tobytes(),
-                frame_rate=sample_rate,
-                sample_width=2,
-                channels=1,
-            )
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
-                temp_file_path = temp_file.name
-                audio_segment.export(temp_file_path, format="wav")
+            formant_qfrency = kwargs.get("formant_qfrency", 0.8)
+            formant_timbre = kwargs.get("formant_timbre", 0.8)
 
-            command = [
-                stft,
-                "-i",
-                temp_file_path,
-                "-q",
-                str(formant_qfrency),
-                "-t",
-                str(formant_timbre),
-                "-o",
-                f"{temp_file_path}_formatted.wav",
-            ]
-            subprocess.run(command, shell=True)
-            formatted_audio_path = f"{temp_file_path}_formatted.wav"
-            audio, sr = sf.read(formatted_audio_path)
-            if len(audio.shape) > 1:
-                audio = librosa.to_mono(audio.T)
-            if sr != sample_rate:
-                audio = librosa.resample(audio, orig_sr=sr, target_sr=sample_rate)
+            from stftpitchshift import StftPitchShift
+
+            pitchshifter = StftPitchShift(1024, 32, sample_rate)
+            audio = pitchshifter.shiftpitch(
+                audio,
+                factors=1,
+                quefrency=formant_qfrency * 1e-3,
+                distortion=formant_timbre,
+            )
     except Exception as error:
         raise RuntimeError(f"An error occurred loading the audio: {error}")
-    return audio.flatten()
+    return np.array(audio).flatten()
 
 
 def format_title(title):

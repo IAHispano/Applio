@@ -437,7 +437,7 @@ def inference_tab():
                     visible=True,
                     interactive=True,
                 )
-                with gr.Row():
+                with gr.Row(visible=False) as formant_row:
                     formant_preset = gr.Dropdown(
                         label=i18n("Browse presets for formanting"),
                         info=i18n(
@@ -1063,7 +1063,7 @@ def inference_tab():
                     visible=True,
                     interactive=True,
                 )
-                with gr.Row():
+                with gr.Row(visible=False) as formant_row_batch:
                     formant_preset_batch = gr.Dropdown(
                         label=i18n("Browse presets for formanting"),
                         info=i18n(
@@ -1636,9 +1636,11 @@ def inference_tab():
                 gr.update(visible=True),
                 gr.update(visible=True),
                 gr.update(visible=True),
+                gr.update(visible=True),
             )
         else:
             return (
+                gr.update(visible=False),
                 gr.update(visible=False),
                 gr.update(visible=False),
                 gr.update(visible=False),
@@ -1649,7 +1651,7 @@ def inference_tab():
         return [gr.update(visible=checkbox) for _ in range(count)]
 
     def post_process_visible(checkbox):
-        return update_visibility(checkbox, 11)
+        return update_visibility(checkbox, 10)
 
     def reverb_visible(checkbox):
         return update_visibility(checkbox, 6)
@@ -1678,6 +1680,7 @@ def inference_tab():
         fn=toggle_visible_formant_shifting,
         inputs=[formant_shifting],
         outputs=[
+            formant_row,
             formant_preset,
             formant_refresh_button,
             formant_qfrency,
@@ -1688,6 +1691,7 @@ def inference_tab():
         fn=toggle_visible_formant_shifting,
         inputs=[formant_shifting],
         outputs=[
+            formant_row_batch,
             formant_preset_batch,
             formant_refresh_button_batch,
             formant_qfrency_batch,
@@ -1729,7 +1733,6 @@ def inference_tab():
             clipping,
             compressor,
             delay,
-            clean_audio,
         ],
     )
 
@@ -1815,7 +1818,6 @@ def inference_tab():
             clipping_batch,
             compressor_batch,
             delay_batch,
-            clean_audio_batch,
         ],
     )
 
@@ -1970,47 +1972,6 @@ def inference_tab():
         inputs=[],
         outputs=[embedder_model_custom_batch],
     )
-    # Sliders variables
-    reverb_sliders = [
-        reverb_room_size,
-        reverb_damping,
-        reverb_wet_gain,
-        reverb_dry_gain,
-        reverb_width,
-        reverb_freeze_mode,
-    ]
-    pitch_shift_sliders = [pitch_shift_semitones]
-    limiter_sliders = [limiter_threshold, limiter_release_time]
-    gain_sliders = [gain_db]
-    distortion_sliders = [distortion_gain]
-    chorus_sliders = [
-        chorus_rate,
-        chorus_depth,
-        chorus_center_delay,
-        chorus_feedback,
-        chorus_mix,
-    ]
-    bitcrush_sliders = [bitcrush_bit_depth]
-    clipping_sliders = [clipping_threshold]
-    compressor_sliders = [
-        compressor_threshold,
-        compressor_ratio,
-        compressor_attack,
-        compressor_release,
-    ]
-    delay_sliders = [delay_seconds, delay_feedback, delay_mix]
-    sliders = [
-        *reverb_sliders,
-        *pitch_shift_sliders,
-        *limiter_sliders,
-        *gain_sliders,
-        *distortion_sliders,
-        *chorus_sliders,
-        *bitcrush_sliders,
-        *clipping_sliders,
-        *compressor_sliders,
-        *delay_sliders,
-    ]
     convert_button1.click(
         fn=run_infer_script,
         inputs=[
@@ -2048,51 +2009,34 @@ def inference_tab():
             clipping,
             compressor,
             delay,
-            *sliders,
+            reverb_room_size,
+            reverb_damping,
+            reverb_wet_gain,
+            reverb_dry_gain,
+            reverb_width,
+            reverb_freeze_mode,
+            pitch_shift_semitones,
+            limiter_threshold,
+            limiter_release_time,
+            gain_db,
+            distortion_gain,
+            chorus_rate,
+            chorus_depth,
+            chorus_center_delay,
+            chorus_feedback,
+            chorus_mix,
+            bitcrush_bit_depth,
+            clipping_threshold,
+            compressor_threshold,
+            compressor_ratio,
+            compressor_attack,
+            compressor_release,
+            delay_seconds,
+            delay_feedback,
+            delay_mix,
         ],
         outputs=[vc_output1, vc_output2],
     )
-    # Batch sliders variables
-    reverb_sliders_batch = [
-        reverb_room_size_batch,
-        reverb_damping_batch,
-        reverb_wet_gain_batch,
-        reverb_dry_gain_batch,
-        reverb_width_batch,
-        reverb_freeze_mode_batch,
-    ]
-    pitch_shift_sliders_batch = [pitch_shift_semitones_batch]
-    limiter_sliders_batch = [limiter_threshold_batch, limiter_release_time_batch]
-    gain_sliders_batch = [gain_db_batch]
-    distortion_sliders_batch = [distortion_gain_batch]
-    chorus_sliders_batch = [
-        chorus_rate_batch,
-        chorus_depth_batch,
-        chorus_center_delay_batch,
-        chorus_feedback_batch,
-        chorus_mix_batch,
-    ]
-    bitcrush_sliders_batch = [bitcrush_bit_depth_batch]
-    clipping_sliders_batch = [clipping_threshold_batch]
-    compressor_sliders_batch = [
-        compressor_threshold_batch,
-        compressor_ratio_batch,
-        compressor_attack_batch,
-        compressor_release_batch,
-    ]
-    delay_sliders_batch = [delay_seconds_batch, delay_feedback_batch, delay_mix_batch]
-    sliders_batch = [
-        *reverb_sliders_batch,
-        *pitch_shift_sliders_batch,
-        *limiter_sliders_batch,
-        *gain_sliders_batch,
-        *distortion_sliders_batch,
-        *chorus_sliders_batch,
-        *bitcrush_sliders_batch,
-        *clipping_sliders_batch,
-        *compressor_sliders_batch,
-        *delay_sliders_batch,
-    ]
     convert_button2.click(
         fn=run_batch_infer_script,
         inputs=[
@@ -2130,7 +2074,31 @@ def inference_tab():
             clipping_batch,
             compressor_batch,
             delay_batch,
-            *sliders_batch,
+            reverb_room_size_batch,
+            reverb_damping_batch,
+            reverb_wet_gain_batch,
+            reverb_dry_gain_batch,
+            reverb_width_batch,
+            reverb_freeze_mode_batch,
+            pitch_shift_semitones_batch,
+            limiter_threshold_batch,
+            limiter_release_time_batch,
+            gain_db_batch,
+            distortion_gain_batch,
+            chorus_rate_batch,
+            chorus_depth_batch,
+            chorus_center_delay_batch,
+            chorus_feedback_batch,
+            chorus_mix_batch,
+            bitcrush_bit_depth_batch,
+            clipping_threshold_batch,
+            compressor_threshold_batch,
+            compressor_ratio_batch,
+            compressor_attack_batch,
+            compressor_release_batch,
+            delay_seconds_batch,
+            delay_feedback_batch,
+            delay_mix_batch,
         ],
         outputs=[vc_output3],
     )
