@@ -52,10 +52,10 @@ jobs:
           rm -rf .github .git
       - name: Create file list
         run: |
-          find . -depth -print0 | sort -uz | uniq -zu | grep -v "^\s*$" > unique_files_to_archive.txt
+          find . -depth -print0 -not -name 'unique_files_to_archive.txt' | sort -uz | uniq -zu | grep -v "^\s*$" > unique_files_to_archive.txt
       - name: Create Tar file
         run: |
-          tar --warning=no-file-ignored --exclude=ApplioV${{ steps.get-version.outputs.version }}.tar.gz -cf - --null -T unique_files_to_archive.txt --ignore-failed-read | pigz -9 -p 32 > ApplioV${{ steps.get-version.outputs.version }}.tar.gz || true
+          tar --warning=no-file-ignored --exclude=unique_files_to_archive.txt --exclude=ApplioV${{ steps.get-version.outputs.version }}.tar.gz -cf - --null -T unique_files_to_archive.txt --ignore-failed-read | pigz -9 -p 32 > ApplioV${{ steps.get-version.outputs.version }}.tar.gz || true
       - name: Upload Linux Compiled
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
