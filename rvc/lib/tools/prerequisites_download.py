@@ -152,7 +152,7 @@ def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
                         global_bar,
                     )
                 else:
-                    print("no executables for linux")
+                    print("No executables needed")
             if pretraineds_v1:
                 download_mapping_files(pretraineds_v1_list, global_bar)
             if pretraineds_v2:
