@@ -206,7 +206,6 @@ def download_tab():
             fn=run_download_script,
             inputs=[model_link],
             outputs=[model_download_output_info],
-            api_name="model_download",
         )
         gr.Markdown(value=i18n("## Drop files"))
         dropbox = gr.File(

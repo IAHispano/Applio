@@ -127,7 +127,7 @@ jobs:
       - name: Install gh-release
         if: steps.check-version.outputs.tag
         run: |
-          npm install https://github.com/Vidalnt/gh-release.git
+          npm install https://github.com/IAHispano/gh-release.git
 
       - name: Create package.json 
         if: steps.check-version.outputs.tag

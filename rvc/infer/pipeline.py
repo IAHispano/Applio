@@ -259,7 +259,7 @@ class Pipeline:
         for method in methods:
             f0 = None
             if method == "crepe":
-                f0 = self.get_f0_crepe_computation(
+                f0 = self.get_f0_crepe(
                     x, f0_min, f0_max, p_len, int(hop_length)
                 )
             elif method == "rmvpe":

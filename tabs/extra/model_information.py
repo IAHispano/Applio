@@ -26,5 +26,4 @@ def model_information_tab():
             fn=run_model_information_script,
             inputs=[model_name],
             outputs=[model_information_output_info],
-            api_name="model_information",
         )
