@@ -121,10 +121,8 @@ def calculate_total_size(pretraineds_v1, pretraineds_v2, models, exe):
     if models:
         total_size += get_file_size_if_missing(models_list)
         total_size += get_file_size_if_missing(embedders_list)
-    if exe:
-        total_size += get_file_size_if_missing(
-            executables_list if os.name == "nt" else linux_executables_list
-        )
+    if exe and os.name == "nt":
+        total_size += get_file_size_if_missing(executables_list)
     if pretraineds_v1:
         total_size += get_file_size_if_missing(pretraineds_v1_list)
     if pretraineds_v2:
