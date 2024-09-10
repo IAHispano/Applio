@@ -57,7 +57,7 @@ jobs:
     
       - name: Create Tar file
         run: |
-          tar -cf - --null -T files_to_archive.txt --ignore-failed-read | pigz -9 -p 32 > ApplioV${{ steps.get-version.outputs.version }}.tar.gz
+          tar -cf - --null -T unique_files_to_archive.txt --ignore-failed-read | pigz -9 -p 32 > ApplioV${{ steps.get-version.outputs.version }}.tar.gz
       - name: Upload Linux Compiled
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
