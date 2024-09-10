@@ -1970,58 +1970,6 @@ def inference_tab():
         inputs=[],
         outputs=[embedder_model_custom_batch],
     )
-    # Sliders variables
-    reverb_sliders = [
-        reverb_room_size,
-        reverb_damping,
-        reverb_wet_gain,
-        reverb_dry_gain,
-        reverb_width,
-        reverb_freeze_mode,
-    ]
-    pitch_shift_sliders = [pitch_shift_semitones]
-    limiter_sliders = [limiter_threshold, limiter_release_time]
-    gain_sliders = [gain_db]
-    distortion_sliders = [distortion_gain]
-    chorus_sliders = [
-        chorus_rate,
-        chorus_depth,
-        chorus_center_delay,
-        chorus_feedback,
-        chorus_mix,
-    ]
-    bitcrush_sliders = [bitcrush_bit_depth]
-    clipping_sliders = [clipping_threshold]
-    compressor_sliders = [
-        compressor_threshold,
-        compressor_ratio,
-        compressor_attack,
-        compressor_release,
-    ]
-    delay_sliders = [delay_seconds, delay_feedback, delay_mix]
-    post_process_options = [
-        post_process,
-        reverb,
-        pitch_shift,
-        limiter,
-        gain,
-        distortion,
-        chorus,
-        bitcrush,
-        clipping,
-        compressor,
-        delay,
-        *reverb_sliders,
-        *pitch_shift_sliders,
-        *limiter_sliders,
-        *gain_sliders,
-        *distortion_sliders,
-        *chorus_sliders,
-        *bitcrush_sliders,
-        *clipping_sliders,
-        *compressor_sliders,
-        *delay_sliders,
-    ]
     convert_button1.click(
         fn=run_infer_script,
         inputs=[
@@ -2048,65 +1996,46 @@ def inference_tab():
             formant_shifting,
             formant_qfrency,
             formant_timbre,
-            *post_process_options,
+            post_process,
+            reverb,
+            pitch_shift,
+            limiter,
+            gain,
+            distortion,
+            chorus,
+            bitcrush,
+            clipping,
+            compressor,
+            delay,
+            reverb_room_size,
+            reverb_damping,
+            reverb_wet_gain,
+            reverb_dry_gain,
+            reverb_width,
+            reverb_freeze_mode,
+            pitch_shift_semitones,
+            limiter_threshold,
+            limiter_release_time,
+            gain_db,
+            distortion_gain,
+            chorus_rate,
+            chorus_depth,
+            chorus_center_delay,
+            chorus_feedback,
+            chorus_mix,
+            bitcrush_bit_depth,
+            clipping_threshold,
+            compressor_threshold,
+            compressor_ratio,
+            compressor_attack,
+            compressor_release,
+            delay_seconds,
+            delay_feedback,
+            delay_mix,
         ],
         outputs=[vc_output1, vc_output2],
     )
     # Batch sliders variables
-    reverb_sliders_batch = [
-        reverb_room_size_batch,
-        reverb_damping_batch,
-        reverb_wet_gain_batch,
-        reverb_dry_gain_batch,
-        reverb_width_batch,
-        reverb_freeze_mode_batch,
-    ]
-    pitch_shift_sliders_batch = [pitch_shift_semitones_batch]
-    limiter_sliders_batch = [limiter_threshold_batch, limiter_release_time_batch]
-    gain_sliders_batch = [gain_db_batch]
-    distortion_sliders_batch = [distortion_gain_batch]
-    chorus_sliders_batch = [
-        chorus_rate_batch,
-        chorus_depth_batch,
-        chorus_center_delay_batch,
-        chorus_feedback_batch,
-        chorus_mix_batch,
-    ]
-    bitcrush_sliders_batch = [bitcrush_bit_depth_batch]
-    clipping_sliders_batch = [clipping_threshold_batch]
-    compressor_sliders_batch = [
-        compressor_threshold_batch,
-        compressor_ratio_batch,
-        compressor_attack_batch,
-        compressor_release_batch,
-    ]
-    delay_sliders_batch = [delay_seconds_batch, delay_feedback_batch, delay_mix_batch]
-    post_process_options_batch = [
-        formant_shifting_batch,
-        formant_qfrency_batch,
-        formant_timbre_batch,
-        post_process_batch,
-        reverb_batch,
-        pitch_shift_batch,
-        limiter_batch,
-        gain_batch,
-        distortion_batch,
-        chorus_batch,
-        bitcrush_batch,
-        clipping_batch,
-        compressor_batch,
-        delay_batch,
-        *reverb_sliders_batch,
-        *pitch_shift_sliders_batch,
-        *limiter_sliders_batch,
-        *gain_sliders_batch,
-        *distortion_sliders_batch,
-        *chorus_sliders_batch,
-        *bitcrush_sliders_batch,
-        *clipping_sliders_batch,
-        *compressor_sliders_batch,
-        *delay_sliders_batch,
-    ]
     convert_button2.click(
         fn=run_batch_infer_script,
         inputs=[
@@ -2130,7 +2059,45 @@ def inference_tab():
             f0_file_batch,
             embedder_model_batch,
             embedder_model_custom_batch,
-            *post_process_options_batch,
+            formant_shifting_batch,
+            formant_qfrency_batch,
+            formant_timbre_batch,
+            post_process_batch,
+            reverb_batch,
+            pitch_shift_batch,
+            limiter_batch,
+            gain_batch,
+            distortion_batch,
+            chorus_batch,
+            bitcrush_batch,
+            clipping_batch,
+            compressor_batch,
+            delay_batch,
+            reverb_room_size_batch,
+            reverb_damping_batch,
+            reverb_wet_gain_batch,
+            reverb_dry_gain_batch,
+            reverb_width_batch,
+            reverb_freeze_mode_batch,
+            pitch_shift_semitones_batch,
+            limiter_threshold_batch,
+            limiter_release_time_batch,
+            gain_db_batch,
+            distortion_gain_batch,
+            chorus_rate_batch,
+            chorus_depth_batch,
+            chorus_center_delay_batch,
+            chorus_feedback_batch,
+            chorus_mix_batch,
+            bitcrush_bit_depth_batch,
+            clipping_threshold_batch,
+            compressor_threshold_batch,
+            compressor_ratio_batch,
+            compressor_attack_batch,
+            compressor_release_batch,
+            delay_seconds_batch,
+            delay_feedback_batch,
+            delay_mix_batch,
         ],
         outputs=[vc_output3],
     )
