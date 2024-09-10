@@ -9,6 +9,8 @@ import numpy as np
 import concurrent.futures
 import multiprocessing as mp
 import json
+import shutil
+from distutils.util import strtobool
 
 # Zluda
 if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):
@@ -253,6 +255,7 @@ if __name__ == "__main__":
     sample_rate = sys.argv[8]
     embedder_model = sys.argv[9]
     embedder_model_custom = sys.argv[10] if len(sys.argv) > 10 else None
+    delete_sliced_audios = strtobool(sys.argv[11]) if len(sys.argv) > 11 else True
 
     # prep
     wav_path = os.path.join(exp_dir, "sliced_audios_16k")
@@ -291,6 +294,9 @@ if __name__ == "__main__":
     run_embedding_extraction(
         files, devices, version, embedder_model, embedder_model_custom
     )
+    if delete_sliced_audios:
+        shutil.rmtree(os.path.join(exp_dir, "sliced_audios"), ignore_errors=True)
+        shutil.rmtree(os.path.join(exp_dir, "sliced_audios_16k"), ignore_errors=True)
 
     # Run Preparing Files
     generate_config(version, sample_rate, exp_dir)
