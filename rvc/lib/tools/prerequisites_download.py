@@ -45,10 +45,8 @@ pretraineds_v2_list = [
 ]
 models_list = [("predictors/", ["rmvpe.pt", "fcpe.pt"])]
 embedders_list = [("embedders/contentvec/", ["pytorch_model.bin", "config.json"])]
-linux_executables_list = [("formant/", ["stftpitchshift"])]
 executables_list = [
     ("", ["ffmpeg.exe", "ffprobe.exe"]),
-    ("formant/", ["stftpitchshift.exe"]),
 ]
 
 folder_mapping_list = {
@@ -148,10 +146,13 @@ def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
                 download_mapping_files(models_list, global_bar)
                 download_mapping_files(embedders_list, global_bar)
             if exe:
-                download_mapping_files(
-                    executables_list if os.name == "nt" else linux_executables_list,
-                    global_bar,
-                )
+                if os.name == "nt":
+                    download_mapping_files(
+                        executables_list,
+                        global_bar,
+                    )
+                else:
+                    print("no executables for linux")
             if pretraineds_v1:
                 download_mapping_files(pretraineds_v1_list, global_bar)
             if pretraineds_v2:
