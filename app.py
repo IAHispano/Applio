@@ -67,7 +67,9 @@ import assets.themes.loadThemes as loadThemes
 my_applio = loadThemes.load_json() or "ParityError/Interstellar"
 
 # Define Gradio interface
-with gr.Blocks(theme=my_applio, title="Applio", css="footer{display:none !important}") as Applio:
+with gr.Blocks(
+    theme=my_applio, title="Applio", css="footer{display:none !important}"
+) as Applio:
     gr.Markdown("# Applio")
     gr.Markdown(
         i18n(
