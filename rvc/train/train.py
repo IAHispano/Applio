@@ -5,7 +5,6 @@ import glob
 import json
 import torch
 import datetime
-import shutil
 
 from distutils.util import strtobool
 from random import randint, shuffle
