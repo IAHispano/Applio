@@ -498,14 +498,6 @@ def train_tab():
                 value=True,
                 interactive=True,
             )
-            delete_sliced_audio = gr.Checkbox(
-                label=i18n("Delete Sliced Audio"),
-                info=i18n(
-                    "Delete the sliced audio folders after the embedder extraction process is completed."
-                ),
-                value=True,
-                interactive=True,
-            )
 
         with gr.Accordion(
             i18n(
@@ -565,7 +557,6 @@ def train_tab():
                 sampling_rate,
                 embedder_model,
                 embedder_model_custom,
-                delete_sliced_audio,
             ],
             outputs=[extract_output_info],
         )
@@ -659,6 +650,14 @@ def train_tab():
                             "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential."
                         ),
                         value=True,
+                        interactive=True,
+                    )
+                    delete_sliced_audio = gr.Checkbox(
+                        label=i18n("Delete Sliced Audio"),
+                        info=i18n(
+                            "Delete the sliced audio folders after the embedder extraction process is completed."
+                        ),
+                        value=False,
                         interactive=True,
                     )
             with gr.Column():
@@ -788,6 +787,7 @@ def train_tab():
                     cache_dataset_in_gpu,
                     custom_pretrained,
                     use_cpu,
+                    delete_sliced_audio,
                     g_pretrained_path,
                     d_pretrained_path,
                 ],

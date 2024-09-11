@@ -5,6 +5,7 @@ import glob
 import json
 import torch
 import datetime
+import shutil
 
 from distutils.util import strtobool
 from random import randint, shuffle
@@ -75,6 +76,7 @@ overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
 sync_graph = strtobool(sys.argv[16])
 use_cpu = strtobool(sys.argv[17])
+delete_sliced_audio = strtobool(sys.argv[18])
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -485,7 +487,9 @@ def run(
     # Check sample rate
     if rank == 0:
         verify_checkpoint_shapes(pretrainG, net_g)
-
+        if delete_sliced_audio:
+            shutil.rmtree(os.path.join(experiment_dir, "sliced_audios"))
+            shutil.rmtree(os.path.join(experiment_dir, "sliced_audios_16k"))
     # Load checkpoint if available
     try:
         print("Starting training...")
