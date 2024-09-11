@@ -19,7 +19,7 @@ scipy==1.11.1
 soundfile==0.12.1
 praat-parselmouth
 noisereduce
-audio_upscaler==0.1.4
+versatile-audio-upscaler
 pedalboard
 stftpitchshift
 
