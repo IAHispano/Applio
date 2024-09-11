@@ -9,6 +9,7 @@ if not exist env (
 )
 
 set HIP_VISIBLE_DEVICES="0"
+set ZLUDA_COMGR_LOG_LEVEL=1
 zluda\zluda.exe -- env\python.exe app.py --open
 echo.
 pause
