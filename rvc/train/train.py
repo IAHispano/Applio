@@ -485,11 +485,9 @@ def run(
         net_d = DDP(net_d)
 
     # Check sample rate
-    if rank == 0:
-        verify_checkpoint_shapes(pretrainG, net_g)
-        if delete_sliced_audio:
-            shutil.rmtree(os.path.join(experiment_dir, "sliced_audios"))
-            shutil.rmtree(os.path.join(experiment_dir, "sliced_audios_16k"))
+    if rank == 0 and delete_sliced_audio:
+        shutil.rmtree(os.path.join(experiment_dir, "sliced_audios"))
+        shutil.rmtree(os.path.join(experiment_dir, "sliced_audios_16k"))
     # Load checkpoint if available
     try:
         print("Starting training...")
@@ -507,6 +505,7 @@ def run(
         global_step = 0
         if pretrainG != "":
             if rank == 0:
+                verify_checkpoint_shapes(pretrainG, net_g)
                 print(f"Loaded pretrained (G) '{pretrainG}'")
             if hasattr(net_g, "module"):
                 net_g.module.load_state_dict(
