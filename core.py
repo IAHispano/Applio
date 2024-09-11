@@ -1735,6 +1735,8 @@ def main():
                 cpu_cores=args.cpu_cores,
                 cut_preprocess=args.cut_preprocess,
                 process_effects=args.process_effects,
+                noise_reduction=args.noise_reduction,
+                clean_strength=args.noise_reduction_strength,
             )
         elif args.mode == "extract":
             run_extract_script(
