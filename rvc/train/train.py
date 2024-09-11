@@ -76,7 +76,6 @@ overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
 sync_graph = strtobool(sys.argv[16])
 use_cpu = strtobool(sys.argv[17])
-delete_sliced_audio = strtobool(sys.argv[18])
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -483,11 +482,6 @@ def run(
     else:
         net_g = DDP(net_g)
         net_d = DDP(net_d)
-
-    # Check sample rate
-    if rank == 0 and delete_sliced_audio:
-        shutil.rmtree(os.path.join(experiment_dir, "sliced_audios"))
-        shutil.rmtree(os.path.join(experiment_dir, "sliced_audios_16k"))
     # Load checkpoint if available
     try:
         print("Starting training...")

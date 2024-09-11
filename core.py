@@ -468,7 +468,6 @@ def run_extract_script(
     sample_rate: int,
     embedder_model: str,
     embedder_model_custom: str = None,
-    delete_sliced_audios: bool = True,
 ):
 
     model_path = os.path.join(logs_path, model_name)
@@ -490,7 +489,6 @@ def run_extract_script(
                 sample_rate,
                 embedder_model,
                 embedder_model_custom,
-                delete_sliced_audios,
             ],
         ),
     ]
@@ -520,7 +518,6 @@ def run_train_script(
     cache_data_in_gpu: bool = False,
     custom_pretrained: bool = False,
     use_cpu: bool = False,
-    delete_sliced_audio: bool = True,
     g_pretrained_path: str = None,
     d_pretrained_path: str = None,
 ):
@@ -565,7 +562,6 @@ def run_train_script(
                 overtraining_threshold,
                 sync_graph,
                 use_cpu,
-                delete_sliced_audio,
             ],
         ),
     ]
@@ -1472,14 +1468,6 @@ def parse_arguments():
         help="Force the use of CPU for training.",
         default=False,
     )
-    train_parser.add_argument(
-        "--delete_sliced_folders",
-        type=lambda x: bool(strtobool(x)),
-        choices=[True, False],
-        help="Auto delete sliced audio folders after embedder process.",
-        default=False,
-        required=False,
-    )
 
     # Parser for 'index' mode
     index_parser = subparsers.add_parser(
@@ -1771,7 +1759,6 @@ def main():
                 index_algorithm=args.index_algorithm,
                 cache_data_in_gpu=args.cache_data_in_gpu,
                 use_cpu=args.use_cpu,
-                delete_sliced_folders=args.delete_sliced_folders,
                 g_pretrained_path=args.g_pretrained_path,
                 d_pretrained_path=args.d_pretrained_path,
             )
