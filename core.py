@@ -468,7 +468,6 @@ def run_extract_script(
     sample_rate: int,
     embedder_model: str,
     embedder_model_custom: str = None,
-    delete_sliced_audios: bool = True,
 ):
 
     model_path = os.path.join(logs_path, model_name)
@@ -490,7 +489,6 @@ def run_extract_script(
                 sample_rate,
                 embedder_model,
                 embedder_model_custom,
-                delete_sliced_audios,
             ],
         ),
     ]
@@ -1331,14 +1329,6 @@ def parse_arguments():
         help=embedder_model_custom_description,
         default=None,
     )
-    extract_parser.add_argument(
-        "--delete_sliced_folders",
-        type=lambda x: bool(strtobool(x)),
-        choices=[True, False],
-        help="Auto delete sliced audio folders after embedder process.",
-        default=True,
-        required=False,
-    )
 
     # Parser for 'train' mode
     train_parser = subparsers.add_parser("train", help="Train an RVC model.")
@@ -1733,6 +1723,8 @@ def main():
                 cpu_cores=args.cpu_cores,
                 cut_preprocess=args.cut_preprocess,
                 process_effects=args.process_effects,
+                noise_reduction=args.noise_reduction,
+                clean_strength=args.noise_reduction_strength,
             )
         elif args.mode == "extract":
             run_extract_script(
@@ -1746,7 +1738,6 @@ def main():
                 sample_rate=args.sample_rate,
                 embedder_model=args.embedder_model,
                 embedder_model_custom=args.embedder_model_custom,
-                delete_sliced_folders=args.delete_sliced_folders,
             )
         elif args.mode == "train":
             run_train_script(

@@ -162,10 +162,17 @@ def save_dataset_duration(file_path, dataset_duration):
 
 
 def process_audio_wrapper(args):
-    pp, file, cut_preprocess, process_effects, noise_reduction = args
+    pp, file, cut_preprocess, process_effects, noise_reduction, reduction_strength = (
+        args
+    )
     file_path, idx0 = file
     return pp.process_audio(
-        file_path, idx0, cut_preprocess, process_effects, noise_reduction
+        file_path,
+        idx0,
+        cut_preprocess,
+        process_effects,
+        noise_reduction,
+        reduction_strength,
     )
 
 
@@ -178,6 +185,7 @@ def preprocess_training_set(
     cut_preprocess: bool,
     process_effects: bool,
     noise_reduction: bool,
+    reduction_strength: float,
 ):
     start_time = time.time()
     pp = PreProcess(sr, exp_dir, per)
@@ -195,7 +203,14 @@ def preprocess_training_set(
                 executor.map(
                     process_audio_wrapper,
                     [
-                        (pp, file, cut_preprocess, process_effects, noise_reduction)
+                        (
+                            pp,
+                            file,
+                            cut_preprocess,
+                            process_effects,
+                            noise_reduction,
+                            reduction_strength,
+                        )
                         for file in files
                     ],
                 ),
@@ -225,6 +240,7 @@ if __name__ == "__main__":
     cut_preprocess = strtobool(sys.argv[6])
     process_effects = strtobool(sys.argv[7])
     noise_reduction = strtobool(sys.argv[8])
+    reduction_strength = float(sys.argv[9])
 
     preprocess_training_set(
         input_root,
@@ -235,4 +251,5 @@ if __name__ == "__main__":
         cut_preprocess,
         process_effects,
         noise_reduction,
+        reduction_strength,
     )
