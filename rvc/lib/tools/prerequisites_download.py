@@ -113,7 +113,24 @@ def download_mapping_files(file_mapping_list, global_bar):
             future.result()
 
 
-def calculate_total_size(pretraineds_v1, pretraineds_v2, models, exe):
+def split_pretraineds(pretrained_list):
+    f0_list = []
+    non_f0_list = []
+    for folder, files in pretrained_list:
+        f0_files = [f for f in files if f.startswith("f0")]
+        non_f0_files = [f for f in files if not f.startswith("f0")]
+        if f0_files:
+            f0_list.append((folder, f0_files))
+        if non_f0_files:
+            non_f0_list.append((folder, non_f0_files))
+    return f0_list, non_f0_list
+
+
+pretraineds_v1_f0_list, pretraineds_v1_nof0_list = split_pretraineds(pretraineds_v1_list)
+pretraineds_v2_f0_list, pretraineds_v2_nof0_list = split_pretraineds(pretraineds_v2_list)
+
+
+def calculate_total_size(pretraineds_v1_f0, pretraineds_v1_nof0, pretraineds_v2_f0, pretraineds_v2_nof0, models, exe):
     """
     Calculate the total size of all files to be downloaded based on selected categories.
     """
@@ -123,18 +140,25 @@ def calculate_total_size(pretraineds_v1, pretraineds_v2, models, exe):
         total_size += get_file_size_if_missing(embedders_list)
     if exe and os.name == "nt":
         total_size += get_file_size_if_missing(executables_list)
-    if pretraineds_v1:
-        total_size += get_file_size_if_missing(pretraineds_v1_list)
-    if pretraineds_v2:
-        total_size += get_file_size_if_missing(pretraineds_v2_list)
+    total_size += get_file_size_if_missing(pretraineds_v1_f0)
+    total_size += get_file_size_if_missing(pretraineds_v1_nof0)
+    total_size += get_file_size_if_missing(pretraineds_v2_f0)
+    total_size += get_file_size_if_missing(pretraineds_v2_nof0)
     return total_size
 
 
-def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
+def prequisites_download_pipeline(pretraineds_v1_f0, pretraineds_v1_nof0, pretraineds_v2_f0, pretraineds_v2_nof0, models, exe):
     """
     Manage the download pipeline for different categories of files.
     """
-    total_size = calculate_total_size(pretraineds_v1, pretraineds_v2, models, exe)
+    total_size = calculate_total_size(
+        pretraineds_v1_f0_list if pretraineds_v1_f0 else [],
+        pretraineds_v1_nof0_list if pretraineds_v1_nof0 else [],
+        pretraineds_v2_f0_list if pretraineds_v2_f0 else [],
+        pretraineds_v2_nof0_list if pretraineds_v2_nof0 else [],
+        models,
+        exe
+    )
 
     if total_size > 0:
         with tqdm(
@@ -145,15 +169,16 @@ def prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe):
                 download_mapping_files(embedders_list, global_bar)
             if exe:
                 if os.name == "nt":
-                    download_mapping_files(
-                        executables_list,
-                        global_bar,
-                    )
+                    download_mapping_files(executables_list, global_bar)
                 else:
                     print("No executables needed")
-            if pretraineds_v1:
-                download_mapping_files(pretraineds_v1_list, global_bar)
-            if pretraineds_v2:
-                download_mapping_files(pretraineds_v2_list, global_bar)
+            if pretraineds_v1_f0:
+                download_mapping_files(pretraineds_v1_f0_list, global_bar)
+            if pretraineds_v1_nof0:
+                download_mapping_files(pretraineds_v1_nof0_list, global_bar)
+            if pretraineds_v2_f0:
+                download_mapping_files(pretraineds_v2_f0_list, global_bar)
+            if pretraineds_v2_nof0:
+                download_mapping_files(pretraineds_v2_nof0_list, global_bar)
     else:
         pass
