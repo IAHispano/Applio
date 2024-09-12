@@ -141,9 +141,7 @@ class STFT:
 
         # Zluda, fall-back to CPU for FFTs since HIP SDK has no cuFFT alternative
         source_device = y.device
-        if y.device.type == "cuda" and torch.cuda.get_device_name().endswith(
-            "[ZLUDA]"
-        ):
+        if y.device.type == "cuda" and torch.cuda.get_device_name().endswith("[ZLUDA]"):
             y = y.to("cpu")
             hann_window[keyshift_key] = hann_window[keyshift_key].to("cpu")
 
