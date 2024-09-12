@@ -126,11 +126,22 @@ def split_pretraineds(pretrained_list):
     return f0_list, non_f0_list
 
 
-pretraineds_v1_f0_list, pretraineds_v1_nof0_list = split_pretraineds(pretraineds_v1_list)
-pretraineds_v2_f0_list, pretraineds_v2_nof0_list = split_pretraineds(pretraineds_v2_list)
+pretraineds_v1_f0_list, pretraineds_v1_nof0_list = split_pretraineds(
+    pretraineds_v1_list
+)
+pretraineds_v2_f0_list, pretraineds_v2_nof0_list = split_pretraineds(
+    pretraineds_v2_list
+)
 
 
-def calculate_total_size(pretraineds_v1_f0, pretraineds_v1_nof0, pretraineds_v2_f0, pretraineds_v2_nof0, models, exe):
+def calculate_total_size(
+    pretraineds_v1_f0,
+    pretraineds_v1_nof0,
+    pretraineds_v2_f0,
+    pretraineds_v2_nof0,
+    models,
+    exe,
+):
     """
     Calculate the total size of all files to be downloaded based on selected categories.
     """
@@ -147,7 +158,14 @@ def calculate_total_size(pretraineds_v1_f0, pretraineds_v1_nof0, pretraineds_v2_
     return total_size
 
 
-def prequisites_download_pipeline(pretraineds_v1_f0, pretraineds_v1_nof0, pretraineds_v2_f0, pretraineds_v2_nof0, models, exe):
+def prequisites_download_pipeline(
+    pretraineds_v1_f0,
+    pretraineds_v1_nof0,
+    pretraineds_v2_f0,
+    pretraineds_v2_nof0,
+    models,
+    exe,
+):
     """
     Manage the download pipeline for different categories of files.
     """
@@ -157,7 +175,7 @@ def prequisites_download_pipeline(pretraineds_v1_f0, pretraineds_v1_nof0, pretra
         pretraineds_v2_f0_list if pretraineds_v2_f0 else [],
         pretraineds_v2_nof0_list if pretraineds_v2_nof0 else [],
         models,
-        exe
+        exe,
     )
 
     if total_size > 0:
