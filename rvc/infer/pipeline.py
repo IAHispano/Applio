@@ -259,9 +259,7 @@ class Pipeline:
         for method in methods:
             f0 = None
             if method == "crepe":
-                f0 = self.get_f0_crepe_computation(
-                    x, f0_min, f0_max, p_len, int(hop_length)
-                )
+                f0 = self.get_f0_crepe(x, f0_min, f0_max, p_len, int(hop_length))
             elif method == "rmvpe":
                 self.model_rmvpe = RMVPE0Predictor(
                     os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
@@ -490,21 +488,32 @@ class Pipeline:
             torch.cuda.empty_cache()
         return audio1
 
+    def _retrieve_speaker_embeddings(self, feats, index, big_npy, index_rate):
+        npy = feats[0].cpu().numpy()
+        npy = npy.astype("float32") if self.is_half else npy
+        score, ix = index.search(npy, k=8)
+        weight = np.square(1 / score)
+        weight /= weight.sum(axis=1, keepdims=True)
+        npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
+        npy = npy.astype("float16") if self.is_half else npy
+        feats = (
+            torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
+            + (1 - index_rate) * feats
+        )
+        return feats
+
     def pipeline(
         self,
         model,
         net_g,
         sid,
         audio,
-        input_audio_path,
         pitch,
         f0_method,
         file_index,
         index_rate,
         pitch_guidance,
         filter_radius,
-        tgt_sr,
-        resample_sr,
         volume_envelope,
         version,
         protect,
@@ -536,7 +545,7 @@ class Pipeline:
             f0_autotune: Whether to apply autotune to the F0 contour.
             f0_file: Path to a file containing an F0 contour to use.
         """
-        if file_index != "" and os.path.exists(file_index) == True and index_rate != 0:
+        if file_index != "" and os.path.exists(file_index) and index_rate > 0:
             try:
                 index = faiss.read_index(file_index)
                 big_npy = index.reconstruct_n(0, index.ntotal)
@@ -567,7 +576,7 @@ class Pipeline:
         audio_pad = np.pad(audio, (self.t_pad, self.t_pad), mode="reflect")
         p_len = audio_pad.shape[0] // self.window
         inp_f0 = None
-        if hasattr(f0_file, "name") == True:
+        if hasattr(f0_file, "name"):
             try:
                 with open(f0_file.name, "r") as f:
                     lines = f.read().strip("\n").split("\n")
@@ -578,9 +587,9 @@ class Pipeline:
             except Exception as error:
                 print(f"An error occurred reading the F0 file: {error}")
         sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
-        if pitch_guidance == True:
+        if pitch_guidance:
             pitch, pitchf = self.get_f0(
-                input_audio_path,
+                "input_audio_path",  # questionable purpose of making a key for an array
                 audio_pad,
                 p_len,
                 pitch,
@@ -598,7 +607,7 @@ class Pipeline:
             pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
         for t in opt_ts:
             t = t // self.window * self.window
-            if pitch_guidance == True:
+            if pitch_guidance:
                 audio_opt.append(
                     self.voice_conversion(
                         model,
@@ -631,7 +640,7 @@ class Pipeline:
                     )[self.t_pad_tgt : -self.t_pad_tgt]
                 )
             s = t
-        if pitch_guidance == True:
+        if pitch_guidance:
             audio_opt.append(
                 self.voice_conversion(
                     model,
@@ -666,17 +675,20 @@ class Pipeline:
         audio_opt = np.concatenate(audio_opt)
         if volume_envelope != 1:
             audio_opt = AudioProcessor.change_rms(
-                audio, self.sample_rate, audio_opt, tgt_sr, volume_envelope
+                audio, self.sample_rate, audio_opt, self.sample_rate, volume_envelope
             )
-        if resample_sr >= self.sample_rate and tgt_sr != resample_sr:
-            audio_opt = librosa.resample(
-                audio_opt, orig_sr=tgt_sr, target_sr=resample_sr
-            )
+        # if resample_sr >= self.sample_rate and tgt_sr != resample_sr:
+        #    audio_opt = librosa.resample(
+        #        audio_opt, orig_sr=tgt_sr, target_sr=resample_sr
+        #    )
+        # audio_max = np.abs(audio_opt).max() / 0.99
+        # max_int16 = 32768
+        # if audio_max > 1:
+        #    max_int16 /= audio_max
+        # audio_opt = (audio_opt * 32768).astype(np.int16)
         audio_max = np.abs(audio_opt).max() / 0.99
-        max_int16 = 32768
         if audio_max > 1:
-            max_int16 /= audio_max
-        audio_opt = (audio_opt * max_int16).astype(np.int16)
+            audio_opt /= audio_max
         del pitch, pitchf, sid
         if torch.cuda.is_available():
             torch.cuda.empty_cache()

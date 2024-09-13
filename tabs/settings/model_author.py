@@ -30,5 +30,4 @@ def model_author_tab():
         fn=run_model_author_script,
         inputs=[model_author_name],
         outputs=[model_author_output_info],
-        api_name="model_author",
     )

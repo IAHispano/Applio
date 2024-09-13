@@ -34,5 +34,4 @@ def processing_tab():
             fn=run_model_information_script,
             inputs=[model_view_model_path],
             outputs=[model_view_output_info],
-            api_name="model_info",
         )

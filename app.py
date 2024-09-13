@@ -32,11 +32,19 @@ from tabs.settings.flask_server import flask_server_tab
 from tabs.settings.fake_gpu import fake_gpu_tab, gpu_available, load_fake_gpu
 from tabs.settings.themes import theme_tab
 from tabs.settings.precision import precision_tab
+from tabs.settings.model_author import model_author_tab
 
 # Run prerequisites
 from core import run_prerequisites_script
 
-run_prerequisites_script(False, True, True, True)
+run_prerequisites_script(
+    pretraineds_v1_f0=False,
+    pretraineds_v1_nof0=False,
+    pretraineds_v2_f0=True,
+    pretraineds_v2_nof0=False,
+    models=True,
+    exe=True,
+)
 
 # Initialize i18n
 from assets.i18n.i18n import I18nAuto
@@ -67,7 +75,9 @@ import assets.themes.loadThemes as loadThemes
 my_applio = loadThemes.load_json() or "ParityError/Interstellar"
 
 # Define Gradio interface
-with gr.Blocks(theme=my_applio, title="Applio") as Applio:
+with gr.Blocks(
+    theme=my_applio, title="Applio", css="footer{display:none !important}"
+) as Applio:
     gr.Markdown("# Applio")
     gr.Markdown(
         i18n(
@@ -120,6 +130,7 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
         version_tab()
         lang_tab()
         restart_tab()
+        model_author_tab()
 
 
 def launch_gradio(port):

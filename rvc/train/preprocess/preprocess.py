@@ -10,6 +10,7 @@ import json
 from distutils.util import strtobool
 import librosa
 import multiprocessing
+import noisereduce as nr
 
 now_directory = os.getcwd()
 sys.path.append(now_directory)
@@ -93,6 +94,8 @@ class PreProcess:
         idx0: int,
         cut_preprocess: bool,
         process_effects: bool,
+        noise_reduction: bool,
+        reduction_strength: float,
     ):
         audio_length = 0
         try:
@@ -100,6 +103,10 @@ class PreProcess:
             audio_length = librosa.get_duration(y=audio, sr=self.sr)
             if process_effects:
                 audio = signal.lfilter(self.b_high, self.a_high, audio)
+            if noise_reduction:
+                audio = nr.reduce_noise(
+                    y=audio, sr=self.sr, prop_decrease=reduction_strength
+                )
             idx1 = 0
             if cut_preprocess:
                 for audio_segment in self.slicer.slice(audio):
@@ -155,9 +162,18 @@ def save_dataset_duration(file_path, dataset_duration):
 
 
 def process_audio_wrapper(args):
-    pp, file, cut_preprocess, process_effects = args
+    pp, file, cut_preprocess, process_effects, noise_reduction, reduction_strength = (
+        args
+    )
     file_path, idx0 = file
-    return pp.process_audio(file_path, idx0, cut_preprocess, process_effects)
+    return pp.process_audio(
+        file_path,
+        idx0,
+        cut_preprocess,
+        process_effects,
+        noise_reduction,
+        reduction_strength,
+    )
 
 
 def preprocess_training_set(
@@ -168,6 +184,8 @@ def preprocess_training_set(
     per: float,
     cut_preprocess: bool,
     process_effects: bool,
+    noise_reduction: bool,
+    reduction_strength: float,
 ):
     start_time = time.time()
     pp = PreProcess(sr, exp_dir, per)
@@ -184,7 +202,17 @@ def preprocess_training_set(
             tqdm(
                 executor.map(
                     process_audio_wrapper,
-                    [(pp, file, cut_preprocess, process_effects) for file in files],
+                    [
+                        (
+                            pp,
+                            file,
+                            cut_preprocess,
+                            process_effects,
+                            noise_reduction,
+                            reduction_strength,
+                        )
+                        for file in files
+                    ],
                 ),
                 total=len(files),
             )
@@ -211,6 +239,8 @@ if __name__ == "__main__":
         num_processes = int(num_processes)
     cut_preprocess = strtobool(sys.argv[6])
     process_effects = strtobool(sys.argv[7])
+    noise_reduction = strtobool(sys.argv[8])
+    reduction_strength = float(sys.argv[9])
 
     preprocess_training_set(
         input_root,
@@ -220,4 +250,6 @@ if __name__ == "__main__":
         percentage,
         cut_preprocess,
         process_effects,
+        noise_reduction,
+        reduction_strength,
     )

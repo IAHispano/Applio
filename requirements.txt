@@ -19,8 +19,9 @@ scipy==1.11.1
 soundfile==0.12.1
 praat-parselmouth
 noisereduce
-audio_upscaler==0.1.4
+versatile-audio-upscaler
 pedalboard
+stftpitchshift
 
 # Machine learning and deep learning
 omegaconf==2.0.5; sys_platform == 'darwin'
@@ -39,6 +40,7 @@ transformers==4.44.2
 matplotlib==3.7.2
 tensorboard
 gradio==4.43.0
+
 # Miscellaneous utilities
 certifi==2024.7.4; sys_platform == 'darwin'
 antlr4-python3-runtime==4.8; sys_platform == 'darwin'

@@ -80,18 +80,18 @@ class VoiceConverter:
         self.hubert_model.eval()
 
     @staticmethod
-    def remove_audio_noise(input_audio_path, reduction_strength=0.7):
+    def remove_audio_noise(data, sr, reduction_strength=0.7):
         """
         Removes noise from an audio file using the NoiseReduce library.
 
         Args:
-            input_audio_path (str): Path to the input audio file.
+            data (numpy.ndarray): The audio data as a NumPy array.
+            sr (int): The sample rate of the audio data.
             reduction_strength (float): Strength of the noise reduction. Default is 0.7.
         """
         try:
-            rate, data = wavfile.read(input_audio_path)
             reduced_noise = nr.reduce_noise(
-                y=data, sr=rate, prop_decrease=reduction_strength
+                y=data, sr=sr, prop_decrease=reduction_strength
             )
             return reduced_noise
         except Exception as error:
@@ -136,102 +136,65 @@ class VoiceConverter:
     def post_process_audio(
         audio_input,
         sample_rate,
-        reverb: bool,
-        reverb_room_size: float,
-        reverb_damping: float,
-        reverb_wet_level: float,
-        reverb_dry_level: float,
-        reverb_width: float,
-        reverb_freeze_mode: float,
-        pitch_shift: bool,
-        pitch_shift_semitones: int,
-        limiter: bool,
-        limiter_threshold: float,
-        limiter_release: float,
-        gain: bool,
-        gain_db: float,
-        distortion: bool,
-        distortion_gain: float,
-        chorus: bool,
-        chorus_rate: float,
-        chorus_depth: float,
-        chorus_delay: float,
-        chorus_feedback: float,
-        chorus_mix: float,
-        bitcrush: bool,
-        bitcrush_bit_depth: int,
-        clipping: bool,
-        clipping_threshold: float,
-        compressor: bool,
-        compressor_threshold: float,
-        compressor_ratio: float,
-        compressor_attack: float,
-        compressor_release: float,
-        delay: bool,
-        delay_seconds: float,
-        delay_feedback: float,
-        delay_mix: float,
-        audio_output_path: str,
+        **kwargs,
     ):
         board = Pedalboard()
-        if reverb:
+        if kwargs.get("reverb", False):
             reverb = Reverb(
-                room_size=reverb_room_size,
-                damping=reverb_damping,
-                wet_level=reverb_wet_level,
-                dry_level=reverb_dry_level,
-                width=reverb_width,
-                freeze_mode=reverb_freeze_mode,
+                room_size=kwargs.get("reverb_room_size", 0.5),
+                damping=kwargs.get("reverb_damping", 0.5),
+                wet_level=kwargs.get("reverb_wet_level", 0.33),
+                dry_level=kwargs.get("reverb_dry_level", 0.4),
+                width=kwargs.get("reverb_width", 1.0),
+                freeze_mode=kwargs.get("reverb_freeze_mode", 0),
             )
             board.append(reverb)
-        if pitch_shift:
-            pitch_shift = PitchShift(semitones=pitch_shift_semitones)
+        if kwargs.get("pitch_shift", False):
+            pitch_shift = PitchShift(semitones=kwargs.get("pitch_shift_semitones", 0))
             board.append(pitch_shift)
-        if limiter:
+        if kwargs.get("limiter", False):
             limiter = Limiter(
-                threshold_db=limiter_threshold, release_ms=limiter_release
+                threshold_db=kwargs.get("limiter_threshold", -6),
+                release_ms=kwargs.get("limiter_release", 0.05),
             )
             board.append(limiter)
-        if gain:
-            gain = Gain(gain_db=gain_db)
+        if kwargs.get("gain", False):
+            gain = Gain(gain_db=kwargs.get("gain_db", 0))
             board.append(gain)
-        if distortion:
-            distortion = Distortion(drive_db=distortion_gain)
+        if kwargs.get("distortion", False):
+            distortion = Distortion(drive_db=kwargs.get("distortion_gain", 25))
             board.append(distortion)
-        if chorus:
+        if kwargs.get("chorus", False):
             chorus = Chorus(
-                rate_hz=chorus_rate,
-                depth=chorus_depth,
-                centre_delay_ms=chorus_delay,
-                feedback=chorus_feedback,
-                mix=chorus_mix,
+                rate_hz=kwargs.get("chorus_rate", 1.0),
+                depth=kwargs.get("chorus_depth", 0.25),
+                centre_delay_ms=kwargs.get("chorus_delay", 7),
+                feedback=kwargs.get("chorus_feedback", 0.0),
+                mix=kwargs.get("chorus_mix", 0.5),
             )
             board.append(chorus)
-        if bitcrush:
-            bitcrush = Bitcrush(bit_depth=bitcrush_bit_depth)
+        if kwargs.get("bitcrush", False):
+            bitcrush = Bitcrush(bit_depth=kwargs.get("bitcrush_bit_depth", 8))
             board.append(bitcrush)
-        if clipping:
-            clipping = Clipping(threshold_db=clipping_threshold)
+        if kwargs.get("clipping", False):
+            clipping = Clipping(threshold_db=kwargs.get("clipping_threshold", 0))
             board.append(clipping)
-        if compressor:
+        if kwargs.get("compressor", False):
             compressor = Compressor(
-                threshold_db=compressor_threshold,
-                ratio=compressor_ratio,
-                attack_ms=compressor_attack,
-                release_ms=compressor_release,
+                threshold_db=kwargs.get("compressor_threshold", 0),
+                ratio=kwargs.get("compressor_ratio", 1),
+                attack_ms=kwargs.get("compressor_attack", 1.0),
+                release_ms=kwargs.get("compressor_release", 100),
             )
             board.append(compressor)
-        if delay:
+        if kwargs.get("delay", False):
             delay = Delay(
-                delay_seconds=delay_seconds,
-                feedback=delay_feedback,
-                mix=delay_mix,
+                delay_seconds=kwargs.get("delay_seconds", 0.5),
+                feedback=kwargs.get("delay_feedback", 0.0),
+                mix=kwargs.get("delay_mix", 0.5),
             )
             board.append(delay)
-        audio_input, sample_rate = librosa.load(audio_input, sr=sample_rate)
-        output = board(audio_input, sample_rate)
-        sf.write(audio_output_path, output, sample_rate, format="WAV")
-        return audio_output_path
+        return board(audio_input, sample_rate)
 
     def convert_audio(
         self,
@@ -239,83 +202,56 @@ class VoiceConverter:
         audio_output_path: str,
         model_path: str,
         index_path: str,
-        embedder_model: str,
-        pitch: int,
-        f0_file: str,
-        f0_method: str,
-        index_rate: float,
-        volume_envelope: int,
-        protect: float,
-        hop_length: int,
-        split_audio: bool,
-        f0_autotune: bool,
-        filter_radius: int,
-        embedder_model_custom: str,
-        clean_audio: bool,
-        clean_strength: float,
-        export_format: str,
-        upscale_audio: bool,
-        formant_shifting: bool,
-        formant_qfrency: float,
-        formant_timbre: float,
-        post_process: bool,
-        reverb: bool,
-        pitch_shift: bool,
-        limiter: bool,
-        gain: bool,
-        distortion: bool,
-        chorus: bool,
-        bitcrush: bool,
-        clipping: bool,
-        compressor: bool,
-        delay: bool,
-        sliders: dict,
+        pitch: int = 0,
+        f0_file: str = None,
+        f0_method: str = "rmvpe",
+        index_rate: float = 0.75,
+        volume_envelope: float = 1,
+        protect: float = 0.5,
+        hop_length: int = 128,
+        split_audio: bool = False,
+        f0_autotune: bool = False,
+        filter_radius: int = 3,
+        embedder_model: str = "contentvec",
+        embedder_model_custom: str = None,
+        clean_audio: bool = False,
+        clean_strength: float = 0.5,
+        export_format: str = "WAV",
+        upscale_audio: bool = False,
+        post_process: bool = False,
         resample_sr: int = 0,
         sid: int = 0,
+        **kwargs,
     ):
         """
         Performs voice conversion on the input audio.
 
         Args:
+            pitch (int): Key for F0 up-sampling.
+            filter_radius (int): Radius for filtering.
+            index_rate (float): Rate for index matching.
+            volume_envelope (int): RMS mix rate.
+            protect (float): Protection rate for certain audio segments.
+            hop_length (int): Hop length for audio processing.
+            f0_method (str): Method for F0 extraction.
             audio_input_path (str): Path to the input audio file.
             audio_output_path (str): Path to the output audio file.
             model_path (str): Path to the voice conversion model.
             index_path (str): Path to the index file.
-            sid (int, optional): Speaker ID. Default is 0.
-            pitch (str, optional): Key for F0 up-sampling. Default is None.
-            f0_file (str, optional): Path to the F0 file. Default is None.
-            f0_method (str, optional): Method for F0 extraction. Default is None.
-            index_rate (float, optional): Rate for index matching. Default is None.
+            split_audio (bool): Whether to split the audio for processing.
+            f0_autotune (bool): Whether to use F0 autotune.
+            clean_audio (bool): Whether to clean the audio.
+            clean_strength (float): Strength of the audio cleaning.
+            export_format (str): Format for exporting the audio.
+            upscale_audio (bool): Whether to upscale the audio.
+            f0_file (str): Path to the F0 file.
+            embedder_model (str): Path to the embedder model.
+            embedder_model_custom (str): Path to the custom embedder model.
             resample_sr (int, optional): Resample sampling rate. Default is 0.
-            volume_envelope (float, optional): RMS mix rate. Default is None.
-            protect (float, optional): Protection rate for certain audio segments. Default is None.
-            hop_length (int, optional): Hop length for audio processing. Default is None.
-            split_audio (bool, optional): Whether to split the audio for processing. Default is False.
-            f0_autotune (bool, optional): Whether to use F0 autotune. Default is False.
-            filter_radius (int, optional): Radius for filtering. Default is None.
-            embedder_model (str, optional): Path to the embedder model. Default is None.
-            embedder_model_custom (str, optional): Path to the custom embedder model. Default is None.
-            clean_audio (bool, optional): Whether to clean the audio. Default is False.
-            clean_strength (float, optional): Strength of the audio cleaning. Default is 0.7.
-            export_format (str, optional): Format for exporting the audio. Default is "WAV".
-            upscale_audio (bool, optional): Whether to upscale the audio. Default is False.
-            formant_shift (bool, optional): Whether to shift the formants. Default is False.
-            formant_qfrency (float, optional): Formant frequency. Default is 1.0.
-            formant_timbre (float, optional): Formant timbre. Default is 1.0.
-            reverb (bool, optional): Whether to apply reverb. Default is False.
-            pitch_shift (bool, optional): Whether to apply pitch shift. Default is False.
-            limiter (bool, optional): Whether to apply a limiter. Default is False.
-            gain (bool, optional): Whether to apply gain. Default is False.
-            distortion (bool, optional): Whether to apply distortion. Default is False.
-            chorus (bool, optional): Whether to apply chorus. Default is False.
-            bitcrush (bool, optional): Whether to apply bitcrush. Default is False.
-            clipping (bool, optional): Whether to apply clipping. Default is False.
-            compressor (bool, optional): Whether to apply a compressor. Default is False.
-            delay (bool, optional): Whether to apply delay. Default is False.
-            sliders (dict, optional): Dictionary of effect parameters. Default is None.
+            sid (int, optional): Speaker ID. Default is 0.
+            **kwargs: Additional keyword arguments.
         """
         self.get_vc(model_path, sid)
-
         try:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
@@ -325,9 +261,7 @@ class VoiceConverter:
             audio = load_audio_infer(
                 audio_input_path,
                 16000,
-                formant_shifting,
-                formant_qfrency,
-                formant_timbre,
+                **kwargs,
             )
             audio_max = np.abs(audio).max() / 0.95
 
@@ -351,129 +285,26 @@ class VoiceConverter:
                 self.tgt_sr = resample_sr
 
             if split_audio:
-                result, new_dir_path = process_audio(audio_input_path)
+                result, chunks, timestamps = process_audio(audio, self.tgt_sr)
                 if result == "Error":
                     return "Error with Split Audio", None
-
-                dir_path = (
-                    new_dir_path.strip().strip('"').strip("\n").strip('"').strip()
-                )
-                if dir_path:
-                    paths = [
-                        os.path.join(root, name)
-                        for root, _, files in os.walk(dir_path, topdown=False)
-                        for name in files
-                        if name.endswith(".wav") and root == dir_path
-                    ]
-                try:
-                    for path in paths:
-                        self.convert_audio(
-                            audio_input_path=path,
-                            audio_output_path=path,
-                            model_path=model_path,
-                            index_path=index_path,
-                            sid=sid,
-                            pitch=pitch,
-                            f0_file=None,
-                            f0_method=f0_method,
-                            index_rate=index_rate,
-                            resample_sr=resample_sr,
-                            volume_envelope=volume_envelope,
-                            protect=protect,
-                            hop_length=hop_length,
-                            split_audio=False,
-                            f0_autotune=f0_autotune,
-                            filter_radius=filter_radius,
-                            export_format=export_format,
-                            upscale_audio=upscale_audio,
-                            embedder_model=embedder_model,
-                            embedder_model_custom=embedder_model_custom,
-                            clean_audio=clean_audio,
-                            clean_strength=clean_strength,
-                            formant_shifting=formant_shifting,
-                            formant_qfrency=formant_qfrency,
-                            formant_timbre=formant_timbre,
-                            post_process=post_process,
-                            reverb=reverb,
-                            pitch_shift=pitch_shift,
-                            limiter=limiter,
-                            gain=gain,
-                            distortion=distortion,
-                            chorus=chorus,
-                            bitcrush=bitcrush,
-                            clipping=clipping,
-                            compressor=compressor,
-                            delay=delay,
-                            sliders=sliders,
-                        )
-                except Exception as error:
-                    print(f"An error occurred processing the segmented audio: {error}")
-                    print(traceback.format_exc())
-                    return f"Error {error}"
-                print("Finished processing segmented audio, now merging audio...")
-                merge_timestamps_file = os.path.join(
-                    os.path.dirname(new_dir_path),
-                    f"{os.path.basename(audio_input_path).split('.')[0]}_timestamps.txt",
-                )
-                self.tgt_sr, audio_opt = merge_audio(merge_timestamps_file)
-                os.remove(merge_timestamps_file)
-                if post_process:
-                    audio_opt = self.post_process_audio(
-                        audio_input=audio_opt,
-                        sample_rate=self.tgt_sr,
-                        reverb=reverb,
-                        reverb_room_size=sliders[0],
-                        reverb_damping=sliders[1],
-                        reverb_wet_level=sliders[2],
-                        reverb_dry_level=sliders[3],
-                        reverb_width=sliders[4],
-                        reverb_freeze_mode=sliders[5],
-                        pitch_shift=pitch_shift,
-                        pitch_shift_semitones=sliders[6],
-                        limiter=limiter,
-                        limiter_threshold=sliders[7],
-                        limiter_release=sliders[8],
-                        gain=gain,
-                        gain_db=sliders[9],
-                        distortion=distortion,
-                        distortion_gain=sliders[10],
-                        chorus=chorus,
-                        chorus_rate=sliders[11],
-                        chorus_depth=sliders[12],
-                        chorus_delay=sliders[13],
-                        chorus_feedback=sliders[14],
-                        chorus_mix=sliders[15],
-                        bitcrush=bitcrush,
-                        bitcrush_bit_depth=sliders[16],
-                        clipping=clipping,
-                        clipping_threshold=sliders[17],
-                        compressor=compressor,
-                        compressor_threshold=sliders[18],
-                        compressor_ratio=sliders[19],
-                        compressor_attack=sliders[20],
-                        compressor_release=sliders[21],
-                        delay=delay,
-                        delay_seconds=sliders[22],
-                        delay_feedback=sliders[23],
-                        delay_mix=sliders[24],
-                        audio_output_path=audio_output_path,
-                    )
-                sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
             else:
+                chunks = []
+                chunks.append(audio)
+
+            converted_chunks = []
+            for c in chunks:
                 audio_opt = self.vc.pipeline(
                     model=self.hubert_model,
                     net_g=self.net_g,
                     sid=sid,
-                    audio=audio,
-                    input_audio_path=audio_input_path,
+                    audio=c,
                     pitch=pitch,
                     f0_method=f0_method,
                     file_index=file_index,
                     index_rate=index_rate,
                     pitch_guidance=self.use_f0,
                     filter_radius=filter_radius,
-                    tgt_sr=self.tgt_sr,
-                    resample_sr=resample_sr,
                     volume_envelope=volume_envelope,
                     version=self.version,
                     protect=protect,
@@ -481,59 +312,32 @@ class VoiceConverter:
                     f0_autotune=f0_autotune,
                     f0_file=f0_file,
                 )
+                converted_chunks.append(audio_opt)
+                if split_audio:
+                    print(f"Converted audio chunk {len(converted_chunks)}")
 
-            if audio_output_path:
-                sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
+            if split_audio:
+                self.tgt_sr, audio_opt = merge_audio(
+                    converted_chunks, timestamps, self.tgt_sr
+                )
+            else:
+                audio_opt = converted_chunks[0]
 
             if clean_audio:
                 cleaned_audio = self.remove_audio_noise(
-                    audio_output_path, clean_strength
+                    audio_opt, self.tgt_sr, clean_strength
                 )
                 if cleaned_audio is not None:
-                    sf.write(
-                        audio_output_path, cleaned_audio, self.tgt_sr, format="WAV"
-                    )
+                    audio_opt = cleaned_audio
+
             if post_process:
-                audio_output_path = self.post_process_audio(
-                    audio_input=audio_output_path,
+                audio_opt = self.post_process_audio(
+                    audio_input=audio_opt,
                     sample_rate=self.tgt_sr,
-                    reverb=reverb,
-                    reverb_room_size=sliders["reverb_room_size"],
-                    reverb_damping=sliders["reverb_damping"],
-                    reverb_wet_level=sliders["reverb_wet_level"],
-                    reverb_dry_level=sliders["reverb_dry_level"],
-                    reverb_width=sliders["reverb_width"],
-                    reverb_freeze_mode=sliders["reverb_freeze_mode"],
-                    pitch_shift=pitch_shift,
-                    pitch_shift_semitones=sliders["pitch_shift_semitones"],
-                    limiter=limiter,
-                    limiter_threshold=sliders["limiter_threshold"],
-                    limiter_release=sliders["limiter_release"],
-                    gain=gain,
-                    gain_db=sliders["gain_db"],
-                    distortion=distortion,
-                    distortion_gain=sliders["distortion_gain"],
-                    chorus=chorus,
-                    chorus_rate=sliders["chorus_rate"],
-                    chorus_depth=sliders["chorus_depth"],
-                    chorus_delay=sliders["chorus_delay"],
-                    chorus_feedback=sliders["chorus_feedback"],
-                    chorus_mix=sliders["chorus_mix"],
-                    bitcrush=bitcrush,
-                    bitcrush_bit_depth=sliders["bitcrush_bit_depth"],
-                    clipping=clipping,
-                    clipping_threshold=sliders["clipping_threshold"],
-                    compressor=compressor,
-                    compressor_threshold=sliders["compressor_threshold"],
-                    compressor_ratio=sliders["compressor_ratio"],
-                    compressor_attack=sliders["compressor_attack"],
-                    compressor_release=sliders["compressor_release"],
-                    delay=delay,
-                    delay_seconds=sliders["delay_seconds"],
-                    delay_feedback=sliders["delay_feedback"],
-                    delay_mix=sliders["delay_mix"],
-                    audio_output_path=audio_output_path,
+                    **kwargs,
                 )
+
+            sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
             output_path_format = audio_output_path.replace(
                 ".wav", f".{export_format.lower()}"
             )
@@ -545,7 +349,6 @@ class VoiceConverter:
             print(
                 f"Conversion completed at '{audio_output_path}' in {elapsed_time:.2f} seconds."
             )
-
         except Exception as error:
             print(f"An error occurred during audio conversion: {error}")
             print(traceback.format_exc())
@@ -554,339 +357,67 @@ class VoiceConverter:
         self,
         audio_input_paths: str,
         audio_output_path: str,
-        model_path: str,
-        index_path: str,
-        embedder_model: str,
-        pitch: int,
-        f0_file: str,
-        f0_method: str,
-        index_rate: float,
-        volume_envelope: int,
-        protect: float,
-        hop_length: int,
-        split_audio: bool,
-        f0_autotune: bool,
-        filter_radius: int,
-        embedder_model_custom: str,
-        clean_audio: bool,
-        clean_strength: float,
-        export_format: str,
-        upscale_audio: bool,
-        formant_shifting: bool,
-        formant_qfrency: float,
-        formant_timbre: float,
-        resample_sr: int = 0,
-        sid: int = 0,
-        pid_file_path: str = None,
-        post_process: bool = False,
-        reverb: bool = False,
-        pitch_shift: bool = False,
-        limiter: bool = False,
-        gain: bool = False,
-        distortion: bool = False,
-        chorus: bool = False,
-        bitcrush: bool = False,
-        clipping: bool = False,
-        compressor: bool = False,
-        delay: bool = False,
-        sliders: dict = None,
+        **kwargs,
     ):
         """
         Performs voice conversion on a batch of input audio files.
 
         Args:
-            audio_input_paths (list): List of paths to the input audio files.
+            audio_input_paths (str): List of paths to the input audio files.
             audio_output_path (str): Path to the output audio file.
-            model_path (str): Path to the voice conversion model.
-            index_path (str): Path to the index file.
-            sid (int, optional): Speaker ID. Default is 0.
-            pitch (str, optional): Key for F0 up-sampling. Default is None.
-            f0_file (str, optional): Path to the F0 file. Default is None.
-            f0_method (str, optional): Method for F0 extraction. Default is None.
-            index_rate (float, optional): Rate for index matching. Default is None.
             resample_sr (int, optional): Resample sampling rate. Default is 0.
-            volume_envelope (float, optional): RMS mix rate. Default is None.
-            protect (float, optional): Protection rate for certain audio segments. Default is None.
-            hop_length (int, optional): Hop length for audio processing. Default is None.
-            split_audio (bool, optional): Whether to split the audio for processing. Default is False.
-            f0_autotune (bool, optional): Whether to use F0 autotune. Default is False.
-            filter_radius (int, optional): Radius for filtering. Default is None.
-            embedder_model (str, optional): Path to the embedder model. Default is None.
-            embedder_model_custom (str, optional): Path to the custom embedder model. Default is None.
-            clean_audio (bool, optional): Whether to clean the audio. Default is False.
-            clean_strength (float, optional): Strength of the audio cleaning. Default is 0.7.
-            export_format (str, optional): Format for exporting the audio. Default is "WAV".
-            upscale_audio (bool, optional): Whether to upscale the audio. Default is False.
-            formant_shift (bool, optional): Whether to shift the formants. Default is False.
-            formant_qfrency (float, optional): Formant frequency. Default is 1.0.
-            formant_timbre (float, optional): Formant timbre. Default is 1.0.
-            pid_file_path (str, optional): Path to the PID file. Default is None.
-            post_process (bool, optional): Whether to apply post-processing effects. Default is False.
-            reverb (bool, optional): Whether to apply reverb. Default is False.
-            pitch_shift (bool, optional): Whether to apply pitch shift. Default is False.
-            limiter (bool, optional): Whether to apply a limiter. Default is False.
-            gain (bool, optional): Whether to apply gain. Default is False.
-            distortion (bool, optional): Whether to apply distortion. Default is False.
-            chorus (bool, optional): Whether to apply chorus. Default is False.
-            bitcrush (bool, optional): Whether to apply bitcrush. Default is False.
-            clipping (bool, optional): Whether to apply clipping. Default is False.
-            compressor (bool, optional): Whether to apply a compressor. Default is False.
-            delay (bool, optional): Whether to apply delay. Default is False.
-            sliders (dict, optional): Dictionary of effect parameters. Default is None.
-
+            sid (int, optional): Speaker ID. Default is 0.
+            **kwargs: Additional keyword arguments.
         """
         pid = os.getpid()
-        with open(pid_file_path, "w") as pid_file:
-            pid_file.write(str(pid))
         try:
-            if not self.hubert_model or embedder_model != self.last_embedder_model:
-                self.load_hubert(embedder_model, embedder_model_custom)
-                self.last_embedder_model = embedder_model
-            self.get_vc(model_path, sid)
-            file_index = (
-                index_path.strip()
-                .strip('"')
-                .strip("\n")
-                .strip('"')
-                .strip()
-                .replace("trained", "added")
-            )
+            with open(
+                os.path.join(now_dir, "assets", "infer_pid.txt"), "w"
+            ) as pid_file:
+                pid_file.write(str(pid))
             start_time = time.time()
             print(f"Converting audio batch '{audio_input_paths}'...")
             audio_files = [
                 f
                 for f in os.listdir(audio_input_paths)
-                if f.endswith((".mp3", ".wav", ".flac", ".m4a", ".ogg", ".opus"))
+                if f.endswith(
+                    (
+                        "wav",
+                        "mp3",
+                        "flac",
+                        "ogg",
+                        "opus",
+                        "m4a",
+                        "mp4",
+                        "aac",
+                        "alac",
+                        "wma",
+                        "aiff",
+                        "webm",
+                        "ac3",
+                    )
+                )
             ]
             print(f"Detected {len(audio_files)} audio files for inference.")
-            for i, audio_input_path in enumerate(audio_files):
-                audio_output_paths = os.path.join(
-                    audio_output_path,
-                    f"{os.path.splitext(os.path.basename(audio_input_path))[0]}_output.{export_format.lower()}",
-                )
-                if os.path.exists(audio_output_paths):
+            for a in audio_files:
+                new_input = os.path.join(audio_input_paths, a)
+                new_output = os.path.splitext(a)[0] + "_output.wav"
+                new_output = os.path.join(audio_output_path, new_output)
+                if os.path.exists(new_output):
                     continue
-                print(f"Converting audio '{audio_input_path}'...")
-                audio_input_path = os.path.join(audio_input_paths, audio_input_path)
-
-                if upscale_audio == True:
-                    upscale(audio_input_path, audio_input_path)
-                audio = load_audio_infer(
-                    audio_input_path,
-                    16000,
-                    formant_shifting,
-                    formant_qfrency,
-                    formant_timbre,
+                self.convert_audio(
+                    audio_input_path=new_input,
+                    audio_output_path=new_output,
+                    **kwargs,
                 )
-                audio_max = np.abs(audio).max() / 0.95
-
-                if audio_max > 1:
-                    audio /= audio_max
-
-                if self.tgt_sr != resample_sr >= 16000:
-                    self.tgt_sr = resample_sr
-
-                if split_audio:
-                    result, new_dir_path = process_audio(audio_input_path)
-                    if result == "Error":
-                        return "Error with Split Audio", None
-
-                    dir_path = (
-                        new_dir_path.strip().strip('"').strip("\n").strip('"').strip()
-                    )
-                    if dir_path:
-                        paths = [
-                            os.path.join(root, name)
-                            for root, _, files in os.walk(dir_path, topdown=False)
-                            for name in files
-                            if name.endswith(".wav") and root == dir_path
-                        ]
-                    try:
-                        for path in paths:
-                            self.convert_audio(
-                                audio_input_path=path,
-                                audio_output_path=path,
-                                model_path=model_path,
-                                index_path=index_path,
-                                sid=sid,
-                                pitch=pitch,
-                                f0_file=None,
-                                f0_method=f0_method,
-                                index_rate=index_rate,
-                                resample_sr=resample_sr,
-                                volume_envelope=volume_envelope,
-                                protect=protect,
-                                hop_length=hop_length,
-                                split_audio=False,
-                                f0_autotune=f0_autotune,
-                                filter_radius=filter_radius,
-                                export_format=export_format,
-                                upscale_audio=upscale_audio,
-                                embedder_model=embedder_model,
-                                embedder_model_custom=embedder_model_custom,
-                                clean_audio=clean_audio,
-                                clean_strength=clean_strength,
-                                formant_shifting=formant_shifting,
-                                formant_qfrency=formant_qfrency,
-                                formant_timbre=formant_timbre,
-                                post_process=post_process,
-                                reverb=reverb,
-                                pitch_shift=pitch_shift,
-                                limiter=limiter,
-                                gain=gain,
-                                distortion=distortion,
-                                chorus=chorus,
-                                bitcrush=bitcrush,
-                                clipping=clipping,
-                                compressor=compressor,
-                                delay=delay,
-                                sliders=sliders,
-                            )
-                    except Exception as error:
-                        print(
-                            f"An error occurred processing the segmented audio: {error}"
-                        )
-                        print(traceback.format_exc())
-                        return f"Error {error}"
-                    print("Finished processing segmented audio, now merging audio...")
-                    merge_timestamps_file = os.path.join(
-                        os.path.dirname(new_dir_path),
-                        f"{os.path.basename(audio_input_path).split('.')[0]}_timestamps.txt",
-                    )
-                    self.tgt_sr, audio_opt = merge_audio(merge_timestamps_file)
-                    os.remove(merge_timestamps_file)
-                    if post_process:
-                        audio_opt = self.post_process_audio(
-                            audio_input=audio_opt,
-                            sample_rate=self.tgt_sr,
-                            reverb=reverb,
-                            reverb_room_size=sliders[0],
-                            reverb_damping=sliders[1],
-                            reverb_wet_level=sliders[2],
-                            reverb_dry_level=sliders[3],
-                            reverb_width=sliders[4],
-                            reverb_freeze_mode=sliders[5],
-                            pitch_shift=pitch_shift,
-                            pitch_shift_semitones=sliders[6],
-                            limiter=limiter,
-                            limiter_threshold=sliders[7],
-                            limiter_release=sliders[8],
-                            gain=gain,
-                            gain_db=sliders[9],
-                            distortion=distortion,
-                            distortion_gain=sliders[10],
-                            chorus=chorus,
-                            chorus_rate=sliders[11],
-                            chorus_depth=sliders[12],
-                            chorus_delay=sliders[13],
-                            chorus_feedback=sliders[14],
-                            chorus_mix=sliders[15],
-                            bitcrush=bitcrush,
-                            bitcrush_bit_depth=sliders[16],
-                            clipping=clipping,
-                            clipping_threshold=sliders[17],
-                            compressor=compressor,
-                            compressor_threshold=sliders[18],
-                            compressor_ratio=sliders[19],
-                            compressor_attack=sliders[20],
-                            compressor_release=sliders[21],
-                            delay=delay,
-                            delay_seconds=sliders[22],
-                            delay_feedback=sliders[23],
-                            delay_mix=sliders[24],
-                            audio_output_path=audio_output_paths,
-                        )
-                        sf.write(
-                            audio_output_paths, audio_opt, self.tgt_sr, format="WAV"
-                        )
-                else:
-                    audio_opt = self.vc.pipeline(
-                        model=self.hubert_model,
-                        net_g=self.net_g,
-                        sid=sid,
-                        audio=audio,
-                        input_audio_path=audio_input_path,
-                        pitch=pitch,
-                        f0_method=f0_method,
-                        file_index=file_index,
-                        index_rate=index_rate,
-                        pitch_guidance=self.use_f0,
-                        filter_radius=filter_radius,
-                        tgt_sr=self.tgt_sr,
-                        resample_sr=resample_sr,
-                        volume_envelope=volume_envelope,
-                        version=self.version,
-                        protect=protect,
-                        hop_length=hop_length,
-                        f0_autotune=f0_autotune,
-                        f0_file=f0_file,
-                    )
-
-                if audio_output_paths:
-                    sf.write(audio_output_paths, audio_opt, self.tgt_sr, format="WAV")
-
-                if clean_audio:
-                    cleaned_audio = self.remove_audio_noise(
-                        audio_output_paths, clean_strength
-                    )
-                    if cleaned_audio is not None:
-                        sf.write(
-                            audio_output_paths, cleaned_audio, self.tgt_sr, format="WAV"
-                        )
-                if post_process:
-                    audio_output_paths = self.post_process_audio(
-                        audio_input=audio_output_paths,
-                        sample_rate=self.tgt_sr,
-                        reverb=reverb,
-                        reverb_room_size=sliders["reverb_room_size"],
-                        reverb_damping=sliders["reverb_damping"],
-                        reverb_wet_level=sliders["reverb_wet_level"],
-                        reverb_dry_level=sliders["reverb_dry_level"],
-                        reverb_width=sliders["reverb_width"],
-                        reverb_freeze_mode=sliders["reverb_freeze_mode"],
-                        pitch_shift=pitch_shift,
-                        pitch_shift_semitones=sliders["pitch_shift_semitones"],
-                        limiter=limiter,
-                        limiter_threshold=sliders["limiter_threshold"],
-                        limiter_release=sliders["limiter_release"],
-                        gain=gain,
-                        gain_db=sliders["gain_db"],
-                        distortion=distortion,
-                        distortion_gain=sliders["distortion_gain"],
-                        chorus=chorus,
-                        chorus_rate=sliders["chorus_rate"],
-                        chorus_depth=sliders["chorus_depth"],
-                        chorus_delay=sliders["chorus_delay"],
-                        chorus_feedback=sliders["chorus_feedback"],
-                        chorus_mix=sliders["chorus_mix"],
-                        bitcrush=bitcrush,
-                        bitcrush_bit_depth=sliders["bitcrush_bit_depth"],
-                        clipping=clipping,
-                        clipping_threshold=sliders["clipping_threshold"],
-                        compressor=compressor,
-                        compressor_threshold=sliders["compressor_threshold"],
-                        compressor_ratio=sliders["compressor_ratio"],
-                        compressor_attack=sliders["compressor_attack"],
-                        compressor_release=sliders["compressor_release"],
-                        delay=delay,
-                        delay_seconds=sliders["delay_seconds"],
-                        delay_feedback=sliders["delay_feedback"],
-                        delay_mix=sliders["delay_mix"],
-                        audio_output_path=audio_output_paths,
-                    )
-                output_path_format = audio_output_paths.replace(
-                    ".wav", f".{export_format.lower()}"
-                )
-                audio_output_paths = self.convert_audio_format(
-                    audio_output_paths, output_path_format, export_format
-                )
-                print(f"Conversion completed at '{audio_output_paths}'.")
-            elapsed_time = time.time() - start_time
-            print(f"Batch conversion completed in {elapsed_time:.2f} seconds.")
-            os.remove(pid_file_path)
+                print(f"Conversion completed at '{audio_input_paths}'.")
+                elapsed_time = time.time() - start_time
+                print(f"Batch conversion completed in {elapsed_time:.2f} seconds.")
         except Exception as error:
-            print(f"An error occurred during audio conversion: {error}")
+            print(f"An error occurred during audio batch conversion: {error}")
             print(traceback.format_exc())
+        finally:
+            os.remove(os.path.join(now_dir, "assets", "infer_pid.txt"))
 
     def get_vc(self, weight_root, sid):
         """

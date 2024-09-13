@@ -1,5 +1,5 @@
 rmdir /S /q zluda
-curl -s -L https://github.com/lshqqytiger/ZLUDA/releases/download/rel.11cc5844514f93161e0e74387f04e2c537705a82/ZLUDA-windows-amd64.zip > zluda.zip
+curl -s -L https://github.com/lshqqytiger/ZLUDA/releases/download/rel.c0804ca624963aab420cb418412b1c7fbae3454b/ZLUDA-windows-rocm5-amd64.zip > zluda.zip
 tar -xf zluda.zip
 del zluda.zip
 copy zluda\cublas.dll env\Lib\site-packages\torch\lib\cublas64_11.dll /y
