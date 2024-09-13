@@ -95,7 +95,7 @@ def get_indexes():
 
 
 def process_input(file_path):
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         file_contents = file.read()
     gr.Info(f"The text from the txt file has been loaded!")
     return file_contents, None
