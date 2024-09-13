@@ -8,6 +8,9 @@ import torchcrepe
 import numpy as np
 import concurrent.futures
 import multiprocessing as mp
+import json
+import shutil
+from distutils.util import strtobool
 
 # Zluda
 if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):
@@ -258,7 +261,17 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(exp_dir, "f0"), exist_ok=True)
     os.makedirs(os.path.join(exp_dir, "f0_voiced"), exist_ok=True)
     os.makedirs(os.path.join(exp_dir, version + "_extracted"), exist_ok=True)
-
+    # write to model_info.json
+    chosen_embedder_model = (
+        embedder_model_custom if embedder_model_custom else embedder_model
+    )
+    with open(os.path.join(exp_dir, "model_info.json"), "w") as f:
+        json.dump(
+            {
+                "embedder_model": chosen_embedder_model,
+            },
+            f,
+        )
     files = []
     for file in glob.glob(os.path.join(wav_path, "*.wav")):
         file_name = os.path.basename(file)

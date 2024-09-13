@@ -621,6 +621,12 @@ def train_tab():
                         value=True,
                         interactive=True,
                     )
+                    use_cpu = gr.Checkbox(
+                        label=i18n("Use CPU"),
+                        info=i18n("Force the use of CPU for training."),
+                        value=False,
+                        interactive=True,
+                    )
                 with gr.Column():
                     sync_graph = gr.Checkbox(
                         label=i18n("Sync Graph"),
@@ -772,6 +778,7 @@ def train_tab():
                     index_algorithm,
                     cache_dataset_in_gpu,
                     custom_pretrained,
+                    use_cpu,
                     g_pretrained_path,
                     d_pretrained_path,
                 ],
