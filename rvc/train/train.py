@@ -474,13 +474,13 @@ def run(
         eps=config.train.eps,
     )
 
-    # Wrap models with DDP
-    if device.type == "cuda":
+    # Wrap models with DDP for multi-gpu processing
+    if n_gpus > 1 and device.type == "cuda":
         net_g = DDP(net_g, device_ids=[rank])
         net_d = DDP(net_d, device_ids=[rank])
-    else:
-        net_g = DDP(net_g)
-        net_d = DDP(net_d)
+    #else:
+    #    net_g = DDP(net_g)
+    #    net_d = DDP(net_d)
     # Load checkpoint if available
     try:
         print("Starting training...")
