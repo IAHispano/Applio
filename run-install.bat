@@ -58,8 +58,7 @@ echo Installing dependencies...
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" activate "%INSTALL_ENV_DIR%" || goto :error
 pip install --upgrade setuptools || goto :error
 pip install -r "%principal%\requirements.txt" || goto :error
-pip uninstall torch torchvision torchaudio -y
-pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121 || goto :error
+pip install torch==2.3.1 torchvision torchaudio --upgrade --index-url https://download.pytorch.org/whl/cu121 || goto :error
 call "%CONDA_ROOT_PREFIX%\condabin\conda.bat" deactivate
 echo Dependencies installation complete.
 echo
