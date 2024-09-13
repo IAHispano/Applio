@@ -105,7 +105,7 @@ jobs:
           . .venv/bin/activate
           python -m ensurepip
           python -m pip install "pip<24.1"
-          python -m pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
+          python -m pip install torch==2.3.1 torchvision torchaudio --upgrade --index-url https://download.pytorch.org/whl/cu121
           deactivate
           wget https://huggingface.co/IAHispano/Applio/resolve/main/Enviroment/Kaggle/bin_kaggle.tar.gz?download=true -O bin_kaggle.tar.gz
           tar -xzf bin_kaggle.tar.gz
