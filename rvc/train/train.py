@@ -134,7 +134,7 @@ def verify_checkpoint_shapes(checkpoint_path, model):
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
     checkpoint_state_dict = checkpoint["model"]
     try:
-        if hasattr(model, 'module'):
+        if hasattr(model, "module"):
             model_state_dict = model.module.load_state_dict(checkpoint_state_dict)
         else:
             model_state_dict = model.load_state_dict(checkpoint_state_dict)
