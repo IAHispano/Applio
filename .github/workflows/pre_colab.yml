@@ -120,7 +120,7 @@ jobs:
                   new_path = os.path.join(arc_base_dir, relative_path)
                   f.write(f'{file}\n')
           "
-      - name: Create TAR file using pigz
+      - name: Create TAR file
         run: |
           tar --use-compress-program="pigz --best --recursive" -cvf Pnpur.tar.gz -T filelist.txt
       - name: Upload Colab Env
