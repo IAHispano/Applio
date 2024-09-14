@@ -27,6 +27,7 @@ jobs:
       - name: Clean up unnecessary files
         run: |
           Remove-Item -Path 'LICENSE', 'run-tensorboard.sh', 'run-install.sh', 'run-applio.sh', 'run-install.bat', 'requirements.txt', '.gitignore', '.github', '.git' -Recurse -Force -ErrorAction SilentlyContinue
+          Get-ChildItem -Path . -Include __pycache__ -Recurse -Directory | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
       - name: Read version from config.json
         id: get-version
         run: |
