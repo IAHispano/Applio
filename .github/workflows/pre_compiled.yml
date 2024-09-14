@@ -26,8 +26,7 @@ jobs:
           .\env\python.exe core.py "prerequisites" --models "True" --exe "True" --pretraineds_v1_f0 "False" --pretraineds_v2_f0 "True" --pretraineds_v1_nof0 "False" --pretraineds_v2_nof0 "False"
       - name: Clean up unnecessary files
         run: |
-          Remove-Item -Path 'LICENSE', 'run-tensorboard.sh', 'run-install.sh', 'run-applio.sh', 'run-install.bat', 'requirements.txt', '.gitignore' -Force -ErrorAction SilentlyContinue
-          Remove-Item -Path '.github' -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path 'LICENSE', 'run-tensorboard.sh', 'run-install.sh', 'run-applio.sh', 'run-install.bat', 'requirements.txt', '.gitignore', '.github', '.git' -Recurse -Force -ErrorAction SilentlyContinue
       - name: Read version from config.json
         id: get-version
         run: |
