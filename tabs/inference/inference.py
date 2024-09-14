@@ -302,7 +302,7 @@ def refresh_embedders_folders():
 # Inference tab
 def inference_tab():
     default_weight = names[0] if names else None
-    with gr.Row():
+    with gr.Column():
         with gr.Row():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
@@ -321,9 +321,9 @@ def inference_tab():
                 interactive=True,
                 allow_custom_value=True,
             )
-        with gr.Column():
-            refresh_button = gr.Button(i18n("Refresh"))
+        with gr.Row():
             unload_button = gr.Button(i18n("Unload Voice"))
+            refresh_button = gr.Button(i18n("Refresh"))
 
             unload_button.click(
                 fn=lambda: (

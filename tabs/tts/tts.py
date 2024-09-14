@@ -140,7 +140,7 @@ def save_drop_custom_embedder(dropbox):
 # TTS tab
 def tts_tab():
     default_weight = random.choice(names) if names else ""
-    with gr.Row():
+    with gr.Column():
         with gr.Row():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
@@ -159,9 +159,9 @@ def tts_tab():
                 interactive=True,
                 allow_custom_value=True,
             )
-        with gr.Column():
-            refresh_button = gr.Button(i18n("Refresh"))
+        with gr.Row():
             unload_button = gr.Button(i18n("Unload Voice"))
+            refresh_button = gr.Button(i18n("Refresh"))
 
             unload_button.click(
                 fn=lambda: (
