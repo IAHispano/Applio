@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  Colab:
+  Linux:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -13,117 +13,46 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Free up space on runner
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Download and extract pre-packaged dependencies
-        run: |
-          sudo apt-get install -y pigz
-          wget https://huggingface.co/IAHispano/Applio/resolve/main/Enviroment/Colab/tmp_packages.tar.gz?download=true -O prepackaged.tar.gz
-          tar -xzf prepackaged.tar.gz -C /opt/hostedtoolcache/Python/3.10.12/x64/lib/python3.10/site-packages/
       - name: Read version from config.json
         id: get-version
         run: |
           version=$(jq -r '.version' assets/config.json)
           echo "version=$version" >> $GITHUB_OUTPUT
-      - name: Record initial state of site-packages
+      - name: Create virtual environment
         run: |
-          python -c "
-          import csv
-          import os
-          def scan_and_write(base_path, output_file):
-              with open(output_file, 'w', newline='') as f:
-                  writer = csv.writer(f)
-                  for dirpath, dirs, files in os.walk(base_path):
-                      for filename in files:
-                          fname = os.path.join(dirpath, filename)
-                          try:
-                              mtime = os.path.getmtime(fname)
-                              writer.writerow([fname, mtime])
-                          except Exception as e:
-                              print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
-              print(f'Finished recording filesystem timestamps to {output_file}.')
+          sudo apt-get install -y pigz
+          pip install huggingface_hub
+          python -m venv .venv
+          . .venv/bin/activate
+          python -m ensurepip
+          python -m pip install "pip<24.1"
+          python -m pip install -r requirements.txt
+          python -m pip install torch==2.3.1 torchvision torchaudio --upgrade --index-url https://download.pytorch.org/whl/cu121
+          python core.py "prerequisites" --models "True" --exe "False" --pretraineds_v1_f0 "False" --pretraineds_v2_f0 "True" --pretraineds_v1_nof0 "False" --pretraineds_v2_nof0 "False"
+          find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
+          deactivate
+          rm -f .venv/bin/Activate.ps1 .venv/bin/activate .venv/bin/activate.csh .venv/bin/activate.fish .venv/bin/pip .venv/bin/pip3 .venv/bin/pip3.10 .venv/bin/python .venv/bin/python3 .venv/bin/python3.10
           
-          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.12/x64\", \"./usr_files.csv\")"
-          
-      - name: Install dependencies 
+      
+      - name: Clean up unnecessary files
         run: |
-          pip install -r requirements.txt
-          pip install torch==2.3.1 torchvision torchaudio --upgrade --index-url https://download.pytorch.org/whl/cu121
-          
-      - name: Record final state of site-packages
+          rm -f LICENSE run-tensorboard.bat run-install.bat run-applio.bat run-install.sh requirements.txt .gitignore
+          rm -rf .github .git
+      - name: Create Tar file
         run: |
-          python -c "
-          import csv
-          import os
-          def scan_and_write(base_path, output_file):
-              with open(output_file, 'w', newline='') as f:
-                  writer = csv.writer(f)
-                  for dirpath, dirs, files in os.walk(base_path):
-                      for filename in files:
-                          fname = os.path.join(dirpath, filename)
-                          try:
-                              mtime = os.path.getmtime(fname)
-                              writer.writerow([fname, mtime])
-                          except Exception as e:
-                              print(f'Skipping irrelevant nonexistent file {fname}: {str(e)}')
-              print(f'Finished recording filesystem timestamps to {output_file}.')
-          
-          scan_and_write(\"/opt/hostedtoolcache/Python/3.10.12/x64\", \"./usr_files_new.csv\")"
-
-      - name: Compare files of site-packages
-        run: |
-          python -c "
-          import os
-          import csv
-          import subprocess
-
-          def compare_files(old_file, new_file):
-              old_files = {}
-              new_files = {}
-
-              with open(old_file, 'r') as f:
-                  reader = csv.reader(f)
-                  old_files = {rows[0]: rows[1] for rows in reader}
-
-              with open(new_file, 'r') as f:
-                  reader = csv.reader(f)
-                  new_files = {rows[0]: rows[1] for rows in reader}
-
-              removed_files = old_files.keys() - new_files.keys()
-              added_files = new_files.keys() - old_files.keys()
-              unchanged_files = old_files.keys() & new_files.keys()
-
-              changed_files = {f for f in unchanged_files if old_files[f] != new_files[f]}
-
-              for file in removed_files:
-                  print(f'File has been removed: {file}')
-
-              for file in changed_files:
-                  print(f'File has been updated: {file}')
-
-              return list(added_files) + list(changed_files)
-
-          changed_files = compare_files('./usr_files.csv', './usr_files_new.csv')
-          base_dir = '/opt/hostedtoolcache/Python/3.10.12/x64/'
-          arc_base_dir = 'usr/local/'
-          with open('filelist.txt', 'w') as f:
-              for file in changed_files:
-                  relative_path = os.path.relpath(file, base_dir)
-                  if 'python3.10' in relative_path:
-                      if 'site-packages' not in relative_path:
-                          continue
-                      if 'site-packages' in relative_path:
-                          relative_path = relative_path.replace('site-packages', 'dist-packages')
-                  new_path = os.path.join(arc_base_dir, relative_path)
-                  f.write(f'{file}\n')
-          "
-      - name: Create TAR file
-        run: |
-          tar --use-compress-program="pigz --best --recursive" -cvf Pnpur.tar.gz -T filelist.txt
-      - name: Upload Colab Env
+          tar --warning=no-file-ignored --exclude=ApplioV${{ steps.get-version.outputs.version }}.tar.gz -cf - . | pigz -9 -p 32 > ApplioV${{ steps.get-version.outputs.version }}.tar.gz || true
+      - name: Upload Linux Compiled
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           version: ${{ steps.get-version.outputs.version }}
@@ -136,12 +65,13 @@ jobs:
           version = os.getenv('version')
           login(token)
           repo_id = 'vidalnt/nothing'
-          repo_file_path = 'Pnpur.tar.gz'
+          repo_file_path = f'ApplioV{version}.tar.gz'
             
           upload_file(
           commit_message=f'{version}',
           path_or_fileobj=repo_file_path,
-          path_in_repo=f'Enviroment/Colab/{repo_file_path}',
+          path_in_repo=f'Compiled/Linux/ApplioV{version}.tar.gz',
           repo_id=repo_id,
           token=token)
           "
+  
