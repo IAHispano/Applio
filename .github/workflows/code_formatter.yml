@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  push_format:
+  format:
     runs-on: ubuntu-latest
-
     permissions:
       contents: write
       pull-requests: write
@@ -16,36 +18,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{github.ref_name}}
+          ref: ${{ github.head_ref || github.ref_name }}
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.x"
 
       - name: Install Black
         run: pip install "black[jupyter]"
 
       - name: Run Black
-        # run: black $(git ls-files '*.py')
         run: black . --exclude=".*\.ipynb$"
 
-      - name: Commit Back
-        continue-on-error: true
-        id: commitback
+      - name: Commit changes
+        if: github.event_name == 'pull_request'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add --all
-          git commit -m "chore(format): run black on ${{github.ref_name}}"
+          git commit -am "chore(format): run black" || echo "No changes to commit"
+          git push
 
       - name: Create Pull Request
-        if: steps.commitback.outcome == 'success'
-        continue-on-error: true
+        if: github.event_name == 'push'
         uses: peter-evans/create-pull-request@v5
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(format): run black"
+          title: "chore(format): run black"
+          body: |
+            This is an auto-generated PR with formatting changes from Black.
+          branch: format-${{ github.sha }}
           delete-branch: true
-          body: "Automatically apply code formatter change"
-          title: "chore(format): run black on ${{github.ref_name}}"
-          commit-message: "chore(format): run black on ${{github.ref_name}}"
-          branch: formatter/${{github.ref_name}}
