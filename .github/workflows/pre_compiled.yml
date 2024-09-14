@@ -84,7 +84,6 @@ jobs:
           echo "version=$version" >> $GITHUB_OUTPUT
       - name: Create virtual environment
         run: |
-          sudo apt-get install -y pigz
           pip install huggingface_hub
           python -m venv .venv
           . .venv/bin/activate
@@ -100,9 +99,9 @@ jobs:
         run: |
           rm -f LICENSE run-tensorboard.bat run-install.bat run-applio.bat run-install.sh requirements.txt .gitignore
           rm -rf .github .git
-      - name: Create Tar file
+      - name: Create ZIP file
         run: |
-          tar --warning=no-file-ignored --exclude=ApplioV${{ steps.get-version.outputs.version }}.tar.gz -cf - . | pigz -9 -p 32 > ApplioV${{ steps.get-version.outputs.version }}.tar.gz || true
+          zip -9 -r ApplioV${{ steps.get-version.outputs.version }}.zip .
       - name: Upload Linux Compiled
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -111,17 +110,17 @@ jobs:
           python -c "
           import os
           from huggingface_hub import login, upload_file
-            
+
           token = os.getenv('HF_TOKEN')
           version = os.getenv('version')
           login(token)
           repo_id = 'vidalnt/nothing'
-          repo_file_path = f'ApplioV{version}.tar.gz'
-            
+          repo_file_path = f'ApplioV{version}.zip'
+
           upload_file(
           commit_message=f'{version}',
           path_or_fileobj=repo_file_path,
-          path_in_repo=f'Compiled/Linux/ApplioV{version}.tar.gz',
+          path_in_repo=f'Compiled/Linux/ApplioV{version}.zip',
           repo_id=repo_id,
           token=token)
           "
