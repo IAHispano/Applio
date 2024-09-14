@@ -73,7 +73,7 @@ jobs:
           
           scan_and_write(\"/opt/hostedtoolcache/Python/3.10.12/x64\", \"./usr_files_new.csv\")"
 
-      - name: Create TAR file
+      - name: Compare files of site-packages
         run: |
           python -c "
           import os
@@ -119,8 +119,10 @@ jobs:
                           relative_path = relative_path.replace('site-packages', 'dist-packages')
                   new_path = os.path.join(arc_base_dir, relative_path)
                   f.write(f'{file}\n')
-          subprocess.run(['tar', '--use-compress-program="pigz --best --recursive"', '-cvf', 'Pnpur.tar.gz', '-T', 'filelist.txt'], shell=True)
           "
+      - name: Create TAR file using pigz
+        run: |
+          tar --use-compress-program="pigz --best --recursive" -cvf Pnpur.tar.gz -T filelist.txt
       - name: Upload Colab Env
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
