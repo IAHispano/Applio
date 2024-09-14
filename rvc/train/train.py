@@ -134,7 +134,10 @@ def verify_checkpoint_shapes(checkpoint_path, model):
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
     checkpoint_state_dict = checkpoint["model"]
     try:
-        model_state_dict = model.module.load_state_dict(checkpoint_state_dict)
+        if hasattr(model, "module"):
+            model_state_dict = model.module.load_state_dict(checkpoint_state_dict)
+        else:
+            model_state_dict = model.load_state_dict(checkpoint_state_dict)
     except RuntimeError:
         print("The sample rate of the pretrain doesn't match the selected one")
         sys.exit(1)
@@ -478,7 +481,7 @@ def run(
     if n_gpus > 1 and device.type == "cuda":
         net_g = DDP(net_g, device_ids=[rank])
         net_d = DDP(net_d, device_ids=[rank])
-    #else:
+    # else:
     #    net_g = DDP(net_g)
     #    net_d = DDP(net_d)
     # Load checkpoint if available
