@@ -478,7 +478,7 @@ def run(
     if n_gpus > 1 and device.type == "cuda":
         net_g = DDP(net_g, device_ids=[rank])
         net_d = DDP(net_d, device_ids=[rank])
-    #else:
+    # else:
     #    net_g = DDP(net_g)
     #    net_d = DDP(net_d)
     # Load checkpoint if available
