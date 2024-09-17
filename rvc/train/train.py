@@ -781,7 +781,7 @@ def train_and_evaluate(
 
         record = f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()}"
         if epoch > 1:
-            record = record + f" | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']}"
+            record = record + f" | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
         
         if overtraining_detector:
             remaining_epochs_gen = overtraining_threshold - consecutive_increases_gen
