@@ -650,7 +650,9 @@ class Pipeline:
         audio_max = np.abs(audio_opt).max() / 0.99
         if audio_max > 1:
             audio_opt /= audio_max
-        del pitch, pitchf, sid
+        if pitch_guidance:
+            del pitch, pitchf
+        del sid
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         return audio_opt
