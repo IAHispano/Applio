@@ -35,12 +35,14 @@ class Generator(torch.nn.Module):
         super(Generator, self).__init__()
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)
-        self.conv_pre = torch.nn.Conv1d(initial_channel, upsample_initial_channel, 7, 1, padding=3)
+        self.conv_pre = torch.nn.Conv1d(
+            initial_channel, upsample_initial_channel, 7, 1, padding=3
+        )
         resblock = ResBlock1 if resblock == "1" else ResBlock2
-          
+
         self.ups = torch.nn.ModuleList()
         self.resblocks = torch.nn.ModuleList()
-        
+
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):
             self.ups.append(
                 weight_norm(
