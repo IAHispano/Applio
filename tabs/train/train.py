@@ -884,7 +884,7 @@ def train_tab():
                 if version == "v1":
                     if pitch_guidance:
                         gr.Info(
-                            "Downloading v1 prerequisites with pitch guidance... Please wait till it finishes to start preprocessing."
+                            "Checking for v1 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
                         )
                         run_prerequisites_script(
                             pretraineds_v1_f0=True,
@@ -896,7 +896,7 @@ def train_tab():
                         )
                     else:
                         gr.Info(
-                            "Downloading v1 prerequisites without pitch guidance... Please wait till it finishes to start preprocessing."
+                            "Checking for v1 prerequisites without pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
                         )
                         run_prerequisites_script(
                             pretraineds_v1_f0=False,
@@ -909,7 +909,7 @@ def train_tab():
                 elif version == "v2":
                     if pitch_guidance:
                         gr.Info(
-                            "Downloading v2 prerequisites with pitch guidance... Please wait till it finishes to start preprocessing."
+                            "Checking for v2 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
                         )
                         run_prerequisites_script(
                             pretraineds_v1_f0=False,
@@ -921,7 +921,7 @@ def train_tab():
                         )
                     else:
                         gr.Info(
-                            "Downloading v2 prerequisites without pitch guidance... Please wait till it finishes to start preprocessing."
+                            "Checking for v2 prerequisites without pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
                         )
                         run_prerequisites_script(
                             pretraineds_v1_f0=False,
@@ -932,7 +932,7 @@ def train_tab():
                             exe=False,
                         )
                 gr.Info(
-                    "Prerequisites downloaded successfully, you may now start preprocessing."
+                    "Prerequisites check complete. Missing files were downloaded, and you may now start preprocessing."
                 )
 
             def toggle_visible_embedder_custom(embedder_model):
