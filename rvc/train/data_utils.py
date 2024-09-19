@@ -6,6 +6,7 @@ import torch.utils.data
 from mel_processing import spectrogram_torch
 from utils import load_filepaths_and_text, load_wav_to_torch
 
+
 class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
     """
     Dataset that loads text and audio pairs.
@@ -162,6 +163,7 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
         Returns the length of the dataset.
         """
         return len(self.audiopaths_and_text)
+
 
 class TextAudioCollateMultiNSFsid:
     """

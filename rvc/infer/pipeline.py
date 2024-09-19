@@ -417,41 +417,62 @@ class Pipeline:
         with torch.no_grad():
             pitch_guidance = pitch != None and pitchf != None
             # prepare source audio
-            feats = torch.from_numpy(audio0).half() if self.is_half else torch.from_numpy(audio0).float()
+            feats = (
+                torch.from_numpy(audio0).half()
+                if self.is_half
+                else torch.from_numpy(audio0).float()
+            )
             feats = feats.mean(-1) if feats.dim() == 2 else feats
             assert feats.dim() == 1, feats.dim()
             feats = feats.view(1, -1).to(self.device)
             # extract features
             feats = model(feats)["last_hidden_state"]
-            feats = model.final_proj(feats[0]).unsqueeze(0) if version == "v1" else feats
+            feats = (
+                model.final_proj(feats[0]).unsqueeze(0) if version == "v1" else feats
+            )
             # make a copy for pitch guidance and protection
             feats0 = feats.clone() if pitch_guidance else None
-            if index: # set by parent function, only true if index is available, loaded, and index rate > 0
-                feats = self._retrieve_speaker_embeddings(feats, index, big_npy, index_rate)
-            # feature upsampling    
-            feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)
+            if (
+                index
+            ):  # set by parent function, only true if index is available, loaded, and index rate > 0
+                feats = self._retrieve_speaker_embeddings(
+                    feats, index, big_npy, index_rate
+                )
+            # feature upsampling
+            feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(
+                0, 2, 1
+            )
             # adjust the length if the audio is short
             p_len = min(audio0.shape[0] // self.window, feats.shape[1])
             if pitch_guidance:
-                feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)
+                feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
+                    0, 2, 1
+                )
                 pitch, pitchf = pitch[:, :p_len], pitchf[:, :p_len]
                 # Pitch protection blending
                 if protect < 0.5:
                     pitchff = pitchf.clone()
                     pitchff[pitchf > 0] = 1
                     pitchff[pitchf < 1] = protect
-                    feats = feats * pitchff.unsqueeze(-1) + feats0 * (1 - pitchff.unsqueeze(-1))
+                    feats = feats * pitchff.unsqueeze(-1) + feats0 * (
+                        1 - pitchff.unsqueeze(-1)
+                    )
                     feats = feats.to(feats0.dtype)
             else:
                 pitch, pitchf = None, None
             p_len = torch.tensor([p_len], device=self.device).long()
-            audio1 = ((net_g.infer(feats, p_len, pitch, pitchf, sid)[0][0, 0]).data.cpu().float().numpy())
+            audio1 = (
+                (net_g.infer(feats, p_len, pitch, pitchf, sid)[0][0, 0])
+                .data.cpu()
+                .float()
+                .numpy()
+            )
             # clean up
             del feats, feats0, p_len
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
         return audio1
-        
+
     def _retrieve_speaker_embeddings(self, feats, index, big_npy, index_rate):
         npy = feats[0].cpu().numpy()
         npy = npy.astype("float32") if self.is_half else npy
@@ -460,9 +481,12 @@ class Pipeline:
         weight /= weight.sum(axis=1, keepdims=True)
         npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
         npy = npy.astype("float16") if self.is_half else npy
-        feats = torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate + (1 - index_rate) * feats
+        feats = (
+            torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
+            + (1 - index_rate) * feats
+        )
         return feats
-        
+
     def pipeline(
         self,
         model,
