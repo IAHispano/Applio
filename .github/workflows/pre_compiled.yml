@@ -49,7 +49,7 @@ jobs:
           token = os.getenv('HF_TOKEN')
           version = os.getenv('version')
           login(token)
-          repo_id = 'vidalnt/nothing'
+          repo_id = 'IAHispano/Applio'
           repo_file_path = f'D:/a/Applio/ApplioV{version}.zip'
           
           upload_file(
@@ -114,7 +114,7 @@ jobs:
           token = os.getenv('HF_TOKEN')
           version = os.getenv('version')
           login(token)
-          repo_id = 'vidalnt/nothing'
+          repo_id = 'IAHispano/Applio'
           repo_file_path = f'ApplioV{version}.zip'
 
           upload_file(
@@ -182,7 +182,7 @@ jobs:
           token = os.getenv('HF_TOKEN')
           version = os.getenv('version')
           login(token)
-          repo_id = 'vidalnt/nothing'
+          repo_id = 'IAHispano/Applio'
           repo_file_path = 'KaggleV2.tar.gz'
             
           upload_file(
@@ -316,7 +316,7 @@ jobs:
           token = os.getenv('HF_TOKEN')
           version = os.getenv('version')
           login(token)
-          repo_id = 'vidalnt/nothing'
+          repo_id = 'IAHispano/Applio'
           repo_file_path = 'Pnpur.tar.gz'
             
           upload_file(
