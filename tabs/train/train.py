@@ -621,12 +621,6 @@ def train_tab():
                         value=True,
                         interactive=True,
                     )
-                    use_cpu = gr.Checkbox(
-                        label=i18n("Use CPU"),
-                        info=i18n("Force the use of CPU for training."),
-                        value=False,
-                        interactive=True,
-                    )
                 with gr.Column():
                     sync_graph = gr.Checkbox(
                         label=i18n("Sync Graph"),
@@ -778,7 +772,6 @@ def train_tab():
                     index_algorithm,
                     cache_dataset_in_gpu,
                     custom_pretrained,
-                    use_cpu,
                     g_pretrained_path,
                     d_pretrained_path,
                 ],
@@ -884,7 +877,7 @@ def train_tab():
                 if version == "v1":
                     if pitch_guidance:
                         gr.Info(
-                            "Downloading v1 prerequisites with pitch guidance... Please wait till it finishes to start preprocessing."
+                            "Checking for v1 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
                         )
                         run_prerequisites_script(
                             pretraineds_v1_f0=True,
@@ -896,7 +889,7 @@ def train_tab():
                         )
                     else:
                         gr.Info(
-                            "Downloading v1 prerequisites without pitch guidance... Please wait till it finishes to start preprocessing."
+                            "Checking for v1 prerequisites without pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
                         )
                         run_prerequisites_script(
                             pretraineds_v1_f0=False,
@@ -909,7 +902,7 @@ def train_tab():
                 elif version == "v2":
                     if pitch_guidance:
                         gr.Info(
-                            "Downloading v2 prerequisites with pitch guidance... Please wait till it finishes to start preprocessing."
+                            "Checking for v2 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
                         )
                         run_prerequisites_script(
                             pretraineds_v1_f0=False,
@@ -921,7 +914,7 @@ def train_tab():
                         )
                     else:
                         gr.Info(
-                            "Downloading v2 prerequisites without pitch guidance... Please wait till it finishes to start preprocessing."
+                            "Checking for v2 prerequisites without pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
                         )
                         run_prerequisites_script(
                             pretraineds_v1_f0=False,
@@ -932,7 +925,7 @@ def train_tab():
                             exe=False,
                         )
                 gr.Info(
-                    "Prerequisites downloaded successfully, you may now start preprocessing."
+                    "Prerequisites check complete. Missing files were downloaded, and you may now start preprocessing."
                 )
 
             def toggle_visible_embedder_custom(embedder_model):
