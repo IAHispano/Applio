@@ -39,7 +39,7 @@ def generate_filelist(
     options = []
     mute_base_path = os.path.join(current_directory, "logs", "mute")
 
-    sid_pattern = re.compile(r'^(\d+)')
+    sid_pattern = re.compile(r'^(\d+)_')
 
     for name in names:
         sid_match = sid_pattern.match(name)
