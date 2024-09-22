@@ -273,7 +273,7 @@ if __name__ == "__main__":
             f,
         )
     files = []
-    for file in glob.glob(os.path.join(wav_path, "*.wav")):
+    for file in glob.glob(os.path.join(wav_path, "**", "*.wav"), recursive=True):
         file_name = os.path.basename(file)
         file_info = [
             file,  # full path to sliced 16k wav

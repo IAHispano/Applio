@@ -2,6 +2,7 @@ import os
 import shutil
 from random import shuffle
 from rvc.configs.config import Config
+import re
 
 config = Config()
 current_directory = os.getcwd()
@@ -38,13 +39,18 @@ def generate_filelist(
     options = []
     mute_base_path = os.path.join(current_directory, "logs", "mute")
 
+    sid_pattern = re.compile(r'^(\d+)')
+
     for name in names:
+        sid_match = sid_pattern.match(name)
+        sid = sid_match.group(1) if sid_match else None
+
         if pitch_guidance:
             options.append(
-                f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{f0_dir}/{name}.wav.npy|{f0nsf_dir}/{name}.wav.npy|0"
+                f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{f0_dir}/{name}.wav.npy|{f0nsf_dir}/{name}.wav.npy|{sid}"
             )
         else:
-            options.append(f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|0")
+            options.append(f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{sid}")
 
     mute_audio_path = os.path.join(
         mute_base_path, "sliced_audios", f"mute{sample_rate}.wav"
