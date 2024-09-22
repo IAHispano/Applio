@@ -64,10 +64,10 @@ def generate_filelist(
             mute_f0_path = os.path.join(mute_base_path, "f0", "mute.wav.npy")
             mute_f0nsf_path = os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")
             options.append(
-                f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|0"
+                f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}"
             )
         else:
-            options.append(f"{mute_audio_path}|{mute_feature_path}|0")
+            options.append(f"{mute_audio_path}|{mute_feature_path}|{sid}")
 
     shuffle(options)
 

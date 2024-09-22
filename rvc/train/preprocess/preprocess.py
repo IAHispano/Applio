@@ -67,7 +67,7 @@ class PreProcess:
         sid: int,
         idx0: int,
         idx1: int,
-        process_effects: bool,
+        process_effects: bool
     ):
         normalized_audio = (
             self._normalize_audio(audio_segment) if process_effects else audio_segment
@@ -202,27 +202,16 @@ def preprocess_training_set(
             if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg")):
                 files.append((os.path.join(root, f), idx, 0 if root == input_root else os.path.basename(root)))
                 idx += 1
+
     # print(f"Number of files: {len(files)}")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_processes) as executor:
-        audio_length = list(
-            tqdm(
-                executor.map(
-                    process_audio_wrapper,
-                    [
-                        (
-                            pp,
-                            file,
-                            cut_preprocess,
-                            process_effects,
-                            noise_reduction,
-                            reduction_strength,
-                        )
-                        for file in files
-                    ],
-                ),
-                total=len(files),
-            )
-        )
+    audio_length = []
+    with tqdm(total=len(files)) as pbar:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=num_processes) as executor:
+            futures = [executor.submit(process_audio_wrapper, (pp, file, cut_preprocess, process_effects, noise_reduction, reduction_strength,)) for file in files]
+            for future in concurrent.futures.as_completed(futures):
+                audio_length.append(future.result())
+                pbar.update(1)
+
     audio_length = sum(audio_length)
     save_dataset_duration(
         os.path.join(exp_dir, "model_info.json"), dataset_duration=audio_length
