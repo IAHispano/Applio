@@ -67,7 +67,7 @@ def generate_filelist(
                     f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}"
                 )
             else:
-                options.append(f"{mute_audio_path}|{mute_feature_path}|{sid}")
+                options.append(f"{mute_audio_path}|{mute_feature_path}|||{sid}")
 
     shuffle(options)
 
