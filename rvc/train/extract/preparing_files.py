@@ -46,10 +46,12 @@ def generate_filelist(
 
         if pitch_guidance:
             options.append(
-                f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{f0_dir}/{name}.wav.npy|{f0nsf_dir}/{name}.wav.npy|{sid}"
+                f"{os.path.join(gt_wavs_dir, f'{name}.wav')}|{os.path.join(feature_dir, f'{name}.npy')}|{os.path.join(f0_dir, f'{name}.wav.npy')}|{os.path.join(f0nsf_dir, f'{name}.wav.npy')}|{sid}"
             )
         else:
-            options.append(f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|||{sid}")
+            options.append(
+                f"{os.path.join(gt_wavs_dir, f'{name}.wav')}|{os.path.join(feature_dir, f'{name}.npy')}|||{sid}"
+            )
 
     mute_audio_path = os.path.join(
         mute_base_path, "sliced_audios", f"mute{sample_rate}.wav"
