@@ -265,7 +265,7 @@ if __name__ == "__main__":
     chosen_embedder_model = (
         embedder_model_custom if embedder_model_custom else embedder_model
     )
-    with open(os.path.join(exp_dir, "model_info.json"), "w") as f:
+    with open(os.path.join(exp_dir, "model_info.json"), "a") as f:
         json.dump(
             {
                 "embedder_model": chosen_embedder_model,
