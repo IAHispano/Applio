@@ -194,12 +194,14 @@ def preprocess_training_set(
     pp = PreProcess(sr, exp_dir, per)
     print(f"Starting preprocess with {num_processes} processes...")
 
-    files = [
-        (os.path.join(root, f), idx, '0' if root == input_root else os.path.basename(root))
-        for idx, (root, _, filenames) in enumerate(os.walk(input_root))
-        for f in filenames
-        if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg"))
-    ]
+    files = []
+    idx = 0
+
+    for root, _, filenames in os.walk(input_root):
+        for f in filenames:
+            if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg")):
+                files.append((os.path.join(root, f), idx, 0 if root == input_root else os.path.basename(root)))
+                idx += 1
     # print(f"Number of files: {len(files)}")
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_processes) as executor:
         audio_length = list(
