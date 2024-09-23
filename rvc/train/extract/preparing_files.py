@@ -37,7 +37,7 @@ def generate_filelist(
     for name in names:
         sid = name.split("_")[0]
         if sid not in sids:
-            sids.appens(sid)
+            sids.append(sid)
         options.append(f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{f0_dir}/{name}.wav.npy|{f0nsf_dir}/{name}.wav.npy|{sid}")
 
     mute_audio_path = os.path.join(mute_base_path, "sliced_audios", f"mute{sample_rate}.wav")
