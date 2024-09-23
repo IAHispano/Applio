@@ -21,55 +21,34 @@ def generate_filelist(
     feature_dir = os.path.join(model_path, f"{rvc_version}_extracted")
 
     f0_dir, f0nsf_dir = None, None
-    if pitch_guidance:
-        f0_dir = os.path.join(model_path, "f0")
-        f0nsf_dir = os.path.join(model_path, "f0_voiced")
+    f0_dir = os.path.join(model_path, "f0")
+    f0nsf_dir = os.path.join(model_path, "f0_voiced")
 
     gt_wavs_files = set(name.split(".")[0] for name in os.listdir(gt_wavs_dir))
     feature_files = set(name.split(".")[0] for name in os.listdir(feature_dir))
 
-    if pitch_guidance:
-        f0_files = set(name.split(".")[0] for name in os.listdir(f0_dir))
-        f0nsf_files = set(name.split(".")[0] for name in os.listdir(f0nsf_dir))
-        names = gt_wavs_files & feature_files & f0_files & f0nsf_files
-    else:
-        names = gt_wavs_files & feature_files
+    f0_files = set(name.split(".")[0] for name in os.listdir(f0_dir))
+    f0nsf_files = set(name.split(".")[0] for name in os.listdir(f0nsf_dir))
+    names = gt_wavs_files & feature_files & f0_files & f0nsf_files
 
     options = []
     mute_base_path = os.path.join(current_directory, "logs", "mute")
-
     sids = []
     for name in names:
         sid = name.split("_")[0]
         if sid not in sids:
-            sids.append(sid)
+            sids.appens(sid)
+        options.append(f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{f0_dir}/{name}.wav.npy|{f0nsf_dir}/{name}.wav.npy|{sid}")
 
-        if pitch_guidance:
-            options.append(
-                f"{os.path.join(gt_wavs_dir, f'{name}.wav')}|{os.path.join(feature_dir, f'{name}.npy')}|{os.path.join(f0_dir, f'{name}.wav.npy')}|{os.path.join(f0nsf_dir, f'{name}.wav.npy')}|{sid}"
-            )
-        else:
-            options.append(
-                f"{os.path.join(gt_wavs_dir, f'{name}.wav')}|{os.path.join(feature_dir, f'{name}.npy')}|||{sid}"
-            )
+    mute_audio_path = os.path.join(mute_base_path, "sliced_audios", f"mute{sample_rate}.wav")
+    mute_feature_path = os.path.join(mute_base_path, f"{rvc_version}_extracted", "mute.npy")
+    mute_f0_path = os.path.join(mute_base_path, "f0", "mute.wav.npy")
+    mute_f0nsf_path = os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")
 
-    mute_audio_path = os.path.join(
-        mute_base_path, "sliced_audios", f"mute{sample_rate}.wav"
-    )
-    mute_feature_path = os.path.join(
-        mute_base_path, f"{rvc_version}_extracted", "mute.npy"
-    )
-
+    # always adding two files
     for sid in sids:
-        for _ in range(2):
-            if pitch_guidance:
-                mute_f0_path = os.path.join(mute_base_path, "f0", "mute.wav.npy")
-                mute_f0nsf_path = os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")
-                options.append(
-                    f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}"
-                )
-            else:
-                options.append(f"{mute_audio_path}|{mute_feature_path}|||{sid}")
+        options.append(f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}")
+        options.append(f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}")
 
     shuffle(options)
 
