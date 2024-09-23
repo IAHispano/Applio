@@ -48,5 +48,5 @@ def model_information(path):
         f"Hash (ID): {model_hash}\n"
         f"Overtrain Info: {overtrain_info}"
         f"Embedder Model: {embedder_model}"
-        f"Number of Speakers: {speakers_id}"
+        f"Max Speakers ID: {speakers_id}"
     )
