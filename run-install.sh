@@ -45,7 +45,7 @@ create_venv() {
             exit 1
         fi
     fi
-    # try to create the .venv
+    # Try to create the env
     $py -m venv .venv
     if [ $? -ne 0 ]; then
         echo "Error creating the virtual environment. Check Python installation or permissions."
@@ -57,14 +57,14 @@ create_venv() {
         exit 1
     fi
 
-    # installs pip using ensurepip or get-pip.py if ensurepip fails
+    # Installs pip using ensurepip or get-pip.py
     echo "Installing pip..."
     python -m ensurepip --upgrade
     if [ $? -ne 0 ]; then
         echo "Error with ensurepip, attempting manual pip installation..."
         curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
         python get-pip.py
-        if [ $? -ne 0 ]; then
+        if [ $? -ne 0 ];then
             echo "Failed to install pip manually. Check permissions and internet connection."
             exit 1
         fi
@@ -72,11 +72,10 @@ create_venv() {
     python -m pip install --upgrade pip
     echo
 
-    # installs pyworld
-    echo "Installing build dependencies for pyworld..."
-    sudo apt update && sudo apt install -y build-essential libpython3-dev cmake
+    echo "Installing ffmpeg..."
+    sudo apt update && sudo apt install -y ffmpeg
     if [ $? -ne 0 ]; then
-        echo "Error installing build dependencies. Check your system's package manager."
+        echo "Error installing ffmpeg. Check your system's package manager."
         exit 1
     fi
 
@@ -87,21 +86,7 @@ create_venv() {
         exit 1
     fi
 
-    # try to install pyworld
-    echo "Installing pyworld..."
-    python -m pip install pyworld
-    if [ $? -ne 0 ]; then
-        echo "Failed to install pyworld. Attempting to install specific version..."
-        python -m pip install pyworld==0.3.0
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to install pyworld after multiple attempts."
-            exit 1
-        fi
-    fi
-
-    python -m pip uninstall torch torchvision torchaudio -y
-    python -m pip install torch==2.1.1 torchvision==0.16.1 torchaudio==2.1.1 --index-url https://download.pytorch.org/whl/cu121
-    sudo apt install ffmpeg
+    python -m pip install torch==2.3.1 torchvision torchaudio --upgrade --index-url https://download.pytorch.org/whl/cu121 
     finish
 }
 
