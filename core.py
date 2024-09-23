@@ -874,6 +874,14 @@ def parse_arguments():
         default=1.0,
         required=False,
     )
+    sid_description = "Speaker ID for multi-speaker models."
+    infer_parser.add_argument(
+        "--sid",
+        type=int,
+        help=sid_description,
+        default=0,
+        required=False,
+    )
 
     # Parser for 'batch_infer' mode
     batch_infer_parser = subparsers.add_parser(
@@ -1043,6 +1051,13 @@ def parse_arguments():
         type=float,
         help=formant_timbre_description,
         default=1.0,
+        required=False,
+    )
+    batch_infer_parser.add_argument(
+        "--sid",
+        type=int,
+        help=sid_description,
+        default=0,
         required=False,
     )
 
@@ -1683,6 +1698,7 @@ def main():
                 formant_qfrency=args.formant_qfrency,
                 formant_timbre=args.formant_timbre,
                 embedder_model_custom=args.embedder_model_custom,
+                sid=args.sid,
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(
@@ -1709,6 +1725,7 @@ def main():
                 formant_shifting=args.formant_shifting,
                 formant_qfrency=args.formant_qfrency,
                 formant_timbre=args.formant_timbre,
+                sid=args.sid,
             )
         elif args.mode == "tts":
             run_tts_script(
