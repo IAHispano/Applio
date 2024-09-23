@@ -301,7 +301,8 @@ def refresh_embedders_folders():
 
 def get_speakers_id(model):
     model_data = torch.load(model, map_location="cpu")
-    return model_data.get("speakers_id", 1)
+    speakers_id = model_data.get("speakers_id", 0)
+    return list(range(speakers_id + 1))
 
 # Inference tab
 def inference_tab():
@@ -389,7 +390,7 @@ def inference_tab():
                     label=i18n("Speaker ID"),
                     info=i18n("Select the speaker ID to use for the conversion."),
                     choices=get_speakers_id(model_file.value),
-                    value=1,
+                    value=0,
                     interactive=True,
                 )
                 split_audio = gr.Checkbox(
@@ -1022,7 +1023,7 @@ def inference_tab():
                     label=i18n("Speaker ID"),
                     info=i18n("Select the speaker ID to use for the conversion."),
                     choices=get_speakers_id(model_file.value),
-                    value=1,
+                    value=0,
                     interactive=True,
                 )
                 split_audio_batch = gr.Checkbox(

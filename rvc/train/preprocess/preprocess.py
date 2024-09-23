@@ -182,9 +182,9 @@ def get_folder_with_max_number(input_root):
     folders = [f for f in os.listdir(input_root) if os.path.isdir(os.path.join(input_root, f))]
     numeric_folders = [f for f in folders if f.isdigit()]
     if not numeric_folders:
-        return "1"
+        return 0
     max_number = max(int(f) for f in numeric_folders)
-    return str(max_number + 1)
+    return str(max_number)
 
 def preprocess_training_set(
     input_root: str,
