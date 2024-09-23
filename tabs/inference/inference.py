@@ -4,6 +4,7 @@ import regex as re
 import shutil
 import datetime
 import json
+import torch
 
 from core import (
     run_infer_script,
@@ -298,6 +299,9 @@ def refresh_embedders_folders():
     ]
     return custom_embedders
 
+def get_speakers_id(model):
+    model_data = torch.load(model, map_location="cpu")
+    return model_data.get("speakers_id", 1)
 
 # Inference tab
 def inference_tab():
@@ -381,12 +385,11 @@ def inference_tab():
                     value="WAV",
                     interactive=True,
                 )
-                sid = gr.Slider(
-                    minimum=0,
-                    maximum=100,
+                sid = gr.Dropdown(
                     label=i18n("Speaker ID"),
-                    info=i18n("Speaker ID to use for the conversion."),
-                    value=0,
+                    info=i18n("Select the speaker ID to use for the conversion."),
+                    choices=get_speakers_id(model_file.value),
+                    value=1,
                     interactive=True,
                 )
                 split_audio = gr.Checkbox(
@@ -1015,12 +1018,11 @@ def inference_tab():
                     value="WAV",
                     interactive=True,
                 )
-                sid_batch = gr.Slider(
-                    minimum=0,
-                    maximum=100,
+                sid_batch = gr.Dropdown(
                     label=i18n("Speaker ID"),
-                    info=i18n("Speaker ID to use for the conversion."),
-                    value=0,
+                    info=i18n("Select the speaker ID to use for the conversion."),
+                    choices=get_speakers_id(model_file.value),
+                    value=1,
                     interactive=True,
                 )
                 split_audio_batch = gr.Checkbox(

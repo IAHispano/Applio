@@ -178,6 +178,13 @@ def process_audio_wrapper(args):
         reduction_strength,
     )
 
+def get_folder_with_max_number(input_root):
+    folders = [f for f in os.listdir(input_root) if os.path.isdir(os.path.join(input_root, f))]
+    numeric_folders = [f for f in folders if f.isdigit()]
+    if not numeric_folders:
+        return "1"
+    max_number = max(int(f) for f in numeric_folders)
+    return str(max_number + 1)
 
 def preprocess_training_set(
     input_root: str,
@@ -202,6 +209,18 @@ def preprocess_training_set(
             if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg")):
                 files.append((os.path.join(root, f), idx, 0 if root == input_root else os.path.basename(root)))
                 idx += 1
+
+    file_path = os.path.join(exp_dir, "model_info.json")
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            data = json.load(f)
+    else:
+        data = {}
+    data.update({
+        "speakers_id": get_folder_with_max_number(input_root),
+    })
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=4)
 
     # print(f"Number of files: {len(files)}")
     audio_length = []
