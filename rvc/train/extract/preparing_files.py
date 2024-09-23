@@ -35,16 +35,26 @@ def generate_filelist(
     mute_base_path = os.path.join(current_directory, "logs", "mute")
 
     for name in names:
-        options.append(f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{f0_dir}/{name}.wav.npy|{f0nsf_dir}/{name}.wav.npy|0")
+        options.append(
+            f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{f0_dir}/{name}.wav.npy|{f0nsf_dir}/{name}.wav.npy|0"
+        )
 
-    mute_audio_path = os.path.join(mute_base_path, "sliced_audios", f"mute{sample_rate}.wav")
-    mute_feature_path = os.path.join(mute_base_path, f"{rvc_version}_extracted", "mute.npy")
+    mute_audio_path = os.path.join(
+        mute_base_path, "sliced_audios", f"mute{sample_rate}.wav"
+    )
+    mute_feature_path = os.path.join(
+        mute_base_path, f"{rvc_version}_extracted", "mute.npy"
+    )
     mute_f0_path = os.path.join(mute_base_path, "f0", "mute.wav.npy")
     mute_f0nsf_path = os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")
 
     # always adding two files
-    options.append(f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|0")
-    options.append(f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|0")
+    options.append(
+        f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|0"
+    )
+    options.append(
+        f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|0"
+    )
 
     shuffle(options)
 
