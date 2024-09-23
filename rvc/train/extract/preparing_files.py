@@ -2,6 +2,7 @@ import os
 import shutil
 from random import shuffle
 from rvc.configs.config import Config
+import json
 
 config = Config()
 current_directory = os.getcwd()
@@ -49,6 +50,18 @@ def generate_filelist(
     for sid in sids:
         options.append(f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}")
         options.append(f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}")
+
+    file_path = os.path.join(model_path, "model_info.json")
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            data = json.load(f)
+    else:
+        data = {}
+    data.update({
+        "speakers_id": len(sids),
+    })
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=4)
 
     shuffle(options)
 
