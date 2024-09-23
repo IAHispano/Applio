@@ -198,13 +198,13 @@ def preprocess_training_set(
 
     for root, _, filenames in os.walk(input_root):
         try:
-            sid = int(os.path.basename(root))
+            sid = 0 if root == input_root else int(os.path.basename(root))
             for f in filenames:
                 if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg")):
-                    files.append((os.path.join(root, f), idx, 0 if root == input_root else sid))
+                    files.append((os.path.join(root, f), idx, sid))
                     idx += 1
         except ValueError:
-            print('Speaker folders should be numeric')
+            print(f"Speaker ID folder is expected to be integer, got \"{os.path.basename(root)}\" instead.")
 
     # print(f"Number of files: {len(files)}")
     audio_length = []
