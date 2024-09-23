@@ -109,6 +109,7 @@ def run_infer_script(
     delay_seconds: float,
     delay_feedback: float,
     delay_mix: float,
+    sid: int,
 ):
     infer_pipeline = import_voice_converter()
     kwargs = {
@@ -186,6 +187,7 @@ def run_infer_script(
         "delay_seconds": delay_seconds,
         "delay_feedback": delay_feedback,
         "delay_mix": delay_mix,
+        "sid": sid,
     }
     infer_pipeline.convert_audio(
         **kwargs,
@@ -256,6 +258,7 @@ def run_batch_infer_script(
     delay_seconds: float,
     delay_feedback: float,
     delay_mix: float,
+    sid: int,
 ):
     kwargs = {
         "audio_input_paths": input_folder,
@@ -321,6 +324,7 @@ def run_batch_infer_script(
         "delay_seconds": delay_seconds,
         "delay_feedback": delay_feedback,
         "delay_mix": delay_mix,
+        "sid": sid,
     }
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio_batch(

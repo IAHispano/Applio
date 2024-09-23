@@ -381,6 +381,14 @@ def inference_tab():
                     value="WAV",
                     interactive=True,
                 )
+                sid = gr.Slider(
+                    minimum=0,
+                    maximum=100,
+                    label=i18n("Speaker ID"),
+                    info=i18n("Speaker ID to use for the conversion."),
+                    value=0,
+                    interactive=True,
+                )
                 split_audio = gr.Checkbox(
                     label=i18n("Split Audio"),
                     info=i18n(
@@ -1005,6 +1013,14 @@ def inference_tab():
                     info=i18n("Select the format to export the audio."),
                     choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
                     value="WAV",
+                    interactive=True,
+                )
+                sid_batch = gr.Slider(
+                    minimum=0,
+                    maximum=100,
+                    label=i18n("Speaker ID"),
+                    info=i18n("Speaker ID to use for the conversion."),
+                    value=0,
                     interactive=True,
                 )
                 split_audio_batch = gr.Checkbox(
@@ -2034,6 +2050,7 @@ def inference_tab():
             delay_seconds,
             delay_feedback,
             delay_mix,
+            sid,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -2099,6 +2116,7 @@ def inference_tab():
             delay_seconds_batch,
             delay_feedback_batch,
             delay_mix_batch,
+            sid_batch,
         ],
         outputs=[vc_output3],
     )
