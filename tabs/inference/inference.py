@@ -4,6 +4,7 @@ import regex as re
 import shutil
 import datetime
 import json
+import torch
 
 from core import (
     run_infer_script,
@@ -298,6 +299,10 @@ def refresh_embedders_folders():
     ]
     return custom_embedders
 
+def get_speakers_id(model):
+    model_data = torch.load(model, map_location="cpu")
+    speakers_id = model_data.get("speakers_id", 0)
+    return list(range(speakers_id + 1))
 
 # Inference tab
 def inference_tab():
@@ -379,6 +384,13 @@ def inference_tab():
                     info=i18n("Select the format to export the audio."),
                     choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
                     value="WAV",
+                    interactive=True,
+                )
+                sid = gr.Dropdown(
+                    label=i18n("Speaker ID"),
+                    info=i18n("Select the speaker ID to use for the conversion."),
+                    choices=get_speakers_id(model_file.value),
+                    value=0,
                     interactive=True,
                 )
                 split_audio = gr.Checkbox(
@@ -1005,6 +1017,13 @@ def inference_tab():
                     info=i18n("Select the format to export the audio."),
                     choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
                     value="WAV",
+                    interactive=True,
+                )
+                sid_batch = gr.Dropdown(
+                    label=i18n("Speaker ID"),
+                    info=i18n("Select the speaker ID to use for the conversion."),
+                    choices=get_speakers_id(model_file.value),
+                    value=0,
                     interactive=True,
                 )
                 split_audio_batch = gr.Checkbox(
@@ -2034,6 +2053,7 @@ def inference_tab():
             delay_seconds,
             delay_feedback,
             delay_mix,
+            sid,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -2099,6 +2119,7 @@ def inference_tab():
             delay_seconds_batch,
             delay_feedback_batch,
             delay_mix_batch,
+            sid_batch,
         ],
         outputs=[vc_output3],
     )
