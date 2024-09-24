@@ -39,17 +39,27 @@ def generate_filelist(
         sid = name.split("_")[0]
         if sid not in sids:
             sids.append(sid)
-        options.append(f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{f0_dir}/{name}.wav.npy|{f0nsf_dir}/{name}.wav.npy|{sid}")
+        options.append(
+            f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{f0_dir}/{name}.wav.npy|{f0nsf_dir}/{name}.wav.npy|{sid}"
+        )
 
-    mute_audio_path = os.path.join(mute_base_path, "sliced_audios", f"mute{sample_rate}.wav")
-    mute_feature_path = os.path.join(mute_base_path, f"{rvc_version}_extracted", "mute.npy")
+    mute_audio_path = os.path.join(
+        mute_base_path, "sliced_audios", f"mute{sample_rate}.wav"
+    )
+    mute_feature_path = os.path.join(
+        mute_base_path, f"{rvc_version}_extracted", "mute.npy"
+    )
     mute_f0_path = os.path.join(mute_base_path, "f0", "mute.wav.npy")
     mute_f0nsf_path = os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")
 
     # always adding two files
     for sid in sids:
-        options.append(f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}")
-        options.append(f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}")
+        options.append(
+            f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}"
+        )
+        options.append(
+            f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}"
+        )
 
     file_path = os.path.join(model_path, "model_info.json")
     if os.path.exists(file_path):
@@ -57,9 +67,11 @@ def generate_filelist(
             data = json.load(f)
     else:
         data = {}
-    data.update({
-        "speakers_id": len(sids),
-    })
+    data.update(
+        {
+            "speakers_id": len(sids),
+        }
+    )
     with open(file_path, "w") as f:
         json.dump(data, f, indent=4)
 
