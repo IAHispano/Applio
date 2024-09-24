@@ -272,9 +272,11 @@ if __name__ == "__main__":
             data = json.load(f)
     else:
         data = {}
-    data.update({
-        "embedder_model": chosen_embedder_model,
-    })
+    data.update(
+        {
+            "embedder_model": chosen_embedder_model,
+        }
+    )
     with open(file_path, "w") as f:
         json.dump(data, f, indent=4)
 

@@ -67,7 +67,7 @@ class PreProcess:
         sid: int,
         idx0: int,
         idx1: int,
-        process_effects: bool
+        process_effects: bool,
     ):
         normalized_audio = (
             self._normalize_audio(audio_segment) if process_effects else audio_segment
@@ -178,6 +178,7 @@ def process_audio_wrapper(args):
         reduction_strength,
     )
 
+
 def preprocess_training_set(
     input_root: str,
     sr: int,
@@ -204,13 +205,30 @@ def preprocess_training_set(
                     files.append((os.path.join(root, f), idx, sid))
                     idx += 1
         except ValueError:
-            print(f"Speaker ID folder is expected to be integer, got \"{os.path.basename(root)}\" instead.")
+            print(
+                f'Speaker ID folder is expected to be integer, got "{os.path.basename(root)}" instead.'
+            )
 
     # print(f"Number of files: {len(files)}")
     audio_length = []
     with tqdm(total=len(files)) as pbar:
-        with concurrent.futures.ProcessPoolExecutor(max_workers=num_processes) as executor:
-            futures = [executor.submit(process_audio_wrapper, (pp, file, cut_preprocess, process_effects, noise_reduction, reduction_strength,)) for file in files]
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=num_processes
+        ) as executor:
+            futures = [
+                executor.submit(
+                    process_audio_wrapper,
+                    (
+                        pp,
+                        file,
+                        cut_preprocess,
+                        process_effects,
+                        noise_reduction,
+                        reduction_strength,
+                    ),
+                )
+                for file in files
+            ]
             for future in concurrent.futures.as_completed(futures):
                 audio_length.append(future.result())
                 pbar.update(1)
