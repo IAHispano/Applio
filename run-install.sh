@@ -86,7 +86,7 @@ create_venv() {
         exit 1
     fi
 
-    python -m pip install torch==2.3.1 torchvision torchaudio --upgrade --index-url https://download.pytorch.org/whl/cu121 
+    python -m pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --upgrade --index-url https://download.pytorch.org/whl/cu121 
     finish
 }
 
