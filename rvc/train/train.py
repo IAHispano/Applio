@@ -20,6 +20,7 @@ from torch.nn import functional as F
 
 import torch.distributed as dist
 import torch.multiprocessing as mp
+import zluda
 
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
@@ -375,12 +376,6 @@ def run(
 
     if torch.cuda.is_available():
         torch.cuda.set_device(rank)
-        if torch.cuda.get_device_name().endswith("[ZLUDA]"):
-            print("Disabling CUDNN for traning with Zluda")
-            torch.backends.cudnn.enabled = False
-            torch.backends.cuda.enable_flash_sdp(False)
-            torch.backends.cuda.enable_math_sdp(True)
-            torch.backends.cuda.enable_mem_efficient_sdp(False)
 
     # Create datasets and dataloaders
     train_dataset = TextAudioLoaderMultiNSFsid(config.data)
@@ -1026,7 +1021,6 @@ def save_to_json(
     }
     with open(file_path, "w") as f:
         json.dump(data, f)
-
 
 if __name__ == "__main__":
     torch.multiprocessing.set_start_method("spawn")
