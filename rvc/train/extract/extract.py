@@ -258,13 +258,21 @@ if __name__ == "__main__":
     chosen_embedder_model = (
         embedder_model_custom if embedder_model_custom else embedder_model
     )
-    with open(os.path.join(exp_dir, "model_info.json"), "w") as f:
-        json.dump(
-            {
-                "embedder_model": chosen_embedder_model,
-            },
-            f,
-        )
+
+    file_path = os.path.join(exp_dir, "model_info.json")
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            data = json.load(f)
+    else:
+        data = {}
+    data.update(
+        {
+            "embedder_model": chosen_embedder_model,
+        }
+    )
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=4)
+
     files = []
     for file in glob.glob(os.path.join(wav_path, "*.wav")):
         file_name = os.path.basename(file)
