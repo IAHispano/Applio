@@ -1,5 +1,5 @@
 import torch
-if torch.cuda.get_device_name().endswith("[ZLUDA]"):
+if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):
     _torch_stft = torch.stft
     def z_stft(
         audio: torch.Tensor,
