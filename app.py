@@ -16,7 +16,7 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 # Zluda hijack
-import rvc.train.zluda
+import rvc.lib.zluda
 
 # Import Tabs
 from tabs.inference.inference import inference_tab

@@ -20,10 +20,12 @@ from torch.nn import functional as F
 
 import torch.distributed as dist
 import torch.multiprocessing as mp
-import zluda
 
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
+
+# Zluda hijack
+import rvc.lib.zluda
 
 from utils import (
     HParams,
