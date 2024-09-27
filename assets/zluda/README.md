@@ -41,13 +41,9 @@ c. Unzip the content of the archive into that folder
 - Follow the description there.
 
 ### 3. Installing Applio
-3.1 Install [Python 3.10.11] https://www.python.org/ftp/python/3.10.11/python-3.10.11-amd64.exe
-		- check "Add Python to Path"
-3.2 Download Applio v3.2.5 or higher source code zip Applio's release page, unzip to the desired folder.
-3.3 Edit `run-install.bat` and update the Torch URL from `cu121` to `cu118`
-		```pip install torch==2.3.1 torchvision torchaudio --upgrade --index-url https://download.pytorch.org/whl/cu121```
-3.4 Execute `run-install.bat` to install the required python libraries.
-3.5. If installation completes without errors proceed to the next step
+3.1 Download a compiled version of Applio v3.2.5 or higher, unzip to the desired folder.
+3.3 Using command line from the Applio folder run
+		```env\python -m pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --upgrade --index-url https://download.pytorch.org/whl/cu118```
 
 ### 4. Download Zluda and Patch Torch Libraries
 4.1 move all .bat files from `assets\zluda`to root Applio folder
