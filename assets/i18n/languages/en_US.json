@@ -306,5 +306,7 @@
   "Move files to custom embedder folder": "Move files to custom embedder folder",
   "model information": "model information",
   "Model Creator": "Model Creator",
-  "Name of the model creator. (Default: Unknown)": "Name of the model creator. (Default: Unknown)"
+  "Name of the model creator. (Default: Unknown)": "Name of the model creator. (Default: Unknown)",
+  "Speaker ID": "Speaker ID",
+  "Select the speaker ID to use for the conversion.": "Select the speaker ID to use for the conversion."
 }

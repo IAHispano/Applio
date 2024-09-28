@@ -174,7 +174,11 @@ def output_path_fn(input_audio_path):
     return output_path
 
 
-def change_choices():
+def change_choices(model):
+    if model:
+        speakers = get_speakers_id(model)
+    else:
+        speakers = 0
     names = [
         os.path.join(root, file)
         for root, _, files in os.walk(model_root_relative, topdown=False)
@@ -205,6 +209,7 @@ def change_choices():
         {"choices": sorted(names), "__type__": "update"},
         {"choices": sorted(indexes_list), "__type__": "update"},
         {"choices": sorted(audio_paths), "__type__": "update"},
+        {"choices": sorted(speakers), "__type__": "update"},
     )
 
 
@@ -304,7 +309,7 @@ def get_speakers_id(model):
     if model:
         model_data = torch.load(model, map_location="cpu")
         speakers_id = model_data.get("speakers_id", 0)
-        return list(range(speakers_id + 1))
+        return list(range(speakers_id))
 
 
 # Inference tab
@@ -1928,11 +1933,12 @@ def inference_tab():
     )
     refresh_button.click(
         fn=change_choices,
-        inputs=[],
+        inputs=[model_file],
         outputs=[
             model_file,
             index_file,
             audio,
+            sid,
         ],
     )
     audio.change(
