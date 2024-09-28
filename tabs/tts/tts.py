@@ -439,8 +439,8 @@ def tts_tab():
     )
     refresh_button.click(
         fn=change_choices,
-        inputs=[],
-        outputs=[model_file, index_file],
+        inputs=[model_file],
+        outputs=[model_file, index_file, sid],
     )
     txt_file.upload(
         fn=process_input,
