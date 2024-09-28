@@ -4,6 +4,7 @@ import regex as re
 import json
 import random
 import shutil
+import torch
 
 from core import (
     run_tts_script,
@@ -51,7 +52,11 @@ custom_embedders = [
 ]
 
 
-def change_choices():
+def change_choices(model):
+    if model:
+        speakers = get_speakers_id(model)
+    else:
+        speakers = 0
     names = [
         os.path.join(root, file)
         for root, _, files in os.walk(model_root_relative, topdown=False)
@@ -80,6 +85,7 @@ def change_choices():
         {"choices": sorted(indexes_list), "__type__": "update"},
         {"choices": sorted(custom_embedders), "__type__": "update"},
         {"choices": sorted(custom_embedders), "__type__": "update"},
+        {"choices": sorted(speakers), "__type__": "update"},
     )
 
 
@@ -136,6 +142,11 @@ def save_drop_custom_embedder(dropbox):
         )
     return None
 
+def get_speakers_id(model):
+    if model:
+        model_data = torch.load(model, map_location="cpu")
+        speakers_id = model_data.get("speakers_id", 0)
+        return list(range(speakers_id))
 
 # TTS tab
 def tts_tab():
@@ -233,6 +244,13 @@ def tts_tab():
                 info=i18n("Select the format to export the audio."),
                 choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
                 value="WAV",
+                interactive=True,
+            )
+            sid = gr.Dropdown(
+                label=i18n("Speaker ID"),
+                info=i18n("Select the speaker ID to use for the conversion."),
+                choices=get_speakers_id(model_file.value),
+                value=0,
                 interactive=True,
             )
             split_audio = gr.Checkbox(
@@ -470,6 +488,7 @@ def tts_tab():
             f0_file,
             embedder_model,
             embedder_model_custom,
+            sid,
         ],
         outputs=[vc_output1, vc_output2],
     )
