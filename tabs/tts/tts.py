@@ -142,11 +142,13 @@ def save_drop_custom_embedder(dropbox):
         )
     return None
 
+
 def get_speakers_id(model):
     if model:
         model_data = torch.load(model, map_location="cpu")
         speakers_id = model_data.get("speakers_id", 0)
         return list(range(speakers_id))
+
 
 # TTS tab
 def tts_tab():
