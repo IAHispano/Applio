@@ -359,6 +359,7 @@ def run_tts_script(
     f0_file: str,
     embedder_model: str,
     embedder_model_custom: str = None,
+    sid: int = 0,
 ):
 
     tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
@@ -402,6 +403,7 @@ def run_tts_script(
         f0_file=f0_file,
         embedder_model=embedder_model,
         embedder_model_custom=embedder_model_custom,
+        sid=sid,
         formant_shifting=None,
         formant_qfrency=None,
         formant_timbre=None,
