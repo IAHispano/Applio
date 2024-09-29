@@ -80,13 +80,37 @@ def change_choices(model):
         for filename in filenames
         if filename.endswith(".pt")
     ]
+
     return (
         {"choices": sorted(names), "__type__": "update"},
         {"choices": sorted(indexes_list), "__type__": "update"},
-        {"choices": sorted(custom_embedders), "__type__": "update"},
-        {"choices": sorted(custom_embedders), "__type__": "update"},
-        {"choices": sorted(speakers), "__type__": "update"},
+        {
+            "choices": (
+                sorted(speakers)
+                if speakers is not None and isinstance(speakers, (list, tuple))
+                else []
+            ),
+            "__type__": "update",
+        },
     )
+
+
+def create_folder_and_move_files(folder_name, bin_file, config_file):
+    if not folder_name:
+        return "Folder name must not be empty."
+
+    folder_name = os.path.join(custom_embedder_root, folder_name)
+    os.makedirs(folder_name, exist_ok=True)
+
+    if bin_file:
+        bin_file_path = os.path.join(folder_name, os.path.basename(bin_file))
+        shutil.copy(bin_file, bin_file_path)
+
+    if config_file:
+        config_file_path = os.path.join(folder_name, os.path.basename(config_file))
+        shutil.copy(config_file, config_file_path)
+
+    return f"Files moved to folder {folder_name}"
 
 
 def get_indexes():
@@ -106,6 +130,13 @@ def process_input(file_path):
     gr.Info(f"The text from the txt file has been loaded!")
     return file_contents, None
 
+def refresh_embedders_folders():
+    custom_embedders = [
+        os.path.join(dirpath, dirname)
+        for dirpath, dirnames, _ in os.walk(custom_embedder_root_relative)
+        for dirname in dirnames
+    ]
+    return custom_embedders
 
 def match_index(model_file_value):
     if model_file_value:
@@ -384,35 +415,47 @@ def tts_tab():
                 interactive=True,
             )
             embedder_model = gr.Radio(
-                label=i18n("Embedder Model"),
-                info=i18n("Model used for learning speaker embedding."),
-                choices=[
-                    "contentvec",
-                    "chinese-hubert-base",
-                    "japanese-hubert-base",
-                    "korean-hubert-base",
-                    "custom",
-                ],
-                value="contentvec",
-                interactive=True,
-            )
+                    label=i18n("Embedder Model"),
+                    info=i18n("Model used for learning speaker embedding."),
+                    choices=[
+                        "contentvec",
+                        "chinese-hubert-base",
+                        "japanese-hubert-base",
+                        "korean-hubert-base",
+                        "custom",
+                    ],
+                    value="contentvec",
+                    interactive=True,
+                )
             with gr.Column(visible=False) as embedder_custom:
-                with gr.Accordion(i18n("Custom Embedder"), open=True):
-                    embedder_upload_custom = gr.File(
-                        label=i18n("Upload Custom Embedder"),
-                        type="filepath",
-                        interactive=True,
-                    )
-                    embedder_custom_refresh = gr.Button(i18n("Refresh"))
-                    embedder_model_custom = gr.Dropdown(
-                        label=i18n("Custom Embedder"),
-                        info=i18n(
-                            "Select the custom embedder to use for the conversion."
-                        ),
-                        choices=sorted(custom_embedders),
-                        interactive=True,
-                        allow_custom_value=True,
-                    )
+                    with gr.Accordion(i18n("Custom Embedder"), open=True):
+                        with gr.Row():
+                            embedder_model_custom = gr.Dropdown(
+                                label=i18n("Select Custom Embedder"),
+                                choices=refresh_embedders_folders(),
+                                interactive=True,
+                                allow_custom_value=True,
+                            )
+                            refresh_embedders_button = gr.Button(
+                                i18n("Refresh embedders")
+                            )
+                        folder_name_input = gr.Textbox(
+                            label=i18n("Folder Name"), interactive=True
+                        )
+                        with gr.Row():
+                            bin_file_upload = gr.File(
+                                label=i18n("Upload .bin"),
+                                type="filepath",
+                                interactive=True,
+                            )
+                            config_file_upload = gr.File(
+                                label=i18n("Upload .json"),
+                                type="filepath",
+                                interactive=True,
+                            )
+                        move_files_button = gr.Button(
+                            i18n("Move files to custom embedder folder")
+                        )
             f0_file = gr.File(
                 label=i18n(
                     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."
@@ -457,15 +500,15 @@ def tts_tab():
         inputs=[embedder_model],
         outputs=[embedder_custom],
     )
-    embedder_upload_custom.upload(
-        fn=save_drop_custom_embedder,
-        inputs=[embedder_upload_custom],
-        outputs=[embedder_upload_custom],
+    move_files_button.click(
+        fn=create_folder_and_move_files,
+        inputs=[folder_name_input, bin_file_upload, config_file_upload],
+        outputs=[],
     )
-    embedder_custom_refresh.click(
-        fn=change_choices,
+    refresh_embedders_button.click(
+        fn=lambda: gr.update(choices=refresh_embedders_folders()),
         inputs=[],
-        outputs=[model_file, index_file, embedder_model_custom],
+        outputs=[embedder_model_custom],
     )
     convert_button1.click(
         fn=run_tts_script,
