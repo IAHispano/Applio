@@ -1617,7 +1617,7 @@ def parse_arguments():
         "--pretraineds_v1_f0",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
-        default=True,
+        default=False,
         help="Download pretrained models for RVC v1.",
     )
     prerequisites_parser.add_argument(
@@ -1631,14 +1631,14 @@ def parse_arguments():
         "--pretraineds_v1_nof0",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
-        default=True,
+        default=False,
         help="Download non f0 pretrained models for RVC v1.",
     )
     prerequisites_parser.add_argument(
         "--pretraineds_v2_nof0",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
-        default=True,
+        default=False,
         help="Download non f0 pretrained models for RVC v2.",
     )
     prerequisites_parser.add_argument(
