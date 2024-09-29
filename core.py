@@ -1838,7 +1838,7 @@ def main():
             run_prerequisites_script(
                 pretraineds_v1_f0=args.pretraineds_v1_f0,
                 pretraineds_v1_nof0=args.pretraineds_v1_nof0,
-                pretraineds_v2_f0=args.pretraineds_v1_nof0,
+                pretraineds_v2_f0=args.pretraineds_v2_f0,
                 pretraineds_v2_nof0=args.pretraineds_v2_nof0,
                 models=args.models,
                 exe=args.exe,
