@@ -1,127 +1,34 @@
-import os, sys
-import gradio as gr
-import regex as re
 import json
+import os
 import random
-import shutil
-import torch
+import sys
 
-from core import (
-    run_tts_script,
-)
-
-from assets.i18n.i18n import I18nAuto
-
-i18n = I18nAuto()
+import gradio as gr
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-model_root = os.path.join(now_dir, "logs")
-model_root_relative = os.path.relpath(model_root, now_dir)
-custom_embedder_root = os.path.join(
-    now_dir, "rvc", "models", "embedders", "embedders_custom"
+from assets.i18n.i18n import I18nAuto
+from core import run_tts_script
+from tabs.inference.inference import (
+    change_choices,
+    create_folder_and_move_files,
+    get_indexes,
+    get_speakers_id,
+    match_index,
+    names,
+    refresh_embedders_folders,
 )
 
-os.makedirs(custom_embedder_root, exist_ok=True)
+i18n = I18nAuto()
 
-custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
+json_path = os.path.join("rvc", "lib", "tools", "tts_voices.json")
+default_weight = random.choice(names) if names else ""
 
-names = [
-    os.path.join(root, file)
-    for root, _, files in os.walk(model_root_relative, topdown=False)
-    for file in files
-    if (
-        file.endswith((".pth", ".onnx"))
-        and not (file.startswith("G_") or file.startswith("D_"))
-    )
-]
+with open(json_path, "r") as file:
+    tts_voices_data = json.load(file)
 
-indexes_list = [
-    os.path.join(root, name)
-    for root, _, files in os.walk(model_root_relative, topdown=False)
-    for name in files
-    if name.endswith(".index") and "trained" not in name
-]
-
-custom_embedders = [
-    os.path.join(dirpath, filename)
-    for dirpath, _, filenames in os.walk(custom_embedder_root_relative)
-    for filename in filenames
-    if filename.endswith(".pt")
-]
-
-
-def change_choices(model):
-    if model:
-        speakers = get_speakers_id(model)
-    else:
-        speakers = 0
-    names = [
-        os.path.join(root, file)
-        for root, _, files in os.walk(model_root_relative, topdown=False)
-        for file in files
-        if (
-            file.endswith((".pth", ".onnx"))
-            and not (file.startswith("G_") or file.startswith("D_"))
-        )
-    ]
-
-    indexes_list = [
-        os.path.join(root, name)
-        for root, _, files in os.walk(model_root_relative, topdown=False)
-        for name in files
-        if name.endswith(".index") and "trained" not in name
-    ]
-
-    custom_embedders = [
-        os.path.join(dirpath, filename)
-        for dirpath, _, filenames in os.walk(custom_embedder_root_relative)
-        for filename in filenames
-        if filename.endswith(".pt")
-    ]
-
-    return (
-        {"choices": sorted(names), "__type__": "update"},
-        {"choices": sorted(indexes_list), "__type__": "update"},
-        {
-            "choices": (
-                sorted(speakers)
-                if speakers is not None and isinstance(speakers, (list, tuple))
-                else []
-            ),
-            "__type__": "update",
-        },
-    )
-
-
-def create_folder_and_move_files(folder_name, bin_file, config_file):
-    if not folder_name:
-        return "Folder name must not be empty."
-
-    folder_name = os.path.join(custom_embedder_root, folder_name)
-    os.makedirs(folder_name, exist_ok=True)
-
-    if bin_file:
-        bin_file_path = os.path.join(folder_name, os.path.basename(bin_file))
-        shutil.copy(bin_file, bin_file_path)
-
-    if config_file:
-        config_file_path = os.path.join(folder_name, os.path.basename(config_file))
-        shutil.copy(config_file, config_file_path)
-
-    return f"Files moved to folder {folder_name}"
-
-
-def get_indexes():
-    indexes_list = [
-        os.path.join(dirpath, filename)
-        for dirpath, _, filenames in os.walk(model_root_relative)
-        for filename in filenames
-        if filename.endswith(".index") and "trained" not in filename
-    ]
-
-    return indexes_list if indexes_list else ""
+short_names = [voice.get("ShortName", "") for voice in tts_voices_data]
 
 
 def process_input(file_path):
@@ -131,64 +38,8 @@ def process_input(file_path):
     return file_contents, None
 
 
-def refresh_embedders_folders():
-    custom_embedders = [
-        os.path.join(dirpath, dirname)
-        for dirpath, dirnames, _ in os.walk(custom_embedder_root_relative)
-        for dirname in dirnames
-    ]
-    return custom_embedders
-
-
-def match_index(model_file_value):
-    if model_file_value:
-        model_folder = os.path.dirname(model_file_value)
-        model_name = os.path.basename(model_file_value)
-        index_files = get_indexes()
-        pattern = r"^(.*?)_"
-        match = re.match(pattern, model_name)
-        for index_file in index_files:
-            if os.path.dirname(index_file) == model_folder:
-                return index_file
-            elif match and match.group(1) in os.path.basename(index_file):
-                return index_file
-            elif model_name in os.path.basename(index_file):
-                return index_file
-    return ""
-
-
-def save_drop_custom_embedder(dropbox):
-    if ".pt" not in dropbox:
-        gr.Info(
-            i18n("The file you dropped is not a valid embedder file. Please try again.")
-        )
-    else:
-        file_name = os.path.basename(dropbox)
-        custom_embedder_path = os.path.join(custom_embedder_root, file_name)
-        if os.path.exists(custom_embedder_path):
-            os.remove(custom_embedder_path)
-        shutil.copy(dropbox, custom_embedder_path)
-        gr.Info(
-            i18n(
-                "Click the refresh button to see the embedder file in the dropdown menu."
-            )
-        )
-    return None
-
-
-def get_speakers_id(model):
-    if model:
-        model_data = torch.load(model, map_location="cpu")
-        speakers_id = model_data.get("speakers_id", 0)
-        if speakers_id:
-            return list(range(speakers_id))
-        else:
-            return [0]
-
-
 # TTS tab
 def tts_tab():
-    default_weight = random.choice(names) if names else ""
     with gr.Column():
         with gr.Row():
             model_file = gr.Dropdown(
@@ -227,12 +78,7 @@ def tts_tab():
                 outputs=[index_file],
             )
 
-    json_path = os.path.join("rvc", "lib", "tools", "tts_voices.json")
-    with open(json_path, "r") as file:
-        tts_voices_data = json.load(file)
-
-    short_names = [voice.get("ShortName", "") for voice in tts_voices_data]
-
+    gr.Markdown(i18n(f"Applio is a Speech-to-Speech conversion software, utilizing EdgeTTS as middleware for running the Text-to-Speech (TTS) component. Read more about it [here!](https://docs.applio.org/getting-started/tts#disclaimer)"))
     tts_voice = gr.Dropdown(
         label=i18n("TTS Voices"),
         info=i18n("Select the TTS voice to use for the conversion."),
@@ -251,17 +97,19 @@ def tts_tab():
         interactive=True,
     )
 
-    tts_text = gr.Textbox(
-        label=i18n("Text to Synthesize"),
-        info=i18n("Enter the text to synthesize."),
-        placeholder=i18n("Enter text to synthesize"),
-        lines=3,
-    )
-
-    txt_file = gr.File(
-        label=i18n("Or you can upload a .txt file"),
-        type="filepath",
-    )
+    with gr.Tabs():
+        with gr.Tab(label="Text to Speech"):
+            tts_text = gr.Textbox(
+                label=i18n("Text to Synthesize"),
+                info=i18n("Enter the text to synthesize."),
+                placeholder=i18n("Enter text to synthesize"),
+                lines=3,
+            )
+        with gr.Tab(label="File to Speech"):
+            txt_file = gr.File(
+                label=i18n("Upload a .txt file"),
+                type="filepath",
+            )
 
     with gr.Accordion(i18n("Advanced Settings"), open=False):
         with gr.Column():
@@ -463,7 +311,7 @@ def tts_tab():
                 visible=True,
             )
 
-    convert_button1 = gr.Button(i18n("Convert"))
+    convert_button = gr.Button(i18n("Convert"))
 
     with gr.Row():
         vc_output1 = gr.Textbox(
@@ -510,7 +358,7 @@ def tts_tab():
         inputs=[],
         outputs=[embedder_model_custom],
     )
-    convert_button1.click(
+    convert_button.click(
         fn=run_tts_script,
         inputs=[
             tts_text,
