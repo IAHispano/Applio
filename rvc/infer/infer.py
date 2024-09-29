@@ -211,6 +211,7 @@ class VoiceConverter:
         hop_length: int = 128,
         split_audio: bool = False,
         f0_autotune: bool = False,
+        f0_autotune_strength: float = 1,
         filter_radius: int = 3,
         embedder_model: str = "contentvec",
         embedder_model_custom: str = None,
@@ -309,6 +310,7 @@ class VoiceConverter:
                     protect=protect,
                     hop_length=hop_length,
                     f0_autotune=f0_autotune,
+                    f0_autotune_strength=f0_autotune_strength,
                     f0_file=f0_file,
                 )
                 converted_chunks.append(audio_opt)

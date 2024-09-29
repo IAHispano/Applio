@@ -422,6 +422,17 @@ def inference_tab():
                     value=False,
                     interactive=True,
                 )
+                autotune_strength = gr.Slider(
+                    minimum=0,
+                    maximum=1,
+                    label=i18n("Autotune Strength"),
+                    info=i18n(
+                        "Set the autotune strength - the more you increase it the more it will snap to the monochromatic grid."
+                    ),
+                    visible=False,
+                    value=1,
+                    interactive=True,
+                )
                 clean_audio = gr.Checkbox(
                     label=i18n("Clean Audio"),
                     info=i18n(
@@ -1053,6 +1064,17 @@ def inference_tab():
                     ),
                     visible=True,
                     value=False,
+                    interactive=True,
+                )
+                autotune_strength_batch = gr.Slider(
+                    minimum=0,
+                    maximum=1,
+                    label=i18n("Autotune Strength"),
+                    info=i18n(
+                        "Set the autotune strength - the more you increase it the more it will snap to the monochromatic grid."
+                    ),
+                    visible=False,
+                    value=1,
                     interactive=True,
                 )
                 clean_audio_batch = gr.Checkbox(
@@ -1701,6 +1723,11 @@ def inference_tab():
     def delay_visible(checkbox):
         return update_visibility(checkbox, 3)
 
+    autotune.change(
+        fn=toggle_visible,
+        inputs=[autotune],
+        outputs=[autotune_strength],
+    )
     clean_audio.change(
         fn=toggle_visible,
         inputs=[clean_audio],
@@ -1919,6 +1946,11 @@ def inference_tab():
         inputs=[delay_batch],
         outputs=[delay_seconds_batch, delay_feedback_batch, delay_mix_batch],
     )
+    autotune_batch.change(
+        fn=toggle_visible,
+        inputs=[autotune_batch],
+        outputs=[autotune_strength_batch],
+    )
     clean_audio_batch.change(
         fn=toggle_visible,
         inputs=[clean_audio_batch],
@@ -2019,6 +2051,7 @@ def inference_tab():
             index_file,
             split_audio,
             autotune,
+            autotune_strength,
             clean_audio,
             clean_strength,
             export_format,
@@ -2085,6 +2118,7 @@ def inference_tab():
             index_file,
             split_audio_batch,
             autotune_batch,
+            autotune_strength_batch,
             clean_audio_batch,
             clean_strength_batch,
             export_format_batch,
