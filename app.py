@@ -128,6 +128,7 @@ with gr.Blocks(
 
 def launch_gradio(port):
     Applio.launch(
+        # ssr_mode=True,
         favicon_path="assets/ICON.ico",
         share="--share" in sys.argv,
         inbrowser="--open" in sys.argv,

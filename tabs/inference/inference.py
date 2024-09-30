@@ -86,6 +86,8 @@ custom_embedders = [
 
 
 def update_sliders(preset):
+    if not preset:
+        return None, None, None, None, None
     with open(
         os.path.join(PRESETS_DIR, f"{preset}.json"), "r", encoding="utf-8"
     ) as json_file:
@@ -100,6 +102,8 @@ def update_sliders(preset):
 
 
 def update_sliders_formant(preset):
+    if not preset:
+        return None, None
     with open(
         os.path.join(FORMANTSHIFT_DIR, f"{preset}.json"), "r", encoding="utf-8"
     ) as json_file:
