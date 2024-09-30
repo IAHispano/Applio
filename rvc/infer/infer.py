@@ -21,6 +21,7 @@ from pedalboard import (
     Compressor,
     Delay,
 )
+from audioseal import AudioSeal
 
 from scipy.io import wavfile
 from audio_upscaler import upscale
@@ -334,6 +335,34 @@ class VoiceConverter:
                     **kwargs,
                 )
 
+            model = AudioSeal.load_generator("audioseal_wm_16bits")
+
+            # Converter o áudio para tensor do PyTorch e adicionar dimensão de batch
+            wav = torch.tensor(audio_opt).unsqueeze(0).unsqueeze(0)
+
+            def string_to_bits(s):
+                result = []
+                for c in s:
+                    bits = bin(ord(c))[2:]
+                    bits = "00000000"[len(bits) :] + bits
+                    result.extend([int(b) for b in bits])
+                return result
+
+            # Mensagem a ser embutida
+            message = "made with Applio"
+            message_bits = string_to_bits(message)
+
+            # Cria um tensor a partir da sequência de bits
+            message_tensor = torch.tensor(
+                message_bits, device=wav.device, dtype=torch.float32
+            )
+
+            # Gerar a marca d'água com a mensagem
+            watermark = model.get_watermark(wav, self.tgt_sr, message=message_tensor)
+
+            # Adicionar a marca d'água ao áudio
+            watermarked_audio = wav + watermark
+            audio_opt = watermarked_audio.squeeze(0).numpy()
             sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
             output_path_format = audio_output_path.replace(
                 ".wav", f".{export_format.lower()}"

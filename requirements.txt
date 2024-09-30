@@ -22,6 +22,7 @@ noisereduce
 versatile-audio-upscaler
 pedalboard
 stftpitchshift
+audioseal
 
 # Machine learning and deep learning
 omegaconf==2.0.5; sys_platform == 'darwin'
