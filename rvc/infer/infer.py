@@ -337,32 +337,30 @@ class VoiceConverter:
 
             model = AudioSeal.load_generator("audioseal_wm_16bits")
 
-            # Converter o áudio para tensor do PyTorch e adicionar dimensão de batch
             wav = torch.tensor(audio_opt).unsqueeze(0).unsqueeze(0)
 
             def string_to_bits(s):
                 result = []
                 for c in s:
-                    bits = bin(ord(c))[2:]
-                    bits = "00000000"[len(bits) :] + bits
+                    bits = bin(ord(c))[2:].zfill(8)
                     result.extend([int(b) for b in bits])
                 return result
 
-            # Mensagem a ser embutida
-            message = "made with Applio"
+            message = "made with applio"
             message_bits = string_to_bits(message)
 
-            # Cria um tensor a partir da sequência de bits
-            message_tensor = torch.tensor(
-                message_bits, device=wav.device, dtype=torch.float32
-            )
+            if len(message_bits) < 16:
+                message_bits += [0] * (16 - len(message_bits))
+            else:
+                message_bits = message_bits[:16]
 
-            # Gerar a marca d'água com a mensagem
-            watermark = model.get_watermark(wav, self.tgt_sr, message=message_tensor)
+            secret_message = torch.tensor([message_bits], dtype=torch.int32)
 
-            # Adicionar a marca d'água ao áudio
+            watermark = model.get_watermark(wav, self.tgt_sr, message=secret_message)
+
             watermarked_audio = wav + watermark
-            audio_opt = watermarked_audio.squeeze(0).numpy()
+            audio_opt = watermarked_audio.squeeze().detach().numpy()
+
             sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
             output_path_format = audio_output_path.replace(
                 ".wav", f".{export_format.lower()}"
