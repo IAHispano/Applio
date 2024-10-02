@@ -26,7 +26,9 @@ python = sys.executable
 # Get TTS Voices -> https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4
 @lru_cache(maxsize=1)  # Cache only one result since the file is static
 def load_voices_data():
-    with open(os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r", encoding="utf-8") as file:
+    with open(
+        os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r", encoding="utf-8"
+    ) as file:
         return json.load(file)
 
 
