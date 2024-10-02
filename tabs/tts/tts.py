@@ -22,10 +22,9 @@ from tabs.inference.inference import (
 
 i18n = I18nAuto()
 
-json_path = os.path.join("rvc", "lib", "tools", "tts_voices.json")
 default_weight = random.choice(names) if names else ""
 
-with open(json_path, "r") as file:
+with open(os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r", encoding="utf-8") as file:
     tts_voices_data = json.load(file)
 
 short_names = [voice.get("ShortName", "") for voice in tts_voices_data]
