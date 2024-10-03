@@ -778,11 +778,17 @@ def train_and_evaluate(
                         ),
                         "all/mel": plot_spectrogram_to_numpy(mel[0].data.cpu().numpy()),
                     }
+                    audio_dict = {}
+                    o, *_ = net_g.infer(phone, phone_lengths, pitch, pitchf, sid)
+                    audio_dict.update({f"gen/audio_{global_step:07d}": o[0, :, : ]})
+                    
                     summarize(
                         writer=writer,
                         global_step=global_step,
                         images=image_dict,
                         scalars=scalar_dict,
+                        audios=audio_dict,
+                        audio_sample_rate=config.data.sample_rate,
                     )
 
             global_step += 1
