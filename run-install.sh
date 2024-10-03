@@ -3,6 +3,28 @@ printf "\033]0;Installer\007"
 clear
 rm *.bat
 
+# Function to install FFmpeg based on the distribution
+install_ffmpeg() {
+    if [ -x "$(command -v apt)" ]; then
+        echo "Installing FFmpeg using apt..."
+        sudo apt update && sudo apt install -y ffmpeg
+        if [ $? -ne 0 ]; then
+            echo "Error installing FFmpeg. Check your system's package manager."
+            exit 1
+        fi
+    elif [ -x "$(command -v pacman)" ]; then
+        echo "Installing FFmpeg using pacman..."
+        sudo pacman -Syu --noconfirm ffmpeg
+        if [ $? -ne 0 ]; then
+            echo "Error installing FFmpeg. Check your system's package manager."
+            exit 1
+        fi
+    else
+        echo "Unsupported distribution for FFmpeg installation."
+        exit 1
+    fi
+}
+
 # Function to create or activate a virtual environment
 prepare_install() {
     if [ -d ".venv" ]; then
@@ -17,7 +39,13 @@ prepare_install() {
             echo "Ok! The installation will continue. Good luck!"
         fi
         if [ -f ".venv/bin/activate" ]; then
-            . .venv/bin/activate  
+            if [ "$(uname)" = "Linux" ] && [ -x "$(command -v pacman)" ]; then
+                echo "Activating venv with 'source'..."
+                source .venv/bin/activate  
+            else
+                echo "Activating venv with '.'..."
+                . .venv/bin/activate  
+            fi
         else
             echo "Venv exists but activation file not found, re-creating venv..."
             rm -rf .venv
@@ -51,10 +79,12 @@ create_venv() {
         echo "Error creating the virtual environment. Check Python installation or permissions."
         exit 1
     fi
-    . .venv/bin/activate
-    if [ $? -ne 0 ]; then
-        echo "Error activating the virtual environment. Check if it was created properly."
-        exit 1
+    if [ "$(uname)" = "Linux" ] && [ -x "$(command -v pacman)" ]; then
+        echo "Activating venv with 'source'..."
+        source .venv/bin/activate
+    else
+        echo "Activating venv with '.'..."
+        . .venv/bin/activate
     fi
 
     # Installs pip using ensurepip or get-pip.py
@@ -64,7 +94,7 @@ create_venv() {
         echo "Error with ensurepip, attempting manual pip installation..."
         curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
         python get-pip.py
-        if [ $? -ne 0 ];then
+        if [ $? -ne 0 ]; then
             echo "Failed to install pip manually. Check permissions and internet connection."
             exit 1
         fi
@@ -72,12 +102,7 @@ create_venv() {
     python -m pip install --upgrade pip
     echo
 
-    echo "Installing ffmpeg..."
-    sudo apt update && sudo apt install -y ffmpeg
-    if [ $? -ne 0 ]; then
-        echo "Error installing ffmpeg. Check your system's package manager."
-        exit 1
-    fi
+    install_ffmpeg
 
     echo "Installing Applio dependencies..."
     python -m pip install -r requirements.txt
