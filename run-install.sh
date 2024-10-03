@@ -3,6 +3,28 @@ printf "\033]0;Installer\007"
 clear
 rm *.bat
 
+# Function to install FFmpeg based on the distribution
+install_ffmpeg() {
+    if [ -x "$(command -v apt)" ]; then
+        echo "Installing FFmpeg using apt..."
+        sudo apt update && sudo apt install -y ffmpeg
+        if [ $? -ne 0 ]; then
+            echo "Error installing FFmpeg. Check your system's package manager."
+            exit 1
+        fi
+    elif [ -x "$(command -v pacman)" ]; then
+        echo "Installing FFmpeg using pacman..."
+        sudo pacman -Syu --noconfirm ffmpeg
+        if [ $? -ne 0 ]; then
+            echo "Error installing FFmpeg. Check your system's package manager."
+            exit 1
+        fi
+    else
+        echo "Unsupported distribution for FFmpeg installation."
+        exit 1
+    fi
+}
+
 # Function to create or activate a virtual environment
 prepare_install() {
     if [ -d ".venv" ]; then
@@ -17,7 +39,13 @@ prepare_install() {
             echo "Ok! The installation will continue. Good luck!"
         fi
         if [ -f ".venv/bin/activate" ]; then
-            . .venv/bin/activate  
+            if [ "$(uname)" = "Linux" ] && [ -x "$(command -v pacman)" ]; then
+                echo "Activating venv with 'source'..."
+                source .venv/bin/activate  
+            else
+                echo "Activating venv with '.'..."
+                . .venv/bin/activate  
+            fi
         else
             echo "Venv exists but activation file not found, re-creating venv..."
             rm -rf .venv
@@ -33,7 +61,6 @@ create_venv() {
     echo "Creating venv..."
     requirements_file="requirements.txt"
     echo "Checking if python exists"
-
     if command -v python3.10 > /dev/null 2>&1; then
         py=$(which python3.10)
         echo "Using python3.10"
@@ -46,20 +73,18 @@ create_venv() {
             exit 1
         fi
     fi
-
-    # Install the venv package based on the distribution
-    install_venv_package
-
     # Try to create the env
     $py -m venv .venv
     if [ $? -ne 0 ]; then
         echo "Error creating the virtual environment. Check Python installation or permissions."
         exit 1
     fi
-    . .venv/bin/activate
-    if [ $? -ne 0 ]; then
-        echo "Error activating the virtual environment. Check if it was created properly."
-        exit 1
+    if [ "$(uname)" = "Linux" ] && [ -x "$(command -v pacman)" ]; then
+        echo "Activating venv with 'source'..."
+        source .venv/bin/activate
+    else
+        echo "Activating venv with '.'..."
+        . .venv/bin/activate
     fi
 
     # Installs pip using ensurepip or get-pip.py
@@ -77,7 +102,6 @@ create_venv() {
     python -m pip install --upgrade pip
     echo
 
-    # Install FFmpeg based on the distribution
     install_ffmpeg
 
     echo "Installing Applio dependencies..."
@@ -89,71 +113,6 @@ create_venv() {
 
     python -m pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --upgrade --index-url https://download.pytorch.org/whl/cu121 
     finish
-}
-
-# Function to install the venv package based on the distribution
-install_venv_package() {
-    echo "Installing venv package..."
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        case "$ID" in
-            ubuntu|debian)
-                sudo apt update && sudo apt install -y python3-venv
-                ;;
-            arch)
-                sudo pacman -Sy python-virtualenv
-                install_gtk_modules
-                ;;
-            *)
-                echo "Unsupported distribution for venv installation."
-                exit 1
-                ;;
-        esac
-        if [ $? -ne 0 ]; then
-            echo "Error installing venv package. Check your system's package manager."
-            exit 1
-        fi
-    else
-        echo "Could not determine the operating system."
-        exit 1
-    fi
-}
-
-# Function to install FFmpeg based on the distribution
-install_ffmpeg() {
-    echo "Installing FFmpeg..."
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        case "$ID" in
-            ubuntu|debian)
-                sudo apt update && sudo apt install -y ffmpeg
-                ;;
-            arch)
-                sudo pacman -Sy ffmpeg
-                ;;
-            *)
-                echo "Unsupported distribution for FFmpeg installation."
-                exit 1
-                ;;
-        esac
-        if [ $? -ne 0 ]; then
-            echo "Error installing FFmpeg. Check your system's package manager."
-            exit 1
-        fi
-    else
-        echo "Could not determine the operating system."
-        exit 1
-    fi
-}
-
-# Function to install GTK modules for Arch Linux
-install_gtk_modules() {
-    echo "Installing GTK modules..."
-    sudo pacman -Sy xapp gtk3-gtk2-module
-    if [ $? -ne 0 ]; then
-        echo "Error installing GTK modules. Check your system's package manager."
-        exit 1
-    fi
 }
 
 # Function to finish installation
