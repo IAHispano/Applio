@@ -24,7 +24,9 @@ i18n = I18nAuto()
 
 default_weight = random.choice(names) if names else ""
 
-with open(os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r", encoding="utf-8") as file:
+with open(
+    os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r", encoding="utf-8"
+) as file:
     tts_voices_data = json.load(file)
 
 short_names = [voice.get("ShortName", "") for voice in tts_voices_data]
