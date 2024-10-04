@@ -779,7 +779,8 @@ def train_and_evaluate(
                         "all/mel": plot_spectrogram_to_numpy(mel[0].data.cpu().numpy()),
                     }
                     audio_dict = {}
-                    o, *_ = net_g.infer(phone, phone_lengths, pitch, pitchf, sid)
+                    with torch.no_grad():
+                        o, *_ = net_g.infer(phone, phone_lengths, pitch, pitchf, sid)
                     audio_dict.update({f"gen/audio_{global_step:07d}": o[0, :, : ]})
                     
                     summarize(
