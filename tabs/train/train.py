@@ -602,7 +602,7 @@ def train_tab():
                         info=i18n(
                             "Enabling this setting will result in the G and D files saving only their most recent versions, effectively conserving storage space."
                         ),
-                        value=False,
+                        value=True,
                         interactive=True,
                     )
                     save_every_weights = gr.Checkbox(
