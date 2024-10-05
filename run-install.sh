@@ -54,13 +54,16 @@ install_gpp() {
         case "$ID" in
             "ubuntu"|"debian")
                 sudo apt update
+                sudo apt install python3-dev
                 sudo apt install -y g++
                 ;;
             "fedora"|"nobara")
                 sudo dnf install -y gcc-c++
+                sudo dnf install python3-devel
                 ;;
             "arch"|"manjaro")
                 sudo pacman -Syu g++
+                sudo pacman -S python
                 ;;
             *)
                 echo "Distribution not supported."
@@ -153,7 +156,6 @@ create_venv() {
         exit 1
     fi
 
-    python -m pip uninstall -y pyworld
 
     python -m pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --upgrade --index-url https://download.pytorch.org/whl/cu121 
     finish
