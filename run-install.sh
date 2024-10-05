@@ -83,7 +83,7 @@ create_venv() {
         py=$(which python3.10)
         echo "Using python3.10"
     else
-        if python --version | grep -qE "3\.(7|8|9|10|11)\."; then
+        if python --version | grep -qE "3\.(7|8|9|10|)\."; then
             py=$(which python)
             echo "Using python"
         else
