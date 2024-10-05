@@ -80,6 +80,8 @@ install_gpp
 
 echo "g++ correctly installed"
 
+python pip install pyworld --no-build-isolation
+
 # Function to create or activate a virtual environment
 prepare_install() {
     if [ -d ".venv" ]; then
