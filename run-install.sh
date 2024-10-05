@@ -21,7 +21,7 @@ install_ffmpeg() {
         fi
     elif [ -x "$(command -v dnf)" ]; then
         echo "Installing FFmpeg using dnf..."
-        sudo dnf install -y ffmpeg
+        sudo dnf install -y ffmpeg --allowerasing
         if [ $? -ne 0 ];then
             echo "Error installing FFmpeg with dnf. Trying Flatpak..."
             install_ffmpeg_flatpak
