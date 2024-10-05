@@ -47,40 +47,6 @@ install_ffmpeg_flatpak() {
     fi
 }
 
-# Fix for "  Building wheel for pyworld (pyproject.toml) ... error"
-install_gpp() {
-    if [[ -f /etc/os-release ]]; then
-        . /etc/os-release
-        case "$ID" in
-            "ubuntu"|"debian")
-                sudo apt update
-                sudo apt install python3-dev
-                sudo apt install -y g++
-                ;;
-            "fedora"|"nobara")
-                sudo dnf install -y gcc-c++
-                sudo dnf install python3-devel
-                ;;
-            "arch"|"manjaro")
-                sudo pacman -Syu g++
-                sudo pacman -S python
-                ;;
-            *)
-                echo "Distribution not supported."
-                exit 1
-                ;;
-        esac
-    else
-        echo "The distribution cannot be determined."
-        exit 1
-    fi
-}
-
-install_gpp
-
-echo "g++ correctly installed"
-
-python pip install pyworld --no-build-isolation
 
 # Function to create or activate a virtual environment
 prepare_install() {
@@ -149,7 +115,6 @@ create_venv() {
     python -m pip install --upgrade pip
 
     install_ffmpeg
-    install_dev_tools
 
     echo "Installing Applio dependencies..."
     python -m pip install -r requirements.txt
