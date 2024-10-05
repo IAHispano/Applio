@@ -36,8 +36,8 @@ install_ffmpeg() {
 install_ffmpeg_flatpak() {
     if [ -x "$(command -v flatpak)" ]; then
         echo "Installing FFmpeg using Flatpak..."
-        flatpak install -y flathub org.freedesktop.Platform.ffmpeg
-        if [ $? -ne 0 ];then
+        flatpak install --user -y flathub org.freedesktop.Platform.ffmpeg
+        if [ $? -ne 0 ]; then
             echo "Error installing FFmpeg with Flatpak. Please check your Flatpak setup."
             exit 1
         fi
