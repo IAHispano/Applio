@@ -47,10 +47,30 @@ install_ffmpeg_flatpak() {
     fi
 }
 
+# Function to install development tools (g++)
+install_dev_tools() {
+    if command -v g++ > /dev/null; then
+        echo "g++ is already installed."
+    else
+        echo "Installing g++..."
+        if [ -f /etc/debian_version ]; then
+            sudo apt update
+            sudo apt install -y build-essential
+        elif [ -f /etc/arch-release ]; then
+            sudo pacman -S --noconfirm base-devel
+        elif [ -f /etc/fedora-release ]; then
+            sudo dnf install -y gcc-c++ make
+        else
+            echo "Unrecognized distribution. Unable to install g++."
+            exit 1
+        fi
+    fi
+}
+
 # Function to create or activate a virtual environment
 prepare_install() {
     if [ -d ".venv" ]; then
-        echo "Venv found. This implies Applio has been already installed or this is a broken install"
+        echo "Venv found. This implies Applio has been already installed or this is a broken install."
         printf "Do you want to execute run-applio.sh? (Y/N): " >&2
         read -r r
         r=$(echo "$r" | tr '[:upper:]' '[:lower:]')
@@ -114,6 +134,7 @@ create_venv() {
     python -m pip install --upgrade pip
 
     install_ffmpeg
+    install_dev_tools
 
     echo "Installing Applio dependencies..."
     python -m pip install -r requirements.txt
