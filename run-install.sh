@@ -48,39 +48,34 @@ install_ffmpeg_flatpak() {
 }
 
 # Fix for "  Building wheel for pyworld (pyproject.toml) ... error"
-install_dev_tools() {
-    echo "Detecting distribution..."
-    if [ -f /etc/debian_version ]; then
-        echo "Detected Debian-based distribution."
-        if ! command -v g++ &> /dev/null; then
-            echo "Installing g++"
-            sudo apt update
-            sudo apt install -y build-essential
-        else
-            echo "g++ is already installed."
-        fi
-    elif [ -f /etc/arch-release ]; then
-        echo "Detected Arch-based distribution."
-        if ! command -v g++ &> /dev/null; then
-            echo "Installing g++"
-            sudo pacman -S --noconfirm base-devel
-        else
-            echo "g++ is already installed."
-        fi
-    elif [ -f /etc/fedora-release ]; then
-        echo "Detected Fedora-based distribution."
-        if ! command -v g++ &> /dev/null; then
-            echo "Installing g++"
-            sudo dnf install -y gcc-c++ make
-        else
-            echo "g++ is already installed."
-        fi
+install_gpp() {
+    if [[ -f /etc/os-release ]]; then
+        . /etc/os-release
+        case "$ID" in
+            "ubuntu"|"debian")
+                sudo apt update
+                sudo apt install -y g++
+                ;;
+            "fedora"|"nobara")
+                sudo dnf install -y gcc-c++
+                ;;
+            "arch"|"manjaro")
+                sudo pacman -Syu g++
+                ;;
+            *)
+                echo "Distribution not supported."
+                exit 1
+                ;;
+        esac
     else
-        echo "Unrecognized distribution. Unable to install g++."
+        echo "The distribution cannot be determined."
         exit 1
     fi
 }
 
+install_gpp
+
+echo "g++ correctly installed"
 
 # Function to create or activate a virtual environment
 prepare_install() {
