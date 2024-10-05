@@ -8,19 +8,41 @@ install_ffmpeg() {
     if [ -x "$(command -v apt)" ]; then
         echo "Installing FFmpeg using apt..."
         sudo apt update && sudo apt install -y ffmpeg
-        if [ $? -ne 0 ]; then
+        if [ $? -ne 0 ];then
             echo "Error installing FFmpeg. Check your system's package manager."
             exit 1
         fi
     elif [ -x "$(command -v pacman)" ]; then
         echo "Installing FFmpeg using pacman..."
         sudo pacman -Syu --noconfirm ffmpeg
-        if [ $? -ne 0 ]; then
+        if [ $? -ne 0 ];then
             echo "Error installing FFmpeg. Check your system's package manager."
             exit 1
         fi
+    elif [ -x "$(command -v dnf)" ]; then
+        echo "Installing FFmpeg using dnf..."
+        sudo dnf install -y ffmpeg
+        if [ $? -ne 0 ];then
+            echo "Error installing FFmpeg with dnf. Trying Flatpak..."
+            install_ffmpeg_flatpak
+        fi
     else
-        echo "Unsupported distribution for FFmpeg installation."
+        echo "Unsupported distribution for FFmpeg installation. Trying Flatpak..."
+        install_ffmpeg_flatpak
+    fi
+}
+
+# Function to install FFmpeg using Flatpak
+install_ffmpeg_flatpak() {
+    if [ -x "$(command -v flatpak)" ]; then
+        echo "Installing FFmpeg using Flatpak..."
+        flatpak install -y flathub org.freedesktop.Platform.ffmpeg
+        if [ $? -ne 0 ];then
+            echo "Error installing FFmpeg with Flatpak. Please check your Flatpak setup."
+            exit 1
+        fi
+    else
+        echo "Flatpak is not installed. Please install Flatpak and try again."
         exit 1
     fi
 }
@@ -39,13 +61,8 @@ prepare_install() {
             echo "Ok! The installation will continue. Good luck!"
         fi
         if [ -f ".venv/bin/activate" ]; then
-            if [ "$(uname)" = "Linux" ] && [ -x "$(command -v pacman)" ]; then
-                echo "Activating venv with 'source'..."
-                source .venv/bin/activate  
-            else
-                echo "Activating venv with '.'..."
-                . .venv/bin/activate  
-            fi
+            echo "Activating venv..."
+            source .venv/bin/activate  
         else
             echo "Venv exists but activation file not found, re-creating venv..."
             rm -rf .venv
@@ -79,15 +96,10 @@ create_venv() {
         echo "Error creating the virtual environment. Check Python installation or permissions."
         exit 1
     fi
-    if [ "$(uname)" = "Linux" ] && [ -x "$(command -v pacman)" ]; then
-        echo "Activating venv with 'source'..."
-        source .venv/bin/activate
-    else
-        echo "Activating venv with '.'..."
-        . .venv/bin/activate
-    fi
+    echo "Activating venv..."
+    source .venv/bin/activate
 
-    # Installs pip using ensurepip or get-pip.py
+    # Install pip using ensurepip or get-pip.py
     echo "Installing pip..."
     python -m ensurepip --upgrade
     if [ $? -ne 0 ]; then
@@ -100,7 +112,6 @@ create_venv() {
         fi
     fi
     python -m pip install --upgrade pip
-    echo
 
     install_ffmpeg
 
