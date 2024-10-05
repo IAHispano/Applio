@@ -781,8 +781,8 @@ def train_and_evaluate(
                     audio_dict = {}
                     with torch.no_grad():
                         o, *_ = net_g.infer(phone, phone_lengths, pitch, pitchf, sid)
-                    audio_dict.update({f"gen/audio_{global_step:07d}": o[0, :, : ]})
-                    
+                    audio_dict.update({f"gen/audio_{global_step:07d}": o[0, :, :]})
+
                     summarize(
                         writer=writer,
                         global_step=global_step,
