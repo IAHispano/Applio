@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
 
+printf "\033]0;Installer\007"
+clear
+rm -f *.bat  
+
 # Function to log messages with timestamps
 log_message() {
     local msg="$1"
@@ -87,7 +91,6 @@ create_venv() {
     log_message "Creating virtual environment..."
     py=$(find_python)
 
-    # Create the virtual environment
     "$py" -m venv .venv
 
     log_message "Activating virtual environment..."
@@ -104,8 +107,7 @@ create_venv() {
 
     install_ffmpeg
 
-    # Install dependencies
-    log_message "Installing Applio dependencies..."
+    log_message "Installing dependencies..."
     if [ -f "requirements.txt" ]; then
         python -m pip install -r requirements.txt
     else
@@ -113,8 +115,7 @@ create_venv() {
         exit 1
     fi
 
-    # Install specific PyTorch version
-    log_message "Installing PyTorch and related packages..."
+    log_message "Installing PyTorch..."
     python -m pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --upgrade --index-url https://download.pytorch.org/whl/cu121
 
     finish
@@ -137,7 +138,9 @@ finish() {
         log_message "requirements.txt not found. Please ensure it exists."
         exit 1
     fi
-    log_message "Applio has been successfully installed. Run the file run-applio.sh to start the web interface!"
+
+    clear
+    echo "Applio has been successfully installed. Run the file run-applio.sh to start the web interface!"
     exit 0
 }
 
