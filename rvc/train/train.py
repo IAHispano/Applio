@@ -489,6 +489,16 @@ def run(
     scaler = GradScaler(enabled=config.train.fp16_run and device.type == "cuda")
 
     cache = []
+    # get the first sample as reference for tensorboard evaluation
+    for info in train_loader:
+        phone, phone_lengths, pitch, pitchf, _, _, _, _, sid = info
+        reference = (phone.to(device), 
+                     phone_lengths.to(device),
+                     pitch.to(device) if pitch_guidance else None,
+                     pitchf.to(device) if pitch_guidance else None,
+                     sid.to(device))
+        break
+  
     for epoch in range(epoch_str, total_epoch + 1):
         if rank == 0:
             train_and_evaluate(
@@ -504,6 +514,7 @@ def run(
                 custom_save_every_weights,
                 custom_total_epoch,
                 device,
+                reference
             )
         else:
             train_and_evaluate(
@@ -519,6 +530,7 @@ def run(
                 custom_save_every_weights,
                 custom_total_epoch,
                 device,
+                reference,
             )
         scheduler_g.step()
         scheduler_d.step()
@@ -537,6 +549,7 @@ def train_and_evaluate(
     custom_save_every_weights,
     custom_total_epoch,
     device,
+    reference,
 ):
     """
     Trains and evaluates the model for one epoch.
@@ -778,11 +791,10 @@ def train_and_evaluate(
                         ),
                         "all/mel": plot_spectrogram_to_numpy(mel[0].data.cpu().numpy()),
                     }
-                    audio_dict = {}
+                  
                     with torch.no_grad():
-                        o, *_ = net_g.infer(phone, phone_lengths, pitch, pitchf, sid)
-                    audio_dict.update({f"gen/audio_{global_step:07d}": o[0, :, : ]})
-                    
+                        o, *_ = net_g.infer(*reference)
+                    audio_dict = {f"gen/audio_{global_step:07d}": o[0, :, : ]}
                     summarize(
                         writer=writer,
                         global_step=global_step,
