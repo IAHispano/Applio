@@ -893,6 +893,7 @@ def parse_arguments():
         choices=[True, False],
         help=post_process_description,
         default=False,
+        required=False,
     )
     reverb_description = "Apply reverb effect to the output audio."
     infer_parser.add_argument(
@@ -901,6 +902,7 @@ def parse_arguments():
         choices=[True, False],
         help=reverb_description,
         default=False,
+        required=False,
     )
 
     pitch_shift_description = "Apply pitch shifting effect to the output audio."
@@ -910,6 +912,7 @@ def parse_arguments():
         choices=[True, False],
         help=pitch_shift_description,
         default=False,
+        required=False,
     )
 
     limiter_description = "Apply limiter effect to the output audio."
@@ -919,6 +922,7 @@ def parse_arguments():
         choices=[True, False],
         help=limiter_description,
         default=False,
+        required=False,
     )
 
     gain_description = "Apply gain effect to the output audio."
@@ -928,6 +932,7 @@ def parse_arguments():
         choices=[True, False],
         help=gain_description,
         default=False,
+        required=False,
     )
 
     distortion_description = "Apply distortion effect to the output audio."
@@ -937,6 +942,7 @@ def parse_arguments():
         choices=[True, False],
         help=distortion_description,
         default=False,
+        required=False,
     )
 
     chorus_description = "Apply chorus effect to the output audio."
@@ -946,6 +952,7 @@ def parse_arguments():
         choices=[True, False],
         help=chorus_description,
         default=False,
+        required=False,
     )
 
     bitcrush_description = "Apply bitcrush effect to the output audio."
@@ -955,6 +962,7 @@ def parse_arguments():
         choices=[True, False],
         help=bitcrush_description,
         default=False,
+        required=False,
     )
 
     clipping_description = "Apply clipping effect to the output audio."
@@ -964,6 +972,7 @@ def parse_arguments():
         choices=[True, False],
         help=clipping_description,
         default=False,
+        required=False,
     )
 
     compressor_description = "Apply compressor effect to the output audio."
@@ -973,6 +982,7 @@ def parse_arguments():
         choices=[True, False],
         help=compressor_description,
         default=False,
+        required=False,
     )
 
     delay_description = "Apply delay effect to the output audio."
@@ -982,6 +992,7 @@ def parse_arguments():
         choices=[True, False],
         help=delay_description,
         default=False,
+        required=False,
     )
 
     reverb_room_size_description = "Control the room size of the reverb effect. Higher values result in a larger room size."
@@ -1390,6 +1401,7 @@ def parse_arguments():
         choices=[True, False],
         help=post_process_description,
         default=False,
+        required=False,
     )
     batch_infer_parser.add_argument(
         "--reverb",
@@ -1397,6 +1409,7 @@ def parse_arguments():
         choices=[True, False],
         help=reverb_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1405,6 +1418,7 @@ def parse_arguments():
         choices=[True, False],
         help=pitch_shift_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1413,6 +1427,7 @@ def parse_arguments():
         choices=[True, False],
         help=limiter_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1421,6 +1436,7 @@ def parse_arguments():
         choices=[True, False],
         help=gain_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1429,6 +1445,7 @@ def parse_arguments():
         choices=[True, False],
         help=distortion_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1437,6 +1454,7 @@ def parse_arguments():
         choices=[True, False],
         help=chorus_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1445,6 +1463,7 @@ def parse_arguments():
         choices=[True, False],
         help=bitcrush_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1453,6 +1472,7 @@ def parse_arguments():
         choices=[True, False],
         help=clipping_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1461,6 +1481,7 @@ def parse_arguments():
         choices=[True, False],
         help=compressor_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1469,6 +1490,7 @@ def parse_arguments():
         choices=[True, False],
         help=delay_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
