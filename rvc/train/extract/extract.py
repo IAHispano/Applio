@@ -104,7 +104,6 @@ class FeatureInput:
         audio = torch.from_numpy(x.astype(np.float32)).to(self.device)
         audio /= torch.quantile(torch.abs(audio), 0.999)
         audio = audio.unsqueeze(0)
-
         pitch = torchcrepe.predict(
             audio,
             self.fs,

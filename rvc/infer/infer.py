@@ -80,18 +80,18 @@ class VoiceConverter:
         self.hubert_model.eval()
 
     @staticmethod
-    def remove_audio_noise(input_audio_path, reduction_strength=0.7):
+    def remove_audio_noise(data, sr, reduction_strength=0.7):
         """
         Removes noise from an audio file using the NoiseReduce library.
 
         Args:
-            input_audio_path (str): Path to the input audio file.
+            data (numpy.ndarray): The audio data as a NumPy array.
+            sr (int): The sample rate of the audio data.
             reduction_strength (float): Strength of the noise reduction. Default is 0.7.
         """
         try:
-            rate, data = wavfile.read(input_audio_path)
             reduced_noise = nr.reduce_noise(
-                y=data, sr=rate, prop_decrease=reduction_strength
+                y=data, sr=sr, prop_decrease=reduction_strength
             )
             return reduced_noise
         except Exception as error:
@@ -272,20 +272,32 @@ class VoiceConverter:
         sliders: dict,
         resample_sr: int = 0,
         sid: int = 0,
+        **kwargs,
     ):
         """
         Performs voice conversion on the input audio.
 
         Args:
+            pitch (int): Key for F0 up-sampling.
+            filter_radius (int): Radius for filtering.
+            index_rate (float): Rate for index matching.
+            volume_envelope (int): RMS mix rate.
+            protect (float): Protection rate for certain audio segments.
+            hop_length (int): Hop length for audio processing.
+            f0_method (str): Method for F0 extraction.
             audio_input_path (str): Path to the input audio file.
             audio_output_path (str): Path to the output audio file.
             model_path (str): Path to the voice conversion model.
             index_path (str): Path to the index file.
-            sid (int, optional): Speaker ID. Default is 0.
-            pitch (str, optional): Key for F0 up-sampling. Default is None.
-            f0_file (str, optional): Path to the F0 file. Default is None.
-            f0_method (str, optional): Method for F0 extraction. Default is None.
-            index_rate (float, optional): Rate for index matching. Default is None.
+            split_audio (bool): Whether to split the audio for processing.
+            f0_autotune (bool): Whether to use F0 autotune.
+            clean_audio (bool): Whether to clean the audio.
+            clean_strength (float): Strength of the audio cleaning.
+            export_format (str): Format for exporting the audio.
+            upscale_audio (bool): Whether to upscale the audio.
+            f0_file (str): Path to the F0 file.
+            embedder_model (str): Path to the embedder model.
+            embedder_model_custom (str): Path to the custom embedder model.
             resample_sr (int, optional): Resample sampling rate. Default is 0.
             volume_envelope (float, optional): RMS mix rate. Default is None.
             protect (float, optional): Protection rate for certain audio segments. Default is None.
@@ -315,7 +327,6 @@ class VoiceConverter:
             sliders (dict, optional): Dictionary of effect parameters. Default is None.
         """
         self.get_vc(model_path, sid)
-
         try:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
@@ -460,20 +471,22 @@ class VoiceConverter:
                     )
                 sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
             else:
+                chunks = []
+                chunks.append(audio)
+
+            converted_chunks = []
+            for c in chunks:
                 audio_opt = self.vc.pipeline(
                     model=self.hubert_model,
                     net_g=self.net_g,
                     sid=sid,
-                    audio=audio,
-                    input_audio_path=audio_input_path,
+                    audio=c,
                     pitch=pitch,
                     f0_method=f0_method,
                     file_index=file_index,
                     index_rate=index_rate,
                     pitch_guidance=self.use_f0,
                     filter_radius=filter_radius,
-                    tgt_sr=self.tgt_sr,
-                    resample_sr=resample_sr,
                     volume_envelope=volume_envelope,
                     version=self.version,
                     protect=protect,
@@ -481,13 +494,18 @@ class VoiceConverter:
                     f0_autotune=f0_autotune,
                     f0_file=f0_file,
                 )
+                converted_chunks.append(audio_opt)
+                if split_audio:
+                    print(f"Converted audio chunk {len(converted_chunks)}")
 
-            if audio_output_path:
-                sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
+            if split_audio:
+                audio_opt = merge_audio(converted_chunks, intervals, 16000, self.tgt_sr)
+            else:
+                audio_opt = converted_chunks[0]
 
             if clean_audio:
                 cleaned_audio = self.remove_audio_noise(
-                    audio_output_path, clean_strength
+                    audio_opt, self.tgt_sr, clean_strength
                 )
                 if cleaned_audio is not None:
                     sf.write(
@@ -545,7 +563,6 @@ class VoiceConverter:
             print(
                 f"Conversion completed at '{audio_output_path}' in {elapsed_time:.2f} seconds."
             )
-
         except Exception as error:
             print(f"An error occurred during audio conversion: {error}")
             print(traceback.format_exc())

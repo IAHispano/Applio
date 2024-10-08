@@ -160,7 +160,7 @@ def max_vram_gpu(gpu):
         total_memory_gb = round(gpu_properties.total_memory / 1024 / 1024 / 1024)
         return total_memory_gb
     else:
-        return "0"
+        return "8"
 
 
 def get_gpu_info():

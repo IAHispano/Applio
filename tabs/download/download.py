@@ -1,19 +1,25 @@
-import os, sys, shutil
+import os
+import sys
+import json
+import shutil
+import requests
 import tempfile
 import gradio as gr
 import pandas as pd
-import requests
-import wget
-import json
+
+from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
+
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+
 from core import run_download_script
+from rvc.lib.utils import format_title
 
 from assets.i18n.i18n import I18nAuto
 
-from rvc.lib.utils import format_title
-
 i18n = I18nAuto()
-
-sys.path.append(os.getcwd())
 
 gradio_temp_dir = os.path.join(tempfile.gettempdir(), "gradio")
 
@@ -39,7 +45,7 @@ def save_drop_model(dropbox):
                 model_name = format_title(
                     file_name.split("_nprobe_1_")[1].split("_v2")[0]
                 )
-        model_path = os.path.join(os.getcwd(), "logs", model_name)
+        model_path = os.path.join(now_dir, "logs", model_name)
         if not os.path.exists(model_path):
             os.makedirs(model_path)
         if os.path.exists(os.path.join(model_path, file_name)):
@@ -53,7 +59,7 @@ def save_drop_model(dropbox):
 def search_models(name):
     url = f"https://cjtfqzjfdimgpvpwhzlv.supabase.co/rest/v1/models?name=ilike.%25{name}%25&order=created_at.desc&limit=15"
     headers = {
-        "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqdGZxempmZGltZ3B2cHdoemx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTUxNjczODgsImV4cCI6MjAxMDc0MzM4OH0.7z5WMIbjR99c2Ooc0ma7B_FyGq10G8X-alkCYTkKR10"
+        "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqdGZxempmZGltZ3B2cHdoemx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjY5MjYxMzQsImV4cCI6MjA0MjUwMjEzNH0.OyDXlhvH6D-IsHiWhPAGUtsPGGUvWQynfxUeQwfYToE"
     }
     response = requests.get(url, headers=headers)
     data = response.json()
@@ -117,6 +123,21 @@ def get_pretrained_sample_rates(model):
     return list(data[model].keys())
 
 
+def get_file_size(url):
+    response = requests.head(url)
+    return int(response.headers.get("content-length", 0))
+
+
+def download_file(url, destination_path, progress_bar):
+    os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+    response = requests.get(url, stream=True)
+    block_size = 1024
+    with open(destination_path, "wb") as file:
+        for data in response.iter_content(block_size):
+            file.write(data)
+            progress_bar.update(len(data))
+
+
 def download_pretrained_model(model, sample_rate):
     data = fetch_pretrained_data()
     paths = data[model][sample_rate]
@@ -128,10 +149,33 @@ def download_pretrained_model(model, sample_rate):
     d_url = f"https://huggingface.co/{paths['D']}"
     g_url = f"https://huggingface.co/{paths['G']}"
 
-    gr.Info("Downloading Pretrained Model...")
-    print("Downloading Pretrained Model...")
-    wget.download(d_url, out=pretraineds_custom_path)
-    wget.download(g_url, out=pretraineds_custom_path)
+    total_size = get_file_size(d_url) + get_file_size(g_url)
+
+    gr.Info("Downloading pretrained model...")
+
+    with tqdm(
+        total=total_size, unit="iB", unit_scale=True, desc="Downloading files"
+    ) as progress_bar:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [
+                executor.submit(
+                    download_file,
+                    d_url,
+                    os.path.join(pretraineds_custom_path, os.path.basename(paths["D"])),
+                    progress_bar,
+                ),
+                executor.submit(
+                    download_file,
+                    g_url,
+                    os.path.join(pretraineds_custom_path, os.path.basename(paths["G"])),
+                    progress_bar,
+                ),
+            ]
+            for future in futures:
+                future.result()
+
+    gr.Info("Pretrained model downloaded successfully!")
+    print("Pretrained model downloaded successfully!")
 
 
 def update_sample_rate_dropdown(model):
@@ -162,7 +206,6 @@ def download_tab():
             fn=run_download_script,
             inputs=[model_link],
             outputs=[model_download_output_info],
-            api_name="model_download",
         )
         gr.Markdown(value=i18n("## Drop files"))
         dropbox = gr.File(

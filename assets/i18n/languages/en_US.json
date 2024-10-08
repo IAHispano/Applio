@@ -73,6 +73,8 @@
   "The number of CPU cores to use in the extraction process. The default setting are your cpu cores, which is recommended for most cases.": "The number of CPU cores to use in the extraction process. The default setting are your cpu cores, which is recommended for most cases.",
   "GPU Information": "GPU Information",
   "Pitch Guidance": "Pitch Guidance",
+  "Use CPU": "Use CPU",
+  "Force the use of CPU for training.": "Force the use of CPU for training.",
   "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential.": "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential.",
   "Utilize pretrained models when training your own. This approach reduces training duration and enhances overall quality.": "Utilize pretrained models when training your own. This approach reduces training duration and enhances overall quality.",
   "Extract Features": "Extract Features",
@@ -200,7 +202,7 @@
   "Select the TTS voice to use for the conversion.": "Select the TTS voice to use for the conversion.",
   "Text to Synthesize": "Text to Synthesize",
   "Enter the text to synthesize.": "Enter the text to synthesize.",
-  "Or you can upload a .txt file": "Or you can upload a .txt file",
+  "Upload a .txt file": "Upload a .txt file",
   "Enter text to synthesize": "Enter text to synthesize",
   "Output Path for TTS Audio": "Output Path for TTS Audio",
   "Output Path for RVC Audio": "Output Path for RVC Audio",
@@ -304,5 +306,7 @@
   "Move files to custom embedder folder": "Move files to custom embedder folder",
   "model information": "model information",
   "Model Creator": "Model Creator",
-  "Name of the model creator. (Default: Unknown)": "Name of the model creator. (Default: Unknown)"
+  "Name of the model creator. (Default: Unknown)": "Name of the model creator. (Default: Unknown)",
+  "Speaker ID": "Speaker ID",
+  "Select the speaker ID to use for the conversion.": "Select the speaker ID to use for the conversion."
 }

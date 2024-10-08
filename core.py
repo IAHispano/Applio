@@ -25,8 +25,10 @@ python = sys.executable
 # Get TTS Voices -> https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4
 @lru_cache(maxsize=1)  # Cache only one result since the file is static
 def load_voices_data():
-    with open(os.path.join("rvc", "lib", "tools", "tts_voices.json")) as f:
-        return json.load(f)
+    with open(
+        os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r", encoding="utf-8"
+    ) as file:
+        return json.load(file)
 
 
 voices_data = load_voices_data()
@@ -296,6 +298,7 @@ def run_tts_script(
     f0_file: str,
     embedder_model: str,
     embedder_model_custom: str = None,
+    sid: int = 0,
 ):
 
     tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
@@ -568,9 +571,21 @@ def run_download_script(model_link: str):
 
 # Prerequisites
 def run_prerequisites_script(
-    pretraineds_v1: bool, pretraineds_v2: bool, models: bool, exe: bool
+    pretraineds_v1_f0: bool,
+    pretraineds_v1_nof0: bool,
+    pretraineds_v2_f0: bool,
+    pretraineds_v2_nof0: bool,
+    models: bool,
+    exe: bool,
 ):
-    prequisites_download_pipeline(pretraineds_v1, pretraineds_v2, models, exe)
+    prequisites_download_pipeline(
+        pretraineds_v1_f0,
+        pretraineds_v1_nof0,
+        pretraineds_v2_f0,
+        pretraineds_v2_nof0,
+        models,
+        exe,
+    )
     return "Prerequisites installed successfully."
 
 
@@ -646,7 +661,7 @@ def parse_arguments():
         "--index_rate",
         type=float,
         help=index_rate_description,
-        choices=[(i / 10) for i in range(11)],
+        choices=[i / 100.0 for i in range(0, 101)],
         default=0.3,
     )
     volume_envelope_description = "Control the blending of the output's volume envelope. A value of 1 means the output envelope is fully used."
@@ -654,7 +669,7 @@ def parse_arguments():
         "--volume_envelope",
         type=float,
         help=volume_envelope_description,
-        choices=[(i / 10) for i in range(11)],
+        choices=[i / 100.0 for i in range(0, 101)],
         default=1,
     )
     protect_description = "Protect consonants and breathing sounds from artifacts. A value of 0.5 offers the strongest protection, while lower values may reduce the protection level but potentially mitigate the indexing effect."
@@ -662,7 +677,7 @@ def parse_arguments():
         "--protect",
         type=float,
         help=protect_description,
-        choices=[(i / 10) for i in range(6)],
+        choices=[i / 1000.0 for i in range(0, 501)],
         default=0.33,
     )
     hop_length_description = "Only applicable for the Crepe pitch extraction method. Determines the time it takes for the system to react to a significant pitch change. Smaller values require more processing time but can lead to better pitch accuracy."
@@ -837,21 +852,21 @@ def parse_arguments():
         "--index_rate",
         type=float,
         help=index_rate_description,
-        choices=[(i / 10) for i in range(11)],
+        choices=[i / 100.0 for i in range(0, 101)],
         default=0.3,
     )
     batch_infer_parser.add_argument(
         "--volume_envelope",
         type=float,
         help=volume_envelope_description,
-        choices=[(i / 10) for i in range(11)],
+        choices=[i / 100.0 for i in range(0, 101)],
         default=1,
     )
     batch_infer_parser.add_argument(
         "--protect",
         type=float,
         help=protect_description,
-        choices=[(i / 10) for i in range(6)],
+        choices=[i / 1000.0 for i in range(0, 501)],
         default=0.33,
     )
     batch_infer_parser.add_argument(
@@ -1541,18 +1556,32 @@ def parse_arguments():
         "prerequisites", help="Install prerequisites for RVC."
     )
     prerequisites_parser.add_argument(
-        "--pretraineds_v1",
+        "--pretraineds_v1_f0",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
-        default=True,
+        default=False,
         help="Download pretrained models for RVC v1.",
     )
     prerequisites_parser.add_argument(
-        "--pretraineds_v2",
+        "--pretraineds_v2_f0",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
         default=True,
         help="Download pretrained models for RVC v2.",
+    )
+    prerequisites_parser.add_argument(
+        "--pretraineds_v1_nof0",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        default=False,
+        help="Download non f0 pretrained models for RVC v1.",
+    )
+    prerequisites_parser.add_argument(
+        "--pretraineds_v2_nof0",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        default=False,
+        help="Download non f0 pretrained models for RVC v2.",
     )
     prerequisites_parser.add_argument(
         "--models",
@@ -1575,15 +1604,6 @@ def parse_arguments():
     )
     audio_analyzer.add_argument(
         "--input_path", type=str, help="Path to the input audio file.", required=True
-    )
-
-    # Parser for 'api' mode
-    api_parser = subparsers.add_parser("api", help="Start the RVC API server.")
-    api_parser.add_argument(
-        "--host", type=str, help="Host address for the API server.", default="127.0.0.1"
-    )
-    api_parser.add_argument(
-        "--port", type=int, help="Port for the API server.", default=8000
     )
 
     return parser.parse_args()
@@ -1616,9 +1636,49 @@ def main():
                 clean_strength=args.clean_strength,
                 export_format=args.export_format,
                 embedder_model=args.embedder_model,
-                embedder_model_custom=args.embedder_model_custom,
                 upscale_audio=args.upscale_audio,
                 f0_file=args.f0_file,
+                formant_shifting=args.formant_shifting,
+                formant_qfrency=args.formant_qfrency,
+                formant_timbre=args.formant_timbre,
+                embedder_model_custom=args.embedder_model_custom,
+                sid=args.sid,
+                post_process=args.post_process,
+                reverb=args.reverb,
+                pitch_shift=args.pitch_shift,
+                limiter=args.limiter,
+                gain=args.gain,
+                distortion=args.distortion,
+                chorus=args.chorus,
+                bitcrush=args.bitcrush,
+                clipping=args.clipping,
+                compressor=args.compressor,
+                delay=args.delay,
+                reverb_room_size=args.reverb_room_size,
+                reverb_damping=args.reverb_damping,
+                reverb_wet_gain=args.reverb_wet_gain,
+                reverb_dry_gain=args.reverb_dry_gain,
+                reverb_width=args.reverb_width,
+                reverb_freeze_mode=args.reverb_freeze_mode,
+                pitch_shift_semitones=args.pitch_shift_semitones,
+                limiter_threshold=args.limiter_threshold,
+                limiter_release_time=args.limiter_release_time,
+                gain_db=args.gain_db,
+                distortion_gain=args.distortion_gain,
+                chorus_rate=args.chorus_rate,
+                chorus_depth=args.chorus_depth,
+                chorus_center_delay=args.chorus_center_delay,
+                chorus_feedback=args.chorus_feedback,
+                chorus_mix=args.chorus_mix,
+                bitcrush_bit_depth=args.bitcrush_bit_depth,
+                clipping_threshold=args.clipping_threshold,
+                compressor_threshold=args.compressor_threshold,
+                compressor_ratio=args.compressor_ratio,
+                compressor_attack=args.compressor_attack,
+                compressor_release=args.compressor_release,
+                delay_seconds=args.delay_seconds,
+                delay_feedback=args.delay_feedback,
+                delay_mix=args.delay_mix,
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(
@@ -1642,6 +1702,46 @@ def main():
                 embedder_model_custom=args.embedder_model_custom,
                 upscale_audio=args.upscale_audio,
                 f0_file=args.f0_file,
+                formant_shifting=args.formant_shifting,
+                formant_qfrency=args.formant_qfrency,
+                formant_timbre=args.formant_timbre,
+                sid=args.sid,
+                post_process=args.post_process,
+                reverb=args.reverb,
+                pitch_shift=args.pitch_shift,
+                limiter=args.limiter,
+                gain=args.gain,
+                distortion=args.distortion,
+                chorus=args.chorus,
+                bitcrush=args.bitcrush,
+                clipping=args.clipping,
+                compressor=args.compressor,
+                delay=args.delay,
+                reverb_room_size=args.reverb_room_size,
+                reverb_damping=args.reverb_damping,
+                reverb_wet_gain=args.reverb_wet_gain,
+                reverb_dry_gain=args.reverb_dry_gain,
+                reverb_width=args.reverb_width,
+                reverb_freeze_mode=args.reverb_freeze_mode,
+                pitch_shift_semitones=args.pitch_shift_semitones,
+                limiter_threshold=args.limiter_threshold,
+                limiter_release_time=args.limiter_release_time,
+                gain_db=args.gain_db,
+                distortion_gain=args.distortion_gain,
+                chorus_rate=args.chorus_rate,
+                chorus_depth=args.chorus_depth,
+                chorus_center_delay=args.chorus_center_delay,
+                chorus_feedback=args.chorus_feedback,
+                chorus_mix=args.chorus_mix,
+                bitcrush_bit_depth=args.bitcrush_bit_depth,
+                clipping_threshold=args.clipping_threshold,
+                compressor_threshold=args.compressor_threshold,
+                compressor_ratio=args.compressor_ratio,
+                compressor_attack=args.compressor_attack,
+                compressor_release=args.compressor_release,
+                delay_seconds=args.delay_seconds,
+                delay_feedback=args.delay_feedback,
+                delay_mix=args.delay_mix,
             )
         elif args.mode == "tts":
             run_tts_script(
@@ -1751,19 +1851,16 @@ def main():
             )
         elif args.mode == "prerequisites":
             run_prerequisites_script(
-                pretraineds_v1=args.pretraineds_v1,
-                pretraineds_v2=args.pretraineds_v2,
+                pretraineds_v1_f0=args.pretraineds_v1_f0,
+                pretraineds_v1_nof0=args.pretraineds_v1_nof0,
+                pretraineds_v2_f0=args.pretraineds_v2_f0,
+                pretraineds_v2_nof0=args.pretraineds_v2_nof0,
                 models=args.models,
                 exe=args.exe,
             )
         elif args.mode == "audio_analyzer":
             run_audio_analyzer_script(
                 input_path=args.input_path,
-            )
-        elif args.mode == "api":
-            run_api_script(
-                ip=args.host,
-                port=args.port,
             )
     except Exception as error:
         print(f"An error occurred during execution: {error}")

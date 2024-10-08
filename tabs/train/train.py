@@ -433,7 +433,6 @@ def train_tab():
                     process_effects,
                 ],
                 outputs=[preprocess_output_info],
-                api_name="preprocess_dataset",
             )
 
     with gr.Accordion(i18n("Extract")):
@@ -563,7 +562,6 @@ def train_tab():
                 embedder_model_custom,
             ],
             outputs=[extract_output_info],
-            api_name="extract_features",
         )
 
     with gr.Accordion(i18n("Train")):
@@ -607,7 +605,7 @@ def train_tab():
                         info=i18n(
                             "Enabling this setting will result in the G and D files saving only their most recent versions, effectively conserving storage space."
                         ),
-                        value=False,
+                        value=True,
                         interactive=True,
                     )
                     save_every_weights = gr.Checkbox(
@@ -782,7 +780,6 @@ def train_tab():
                     d_pretrained_path,
                 ],
                 outputs=[train_output_info],
-                api_name="start_training",
             )
 
             stop_train_button = gr.Button(i18n("Stop Training"), visible=False)
@@ -797,7 +794,6 @@ def train_tab():
                 fn=run_index_script,
                 inputs=[model_name, rvc_version, index_algorithm],
                 outputs=[train_output_info],
-                api_name="generate_index",
             )
 
     with gr.Accordion(i18n("Export Model"), open=False):
@@ -881,31 +877,83 @@ def train_tab():
                     "__type__": "update",
                 }
 
-            def download_prerequisites(version):
-                for remote_folder, file_list in pretraineds_v1:
-                    local_folder = folder_mapping.get(remote_folder, "")
-                    missing = False
-                    for file in file_list:
-                        destination_path = os.path.join(local_folder, file)
-                        if not os.path.exists(destination_path):
-                            missing = True
-                if version == "v1" and missing == True:
-                    gr.Info(
-                        "Downloading prerequisites... Please wait till it finishes to start preprocessing."
-                    )
-                    run_prerequisites_script("True", "False", "True", "True")
-                    gr.Info(
-                        "Prerequisites downloaded successfully, you may now start preprocessing."
-                    )
+            def download_prerequisites(version, pitch_guidance):
+                if version == "v1":
+                    if pitch_guidance:
+                        gr.Info(
+                            "Checking for v1 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
+                        )
+                        run_prerequisites_script(
+                            pretraineds_v1_f0=True,
+                            pretraineds_v1_nof0=False,
+                            pretraineds_v2_f0=False,
+                            pretraineds_v2_nof0=False,
+                            models=False,
+                            exe=False,
+                        )
+                    else:
+                        gr.Info(
+                            "Checking for v1 prerequisites without pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
+                        )
+                        run_prerequisites_script(
+                            pretraineds_v1_f0=False,
+                            pretraineds_v1_nof0=True,
+                            pretraineds_v2_f0=False,
+                            pretraineds_v2_nof0=False,
+                            models=False,
+                            exe=False,
+                        )
+                elif version == "v2":
+                    if pitch_guidance:
+                        gr.Info(
+                            "Checking for v2 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
+                        )
+                        run_prerequisites_script(
+                            pretraineds_v1_f0=False,
+                            pretraineds_v1_nof0=False,
+                            pretraineds_v2_f0=True,
+                            pretraineds_v2_nof0=False,
+                            models=False,
+                            exe=False,
+                        )
+                    else:
+                        gr.Info(
+                            "Checking for v2 prerequisites without pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
+                        )
+                        run_prerequisites_script(
+                            pretraineds_v1_f0=False,
+                            pretraineds_v1_nof0=False,
+                            pretraineds_v2_f0=False,
+                            pretraineds_v2_nof0=True,
+                            models=False,
+                            exe=False,
+                        )
+                gr.Info(
+                    "Prerequisites check complete. Missing files were downloaded, and you may now start preprocessing."
+                )
 
             def toggle_visible_embedder_custom(embedder_model):
                 if embedder_model == "custom":
                     return {"visible": True, "__type__": "update"}
                 return {"visible": False, "__type__": "update"}
 
+            def update_slider_visibility(noise_reduction):
+                return gr.update(visible=noise_reduction)
+
+            noise_reduction.change(
+                fn=update_slider_visibility,
+                inputs=noise_reduction,
+                outputs=clean_strength,
+            )
             rvc_version.change(
                 fn=download_prerequisites,
-                inputs=[rvc_version],
+                inputs=[rvc_version, pitch_guidance],
+                outputs=[],
+            )
+
+            pitch_guidance.change(
+                fn=download_prerequisites,
+                inputs=[rvc_version, pitch_guidance],
                 outputs=[],
             )
 

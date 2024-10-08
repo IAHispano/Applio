@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest an idea for this project
+title: "[Feature]: "
+labels: ["feature request", "enhancement", "feature"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Clearly and concisely describe what you would like to change, add, or implement.
+      placeholder: Tell us your idea.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Is your feature request related to a problem?
+      placeholder: What problem will this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How should this be solved?
+      placeholder: How do you think this should be implemented?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Are there other possible approaches?
+      placeholder: Can you think of any other options?
+    validations:
+      required: true
