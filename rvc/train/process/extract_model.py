@@ -32,6 +32,7 @@ def extract_model(
     step,
     version,
     hps,
+    vocoder_type,
     overtrain_info,
 ):
     try:
@@ -54,8 +55,6 @@ def extract_model(
             with open(os.path.join(model_dir_path, "model_info.json"), "r") as f:
                 data = json.load(f)
                 dataset_lenght = data.get("total_dataset_duration", None)
-                embedder_model = data.get("embedder_model", None)
-                speakers_id = data.get("speakers_id", 1)
         else:
             dataset_lenght = None
 
@@ -95,7 +94,7 @@ def extract_model(
         opt["f0"] = pitch_guidance
         opt["version"] = version
         opt["creation_date"] = datetime.datetime.now().isoformat()
-
+        opt["vocoder_type"] = vocoder_type
         hash_input = f"{str(ckpt)} {epoch} {step} {datetime.datetime.now().isoformat()}"
         model_hash = hashlib.sha256(hash_input.encode()).hexdigest()
         opt["model_hash"] = model_hash
@@ -103,8 +102,6 @@ def extract_model(
         opt["dataset_lenght"] = dataset_lenght
         opt["model_name"] = name
         opt["author"] = model_author
-        opt["embedder_model"] = embedder_model
-        opt["speakers_id"] = speakers_id
 
         torch.save(opt, os.path.join(model_dir_path, pth_file))
 

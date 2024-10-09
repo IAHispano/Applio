@@ -3,16 +3,15 @@ import json
 from pathlib import Path
 from locale import getdefaultlocale
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 
 class I18nAuto:
-    LANGUAGE_PATH = os.path.join(now_dir, "assets", "i18n", "languages")
+    LANGUAGE_PATH = os.path.join(os.getcwd(), "assets", "i18n", "languages")
 
     def __init__(self, language=None):
         with open(
-            os.path.join(now_dir, "assets", "config.json"), "r", encoding="utf8"
+            os.path.join(os.getcwd(), "assets", "config.json"), "r", encoding="utf8"
         ) as file:
             config = json.load(file)
             override = config["lang"]["override"]

@@ -66,12 +66,12 @@ pretraineds_custom_path = os.path.join(
     now_dir, "rvc", "models", "pretraineds", "pretraineds_custom"
 )
 
-pretraineds_custom_path_relative = os.path.relpath(pretraineds_custom_path, now_dir)
+pretraineds_custom_path_relative = os.path.relpath(pretraineds_custom_path, os.getcwd())
 
 custom_embedder_root = os.path.join(
-    now_dir, "rvc", "models", "embedders", "embedders_custom"
+    os.getcwd(), "rvc", "models", "embedders", "embedders_custom"
 )
-custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
+custom_embedder_root_relative = os.path.relpath(custom_embedder_root, os.getcwd())
 
 os.makedirs(custom_embedder_root, exist_ok=True)
 os.makedirs(pretraineds_custom_path_relative, exist_ok=True)
@@ -98,12 +98,12 @@ def refresh_custom_pretraineds():
 
 
 # Dataset Creator
-datasets_path = os.path.join(now_dir, "assets", "datasets")
+datasets_path = os.path.join(os.getcwd(), "assets", "datasets")
 
 if not os.path.exists(datasets_path):
     os.makedirs(datasets_path)
 
-datasets_path_relative = os.path.relpath(datasets_path, now_dir)
+datasets_path_relative = os.path.relpath(datasets_path, os.getcwd())
 
 
 def get_datasets_list():
@@ -119,7 +119,7 @@ def refresh_datasets():
 
 
 # Model Names
-models_path = os.path.join(now_dir, "logs")
+models_path = os.path.join(os.getcwd(), "logs")
 
 
 def get_models_list():
@@ -190,7 +190,7 @@ def save_drop_dataset_audio(dropbox, dataset_name):
         else:
             dataset_name = format_title(dataset_name)
             audio_file = format_title(os.path.basename(dropbox))
-            dataset_path = os.path.join(now_dir, "assets", "datasets", dataset_name)
+            dataset_path = os.path.join(os.getcwd(), "assets", "datasets", dataset_name)
             if not os.path.exists(dataset_path):
                 os.makedirs(dataset_path)
             destination_path = os.path.join(dataset_path, audio_file)
@@ -203,7 +203,7 @@ def save_drop_dataset_audio(dropbox, dataset_name):
                 )
             )
             dataset_path = os.path.dirname(destination_path)
-            relative_dataset_path = os.path.relpath(dataset_path, now_dir)
+            relative_dataset_path = os.path.relpath(dataset_path, os.getcwd())
 
             return None, relative_dataset_path
 
@@ -235,12 +235,32 @@ def refresh_embedders_folders():
     ]
     return custom_embedders
 
+    folder_name = os.path.join(custom_embedder_root, folder_name)
+    os.makedirs(folder_name, exist_ok=True)
+
+    if bin_file:
+        bin_file_path = os.path.join(folder_name, os.path.basename(bin_file))
+        shutil.copy(bin_file, bin_file_path)
+
+    if config_file:
+        config_file_path = os.path.join(folder_name, os.path.basename(config_file))
+        shutil.copy(config_file, config_file_path)
+
+    return f"Files moved to folder {folder_name}"
+
+def refresh_embedders_folders():
+    custom_embedders = [
+        os.path.join(dirpath, dirname)
+        for dirpath, dirnames, _ in os.walk(custom_embedder_root_relative)
+        for dirname in dirnames
+    ]
+    return custom_embedders
 
 # Export
 ## Get Pth and Index Files
 def get_pth_list():
     return [
-        os.path.relpath(os.path.join(dirpath, filename), now_dir)
+        os.path.relpath(os.path.join(dirpath, filename), os.getcwd())
         for dirpath, _, filenames in os.walk(models_path)
         for filename in filenames
         if filename.endswith(".pth")
@@ -249,7 +269,7 @@ def get_pth_list():
 
 def get_index_list():
     return [
-        os.path.relpath(os.path.join(dirpath, filename), now_dir)
+        os.path.relpath(os.path.join(dirpath, filename), os.getcwd())
         for dirpath, _, filenames in os.walk(models_path)
         for filename in filenames
         if filename.endswith(".index") and "trained" not in filename
@@ -311,7 +331,7 @@ def train_tab():
             interactive=True,
             allow_custom_value=True,
         )
-        sampling_rate = gr.Radio(
+        sample_rate = gr.Radio(
             label=i18n("Sampling Rate"),
             info=i18n("The sampling rate of the audio files."),
             choices=["32000", "40000", "48000"],
@@ -323,6 +343,12 @@ def train_tab():
             info=i18n("Version of the model architecture."),
             choices=["v1", "v2"],
             value="v2",
+            interactive=True,
+        )
+        vocoder_type = gr.Radio(
+            label=i18n("Vocoder"),
+            choices=["hifigan", "bigvgan", "bigvsan"],
+            value="hifigan",
             interactive=True,
         )
     with gr.Accordion(i18n("Preprocess")):
@@ -386,27 +412,6 @@ def train_tab():
                     interactive=True,
                     visible=True,
                 )
-            with gr.Row():
-                noise_reduction = gr.Checkbox(
-                    label=i18n("Noise Reduction"),
-                    info=i18n(
-                        "It's recommended keep deactivate this option if your dataset has already been processed."
-                    ),
-                    value=False,
-                    interactive=True,
-                    visible=True,
-                )
-                clean_strength = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Noise Reduction Strength"),
-                    info=i18n(
-                        "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
-                    ),
-                    visible=False,
-                    value=0.5,
-                    interactive=True,
-                )
         preprocess_output_info = gr.Textbox(
             label=i18n("Output Information"),
             info=i18n("The output information will be displayed here."),
@@ -422,12 +427,10 @@ def train_tab():
                 inputs=[
                     model_name,
                     dataset_path,
-                    sampling_rate,
+                    sample_rate,
                     cpu_cores_preprocess,
                     cut_preprocess,
                     process_effects,
-                    noise_reduction,
-                    clean_strength,
                 ],
                 outputs=[preprocess_output_info],
             )
@@ -455,7 +458,7 @@ def train_tab():
                     "custom",
                 ],
                 value="contentvec",
-                interactive=True,
+                interactive=False, # Temporary disable this option
             )
 
         hop_length = gr.Slider(
@@ -489,15 +492,14 @@ def train_tab():
                         label="Upload .json", type="filepath", interactive=True
                     )
                 move_files_button = gr.Button("Move files to custom embedder folder")
-        with gr.Row():
-            pitch_guidance_extract = gr.Checkbox(
-                label=i18n("Pitch Guidance"),
-                info=i18n(
-                    "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential."
-                ),
-                value=True,
-                interactive=True,
-            )
+        pitch_guidance_extract = gr.Checkbox(
+            label=i18n("Pitch Guidance"),
+            info=i18n(
+                "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential."
+            ),
+            value=True,
+            interactive=True,
+        )
 
         with gr.Accordion(
             i18n(
@@ -549,12 +551,13 @@ def train_tab():
             inputs=[
                 model_name,
                 rvc_version,
+                vocoder_type,
                 f0_method,
                 pitch_guidance_extract,
                 hop_length,
                 cpu_cores_extract,
-                gpu_extract,
-                sampling_rate,
+                gpu_extract,              
+                sample_rate,
                 embedder_model,
                 embedder_model_custom,
             ],
@@ -757,11 +760,12 @@ def train_tab():
                 inputs=[
                     model_name,
                     rvc_version,
+                    vocoder_type,
                     save_every_epoch,
                     save_only_latest,
                     save_every_weights,
                     total_epoch,
-                    sampling_rate,
+                    sample_rate,
                     batch_size,
                     gpu,
                     pitch_guidance,

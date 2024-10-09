@@ -36,6 +36,21 @@ from utils import (
     latest_checkpoint_path,
     load_wav_to_torch,
 )
+from random import randint, shuffle
+from time import sleep
+from time import time as ttime
+from tqdm import tqdm
+
+from torch.cuda.amp import GradScaler, autocast
+
+from torch.nn import functional as F
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+import torch.distributed as dist
+import torch.multiprocessing as mp
+
+sys.path.append(os.path.join(os.getcwd()))
 
 from data_utils import (
     DistributedBucketSampler,
@@ -54,30 +69,30 @@ from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 from rvc.train.process.extract_model import extract_model
 
 from rvc.lib.algorithm import commons
-from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
-from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminatorV2
-from rvc.lib.algorithm.synthesizers import Synthesizer
+
+from rvc.train.mel_processing import MultiScaleMelSpectrogramLoss
+from rvc.lib.algorithm.synthesizer import Synthesizer
 
 # Parse command line arguments
 model_name = sys.argv[1]
-save_every_epoch = int(sys.argv[2])
-total_epoch = int(sys.argv[3])
-pretrainG = sys.argv[4]
-pretrainD = sys.argv[5]
-version = sys.argv[6]
-gpus = sys.argv[7]
-batch_size = int(sys.argv[8])
-sample_rate = int(sys.argv[9])
-pitch_guidance = strtobool(sys.argv[10])
-save_only_latest = strtobool(sys.argv[11])
-save_every_weights = strtobool(sys.argv[12])
-cache_data_in_gpu = strtobool(sys.argv[13])
-overtraining_detector = strtobool(sys.argv[14])
-overtraining_threshold = int(sys.argv[15])
-sync_graph = strtobool(sys.argv[16])
+vocoder_type = str(sys.argv[2])
+save_every_epoch = int(sys.argv[3])
+total_epoch = int(sys.argv[4])
+pretrainG = sys.argv[5]
+pretrainD = sys.argv[6]
+version = sys.argv[7]
+gpus = sys.argv[8]
+batch_size = int(sys.argv[9])
+sample_rate = int(sys.argv[10])
+pitch_guidance = strtobool(sys.argv[11])
+save_only_latest = strtobool(sys.argv[12])
+save_every_weights = strtobool(sys.argv[13])
+cache_data_in_gpu = strtobool(sys.argv[14])
+overtraining_detector = strtobool(sys.argv[15])
+overtraining_threshold = int(sys.argv[16])
+sync_graph = strtobool(sys.argv[17])
 
-current_dir = os.getcwd()
-experiment_dir = os.path.join(current_dir, "logs", model_name)
+experiment_dir = os.path.join(os.getcwd(), "logs", model_name)
 config_save_path = os.path.join(experiment_dir, "config.json")
 dataset_path = os.path.join(experiment_dir, "sliced_audios")
 
@@ -85,6 +100,44 @@ with open(config_save_path, "r") as f:
     config = json.load(f)
 config = HParams(**config)
 config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
+
+os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
+n_gpus = len(gpus.split("-"))
+
+from rvc.lib.algorithm.discriminators.sub.__init__ import (
+    MultiPeriodDiscriminator,
+    MultiScaleDiscriminator,
+    MultiBandDiscriminator,
+    MultiScaleSubbandCQTDiscriminator
+)
+
+from rvc.lib.algorithm.discriminators.discriminator import CombinedDiscriminator
+supported_discriminators = {
+    "mpd": MultiPeriodDiscriminator,
+    "msd": MultiScaleDiscriminator,
+    "mbd": MultiBandDiscriminator,
+    "mssbcqtd": MultiScaleSubbandCQTDiscriminator,
+}
+discriminators = dict()
+is_san = vocoder_type == "bigvsan"
+for key, value in config.model.discriminators.items():
+    key = str(key)
+    if key == "mssbcqtd":
+        value["sample_rate"] = config.data.sample_rate
+    else:
+        value["use_spectral_norm"] = config.model.use_spectral_norm
+    if is_san:
+        if value is True:
+            discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm, is_san=True)
+        else:
+            discriminators[key] = supported_discriminators[key](**value, is_san=True)
+    else:
+        if value is True:
+            discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm)
+        else:
+            discriminators[key] = supported_discriminators[key](**value)
+
+MultiDiscriminator = CombinedDiscriminator(list(discriminators.values()))
 
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
@@ -98,11 +151,12 @@ loss_disc_history = []
 smoothed_loss_disc_history = []
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 training_file_path = os.path.join(experiment_dir, "training_data.json")
+overtrain_info = None
 
 import logging
 
 logging.getLogger("torch").setLevel(logging.ERROR)
-
+logging.getLogger("nnAudio").setLevel(logging.ERROR)
 
 class EpochRecorder:
     """
@@ -256,13 +310,24 @@ def main():
         start()
 
         # Synchronize graphs by modifying config files
+        if version == "v1":
+            rvc_config_file = os.path.join(
+                os.getcwd(), "rvc", "configs", version, str(sample_rate) + ".json"
+            )
+        elif version == "v2":
+            rvc_config_file = os.path.join(
+                os.getcwd(),
+                "rvc",
+                "configs",
+                version,
+                "bigvgan" if vocoder_type == "bigvsan" else vocoder_type,
+                str(sample_rate) + ".json",
+            )
+
         model_config_file = os.path.join(experiment_dir, "config.json")
-        rvc_config_file = os.path.join(
-            now_dir, "rvc", "configs", version, str(sample_rate) + ".json"
-        )
         if not os.path.exists(rvc_config_file):
             rvc_config_file = os.path.join(
-                now_dir, "rvc", "configs", "v1", str(sample_rate) + ".json"
+                os.getcwd(), "rvc", "configs", "v1", str(sample_rate) + ".json"
             )
 
         pattern = rf"{os.path.basename(model_name)}_(\d+)e_(\d+)s\.pth"
@@ -298,7 +363,7 @@ def main():
 
         # Clean up unnecessary files
         for root, dirs, files in os.walk(
-            os.path.join(now_dir, "logs", model_name), topdown=False
+            os.path.join(os.getcwd(), "logs", model_name), topdown=False
         ):
             for name in files:
                 file_path = os.path.join(root, name)
@@ -379,6 +444,14 @@ def run(
     if torch.cuda.is_available():
         torch.cuda.set_device(rank)
 
+    # Zluda
+    if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):
+        print("Disabling CUDNN for traning with Zluda")
+        torch.backends.cudnn.enabled = False
+        torch.backends.cuda.enable_flash_sdp(False)
+        torch.backends.cuda.enable_math_sdp(True)
+        torch.backends.cuda.enable_mem_efficient_sdp(False)
+
     # Create datasets and dataloaders
     train_dataset = TextAudioLoaderMultiNSFsid(config.data)
     collate_fn = TextAudioCollateMultiNSFsid()
@@ -410,13 +483,15 @@ def run(
         use_f0=pitch_guidance == True,  # converting 1/0 to True/False
         is_half=config.train.fp16_run and device.type == "cuda",
         sr=sample_rate,
-    ).to(device)
+        vocoder_type=vocoder_type,
+    )
+    if torch.cuda.is_available():
+        net_g = net_g.cuda(rank)
 
-    if version == "v1":
-        net_d = MultiPeriodDiscriminator(config.model.use_spectral_norm).to(device)
-    else:
-        net_d = MultiPeriodDiscriminatorV2(config.model.use_spectral_norm).to(device)
+    net_d = MultiDiscriminator
 
+    if torch.cuda.is_available():
+        net_d = net_d.cuda(rank)
     optim_g = torch.optim.AdamW(
         net_g.parameters(),
         config.train.learning_rate,
@@ -483,10 +558,10 @@ def run(
         optim_d, gamma=config.train.lr_decay, last_epoch=epoch_str - 2
     )
 
-    optim_g.step()
     optim_d.step()
+    optim_g.step()
 
-    scaler = GradScaler(enabled=config.train.fp16_run and device.type == "cuda")
+    scaler = GradScaler(enabled=config.train.fp16_run)
 
     cache = []
     # get the first sample as reference for tensorboard evaluation
@@ -568,7 +643,7 @@ def train_and_evaluate(
         cache (list): List to cache data in GPU memory.
         use_cpu (bool): Whether to use CPU for training.
     """
-    global global_step, lowest_value, loss_disc, consecutive_increases_gen, consecutive_increases_disc, smoothed_value_gen, smoothed_value_disc
+    global global_step, lowest_value, loss_disc, consecutive_increases_gen, consecutive_increases_disc
 
     if epoch == 1:
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
@@ -584,14 +659,90 @@ def train_and_evaluate(
 
     train_loader.batch_sampler.set_epoch(epoch)
 
+    fn_mel_loss_multiscale = MultiScaleMelSpectrogramLoss(
+        sample_rate=hps.data.sample_rate
+    )
+
     net_g.train()
     net_d.train()
 
     # Data caching
-    if device.type == "cuda" and cache_data_in_gpu:
+    if cache_data_in_gpu:
         data_iterator = cache
         if cache == []:
             for batch_idx, info in enumerate(train_loader):
+                if pitch_guidance == True:
+                    (
+                        phone,
+                        phone_lengths,
+                        pitch,
+                        pitchf,
+                        spec,
+                        spec_lengths,
+                        wave,
+                        wave_lengths,
+                        sid,
+                    ) = info
+                elif pitch_guidance == False:
+                    (
+                        phone,
+                        phone_lengths,
+                        spec,
+                        spec_lengths,
+                        wave,
+                        wave_lengths,
+                        sid,
+                    ) = info
+                if cache_data_in_gpu == True and torch.cuda.is_available():
+                    phone = phone.cuda(rank, non_blocking=True)
+                    phone_lengths = phone_lengths.cuda(rank, non_blocking=True)
+                    if pitch_guidance == True:
+                        pitch = pitch.cuda(rank, non_blocking=True)
+                        pitchf = pitchf.cuda(rank, non_blocking=True)
+                    sid = sid.cuda(rank, non_blocking=True)
+                    spec = spec.cuda(rank, non_blocking=True)
+                    spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
+                    wave = wave.cuda(rank, non_blocking=True)
+                    wave_lengths = wave_lengths.cuda(rank, non_blocking=True)
+                if pitch_guidance == True:
+                    cache.append(
+                        (
+                            batch_idx,
+                            (
+                                phone,
+                                phone_lengths,
+                                pitch,
+                                pitchf,
+                                spec,
+                                spec_lengths,
+                                wave,
+                                wave_lengths,
+                                sid,
+                            ),
+                        )
+                    )
+                elif pitch_guidance == False:
+                    cache.append(
+                        (
+                            batch_idx,
+                            (
+                                phone,
+                                phone_lengths,
+                                spec,
+                                spec_lengths,
+                                wave,
+                                wave_lengths,
+                                sid,
+                            ),
+                        )
+                    )
+        else:
+            shuffle(cache)
+
+    epoch_recorder = EpochRecorder()
+    with tqdm(total=len(train_loader), leave=False) as pbar:
+        for batch_idx, info in data_iterator:
+            if pitch_guidance == True:
                 (
                     phone,
                     phone_lengths,
@@ -658,16 +809,6 @@ def train_and_evaluate(
                 spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
                 wave = wave.cuda(rank, non_blocking=True)
                 wave_lengths = wave_lengths.cuda(rank, non_blocking=True)
-            else:
-                phone = phone.to(device)
-                phone_lengths = phone_lengths.to(device)
-                pitch = pitch.to(device) if pitch_guidance else None
-                pitchf = pitchf.to(device) if pitch_guidance else None
-                sid = sid.to(device)
-                spec = spec.to(device)
-                spec_lengths = spec_lengths.to(device)
-                wave = wave.to(device)
-                wave_lengths = wave_lengths.to(device)
 
             # Forward pass
             use_amp = config.train.fp16_run and device.type == "cuda"
@@ -715,7 +856,7 @@ def train_and_evaluate(
                 y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
                 with autocast(enabled=False):
                     loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(
-                        y_d_hat_r, y_d_hat_g
+                        y_d_hat_r, y_d_hat_g, is_san=is_san
                     )
             # Discriminator backward and update
             optim_d.zero_grad()
@@ -728,12 +869,15 @@ def train_and_evaluate(
             with autocast(enabled=use_amp):
                 y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
                 with autocast(enabled=False):
-                    loss_mel = F.l1_loss(y_mel, y_hat_mel) * config.train.c_mel
+                    # loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
+
+                    loss_mel = fn_mel_loss_multiscale(y_hat, wave) * config.train.c_mel
                     loss_kl = (
                         kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
                     )
-                    loss_fm = feature_loss(fmap_r, fmap_g)
-                    loss_gen, losses_gen = generator_loss(y_d_hat_g)
+
+                    loss_fm = feature_loss(fmap_r, fmap_g, is_san=is_san)
+                    loss_gen, losses_gen = generator_loss(y_d_hat_g, is_san=is_san)
                     loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
 
                     if loss_gen_all < lowest_value["value"]:

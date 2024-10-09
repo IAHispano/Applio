@@ -1,5 +1,9 @@
+import os
+import sys
 import math
 import torch
+
+sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.commons import convert_pad_shape
 
@@ -214,11 +218,12 @@ class MultiHeadAttention(torch.nn.Module):
     def _attention_bias_proximal(self, length):
         """Bias for self-attention to encourage attention to close positions.
         Args:
-            length: an integer scalar.
+          length: an integer scalar.
         """
         r = torch.arange(length, dtype=torch.float32)
         diff = torch.unsqueeze(r, 0) - torch.unsqueeze(r, 1)
         return torch.unsqueeze(torch.unsqueeze(-torch.log1p(torch.abs(diff)), 0), 0)
+
 
 
 class FFN(torch.nn.Module):
@@ -233,6 +238,13 @@ class FFN(torch.nn.Module):
         p_dropout (float, optional): Dropout probability. Defaults to 0.0.
         activation (str, optional): Activation function to use. Defaults to None.
         causal (bool, optional): Whether to use causal padding in the convolution layers. Defaults to False.
+
+    Inputs:
+        x (torch.Tensor): Input tensor of shape (batch_size, in_channels, time_steps).
+        x_mask (torch.Tensor): Mask tensor of shape (batch_size, time_steps), indicating valid time steps.
+
+    Returns:
+        torch.Tensor: Output tensor of shape (batch_size, out_channels, time_steps).
     """
 
     def __init__(
@@ -242,8 +254,9 @@ class FFN(torch.nn.Module):
         filter_channels,
         kernel_size,
         p_dropout=0.0,
-        activation=None,
+        activation: str = None,
         causal=False,
+        vocoder_type="hifigan",
     ):
         super().__init__()
         self.in_channels = in_channels
@@ -251,8 +264,9 @@ class FFN(torch.nn.Module):
         self.filter_channels = filter_channels
         self.kernel_size = kernel_size
         self.p_dropout = p_dropout
-        self.activation = activation
+        self.activation = True if activation == "gelu" else False
         self.causal = causal
+        self.vocoder_type = vocoder_type
 
         if causal:
             self.padding = self._causal_padding
@@ -264,13 +278,33 @@ class FFN(torch.nn.Module):
         self.drop = torch.nn.Dropout(p_dropout)
 
     def forward(self, x, x_mask):
-        x = self.conv_1(self.padding(x * x_mask))
-        if self.activation == "gelu":
-            x = x * torch.sigmoid(1.702 * x)
+        if self.vocoder_type == "hifigan":
+            x = self.conv_1(self.padding(x * x_mask))
+
+            if self.activation:
+                x = x * torch.sigmoid(1.702 * x)
+            else:
+                x = torch.relu(x)
+            
+            x = self.drop(x)
+            x = self.conv_2(self.padding(x * x_mask))
         else:
-            x = torch.relu(x)
-        x = self.drop(x)
-        x = self.conv_2(self.padding(x * x_mask))
+            x_pad = self.padding(x * x_mask.unsqueeze(-1))
+            x = x_pad.transpose(1, 2)
+            x = self.conv_1(x)
+            x = x.transpose(1, 2)
+
+            if self.activation:
+                x = torch.nn.functional.gelu(x)
+            else:
+                x = torch.nn.functional.relu(x)
+
+            x = self.drop(x)
+            x_pad = self.padding(x * x_mask.unsqueeze(-1))
+            x = x_pad.transpose(1, 2)
+            x = self.conv_2(x)
+            x = x.transpose(1, 2)
+            return x * x_mask.unsqueeze(-1)
         return x * x_mask
 
     def _causal_padding(self, x):

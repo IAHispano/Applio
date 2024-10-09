@@ -7,8 +7,7 @@ from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 plugins_core.check_new_folders()
 
@@ -26,7 +25,7 @@ def plugins_tab():
             outputs=[dropbox],
         )
 
-    for plugin in os.listdir(os.path.join(now_dir, "tabs", "plugins", "installed")):
+    for plugin in os.listdir(os.path.join(os.getcwd(), "tabs", "plugins", "installed")):
         plugin_main = f"tabs.plugins.installed.{plugin}.plugin"
         plugin_import = importlib.import_module(plugin_main)
 

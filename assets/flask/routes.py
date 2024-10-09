@@ -2,8 +2,7 @@ import os, sys
 import signal
 from flask import Flask, request, redirect
 
-now_dir = os.getcwd()
-sys.path.append(now_dir)
+sys.path.append(os.getcwd())
 
 from core import run_download_script
 

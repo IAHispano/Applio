@@ -10,10 +10,13 @@ import json
 from distutils.util import strtobool
 import librosa
 import multiprocessing
-import noisereduce as nr
+import json
+from distutils.util import strtobool
+import librosa
 
-now_directory = os.getcwd()
-sys.path.append(now_directory)
+multiprocessing.set_start_method("spawn", force=True)
+sys.path.append(os.getcwd())
+
 
 from rvc.lib.utils import load_audio
 from rvc.train.preprocess.slicer import Slicer
@@ -21,6 +24,7 @@ from rvc.train.preprocess.slicer import Slicer
 # Remove colab logs
 import logging
 
+logging.getLogger("pydub").setLevel(logging.WARNING)
 logging.getLogger("numba.core.byteflow").setLevel(logging.WARNING)
 logging.getLogger("numba.core.ssa").setLevel(logging.WARNING)
 logging.getLogger("numba.core.interpreter").setLevel(logging.WARNING)
@@ -64,7 +68,6 @@ class PreProcess:
     def process_audio_segment(
         self,
         audio_segment: np.ndarray,
-        sid: int,
         idx0: int,
         idx1: int,
         process_effects: bool,
@@ -73,10 +76,9 @@ class PreProcess:
             self._normalize_audio(audio_segment) if process_effects else audio_segment
         )
         if normalized_audio is None:
-            print(f"{sid}-{idx0}-{idx1}-filtered")
             return
         wavfile.write(
-            os.path.join(self.gt_wavs_dir, f"{sid}_{idx0}_{idx1}.wav"),
+            os.path.join(self.gt_wavs_dir, f"{idx0}_{idx1}.wav"),
             self.sr,
             normalized_audio.astype(np.float32),
         )
@@ -84,7 +86,7 @@ class PreProcess:
             normalized_audio, orig_sr=self.sr, target_sr=SAMPLE_RATE_16K
         )
         wavfile.write(
-            os.path.join(self.wavs16k_dir, f"{sid}_{idx0}_{idx1}.wav"),
+            os.path.join(self.wavs16k_dir, f"{idx0}_{idx1}.wav"),
             SAMPLE_RATE_16K,
             audio_16k.astype(np.float32),
         )
@@ -93,11 +95,8 @@ class PreProcess:
         self,
         path: str,
         idx0: int,
-        sid: int,
         cut_preprocess: bool,
         process_effects: bool,
-        noise_reduction: bool,
-        reduction_strength: float,
     ):
         audio_length = 0
         try:
@@ -105,10 +104,6 @@ class PreProcess:
             audio_length = librosa.get_duration(y=audio, sr=self.sr)
             if process_effects:
                 audio = signal.lfilter(self.b_high, self.a_high, audio)
-            if noise_reduction:
-                audio = nr.reduce_noise(
-                    y=audio, sr=self.sr, prop_decrease=reduction_strength
-                )
             idx1 = 0
             if cut_preprocess:
                 for audio_segment in self.slicer.slice(audio):
@@ -121,20 +116,20 @@ class PreProcess:
                                 start : start + int(self.per * self.sr)
                             ]
                             self.process_audio_segment(
-                                tmp_audio, sid, idx0, idx1, process_effects
+                                tmp_audio, idx0, idx1, process_effects
                             )
                             idx1 += 1
                         else:
                             tmp_audio = audio_segment[start:]
                             self.process_audio_segment(
-                                tmp_audio, sid, idx0, idx1, process_effects
+                                tmp_audio, idx0, idx1, process_effects
                             )
                             idx1 += 1
                             break
             else:
-                self.process_audio_segment(audio, sid, idx0, idx1, process_effects)
-        except Exception as error:
-            print(f"Error processing audio: {error}")
+                self.process_audio_segment(audio, idx0, idx1, process_effects)
+        except Exception as e:
+            print(f"Error processing audio: {e}")
         return audio_length
 
 
@@ -164,19 +159,9 @@ def save_dataset_duration(file_path, dataset_duration):
 
 
 def process_audio_wrapper(args):
-    pp, file, cut_preprocess, process_effects, noise_reduction, reduction_strength = (
-        args
-    )
-    file_path, idx0, sid = file
-    return pp.process_audio(
-        file_path,
-        idx0,
-        sid,
-        cut_preprocess,
-        process_effects,
-        noise_reduction,
-        reduction_strength,
-    )
+    pp, file, cut_preprocess, process_effects = args
+    file_path, idx0 = file
+    return pp.process_audio(file_path, idx0, cut_preprocess, process_effects)
 
 
 def preprocess_training_set(
@@ -187,59 +172,29 @@ def preprocess_training_set(
     per: float,
     cut_preprocess: bool,
     process_effects: bool,
-    noise_reduction: bool,
-    reduction_strength: float,
 ):
     start_time = time.time()
     pp = PreProcess(sr, exp_dir, per)
     print(f"Starting preprocess with {num_processes} processes...")
 
-    files = []
-    idx = 0
-
-    for root, _, filenames in os.walk(input_root):
-        try:
-            sid = 0 if root == input_root else int(os.path.basename(root))
-            for f in filenames:
-                if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg")):
-                    files.append((os.path.join(root, f), idx, sid))
-                    idx += 1
-        except ValueError:
-            print(
-                f'Speaker ID folder is expected to be integer, got "{os.path.basename(root)}" instead.'
-            )
-
-    # print(f"Number of files: {len(files)}")
-    audio_length = []
-    with tqdm(total=len(files)) as pbar:
-        with concurrent.futures.ProcessPoolExecutor(
-            max_workers=num_processes
-        ) as executor:
-            futures = [
-                executor.submit(
-                    process_audio_wrapper,
-                    (
-                        pp,
-                        file,
-                        cut_preprocess,
-                        process_effects,
-                        noise_reduction,
-                        reduction_strength,
-                    ),
-                )
-                for file in files
-            ]
-            for future in concurrent.futures.as_completed(futures):
-                audio_length.append(future.result())
-                pbar.update(1)
-
+    files = [
+        (os.path.join(input_root, f), idx)
+        for idx, f in enumerate(os.listdir(input_root))
+        if f.lower().endswith((".wav", ".mp3", ".flac", ".ogg"))
+    ]
+    ctx = multiprocessing.get_context("spawn")
+    with ctx.Pool(processes=num_processes) as pool:
+        audio_length = pool.map(
+            process_audio_wrapper,
+            [(pp, file, cut_preprocess, process_effects) for file in files],
+        )
     audio_length = sum(audio_length)
     save_dataset_duration(
         os.path.join(exp_dir, "model_info.json"), dataset_duration=audio_length
     )
     elapsed_time = time.time() - start_time
     print(
-        f"Preprocess completed in {elapsed_time:.2f} seconds on {format_duration(audio_length)} seconds of audio."
+        f"Preprocess completed in {elapsed_time:.2f} seconds. Dataset duration: {format_duration(audio_length)}."
     )
 
 
@@ -255,8 +210,6 @@ if __name__ == "__main__":
         num_processes = int(num_processes)
     cut_preprocess = strtobool(sys.argv[6])
     process_effects = strtobool(sys.argv[7])
-    noise_reduction = strtobool(sys.argv[8])
-    reduction_strength = float(sys.argv[9])
 
     preprocess_training_set(
         input_root,
@@ -266,6 +219,4 @@ if __name__ == "__main__":
         percentage,
         cut_preprocess,
         process_effects,
-        noise_reduction,
-        reduction_strength,
     )
