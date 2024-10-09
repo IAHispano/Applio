@@ -33,7 +33,7 @@ def precision_tab():
                 interactive=False,
             )
 
-            update_button = gr.Button(i18n("Update precision"))
+            update_button = gr.Button(i18n("Update Precision"))
             update_button.click(
                 fn=config.set_precision,
                 inputs=[precision],
