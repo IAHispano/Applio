@@ -67,6 +67,24 @@ def update_model_settings(
             use_spectral_norm = values["use_spectral_norm"]
             gin_channels = values["gin_channels"]
             spk_embed_dim = values["spk_embed_dim"]
+
+        prev_values = {
+            "Inter Channels": config.get_inter_channels(),
+            "Hidden Channels": config.get_hidden_channels(),
+            "Filter Channels": config.get_filter_channels(),
+            "Learning Rate": config.get_learning_rate(),
+            "Dropout": config.get_p_dropout(),
+            "Spectral Norm": config.get_use_spectral_norm(),
+            "Gin Channels": config.get_gin_channels(),
+            "Speaker Embed Dim": config.get_spk_embed_dim(),
+            "Precision": config.get_precision()
+        }
+
+        if hasattr(config, 'rmvpe') and config.rmvpe is not None:
+            prev_rmvpe_hop_length = config.rmvpe.hop_length
+        else:
+            prev_rmvpe_hop_length = 160  # default value
+        prev_values["RMVPE Hop Length"] = prev_rmvpe_hop_length
         
         # Update all settings
         config.set_inter_channels(inter_channels)
@@ -82,6 +100,32 @@ def update_model_settings(
         if hasattr(config, 'rmvpe') and config.rmvpe is not None:
             config.rmvpe.update_hop_length(int(rmvpe_hop_length))
         
+        changed_settings = []
+        new_values = {
+            "Inter Channels": inter_channels,
+            "Hidden Channels": hidden_channels,
+            "Filter Channels": filter_channels,
+            "Learning Rate": float(learning_rate),
+            "Dropout": float(p_dropout),
+            "Spectral Norm": use_spectral_norm,
+            "Gin Channels": int(gin_channels),
+            "Speaker Embed Dim": int(spk_embed_dim),
+            "RMVPE Hop Length": int(rmvpe_hop_length),
+            "Precision": precision
+        }
+        for key, new_value in new_values.items():
+            if key in prev_values and prev_values[key] != new_value:
+                if isinstance(new_value, float) and key == "Learning Rate":
+                    # Format learning rate to scientific notation
+                    changed_settings.append(f"{key}: {prev_values[key]:.1e} → {new_value:.1e}")
+                else:
+                    changed_settings.append(f"{key}: {prev_values[key]} → {new_value}")
+        
+        if not changed_settings:
+            return "No settings were changed."
+        else:
+            return "Changed settings:\n" + "\n".join(changed_settings)
+
         return f"Settings updated:\n" \
                f"Inter Channels: {inter_channels}\n" \
                f"Hidden Channels: {hidden_channels}\n" \
