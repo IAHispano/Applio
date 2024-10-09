@@ -209,7 +209,14 @@ def change_choices(model):
         {"choices": sorted(names), "__type__": "update"},
         {"choices": sorted(indexes_list), "__type__": "update"},
         {"choices": sorted(audio_paths), "__type__": "update"},
-        {"choices": sorted(speakers), "__type__": "update"},
+        {
+            "choices": (
+                sorted(speakers)
+                if speakers is not None and isinstance(speakers, (list, tuple))
+                else []
+            ),
+            "__type__": "update",
+        },
     )
 
 

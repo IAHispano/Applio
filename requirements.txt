@@ -1,5 +1,5 @@
 # Core dependencies
-pip==23.3; sys_platform == 'darwin'
+pip>=23.3; sys_platform == 'darwin'
 wheel; sys_platform == 'darwin'
 PyYAML; sys_platform == 'darwin'
 numpy==1.23.5
@@ -24,7 +24,7 @@ pedalboard
 stftpitchshift
 
 # Machine learning and deep learning
-omegaconf==2.0.5; sys_platform == 'darwin'
+omegaconf>=2.0.6; sys_platform == 'darwin' 
 numba; sys_platform == 'linux'
 numba==0.57.0; sys_platform == 'darwin' or sys_platform == 'win32'
 torch==2.3.1
@@ -42,7 +42,7 @@ tensorboard
 gradio==4.43.0
 
 # Miscellaneous utilities
-certifi==2024.7.4; sys_platform == 'darwin'
+certifi>=2023.07.22; sys_platform == 'darwin'  
 antlr4-python3-runtime==4.8; sys_platform == 'darwin'
 ffmpy==0.3.1
 tensorboardX

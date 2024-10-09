@@ -22,9 +22,6 @@ from pedalboard import (
     Delay,
 )
 
-from scipy.io import wavfile
-from audio_upscaler import upscale
-
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
@@ -258,6 +255,8 @@ class VoiceConverter:
             print(f"Converting audio '{audio_input_path}'...")
 
             if upscale_audio == True:
+                from audio_upscaler import upscale
+
                 upscale(audio_input_path, audio_input_path)
             audio = load_audio_infer(
                 audio_input_path,

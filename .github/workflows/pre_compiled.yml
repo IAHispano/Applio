@@ -91,7 +91,7 @@ jobs:
           python -m pip install "pip<24.1"
           python -m pip install -r requirements.txt
           python -m pip install torch==2.3.1 torchvision torchaudio --upgrade --index-url https://download.pytorch.org/whl/cu121
-          python core.py "prerequisites" --models "True" --exe "False" --pretraineds_v1_f0 "False" --pretraineds_v2_f0 "True" --pretraineds_v1_nof0 "False" --pretraineds_v2_nof0 "False"
+          python core.py "prerequisites" --models "True" --exe "True" --pretraineds_v1_f0 "False" --pretraineds_v2_f0 "True" --pretraineds_v1_nof0 "False" --pretraineds_v2_nof0 "False"
           find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
           deactivate
           rm -f .venv/bin/Activate.ps1 .venv/bin/activate .venv/bin/activate.csh .venv/bin/activate.fish .venv/bin/pip .venv/bin/pip3 .venv/bin/pip3.10 .venv/bin/python .venv/bin/python3 .venv/bin/python3.10

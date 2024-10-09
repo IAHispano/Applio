@@ -1,27 +1,85 @@
-#!/bin/sh
+#!/bin/bash
+set -e  # Exit immediately if a command exits with a non-zero status
+
 printf "\033]0;Installer\007"
 clear
-rm *.bat
+rm -f *.bat  
+
+# Function to log messages with timestamps
+log_message() {
+    local msg="$1"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $msg"
+}
+
+# Function to find a suitable Python version
+find_python() {
+    for py in python3.10 python3 python; do
+        if command -v "$py" > /dev/null 2>&1; then
+            echo "$py"
+            return
+        fi
+    done
+    log_message "No compatible Python installation found. Please install Python 3.7+."
+    exit 1
+}
+
+# Function to install FFmpeg based on the distribution
+install_ffmpeg() {
+    if command -v apt > /dev/null; then
+        log_message "Installing FFmpeg using apt..."
+        sudo apt update && sudo apt install -y ffmpeg
+    elif command -v pacman > /dev/null; then
+        log_message "Installing FFmpeg using pacman..."
+        sudo pacman -Syu --noconfirm ffmpeg
+    elif command -v dnf > /dev/null; then
+        log_message "Installing FFmpeg using dnf..."
+        sudo dnf install -y ffmpeg --allowerasing || install_ffmpeg_flatpak
+    elif command -v brew > /dev/null; then
+        log_message "Installing FFmpeg using Homebrew on macOS..."
+        brew install ffmpeg
+    else
+        log_message "Unsupported distribution for FFmpeg installation. Trying Flatpak..."
+        install_ffmpeg_flatpak
+    fi
+}
+
+# Function to install FFmpeg using Flatpak
+install_ffmpeg_flatpak() {
+    if command -v flatpak > /dev/null; then
+        log_message "Installing FFmpeg using Flatpak..."
+        flatpak install --user -y flathub org.freedesktop.Platform.ffmpeg
+    else
+        log_message "Flatpak is not installed. Installing Flatpak..."
+        if command -v apt > /dev/null; then
+            sudo apt install -y flatpak
+        elif command -v pacman > /dev/null; then
+            sudo pacman -Syu --noconfirm flatpak
+        elif command -v dnf > /dev/null; then
+            sudo dnf install -y flatpak
+        elif command -v brew > /dev/null; then
+            brew install flatpak
+        else
+            log_message "Unable to install Flatpak automatically. Please install Flatpak and try again."
+            exit 1
+        fi
+        flatpak install --user -y flathub org.freedesktop.Platform.ffmpeg
+    fi
+}
 
 # Function to create or activate a virtual environment
 prepare_install() {
     if [ -d ".venv" ]; then
-        echo "Venv found. This implies Applio has been already installed or this is a broken install"
+        log_message "Virtual environment found. This implies Applio has been already installed or this is a broken install."
         printf "Do you want to execute run-applio.sh? (Y/N): " >&2
         read -r r
         r=$(echo "$r" | tr '[:upper:]' '[:lower:]')
         if [ "$r" = "y" ]; then
-            chmod +x run-applio.sh  
-            ./run-applio.sh && exit 1
+            chmod +x run-applio.sh
+            ./run-applio.sh && exit 0
         else
-            echo "Ok! The installation will continue. Good luck!"
-        fi
-        if [ -f ".venv/bin/activate" ]; then
-            . .venv/bin/activate  
-        else
-            echo "Venv exists but activation file not found, re-creating venv..."
+            log_message "Continuing with the installation."
             rm -rf .venv
-            create_venv  
+            create_venv
         fi
     else
         create_venv
@@ -30,99 +88,75 @@ prepare_install() {
 
 # Function to create the virtual environment and install dependencies
 create_venv() {
-    echo "Creating venv..."
-    requirements_file="requirements.txt"
-    echo "Checking if python exists"
-    if command -v python3.10 > /dev/null 2>&1; then
-        py=$(which python3.10)
-        echo "Using python3.10"
-    else
-        if python --version | grep -qE "3\.(7|8|9|10)\."; then
-            py=$(which python)
-            echo "Using python"
-        else
-            echo "Please install Python3 or 3.10 manually."
-            exit 1
-        fi
-    fi
-    # Try to create the env
-    $py -m venv .venv
-    if [ $? -ne 0 ]; then
-        echo "Error creating the virtual environment. Check Python installation or permissions."
-        exit 1
-    fi
-    . .venv/bin/activate
-    if [ $? -ne 0 ]; then
-        echo "Error activating the virtual environment. Check if it was created properly."
-        exit 1
-    fi
+    log_message "Creating virtual environment..."
+    py=$(find_python)
 
-    # Installs pip using ensurepip or get-pip.py
-    echo "Installing pip..."
-    python -m ensurepip --upgrade
-    if [ $? -ne 0 ]; then
-        echo "Error with ensurepip, attempting manual pip installation..."
+    "$py" -m venv .venv
+
+    log_message "Activating virtual environment..."
+    source .venv/bin/activate
+
+    # Install pip if necessary and upgrade
+    log_message "Ensuring pip is installed..."
+    python -m ensurepip --upgrade || {
+        log_message "ensurepip failed, attempting manual pip installation..."
         curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
         python get-pip.py
-        if [ $? -ne 0 ];then
-            echo "Failed to install pip manually. Check permissions and internet connection."
-            exit 1
-        fi
-    fi
+    }
     python -m pip install --upgrade pip
-    echo
 
-    echo "Installing ffmpeg..."
-    sudo apt update && sudo apt install -y ffmpeg
-    if [ $? -ne 0 ]; then
-        echo "Error installing ffmpeg. Check your system's package manager."
+    install_ffmpeg
+
+    log_message "Installing dependencies..."
+    if [ -f "requirements.txt" ]; then
+        python -m pip install -r requirements.txt
+    else
+        log_message "requirements.txt not found. Please ensure it exists."
         exit 1
     fi
 
-    echo "Installing Applio dependencies..."
-    python -m pip install -r requirements.txt
-    if [ $? -ne 0 ]; then
-        echo "Error installing Applio dependencies."
-        exit 1
-    fi
+    log_message "Installing PyTorch..."
+    python -m pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --upgrade --index-url https://download.pytorch.org/whl/cu121
 
-    python -m pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --upgrade --index-url https://download.pytorch.org/whl/cu121 
     finish
 }
 
 # Function to finish installation
 finish() {
-    if [ -f "${requirements_file}" ]; then
+    log_message "Verifying installed packages..."
+    if [ -f "requirements.txt" ]; then
         installed_packages=$(python -m pip freeze)
         while IFS= read -r package; do
             expr "${package}" : "^#.*" > /dev/null && continue
             package_name=$(echo "${package}" | sed 's/[<>=!].*//')
             if ! echo "${installed_packages}" | grep -q "${package_name}"; then
-                echo "${package_name} not found. Attempting to install..."
+                log_message "${package_name} not found. Attempting to install..."
                 python -m pip install --upgrade "${package}"
             fi
-        done < "${requirements_file}"
+        done < "requirements.txt"
     else
-        echo "${requirements_file} not found. Please ensure the requirements file with required packages exists."
+        log_message "requirements.txt not found. Please ensure it exists."
         exit 1
     fi
+
     clear
-    echo "Applio has been successfully downloaded. Run the file run-applio.sh to run the web interface!"
+    echo "Applio has been successfully installed. Run the file run-applio.sh to start the web interface!"
     exit 0
 }
 
-# Main menu loop
+# Main script execution
 if [ "$(uname)" = "Darwin" ]; then
+    log_message "Detected macOS..."
     if ! command -v brew >/dev/null 2>&1; then
+        log_message "Homebrew not found. Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    else
-        brew install python@3.10
-        export PYTORCH_ENABLE_MPS_FALLBACK=1
-        export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
     fi
+    brew install python@3.10
+    export PYTORCH_ENABLE_MPS_FALLBACK=1
+    export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
 elif [ "$(uname)" != "Linux" ]; then
-    echo "Unsupported operating system. Are you using Windows...?"
-    echo "If yes, use the batch (.bat) file instead of this one!"
+    log_message "Unsupported operating system. Are you using Windows?"
+    log_message "If yes, use the batch (.bat) file instead of this one!"
     exit 1
 fi
 
