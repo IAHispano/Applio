@@ -48,8 +48,10 @@ def update_model_settings(
     p_dropout,
     use_spectral_norm,
     gin_channels,
-    spk_embed_dim
+    spk_embed_dim,
+    rmvpe_hop_length
 ):
+
     # If preset is selected, use preset values
     if preset != "Custom":
         values = MODEL_PRESETS[preset]
@@ -71,6 +73,9 @@ def update_model_settings(
     config.set_use_spectral_norm(use_spectral_norm)
     config.set_gin_channels(int(gin_channels))
     config.set_spk_embed_dim(int(spk_embed_dim))
+
+    if hasattr(config, 'rmvpe') and config.rmvpe is not None:
+        config.rmvpe.update_hop_length(int(rmvpe_hop_length))
     
     return f"Settings updated:\n" \
            f"Inter Channels: {inter_channels}\n" \
@@ -80,7 +85,8 @@ def update_model_settings(
            f"Dropout: {p_dropout}\n" \
            f"Spectral Norm: {use_spectral_norm}\n" \
            f"Gin Channels: {gin_channels}\n" \
-           f"Speaker Embed Dim: {spk_embed_dim}"
+           f"Speaker Embed Dim: {spk_embed_dim}\n"\
+           f"RMVPE Hop Length: {rmvpe_hop_length}"
 
 def update_input_fields(preset):
     if preset == "Custom":
@@ -174,6 +180,15 @@ def adv_tab():
                 value=MODEL_PRESETS["Default"]["spk_embed_dim"],
                 interactive=False,
             )
+            rmvpe_hop_length = gr.Slider(
+                label=i18n("RMVPE Hop Length"),
+                info=i18n("Adjust the hop length for RMVPE pitch extraction. Lower values may increase quality but will be slower."),
+                minimum=32,
+                maximum=640,
+                step=16,
+                value=160,
+                interactive=True,
+            )
 
         output = gr.Textbox(
             label=i18n("Output Information"),
@@ -210,7 +225,8 @@ def adv_tab():
                 p_dropout,
                 use_spectral_norm,
                 gin_channels,
-                spk_embed_dim
+                spk_embed_dim,
+                rmvpe_hop_length
             ],
             outputs=[output],
         )
