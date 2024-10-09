@@ -3,7 +3,7 @@ pip>=23.3; sys_platform == 'darwin'
 wheel; sys_platform == 'darwin'
 PyYAML; sys_platform == 'darwin'
 numpy==1.23.5
-requests==2.32.0
+requests>=2.31.0,<2.32.0
 tqdm
 wget
 pydantic==2.8.2
@@ -51,3 +51,4 @@ pypresence
 beautifulsoup4
 flask
 local-attention
+
