@@ -434,7 +434,7 @@ def inference_tab():
                     maximum=1,
                     label=i18n("Autotune Strength"),
                     info=i18n(
-                        "Set the autotune strength - the more you increase it the more it will snap to the monochromatic grid."
+                        "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
                     ),
                     visible=False,
                     value=1,
@@ -1078,7 +1078,7 @@ def inference_tab():
                     maximum=1,
                     label=i18n("Autotune Strength"),
                     info=i18n(
-                        "Set the autotune strength - the more you increase it the more it will snap to the monochromatic grid."
+                        "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
                     ),
                     visible=False,
                     value=1,
