@@ -33,7 +33,6 @@ from tabs.settings.restart import restart_tab
 from tabs.settings.presence import presence_tab, load_config_presence
 from tabs.settings.flask_server import flask_server_tab
 from tabs.settings.themes import theme_tab
-from tabs.settings.advanced.precision import precision_tab
 from tabs.settings.model_author import model_author_tab
 from tabs.settings.advanced.advanced import adv_tab
 from tabs.settings.settings import settings_tab
