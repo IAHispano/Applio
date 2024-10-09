@@ -22,7 +22,7 @@ i18n = I18nAuto()
 
 
 def settings_tab():
-    with gr.TabItem(i18n("Settings")):
+    with gr.TabItem(i18n("General")):
         model_author_tab()
         lang_tab()
         flask_server_tab()
