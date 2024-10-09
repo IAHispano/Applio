@@ -7,7 +7,6 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from tabs.settings.advanced.advanced import adv_tab
-from tabs.settings.advanced.precision import precision_tab
 from tabs.settings.lang import lang_tab
 from tabs.settings.flask_server import flask_server_tab
 from tabs.settings.model_author import model_author_tab
@@ -33,5 +32,4 @@ def settings_tab():
 
 
     with gr.TabItem(i18n("Advanced Settings")):
-        precision_tab()
         adv_tab()
