@@ -371,7 +371,7 @@ class MelSpectrogram(torch.nn.Module):
         n_mel_channels,
         sample_rate,
         win_length,
-        hop_length160, #default
+        hop_length160,
         n_fft=None,
         mel_fmin=0,
         mel_fmax=None,
@@ -391,7 +391,7 @@ class MelSpectrogram(torch.nn.Module):
         mel_basis = torch.from_numpy(mel_basis).float()
         self.register_buffer("mel_basis", mel_basis)
         self.n_fft = win_length if n_fft is None else n_fft
-        self.hop_length = hop_length  # Store hop_length as instance variable
+        self.hop_length = hop_length
         self.win_length = win_length
         self.sample_rate = sample_rate
         self.n_mel_channels = n_mel_channels
@@ -434,7 +434,14 @@ class MelSpectrogram(torch.nn.Module):
 
 # Define a class for the RMVPE0 predictor
 class RMVPE0Predictor:
-    def __init__(self, model_path, is_half, device=None, hop_length=160):  # Add hop_length parameter
+    """
+    A predictor for fundamental frequency (F0) based on the RMVPE0 model.
+    Args:
+        model_path (str): Path to the RMVPE0 model file.
+        is_half (bool): Whether to use half-precision floating-point numbers.
+        device (str, optional): Device to use for computation. Defaults to None, which uses CUDA if available.
+    """
+    def __init__(self, model_path, is_half, device=None, hop_length=160):  
         self.resample_kernel = {}
         model = E2E(4, 1, (2, 2))
         ckpt = torch.load(model_path, map_location="cpu")
@@ -446,9 +453,9 @@ class RMVPE0Predictor:
         self.resample_kernel = {}
         self.is_half = is_half
         self.device = device
-        self.hop_length = hop_length  # Store hop_length as instance variable
+        self.hop_length = hop_length
         self.mel_extractor = MelSpectrogram(
-            is_half, N_MELS, 16000, 1024, hop_length, None, 30, 8000  # Use hop_length parameter
+            is_half, N_MELS, 16000, 1024, hop_length, None, 30, 8000 
         ).to(device)
         self.model = self.model.to(device)
         cents_mapping = 20 * np.arange(N_CLASS) + 1997.3794084376191
