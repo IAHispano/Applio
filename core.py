@@ -797,6 +797,14 @@ def parse_arguments():
         help=f0_autotune_description,
         default=False,
     )
+    f0_autotune_strength_description = "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
+    infer_parser.add_argument(
+        "--f0_autotune_strength",
+        type=float,
+        help=clean_strength_description,
+        choices=[(i / 10) for i in range(11)],
+        default=1.0,
+    )
     clean_audio_description = "Clean the output audio using noise reduction algorithms. Recommended for speech conversions."
     infer_parser.add_argument(
         "--clean_audio",
@@ -1320,6 +1328,13 @@ def parse_arguments():
         default=False,
     )
     batch_infer_parser.add_argument(
+        "--f0_autotune_strength",
+        type=float,
+        help=clean_strength_description,
+        choices=[(i / 10) for i in range(11)],
+        default=1.0,
+    )
+    batch_infer_parser.add_argument(
         "--clean_audio",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
@@ -1802,6 +1817,13 @@ def parse_arguments():
         choices=[True, False],
         help=f0_autotune_description,
         default=False,
+    )
+    tts_parser.add_argument(
+        "--f0_autotune_strength",
+        type=float,
+        help=clean_strength_description,
+        choices=[(i / 10) for i in range(11)],
+        default=1.0,
     )
     tts_parser.add_argument(
         "--clean_audio",
@@ -2321,6 +2343,7 @@ def main():
                 index_path=args.index_path,
                 split_audio=args.split_audio,
                 f0_autotune=args.f0_autotune,
+                f0_autotune_strength=args.f0_autotune_strength,
                 clean_audio=args.clean_audio,
                 clean_strength=args.clean_strength,
                 export_format=args.export_format,
@@ -2384,6 +2407,7 @@ def main():
                 index_path=args.index_path,
                 split_audio=args.split_audio,
                 f0_autotune=args.f0_autotune,
+                f0_autotune_strength=args.f0_autotune_strength,
                 clean_audio=args.clean_audio,
                 clean_strength=args.clean_strength,
                 export_format=args.export_format,
@@ -2450,6 +2474,7 @@ def main():
                 index_path=args.index_path,
                 split_audio=args.split_audio,
                 f0_autotune=args.f0_autotune,
+                f0_autotune_strength=args.f0_autotune_strength,
                 clean_audio=args.clean_audio,
                 clean_strength=args.clean_strength,
                 export_format=args.export_format,
