@@ -30,6 +30,5 @@ def settings_tab():
         version_tab()
         restart_tab()
 
-
     with gr.TabItem(i18n("Advanced Settings")):
         adv_tab()

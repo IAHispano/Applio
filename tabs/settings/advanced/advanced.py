@@ -15,7 +15,7 @@ MODEL_PRESETS = {
         "p_dropout": 0,
         "use_spectral_norm": False,
         "gin_channels": 256,
-        "spk_embed_dim": 109
+        "spk_embed_dim": 109,
     },
     "2x Default": {
         "inter": 384,
@@ -25,7 +25,7 @@ MODEL_PRESETS = {
         "p_dropout": 0.5,
         "use_spectral_norm": True,
         "gin_channels": 512,
-        "spk_embed_dim": 218
+        "spk_embed_dim": 218,
     },
     "3x Default": {
         "inter": 576,
@@ -35,9 +35,10 @@ MODEL_PRESETS = {
         "p_dropout": 0.5,
         "use_spectral_norm": True,
         "gin_channels": 768,
-        "spk_embed_dim": 327
-    }
+        "spk_embed_dim": 327,
+    },
 }
+
 
 def update_model_settings(
     preset,
@@ -73,10 +74,9 @@ def update_model_settings(
             "Spectral Norm": config.get_use_spectral_norm(),
             "Gin Channels": config.get_gin_channels(),
             "Speaker Embed Dim": config.get_spk_embed_dim(),
-            "Precision": config.get_precision()
+            "Precision": config.get_precision(),
         }
 
-        
         # Update all settings
         config.set_inter_channels(inter_channels)
         config.set_hidden_channels(hidden_channels)
@@ -87,7 +87,6 @@ def update_model_settings(
         config.set_gin_channels(int(gin_channels))
         config.set_spk_embed_dim(int(spk_embed_dim))
 
-        
         changed_settings = []
         new_values = {
             "Inter Channels": inter_channels,
@@ -97,34 +96,39 @@ def update_model_settings(
             "Dropout": float(p_dropout),
             "Spectral Norm": use_spectral_norm,
             "Gin Channels": int(gin_channels),
-            "Speaker Embed Dim": int(spk_embed_dim)
+            "Speaker Embed Dim": int(spk_embed_dim),
         }
         for key, new_value in new_values.items():
             if key in prev_values and prev_values[key] != new_value:
                 if isinstance(new_value, float) and key == "Learning Rate":
                     # Format learning rate to scientific notation
-                    changed_settings.append(f"{key}: {prev_values[key]:.1e} → {new_value:.1e}")
+                    changed_settings.append(
+                        f"{key}: {prev_values[key]:.1e} → {new_value:.1e}"
+                    )
                 else:
                     changed_settings.append(f"{key}: {prev_values[key]} → {new_value}")
-        
+
         if not changed_settings:
             return "No settings were changed."
         else:
             return "Changed settings:\n" + "\n".join(changed_settings)
 
-        return f"Settings updated:\n" \
-               f"Inter Channels: {inter_channels}\n" \
-               f"Hidden Channels: {hidden_channels}\n" \
-               f"Filter Channels: {filter_channels}\n" \
-               f"Learning Rate: {learning_rate}\n" \
-               f"Dropout: {p_dropout}\n" \
-               f"Spectral Norm: {use_spectral_norm}\n" \
-               f"Gin Channels: {gin_channels}\n" \
-               f"Speaker Embed Dim: {spk_embed_dim}"
+        return (
+            f"Settings updated:\n"
+            f"Inter Channels: {inter_channels}\n"
+            f"Hidden Channels: {hidden_channels}\n"
+            f"Filter Channels: {filter_channels}\n"
+            f"Learning Rate: {learning_rate}\n"
+            f"Dropout: {p_dropout}\n"
+            f"Spectral Norm: {use_spectral_norm}\n"
+            f"Gin Channels: {gin_channels}\n"
+            f"Speaker Embed Dim: {spk_embed_dim}"
+        )
     except ValueError as e:
         return f"Error: {str(e)}"
     except Exception as e:
         return f"An unexpected error occurred: {str(e)}"
+
 
 def update_input_fields(preset):
     if preset == "Custom":
@@ -136,7 +140,7 @@ def update_input_fields(preset):
             gr.update(interactive=True, value=str(config.get_p_dropout())),
             gr.update(interactive=True, value=config.get_use_spectral_norm()),
             gr.update(interactive=True, value=str(config.get_gin_channels())),
-            gr.update(interactive=True, value=str(config.get_spk_embed_dim()))
+            gr.update(interactive=True, value=str(config.get_spk_embed_dim())),
         ]
     else:
         values = MODEL_PRESETS[preset]
@@ -148,114 +152,128 @@ def update_input_fields(preset):
             gr.update(interactive=False, value=str(values["p_dropout"])),
             gr.update(interactive=False, value=values["use_spectral_norm"]),
             gr.update(interactive=False, value=str(values["gin_channels"])),
-            gr.update(interactive=False, value=str(values["spk_embed_dim"]))
+            gr.update(interactive=False, value=str(values["spk_embed_dim"])),
         ]
+
 
 def adv_tab():
     with gr.Row():
-     with gr.Column():
-        preset_choices = list(MODEL_PRESETS.keys()) + ["Custom"]
-        model_preset = gr.Dropdown(
-            label=i18n("Presets"),
-            info=i18n("Choose a preset for all model parameters"),
-            choices=preset_choices,
-            value="Default",
-            interactive=True,
-        )
-        
-        with gr.Column() as settings_column:
-            inter_channels = gr.Number(
-                label=i18n("Inter Channels"),
-                info=i18n("Increasing this setting will make training slower and consume more resources"),
-                value=MODEL_PRESETS["Default"]["inter"],
-                interactive=False,
+        with gr.Column():
+            preset_choices = list(MODEL_PRESETS.keys()) + ["Custom"]
+            model_preset = gr.Dropdown(
+                label=i18n("Presets"),
+                info=i18n("Choose a preset for all model parameters"),
+                choices=preset_choices,
+                value="Default",
+                interactive=True,
             )
-            
-            hidden_channels = gr.Number(
-                label=i18n("Hidden Channels"),
-                info=i18n("Increasing this setting will make training slower and consume more resources"),
-                value=MODEL_PRESETS["Default"]["hidden"],
-                interactive=False,
-            )
-            
-            filter_channels = gr.Number(
-                label=i18n("Filter Channels"),
-                info=i18n("Increasing this setting will make training slower and consume more resources"),
-                value=MODEL_PRESETS["Default"]["filter"],
-                interactive=False,
-            )
-            
-            learning_rate = gr.Textbox(
-                label=i18n("Learning Rate"),
-                info=i18n("Increasing this setting will make training faster but will converge slower"),
-                value=str(MODEL_PRESETS["Default"]["learning_rate"]),
-                interactive=False,
-            )
-            
-            p_dropout = gr.Textbox(
-                label=i18n("P Dropout Rate"),
-                value=str(MODEL_PRESETS["Default"]["p_dropout"]),
-                interactive=False,
-            )
-            
-            use_spectral_norm = gr.Checkbox(
-                label=i18n("Use Spectral Normalization"),
-                info=i18n("Enabling this setting will make training more stable, lower computational needs and will be able to handle higher learing rates"),
-                value=MODEL_PRESETS["Default"]["use_spectral_norm"],
-                interactive=False,
-            )
-            
-            gin_channels = gr.Number(
-                label=i18n("Gin Channels"),
-                info=i18n("Increasing this setting will make training consume more resources"),
-                value=MODEL_PRESETS["Default"]["gin_channels"],
-                interactive=False,
-            )
-            
-            spk_embed_dim = gr.Number(
-                label=i18n("Speaker Embed Dim"),
-                info=i18n("Increasing this setting will make training consume more resources"),
-                value=MODEL_PRESETS["Default"]["spk_embed_dim"],
-                interactive=False,
-            )
-            
-        output = gr.Textbox(
-            label=i18n("Output Information"),
-            info=i18n("The updated settings will be displayed here."),
-            value="",
-            max_lines=11,
-            interactive=False,
-        )
 
-        model_preset.change(
-            fn=update_input_fields,
-            inputs=[model_preset],
-            outputs=[
-                inter_channels,
-                hidden_channels,
-                filter_channels,
-                learning_rate,
-                p_dropout,
-                use_spectral_norm,
-                gin_channels,
-                spk_embed_dim
-            ]
-        )
+            with gr.Column() as settings_column:
+                inter_channels = gr.Number(
+                    label=i18n("Inter Channels"),
+                    info=i18n(
+                        "Increasing this setting will make training slower and consume more resources"
+                    ),
+                    value=MODEL_PRESETS["Default"]["inter"],
+                    interactive=False,
+                )
 
-        update_button = gr.Button(i18n("Update Settings"))
-        update_button.click(
-            fn=update_model_settings,
-            inputs=[
-                model_preset,
-                inter_channels,
-                hidden_channels,
-                filter_channels,
-                learning_rate,
-                p_dropout,
-                use_spectral_norm,
-                gin_channels,
-                spk_embed_dim
-                
-            ],
-            outputs=[output],
-        )
+                hidden_channels = gr.Number(
+                    label=i18n("Hidden Channels"),
+                    info=i18n(
+                        "Increasing this setting will make training slower and consume more resources"
+                    ),
+                    value=MODEL_PRESETS["Default"]["hidden"],
+                    interactive=False,
+                )
+
+                filter_channels = gr.Number(
+                    label=i18n("Filter Channels"),
+                    info=i18n(
+                        "Increasing this setting will make training slower and consume more resources"
+                    ),
+                    value=MODEL_PRESETS["Default"]["filter"],
+                    interactive=False,
+                )
+
+                learning_rate = gr.Textbox(
+                    label=i18n("Learning Rate"),
+                    info=i18n(
+                        "Increasing this setting will make training faster but will converge slower"
+                    ),
+                    value=str(MODEL_PRESETS["Default"]["learning_rate"]),
+                    interactive=False,
+                )
+
+                p_dropout = gr.Textbox(
+                    label=i18n("P Dropout Rate"),
+                    value=str(MODEL_PRESETS["Default"]["p_dropout"]),
+                    interactive=False,
+                )
+
+                use_spectral_norm = gr.Checkbox(
+                    label=i18n("Use Spectral Normalization"),
+                    info=i18n(
+                        "Enabling this setting will make training more stable, lower computational needs and will be able to handle higher learing rates"
+                    ),
+                    value=MODEL_PRESETS["Default"]["use_spectral_norm"],
+                    interactive=False,
+                )
+
+                gin_channels = gr.Number(
+                    label=i18n("Gin Channels"),
+                    info=i18n(
+                        "Increasing this setting will make training consume more resources"
+                    ),
+                    value=MODEL_PRESETS["Default"]["gin_channels"],
+                    interactive=False,
+                )
+
+                spk_embed_dim = gr.Number(
+                    label=i18n("Speaker Embed Dim"),
+                    info=i18n(
+                        "Increasing this setting will make training consume more resources"
+                    ),
+                    value=MODEL_PRESETS["Default"]["spk_embed_dim"],
+                    interactive=False,
+                )
+
+            output = gr.Textbox(
+                label=i18n("Output Information"),
+                info=i18n("The updated settings will be displayed here."),
+                value="",
+                max_lines=11,
+                interactive=False,
+            )
+
+            model_preset.change(
+                fn=update_input_fields,
+                inputs=[model_preset],
+                outputs=[
+                    inter_channels,
+                    hidden_channels,
+                    filter_channels,
+                    learning_rate,
+                    p_dropout,
+                    use_spectral_norm,
+                    gin_channels,
+                    spk_embed_dim,
+                ],
+            )
+
+            update_button = gr.Button(i18n("Update Settings"))
+            update_button.click(
+                fn=update_model_settings,
+                inputs=[
+                    model_preset,
+                    inter_channels,
+                    hidden_channels,
+                    filter_channels,
+                    learning_rate,
+                    p_dropout,
+                    use_spectral_norm,
+                    gin_channels,
+                    spk_embed_dim,
+                ],
+                outputs=[output],
+            )

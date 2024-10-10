@@ -118,7 +118,6 @@ with gr.Blocks(
 
     with gr.Tab(i18n("Settings")):
         settings_tab()
-        
 
 
 def launch_gradio(port):
