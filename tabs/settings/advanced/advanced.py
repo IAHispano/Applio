@@ -49,7 +49,6 @@ def update_model_settings(
     use_spectral_norm,
     gin_channels,
     spk_embed_dim,
-    rmvpe_hop_length,
     precision
 ):
     try:
@@ -80,11 +79,6 @@ def update_model_settings(
             "Precision": config.get_precision()
         }
 
-        if hasattr(config, 'rmvpe') and config.rmvpe is not None:
-            prev_rmvpe_hop_length = config.rmvpe.hop_length
-        else:
-            prev_rmvpe_hop_length = 160  # default value
-        prev_values["RMVPE Hop Length"] = prev_rmvpe_hop_length
         
         # Update all settings
         config.set_inter_channels(inter_channels)
@@ -97,8 +91,6 @@ def update_model_settings(
         config.set_spk_embed_dim(int(spk_embed_dim))
         config.set_precision(precision)
 
-        if hasattr(config, 'rmvpe') and config.rmvpe is not None:
-            config.rmvpe.update_hop_length(int(rmvpe_hop_length))
         
         changed_settings = []
         new_values = {
@@ -110,7 +102,6 @@ def update_model_settings(
             "Spectral Norm": use_spectral_norm,
             "Gin Channels": int(gin_channels),
             "Speaker Embed Dim": int(spk_embed_dim),
-            "RMVPE Hop Length": int(rmvpe_hop_length),
             "Precision": precision
         }
         for key, new_value in new_values.items():
@@ -135,7 +126,6 @@ def update_model_settings(
                f"Spectral Norm: {use_spectral_norm}\n" \
                f"Gin Channels: {gin_channels}\n" \
                f"Speaker Embed Dim: {spk_embed_dim}\n" \
-               f"RMVPE Hop Length: {rmvpe_hop_length}\n" \
                f"Precision: {precision}"
     except ValueError as e:
         return f"Error: {str(e)}"
@@ -243,21 +233,11 @@ def adv_tab():
                 interactive=False,
             )
             
-            rmvpe_hop_length = gr.Slider(
-                label=i18n("RMVPE Hop Length"),
-                info=i18n("Adjust the hop length for RMVPE pitch extraction. Lower values may increase quality but will be slower."),
-                minimum=32,
-                maximum=640,
-                step=16,
-                value=160,
-                interactive=True,
-            )
-
         output = gr.Textbox(
             label=i18n("Output Information"),
             info=i18n("The updated settings will be displayed here."),
             value="",
-            max_lines=12,
+            max_lines=11,
             interactive=False,
         )
 
@@ -289,7 +269,6 @@ def adv_tab():
                 use_spectral_norm,
                 gin_channels,
                 spk_embed_dim,
-                rmvpe_hop_length,
                 precision
                 
             ],
