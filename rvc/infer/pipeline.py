@@ -150,19 +150,19 @@ class Pipeline:
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
         self.device = config.device
         self.ref_freqs = [
-            49.00,   # G1
-            51.91,   # G#1 / Ab1
-            55.00,   # A1
-            58.27,   # A#1 / Bb1
-            61.74,   # B1
-            65.41,   # C2
-            69.30,   # C#2 / Db2
-            73.42,   # D2
-            77.78,   # D#2 / Eb2
-            82.41,   # E2
-            87.31,   # F2
-            92.50,   # F#2 / Gb2
-            98.00,   # G2
+            49.00,  # G1
+            51.91,  # G#1 / Ab1
+            55.00,  # A1
+            58.27,  # A#1 / Bb1
+            61.74,  # B1
+            65.41,  # C2
+            69.30,  # C#2 / Db2
+            73.42,  # D2
+            77.78,  # D#2 / Eb2
+            82.41,  # E2
+            87.31,  # F2
+            92.50,  # F#2 / Gb2
+            98.00,  # G2
             103.83,  # G#2 / Ab2
             110.00,  # A2
             116.54,  # A#2 / Bb2
@@ -203,7 +203,7 @@ class Pipeline:
             880.00,  # A5
             932.33,  # A#5 / Bb5
             987.77,  # B5
-            1046.50  # C6
+            1046.50,  # C6
         ]
         self.autotune = Autotune(self.ref_freqs)
         self.note_dict = self.autotune.note_dict
