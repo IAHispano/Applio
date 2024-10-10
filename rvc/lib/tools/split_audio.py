@@ -43,7 +43,7 @@ def merge_audio(audio_segments, intervals, sr_orig, sr_new):
 
     merged_audio = np.zeros(
         int(intervals[0][0] * sr_ratio if intervals[0][0] > 0 else 0),
-        dtype=audio_segments[0].dtype
+        dtype=audio_segments[0].dtype,
     )
 
     merged_audio = np.concatenate((merged_audio, audio_segments[0]))
