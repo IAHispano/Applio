@@ -13,10 +13,11 @@ from core import (
     run_prerequisites_script,
     run_train_script,
 )
-from rvc.configs.config import get_gpu_info, get_number_of_gpus, max_vram_gpu
+from rvc.configs.config import Config, get_gpu_info, get_number_of_gpus, max_vram_gpu
 from rvc.lib.utils import format_title
 from tabs.settings.restart import stop_train
 
+config = Config()
 i18n = I18nAuto()
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -741,6 +742,19 @@ def train_tab():
                     interactive=True,
                 )
 
+                precision = gr.Radio(
+                    label=i18n("Precision"),
+                    info=i18n(
+                        "Select the precision you want to use for training and inference."
+                    ),
+                    choices=[
+                        "fp16",
+                        "fp32",
+                    ],
+                    value=config.get_precision(),
+                    interactive=True,
+                )
+
         with gr.Row():
             train_output_info = gr.Textbox(
                 label=i18n("Output Information"),
@@ -936,6 +950,10 @@ def train_tab():
             def update_slider_visibility(noise_reduction):
                 return gr.update(visible=noise_reduction)
 
+            def update_precision(value):
+                config.set_precision(value)
+                return gr.update()
+
             noise_reduction.change(
                 fn=update_slider_visibility,
                 inputs=noise_reduction,
@@ -1059,4 +1077,9 @@ def train_tab():
                 fn=refresh_pth_and_index_list,
                 inputs=[],
                 outputs=[pth_dropdown_export, index_dropdown_export],
+            )
+            precision.change(
+                fn=update_precision,
+                inputs=[precision],
+                outputs=[],
             )
