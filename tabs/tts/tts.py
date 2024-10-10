@@ -163,15 +163,15 @@ def tts_tab():
                 interactive=True,
             )
             autotune_strength = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Autotune Strength"),
-                    info=i18n(
-                        "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
-                    ),
-                    visible=False,
-                    value=1,
-                    interactive=True,
+                minimum=0,
+                maximum=1,
+                label=i18n("Autotune Strength"),
+                info=i18n(
+                    "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
+                ),
+                visible=False,
+                value=1,
+                interactive=True,
             )
             clean_audio = gr.Checkbox(
                 label=i18n("Clean Audio"),
