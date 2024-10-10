@@ -308,5 +308,6 @@
   "Model Creator": "Model Creator",
   "Name of the model creator. (Default: Unknown)": "Name of the model creator. (Default: Unknown)",
   "Speaker ID": "Speaker ID",
-  "Select the speaker ID to use for the conversion.": "Select the speaker ID to use for the conversion."
+  "Select the speaker ID to use for the conversion.": "Select the speaker ID to use for the conversion.",
+  "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid.": "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
 }
