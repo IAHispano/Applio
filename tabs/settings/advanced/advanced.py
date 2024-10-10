@@ -49,11 +49,8 @@ def update_model_settings(
     use_spectral_norm,
     gin_channels,
     spk_embed_dim,
-    precision
 ):
     try:
-        if precision not in ["fp16", "fp32"]:
-            raise ValueError(f"Invalid precision type: {precision}. Must be 'fp32' or 'fp16'.")
 
         # If preset is selected, use preset values
         if preset != "Custom":
@@ -89,7 +86,6 @@ def update_model_settings(
         config.set_use_spectral_norm(use_spectral_norm)
         config.set_gin_channels(int(gin_channels))
         config.set_spk_embed_dim(int(spk_embed_dim))
-        config.set_precision(precision)
 
         
         changed_settings = []
@@ -101,8 +97,7 @@ def update_model_settings(
             "Dropout": float(p_dropout),
             "Spectral Norm": use_spectral_norm,
             "Gin Channels": int(gin_channels),
-            "Speaker Embed Dim": int(spk_embed_dim),
-            "Precision": precision
+            "Speaker Embed Dim": int(spk_embed_dim)
         }
         for key, new_value in new_values.items():
             if key in prev_values and prev_values[key] != new_value:
@@ -125,8 +120,7 @@ def update_model_settings(
                f"Dropout: {p_dropout}\n" \
                f"Spectral Norm: {use_spectral_norm}\n" \
                f"Gin Channels: {gin_channels}\n" \
-               f"Speaker Embed Dim: {spk_embed_dim}\n" \
-               f"Precision: {precision}"
+               f"Speaker Embed Dim: {spk_embed_dim}"
     except ValueError as e:
         return f"Error: {str(e)}"
     except Exception as e:
@@ -170,14 +164,6 @@ def adv_tab():
         )
         
         with gr.Column() as settings_column:
-            precision = gr.Radio(
-                label=i18n("Precision"),
-                info=i18n("Select the precision you want to use for training and inference."),
-                choices=["fp16", "fp32"],
-                value=config.get_precision(),
-                interactive=True,
-            )
-
             inter_channels = gr.Number(
                 label=i18n("Inter Channels"),
                 info=i18n("Increasing this setting will make training slower and consume more resources"),
@@ -268,8 +254,7 @@ def adv_tab():
                 p_dropout,
                 use_spectral_norm,
                 gin_channels,
-                spk_embed_dim,
-                precision
+                spk_embed_dim
                 
             ],
             outputs=[output],
