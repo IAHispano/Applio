@@ -371,7 +371,7 @@ class MelSpectrogram(torch.nn.Module):
         n_mel_channels,
         sample_rate,
         win_length,
-        hop_length160,
+        hop_length=160,  # Set default value here
         n_fft=None,
         mel_fmin=0,
         mel_fmax=None,
@@ -434,14 +434,7 @@ class MelSpectrogram(torch.nn.Module):
 
 # Define a class for the RMVPE0 predictor
 class RMVPE0Predictor:
-    """
-    A predictor for fundamental frequency (F0) based on the RMVPE0 model.
-    Args:
-        model_path (str): Path to the RMVPE0 model file.
-        is_half (bool): Whether to use half-precision floating-point numbers.
-        device (str, optional): Device to use for computation. Defaults to None, which uses CUDA if available.
-    """
-    def __init__(self, model_path, is_half, device=None, hop_length=160):  
+    def __init__(self, model_path, is_half, device=None, hop_length=160):
         self.resample_kernel = {}
         model = E2E(4, 1, (2, 2))
         ckpt = torch.load(model_path, map_location="cpu")
