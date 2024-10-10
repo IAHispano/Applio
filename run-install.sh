@@ -66,6 +66,12 @@ install_ffmpeg_flatpak() {
     fi
 }
 
+
+install_python_ffmpeg() {
+    log_message "Installing python-ffmpeg..."
+    python -m pip install python-ffmpeg
+}
+
 # Function to create or activate a virtual environment
 prepare_install() {
     if [ -d ".venv" ]; then
@@ -106,6 +112,7 @@ create_venv() {
     python -m pip install --upgrade pip
 
     install_ffmpeg
+    install_python_ffmpeg  
 
     log_message "Installing dependencies..."
     if [ -f "requirements.txt" ]; then
@@ -154,6 +161,7 @@ if [ "$(uname)" = "Darwin" ]; then
     brew install python@3.10
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
+    export PATH="/opt/homebrew/bin:$PATH"  
 elif [ "$(uname)" != "Linux" ]; then
     log_message "Unsupported operating system. Are you using Windows?"
     log_message "If yes, use the batch (.bat) file instead of this one!"
