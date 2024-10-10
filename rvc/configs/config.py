@@ -105,6 +105,7 @@ class Config:
         except FileNotFoundError:
             print(f"File not found: {full_config_path}")
             return None
+
     def set_inter_channels(self, value):
         for config_path in version_config_paths:
             full_config_path = os.path.join("rvc", "configs", config_path)
@@ -147,7 +148,7 @@ class Config:
     def get_inter_channels(self):
         if not version_config_paths:
             raise FileNotFoundError("No configuration paths provided.")
-        
+
         full_config_path = os.path.join("rvc", "configs", version_config_paths[0])
         try:
             with open(full_config_path, "r") as f:
@@ -160,7 +161,7 @@ class Config:
     def get_hidden_channels(self):
         if not version_config_paths:
             raise FileNotFoundError("No configuration paths provided.")
-        
+
         full_config_path = os.path.join("rvc", "configs", version_config_paths[0])
         try:
             with open(full_config_path, "r") as f:
@@ -173,7 +174,7 @@ class Config:
     def get_filter_channels(self):
         if not version_config_paths:
             raise FileNotFoundError("No configuration paths provided.")
-        
+
         full_config_path = os.path.join("rvc", "configs", version_config_paths[0])
         try:
             with open(full_config_path, "r") as f:
@@ -182,6 +183,7 @@ class Config:
         except FileNotFoundError:
             print(f"File not found: {full_config_path}")
             return None
+
     def set_learning_rate(self, value):
         for config_path in version_config_paths:
             full_config_path = os.path.join("rvc", "configs", config_path)
