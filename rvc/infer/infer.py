@@ -406,9 +406,9 @@ class VoiceConverter:
                     audio_output_path=new_output,
                     **kwargs,
                 )
-                print(f"Conversion completed at '{audio_input_paths}'.")
-                elapsed_time = time.time() - start_time
-                print(f"Batch conversion completed in {elapsed_time:.2f} seconds.")
+            print(f"Conversion completed at '{audio_input_paths}'.")
+            elapsed_time = time.time() - start_time
+            print(f"Batch conversion completed in {elapsed_time:.2f} seconds.")
         except Exception as error:
             print(f"An error occurred during audio batch conversion: {error}")
             print(traceback.format_exc())
