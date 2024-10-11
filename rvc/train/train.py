@@ -75,6 +75,10 @@ cache_data_in_gpu = strtobool(sys.argv[13])
 overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
 sync_graph = strtobool(sys.argv[16])
+inter_channels = int(sys.argv[17]) 
+hidden_channels = int(sys.argv[18]) 
+filter_channels = int(sys.argv[19])
+
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -489,18 +493,6 @@ def run(
     scaler = GradScaler(enabled=config.train.fp16_run and device.type == "cuda")
 
     cache = []
-    # get the first sample as reference for tensorboard evaluation
-    for info in train_loader:
-        phone, phone_lengths, pitch, pitchf, _, _, _, _, sid = info
-        reference = (
-            phone.to(device),
-            phone_lengths.to(device),
-            pitch.to(device) if pitch_guidance else None,
-            pitchf.to(device) if pitch_guidance else None,
-            sid.to(device),
-        )
-        break
-
     for epoch in range(epoch_str, total_epoch + 1):
         if rank == 0:
             train_and_evaluate(
@@ -516,7 +508,6 @@ def run(
                 custom_save_every_weights,
                 custom_total_epoch,
                 device,
-                reference,
             )
         else:
             train_and_evaluate(
@@ -532,7 +523,6 @@ def run(
                 custom_save_every_weights,
                 custom_total_epoch,
                 device,
-                reference,
             )
         scheduler_g.step()
         scheduler_d.step()
@@ -551,7 +541,6 @@ def train_and_evaluate(
     custom_save_every_weights,
     custom_total_epoch,
     device,
-    reference,
 ):
     """
     Trains and evaluates the model for one epoch.
@@ -793,18 +782,11 @@ def train_and_evaluate(
                         ),
                         "all/mel": plot_spectrogram_to_numpy(mel[0].data.cpu().numpy()),
                     }
-
-                    with torch.no_grad():
-                        o, *_ = net_g.infer(*reference)
-                    audio_dict = {f"gen/audio_{global_step:07d}": o[0, :, :]}
-
                     summarize(
                         writer=writer,
                         global_step=global_step,
                         images=image_dict,
                         scalars=scalar_dict,
-                        audios=audio_dict,
-                        audio_sample_rate=config.data.sample_rate,
                     )
 
             global_step += 1
