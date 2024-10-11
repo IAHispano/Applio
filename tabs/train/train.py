@@ -647,42 +647,6 @@ def train_tab():
                         value=True,
                         interactive=True,
                     )
-            with gr.Row():
-                inter_channels = gr.Slider(
-                    minimum=32,
-                    maximum=2048,
-                    value=192,
-                    step=32,
-                    label=i18n("Inter Channels"),
-                    info=i18n(
-                        "Controls the number of intermediate channels in the model. Higher values may improve quality but increase memory usage and training time."
-                    ),
-                    interactive=True,
-                )
-            with gr.Row():
-                hidden_channels = gr.Slider(
-                    minimum=32,
-                    maximum=2048,
-                    value=192,
-                    step=32,
-                    label=i18n("Hidden Channels"),
-                    info=i18n(
-                        "Controls the number of hidden channels in the model. Higher values may improve quality but increase memory usage and training time."
-                    ),
-                    interactive=True,
-                )
-            with gr.Row():
-                filter_channels = gr.Slider(
-                    minimum=32,
-                    maximum=2048,
-                    value=768,
-                    step=32,
-                    label=i18n("Filter Channels"),
-                    info=i18n(
-                        "Controls the number of filter channels in the model. Higher values may improve quality but increase memory usage and training time."
-                    ),
-                    interactive=True,
-                )
             with gr.Column():
                 custom_pretrained = gr.Checkbox(
                     label=i18n("Custom Pretrained"),
@@ -768,6 +732,43 @@ def train_tab():
                             ),
                             interactive=True,
                         )
+                with gr.Accordion("Model Settings", open=False):
+                    with gr.Row():
+                        inter_channels = gr.Slider(
+                            minimum=32,
+                            maximum=2048,
+                            value=192,
+                            step=32,
+                            label=i18n("Inter Channels"),
+                            info=i18n(
+                                "Controls the number of intermediate channels in the model. Higher values may improve quality but increase memory usage and training time."
+                            ),
+                            interactive=True,
+                        )
+                    with gr.Row():
+                        hidden_channels = gr.Slider(
+                            minimum=32,
+                            maximum=2048,
+                            value=192,
+                            step=32,
+                            label=i18n("Hidden Channels"),
+                            info=i18n(
+                                "Controls the number of hidden channels in the model. Higher values may improve quality but increase memory usage and training time."
+                            ),
+                            interactive=True,
+                        )
+                    with gr.Row():
+                        filter_channels = gr.Slider(
+                            minimum=32,
+                            maximum=2048,
+                            value=768,
+                            step=32,
+                            label=i18n("Filter Channels"),
+                            info=i18n(
+                                "Controls the number of filter channels in the model. Higher values may improve quality but increase memory usage and training time."
+                            ),
+                            interactive=True,
+                        )
                 index_algorithm = gr.Radio(
                     label=i18n("Index Algorithm"),
                     info=i18n(
@@ -777,6 +778,7 @@ def train_tab():
                     value="Auto",
                     interactive=True,
                 )
+
 
         with gr.Row():
             train_output_info = gr.Textbox(
