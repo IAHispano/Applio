@@ -647,6 +647,42 @@ def train_tab():
                         value=True,
                         interactive=True,
                     )
+            with gr.Row():
+                inter_channels = gr.Slider(
+                    minimum=32,
+                    maximum=2048,
+                    value=192,
+                    step=32,
+                    label=i18n("Inter Channels"),
+                    info=i18n(
+                        "Controls the number of intermediate channels in the model. Higher values may improve quality but increase memory usage and training time."
+                    ),
+                    interactive=True,
+                )
+            with gr.Row():
+                hidden_channels = gr.Slider(
+                    minimum=32,
+                    maximum=2048,
+                    value=192,
+                    step=32,
+                    label=i18n("Hidden Channels"),
+                    info=i18n(
+                        "Controls the number of hidden channels in the model. Higher values may improve quality but increase memory usage and training time."
+                    ),
+                    interactive=True,
+                )
+            with gr.Row():
+                filter_channels = gr.Slider(
+                    minimum=32,
+                    maximum=2048,
+                    value=768,
+                    step=32,
+                    label=i18n("Filter Channels"),
+                    info=i18n(
+                        "Controls the number of filter channels in the model. Higher values may improve quality but increase memory usage and training time."
+                    ),
+                    interactive=True,
+                )
             with gr.Column():
                 custom_pretrained = gr.Checkbox(
                     label=i18n("Custom Pretrained"),
@@ -742,18 +778,6 @@ def train_tab():
                     interactive=True,
                 )
 
-                precision = gr.Radio(
-                    label=i18n("Precision"),
-                    info=i18n(
-                        "Select the precision you want to use for training and inference."
-                    ),
-                    choices=[
-                        "fp16",
-                        "fp32",
-                    ],
-                    value=config.get_precision(),
-                    interactive=True,
-                )
 
         with gr.Row():
             train_output_info = gr.Textbox(
@@ -788,6 +812,7 @@ def train_tab():
                     custom_pretrained,
                     g_pretrained_path,
                     d_pretrained_path,
+                    inter_channels,
                 ],
                 outputs=[train_output_info],
             )
@@ -950,10 +975,6 @@ def train_tab():
             def update_slider_visibility(noise_reduction):
                 return gr.update(visible=noise_reduction)
 
-            def update_precision(value):
-                config.set_precision(value)
-                return gr.update()
-
             noise_reduction.change(
                 fn=update_slider_visibility,
                 inputs=noise_reduction,
@@ -1077,9 +1098,4 @@ def train_tab():
                 fn=refresh_pth_and_index_list,
                 inputs=[],
                 outputs=[pth_dropdown_export, index_dropdown_export],
-            )
-            precision.change(
-                fn=update_precision,
-                inputs=[precision],
-                outputs=[],
             )
