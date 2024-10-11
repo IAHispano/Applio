@@ -814,6 +814,8 @@ def train_tab():
                     g_pretrained_path,
                     d_pretrained_path,
                     inter_channels,
+                    hidden_channels,
+                    filter_channels,
                 ],
                 outputs=[train_output_info],
             )
