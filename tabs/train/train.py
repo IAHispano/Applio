@@ -778,7 +778,6 @@ def train_tab():
                     interactive=True,
                 )
 
-
         with gr.Row():
             train_output_info = gr.Textbox(
                 label=i18n("Output Information"),
