@@ -25,7 +25,10 @@ find_python() {
 
 # Function to install FFmpeg based on the distribution
 install_ffmpeg() {
-    if command -v apt > /dev/null; then
+    if command -v brew > /dev/null; then
+        log_message "Installing FFmpeg using Homebrew on macOS..."
+        brew install ffmpeg
+    elif command -v apt > /dev/null; then
         log_message "Installing FFmpeg using apt..."
         sudo apt update && sudo apt install -y ffmpeg
     elif command -v pacman > /dev/null; then
@@ -34,9 +37,6 @@ install_ffmpeg() {
     elif command -v dnf > /dev/null; then
         log_message "Installing FFmpeg using dnf..."
         sudo dnf install -y ffmpeg --allowerasing || install_ffmpeg_flatpak
-    elif command -v brew > /dev/null; then
-        log_message "Installing FFmpeg using Homebrew on macOS..."
-        brew install ffmpeg
     else
         log_message "Unsupported distribution for FFmpeg installation. Trying Flatpak..."
         install_ffmpeg_flatpak
