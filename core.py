@@ -801,7 +801,7 @@ def parse_arguments():
     infer_parser.add_argument(
         "--f0_autotune_strength",
         type=float,
-        help=clean_strength_description,
+        help=f0_autotune_strength_description,
         choices=[(i / 10) for i in range(11)],
         default=1.0,
     )
