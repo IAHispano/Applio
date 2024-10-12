@@ -75,9 +75,6 @@ cache_data_in_gpu = strtobool(sys.argv[13])
 overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
 sync_graph = strtobool(sys.argv[16])
-inter_channels = int(sys.argv[17]) 
-hidden_channels = int(sys.argv[18]) 
-filter_channels = int(sys.argv[19])
 
 
 current_dir = os.getcwd()
