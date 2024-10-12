@@ -392,6 +392,12 @@ def train_tab():
                     interactive=True,
                     visible=True,
                 )
+            with gr.Row():
+                noise_reduction = gr.Checkbox(
+                    label=i18n("Noise Reduction"),
+                    info=i18n(
+                        "It's recommended keep deactivate this option if your dataset has already been processed."
+                    ),
                     value=False,
                     interactive=True,
                     visible=True,
