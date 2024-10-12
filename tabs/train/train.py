@@ -1,6 +1,8 @@
 import os
 import shutil
 import sys
+import re
+import json
 from multiprocessing import cpu_count
 
 import gradio as gr
@@ -131,6 +133,22 @@ def get_models_list():
         and all(excluded not in dirpath for excluded in ["zips", "mute"])
     ]
 
+def update_config(inter_channels, hidden_channels, filter_channels):
+        config_path = os.path.join('rvc', 'configs', 'v2', '32000.json')
+        try:
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+            
+            config['model']['inter_channels'] = int(inter_channels)
+            config['model']['hidden_channels'] = int(hidden_channels)
+            config['model']['filter_channels'] = int(filter_channels)
+            
+            with open(config_path, 'w') as f:
+                json.dump(config, f, indent=2)
+            
+            return f"Config updated: inter_channels={inter_channels}, hidden_channels={hidden_channels}, filter_channels={filter_channels}"
+        except Exception as e:
+            return f"Error updating config: {str(e)}"
 
 def refresh_models():
     return {"choices": sorted(get_models_list()), "__type__": "update"}
@@ -813,9 +831,6 @@ def train_tab():
                     custom_pretrained,
                     g_pretrained_path,
                     d_pretrained_path,
-                    inter_channels,
-                    hidden_channels,
-                    filter_channels,
                 ],
                 outputs=[train_output_info],
             )
@@ -977,6 +992,22 @@ def train_tab():
 
             def update_slider_visibility(noise_reduction):
                 return gr.update(visible=noise_reduction)
+
+            inter_channels.change(
+                fn=update_config,
+                inputs=[inter_channels, hidden_channels, filter_channels],
+                outputs=[train_output_info]
+            )
+            hidden_channels.change(
+                fn=update_config,
+                inputs=[inter_channels, hidden_channels, filter_channels],
+                outputs=[train_output_info]
+            )
+            filter_channels.change(
+                fn=update_config,
+                inputs=[inter_channels, hidden_channels, filter_channels],
+                outputs=[train_output_info]
+            )
 
             noise_reduction.change(
                 fn=update_slider_visibility,
