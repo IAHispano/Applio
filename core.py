@@ -338,6 +338,7 @@ def run_batch_infer_script(
 
 # TTS
 def run_tts_script(
+    tts_file: str,
     tts_text: str,
     tts_voice: str,
     tts_rate: int,
@@ -375,6 +376,7 @@ def run_tts_script(
             [
                 python,
                 tts_script_path,
+                tts_file,
                 tts_text,
                 tts_voice,
                 tts_rate,
@@ -1690,6 +1692,9 @@ def parse_arguments():
 
     # Parser for 'tts' mode
     tts_parser = subparsers.add_parser("tts", help="Run TTS inference")
+    tts_parser.add_argument(
+        "--tts_file", type=str, help="File with a text to be synthesized", required=True
+    )
     tts_parser.add_argument(
         "--tts_text", type=str, help="Text to be synthesized", required=True
     )
