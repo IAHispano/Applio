@@ -133,31 +133,41 @@ def get_models_list():
         and all(excluded not in dirpath for excluded in ["zips", "mute"])
     ]
 
-def update_config(inter_channels, hidden_channels, filter_channels, 
-                  resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3):
-    config_path = os.path.join('rvc', 'configs', 'v2', '32000.json')
+
+def update_config(
+    inter_channels,
+    hidden_channels,
+    filter_channels,
+    resblock_kernel_size_1,
+    resblock_kernel_size_2,
+    resblock_kernel_size_3,
+):
+    config_path = os.path.join("rvc", "configs", "v2", "32000.json")
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             config = json.load(f)
-        
+
         # Convert to int and handle None values
-        config['model']['inter_channels'] = int(inter_channels or 0)
-        config['model']['hidden_channels'] = int(hidden_channels or 0)
-        config['model']['filter_channels'] = int(filter_channels or 0)
-        config['model']['resblock_kernel_sizes'] = [
+        config["model"]["inter_channels"] = int(inter_channels or 0)
+        config["model"]["hidden_channels"] = int(hidden_channels or 0)
+        config["model"]["filter_channels"] = int(filter_channels or 0)
+        config["model"]["resblock_kernel_sizes"] = [
             int(resblock_kernel_size_1 or 0),
             int(resblock_kernel_size_2 or 0),
-            int(resblock_kernel_size_3 or 0)
+            int(resblock_kernel_size_3 or 0),
         ]
-        
-        with open(config_path, 'w') as f:
+
+        with open(config_path, "w") as f:
             json.dump(config, f, indent=2)
-        
-        return f"Config updated: inter_channels={inter_channels}, hidden_channels={hidden_channels}, " \
-               f"filter_channels={filter_channels}, resblock_kernel_sizes=" \
-               f"[{resblock_kernel_size_1}, {resblock_kernel_size_2}, {resblock_kernel_size_3}]"
+
+        return (
+            f"Config updated: inter_channels={inter_channels}, hidden_channels={hidden_channels}, "
+            f"filter_channels={filter_channels}, resblock_kernel_sizes="
+            f"[{resblock_kernel_size_1}, {resblock_kernel_size_2}, {resblock_kernel_size_3}]"
+        )
     except Exception as e:
         return f"Error updating config: {str(e)}"
+
 
 def refresh_models():
     return {"choices": sorted(get_models_list()), "__type__": "update"}
@@ -835,7 +845,6 @@ def train_tab():
                     interactive=True,
                 )
 
-
         with gr.Row():
             train_output_info = gr.Textbox(
                 label=i18n("Output Information"),
@@ -1033,33 +1042,75 @@ def train_tab():
 
             inter_channels.change(
                 fn=update_config,
-                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
-                outputs=[train_output_info]
+                inputs=[
+                    inter_channels,
+                    hidden_channels,
+                    filter_channels,
+                    resblock_kernel_size_1,
+                    resblock_kernel_size_2,
+                    resblock_kernel_size_3,
+                ],
+                outputs=[train_output_info],
             )
             hidden_channels.change(
                 fn=update_config,
-                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
-                outputs=[train_output_info]
+                inputs=[
+                    inter_channels,
+                    hidden_channels,
+                    filter_channels,
+                    resblock_kernel_size_1,
+                    resblock_kernel_size_2,
+                    resblock_kernel_size_3,
+                ],
+                outputs=[train_output_info],
             )
             filter_channels.change(
                 fn=update_config,
-                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
-                outputs=[train_output_info]
+                inputs=[
+                    inter_channels,
+                    hidden_channels,
+                    filter_channels,
+                    resblock_kernel_size_1,
+                    resblock_kernel_size_2,
+                    resblock_kernel_size_3,
+                ],
+                outputs=[train_output_info],
             )
             resblock_kernel_size_1.change(
                 fn=update_config,
-                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
-                outputs=[train_output_info]
+                inputs=[
+                    inter_channels,
+                    hidden_channels,
+                    filter_channels,
+                    resblock_kernel_size_1,
+                    resblock_kernel_size_2,
+                    resblock_kernel_size_3,
+                ],
+                outputs=[train_output_info],
             )
             resblock_kernel_size_2.change(
                 fn=update_config,
-                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
-                outputs=[train_output_info]
+                inputs=[
+                    inter_channels,
+                    hidden_channels,
+                    filter_channels,
+                    resblock_kernel_size_1,
+                    resblock_kernel_size_2,
+                    resblock_kernel_size_3,
+                ],
+                outputs=[train_output_info],
             )
             resblock_kernel_size_3.change(
                 fn=update_config,
-                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
-                outputs=[train_output_info]
+                inputs=[
+                    inter_channels,
+                    hidden_channels,
+                    filter_channels,
+                    resblock_kernel_size_1,
+                    resblock_kernel_size_2,
+                    resblock_kernel_size_3,
+                ],
+                outputs=[train_output_info],
             )
             noise_reduction.change(
                 fn=update_slider_visibility,
