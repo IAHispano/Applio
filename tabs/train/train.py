@@ -140,7 +140,6 @@ def update_config(inter_channels, hidden_channels, filter_channels,
         with open(config_path, 'r') as f:
             config = json.load(f)
         
-        # Convert to int and handle None values
         config['model']['inter_channels'] = int(inter_channels or 0)
         config['model']['hidden_channels'] = int(hidden_channels or 0)
         config['model']['filter_channels'] = int(filter_channels or 0)
