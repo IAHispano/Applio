@@ -203,6 +203,8 @@
   "Text to Synthesize": "Text to Synthesize",
   "Enter the text to synthesize.": "Enter the text to synthesize.",
   "Upload a .txt file": "Upload a .txt file",
+  "Input path for text file": "Input path for text file",
+  "The path to the text file that contains content for text to speech.": "The path to the text file that contains content for text to speech.",
   "Enter text to synthesize": "Enter text to synthesize",
   "Output Path for TTS Audio": "Output Path for TTS Audio",
   "Output Path for RVC Audio": "Output Path for RVC Audio",
