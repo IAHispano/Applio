@@ -140,6 +140,7 @@ def update_config(inter_channels, hidden_channels, filter_channels,
         with open(config_path, 'r') as f:
             config = json.load(f)
         
+        # Convert to int and handle None values
         config['model']['inter_channels'] = int(inter_channels or 0)
         config['model']['hidden_channels'] = int(hidden_channels or 0)
         config['model']['filter_channels'] = int(filter_channels or 0)
@@ -1032,7 +1033,7 @@ def train_tab():
 
             inter_channels.change(
                 fn=update_config,
-                inputs=[inter_channels, hidden_channels, filter_channels],
+                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
                 outputs=[train_output_info]
             )
             hidden_channels.change(
