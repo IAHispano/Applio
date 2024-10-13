@@ -2433,6 +2433,7 @@ def main():
             )
         elif args.mode == "tts":
             run_tts_script(
+                tts_file=args.tts_file,
                 tts_text=args.tts_text,
                 tts_voice=args.tts_voice,
                 tts_rate=args.tts_rate,
