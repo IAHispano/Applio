@@ -121,7 +121,9 @@ def tts_tab():
             )
             input_tts_path = gr.Textbox(
                 label=i18n("Input path for text file"),
-                placeholder=i18n("The path to the text file that contains content for text to speech."),
+                placeholder=i18n(
+                    "The path to the text file that contains content for text to speech."
+                ),
                 value="",
                 interactive=True,
             )
@@ -392,7 +394,7 @@ def tts_tab():
     convert_button.click(
         fn=run_tts_script,
         inputs=[
-            input_tts_path,           
+            input_tts_path,
             tts_text,
             tts_voice,
             tts_rate,
