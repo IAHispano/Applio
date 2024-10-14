@@ -33,8 +33,9 @@ from tabs.settings.restart import restart_tab
 from tabs.settings.presence import presence_tab, load_config_presence
 from tabs.settings.flask_server import flask_server_tab
 from tabs.settings.themes import theme_tab
-from tabs.settings.precision import precision_tab
 from tabs.settings.model_author import model_author_tab
+from tabs.settings.advanced.advanced import adv_tab
+from tabs.settings.settings import settings_tab
 
 # Run prerequisites
 from core import run_prerequisites_script
@@ -116,14 +117,7 @@ with gr.Blocks(
         extra_tab()
 
     with gr.Tab(i18n("Settings")):
-        presence_tab()
-        flask_server_tab()
-        precision_tab()
-        theme_tab()
-        version_tab()
-        lang_tab()
-        restart_tab()
-        model_author_tab()
+        settings_tab()
 
 
 def launch_gradio(port):
