@@ -15,7 +15,7 @@ jobs:
         python-version: ["3.10"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -66,7 +66,7 @@ jobs:
         python-version: ["3.10.12"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Free up space on runner
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -131,7 +131,7 @@ jobs:
         python-version: ["3.10.12"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Free up space on runner
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -200,7 +200,7 @@ jobs:
         python-version: ["3.10.12"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -233,7 +233,7 @@ jobs:
               print(f'Finished recording filesystem timestamps to {output_file}.')
           
           scan_and_write(\"/opt/hostedtoolcache/Python/3.10.12/x64\", \"./usr_files.csv\")"
-      - name: Install dependencies 
+      - name: Install dependencies
         run: |
           pip install -r requirements.txt
           pip install torch==2.3.1 torchvision torchaudio --upgrade --index-url https://download.pytorch.org/whl/cu121
