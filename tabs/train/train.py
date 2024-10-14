@@ -1,6 +1,8 @@
 import os
 import shutil
 import sys
+import re
+import json
 from multiprocessing import cpu_count
 
 import gradio as gr
@@ -13,10 +15,11 @@ from core import (
     run_prerequisites_script,
     run_train_script,
 )
-from rvc.configs.config import get_gpu_info, get_number_of_gpus, max_vram_gpu
+from rvc.configs.config import Config, get_gpu_info, get_number_of_gpus, max_vram_gpu
 from rvc.lib.utils import format_title
 from tabs.settings.restart import stop_train
 
+config = Config()
 i18n = I18nAuto()
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -130,6 +133,31 @@ def get_models_list():
         and all(excluded not in dirpath for excluded in ["zips", "mute"])
     ]
 
+def update_config(inter_channels, hidden_channels, filter_channels, 
+                  resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3):
+    config_path = os.path.join('rvc', 'configs', 'v2', '32000.json')
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        
+        # Convert to int and handle None values
+        config['model']['inter_channels'] = int(inter_channels or 0)
+        config['model']['hidden_channels'] = int(hidden_channels or 0)
+        config['model']['filter_channels'] = int(filter_channels or 0)
+        config['model']['resblock_kernel_sizes'] = [
+            int(resblock_kernel_size_1 or 0),
+            int(resblock_kernel_size_2 or 0),
+            int(resblock_kernel_size_3 or 0)
+        ]
+        
+        with open(config_path, 'w') as f:
+            json.dump(config, f, indent=2)
+        
+        return f"Config updated: inter_channels={inter_channels}, hidden_channels={hidden_channels}, " \
+               f"filter_channels={filter_channels}, resblock_kernel_sizes=" \
+               f"[{resblock_kernel_size_1}, {resblock_kernel_size_2}, {resblock_kernel_size_3}]"
+    except Exception as e:
+        return f"Error updating config: {str(e)}"
 
 def refresh_models():
     return {"choices": sorted(get_models_list()), "__type__": "update"}
@@ -731,6 +759,72 @@ def train_tab():
                             ),
                             interactive=True,
                         )
+                with gr.Accordion("Model Settings", open=False):
+                    with gr.Row():
+                        inter_channels = gr.Slider(
+                            minimum=32,
+                            maximum=2048,
+                            value=192,
+                            step=32,
+                            label=i18n("Inter Channels"),
+                            info=i18n(
+                                "Controls the number of intermediate channels in the model. Higher values may improve quality but increase memory usage and training time."
+                            ),
+                            interactive=True,
+                        )
+                    with gr.Row():
+                        hidden_channels = gr.Slider(
+                            minimum=32,
+                            maximum=2048,
+                            value=192,
+                            step=32,
+                            label=i18n("Hidden Channels"),
+                            info=i18n(
+                                "Controls the number of hidden channels in the model. Higher values may improve quality but increase memory usage and training time."
+                            ),
+                            interactive=True,
+                        )
+                    with gr.Row():
+                        filter_channels = gr.Slider(
+                            minimum=32,
+                            maximum=2048,
+                            value=768,
+                            step=32,
+                            label=i18n("Filter Channels"),
+                            info=i18n(
+                                "Controls the number of filter channels in the model. Higher values may improve quality but increase memory usage and training time."
+                            ),
+                            interactive=True,
+                        )
+                    with gr.Row():
+                        resblock_kernel_size_1 = gr.Slider(
+                            minimum=1,
+                            maximum=50,
+                            value=3,
+                            step=1,
+                            label=i18n("Resblock Kernel Size 1"),
+                            info=i18n("Kernel size for the first residual block."),
+                            interactive=True,
+                        )
+                        resblock_kernel_size_2 = gr.Slider(
+                            minimum=3,
+                            maximum=50,
+                            value=7,
+                            step=1,
+                            label=i18n("Resblock Kernel Size 2"),
+                            info=i18n("Kernel size for the second residual block."),
+                            interactive=True,
+                        )
+                        resblock_kernel_size_3 = gr.Slider(
+                            minimum=1,
+                            maximum=50,
+                            value=11,
+                            step=1,
+                            label=i18n("Resblock Kernel Size 3"),
+                            info=i18n("Kernel size for the third residual block."),
+                            interactive=True,
+                        )
+
                 index_algorithm = gr.Radio(
                     label=i18n("Index Algorithm"),
                     info=i18n(
@@ -740,6 +834,7 @@ def train_tab():
                     value="Auto",
                     interactive=True,
                 )
+
 
         with gr.Row():
             train_output_info = gr.Textbox(
@@ -936,6 +1031,36 @@ def train_tab():
             def update_slider_visibility(noise_reduction):
                 return gr.update(visible=noise_reduction)
 
+            inter_channels.change(
+                fn=update_config,
+                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
+                outputs=[train_output_info]
+            )
+            hidden_channels.change(
+                fn=update_config,
+                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
+                outputs=[train_output_info]
+            )
+            filter_channels.change(
+                fn=update_config,
+                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
+                outputs=[train_output_info]
+            )
+            resblock_kernel_size_1.change(
+                fn=update_config,
+                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
+                outputs=[train_output_info]
+            )
+            resblock_kernel_size_2.change(
+                fn=update_config,
+                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
+                outputs=[train_output_info]
+            )
+            resblock_kernel_size_3.change(
+                fn=update_config,
+                inputs=[inter_channels, hidden_channels, filter_channels, resblock_kernel_size_1, resblock_kernel_size_2, resblock_kernel_size_3],
+                outputs=[train_output_info]
+            )
             noise_reduction.change(
                 fn=update_slider_visibility,
                 inputs=noise_reduction,
