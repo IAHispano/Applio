@@ -358,8 +358,8 @@ def train_tab():
         with gr.Accordion(i18n("Advanced Settings"), open=False):
             cpu_cores_preprocess = gr.Slider(
                 1,
-                64,
-                cpu_count(),
+                min(cpu_count(), 32), # max 32 parallel processes
+                min(cpu_count(), 32),
                 step=1,
                 label=i18n("CPU Cores"),
                 info=i18n(
@@ -509,8 +509,8 @@ def train_tab():
                 with gr.Column():
                     cpu_cores_extract = gr.Slider(
                         1,
-                        64,
-                        cpu_count(),
+                        min(cpu_count(), 32), # max 32 parallel processes
+                        min(cpu_count(), 32),
                         step=1,
                         label=i18n("CPU Cores"),
                         info=i18n(
