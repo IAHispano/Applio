@@ -8,7 +8,7 @@ tqdm
 wget
 pydantic==2.8.2
 fastapi==0.112.0
-starlette==0.37.2
+starlette==0.40.0
 
 # Audio processing
 ffmpeg-python>=0.2.0
