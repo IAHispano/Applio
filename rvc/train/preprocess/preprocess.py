@@ -118,18 +118,29 @@ class PreProcess:
                                 start : start + int(self.per * self.sr)
                             ]
                             self.process_audio_segment(
-                                tmp_audio, sid, idx0, idx1,
+                                tmp_audio,
+                                sid,
+                                idx0,
+                                idx1,
                             )
                             idx1 += 1
                         else:
                             tmp_audio = audio_segment[start:]
                             self.process_audio_segment(
-                                tmp_audio, sid, idx0, idx1,
+                                tmp_audio,
+                                sid,
+                                idx0,
+                                idx1,
                             )
                             idx1 += 1
                             break
             else:
-                self.process_audio_segment(audio, sid, idx0, idx1,)
+                self.process_audio_segment(
+                    audio,
+                    sid,
+                    idx0,
+                    idx1,
+                )
         except Exception as error:
             print(f"Error processing audio: {error}")
         return audio_length
