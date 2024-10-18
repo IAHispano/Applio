@@ -106,6 +106,131 @@ class Config:
             print(f"File not found: {full_config_path}")
             return None
 
+    def set_learning_rate(self, value):
+        for config_path in version_config_paths:
+            full_config_path = os.path.join("rvc", "configs", config_path)
+            try:
+                with open(full_config_path, "r") as f:
+                    config = json.load(f)
+                config["train"]["learning_rate"] = value
+                with open(full_config_path, "w") as f:
+                    json.dump(config, f, indent=4)
+            except FileNotFoundError:
+                print(f"File not found: {full_config_path}")
+        return f"Set learning_rate to {value}"
+
+    def set_p_dropout(self, value):
+        for config_path in version_config_paths:
+            full_config_path = os.path.join("rvc", "configs", config_path)
+            try:
+                with open(full_config_path, "r") as f:
+                    config = json.load(f)
+                config["model"]["p_dropout"] = value
+                with open(full_config_path, "w") as f:
+                    json.dump(config, f, indent=4)
+            except FileNotFoundError:
+                print(f"File not found: {full_config_path}")
+        return f"Set p_dropout to {value}"
+
+    def set_use_spectral_norm(self, value):
+        for config_path in version_config_paths:
+            full_config_path = os.path.join("rvc", "configs", config_path)
+            try:
+                with open(full_config_path, "r") as f:
+                    config = json.load(f)
+                config["model"]["use_spectral_norm"] = value
+                with open(full_config_path, "w") as f:
+                    json.dump(config, f, indent=4)
+            except FileNotFoundError:
+                print(f"File not found: {full_config_path}")
+        return f"Set use_spectral_norm to {value}"
+
+    def set_gin_channels(self, value):
+        for config_path in version_config_paths:
+            full_config_path = os.path.join("rvc", "configs", config_path)
+            try:
+                with open(full_config_path, "r") as f:
+                    config = json.load(f)
+                config["model"]["gin_channels"] = value
+                with open(full_config_path, "w") as f:
+                    json.dump(config, f, indent=4)
+            except FileNotFoundError:
+                print(f"File not found: {full_config_path}")
+        return f"Set gin_channels to {value}"
+
+    def set_spk_embed_dim(self, value):
+        for config_path in version_config_paths:
+            full_config_path = os.path.join("rvc", "configs", config_path)
+            try:
+                with open(full_config_path, "r") as f:
+                    config = json.load(f)
+                config["model"]["spk_embed_dim"] = value
+                with open(full_config_path, "w") as f:
+                    json.dump(config, f, indent=4)
+            except FileNotFoundError:
+                print(f"File not found: {full_config_path}")
+        return f"Set spk_embed_dim to {value}"
+
+    def get_learning_rate(self):
+        if not version_config_paths:
+            raise FileNotFoundError("No configuration paths provided.")
+        full_config_path = os.path.join("rvc", "configs", version_config_paths[0])
+        try:
+            with open(full_config_path, "r") as f:
+                config = json.load(f)
+            return config["train"].get("learning_rate", 1e-4)
+        except FileNotFoundError:
+            print(f"File not found: {full_config_path}")
+            return None
+
+    def get_p_dropout(self):
+        if not version_config_paths:
+            raise FileNotFoundError("No configuration paths provided.")
+        full_config_path = os.path.join("rvc", "configs", version_config_paths[0])
+        try:
+            with open(full_config_path, "r") as f:
+                config = json.load(f)
+            return config["model"].get("p_dropout", 0)
+        except FileNotFoundError:
+            print(f"File not found: {full_config_path}")
+            return None
+
+    def get_use_spectral_norm(self):
+        if not version_config_paths:
+            raise FileNotFoundError("No configuration paths provided.")
+        full_config_path = os.path.join("rvc", "configs", version_config_paths[0])
+        try:
+            with open(full_config_path, "r") as f:
+                config = json.load(f)
+            return config["model"].get("use_spectral_norm", False)
+        except FileNotFoundError:
+            print(f"File not found: {full_config_path}")
+            return None
+
+    def get_gin_channels(self):
+        if not version_config_paths:
+            raise FileNotFoundError("No configuration paths provided.")
+        full_config_path = os.path.join("rvc", "configs", version_config_paths[0])
+        try:
+            with open(full_config_path, "r") as f:
+                config = json.load(f)
+            return config["model"].get("gin_channels", 256)
+        except FileNotFoundError:
+            print(f"File not found: {full_config_path}")
+            return None
+
+    def get_spk_embed_dim(self):
+        if not version_config_paths:
+            raise FileNotFoundError("No configuration paths provided.")
+        full_config_path = os.path.join("rvc", "configs", version_config_paths[0])
+        try:
+            with open(full_config_path, "r") as f:
+                config = json.load(f)
+            return config["model"].get("spk_embed_dim", 109)
+        except FileNotFoundError:
+            print(f"File not found: {full_config_path}")
+            return None
+
     def device_config(self) -> tuple:
         if self.device.startswith("cuda"):
             self.set_cuda_config()
