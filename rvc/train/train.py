@@ -74,7 +74,7 @@ save_every_weights = strtobool(sys.argv[12])
 cache_data_in_gpu = strtobool(sys.argv[13])
 overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
-sync_graph = strtobool(sys.argv[16])
+cleanup = strtobool(sys.argv[16])
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -198,8 +198,8 @@ def main():
                         pretrainG,
                         pretrainD,
                         pitch_guidance,
-                        custom_total_epoch,
-                        custom_save_every_weights,
+                        total_epoch,
+                        save_every_weights,
                         config,
                         device,
                     ),
@@ -246,56 +246,9 @@ def main():
                     smoothed_loss_gen_history,
                 ) = load_from_json(training_file_path)
 
-    if sync_graph:
-        print(
-            "Sync graph is now activated! With sync graph enabled, the model undergoes a single epoch of training. Once the graphs are synchronized, training proceeds for the previously specified number of epochs."
-        )
-        custom_total_epoch = 1
-        custom_save_every_weights = True
-
-        start()
-
-        # Synchronize graphs by modifying config files
-        model_config_file = os.path.join(experiment_dir, "config.json")
-        rvc_config_file = os.path.join(
-            now_dir, "rvc", "configs", version, str(sample_rate) + ".json"
-        )
-        if not os.path.exists(rvc_config_file):
-            rvc_config_file = os.path.join(
-                now_dir, "rvc", "configs", "v1", str(sample_rate) + ".json"
-            )
-
-        pattern = rf"{os.path.basename(model_name)}_(\d+)e_(\d+)s\.pth"
-
-        for filename in os.listdir(experiment_dir):
-            match = re.match(pattern, filename)
-            if match:
-                steps = int(match.group(2))
-
-        def edit_config(config_file):
-            """
-            Edits the config file to synchronize graphs.
-
-            Args:
-                config_file (str): Path to the config file.
-            """
-            with open(config_file, "r", encoding="utf8") as json_file:
-                config_data = json.load(json_file)
-
-            config_data["train"]["log_interval"] = steps
-
-            with open(config_file, "w", encoding="utf8") as json_file:
-                json.dump(
-                    config_data,
-                    json_file,
-                    indent=2,
-                    separators=(",", ": "),
-                    ensure_ascii=False,
-                )
-
-        edit_config(model_config_file)
-        edit_config(rvc_config_file)
-
+    if cleanup:
+        print("Removing files from the prior training attempt...")
+        
         # Clean up unnecessary files
         for root, dirs, files in os.walk(
             os.path.join(now_dir, "logs", model_name), topdown=False
@@ -319,17 +272,10 @@ def main():
                             os.remove(item_path)
                     os.rmdir(folder_path)
 
-        print("Successfully synchronized graphs!")
-        custom_total_epoch = total_epoch
-        custom_save_every_weights = save_every_weights
-        continue_overtrain_detector(training_file_path)
-        start()
-    else:
-        custom_total_epoch = total_epoch
-        custom_save_every_weights = save_every_weights
-        continue_overtrain_detector(training_file_path)
-        start()
-
+        print("Cleanup done!")
+        
+    continue_overtrain_detector(training_file_path)
+    start()
 
 def run(
     rank,
@@ -729,9 +675,7 @@ def train_and_evaluate(
                 y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
                 with autocast(enabled=False):
                     loss_mel = F.l1_loss(y_mel, y_hat_mel) * config.train.c_mel
-                    loss_kl = (
-                        kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
-                    )
+                    loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
                     loss_fm = feature_loss(fmap_r, fmap_g)
                     loss_gen, losses_gen = generator_loss(y_d_hat_g)
                     loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
@@ -753,65 +697,49 @@ def train_and_evaluate(
             scaler.step(optim_g)
             scaler.update()
 
-            # Logging and checkpointing
-            if rank == 0:
-                if global_step % config.train.log_interval == 0:
-                    lr = optim_g.param_groups[0]["lr"]
-                    if loss_mel > 75:
-                        loss_mel = 75
-                    if loss_kl > 9:
-                        loss_kl = 9
-                    scalar_dict = {
-                        "loss/g/total": loss_gen_all,
-                        "loss/d/total": loss_disc,
-                        "learning_rate": lr,
-                        "grad_norm_d": grad_norm_d,
-                        "grad_norm_g": grad_norm_g,
-                    }
-                    scalar_dict.update(
-                        {
-                            "loss/g/fm": loss_fm,
-                            "loss/g/mel": loss_mel,
-                            "loss/g/kl": loss_kl,
-                        }
-                    )
-                    scalar_dict.update(
-                        {f"loss/g/{i}": v for i, v in enumerate(losses_gen)}
-                    )
-                    scalar_dict.update(
-                        {f"loss/d_r/{i}": v for i, v in enumerate(losses_disc_r)}
-                    )
-                    scalar_dict.update(
-                        {f"loss/d_g/{i}": v for i, v in enumerate(losses_disc_g)}
-                    )
-                    image_dict = {
-                        "slice/mel_org": plot_spectrogram_to_numpy(
-                            y_mel[0].data.cpu().numpy()
-                        ),
-                        "slice/mel_gen": plot_spectrogram_to_numpy(
-                            y_hat_mel[0].data.cpu().numpy()
-                        ),
-                        "all/mel": plot_spectrogram_to_numpy(mel[0].data.cpu().numpy()),
-                    }
-
-                    with torch.no_grad():
-                        if hasattr(net_g, "module"):
-                            o, *_ = net_g.module.infer(*reference)
-                        else:
-                            o, *_ = net_g.infer(*reference)
-                    audio_dict = {f"gen/audio_{global_step:07d}": o[0, :, :]}
-
-                    summarize(
-                        writer=writer,
-                        global_step=global_step,
-                        images=image_dict,
-                        scalars=scalar_dict,
-                        audios=audio_dict,
-                        audio_sample_rate=config.data.sample_rate,
-                    )
-
             global_step += 1
             pbar.update(1)
+
+    # Logging and checkpointing
+    if rank == 0:
+        lr = optim_g.param_groups[0]["lr"]
+        if loss_mel > 75:
+            loss_mel = 75
+        if loss_kl > 9:
+            loss_kl = 9
+        scalar_dict = {
+            "loss/g/total": loss_gen_all,
+            "loss/d/total": loss_disc,
+            "learning_rate": lr,
+            "grad_norm_d": grad_norm_d,
+            "grad_norm_g": grad_norm_g,
+            "loss/g/fm": loss_fm,
+            "loss/g/mel": loss_mel,
+            "loss/g/kl": loss_kl,
+        }
+        # commented out 
+        #scalar_dict.update({f"loss/g/{i}": v for i, v in enumerate(losses_gen)})
+        #scalar_dict.update({f"loss/d_r/{i}": v for i, v in enumerate(losses_disc_r)})
+        #scalar_dict.update({f"loss/d_g/{i}": v for i, v in enumerate(losses_disc_g)})
+            
+        image_dict = {
+            "slice/mel_org": plot_spectrogram_to_numpy(y_mel[0].data.cpu().numpy()),
+            "slice/mel_gen": plot_spectrogram_to_numpy(y_hat_mel[0].data.cpu().numpy()),
+            "all/mel": plot_spectrogram_to_numpy(mel[0].data.cpu().numpy()),
+        }
+
+        with torch.no_grad():
+            o, *_ = net_g.infer(*reference)
+        audio_dict = {f"gen/audio_{global_step:07d}": o[0, :, :]}
+
+        summarize(
+            writer=writer,
+            global_step=global_step,
+            images=image_dict,
+            scalars=scalar_dict,
+            audios=audio_dict,
+            audio_sample_rate=config.data.sample_rate,
+        )
 
     # Save checkpoint
     model_add = []
