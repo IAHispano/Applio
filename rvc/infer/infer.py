@@ -58,6 +58,7 @@ class VoiceConverter:
         self.version = None  # Model version
         self.n_spk = None  # Number of speakers in the model
         self.use_f0 = None  # Whether the model uses F0
+        self.loaded_model = None
 
     def load_hubert(self, embedder_model: str, embedder_model_custom: str = None):
         """
@@ -430,11 +431,12 @@ class VoiceConverter:
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        self.load_model(weight_root)
-
-        if self.cpt is not None:
-            self.setup_network()
-            self.setup_vc_instance()
+        if not self.loaded_model or self.loaded_model != weight_root:
+            self.load_model(weight_root)
+            if self.cpt is not None:
+                self.setup_network()
+                self.setup_vc_instance()
+            self.loaded_model = weight_root
 
     def cleanup_model(self):
         """
