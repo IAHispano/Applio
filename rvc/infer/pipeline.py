@@ -207,7 +207,11 @@ class Pipeline:
         ]
         self.autotune = Autotune(self.ref_freqs)
         self.note_dict = self.autotune.note_dict
-
+        self.model_rmvpe = RMVPE0Predictor(
+            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
+            is_half=self.is_half,
+            device=self.device,
+        )
     def get_f0_crepe(
         self,
         x,
@@ -291,11 +295,6 @@ class Pipeline:
                     x, f0_min, f0_max, p_len, int(hop_length)
                 )
             elif method == "rmvpe":
-                self.model_rmvpe = RMVPE0Predictor(
-                    os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-                    is_half=self.is_half,
-                    device=self.device,
-                )
                 f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
                 f0 = f0[1:]
             elif method == "fcpe":
@@ -356,11 +355,6 @@ class Pipeline:
                 x, self.f0_min, self.f0_max, p_len, int(hop_length), "tiny"
             )
         elif f0_method == "rmvpe":
-            self.model_rmvpe = RMVPE0Predictor(
-                os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-                is_half=self.is_half,
-                device=self.device,
-            )
             f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
         elif f0_method == "fcpe":
             self.model_fcpe = FCPEF0Predictor(
