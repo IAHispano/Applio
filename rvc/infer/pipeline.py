@@ -212,6 +212,7 @@ class Pipeline:
             is_half=self.is_half,
             device=self.device,
         )
+
     def get_f0_crepe(
         self,
         x,
