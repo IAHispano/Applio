@@ -529,7 +529,7 @@ def run_train_script(
     overtraining_detector: bool,
     overtraining_threshold: int,
     pretrained: bool,
-    sync_graph: bool,
+    cleanup: bool,
     index_algorithm: str = "Auto",
     cache_data_in_gpu: bool = False,
     custom_pretrained: bool = False,
@@ -575,7 +575,7 @@ def run_train_script(
                 cache_data_in_gpu,
                 overtraining_detector,
                 overtraining_threshold,
-                sync_graph,
+                cleanup,
             ],
         ),
     ]
@@ -2129,10 +2129,10 @@ def parse_arguments():
         default=50,
     )
     train_parser.add_argument(
-        "--sync_graph",
+        "--cleanup",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
-        help="Enable graph synchronization for distributed training.",
+        help="Cleanup previous training attempt.",
         default=False,
     )
     train_parser.add_argument(
@@ -2529,7 +2529,7 @@ def main():
                 overtraining_threshold=args.overtraining_threshold,
                 pretrained=args.pretrained,
                 custom_pretrained=args.custom_pretrained,
-                sync_graph=args.sync_graph,
+                cleanup=args.cleanup,
                 index_algorithm=args.index_algorithm,
                 cache_data_in_gpu=args.cache_data_in_gpu,
                 g_pretrained_path=args.g_pretrained_path,
