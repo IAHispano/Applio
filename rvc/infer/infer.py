@@ -58,7 +58,6 @@ class VoiceConverter:
         self.version = None  # Model version
         self.n_spk = None  # Number of speakers in the model
         self.use_f0 = None  # Whether the model uses F0
-        self.loaded_model = None
 
     def load_hubert(self, embedder_model: str, embedder_model_custom: str = None):
         """
@@ -250,7 +249,10 @@ class VoiceConverter:
             sid (int, optional): Speaker ID. Default is 0.
             **kwargs: Additional keyword arguments.
         """
-        self.get_vc(model_path, sid)
+        # print(kwargs)
+        f0_model = kwargs['f0_model']
+        # kwargs = {key:value for key,value in kwargs.items()[:-1]}
+        # print('load model time:', time.time() - start)
         try:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
@@ -291,14 +293,19 @@ class VoiceConverter:
             else:
                 chunks = []
                 chunks.append(audio)
-
+            # print('chunks: ', len(chunks)) # 1
+            # chunk_times = time.time()
             converted_chunks = []
+
+            
             for c in chunks:
+                pipeline_start = time.time()
                 audio_opt = self.vc.pipeline(
                     model=self.hubert_model,
                     net_g=self.net_g,
                     sid=sid,
                     audio=c,
+                    input_audio_path=audio_input_path,
                     pitch=pitch,
                     f0_method=f0_method,
                     file_index=file_index,
@@ -312,16 +319,19 @@ class VoiceConverter:
                     f0_autotune=f0_autotune,
                     f0_autotune_strength=f0_autotune_strength,
                     f0_file=f0_file,
+                    f0_model=f0_model
                 )
+                
                 converted_chunks.append(audio_opt)
                 if split_audio:
                     print(f"Converted audio chunk {len(converted_chunks)}")
-
+                print('pipeline each iteration time #infer.py (for c in chunks):', time.time() - pipeline_start)
+            
             if split_audio:
                 audio_opt = merge_audio(converted_chunks, intervals, 16000, self.tgt_sr)
             else:
                 audio_opt = converted_chunks[0]
-
+            # final_times = time.time()
             if clean_audio:
                 cleaned_audio = self.remove_audio_noise(
                     audio_opt, self.tgt_sr, clean_strength
@@ -340,14 +350,17 @@ class VoiceConverter:
             output_path_format = audio_output_path.replace(
                 ".wav", f".{export_format.lower()}"
             )
+
             audio_output_path = self.convert_audio_format(
                 audio_output_path, output_path_format, export_format
             )
 
             elapsed_time = time.time() - start_time
+            
             print(
                 f"Conversion completed at '{audio_output_path}' in {elapsed_time:.2f} seconds."
             )
+            # print('final times:', time.time() - final_times)
         except Exception as error:
             print(f"An error occurred during audio conversion: {error}")
             print(traceback.format_exc())
@@ -369,9 +382,12 @@ class VoiceConverter:
             **kwargs: Additional keyword arguments.
         """
         pid = os.getpid()
+        
+        self.get_vc(kwargs['model_path'], kwargs['sid'])
+
         try:
             with open(
-                os.path.join(now_dir, "assets", "infer_pid.txt"), "w"
+                os.path.join(now_dir, "infer_pid.txt"), "w"
             ) as pid_file:
                 pid_file.write(str(pid))
             start_time = time.time()
@@ -400,8 +416,8 @@ class VoiceConverter:
             print(f"Detected {len(audio_files)} audio files for inference.")
             for a in audio_files:
                 new_input = os.path.join(audio_input_paths, a)
-                new_output = os.path.splitext(a)[0] + "_output.wav"
-                new_output = os.path.join(audio_output_path, new_output)
+                file_name = os.path.splitext(a)[0] + "_output.wav"
+                new_output = os.path.join(audio_output_path, file_name)
                 if os.path.exists(new_output):
                     continue
                 self.convert_audio(
@@ -416,7 +432,7 @@ class VoiceConverter:
             print(f"An error occurred during audio batch conversion: {error}")
             print(traceback.format_exc())
         finally:
-            os.remove(os.path.join(now_dir, "assets", "infer_pid.txt"))
+            os.remove(os.path.join(now_dir, "infer_pid.txt"))
 
     def get_vc(self, weight_root, sid):
         """
@@ -431,12 +447,11 @@ class VoiceConverter:
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        if not self.loaded_model or self.loaded_model != weight_root:
-            self.load_model(weight_root)
-            if self.cpt is not None:
-                self.setup_network()
-                self.setup_vc_instance()
-            self.loaded_model = weight_root
+        self.load_model(weight_root)
+
+        if self.cpt is not None:
+            self.setup_network()
+            self.setup_vc_instance()
 
     def cleanup_model(self):
         """
@@ -461,6 +476,7 @@ class VoiceConverter:
             weight_root (str): Path to the model weights.
         """
         self.cpt = (
+            # torch.load(weight_root, map_location="cuda:0")
             torch.load(weight_root, map_location="cpu")
             if os.path.isfile(weight_root)
             else None

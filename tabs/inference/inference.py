@@ -393,7 +393,7 @@ def inference_tab():
                     value=(
                         output_path_fn(audio_paths[0])
                         if audio_paths
-                        else os.path.join(now_dir, "assets", "audios", "output.wav")
+                        else os.path.join(now_dir, "assets", "audios", 'output', "output.wav")
                     ),
                     interactive=True,
                 )
@@ -1024,7 +1024,7 @@ def inference_tab():
                     label=i18n("Input Folder"),
                     info=i18n("Select the folder containing the audios to convert."),
                     placeholder=i18n("Enter input path"),
-                    value=os.path.join(now_dir, "assets", "audios"),
+                    value=os.path.join(now_dir, "assets", "audios", "input"),
                     interactive=True,
                 )
                 output_folder_batch = gr.Textbox(
@@ -1033,7 +1033,7 @@ def inference_tab():
                         "Select the folder where the output audios will be saved."
                     ),
                     placeholder=i18n("Enter output path"),
-                    value=os.path.join(now_dir, "assets", "audios"),
+                    value=os.path.join(now_dir, "assets", "audios", "output"),
                     interactive=True,
                 )
         with gr.Accordion(i18n("Advanced Settings"), open=False):

@@ -14,8 +14,13 @@
 *.zip
 *.png
 *.safetensors
+*.txt
+*.ckpt
+*.pyc
 
 logs
 env
+.env
 venv
 .venv
+__pycache__

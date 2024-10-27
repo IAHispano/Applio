@@ -1,7 +1,7 @@
 import math
 import torch
 from torch.nn.utils import remove_weight_norm
-from torch.nn.utils.parametrizations import weight_norm
+from torch.nn.utils import weight_norm
 from typing import Optional
 
 from rvc.lib.algorithm.generators import SineGen
@@ -182,14 +182,14 @@ class GeneratorNSF(torch.nn.Module):
         for l in self.ups:
             for hook in l._forward_pre_hooks.values():
                 if (
-                    hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
+                    hook.__module__ == "torch.nn.utils.weight_norm"
                     and hook.__class__.__name__ == "WeightNorm"
                 ):
                     remove_weight_norm(l)
         for l in self.resblocks:
             for hook in l._forward_pre_hooks.values():
                 if (
-                    hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
+                    hook.__module__ == "torch.nn.utils.weight_norm"
                     and hook.__class__.__name__ == "WeightNorm"
                 ):
                     remove_weight_norm(l)

@@ -622,10 +622,10 @@ def train_tab():
                         interactive=True,
                     )
                 with gr.Column():
-                    cleanup = gr.Checkbox(
-                        label=i18n("New Model"),
+                    sync_graph = gr.Checkbox(
+                        label=i18n("Sync Graph"),
                         info=i18n(
-                            "Enable this setting only if you are training a new model from scratch or restarting the training. Deletes all previously generated weights and tensorboard logs."
+                            "Synchronize the graph of the tensorbaord. Only enable this setting if you are training a new model."
                         ),
                         value=False,
                         interactive=True,
@@ -768,7 +768,7 @@ def train_tab():
                     overtraining_detector,
                     overtraining_threshold,
                     pretrained,
-                    cleanup,
+                    sync_graph,
                     index_algorithm,
                     cache_dataset_in_gpu,
                     custom_pretrained,

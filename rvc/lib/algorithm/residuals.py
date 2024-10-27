@@ -1,7 +1,7 @@
 from typing import Optional
 import torch
 from torch.nn.utils import remove_weight_norm
-from torch.nn.utils.parametrizations import weight_norm
+from torch.nn.utils import weight_norm
 
 from rvc.lib.algorithm.modules import WaveNet
 from rvc.lib.algorithm.commons import get_padding, init_weights
@@ -216,7 +216,7 @@ class ResidualCouplingBlock(torch.nn.Module):
         for i in range(self.n_flows):
             for hook in self.flows[i * 2]._forward_pre_hooks.values():
                 if (
-                    hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
+                    hook.__module__ == "torch.nn.utils.weight_norm"
                     and hook.__class__.__name__ == "WeightNorm"
                 ):
                     torch.nn.utils.remove_weight_norm(self.flows[i * 2])

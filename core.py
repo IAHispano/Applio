@@ -3,6 +3,16 @@ import sys
 import json
 import argparse
 import subprocess
+import time
+
+# new by https://github.com/BornSaint
+import torch
+import gc
+import torchcrepe
+from rvc.lib.predictors.RMVPE import RMVPE0Predictor
+from rvc.lib.predictors.FCPE import FCPEF0Predictor
+#####################################################
+import numpy as np
 from functools import lru_cache
 from distutils.util import strtobool
 
@@ -201,7 +211,7 @@ def run_infer_script(
     )
 
 
-# Batch infer
+# Batch infer modified by https://github.com/BornSaint
 def run_batch_infer_script(
     pitch: int,
     filter_radius: int,
@@ -265,6 +275,128 @@ def run_batch_infer_script(
     delay_mix: float = 0.5,
     sid: int = 0,
 ):
+    # kwargs = {
+    #     "audio_input_paths": input_folder,
+    #     "audio_output_path": output_folder,
+    #     "model_path": pth_path,
+    #     "index_path": index_path,
+    #     "pitch": pitch,
+    #     "filter_radius": filter_radius,
+    #     "index_rate": index_rate,
+    #     "volume_envelope": volume_envelope,
+    #     "protect": protect,
+    #     "hop_length": hop_length,
+    #     "f0_method": f0_method,
+    #     "input_folder": input_folder,
+    #     "output_folder": output_folder,
+    #     "pth_path": pth_path,
+    #     "index_path": index_path,
+    #     "split_audio": split_audio,
+    #     "f0_autotune": f0_autotune,
+    #     "f0_autotune_strength": f0_autotune_strength,
+    #     "clean_audio": clean_audio,
+    #     "clean_strength": clean_strength,
+    #     "export_format": export_format,
+    #     "upscale_audio": upscale_audio,
+    #     "f0_file": f0_file,
+    #     "embedder_model": embedder_model,
+    #     "embedder_model_custom": embedder_model_custom,
+    #     "post_process": post_process,
+    #     "formant_shifting": formant_shifting,
+    #     "formant_qfrency": formant_qfrency,
+    #     "formant_timbre": formant_timbre,
+    #     "reverb": reverb,
+    #     "pitch_shift": pitch_shift,
+    #     "limiter": limiter,
+    #     "gain": gain,
+    #     "distortion": distortion,
+    #     "chorus": chorus,
+    #     "bitcrush": bitcrush,
+    #     "clipping": clipping,
+    #     "compressor": compressor,
+    #     "delay": delay,
+    #     "reverb_room_size": reverb_room_size,
+    #     "reverb_damping": reverb_damping,
+    #     "reverb_wet_level": reverb_wet_gain,
+    #     "reverb_dry_level": reverb_dry_gain,
+    #     "reverb_width": reverb_width,
+    #     "reverb_freeze_mode": reverb_freeze_mode,
+    #     "pitch_shift_semitones": pitch_shift_semitones,
+    #     "limiter_threshold": limiter_threshold,
+    #     "limiter_release": limiter_release_time,
+    #     "gain_db": gain_db,
+    #     "distortion_gain": distortion_gain,
+    #     "chorus_rate": chorus_rate,
+    #     "chorus_depth": chorus_depth,
+    #     "chorus_delay": chorus_center_delay,
+    #     "chorus_feedback": chorus_feedback,
+    #     "chorus_mix": chorus_mix,
+    #     "bitcrush_bit_depth": bitcrush_bit_depth,
+    #     "clipping_threshold": clipping_threshold,
+    #     "compressor_threshold": compressor_threshold,
+    #     "compressor_ratio": compressor_ratio,
+    #     "compressor_attack": compressor_attack,
+    #     "compressor_release": compressor_release,
+    #     "delay_seconds": delay_seconds,
+    #     "delay_feedback": delay_feedback,
+    #     "delay_mix": delay_mix,
+    #     "sid": sid,
+    #     "model": model_rmvpe
+    # }
+    # time_step = 160 / 16000 * 1000
+    f0_min = 50
+    f0_max = 1100
+    # f0_mel_min = 1127 * np.log(1 + f0_min / 700)
+    # f0_mel_max = 1127 * np.log(1 + f0_max / 700)
+        
+    if f0_method == "crepe":
+        f0_model = ''
+    
+        # f0_model = get_f0_crepe(x, f0_min, f0_max, p_len, int(hop_length))
+    elif f0_method == "crepe-tiny":
+        f0_model = ''
+        
+        # f0_model = get_f0_crepe(
+        #     x, f0_min, f0_max, p_len, int(hop_length), "tiny"
+        # )
+    elif f0_method == "fcpe":
+        f0_model = FCPEF0Predictor(
+            os.path.join("rvc", "models", "predictors", "fcpe.pt"),
+            f0_min=int(f0_min),
+            f0_max=int(f0_max),
+            dtype=torch.float32,
+            device='cuda:0' if torch.cuda.is_available() else 'cpu',
+            sample_rate=16000,
+            threshold=0.03,
+        )
+        # f0 = model_fcpe.compute_f0(x, p_len=p_len)
+        # del model_fcpe
+        # gc.collect()
+    elif "hybrid" in f0_method:
+        f0_model = ''
+        # input_audio_path2wav[input_audio_path] = x.astype(np.double)
+        # f0_model = get_f0_hybrid(
+        #     f0_method,
+        #     x,
+        #     f0_min,
+        #     f0_max,
+        #     p_len,
+        #     hop_length,
+        # )
+
+    elif f0_method == "rmvpe":
+        start = time.time()
+        f0_model = RMVPE0Predictor(
+            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
+            is_half=True,
+            device="cuda:0" if torch.cuda.is_available() else "cpu",
+        )
+        # f0 = model_rmvpe.infer_from_audio(x, thred=0.03)
+        # if "privateuseone" in str("cuda:0" if torch.cuda.is_available() else "cpu"):  # clean ortruntime memory
+        #     del self.model_rmvpe.model
+        #     del self.model_rmvpe
+        #     logger.info("Cleaning ortruntime memory")
+        print('rmvpe load time:', time.time() - start)
     kwargs = {
         "audio_input_paths": input_folder,
         "audio_output_path": output_folder,
@@ -331,12 +463,13 @@ def run_batch_infer_script(
         "delay_feedback": delay_feedback,
         "delay_mix": delay_mix,
         "sid": sid,
+        "f0_model": f0_model
     }
+    print
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio_batch(
         **kwargs,
     )
-
     return f"Files from {input_folder} inferred successfully."
 
 
@@ -529,7 +662,7 @@ def run_train_script(
     overtraining_detector: bool,
     overtraining_threshold: int,
     pretrained: bool,
-    cleanup: bool,
+    sync_graph: bool,
     index_algorithm: str = "Auto",
     cache_data_in_gpu: bool = False,
     custom_pretrained: bool = False,
@@ -575,7 +708,7 @@ def run_train_script(
                 cache_data_in_gpu,
                 overtraining_detector,
                 overtraining_threshold,
-                cleanup,
+                sync_graph,
             ],
         ),
     ]
@@ -2129,10 +2262,10 @@ def parse_arguments():
         default=50,
     )
     train_parser.add_argument(
-        "--cleanup",
+        "--sync_graph",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
-        help="Cleanup previous training attempt.",
+        help="Enable graph synchronization for distributed training.",
         default=False,
     )
     train_parser.add_argument(
@@ -2529,7 +2662,7 @@ def main():
                 overtraining_threshold=args.overtraining_threshold,
                 pretrained=args.pretrained,
                 custom_pretrained=args.custom_pretrained,
-                cleanup=args.cleanup,
+                sync_graph=args.sync_graph,
                 index_algorithm=args.index_algorithm,
                 cache_data_in_gpu=args.cache_data_in_gpu,
                 g_pretrained_path=args.g_pretrained_path,

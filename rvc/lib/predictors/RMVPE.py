@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+import os
+import jit
 
 from librosa.filters import mel
 from typing import List
@@ -433,90 +435,241 @@ class MelSpectrogram(torch.nn.Module):
 
 
 # Define a class for the RMVPE0 predictor
+# class RMVPE0Predictor:
+#     """
+#     A predictor for fundamental frequency (F0) based on the RMVPE0 model.
+
+#     Args:
+#         model_path (str): Path to the RMVPE0 model file.
+#         is_half (bool): Whether to use half-precision floating-point numbers.
+#         device (str, optional): Device to use for computation. Defaults to None, which uses CUDA if available.
+#     """
+
+#     def __init__(self, model_path, is_half, device=None):
+#         if device is None:
+#             device = "cuda:0" if torch.cuda.is_available() else "cpu"
+#         self.resample_kernel = {}
+#         model = E2E(4, 1, (2, 2))
+#         ckpt = torch.load(model_path, map_location="cpu")
+#         model.load_state_dict(ckpt)
+#         model.eval()
+#         if is_half:
+#             model = model.half()
+#         self.model = model
+#         self.resample_kernel = {}
+#         self.is_half = is_half
+#         self.device = device
+#         self.mel_extractor = MelSpectrogram(
+#             is_half, N_MELS, 16000, 1024, 160, None, 30, 8000
+#         ).to(device)
+#         self.model = self.model.to(device)
+#         cents_mapping = 20 * np.arange(N_CLASS) + 1997.3794084376191
+#         self.cents_mapping = np.pad(cents_mapping, (4, 4))
+
+#     def mel2hidden(self, mel):
+#         """
+#         Converts Mel-spectrogram features to hidden representation.
+
+#         Args:
+#             mel (torch.Tensor): Mel-spectrogram features.
+#         """
+#         with torch.no_grad():
+#             n_frames = mel.shape[-1]
+#             mel = F.pad(
+#                 mel, (0, 32 * ((n_frames - 1) // 32 + 1) - n_frames), mode="reflect"
+#             )
+#             hidden = self.model(mel)
+#             return hidden[:, :n_frames]
+
+#     def decode(self, hidden, thred=0.03):
+#         """
+#         Decodes hidden representation to F0.
+
+#         Args:
+#             hidden (np.ndarray): Hidden representation.
+#             thred (float, optional): Threshold for salience. Defaults to 0.03.
+#         """
+#         cents_pred = self.to_local_average_cents(hidden, thred=thred)
+#         f0 = 10 * (2 ** (cents_pred / 1200))
+#         f0[f0 == 10] = 0
+#         return f0
+
+#     def infer_from_audio(self, audio, thred=0.03):
+#         """
+#         Infers F0 from audio.
+
+#         Args:
+#             audio (np.ndarray): Audio signal.
+#             thred (float, optional): Threshold for salience. Defaults to 0.03.
+#         """
+#         audio = torch.from_numpy(audio).float().to(self.device).unsqueeze(0)
+#         mel = self.mel_extractor(audio, center=True)
+#         hidden = self.mel2hidden(mel)
+#         hidden = hidden.squeeze(0).cpu().numpy()
+#         if self.is_half == True:
+#             hidden = hidden.astype("float32")
+#         f0 = self.decode(hidden, thred=thred)
+#         return f0
+
+#     def to_local_average_cents(self, salience, thred=0.05):
+#         """
+#         Converts salience to local average cents.
+
+#         Args:
+#             salience (np.ndarray): Salience values.
+#             thred (float, optional): Threshold for salience. Defaults to 0.05.
+#         """
+#         center = np.argmax(salience, axis=1)
+#         salience = np.pad(salience, ((0, 0), (4, 4)))
+#         center += 4
+#         todo_salience = []
+#         todo_cents_mapping = []
+#         starts = center - 4
+#         ends = center + 5
+#         for idx in range(salience.shape[0]):
+#             todo_salience.append(salience[:, starts[idx] : ends[idx]][idx])
+#             todo_cents_mapping.append(self.cents_mapping[starts[idx] : ends[idx]])
+#         todo_salience = np.array(todo_salience)
+#         todo_cents_mapping = np.array(todo_cents_mapping)
+#         product_sum = np.sum(todo_salience * todo_cents_mapping, 1)
+#         weight_sum = np.sum(todo_salience, 1)
+#         devided = product_sum / weight_sum
+#         maxx = np.max(salience, axis=1)
+#         devided[maxx <= thred] = 0
+#         return devided
+
+# copied from RVC WebUi
 class RMVPE0Predictor:
-    """
-    A predictor for fundamental frequency (F0) based on the RMVPE0 model.
-
-    Args:
-        model_path (str): Path to the RMVPE0 model file.
-        is_half (bool): Whether to use half-precision floating-point numbers.
-        device (str, optional): Device to use for computation. Defaults to None, which uses CUDA if available.
-    """
-
-    def __init__(self, model_path, is_half, device=None):
+    def __init__(self, model_path: str, is_half, device=None, use_jit=False):
+        # use_jit=True
         self.resample_kernel = {}
-        model = E2E(4, 1, (2, 2))
-        ckpt = torch.load(model_path, map_location="cpu")
-        model.load_state_dict(ckpt)
-        model.eval()
-        if is_half:
-            model = model.half()
-        self.model = model
         self.resample_kernel = {}
         self.is_half = is_half
+        if device is None:
+            device = "cuda:0" if torch.cuda.is_available() else "cpu"
         self.device = device
         self.mel_extractor = MelSpectrogram(
-            is_half, N_MELS, 16000, 1024, 160, None, 30, 8000
+            is_half, 128, 16000, 1024, 160, None, 30, 8000
         ).to(device)
-        self.model = self.model.to(device)
-        cents_mapping = 20 * np.arange(N_CLASS) + 1997.3794084376191
-        self.cents_mapping = np.pad(cents_mapping, (4, 4))
+        if "privateuseone" in str(device):
+            import onnxruntime as ort
+
+            ort_session = ort.InferenceSession(
+                "%s/rmvpe.onnx" % os.environ["rmvpe_root"],
+                providers=["DmlExecutionProvider"],
+            )
+            self.model = ort_session
+        else:
+            if str(self.device) == "cuda":
+                self.device = torch.device("cuda:0")
+
+            def get_jit_model():
+                jit_model_path = model_path.rstrip(".pth")
+                jit_model_path += ".half.jit" if is_half else ".jit"
+                reload = False
+                if os.path.exists(jit_model_path):
+                    ckpt = jit.load(jit_model_path)
+                    model_device = ckpt["device"]
+                    if model_device != str(self.device):
+                        reload = True
+                else:
+                    reload = True
+
+                if reload:
+                    ckpt = jit.rmvpe_jit_export(
+                        model_path=model_path,
+                        mode="script",
+                        inputs_path=None,
+                        save_path=jit_model_path,
+                        device=device,
+                        is_half=is_half,
+                    )
+                model = torch.jit.load(BytesIO(ckpt["model"]), map_location=device)
+                return model
+
+            def get_default_model():
+                model = E2E(4, 1, (2, 2))
+                ckpt = torch.load(model_path, map_location="cpu")
+                model.load_state_dict(ckpt)
+                model.eval()
+                if is_half:
+                    model = model.half()
+                else:
+                    model = model.float()
+                return model
+
+            if use_jit:
+                if is_half and "cpu" in str(self.device):
+                    logger.warning(
+                        "Use default rmvpe model. \
+                                 Jit is not supported on the CPU for half floating point"
+                    )
+                    self.model = get_default_model()
+                else:
+                    self.model = get_jit_model()
+            else:
+                self.model = get_default_model()
+
+            self.model = self.model.to(device)
+        cents_mapping = 20 * np.arange(360) + 1997.3794084376191
+        self.cents_mapping = np.pad(cents_mapping, (4, 4))  # 368
 
     def mel2hidden(self, mel):
-        """
-        Converts Mel-spectrogram features to hidden representation.
-
-        Args:
-            mel (torch.Tensor): Mel-spectrogram features.
-        """
         with torch.no_grad():
             n_frames = mel.shape[-1]
-            mel = F.pad(
-                mel, (0, 32 * ((n_frames - 1) // 32 + 1) - n_frames), mode="reflect"
-            )
-            hidden = self.model(mel)
+            n_pad = 32 * ((n_frames - 1) // 32 + 1) - n_frames
+            if n_pad > 0:
+                mel = F.pad(mel, (0, n_pad), mode="constant")
+            if "privateuseone" in str(self.device):
+                onnx_input_name = self.model.get_inputs()[0].name
+                onnx_outputs_names = self.model.get_outputs()[0].name
+                hidden = self.model.run(
+                    [onnx_outputs_names],
+                    input_feed={onnx_input_name: mel.cpu().numpy()},
+                )[0]
+            else:
+                mel = mel.half() if self.is_half else mel.float()
+                hidden = self.model(mel)
             return hidden[:, :n_frames]
 
     def decode(self, hidden, thred=0.03):
-        """
-        Decodes hidden representation to F0.
-
-        Args:
-            hidden (np.ndarray): Hidden representation.
-            thred (float, optional): Threshold for salience. Defaults to 0.03.
-        """
         cents_pred = self.to_local_average_cents(hidden, thred=thred)
         f0 = 10 * (2 ** (cents_pred / 1200))
         f0[f0 == 10] = 0
+        # f0 = np.array([10 * (2 ** (cent_pred / 1200)) if cent_pred else 0 for cent_pred in cents_pred])
         return f0
 
     def infer_from_audio(self, audio, thred=0.03):
-        """
-        Infers F0 from audio.
-
-        Args:
-            audio (np.ndarray): Audio signal.
-            thred (float, optional): Threshold for salience. Defaults to 0.03.
-        """
-        audio = torch.from_numpy(audio).float().to(self.device).unsqueeze(0)
-        mel = self.mel_extractor(audio, center=True)
+        # torch.cuda.synchronize()
+        # t0 = ttime()
+        mel = self.mel_extractor(
+            torch.from_numpy(audio).float().to(self.device).unsqueeze(0), center=True
+        )
+        # print(123123123,mel.device.type)
+        # torch.cuda.synchronize()
+        # t1 = ttime()
         hidden = self.mel2hidden(mel)
-        hidden = hidden.squeeze(0).cpu().numpy()
+        # torch.cuda.synchronize()
+        # t2 = ttime()
+        # print(234234,hidden.device.type)
+        if "privateuseone" not in str(self.device):
+            hidden = hidden.squeeze(0).cpu().numpy()
+        else:
+            hidden = hidden[0]
         if self.is_half == True:
             hidden = hidden.astype("float32")
+
         f0 = self.decode(hidden, thred=thred)
+        # torch.cuda.synchronize()
+        # t3 = ttime()
+        # print("hmvpe:%s\t%s\t%s\t%s"%(t1-t0,t2-t1,t3-t2,t3-t0))
         return f0
 
     def to_local_average_cents(self, salience, thred=0.05):
-        """
-        Converts salience to local average cents.
-
-        Args:
-            salience (np.ndarray): Salience values.
-            thred (float, optional): Threshold for salience. Defaults to 0.05.
-        """
-        center = np.argmax(salience, axis=1)
-        salience = np.pad(salience, ((0, 0), (4, 4)))
+        # t0 = ttime()
+        center = np.argmax(salience, axis=1)  # 帧长#index
+        salience = np.pad(salience, ((0, 0), (4, 4)))  # 帧长,368
+        # t1 = ttime()
         center += 4
         todo_salience = []
         todo_cents_mapping = []
@@ -525,14 +678,19 @@ class RMVPE0Predictor:
         for idx in range(salience.shape[0]):
             todo_salience.append(salience[:, starts[idx] : ends[idx]][idx])
             todo_cents_mapping.append(self.cents_mapping[starts[idx] : ends[idx]])
-        todo_salience = np.array(todo_salience)
-        todo_cents_mapping = np.array(todo_cents_mapping)
+        # t2 = ttime()
+        todo_salience = np.array(todo_salience)  # 帧长，9
+        todo_cents_mapping = np.array(todo_cents_mapping)  # 帧长，9
         product_sum = np.sum(todo_salience * todo_cents_mapping, 1)
-        weight_sum = np.sum(todo_salience, 1)
-        devided = product_sum / weight_sum
-        maxx = np.max(salience, axis=1)
+        weight_sum = np.sum(todo_salience, 1)  # 帧长
+        devided = product_sum / weight_sum  # 帧长
+        # t3 = ttime()
+        maxx = np.max(salience, axis=1)  # 帧长
         devided[maxx <= thred] = 0
+        # t4 = ttime()
+        # print("decode:%s\t%s\t%s\t%s" % (t1 - t0, t2 - t1, t3 - t2, t4 - t3))
         return devided
+
 
 
 # Define a class for BiGRU (bidirectional GRU)

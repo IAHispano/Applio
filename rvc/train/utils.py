@@ -46,6 +46,7 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
     ), f"Checkpoint file not found: {checkpoint_path}"
 
     checkpoint_dict = torch.load(checkpoint_path, map_location="cpu")
+    # checkpoint_dict = torch.load(checkpoint_path, map_location="cuda:0")
     checkpoint_dict = replace_keys_in_dict(
         replace_keys_in_dict(
             checkpoint_dict, ".weight_v", ".parametrizations.weight.original1"

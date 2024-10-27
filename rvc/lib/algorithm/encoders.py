@@ -212,7 +212,7 @@ class PosteriorEncoder(torch.nn.Module):
         """Prepares the module for scripting."""
         for hook in self.enc._forward_pre_hooks.values():
             if (
-                hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"
+                hook.__module__ == "torch.nn.utils.weight_norm"
                 and hook.__class__.__name__ == "WeightNorm"
             ):
                 torch.nn.utils.remove_weight_norm(self.enc)

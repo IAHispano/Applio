@@ -1,0 +1,122 @@
+{
+  "Beatz Forge": {
+    "32k": {
+      "D": "SeoulStreamingStation/KLM_BEATMASTER/resolve/main/D_BeatzForge_V2_32k.pth",
+      "G": "SeoulStreamingStation/KLM_BEATMASTER/resolve/main/G_BeatzForge_V2_32k.pth"
+    }
+  },
+  "DMR V1": {
+    "32k": {
+      "D": "Razer112/DMR_Pretrain/resolve/main/D_DMR-V1.pth",
+      "G": "Razer112/DMR_Pretrain/resolve/main/G_DMR-V1.pth"
+    }
+  },
+  "Italia": {
+    "32k": {
+      "D": "TheStinger/itaila/resolve/main/ItaIla_32k_D.pth",
+      "G": "TheStinger/itaila/resolve/main/ItaIla_32k_G.pth"
+    }
+  },
+  "IMA V1": {
+    "32k": {
+      "D": "Loren85/IMA-TEST-V1/resolve/main/D_2333333.pth",
+      "G": "Loren85/IMA-TEST-V1/resolve/main/G_2333333.pth"
+    }
+  },
+  "KLM4.1": {
+    "32k": {
+      "D": "SeoulStreamingStation/KLM4.1/resolve/main/D_KLM41_32k.pth",
+      "G": "SeoulStreamingStation/KLM4.1/resolve/main/G_KLM41_32k.pth"
+    },
+    "48k": {
+      "D": "SeoulStreamingStation/KLM4.1/resolve/main/D_KLM41_48k.pth",
+      "G": "SeoulStreamingStation/KLM4.1/resolve/main/G_KLM41_48k.pth"
+    }
+  },
+  "KLM4.2": {
+    "40k": {
+      "D": "SeoulStreamingStation/KLM4.2_TestVersion/resolve/main/D_KLM42_T4_40k.pth",
+      "G": "SeoulStreamingStation/KLM4.2_TestVersion/resolve/main/G_KLM42_T4_40k.pth"
+    }
+  },
+  "Nanashi v1.7": {
+    "32k": {
+      "D": "shiromiya/nanashi-pretrain/resolve/main/v1.7/D_nanashi_v1_7.pth",
+      "G": "shiromiya/nanashi-pretrain/resolve/main/v1.7/G_nanashi_v1_7.pth"
+    }
+  },
+  "Ov2Super": {
+    "32k": {
+      "D": "ORVC/Ov2Super/resolve/main/f0Ov2Super32kD.pth",
+      "G": "ORVC/Ov2Super/resolve/main/f0Ov2Super32kG.pth"
+    },
+    "40k": {
+      "D": "ORVC/Ov2Super/resolve/main/f0Ov2Super40kD.pth",
+      "G": "ORVC/Ov2Super/resolve/main/f0Ov2Super40kG.pth"
+    }
+  },
+  "RIN_E3": {
+    "40k": {
+      "D": "MUSTAR/RIN_E3/resolve/main/RIN_E3_D.pth",
+      "G": "MUSTAR/RIN_E3/resolve/main/RIN_E3_G.pth"
+    }
+  },
+  "Rigel Base": {
+    "32k": {
+      "D": "MUSTAR/Rigel-rvc-base-pretrained-model/resolve/main/Rigel_32k_Base_and_FineTuned/Base-model_32k_fp32/D_Rigel_32k_3890220.pth",
+      "G": "MUSTAR/Rigel-rvc-base-pretrained-model/resolve/main/Rigel_32k_Base_and_FineTuned/Base-model_32k_fp32/G_Rigel_32k_3890220.pth"
+    }
+  },
+  "Rigel FineTuned": {
+    "32k": {
+      "D": "MUSTAR/Rigel-rvc-base-pretrained-model/resolve/main/Rigel_32k_Base_and_FineTuned/FineTuned-model_32k_fp32/D_Rigel_32k_fp32_2854856.pth",
+      "G": "MUSTAR/Rigel-rvc-base-pretrained-model/resolve/main/Rigel_32k_Base_and_FineTuned/FineTuned-model_32k_fp32/G_Rigel_32k_fp32_2854856.pth"
+    }
+  },
+  "Snowie": {
+    "32k": {
+      "D": "MUSTAR/SnowieV3.1-32k/resolve/main/D_SnowieV3.1_32k.pth",
+      "G": "MUSTAR/SnowieV3.1-32k/resolve/main/G_SnowieV3.1_32k.pth"
+    },
+    "40k": {
+      "D": "MUSTAR/SnowieV3.1-32k/resolve/main/D_SnowieV3.1_40k.pth",
+      "G": "MUSTAR/SnowieV3.1-32k/resolve/main/G_SnowieV3.1_40k.pth"
+    },
+    "48k": {
+      "D": "MUSTAR/SnowieV3.1-32k/resolve/main/D_SnowieV3.1_48k.pth",
+      "G": "MUSTAR/SnowieV3.1-32k/resolve/main/G_SnowieV3.1_48k.pth"
+    }
+  },
+  "Snowie-X-RinE3": {
+    "40k": {
+      "D": "MUSTAR/SnowieV3.1-X-RinE3-40K/resolve/main/D_Snowie-X-Rin_40k.pth",
+      "G": "MUSTAR/SnowieV3.1-X-RinE3-40K/resolve/main/G_Snowie-X-Rin_40k.pth"
+    }
+  },
+  "SingerPreTrain": {
+    "32k": {
+      "D": "Sztef/SingerPreTrained/resolve/main/update/f0D_SingerPreTrain.pth",
+      "G": "Sztef/SingerPreTrained/resolve/main/update/f0G_SingerPreTrain.pth"
+    }
+  },
+  "Titan": {
+    "32k": {
+      "D": "blaise-tk/TITAN/resolve/main/models/medium/32k/pretrained/D-f032k-TITAN-Medium.pth",
+      "G": "blaise-tk/TITAN/resolve/main/models/medium/32k/pretrained/G-f032k-TITAN-Medium.pth"
+    },
+    "40k": {
+      "D": "blaise-tk/TITAN/resolve/main/models/medium/40k/pretrained/D-f040k-TITAN-Medium.pth",
+      "G": "blaise-tk/TITAN/resolve/main/models/medium/40k/pretrained/G-f040k-TITAN-Medium.pth"
+    },
+    "48k": {
+      "D": "blaise-tk/TITAN/resolve/main/models/medium/48k/pretrained/D-f048k-TITAN-Medium.pth",
+      "G": "blaise-tk/TITAN/resolve/main/models/medium/48k/pretrained/G-f048k-TITAN-Medium.pth"
+    }
+  },
+  "UKA": {
+    "32k": {
+      "D": "Plasmati/Pretrains/resolve/main/UKA-Pretrain-D.pth",
+      "G": "Plasmati/Pretrains/resolve/main/UKA-Pretrain-G.pth"
+    }
+  }
+}
