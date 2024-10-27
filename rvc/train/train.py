@@ -732,7 +732,10 @@ def train_and_evaluate(
         }
 
         with torch.no_grad():
-            o, *_ = net_g.infer(*reference)
+            if hasattr(net_g, "module"):
+                o, *_ = net_g.module.infer(*reference)
+            else:
+                o, *_ = net_g.infer(*reference)
         audio_dict = {f"gen/audio_{global_step:07d}": o[0, :, :]}
 
         summarize(
