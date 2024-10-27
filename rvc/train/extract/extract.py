@@ -259,7 +259,7 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(exp_dir, version + "_extracted"), exist_ok=True)
     # write to model_info.json
     chosen_embedder_model = (
-        embedder_model_custom if embedder_model=='custom' else embedder_model
+        embedder_model_custom if embedder_model == "custom" else embedder_model
     )
 
     file_path = os.path.join(exp_dir, "model_info.json")
