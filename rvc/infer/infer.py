@@ -61,6 +61,7 @@ class VoiceConverter:
         self.version = None  # Model version
         self.n_spk = None  # Number of speakers in the model
         self.use_f0 = None  # Whether the model uses F0
+        self.loaded_model = None
 
     def load_hubert(self, embedder_model: str, embedder_model_custom: str = None):
         """
@@ -239,37 +240,24 @@ class VoiceConverter:
         audio_output_path: str,
         model_path: str,
         index_path: str,
-        embedder_model: str,
-        pitch: int,
-        f0_file: str,
-        f0_method: str,
-        index_rate: float,
-        volume_envelope: int,
-        protect: float,
-        hop_length: int,
-        split_audio: bool,
-        f0_autotune: bool,
-        filter_radius: int,
-        embedder_model_custom: str,
-        clean_audio: bool,
-        clean_strength: float,
-        export_format: str,
-        upscale_audio: bool,
-        formant_shifting: bool,
-        formant_qfrency: float,
-        formant_timbre: float,
-        post_process: bool,
-        reverb: bool,
-        pitch_shift: bool,
-        limiter: bool,
-        gain: bool,
-        distortion: bool,
-        chorus: bool,
-        bitcrush: bool,
-        clipping: bool,
-        compressor: bool,
-        delay: bool,
-        sliders: dict,
+        pitch: int = 0,
+        f0_file: str = None,
+        f0_method: str = "rmvpe",
+        index_rate: float = 0.75,
+        volume_envelope: float = 1,
+        protect: float = 0.5,
+        hop_length: int = 128,
+        split_audio: bool = False,
+        f0_autotune: bool = False,
+        f0_autotune_strength: float = 1,
+        filter_radius: int = 3,
+        embedder_model: str = "contentvec",
+        embedder_model_custom: str = None,
+        clean_audio: bool = False,
+        clean_strength: float = 0.5,
+        export_format: str = "WAV",
+        upscale_audio: bool = False,
+        post_process: bool = False,
         resample_sr: int = 0,
         sid: int = 0,
         **kwargs,
@@ -492,6 +480,7 @@ class VoiceConverter:
                     protect=protect,
                     hop_length=hop_length,
                     f0_autotune=f0_autotune,
+                    f0_autotune_strength=f0_autotune_strength,
                     f0_file=f0_file,
                 )
                 converted_chunks.append(audio_opt)
@@ -894,13 +883,11 @@ class VoiceConverter:
                 output_path_format = audio_output_paths.replace(
                     ".wav", f".{export_format.lower()}"
                 )
-                audio_output_paths = self.convert_audio_format(
-                    audio_output_paths, output_path_format, export_format
-                )
-                print(f"Conversion completed at '{audio_output_paths}'.")
+            
+            print(f"Conversion completed at '{audio_input_paths}'.")
             elapsed_time = time.time() - start_time
             print(f"Batch conversion completed in {elapsed_time:.2f} seconds.")
-            os.remove(pid_file_path)
+       
         except Exception as error:
             print(f"An error occurred during audio conversion: {error}")
             print(traceback.format_exc())
@@ -918,11 +905,12 @@ class VoiceConverter:
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        self.load_model(weight_root)
-
-        if self.cpt is not None:
-            self.setup_network()
-            self.setup_vc_instance()
+        if not self.loaded_model or self.loaded_model != weight_root:
+            self.load_model(weight_root)
+            if self.cpt is not None:
+                self.setup_network()
+                self.setup_vc_instance()
+            self.loaded_model = weight_root
 
     def cleanup_model(self):
         """

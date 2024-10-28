@@ -25,7 +25,10 @@ find_python() {
 
 # Function to install FFmpeg based on the distribution
 install_ffmpeg() {
-    if command -v apt > /dev/null; then
+    if command -v brew > /dev/null; then
+        log_message "Installing FFmpeg using Homebrew on macOS..."
+        brew install ffmpeg
+    elif command -v apt > /dev/null; then
         log_message "Installing FFmpeg using apt..."
         sudo apt update && sudo apt install -y ffmpeg
     elif command -v pacman > /dev/null; then
@@ -34,9 +37,6 @@ install_ffmpeg() {
     elif command -v dnf > /dev/null; then
         log_message "Installing FFmpeg using dnf..."
         sudo dnf install -y ffmpeg --allowerasing || install_ffmpeg_flatpak
-    elif command -v brew > /dev/null; then
-        log_message "Installing FFmpeg using Homebrew on macOS..."
-        brew install ffmpeg
     else
         log_message "Unsupported distribution for FFmpeg installation. Trying Flatpak..."
         install_ffmpeg_flatpak
@@ -64,6 +64,12 @@ install_ffmpeg_flatpak() {
         fi
         flatpak install --user -y flathub org.freedesktop.Platform.ffmpeg
     fi
+}
+
+
+install_python_ffmpeg() {
+    log_message "Installing python-ffmpeg..."
+    python -m pip install python-ffmpeg
 }
 
 # Function to create or activate a virtual environment
@@ -106,6 +112,7 @@ create_venv() {
     python -m pip install --upgrade pip
 
     install_ffmpeg
+    install_python_ffmpeg  
 
     log_message "Installing dependencies..."
     if [ -f "requirements.txt" ]; then
@@ -154,6 +161,7 @@ if [ "$(uname)" = "Darwin" ]; then
     brew install python@3.10
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
+    export PATH="/opt/homebrew/bin:$PATH"  
 elif [ "$(uname)" != "Linux" ]; then
     log_message "Unsupported operating system. Are you using Windows?"
     log_message "If yes, use the batch (.bat) file instead of this one!"

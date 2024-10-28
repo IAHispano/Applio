@@ -364,8 +364,8 @@ def train_tab():
         with gr.Accordion(i18n("Advanced Settings"), open=False):
             cpu_cores_preprocess = gr.Slider(
                 1,
-                64,
-                cpu_count(),
+                min(cpu_count(), 32),  # max 32 parallel processes
+                min(cpu_count(), 32),
                 step=1,
                 label=i18n("CPU Cores"),
                 info=i18n(
@@ -515,8 +515,8 @@ def train_tab():
                 with gr.Column():
                     cpu_cores_extract = gr.Slider(
                         1,
-                        64,
-                        cpu_count(),
+                        min(cpu_count(), 32),  # max 32 parallel processes
+                        min(cpu_count(), 32),
                         step=1,
                         label=i18n("CPU Cores"),
                         info=i18n(
@@ -629,10 +629,10 @@ def train_tab():
                         interactive=True,
                     )
                 with gr.Column():
-                    sync_graph = gr.Checkbox(
-                        label=i18n("Sync Graph"),
+                    cleanup = gr.Checkbox(
+                        label=i18n("New Model"),
                         info=i18n(
-                            "Synchronize the graph of the tensorbaord. Only enable this setting if you are training a new model."
+                            "Enable this setting only if you are training a new model from scratch or restarting the training. Deletes all previously generated weights and tensorboard logs."
                         ),
                         value=False,
                         interactive=True,
@@ -776,7 +776,7 @@ def train_tab():
                     overtraining_detector,
                     overtraining_threshold,
                     pretrained,
-                    sync_graph,
+                    cleanup,
                     index_algorithm,
                     cache_dataset_in_gpu,
                     custom_pretrained,

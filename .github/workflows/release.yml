@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 2
 
       - name: Set up Python
-        uses: actions/setup-python@v4.7.1
+        uses: actions/setup-python@v5
         with:
           python-version: "3.8"
 
@@ -72,7 +72,7 @@ jobs:
 
           if [[ "$commit_data" == "[]" ]]; then
             echo "No commits found for tag $previous_tag. Using current date."
-            commit_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ") 
+            commit_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           else
             commit_date=$(echo "$commit_data" | jq -r '.[0].commit.committer.date')
           fi
@@ -129,10 +129,10 @@ jobs:
         run: |
           npm install https://github.com/IAHispano/gh-release.git
 
-      - name: Create package.json 
+      - name: Create package.json
         if: steps.check-version.outputs.tag
         run: |
-          cd /home/runner/work/Applio/Applio 
+          cd /home/runner/work/Applio/Applio
           echo '{}' > package.json
           jq \
             --arg version "${{ steps.check-version.outputs.tag }}" \

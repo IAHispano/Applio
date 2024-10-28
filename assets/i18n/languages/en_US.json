@@ -85,8 +85,8 @@
   "Overtraining Detector Settings": "Overtraining Detector Settings",
   "Overtraining Threshold": "Overtraining Threshold",
   "Set the maximum number of epochs you want your model to stop training if no improvement is detected.": "Set the maximum number of epochs you want your model to stop training if no improvement is detected.",
-  "Sync Graph": "Sync Graph",
-  "Synchronize the graph of the tensorbaord. Only enable this setting if you are training a new model.": "Synchronize the graph of the tensorbaord. Only enable this setting if you are training a new model.",
+  "New Model": "New Model",
+  "Enable this setting only if you are training a new model from scratch or restarting the training. Deletes all previously generated weights and tensorboard logs.": "Enable this setting only if you are training a new model from scratch or restarting the training. Deletes all previously generated weights and tensorboard logs.",
   "Start Training": "Start Training",
   "Stop Training": "Stop Training",
   "Generate Index": "Generate Index",
@@ -203,6 +203,8 @@
   "Text to Synthesize": "Text to Synthesize",
   "Enter the text to synthesize.": "Enter the text to synthesize.",
   "Upload a .txt file": "Upload a .txt file",
+  "Input path for text file": "Input path for text file",
+  "The path to the text file that contains content for text to speech.": "The path to the text file that contains content for text to speech.",
   "Enter text to synthesize": "Enter text to synthesize",
   "Output Path for TTS Audio": "Output Path for TTS Audio",
   "Output Path for RVC Audio": "Output Path for RVC Audio",
@@ -308,5 +310,6 @@
   "Model Creator": "Model Creator",
   "Name of the model creator. (Default: Unknown)": "Name of the model creator. (Default: Unknown)",
   "Speaker ID": "Speaker ID",
-  "Select the speaker ID to use for the conversion.": "Select the speaker ID to use for the conversion."
+  "Select the speaker ID to use for the conversion.": "Select the speaker ID to use for the conversion.",
+  "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid.": "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
 }

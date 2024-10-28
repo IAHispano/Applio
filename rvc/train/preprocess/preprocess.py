@@ -70,11 +70,7 @@ class PreProcess:
         audio_segment: np.ndarray,
         idx0: int,
         idx1: int,
-        process_effects: bool,
     ):
-        normalized_audio = (
-            self._normalize_audio(audio_segment) if process_effects else audio_segment
-        )
         if normalized_audio is None:
             return
         wavfile.write(
