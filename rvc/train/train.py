@@ -72,6 +72,13 @@ from rvc.lib.algorithm import commons
 
 from rvc.train.mel_processing import MultiScaleMelSpectrogramLoss
 from rvc.lib.algorithm.synthesizer import Synthesizer
+from rvc.lib.algorithm.discriminators.discriminator import CombinedDiscriminator
+from rvc.lib.algorithm.discriminators.sub.__init__ import (
+    MultiPeriodDiscriminator,
+    MultiScaleDiscriminator,
+    MultiBandDiscriminator,
+    MultiScaleSubbandCQTDiscriminator
+)
 
 # Parse command line arguments
 model_name = sys.argv[1]
@@ -90,7 +97,7 @@ save_every_weights = strtobool(sys.argv[13])
 cache_data_in_gpu = strtobool(sys.argv[14])
 overtraining_detector = strtobool(sys.argv[15])
 overtraining_threshold = int(sys.argv[16])
-cleanup = strtobool(sys.argv[16])
+cleanup = strtobool(sys.argv[17])
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -105,14 +112,6 @@ config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
 os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
 n_gpus = len(gpus.split("-"))
 
-from rvc.lib.algorithm.discriminators.sub.__init__ import (
-    MultiPeriodDiscriminator,
-    MultiScaleDiscriminator,
-    MultiBandDiscriminator,
-    MultiScaleSubbandCQTDiscriminator
-)
-
-from rvc.lib.algorithm.discriminators.discriminator import CombinedDiscriminator
 supported_discriminators = {
     "mpd": MultiPeriodDiscriminator,
     "msd": MultiScaleDiscriminator,
@@ -603,83 +602,11 @@ def train_and_evaluate(
     net_g.train()
     net_d.train()
 
-    # Data caching
-    if cache_data_in_gpu:
+     # Data caching
+    if device.type == "cuda" and cache_data_in_gpu:
         data_iterator = cache
         if cache == []:
             for batch_idx, info in enumerate(train_loader):
-                if pitch_guidance == True:
-                    (
-                        phone,
-                        phone_lengths,
-                        pitch,
-                        pitchf,
-                        spec,
-                        spec_lengths,
-                        wave,
-                        wave_lengths,
-                        sid,
-                    ) = info
-                elif pitch_guidance == False:
-                    (
-                        phone,
-                        phone_lengths,
-                        spec,
-                        spec_lengths,
-                        wave,
-                        wave_lengths,
-                        sid,
-                    ) = info
-                if cache_data_in_gpu == True and torch.cuda.is_available():
-                    phone = phone.cuda(rank, non_blocking=True)
-                    phone_lengths = phone_lengths.cuda(rank, non_blocking=True)
-                    if pitch_guidance == True:
-                        pitch = pitch.cuda(rank, non_blocking=True)
-                        pitchf = pitchf.cuda(rank, non_blocking=True)
-                    sid = sid.cuda(rank, non_blocking=True)
-                    spec = spec.cuda(rank, non_blocking=True)
-                    spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
-                    wave = wave.cuda(rank, non_blocking=True)
-                    wave_lengths = wave_lengths.cuda(rank, non_blocking=True)
-                if pitch_guidance == True:
-                    cache.append(
-                        (
-                            batch_idx,
-                            (
-                                phone,
-                                phone_lengths,
-                                pitch,
-                                pitchf,
-                                spec,
-                                spec_lengths,
-                                wave,
-                                wave_lengths,
-                                sid,
-                            ),
-                        )
-                    )
-                elif pitch_guidance == False:
-                    cache.append(
-                        (
-                            batch_idx,
-                            (
-                                phone,
-                                phone_lengths,
-                                spec,
-                                spec_lengths,
-                                wave,
-                                wave_lengths,
-                                sid,
-                            ),
-                        )
-                    )
-        else:
-            shuffle(cache)
-
-    epoch_recorder = EpochRecorder()
-    with tqdm(total=len(train_loader), leave=False) as pbar:
-        for batch_idx, info in data_iterator:
-            if pitch_guidance == True:
                 (
                     phone,
                     phone_lengths,
@@ -746,6 +673,16 @@ def train_and_evaluate(
                 spec_lengths = spec_lengths.cuda(rank, non_blocking=True)
                 wave = wave.cuda(rank, non_blocking=True)
                 wave_lengths = wave_lengths.cuda(rank, non_blocking=True)
+            else:
+                phone = phone.to(device)
+                phone_lengths = phone_lengths.to(device)
+                pitch = pitch.to(device) if pitch_guidance else None
+                pitchf = pitchf.to(device) if pitch_guidance else None
+                sid = sid.to(device)
+                spec = spec.to(device)
+                spec_lengths = spec_lengths.to(device)
+                wave = wave.to(device)
+                wave_lengths = wave_lengths.to(device)
 
             # Forward pass
             use_amp = config.train.fp16_run and device.type == "cuda"
@@ -793,7 +730,7 @@ def train_and_evaluate(
                 y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
                 with autocast(enabled=False):
                     loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(
-                        y_d_hat_r, y_d_hat_g, is_san=is_san
+                        y_d_hat_r, y_d_hat_g
                     )
             # Discriminator backward and update
             optim_d.zero_grad()
@@ -806,15 +743,12 @@ def train_and_evaluate(
             with autocast(enabled=use_amp):
                 y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
                 with autocast(enabled=False):
-                    # loss_mel = F.l1_loss(y_mel, y_hat_mel) * hps.train.c_mel
-
-                    loss_mel = fn_mel_loss_multiscale(y_hat, wave) * config.train.c_mel
+                    loss_mel = F.l1_loss(y_mel, y_hat_mel) * config.train.c_mel
                     loss_kl = (
                         kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
                     )
-
-                    loss_fm = feature_loss(fmap_r, fmap_g, is_san=is_san)
-                    loss_gen, losses_gen = generator_loss(y_d_hat_g, is_san=is_san)
+                    loss_fm = feature_loss(fmap_r, fmap_g)
+                    loss_gen, losses_gen = generator_loss(y_d_hat_g)
                     loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
 
                     if loss_gen_all < lowest_value["value"]:

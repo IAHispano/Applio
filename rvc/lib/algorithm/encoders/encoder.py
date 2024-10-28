@@ -5,7 +5,7 @@ import torch
 sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.normalization import LayerNorm
-from rvc.lib.algorithm.attentions import FFN, FFNV2, MultiHeadAttention
+from rvc.lib.algorithm.attentions import FFN, MultiHeadAttention
 
 class Encoder(torch.nn.Module):
     """
