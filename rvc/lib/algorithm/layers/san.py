@@ -2,11 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 def _normalize(tensor, dim):
     denom = tensor.norm(p=2.0, dim=dim, keepdim=True).clamp_min(1e-12)
     return tensor / denom
-
 
 class SANLinear(nn.Linear):
     def __init__(self, in_features, out_features, bias=True, device=None, dtype=None):

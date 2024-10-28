@@ -7,7 +7,6 @@ sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.commons import convert_pad_shape
 
-
 class MultiHeadAttention(torch.nn.Module):
     """
     Multi-head attention module with optional relative positional encoding and proximal bias.

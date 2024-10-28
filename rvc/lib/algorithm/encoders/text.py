@@ -3,12 +3,10 @@ import sys
 import math
 import torch
 
-
 sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.commons import sequence_mask
 from rvc.lib.algorithm.encoders.encoder import Encoder
-
 
 class TextEncoder(torch.nn.Module):
     def __init__(

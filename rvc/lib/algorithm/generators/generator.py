@@ -1,10 +1,10 @@
+import sys
+import os
+
 import torch
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
 from typing import Optional
-
-import sys
-import os
 
 sys.path.append(os.getcwd())
 

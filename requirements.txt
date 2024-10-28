@@ -35,6 +35,7 @@ torchfcpe
 einops
 libf0
 transformers==4.44.2
+nnAudio
 
 # Visualization and UI
 matplotlib==3.7.2
@@ -51,4 +52,3 @@ pypresence
 beautifulsoup4
 flask
 local-attention
-

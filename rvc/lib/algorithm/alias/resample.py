@@ -1,7 +1,12 @@
+import os
+import sys
 import torch.nn as nn
-from torch.nn import functional as F
-from rvc.lib.algorithm.alias.filter import kaiser_sinc_filter1d, LowPassFilter1d
 
+from torch.nn import functional as F
+
+sys.path.append(os.getcwd())
+
+from rvc.lib.algorithm.alias.filter import kaiser_sinc_filter1d, LowPassFilter1d
 
 class UpSample1d(nn.Module):
     def __init__(self, ratio=2, kernel_size=None):

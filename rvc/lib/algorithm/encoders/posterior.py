@@ -8,7 +8,6 @@ sys.path.append(os.getcwd())
 from rvc.lib.algorithm.commons import sequence_mask
 from rvc.lib.algorithm.modules import WaveNet
 
-
 class PosteriorEncoder(torch.nn.Module):
     """Posterior Encoder for inferring latent representation.
 

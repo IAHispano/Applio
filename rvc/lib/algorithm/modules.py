@@ -1,9 +1,13 @@
+import os
+import sys
 import torch
+
+sys.path.append(os.getcwd())
+
 from rvc.lib.algorithm.commons import (
     fused_add_tanh_sigmoid_multiply_no_jit,
     fused_add_tanh_sigmoid_multiply,
 )
-
 
 class WaveNet(torch.nn.Module):
     """WaveNet residual blocks as used in WaveGlow
