@@ -217,6 +217,14 @@ def change_choices(model):
             ),
             "__type__": "update",
         },
+        {
+            "choices": (
+                sorted(speakers)
+                if speakers is not None and isinstance(speakers, (list, tuple))
+                else []
+            ),
+            "__type__": "update",
+        },
     )
 
 
@@ -1981,6 +1989,7 @@ def inference_tab():
             index_file,
             audio,
             sid,
+            sid_batch
         ],
     )
     audio.change(
