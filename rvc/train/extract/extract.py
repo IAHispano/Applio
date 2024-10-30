@@ -247,10 +247,11 @@ if __name__ == "__main__":
     num_processes = int(sys.argv[4])
     gpus = sys.argv[5]
     version = sys.argv[6]
-    pitch_guidance = sys.argv[7]
-    sample_rate = sys.argv[8]
-    embedder_model = sys.argv[9]
-    embedder_model_custom = sys.argv[10] if len(sys.argv) > 10 else None
+    vocoder_type = sys.argv[7]
+    pitch_guidance = sys.argv[8]
+    sample_rate = sys.argv[9]
+    embedder_model = sys.argv[10]
+    embedder_model_custom = sys.argv[11] if len(sys.argv) > 11 else None
 
     # prep
     wav_path = os.path.join(exp_dir, "sliced_audios_16k")
@@ -299,5 +300,5 @@ if __name__ == "__main__":
     )
 
     # Run Preparing Files
-    generate_config(version, sample_rate, exp_dir)
+    generate_config(version, vocoder_type, sample_rate, exp_dir)
     generate_filelist(pitch_guidance, exp_dir, version, sample_rate)
