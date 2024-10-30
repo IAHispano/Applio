@@ -8,7 +8,6 @@ sys.path.append(os.getcwd())
 from tabs.extra.processing.processing import processing_tab
 from tabs.extra.analyzer.analyzer import analyzer_tab
 from tabs.extra.f0_extractor.f0_extractor import f0_extractor_tab
-from tabs.extra.model_author.model_author import model_author_tab
 
 from assets.i18n.i18n import I18nAuto
 
@@ -29,6 +28,3 @@ def extra_tab():
 
     with gr.TabItem(i18n("Audio Analyzer")):
         analyzer_tab()
-
-    with gr.TabItem(i18n("Model Author")):
-        model_author_tab()

@@ -1,7 +1,7 @@
 import math
 import torch
-
 from typing import List, Optional
+
 
 def init_weights(m, mean=0.0, std=0.01):
     """
@@ -141,24 +141,6 @@ def subsequent_mask(length):
 
 @torch.jit.script
 def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
-    """
-    Fused add tanh sigmoid multiply operation.
-
-    Args:
-        input_a: The first input tensor.
-        input_b: The second input tensor.
-        n_channels: The number of channels.
-    """
-    n_channels_int = n_channels[0]
-    in_act = input_a + input_b
-    t_act = torch.tanh(in_act[:, :n_channels_int, :])
-    s_act = torch.sigmoid(in_act[:, n_channels_int:, :])
-    acts = t_act * s_act
-    return acts
-
-
-# Zluda, same as previous, but without jit.script
-def fused_add_tanh_sigmoid_multiply_no_jit(input_a, input_b, n_channels):
     """
     Fused add tanh sigmoid multiply operation.
 

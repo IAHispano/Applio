@@ -1,15 +1,11 @@
-import os
-import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from torch import sin, pow
 from torch.nn import Parameter
-
-sys.path.append(os.getcwd())
-
 from rvc.lib.algorithm.alias.resample import UpSample1d, DownSample1d
+
 
 class Activation1d(nn.Module):
     def __init__(

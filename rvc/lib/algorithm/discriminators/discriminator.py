@@ -1,5 +1,4 @@
 import torch
-
 class CombinedDiscriminator(torch.nn.Module):
     def __init__(self, discriminators):
         super().__init__()
@@ -19,3 +18,4 @@ class CombinedDiscriminator(torch.nn.Module):
             fmap_gs.extend(fmap_g)
 
         return y_d_rs, y_d_gs, fmap_rs, fmap_gs
+

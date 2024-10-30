@@ -6,6 +6,7 @@ from torch.nn import Conv1d
 from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils import remove_weight_norm
 
+
 sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.alias.act import SnakeAlias

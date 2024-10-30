@@ -1,11 +1,14 @@
-import os
-import sys
+
 import torch
+
+import sys
+import os
 
 sys.path.append(os.getcwd())
 
 from rvc.lib.algorithm.normalization import LayerNorm
-from rvc.lib.algorithm.attentions import FFN, MultiHeadAttention
+from rvc.lib.algorithm.attentions import FFN, FFNV2, MultiHeadAttention
+
 
 class Encoder(torch.nn.Module):
     """
@@ -66,19 +69,28 @@ class Encoder(torch.nn.Module):
                     )
                 )
                 self.norm_layers_1.append(torch.nn.LayerNorm(hidden_channels))
-            self.ffn_layers.append(
-                FFN(
-                    hidden_channels,
-                    hidden_channels,
-                    filter_channels,
-                    kernel_size,
-                    p_dropout=p_dropout,
-                    vocoder_type=vocoder_type
+
+            if vocoder_type == "hifigan":
+                self.ffn_layers.append(
+                    FFN(
+                        hidden_channels,
+                        hidden_channels,
+                        filter_channels,
+                        kernel_size,
+                        p_dropout=p_dropout,
                     )
                 )
-            if vocoder_type == "hifigan":
                 self.norm_layers_2.append(LayerNorm(hidden_channels))
             elif vocoder_type in ["bigvgan", "bigvsan"]:
+                self.ffn_layers.append(
+                    FFNV2(
+                        hidden_channels,
+                        hidden_channels,
+                        filter_channels,
+                        kernel_size,
+                        p_dropout=p_dropout,
+                    )
+                )
                 self.norm_layers_2.append(torch.nn.LayerNorm(hidden_channels))
 
     def forward(self, x, x_mask):

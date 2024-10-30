@@ -12,8 +12,7 @@ import librosa
 import multiprocessing
 import noisereduce as nr
 
-now_directory = os.getcwd()
-sys.path.append(now_directory)
+sys.path.append(os.getcwd())
 
 from rvc.lib.utils import load_audio
 from rvc.train.preprocess.slicer import Slicer

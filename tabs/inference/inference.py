@@ -217,6 +217,14 @@ def change_choices(model):
             ),
             "__type__": "update",
         },
+        {
+            "choices": (
+                sorted(speakers)
+                if speakers is not None and isinstance(speakers, (list, tuple))
+                else []
+            ),
+            "__type__": "update",
+        },
     )
 
 
@@ -1976,12 +1984,7 @@ def inference_tab():
     refresh_button.click(
         fn=change_choices,
         inputs=[model_file],
-        outputs=[
-            model_file,
-            index_file,
-            audio,
-            sid,
-        ],
+        outputs=[model_file, index_file, audio, sid, sid_batch],
     )
     audio.change(
         fn=output_path_fn,

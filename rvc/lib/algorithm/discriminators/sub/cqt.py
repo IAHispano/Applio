@@ -1,21 +1,14 @@
-import os 
-import sys
-import torch
 import typing
-import torch.nn as nn
-
 from typing import List, Tuple
+
+import torch
+import torch.nn as nn
 from nnAudio import features
 from torch.nn.utils.parametrizations import weight_norm
 from torchaudio.transforms import Resample
-
+from rvc.lib.algorithm.layers.san import SANConv2d
 import logging
 logging.getLogger("nnAudio").setLevel(logging.ERROR)
-
-sys.path.append(os.getcwd())
-
-from rvc.lib.algorithm.layers.san import SANConv2d
-
 
 class DiscriminatorCQT(nn.Module):
     def __init__(

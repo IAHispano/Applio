@@ -36,21 +36,6 @@ from utils import (
     latest_checkpoint_path,
     load_wav_to_torch,
 )
-from random import randint, shuffle
-from time import sleep
-from time import time as ttime
-from tqdm import tqdm
-
-from torch.cuda.amp import GradScaler, autocast
-
-from torch.nn import functional as F
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
-import torch.distributed as dist
-import torch.multiprocessing as mp
-
-sys.path.append(os.path.join(os.getcwd()))
 
 from data_utils import (
     DistributedBucketSampler,
@@ -68,17 +53,11 @@ from mel_processing import mel_spectrogram_torch, spec_to_mel_torch
 
 from rvc.train.process.extract_model import extract_model
 
+#from rvc.train.mel_processing import MultiScaleMelSpectrogramLoss
 from rvc.lib.algorithm import commons
-
-from rvc.train.mel_processing import MultiScaleMelSpectrogramLoss
+#from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
+#from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminatorV2
 from rvc.lib.algorithm.synthesizer import Synthesizer
-from rvc.lib.algorithm.discriminators.discriminator import CombinedDiscriminator
-from rvc.lib.algorithm.discriminators.sub.__init__ import (
-    MultiPeriodDiscriminator,
-    MultiScaleDiscriminator,
-    MultiBandDiscriminator,
-    MultiScaleSubbandCQTDiscriminator
-)
 
 # Parse command line arguments
 model_name = sys.argv[1]
@@ -109,9 +88,31 @@ with open(config_save_path, "r") as f:
 config = HParams(**config)
 config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
 
-os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
-n_gpus = len(gpus.split("-"))
+torch.backends.cudnn.deterministic = False
+torch.backends.cudnn.benchmark = False
 
+global_step = 0
+last_loss_gen_all = 0
+overtrain_save_epoch = 0
+loss_gen_history = []
+smoothed_loss_gen_history = []
+loss_disc_history = []
+smoothed_loss_disc_history = []
+lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
+training_file_path = os.path.join(experiment_dir, "training_data.json")
+
+import logging
+
+logging.getLogger("torch").setLevel(logging.ERROR)
+
+from rvc.lib.algorithm.discriminators.sub.__init__ import (
+    MultiPeriodDiscriminator,
+    MultiScaleDiscriminator,
+    MultiBandDiscriminator,
+    MultiScaleSubbandCQTDiscriminator
+)
+
+from rvc.lib.algorithm.discriminators.discriminator import CombinedDiscriminator
 supported_discriminators = {
     "mpd": MultiPeriodDiscriminator,
     "msd": MultiScaleDiscriminator,
@@ -126,6 +127,8 @@ for key, value in config.model.discriminators.items():
         value["sample_rate"] = config.data.sample_rate
     else:
         value["use_spectral_norm"] = config.model.use_spectral_norm
+    
+    
     if is_san:
         if value is True:
             discriminators[key] = supported_discriminators[key](use_spectral_norm=config.model.use_spectral_norm, is_san=True)
@@ -138,25 +141,6 @@ for key, value in config.model.discriminators.items():
             discriminators[key] = supported_discriminators[key](**value)
 
 MultiDiscriminator = CombinedDiscriminator(list(discriminators.values()))
-
-torch.backends.cudnn.deterministic = False
-torch.backends.cudnn.benchmark = False
-
-global_step = 0
-last_loss_gen_all = 0
-overtrain_save_epoch = 0
-loss_gen_history = []
-smoothed_loss_gen_history = []
-loss_disc_history = []
-smoothed_loss_disc_history = []
-lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
-training_file_path = os.path.join(experiment_dir, "training_data.json")
-overtrain_info = None
-
-import logging
-
-logging.getLogger("torch").setLevel(logging.ERROR)
-logging.getLogger("nnAudio").setLevel(logging.ERROR)
 
 class EpochRecorder:
     """
@@ -299,13 +283,13 @@ def main():
                     loss_gen_history,
                     smoothed_loss_gen_history,
                 ) = load_from_json(training_file_path)
-                
+
     if cleanup:
         print("Removing files from the prior training attempt...")
 
         # Clean up unnecessary files
         for root, dirs, files in os.walk(
-            os.path.join(os.getcwd(), "logs", model_name), topdown=False
+            os.path.join(now_dir, "logs", model_name), topdown=False
         ):
             for name in files:
                 file_path = os.path.join(root, name)
@@ -330,6 +314,7 @@ def main():
 
     continue_overtrain_detector(training_file_path)
     start()
+
 
 
 def run(
@@ -380,14 +365,6 @@ def run(
     if torch.cuda.is_available():
         torch.cuda.set_device(rank)
 
-    # Zluda
-    if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):
-        print("Disabling CUDNN for traning with Zluda")
-        torch.backends.cudnn.enabled = False
-        torch.backends.cuda.enable_flash_sdp(False)
-        torch.backends.cuda.enable_math_sdp(True)
-        torch.backends.cuda.enable_mem_efficient_sdp(False)
-
     # Create datasets and dataloaders
     train_dataset = TextAudioLoaderMultiNSFsid(config.data)
     collate_fn = TextAudioCollateMultiNSFsid()
@@ -419,15 +396,10 @@ def run(
         use_f0=pitch_guidance == True,  # converting 1/0 to True/False
         is_half=config.train.fp16_run and device.type == "cuda",
         sr=sample_rate,
-        vocoder_type=vocoder_type,
-    )
-    if torch.cuda.is_available():
-        net_g = net_g.cuda(rank)
+    ).to(device)
 
-    net_d = MultiDiscriminator
+    net_d = MultiDiscriminator.to(device)
 
-    if torch.cuda.is_available():
-        net_d = net_d.cuda(rank)
     optim_g = torch.optim.AdamW(
         net_g.parameters(),
         config.train.learning_rate,
@@ -494,10 +466,10 @@ def run(
         optim_d, gamma=config.train.lr_decay, last_epoch=epoch_str - 2
     )
 
-    optim_d.step()
     optim_g.step()
+    optim_d.step()
 
-    scaler = GradScaler(enabled=config.train.fp16_run)
+    scaler = GradScaler(enabled=config.train.fp16_run and device.type == "cuda")
 
     cache = []
     # get the first sample as reference for tensorboard evaluation
@@ -549,6 +521,7 @@ def run(
         scheduler_d.step()
 
 
+
 def train_and_evaluate(
     rank,
     epoch,
@@ -579,7 +552,7 @@ def train_and_evaluate(
         cache (list): List to cache data in GPU memory.
         use_cpu (bool): Whether to use CPU for training.
     """
-    global global_step, lowest_value, loss_disc, consecutive_increases_gen, consecutive_increases_disc
+    global global_step, lowest_value, loss_disc, consecutive_increases_gen, consecutive_increases_disc, smoothed_value_gen, smoothed_value_disc
 
     if epoch == 1:
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
@@ -595,14 +568,14 @@ def train_and_evaluate(
 
     train_loader.batch_sampler.set_epoch(epoch)
 
-    fn_mel_loss_multiscale = MultiScaleMelSpectrogramLoss(
-        sample_rate=hps.data.sample_rate
-    )
+    #n_mel_loss_multiscale = MultiScaleMelSpectrogramLoss(
+    #    sample_rate=hps.data.sample_rate
+    #)
 
     net_g.train()
     net_d.train()
 
-     # Data caching
+    # Data caching
     if device.type == "cuda" and cache_data_in_gpu:
         data_iterator = cache
         if cache == []:
@@ -744,6 +717,7 @@ def train_and_evaluate(
                 y_d_hat_r, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
                 with autocast(enabled=False):
                     loss_mel = F.l1_loss(y_mel, y_hat_mel) * config.train.c_mel
+                    #loss_mel = fn_mel_loss_multiscale(y_hat, wave) * config.train.c_mel
                     loss_kl = (
                         kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
                     )
@@ -954,6 +928,7 @@ def train_and_evaluate(
                         == True,  # converting 1/0 to True/False,
                         name=model_name,
                         model_dir=m,
+                        vocoder_type=vocoder_type,
                         epoch=epoch,
                         step=global_step,
                         version=version,

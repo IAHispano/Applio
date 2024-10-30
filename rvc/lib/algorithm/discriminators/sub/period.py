@@ -1,14 +1,10 @@
-import os
-import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-sys.path.append(os.getcwd())
-
 from torch.nn.utils.parametrizations import weight_norm, spectral_norm
 from rvc.lib.algorithm.layers.san import SANConv2d
 from rvc.lib.algorithm.residuals import LRELU_SLOPE
+
 
 class DiscriminatorP(nn.Module):
     def __init__(self, periods, kernel_size=5, stride=3, is_san=False, use_spectral_norm=False):

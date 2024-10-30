@@ -21,18 +21,17 @@ def replace_keys_in_dict(d, old_key_part, new_key_part):
         updated_dict[new_key] = value
     return updated_dict
 
-
 def extract_model(
     ckpt,
     sr,
     pitch_guidance,
     name,
     model_dir,
+    vocoder_type,
     epoch,
     step,
     version,
     hps,
-    vocoder_type,
     overtrain_info,
 ):
     try:
@@ -55,6 +54,8 @@ def extract_model(
             with open(os.path.join(model_dir_path, "model_info.json"), "r") as f:
                 data = json.load(f)
                 dataset_lenght = data.get("total_dataset_duration", None)
+                embedder_model = data.get("embedder_model", None)
+                speakers_id = data.get("speakers_id", 1)
         else:
             dataset_lenght = None
 
@@ -102,6 +103,8 @@ def extract_model(
         opt["dataset_lenght"] = dataset_lenght
         opt["model_name"] = name
         opt["author"] = model_author
+        opt["embedder_model"] = embedder_model
+        opt["speakers_id"] = speakers_id
 
         torch.save(opt, os.path.join(model_dir_path, pth_file))
 

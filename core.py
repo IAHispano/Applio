@@ -49,7 +49,6 @@ def get_config():
 
     return Config()
 
-
 # Infer
 def run_infer_script(
     pitch: int,
@@ -114,7 +113,6 @@ def run_infer_script(
     delay_mix: float = 0.5,
     sid: int = 0,
 ):
-    infer_pipeline = import_voice_converter()
     kwargs = {
         "audio_input_path": input_path,
         "audio_output_path": output_path,
@@ -140,19 +138,6 @@ def run_infer_script(
         "embedder_model": embedder_model,
         "embedder_model_custom": embedder_model_custom,
         "post_process": post_process,
-        "formant_shifting": formant_shifting,
-        "formant_qfrency": formant_qfrency,
-        "formant_timbre": formant_timbre,
-        "reverb": reverb,
-        "pitch_shift": pitch_shift,
-        "limiter": limiter,
-        "gain": gain,
-        "distortion": distortion,
-        "chorus": chorus,
-        "bitcrush": bitcrush,
-        "clipping": clipping,
-        "compressor": compressor,
-        "delay": delay,
         "formant_shifting": formant_shifting,
         "formant_qfrency": formant_qfrency,
         "formant_timbre": formant_timbre,
@@ -193,6 +178,7 @@ def run_infer_script(
         "delay_mix": delay_mix,
         "sid": sid,
     }
+    infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(
         **kwargs,
     )
@@ -277,8 +263,6 @@ def run_batch_infer_script(
         "protect": protect,
         "hop_length": hop_length,
         "f0_method": f0_method,
-        "input_folder": input_folder,
-        "output_folder": output_folder,
         "pth_path": pth_path,
         "index_path": index_path,
         "split_audio": split_audio,
@@ -497,12 +481,12 @@ def run_extract_script(
             str,
             [
                 model_path,
-                vocoder_type,
                 f0_method,
                 hop_length,
                 cpu_cores,
                 gpu,
                 rvc_version,
+                vocoder_type,
                 pitch_guidance,
                 sample_rate,
                 embedder_model,
@@ -615,7 +599,7 @@ def run_model_extract_script(
     step: int,
 ):
     extract_small_model(
-        pth_path, model_name, vocoder_type, sample_rate, pitch_guidance, rvc_version, epoch, step
+        path=pth_path, name=model_name, vocoder_type=vocoder_type, sample_rate=sample_rate, pitch_guidance=pitch_guidance, rvc_version=rvc_version, epoch=epoch, step=step
     )
     return f"Model {model_name} extracted successfully."
 
@@ -2379,12 +2363,12 @@ def main():
                 clean_strength=args.clean_strength,
                 export_format=args.export_format,
                 embedder_model=args.embedder_model,
+                embedder_model_custom=args.embedder_model_custom,
                 upscale_audio=args.upscale_audio,
                 f0_file=args.f0_file,
                 formant_shifting=args.formant_shifting,
                 formant_qfrency=args.formant_qfrency,
                 formant_timbre=args.formant_timbre,
-                embedder_model_custom=args.embedder_model_custom,
                 sid=args.sid,
                 post_process=args.post_process,
                 reverb=args.reverb,

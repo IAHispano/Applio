@@ -1,15 +1,11 @@
-import os
-import sys
+from typing import List, Tuple
+
 import torch
 import torch.nn as nn
-
-from typing import List, Tuple
 from torch.nn.utils.parametrizations import weight_norm
 from torchaudio.transforms import Spectrogram
-
-sys.path.append(os.getcwd())
-
 from rvc.lib.algorithm.layers.san import SANConv2d
+
 
 class DiscriminatorB(nn.Module):
     def __init__(
