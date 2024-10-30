@@ -1,10 +1,24 @@
 import gradio as gr
 import sys
 import os
+import logging
 
-sys.path.append(os.getcwd())
+# Constants
+DEFAULT_PORT = 6969
+MAX_PORT_ATTEMPTS = 10
 
-# Tabs
+# Set up logging
+logging.getLogger("uvicorn").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
+# Add current directory to sys.path
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+
+# Zluda hijack
+import rvc.lib.zluda
+
+# Import Tabs
 from tabs.inference.inference import inference_tab
 from tabs.train.train import train_tab
 from tabs.extra.extra import extra_tab
@@ -18,46 +32,58 @@ from tabs.settings.lang import lang_tab
 from tabs.settings.restart import restart_tab
 from tabs.settings.presence import presence_tab, load_config_presence
 from tabs.settings.flask_server import flask_server_tab
-from tabs.settings.fake_gpu import fake_gpu_tab, gpu_available, load_fake_gpu
 from tabs.settings.themes import theme_tab
 from tabs.settings.precision import precision_tab
+from tabs.settings.model_author import model_author_tab
 
-# Assets
-import assets.themes.loadThemes as loadThemes
-from assets.i18n.i18n import I18nAuto
-import assets.installation_checker as installation_checker
-from assets.discord_presence import RPCManager
-from assets.flask.server import start_flask, load_config_flask
+# Run prerequisites
 from core import run_prerequisites_script
 
-# Disable logging
-import logging
+run_prerequisites_script(
+    pretraineds_v1_f0=False,
+    pretraineds_v1_nof0=False,
+    pretraineds_v2_f0=True,
+    pretraineds_v2_nof0=False,
+    models=True,
+    exe=True,
+)
 
-logging.getLogger("uvicorn").setLevel(logging.WARNING)
-logging.getLogger("httpx").setLevel(logging.WARNING)
-
-run_prerequisites_script(False, True, True, True)
+# Initialize i18n
+from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
-if load_config_presence() == True:
+
+# Start Discord presence if enabled
+if load_config_presence():
+    from assets.discord_presence import RPCManager
+
     RPCManager.start_presence()
+
+# Check installation
+import assets.installation_checker as installation_checker
+
 installation_checker.check_installation()
 
-if load_config_flask() == True:
+# Start Flask server if enabled
+from assets.flask.server import start_flask, load_config_flask
+
+if load_config_flask():
     print("Starting Flask server")
     start_flask()
 
-my_applio = loadThemes.load_json()
-if my_applio:
-    pass
-else:
-    my_applio = "ParityError/Interstellar"
+# Load theme
+import assets.themes.loadThemes as loadThemes
 
-with gr.Blocks(theme=my_applio, title="Applio") as Applio:
+my_applio = loadThemes.load_json() or "ParityError/Interstellar"
+
+# Define Gradio interface
+with gr.Blocks(
+    theme=my_applio, title="Applio", css="footer{display:none !important}"
+) as Applio:
     gr.Markdown("# Applio")
     gr.Markdown(
         i18n(
-            "Ultimate voice cloning tool, meticulously optimized for unrivaled power, modularity, and user-friendly experience."
+            "VITS-based Voice Conversion focused on simplicity, quality and performance."
         )
     )
     gr.Markdown(
@@ -69,14 +95,7 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
         inference_tab()
 
     with gr.Tab(i18n("Train")):
-        if gpu_available() or load_fake_gpu():
-            train_tab()
-        else:
-            gr.Markdown(
-                i18n(
-                    "Training is currently unsupported due to the absence of a GPU. To activate the training tab, navigate to the settings tab and enable the 'Fake GPU' option."
-                )
-            )
+        train_tab()
 
     with gr.Tab(i18n("TTS")):
         tts_tab()
@@ -100,12 +119,11 @@ with gr.Blocks(theme=my_applio, title="Applio") as Applio:
         presence_tab()
         flask_server_tab()
         precision_tab()
-        if not gpu_available():
-            fake_gpu_tab()
         theme_tab()
         version_tab()
         lang_tab()
         restart_tab()
+        model_author_tab()
 
 
 def launch_gradio(port):
@@ -117,24 +135,25 @@ def launch_gradio(port):
     )
 
 
-if __name__ == "__main__":
-    port = 6969
+def get_port_from_args():
     if "--port" in sys.argv:
         port_index = sys.argv.index("--port") + 1
         if port_index < len(sys.argv):
-            port = int(sys.argv[port_index])
+            return int(sys.argv[port_index])
+    return DEFAULT_PORT
 
-        launch_gradio(port)
 
-    else:
-        # if launch fails, decrement port number and try again (up to 10 times)
-        for i in range(10):
-            try:
-                launch_gradio(port)
-                break
-            except OSError:
-                print("Failed to launch on port", port, "- trying again...")
-                port -= 1
-            except Exception as error:
-                print(f"An error occurred launching Gradio: {error}")
-                break
+if __name__ == "__main__":
+    port = get_port_from_args()
+    for _ in range(MAX_PORT_ATTEMPTS):
+        try:
+            launch_gradio(port)
+            break
+        except OSError:
+            print(
+                f"Failed to launch on port {port}, trying again on port {port - 1}..."
+            )
+            port -= 1
+        except Exception as error:
+            print(f"An error occurred launching Gradio: {error}")
+            break

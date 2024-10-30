@@ -417,6 +417,7 @@ class MelSpectrogram(torch.nn.Module):
             center=center,
             return_complex=True,
         )
+
         magnitude = torch.sqrt(fft.real.pow(2) + fft.imag.pow(2))
         if keyshift != 0:
             size = self.n_fft // 2 + 1

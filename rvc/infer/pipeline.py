@@ -99,24 +99,9 @@ class Autotune:
             ref_freqs: A list of reference frequencies representing musical notes.
         """
         self.ref_freqs = ref_freqs
-        self.note_dict = self.generate_interpolated_frequencies()
+        self.note_dict = self.ref_freqs  # No interpolation needed
 
-    def generate_interpolated_frequencies(self):
-        """
-        Generates a dictionary of interpolated frequencies between reference frequencies.
-        """
-        note_dict = []
-        for i in range(len(self.ref_freqs) - 1):
-            freq_low = self.ref_freqs[i]
-            freq_high = self.ref_freqs[i + 1]
-            interpolated_freqs = np.linspace(
-                freq_low, freq_high, num=10, endpoint=False
-            )
-            note_dict.extend(interpolated_freqs)
-        note_dict.append(self.ref_freqs[-1])
-        return note_dict
-
-    def autotune_f0(self, f0):
+    def autotune_f0(self, f0, f0_autotune_strength):
         """
         Autotunes a given F0 contour by snapping each frequency to the closest reference frequency.
 
@@ -126,7 +111,7 @@ class Autotune:
         autotuned_f0 = np.zeros_like(f0)
         for i, freq in enumerate(f0):
             closest_note = min(self.note_dict, key=lambda x: abs(x - freq))
-            autotuned_f0[i] = closest_note
+            autotuned_f0[i] = freq + (closest_note - freq) * f0_autotune_strength
         return autotuned_f0
 
 
@@ -164,20 +149,68 @@ class Pipeline:
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
         self.device = config.device
         self.ref_freqs = [
-            65.41,
-            82.41,
-            110.00,
-            146.83,
-            196.00,
-            246.94,
-            329.63,
-            440.00,
-            587.33,
-            783.99,
-            1046.50,
+            49.00,  # G1
+            51.91,  # G#1 / Ab1
+            55.00,  # A1
+            58.27,  # A#1 / Bb1
+            61.74,  # B1
+            65.41,  # C2
+            69.30,  # C#2 / Db2
+            73.42,  # D2
+            77.78,  # D#2 / Eb2
+            82.41,  # E2
+            87.31,  # F2
+            92.50,  # F#2 / Gb2
+            98.00,  # G2
+            103.83,  # G#2 / Ab2
+            110.00,  # A2
+            116.54,  # A#2 / Bb2
+            123.47,  # B2
+            130.81,  # C3
+            138.59,  # C#3 / Db3
+            146.83,  # D3
+            155.56,  # D#3 / Eb3
+            164.81,  # E3
+            174.61,  # F3
+            185.00,  # F#3 / Gb3
+            196.00,  # G3
+            207.65,  # G#3 / Ab3
+            220.00,  # A3
+            233.08,  # A#3 / Bb3
+            246.94,  # B3
+            261.63,  # C4
+            277.18,  # C#4 / Db4
+            293.66,  # D4
+            311.13,  # D#4 / Eb4
+            329.63,  # E4
+            349.23,  # F4
+            369.99,  # F#4 / Gb4
+            392.00,  # G4
+            415.30,  # G#4 / Ab4
+            440.00,  # A4
+            466.16,  # A#4 / Bb4
+            493.88,  # B4
+            523.25,  # C5
+            554.37,  # C#5 / Db5
+            587.33,  # D5
+            622.25,  # D#5 / Eb5
+            659.25,  # E5
+            698.46,  # F5
+            739.99,  # F#5 / Gb5
+            783.99,  # G5
+            830.61,  # G#5 / Ab5
+            880.00,  # A5
+            932.33,  # A#5 / Bb5
+            987.77,  # B5
+            1046.50,  # C6
         ]
         self.autotune = Autotune(self.ref_freqs)
         self.note_dict = self.autotune.note_dict
+        self.model_rmvpe = RMVPE0Predictor(
+            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
+            is_half=self.is_half,
+            device=self.device,
+        )
 
     def get_f0_crepe(
         self,
@@ -262,11 +295,6 @@ class Pipeline:
                     x, f0_min, f0_max, p_len, int(hop_length)
                 )
             elif method == "rmvpe":
-                self.model_rmvpe = RMVPE0Predictor(
-                    os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-                    is_half=self.is_half,
-                    device=self.device,
-                )
                 f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
                 f0 = f0[1:]
             elif method == "fcpe":
@@ -302,6 +330,7 @@ class Pipeline:
         filter_radius,
         hop_length,
         f0_autotune,
+        f0_autotune_strength,
         inp_f0=None,
     ):
         """
@@ -326,11 +355,6 @@ class Pipeline:
                 x, self.f0_min, self.f0_max, p_len, int(hop_length), "tiny"
             )
         elif f0_method == "rmvpe":
-            self.model_rmvpe = RMVPE0Predictor(
-                os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-                is_half=self.is_half,
-                device=self.device,
-            )
             f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
         elif f0_method == "fcpe":
             self.model_fcpe = FCPEF0Predictor(
@@ -356,8 +380,8 @@ class Pipeline:
                 hop_length,
             )
 
-        if f0_autotune == "True":
-            f0 = Autotune.autotune_f0(self, f0)
+        if f0_autotune is True:
+            f0 = Autotune.autotune_f0(self, f0, f0_autotune_strength)
 
         f0 *= pow(2, pitch / 12)
         tf0 = self.sample_rate // self.window
@@ -413,84 +437,78 @@ class Pipeline:
             version: Model version ("v1" or "v2").
             protect: Protection level for preserving the original pitch.
         """
-        feats = torch.from_numpy(audio0)
-        if self.is_half:
-            feats = feats.half()
-        else:
-            feats = feats.float()
-        if feats.dim() == 2:
-            feats = feats.mean(-1)
-        assert feats.dim() == 1, feats.dim()
-        feats = feats.view(1, -1)
-        padding_mask = torch.BoolTensor(feats.shape).to(self.device).fill_(False)
-
-        inputs = {
-            "source": feats.to(self.device),
-            "padding_mask": padding_mask,
-            "output_layer": 9 if version == "v1" else 12,
-        }
         with torch.no_grad():
-            logits = model.extract_features(**inputs)
-            feats = model.final_proj(logits[0]) if version == "v1" else logits[0]
-        if protect < 0.5 and pitch != None and pitchf != None:
-            feats0 = feats.clone()
-        if (
-            isinstance(index, type(None)) == False
-            and isinstance(big_npy, type(None)) == False
-            and index_rate != 0
-        ):
-            npy = feats[0].cpu().numpy()
-            if self.is_half:
-                npy = npy.astype("float32")
-
-            score, ix = index.search(npy, k=8)
-            weight = np.square(1 / score)
-            weight /= weight.sum(axis=1, keepdims=True)
-            npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
-
-            if self.is_half:
-                npy = npy.astype("float16")
+            pitch_guidance = pitch != None and pitchf != None
+            # prepare source audio
             feats = (
-                torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
-                + (1 - index_rate) * feats
+                torch.from_numpy(audio0).half()
+                if self.is_half
+                else torch.from_numpy(audio0).float()
             )
-
-        feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)
-        if protect < 0.5 and pitch != None and pitchf != None:
-            feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
+            feats = feats.mean(-1) if feats.dim() == 2 else feats
+            assert feats.dim() == 1, feats.dim()
+            feats = feats.view(1, -1).to(self.device)
+            # extract features
+            feats = model(feats)["last_hidden_state"]
+            feats = (
+                model.final_proj(feats[0]).unsqueeze(0) if version == "v1" else feats
+            )
+            # make a copy for pitch guidance and protection
+            feats0 = feats.clone() if pitch_guidance else None
+            if (
+                index
+            ):  # set by parent function, only true if index is available, loaded, and index rate > 0
+                feats = self._retrieve_speaker_embeddings(
+                    feats, index, big_npy, index_rate
+                )
+            # feature upsampling
+            feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(
                 0, 2, 1
             )
-        p_len = audio0.shape[0] // self.window
-        if feats.shape[1] < p_len:
-            p_len = feats.shape[1]
-            if pitch != None and pitchf != None:
-                pitch = pitch[:, :p_len]
-                pitchf = pitchf[:, :p_len]
-
-        if protect < 0.5 and pitch != None and pitchf != None:
-            pitchff = pitchf.clone()
-            pitchff[pitchf > 0] = 1
-            pitchff[pitchf < 1] = protect
-            pitchff = pitchff.unsqueeze(-1)
-            feats = feats * pitchff + feats0 * (1 - pitchff)
-            feats = feats.to(feats0.dtype)
-        p_len = torch.tensor([p_len], device=self.device).long()
-        with torch.no_grad():
-            if pitch != None and pitchf != None:
-                audio1 = (
-                    (net_g.infer(feats, p_len, pitch, pitchf, sid)[0][0, 0])
-                    .data.cpu()
-                    .float()
-                    .numpy()
+            # adjust the length if the audio is short
+            p_len = min(audio0.shape[0] // self.window, feats.shape[1])
+            if pitch_guidance:
+                feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
+                    0, 2, 1
                 )
+                pitch, pitchf = pitch[:, :p_len], pitchf[:, :p_len]
+                # Pitch protection blending
+                if protect < 0.5:
+                    pitchff = pitchf.clone()
+                    pitchff[pitchf > 0] = 1
+                    pitchff[pitchf < 1] = protect
+                    feats = feats * pitchff.unsqueeze(-1) + feats0 * (
+                        1 - pitchff.unsqueeze(-1)
+                    )
+                    feats = feats.to(feats0.dtype)
             else:
-                audio1 = (
-                    (net_g.infer(feats, p_len, sid)[0][0, 0]).data.cpu().float().numpy()
-                )
-        del feats, p_len, padding_mask
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+                pitch, pitchf = None, None
+            p_len = torch.tensor([p_len], device=self.device).long()
+            audio1 = (
+                (net_g.infer(feats, p_len, pitch, pitchf, sid)[0][0, 0])
+                .data.cpu()
+                .float()
+                .numpy()
+            )
+            # clean up
+            del feats, feats0, p_len
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
         return audio1
+
+    def _retrieve_speaker_embeddings(self, feats, index, big_npy, index_rate):
+        npy = feats[0].cpu().numpy()
+        npy = npy.astype("float32") if self.is_half else npy
+        score, ix = index.search(npy, k=8)
+        weight = np.square(1 / score)
+        weight /= weight.sum(axis=1, keepdims=True)
+        npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
+        npy = npy.astype("float16") if self.is_half else npy
+        feats = (
+            torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
+            + (1 - index_rate) * feats
+        )
+        return feats
 
     def pipeline(
         self,
@@ -498,20 +516,18 @@ class Pipeline:
         net_g,
         sid,
         audio,
-        input_audio_path,
         pitch,
         f0_method,
         file_index,
         index_rate,
         pitch_guidance,
         filter_radius,
-        tgt_sr,
-        resample_sr,
         volume_envelope,
         version,
         protect,
         hop_length,
         f0_autotune,
+        f0_autotune_strength,
         f0_file,
     ):
         """
@@ -538,7 +554,7 @@ class Pipeline:
             f0_autotune: Whether to apply autotune to the F0 contour.
             f0_file: Path to a file containing an F0 contour to use.
         """
-        if file_index != "" and os.path.exists(file_index) == True and index_rate != 0:
+        if file_index != "" and os.path.exists(file_index) and index_rate > 0:
             try:
                 index = faiss.read_index(file_index)
                 big_npy = index.reconstruct_n(0, index.ntotal)
@@ -569,7 +585,7 @@ class Pipeline:
         audio_pad = np.pad(audio, (self.t_pad, self.t_pad), mode="reflect")
         p_len = audio_pad.shape[0] // self.window
         inp_f0 = None
-        if hasattr(f0_file, "name") == True:
+        if hasattr(f0_file, "name"):
             try:
                 with open(f0_file.name, "r") as f:
                     lines = f.read().strip("\n").split("\n")
@@ -580,9 +596,9 @@ class Pipeline:
             except Exception as error:
                 print(f"An error occurred reading the F0 file: {error}")
         sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
-        if pitch_guidance == True:
+        if pitch_guidance:
             pitch, pitchf = self.get_f0(
-                input_audio_path,
+                "input_audio_path",  # questionable purpose of making a key for an array
                 audio_pad,
                 p_len,
                 pitch,
@@ -590,6 +606,7 @@ class Pipeline:
                 filter_radius,
                 hop_length,
                 f0_autotune,
+                f0_autotune_strength,
                 inp_f0,
             )
             pitch = pitch[:p_len]
@@ -600,7 +617,7 @@ class Pipeline:
             pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
         for t in opt_ts:
             t = t // self.window * self.window
-            if pitch_guidance == True:
+            if pitch_guidance:
                 audio_opt.append(
                     self.voice_conversion(
                         model,
@@ -633,7 +650,7 @@ class Pipeline:
                     )[self.t_pad_tgt : -self.t_pad_tgt]
                 )
             s = t
-        if pitch_guidance == True:
+        if pitch_guidance:
             audio_opt.append(
                 self.voice_conversion(
                     model,
@@ -668,18 +685,23 @@ class Pipeline:
         audio_opt = np.concatenate(audio_opt)
         if volume_envelope != 1:
             audio_opt = AudioProcessor.change_rms(
-                audio, self.sample_rate, audio_opt, tgt_sr, volume_envelope
+                audio, self.sample_rate, audio_opt, self.sample_rate, volume_envelope
             )
-        if resample_sr >= self.sample_rate and tgt_sr != resample_sr:
-            audio_opt = librosa.resample(
-                audio_opt, orig_sr=tgt_sr, target_sr=resample_sr
-            )
+        # if resample_sr >= self.sample_rate and tgt_sr != resample_sr:
+        #    audio_opt = librosa.resample(
+        #        audio_opt, orig_sr=tgt_sr, target_sr=resample_sr
+        #    )
+        # audio_max = np.abs(audio_opt).max() / 0.99
+        # max_int16 = 32768
+        # if audio_max > 1:
+        #    max_int16 /= audio_max
+        # audio_opt = (audio_opt * 32768).astype(np.int16)
         audio_max = np.abs(audio_opt).max() / 0.99
-        max_int16 = 32768
         if audio_max > 1:
-            max_int16 /= audio_max
-        audio_opt = (audio_opt * max_int16).astype(np.int16)
-        del pitch, pitchf, sid
+            audio_opt /= audio_max
+        if pitch_guidance:
+            del pitch, pitchf
+        del sid
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         return audio_opt

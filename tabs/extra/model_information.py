@@ -18,7 +18,7 @@ def model_information_tab():
             label=i18n("Output Information"),
             info=i18n("The output information will be displayed here."),
             value="",
-            max_lines=8,
+            max_lines=12,
             interactive=False,
         )
         model_information_button = gr.Button(i18n("See Model Information"))
@@ -26,5 +26,4 @@ def model_information_tab():
             fn=run_model_information_script,
             inputs=[model_name],
             outputs=[model_information_output_info],
-            api_name="model_information",
         )
