@@ -68,7 +68,7 @@ if load_config_flask():
 # Load theme
 import assets.themes.loadThemes as loadThemes
 
-my_applio = loadThemes.load_json() or "ParityError/Interstellar"
+my_applio = loadThemes.load_theme() or "ParityError/Interstellar"
 
 # Define Gradio interface
 with gr.Blocks(
