@@ -15,7 +15,7 @@ from core import (
 )
 from rvc.configs.config import get_gpu_info, get_number_of_gpus, max_vram_gpu
 from rvc.lib.utils import format_title
-from tabs.settings.restart import stop_train
+from tabs.settings.sections.restart import stop_train
 
 i18n = I18nAuto()
 now_dir = os.getcwd()

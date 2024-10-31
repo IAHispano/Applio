@@ -14,7 +14,7 @@ from core import (
 from assets.i18n.i18n import I18nAuto
 
 from rvc.lib.utils import format_title
-from tabs.settings.restart import stop_infer
+from tabs.settings.sections.restart import stop_infer
 
 i18n = I18nAuto()
 
