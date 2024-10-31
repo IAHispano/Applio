@@ -65,30 +65,6 @@ class ResBlock2(ResBlockBase):
         super(ResBlock2, self).__init__(channels, kernel_size, dilation)
 
 
-class Log(torch.nn.Module):
-    """Logarithm module for flow-based models.
-
-    This module computes the logarithm of the input and its log determinant.
-    During reverse, it computes the exponential of the input.
-    """
-
-    def forward(self, x, x_mask, reverse=False, **kwargs):
-        """Forward pass.
-
-        Args:
-            x (torch.Tensor): Input tensor.
-            x_mask (torch.Tensor): Mask tensor.
-            reverse (bool, optional): Whether to reverse the operation. Defaults to False.
-        """
-        if not reverse:
-            y = torch.log(torch.clamp_min(x, 1e-5)) * x_mask
-            logdet = torch.sum(-y, [1, 2])
-            return y, logdet
-        else:
-            x = torch.exp(x) * x_mask
-            return x
-
-
 class Flip(torch.nn.Module):
     """Flip module for flow-based models.
 
@@ -107,40 +83,6 @@ class Flip(torch.nn.Module):
             logdet = torch.zeros(x.size(0)).to(dtype=x.dtype, device=x.device)
             return x, logdet
         else:
-            return x
-
-
-class ElementwiseAffine(torch.nn.Module):
-    """Elementwise affine transformation module for flow-based models.
-
-    This module performs an elementwise affine transformation on the input.
-
-    Args:
-        channels (int): Number of channels.
-
-    """
-
-    def __init__(self, channels):
-        super().__init__()
-        self.channels = channels
-        self.m = torch.nn.Parameter(torch.zeros(channels, 1))
-        self.logs = torch.nn.Parameter(torch.zeros(channels, 1))
-
-    def forward(self, x, x_mask, reverse=False, **kwargs):
-        """Forward pass.
-
-        Args:
-            x (torch.Tensor): Input tensor.
-            x_mask (torch.Tensor): Mask tensor.
-            reverse (bool, optional): Whether to reverse the operation. Defaults to False.
-        """
-        if not reverse:
-            y = self.m + torch.exp(self.logs) * x
-            y = y * x_mask
-            logdet = torch.sum(self.logs * x_mask, [1, 2])
-            return y, logdet
-        else:
-            x = (x - self.m) * torch.exp(-self.logs) * x_mask
             return x
 
 
