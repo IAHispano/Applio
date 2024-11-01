@@ -489,15 +489,6 @@ def train_tab():
                         label="Upload .json", type="filepath", interactive=True
                     )
                 move_files_button = gr.Button("Move files to custom embedder folder")
-        with gr.Row():
-            pitch_guidance_extract = gr.Checkbox(
-                label=i18n("Pitch Guidance"),
-                info=i18n(
-                    "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential."
-                ),
-                value=True,
-                interactive=True,
-            )
 
         with gr.Accordion(
             i18n(
@@ -550,7 +541,6 @@ def train_tab():
                 model_name,
                 rvc_version,
                 f0_method,
-                pitch_guidance_extract,
                 hop_length,
                 cpu_cores_extract,
                 gpu_extract,

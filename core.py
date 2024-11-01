@@ -462,7 +462,6 @@ def run_extract_script(
     model_name: str,
     rvc_version: str,
     f0_method: str,
-    pitch_guidance: bool,
     hop_length: int,
     cpu_cores: int,
     gpu: int,
@@ -486,7 +485,6 @@ def run_extract_script(
                 cpu_cores,
                 gpu,
                 rvc_version,
-                pitch_guidance,
                 sample_rate,
                 embedder_model,
                 embedder_model_custom,
@@ -1938,13 +1936,6 @@ def parse_arguments():
         default="rmvpe",
     )
     extract_parser.add_argument(
-        "--pitch_guidance",
-        type=lambda x: bool(strtobool(x)),
-        choices=[True, False],
-        help="Enable or disable pitch guidance during feature extraction.",
-        default=True,
-    )
-    extract_parser.add_argument(
         "--hop_length",
         type=int,
         help="Hop length for feature extraction. Only applicable for Crepe pitch extraction.",
@@ -2477,7 +2468,6 @@ def main():
                 model_name=args.model_name,
                 rvc_version=args.rvc_version,
                 f0_method=args.f0_method,
-                pitch_guidance=args.pitch_guidance,
                 hop_length=args.hop_length,
                 cpu_cores=args.cpu_cores,
                 gpu=args.gpu,
