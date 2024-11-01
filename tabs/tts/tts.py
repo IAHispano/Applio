@@ -101,7 +101,7 @@ def tts_tab():
         maximum=100,
         step=1,
         label=i18n("TTS Speed"),
-        info=i18n("Increase or decrease TTS speed"),
+        info=i18n("Increase or decrease TTS speed."),
         value=0,
         interactive=True,
     )

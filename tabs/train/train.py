@@ -552,7 +552,7 @@ def train_tab():
             outputs=[extract_output_info],
         )
 
-    with gr.Accordion(i18n("Train")):
+    with gr.Accordion(i18n("Training")):
         with gr.Row():
             batch_size = gr.Slider(
                 1,
