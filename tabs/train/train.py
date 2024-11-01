@@ -324,6 +324,7 @@ def train_tab():
             choices=["v1", "v2"],
             value="v2",
             interactive=True,
+            visible=False,
         )
     with gr.Accordion(i18n("Preprocess")):
         dataset_path = gr.Dropdown(
