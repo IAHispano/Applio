@@ -614,7 +614,7 @@ def train_tab():
                     )
                 with gr.Column():
                     cleanup = gr.Checkbox(
-                        label=i18n("New Model"),
+                        label=i18n("Fresh Training"),
                         info=i18n(
                             "Enable this setting only if you are training a new model from scratch or restarting the training. Deletes all previously generated weights and tensorboard logs."
                         ),
