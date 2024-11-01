@@ -48,6 +48,7 @@ i18n = I18nAuto()
 
 # Start Discord presence if enabled
 from tabs.settings.sections.presence import load_config_presence
+
 if load_config_presence():
     from assets.discord_presence import RPCManager
 
@@ -77,7 +78,7 @@ with gr.Blocks(
     gr.Markdown("# Applio")
     gr.Markdown(
         i18n(
-            "VITS-based Voice Conversion focused on simplicity, quality and performance."
+            "A simple, high-quality voice conversion tool focused on ease of use and performance."
         )
     )
     gr.Markdown(
