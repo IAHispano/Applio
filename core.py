@@ -655,6 +655,21 @@ def run_audio_analyzer_script(
     return audio_info, plot_path
 
 
+# Model author
+def run_model_author_script(
+    model_author: str,
+):
+    with open(os.path.join(now_dir, "assets", "config.json"), "r") as f:
+        config = json.load(f)
+
+    config["model_author"] = model_author
+
+    with open(os.path.join(now_dir, "assets", "config.json"), "w") as f:
+        json.dump(config, f, indent=4)
+
+    return f"Model author set to {model_author}."
+
+
 # Parse arguments
 def parse_arguments():
     parser = argparse.ArgumentParser(
@@ -2285,6 +2300,14 @@ def parse_arguments():
         "--input_path", type=str, help="Path to the input audio file.", required=True
     )
 
+    # Parser for 'model_author' mode
+    model_author_parser = subparsers.add_parser(
+        "model_author", help="Add author information to a model."
+    )
+    model_author_parser.add_argument(
+        "--author", type=str, help="Name of the author.", required=True
+    )
+
     return parser.parse_args()
 
 
@@ -2543,6 +2566,11 @@ def main():
             run_audio_analyzer_script(
                 input_path=args.input_path,
             )
+        elif args.mode == "model_author":
+            run_model_author_script(
+                author=args.author,
+            )
+
     except Exception as error:
         print(f"An error occurred during execution: {error}")
 
