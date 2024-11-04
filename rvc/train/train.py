@@ -430,9 +430,6 @@ def run(
         optim_d, gamma=config.train.lr_decay, last_epoch=epoch_str - 2
     )
 
-    optim_g.step()
-    optim_d.step()
-
     scaler = GradScaler(enabled=config.train.fp16_run and device.type == "cuda")
 
     cache = []
