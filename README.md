@@ -17,7 +17,7 @@
   •
   <a href="https://docs.applio.org" target="_blank">📚 Documentation</a>
   •
-  <a href="https://discord.gg/iahispano" target="_blank">☎️ Discord</a>
+  <a href="https://discord.com/invite/ai-hispano-1096877223765606521" target="_blank">☎️ Discord</a>
 </p>
 
 <p align="center">
