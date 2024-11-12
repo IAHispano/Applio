@@ -453,7 +453,13 @@ def run(
         # removed last frame to match features
         pitchf = torch.FloatTensor(pitchf[:-1]).unsqueeze(0).to(device)
         sid = torch.LongTensor([0]).to(device)
-        reference = (phone, phone_lengths, pitch, pitchf, sid)
+        reference = (
+            phone,
+            phone_lengths,
+            pitch if pitch_guidance else None,
+            pitchf if pitch_guidance else None,
+            sid
+        )
     else:
         for info in train_loader:
             phone, phone_lengths, pitch, pitchf, _, _, _, _, sid = info
