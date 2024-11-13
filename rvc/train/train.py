@@ -439,16 +439,38 @@ def run(
 
     cache = []
     # get the first sample as reference for tensorboard evaluation
-    for info in train_loader:
-        phone, phone_lengths, pitch, pitchf, _, _, _, _, sid = info
+    if os.path.isfile(os.path.join("logs", "reference", f"ref{sample_rate}.wav")):
+        import numpy as np
+        phone = np.load(os.path.join("logs", "reference", f"ref{sample_rate}_feats.npy"))
+        #expanding x2 to match pitch size
+        phone = np.repeat(phone, 2, axis=0)
+        phone = torch.FloatTensor(phone).unsqueeze(0).to(device)
+        phone_lengths = torch.LongTensor(phone.size(0)).to(device)
+        pitch = np.load(os.path.join("logs", "reference", f"ref{sample_rate}_f0c.npy"))
+        # removed last frame to match features
+        pitch = torch.LongTensor(pitch[:-1]).unsqueeze(0).to(device)
+        pitchf = np.load(os.path.join("logs", "reference", f"ref{sample_rate}_f0f.npy"))
+        # removed last frame to match features
+        pitchf = torch.FloatTensor(pitchf[:-1]).unsqueeze(0).to(device)
+        sid = torch.LongTensor([0]).to(device)
         reference = (
-            phone.to(device),
-            phone_lengths.to(device),
-            pitch.to(device) if pitch_guidance else None,
-            pitchf.to(device) if pitch_guidance else None,
-            sid.to(device),
+            phone,
+            phone_lengths,
+            pitch if pitch_guidance else None,
+            pitchf if pitch_guidance else None,
+            sid
         )
-        break
+    else:
+        for info in train_loader:
+            phone, phone_lengths, pitch, pitchf, _, _, _, _, sid = info
+            reference = (
+                phone.to(device),
+                phone_lengths.to(device),
+                pitch.to(device) if pitch_guidance else None,
+                pitchf.to(device) if pitch_guidance else None,
+                sid.to(device),
+            )
+            break
 
     for epoch in range(epoch_str, total_epoch + 1):
         train_and_evaluate(
