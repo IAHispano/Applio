@@ -441,8 +441,11 @@ def run(
     # get the first sample as reference for tensorboard evaluation
     if os.path.isfile(os.path.join("logs", "reference", f"ref{sample_rate}.wav")):
         import numpy as np
-        phone = np.load(os.path.join("logs", "reference", f"ref{sample_rate}_feats.npy"))
-        #expanding x2 to match pitch size
+
+        phone = np.load(
+            os.path.join("logs", "reference", f"ref{sample_rate}_feats.npy")
+        )
+        # expanding x2 to match pitch size
         phone = np.repeat(phone, 2, axis=0)
         phone = torch.FloatTensor(phone).unsqueeze(0).to(device)
         phone_lengths = torch.LongTensor(phone.size(0)).to(device)
@@ -458,7 +461,7 @@ def run(
             phone_lengths,
             pitch if pitch_guidance else None,
             pitchf if pitch_guidance else None,
-            sid
+            sid,
         )
     else:
         for info in train_loader:
