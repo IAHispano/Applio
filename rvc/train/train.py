@@ -440,7 +440,9 @@ def run(
     cache = []
     # get the first sample as reference for tensorboard evaluation
     # custom reference temporarily disabled
-    if True == False and os.path.isfile(os.path.join("logs", "reference", f"ref{sample_rate}.wav")):
+    if True == False and os.path.isfile(
+        os.path.join("logs", "reference", f"ref{sample_rate}.wav")
+    ):
         import numpy as np
 
         phone = np.load(
