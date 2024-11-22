@@ -127,7 +127,7 @@ def get_models_list():
         os.path.basename(dirpath)
         for dirpath in os.listdir(models_path)
         if os.path.isdir(os.path.join(models_path, dirpath))
-        and all(excluded not in dirpath for excluded in ["zips", "mute"])
+        and all(excluded not in dirpath for excluded in ["zips", "mute", "reference"])
     ]
 
 
