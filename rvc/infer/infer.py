@@ -255,10 +255,6 @@ class VoiceConverter:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
 
-            if upscale_audio == True:
-                from audio_upscaler import upscale
-
-                upscale(audio_input_path, audio_input_path)
             audio = load_audio_infer(
                 audio_input_path,
                 16000,

@@ -352,7 +352,6 @@ def run(
 
     # Initialize models and optimizers
     from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
-    from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminatorV2
     from rvc.lib.algorithm.synthesizers import Synthesizer
 
     net_g = Synthesizer(
@@ -364,10 +363,7 @@ def run(
         sr=sample_rate,
     ).to(device)
 
-    if version == "v1":
-        net_d = MultiPeriodDiscriminator(config.model.use_spectral_norm).to(device)
-    else:
-        net_d = MultiPeriodDiscriminatorV2(config.model.use_spectral_norm).to(device)
+    net_d = MultiPeriodDiscriminator(version, config.model.use_spectral_norm).to(device)
 
     optim_g = torch.optim.AdamW(
         net_g.parameters(),
