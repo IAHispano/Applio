@@ -1,6 +1,7 @@
 from pypresence import Presence
 import datetime as dt
 
+
 class RichPresenceManager:
     def __init__(self):
         self.client_id = "1144714449563955302"
