@@ -108,6 +108,7 @@ class Generator(torch.nn.Module):
         for l in self.resblocks:
             l.remove_weight_norm()
 
+
 class SineGenerator(torch.nn.Module):
     """
     A sine wave generator that synthesizes waveforms with optional harmonic overtones and noise.
