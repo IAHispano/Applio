@@ -468,15 +468,6 @@ def inference_tab():
                     value=0.5,
                     interactive=True,
                 )
-                upscale_audio = gr.Checkbox(
-                    label=i18n("Upscale Audio"),
-                    info=i18n(
-                        "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)"
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
                 formant_shifting = gr.Checkbox(
                     label=i18n("Formant Shifting"),
                     info=i18n(
@@ -484,6 +475,12 @@ def inference_tab():
                     ),
                     value=False,
                     visible=True,
+                    interactive=True,
+                )
+                post_process = gr.Checkbox(
+                    label=i18n("Post-Process"),
+                    info=i18n("Post-process the audio to apply effects to the output."),
+                    value=False,
                     interactive=True,
                 )
                 with gr.Row(visible=False) as formant_row:
@@ -518,12 +515,6 @@ def inference_tab():
                     maximum=16.0,
                     step=0.1,
                     visible=False,
-                    interactive=True,
-                )
-                post_process = gr.Checkbox(
-                    label=i18n("Post-Process"),
-                    info=i18n("Post-process the audio to apply effects to the output."),
-                    value=False,
                     interactive=True,
                 )
                 reverb = gr.Checkbox(
@@ -1112,15 +1103,6 @@ def inference_tab():
                     value=0.5,
                     interactive=True,
                 )
-                upscale_audio_batch = gr.Checkbox(
-                    label=i18n("Upscale Audio"),
-                    info=i18n(
-                        "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)"
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
                 formant_shifting_batch = gr.Checkbox(
                     label=i18n("Formant Shifting"),
                     info=i18n(
@@ -1128,6 +1110,12 @@ def inference_tab():
                     ),
                     value=False,
                     visible=True,
+                    interactive=True,
+                )
+                post_process_batch = gr.Checkbox(
+                    label=i18n("Post-Process"),
+                    info=i18n("Post-process the audio to apply effects to the output."),
+                    value=False,
                     interactive=True,
                 )
                 with gr.Row(visible=False) as formant_row_batch:
@@ -1143,7 +1131,6 @@ def inference_tab():
                     formant_refresh_button_batch = gr.Button(
                         value="Refresh",
                         visible=False,
-                        variant="primary",
                     )
                 formant_qfrency_batch = gr.Slider(
                     value=1.0,
@@ -1163,12 +1150,6 @@ def inference_tab():
                     maximum=16.0,
                     step=0.1,
                     visible=False,
-                    interactive=True,
-                )
-                post_process_batch = gr.Checkbox(
-                    label=i18n("Post-Process"),
-                    info=i18n("Post-process the audio to apply effects to the output."),
-                    value=False,
                     interactive=True,
                 )
                 reverb_batch = gr.Checkbox(
@@ -2065,7 +2046,6 @@ def inference_tab():
             clean_audio,
             clean_strength,
             export_format,
-            upscale_audio,
             f0_file,
             embedder_model,
             embedder_model_custom,
@@ -2132,7 +2112,6 @@ def inference_tab():
             clean_audio_batch,
             clean_strength_batch,
             export_format_batch,
-            upscale_audio_batch,
             f0_file_batch,
             embedder_model_batch,
             embedder_model_custom_batch,

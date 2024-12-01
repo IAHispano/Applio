@@ -286,7 +286,7 @@ class Pipeline:
         if methods_str:
             methods = [method.strip() for method in methods_str.group(1).split("+")]
         f0_computation_stack = []
-        print(f"Calculating f0 pitch estimations for methods {str(methods)}")
+        print(f"Calculating f0 pitch estimations for methods: {', '.join(methods)}")
         x = x.astype(np.float32)
         x /= np.quantile(np.abs(x), 0.999)
         for method in methods:

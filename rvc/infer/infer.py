@@ -108,7 +108,7 @@ class VoiceConverter:
         """
         try:
             if output_format != "WAV":
-                print(f"Converting audio to {output_format} format...")
+                print(f"Saving audio as {output_format}...")
                 audio, sample_rate = librosa.load(input_path, sr=None)
                 common_sample_rates = [
                     8000,
@@ -255,10 +255,6 @@ class VoiceConverter:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
 
-            if upscale_audio == True:
-                from audio_upscaler import upscale
-
-                upscale(audio_input_path, audio_input_path)
             audio = load_audio_infer(
                 audio_input_path,
                 16000,

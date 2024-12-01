@@ -21,7 +21,7 @@ def analyzer_tab():
             interactive=False,
         )
         get_info_button = gr.Button(
-            value=i18n("Get information about the audio"), variant="primary"
+            value=i18n("Get information about the audio")
         )
         image_output = gr.Image(type="filepath", interactive=False)
 

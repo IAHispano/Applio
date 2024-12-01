@@ -825,7 +825,7 @@ def train_tab():
             with gr.Column():
                 refresh_export = gr.Button(i18n("Refresh"))
                 if not os.name == "nt":
-                    upload_exported = gr.Button(i18n("Upload"), variant="primary")
+                    upload_exported = gr.Button(i18n("Upload"))
                     upload_exported.click(
                         fn=upload_to_google_drive,
                         inputs=[pth_dropdown_export, index_dropdown_export],
