@@ -477,6 +477,12 @@ def inference_tab():
                     visible=True,
                     interactive=True,
                 )
+                post_process = gr.Checkbox(
+                    label=i18n("Post-Process"),
+                    info=i18n("Post-process the audio to apply effects to the output."),
+                    value=False,
+                    interactive=True,
+                )
                 with gr.Row(visible=False) as formant_row:
                     formant_preset = gr.Dropdown(
                         label=i18n("Browse presets for formanting"),
@@ -509,12 +515,6 @@ def inference_tab():
                     maximum=16.0,
                     step=0.1,
                     visible=False,
-                    interactive=True,
-                )
-                post_process = gr.Checkbox(
-                    label=i18n("Post-Process"),
-                    info=i18n("Post-process the audio to apply effects to the output."),
-                    value=False,
                     interactive=True,
                 )
                 reverb = gr.Checkbox(
@@ -1112,6 +1112,12 @@ def inference_tab():
                     visible=True,
                     interactive=True,
                 )
+                post_process_batch = gr.Checkbox(
+                    label=i18n("Post-Process"),
+                    info=i18n("Post-process the audio to apply effects to the output."),
+                    value=False,
+                    interactive=True,
+                )
                 with gr.Row(visible=False) as formant_row_batch:
                     formant_preset_batch = gr.Dropdown(
                         label=i18n("Browse presets for formanting"),
@@ -1125,7 +1131,6 @@ def inference_tab():
                     formant_refresh_button_batch = gr.Button(
                         value="Refresh",
                         visible=False,
-                        variant="primary",
                     )
                 formant_qfrency_batch = gr.Slider(
                     value=1.0,
@@ -1145,12 +1150,6 @@ def inference_tab():
                     maximum=16.0,
                     step=0.1,
                     visible=False,
-                    interactive=True,
-                )
-                post_process_batch = gr.Checkbox(
-                    label=i18n("Post-Process"),
-                    info=i18n("Post-process the audio to apply effects to the output."),
-                    value=False,
                     interactive=True,
                 )
                 reverb_batch = gr.Checkbox(

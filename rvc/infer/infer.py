@@ -108,7 +108,7 @@ class VoiceConverter:
         """
         try:
             if output_format != "WAV":
-                print(f"Converting audio to {output_format} format...")
+                print(f"Saving audio as {output_format}...")
                 audio, sample_rate = librosa.load(input_path, sr=None)
                 common_sample_rates = [
                     8000,

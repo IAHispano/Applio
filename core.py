@@ -33,7 +33,7 @@ def load_voices_data():
 
 
 voices_data = load_voices_data()
-locales = list({voice["Locale"] for voice in voices_data})
+locales = list({voice["ShortName"] for voice in voices_data})
 
 
 @lru_cache(maxsize=None)
@@ -2407,8 +2407,8 @@ def main():
                 protect=args.protect,
                 hop_length=args.hop_length,
                 f0_method=args.f0_method,
-                input_path=args.input_path,
-                output_path=args.output_path,
+                output_tts_path=args.output_tts_path,
+                output_rvc_path=args.output_rvc_path,
                 pth_path=args.pth_path,
                 index_path=args.index_path,
                 split_audio=args.split_audio,
