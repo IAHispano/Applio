@@ -374,7 +374,6 @@ def model_download_pipeline(url: str):
                                         model_name + ".index",
                                     ),
                                 )
-                                
 
                     if success:
                         print(f"Model {model_name} downloaded!")
