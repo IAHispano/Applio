@@ -43,7 +43,11 @@ from losses import (
     generator_loss,
     kl_loss,
 )
-from mel_processing import mel_spectrogram_torch, spec_to_mel_torch, MultiScaleMelSpectrogramLoss
+from mel_processing import (
+    mel_spectrogram_torch,
+    spec_to_mel_torch,
+    MultiScaleMelSpectrogramLoss,
+)
 
 from rvc.train.process.extract_model import extract_model
 
@@ -377,7 +381,7 @@ def run(
         betas=config.train.betas,
         eps=config.train.eps,
     )
-    
+
     fn_mel_loss = MultiScaleMelSpectrogramLoss(sample_rate=sample_rate)
 
     # Wrap models with DDP for multi-gpu processing
@@ -491,7 +495,7 @@ def run(
             custom_total_epoch,
             device,
             reference,
-            fn_mel_loss
+            fn_mel_loss,
         )
 
         scheduler_g.step()
@@ -512,7 +516,7 @@ def train_and_evaluate(
     custom_total_epoch,
     device,
     reference,
-    fn_mel_loss
+    fn_mel_loss,
 ):
     """
     Trains and evaluates the model for one epoch.
@@ -617,13 +621,19 @@ def train_and_evaluate(
                 _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
                 with autocast(enabled=False):
                     loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
-                    loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
+                    loss_kl = (
+                        kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
+                    )
                     loss_fm = feature_loss(fmap_r, fmap_g)
                     loss_gen, losses_gen = generator_loss(y_d_hat_g)
                     loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
 
                     if loss_gen_all < lowest_value["value"]:
-                        lowest_value = {"step": global_step, "value": loss_gen_all, "epoch": epoch}
+                        lowest_value = {
+                            "step": global_step,
+                            "value": loss_gen_all,
+                            "epoch": epoch,
+                        }
 
             optim_g.zero_grad()
             scaler.scale(loss_gen_all).backward()
@@ -645,7 +655,7 @@ def train_and_evaluate(
             config.data.sample_rate,
             config.data.mel_fmin,
             config.data.mel_fmax,
-            )
+        )
         # used for tensorboard chart - slice/mel_org
         y_mel = commons.slice_segments(
             mel,
@@ -664,10 +674,10 @@ def train_and_evaluate(
                 config.data.win_length,
                 config.data.mel_fmin,
                 config.data.mel_fmax,
-                )
+            )
             if use_amp:
-                y_hat_mel = y_hat_mel.half()    
-    
+                y_hat_mel = y_hat_mel.half()
+
         lr = optim_g.param_groups[0]["lr"]
         if loss_mel > 75:
             loss_mel = 75
