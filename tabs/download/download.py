@@ -35,16 +35,14 @@ def save_drop_model(dropbox):
     else:
         file_name = format_title(os.path.basename(dropbox))
         if ".pth" in dropbox:
-            model_name = format_title(file_name.split(".pth")[0])
-        else:
-            if "v2" not in dropbox:
-                model_name = format_title(
-                    file_name.split("_nprobe_1_")[1].split("_v1")[0]
-                )
+            model_name = file_name.split(".pth")[0]
+        elif ".index" in dropbox:
+            if "v1" in dropbox:
+                model_name = file_name.split("_nprobe_1_")[1].split("_v1")[0].split(".index")[0]
+            elif "v2" in dropbox:
+                model_name = file_name.split("_nprobe_1_")[1].split("_v2")[0].split(".index")[0]
             else:
-                model_name = format_title(
-                    file_name.split("_nprobe_1_")[1].split("_v2")[0]
-                )
+                model_name = file_name.split(".index")[0]
         model_path = os.path.join(now_dir, "logs", model_name)
         if not os.path.exists(model_path):
             os.makedirs(model_path)
