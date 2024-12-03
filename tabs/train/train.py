@@ -76,7 +76,6 @@ custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
 os.makedirs(custom_embedder_root, exist_ok=True)
 os.makedirs(pretraineds_custom_path_relative, exist_ok=True)
 
-initial_load = True
 
 def get_pretrained_list(suffix):
     return [
@@ -866,11 +865,6 @@ def train_tab():
                 }
 
             def download_prerequisites(version, pitch_guidance):
-                global initial_load
-                if initial_load:
-                    initial_load = False
-                    return
-
                 if version == "v1":
                     if pitch_guidance:
                         gr.Info(

@@ -216,7 +216,6 @@ class VoiceConverter:
         clean_audio: bool = False,
         clean_strength: float = 0.5,
         export_format: str = "WAV",
-        upscale_audio: bool = False,
         post_process: bool = False,
         resample_sr: int = 0,
         sid: int = 0,
@@ -242,7 +241,6 @@ class VoiceConverter:
             clean_audio (bool): Whether to clean the audio.
             clean_strength (float): Strength of the audio cleaning.
             export_format (str): Format for exporting the audio.
-            upscale_audio (bool): Whether to upscale the audio.
             f0_file (str): Path to the F0 file.
             embedder_model (str): Path to the embedder model.
             embedder_model_custom (str): Path to the custom embedder model.
