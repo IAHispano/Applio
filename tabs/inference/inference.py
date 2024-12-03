@@ -420,7 +420,7 @@ def inference_tab():
                     label=i18n("Speaker ID"),
                     info=i18n("Select the speaker ID to use for the conversion."),
                     choices=get_speakers_id(model_file.value),
-                    value=0,
+                    value=[0],
                     interactive=True,
                 )
                 split_audio = gr.Checkbox(
