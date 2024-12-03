@@ -71,6 +71,7 @@ class Encoder(torch.nn.Module):
     def forward(self, x, x_mask):
         attn_mask = x_mask.unsqueeze(2) * x_mask.unsqueeze(-1)
         x = x * x_mask
+
         for i in range(self.n_layers):
             y = self.attn_layers[i](x, x, attn_mask)
             y = self.drop(y)
@@ -79,8 +80,8 @@ class Encoder(torch.nn.Module):
             y = self.ffn_layers[i](x, x_mask)
             y = self.drop(y)
             x = self.norm_layers_2[i](x + y)
-        x = x * x_mask
-        return x
+
+        return x * x_mask
 
 
 class TextEncoder(torch.nn.Module):
@@ -196,11 +197,17 @@ class PosteriorEncoder(torch.nn.Module):
         self, x: torch.Tensor, x_lengths: torch.Tensor, g: Optional[torch.Tensor] = None
     ):
         x_mask = torch.unsqueeze(sequence_mask(x_lengths, x.size(2)), 1).to(x.dtype)
+
         x = self.pre(x) * x_mask
         x = self.enc(x, x_mask, g=g)
+
         stats = self.proj(x) * x_mask
         m, logs = torch.split(stats, self.out_channels, dim=1)
-        z = (m + torch.randn_like(m) * torch.exp(logs)) * x_mask
+
+        logs_exp = torch.exp(logs)
+        z = m + torch.randn_like(m) * logs_exp
+        z = z * x_mask
+
         return z, m, logs, x_mask
 
     def remove_weight_norm(self):
