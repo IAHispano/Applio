@@ -59,7 +59,7 @@ class DiscriminatorS(torch.nn.Module):
     convolutional layers that are applied to the input signal.
     """
 
-    def __init__(self, use_spectral_norm: bool =False):
+    def __init__(self, use_spectral_norm: bool = False):
         super(DiscriminatorS, self).__init__()
         norm_f = spectral_norm if use_spectral_norm else weight_norm
         self.convs = torch.nn.ModuleList(
@@ -108,7 +108,13 @@ class DiscriminatorP(torch.nn.Module):
         use_spectral_norm (bool): Whether to use spectral normalization. Defaults to False.
     """
 
-    def __init__(self, period: int, kernel_size: int = 5, stride: int = 3, use_spectral_norm: bool = False):
+    def __init__(
+        self,
+        period: int,
+        kernel_size: int = 5,
+        stride: int = 3,
+        use_spectral_norm: bool = False,
+    ):
         super(DiscriminatorP, self).__init__()
         self.period = period
         norm_f = spectral_norm if use_spectral_norm else weight_norm

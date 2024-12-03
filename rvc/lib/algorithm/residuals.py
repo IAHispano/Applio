@@ -55,7 +55,9 @@ class ResBlockBase(torch.nn.Module):
 
 
 class ResBlock(ResBlockBase):
-    def __init__(self, channels: int, kernel_size: int = 3, dilation: Tuple[int] = (1, 3, 5)):
+    def __init__(
+        self, channels: int, kernel_size: int = 3, dilation: Tuple[int] = (1, 3, 5)
+    ):
         super(ResBlock, self).__init__(channels, kernel_size, dilation)
 
 
@@ -210,7 +212,13 @@ class ResidualCouplingLayer(torch.nn.Module):
         self.post.weight.data.zero_()
         self.post.bias.data.zero_()
 
-    def forward(self, x: torch.Tensor, x_mask: torch.Tensor, g: Optional[torch.Tensor] = None, reverse: bool = False):
+    def forward(
+        self,
+        x: torch.Tensor,
+        x_mask: torch.Tensor,
+        g: Optional[torch.Tensor] = None,
+        reverse: bool = False,
+    ):
         """Forward pass.
 
         Args:
