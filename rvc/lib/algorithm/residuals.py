@@ -54,14 +54,9 @@ class ResBlockBase(torch.nn.Module):
             remove_weight_norm(conv)
 
 
-class ResBlock1(ResBlockBase):
+class ResBlock(ResBlockBase):
     def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5)):
-        super(ResBlock1, self).__init__(channels, kernel_size, dilation)
-
-
-class ResBlock2(ResBlockBase):
-    def __init__(self, channels, kernel_size=3, dilation=(1, 3)):
-        super(ResBlock2, self).__init__(channels, kernel_size, dilation)
+        super(ResBlock, self).__init__(channels, kernel_size, dilation)
 
 
 class Flip(torch.nn.Module):
