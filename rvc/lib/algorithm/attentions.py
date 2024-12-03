@@ -201,10 +201,10 @@ class FFN(torch.nn.Module):
 
     def __init__(
         self,
-        in_channels=int,
-        out_channels=int,
-        filter_channels=int,
-        kernel_size=int,
+        in_channels: int,
+        out_channels: int,
+        filter_channels: int,
+        kernel_size: int,
         p_dropout: float = 0.0,
         activation: str = None,
         causal: bool = False,
