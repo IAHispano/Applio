@@ -15,7 +15,7 @@ from core import (
 )
 from rvc.configs.config import get_gpu_info, get_number_of_gpus, max_vram_gpu
 from rvc.lib.utils import format_title
-from tabs.settings.restart import stop_train
+from tabs.settings.sections.restart import stop_train
 
 i18n = I18nAuto()
 now_dir = os.getcwd()
@@ -128,7 +128,7 @@ def get_models_list():
         os.path.basename(dirpath)
         for dirpath in os.listdir(models_path)
         if os.path.isdir(os.path.join(models_path, dirpath))
-        and all(excluded not in dirpath for excluded in ["zips", "mute"])
+        and all(excluded not in dirpath for excluded in ["zips", "mute", "reference"])
     ]
 
 
@@ -325,6 +325,7 @@ def train_tab():
             choices=["v1", "v2"],
             value="v2",
             interactive=True,
+            visible=False,
         )
     with gr.Accordion(i18n("Preprocess")):
         dataset_path = gr.Dropdown(
@@ -359,8 +360,8 @@ def train_tab():
         with gr.Accordion(i18n("Advanced Settings"), open=False):
             cpu_cores_preprocess = gr.Slider(
                 1,
-                64,
-                cpu_count(),
+                min(cpu_count(), 32),  # max 32 parallel processes
+                min(cpu_count(), 32),
                 step=1,
                 label=i18n("CPU Cores"),
                 info=i18n(
@@ -490,15 +491,6 @@ def train_tab():
                         label="Upload .json", type="filepath", interactive=True
                     )
                 move_files_button = gr.Button("Move files to custom embedder folder")
-        with gr.Row():
-            pitch_guidance_extract = gr.Checkbox(
-                label=i18n("Pitch Guidance"),
-                info=i18n(
-                    "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential."
-                ),
-                value=True,
-                interactive=True,
-            )
 
         with gr.Accordion(
             i18n(
@@ -510,8 +502,8 @@ def train_tab():
                 with gr.Column():
                     cpu_cores_extract = gr.Slider(
                         1,
-                        64,
-                        cpu_count(),
+                        min(cpu_count(), 32),  # max 32 parallel processes
+                        min(cpu_count(), 32),
                         step=1,
                         label=i18n("CPU Cores"),
                         info=i18n(
@@ -551,7 +543,6 @@ def train_tab():
                 model_name,
                 rvc_version,
                 f0_method,
-                pitch_guidance_extract,
                 hop_length,
                 cpu_cores_extract,
                 gpu_extract,
@@ -562,7 +553,7 @@ def train_tab():
             outputs=[extract_output_info],
         )
 
-    with gr.Accordion(i18n("Train")):
+    with gr.Accordion(i18n("Training")):
         with gr.Row():
             batch_size = gr.Slider(
                 1,
@@ -603,7 +594,7 @@ def train_tab():
                         info=i18n(
                             "Enabling this setting will result in the G and D files saving only their most recent versions, effectively conserving storage space."
                         ),
-                        value=False,
+                        value=True,
                         interactive=True,
                     )
                     save_every_weights = gr.Checkbox(
@@ -623,10 +614,10 @@ def train_tab():
                         interactive=True,
                     )
                 with gr.Column():
-                    sync_graph = gr.Checkbox(
-                        label=i18n("Sync Graph"),
+                    cleanup = gr.Checkbox(
+                        label=i18n("Fresh Training"),
                         info=i18n(
-                            "Synchronize the graph of the tensorbaord. Only enable this setting if you are training a new model."
+                            "Enable this setting only if you are training a new model from scratch or restarting the training. Deletes all previously generated weights and tensorboard logs."
                         ),
                         value=False,
                         interactive=True,
@@ -769,7 +760,7 @@ def train_tab():
                     overtraining_detector,
                     overtraining_threshold,
                     pretrained,
-                    sync_graph,
+                    cleanup,
                     index_algorithm,
                     cache_dataset_in_gpu,
                     custom_pretrained,
@@ -835,7 +826,7 @@ def train_tab():
             with gr.Column():
                 refresh_export = gr.Button(i18n("Refresh"))
                 if not os.name == "nt":
-                    upload_exported = gr.Button(i18n("Upload"), variant="primary")
+                    upload_exported = gr.Button(i18n("Upload"))
                     upload_exported.click(
                         fn=upload_to_google_drive,
                         inputs=[pth_dropdown_export, index_dropdown_export],

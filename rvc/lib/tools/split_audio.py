@@ -41,7 +41,12 @@ def merge_audio(audio_segments, intervals, sr_orig, sr_new):
     """
     sr_ratio = sr_new / sr_orig if sr_new > sr_orig else 1.0
 
-    merged_audio = audio_segments[0]
+    merged_audio = np.zeros(
+        int(intervals[0][0] * sr_ratio if intervals[0][0] > 0 else 0),
+        dtype=audio_segments[0].dtype,
+    )
+
+    merged_audio = np.concatenate((merged_audio, audio_segments[0]))
 
     for i in range(1, len(intervals)):
         silence_duration = int((intervals[i][0] - intervals[i - 1][1]) * sr_ratio)

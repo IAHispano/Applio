@@ -14,7 +14,7 @@ from core import (
 from assets.i18n.i18n import I18nAuto
 
 from rvc.lib.utils import format_title
-from tabs.settings.restart import stop_infer
+from tabs.settings.sections.restart import stop_infer
 
 i18n = I18nAuto()
 
@@ -213,6 +213,14 @@ def change_choices(model):
         {"choices": sorted(names), "__type__": "update"},
         {"choices": sorted(indexes_list), "__type__": "update"},
         {"choices": sorted(audio_paths), "__type__": "update"},
+        {
+            "choices": (
+                sorted(speakers)
+                if speakers is not None and isinstance(speakers, (list, tuple))
+                else []
+            ),
+            "__type__": "update",
+        },
         {
             "choices": (
                 sorted(speakers)
@@ -433,6 +441,17 @@ def inference_tab():
                     value=False,
                     interactive=True,
                 )
+                autotune_strength = gr.Slider(
+                    minimum=0,
+                    maximum=1,
+                    label=i18n("Autotune Strength"),
+                    info=i18n(
+                        "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
+                    ),
+                    visible=False,
+                    value=1,
+                    interactive=True,
+                )
                 clean_audio = gr.Checkbox(
                     label=i18n("Clean Audio"),
                     info=i18n(
@@ -453,15 +472,6 @@ def inference_tab():
                     value=0.5,
                     interactive=True,
                 )
-                upscale_audio = gr.Checkbox(
-                    label=i18n("Upscale Audio"),
-                    info=i18n(
-                        "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)"
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
                 formant_shifting = gr.Checkbox(
                     label=i18n("Formant Shifting"),
                     info=i18n(
@@ -469,6 +479,12 @@ def inference_tab():
                     ),
                     value=False,
                     visible=True,
+                    interactive=True,
+                )
+                post_process = gr.Checkbox(
+                    label=i18n("Post-Process"),
+                    info=i18n("Post-process the audio to apply effects to the output."),
+                    value=False,
                     interactive=True,
                 )
                 with gr.Row(visible=False) as formant_row:
@@ -503,12 +519,6 @@ def inference_tab():
                     maximum=16.0,
                     step=0.1,
                     visible=False,
-                    interactive=True,
-                )
-                post_process = gr.Checkbox(
-                    label=i18n("Post-Process"),
-                    info=i18n("Post-process the audio to apply effects to the output."),
-                    value=False,
                     interactive=True,
                 )
                 reverb = gr.Checkbox(
@@ -1066,6 +1076,17 @@ def inference_tab():
                     value=False,
                     interactive=True,
                 )
+                autotune_strength_batch = gr.Slider(
+                    minimum=0,
+                    maximum=1,
+                    label=i18n("Autotune Strength"),
+                    info=i18n(
+                        "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
+                    ),
+                    visible=False,
+                    value=1,
+                    interactive=True,
+                )
                 clean_audio_batch = gr.Checkbox(
                     label=i18n("Clean Audio"),
                     info=i18n(
@@ -1086,15 +1107,6 @@ def inference_tab():
                     value=0.5,
                     interactive=True,
                 )
-                upscale_audio_batch = gr.Checkbox(
-                    label=i18n("Upscale Audio"),
-                    info=i18n(
-                        "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)"
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
                 formant_shifting_batch = gr.Checkbox(
                     label=i18n("Formant Shifting"),
                     info=i18n(
@@ -1102,6 +1114,12 @@ def inference_tab():
                     ),
                     value=False,
                     visible=True,
+                    interactive=True,
+                )
+                post_process_batch = gr.Checkbox(
+                    label=i18n("Post-Process"),
+                    info=i18n("Post-process the audio to apply effects to the output."),
+                    value=False,
                     interactive=True,
                 )
                 with gr.Row(visible=False) as formant_row_batch:
@@ -1117,7 +1135,6 @@ def inference_tab():
                     formant_refresh_button_batch = gr.Button(
                         value="Refresh",
                         visible=False,
-                        variant="primary",
                     )
                 formant_qfrency_batch = gr.Slider(
                     value=1.0,
@@ -1137,12 +1154,6 @@ def inference_tab():
                     maximum=16.0,
                     step=0.1,
                     visible=False,
-                    interactive=True,
-                )
-                post_process_batch = gr.Checkbox(
-                    label=i18n("Post-Process"),
-                    info=i18n("Post-process the audio to apply effects to the output."),
-                    value=False,
                     interactive=True,
                 )
                 reverb_batch = gr.Checkbox(
@@ -1712,6 +1723,11 @@ def inference_tab():
     def delay_visible(checkbox):
         return update_visibility(checkbox, 3)
 
+    autotune.change(
+        fn=toggle_visible,
+        inputs=[autotune],
+        outputs=[autotune_strength],
+    )
     clean_audio.change(
         fn=toggle_visible,
         inputs=[clean_audio],
@@ -1930,6 +1946,11 @@ def inference_tab():
         inputs=[delay_batch],
         outputs=[delay_seconds_batch, delay_feedback_batch, delay_mix_batch],
     )
+    autotune_batch.change(
+        fn=toggle_visible,
+        inputs=[autotune_batch],
+        outputs=[autotune_strength_batch],
+    )
     clean_audio_batch.change(
         fn=toggle_visible,
         inputs=[clean_audio_batch],
@@ -1948,12 +1969,7 @@ def inference_tab():
     refresh_button.click(
         fn=change_choices,
         inputs=[model_file],
-        outputs=[
-            model_file,
-            index_file,
-            audio,
-            sid,
-        ],
+        outputs=[model_file, index_file, audio, sid, sid_batch],
     )
     audio.change(
         fn=output_path_fn,
@@ -2030,10 +2046,10 @@ def inference_tab():
             index_file,
             split_audio,
             autotune,
+            autotune_strength,
             clean_audio,
             clean_strength,
             export_format,
-            upscale_audio,
             f0_file,
             embedder_model,
             embedder_model_custom,
@@ -2096,10 +2112,10 @@ def inference_tab():
             index_file,
             split_audio_batch,
             autotune_batch,
+            autotune_strength_batch,
             clean_audio_batch,
             clean_strength_batch,
             export_format_batch,
-            upscale_audio_batch,
             f0_file_batch,
             embedder_model_batch,
             embedder_model_custom_batch,

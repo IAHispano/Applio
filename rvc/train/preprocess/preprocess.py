@@ -63,15 +63,11 @@ class PreProcess:
 
     def process_audio_segment(
         self,
-        audio_segment: np.ndarray,
+        normalized_audio: np.ndarray,
         sid: int,
         idx0: int,
         idx1: int,
-        process_effects: bool,
     ):
-        normalized_audio = (
-            self._normalize_audio(audio_segment) if process_effects else audio_segment
-        )
         if normalized_audio is None:
             print(f"{sid}-{idx0}-{idx1}-filtered")
             return
@@ -105,6 +101,7 @@ class PreProcess:
             audio_length = librosa.get_duration(y=audio, sr=self.sr)
             if process_effects:
                 audio = signal.lfilter(self.b_high, self.a_high, audio)
+                audio = self._normalize_audio(audio)
             if noise_reduction:
                 audio = nr.reduce_noise(
                     y=audio, sr=self.sr, prop_decrease=reduction_strength
@@ -121,18 +118,29 @@ class PreProcess:
                                 start : start + int(self.per * self.sr)
                             ]
                             self.process_audio_segment(
-                                tmp_audio, sid, idx0, idx1, process_effects
+                                tmp_audio,
+                                sid,
+                                idx0,
+                                idx1,
                             )
                             idx1 += 1
                         else:
                             tmp_audio = audio_segment[start:]
                             self.process_audio_segment(
-                                tmp_audio, sid, idx0, idx1, process_effects
+                                tmp_audio,
+                                sid,
+                                idx0,
+                                idx1,
                             )
                             idx1 += 1
                             break
             else:
-                self.process_audio_segment(audio, sid, idx0, idx1, process_effects)
+                self.process_audio_segment(
+                    audio,
+                    sid,
+                    idx0,
+                    idx1,
+                )
         except Exception as error:
             print(f"Error processing audio: {error}")
         return audio_length

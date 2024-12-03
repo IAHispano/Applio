@@ -31,7 +31,6 @@ class Encoder(torch.nn.Module):
         kernel_size=1,
         p_dropout=0.0,
         window_size=10,
-        **kwargs
     ):
         super().__init__()
         self.hidden_channels = hidden_channels

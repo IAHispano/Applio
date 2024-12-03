@@ -19,3 +19,4 @@ logs
 env
 venv
 .venv
+rvc/models

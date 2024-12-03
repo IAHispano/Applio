@@ -247,10 +247,9 @@ if __name__ == "__main__":
     num_processes = int(sys.argv[4])
     gpus = sys.argv[5]
     version = sys.argv[6]
-    pitch_guidance = sys.argv[7]
-    sample_rate = sys.argv[8]
-    embedder_model = sys.argv[9]
-    embedder_model_custom = sys.argv[10] if len(sys.argv) > 10 else None
+    sample_rate = sys.argv[7]
+    embedder_model = sys.argv[8]
+    embedder_model_custom = sys.argv[9] if len(sys.argv) > 9 else None
 
     # prep
     wav_path = os.path.join(exp_dir, "sliced_audios_16k")
@@ -259,7 +258,7 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(exp_dir, version + "_extracted"), exist_ok=True)
     # write to model_info.json
     chosen_embedder_model = (
-        embedder_model_custom if embedder_model_custom else embedder_model
+        embedder_model_custom if embedder_model == "custom" else embedder_model
     )
 
     file_path = os.path.join(exp_dir, "model_info.json")
@@ -300,4 +299,4 @@ if __name__ == "__main__":
 
     # Run Preparing Files
     generate_config(version, sample_rate, exp_dir)
-    generate_filelist(pitch_guidance, exp_dir, version, sample_rate)
+    generate_filelist(exp_dir, version, sample_rate)

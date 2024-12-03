@@ -100,24 +100,9 @@ class Autotune:
             ref_freqs: A list of reference frequencies representing musical notes.
         """
         self.ref_freqs = ref_freqs
-        self.note_dict = self.generate_interpolated_frequencies()
+        self.note_dict = self.ref_freqs  # No interpolation needed
 
-    def generate_interpolated_frequencies(self):
-        """
-        Generates a dictionary of interpolated frequencies between reference frequencies.
-        """
-        note_dict = []
-        for i in range(len(self.ref_freqs) - 1):
-            freq_low = self.ref_freqs[i]
-            freq_high = self.ref_freqs[i + 1]
-            interpolated_freqs = np.linspace(
-                freq_low, freq_high, num=10, endpoint=False
-            )
-            note_dict.extend(interpolated_freqs)
-        note_dict.append(self.ref_freqs[-1])
-        return note_dict
-
-    def autotune_f0(self, f0):
+    def autotune_f0(self, f0, f0_autotune_strength):
         """
         Autotunes a given F0 contour by snapping each frequency to the closest reference frequency.
 
@@ -127,7 +112,7 @@ class Autotune:
         autotuned_f0 = np.zeros_like(f0)
         for i, freq in enumerate(f0):
             closest_note = min(self.note_dict, key=lambda x: abs(x - freq))
-            autotuned_f0[i] = closest_note
+            autotuned_f0[i] = freq + (closest_note - freq) * f0_autotune_strength
         return autotuned_f0
 
 
@@ -165,20 +150,68 @@ class Pipeline:
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
         self.device = config.device
         self.ref_freqs = [
-            65.41,
-            82.41,
-            110.00,
-            146.83,
-            196.00,
-            246.94,
-            329.63,
-            440.00,
-            587.33,
-            783.99,
-            1046.50,
+            49.00,  # G1
+            51.91,  # G#1 / Ab1
+            55.00,  # A1
+            58.27,  # A#1 / Bb1
+            61.74,  # B1
+            65.41,  # C2
+            69.30,  # C#2 / Db2
+            73.42,  # D2
+            77.78,  # D#2 / Eb2
+            82.41,  # E2
+            87.31,  # F2
+            92.50,  # F#2 / Gb2
+            98.00,  # G2
+            103.83,  # G#2 / Ab2
+            110.00,  # A2
+            116.54,  # A#2 / Bb2
+            123.47,  # B2
+            130.81,  # C3
+            138.59,  # C#3 / Db3
+            146.83,  # D3
+            155.56,  # D#3 / Eb3
+            164.81,  # E3
+            174.61,  # F3
+            185.00,  # F#3 / Gb3
+            196.00,  # G3
+            207.65,  # G#3 / Ab3
+            220.00,  # A3
+            233.08,  # A#3 / Bb3
+            246.94,  # B3
+            261.63,  # C4
+            277.18,  # C#4 / Db4
+            293.66,  # D4
+            311.13,  # D#4 / Eb4
+            329.63,  # E4
+            349.23,  # F4
+            369.99,  # F#4 / Gb4
+            392.00,  # G4
+            415.30,  # G#4 / Ab4
+            440.00,  # A4
+            466.16,  # A#4 / Bb4
+            493.88,  # B4
+            523.25,  # C5
+            554.37,  # C#5 / Db5
+            587.33,  # D5
+            622.25,  # D#5 / Eb5
+            659.25,  # E5
+            698.46,  # F5
+            739.99,  # F#5 / Gb5
+            783.99,  # G5
+            830.61,  # G#5 / Ab5
+            880.00,  # A5
+            932.33,  # A#5 / Bb5
+            987.77,  # B5
+            1046.50,  # C6
         ]
         self.autotune = Autotune(self.ref_freqs)
         self.note_dict = self.autotune.note_dict
+        self.model_rmvpe = RMVPE0Predictor(
+            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
+            is_half=self.is_half,
+            device=self.device,
+        )
 
     def get_f0_crepe(
         self,
@@ -253,7 +286,7 @@ class Pipeline:
         if methods_str:
             methods = [method.strip() for method in methods_str.group(1).split("+")]
         f0_computation_stack = []
-        print(f"Calculating f0 pitch estimations for methods {str(methods)}")
+        print(f"Calculating f0 pitch estimations for methods: {', '.join(methods)}")
         x = x.astype(np.float32)
         x /= np.quantile(np.abs(x), 0.999)
         for method in methods:
@@ -263,11 +296,6 @@ class Pipeline:
                     x, f0_min, f0_max, p_len, int(hop_length)
                 )
             elif method == "rmvpe":
-                self.model_rmvpe = RMVPE0Predictor(
-                    os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-                    is_half=self.is_half,
-                    device=self.device,
-                )
                 f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
                 f0 = f0[1:]
             elif method == "fcpe":
@@ -303,6 +331,7 @@ class Pipeline:
         filter_radius,
         hop_length,
         f0_autotune,
+        f0_autotune_strength,
         inp_f0=None,
     ):
         """
@@ -327,11 +356,6 @@ class Pipeline:
                 x, self.f0_min, self.f0_max, p_len, int(hop_length), "tiny"
             )
         elif f0_method == "rmvpe":
-            self.model_rmvpe = RMVPE0Predictor(
-                os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-                is_half=self.is_half,
-                device=self.device,
-            )
             f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
         elif f0_method == "fcpe":
             self.model_fcpe = FCPEF0Predictor(
@@ -358,7 +382,7 @@ class Pipeline:
             )
 
         if f0_autotune is True:
-            f0 = Autotune.autotune_f0(self, f0)
+            f0 = Autotune.autotune_f0(self, f0, f0_autotune_strength)
 
         f0 *= pow(2, pitch / 12)
         tf0 = self.sample_rate // self.window
@@ -380,7 +404,7 @@ class Pipeline:
         ) + 1
         f0_mel[f0_mel <= 1] = 1
         f0_mel[f0_mel > 255] = 255
-        f0_coarse = np.rint(f0_mel).astype(np.int)
+        f0_coarse = np.rint(f0_mel).astype(int)
 
         return f0_coarse, f0bak
 
@@ -504,6 +528,7 @@ class Pipeline:
         protect,
         hop_length,
         f0_autotune,
+        f0_autotune_strength,
         f0_file,
     ):
         """
@@ -582,6 +607,7 @@ class Pipeline:
                 filter_radius,
                 hop_length,
                 f0_autotune,
+                f0_autotune_strength,
                 inp_f0,
             )
             pitch = pitch[:p_len]

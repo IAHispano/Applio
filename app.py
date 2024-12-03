@@ -27,14 +27,7 @@ from tabs.download.download import download_tab
 from tabs.tts.tts import tts_tab
 from tabs.voice_blender.voice_blender import voice_blender_tab
 from tabs.plugins.plugins import plugins_tab
-from tabs.settings.version import version_tab
-from tabs.settings.lang import lang_tab
-from tabs.settings.restart import restart_tab
-from tabs.settings.presence import presence_tab, load_config_presence
-from tabs.settings.flask_server import flask_server_tab
-from tabs.settings.themes import theme_tab
-from tabs.settings.precision import precision_tab
-from tabs.settings.model_author import model_author_tab
+from tabs.settings.settings import settings_tab
 
 # Run prerequisites
 from core import run_prerequisites_script
@@ -54,6 +47,8 @@ from assets.i18n.i18n import I18nAuto
 i18n = I18nAuto()
 
 # Start Discord presence if enabled
+from tabs.settings.sections.presence import load_config_presence
+
 if load_config_presence():
     from assets.discord_presence import RPCManager
 
@@ -74,7 +69,7 @@ if load_config_flask():
 # Load theme
 import assets.themes.loadThemes as loadThemes
 
-my_applio = loadThemes.load_json() or "ParityError/Interstellar"
+my_applio = loadThemes.load_theme() or "ParityError/Interstellar"
 
 # Define Gradio interface
 with gr.Blocks(
@@ -83,18 +78,18 @@ with gr.Blocks(
     gr.Markdown("# Applio")
     gr.Markdown(
         i18n(
-            "VITS-based Voice Conversion focused on simplicity, quality and performance."
+            "A simple, high-quality voice conversion tool focused on ease of use and performance."
         )
     )
     gr.Markdown(
         i18n(
-            "[Support](https://discord.gg/IAHispano) — [Discord Bot](https://discord.com/oauth2/authorize?client_id=1144714449563955302&permissions=1376674695271&scope=bot%20applications.commands) — [Find Voices](https://applio.org/models) — [GitHub](https://github.com/IAHispano/Applio)"
+            "[Support](https://discord.gg/urxFjYmYYh) — [Discord Bot](https://discord.com/oauth2/authorize?client_id=1144714449563955302&permissions=1376674695271&scope=bot%20applications.commands) — [Find Voices](https://applio.org/models) — [GitHub](https://github.com/IAHispano/Applio)"
         )
     )
     with gr.Tab(i18n("Inference")):
         inference_tab()
 
-    with gr.Tab(i18n("Train")):
+    with gr.Tab(i18n("Training")):
         train_tab()
 
     with gr.Tab(i18n("TTS")):
@@ -116,14 +111,7 @@ with gr.Blocks(
         extra_tab()
 
     with gr.Tab(i18n("Settings")):
-        presence_tab()
-        flask_server_tab()
-        precision_tab()
-        theme_tab()
-        version_tab()
-        lang_tab()
-        restart_tab()
-        model_author_tab()
+        settings_tab()
 
 
 def launch_gradio(port):

@@ -26,12 +26,14 @@ python = sys.executable
 # Get TTS Voices -> https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4
 @lru_cache(maxsize=1)  # Cache only one result since the file is static
 def load_voices_data():
-    with open(os.path.join("rvc", "lib", "tools", "tts_voices.json")) as f:
-        return json.load(f)
+    with open(
+        os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r", encoding="utf-8"
+    ) as file:
+        return json.load(file)
 
 
 voices_data = load_voices_data()
-locales = list({voice["Locale"] for voice in voices_data})
+locales = list({voice["ShortName"] for voice in voices_data})
 
 
 @lru_cache(maxsize=None)
@@ -63,10 +65,10 @@ def run_infer_script(
     index_path: str,
     split_audio: bool,
     f0_autotune: bool,
+    f0_autotune_strength: float,
     clean_audio: bool,
     clean_strength: float,
     export_format: str,
-    upscale_audio: bool,
     f0_file: str,
     embedder_model: str,
     embedder_model_custom: str = None,
@@ -105,13 +107,12 @@ def run_infer_script(
     compressor_threshold: float = 0,
     compressor_ratio: float = 1,
     compressor_attack: float = 1.0,
-    compressor_release: float =  100,
+    compressor_release: float = 100,
     delay_seconds: float = 0.5,
     delay_feedback: float = 0.0,
     delay_mix: float = 0.5,
     sid: int = 0,
 ):
-    infer_pipeline = import_voice_converter()
     kwargs = {
         "audio_input_path": input_path,
         "audio_output_path": output_path,
@@ -128,27 +129,14 @@ def run_infer_script(
         "index_path": index_path,
         "split_audio": split_audio,
         "f0_autotune": f0_autotune,
+        "f0_autotune_strength": f0_autotune_strength,
         "clean_audio": clean_audio,
         "clean_strength": clean_strength,
         "export_format": export_format,
-        "upscale_audio": upscale_audio,
         "f0_file": f0_file,
         "embedder_model": embedder_model,
         "embedder_model_custom": embedder_model_custom,
         "post_process": post_process,
-        "formant_shifting": formant_shifting,
-        "formant_qfrency": formant_qfrency,
-        "formant_timbre": formant_timbre,
-        "reverb": reverb,
-        "pitch_shift": pitch_shift,
-        "limiter": limiter,
-        "gain": gain,
-        "distortion": distortion,
-        "chorus": chorus,
-        "bitcrush": bitcrush,
-        "clipping": clipping,
-        "compressor": compressor,
-        "delay": delay,
         "formant_shifting": formant_shifting,
         "formant_qfrency": formant_qfrency,
         "formant_timbre": formant_timbre,
@@ -189,6 +177,7 @@ def run_infer_script(
         "delay_mix": delay_mix,
         "sid": sid,
     }
+    infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(
         **kwargs,
     )
@@ -212,10 +201,10 @@ def run_batch_infer_script(
     index_path: str,
     split_audio: bool,
     f0_autotune: bool,
+    f0_autotune_strength: float,
     clean_audio: bool,
     clean_strength: float,
     export_format: str,
-    upscale_audio: bool,
     f0_file: str,
     embedder_model: str,
     embedder_model_custom: str = None,
@@ -254,7 +243,7 @@ def run_batch_infer_script(
     compressor_threshold: float = 0,
     compressor_ratio: float = 1,
     compressor_attack: float = 1.0,
-    compressor_release: float =  100,
+    compressor_release: float = 100,
     delay_seconds: float = 0.5,
     delay_feedback: float = 0.0,
     delay_mix: float = 0.5,
@@ -272,16 +261,14 @@ def run_batch_infer_script(
         "protect": protect,
         "hop_length": hop_length,
         "f0_method": f0_method,
-        "input_folder": input_folder,
-        "output_folder": output_folder,
         "pth_path": pth_path,
         "index_path": index_path,
         "split_audio": split_audio,
         "f0_autotune": f0_autotune,
+        "f0_autotune_strength": f0_autotune_strength,
         "clean_audio": clean_audio,
         "clean_strength": clean_strength,
         "export_format": export_format,
-        "upscale_audio": upscale_audio,
         "f0_file": f0_file,
         "embedder_model": embedder_model,
         "embedder_model_custom": embedder_model_custom,
@@ -336,6 +323,7 @@ def run_batch_infer_script(
 
 # TTS
 def run_tts_script(
+    tts_file: str,
     tts_text: str,
     tts_voice: str,
     tts_rate: int,
@@ -352,10 +340,10 @@ def run_tts_script(
     index_path: str,
     split_audio: bool,
     f0_autotune: bool,
+    f0_autotune_strength: float,
     clean_audio: bool,
     clean_strength: float,
     export_format: str,
-    upscale_audio: bool,
     f0_file: str,
     embedder_model: str,
     embedder_model_custom: str = None,
@@ -373,6 +361,7 @@ def run_tts_script(
             [
                 python,
                 tts_script_path,
+                tts_file,
                 tts_text,
                 tts_voice,
                 tts_rate,
@@ -396,10 +385,10 @@ def run_tts_script(
         index_path=index_path,
         split_audio=split_audio,
         f0_autotune=f0_autotune,
+        f0_autotune_strength=f0_autotune_strength,
         clean_audio=clean_audio,
         clean_strength=clean_strength,
         export_format=export_format,
-        upscale_audio=upscale_audio,
         f0_file=f0_file,
         embedder_model=embedder_model,
         embedder_model_custom=embedder_model_custom,
@@ -467,7 +456,6 @@ def run_extract_script(
     model_name: str,
     rvc_version: str,
     f0_method: str,
-    pitch_guidance: bool,
     hop_length: int,
     cpu_cores: int,
     gpu: int,
@@ -491,7 +479,6 @@ def run_extract_script(
                 cpu_cores,
                 gpu,
                 rvc_version,
-                pitch_guidance,
                 sample_rate,
                 embedder_model,
                 embedder_model_custom,
@@ -519,7 +506,7 @@ def run_train_script(
     overtraining_detector: bool,
     overtraining_threshold: int,
     pretrained: bool,
-    sync_graph: bool,
+    cleanup: bool,
     index_algorithm: str = "Auto",
     cache_data_in_gpu: bool = False,
     custom_pretrained: bool = False,
@@ -565,7 +552,7 @@ def run_train_script(
                 cache_data_in_gpu,
                 overtraining_detector,
                 overtraining_threshold,
-                sync_graph,
+                cleanup,
             ],
         ),
     ]
@@ -660,19 +647,6 @@ def run_audio_analyzer_script(
         f"Audio file {input_path} analyzed successfully. Plot saved at: {plot_path}",
     )
     return audio_info, plot_path
-
-
-def run_model_author_script(model_author: str):
-    with open(os.path.join(now_dir, "assets", "config.json"), "r") as f:
-        config = json.load(f)
-
-    config["model_author"] = model_author
-
-    with open(os.path.join(now_dir, "assets", "config.json"), "w") as f:
-        json.dump(config, f, indent=4)
-
-    print(f"Model author set to {model_author}.")
-    return f"Model author set to {model_author}."
 
 
 # Parse arguments
@@ -789,6 +763,14 @@ def parse_arguments():
         help=f0_autotune_description,
         default=False,
     )
+    f0_autotune_strength_description = "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
+    infer_parser.add_argument(
+        "--f0_autotune_strength",
+        type=float,
+        help=f0_autotune_strength_description,
+        choices=[(i / 10) for i in range(11)],
+        default=1.0,
+    )
     clean_audio_description = "Clean the output audio using noise reduction algorithms. Recommended for speech conversions."
     infer_parser.add_argument(
         "--clean_audio",
@@ -835,14 +817,6 @@ def parse_arguments():
         type=str,
         help=embedder_model_custom_description,
         default=None,
-    )
-    upscale_audio_description = "Upscale the input audio to a higher quality before processing. This can improve the overall quality of the output, especially for low-quality input audio."
-    infer_parser.add_argument(
-        "--upscale_audio",
-        type=lambda x: bool(strtobool(x)),
-        choices=[True, False],
-        help=upscale_audio_description,
-        default=False,
     )
     f0_file_description = "Full path to an external F0 file (.f0). This allows you to use pre-computed pitch values for the input audio."
     infer_parser.add_argument(
@@ -891,6 +865,7 @@ def parse_arguments():
         choices=[True, False],
         help=post_process_description,
         default=False,
+        required=False,
     )
     reverb_description = "Apply reverb effect to the output audio."
     infer_parser.add_argument(
@@ -899,6 +874,7 @@ def parse_arguments():
         choices=[True, False],
         help=reverb_description,
         default=False,
+        required=False,
     )
 
     pitch_shift_description = "Apply pitch shifting effect to the output audio."
@@ -908,6 +884,7 @@ def parse_arguments():
         choices=[True, False],
         help=pitch_shift_description,
         default=False,
+        required=False,
     )
 
     limiter_description = "Apply limiter effect to the output audio."
@@ -917,6 +894,7 @@ def parse_arguments():
         choices=[True, False],
         help=limiter_description,
         default=False,
+        required=False,
     )
 
     gain_description = "Apply gain effect to the output audio."
@@ -926,6 +904,7 @@ def parse_arguments():
         choices=[True, False],
         help=gain_description,
         default=False,
+        required=False,
     )
 
     distortion_description = "Apply distortion effect to the output audio."
@@ -935,6 +914,7 @@ def parse_arguments():
         choices=[True, False],
         help=distortion_description,
         default=False,
+        required=False,
     )
 
     chorus_description = "Apply chorus effect to the output audio."
@@ -944,6 +924,7 @@ def parse_arguments():
         choices=[True, False],
         help=chorus_description,
         default=False,
+        required=False,
     )
 
     bitcrush_description = "Apply bitcrush effect to the output audio."
@@ -953,6 +934,7 @@ def parse_arguments():
         choices=[True, False],
         help=bitcrush_description,
         default=False,
+        required=False,
     )
 
     clipping_description = "Apply clipping effect to the output audio."
@@ -962,6 +944,7 @@ def parse_arguments():
         choices=[True, False],
         help=clipping_description,
         default=False,
+        required=False,
     )
 
     compressor_description = "Apply compressor effect to the output audio."
@@ -971,6 +954,7 @@ def parse_arguments():
         choices=[True, False],
         help=compressor_description,
         default=False,
+        required=False,
     )
 
     delay_description = "Apply delay effect to the output audio."
@@ -980,6 +964,7 @@ def parse_arguments():
         choices=[True, False],
         help=delay_description,
         default=False,
+        required=False,
     )
 
     reverb_room_size_description = "Control the room size of the reverb effect. Higher values result in a larger room size."
@@ -1301,6 +1286,13 @@ def parse_arguments():
         default=False,
     )
     batch_infer_parser.add_argument(
+        "--f0_autotune_strength",
+        type=float,
+        help=clean_strength_description,
+        choices=[(i / 10) for i in range(11)],
+        default=1.0,
+    )
+    batch_infer_parser.add_argument(
         "--clean_audio",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
@@ -1339,13 +1331,6 @@ def parse_arguments():
         type=str,
         help=embedder_model_custom_description,
         default=None,
-    )
-    batch_infer_parser.add_argument(
-        "--upscale_audio",
-        type=lambda x: bool(strtobool(x)),
-        choices=[True, False],
-        help=upscale_audio_description,
-        default=False,
     )
     batch_infer_parser.add_argument(
         "--f0_file",
@@ -1388,6 +1373,7 @@ def parse_arguments():
         choices=[True, False],
         help=post_process_description,
         default=False,
+        required=False,
     )
     batch_infer_parser.add_argument(
         "--reverb",
@@ -1395,6 +1381,7 @@ def parse_arguments():
         choices=[True, False],
         help=reverb_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1403,6 +1390,7 @@ def parse_arguments():
         choices=[True, False],
         help=pitch_shift_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1411,6 +1399,7 @@ def parse_arguments():
         choices=[True, False],
         help=limiter_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1419,6 +1408,7 @@ def parse_arguments():
         choices=[True, False],
         help=gain_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1427,6 +1417,7 @@ def parse_arguments():
         choices=[True, False],
         help=distortion_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1435,6 +1426,7 @@ def parse_arguments():
         choices=[True, False],
         help=chorus_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1443,6 +1435,7 @@ def parse_arguments():
         choices=[True, False],
         help=bitcrush_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1451,6 +1444,7 @@ def parse_arguments():
         choices=[True, False],
         help=clipping_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1459,6 +1453,7 @@ def parse_arguments():
         choices=[True, False],
         help=compressor_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1467,6 +1462,7 @@ def parse_arguments():
         choices=[True, False],
         help=delay_description,
         default=False,
+        required=False,
     )
 
     batch_infer_parser.add_argument(
@@ -1667,6 +1663,9 @@ def parse_arguments():
     # Parser for 'tts' mode
     tts_parser = subparsers.add_parser("tts", help="Run TTS inference")
     tts_parser.add_argument(
+        "--tts_file", type=str, help="File with a text to be synthesized", required=True
+    )
+    tts_parser.add_argument(
         "--tts_text", type=str, help="Text to be synthesized", required=True
     )
     tts_parser.add_argument(
@@ -1774,6 +1773,13 @@ def parse_arguments():
         default=False,
     )
     tts_parser.add_argument(
+        "--f0_autotune_strength",
+        type=float,
+        help=clean_strength_description,
+        choices=[(i / 10) for i in range(11)],
+        default=1.0,
+    )
+    tts_parser.add_argument(
         "--clean_audio",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
@@ -1812,13 +1818,6 @@ def parse_arguments():
         type=str,
         help=embedder_model_custom_description,
         default=None,
-    )
-    tts_parser.add_argument(
-        "--upscale_audio",
-        type=lambda x: bool(strtobool(x)),
-        choices=[True, False],
-        help=upscale_audio_description,
-        default=False,
     )
     tts_parser.add_argument(
         "--f0_file",
@@ -1907,13 +1906,6 @@ def parse_arguments():
             "rmvpe",
         ],
         default="rmvpe",
-    )
-    extract_parser.add_argument(
-        "--pitch_guidance",
-        type=lambda x: bool(strtobool(x)),
-        choices=[True, False],
-        help="Enable or disable pitch guidance during feature extraction.",
-        default=True,
     )
     extract_parser.add_argument(
         "--hop_length",
@@ -2072,10 +2064,10 @@ def parse_arguments():
         default=50,
     )
     train_parser.add_argument(
-        "--sync_graph",
+        "--cleanup",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
-        help="Enable graph synchronization for distributed training.",
+        help="Cleanup previous training attempt.",
         default=False,
     )
     train_parser.add_argument(
@@ -2291,16 +2283,16 @@ def main():
                 index_path=args.index_path,
                 split_audio=args.split_audio,
                 f0_autotune=args.f0_autotune,
+                f0_autotune_strength=args.f0_autotune_strength,
                 clean_audio=args.clean_audio,
                 clean_strength=args.clean_strength,
                 export_format=args.export_format,
                 embedder_model=args.embedder_model,
-                upscale_audio=args.upscale_audio,
+                embedder_model_custom=args.embedder_model_custom,
                 f0_file=args.f0_file,
                 formant_shifting=args.formant_shifting,
                 formant_qfrency=args.formant_qfrency,
                 formant_timbre=args.formant_timbre,
-                embedder_model_custom=args.embedder_model_custom,
                 sid=args.sid,
                 post_process=args.post_process,
                 reverb=args.reverb,
@@ -2354,12 +2346,12 @@ def main():
                 index_path=args.index_path,
                 split_audio=args.split_audio,
                 f0_autotune=args.f0_autotune,
+                f0_autotune_strength=args.f0_autotune_strength,
                 clean_audio=args.clean_audio,
                 clean_strength=args.clean_strength,
                 export_format=args.export_format,
                 embedder_model=args.embedder_model,
                 embedder_model_custom=args.embedder_model_custom,
-                upscale_audio=args.upscale_audio,
                 f0_file=args.f0_file,
                 formant_shifting=args.formant_shifting,
                 formant_qfrency=args.formant_qfrency,
@@ -2404,6 +2396,7 @@ def main():
             )
         elif args.mode == "tts":
             run_tts_script(
+                tts_file=args.tts_file,
                 tts_text=args.tts_text,
                 tts_voice=args.tts_voice,
                 tts_rate=args.tts_rate,
@@ -2414,18 +2407,18 @@ def main():
                 protect=args.protect,
                 hop_length=args.hop_length,
                 f0_method=args.f0_method,
-                input_path=args.input_path,
-                output_path=args.output_path,
+                output_tts_path=args.output_tts_path,
+                output_rvc_path=args.output_rvc_path,
                 pth_path=args.pth_path,
                 index_path=args.index_path,
                 split_audio=args.split_audio,
                 f0_autotune=args.f0_autotune,
+                f0_autotune_strength=args.f0_autotune_strength,
                 clean_audio=args.clean_audio,
                 clean_strength=args.clean_strength,
                 export_format=args.export_format,
                 embedder_model=args.embedder_model,
                 embedder_model_custom=args.embedder_model_custom,
-                upscale_audio=args.upscale_audio,
                 f0_file=args.f0_file,
             )
         elif args.mode == "preprocess":
@@ -2444,7 +2437,6 @@ def main():
                 model_name=args.model_name,
                 rvc_version=args.rvc_version,
                 f0_method=args.f0_method,
-                pitch_guidance=args.pitch_guidance,
                 hop_length=args.hop_length,
                 cpu_cores=args.cpu_cores,
                 gpu=args.gpu,
@@ -2468,7 +2460,7 @@ def main():
                 overtraining_threshold=args.overtraining_threshold,
                 pretrained=args.pretrained,
                 custom_pretrained=args.custom_pretrained,
-                sync_graph=args.sync_graph,
+                cleanup=args.cleanup,
                 index_algorithm=args.index_algorithm,
                 cache_data_in_gpu=args.cache_data_in_gpu,
                 g_pretrained_path=args.g_pretrained_path,

@@ -11,7 +11,7 @@ i18n = I18nAuto()
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from tabs.settings.restart import restart_applio
+from tabs.settings.sections.restart import restart_applio
 
 plugins_path = os.path.join(now_dir, "tabs", "plugins", "installed")
 if not os.path.exists(plugins_path):

@@ -22,20 +22,25 @@ from tabs.inference.inference import (
 
 i18n = I18nAuto()
 
-json_path = os.path.join("rvc", "lib", "tools", "tts_voices.json")
 default_weight = random.choice(names) if names else ""
 
-with open(json_path, "r") as file:
+with open(
+    os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r", encoding="utf-8"
+) as file:
     tts_voices_data = json.load(file)
 
 short_names = [voice.get("ShortName", "") for voice in tts_voices_data]
 
 
 def process_input(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
-        file_contents = file.read()
-    gr.Info(f"The text from the txt file has been loaded!")
-    return file_contents, None
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            file.read()
+        gr.Info(f"The file has been loaded!")
+        return file_path, file_path
+    except UnicodeDecodeError:
+        gr.Info(f"The file has to be in UTF-8 encoding.")
+        return None, None
 
 
 # TTS tab
@@ -96,7 +101,7 @@ def tts_tab():
         maximum=100,
         step=1,
         label=i18n("TTS Speed"),
-        info=i18n("Increase or decrease TTS speed"),
+        info=i18n("Increase or decrease TTS speed."),
         value=0,
         interactive=True,
     )
@@ -113,6 +118,14 @@ def tts_tab():
             txt_file = gr.File(
                 label=i18n("Upload a .txt file"),
                 type="filepath",
+            )
+            input_tts_path = gr.Textbox(
+                label=i18n("Input path for text file"),
+                placeholder=i18n(
+                    "The path to the text file that contains content for text to speech."
+                ),
+                value="",
+                interactive=True,
             )
 
     with gr.Accordion(i18n("Advanced Settings"), open=False):
@@ -161,6 +174,17 @@ def tts_tab():
                 value=False,
                 interactive=True,
             )
+            autotune_strength = gr.Slider(
+                minimum=0,
+                maximum=1,
+                label=i18n("Autotune Strength"),
+                info=i18n(
+                    "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
+                ),
+                visible=False,
+                value=1,
+                interactive=True,
+            )
             clean_audio = gr.Checkbox(
                 label=i18n("Clean Audio"),
                 info=i18n(
@@ -179,15 +203,6 @@ def tts_tab():
                 ),
                 visible=True,
                 value=0.5,
-                interactive=True,
-            )
-            upscale_audio = gr.Checkbox(
-                label=i18n("Upscale Audio"),
-                info=i18n(
-                    "Upscale the audio to a higher quality, recommended for low-quality audios. (It could take longer to process the audio)"
-                ),
-                visible=True,
-                value=False,
                 interactive=True,
             )
             pitch = gr.Slider(
@@ -332,6 +347,11 @@ def tts_tab():
             return {"visible": True, "__type__": "update"}
         return {"visible": False, "__type__": "update"}
 
+    autotune.change(
+        fn=toggle_visible,
+        inputs=[autotune],
+        outputs=[autotune_strength],
+    )
     clean_audio.change(
         fn=toggle_visible,
         inputs=[clean_audio],
@@ -345,7 +365,7 @@ def tts_tab():
     txt_file.upload(
         fn=process_input,
         inputs=[txt_file],
-        outputs=[tts_text, txt_file],
+        outputs=[input_tts_path, txt_file],
     )
     embedder_model.change(
         fn=toggle_visible_embedder_custom,
@@ -365,6 +385,7 @@ def tts_tab():
     convert_button.click(
         fn=run_tts_script,
         inputs=[
+            input_tts_path,
             tts_text,
             tts_voice,
             tts_rate,
@@ -381,10 +402,10 @@ def tts_tab():
             index_file,
             split_audio,
             autotune,
+            autotune_strength,
             clean_audio,
             clean_strength,
             export_format,
-            upscale_audio,
             f0_file,
             embedder_model,
             embedder_model_custom,

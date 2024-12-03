@@ -22,9 +22,6 @@ from pedalboard import (
     Delay,
 )
 
-from scipy.io import wavfile
-from audio_upscaler import upscale
-
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
@@ -61,6 +58,7 @@ class VoiceConverter:
         self.version = None  # Model version
         self.n_spk = None  # Number of speakers in the model
         self.use_f0 = None  # Whether the model uses F0
+        self.loaded_model = None
 
     def load_hubert(self, embedder_model: str, embedder_model_custom: str = None):
         """
@@ -110,7 +108,7 @@ class VoiceConverter:
         """
         try:
             if output_format != "WAV":
-                print(f"Converting audio to {output_format} format...")
+                print(f"Saving audio as {output_format}...")
                 audio, sample_rate = librosa.load(input_path, sr=None)
                 common_sample_rates = [
                     8000,
@@ -211,6 +209,7 @@ class VoiceConverter:
         hop_length: int = 128,
         split_audio: bool = False,
         f0_autotune: bool = False,
+        f0_autotune_strength: float = 1,
         filter_radius: int = 3,
         embedder_model: str = "contentvec",
         embedder_model_custom: str = None,
@@ -256,8 +255,6 @@ class VoiceConverter:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
 
-            if upscale_audio == True:
-                upscale(audio_input_path, audio_input_path)
             audio = load_audio_infer(
                 audio_input_path,
                 16000,
@@ -309,6 +306,7 @@ class VoiceConverter:
                     protect=protect,
                     hop_length=hop_length,
                     f0_autotune=f0_autotune,
+                    f0_autotune_strength=f0_autotune_strength,
                     f0_file=f0_file,
                 )
                 converted_chunks.append(audio_opt)
@@ -407,9 +405,9 @@ class VoiceConverter:
                     audio_output_path=new_output,
                     **kwargs,
                 )
-                print(f"Conversion completed at '{audio_input_paths}'.")
-                elapsed_time = time.time() - start_time
-                print(f"Batch conversion completed in {elapsed_time:.2f} seconds.")
+            print(f"Conversion completed at '{audio_input_paths}'.")
+            elapsed_time = time.time() - start_time
+            print(f"Batch conversion completed in {elapsed_time:.2f} seconds.")
         except Exception as error:
             print(f"An error occurred during audio batch conversion: {error}")
             print(traceback.format_exc())
@@ -429,11 +427,12 @@ class VoiceConverter:
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-        self.load_model(weight_root)
-
-        if self.cpt is not None:
-            self.setup_network()
-            self.setup_vc_instance()
+        if not self.loaded_model or self.loaded_model != weight_root:
+            self.load_model(weight_root)
+            if self.cpt is not None:
+                self.setup_network()
+                self.setup_vc_instance()
+            self.loaded_model = weight_root
 
     def cleanup_model(self):
         """
