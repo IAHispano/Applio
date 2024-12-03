@@ -24,13 +24,13 @@ class Encoder(torch.nn.Module):
 
     def __init__(
         self,
-        hidden_channels,
-        filter_channels,
-        n_heads,
-        n_layers,
-        kernel_size=1,
-        p_dropout=0.0,
-        window_size=10,
+        hidden_channels: int,
+        filter_channels: int,
+        n_heads: int,
+        n_layers: int,
+        kernel_size: int = 1,
+        p_dropout: float = 0.0,
+        window_size: int = 10,
     ):
         super().__init__()
         self.hidden_channels = hidden_channels
@@ -101,15 +101,15 @@ class TextEncoder(torch.nn.Module):
 
     def __init__(
         self,
-        out_channels,
-        hidden_channels,
-        filter_channels,
-        n_heads,
-        n_layers,
-        kernel_size,
-        p_dropout,
-        embedding_dim,
-        f0=True,
+        out_channels: int,
+        hidden_channels: int,
+        filter_channels: int,
+        n_heads: int,
+        n_layers: int,
+        kernel_size: int,
+        p_dropout: float,
+        embedding_dim: int,
+        f0: bool = True,
     ):
         super(TextEncoder, self).__init__()
         self.out_channels = out_channels
@@ -166,13 +166,13 @@ class PosteriorEncoder(torch.nn.Module):
 
     def __init__(
         self,
-        in_channels,
-        out_channels,
-        hidden_channels,
-        kernel_size,
-        dilation_rate,
-        n_layers,
-        gin_channels=0,
+        in_channels: int,
+        out_channels: int,
+        hidden_channels: int,
+        kernel_size: int,
+        dilation_rate: int,
+        n_layers: int,
+        gin_channels: int = 0,
     ):
         super(PosteriorEncoder, self).__init__()
         self.in_channels = in_channels

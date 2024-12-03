@@ -24,12 +24,12 @@ class SourceModuleHnNSF(torch.nn.Module):
 
     def __init__(
         self,
-        sample_rate,
-        harmonic_num=0,
-        sine_amp=0.1,
-        add_noise_std=0.003,
-        voiced_threshod=0,
-        is_half=True,
+        sample_rate: int,
+        harmonic_num: int = 0,
+        sine_amp: float = 0.1,
+        add_noise_std: float = 0.003,
+        voiced_threshod: float = 0,
+        is_half: bool = True,
     ):
         super(SourceModuleHnNSF, self).__init__()
 
@@ -69,16 +69,15 @@ class GeneratorNSF(torch.nn.Module):
 
     def __init__(
         self,
-        initial_channel,
-        resblock,
-        resblock_kernel_sizes,
-        resblock_dilation_sizes,
-        upsample_rates,
-        upsample_initial_channel,
-        upsample_kernel_sizes,
-        gin_channels,
-        sr,
-        is_half=False,
+        initial_channel : int,
+        resblock_kernel_sizes: list,
+        resblock_dilation_sizes: list,
+        upsample_rates: list,
+        upsample_initial_channel: int,
+        upsample_kernel_sizes: list,
+        gin_channels: int,
+        sr: int,
+        is_half: bool = False,
     ):
         super(GeneratorNSF, self).__init__()
 
@@ -157,13 +156,13 @@ class GeneratorNSF(torch.nn.Module):
         for i, (ups, noise_convs) in enumerate(zip(self.ups, self.noise_convs)):
             x = torch.nn.functional.leaky_relu(x, self.lrelu_slope)
             x = ups(x)
-            x += noise_convs(har_source) 
+            x += noise_convs(har_source)
 
             xs = sum(
                 self.resblocks[j](x)
                 for j in range(i * self.num_kernels, (i + 1) * self.num_kernels)
             )
-            x = xs / self.num_kernels 
+            x = xs / self.num_kernels
 
         x = torch.nn.functional.leaky_relu(x)
         x = torch.tanh(self.conv_post(x))
