@@ -69,7 +69,7 @@ class GeneratorNSF(torch.nn.Module):
 
     def __init__(
         self,
-        initial_channel : int,
+        initial_channel: int,
         resblock_kernel_sizes: list,
         resblock_dilation_sizes: list,
         upsample_rates: list,
