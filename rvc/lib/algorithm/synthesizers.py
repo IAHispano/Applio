@@ -1,6 +1,5 @@
 import torch
 from typing import Optional
-
 from rvc.lib.algorithm.hifigan import HiFiGAN
 from rvc.lib.algorithm.nsf import GeneratorNSF
 from rvc.lib.algorithm.generators import Generator

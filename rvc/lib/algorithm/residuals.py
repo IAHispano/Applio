@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 import torch
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
@@ -27,7 +27,7 @@ def apply_mask(tensor, mask):
 
 
 class ResBlockBase(torch.nn.Module):
-    def __init__(self, channels, kernel_size, dilations):
+    def __init__(self, channels: int, kernel_size: int, dilations: Tuple[int]):
         super(ResBlockBase, self).__init__()
         self.convs1 = torch.nn.ModuleList(
             [create_conv1d_layer(channels, kernel_size, d) for d in dilations]
@@ -54,14 +54,11 @@ class ResBlockBase(torch.nn.Module):
             remove_weight_norm(conv)
 
 
-class ResBlock1(ResBlockBase):
-    def __init__(self, channels, kernel_size=3, dilation=(1, 3, 5)):
-        super(ResBlock1, self).__init__(channels, kernel_size, dilation)
-
-
-class ResBlock2(ResBlockBase):
-    def __init__(self, channels, kernel_size=3, dilation=(1, 3)):
-        super(ResBlock2, self).__init__(channels, kernel_size, dilation)
+class ResBlock(ResBlockBase):
+    def __init__(
+        self, channels: int, kernel_size: int = 3, dilation: Tuple[int] = (1, 3, 5)
+    ):
+        super(ResBlock, self).__init__(channels, kernel_size, dilation)
 
 
 class Flip(torch.nn.Module):
@@ -100,13 +97,13 @@ class ResidualCouplingBlock(torch.nn.Module):
 
     def __init__(
         self,
-        channels,
-        hidden_channels,
-        kernel_size,
-        dilation_rate,
-        n_layers,
-        n_flows=4,
-        gin_channels=0,
+        channels: int,
+        hidden_channels: int,
+        kernel_size: int,
+        dilation_rate: int,
+        n_layers: int,
+        n_flows: int = 4,
+        gin_channels: int = 0,
     ):
         super(ResidualCouplingBlock, self).__init__()
         self.channels = channels
@@ -181,14 +178,14 @@ class ResidualCouplingLayer(torch.nn.Module):
 
     def __init__(
         self,
-        channels,
-        hidden_channels,
-        kernel_size,
-        dilation_rate,
-        n_layers,
-        p_dropout=0,
-        gin_channels=0,
-        mean_only=False,
+        channels: int,
+        hidden_channels: int,
+        kernel_size: int,
+        dilation_rate: int,
+        n_layers: int,
+        p_dropout: float = 0,
+        gin_channels: int = 0,
+        mean_only: bool = False,
     ):
         assert channels % 2 == 0, "channels should be divisible by 2"
         super().__init__()
@@ -215,7 +212,13 @@ class ResidualCouplingLayer(torch.nn.Module):
         self.post.weight.data.zero_()
         self.post.bias.data.zero_()
 
-    def forward(self, x, x_mask, g=None, reverse=False):
+    def forward(
+        self,
+        x: torch.Tensor,
+        x_mask: torch.Tensor,
+        g: Optional[torch.Tensor] = None,
+        reverse: bool = False,
+    ):
         """Forward pass.
 
         Args:

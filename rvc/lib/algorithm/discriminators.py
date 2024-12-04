@@ -20,7 +20,7 @@ class MultiPeriodDiscriminator(torch.nn.Module):
             Defaults to False.
     """
 
-    def __init__(self, version, use_spectral_norm=False):
+    def __init__(self, version: str, use_spectral_norm: bool = False):
         super(MultiPeriodDiscriminator, self).__init__()
         periods = (
             [2, 3, 5, 7, 11, 17] if version == "v1" else [2, 3, 5, 7, 11, 17, 23, 37]
@@ -59,7 +59,7 @@ class DiscriminatorS(torch.nn.Module):
     convolutional layers that are applied to the input signal.
     """
 
-    def __init__(self, use_spectral_norm=False):
+    def __init__(self, use_spectral_norm: bool = False):
         super(DiscriminatorS, self).__init__()
         norm_f = spectral_norm if use_spectral_norm else weight_norm
         self.convs = torch.nn.ModuleList(
@@ -103,14 +103,18 @@ class DiscriminatorP(torch.nn.Module):
 
     Args:
         period (int): Period of the discriminator.
-        kernel_size (int): Kernel size of the convolutional layers.
-            Defaults to 5.
+        kernel_size (int): Kernel size of the convolutional layers. Defaults to 5.
         stride (int): Stride of the convolutional layers. Defaults to 3.
-        use_spectral_norm (bool): Whether to use spectral normalization.
-            Defaults to False.
+        use_spectral_norm (bool): Whether to use spectral normalization. Defaults to False.
     """
 
-    def __init__(self, period, kernel_size=5, stride=3, use_spectral_norm=False):
+    def __init__(
+        self,
+        period: int,
+        kernel_size: int = 5,
+        stride: int = 3,
+        use_spectral_norm: bool = False,
+    ):
         super(DiscriminatorP, self).__init__()
         self.period = period
         norm_f = spectral_norm if use_spectral_norm else weight_norm

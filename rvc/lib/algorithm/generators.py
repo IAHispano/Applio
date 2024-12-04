@@ -4,7 +4,7 @@ from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
 from typing import Optional
 
-from rvc.lib.algorithm.residuals import LRELU_SLOPE, ResBlock1, ResBlock2
+from rvc.lib.algorithm.residuals import LRELU_SLOPE, ResBlock
 from rvc.lib.algorithm.commons import init_weights
 
 
@@ -24,14 +24,13 @@ class Generator(torch.nn.Module):
 
     def __init__(
         self,
-        initial_channel,
-        resblock,
-        resblock_kernel_sizes,
-        resblock_dilation_sizes,
-        upsample_rates,
-        upsample_initial_channel,
-        upsample_kernel_sizes,
-        gin_channels=0,
+        initial_channel: int,
+        resblock_kernel_sizes: list,
+        resblock_dilation_sizes: list,
+        upsample_rates: list,
+        upsample_initial_channel: int,
+        upsample_kernel_sizes: list,
+        gin_channels: int = 0,
     ):
         super(Generator, self).__init__()
         self.num_kernels = len(resblock_kernel_sizes)
@@ -39,7 +38,6 @@ class Generator(torch.nn.Module):
         self.conv_pre = torch.nn.Conv1d(
             initial_channel, upsample_initial_channel, 7, 1, padding=3
         )
-        resblock = ResBlock1 if resblock == "1" else ResBlock2
 
         self.ups = torch.nn.ModuleList()
         self.resblocks = torch.nn.ModuleList()
@@ -60,7 +58,7 @@ class Generator(torch.nn.Module):
             for j, (k, d) in enumerate(
                 zip(resblock_kernel_sizes, resblock_dilation_sizes)
             ):
-                self.resblocks.append(resblock(ch, k, d))
+                self.resblocks.append(ResBlock(ch, k, d))
 
         self.conv_post = torch.nn.Conv1d(ch, 1, 7, 1, padding=3, bias=False)
         self.ups.apply(init_weights)

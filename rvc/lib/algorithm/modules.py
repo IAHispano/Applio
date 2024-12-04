@@ -16,12 +16,12 @@ class WaveNet(torch.nn.Module):
 
     def __init__(
         self,
-        hidden_channels,
-        kernel_size,
+        hidden_channels: int,
+        kernel_size: int,
         dilation_rate,
-        n_layers,
-        gin_channels=0,
-        p_dropout=0,
+        n_layers: int,
+        gin_channels: int = 0,
+        p_dropout: int = 0,
     ):
         super().__init__()
         assert kernel_size % 2 == 1, "Kernel size must be odd for proper padding."

@@ -21,15 +21,15 @@ class MultiHeadAttention(torch.nn.Module):
 
     def __init__(
         self,
-        channels,
-        out_channels,
-        n_heads,
-        p_dropout=0.0,
-        window_size=None,
-        heads_share=True,
-        block_length=None,
-        proximal_bias=False,
-        proximal_init=False,
+        channels: int,
+        out_channels: int,
+        n_heads: int,
+        p_dropout: float = 0.0,
+        window_size: int = None,
+        heads_share: bool = True,
+        block_length: int = None,
+        proximal_bias: bool = False,
+        proximal_init: bool = False,
     ):
         super().__init__()
         assert (
@@ -201,13 +201,13 @@ class FFN(torch.nn.Module):
 
     def __init__(
         self,
-        in_channels,
-        out_channels,
-        filter_channels,
-        kernel_size,
-        p_dropout=0.0,
-        activation=None,
-        causal=False,
+        in_channels: int,
+        out_channels: int,
+        filter_channels: int,
+        kernel_size: int,
+        p_dropout: float = 0.0,
+        activation: str = None,
+        causal: bool = False,
     ):
         super().__init__()
         self.padding_fn = self._causal_padding if causal else self._same_padding
