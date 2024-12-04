@@ -322,7 +322,7 @@ def refresh_embedders_folders():
 
 def get_speakers_id(model):
     if model:
-        model_data = torch.load(os.path.join(now_dir,model), map_location="cpu")
+        model_data = torch.load(os.path.join(now_dir, model), map_location="cpu")
         speakers_id = model_data.get("speakers_id")
         if speakers_id:
             return list(range(speakers_id))
@@ -330,6 +330,7 @@ def get_speakers_id(model):
             return [0]
     else:
         return [0]
+
 
 # Inference tab
 def inference_tab():
