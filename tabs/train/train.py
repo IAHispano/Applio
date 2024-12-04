@@ -320,7 +320,7 @@ def train_tab():
         )
         vocoder = gr.Radio(
             label=i18n("Vocoder"),
-            info=i18n("Vocoder type"),
+            info=i18n("Choose the vocoder type. 'Default' is a standard vocoder compatible with all other RVC clients, the experimental 'MRF HiFi-GAN' vocoder provides higher fidelity but is only compatible with Applio."),
             choices=["default", "MRF HiFi-GAN"],
             value="default",
             interactive=True,
