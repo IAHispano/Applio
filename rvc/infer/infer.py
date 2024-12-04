@@ -216,7 +216,6 @@ class VoiceConverter:
         clean_audio: bool = False,
         clean_strength: float = 0.5,
         export_format: str = "WAV",
-        upscale_audio: bool = False,
         post_process: bool = False,
         resample_sr: int = 0,
         sid: int = 0,
@@ -242,7 +241,6 @@ class VoiceConverter:
             clean_audio (bool): Whether to clean the audio.
             clean_strength (float): Strength of the audio cleaning.
             export_format (str): Format for exporting the audio.
-            upscale_audio (bool): Whether to upscale the audio.
             f0_file (str): Path to the F0 file.
             embedder_model (str): Path to the embedder model.
             embedder_model_custom (str): Path to the custom embedder model.
@@ -473,11 +471,13 @@ class VoiceConverter:
 
             self.version = self.cpt.get("version", "v1")
             self.text_enc_hidden_dim = 768 if self.version == "v2" else 256
+            self.vocoder = self.cpt.get("vocoder", "default")
             self.net_g = Synthesizer(
                 *self.cpt["config"],
                 use_f0=self.use_f0,
                 text_enc_hidden_dim=self.text_enc_hidden_dim,
                 is_half=self.config.is_half,
+                vocoder=self.vocoder
             )
             del self.net_g.enc_q
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)

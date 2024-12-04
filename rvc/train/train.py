@@ -39,8 +39,10 @@ from utils import (
 
 from losses import (
     discriminator_loss,
+    discriminator_loss_scaled,
     feature_loss,
     generator_loss,
+    generator_loss_scaled,
     kl_loss,
 )
 from mel_processing import (
@@ -70,6 +72,7 @@ cache_data_in_gpu = strtobool(sys.argv[13])
 overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
 cleanup = strtobool(sys.argv[16])
+vocoder = sys.argv[17]
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -80,6 +83,10 @@ with open(config_save_path, "r") as f:
     config = json.load(f)
 config = HParams(**config)
 config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
+
+# for nVidia's CUDA device selection can be done from command line / UI
+# for AMD the device selection can only be done from .bat file using HIP_VISIBLE_DEVICES
+os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
 
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
@@ -164,6 +171,7 @@ def main():
     if torch.cuda.is_available():
         device = torch.device("cuda")
         n_gpus = torch.cuda.device_count()
+        print('torch returned device_count:', n_gpus)
     elif torch.backends.mps.is_available():
         device = torch.device("mps")
         n_gpus = 1
@@ -186,6 +194,7 @@ def main():
                 pass
         with open(config_save_path, "w") as pid_file:
             for i in range(n_gpus):
+                print('creating process for gpu:', i)
                 subproc = mp.Process(
                     target=run,
                     args=(
@@ -302,6 +311,7 @@ def run(
         config (object): Configuration object containing training parameters.
         device (torch.device): The device to use for training (CPU or GPU).
     """
+    print('run() with rank', rank, 'n_gpus', n_gpus)
     global global_step, smoothed_value_gen, smoothed_value_disc
 
     smoothed_value_gen = 0
@@ -365,6 +375,7 @@ def run(
         use_f0=pitch_guidance == True,  # converting 1/0 to True/False
         is_half=config.train.fp16_run and device.type == "cuda",
         sr=sample_rate,
+        vocoder=vocoder
     ).to(device)
 
     net_d = MultiPeriodDiscriminator(version, config.model.use_spectral_norm).to(device)
@@ -606,9 +617,11 @@ def train_and_evaluate(
                 )
                 y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
                 with autocast(enabled=False):
-                    loss_disc, losses_disc_r, losses_disc_g = discriminator_loss(
-                        y_d_hat_r, y_d_hat_g
-                    )
+                    #if vocoder == "default":
+                    #    loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
+                    #else:
+                    #    loss_disc, _, _ = discriminator_loss_scaled(y_d_hat_r, y_d_hat_g)
+                    loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
             # Discriminator backward and update
             optim_d.zero_grad()
             scaler.scale(loss_disc).backward()
@@ -621,11 +634,13 @@ def train_and_evaluate(
                 _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
                 with autocast(enabled=False):
                     loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
-                    loss_kl = (
-                        kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
-                    )
+                    loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
                     loss_fm = feature_loss(fmap_r, fmap_g)
-                    loss_gen, losses_gen = generator_loss(y_d_hat_g)
+                    #if vocoder == "default":
+                    #	loss_gen, _ = generator_loss(y_d_hat_g)
+                    #else:
+                    #	loss_gen, _ = generator_loss_scaled(y_d_hat_g)
+                    loss_gen, _ = generator_loss(y_d_hat_g)
                     loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
 
                     if loss_gen_all < lowest_value["value"]:
@@ -871,6 +886,7 @@ def train_and_evaluate(
                         version=version,
                         hps=hps,
                         overtrain_info=overtrain_info,
+                        vocoder=vocoder,
                     )
         # Clean-up old best epochs
         for m in model_del:

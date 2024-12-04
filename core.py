@@ -512,15 +512,14 @@ def run_train_script(
     custom_pretrained: bool = False,
     g_pretrained_path: str = None,
     d_pretrained_path: str = None,
+    vocoder: str = "default",
 ):
 
     if pretrained == True:
         from rvc.lib.tools.pretrained_selector import pretrained_selector
 
         if custom_pretrained == False:
-            pg, pd = pretrained_selector(bool(pitch_guidance))[str(rvc_version)][
-                int(sample_rate)
-            ]
+            pg, pd = pretrained_selector(str(rvc_version), str(vocoder), bool(pitch_guidance), int(sample_rate))
         else:
             if g_pretrained_path is None or d_pretrained_path is None:
                 raise ValueError(
@@ -553,6 +552,7 @@ def run_train_script(
                 overtraining_detector,
                 overtraining_threshold,
                 cleanup,
+                vocoder
             ],
         ),
     ]
@@ -1967,6 +1967,13 @@ def parse_arguments():
         default="v2",
     )
     train_parser.add_argument(
+        "--vocoder",
+        type=str,
+        help="Vocoder name",
+        choices=["default", "MRF HiFi-GAN"],
+        default="default",
+    )
+    train_parser.add_argument(
         "--save_every_epoch",
         type=int,
         help="Save the model every specified number of epochs.",
@@ -2465,6 +2472,7 @@ def main():
                 cache_data_in_gpu=args.cache_data_in_gpu,
                 g_pretrained_path=args.g_pretrained_path,
                 d_pretrained_path=args.d_pretrained_path,
+                vocoder=args.vocoder,
             )
         elif args.mode == "index":
             run_index_script(
