@@ -171,7 +171,6 @@ def main():
     if torch.cuda.is_available():
         device = torch.device("cuda")
         n_gpus = torch.cuda.device_count()
-        print('torch returned device_count:', n_gpus)
     elif torch.backends.mps.is_available():
         device = torch.device("mps")
         n_gpus = 1
@@ -194,7 +193,6 @@ def main():
                 pass
         with open(config_save_path, "w") as pid_file:
             for i in range(n_gpus):
-                print('creating process for gpu:', i)
                 subproc = mp.Process(
                     target=run,
                     args=(
@@ -311,7 +309,6 @@ def run(
         config (object): Configuration object containing training parameters.
         device (torch.device): The device to use for training (CPU or GPU).
     """
-    print('run() with rank', rank, 'n_gpus', n_gpus)
     global global_step, smoothed_value_gen, smoothed_value_disc
 
     smoothed_value_gen = 0
