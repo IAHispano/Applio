@@ -314,8 +314,15 @@ def train_tab():
         sampling_rate = gr.Radio(
             label=i18n("Sampling Rate"),
             info=i18n("The sampling rate of the audio files."),
-            choices=["32000", "40000", "48000"],
+            choices=["32000", "40000", "44100", "48000"],
             value="40000",
+            interactive=True,
+        )
+        vocoder = gr.Radio(
+            label=i18n("Vocoder"),
+            info=i18n("Choose the vocoder type. 'Default' is a standard vocoder compatible with all other RVC clients, the experimental 'MRF HiFi-GAN' vocoder provides higher fidelity but is only compatible with Applio."),
+            choices=["default", "MRF HiFi-GAN"],
+            value="default",
             interactive=True,
         )
         rvc_version = gr.Radio(
@@ -765,6 +772,7 @@ def train_tab():
                     custom_pretrained,
                     g_pretrained_path,
                     d_pretrained_path,
+                    vocoder,
                 ],
                 outputs=[train_output_info],
             )
@@ -825,7 +833,7 @@ def train_tab():
             with gr.Column():
                 refresh_export = gr.Button(i18n("Refresh"))
                 if not os.name == "nt":
-                    upload_exported = gr.Button(i18n("Upload"))
+                    upload_exported = gr.Button(i18n("Upload"), variant="primary")
                     upload_exported.click(
                         fn=upload_to_google_drive,
                         inputs=[pth_dropdown_export, index_dropdown_export],

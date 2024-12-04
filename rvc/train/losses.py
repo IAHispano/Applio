@@ -55,6 +55,22 @@ def generator_loss(disc_outputs):
 
     return loss, gen_losses
 
+def discriminator_loss_scaled(disc_real, disc_fake, scale=1.0):
+    loss = 0
+    for i, (d_real, d_fake) in enumerate(zip(disc_real, disc_fake)):
+        real_loss = torch.mean((1 - d_real) ** 2)
+        fake_loss = torch.mean(d_fake**2)
+        _loss = real_loss + fake_loss
+        loss += _loss if i < len(disc_real) / 2 else scale * _loss
+    return loss, None, None
+
+def generator_loss_scaled(disc_outputs, scale=1.0):
+    loss = 0
+    for i, d_fake in enumerate(disc_outputs):
+        d_fake = d_fake.float()
+        _loss = torch.mean((1 - d_fake) ** 2)
+        loss += _loss if i < len(disc_outputs) / 2 else scale * _loss
+    return loss, None, None
 
 def kl_loss(z_p, logs_q, m_p, logs_p, z_mask):
     """

@@ -321,5 +321,7 @@
   "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid.": "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid.",
   "Model Author Name": "Model Author Name",
   "The name that will appear in the model information.": "The name that will appear in the model information.",
-  "Set name": "Set name"
+  "Set name": "Set name",
+  "Vocoder": "Vocoder",
+  "Vocoder type": "Choose the vocoder type. 'Default' is a standard vocoder compatible with all other RVC clients, the experimental 'MRF HiFi-GAN' vocoder provides higher fidelity but is only compatible with Applio."
 }
