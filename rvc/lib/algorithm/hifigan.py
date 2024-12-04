@@ -202,6 +202,12 @@ class HiFiGAN(nn.Module):
         )
         self.upsamples = nn.ModuleList()
         self.noise_convs = nn.ModuleList()
+        
+        stride_f0s = [
+            math.prod(upsample_rates[i + 1 :]) if i + 1 < len(upsample_rates) else 1
+            for i in range(len(upsample_rates))
+        ]
+
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):
             self.upsamples.append(
                 weight_norm(
@@ -215,24 +221,30 @@ class HiFiGAN(nn.Module):
                     )
                 )
             )
-            if i < len(upsample_rates) - 1:
-                stride_f0 = np.prod(upsample_rates[i + 1 :])  # noqa
-                self.noise_convs.append(
-                    nn.Conv1d(
-                        1,
-                        upsample_initial_channel // (2 ** (i + 1)),
-                        kernel_size=stride_f0 * 2,
-                        stride=stride_f0,
-                        padding=stride_f0 // 2,
-                    )
+            """ handling odd upsampling rates
+            #  s   k   p
+            # 40  80  20
+            # 32  64  16
+            #  4   8   2
+            #  2   3   1
+            # 63 125  31
+            #  9  17   4
+            #  3   5   1
+            #  1   1   0
+            """
+            stride = stride_f0s[i]
+            kernel = (1 if stride == 1 else stride * 2 - stride % 2)
+            padding = (0 if stride == 1 else (kernel - stride) // 2)
+            
+            self.noise_convs.append(
+                nn.Conv1d(
+                    1,
+                    upsample_initial_channel // (2 ** (i + 1)),
+                    kernel_size=kernel,
+                    stride=stride,
+                    padding=padding,
                 )
-            else:
-                self.noise_convs.append(
-                    nn.Conv1d(
-                        1, upsample_initial_channel // (2 ** (i + 1)), kernel_size=1
-                    )
-                )
-
+            )
         self.mrfs = nn.ModuleList()
         for i in range(len(self.upsamples)):
             channel = upsample_initial_channel // (2 ** (i + 1))
@@ -264,9 +276,6 @@ class HiFiGAN(nn.Module):
             x = F.leaky_relu(x, LRELU_SLOPE)
             x = up(x)
             x_source = noise_conv(har_source)
-            # hacky fix the for upscale/downscale mismatch between signal and f0 helper
-            if x_source.size(-1) < x.size(-1):
-                x_source = F.pad(x_source, (0, x.size(-1)-x_source.size(-1)))
             x = x + x_source
             xs = 0
             for layer in mrf:
