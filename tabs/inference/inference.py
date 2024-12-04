@@ -178,7 +178,7 @@ def change_choices(model):
     if model:
         speakers = get_speakers_id(model)
     else:
-        speakers = 0
+        speakers = [0]
     names = [
         os.path.join(root, file)
         for root, _, files in os.walk(model_root_relative, topdown=False)
@@ -213,7 +213,7 @@ def change_choices(model):
             "choices": (
                 sorted(speakers)
                 if speakers is not None and isinstance(speakers, (list, tuple))
-                else []
+                else [0]
             ),
             "__type__": "update",
         },
@@ -221,7 +221,7 @@ def change_choices(model):
             "choices": (
                 sorted(speakers)
                 if speakers is not None and isinstance(speakers, (list, tuple))
-                else []
+                else [0]
             ),
             "__type__": "update",
         },
@@ -322,15 +322,17 @@ def refresh_embedders_folders():
 
 def get_speakers_id(model):
     if model:
-        model_data = torch.load(os.path.join(now_dir, model), map_location="cpu")
-        speakers_id = model_data.get("speakers_id")
-        if speakers_id:
-            return list(range(speakers_id))
-        else:
+        try:
+            model_data = torch.load(os.path.join(now_dir, model), map_location="cpu")
+            speakers_id = model_data.get("speakers_id")
+            if speakers_id:
+                return list(range(speakers_id))
+            else:
+                return [0]
+        except Exception as e: 
             return [0]
     else:
         return [0]
-
 
 # Inference tab
 def inference_tab():
