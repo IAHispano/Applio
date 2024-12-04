@@ -329,10 +329,11 @@ def get_speakers_id(model):
                 return list(range(speakers_id))
             else:
                 return [0]
-        except Exception as e: 
+        except Exception as e:
             return [0]
     else:
         return [0]
+
 
 # Inference tab
 def inference_tab():
