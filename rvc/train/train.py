@@ -614,7 +614,7 @@ def train_and_evaluate(
                 )
                 y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
                 with autocast(enabled=False):
-                    #if vocoder == "default":
+                    #if vocoder == "HiFi-GAN":
                     #    loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
                     #else:
                     #    loss_disc, _, _ = discriminator_loss_scaled(y_d_hat_r, y_d_hat_g)
@@ -633,7 +633,7 @@ def train_and_evaluate(
                     loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
                     loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
                     loss_fm = feature_loss(fmap_r, fmap_g)
-                    #if vocoder == "default":
+                    #if vocoder == "HiFi-GAN":
                     #	loss_gen, _ = generator_loss(y_d_hat_g)
                     #else:
                     #	loss_gen, _ = generator_loss_scaled(y_d_hat_g)

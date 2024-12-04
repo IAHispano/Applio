@@ -512,7 +512,7 @@ def run_train_script(
     custom_pretrained: bool = False,
     g_pretrained_path: str = None,
     d_pretrained_path: str = None,
-    vocoder: str = "default",
+    vocoder: str = "HiFi-GAN",
 ):
 
     if pretrained == True:
@@ -1970,8 +1970,8 @@ def parse_arguments():
         "--vocoder",
         type=str,
         help="Vocoder name",
-        choices=["default", "MRF HiFi-GAN"],
-        default="default",
+        choices=["HiFi-GAN", "MRF HiFi-GAN"],
+        default="HiFi-GAN",
     )
     train_parser.add_argument(
         "--save_every_epoch",

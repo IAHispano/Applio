@@ -3,7 +3,7 @@ def pretrained_selector(version, vocoder, pitch_guidance, sample_rate):
     path = f"rvc/models/pretraineds/pretrained_{version}/"
     f0 = "f0" if pitch_guidance == True else ""
 
-    if vocoder == "default":
+    if vocoder == "HiFi-GAN":
         vocoder_path = ""
     elif vocoder == "MRF HiFi-GAN":
         vocoder_path = "HiFiGAN_"

@@ -57,7 +57,7 @@ class Synthesizer(torch.nn.Module):
         sr: int,
         use_f0: bool,
         text_enc_hidden_dim: int = 768,
-        vocoder: str = "default",
+        vocoder: str = "HiFi-GAN",
         randomized: bool = True,
         **kwargs,
     ):
@@ -94,7 +94,6 @@ class Synthesizer(torch.nn.Module):
             else:
                 self.dec = GeneratorNSF(
                     inter_channels,
-                    resblock,
                     resblock_kernel_sizes,
                     resblock_dilation_sizes,
                     upsample_rates,
@@ -111,7 +110,6 @@ class Synthesizer(torch.nn.Module):
             else:
                 self.dec = Generator(
                     inter_channels,
-                    resblock,
                     resblock_kernel_sizes,
                     resblock_dilation_sizes,
                     upsample_rates,
