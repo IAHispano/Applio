@@ -157,7 +157,20 @@ if [ "$(uname)" = "Darwin" ]; then
         log_message "Homebrew not found. Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
-    brew install python@3.10 python@3.9 
+
+    # Check installed Python version and install the correct Homebrew Python version ( macOS )
+    python_version=$(python3 --version | awk '{print $2}' | cut -d'.' -f1,2)
+    if [ "$python_version" = "3.9" ]; then
+        log_message "Python 3.9 detected. Installing Python 3.9 using Homebrew..."
+        brew install python@3.9
+    elif [ "$python_version" = "3.10" ]; then
+        log_message "Python 3.10 detected. Installing Python 3.10 using Homebrew..."
+        brew install python@3.10
+    else
+        log_message "Python version $python_version detected. Please use Python 3.9 or 3.10."
+        exit 1
+    fi
+
     brew install faiss
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
