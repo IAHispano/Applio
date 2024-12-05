@@ -13,7 +13,7 @@ log_message() {
 
 # Function to find a suitable Python version
 find_python() {
-    for py in python3.10 python3 python; do
+    for py in python3.10 python3.9 python3 python; do
         if command -v "$py" > /dev/null 2>&1; then
             echo "$py"
             return
@@ -65,7 +65,6 @@ install_ffmpeg_flatpak() {
         flatpak install --user -y flathub org.freedesktop.Platform.ffmpeg
     fi
 }
-
 
 install_python_ffmpeg() {
     log_message "Installing python-ffmpeg..."
@@ -158,7 +157,8 @@ if [ "$(uname)" = "Darwin" ]; then
         log_message "Homebrew not found. Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
-    brew install python@3.10
+    brew install python@3.10 python@3.9 
+    brew install faiss
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
     export PATH="/opt/homebrew/bin:$PATH"  
@@ -169,3 +169,4 @@ elif [ "$(uname)" != "Linux" ]; then
 fi
 
 prepare_install
+
