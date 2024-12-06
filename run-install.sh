@@ -13,13 +13,13 @@ log_message() {
 
 # Function to find a suitable Python version
 find_python() {
-    for py in python3.10 python3.9 python3 python; do
+    for py in python3.10 python3 python; do
         if command -v "$py" > /dev/null 2>&1; then
             echo "$py"
             return
         fi
     done
-    log_message "No compatible Python installation found. Please install Python 3.7+."
+    log_message "No compatible Python installation found. Please install Python 3.10."
     exit 1
 }
 
