@@ -1923,7 +1923,7 @@ def parse_arguments():
     )
     extract_parser.add_argument(
         "--gpu",
-        type=int,
+        type=str,
         help="GPU device to use for feature extraction (optional).",
         default="-",
     )
