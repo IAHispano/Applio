@@ -78,7 +78,7 @@ class Synthesizer(torch.nn.Module):
             text_enc_hidden_dim,
             f0=use_f0,
         )
-
+        print(f"Using {vocoder} vocoder")
         if use_f0:
             if vocoder == "MRF HiFi-GAN":
                 self.dec = HiFiGAN(

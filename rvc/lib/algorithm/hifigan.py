@@ -189,7 +189,6 @@ class HiFiGAN(nn.Module):
         harmonic_num,
     ):
         super().__init__()
-        print('hifigan')
         self.num_kernels = len(resblock_kernel_sizes)
 
         self.f0_upsample = nn.Upsample(scale_factor=np.prod(upsample_rates))
