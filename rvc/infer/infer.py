@@ -253,7 +253,7 @@ class VoiceConverter:
             return
 
         self.get_vc(model_path, sid)
-        
+
         try:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
@@ -437,7 +437,6 @@ class VoiceConverter:
                 self.setup_vc_instance()
             self.loaded_model = weight_root
 
-
     def cleanup_model(self):
         """
         Cleans up the model and releases resources.
@@ -483,7 +482,7 @@ class VoiceConverter:
                 use_f0=self.use_f0,
                 text_enc_hidden_dim=self.text_enc_hidden_dim,
                 is_half=self.config.is_half,
-                vocoder=self.vocoder
+                vocoder=self.vocoder,
             )
             del self.net_g.enc_q
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)
