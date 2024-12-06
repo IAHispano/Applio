@@ -248,7 +248,12 @@ class VoiceConverter:
             sid (int, optional): Speaker ID. Default is 0.
             **kwargs: Additional keyword arguments.
         """
+        if not model_path:
+            print("No model path provided. Aborting conversion.")
+            return
+
         self.get_vc(model_path, sid)
+
         try:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")

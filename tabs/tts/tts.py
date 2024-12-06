@@ -85,7 +85,7 @@ def tts_tab():
 
     gr.Markdown(
         i18n(
-            f"Applio is a Speech-to-Speech conversion software, utilizing EdgeTTS as middleware for running the Text-to-Speech (TTS) component. Read more about it [here!](https://docs.applio.org/getting-started/tts#disclaimer)"
+            f"Applio is a Speech-to-Speech conversion software, utilizing EdgeTTS as middleware for running the Text-to-Speech (TTS) component. Read more about it [here!](https://docs.applio.org/applio/getting-started/tts)"
         )
     )
     tts_voice = gr.Dropdown(

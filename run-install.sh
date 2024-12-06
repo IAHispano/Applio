@@ -19,7 +19,7 @@ find_python() {
             return
         fi
     done
-    log_message "No compatible Python installation found. Please install Python 3.7+."
+    log_message "No compatible Python installation found. Please install Python 3.10."
     exit 1
 }
 
