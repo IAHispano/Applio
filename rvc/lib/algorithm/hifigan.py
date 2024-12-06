@@ -209,6 +209,13 @@ class HiFiGAN(nn.Module):
         ]
 
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):
+            # handling odd upsampling rates
+            if u % 2 == 0:
+                # old method
+                padding = (k - u) // 2
+            else:
+                padding = u // 2 + u % 2
+                
             self.upsamples.append(
                 weight_norm(
                     nn.ConvTranspose1d(
@@ -216,7 +223,7 @@ class HiFiGAN(nn.Module):
                         upsample_initial_channel // (2 ** (i + 1)),
                         kernel_size=k,
                         stride=u,
-                        padding=u // 2 + u % 2,
+                        padding=padding,
                         output_padding=u % 2,
                     )
                 )

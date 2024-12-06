@@ -105,6 +105,13 @@ class GeneratorNSF(torch.nn.Module):
         ]
 
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):
+            # handling odd upsampling rates
+            if u % 2 == 0:
+                # old method
+                padding = (k - u) // 2
+            else:
+                padding = u // 2 + u % 2
+                
             self.ups.append(
                 weight_norm(
                     torch.nn.ConvTranspose1d(
@@ -112,7 +119,7 @@ class GeneratorNSF(torch.nn.Module):
                         channels[i],
                         k,
                         u,
-                        padding=u // 2 + u % 2,
+                        padding=padding,
                         output_padding=u % 2,
                     )
                 )
