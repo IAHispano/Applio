@@ -248,7 +248,12 @@ class VoiceConverter:
             sid (int, optional): Speaker ID. Default is 0.
             **kwargs: Additional keyword arguments.
         """
+        if not model_path:
+            print("No model path provided. Aborting conversion.")
+            return
+
         self.get_vc(model_path, sid)
+        
         try:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
@@ -432,6 +437,7 @@ class VoiceConverter:
                 self.setup_vc_instance()
             self.loaded_model = weight_root
 
+
     def cleanup_model(self):
         """
         Cleans up the model and releases resources.
@@ -471,11 +477,13 @@ class VoiceConverter:
 
             self.version = self.cpt.get("version", "v1")
             self.text_enc_hidden_dim = 768 if self.version == "v2" else 256
+            self.vocoder = self.cpt.get("vocoder", "HiFi-GAN")
             self.net_g = Synthesizer(
                 *self.cpt["config"],
                 use_f0=self.use_f0,
                 text_enc_hidden_dim=self.text_enc_hidden_dim,
                 is_half=self.config.is_half,
+                vocoder=self.vocoder
             )
             del self.net_g.enc_q
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)
