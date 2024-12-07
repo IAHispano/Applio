@@ -3,12 +3,9 @@
         "log_interval": 200,
         "seed": 1234,
         "learning_rate": 0.0001,
-        "betas": [
-            0.8,
-            0.99
-        ],
+        "betas": [0.8, 0.99],
         "eps": 1e-09,
-        "fp16_run": false,
+        "fp16_run": true,
         "lr_decay": 0.999875,
         "segment_size": 15876,
         "c_mel": 45,
@@ -33,42 +30,12 @@
         "n_layers": 6,
         "kernel_size": 3,
         "p_dropout": 0,
-        "resblock": "1",
-        "resblock_kernel_sizes": [
-            3,
-            7,
-            11
-        ],
-        "resblock_dilation_sizes": [
-            [
-                1,
-                3,
-                5
-            ],
-            [
-                1,
-                3,
-                5
-            ],
-            [
-                1,
-                3,
-                5
-            ]
-        ],
-        "upsample_rates": [
-            7,
-            7,
-            3,
-            3
-        ],
+        "resblock": 1,
+        "resblock_kernel_sizes": [3,7,11],
+        "resblock_dilation_sizes": [[1,3,5], [1,3,5], [1,3,5]],
+        "upsample_rates": [7,5,3,3],
         "upsample_initial_channel": 512,
-        "upsample_kernel_sizes": [
-            14,
-            14,
-            6,
-            6
-        ],
+        "upsample_kernel_sizes": [14,14,6,6],
         "use_spectral_norm": false,
         "gin_channels": 256,
         "spk_embed_dim": 109
