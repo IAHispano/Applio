@@ -49,9 +49,7 @@ class ResBlock(torch.nn.Module):
         self.convs2 = self._create_convs(channels, kernel_size, [1] * len(dilations))
 
     @staticmethod
-    def _create_convs(
-        channels: int, kernel_size: int, dilations: Tuple[int]
-    ):
+    def _create_convs(channels: int, kernel_size: int, dilations: Tuple[int]):
         """
         Creates a list of 1D convolutional layers with specified dilations.
 
