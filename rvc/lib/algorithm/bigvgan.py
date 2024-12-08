@@ -334,6 +334,13 @@ class BigVGAN(nn.Module):
         self.upsamples = nn.ModuleList()
         self.noise_convs = nn.ModuleList()
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):
+            # handling odd upsampling rates
+            if u % 2 == 0:
+                # old method
+                padding = (k - u) // 2
+            else:
+                padding = u // 2 + u % 2
+                
             self.upsamples.append(
                 weight_norm(
                     nn.ConvTranspose1d(
@@ -341,28 +348,35 @@ class BigVGAN(nn.Module):
                         upsample_initial_channel // (2 ** (i + 1)),
                         kernel_size=k,
                         stride=u,
-                        padding=u // 2 + u % 2,
+                        padding=padding,
                         output_padding=u % 2,
                     )
                 )
             )
-            if i < len(upsample_rates) - 1:
-                stride_f0 = np.prod(upsample_rates[i + 1 :])  # noqa
-                self.noise_convs.append(
-                    nn.Conv1d(
-                        1,
-                        upsample_initial_channel // (2 ** (i + 1)),
-                        kernel_size=stride_f0 * 2,
-                        stride=stride_f0,
-                        padding=stride_f0 // 2,
-                    )
+            """ handling odd upsampling rates
+            #  s   k   p
+            # 40  80  20
+            # 32  64  16
+            #  4   8   2
+            #  2   3   1
+            # 63 125  31
+            #  9  17   4
+            #  3   5   1
+            #  1   1   0
+            """
+            stride = stride_f0s[i]
+            kernel = (1 if stride == 1 else stride * 2 - stride % 2)
+            padding = (0 if stride == 1 else (kernel - stride) // 2)
+            
+            self.noise_convs.append(
+                nn.Conv1d(
+                    1,
+                    upsample_initial_channel // (2 ** (i + 1)),
+                    kernel_size=kernel,
+                    stride=stride,
+                    padding=padding,
                 )
-            else:
-                self.noise_convs.append(
-                    nn.Conv1d(
-                        1, upsample_initial_channel // (2 ** (i + 1)), kernel_size=1
-                    )
-                )
+            )
 
         self.amps = nn.ModuleList()
         for i in range(len(self.upsamples)):

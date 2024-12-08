@@ -216,6 +216,13 @@ class HiFiGAN_CAM(nn.Module):
                 ConvNeXtBlock(dim=upsample_initial_channel // (2 ** (i + 1)), drop_path=0.1)
             )
         
+            # handling odd upsampling rates
+            if u % 2 == 0:
+                # old method
+                padding = (k - u) // 2
+            else:
+                padding = u // 2 + u % 2
+                
             self.upsamples.append(
                 weight_norm(
                     nn.ConvTranspose1d(
@@ -223,7 +230,7 @@ class HiFiGAN_CAM(nn.Module):
                         upsample_initial_channel // (2 ** (i + 1)),
                         kernel_size=k,
                         stride=u,
-                        padding=u // 2 + u % 2,
+                        padding=padding,
                         output_padding=u % 2,
                     )
                 )
