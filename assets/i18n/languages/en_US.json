@@ -321,5 +321,7 @@
   "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid.": "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid.",
   "Model Author Name": "Model Author Name",
   "The name that will appear in the model information.": "The name that will appear in the model information.",
-  "Set name": "Set name"
+  "Set name": "Set name",
+  "Vocoder": "Vocoder",
+  "Vocoder for audio synthesis, HiFi-GAN (default, works with all clients) or MRF HiFi-GAN (experimental, higher fidelity, Applio-only).": "Vocoder for audio synthesis, HiFi-GAN (default, works with all clients) or MRF HiFi-GAN (experimental, higher fidelity, Applio-only)."
 }
