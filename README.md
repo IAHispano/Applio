@@ -45,7 +45,7 @@ The use of Applio is entirely at your own discretion and responsibility. By usin
 
 3. Comply with all relevant laws and regulations governing the use of AI and voice transformation tools in your jurisdiction.
 
-Applio and its contributors are not liable for any misuse of the tool. The responsibility for adhering to ethical practices and legal compliance lies solely with the user. Applio does not endorse or support any activities that result in harm to individuals, groups, or entities. All official models distributed by Applio have been trained under public use datasets such as VCTK.
+Applio and its contributors are not liable for any misuse of the tool. The responsibility for adhering to ethical practices and legal compliance lies solely with the user. Applio does not endorse or support any activities that result in harm to individuals, groups, or entities. All official models distributed by Applio have been trained under public use datasets such as [VCTK](https://huggingface.co/datasets/IAHispano/Applio-Dataset).
 
 ## Getting Started
 
