@@ -8,6 +8,8 @@ def pretrained_selector(version, vocoder, pitch_guidance, sample_rate):
         vocoder_path = ""
     elif vocoder == "MRF HiFi-GAN":
         vocoder_path = "HiFiGAN_"
+    elif vocoder == "RefineGAN":
+        vocoder_path = "RefineGAN_"
 
     path_g = f"{path}{vocoder_path}{f0}G{str(sample_rate)[:2]}k.pth"
     path_d = f"{path}{vocoder_path}{f0}D{str(sample_rate)[:2]}k.pth"

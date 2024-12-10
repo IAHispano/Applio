@@ -321,7 +321,7 @@ def train_tab():
         vocoder = gr.Radio(
             label=i18n("Vocoder"),
             info=i18n("Vocoder for audio synthesis, HiFi-GAN (default, works with all clients) or MRF HiFi-GAN (experimental, higher fidelity, Applio-only)."),
-            choices=["HiFi-GAN", "MRF HiFi-GAN"],
+            choices=["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"],
             value="HiFi-GAN",
             interactive=True,
         )

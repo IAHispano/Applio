@@ -1,6 +1,7 @@
 import torch
 from typing import Optional
 from rvc.lib.algorithm.hifigan import HiFiGAN
+from rvc.lib.algorithm.refinegan import RefineGANGenerator
 from rvc.lib.algorithm.nsf import GeneratorNSF
 from rvc.lib.algorithm.generators import Generator
 from rvc.lib.algorithm.commons import slice_segments, rand_slice_segments
@@ -92,6 +93,13 @@ class Synthesizer(torch.nn.Module):
                     sample_rate=sr,
                     harmonic_num=8,
                 )
+            elif vocoder == "RefineGAN":
+                self.dec = RefineGANGenerator(
+                    sample_rate = sr,
+                    downsample_rates=upsample_rates[::-1],
+                    upsample_rates=upsample_rates,
+                    start_channels=32,
+                    num_mels=inter_channels)
             else:
                 self.dec = GeneratorNSF(
                     inter_channels,
@@ -107,6 +115,9 @@ class Synthesizer(torch.nn.Module):
         else:
             if vocoder == "MRF HiFi-GAN":
                 print("MRF HiFi-GAN does not support training without pitch guidance.")
+                self.dec = None
+            elif vocoder == "RefineGAN":
+                print("RefineGAN does not support training without pitch guidance.")
                 self.dec = None
             else:
                 self.dec = Generator(

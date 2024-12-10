@@ -1970,7 +1970,7 @@ def parse_arguments():
         "--vocoder",
         type=str,
         help="Vocoder name",
-        choices=["HiFi-GAN", "MRF HiFi-GAN"],
+        choices=["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"],
         default="HiFi-GAN",
     )
     train_parser.add_argument(
