@@ -1640,13 +1640,13 @@ def inference_tab():
                         )
 
         terms_checkbox_batch = gr.Checkbox(
-                label=i18n("I agree to the terms of use"),
-                info=i18n(
-                    "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your inference."
-                ),
-                value=False,
-                interactive=True,
-            )
+            label=i18n("I agree to the terms of use"),
+            info=i18n(
+                "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your inference."
+            ),
+            value=False,
+            interactive=True,
+        )
         convert_button_batch = gr.Button(i18n("Convert"))
         stop_button = gr.Button(i18n("Stop convert"), visible=False)
         stop_button.click(fn=stop_infer, inputs=[], outputs=[])
