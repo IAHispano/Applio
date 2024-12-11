@@ -733,12 +733,11 @@ def train_tab():
                 )
 
         def enforce_terms(terms_accepted, *args):
-                if not terms_accepted:
-                    message = "You must agree to the Terms of Use to proceed."
-                    gr.Info(message)
-                    return message
-                return run_train_script(*args)
-
+            if not terms_accepted:
+                message = "You must agree to the Terms of Use to proceed."
+                gr.Info(message)
+                return message
+            return run_train_script(*args)
 
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
@@ -749,12 +748,12 @@ def train_tab():
             interactive=True,
         )
         train_output_info = gr.Textbox(
-                label=i18n("Output Information"),
-                info=i18n("The output information will be displayed here."),
-                value="",
-                max_lines=8,
-                interactive=False,
-            )
+            label=i18n("Output Information"),
+            info=i18n("The output information will be displayed here."),
+            value="",
+            max_lines=8,
+            interactive=False,
+        )
 
         with gr.Row():
             train_button = gr.Button(i18n("Start Training"))
