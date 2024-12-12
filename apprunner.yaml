@@ -3,11 +3,12 @@ runtime: python311
 build:
   commands:
     build:
-      - python3 -m venv .venv
-      - source .venv/bin/activate
       - python3 -m pip install --upgrade pip
       - python3 -m pip install --upgrade setuptools wheel
       - python3 -m pip install -r requirements.txt
+      - python3 -m venv .venv
+      - source .venv/bin/activate
+      - mkdir -p /home/user/app/assets/audios/
       - chmod +x run-applio.sh
 run:
   command: ./run-applio.sh
