@@ -1,0 +1,13 @@
+version: 1.0
+runtime: python311
+build:
+  commands:
+    build:
+      - python3 -m pip install --upgrade pip
+      - python3 -m pip install --upgrade setuptools wheel
+      - python3 -m pip install -r requirements.txt
+      - chmod +x run-applio.sh
+run:
+  command: ./run-applio.sh
+  network:
+    port: 8080
