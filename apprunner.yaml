@@ -9,6 +9,8 @@ build:
       - python3 -m venv .venv
       - source .venv/bin/activate
       - mkdir -p /home/user/app/assets/audios/
+      - touch /home/user/app/assets/audios/tts_output.wav
+      - touch /home/user/app/assets/audios/tts_rvc_output.wav
       - chmod +x run-applio.sh
 run:
   command: ./run-applio.sh
