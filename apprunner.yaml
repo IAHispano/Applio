@@ -6,13 +6,8 @@ build:
       - python3 -m pip install --upgrade pip
       - python3 -m pip install --upgrade setuptools wheel
       - python3 -m pip install -r requirements.txt
-      - python3 -m venv .venv
-      - source .venv/bin/activate
-      - mkdir -p /home/user/app/assets/audios/
-      - touch /home/user/app/assets/audios/tts_output.wav
-      - touch /home/user/app/assets/audios/tts_rvc_output.wav
       - chmod +x run-applio.sh
 run:
-  command: ./run-applio.sh
+  command: python3 app.py --host 0.0.0.0 --port 8080
 network:
   port: 8080
