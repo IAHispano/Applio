@@ -6,12 +6,13 @@ import json
 import torch
 import datetime
 
+from collections import deque
 from distutils.util import strtobool
 from random import randint, shuffle
 from time import time as ttime
 from time import sleep
 from tqdm import tqdm
-
+import numpy as np
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
 from torch.cuda.amp import GradScaler, autocast
@@ -100,6 +101,9 @@ loss_disc_history = []
 smoothed_loss_disc_history = []
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 training_file_path = os.path.join(experiment_dir, "training_data.json")
+
+gen_loss_queue = deque(maxlen=10)
+disc_loss_queue = deque(maxlen=10)
 
 import logging
 
@@ -453,8 +457,6 @@ def run(
     if True == False and os.path.isfile(
         os.path.join("logs", "reference", f"ref{sample_rate}.wav")
     ):
-        import numpy as np
-
         phone = np.load(
             os.path.join("logs", "reference", f"ref{sample_rate}_feats.npy")
         )
@@ -548,6 +550,9 @@ def train_and_evaluate(
         last_loss_gen_all = 0.0
         consecutive_increases_gen = 0
         consecutive_increases_disc = 0
+    
+    epoch_disc_sum = 0.0            
+    epoch_gen_sum = 0.0
 
     net_g, net_d = nets
     optim_g, optim_d = optims
@@ -620,6 +625,7 @@ def train_and_evaluate(
                     #    loss_disc, _, _ = discriminator_loss_scaled(y_d_hat_r, y_d_hat_g)
                     loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
             # Discriminator backward and update
+            epoch_disc_sum += loss_disc.item()
             optim_d.zero_grad()
             scaler.scale(loss_disc).backward()
             scaler.unscale_(optim_d)
@@ -646,7 +652,7 @@ def train_and_evaluate(
                             "value": loss_gen_all,
                             "epoch": epoch,
                         }
-
+            epoch_gen_sum += loss_gen_all.item()
             optim_g.zero_grad()
             scaler.scale(loss_gen_all).backward()
             scaler.unscale_(optim_g)
@@ -659,6 +665,10 @@ def train_and_evaluate(
 
     # Logging and checkpointing
     if rank == 0:
+    
+        disc_loss_queue.append(epoch_disc_sum / len(train_loader))
+        gen_loss_queue.append(epoch_gen_sum / len(train_loader))
+            
         # used for tensorboard chart - all/mel
         mel = spec_to_mel_torch(
             spec,
@@ -704,6 +714,8 @@ def train_and_evaluate(
             "loss/g/fm": loss_fm,
             "loss/g/mel": loss_mel,
             "loss/g/kl": loss_kl,
+            "loss_avg/disc": np.mean(disc_loss_queue),
+            "loss_avg/gen": np.mean(gen_loss_queue)
         }
         # commented out
         # scalar_dict.update({f"loss/g/{i}": v for i, v in enumerate(losses_gen)})
