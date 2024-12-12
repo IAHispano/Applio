@@ -77,18 +77,16 @@ For more detailed instructions, visit the [documentation](https://docs.applio.or
 
 ## Docker Instance
 
-Es necesario un nivel mas tecnico para este tipo de uso. Puedes usar este cuadernillo de Jupyter para incializar Applio en maquinas virtuales con GPU. Este instalara todo Applio del brand main de Github.
+A more technical level is required for this type of use. You can use this Jupyter notebook to initialize Applio on virtual machines with GPU. This will install the entire Applio from the main branch of GitHub.
 
-### Requisitos/Recomendaciones
-- Utilizar docker image `tensorflow/tensorflow:2.9.0-gpu`
-- Al menos `20 GB de alacenamiento como minimo.` (Agregar mas espacio para tus modelos/entrenamientos)
-- Utilizar Jupyther `>= 7.3.1`
-- Configurar redicción de puertos `6969 (Applio GUI) y 6006 (Tensorboard GUI)`
-- Instalación de drivers necesarios para utilizar la GPU
+### Requirements/Recommendations
+- Use the docker image `>= tensorflow/tensorflow:2.9.0-gpu`
+- At least `20 GB of storage minimum.` (Add more space for your models/training)
+- Use Jupyter `>= 7.3.1`
+- Configure port forwarding `6969 (Applio GUI) and 6006 (TensorBoard GUI)`
+- Install necessary drivers to use the GPU
 
-Puedes obtener el cuadernillo aquí: [Jupyter Notebook]()
-
-
+You can get the notebook here: [Jupyter Notebook](https://github.com/IAHispano/Applio-RVC-Fork/blob/main/assets/Applio_Jupyter.ipynb) by iroaK
 
 ## References
 
