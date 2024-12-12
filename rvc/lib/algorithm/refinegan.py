@@ -7,32 +7,8 @@ from torch.nn import functional as F
 from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils.parametrize import remove_parametrizations
 
-
-def named_applyZ(
-    fn: Callable, module: nn.Module, name="", depth_first=True, include_root=False
-) -> nn.Module:
-    if not depth_first and include_root:
-        fn(module=module, name=name)
-
-    for child_name, child_module in module.named_children():
-        child_name = ".".join((name, child_name)) if name else child_name
-        named_apply(
-            fn=fn,
-            module=child_module,
-            name=child_name,
-            depth_first=depth_first,
-            include_root=True,
-        )
-
-    if depth_first and include_root:
-        fn(module=module, name=name)
-
-    return module
-
-
 def get_padding(kernel_size: int, dilation: int = 1) -> int:
     return int((kernel_size * dilation - dilation) / 2)
-
 
 class ResBlock(torch.nn.Module):
     def __init__(
@@ -307,7 +283,7 @@ class RefineGANGenerator(nn.Module):
         upsample_rates: tuple[int] = (8, 8, 2, 2),
         leaky_relu_slope: float = 0.2,
         num_mels: int = 128,
-        start_channels: int = 32,
+        start_channels: int = 16,
         gin_channels: int = 256,
     ) -> None:
         super().__init__()

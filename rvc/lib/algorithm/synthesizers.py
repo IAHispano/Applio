@@ -98,7 +98,7 @@ class Synthesizer(torch.nn.Module):
                     sample_rate = sr,
                     downsample_rates=upsample_rates[::-1],
                     upsample_rates=upsample_rates,
-                    start_channels=32,
+                    start_channels=16,
                     num_mels=inter_channels)
             else:
                 self.dec = GeneratorNSF(
