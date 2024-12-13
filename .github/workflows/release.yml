@@ -25,7 +25,7 @@ jobs:
         id: check-version
         uses: salsify/action-detect-and-tag-new-version@v2.0.3
         with:
-          tag-template: '{VERSION}'
+          tag-template: "{VERSION}"
           version-command: |
             bash -o pipefail -c "cat ./assets/config.json | jq -r '.version'"
 
@@ -46,14 +46,6 @@ jobs:
           - **Security Settings**: Temporarily disable your antivirus and firewall to prevent any issues with missing dependencies during installation.
 
           ### Installation Steps
-          1. **Download**: Get the .zip file from [this link](https://github.com/IAHispano/Applio/archive/refs/tags/${{ steps.check-version.outputs.tag }}.zip).
-          2. **Run the Installer**: Extract the files and execute the \`run-install.bat\` script.
-          3. **Start Applio**: Launch Applio by running the \`run-applio.bat\` script.
-
-          ### Prefer a Simpler Installation?
-          > [!TIP]
-          > For the best experience, we highly recommend using the pre-compiled version. Compiling the code yourself may lead to instabilities.
-
           - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/resolve/main/Compiled/Windows/ApplioV${{ steps.check-version.outputs.tag }}.zip).
           - **Run Applio**: Extract the `.zip` file, then open the \`run-applio.bat\` file.
 
@@ -161,12 +153,6 @@ jobs:
             - **Path Requirements**: Ensure the installation path is free of spaces or special characters.
             - **Security Settings**: Temporarily disable your antivirus and firewall to prevent any issues with missing dependencies during installation.
             ### Installation Steps
-            1. **Download**: Get the .zip file from [this link](https://github.com/IAHispano/Applio/archive/refs/tags/${{ steps.check-version.outputs.tag }}.zip).
-            2. **Run the Installer**: Extract the files and execute the \`run-install.bat\` script.
-            3. **Start Applio**: Launch Applio by running the \`run-applio.bat\` script.
-            ### Prefer a Simpler Installation?
-            > [!TIP]
-            > For the best experience, we highly recommend using the pre-compiled version. Compiling the code yourself may lead to instabilities.
             - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/resolve/main/Compiled/Windows/ApplioV${{ steps.check-version.outputs.tag }}.zip).
             - **Run Applio**: Extract the `.zip` file, then open the \`run-applio.bat\` file.
           ## What's New in This Release
