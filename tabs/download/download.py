@@ -32,29 +32,27 @@ def save_drop_model(dropbox):
         raise gr.Error(
             message="The file you dropped is not a valid model file. Please try again."
         )
-    else:
-        file_name = format_title(os.path.basename(dropbox))
-        if ".pth" in dropbox:
-            model_name = file_name.split(".pth")[0]
-        elif ".index" in dropbox:
-            if "v1" in dropbox:
-                model_name = (
-                    file_name.split("_nprobe_1_")[1].split("_v1")[0].split(".index")[0]
-                )
-            elif "v2" in dropbox:
-                model_name = (
-                    file_name.split("_nprobe_1_")[1].split("_v2")[0].split(".index")[0]
-                )
-            else:
-                model_name = file_name.split(".index")[0]
-        model_path = os.path.join(now_dir, "logs", model_name)
-        if not os.path.exists(model_path):
-            os.makedirs(model_path)
-        if os.path.exists(os.path.join(model_path, file_name)):
-            os.remove(os.path.join(model_path, file_name))
-        shutil.move(dropbox, os.path.join(model_path, file_name))
-        print(f"{file_name} saved in {model_path}")
-        gr.Info(f"{file_name} saved in {model_path}")
+
+    file_name = format_title(os.path.basename(dropbox))
+    model_name = file_name
+
+    if ".pth" in model_name:
+        model_name = model_name.split(".pth")[0]
+    elif ".index" in model_name:
+        replacements = ["nprobe_1_", "_v1", "_v2", "added_"]
+        for rep in replacements:
+            model_name = model_name.replace(rep, "")
+        model_name = model_name.split(".index")[0]
+
+    model_path = os.path.join(now_dir, "logs", model_name)
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
+    if os.path.exists(os.path.join(model_path, file_name)):
+        os.remove(os.path.join(model_path, file_name))
+    shutil.move(dropbox, os.path.join(model_path, file_name))
+    print(f"{file_name} saved in {model_path}")
+    gr.Info(f"{file_name} saved in {model_path}")
+
     return None
 
 
