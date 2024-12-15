@@ -59,13 +59,6 @@ import assets.installation_checker as installation_checker
 
 installation_checker.check_installation()
 
-# Start Flask server if enabled
-from assets.flask.server import start_flask, load_config_flask
-
-if load_config_flask():
-    print("Starting Flask server")
-    start_flask()
-
 # Load theme
 import assets.themes.loadThemes as loadThemes
 
