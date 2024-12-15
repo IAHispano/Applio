@@ -42,4 +42,3 @@ tensorboardX
 edge-tts==6.1.9
 pypresence
 beautifulsoup4
-flask
