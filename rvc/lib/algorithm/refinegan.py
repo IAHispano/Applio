@@ -312,10 +312,10 @@ class RefineGANGenerator(nn.Module):
 
             channels = new_channels
 
-        self.mel_conv = weight_norm(nn.Conv1d(in_channels=num_mels,out_channels=channels * 2,kernel_size=7,stride=1,padding=3,))
+        self.mel_conv = weight_norm(nn.Conv1d(in_channels=num_mels,out_channels=channels,kernel_size=7,stride=1,padding=3,))
         
         if gin_channels != 0:
-            self.cond = nn.Conv1d(256, channels * 2, 1)
+            self.cond = nn.Conv1d(256, channels, 1)
         
         channels *= 2
 
@@ -356,12 +356,13 @@ class RefineGANGenerator(nn.Module):
             x = block(x)
 
         # expanding spectrogram from 192 to 256 channels
-        x = self.mel_conv(mel)
+        mel = self.mel_conv(mel)
         
         if g is not None:
             # adding expanded speaker embedding
-            x = x + self.cond(g)
-
+              x = x + self.cond(g)
+        x = torch.cat([x, mel], dim=1)
+        i = 1
         for up, res, down in zip(self.upsample_blocks, self.upsample_conv_blocks, reversed(downs),):
             x = F.leaky_relu(x, self.leaky_relu_slope, inplace=True)
             x = up(x)
