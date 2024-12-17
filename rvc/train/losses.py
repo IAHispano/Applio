@@ -32,8 +32,8 @@ def discriminator_loss(disc_real_outputs, disc_generated_outputs):
         r_loss = torch.mean((1 - dr.float()) ** 2)
         g_loss = torch.mean(dg.float() ** 2)
 
-        r_losses.append(r_loss.item())
-        g_losses.append(g_loss.item())
+        #r_losses.append(r_loss.item())
+        #g_losses.append(g_loss.item())
         loss += r_loss + g_loss
 
     return loss, r_losses, g_losses
@@ -50,7 +50,7 @@ def generator_loss(disc_outputs):
     loss = 0
     for dg in disc_outputs:
         l = torch.mean((1 - dg.float()) ** 2)
-        gen_losses.append(l.item())
+        #gen_losses.append(l.item())
         loss += l
 
     return loss, gen_losses

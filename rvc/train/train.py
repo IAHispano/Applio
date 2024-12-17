@@ -625,12 +625,13 @@ def train_and_evaluate(
                     #    loss_disc, _, _ = discriminator_loss_scaled(y_d_hat_r, y_d_hat_g)
                     loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
             # Discriminator backward and update
-            epoch_disc_sum += loss_disc.item()
+            epoch_disc_sum += loss_disc
             optim_d.zero_grad()
             scaler.scale(loss_disc).backward()
             scaler.unscale_(optim_d)
-            grad_norm_d = commons.clip_grad_value(net_d.parameters(), None)
+            grad_norm_d = torch.nn.utils.clip_grad_norm_(net_d.parameters(), max_norm=1000.0)
             scaler.step(optim_d)
+            scaler.update()
 
             # Generator backward and update
             with autocast(enabled=use_amp):
@@ -652,11 +653,11 @@ def train_and_evaluate(
                             "value": loss_gen_all,
                             "epoch": epoch,
                         }
-            epoch_gen_sum += loss_gen_all.item()
+            epoch_gen_sum += loss_gen_all
             optim_g.zero_grad()
             scaler.scale(loss_gen_all).backward()
             scaler.unscale_(optim_g)
-            grad_norm_g = commons.clip_grad_value(net_g.parameters(), None)
+            grad_norm_g = torch.nn.utils.clip_grad_norm_(net_g.parameters(), max_norm=1000.0)
             scaler.step(optim_g)
             scaler.update()
 
@@ -666,8 +667,8 @@ def train_and_evaluate(
     # Logging and checkpointing
     if rank == 0:
     
-        disc_loss_queue.append(epoch_disc_sum / len(train_loader))
-        gen_loss_queue.append(epoch_gen_sum / len(train_loader))
+        disc_loss_queue.append(epoch_disc_sum.item() / len(train_loader))
+        gen_loss_queue.append(epoch_gen_sum.item() / len(train_loader))
             
         # used for tensorboard chart - all/mel
         mel = spec_to_mel_torch(
@@ -709,8 +710,8 @@ def train_and_evaluate(
             "loss/g/total": loss_gen_all,
             "loss/d/total": loss_disc,
             "learning_rate": lr,
-            "grad/norm_d": grad_norm_d,
-            "grad/norm_g": grad_norm_g,
+            "grad/norm_d": grad_norm_d.item(),
+            "grad/norm_g": grad_norm_g.item(),
             "loss/g/fm": loss_fm,
             "loss/g/mel": loss_mel,
             "loss/g/kl": loss_kl,
