@@ -18,32 +18,34 @@ async def get_api_key(api_key: str = Depends(api_key_header)):
         )
     return api_key
 
-@app.post("/api/tts", dependencies=[Security(get_api_key)])
-async def tts_endpoint(
-    request: Request,
-    text: str,
-    voice: str,
-    rate: int = 0,
-    pitch: int = 0,
-    filter_radius: int = 3,
-    index_rate: float = 0.75,
-    protect: float = 0.33,
+from pydantic import BaseModel
+
+class TTSRequest(BaseModel):
+    text: str
+    voice: str
+    rate: int = 0
+    pitch: int = 0
+    filter_radius: int = 3
+    index_rate: float = 0.75
+    protect: float = 0.33
     export_format: str = "wav"
-):
+
+@app.post("/api/tts", dependencies=[Security(get_api_key)])
+async def tts_endpoint(request: TTSRequest):
     try:
-        output_tts_path = os.path.join("assets", "tts", f"tts_{text[:10]}_{voice}.wav")
-        output_rvc_path = os.path.join("assets", "tts", f"rvc_{text[:10]}_{voice}.{export_format}")
+        output_tts_path = os.path.join("assets", "tts", f"tts_{request.text[:10]}_{request.voice}.wav")
+        output_rvc_path = os.path.join("assets", "tts", f"rvc_{request.text[:10]}_{request.voice}.{request.export_format}")
 
         message, output_path = run_tts_script(
             tts_file="",
-            tts_text=text,
-            tts_voice=voice,
-            tts_rate=rate,
-            pitch=pitch,
-            filter_radius=filter_radius,
-            index_rate=index_rate,
+            tts_text=request.text,
+            tts_voice=request.voice,
+            tts_rate=request.rate,
+            pitch=request.pitch,
+            filter_radius=request.filter_radius,
+            index_rate=request.index_rate,
             volume_envelope=1,
-            protect=protect,
+            protect=request.protect,
             hop_length=128,
             f0_method="rmvpe",
             output_tts_path=output_tts_path,
@@ -55,7 +57,7 @@ async def tts_endpoint(
             f0_autotune_strength=0.0,
             clean_audio=False,
             clean_strength=0.0,
-            export_format=export_format,
+            export_format=request.export_format,
             f0_file="",
             embedder_model="hubert_base",
             sid=0
@@ -73,8 +75,7 @@ async def tts_endpoint(
         )
 
 # Mount Gradio app
-gradio_app = Applio().launch(share=False, server_name="0.0.0.0", server_port=6969, prevent_thread_lock=True)
-mount_gradio_app(app, gradio_app, path="/")
+app = mount_gradio_app(app, Applio, path="/")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
