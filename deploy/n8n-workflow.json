@@ -1,0 +1,42 @@
+{
+  "nodes": [
+    {
+      "type": "webhook",
+      "parameters": {
+        "path": "tts",
+        "responseMode": "lastNode",
+        "options": {
+          "allowUnauthorizedCerts": false,
+          "responseData": "allEntries"
+        }
+      }
+    },
+    {
+      "type": "httpRequest",
+      "parameters": {
+        "url": "VERTEX_AI_ENDPOINT",
+        "method": "POST",
+        "headers": {
+          "X-API-Key": "={{$env.APPLIO_API_WRITE}}",
+          "Content-Type": "application/json"
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "text": "={{$json.text}}",
+          "voice": "={{$json.voice}}",
+          "rate": "={{$json.rate || 0}}",
+          "pitch": "={{$json.pitch || 0}}"
+        }
+      }
+    },
+    {
+      "type": "googleCloudStorage",
+      "parameters": {
+        "operation": "upload",
+        "bucket": "applio-tts-output",
+        "fileName": "={{$json.text.substring(0,10)}}_{{$json.voice}}_{{$timestamp}}.wav",
+        "binaryData": "={{$json.audio_path}}"
+      }
+    }
+  ]
+}
