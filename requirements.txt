@@ -36,10 +36,13 @@ tensorboard
 gradio==5.5.0
 
 # Miscellaneous utilities
-certifi>=2023.07.22; sys_platform == 'darwin'  
+certifi>=2023.07.22; sys_platform == 'darwin'
 antlr4-python3-runtime==4.8; sys_platform == 'darwin'
 tensorboardX
 edge-tts==6.1.9
 pypresence
 beautifulsoup4
 flask
+fastapi
+uvicorn
+python-multipart

@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1
 FROM python:3.10-bullseye
 
-# Expose the required port
-EXPOSE 6969
+# Expose the required port for Vertex AI
+EXPOSE 8080
+ENV PORT 8080
 
 # Set up working directory
 WORKDIR /app
@@ -26,9 +27,10 @@ RUN python3 -m venv /app/.venv && \
 # Define volumes for persistent storage
 VOLUME ["/app/logs/"]
 
-# Set environment variables if necessary
+# Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"
+ENV APPLIO_API_WRITE=""
 
-# Run the app
+# Run the FastAPI app
 ENTRYPOINT ["python3"]
-CMD ["app.py"]
+CMD ["main.py"]

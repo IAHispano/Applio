@@ -6,7 +6,9 @@ services:
       context: ./
       dockerfile: Dockerfile
     ports:
-      - "6969"
+      - "8080:8080"
+    environment:
+      - APPLIO_API_WRITE=${APPLIO_API_WRITE}
     deploy:
       resources:
         reservations:
