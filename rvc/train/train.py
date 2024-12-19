@@ -6,6 +6,7 @@ import json
 import torch
 import datetime
 
+import math
 from collections import deque
 from distutils.util import strtobool
 from random import randint, shuffle
@@ -45,6 +46,7 @@ from losses import (
     generator_loss,
     generator_loss_scaled,
     kl_loss,
+    envelope_loss
 )
 from mel_processing import (
     mel_spectrogram_torch,
@@ -102,8 +104,16 @@ smoothed_loss_disc_history = []
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 training_file_path = os.path.join(experiment_dir, "training_data.json")
 
-gen_loss_queue = deque(maxlen=10)
-disc_loss_queue = deque(maxlen=10)
+avg_losses={
+    "gen_loss_queue": deque(maxlen=10),
+    "disc_loss_queue": deque(maxlen=10),
+    "disc_loss_50": deque(maxlen=50),
+    "env_loss_50": deque(maxlen=50),
+    "fm_loss_50": deque(maxlen=50),
+    "kl_loss_50": deque(maxlen=50),
+    "mel_loss_50": deque(maxlen=50),
+    "gen_loss_50": deque(maxlen=50),
+}
 
 import logging
 
@@ -632,12 +642,15 @@ def train_and_evaluate(
             grad_norm_d = torch.nn.utils.clip_grad_norm_(net_d.parameters(), max_norm=1000.0)
             scaler.step(optim_d)
             scaler.update()
+            if not math.isfinite(grad_norm_d):
+                print('\nWarning: grad_norm_d is NaN or Inf')
 
             # Generator backward and update
             with autocast(enabled=use_amp):
                 _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
                 with autocast(enabled=False):
                     loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
+                    loss_env = envelope_loss(wave, y_hat)
                     loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
                     loss_fm = feature_loss(fmap_r, fmap_g)
                     #if vocoder == "HiFi-GAN":
@@ -645,7 +658,7 @@ def train_and_evaluate(
                     #else:
                     #	loss_gen, _ = generator_loss_scaled(y_d_hat_g)
                     loss_gen, _ = generator_loss(y_d_hat_g)
-                    loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
+                    loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl + loss_env
 
                     if loss_gen_all < lowest_value["value"]:
                         lowest_value = {
@@ -660,15 +673,42 @@ def train_and_evaluate(
             grad_norm_g = torch.nn.utils.clip_grad_norm_(net_g.parameters(), max_norm=1000.0)
             scaler.step(optim_g)
             scaler.update()
+            if not math.isfinite(grad_norm_g):
+                print('\n Warning: grad_norm_g is NaN or Inf')
 
             global_step += 1
+            
+            # queue for rolling losses over 50 steps
+            avg_losses["disc_loss_50"].append(loss_disc.detach())
+            avg_losses["env_loss_50"].append(loss_env.detach())
+            avg_losses["fm_loss_50"].append(loss_fm.detach())
+            avg_losses["kl_loss_50"].append(loss_kl.detach())
+            avg_losses["mel_loss_50"].append(loss_mel.detach())
+            avg_losses["gen_loss_50"].append(loss_gen_all.detach())
+            
+            if rank == 0 and global_step % 50 == 0:
+                # logging rolling averages
+                scalar_dict = {
+                    "loss_avg_50/d/total": torch.mean(torch.stack(list(avg_losses["disc_loss_50"]))),
+                    "loss_avg_50/g/env": torch.mean(torch.stack(list(avg_losses["env_loss_50"]))),
+                    "loss_avg_50/g/fm": torch.mean(torch.stack(list(avg_losses["fm_loss_50"]))),
+                    "loss_avg_50/g/kl": torch.mean(torch.stack(list(avg_losses["kl_loss_50"]))),
+                    "loss_avg_50/g/mel": torch.mean(torch.stack(list(avg_losses["mel_loss_50"]))),
+                    "loss_avg_50/g/total": torch.mean(torch.stack(list(avg_losses["gen_loss_50"]))),
+                }
+                summarize(
+                    writer=writer,
+                    global_step=global_step,
+                    scalars=scalar_dict,
+                )
+
             pbar.update(1)
 
     # Logging and checkpointing
     if rank == 0:
     
-        disc_loss_queue.append(epoch_disc_sum.item() / len(train_loader))
-        gen_loss_queue.append(epoch_gen_sum.item() / len(train_loader))
+        avg_losses["disc_loss_queue"].append(epoch_disc_sum.item() / len(train_loader))
+        avg_losses["gen_loss_queue"].append(epoch_gen_sum.item() / len(train_loader))
             
         # used for tensorboard chart - all/mel
         mel = spec_to_mel_torch(
@@ -702,10 +742,7 @@ def train_and_evaluate(
                 y_hat_mel = y_hat_mel.half()
 
         lr = optim_g.param_groups[0]["lr"]
-        if loss_mel > 75:
-            loss_mel = 75
-        if loss_kl > 9:
-            loss_kl = 9
+
         scalar_dict = {
             "loss/g/total": loss_gen_all,
             "loss/d/total": loss_disc,
@@ -715,8 +752,9 @@ def train_and_evaluate(
             "loss/g/fm": loss_fm,
             "loss/g/mel": loss_mel,
             "loss/g/kl": loss_kl,
-            "loss_avg/disc": np.mean(disc_loss_queue),
-            "loss_avg/gen": np.mean(gen_loss_queue)
+            "loss/g/env": loss_env,
+            "loss_avg_epoch/disc": np.mean(avg_losses["disc_loss_queue"]),
+            "loss_avg_epoch/gen": np.mean(avg_losses["gen_loss_queue"]),
         }
         # commented out
         # scalar_dict.update({f"loss/g/{i}": v for i, v in enumerate(losses_gen)})
