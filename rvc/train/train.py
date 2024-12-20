@@ -704,6 +704,9 @@ def train_and_evaluate(
 
             pbar.update(1)
 
+    with torch.no_grad():
+        torch.cuda.empty_cache()
+
     # Logging and checkpointing
     if rank == 0:
     
@@ -965,6 +968,9 @@ def train_and_evaluate(
 
         if done:
             os._exit(2333333)
+        
+        with torch.no_grad():
+            torch.cuda.empty_cache()
 
 
 def check_overtraining(smoothed_loss_history, threshold, epsilon=0.004):
