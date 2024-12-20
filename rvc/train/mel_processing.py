@@ -153,7 +153,6 @@ def compute_window_length(n_mels: int, sample_rate: int) -> int:
     window_length = int(window_length_seconds * sample_rate)
     return 2 ** (window_length.bit_length() - 1)
 
-
 class MultiScaleMelSpectrogramLoss(torch.nn.Module):
 
     def __init__(
@@ -170,33 +169,38 @@ class MultiScaleMelSpectrogramLoss(torch.nn.Module):
         self.hann_window: dict[int, torch.Tensor] = {}
         self.mel_banks: dict[int, torch.Tensor] = {}
 
-        window_lengths = [compute_window_length(mel, sample_rate) for mel in n_mels]
-
-        for n_mels, window_length in zip(n_mels, window_lengths):
-            self.stft_params.append((n_mels, window_length, self.sample_rate // 100))
+        self.stft_params = [(mel, compute_window_length(mel, sample_rate), self.sample_rate // 100) for mel in n_mels]
 
     def mel_spectrogram(
         self,
         wav: torch.Tensor,
-        n_mels: list[int],
+        n_mels: int,
         window_length: int,
         hop_length: int,
     ) -> torch.Tensor:
+        # IDs for caching
         dtype_device = str(wav.dtype) + "_" + str(wav.device)
-        fmax_dtype_device = str(window_length) + "_" + dtype_device
-        if fmax_dtype_device not in self.hann_window:
-            self.hann_window[fmax_dtype_device] = torch.hann_window(window_length, device=wav.device, dtype=wav.dtype)
+        win_dtype_device = str(window_length) + "_" + dtype_device
+        mel_dtype_device = str(n_mels) + "_" + dtype_device
+        # caching hann window
+        if win_dtype_device not in self.hann_window:
+            self.hann_window[win_dtype_device] = torch.hann_window(window_length, device=wav.device, dtype=wav.dtype)
+        
         wav = wav.squeeze(1)  # -> torch(B, T)
+
         stft = torch.stft(
-            wav.float(),
+            wav,
             n_fft=window_length,
             hop_length=hop_length,
-            window=self.hann_window[fmax_dtype_device],
+            window=self.hann_window[win_dtype_device],
             return_complex=True,
         )  # -> torch (B, window_length // 2 + 1, (T - window_length)/hop_length + 1)
+
         magnitude = torch.sqrt(stft.real.pow(2) + stft.imag.pow(2) + 1e-6)
-        if fmax_dtype_device not in self.mel_banks:
-            self.mel_banks[fmax_dtype_device] = torch.from_numpy(
+
+        # caching mel filter
+        if mel_dtype_device not in self.mel_banks:
+            self.mel_banks[mel_dtype_device] = torch.from_numpy(
                 librosa_mel_fn(
                     sr=self.sample_rate,
                     n_mels=n_mels,
@@ -204,10 +208,10 @@ class MultiScaleMelSpectrogramLoss(torch.nn.Module):
                     fmin=0,
                     fmax=None,
                 )
-            ).to(device=wav.device)
-        mel_basis = self.mel_banks[fmax_dtype_device] # torch(n_mels, window_length // 2 + 1)
+            ).to(device=wav.device, dtype=wav.dtype)
+        
         mel_spectrogram = torch.matmul(
-            mel_basis, magnitude
+            self.mel_banks[mel_dtype_device], magnitude
         )  # torch(B, n_mels, stft.frames)
         return mel_spectrogram
 
