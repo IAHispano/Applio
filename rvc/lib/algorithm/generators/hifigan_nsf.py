@@ -4,7 +4,7 @@ from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
 from typing import Optional
 
-from rvc.lib.algorithm.generators import SineGenerator
+from rvc.lib.algorithm.generators.hifigan import SineGenerator
 from rvc.lib.algorithm.residuals import LRELU_SLOPE, ResBlock
 from rvc.lib.algorithm.commons import init_weights
 
@@ -50,7 +50,7 @@ class SourceModuleHnNSF(torch.nn.Module):
         return sine_merge, None, None
 
 
-class GeneratorNSF(torch.nn.Module):
+class HiFiGANNSFGenerator(torch.nn.Module):
     """
     Generator for synthesizing audio using the NSF (Neural Source Filter) approach.
 
@@ -79,7 +79,7 @@ class GeneratorNSF(torch.nn.Module):
         sr: int,
         is_half: bool = False,
     ):
-        super(GeneratorNSF, self).__init__()
+        super(HiFiGANNSFGenerator, self).__init__()
 
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)
@@ -111,7 +111,7 @@ class GeneratorNSF(torch.nn.Module):
                 padding = (k - u) // 2
             else:
                 padding = u // 2 + u % 2
-                
+
             self.ups.append(
                 weight_norm(
                     torch.nn.ConvTranspose1d(
@@ -136,9 +136,9 @@ class GeneratorNSF(torch.nn.Module):
             #  1   1   0
             """
             stride = stride_f0s[i]
-            kernel = (1 if stride == 1 else stride * 2 - stride % 2)
-            padding = (0 if stride == 1 else (kernel - stride) // 2)
-            
+            kernel = 1 if stride == 1 else stride * 2 - stride % 2
+            padding = 0 if stride == 1 else (kernel - stride) // 2
+
             self.noise_convs.append(
                 torch.nn.Conv1d(
                     1,

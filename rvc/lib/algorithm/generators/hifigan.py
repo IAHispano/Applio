@@ -8,7 +8,7 @@ from rvc.lib.algorithm.residuals import LRELU_SLOPE, ResBlock
 from rvc.lib.algorithm.commons import init_weights
 
 
-class Generator(torch.nn.Module):
+class HiFiGANGenerator(torch.nn.Module):
     """Generator for synthesizing audio.
 
     Args:
@@ -32,7 +32,7 @@ class Generator(torch.nn.Module):
         upsample_kernel_sizes: list,
         gin_channels: int = 0,
     ):
-        super(Generator, self).__init__()
+        super(HiFiGANGenerator, self).__init__()
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)
         self.conv_pre = torch.nn.Conv1d(
@@ -135,7 +135,7 @@ class SineGenerator(torch.nn.Module):
         self.voiced_threshold = voiced_threshold
         self.waveform_dim = self.num_harmonics + 1  # fundamental + harmonics
 
-    def _compute_voiced_unvoiced(self, f0: torch.Tensor) -> torch.Tensor:
+    def _compute_voiced_unvoiced(self, f0: torch.Tensor):
         """
         Generate a binary mask to indicate voiced/unvoiced frames.
 
@@ -145,9 +145,7 @@ class SineGenerator(torch.nn.Module):
         uv_mask = (f0 > self.voiced_threshold).float()
         return uv_mask
 
-    def _generate_sine_wave(
-        self, f0: torch.Tensor, upsampling_factor: int
-    ) -> torch.Tensor:
+    def _generate_sine_wave(self, f0: torch.Tensor, upsampling_factor: int):
         """
         Generate sine waves for the fundamental frequency and its harmonics.
 
