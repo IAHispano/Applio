@@ -93,7 +93,7 @@ def tts_tab():
         info=i18n("Select the TTS voice to use for the conversion."),
         choices=short_names,
         interactive=True,
-        value=None,
+        value=random.choice(short_names),
     )
 
     tts_rate = gr.Slider(
@@ -330,6 +330,21 @@ def tts_tab():
                 visible=True,
             )
 
+    def enforce_terms(terms_accepted, *args):
+        if not terms_accepted:
+            message = "You must agree to the Terms of Use to proceed."
+            gr.Info(message)
+            return message, None
+        return run_tts_script(*args)
+
+    terms_checkbox = gr.Checkbox(
+        label=i18n("I agree to the terms of use"),
+        info=i18n(
+            "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your inference."
+        ),
+        value=False,
+        interactive=True,
+    )
     convert_button = gr.Button(i18n("Convert"))
 
     with gr.Row():
@@ -360,7 +375,7 @@ def tts_tab():
     refresh_button.click(
         fn=change_choices,
         inputs=[model_file],
-        outputs=[model_file, index_file, sid],
+        outputs=[model_file, index_file, sid, sid],
     )
     txt_file.upload(
         fn=process_input,
@@ -383,8 +398,9 @@ def tts_tab():
         outputs=[embedder_model_custom],
     )
     convert_button.click(
-        fn=run_tts_script,
+        fn=enforce_terms,
         inputs=[
+            terms_checkbox,
             input_tts_path,
             tts_text,
             tts_voice,

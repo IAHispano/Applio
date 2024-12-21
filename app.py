@@ -59,13 +59,6 @@ import assets.installation_checker as installation_checker
 
 installation_checker.check_installation()
 
-# Start Flask server if enabled
-from assets.flask.server import start_flask, load_config_flask
-
-if load_config_flask():
-    print("Starting Flask server")
-    start_flask()
-
 # Load theme
 import assets.themes.loadThemes as loadThemes
 
@@ -83,7 +76,7 @@ with gr.Blocks(
     )
     gr.Markdown(
         i18n(
-            "[Support](https://discord.gg/urxFjYmYYh) — [Discord Bot](https://discord.com/oauth2/authorize?client_id=1144714449563955302&permissions=1376674695271&scope=bot%20applications.commands) — [Find Voices](https://applio.org/models) — [GitHub](https://github.com/IAHispano/Applio)"
+            "[Support](https://discord.gg/urxFjYmYYh) — [Discord Bot](https://discord.com/oauth2/authorize?client_id=1144714449563955302&permissions=1376674695271&scope=bot%20applications.commands) — [GitHub](https://github.com/IAHispano/Applio)"
         )
     )
     with gr.Tab(i18n("Inference")):
@@ -112,6 +105,14 @@ with gr.Blocks(
 
     with gr.Tab(i18n("Settings")):
         settings_tab()
+
+    gr.Markdown(
+        """
+    <div style="text-align: center; font-size: 0.9em; text-color: a3a3a3;">
+    By using Applio, you agree to comply with ethical and legal standards, respect intellectual property and privacy rights, avoid harmful or prohibited uses, and accept full responsibility for any outcomes, while Applio disclaims liability and reserves the right to amend these terms.
+    </div>
+    """
+    )
 
 
 def launch_gradio(port):

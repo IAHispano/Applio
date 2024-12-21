@@ -739,20 +739,35 @@ def train_tab():
                     interactive=True,
                 )
 
-        with gr.Row():
-            train_output_info = gr.Textbox(
-                label=i18n("Output Information"),
-                info=i18n("The output information will be displayed here."),
-                value="",
-                max_lines=8,
-                interactive=False,
-            )
+        def enforce_terms(terms_accepted, *args):
+            if not terms_accepted:
+                message = "You must agree to the Terms of Use to proceed."
+                gr.Info(message)
+                return message
+            return run_train_script(*args)
+
+        terms_checkbox = gr.Checkbox(
+            label=i18n("I agree to the terms of use"),
+            info=i18n(
+                "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your training."
+            ),
+            value=False,
+            interactive=True,
+        )
+        train_output_info = gr.Textbox(
+            label=i18n("Output Information"),
+            info=i18n("The output information will be displayed here."),
+            value="",
+            max_lines=8,
+            interactive=False,
+        )
 
         with gr.Row():
             train_button = gr.Button(i18n("Start Training"))
             train_button.click(
-                fn=run_train_script,
+                fn=enforce_terms,
                 inputs=[
+                    terms_checkbox,
                     model_name,
                     rvc_version,
                     save_every_epoch,
@@ -945,25 +960,21 @@ def train_tab():
                 inputs=[rvc_version, pitch_guidance],
                 outputs=[],
             )
-
             pitch_guidance.change(
                 fn=download_prerequisites,
                 inputs=[rvc_version, pitch_guidance],
                 outputs=[],
             )
-
             refresh.click(
                 fn=refresh_models_and_datasets,
                 inputs=[],
                 outputs=[model_name, dataset_path],
             )
-
             dataset_creator.change(
                 fn=toggle_visible,
                 inputs=[dataset_creator],
                 outputs=[dataset_creator_settings],
             )
-
             upload_audio_dataset.upload(
                 fn=save_drop_dataset_audio,
                 inputs=[upload_audio_dataset, dataset_name],
@@ -999,61 +1010,51 @@ def train_tab():
                 inputs=[pretrained, custom_pretrained],
                 outputs=[custom_pretrained, pretrained_custom_settings],
             )
-
             custom_pretrained.change(
                 fn=toggle_visible,
                 inputs=[custom_pretrained],
                 outputs=[pretrained_custom_settings],
             )
-
             refresh_custom_pretaineds_button.click(
                 fn=refresh_custom_pretraineds,
                 inputs=[],
                 outputs=[g_pretrained_path, d_pretrained_path],
             )
-
             upload_pretrained.upload(
                 fn=save_drop_model,
                 inputs=[upload_pretrained],
                 outputs=[upload_pretrained],
             )
-
             overtraining_detector.change(
                 fn=toggle_visible,
                 inputs=[overtraining_detector],
                 outputs=[overtraining_settings],
             )
-
             multiple_gpu.change(
                 fn=toggle_visible,
                 inputs=[multiple_gpu],
                 outputs=[gpu_custom_settings],
             )
-
             train_button.click(
                 fn=enable_stop_train_button,
                 inputs=[],
                 outputs=[train_button, stop_train_button],
             )
-
             train_output_info.change(
                 fn=disable_stop_train_button,
                 inputs=[],
                 outputs=[train_button, stop_train_button],
             )
-
             pth_dropdown_export.change(
                 fn=export_pth,
                 inputs=[pth_dropdown_export],
                 outputs=[pth_file_export],
             )
-
             index_dropdown_export.change(
                 fn=export_index,
                 inputs=[index_dropdown_export],
                 outputs=[index_file_export],
             )
-
             refresh_export.click(
                 fn=refresh_pth_and_index_list,
                 inputs=[],
