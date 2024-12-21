@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
+import torch.utils.checkpoint as checkpoint
 from typing import Optional
 
 LRELU_SLOPE = 0.1
@@ -188,9 +189,11 @@ class HiFiGANMRFGenerator(torch.nn.Module):
         gin_channels,
         sample_rate,
         harmonic_num,
+        checkpointing=False,
     ):
         super().__init__()
         self.num_kernels = len(resblock_kernel_sizes)
+        self.checkpointing = checkpointing
 
         self.f0_upsample = torch.nn.Upsample(scale_factor=np.prod(upsample_rates))
         self.m_source = SourceModuleHnNSF(sample_rate, harmonic_num)
@@ -279,15 +282,24 @@ class HiFiGANMRFGenerator(torch.nn.Module):
         if g is not None:
             x = x + self.cond(g)
 
-        for up, mrf, noise_conv in zip(self.upsamples, self.mrfs, self.noise_convs):
+        for ups, mrf, noise_conv in zip(self.upsamples, self.mrfs, self.noise_convs):
             x = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
-            x = up(x)
-            x_source = noise_conv(har_source)
-            x = x + x_source
-            xs = 0
-            for layer in mrf:
-                xs += layer(x)
-            x = xs / self.num_kernels
+
+            if self.training and self.checkpointing:
+                x = checkpoint.checkpoint(ups, x, use_reentrant=False)
+            else:
+                x = ups(x)
+
+            x += noise_conv(har_source)
+
+            def mrf_sum(x, layers):
+                return sum(layer(x) for layer in layers) / self.num_kernels
+
+            if self.training and self.checkpointing:
+                x = checkpoint.checkpoint(mrf_sum, x, mrf, use_reentrant=False)
+            else:
+                x = mrf_sum(x, mrf)
+
         x = torch.nn.functional.leaky_relu(x)
         x = self.conv_post(x)
         x = torch.tanh(x)

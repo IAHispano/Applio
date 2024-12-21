@@ -636,6 +636,12 @@ def train_tab():
                         value=False,
                         interactive=True,
                     )
+                    checkpointing = gr.Checkbox(
+                        label=i18n("Checkpointing"),
+                        info=i18n("Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate."),
+                        value=False,
+                        interactive=True,
+                    )
                     pitch_guidance = gr.Checkbox(
                         label=i18n("Pitch Guidance"),
                         info=i18n(
@@ -788,6 +794,7 @@ def train_tab():
                     g_pretrained_path,
                     d_pretrained_path,
                     vocoder,
+                    checkpointing
                 ],
                 outputs=[train_output_info],
             )

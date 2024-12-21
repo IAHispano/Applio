@@ -61,6 +61,7 @@ class Synthesizer(torch.nn.Module):
         text_enc_hidden_dim: int = 768,
         vocoder: str = "HiFi-GAN",
         randomized: bool = True,
+        checkpointing: bool = False,
         **kwargs,
     ):
         super().__init__()
@@ -92,6 +93,7 @@ class Synthesizer(torch.nn.Module):
                     gin_channels=gin_channels,
                     sample_rate=sr,
                     harmonic_num=8,
+                    checkpointing=checkpointing,
                 )
             elif vocoder == "RefineGAN":
                 self.dec = RefineGANGenerator(
@@ -100,6 +102,7 @@ class Synthesizer(torch.nn.Module):
                     upsample_rates=upsample_rates,
                     start_channels=16,
                     num_mels=inter_channels,
+                    checkpointing=checkpointing,
                 )
             else:
                 self.dec = HiFiGANNSFGenerator(
@@ -112,6 +115,7 @@ class Synthesizer(torch.nn.Module):
                     gin_channels=gin_channels,
                     sr=sr,
                     is_half=kwargs["is_half"],
+                    checkpointing=checkpointing,
                 )
         else:
             if vocoder == "MRF HiFi-GAN":
@@ -129,6 +133,7 @@ class Synthesizer(torch.nn.Module):
                     upsample_initial_channel,
                     upsample_kernel_sizes,
                     gin_channels=gin_channels,
+                    checkpointing=checkpointing
                 )
         self.enc_q = PosteriorEncoder(
             spec_channels,

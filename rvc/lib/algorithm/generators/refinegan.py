@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils.parametrize import remove_parametrizations
+import torch.utils.checkpoint as checkpoint
 
 
 def get_padding(kernel_size: int, dilation: int = 1):
@@ -285,12 +286,14 @@ class RefineGANGenerator(torch.nn.Module):
         num_mels: int = 128,
         start_channels: int = 16,
         gin_channels: int = 256,
+        checkpointing=False,
     ):
         super().__init__()
 
         self.downsample_rates = downsample_rates
         self.upsample_rates = upsample_rates
         self.leaky_relu_slope = leaky_relu_slope
+        self.checkpointing = checkpointing
 
         self.f0_upsample = torch.nn.Upsample(scale_factor=np.prod(upsample_rates))
         self.m_source = SourceModuleHnNSF(sample_rate, harmonic_num=8)
@@ -385,7 +388,10 @@ class RefineGANGenerator(torch.nn.Module):
         for i, block in enumerate(self.downsample_blocks):
             x = torch.nn.functional.leaky_relu(x, self.leaky_relu_slope, inplace=True)
             downs.append(x)
-            x = block(x)
+            if self.training and self.checkpointing:
+                x = checkpoint.checkpoint(block, x, use_reentrant=False)
+            else:
+                x = block(x)
 
         # expanding spectrogram from 192 to 256 channels
         mel = self.mel_conv(mel)
@@ -394,16 +400,22 @@ class RefineGANGenerator(torch.nn.Module):
             # adding expanded speaker embedding
             x = x + self.cond(g)
         x = torch.cat([x, mel], dim=1)
-        i = 1
-        for up, res, down in zip(
+
+        for ups, res, down in zip(
             self.upsample_blocks,
             self.upsample_conv_blocks,
             reversed(downs),
         ):
             x = torch.nn.functional.leaky_relu(x, self.leaky_relu_slope, inplace=True)
-            x = up(x)
-            x = torch.cat([x, down], dim=1)
-            x = res(x)
+
+            if self.training and self.checkpointing:
+                x = checkpoint.checkpoint(ups, x, use_reentrant=False)
+                x = torch.cat([x, down], dim=1)
+                x = checkpoint.checkpoint(res, x, use_reentrant=False)
+            else:
+                x = ups(x)
+                x = torch.cat([x, down], dim=1)
+                x = res(x)
 
         x = torch.nn.functional.leaky_relu(x, self.leaky_relu_slope, inplace=True)
         x = self.conv_post(x)

@@ -513,6 +513,7 @@ def run_train_script(
     g_pretrained_path: str = None,
     d_pretrained_path: str = None,
     vocoder: str = "HiFi-GAN",
+    checkpointing: bool = False,
 ):
 
     if pretrained == True:
@@ -552,7 +553,8 @@ def run_train_script(
                 overtraining_detector,
                 overtraining_threshold,
                 cleanup,
-                vocoder
+                vocoder,
+                checkpointing
             ],
         ),
     ]
@@ -1974,6 +1976,13 @@ def parse_arguments():
         default="HiFi-GAN",
     )
     train_parser.add_argument(
+        "--checkpointing",
+        type=str,
+        help="Enables memory-efficient training.",
+        choices=[True, False],
+        default="False",
+    )    
+    train_parser.add_argument(
         "--save_every_epoch",
         type=int,
         help="Save the model every specified number of epochs.",
@@ -2473,6 +2482,7 @@ def main():
                 g_pretrained_path=args.g_pretrained_path,
                 d_pretrained_path=args.d_pretrained_path,
                 vocoder=args.vocoder,
+                checkpointing=args.checkpointing,
             )
         elif args.mode == "index":
             run_index_script(

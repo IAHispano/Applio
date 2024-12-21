@@ -76,6 +76,7 @@ overtraining_detector = strtobool(sys.argv[14])
 overtraining_threshold = int(sys.argv[15])
 cleanup = strtobool(sys.argv[16])
 vocoder = sys.argv[17]
+checkpointing = strtobool(sys.argv[18])
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -386,7 +387,8 @@ def run(
         use_f0=pitch_guidance == True,  # converting 1/0 to True/False
         is_half=config.train.fp16_run and device.type == "cuda",
         sr=sample_rate,
-        vocoder=vocoder
+        vocoder=vocoder,
+        checkpointing=checkpointing,
     ).to(device)
 
     net_d = MultiPeriodDiscriminator(version, config.model.use_spectral_norm).to(device)
