@@ -323,5 +323,5 @@
   "The name that will appear in the model information.": "The name that will appear in the model information.",
   "Set name": "Set name",
   "Vocoder": "Vocoder",
-  "Vocoder for audio synthesis, HiFi-GAN (default, works with all clients) or MRF HiFi-GAN (experimental, higher fidelity, Applio-only).": "Vocoder for audio synthesis, HiFi-GAN (default, works with all clients) or MRF HiFi-GAN (experimental, higher fidelity, Applio-only)."
+  "Vocoder for audio synthesis: HiFi-GAN (default, available for all clients), MRF HiFi-GAN (higher fidelity, Applio-only), or RefineGAN (offering superior audio quality, Applio-only, with slightly slower performance).": "Vocoder for audio synthesis: HiFi-GAN (default, available for all clients), MRF HiFi-GAN (higher fidelity, Applio-only), or RefineGAN (offering superior audio quality, Applio-only, with slightly slower performance)."
 }
