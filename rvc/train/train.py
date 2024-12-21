@@ -308,10 +308,9 @@ def run(
     smoothed_value_disc = 0
 
     if rank == 0:
-        writer = SummaryWriter(log_dir=experiment_dir)
         writer_eval = SummaryWriter(log_dir=os.path.join(experiment_dir, "eval"))
     else:
-        writer, writer_eval = None, None
+        writer_eval = None
 
     dist.init_process_group(
         backend="gloo",
@@ -489,7 +488,7 @@ def run(
             [optim_g, optim_d],
             scaler,
             [train_loader, None],
-            [writer, writer_eval],
+            [writer_eval],
             cache,
             custom_save_every_weights,
             custom_total_epoch,
@@ -529,7 +528,7 @@ def train_and_evaluate(
         optims (list): List of optimizers [optim_g, optim_d].
         scaler (GradScaler): Gradient scaler for mixed precision training.
         loaders (list): List of dataloaders [train_loader, eval_loader].
-        writers (list): List of TensorBoard writers [writer, writer_eval].
+        writers (list): List of TensorBoard writers [writer_eval].
         cache (list): List to cache data in GPU memory.
         use_cpu (bool): Whether to use CPU for training.
     """
@@ -537,7 +536,6 @@ def train_and_evaluate(
 
     if epoch == 1:
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
-        last_loss_gen_all = 0.0
         consecutive_increases_gen = 0
         consecutive_increases_disc = 0
 
