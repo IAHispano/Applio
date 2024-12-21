@@ -2,9 +2,10 @@ import math
 import torch
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
+import torch.utils.checkpoint as checkpoint
 from typing import Optional
 
-from rvc.lib.algorithm.generators import SineGenerator
+from rvc.lib.algorithm.generators.hifigan import SineGenerator
 from rvc.lib.algorithm.residuals import LRELU_SLOPE, ResBlock
 from rvc.lib.algorithm.commons import init_weights
 
@@ -50,7 +51,7 @@ class SourceModuleHnNSF(torch.nn.Module):
         return sine_merge, None, None
 
 
-class GeneratorNSF(torch.nn.Module):
+class HiFiGANNSFGenerator(torch.nn.Module):
     """
     Generator for synthesizing audio using the NSF (Neural Source Filter) approach.
 
@@ -78,11 +79,13 @@ class GeneratorNSF(torch.nn.Module):
         gin_channels: int,
         sr: int,
         is_half: bool = False,
+        checkpointing = False,
     ):
-        super(GeneratorNSF, self).__init__()
+        super(HiFiGANNSFGenerator, self).__init__()
 
         self.num_kernels = len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_rates)
+        self.checkpointing = checkpointing
         self.f0_upsamp = torch.nn.Upsample(scale_factor=math.prod(upsample_rates))
         self.m_source = SourceModuleHnNSF(
             sample_rate=sr, harmonic_num=0, is_half=is_half
@@ -105,6 +108,13 @@ class GeneratorNSF(torch.nn.Module):
         ]
 
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):
+            # handling odd upsampling rates
+            if u % 2 == 0:
+                # old method
+                padding = (k - u) // 2
+            else:
+                padding = u // 2 + u % 2
+
             self.ups.append(
                 weight_norm(
                     torch.nn.ConvTranspose1d(
@@ -112,18 +122,33 @@ class GeneratorNSF(torch.nn.Module):
                         channels[i],
                         k,
                         u,
-                        padding=(k - u) // 2,
+                        padding=padding,
+                        output_padding=u % 2,
                     )
                 )
             )
+            """ handling odd upsampling rates
+            #  s   k   p
+            # 40  80  20
+            # 32  64  16
+            #  4   8   2
+            #  2   3   1
+            # 63 125  31
+            #  9  17   4
+            #  3   5   1
+            #  1   1   0
+            """
+            stride = stride_f0s[i]
+            kernel = 1 if stride == 1 else stride * 2 - stride % 2
+            padding = 0 if stride == 1 else (kernel - stride) // 2
 
             self.noise_convs.append(
                 torch.nn.Conv1d(
                     1,
                     channels[i],
-                    kernel_size=(stride_f0s[i] * 2 if stride_f0s[i] > 1 else 1),
-                    stride=stride_f0s[i],
-                    padding=(stride_f0s[i] // 2 if stride_f0s[i] > 1 else 0),
+                    kernel_size=kernel,
+                    stride=stride,
+                    padding=padding,
                 )
             )
 
@@ -155,14 +180,24 @@ class GeneratorNSF(torch.nn.Module):
 
         for i, (ups, noise_convs) in enumerate(zip(self.ups, self.noise_convs)):
             x = torch.nn.functional.leaky_relu(x, self.lrelu_slope)
-            x = ups(x)
+    
+            if self.training and self.checkpointing:
+                x = checkpoint.checkpoint(ups, x, use_reentrant=False)
+            else:
+                x = ups(x)
+                    
             x += noise_convs(har_source)
 
-            xs = sum(
-                self.resblocks[j](x)
-                for j in range(i * self.num_kernels, (i + 1) * self.num_kernels)
-            )
-            x = xs / self.num_kernels
+            def resblock_forward(x, blocks):
+                return sum(block(x) for block in blocks) / len(blocks)
+
+            blocks = self.resblocks[i * self.num_kernels:(i + 1) * self.num_kernels]
+
+            # Checkpoint or regular computation for ResBlocks
+            if self.training and self.checkpointing:
+                x = checkpoint.checkpoint(resblock_forward, x, blocks, use_reentrant=False)
+            else:
+                x = resblock_forward(x, blocks)
 
         x = torch.nn.functional.leaky_relu(x)
         x = torch.tanh(self.conv_post(x))

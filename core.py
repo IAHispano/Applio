@@ -512,15 +512,15 @@ def run_train_script(
     custom_pretrained: bool = False,
     g_pretrained_path: str = None,
     d_pretrained_path: str = None,
+    vocoder: str = "HiFi-GAN",
+    checkpointing: bool = False,
 ):
 
     if pretrained == True:
         from rvc.lib.tools.pretrained_selector import pretrained_selector
 
         if custom_pretrained == False:
-            pg, pd = pretrained_selector(bool(pitch_guidance))[str(rvc_version)][
-                int(sample_rate)
-            ]
+            pg, pd = pretrained_selector(str(rvc_version), str(vocoder), bool(pitch_guidance), int(sample_rate))
         else:
             if g_pretrained_path is None or d_pretrained_path is None:
                 raise ValueError(
@@ -553,6 +553,8 @@ def run_train_script(
                 overtraining_detector,
                 overtraining_threshold,
                 cleanup,
+                vocoder,
+                checkpointing
             ],
         ),
     ]
@@ -1840,7 +1842,7 @@ def parse_arguments():
         "--sample_rate",
         type=int,
         help="Target sampling rate for the audio data.",
-        choices=[32000, 40000, 48000],
+        choices=[32000, 40000, 44100, 48000],
         required=True,
     )
     preprocess_parser.add_argument(
@@ -1923,7 +1925,7 @@ def parse_arguments():
     )
     extract_parser.add_argument(
         "--gpu",
-        type=int,
+        type=str,
         help="GPU device to use for feature extraction (optional).",
         default="-",
     )
@@ -1931,7 +1933,7 @@ def parse_arguments():
         "--sample_rate",
         type=int,
         help="Target sampling rate for the audio data.",
-        choices=[32000, 40000, 48000],
+        choices=[32000, 40000, 44100, 48000],
         required=True,
     )
     extract_parser.add_argument(
@@ -1966,6 +1968,20 @@ def parse_arguments():
         choices=["v1", "v2"],
         default="v2",
     )
+    train_parser.add_argument(
+        "--vocoder",
+        type=str,
+        help="Vocoder name",
+        choices=["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"],
+        default="HiFi-GAN",
+    )
+    train_parser.add_argument(
+        "--checkpointing",
+        type=str,
+        help="Enables memory-efficient training.",
+        choices=[True, False],
+        default="False",
+    )    
     train_parser.add_argument(
         "--save_every_epoch",
         type=int,
@@ -2465,6 +2481,8 @@ def main():
                 cache_data_in_gpu=args.cache_data_in_gpu,
                 g_pretrained_path=args.g_pretrained_path,
                 d_pretrained_path=args.d_pretrained_path,
+                vocoder=args.vocoder,
+                checkpointing=args.checkpointing,
             )
         elif args.mode == "index":
             run_index_script(

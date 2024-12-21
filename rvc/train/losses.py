@@ -24,9 +24,17 @@ def discriminator_loss(disc_real_outputs, disc_generated_outputs):
         disc_real_outputs (list of torch.Tensor): List of discriminator outputs for real samples.
         disc_generated_outputs (list of torch.Tensor): List of discriminator outputs for generated samples.
     """
-    r_losses = [(1 - dr).pow(2).mean() for dr in disc_real_outputs]
-    g_losses = [dg.pow(2).mean() for dg in disc_generated_outputs]
-    loss = sum(r_losses) + sum(g_losses)
+    loss = 0
+    r_losses = []
+    g_losses = []
+    for dr, dg in zip(disc_real_outputs, disc_generated_outputs):
+        r_loss = torch.mean((1 - dr.float()) ** 2)
+        g_loss = torch.mean(dg.float() ** 2)
+
+        #r_losses.append(r_loss.item())
+        #g_losses.append(g_loss.item())
+        loss += r_loss + g_loss
+
     return loss, r_losses, g_losses
 
 
@@ -37,10 +45,31 @@ def generator_loss(disc_outputs):
     Args:
         disc_outputs (list of torch.Tensor): List of discriminator outputs for generated samples.
     """
-    gen_losses = [(1 - dg).pow(2).mean() for dg in disc_outputs]
-    loss = sum(gen_losses)
+    loss = 0
+    gen_losses = []
+    for dg in disc_outputs:
+        l = torch.mean((1 - dg.float()) ** 2)
+        #gen_losses.append(l.item())
+        loss += l
+
     return loss, gen_losses
 
+def discriminator_loss_scaled(disc_real, disc_fake, scale=1.0):
+    loss = 0
+    for i, (d_real, d_fake) in enumerate(zip(disc_real, disc_fake)):
+        real_loss = torch.mean((1 - d_real) ** 2)
+        fake_loss = torch.mean(d_fake**2)
+        _loss = real_loss + fake_loss
+        loss += _loss if i < len(disc_real) / 2 else scale * _loss
+    return loss, None, None
+
+def generator_loss_scaled(disc_outputs, scale=1.0):
+    loss = 0
+    for i, d_fake in enumerate(disc_outputs):
+        d_fake = d_fake.float()
+        _loss = torch.mean((1 - d_fake) ** 2)
+        loss += _loss if i < len(disc_outputs) / 2 else scale * _loss
+    return loss, None, None
 
 def discriminator_loss_scaled(disc_real, disc_fake, scale=1.0):
     """
@@ -98,3 +127,11 @@ def kl_loss(z_p, logs_q, m_p, logs_p, z_mask):
     kl = (kl * z_mask).sum()
     loss = kl / z_mask.sum()
     return loss
+
+MaxPool = torch.nn.MaxPool1d(160)
+
+def envelope_loss(y, y_g):
+  loss = 0
+  loss += torch.mean(torch.abs(MaxPool( y) - MaxPool( y_g)))
+  loss += torch.mean(torch.abs(MaxPool(-y) - MaxPool(-y_g)))
+  return loss
