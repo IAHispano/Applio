@@ -243,7 +243,7 @@ def get_indexes():
 
 def extract_model_and_epoch(path):
     base_name = os.path.basename(path)
-    match = re.match(r'(.+?)_(\d+)e_', base_name)
+    match = re.match(r"(.+?)_(\d+)e_", base_name)
     if match:
         model, epoch = match.groups()
         return model, int(epoch)
