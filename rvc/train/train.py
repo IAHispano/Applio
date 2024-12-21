@@ -391,7 +391,7 @@ def run(
         checkpointing=checkpointing,
     ).to(device)
 
-    net_d = MultiPeriodDiscriminator(version, config.model.use_spectral_norm).to(device)
+    net_d = MultiPeriodDiscriminator(version, config.model.use_spectral_norm, checkpointing=checkpointing).to(device)
 
     optim_g = torch.optim.AdamW(
         net_g.parameters(),
