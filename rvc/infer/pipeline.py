@@ -21,7 +21,6 @@ import logging
 
 logging.getLogger("faiss").setLevel(logging.WARNING)
 
-# Constants for high-pass filter
 FILTER_ORDER = 5
 CUTOFF_FREQUENCY = 48  # Hz
 SAMPLE_RATE = 16000  # Hz
@@ -43,7 +42,7 @@ class AudioProcessor:
         target_audio: np.ndarray,
         target_rate: int,
         rate: float,
-    ) -> np.ndarray:
+    ):
         """
         Adjust the RMS level of target_audio to match the RMS of source_audio, with a given blending rate.
 

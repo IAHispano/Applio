@@ -135,7 +135,7 @@ class SineGenerator(torch.nn.Module):
         self.voiced_threshold = voiced_threshold
         self.waveform_dim = self.num_harmonics + 1  # fundamental + harmonics
 
-    def _compute_voiced_unvoiced(self, f0: torch.Tensor) -> torch.Tensor:
+    def _compute_voiced_unvoiced(self, f0: torch.Tensor):
         """
         Generate a binary mask to indicate voiced/unvoiced frames.
 
@@ -145,9 +145,7 @@ class SineGenerator(torch.nn.Module):
         uv_mask = (f0 > self.voiced_threshold).float()
         return uv_mask
 
-    def _generate_sine_wave(
-        self, f0: torch.Tensor, upsampling_factor: int
-    ) -> torch.Tensor:
+    def _generate_sine_wave(self, f0: torch.Tensor, upsampling_factor: int):
         """
         Generate sine waves for the fundamental frequency and its harmonics.
 

@@ -10,7 +10,7 @@ from assets.i18n.i18n import I18nAuto
 i18n = I18nAuto()
 
 
-def extract_f0_curve(audio_path: str, method: str) -> tuple:
+def extract_f0_curve(audio_path: str, method: str):
     print("Extracting F0 Curve...")
     image_path = os.path.join("logs", "f0_plot.png")
     txt_path = os.path.join("logs", "f0_curve.txt")

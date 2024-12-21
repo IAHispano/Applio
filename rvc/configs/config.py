@@ -37,7 +37,7 @@ class Config:
         self.gpu_mem = None
         self.x_pad, self.x_query, self.x_center, self.x_max = self.device_config()
 
-    def load_config_json(self) -> dict:
+    def load_config_json(self):
         configs = {}
         for config_file in version_config_paths:
             config_path = os.path.join("rvc", "configs", config_file)
@@ -97,7 +97,7 @@ class Config:
             print(f"File not found: {full_config_path}")
             return None
 
-    def device_config(self) -> tuple:
+    def device_config(self):
         if self.device.startswith("cuda"):
             self.set_cuda_config()
         else:

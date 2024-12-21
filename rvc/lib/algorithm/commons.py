@@ -157,7 +157,7 @@ def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
     return acts
 
 
-def convert_pad_shape(pad_shape: List[List[int]]) -> List[int]:
+def convert_pad_shape(pad_shape: List[List[int]]):
     """
     Convert the pad shape to a list of integers.
 
