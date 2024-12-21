@@ -184,12 +184,12 @@ class MultiScaleMelSpectrogramLoss(torch.nn.Module):
         mel_dtype_device = str(n_mels) + "_" + dtype_device
         # caching hann window
         if win_dtype_device not in self.hann_window:
-            self.hann_window[win_dtype_device] = torch.hann_window(window_length, device=wav.device, dtype=wav.dtype)
+            self.hann_window[win_dtype_device] = torch.hann_window(window_length, device=wav.device, dtype=torch.float32)
         
         wav = wav.squeeze(1)  # -> torch(B, T)
 
         stft = torch.stft(
-            wav,
+            wav.float(),
             n_fft=window_length,
             hop_length=hop_length,
             window=self.hann_window[win_dtype_device],
@@ -208,7 +208,7 @@ class MultiScaleMelSpectrogramLoss(torch.nn.Module):
                     fmin=0,
                     fmax=None,
                 )
-            ).to(device=wav.device, dtype=wav.dtype)
+            ).to(device=wav.device, dtype=torch.float32)
         
         mel_spectrogram = torch.matmul(
             self.mel_banks[mel_dtype_device], magnitude
