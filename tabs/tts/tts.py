@@ -16,13 +16,14 @@ from tabs.inference.inference import (
     get_indexes,
     get_speakers_id,
     match_index,
-    names,
     refresh_embedders_folders,
+    extract_model_and_epoch,
+    names,
+    default_weight,
 )
 
 i18n = I18nAuto()
 
-default_weight = random.choice(names) if names else ""
 
 with open(
     os.path.join("rvc", "lib", "tools", "tts_voices.json"), "r", encoding="utf-8"
@@ -50,7 +51,7 @@ def tts_tab():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
                 info=i18n("Select the voice model to use for the conversion."),
-                choices=sorted(names, key=lambda path: os.path.getsize(path)),
+                choices=sorted(names, key=lambda x: extract_model_and_epoch(x)),
                 interactive=True,
                 value=default_weight,
                 allow_custom_value=True,

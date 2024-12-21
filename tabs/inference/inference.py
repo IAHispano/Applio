@@ -62,6 +62,8 @@ names = [
     )
 ]
 
+default_weight = names[0] if names else None
+
 indexes_list = [
     os.path.join(root, name)
     for root, _, files in os.walk(model_root_relative, topdown=False)
@@ -239,6 +241,15 @@ def get_indexes():
     return indexes_list if indexes_list else ""
 
 
+def extract_model_and_epoch(path):
+    base_name = os.path.basename(path)
+    match = re.match(r'(.+?)_(\d+)e_', base_name)
+    if match:
+        model, epoch = match.groups()
+        return model, int(epoch)
+    return "", 0
+
+
 def save_to_wav(record_button):
     if record_button is None:
         pass
@@ -337,13 +348,12 @@ def get_speakers_id(model):
 
 # Inference tab
 def inference_tab():
-    default_weight = names[0] if names else None
     with gr.Column():
         with gr.Row():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
                 info=i18n("Select the voice model to use for the conversion."),
-                choices=sorted(names, key=lambda path: os.path.getsize(path)),
+                choices=sorted(names, key=lambda x: extract_model_and_epoch(x)),
                 interactive=True,
                 value=default_weight,
                 allow_custom_value=True,
