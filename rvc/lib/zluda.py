@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 
 if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"):
     class STFT:
@@ -11,15 +10,13 @@ if torch.cuda.is_available() and torch.cuda.get_device_name().endswith("[ZLUDA]"
             # Check if the basis for this n_fft is already cached
             if n_fft in self.fourier_bases:
                 return self.fourier_bases[n_fft]
-            eye = np.eye(n_fft)
-            fourier_basis = np.fft.fft(eye)
+            fourier_basis = torch.fft.fft(torch.eye(n_fft, device="cpu")).to(self.device)
             # stack separated real and imaginary components and convert to torch tensor
             cutoff = n_fft // 2 + 1
-            real_imag_basis = np.vstack([np.real(fourier_basis[:cutoff]), np.imag(fourier_basis[:cutoff])])
-            torch_basis = torch.FloatTensor(real_imag_basis).to(self.device)
+            fourier_basis = torch.cat([fourier_basis.real[:cutoff], fourier_basis.imag[:cutoff]], dim=0)
             # cache the tensor and return
-            self.fourier_bases[n_fft] = torch_basis
-            return torch_basis
+            self.fourier_bases[n_fft] = fourier_basis
+            return fourier_basis
         def transform(self, input, n_fft, hop_length, window):
             # fetch cached Fourier basis
             fourier_basis = self._get_fourier_basis(n_fft)
