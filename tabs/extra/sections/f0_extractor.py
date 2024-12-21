@@ -1,6 +1,6 @@
+import os
 import librosa
 import gradio as gr
-import os
 from matplotlib import pyplot as plt
 
 from rvc.lib.predictors.F0Extractor import F0Extractor
@@ -41,28 +41,26 @@ def extract_f0_curve(audio_path: str, method: str):
 
 
 def f0_extractor_tab():
-    with gr.Accordion(label=i18n("Extract F0 Curve")):
-        with gr.Row():
-            audio = gr.Audio(label=i18n("Upload Audio"), type="filepath")
-            f0_method = gr.Radio(
-                label=i18n("Pitch extraction algorithm"),
-                info=i18n(
-                    "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
-                ),
-                choices=["crepe", "fcpe", "rmvpe"],
-                value="rmvpe",
-            )
-        button = gr.Button(i18n("Extract F0 Curve"))
+    audio = gr.Audio(label=i18n("Upload Audio"), type="filepath")
+    f0_method = gr.Radio(
+        label=i18n("Pitch extraction algorithm"),
+        info=i18n(
+            "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
+        ),
+        choices=["crepe", "fcpe", "rmvpe"],
+        value="rmvpe",
+    )
+    button = gr.Button(i18n("Extract F0 Curve"))
 
-    with gr.Accordion(label=i18n("Output Information")):
+    with gr.Row():
         txt_output = gr.File(label="F0 Curve", type="filepath")
         image_output = gr.Image(type="filepath", interactive=False)
 
-        button.click(
-            fn=extract_f0_curve,
-            inputs=[
-                audio,
-                f0_method,
-            ],
-            outputs=[image_output, txt_output],
-        )
+    button.click(
+        fn=extract_f0_curve,
+        inputs=[
+            audio,
+            f0_method,
+        ],
+        outputs=[image_output, txt_output],
+    )

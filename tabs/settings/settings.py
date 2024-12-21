@@ -1,5 +1,6 @@
 import os
 import sys
+import gradio as gr
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -14,10 +15,12 @@ from tabs.settings.sections.model_author import model_author_tab
 
 
 def settings_tab():
-    presence_tab()
-    precision_tab()
-    theme_tab()
-    version_tab()
-    lang_tab()
-    restart_tab()
-    model_author_tab()
+    with gr.TabItem(label="General"):
+        presence_tab()
+        theme_tab()
+        version_tab()
+        lang_tab()
+        restart_tab()
+    with gr.TabItem(label="Inference & Training"):
+        precision_tab()
+        model_author_tab()

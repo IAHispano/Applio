@@ -1,4 +1,6 @@
-import os, sys
+import os
+import sys
+import gradio as gr
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -8,14 +10,8 @@ from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
 
-import gradio as gr
-
-
 def processing_tab():
-    with gr.Accordion(label=i18n("View model information")):
-        with gr.Row():
-            with gr.Column():
-                model_view_model_path = gr.Textbox(
+        model_view_model_path = gr.Textbox(
                     label=i18n("Path to Model"),
                     info=i18n("Introduce the model pth path"),
                     value="",
