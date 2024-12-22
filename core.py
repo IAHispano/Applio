@@ -1891,7 +1891,7 @@ def parse_arguments():
         "--chunk_len",
         type=float,
         help="Chunk length.",
-        choices=[(i / 10) for i in range(3, 6)],
+        choices=[i * 0.5 for i in range(1, 11)],
         default=3.0,
         required=False,
     )
@@ -2005,10 +2005,11 @@ def parse_arguments():
     )
     train_parser.add_argument(
         "--checkpointing",
-        type=str,
-        help="Enables memory-efficient training.",
+        type=lambda x: bool(strtobool(x)),
         choices=[True, False],
-        default="False",
+        help="Enables memory-efficient training.",
+        default=False,
+        required=False,
     )    
     train_parser.add_argument(
         "--save_every_epoch",
@@ -2468,6 +2469,8 @@ def main():
                 process_effects=args.process_effects,
                 noise_reduction=args.noise_reduction,
                 clean_strength=args.noise_reduction_strength,
+                chunk_len=args.chunk_len,
+                overlap_len=args.overlap_len,
             )
         elif args.mode == "extract":
             run_extract_script(
