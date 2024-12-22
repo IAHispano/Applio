@@ -68,15 +68,14 @@ version = sys.argv[6]
 gpus = sys.argv[7]
 batch_size = int(sys.argv[8])
 sample_rate = int(sys.argv[9])
-pitch_guidance = strtobool(sys.argv[10])
-save_only_latest = strtobool(sys.argv[11])
-save_every_weights = strtobool(sys.argv[12])
-cache_data_in_gpu = strtobool(sys.argv[13])
-overtraining_detector = strtobool(sys.argv[14])
-overtraining_threshold = int(sys.argv[15])
-cleanup = strtobool(sys.argv[16])
-vocoder = sys.argv[17]
-checkpointing = strtobool(sys.argv[18])
+save_only_latest = strtobool(sys.argv[10])
+save_every_weights = strtobool(sys.argv[11])
+cache_data_in_gpu = strtobool(sys.argv[12])
+overtraining_detector = strtobool(sys.argv[13])
+overtraining_threshold = int(sys.argv[14])
+cleanup = strtobool(sys.argv[15])
+vocoder = sys.argv[16]
+checkpointing = strtobool(sys.argv[17])
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -216,7 +215,6 @@ def main():
                         experiment_dir,
                         pretrainG,
                         pretrainD,
-                        pitch_guidance,
                         total_epoch,
                         save_every_weights,
                         config,
@@ -303,7 +301,6 @@ def run(
     experiment_dir,
     pretrainG,
     pretrainD,
-    pitch_guidance,
     custom_total_epoch,
     custom_save_every_weights,
     config,
@@ -318,7 +315,6 @@ def run(
         experiment_dir (str): The directory where experiment logs and checkpoints will be saved.
         pretrainG (str): Path to the pre-trained generator model.
         pretrainD (str): Path to the pre-trained discriminator model.
-        pitch_guidance (bool): Flag indicating whether to use pitch guidance during training.
         custom_total_epoch (int): The total number of epochs for training.
         custom_save_every_weights (int): The interval (in epochs) at which to save model weights.
         config (object): Configuration object containing training parameters.
@@ -383,7 +379,7 @@ def run(
         config.data.filter_length // 2 + 1,
         config.train.segment_size // config.data.hop_length,
         **config.model,
-        use_f0=pitch_guidance == True,  # converting 1/0 to True/False
+        use_f0=True,
         is_half=config.train.fp16_run and device.type == "cuda",
         sr=sample_rate,
         vocoder=vocoder,
@@ -485,8 +481,8 @@ def run(
         reference = (
             phone,
             phone_lengths,
-            pitch if pitch_guidance else None,
-            pitchf if pitch_guidance else None,
+            pitch,
+            pitchf,
             sid,
         )
     else:
@@ -495,8 +491,8 @@ def run(
             reference = (
                 phone.to(device),
                 phone_lengths.to(device),
-                pitch.to(device) if pitch_guidance else None,
-                pitchf.to(device) if pitch_guidance else None,
+                pitch.to(device),
+                pitchf.to(device),
                 sid.to(device),
             )
             break
@@ -608,8 +604,6 @@ def train_and_evaluate(
                 wave_lengths,
                 sid,
             ) = info
-            pitch = pitch if pitch_guidance else None
-            pitchf = pitchf if pitch_guidance else None
 
             # Forward pass
             use_amp = config.train.fp16_run and device.type == "cuda"
@@ -928,8 +922,7 @@ def train_and_evaluate(
                     extract_model(
                         ckpt=ckpt,
                         sr=sample_rate,
-                        pitch_guidance=pitch_guidance
-                        == True,  # converting 1/0 to True/False,
+                        pitch_guidance=True,
                         name=model_name,
                         model_dir=m,
                         epoch=epoch,

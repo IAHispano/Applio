@@ -391,14 +391,32 @@ def train_tab():
                 interactive=True,
             )
             with gr.Row():
-                cut_preprocess = gr.Checkbox(
+                cut_preprocess = gr.Radio(
                     label=i18n("Audio cutting"),
                     info=i18n(
-                        "It's recommended to deactivate this option if your dataset has already been processed."
+                        "Audio file slicing method: Select 'Skip' if the files are already pre-sliced, 'Simple' if excessive silence has already been removed from the files, or 'Automatic' for automatic silence detection and slicing around it."
                     ),
-                    value=True,
+                    choices=["Skip", "Simple", "Automatic"],
+                    value="Automatic",
                     interactive=True,
-                    visible=True,
+                )
+                chunk_len = gr.Slider(
+                    0.5,
+                    5.0,
+                    3.0,
+                    step=0.1,
+                    label=i18n("Chunk length (sec)"),
+                    info=i18n("Length of the audio slice for 'Simple' method."),
+                    interactive=True,
+                )
+                overlap_len = gr.Slider(
+                    0.0,
+                    0.4,
+                    0.3,
+                    step=0.1,
+                    label=i18n("Overlap length (sec)"),
+                    info=i18n("Length of the overlap between slices for 'Simple' method."),
+                    interactive=True,
                 )
                 process_effects = gr.Checkbox(
                     label=i18n("Process effects"),
@@ -451,6 +469,8 @@ def train_tab():
                     process_effects,
                     noise_reduction,
                     clean_strength,
+                    chunk_len,
+                    overlap_len,
                 ],
                 outputs=[preprocess_output_info],
             )
@@ -480,7 +500,18 @@ def train_tab():
                 value="contentvec",
                 interactive=True,
             )
-
+        include_mutes = gr.Slider(
+            0,
+            10,
+            2,
+            step=1,
+            label=i18n("Silent training files"),
+            info=i18n(
+                "Adding several silent files to the training set enables the model to handle pure silence in inferred audio files. Select 0 if your dataset is clean and already contains segments of pure silence."
+                ),
+            value=True,
+            interactive=True,
+        )
         hop_length = gr.Slider(
             1,
             512,
@@ -570,6 +601,7 @@ def train_tab():
                 sampling_rate,
                 embedder_model,
                 embedder_model_custom,
+                include_mutes
             ],
             outputs=[extract_output_info],
         )
@@ -653,18 +685,8 @@ def train_tab():
                     )
                     checkpointing = gr.Checkbox(
                         label=i18n("Checkpointing"),
-                        info=i18n(
-                            "Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate."
-                        ),
+                        info=i18n("Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate."),
                         value=False,
-                        interactive=True,
-                    )
-                    pitch_guidance = gr.Checkbox(
-                        label=i18n("Pitch Guidance"),
-                        info=i18n(
-                            "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential."
-                        ),
-                        value=True,
                         interactive=True,
                     )
             with gr.Column():
@@ -800,7 +822,6 @@ def train_tab():
                     sampling_rate,
                     batch_size,
                     gpu,
-                    pitch_guidance,
                     overtraining_detector,
                     overtraining_threshold,
                     pretrained,
@@ -811,7 +832,7 @@ def train_tab():
                     g_pretrained_path,
                     d_pretrained_path,
                     vocoder,
-                    checkpointing,
+                    checkpointing
                 ],
                 outputs=[train_output_info],
             )
@@ -911,13 +932,12 @@ def train_tab():
                     "__type__": "update",
                 }
 
-            def download_prerequisites(version, pitch_guidance):
+            def download_prerequisites(version):
                 if version == "v1":
-                    if pitch_guidance:
-                        gr.Info(
+                    gr.Info(
                             "Checking for v1 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
                         )
-                        run_prerequisites_script(
+                    run_prerequisites_script(
                             pretraineds_v1_f0=True,
                             pretraineds_v1_nof0=False,
                             pretraineds_v2_f0=False,
@@ -925,24 +945,11 @@ def train_tab():
                             models=False,
                             exe=False,
                         )
-                    else:
-                        gr.Info(
-                            "Checking for v1 prerequisites without pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
-                        )
-                        run_prerequisites_script(
-                            pretraineds_v1_f0=False,
-                            pretraineds_v1_nof0=True,
-                            pretraineds_v2_f0=False,
-                            pretraineds_v2_nof0=False,
-                            models=False,
-                            exe=False,
-                        )
                 elif version == "v2":
-                    if pitch_guidance:
-                        gr.Info(
+                    gr.Info(
                             "Checking for v2 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
                         )
-                        run_prerequisites_script(
+                    run_prerequisites_script(
                             pretraineds_v1_f0=False,
                             pretraineds_v1_nof0=False,
                             pretraineds_v2_f0=True,
@@ -950,18 +957,7 @@ def train_tab():
                             models=False,
                             exe=False,
                         )
-                    else:
-                        gr.Info(
-                            "Checking for v2 prerequisites without pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
-                        )
-                        run_prerequisites_script(
-                            pretraineds_v1_f0=False,
-                            pretraineds_v1_nof0=False,
-                            pretraineds_v2_f0=False,
-                            pretraineds_v2_nof0=True,
-                            models=False,
-                            exe=False,
-                        )
+
                 gr.Info(
                     "Prerequisites check complete. Missing files were downloaded, and you may now start preprocessing."
                 )
@@ -992,7 +988,7 @@ def train_tab():
             )
             rvc_version.change(
                 fn=download_prerequisites,
-                inputs=[rvc_version, pitch_guidance],
+                inputs=[rvc_version],
                 outputs=[],
             )
             experimental_options.change(

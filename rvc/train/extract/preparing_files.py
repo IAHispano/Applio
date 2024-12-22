@@ -15,7 +15,7 @@ def generate_config(rvc_version: str, sample_rate: int, model_path: str):
         shutil.copyfile(config_path, config_save_path)
 
 
-def generate_filelist(model_path: str, rvc_version: str, sample_rate: int):
+def generate_filelist(model_path: str, rvc_version: str, sample_rate: int, include_mutes: int = 2):
     gt_wavs_dir = os.path.join(model_path, "sliced_audios")
     feature_dir = os.path.join(model_path, f"{rvc_version}_extracted")
 
@@ -41,23 +41,21 @@ def generate_filelist(model_path: str, rvc_version: str, sample_rate: int):
             f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{f0_dir}/{name}.wav.npy|{f0nsf_dir}/{name}.wav.npy|{sid}"
         )
 
-    mute_audio_path = os.path.join(
-        mute_base_path, "sliced_audios", f"mute{sample_rate}.wav"
-    )
-    mute_feature_path = os.path.join(
-        mute_base_path, f"{rvc_version}_extracted", "mute.npy"
-    )
-    mute_f0_path = os.path.join(mute_base_path, "f0", "mute.wav.npy")
-    mute_f0nsf_path = os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")
+    if include_mutes > 0:
+        mute_audio_path = os.path.join(
+            mute_base_path, "sliced_audios", f"mute{sample_rate}.wav"
+        )
+        mute_feature_path = os.path.join(
+            mute_base_path, f"{rvc_version}_extracted", "mute.npy"
+        )
+        mute_f0_path = os.path.join(mute_base_path, "f0", "mute.wav.npy")
+        mute_f0nsf_path = os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")
 
-    # always adding two files
-    for sid in sids:
-        options.append(
-            f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}"
-        )
-        options.append(
-            f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}"
-        )
+        # adding x files per sid
+        for sid in sids * include_mutes:
+            options.append(
+                f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}"
+            )
 
     file_path = os.path.join(model_path, "model_info.json")
     if os.path.exists(file_path):
