@@ -481,7 +481,7 @@ class VoiceConverter:
                 *self.cpt["config"],
                 use_f0=self.use_f0,
                 text_enc_hidden_dim=self.text_enc_hidden_dim,
-                is_half=False
+                is_half=False,
                 vocoder=self.vocoder
             )
             del self.net_g.enc_q
