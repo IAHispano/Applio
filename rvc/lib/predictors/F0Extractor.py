@@ -30,14 +30,14 @@ class F0Extractor:
         self.x, self.sample_rate = librosa.load(self.wav_path, sr=self.sample_rate)
 
     @property
-    def hop_size(self) -> float:
+    def hop_size(self):
         return self.hop_length / self.sample_rate
 
     @property
-    def wav16k(self) -> np.ndarray:
+    def wav16k(self):
         return resampy.resample(self.x, self.sample_rate, 16000)
 
-    def extract_f0(self) -> np.ndarray:
+    def extract_f0(self):
         f0 = None
         method = self.method
         if method == "crepe":

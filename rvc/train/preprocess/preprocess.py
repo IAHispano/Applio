@@ -25,7 +25,6 @@ logging.getLogger("numba.core.byteflow").setLevel(logging.WARNING)
 logging.getLogger("numba.core.ssa").setLevel(logging.WARNING)
 logging.getLogger("numba.core.interpreter").setLevel(logging.WARNING)
 
-# Constants
 OVERLAP = 0.3
 MAX_AMPLITUDE = 0.9
 ALPHA = 0.75

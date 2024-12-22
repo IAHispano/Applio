@@ -3,7 +3,6 @@ import sys
 import os
 import logging
 
-# Constants
 DEFAULT_PORT = 6969
 MAX_PORT_ATTEMPTS = 10
 
