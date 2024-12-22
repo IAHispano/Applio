@@ -481,15 +481,13 @@ class VoiceConverter:
                 *self.cpt["config"],
                 use_f0=self.use_f0,
                 text_enc_hidden_dim=self.text_enc_hidden_dim,
-                is_half=self.config.is_half,
+                is_half=False
                 vocoder=self.vocoder
             )
             del self.net_g.enc_q
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)
             self.net_g.eval().to(self.config.device)
-            self.net_g = (
-                self.net_g.half() if self.config.is_half else self.net_g.float()
-            )
+            self.net_g = self.net_g.float()
 
     def setup_vc_instance(self):
         """

@@ -485,7 +485,7 @@ class Pipeline:
                 pitch, pitchf = None, None
             p_len = torch.tensor([p_len], device=self.device).long()
             audio1 = (
-                (net_g.infer(feats, p_len, pitch, pitchf, sid)[0][0, 0])
+                (net_g.infer(feats.float(), p_len, pitch, pitchf.float(), sid)[0][0, 0])
                 .data.cpu()
                 .float()
                 .numpy()
