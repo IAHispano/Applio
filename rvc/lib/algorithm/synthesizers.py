@@ -1,7 +1,9 @@
 import torch
 from typing import Optional
-from rvc.lib.algorithm.nsf import GeneratorNSF
-from rvc.lib.algorithm.generators import Generator
+from rvc.lib.algorithm.generators.hifigan_mrf import HiFiGANMRFGenerator
+from rvc.lib.algorithm.generators.hifigan_nsf import HiFiGANNSFGenerator
+from rvc.lib.algorithm.generators.hifigan import HiFiGANGenerator
+from rvc.lib.algorithm.generators.refinegan import RefineGANGenerator
 from rvc.lib.algorithm.commons import slice_segments, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock
 from rvc.lib.algorithm.encoders import TextEncoder, PosteriorEncoder
@@ -57,12 +59,15 @@ class Synthesizer(torch.nn.Module):
         sr: int,
         use_f0: bool,
         text_enc_hidden_dim: int = 768,
+        vocoder: str = "HiFi-GAN",
+        randomized: bool = True,
+        checkpointing: bool = False,
         **kwargs,
     ):
         super().__init__()
         self.segment_size = segment_size
-        self.gin_channels = gin_channels
         self.use_f0 = use_f0
+        self.randomized = randomized
 
         self.enc_p = TextEncoder(
             inter_channels,
@@ -75,30 +80,60 @@ class Synthesizer(torch.nn.Module):
             text_enc_hidden_dim,
             f0=use_f0,
         )
-
+        print(f"Using {vocoder} vocoder")
         if use_f0:
-            self.dec = GeneratorNSF(
-                inter_channels,
-                resblock_kernel_sizes,
-                resblock_dilation_sizes,
-                upsample_rates,
-                upsample_initial_channel,
-                upsample_kernel_sizes,
-                gin_channels=gin_channels,
-                sr=sr,
-                is_half=kwargs["is_half"],
-            )
+            if vocoder == "MRF HiFi-GAN":
+                self.dec = HiFiGANMRFGenerator(
+                    in_channel=inter_channels,
+                    upsample_initial_channel=upsample_initial_channel,
+                    upsample_rates=upsample_rates,
+                    upsample_kernel_sizes=upsample_kernel_sizes,
+                    resblock_kernel_sizes=resblock_kernel_sizes,
+                    resblock_dilations=resblock_dilation_sizes,
+                    gin_channels=gin_channels,
+                    sample_rate=sr,
+                    harmonic_num=8,
+                    checkpointing=checkpointing,
+                )
+            elif vocoder == "RefineGAN":
+                self.dec = RefineGANGenerator(
+                    sample_rate=sr,
+                    downsample_rates=upsample_rates[::-1],
+                    upsample_rates=upsample_rates,
+                    start_channels=16,
+                    num_mels=inter_channels,
+                    checkpointing=checkpointing,
+                )
+            else:
+                self.dec = HiFiGANNSFGenerator(
+                    inter_channels,
+                    resblock_kernel_sizes,
+                    resblock_dilation_sizes,
+                    upsample_rates,
+                    upsample_initial_channel,
+                    upsample_kernel_sizes,
+                    gin_channels=gin_channels,
+                    sr=sr,
+                    checkpointing=checkpointing,
+                )
         else:
-            self.dec = Generator(
-                inter_channels,
-                resblock_kernel_sizes,
-                resblock_dilation_sizes,
-                upsample_rates,
-                upsample_initial_channel,
-                upsample_kernel_sizes,
-                gin_channels=gin_channels,
-            )
-
+            if vocoder == "MRF HiFi-GAN":
+                print("MRF HiFi-GAN does not support training without pitch guidance.")
+                self.dec = None
+            elif vocoder == "RefineGAN":
+                print("RefineGAN does not support training without pitch guidance.")
+                self.dec = None
+            else:
+                self.dec = HiFiGANGenerator(
+                    inter_channels,
+                    resblock_kernel_sizes,
+                    resblock_dilation_sizes,
+                    upsample_rates,
+                    upsample_initial_channel,
+                    upsample_kernel_sizes,
+                    gin_channels=gin_channels,
+                    checkpointing=checkpointing
+                )
         self.enc_q = PosteriorEncoder(
             spec_channels,
             inter_channels,
@@ -119,13 +154,11 @@ class Synthesizer(torch.nn.Module):
         self.emb_g = torch.nn.Embedding(spk_embed_dim, gin_channels)
 
     def _remove_weight_norm_from(self, module):
-        """Utility to remove weight normalization from a module."""
         for hook in module._forward_pre_hooks.values():
             if getattr(hook, "__class__", None).__name__ == "WeightNorm":
                 torch.nn.utils.remove_weight_norm(module)
 
     def remove_weight_norm(self):
-        """Removes weight normalization from the model."""
         for module in [self.dec, self.flow, self.enc_q]:
             self._remove_weight_norm_from(module)
 
@@ -143,35 +176,32 @@ class Synthesizer(torch.nn.Module):
         y_lengths: Optional[torch.Tensor] = None,
         ds: Optional[torch.Tensor] = None,
     ):
-        """
-        Forward pass of the model.
-
-        Args:
-            phone (torch.Tensor): Phoneme sequence.
-            phone_lengths (torch.Tensor): Lengths of the phoneme sequences.
-            pitch (torch.Tensor, optional): Pitch sequence.
-            pitchf (torch.Tensor, optional): Fine-grained pitch sequence.
-            y (torch.Tensor, optional): Target spectrogram.
-            y_lengths (torch.Tensor, optional): Lengths of the target spectrograms.
-            ds (torch.Tensor, optional): Speaker embedding.
-        """
         g = self.emb_g(ds).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
 
         if y is not None:
             z, m_q, logs_q, y_mask = self.enc_q(y, y_lengths, g=g)
             z_p = self.flow(z, y_mask, g=g)
-            z_slice, ids_slice = rand_slice_segments(z, y_lengths, self.segment_size)
-
-            if self.use_f0 and pitchf is not None:
-                pitchf = slice_segments(pitchf, ids_slice, self.segment_size, 2)
-                o = self.dec(z_slice, pitchf, g=g)
+            # regular old training method using random slices
+            if self.randomized:
+                z_slice, ids_slice = rand_slice_segments(
+                    z, y_lengths, self.segment_size
+                )
+                if self.use_f0:
+                    pitchf = slice_segments(pitchf, ids_slice, self.segment_size, 2)
+                    o = self.dec(z_slice, pitchf, g=g)
+                else:
+                    o = self.dec(z_slice, g=g)
+                return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
+            # future use for finetuning using the entire dataset each pass
             else:
-                o = self.dec(z_slice, g=g)
-
-            return o, ids_slice, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
-
-        return None, None, x_mask, None, (None, None, m_p, logs_p, None, None)
+                if self.use_f0:
+                    o = self.dec(z, pitchf, g=g)
+                else:
+                    o = self.dec(z, g=g)
+                return o, None, x_mask, y_mask, (z, z_p, m_p, logs_p, m_q, logs_q)
+        else:
+            return None, None, x_mask, None, (None, None, m_p, logs_p, None, None)
 
     @torch.jit.export
     def infer(

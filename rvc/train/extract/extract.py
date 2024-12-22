@@ -250,6 +250,7 @@ if __name__ == "__main__":
     sample_rate = sys.argv[7]
     embedder_model = sys.argv[8]
     embedder_model_custom = sys.argv[9] if len(sys.argv) > 9 else None
+    include_mutes = int(sys.argv[10]) if len(sys.argv) > 10 else 2
 
     # prep
     wav_path = os.path.join(exp_dir, "sliced_audios_16k")
@@ -299,4 +300,4 @@ if __name__ == "__main__":
 
     # Run Preparing Files
     generate_config(version, sample_rate, exp_dir)
-    generate_filelist(exp_dir, version, sample_rate)
+    generate_filelist(exp_dir, version, sample_rate, include_mutes)

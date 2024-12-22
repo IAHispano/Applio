@@ -85,7 +85,8 @@ class Encoder(torch.nn.Module):
 
 
 class TextEncoder(torch.nn.Module):
-    """Text Encoder with configurable embedding dimension.
+    """
+    Text Encoder with configurable embedding dimension.
 
     Args:
         out_channels (int): Output channels of the encoder.
@@ -152,7 +153,8 @@ class TextEncoder(torch.nn.Module):
 
 
 class PosteriorEncoder(torch.nn.Module):
-    """Posterior Encoder for inferring latent representation.
+    """
+    Posterior Encoder for inferring latent representation.
 
     Args:
         in_channels (int): Number of channels in the input.
@@ -211,11 +213,9 @@ class PosteriorEncoder(torch.nn.Module):
         return z, m, logs, x_mask
 
     def remove_weight_norm(self):
-        """Removes weight normalization from the encoder."""
         self.enc.remove_weight_norm()
 
     def __prepare_scriptable__(self):
-        """Prepares the module for scripting."""
         for hook in self.enc._forward_pre_hooks.values():
             if (
                 hook.__module__ == "torch.nn.utils.parametrizations.weight_norm"

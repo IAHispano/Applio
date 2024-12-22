@@ -302,30 +302,87 @@ def upload_to_google_drive(pth_path, index_path):
 
 # Train Tab
 def train_tab():
-    with gr.Row():
-        model_name = gr.Dropdown(
-            label=i18n("Model Name"),
-            info=i18n("Name of the new model."),
-            choices=get_models_list(),
-            value="my-project",
-            interactive=True,
-            allow_custom_value=True,
-        )
-        sampling_rate = gr.Radio(
-            label=i18n("Sampling Rate"),
-            info=i18n("The sampling rate of the audio files."),
-            choices=["32000", "40000", "48000"],
-            value="40000",
-            interactive=True,
-        )
-        rvc_version = gr.Radio(
-            label=i18n("Model Architecture"),
-            info=i18n("Version of the model architecture."),
-            choices=["v1", "v2"],
-            value="v2",
-            interactive=True,
-            visible=False,
-        )
+    # Model settings section
+    with gr.Accordion(i18n("Model Settings")):
+        with gr.Row():
+            with gr.Column():
+                model_name = gr.Dropdown(
+                    label=i18n("Model Name"),
+                    info=i18n("Name of the new model."),
+                    choices=get_models_list(),
+                    value="my-project",
+                    interactive=True,
+                    allow_custom_value=True,
+                )
+                experimental_options = gr.Checkbox(
+                    label=i18n("Enable Experimental Options"),
+                    info=i18n(
+                        "Enable extra features like 44100 sample rate and vocoder selection. These may cause errors and lack pretrained models."
+                    ),
+                    value=False,
+                )
+
+            with gr.Column():
+                sampling_rate = gr.Radio(
+                    label=i18n("Sampling Rate"),
+                    info=i18n("The sampling rate of the audio files."),
+                    choices=["32000", "40000", "48000"],
+                    value="40000",
+                    interactive=True,
+                )
+                vocoder = gr.Radio(
+                    label=i18n("Vocoder"),
+                    info=i18n(
+                        "Vocoder for audio synthesis: HiFi-GAN (default, available for all clients), MRF HiFi-GAN (higher fidelity, Applio-only), or RefineGAN (offering superior audio quality, Applio-only)."
+                    ),
+                    choices=["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"],
+                    value="HiFi-GAN",
+                    interactive=True,
+                    visible=False,
+                )
+                rvc_version = gr.Radio(
+                    label=i18n("Model Architecture"),
+                    info=i18n("Version of the model architecture."),
+                    choices=["v1", "v2"],
+                    value="v2",
+                    interactive=True,
+                    visible=False,
+                )
+        with gr.Accordion(
+            i18n("Advanced Settings"),
+            open=False,
+        ):
+            with gr.Row():
+                with gr.Column():
+                    cpu_cores = gr.Slider(
+                        1,
+                        min(cpu_count(), 32),  # max 32 parallel processes
+                        min(cpu_count(), 32),
+                        step=1,
+                        label=i18n("CPU Cores"),
+                        info=i18n(
+                            "The number of CPU cores to use in the extraction process. The default setting are your cpu cores, which is recommended for most cases."
+                        ),
+                        interactive=True,
+                    )
+
+                with gr.Column():
+                    gpu = gr.Textbox(
+                        label=i18n("GPU Number"),
+                        info=i18n(
+                            "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-)."
+                        ),
+                        placeholder=i18n("0 to ∞ separated by -"),
+                        value=str(get_number_of_gpus()),
+                        interactive=True,
+                    )
+                    gr.Textbox(
+                        label=i18n("GPU Information"),
+                        info=i18n("The GPU information will be displayed here."),
+                        value=get_gpu_info(),
+                        interactive=False,
+                    )
+    # Preprocess section
     with gr.Accordion(i18n("Preprocess")):
         dataset_path = gr.Dropdown(
             label=i18n("Dataset Path"),
@@ -357,27 +414,38 @@ def train_tab():
         refresh = gr.Button(i18n("Refresh"))
 
         with gr.Accordion(i18n("Advanced Settings"), open=False):
-            cpu_cores_preprocess = gr.Slider(
-                1,
-                min(cpu_count(), 32),  # max 32 parallel processes
-                min(cpu_count(), 32),
-                step=1,
-                label=i18n("CPU Cores"),
+            cut_preprocess = gr.Radio(
+                label=i18n("Audio cutting"),
                 info=i18n(
-                    "The number of CPU cores to use in the preprocess. The default setting are your cpu cores, which is recommended for most cases."
+                    "Audio file slicing method: Select 'Skip' if the files are already pre-sliced, 'Simple' if excessive silence has already been removed from the files, or 'Automatic' for automatic silence detection and slicing around it."
                 ),
+                choices=["Skip", "Simple", "Automatic"],
+                value="Automatic",
                 interactive=True,
             )
             with gr.Row():
-                cut_preprocess = gr.Checkbox(
-                    label=i18n("Audio cutting"),
-                    info=i18n(
-                        "It's recommended to deactivate this option if your dataset has already been processed."
-                    ),
-                    value=True,
+                chunk_len = gr.Slider(
+                    0.5,
+                    5.0,
+                    3.0,
+                    step=0.1,
+                    label=i18n("Chunk length (sec)"),
+                    info=i18n("Length of the audio slice for 'Simple' method."),
                     interactive=True,
-                    visible=True,
                 )
+                overlap_len = gr.Slider(
+                    0.0,
+                    0.4,
+                    0.3,
+                    step=0.1,
+                    label=i18n("Overlap length (sec)"),
+                    info=i18n(
+                        "Length of the overlap between slices for 'Simple' method."
+                    ),
+                    interactive=True,
+                )
+
+            with gr.Row():
                 process_effects = gr.Checkbox(
                     label=i18n("Process effects"),
                     info=i18n(
@@ -387,7 +455,6 @@ def train_tab():
                     interactive=True,
                     visible=True,
                 )
-            with gr.Row():
                 noise_reduction = gr.Checkbox(
                     label=i18n("Noise Reduction"),
                     info=i18n(
@@ -397,17 +464,17 @@ def train_tab():
                     interactive=True,
                     visible=True,
                 )
-                clean_strength = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Noise Reduction Strength"),
-                    info=i18n(
-                        "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
-                    ),
-                    visible=False,
-                    value=0.5,
-                    interactive=True,
-                )
+            clean_strength = gr.Slider(
+                minimum=0,
+                maximum=1,
+                label=i18n("Noise Reduction Strength"),
+                info=i18n(
+                    "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
+                ),
+                visible=False,
+                value=0.5,
+                interactive=True,
+            )
         preprocess_output_info = gr.Textbox(
             label=i18n("Output Information"),
             info=i18n("The output information will be displayed here."),
@@ -424,15 +491,18 @@ def train_tab():
                     model_name,
                     dataset_path,
                     sampling_rate,
-                    cpu_cores_preprocess,
+                    cpu_cores,
                     cut_preprocess,
                     process_effects,
                     noise_reduction,
                     clean_strength,
+                    chunk_len,
+                    overlap_len,
                 ],
                 outputs=[preprocess_output_info],
             )
 
+    # Extract section
     with gr.Accordion(i18n("Extract")):
         with gr.Row():
             f0_method = gr.Radio(
@@ -458,7 +528,18 @@ def train_tab():
                 value="contentvec",
                 interactive=True,
             )
-
+        include_mutes = gr.Slider(
+            0,
+            10,
+            2,
+            step=1,
+            label=i18n("Silent training files"),
+            info=i18n(
+                "Adding several silent files to the training set enables the model to handle pure silence in inferred audio files. Select 0 if your dataset is clean and already contains segments of pure silence."
+            ),
+            value=True,
+            interactive=True,
+        )
         hop_length = gr.Slider(
             1,
             512,
@@ -491,43 +572,6 @@ def train_tab():
                     )
                 move_files_button = gr.Button("Move files to custom embedder folder")
 
-        with gr.Accordion(
-            i18n(
-                "We prioritize running the model extraction on the GPU for faster performance. If you prefer to use the CPU, simply leave the GPU field blank."
-            ),
-            open=False,
-        ):
-            with gr.Row():
-                with gr.Column():
-                    cpu_cores_extract = gr.Slider(
-                        1,
-                        min(cpu_count(), 32),  # max 32 parallel processes
-                        min(cpu_count(), 32),
-                        step=1,
-                        label=i18n("CPU Cores"),
-                        info=i18n(
-                            "The number of CPU cores to use in the extraction process. The default setting are your cpu cores, which is recommended for most cases."
-                        ),
-                        interactive=True,
-                    )
-
-                with gr.Column():
-                    gpu_extract = gr.Textbox(
-                        label=i18n("GPU Number"),
-                        info=i18n(
-                            "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-)."
-                        ),
-                        placeholder=i18n("0 to ∞ separated by -"),
-                        value=str(get_number_of_gpus()),
-                        interactive=True,
-                    )
-                    gr.Textbox(
-                        label=i18n("GPU Information"),
-                        info=i18n("The GPU information will be displayed here."),
-                        value=get_gpu_info(),
-                        interactive=False,
-                    )
-
         extract_output_info = gr.Textbox(
             label=i18n("Output Information"),
             info=i18n("The output information will be displayed here."),
@@ -543,15 +587,17 @@ def train_tab():
                 rvc_version,
                 f0_method,
                 hop_length,
-                cpu_cores_extract,
-                gpu_extract,
+                cpu_cores,
+                gpu,
                 sampling_rate,
                 embedder_model,
                 embedder_model_custom,
+                include_mutes,
             ],
             outputs=[extract_output_info],
         )
 
+    # Training section
     with gr.Accordion(i18n("Training")):
         with gr.Row():
             batch_size = gr.Slider(
@@ -629,15 +675,15 @@ def train_tab():
                         value=False,
                         interactive=True,
                     )
-                    pitch_guidance = gr.Checkbox(
-                        label=i18n("Pitch Guidance"),
+                    checkpointing = gr.Checkbox(
+                        label=i18n("Checkpointing"),
                         info=i18n(
-                            "By employing pitch guidance, it becomes feasible to mirror the intonation of the original voice, including its pitch. This feature is particularly valuable for singing and other scenarios where preserving the original melody or pitch pattern is essential."
+                            "Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate."
                         ),
-                        value=True,
+                        value=False,
                         interactive=True,
                     )
-            with gr.Column():
+            with gr.Row():
                 custom_pretrained = gr.Checkbox(
                     label=i18n("Custom Pretrained"),
                     info=i18n(
@@ -646,6 +692,15 @@ def train_tab():
                     value=False,
                     interactive=True,
                 )
+                overtraining_detector = gr.Checkbox(
+                    label=i18n("Overtraining Detector"),
+                    info=i18n(
+                        "Detect overtraining to prevent the model from learning the training data too well and losing the ability to generalize to new data."
+                    ),
+                    value=False,
+                    interactive=True,
+                )
+            with gr.Row():
                 with gr.Column(visible=False) as pretrained_custom_settings:
                     with gr.Accordion(i18n("Pretrained Custom Settings")):
                         upload_pretrained = gr.File(
@@ -674,41 +729,7 @@ def train_tab():
                             interactive=True,
                             allow_custom_value=True,
                         )
-                multiple_gpu = gr.Checkbox(
-                    label=i18n("GPU Settings"),
-                    info=(
-                        i18n(
-                            "Sets advanced GPU settings, recommended for users with better GPU architecture."
-                        )
-                    ),
-                    value=False,
-                    interactive=True,
-                )
-                with gr.Column(visible=False) as gpu_custom_settings:
-                    with gr.Accordion(i18n("GPU Settings")):
-                        gpu = gr.Textbox(
-                            label=i18n("GPU Number"),
-                            info=i18n(
-                                "Specify the number of GPUs you wish to utilize for training by entering them separated by hyphens (-)."
-                            ),
-                            placeholder=i18n("0 to ∞ separated by -"),
-                            value=str(get_number_of_gpus()),
-                            interactive=True,
-                        )
-                        gr.Textbox(
-                            label=i18n("GPU Information"),
-                            info=i18n("The GPU information will be displayed here."),
-                            value=get_gpu_info(),
-                            interactive=False,
-                        )
-                overtraining_detector = gr.Checkbox(
-                    label=i18n("Overtraining Detector"),
-                    info=i18n(
-                        "Detect overtraining to prevent the model from learning the training data too well and losing the ability to generalize to new data."
-                    ),
-                    value=False,
-                    interactive=True,
-                )
+
                 with gr.Column(visible=False) as overtraining_settings:
                     with gr.Accordion(i18n("Overtraining Detector Settings")):
                         overtraining_threshold = gr.Slider(
@@ -722,15 +743,15 @@ def train_tab():
                             ),
                             interactive=True,
                         )
-                index_algorithm = gr.Radio(
-                    label=i18n("Index Algorithm"),
-                    info=i18n(
-                        "KMeans is a clustering algorithm that divides the dataset into K clusters. This setting is particularly useful for large datasets."
-                    ),
-                    choices=["Auto", "Faiss", "KMeans"],
-                    value="Auto",
-                    interactive=True,
-                )
+            index_algorithm = gr.Radio(
+                label=i18n("Index Algorithm"),
+                info=i18n(
+                    "KMeans is a clustering algorithm that divides the dataset into K clusters. This setting is particularly useful for large datasets."
+                ),
+                choices=["Auto", "Faiss", "KMeans"],
+                value="Auto",
+                interactive=True,
+            )
 
         def enforce_terms(terms_accepted, *args):
             if not terms_accepted:
@@ -770,7 +791,6 @@ def train_tab():
                     sampling_rate,
                     batch_size,
                     gpu,
-                    pitch_guidance,
                     overtraining_detector,
                     overtraining_threshold,
                     pretrained,
@@ -780,6 +800,8 @@ def train_tab():
                     custom_pretrained,
                     g_pretrained_path,
                     d_pretrained_path,
+                    vocoder,
+                    checkpointing,
                 ],
                 outputs=[train_output_info],
             )
@@ -798,6 +820,7 @@ def train_tab():
                 outputs=[train_output_info],
             )
 
+    # Export Model section
     with gr.Accordion(i18n("Export Model"), open=False):
         if not os.name == "nt":
             gr.Markdown(
@@ -879,57 +902,32 @@ def train_tab():
                     "__type__": "update",
                 }
 
-            def download_prerequisites(version, pitch_guidance):
+            def download_prerequisites(version):
                 if version == "v1":
-                    if pitch_guidance:
-                        gr.Info(
-                            "Checking for v1 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
-                        )
-                        run_prerequisites_script(
-                            pretraineds_v1_f0=True,
-                            pretraineds_v1_nof0=False,
-                            pretraineds_v2_f0=False,
-                            pretraineds_v2_nof0=False,
-                            models=False,
-                            exe=False,
-                        )
-                    else:
-                        gr.Info(
-                            "Checking for v1 prerequisites without pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
-                        )
-                        run_prerequisites_script(
-                            pretraineds_v1_f0=False,
-                            pretraineds_v1_nof0=True,
-                            pretraineds_v2_f0=False,
-                            pretraineds_v2_nof0=False,
-                            models=False,
-                            exe=False,
-                        )
+                    gr.Info(
+                        "Checking for v1 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
+                    )
+                    run_prerequisites_script(
+                        pretraineds_v1_f0=True,
+                        pretraineds_v1_nof0=False,
+                        pretraineds_v2_f0=False,
+                        pretraineds_v2_nof0=False,
+                        models=False,
+                        exe=False,
+                    )
                 elif version == "v2":
-                    if pitch_guidance:
-                        gr.Info(
-                            "Checking for v2 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
-                        )
-                        run_prerequisites_script(
-                            pretraineds_v1_f0=False,
-                            pretraineds_v1_nof0=False,
-                            pretraineds_v2_f0=True,
-                            pretraineds_v2_nof0=False,
-                            models=False,
-                            exe=False,
-                        )
-                    else:
-                        gr.Info(
-                            "Checking for v2 prerequisites without pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
-                        )
-                        run_prerequisites_script(
-                            pretraineds_v1_f0=False,
-                            pretraineds_v1_nof0=False,
-                            pretraineds_v2_f0=False,
-                            pretraineds_v2_nof0=True,
-                            models=False,
-                            exe=False,
-                        )
+                    gr.Info(
+                        "Checking for v2 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
+                    )
+                    run_prerequisites_script(
+                        pretraineds_v1_f0=False,
+                        pretraineds_v1_nof0=False,
+                        pretraineds_v2_f0=True,
+                        pretraineds_v2_nof0=False,
+                        models=False,
+                        exe=False,
+                    )
+
                 gr.Info(
                     "Prerequisites check complete. Missing files were downloaded, and you may now start preprocessing."
                 )
@@ -938,6 +936,17 @@ def train_tab():
                 if embedder_model == "custom":
                     return {"visible": True, "__type__": "update"}
                 return {"visible": False, "__type__": "update"}
+
+            def toggle_experimental(enabled):
+                if enabled:
+                    return {
+                        "choices": ["32000", "40000", "44100", "48000"],
+                        "__type__": "update",
+                    }, {"visible": True, "__type__": "update"}
+                return {"choices": ["32000", "40000", "48000"], "__type__": "update"}, {
+                    "visible": False,
+                    "__type__": "update",
+                }
 
             def update_slider_visibility(noise_reduction):
                 return gr.update(visible=noise_reduction)
@@ -949,13 +958,13 @@ def train_tab():
             )
             rvc_version.change(
                 fn=download_prerequisites,
-                inputs=[rvc_version, pitch_guidance],
+                inputs=[rvc_version],
                 outputs=[],
             )
-            pitch_guidance.change(
-                fn=download_prerequisites,
-                inputs=[rvc_version, pitch_guidance],
-                outputs=[],
+            experimental_options.change(
+                fn=toggle_experimental,
+                inputs=[experimental_options],
+                outputs=[sampling_rate, vocoder],
             )
             refresh.click(
                 fn=refresh_models_and_datasets,
@@ -972,13 +981,11 @@ def train_tab():
                 inputs=[upload_audio_dataset, dataset_name],
                 outputs=[upload_audio_dataset, dataset_path],
             )
-
             f0_method.change(
                 fn=toggle_visible_hop_length,
                 inputs=[f0_method],
                 outputs=[hop_length],
             )
-
             embedder_model.change(
                 fn=toggle_visible_embedder_custom,
                 inputs=[embedder_model],
@@ -1021,11 +1028,6 @@ def train_tab():
                 fn=toggle_visible,
                 inputs=[overtraining_detector],
                 outputs=[overtraining_settings],
-            )
-            multiple_gpu.change(
-                fn=toggle_visible,
-                inputs=[multiple_gpu],
-                outputs=[gpu_custom_settings],
             )
             train_button.click(
                 fn=enable_stop_train_button,
