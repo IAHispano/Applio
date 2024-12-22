@@ -31,8 +31,8 @@ def discriminator_loss(disc_real_outputs, disc_generated_outputs):
         r_loss = torch.mean((1 - dr.float()) ** 2)
         g_loss = torch.mean(dg.float() ** 2)
 
-        #r_losses.append(r_loss.item())
-        #g_losses.append(g_loss.item())
+        # r_losses.append(r_loss.item())
+        # g_losses.append(g_loss.item())
         loss += r_loss + g_loss
 
     return loss, r_losses, g_losses
@@ -49,10 +49,11 @@ def generator_loss(disc_outputs):
     gen_losses = []
     for dg in disc_outputs:
         l = torch.mean((1 - dg.float()) ** 2)
-        #gen_losses.append(l.item())
+        # gen_losses.append(l.item())
         loss += l
 
     return loss, gen_losses
+
 
 def discriminator_loss_scaled(disc_real, disc_fake, scale=1.0):
     loss = 0
@@ -63,6 +64,7 @@ def discriminator_loss_scaled(disc_real, disc_fake, scale=1.0):
         loss += _loss if i < len(disc_real) / 2 else scale * _loss
     return loss, None, None
 
+
 def generator_loss_scaled(disc_outputs, scale=1.0):
     loss = 0
     for i, d_fake in enumerate(disc_outputs):
@@ -70,6 +72,7 @@ def generator_loss_scaled(disc_outputs, scale=1.0):
         _loss = torch.mean((1 - d_fake) ** 2)
         loss += _loss if i < len(disc_outputs) / 2 else scale * _loss
     return loss, None, None
+
 
 def discriminator_loss_scaled(disc_real, disc_fake, scale=1.0):
     """
@@ -128,10 +131,12 @@ def kl_loss(z_p, logs_q, m_p, logs_p, z_mask):
     loss = kl / z_mask.sum()
     return loss
 
+
 MaxPool = torch.nn.MaxPool1d(160)
 
+
 def envelope_loss(y, y_g):
-  loss = 0
-  loss += torch.mean(torch.abs(MaxPool( y) - MaxPool( y_g)))
-  loss += torch.mean(torch.abs(MaxPool(-y) - MaxPool(-y_g)))
-  return loss
+    loss = 0
+    loss += torch.mean(torch.abs(MaxPool(y) - MaxPool(y_g)))
+    loss += torch.mean(torch.abs(MaxPool(-y) - MaxPool(-y_g)))
+    return loss

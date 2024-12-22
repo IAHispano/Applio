@@ -7,6 +7,7 @@ from typing import Optional
 from rvc.lib.algorithm.residuals import LRELU_SLOPE, ResBlock
 from rvc.lib.algorithm.commons import init_weights
 
+
 class HiFiGANGenerator(torch.nn.Module):
     """
     HiFi-GAN Generator module for audio synthesis.
@@ -106,6 +107,7 @@ class HiFiGANGenerator(torch.nn.Module):
             remove_weight_norm(l)
         for l in self.resblocks:
             l.remove_weight_norm()
+
 
 class SineGenerator(torch.nn.Module):
     """

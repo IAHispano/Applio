@@ -487,7 +487,7 @@ def run_extract_script(
                 sample_rate,
                 embedder_model,
                 embedder_model_custom,
-                include_mutes
+                include_mutes,
             ],
         ),
     ]
@@ -525,7 +525,9 @@ def run_train_script(
         from rvc.lib.tools.pretrained_selector import pretrained_selector
 
         if custom_pretrained == False:
-            pg, pd = pretrained_selector(str(rvc_version), str(vocoder), True, int(sample_rate))
+            pg, pd = pretrained_selector(
+                str(rvc_version), str(vocoder), True, int(sample_rate)
+            )
         else:
             if g_pretrained_path is None or d_pretrained_path is None:
                 raise ValueError(
@@ -558,7 +560,7 @@ def run_train_script(
                 overtraining_threshold,
                 cleanup,
                 vocoder,
-                checkpointing
+                checkpointing,
             ],
         ),
     ]
@@ -1858,9 +1860,9 @@ def parse_arguments():
     preprocess_parser.add_argument(
         "--cut_preprocess",
         type=str,
-        choices=['Skip', 'Simple', 'Automatic'],
+        choices=["Skip", "Simple", "Automatic"],
         help="Cut the dataset into smaller segments for faster preprocessing.",
-        default='Automatic',
+        default="Automatic",
         required=True,
     )
     preprocess_parser.add_argument(
@@ -1902,7 +1904,7 @@ def parse_arguments():
         choices=[0.0, 0.1, 0.2, 0.3, 0.4],
         default=0.3,
         required=False,
-    )    
+    )
 
     # Parser for 'extract' mode
     extract_parser = subparsers.add_parser(
@@ -1981,8 +1983,8 @@ def parse_arguments():
         help="Number of silent files to include.",
         choices=range(0, 11),
         default=2,
-        required=True
-    )    
+        required=True,
+    )
 
     # Parser for 'train' mode
     train_parser = subparsers.add_parser("train", help="Train an RVC model.")
@@ -2010,7 +2012,7 @@ def parse_arguments():
         help="Enables memory-efficient training.",
         default=False,
         required=False,
-    )    
+    )
     train_parser.add_argument(
         "--save_every_epoch",
         type=int,

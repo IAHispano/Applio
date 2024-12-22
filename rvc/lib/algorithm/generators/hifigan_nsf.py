@@ -9,6 +9,7 @@ from rvc.lib.algorithm.generators.hifigan import SineGenerator
 from rvc.lib.algorithm.residuals import LRELU_SLOPE, ResBlock
 from rvc.lib.algorithm.commons import init_weights
 
+
 class SourceModuleHnNSF(torch.nn.Module):
     """
     Source Module for generating harmonic and noise components for audio synthesis.
@@ -49,6 +50,7 @@ class SourceModuleHnNSF(torch.nn.Module):
         sine_merge = self.l_tanh(self.l_linear(sine_wavs))
         return sine_merge, None, None
 
+
 class HiFiGANNSFGenerator(torch.nn.Module):
     """
     Generator module based on the Neural Source Filter (NSF) architecture.
@@ -87,9 +89,7 @@ class HiFiGANNSFGenerator(torch.nn.Module):
         self.num_upsamples = len(upsample_rates)
         self.checkpointing = checkpointing
         self.f0_upsamp = torch.nn.Upsample(scale_factor=math.prod(upsample_rates))
-        self.m_source = SourceModuleHnNSF(
-            sample_rate=sr, harmonic_num=0
-        )
+        self.m_source = SourceModuleHnNSF(sample_rate=sr, harmonic_num=0)
 
         self.conv_pre = torch.nn.Conv1d(
             initial_channel, upsample_initial_channel, 7, 1, padding=3
@@ -169,7 +169,9 @@ class HiFiGANNSFGenerator(torch.nn.Module):
         self.upp = math.prod(upsample_rates)
         self.lrelu_slope = LRELU_SLOPE
 
-    def forward(self, x: torch.Tensor, f0: torch.Tensor, g: Optional[torch.Tensor] = None):
+    def forward(
+        self, x: torch.Tensor, f0: torch.Tensor, g: Optional[torch.Tensor] = None
+    ):
         har_source, _, _ = self.m_source(f0, self.upp)
         har_source = har_source.transpose(1, 2)
 
@@ -198,7 +200,9 @@ class HiFiGANNSFGenerator(torch.nn.Module):
 
             # Checkpoint or regular computation for ResBlocks
             if self.training and self.checkpointing:
-                x = checkpoint.checkpoint(resblock_forward, x, blocks, use_reentrant=False)
+                x = checkpoint.checkpoint(
+                    resblock_forward, x, blocks, use_reentrant=False
+                )
             else:
                 x = resblock_forward(x, blocks)
 

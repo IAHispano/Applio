@@ -21,26 +21,41 @@ class MultiPeriodDiscriminator(torch.nn.Module):
             Defaults to False.
     """
 
-    def __init__(self, version: str, use_spectral_norm: bool = False, checkpointing: bool = False):
+    def __init__(
+        self, version: str, use_spectral_norm: bool = False, checkpointing: bool = False
+    ):
         super(MultiPeriodDiscriminator, self).__init__()
         periods = (
             [2, 3, 5, 7, 11, 17] if version == "v1" else [2, 3, 5, 7, 11, 17, 23, 37]
         )
         self.checkpointing = checkpointing
         self.discriminators = torch.nn.ModuleList(
-            [DiscriminatorS(use_spectral_norm=use_spectral_norm, checkpointing=checkpointing)]
-            + [DiscriminatorP(p, use_spectral_norm=use_spectral_norm, checkpointing=checkpointing) for p in periods]
+            [
+                DiscriminatorS(
+                    use_spectral_norm=use_spectral_norm, checkpointing=checkpointing
+                )
+            ]
+            + [
+                DiscriminatorP(
+                    p, use_spectral_norm=use_spectral_norm, checkpointing=checkpointing
+                )
+                for p in periods
+            ]
         )
 
     def forward(self, y, y_hat):
         y_d_rs, y_d_gs, fmap_rs, fmap_gs = [], [], [], []
         for d in self.discriminators:
             if self.training and self.checkpointing:
+
                 def forward_discriminator(d, y, y_hat):
                     y_d_r, fmap_r = d(y)
                     y_d_g, fmap_g = d(y_hat)
                     return y_d_r, fmap_r, y_d_g, fmap_g
-                y_d_r, fmap_r, y_d_g, fmap_g = checkpoint.checkpoint(forward_discriminator, d, y, y_hat, use_reentrant=False)
+
+                y_d_r, fmap_r, y_d_g, fmap_g = checkpoint.checkpoint(
+                    forward_discriminator, d, y, y_hat, use_reentrant=False
+                )
             else:
                 y_d_r, fmap_r = d(y)
                 y_d_g, fmap_g = d(y_hat)
@@ -82,8 +97,8 @@ class DiscriminatorS(torch.nn.Module):
         fmap = []
         for conv in self.convs:
             if self.training and self.checkpointing:
-                x = checkpoint.checkpoint(conv, x, use_reentrant = False)
-                x = checkpoint.checkpoint(self.lrelu, x, use_reentrant = False)
+                x = checkpoint.checkpoint(conv, x, use_reentrant=False)
+                x = checkpoint.checkpoint(self.lrelu, x, use_reentrant=False)
             else:
                 x = self.lrelu(conv(x))
             fmap.append(x)
@@ -153,8 +168,8 @@ class DiscriminatorP(torch.nn.Module):
 
         for conv in self.convs:
             if self.training and self.checkpointing:
-                x = checkpoint.checkpoint(conv, x, use_reentrant = False)
-                x = checkpoint.checkpoint(self.lrelu, x, use_reentrant = False)
+                x = checkpoint.checkpoint(conv, x, use_reentrant=False)
+                x = checkpoint.checkpoint(self.lrelu, x, use_reentrant=False)
             else:
                 x = self.lrelu(conv(x))
             fmap.append(x)
