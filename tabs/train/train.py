@@ -996,11 +996,6 @@ def train_tab():
                 inputs=[experimental_options],
                 outputs=[sampling_rate, vocoder],
             )
-            pitch_guidance.change(
-                fn=download_prerequisites,
-                inputs=[rvc_version, pitch_guidance],
-                outputs=[],
-            )
             refresh.click(
                 fn=refresh_models_and_datasets,
                 inputs=[],
