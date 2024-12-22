@@ -4,12 +4,23 @@ from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils.parametrize import remove_parametrizations
 import torch.utils.checkpoint as checkpoint
 
-
-def get_padding(kernel_size: int, dilation: int = 1):
-    return int((kernel_size * dilation - dilation) / 2)
-
+from rvc.lib.algorithm.commons import get_padding
 
 class ResBlock(torch.nn.Module):
+    """
+    Residual block with multiple dilated convolutions.
+
+    This block applies a sequence of dilated convolutional layers with Leaky ReLU activation.
+    It's designed to capture information at different scales due to the varying dilation rates.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        kernel_size (int, optional): Kernel size for the convolutional layers. Defaults to 7.
+        dilation (tuple[int], optional): Tuple of dilation rates for the convolutional layers. Defaults to (1, 3, 5).
+        leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation. Defaults to 0.2.
+    """
+
     def __init__(
         self,
         *,
@@ -59,7 +70,7 @@ class ResBlock(torch.nn.Module):
         )
         self.convs2.apply(self.init_weights)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         for idx, (c1, c2) in enumerate(zip(self.convs1, self.convs2)):
             xt = torch.nn.functional.leaky_relu(x, self.leaky_relu_slope)
             xt = c1(xt)
@@ -83,8 +94,16 @@ class ResBlock(torch.nn.Module):
             m.weight.data.normal_(0, 0.01)
             m.bias.data.fill_(0.0)
 
-
 class AdaIN(torch.nn.Module):
+    """
+    Adaptive Instance Normalization layer.
+
+    This layer applies a scaling factor to the input based on a learnable weight.
+
+    Args:
+        channels (int): Number of input channels.
+        leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation applied after scaling. Defaults to 0.2.
+    """
     def __init__(
         self,
         *,
@@ -101,14 +120,23 @@ class AdaIN(torch.nn.Module):
 
         return self.activation(x + gaussian)
 
-
 class ParallelResBlock(torch.nn.Module):
+    """
+    Parallel residual block that applies multiple residual blocks with different kernel sizes in parallel.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        kernel_sizes (tuple[int], optional): Tuple of kernel sizes for the parallel residual blocks. Defaults to (3, 7, 11).
+        dilation (tuple[int], optional): Tuple of dilation rates for the convolutional layers within the residual blocks. Defaults to (1, 3, 5).
+        leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation. Defaults to 0.2.
+    """
     def __init__(
         self,
         *,
         in_channels: int,
         out_channels: int,
-        kernel_sizes: int = (3, 7, 11),
+        kernel_sizes: tuple[int] = (3, 7, 11),
         dilation: tuple[int] = (1, 3, 5),
         leaky_relu_slope: float = 0.2,
     ):
@@ -153,23 +181,19 @@ class ParallelResBlock(torch.nn.Module):
         for block in self.blocks:
             block[1].remove_parametrizations()
 
-
 class SineGenerator(torch.nn.Module):
-    """Definition of sine generator
-    SineGen(samp_rate, harmonic_num = 0,
-            sine_amp = 0.1, noise_std = 0.003,
-            voiced_threshold = 0,
-            flag_for_pulse=False)
+    """
+    Definition of sine generator
 
-    samp_rate: sampling rate in Hz
-    harmonic_num: number of harmonic overtones (default 0)
-    sine_amp: amplitude of sine-wavefrom (default 0.1)
-    noise_std: std of Gaussian noise (default 0.003)
-    voiced_thoreshold: F0 threshold for U/V classification (default 0)
-    flag_for_pulse: this SinGen is used inside PulseGen (default False)
+    Generates sine waveforms with optional harmonics and additive noise.
+    Can be used to create harmonic noise source for neural vocoders.
 
-    Note: when flag_for_pulse is True, the first time step of a voiced
-        segment is always sin(np.pi) or cos(0)
+    Args:
+        samp_rate (int): Sampling rate in Hz.
+        harmonic_num (int): Number of harmonic overtones (default 0).
+        sine_amp (float): Amplitude of sine-waveform (default 0.1).
+        noise_std (float): Standard deviation of Gaussian noise (default 0.003).
+        voiced_threshold (float): F0 threshold for voiced/unvoiced classification (default 0).
     """
 
     def __init__(
@@ -220,12 +244,6 @@ class SineGenerator(torch.nn.Module):
         return sines
 
     def forward(self, f0):
-        """sine_tensor, uv = forward(f0)
-        input F0: tensor(batchsize=1, length, dim=1)
-                  f0 for unvoiced steps should be 0
-        output sine_tensor: tensor(batchsize=1, length, dim)
-        output uv: tensor(batchsize=1, length, 1)
-        """
         with torch.no_grad():
             f0_buf = torch.zeros(f0.shape[0], f0.shape[1], self.dim, device=f0.device)
             # fundamental component
@@ -243,8 +261,19 @@ class SineGenerator(torch.nn.Module):
             sine_waves = sine_waves * uv + noise * (1 - uv)
         return sine_waves, uv, noise
 
-
 class SourceModuleHnNSF(torch.nn.Module):
+    """
+    Source Module for generating harmonic and noise signals.
+
+    This module uses a SineGenerator to produce harmonic signals based on the fundamental frequency (F0).
+
+    Args:
+        sampling_rate (int): Sampling rate of the audio.
+        harmonic_num (int, optional): Number of harmonics to generate. Defaults to 0.
+        sine_amp (float, optional): Amplitude of the sine wave. Defaults to 0.1.
+        add_noise_std (float, optional): Standard deviation of the additive noise. Defaults to 0.003.
+        voiced_threshold (int, optional): F0 threshold for voiced/unvoiced classification. Defaults to 0.
+    """
     def __init__(
         self,
         sampling_rate,
@@ -267,15 +296,31 @@ class SourceModuleHnNSF(torch.nn.Module):
         self.l_linear = torch.nn.Linear(harmonic_num + 1, 1)
         self.l_tanh = torch.nn.Tanh()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         sine_wavs, uv, _ = self.l_sin_gen(x)
         sine_wavs = sine_wavs.to(dtype=self.l_linear.weight.dtype)
         sine_merge = self.l_tanh(self.l_linear(sine_wavs))
 
         return sine_merge, None, None
 
-
 class RefineGANGenerator(torch.nn.Module):
+    """
+    RefineGAN generator for audio synthesis.
+
+    This generator uses a combination of downsampling, residual blocks, and parallel residual blocks
+    to refine an input mel-spectrogram and fundamental frequency (F0) into an audio waveform.
+    It can also incorporate global conditioning.
+
+    Args:
+        sample_rate (int, optional): Sampling rate of the audio. Defaults to 44100.
+        downsample_rates (tuple[int], optional): Downsampling rates for the downsampling blocks. Defaults to (2, 2, 8, 8).
+        upsample_rates (tuple[int], optional): Upsampling rates for the upsampling blocks. Defaults to (8, 8, 2, 2).
+        leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation. Defaults to 0.2.
+        num_mels (int, optional): Number of mel-frequency bins in the input mel-spectrogram. Defaults to 128.
+        start_channels (int, optional): Number of channels in the initial convolutional layer. Defaults to 16.
+        gin_channels (int, optional): Number of channels for the global conditioning input. Defaults to 256.
+        checkpointing (bool, optional): Whether to use checkpointing for memory efficiency. Defaults to False.
+    """
     def __init__(
         self,
         *,

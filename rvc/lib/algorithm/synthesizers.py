@@ -114,7 +114,6 @@ class Synthesizer(torch.nn.Module):
                     upsample_kernel_sizes,
                     gin_channels=gin_channels,
                     sr=sr,
-                    is_half=kwargs["is_half"],
                     checkpointing=checkpointing,
                 )
         else:
@@ -155,13 +154,11 @@ class Synthesizer(torch.nn.Module):
         self.emb_g = torch.nn.Embedding(spk_embed_dim, gin_channels)
 
     def _remove_weight_norm_from(self, module):
-        """Utility to remove weight normalization from a module."""
         for hook in module._forward_pre_hooks.values():
             if getattr(hook, "__class__", None).__name__ == "WeightNorm":
                 torch.nn.utils.remove_weight_norm(module)
 
     def remove_weight_norm(self):
-        """Removes weight normalization from the model."""
         for module in [self.dec, self.flow, self.enc_q]:
             self._remove_weight_norm_from(module)
 
@@ -179,18 +176,6 @@ class Synthesizer(torch.nn.Module):
         y_lengths: Optional[torch.Tensor] = None,
         ds: Optional[torch.Tensor] = None,
     ):
-        """
-        Forward pass of the model.
-
-        Args:
-            phone (torch.Tensor): Phoneme sequence.
-            phone_lengths (torch.Tensor): Lengths of the phoneme sequences.
-            pitch (torch.Tensor, optional): Pitch sequence.
-            pitchf (torch.Tensor, optional): Fine-grained pitch sequence.
-            y (torch.Tensor, optional): Target spectrogram.
-            y_lengths (torch.Tensor, optional): Lengths of the target spectrograms.
-            ds (torch.Tensor, optional): Speaker embedding.
-        """
         g = self.emb_g(ds).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
 

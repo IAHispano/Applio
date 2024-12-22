@@ -3,7 +3,8 @@ from rvc.lib.algorithm.commons import fused_add_tanh_sigmoid_multiply
 
 
 class WaveNet(torch.nn.Module):
-    """WaveNet residual blocks as used in WaveGlow.
+    """
+    WaveNet residual blocks as used in WaveGlow.
 
     Args:
         hidden_channels (int): Number of hidden channels.
@@ -75,13 +76,6 @@ class WaveNet(torch.nn.Module):
             )
 
     def forward(self, x, x_mask, g=None):
-        """Forward pass.
-
-        Args:
-            x (torch.Tensor): Input tensor (batch_size, hidden_channels, time_steps).
-            x_mask (torch.Tensor): Mask tensor (batch_size, 1, time_steps).
-            g (torch.Tensor, optional): Conditioning tensor (batch_size, gin_channels, time_steps).
-        """
         output = x.clone().zero_()
 
         # Apply conditional layer if global conditioning is provided
@@ -115,7 +109,6 @@ class WaveNet(torch.nn.Module):
         return output * x_mask
 
     def remove_weight_norm(self):
-        """Remove weight normalization from the module."""
         if self.gin_channels:
             torch.nn.utils.remove_weight_norm(self.cond_layer)
         for layer in self.in_layers:

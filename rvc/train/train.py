@@ -41,12 +41,10 @@ from utils import (
 
 from losses import (
     discriminator_loss,
-    discriminator_loss_scaled,
     feature_loss,
     generator_loss,
-    generator_loss_scaled,
     kl_loss,
-    envelope_loss
+    envelope_loss,
 )
 from mel_processing import (
     mel_spectrogram_torch,
@@ -87,7 +85,7 @@ with open(config_save_path, "r") as f:
 config = HParams(**config)
 config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
 
-# for nVidia's CUDA device selection can be done from command line / UI
+# for Nvidia's CUDA device selection can be done from command line / UI
 # for AMD the device selection can only be done from .bat file using HIP_VISIBLE_DEVICES
 os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
 
@@ -104,7 +102,7 @@ smoothed_loss_disc_history = []
 lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 training_file_path = os.path.join(experiment_dir, "training_data.json")
 
-avg_losses={
+avg_losses = {
     "gen_loss_queue": deque(maxlen=10),
     "disc_loss_queue": deque(maxlen=10),
     "disc_loss_50": deque(maxlen=50),
@@ -386,7 +384,9 @@ def run(
         checkpointing=checkpointing,
     ).to(device)
 
-    net_d = MultiPeriodDiscriminator(version, config.model.use_spectral_norm, checkpointing=checkpointing).to(device)
+    net_d = MultiPeriodDiscriminator(
+        version, config.model.use_spectral_norm, checkpointing=checkpointing
+    ).to(device)
 
     optim_g = torch.optim.AdamW(
         net_g.parameters(),
@@ -556,8 +556,8 @@ def train_and_evaluate(
         lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
         consecutive_increases_gen = 0
         consecutive_increases_disc = 0
-    
-    epoch_disc_sum = 0.0            
+
+    epoch_disc_sum = 0.0
     epoch_gen_sum = 0.0
 
     net_g, net_d = nets
@@ -623,9 +623,9 @@ def train_and_evaluate(
                 )
                 y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
                 with autocast(enabled=False):
-                    #if vocoder == "HiFi-GAN":
+                    # if vocoder == "HiFi-GAN":
                     #    loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
-                    #else:
+                    # else:
                     #    loss_disc, _, _ = discriminator_loss_scaled(y_d_hat_r, y_d_hat_g)
                     loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
             # Discriminator backward and update
@@ -633,11 +633,13 @@ def train_and_evaluate(
             optim_d.zero_grad()
             scaler.scale(loss_disc).backward()
             scaler.unscale_(optim_d)
-            grad_norm_d = torch.nn.utils.clip_grad_norm_(net_d.parameters(), max_norm=1000.0)
+            grad_norm_d = torch.nn.utils.clip_grad_norm_(
+                net_d.parameters(), max_norm=1000.0
+            )
             scaler.step(optim_d)
             scaler.update()
-            if not math.isfinite(grad_norm_d):
-                print('\nWarning: grad_norm_d is NaN or Inf')
+            # if not math.isfinite(grad_norm_d):
+            #    print("\nWarning: grad_norm_d is NaN or Inf")
 
             # Generator backward and update
             with autocast(enabled=use_amp):
@@ -645,12 +647,14 @@ def train_and_evaluate(
                 with autocast(enabled=False):
                     loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
                     loss_env = envelope_loss(wave, y_hat)
-                    loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
+                    loss_kl = (
+                        kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
+                    )
                     loss_fm = feature_loss(fmap_r, fmap_g)
-                    #if vocoder == "HiFi-GAN":
-                    #	loss_gen, _ = generator_loss(y_d_hat_g)
-                    #else:
-                    #	loss_gen, _ = generator_loss_scaled(y_d_hat_g)
+                    # if vocoder == "HiFi-GAN":
+                    # 	loss_gen, _ = generator_loss(y_d_hat_g)
+                    # else:
+                    # 	loss_gen, _ = generator_loss_scaled(y_d_hat_g)
                     loss_gen, _ = generator_loss(y_d_hat_g)
                     loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl + loss_env
 
@@ -664,14 +668,16 @@ def train_and_evaluate(
             optim_g.zero_grad()
             scaler.scale(loss_gen_all).backward()
             scaler.unscale_(optim_g)
-            grad_norm_g = torch.nn.utils.clip_grad_norm_(net_g.parameters(), max_norm=1000.0)
+            grad_norm_g = torch.nn.utils.clip_grad_norm_(
+                net_g.parameters(), max_norm=1000.0
+            )
             scaler.step(optim_g)
             scaler.update()
-            if not math.isfinite(grad_norm_g):
-                print('\n Warning: grad_norm_g is NaN or Inf')
+            # if not math.isfinite(grad_norm_g):
+            #    print("\n Warning: grad_norm_g is NaN or Inf")
 
             global_step += 1
-            
+
             # queue for rolling losses over 50 steps
             avg_losses["disc_loss_50"].append(loss_disc.detach())
             avg_losses["env_loss_50"].append(loss_env.detach())
@@ -679,16 +685,28 @@ def train_and_evaluate(
             avg_losses["kl_loss_50"].append(loss_kl.detach())
             avg_losses["mel_loss_50"].append(loss_mel.detach())
             avg_losses["gen_loss_50"].append(loss_gen_all.detach())
-            
+
             if rank == 0 and global_step % 50 == 0:
                 # logging rolling averages
                 scalar_dict = {
-                    "loss_avg_50/d/total": torch.mean(torch.stack(list(avg_losses["disc_loss_50"]))),
-                    "loss_avg_50/g/env": torch.mean(torch.stack(list(avg_losses["env_loss_50"]))),
-                    "loss_avg_50/g/fm": torch.mean(torch.stack(list(avg_losses["fm_loss_50"]))),
-                    "loss_avg_50/g/kl": torch.mean(torch.stack(list(avg_losses["kl_loss_50"]))),
-                    "loss_avg_50/g/mel": torch.mean(torch.stack(list(avg_losses["mel_loss_50"]))),
-                    "loss_avg_50/g/total": torch.mean(torch.stack(list(avg_losses["gen_loss_50"]))),
+                    "loss_avg_50/d/total": torch.mean(
+                        torch.stack(list(avg_losses["disc_loss_50"]))
+                    ),
+                    "loss_avg_50/g/env": torch.mean(
+                        torch.stack(list(avg_losses["env_loss_50"]))
+                    ),
+                    "loss_avg_50/g/fm": torch.mean(
+                        torch.stack(list(avg_losses["fm_loss_50"]))
+                    ),
+                    "loss_avg_50/g/kl": torch.mean(
+                        torch.stack(list(avg_losses["kl_loss_50"]))
+                    ),
+                    "loss_avg_50/g/mel": torch.mean(
+                        torch.stack(list(avg_losses["mel_loss_50"]))
+                    ),
+                    "loss_avg_50/g/total": torch.mean(
+                        torch.stack(list(avg_losses["gen_loss_50"]))
+                    ),
                 }
                 summarize(
                     writer=writer,
@@ -703,10 +721,10 @@ def train_and_evaluate(
 
     # Logging and checkpointing
     if rank == 0:
-    
+
         avg_losses["disc_loss_queue"].append(epoch_disc_sum.item() / len(train_loader))
         avg_losses["gen_loss_queue"].append(epoch_gen_sum.item() / len(train_loader))
-            
+
         # used for tensorboard chart - all/mel
         mel = spec_to_mel_torch(
             spec,
@@ -961,7 +979,7 @@ def train_and_evaluate(
 
         if done:
             os._exit(2333333)
-        
+
         with torch.no_grad():
             torch.cuda.empty_cache()
 

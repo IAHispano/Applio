@@ -65,12 +65,6 @@ class ResBlock(torch.nn.Module):
         return layers
 
     def forward(self, x: torch.Tensor, x_mask: torch.Tensor = None):
-        """Forward pass.
-
-        Args:
-            x (torch.Tensor): Input tensor of shape (batch_size, channels, sequence_length).
-            x_mask (torch.Tensor, optional): Optional mask to apply to the input and output tensors.
-        """
         for conv1, conv2 in zip(self.convs1, self.convs2):
             x_residual = x
             x = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
@@ -82,26 +76,18 @@ class ResBlock(torch.nn.Module):
         return apply_mask(x, x_mask)
 
     def remove_weight_norm(self):
-        """
-        Removes weight normalization from all convolutional layers in the block.
-        """
         for conv in chain(self.convs1, self.convs2):
             remove_weight_norm(conv)
 
 
 class Flip(torch.nn.Module):
-    """Flip module for flow-based models.
+    """
+    Flip module for flow-based models.
 
     This module flips the input along the time dimension.
     """
 
     def forward(self, x, *args, reverse=False, **kwargs):
-        """Forward pass.
-
-        Args:
-            x (torch.Tensor): Input tensor.
-            reverse (bool, optional): Whether to reverse the operation. Defaults to False.
-        """
         x = torch.flip(x, [1])
         if not reverse:
             logdet = torch.zeros(x.size(0), dtype=x.dtype, device=x.device)
@@ -111,7 +97,8 @@ class Flip(torch.nn.Module):
 
 
 class ResidualCouplingBlock(torch.nn.Module):
-    """Residual Coupling Block for normalizing flow.
+    """
+    Residual Coupling Block for normalizing flow.
 
     Args:
         channels (int): Number of channels in the input.
@@ -173,12 +160,10 @@ class ResidualCouplingBlock(torch.nn.Module):
         return x
 
     def remove_weight_norm(self):
-        """Removes weight normalization from the coupling layers."""
         for i in range(self.n_flows):
             self.flows[i * 2].remove_weight_norm()
 
     def __prepare_scriptable__(self):
-        """Prepares the module for scripting."""
         for i in range(self.n_flows):
             for hook in self.flows[i * 2]._forward_pre_hooks.values():
                 if (
@@ -191,7 +176,8 @@ class ResidualCouplingBlock(torch.nn.Module):
 
 
 class ResidualCouplingLayer(torch.nn.Module):
-    """Residual coupling layer for flow-based models.
+    """
+    Residual coupling layer for flow-based models.
 
     Args:
         channels (int): Number of channels.
@@ -247,15 +233,6 @@ class ResidualCouplingLayer(torch.nn.Module):
         g: Optional[torch.Tensor] = None,
         reverse: bool = False,
     ):
-        """Forward pass.
-
-        Args:
-            x (torch.Tensor): Input tensor of shape (batch_size, channels, time_steps).
-            x_mask (torch.Tensor): Mask tensor of shape (batch_size, 1, time_steps).
-            g (torch.Tensor, optional): Conditioning tensor of shape (batch_size, gin_channels, time_steps).
-                Defaults to None.
-            reverse (bool, optional): Whether to reverse the operation. Defaults to False.
-        """
         x0, x1 = torch.split(x, [self.half_channels] * 2, 1)
         h = self.pre(x0) * x_mask
         h = self.enc(h, x_mask, g=g)
@@ -277,5 +254,4 @@ class ResidualCouplingLayer(torch.nn.Module):
             return x
 
     def remove_weight_norm(self):
-        """Remove weight normalization from the module."""
         self.enc.remove_weight_norm()

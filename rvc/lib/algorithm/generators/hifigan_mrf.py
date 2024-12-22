@@ -10,6 +10,20 @@ LRELU_SLOPE = 0.1
 
 
 class MRFLayer(torch.nn.Module):
+    """
+    A single layer of the Multi-Receptive Field (MRF) block.
+
+    This layer consists of two 1D convolutional layers with weight normalization
+    and Leaky ReLU activation in between. The first convolution has a dilation,
+    while the second has a dilation of 1. A skip connection is added from the input
+    to the output.
+
+    Args:
+        channels (int): The number of input and output channels.
+        kernel_size (int): The kernel size of the convolutional layers.
+        dilation (int): The dilation rate for the first convolutional layer.
+    """
+
     def __init__(self, channels, kernel_size, dilation):
         super().__init__()
         self.conv1 = weight_norm(
@@ -27,7 +41,7 @@ class MRFLayer(torch.nn.Module):
             )
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         y = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
         y = self.conv1(y)
         y = torch.nn.functional.leaky_relu(y, LRELU_SLOPE)
@@ -40,13 +54,25 @@ class MRFLayer(torch.nn.Module):
 
 
 class MRFBlock(torch.nn.Module):
+    """
+    A Multi-Receptive Field (MRF) block.
+
+    This block consists of multiple MRFLayers with different dilation rates.
+    It applies each layer sequentially to the input.
+
+    Args:
+        channels (int): The number of input and output channels for the MRFLayers.
+        kernel_size (int): The kernel size for the convolutional layers in the MRFLayers.
+        dilations (list[int]): A list of dilation rates for the MRFLayers.
+    """
+
     def __init__(self, channels, kernel_size, dilations):
         super().__init__()
         self.layers = torch.nn.ModuleList()
         for dilation in dilations:
             self.layers.append(MRFLayer(channels, kernel_size, dilation))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         for layer in self.layers:
             x = layer(x)
         return x
@@ -57,30 +83,27 @@ class MRFBlock(torch.nn.Module):
 
 
 class SineGenerator(torch.nn.Module):
-    """Definition of sine generator
-    SineGen(samp_rate, harmonic_num = 0,
-            sine_amp = 0.1, noise_std = 0.003,
-            voiced_threshold = 0,
-            flag_for_pulse=False)
+    """
+    Definition of sine generator
 
-    samp_rate: sampling rate in Hz
-    harmonic_num: number of harmonic overtones (default 0)
-    sine_amp: amplitude of sine-wavefrom (default 0.1)
-    noise_std: std of Gaussian noise (default 0.003)
-    voiced_thoreshold: F0 threshold for U/V classification (default 0)
-    flag_for_pulse: this SinGen is used inside PulseGen (default False)
+    Generates sine waveforms with optional harmonics and additive noise.
+    Can be used to create harmonic noise source for neural vocoders.
 
-    Note: when flag_for_pulse is True, the first time step of a voiced
-        segment is always sin(np.pi) or cos(0)
+    Args:
+        samp_rate (int): Sampling rate in Hz.
+        harmonic_num (int): Number of harmonic overtones (default 0).
+        sine_amp (float): Amplitude of sine-waveform (default 0.1).
+        noise_std (float): Standard deviation of Gaussian noise (default 0.003).
+        voiced_threshold (float): F0 threshold for voiced/unvoiced classification (default 0).
     """
 
     def __init__(
         self,
-        samp_rate,
-        harmonic_num=0,
-        sine_amp=0.1,
-        noise_std=0.003,
-        voiced_threshold=0,
+        samp_rate: int,
+        harmonic_num: int = 0,
+        sine_amp: float = 0.1,
+        noise_std: float = 0.003,
+        voiced_threshold: float = 0,
     ):
         super(SineGenerator, self).__init__()
         self.sine_amp = sine_amp
@@ -90,17 +113,28 @@ class SineGenerator(torch.nn.Module):
         self.sampling_rate = samp_rate
         self.voiced_threshold = voiced_threshold
 
-    def _f02uv(self, f0):
+    def _f02uv(self, f0: torch.Tensor):
+        """
+        Generates voiced/unvoiced (UV) signal based on the fundamental frequency (F0).
+
+        Args:
+            f0 (torch.Tensor): Fundamental frequency tensor of shape (batch_size, length, 1).
+        """
         # generate uv signal
         uv = torch.ones_like(f0)
         uv = uv * (f0 > self.voiced_threshold)
         return uv
 
-    def _f02sine(self, f0_values):
-        """f0_values: (batchsize, length, dim)
-        where dim indicates fundamental tone and overtones
+    def _f02sine(self, f0_values: torch.Tensor):
         """
-        # convert to F0 in rad. The interger part n can be ignored
+        Generates sine waveforms based on the fundamental frequency (F0) and its harmonics.
+
+        Args:
+            f0_values (torch.Tensor): Tensor of fundamental frequency and its harmonics,
+                                      shape (batch_size, length, dim), where dim indicates
+                                      the fundamental tone and overtones.
+        """
+        # convert to F0 in rad. The integer part n can be ignored
         # because 2 * np.pi * n doesn't affect phase
         rad_values = (f0_values / self.sampling_rate) % 1
 
@@ -121,13 +155,7 @@ class SineGenerator(torch.nn.Module):
 
         return sines
 
-    def forward(self, f0):
-        """sine_tensor, uv = forward(f0)
-        input F0: tensor(batchsize=1, length, dim=1)
-                  f0 for unvoiced steps should be 0
-        output sine_tensor: tensor(batchsize=1, length, dim)
-        output uv: tensor(batchsize=1, length, 1)
-        """
+    def forward(self, f0: torch.Tensor):
         with torch.no_grad():
             f0_buf = torch.zeros(f0.shape[0], f0.shape[1], self.dim, device=f0.device)
             # fundamental component
@@ -147,13 +175,27 @@ class SineGenerator(torch.nn.Module):
 
 
 class SourceModuleHnNSF(torch.nn.Module):
+    """
+    Generates harmonic and noise source features.
+
+    This module uses the SineGenerator to create harmonic signals based on the
+    fundamental frequency (F0) and merges them into a single excitation signal.
+
+    Args:
+        sample_rate (int): Sampling rate in Hz.
+        harmonic_num (int, optional): Number of harmonics above F0. Defaults to 0.
+        sine_amp (float, optional): Amplitude of sine source signal. Defaults to 0.1.
+        add_noise_std (float, optional): Standard deviation of additive Gaussian noise. Defaults to 0.003.
+        voiced_threshod (float, optional): Threshold to set voiced/unvoiced given F0. Defaults to 0.
+    """
+
     def __init__(
         self,
-        sampling_rate,
-        harmonic_num=0,
-        sine_amp=0.1,
-        add_noise_std=0.003,
-        voiced_threshold=0,
+        sampling_rate: int,
+        harmonic_num: int = 0,
+        sine_amp: float = 0.1,
+        add_noise_std: float = 0.003,
+        voiced_threshold: float = 0,
     ):
         super(SourceModuleHnNSF, self).__init__()
 
@@ -169,7 +211,7 @@ class SourceModuleHnNSF(torch.nn.Module):
         self.l_linear = torch.nn.Linear(harmonic_num + 1, 1)
         self.l_tanh = torch.nn.Tanh()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         sine_wavs, uv, _ = self.l_sin_gen(x)
         sine_wavs = sine_wavs.to(dtype=self.l_linear.weight.dtype)
         sine_merge = self.l_tanh(self.l_linear(sine_wavs))
@@ -178,18 +220,39 @@ class SourceModuleHnNSF(torch.nn.Module):
 
 
 class HiFiGANMRFGenerator(torch.nn.Module):
+    """
+    HiFi-GAN generator with Multi-Receptive Field (MRF) blocks.
+
+    This generator takes an input feature sequence and fundamental frequency (F0)
+    as input and generates an audio waveform. It utilizes transposed convolutions
+    for upsampling and MRF blocks for feature refinement. It can also condition
+    on global conditioning features.
+
+    Args:
+        in_channel (int): Number of input channels.
+        upsample_initial_channel (int): Number of channels after the initial convolution.
+        upsample_rates (list[int]): List of upsampling rates for the transposed convolutions.
+        upsample_kernel_sizes (list[int]): List of kernel sizes for the transposed convolutions.
+        resblock_kernel_sizes (list[int]): List of kernel sizes for the convolutional layers in the MRF blocks.
+        resblock_dilations (list[list[int]]): List of lists of dilation rates for the MRF blocks.
+        gin_channels (int): Number of global conditioning input channels (0 if no global conditioning).
+        sample_rate (int): Sampling rate of the audio.
+        harmonic_num (int): Number of harmonics to generate.
+        checkpointing (bool): Whether to use checkpointing to save memory during training (default: False).
+    """
+
     def __init__(
         self,
-        in_channel,
-        upsample_initial_channel,
-        upsample_rates,
-        upsample_kernel_sizes,
-        resblock_kernel_sizes,
-        resblock_dilations,
-        gin_channels,
-        sample_rate,
-        harmonic_num,
-        checkpointing=False,
+        in_channel: int,
+        upsample_initial_channel: int,
+        upsample_rates: list[int],
+        upsample_kernel_sizes: list[int],
+        resblock_kernel_sizes: list[int],
+        resblock_dilations: list[list[int]],
+        gin_channels: int,
+        sample_rate: int,
+        harmonic_num: int,
+        checkpointing: bool = False,
     ):
         super().__init__()
         self.num_kernels = len(resblock_kernel_sizes)
@@ -272,7 +335,9 @@ class HiFiGANMRFGenerator(torch.nn.Module):
         if gin_channels != 0:
             self.cond = torch.nn.Conv1d(gin_channels, upsample_initial_channel, 1)
 
-    def forward(self, x, f0, g: Optional[torch.Tensor] = None):
+    def forward(
+        self, x: torch.Tensor, f0: torch.Tensor, g: Optional[torch.Tensor] = None
+    ):
         f0 = self.f0_upsample(f0[:, None, :]).transpose(-1, -2)
         har_source, _, _ = self.m_source(f0)
         har_source = har_source.transpose(-1, -2)

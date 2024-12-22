@@ -146,19 +146,20 @@ def mel_spectrogram_torch(
     return melspec
 
 
-def compute_window_length(n_mels: int, sample_rate: int) -> int:
+def compute_window_length(n_mels: int, sample_rate: int):
     f_min = 0
     f_max = sample_rate / 2
     window_length_seconds = 8 * n_mels / (f_max - f_min)
     window_length = int(window_length_seconds * sample_rate)
     return 2 ** (window_length.bit_length() - 1)
 
+
 class MultiScaleMelSpectrogramLoss(torch.nn.Module):
 
     def __init__(
         self,
         sample_rate: int = 24000,
-        n_mels: list[int]=[5, 10, 20, 40, 80, 160, 320, 480],
+        n_mels: list[int] = [5, 10, 20, 40, 80, 160, 320, 480],
         loss_fn=torch.nn.L1Loss(),
     ):
         super().__init__()
@@ -169,7 +170,10 @@ class MultiScaleMelSpectrogramLoss(torch.nn.Module):
         self.hann_window: dict[int, torch.Tensor] = {}
         self.mel_banks: dict[int, torch.Tensor] = {}
 
-        self.stft_params = [(mel, compute_window_length(mel, sample_rate), self.sample_rate // 100) for mel in n_mels]
+        self.stft_params = [
+            (mel, compute_window_length(mel, sample_rate), self.sample_rate // 100)
+            for mel in n_mels
+        ]
 
     def mel_spectrogram(
         self,
@@ -177,15 +181,17 @@ class MultiScaleMelSpectrogramLoss(torch.nn.Module):
         n_mels: int,
         window_length: int,
         hop_length: int,
-    ) -> torch.Tensor:
+    ):
         # IDs for caching
         dtype_device = str(wav.dtype) + "_" + str(wav.device)
         win_dtype_device = str(window_length) + "_" + dtype_device
         mel_dtype_device = str(n_mels) + "_" + dtype_device
         # caching hann window
         if win_dtype_device not in self.hann_window:
-            self.hann_window[win_dtype_device] = torch.hann_window(window_length, device=wav.device, dtype=torch.float32)
-        
+            self.hann_window[win_dtype_device] = torch.hann_window(
+                window_length, device=wav.device, dtype=torch.float32
+            )
+
         wav = wav.squeeze(1)  # -> torch(B, T)
 
         stft = torch.stft(
@@ -209,13 +215,15 @@ class MultiScaleMelSpectrogramLoss(torch.nn.Module):
                     fmax=None,
                 )
             ).to(device=wav.device, dtype=torch.float32)
-        
+
         mel_spectrogram = torch.matmul(
             self.mel_banks[mel_dtype_device], magnitude
         )  # torch(B, n_mels, stft.frames)
         return mel_spectrogram
 
-    def forward(self, real: torch.Tensor, fake: torch.Tensor):  # real: torch(B, 1, T) , fake: torch(B, 1, T)
+    def forward(
+        self, real: torch.Tensor, fake: torch.Tensor
+    ):  # real: torch(B, 1, T) , fake: torch(B, 1, T)
         loss = 0.0
         for p in self.stft_params:
             real_mels = self.mel_spectrogram(real, *p)

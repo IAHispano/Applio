@@ -33,13 +33,6 @@ class MultiPeriodDiscriminator(torch.nn.Module):
         )
 
     def forward(self, y, y_hat):
-        """
-        Forward pass of the multi-period discriminator.
-
-        Args:
-            y (torch.Tensor): Real audio signal.
-            y_hat (torch.Tensor): Fake audio signal.
-        """
         y_d_rs, y_d_gs, fmap_rs, fmap_gs = [], [], [], []
         for d in self.discriminators:
             if self.training and self.checkpointing:
@@ -86,12 +79,6 @@ class DiscriminatorS(torch.nn.Module):
         self.lrelu = torch.nn.LeakyReLU(LRELU_SLOPE, inplace=True)
 
     def forward(self, x):
-        """
-        Forward pass of the discriminator.
-
-        Args:
-            x (torch.Tensor): Input audio signal.
-        """
         fmap = []
         for conv in self.convs:
             if self.training and self.checkpointing:
@@ -157,12 +144,6 @@ class DiscriminatorP(torch.nn.Module):
         self.lrelu = torch.nn.LeakyReLU(LRELU_SLOPE, inplace=True)
 
     def forward(self, x):
-        """
-        Forward pass of the discriminator.
-
-        Args:
-            x (torch.Tensor): Input audio signal.
-        """
         fmap = []
         b, c, t = x.shape
         if t % self.period != 0:

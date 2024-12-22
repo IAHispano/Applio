@@ -9,18 +9,19 @@ from rvc.lib.algorithm.generators.hifigan import SineGenerator
 from rvc.lib.algorithm.residuals import LRELU_SLOPE, ResBlock
 from rvc.lib.algorithm.commons import init_weights
 
-
 class SourceModuleHnNSF(torch.nn.Module):
     """
-    Source Module for harmonic-plus-noise excitation.
+    Source Module for generating harmonic and noise components for audio synthesis.
+
+    This module generates a harmonic source signal using sine waves and adds
+    optional noise. It's often used in neural vocoders as a source of excitation.
 
     Args:
-        sample_rate (int): Sampling rate in Hz.
-        harmonic_num (int, optional): Number of harmonics above F0. Defaults to 0.
-        sine_amp (float, optional): Amplitude of sine source signal. Defaults to 0.1.
-        add_noise_std (float, optional): Standard deviation of additive Gaussian noise. Defaults to 0.003.
-        voiced_threshod (float, optional): Threshold to set voiced/unvoiced given F0. Defaults to 0.
-        is_half (bool, optional): Whether to use half precision. Defaults to True.
+        sample_rate (int): Sampling rate of the audio in Hz.
+        harmonic_num (int, optional): Number of harmonic overtones to generate above the fundamental frequency (F0). Defaults to 0.
+        sine_amp (float, optional): Amplitude of the sine wave components. Defaults to 0.1.
+        add_noise_std (float, optional): Standard deviation of the additive white Gaussian noise. Defaults to 0.003.
+        voiced_threshod (float, optional): Threshold for the fundamental frequency (F0) to determine if a frame is voiced. If F0 is below this threshold, it's considered unvoiced. Defaults to 0.
     """
 
     def __init__(
@@ -30,13 +31,11 @@ class SourceModuleHnNSF(torch.nn.Module):
         sine_amp: float = 0.1,
         add_noise_std: float = 0.003,
         voiced_threshod: float = 0,
-        is_half: bool = True,
     ):
         super(SourceModuleHnNSF, self).__init__()
 
         self.sine_amp = sine_amp
         self.noise_std = add_noise_std
-        self.is_half = is_half
 
         self.l_sin_gen = SineGenerator(
             sample_rate, harmonic_num, sine_amp, add_noise_std, voiced_threshod
@@ -50,22 +49,24 @@ class SourceModuleHnNSF(torch.nn.Module):
         sine_merge = self.l_tanh(self.l_linear(sine_wavs))
         return sine_merge, None, None
 
-
 class HiFiGANNSFGenerator(torch.nn.Module):
     """
-    Generator for synthesizing audio using the NSF (Neural Source Filter) approach.
+    Generator module based on the Neural Source Filter (NSF) architecture.
+
+    This generator synthesizes audio by first generating a source excitation signal
+    (harmonic and noise) and then filtering it through a series of upsampling and
+    residual blocks. Global conditioning can be applied to influence the generation.
 
     Args:
-        initial_channel (int): Number of channels in the initial convolutional layer.
-        resblock (str): Type of residual block to use (1 or 2).
-        resblock_kernel_sizes (list): Kernel sizes of the residual blocks.
-        resblock_dilation_sizes (list): Dilation rates of the residual blocks.
-        upsample_rates (list): Upsampling rates.
-        upsample_initial_channel (int): Number of channels in the initial upsampling layer.
-        upsample_kernel_sizes (list): Kernel sizes of the upsampling layers.
-        gin_channels (int): Number of channels for the global conditioning input.
-        sr (int): Sampling rate.
-        is_half (bool, optional): Whether to use half precision. Defaults to False.
+        initial_channel (int): Number of input channels to the initial convolutional layer.
+        resblock_kernel_sizes (list): List of kernel sizes for the residual blocks.
+        resblock_dilation_sizes (list): List of lists of dilation rates for the residual blocks, corresponding to each kernel size.
+        upsample_rates (list): List of upsampling factors for each upsampling layer.
+        upsample_initial_channel (int): Number of output channels from the initial convolutional layer, which is also the input to the first upsampling layer.
+        upsample_kernel_sizes (list): List of kernel sizes for the transposed convolutional layers used for upsampling.
+        gin_channels (int): Number of input channels for the global conditioning. If 0, no global conditioning is used.
+        sr (int): Sampling rate of the audio.
+        checkpointing (bool, optional): Whether to use gradient checkpointing to save memory during training. Defaults to False.
     """
 
     def __init__(
@@ -78,8 +79,7 @@ class HiFiGANNSFGenerator(torch.nn.Module):
         upsample_kernel_sizes: list,
         gin_channels: int,
         sr: int,
-        is_half: bool = False,
-        checkpointing = False,
+        checkpointing: bool = False,
     ):
         super(HiFiGANNSFGenerator, self).__init__()
 
@@ -88,7 +88,7 @@ class HiFiGANNSFGenerator(torch.nn.Module):
         self.checkpointing = checkpointing
         self.f0_upsamp = torch.nn.Upsample(scale_factor=math.prod(upsample_rates))
         self.m_source = SourceModuleHnNSF(
-            sample_rate=sr, harmonic_num=0, is_half=is_half
+            sample_rate=sr, harmonic_num=0
         )
 
         self.conv_pre = torch.nn.Conv1d(
@@ -169,7 +169,7 @@ class HiFiGANNSFGenerator(torch.nn.Module):
         self.upp = math.prod(upsample_rates)
         self.lrelu_slope = LRELU_SLOPE
 
-    def forward(self, x, f0, g: Optional[torch.Tensor] = None):
+    def forward(self, x: torch.Tensor, f0: torch.Tensor, g: Optional[torch.Tensor] = None):
         har_source, _, _ = self.m_source(f0, self.upp)
         har_source = har_source.transpose(1, 2)
 
@@ -180,18 +180,21 @@ class HiFiGANNSFGenerator(torch.nn.Module):
 
         for i, (ups, noise_convs) in enumerate(zip(self.ups, self.noise_convs)):
             x = torch.nn.functional.leaky_relu(x, self.lrelu_slope)
-    
+
+            # Apply upsampling layer
             if self.training and self.checkpointing:
                 x = checkpoint.checkpoint(ups, x, use_reentrant=False)
             else:
                 x = ups(x)
-                    
+
+            # Add noise excitation
             x += noise_convs(har_source)
 
+            # Apply residual blocks
             def resblock_forward(x, blocks):
                 return sum(block(x) for block in blocks) / len(blocks)
 
-            blocks = self.resblocks[i * self.num_kernels:(i + 1) * self.num_kernels]
+            blocks = self.resblocks[i * self.num_kernels : (i + 1) * self.num_kernels]
 
             # Checkpoint or regular computation for ResBlocks
             if self.training and self.checkpointing:
