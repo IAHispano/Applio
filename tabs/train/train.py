@@ -684,15 +684,23 @@ def train_tab():
                         interactive=True,
                     )
             with gr.Row():
-                with gr.Column():
-                    custom_pretrained = gr.Checkbox(
-                        label=i18n("Custom Pretrained"),
-                        info=i18n(
-                            "Utilizing custom pretrained models can lead to superior results, as selecting the most suitable pretrained models tailored to the specific use case can significantly enhance performance."
-                        ),
-                        value=False,
-                        interactive=True,
-                    )
+                custom_pretrained = gr.Checkbox(
+                    label=i18n("Custom Pretrained"),
+                    info=i18n(
+                        "Utilizing custom pretrained models can lead to superior results, as selecting the most suitable pretrained models tailored to the specific use case can significantly enhance performance."
+                    ),
+                    value=False,
+                    interactive=True,
+                )
+                overtraining_detector = gr.Checkbox(
+                    label=i18n("Overtraining Detector"),
+                    info=i18n(
+                        "Detect overtraining to prevent the model from learning the training data too well and losing the ability to generalize to new data."
+                    ),
+                    value=False,
+                    interactive=True,
+                )
+            with gr.Row():
                 with gr.Column(visible=False) as pretrained_custom_settings:
                     with gr.Accordion(i18n("Pretrained Custom Settings")):
                         upload_pretrained = gr.File(
@@ -721,14 +729,7 @@ def train_tab():
                             interactive=True,
                             allow_custom_value=True,
                         )
-                overtraining_detector = gr.Checkbox(
-                    label=i18n("Overtraining Detector"),
-                    info=i18n(
-                        "Detect overtraining to prevent the model from learning the training data too well and losing the ability to generalize to new data."
-                    ),
-                    value=False,
-                    interactive=True,
-                )
+
                 with gr.Column(visible=False) as overtraining_settings:
                     with gr.Accordion(i18n("Overtraining Detector Settings")):
                         overtraining_threshold = gr.Slider(
