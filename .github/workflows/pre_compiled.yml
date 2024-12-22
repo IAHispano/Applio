@@ -236,7 +236,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install torch==2.3.1 torchvision torchaudio --upgrade --index-url https://download.pytorch.org/whl/cu121
+          pip uninstall torch torchvision torchaudio -y
+
       - name: Record final state of site-packages
         run: |
           python -c "
