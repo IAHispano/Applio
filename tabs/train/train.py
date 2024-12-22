@@ -390,8 +390,7 @@ def train_tab():
                 ),
                 interactive=True,
             )
-            with gr.Row():
-                cut_preprocess = gr.Radio(
+            cut_preprocess = gr.Radio(
                     label=i18n("Audio cutting"),
                     info=i18n(
                         "Audio file slicing method: Select 'Skip' if the files are already pre-sliced, 'Simple' if excessive silence has already been removed from the files, or 'Automatic' for automatic silence detection and slicing around it."
@@ -400,6 +399,7 @@ def train_tab():
                     value="Automatic",
                     interactive=True,
                 )
+            with gr.Row():
                 chunk_len = gr.Slider(
                     0.5,
                     5.0,
@@ -418,6 +418,8 @@ def train_tab():
                     info=i18n("Length of the overlap between slices for 'Simple' method."),
                     interactive=True,
                 )
+                
+            with gr.Row():
                 process_effects = gr.Checkbox(
                     label=i18n("Process effects"),
                     info=i18n(
@@ -427,7 +429,6 @@ def train_tab():
                     interactive=True,
                     visible=True,
                 )
-            with gr.Row():
                 noise_reduction = gr.Checkbox(
                     label=i18n("Noise Reduction"),
                     info=i18n(
@@ -437,7 +438,7 @@ def train_tab():
                     interactive=True,
                     visible=True,
                 )
-                clean_strength = gr.Slider(
+            clean_strength = gr.Slider(
                     minimum=0,
                     maximum=1,
                     label=i18n("Noise Reduction Strength"),
