@@ -325,5 +325,8 @@
   "Vocoder": "Vocoder",
   "Vocoder for audio synthesis: HiFi-GAN (default, available for all clients), MRF HiFi-GAN (higher fidelity, Applio-only), or RefineGAN (offering superior audio quality, Applio-only, with slightly slower performance).": "Vocoder for audio synthesis: HiFi-GAN (default, available for all clients), MRF HiFi-GAN (higher fidelity, Applio-only), or RefineGAN (offering superior audio quality, Applio-only, with slightly slower performance).",
   "Checkpointing": "Checkpointing",
-  "Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate.": "Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate."
+  "Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate.": "Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate.",
+  "Enable Experimental Options": "Enable Experimental Options",
+  "Enable extra features like 44100 sample rate and vocoder selection. These may cause errors and lack pretrained models.": "Enable extra features like 44100 sample rate and vocoder selection. These may cause errors and lack pretrained models.",
+  "Model Settings": "Model Settings"
 }

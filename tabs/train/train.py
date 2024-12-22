@@ -302,37 +302,52 @@ def upload_to_google_drive(pth_path, index_path):
 
 # Train Tab
 def train_tab():
-    with gr.Row():
-        model_name = gr.Dropdown(
-            label=i18n("Model Name"),
-            info=i18n("Name of the new model."),
-            choices=get_models_list(),
-            value="my-project",
-            interactive=True,
-            allow_custom_value=True,
-        )
-        sampling_rate = gr.Radio(
-            label=i18n("Sampling Rate"),
-            info=i18n("The sampling rate of the audio files."),
-            choices=["32000", "40000", "44100", "48000"],
-            value="40000",
-            interactive=True,
-        )
-        vocoder = gr.Radio(
-            label=i18n("Vocoder"),
-            info=i18n("Vocoder for audio synthesis: HiFi-GAN (default, available for all clients), MRF HiFi-GAN (higher fidelity, Applio-only), or RefineGAN (offering superior audio quality, Applio-only, with slightly slower performance)."),
-            choices=["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"],
-            value="HiFi-GAN",
-            interactive=True,
-        )
-        rvc_version = gr.Radio(
-            label=i18n("Model Architecture"),
-            info=i18n("Version of the model architecture."),
-            choices=["v1", "v2"],
-            value="v2",
-            interactive=True,
-            visible=False,
-        )
+    with gr.Accordion(i18n("Model Settings")):
+        with gr.Row():
+            with gr.Column():
+                model_name = gr.Dropdown(
+                    label=i18n("Model Name"),
+                    info=i18n("Name of the new model."),
+                    choices=get_models_list(),
+                    value="my-project",
+                    interactive=True,
+                    allow_custom_value=True,
+                )
+                experimental_options = gr.Checkbox(
+                    label=i18n("Enable Experimental Options"),
+                    info=i18n(
+                        "Enable extra features like 44100 sample rate and vocoder selection. These may cause errors and lack pretrained models."
+                    ),
+                    value=False,
+                )
+
+            with gr.Column():
+                sampling_rate = gr.Radio(
+                        label=i18n("Sampling Rate"),
+                        info=i18n("The sampling rate of the audio files."),
+                        choices=["32000", "40000", "48000"],
+                        value="40000",
+                        interactive=True,
+                    )
+                vocoder = gr.Radio(
+                        label=i18n("Vocoder"),
+                        info=i18n(
+                            "Vocoder for audio synthesis: HiFi-GAN (default, available for all clients), MRF HiFi-GAN (higher fidelity, Applio-only), or RefineGAN (offering superior audio quality, Applio-only, with slightly slower performance)."
+                        ),
+                        choices=["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"],
+                        value="HiFi-GAN",
+                        interactive=True,
+                        visible=False,
+                    )
+                rvc_version = gr.Radio(
+                    label=i18n("Model Architecture"),
+                    info=i18n("Version of the model architecture."),
+                    choices=["v1", "v2"],
+                    value="v2",
+                    interactive=True,
+                    visible=False,
+                )
+
     with gr.Accordion(i18n("Preprocess")):
         dataset_path = gr.Dropdown(
             label=i18n("Dataset Path"),
@@ -638,7 +653,9 @@ def train_tab():
                     )
                     checkpointing = gr.Checkbox(
                         label=i18n("Checkpointing"),
-                        info=i18n("Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate."),
+                        info=i18n(
+                            "Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate."
+                        ),
                         value=False,
                         interactive=True,
                     )
@@ -794,7 +811,7 @@ def train_tab():
                     g_pretrained_path,
                     d_pretrained_path,
                     vocoder,
-                    checkpointing
+                    checkpointing,
                 ],
                 outputs=[train_output_info],
             )
@@ -855,7 +872,7 @@ def train_tab():
             with gr.Column():
                 refresh_export = gr.Button(i18n("Refresh"))
                 if not os.name == "nt":
-                    upload_exported = gr.Button(i18n("Upload"), variant="primary")
+                    upload_exported = gr.Button(i18n("Upload"))
                     upload_exported.click(
                         fn=upload_to_google_drive,
                         inputs=[pth_dropdown_export, index_dropdown_export],
@@ -954,6 +971,17 @@ def train_tab():
                     return {"visible": True, "__type__": "update"}
                 return {"visible": False, "__type__": "update"}
 
+            def toggle_experimental(enabled):
+                if enabled:
+                    return {
+                        "choices": ["32000", "40000", "44100", "48000"],
+                        "__type__": "update",
+                    }, {"visible": True, "__type__": "update"}
+                return {"choices": ["32000", "40000", "48000"], "__type__": "update"}, {
+                    "visible": False,
+                    "__type__": "update",
+                }
+
             def update_slider_visibility(noise_reduction):
                 return gr.update(visible=noise_reduction)
 
@@ -966,6 +994,11 @@ def train_tab():
                 fn=download_prerequisites,
                 inputs=[rvc_version, pitch_guidance],
                 outputs=[],
+            )
+            experimental_options.change(
+                fn=toggle_experimental,
+                inputs=[experimental_options],
+                outputs=[sampling_rate, vocoder],
             )
             pitch_guidance.change(
                 fn=download_prerequisites,
@@ -987,13 +1020,11 @@ def train_tab():
                 inputs=[upload_audio_dataset, dataset_name],
                 outputs=[upload_audio_dataset, dataset_path],
             )
-
             f0_method.change(
                 fn=toggle_visible_hop_length,
                 inputs=[f0_method],
                 outputs=[hop_length],
             )
-
             embedder_model.change(
                 fn=toggle_visible_embedder_custom,
                 inputs=[embedder_model],
