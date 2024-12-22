@@ -16,6 +16,7 @@ soundfile==0.12.1
 noisereduce
 pedalboard
 stftpitchshift
+soxr
 
 # Machine learning and deep learning
 omegaconf>=2.0.6; sys_platform == 'darwin' 
