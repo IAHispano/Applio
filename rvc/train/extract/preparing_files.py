@@ -15,7 +15,9 @@ def generate_config(rvc_version: str, sample_rate: int, model_path: str):
         shutil.copyfile(config_path, config_save_path)
 
 
-def generate_filelist(model_path: str, rvc_version: str, sample_rate: int, include_mutes: int = 2):
+def generate_filelist(
+    model_path: str, rvc_version: str, sample_rate: int, include_mutes: int = 2
+):
     gt_wavs_dir = os.path.join(model_path, "sliced_audios")
     feature_dir = os.path.join(model_path, f"{rvc_version}_extracted")
 

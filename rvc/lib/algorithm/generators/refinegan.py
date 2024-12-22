@@ -6,6 +6,7 @@ import torch.utils.checkpoint as checkpoint
 
 from rvc.lib.algorithm.commons import get_padding
 
+
 class ResBlock(torch.nn.Module):
     """
     Residual block with multiple dilated convolutions.
@@ -94,6 +95,7 @@ class ResBlock(torch.nn.Module):
             m.weight.data.normal_(0, 0.01)
             m.bias.data.fill_(0.0)
 
+
 class AdaIN(torch.nn.Module):
     """
     Adaptive Instance Normalization layer.
@@ -104,6 +106,7 @@ class AdaIN(torch.nn.Module):
         channels (int): Number of input channels.
         leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation applied after scaling. Defaults to 0.2.
     """
+
     def __init__(
         self,
         *,
@@ -120,6 +123,7 @@ class AdaIN(torch.nn.Module):
 
         return self.activation(x + gaussian)
 
+
 class ParallelResBlock(torch.nn.Module):
     """
     Parallel residual block that applies multiple residual blocks with different kernel sizes in parallel.
@@ -131,6 +135,7 @@ class ParallelResBlock(torch.nn.Module):
         dilation (tuple[int], optional): Tuple of dilation rates for the convolutional layers within the residual blocks. Defaults to (1, 3, 5).
         leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation. Defaults to 0.2.
     """
+
     def __init__(
         self,
         *,
@@ -180,6 +185,7 @@ class ParallelResBlock(torch.nn.Module):
     def remove_parametrizations(self):
         for block in self.blocks:
             block[1].remove_parametrizations()
+
 
 class SineGenerator(torch.nn.Module):
     """
@@ -261,6 +267,7 @@ class SineGenerator(torch.nn.Module):
             sine_waves = sine_waves * uv + noise * (1 - uv)
         return sine_waves, uv, noise
 
+
 class SourceModuleHnNSF(torch.nn.Module):
     """
     Source Module for generating harmonic and noise signals.
@@ -274,6 +281,7 @@ class SourceModuleHnNSF(torch.nn.Module):
         add_noise_std (float, optional): Standard deviation of the additive noise. Defaults to 0.003.
         voiced_threshold (int, optional): F0 threshold for voiced/unvoiced classification. Defaults to 0.
     """
+
     def __init__(
         self,
         sampling_rate,
@@ -303,6 +311,7 @@ class SourceModuleHnNSF(torch.nn.Module):
 
         return sine_merge, None, None
 
+
 class RefineGANGenerator(torch.nn.Module):
     """
     RefineGAN generator for audio synthesis.
@@ -321,6 +330,7 @@ class RefineGANGenerator(torch.nn.Module):
         gin_channels (int, optional): Number of channels for the global conditioning input. Defaults to 256.
         checkpointing (bool, optional): Whether to use checkpointing for memory efficiency. Defaults to False.
     """
+
     def __init__(
         self,
         *,
