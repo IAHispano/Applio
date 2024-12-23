@@ -952,12 +952,8 @@ def train_tab():
                     return {
                         "choices": ["32000", "40000", "48000"],
                         "__type__": "update",
-                        "value": "40000"
-                    }, {
-                        "interactive": False,
-                        "__type__": "update",
-                        "value": "HiFi-GAN"
-                    }
+                        "value": "40000",
+                    }, {"interactive": False, "__type__": "update", "value": "HiFi-GAN"}
 
             def update_slider_visibility(noise_reduction):
                 return gr.update(visible=noise_reduction)
