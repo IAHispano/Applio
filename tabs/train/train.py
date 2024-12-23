@@ -314,14 +314,16 @@ def train_tab():
                     interactive=True,
                     allow_custom_value=True,
                 )
-                experimental_options = gr.Checkbox(
-                    label=i18n("Enable Experimental Options"),
+                architecture = gr.Radio(
+                    label=i18n("Architecture"),
                     info=i18n(
-                        "Enable extra features like 44100 sample rate and vocoder selection. These may cause errors and lack pretrained models."
+                        "Choose the model architecture:\n- **RVC (V2)**: Default option, compatible with all clients.\n- **Applio**: Advanced quality with improved vocoders and higher sample rates, Applio-only."
                     ),
-                    value=False,
+                    choices=["RVC", "Applio"],
+                    value="RVC",
+                    interactive=True,
+                    visible=True,
                 )
-
             with gr.Column():
                 sampling_rate = gr.Radio(
                     label=i18n("Sampling Rate"),
@@ -333,12 +335,12 @@ def train_tab():
                 vocoder = gr.Radio(
                     label=i18n("Vocoder"),
                     info=i18n(
-                        "Vocoder for audio synthesis: HiFi-GAN (default, available for all clients), MRF HiFi-GAN (higher fidelity, Applio-only), or RefineGAN (offering superior audio quality, Applio-only)."
+                        "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only."
                     ),
                     choices=["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"],
                     value="HiFi-GAN",
-                    interactive=True,
-                    visible=False,
+                    interactive=False,
+                    visible=True,
                 )
                 rvc_version = gr.Radio(
                     label=i18n("Model Architecture"),
@@ -937,16 +939,25 @@ def train_tab():
                     return {"visible": True, "__type__": "update"}
                 return {"visible": False, "__type__": "update"}
 
-            def toggle_experimental(enabled):
-                if enabled:
+            def toggle_architecture(architecture):
+                if architecture == "Applio":
                     return {
                         "choices": ["32000", "40000", "44100", "48000"],
                         "__type__": "update",
-                    }, {"visible": True, "__type__": "update"}
-                return {"choices": ["32000", "40000", "48000"], "__type__": "update"}, {
-                    "visible": False,
-                    "__type__": "update",
-                }
+                    }, {
+                        "interactive": True,
+                        "__type__": "update",
+                    }
+                else:
+                    return {
+                        "choices": ["32000", "40000", "48000"],
+                        "__type__": "update",
+                        "value": "40000"
+                    }, {
+                        "interactive": False,
+                        "__type__": "update",
+                        "value": "HiFi-GAN"
+                    }
 
             def update_slider_visibility(noise_reduction):
                 return gr.update(visible=noise_reduction)
@@ -961,9 +972,9 @@ def train_tab():
                 inputs=[rvc_version],
                 outputs=[],
             )
-            experimental_options.change(
-                fn=toggle_experimental,
-                inputs=[experimental_options],
+            architecture.change(
+                fn=toggle_architecture,
+                inputs=[architecture],
                 outputs=[sampling_rate, vocoder],
             )
             refresh.click(
