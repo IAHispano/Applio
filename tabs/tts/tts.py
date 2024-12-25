@@ -48,6 +48,7 @@ def process_input(file_path):
 def tts_tab():
     with gr.Column():
         with gr.Row():
+            # getting the default voice model
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
                 info=i18n("Select the voice model to use for the conversion."),
@@ -56,6 +57,7 @@ def tts_tab():
                 value=default_weight,
                 allow_custom_value=True,
             )
+            # getting the default index file respective to model
             best_default_index_path = match_index(model_file.value)
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
@@ -89,6 +91,7 @@ def tts_tab():
             f"Applio is a Speech-to-Speech conversion software, utilizing EdgeTTS as middleware for running the Text-to-Speech (TTS) component. Read more about it [here!](https://docs.applio.org/applio/getting-started/tts)"
         )
     )
+    # getting tts voice name
     tts_voice = gr.Dropdown(
         label=i18n("TTS Voices"),
         info=i18n("Select the TTS voice to use for the conversion."),
@@ -96,7 +99,7 @@ def tts_tab():
         interactive=True,
         value=random.choice(short_names),
     )
-
+    # tts speed
     tts_rate = gr.Slider(
         minimum=-100,
         maximum=100,
@@ -109,12 +112,14 @@ def tts_tab():
 
     with gr.Tabs():
         with gr.Tab(label="Text to Speech"):
+            # tts text
             tts_text = gr.Textbox(
                 label=i18n("Text to Synthesize"),
                 info=i18n("Enter the text to synthesize."),
                 placeholder=i18n("Enter text to synthesize"),
                 lines=3,
             )
+
         with gr.Tab(label="File to Speech"):
             txt_file = gr.File(
                 label=i18n("Upload a .txt file"),
