@@ -35,7 +35,7 @@ async def tts_endpoint(request: TTSRequest):
             tts_file=None,
             tts_text=request.tts_text,
             tts_voice=default_voice_name,
-            tts_rate=25,  # Default TTS speed
+            tts_rate=35,  # Default TTS speed
             pitch=4,  # Default pitch
             filter_radius=3,
             index_rate=0.85,
