@@ -16,7 +16,7 @@ app = FastAPI()
 
 # Default values
 default_voice_name = "ur-PK-AsadNeural"
-default_model_file = sorted(names, key=lambda x: extract_model_and_epoch(x))[2]
+default_model_file = sorted(names, key=lambda x: extract_model_and_epoch(x))[1]
 print(f"Using default model: {default_model_file}")
 default_index_file = match_index(default_model_file)
 default_sid = get_speakers_id(default_model_file)[0] if get_speakers_id(default_model_file) else 0
