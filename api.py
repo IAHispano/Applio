@@ -17,6 +17,7 @@ app = FastAPI()
 # Default values
 default_voice_name = "ur-PK-AsadNeural"
 default_model_file = sorted(names, key=lambda x: extract_model_and_epoch(x))[0]
+print(f"Using default model: {default_model_file}")
 default_index_file = match_index(default_model_file)
 default_sid = get_speakers_id(default_model_file)[0] if get_speakers_id(default_model_file) else 0
 output_tts_path = os.path.join(os.getcwd(), "assets", "audios", "tts_output.wav")
@@ -36,9 +37,9 @@ async def tts_endpoint(request: TTSRequest):
             tts_text=request.tts_text,
             tts_voice=default_voice_name,
             tts_rate=25,  # Default TTS speed
-            pitch=2,  # Default pitch
+            pitch=0,  # Default pitch
             filter_radius=3,
-            index_rate=0.8,
+            index_rate=0.74,
             volume_envelope=1,
             protect=0.5,
             hop_length=128,
