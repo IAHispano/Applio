@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
 from pydantic import BaseModel
 import os
+from io import BytesIO
 from core import run_tts_script
 from tabs.inference.inference import (
     extract_model_and_epoch,
@@ -68,9 +69,7 @@ async def tts_endpoint(request: TTSRequest):
         with open(audio_file_path, "rb") as audio_file:
             audio_bytes = audio_file.read()
 
-        return StreamingResponse(
-            content=audio_bytes,
-            media_type="audio/wav",
-        )
+        # Return audio bytes
+        return Response(content=audio_bytes, media_type="audio/wav")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error during TTS conversion: {str(e)}")
