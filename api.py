@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import os
 from core import run_tts_script
@@ -29,7 +30,7 @@ class TTSRequest(BaseModel):
 async def tts_endpoint(request: TTSRequest):
     try:
         # Run the TTS script with default parameters
-        output_info, audio_file_path = run_tts_script(
+        _, audio_file_path = run_tts_script(
             tts_file=None,
             tts_text=request.tts_text,
             tts_voice=default_voice_name,
@@ -56,10 +57,20 @@ async def tts_endpoint(request: TTSRequest):
             embedder_model_custom=None,
             sid=default_sid,
         )
-        return {
-            "message": "TTS conversion successful",
-            "output_info": output_info,
-            "audio_file_path": audio_file_path,
-        }
+
+        # Check if the audio file exists
+        if not os.path.exists(audio_file_path):
+            raise HTTPException(
+                status_code=500, detail="Audio file was not generated successfully."
+            )
+
+        # Read the audio file as bytes
+        with open(audio_file_path, "rb") as audio_file:
+            audio_bytes = audio_file.read()
+
+        return StreamingResponse(
+            content=audio_bytes,
+            media_type="audio/wav",
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error during TTS conversion: {str(e)}")
