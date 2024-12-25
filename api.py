@@ -29,7 +29,7 @@ async def tts_endpoint(request: TTSRequest):
     try:
         # Call the `run_tts_script` with default and user-provided values
         output_info, audio_file_path = run_tts_script(
-            input_tts_path=None,  # Not using file upload for this endpoint
+            tts_file='',  # Not using file upload for this endpoint
             tts_text=request.text,
             tts_voice=default_voice_name,
             tts_rate=0,  # Default TTS speed
