@@ -275,7 +275,7 @@ class VocosGenerator(torch.nn.Module):
 
         for layer in self.layers:
             if self.checkpointing:
-                x = checkpoint(layer, x)
+                x = checkpoint(layer, x, use_reentrant=False)
             else:
                 x = layer(x)
 
