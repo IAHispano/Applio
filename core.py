@@ -15,7 +15,6 @@ logs_path = os.path.join(current_script_directory, "logs")
 from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
 from rvc.train.process.model_blender import model_blender
 from rvc.train.process.model_information import model_information
-from rvc.train.process.extract_small_model import extract_small_model
 from rvc.lib.tools.analyzer import analyze_audio
 from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
 from rvc.lib.tools.model_download import model_download_pipeline
@@ -582,22 +581,6 @@ def run_index_script(model_name: str, rvc_version: str, index_algorithm: str):
 
     subprocess.run(command)
     return f"Index file for {model_name} generated successfully."
-
-
-# Model extract
-def run_model_extract_script(
-    pth_path: str,
-    model_name: str,
-    sample_rate: int,
-    pitch_guidance: bool,
-    rvc_version: str,
-    epoch: int,
-    step: int,
-):
-    extract_small_model(
-        pth_path, model_name, sample_rate, pitch_guidance, rvc_version, epoch, step
-    )
-    return f"Model {model_name} extracted successfully."
 
 
 # Model information
@@ -2149,51 +2132,6 @@ def parse_arguments():
         required=False,
     )
 
-    # Parser for 'model_extract' mode
-    model_extract_parser = subparsers.add_parser(
-        "model_extract", help="Extract a specific epoch from a trained model."
-    )
-    model_extract_parser.add_argument(
-        "--pth_path", type=str, help="Path to the main .pth model file.", required=True
-    )
-    model_extract_parser.add_argument(
-        "--model_name", type=str, help="Name of the model.", required=True
-    )
-    model_extract_parser.add_argument(
-        "--sample_rate",
-        type=int,
-        help="Sampling rate of the extracted model.",
-        choices=[32000, 40000, 48000],
-        required=True,
-    )
-    model_extract_parser.add_argument(
-        "--pitch_guidance",
-        type=lambda x: bool(strtobool(x)),
-        choices=[True, False],
-        help="Enable or disable pitch guidance for the extracted model.",
-        required=True,
-    )
-    model_extract_parser.add_argument(
-        "--rvc_version",
-        type=str,
-        help="Version of the extracted RVC model ('v1' or 'v2').",
-        choices=["v1", "v2"],
-        default="v2",
-    )
-    model_extract_parser.add_argument(
-        "--epoch",
-        type=int,
-        help="Epoch number to extract from the model.",
-        choices=range(1, 10001),
-        required=True,
-    )
-    model_extract_parser.add_argument(
-        "--step",
-        type=str,
-        help="Step number to extract from the model (optional).",
-        required=False,
-    )
-
     # Parser for 'model_information' mode
     model_information_parser = subparsers.add_parser(
         "model_information", help="Display information about a trained model."
@@ -2515,16 +2453,6 @@ def main():
                 model_name=args.model_name,
                 rvc_version=args.rvc_version,
                 index_algorithm=args.index_algorithm,
-            )
-        elif args.mode == "model_extract":
-            run_model_extract_script(
-                pth_path=args.pth_path,
-                model_name=args.model_name,
-                sample_rate=args.sample_rate,
-                pitch_guidance=args.pitch_guidance,
-                rvc_version=args.rvc_version,
-                epoch=args.epoch,
-                step=args.step,
             )
         elif args.mode == "model_information":
             run_model_information_script(
