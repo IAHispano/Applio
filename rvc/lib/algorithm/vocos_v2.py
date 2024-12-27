@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from torch.nn.utils.parametrizations import weight_norm
+from torch.utils.checkpoint import checkpoint
 
 
 class GlobalResponseNormalization(torch.nn.Module):
@@ -36,16 +37,6 @@ class ConvNeXtLayer(torch.nn.Module):
         channel (int): Number of input and output channels.
         h_channel (int): Number of hidden channels in the pointwise layers.
     """
-
-    def __init__(self, channel, h_channel):
-        super().__init__()
-        self.dw_conv = torch.nn.Conv1d(
-            channel, channel, kernel_size=7, padding=3, groups=channel
-        )
-        self.norm = torch.nn.LayerNorm(channel)
-        self.pw1 = torch.nn.Linear(channel, h_channel)
-        self.pw2 = torch.nn.Linear(h_channel, channel)
-        self.grn = GlobalResponseNormalization(h_channel)
 
     def __init__(self, channel, h_channel):
         super().__init__()
@@ -219,6 +210,7 @@ class VocosGenerator(torch.nn.Module):
         num_layers (int): Number of ConvNeXt layers.
         sample_rate (int): Sampling rate in Hz.
         gin_channels (int): Number of global conditioning channels (0 if not used).
+        checkpointing (bool): Whether to use checkpointing for memory efficiency.
     """
 
     def __init__(
@@ -230,6 +222,7 @@ class VocosGenerator(torch.nn.Module):
         num_layers,  # 8
         sample_rate,  # sr
         gin_channels,  # gin_channels
+        checkpointing,  # checkpointing
     ):
         super().__init__()
 
@@ -256,6 +249,8 @@ class VocosGenerator(torch.nn.Module):
             torch.nn.Conv1d(channel + channel // 2, channel, 1)
         )
 
+        self.checkpointing = checkpointing
+
     def forward(self, x: torch.Tensor, f0: torch.Tensor = None, g=None):
         # z = (8, 192, 36), p = (8, 36), g = (8, 256, 1)
 
@@ -277,8 +272,13 @@ class VocosGenerator(torch.nn.Module):
 
         x = self.pad(x)
         x = self.norm(x.transpose(1, 2)).transpose(1, 2)
+
         for layer in self.layers:
-            x = layer(x)
+            if self.checkpointing:
+                x = checkpoint(layer, x)
+            else:
+                x = layer(x)
+
         x = self.norm_last(x.transpose(1, 2)).transpose(1, 2)
         x = self.out_conv(x)
         mag, phase = x.chunk(2, dim=1)
