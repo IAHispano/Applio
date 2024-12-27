@@ -427,8 +427,6 @@ def run_preprocess_script(
     chunk_len: float,
     overlap_len: float,
 ):
-    config = get_config()
-    per = 3.0 if config.is_half else 3.7
     preprocess_script_path = os.path.join("rvc", "train", "preprocess", "preprocess.py")
     command = [
         python,
@@ -439,7 +437,6 @@ def run_preprocess_script(
                 os.path.join(logs_path, model_name),
                 dataset_path,
                 sample_rate,
-                per,
                 cpu_cores,
                 cut_preprocess,
                 process_effects,

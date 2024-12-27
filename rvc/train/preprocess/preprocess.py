@@ -26,6 +26,7 @@ logging.getLogger("numba.core.ssa").setLevel(logging.WARNING)
 logging.getLogger("numba.core.interpreter").setLevel(logging.WARNING)
 
 OVERLAP = 0.3
+PERCENTAGE = 3.0
 MAX_AMPLITUDE = 0.9
 ALPHA = 0.75
 HIGH_PASS_CUTOFF = 48
@@ -34,7 +35,7 @@ RES_TYPE = "soxr_vhq"
 
 
 class PreProcess:
-    def __init__(self, sr: int, exp_dir: str, per: float):
+    def __init__(self, sr: int, exp_dir: str):
         self.slicer = Slicer(
             sr=sr,
             threshold=-42,
@@ -47,7 +48,6 @@ class PreProcess:
         self.b_high, self.a_high = signal.butter(
             N=5, Wn=HIGH_PASS_CUTOFF, btype="high", fs=self.sr
         )
-        self.per = per
         self.exp_dir = exp_dir
         self.device = "cpu"
         self.gt_wavs_dir = os.path.join(exp_dir, "sliced_audios")
@@ -166,11 +166,11 @@ class PreProcess:
                 for audio_segment in self.slicer.slice(audio):
                     i = 0
                     while True:
-                        start = int(self.sr * (self.per - OVERLAP) * i)
+                        start = int(self.sr * (PERCENTAGE - OVERLAP) * i)
                         i += 1
-                        if len(audio_segment[start:]) > (self.per + OVERLAP) * self.sr:
+                        if len(audio_segment[start:]) > (PERCENTAGE + OVERLAP) * self.sr:
                             tmp_audio = audio_segment[
-                                start : start + int(self.per * self.sr)
+                                start : start + int(PERCENTAGE * self.sr)
                             ]
                             self.process_audio_segment(
                                 tmp_audio,
@@ -250,7 +250,6 @@ def preprocess_training_set(
     sr: int,
     num_processes: int,
     exp_dir: str,
-    per: float,
     cut_preprocess: str,
     process_effects: bool,
     noise_reduction: bool,
@@ -259,7 +258,7 @@ def preprocess_training_set(
     overlap_len: float,
 ):
     start_time = time.time()
-    pp = PreProcess(sr, exp_dir, per)
+    pp = PreProcess(sr, exp_dir)
     print(f"Starting preprocess with {num_processes} processes...")
 
     files = []
@@ -317,25 +316,23 @@ if __name__ == "__main__":
     experiment_directory = str(sys.argv[1])
     input_root = str(sys.argv[2])
     sample_rate = int(sys.argv[3])
-    percentage = float(sys.argv[4])
-    num_processes = sys.argv[5]
+    num_processes = sys.argv[4]
     if num_processes.lower() == "none":
         num_processes = multiprocessing.cpu_count()
     else:
         num_processes = int(num_processes)
-    cut_preprocess = str(sys.argv[6])
-    process_effects = strtobool(sys.argv[7])
-    noise_reduction = strtobool(sys.argv[8])
-    reduction_strength = float(sys.argv[9])
-    chunk_len = float(sys.argv[10])
-    overlap_len = float(sys.argv[11])
+    cut_preprocess = str(sys.argv[5])
+    process_effects = strtobool(sys.argv[6])
+    noise_reduction = strtobool(sys.argv[7])
+    reduction_strength = float(sys.argv[8])
+    chunk_len = float(sys.argv[9])
+    overlap_len = float(sys.argv[10])
 
     preprocess_training_set(
         input_root,
         sample_rate,
         num_processes,
         experiment_directory,
-        percentage,
         cut_preprocess,
         process_effects,
         noise_reduction,
