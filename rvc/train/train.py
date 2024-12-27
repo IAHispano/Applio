@@ -811,29 +811,6 @@ def train_and_evaluate(
     done = False
 
     if rank == 0:
-        # Save weights every N epochs
-        if epoch % save_every_epoch == 0:
-            checkpoint_suffix = f"{2333333 if save_only_latest else global_step}.pth"
-            save_checkpoint(
-                net_g,
-                optim_g,
-                config.train.learning_rate,
-                epoch,
-                os.path.join(experiment_dir, "G_" + checkpoint_suffix),
-            )
-            save_checkpoint(
-                net_d,
-                optim_d,
-                config.train.learning_rate,
-                epoch,
-                os.path.join(experiment_dir, "D_" + checkpoint_suffix),
-            )
-            if custom_save_every_weights:
-                model_add.append(
-                    os.path.join(
-                        experiment_dir, f"{model_name}_{epoch}e_{global_step}s.pth"
-                    )
-                )
         overtrain_info = ""
         # Check overtraining
         if overtraining_detector and rank == 0 and epoch > 1:
@@ -929,6 +906,52 @@ def train_and_evaluate(
             )
             done = True
 
+        # Print training progress
+        lowest_value_rounded = float(lowest_value["value"])
+        lowest_value_rounded = round(lowest_value_rounded, 3)
+
+        record = f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()}"
+        if epoch > 1:
+            record = (
+                record
+                + f" | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
+            )
+
+        if overtraining_detector:
+            remaining_epochs_gen = overtraining_threshold - consecutive_increases_gen
+            remaining_epochs_disc = (
+                overtraining_threshold * 2 - consecutive_increases_disc
+            )
+            record = (
+                record
+                + f" | Number of epochs remaining for overtraining: g/total: {remaining_epochs_gen} d/total: {remaining_epochs_disc} | smoothed_loss_gen={smoothed_value_gen:.3f} | smoothed_loss_disc={smoothed_value_disc:.3f}"
+            )
+        print(record)
+
+        # Save weights every N epochs
+        if epoch % save_every_epoch == 0:
+            checkpoint_suffix = f"{2333333 if save_only_latest else global_step}.pth"
+            save_checkpoint(
+                net_g,
+                optim_g,
+                config.train.learning_rate,
+                epoch,
+                os.path.join(experiment_dir, "G_" + checkpoint_suffix),
+            )
+            save_checkpoint(
+                net_d,
+                optim_d,
+                config.train.learning_rate,
+                epoch,
+                os.path.join(experiment_dir, "D_" + checkpoint_suffix),
+            )
+            if custom_save_every_weights:
+                model_add.append(
+                    os.path.join(
+                        experiment_dir, f"{model_name}_{epoch}e_{global_step}s.pth"
+                    )
+                )
+
         if model_add:
             ckpt = (
                 net_g.module.state_dict()
@@ -953,29 +976,6 @@ def train_and_evaluate(
         # Clean-up old best epochs
         for m in model_del:
             os.remove(m)
-
-        # Print training progress
-        lowest_value_rounded = float(lowest_value["value"])
-        lowest_value_rounded = round(lowest_value_rounded, 3)
-
-        record = f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()}"
-        if epoch > 1:
-            record = (
-                record
-                + f" | lowest_value={lowest_value_rounded} (epoch {lowest_value['epoch']} and step {lowest_value['step']})"
-            )
-
-        if overtraining_detector:
-            remaining_epochs_gen = overtraining_threshold - consecutive_increases_gen
-            remaining_epochs_disc = (
-                overtraining_threshold * 2 - consecutive_increases_disc
-            )
-            record = (
-                record
-                + f" | Number of epochs remaining for overtraining: g/total: {remaining_epochs_gen} d/total: {remaining_epochs_disc} | smoothed_loss_gen={smoothed_value_gen:.3f} | smoothed_loss_disc={smoothed_value_disc:.3f}"
-            )
-        print(record)
-        last_loss_gen_all = loss_gen_all
 
         if done:
             os._exit(2333333)
