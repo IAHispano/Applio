@@ -52,15 +52,6 @@ class Config:
             raise ValueError("Invalid precision type. Must be 'fp32' or 'fp16'.")
 
         fp16_run_value = precision == "fp16"
-        preprocess_target_version = "3.7" if precision == "fp16" else "3.0"
-        preprocess_path = os.path.join(
-            os.path.dirname(__file__),
-            os.pardir,
-            "rvc",
-            "train",
-            "preprocess",
-            "preprocess.py",
-        )
 
         for config_path in version_config_paths:
             full_config_path = os.path.join("rvc", "configs", config_path)
@@ -73,16 +64,7 @@ class Config:
             except FileNotFoundError:
                 print(f"File not found: {full_config_path}")
 
-        if os.path.exists(preprocess_path):
-            with open(preprocess_path, "r") as f:
-                preprocess_content = f.read()
-            preprocess_content = preprocess_content.replace(
-                "3.0" if precision == "fp16" else "3.7", preprocess_target_version
-            )
-            with open(preprocess_path, "w") as f:
-                f.write(preprocess_content)
-
-        return f"Overwritten preprocess and config.json to use {precision}."
+        return f"Overwritten config to use {precision}."
 
     def get_precision(self):
         if not version_config_paths:
