@@ -1,5 +1,6 @@
 import os
 import sys
+import soxr
 import time
 import torch
 import librosa
@@ -123,7 +124,7 @@ class VoiceConverter:
                 ]
                 target_sr = min(common_sample_rates, key=lambda x: abs(x - sample_rate))
                 audio = librosa.resample(
-                    audio, orig_sr=sample_rate, target_sr=target_sr
+                    audio, orig_sr=sample_rate, target_sr=target_sr, res_type="soxr_vhq"
                 )
                 sf.write(output_path, audio, target_sr, format=output_format.lower())
             return output_path
