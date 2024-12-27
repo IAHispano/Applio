@@ -1,10 +1,11 @@
 import math
+from typing import Optional
+
 import numpy as np
 import torch
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils.parametrizations import weight_norm
-import torch.utils.checkpoint as checkpoint
-from typing import Optional
+from torch.utils.checkpoint import checkpoint
 
 LRELU_SLOPE = 0.1
 
@@ -351,7 +352,7 @@ class HiFiGANMRFGenerator(torch.nn.Module):
             x = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
 
             if self.training and self.checkpointing:
-                x = checkpoint.checkpoint(ups, x, use_reentrant=False)
+                x = checkpoint(ups, x, use_reentrant=False)
             else:
                 x = ups(x)
 
@@ -361,7 +362,7 @@ class HiFiGANMRFGenerator(torch.nn.Module):
                 return sum(layer(x) for layer in layers) / self.num_kernels
 
             if self.training and self.checkpointing:
-                x = checkpoint.checkpoint(mrf_sum, x, mrf, use_reentrant=False)
+                x = checkpoint(mrf_sum, x, mrf, use_reentrant=False)
             else:
                 x = mrf_sum(x, mrf)
 

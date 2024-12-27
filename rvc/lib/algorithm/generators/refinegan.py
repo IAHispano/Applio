@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils.parametrize import remove_parametrizations
-import torch.utils.checkpoint as checkpoint
+from torch.utils.checkpoint import checkpoint
 
 from rvc.lib.algorithm.commons import get_padding
 
@@ -444,7 +444,7 @@ class RefineGANGenerator(torch.nn.Module):
             x = torch.nn.functional.leaky_relu(x, self.leaky_relu_slope, inplace=True)
             downs.append(x)
             if self.training and self.checkpointing:
-                x = checkpoint.checkpoint(block, x, use_reentrant=False)
+                x = checkpoint(block, x, use_reentrant=False)
             else:
                 x = block(x)
 
@@ -464,9 +464,9 @@ class RefineGANGenerator(torch.nn.Module):
             x = torch.nn.functional.leaky_relu(x, self.leaky_relu_slope, inplace=True)
 
             if self.training and self.checkpointing:
-                x = checkpoint.checkpoint(ups, x, use_reentrant=False)
+                x = checkpoint(ups, x, use_reentrant=False)
                 x = torch.cat([x, down], dim=1)
-                x = checkpoint.checkpoint(res, x, use_reentrant=False)
+                x = checkpoint(res, x, use_reentrant=False)
             else:
                 x = ups(x)
                 x = torch.cat([x, down], dim=1)

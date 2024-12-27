@@ -1,6 +1,6 @@
 import torch
+from torch.utils.checkpoint import checkpoint
 from torch.nn.utils.parametrizations import spectral_norm, weight_norm
-import torch.utils.checkpoint as checkpoint
 
 from rvc.lib.algorithm.commons import get_padding
 from rvc.lib.algorithm.residuals import LRELU_SLOPE
@@ -53,7 +53,7 @@ class MultiPeriodDiscriminator(torch.nn.Module):
                     y_d_g, fmap_g = d(y_hat)
                     return y_d_r, fmap_r, y_d_g, fmap_g
 
-                y_d_r, fmap_r, y_d_g, fmap_g = checkpoint.checkpoint(
+                y_d_r, fmap_r, y_d_g, fmap_g = checkpoint(
                     forward_discriminator, d, y, y_hat, use_reentrant=False
                 )
             else:
@@ -97,8 +97,8 @@ class DiscriminatorS(torch.nn.Module):
         fmap = []
         for conv in self.convs:
             if self.training and self.checkpointing:
-                x = checkpoint.checkpoint(conv, x, use_reentrant=False)
-                x = checkpoint.checkpoint(self.lrelu, x, use_reentrant=False)
+                x = checkpoint(conv, x, use_reentrant=False)
+                x = checkpoint(self.lrelu, x, use_reentrant=False)
             else:
                 x = self.lrelu(conv(x))
             fmap.append(x)
@@ -168,8 +168,8 @@ class DiscriminatorP(torch.nn.Module):
 
         for conv in self.convs:
             if self.training and self.checkpointing:
-                x = checkpoint.checkpoint(conv, x, use_reentrant=False)
-                x = checkpoint.checkpoint(self.lrelu, x, use_reentrant=False)
+                x = checkpoint(conv, x, use_reentrant=False)
+                x = checkpoint(self.lrelu, x, use_reentrant=False)
             else:
                 x = self.lrelu(conv(x))
             fmap.append(x)
