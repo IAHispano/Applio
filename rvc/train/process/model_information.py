@@ -23,15 +23,13 @@ def model_information(path):
     sr = model_data.get("sr", "None")
     f0 = model_data.get("f0", "None")
     dataset_length = model_data.get("dataset_length", "None")
-    version = model_data.get("version", "None")
+    vocoder = model_data.get("vocoder", "None")
     creation_date = model_data.get("creation_date", "None")
     model_hash = model_data.get("model_hash", None)
     overtrain_info = model_data.get("overtrain_info", "None")
     model_author = model_data.get("author", "None")
     embedder_model = model_data.get("embedder_model", "None")
     speakers_id = model_data.get("speakers_id", 0)
-
-    pitch_guidance = "True" if f0 == 1 else "False"
 
     creation_date_str = prettify_date(creation_date) if creation_date else "None"
 
@@ -40,13 +38,12 @@ def model_information(path):
         f"Model Creator: {model_author}\n"
         f"Epochs: {epochs}\n"
         f"Steps: {steps}\n"
-        f"Model Architecture: {version}\n"
+        f"Vocoder: {vocoder}\n"
         f"Sampling Rate: {sr}\n"
-        f"Pitch Guidance: {pitch_guidance}\n"
         f"Dataset Length: {dataset_length}\n"
         f"Creation Date: {creation_date_str}\n"
-        f"Hash (ID): {model_hash}\n"
         f"Overtrain Info: {overtrain_info}\n"
         f"Embedder Model: {embedder_model}\n"
         f"Max Speakers ID: {speakers_id}"
+        f"Hash: {model_hash}\n"
     )

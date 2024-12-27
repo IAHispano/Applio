@@ -881,31 +881,6 @@ def train_and_evaluate(
                     )
                 )
 
-        # Check completion
-        if epoch >= custom_total_epoch:
-            lowest_value_rounded = float(lowest_value["value"])
-            lowest_value_rounded = round(lowest_value_rounded, 3)
-            print(
-                f"Training has been successfully completed with {epoch} epoch, {global_step} steps and {round(loss_gen_all.item(), 3)} loss gen."
-            )
-            print(
-                f"Lowest generator loss: {lowest_value_rounded} at epoch {lowest_value['epoch']}, step {lowest_value['step']}"
-            )
-
-            pid_file_path = os.path.join(experiment_dir, "config.json")
-            with open(pid_file_path, "r") as pid_file:
-                pid_data = json.load(pid_file)
-            with open(pid_file_path, "w") as pid_file:
-                pid_data.pop("process_pids", None)
-                json.dump(pid_data, pid_file, indent=4)
-            # Final model
-            model_add.append(
-                os.path.join(
-                    experiment_dir, f"{model_name}_{epoch}e_{global_step}s.pth"
-                )
-            )
-            done = True
-
         # Print training progress
         lowest_value_rounded = float(lowest_value["value"])
         lowest_value_rounded = round(lowest_value_rounded, 3)
@@ -976,6 +951,31 @@ def train_and_evaluate(
         # Clean-up old best epochs
         for m in model_del:
             os.remove(m)
+
+        # Check completion
+        if epoch >= custom_total_epoch:
+            lowest_value_rounded = float(lowest_value["value"])
+            lowest_value_rounded = round(lowest_value_rounded, 3)
+            print(
+                f"Training has been successfully completed with {epoch} epoch, {global_step} steps and {round(loss_gen_all.item(), 3)} loss gen."
+            )
+            print(
+                f"Lowest generator loss: {lowest_value_rounded} at epoch {lowest_value['epoch']}, step {lowest_value['step']}"
+            )
+
+            pid_file_path = os.path.join(experiment_dir, "config.json")
+            with open(pid_file_path, "r") as pid_file:
+                pid_data = json.load(pid_file)
+            with open(pid_file_path, "w") as pid_file:
+                pid_data.pop("process_pids", None)
+                json.dump(pid_data, pid_file, indent=4)
+            # Final model
+            model_add.append(
+                os.path.join(
+                    experiment_dir, f"{model_name}_{epoch}e_{global_step}s.pth"
+                )
+            )
+            done = True
 
         if done:
             os._exit(2333333)
