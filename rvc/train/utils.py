@@ -198,7 +198,7 @@ def load_wav_to_torch(full_path):
     Args:
         full_path (str): The path to the WAV file.
     """
-    data, sample_rate = sf.read(full_path, dtype='float32')
+    data, sample_rate = sf.read(full_path, dtype="float32")
     return torch.FloatTensor(data), sample_rate
 
 

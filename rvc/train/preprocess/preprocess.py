@@ -168,7 +168,10 @@ class PreProcess:
                     while True:
                         start = int(self.sr * (PERCENTAGE - OVERLAP) * i)
                         i += 1
-                        if len(audio_segment[start:]) > (PERCENTAGE + OVERLAP) * self.sr:
+                        if (
+                            len(audio_segment[start:])
+                            > (PERCENTAGE + OVERLAP) * self.sr
+                        ):
                             tmp_audio = audio_segment[
                                 start : start + int(PERCENTAGE * self.sr)
                             ]
