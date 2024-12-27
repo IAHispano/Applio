@@ -2,7 +2,7 @@ import os
 import glob
 import torch
 import numpy as np
-from scipy.io.wavfile import read
+import soundfile as sf
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 
@@ -198,8 +198,8 @@ def load_wav_to_torch(full_path):
     Args:
         full_path (str): The path to the WAV file.
     """
-    sample_rate, data = read(full_path)
-    return torch.FloatTensor(data.astype(np.float32)), sample_rate
+    data, sample_rate = sf.read(full_path, dtype='float32')
+    return torch.FloatTensor(data), sample_rate
 
 
 def load_filepaths_and_text(filename, split="|"):
