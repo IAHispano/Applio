@@ -1,9 +1,11 @@
-import os, sys
-import torch
-import hashlib
 import datetime
-from collections import OrderedDict
+import hashlib
 import json
+import os
+import sys
+from collections import OrderedDict
+
+import torch
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -53,11 +55,11 @@ def extract_model(
         if os.path.exists(os.path.join(model_dir_path, "model_info.json")):
             with open(os.path.join(model_dir_path, "model_info.json"), "r") as f:
                 data = json.load(f)
-                dataset_lenght = data.get("total_dataset_duration", None)
+                dataset_length = data.get("total_dataset_duration", None)
                 embedder_model = data.get("embedder_model", None)
                 speakers_id = data.get("speakers_id", 1)
         else:
-            dataset_lenght = None
+            dataset_length = None
 
         with open(os.path.join(now_dir, "assets", "config.json"), "r") as f:
             data = json.load(f)
@@ -99,7 +101,7 @@ def extract_model(
         hash_input = f"{name}-{epoch}-{step}-{sr}-{version}-{opt['config']}"
         opt["model_hash"] = hashlib.sha256(hash_input.encode()).hexdigest()
         opt["overtrain_info"] = overtrain_info
-        opt["dataset_lenght"] = dataset_lenght
+        opt["dataset_length"] = dataset_length
         opt["model_name"] = name
         opt["author"] = model_author
         opt["embedder_model"] = embedder_model
