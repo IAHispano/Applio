@@ -22,7 +22,7 @@ def model_information(path):
     steps = model_data.get("step", "None")
     sr = model_data.get("sr", "None")
     f0 = model_data.get("f0", "None")
-    dataset_lenght = model_data.get("dataset_lenght", "None")
+    dataset_length = model_data.get("dataset_length", "None")
     version = model_data.get("version", "None")
     creation_date = model_data.get("creation_date", "None")
     model_hash = model_data.get("model_hash", None)
@@ -43,7 +43,7 @@ def model_information(path):
         f"Model Architecture: {version}\n"
         f"Sampling Rate: {sr}\n"
         f"Pitch Guidance: {pitch_guidance}\n"
-        f"Dataset Length: {dataset_lenght}\n"
+        f"Dataset Length: {dataset_length}\n"
         f"Creation Date: {creation_date_str}\n"
         f"Hash (ID): {model_hash}\n"
         f"Overtrain Info: {overtrain_info}\n"
