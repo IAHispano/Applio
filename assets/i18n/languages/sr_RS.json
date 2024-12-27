@@ -324,5 +324,22 @@
   "Name of the model creator. (Default: Unknown)": "Ime kreatora modela. (Podrazumevano: Nepoznat)",
   "Speaker ID": "ID Spikera",
   "Select the speaker ID to use for the conversion.": "Izaberite ID spikera koji želite da koristite za konverziju.",
-  "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid.": "Podesite jačinu autotjuna – što je više povećate, to će više zvuk biti prilagođen hromatskoj mreži."
+  "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid.": "Podesite jačinu autotjuna – što je više povećate, to će više zvuk biti prilagođen hromatskoj mreži.",
+  "Architecture": "Arhitektura",
+  "Configure GPU and CPU settings.": "Konfiguriši GPU i CPU podešavanja.",
+  "Vocoder": "Vokoder",
+  "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only.": "Izaberite vokoder za audio sintetizovanje:\n- **HiFi-GAN**: Podrazumevana opcija, kompatibilna sa svim klijentima.\n- **MRF HiFi-GAN**: Veća vernost, samo za Applio.\n- **RefineGAN**: Najkvalitetniji zvuk, samo za Applio.",
+  "Choose the model architecture:\n- **RVC (V2)**: Default option, compatible with all clients.\n- **Applio**: Advanced quality with improved vocoders and higher sample rates, Applio-only.": "Izaberite arhitekturu modela:\n- **RVC (V2)**: Podrazumevana opcija, kompatibilna sa svim klijentima.\n- **Applio**: Napredni kvalitet sa poboljšanim vokoderima i većim uzorkovanjem, samo za Applio.",
+  "Checkpointing": "Kontrolne tačke",
+  "Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate.": "Omogućava memorijski efikasnu obuku. Ovo smanjuje korišćenje VRAM-a po cenu sporije obuke. Korisno je za GPU-ove sa ograničenom memorijom (npr. <6GB VRAM-a) ili kada se koristi veličina serije veća od one koju GPU obično podržava.",
+  "Enable Experimental Options": "Omogući eksperimentalne opcije",
+  "Enable extra features like 44100 sample rate and vocoder selection. These may cause errors and lack pretrained models.": "Omogući dodatne funkcije kao što su uzorkovanje na 44100 Hz i izbor vokodera. Ovo može izazvati greške i nedostatak unapred obučenih modela.",
+  "Model Settings": "Postavke modela",
+  "Audio file slicing method: Select 'Skip' if the files are already pre-sliced, 'Simple' if excessive silence has already been removed from the files, or 'Automatic' for automatic silence detection and slicing around it.": "Metod sečenja audio fajlova: Izaberite 'Preskoči' ako su fajlovi već isečeni, 'Jednostavno' ako je prekomerna tišina već uklonjena iz fajlova, ili 'Automatski' za automatsko otkrivanje i sečenje oko tišine.",
+  "Chunk length (sec)": "Dužina segmenta (sek)",
+  "Length of the audio slice for 'Simple' method.": "Dužina audio segmenta za metod 'Jednostavno'.",
+  "Overlap length (sec)": "Dužina preklapanja (sek)",
+  "Length of the overlap between slices for 'Simple' method.": "Dužina preklapanja između segmenata za metod 'Jednostavno'.",
+  "Silent training files": "Tihi treninzi fajlova",
+  "Adding several silent files to the training set enables the model to handle pure silence in inferred audio files. Select 0 if your dataset is clean and already contains segments of pure silence.": "Dodavanje nekoliko tihih fajlova u set za obuku omogućava modelu da obrađuje čistu tišinu u izvedenim audio fajlovima. Izaberite 0 ako vaš skup podataka već sadrži segmente čiste tišine."
 }
