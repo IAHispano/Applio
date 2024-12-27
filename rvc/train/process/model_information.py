@@ -46,7 +46,7 @@ def model_information(path):
         f"Dataset Length: {dataset_lenght}\n"
         f"Creation Date: {creation_date_str}\n"
         f"Hash (ID): {model_hash}\n"
-        f"Overtrain Info: {overtrain_info}"
-        f"Embedder Model: {embedder_model}"
+        f"Overtrain Info: {overtrain_info}\n"
+        f"Embedder Model: {embedder_model}\n"
         f"Max Speakers ID: {speakers_id}"
     )
