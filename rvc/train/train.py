@@ -631,12 +631,12 @@ def train_and_evaluate(
                     model_output
                 )
                 # slice of the original waveform to match a generate slice
-                    wave = commons.slice_segments(
-                        wave,
-                        ids_slice * config.data.hop_length,
-                        config.train.segment_size,
-                        dim=3,
-                    )
+                wave = commons.slice_segments(
+                    wave,
+                    ids_slice * config.data.hop_length,
+                    config.train.segment_size,
+                    dim=3,
+                )
                 y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
                 with autocast(enabled=False):
                     # if vocoder == "HiFi-GAN":
