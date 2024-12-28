@@ -9,8 +9,6 @@ import numpy as np
 import concurrent.futures
 import multiprocessing as mp
 import json
-import shutil
-from distutils.util import strtobool
 
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
