@@ -204,7 +204,6 @@ def main():
                 pass
         with open(config_save_path, "w") as pid_file:
             for rank, device_id in enumerate(gpus):
-                print(f"  creating subproc for gpu={i}")
                 subproc = mp.Process(
                     target=run,
                     args=(
