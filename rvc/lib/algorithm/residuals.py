@@ -26,8 +26,10 @@ def create_conv1d_layer(channels, kernel_size, dilation):
 def apply_mask(tensor: torch.Tensor, mask: Optional[torch.Tensor]):
     return tensor * mask if mask else tensor
 
+
 def apply_mask_(tensor: torch.Tensor, mask: Optional[torch.Tensor]):
     return tensor.mul_(mask) if mask else tensor
+
 
 class ResBlock(torch.nn.Module):
     """

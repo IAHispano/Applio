@@ -73,7 +73,7 @@ class HiFiGANGenerator(torch.nn.Module):
     def forward(self, x: torch.Tensor, g: Optional[torch.Tensor] = None):
         # new tensor
         x = self.conv_pre(x)
-        
+
         if g is not None:
             # in-place call
             x += self.cond(g)
