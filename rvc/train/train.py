@@ -751,12 +751,12 @@ def train_and_evaluate(
             config.data.mel_fmax,
         )
         # used for tensorboard chart - slice/mel_org
-            y_mel = commons.slice_segments(
-                mel,
-                ids_slice,
-                config.train.segment_size // config.data.hop_length,
-                dim=3,
-            )
+        y_mel = commons.slice_segments(
+            mel,
+            ids_slice,
+            config.train.segment_size // config.data.hop_length,
+            dim=3,
+        )
         # used for tensorboard chart - slice/mel_gen
         with autocast(enabled=False):
             y_hat_mel = mel_spectrogram_torch(
