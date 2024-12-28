@@ -23,9 +23,11 @@ def create_conv1d_layer(channels, kernel_size, dilation):
     )
 
 
-def apply_mask(tensor, mask):
-    return tensor * mask if mask is not None else tensor
+def apply_mask(tensor: torch.Tensor, mask: Optional[torch.Tensor]):
+    return tensor * mask if mask else tensor
 
+def apply_mask_(tensor: torch.Tensor, mask: Optional[torch.Tensor]):
+    return tensor.mul_(mask) if mask else tensor
 
 class ResBlock(torch.nn.Module):
     """
@@ -67,13 +69,19 @@ class ResBlock(torch.nn.Module):
     def forward(self, x: torch.Tensor, x_mask: torch.Tensor = None):
         for conv1, conv2 in zip(self.convs1, self.convs2):
             x_residual = x
+            # new tensor
             x = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
-            x = apply_mask(x, x_mask)
-            x = torch.nn.functional.leaky_relu(conv1(x), LRELU_SLOPE)
-            x = apply_mask(x, x_mask)
+            # in-place call
+            x = apply_mask_(x, x_mask)
+            # in-place call
+            x = torch.nn.functional.leaky_relu_(conv1(x), LRELU_SLOPE)
+            # in-place call
+            x = apply_mask_(x, x_mask)
             x = conv2(x)
-            x = x + x_residual
-        return apply_mask(x, x_mask)
+            # in-place call
+            x += x_residual
+        # in-place call
+        return apply_mask_(x, x_mask)
 
     def remove_weight_norm(self):
         for conv in chain(self.convs1, self.convs2):

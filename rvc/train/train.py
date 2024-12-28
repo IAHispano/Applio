@@ -86,7 +86,7 @@ config = HParams(**config)
 config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
 
 torch.backends.cudnn.deterministic = False
-torch.backends.cudnn.benchmark = False
+torch.backends.cudnn.benchmark = True
 
 global_step = 0
 last_loss_gen_all = 0
