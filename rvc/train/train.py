@@ -85,10 +85,6 @@ with open(config_save_path, "r") as f:
 config = HParams(**config)
 config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
 
-# for Nvidia's CUDA device selection can be done from command line / UI
-# for AMD the device selection can only be done from .bat file using HIP_VISIBLE_DEVICES
-os.environ["CUDA_VISIBLE_DEVICES"] = gpus.replace("-", ",")
-
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
 
@@ -162,7 +158,7 @@ def main():
     """
     Main function to start the training process.
     """
-    global training_file_path, last_loss_gen_all, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch
+    global training_file_path, last_loss_gen_all, smoothed_loss_gen_history, loss_gen_history, loss_disc_history, smoothed_loss_disc_history, overtrain_save_epoch, gpus
 
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
@@ -182,12 +178,15 @@ def main():
 
     if torch.cuda.is_available():
         device = torch.device("cuda")
-        n_gpus = torch.cuda.device_count()
+        gpus = [int(item) for item in gpus.split('-')]
+        n_gpus = len(gpus) 
     elif torch.backends.mps.is_available():
         device = torch.device("mps")
+        gpus = [0]
         n_gpus = 1
     else:
         device = torch.device("cpu")
+        gpus = [0]
         n_gpus = 1
         print("Training with CPU, this will take a long time.")
 
@@ -204,11 +203,12 @@ def main():
             except json.JSONDecodeError:
                 pass
         with open(config_save_path, "w") as pid_file:
-            for i in range(n_gpus):
+            for rank, device_id in enumerate(gpus):
+                print(f"  creating subproc for gpu={i}")
                 subproc = mp.Process(
                     target=run,
                     args=(
-                        i,
+                        rank,
                         n_gpus,
                         experiment_dir,
                         pretrainG,
@@ -217,6 +217,7 @@ def main():
                         save_every_weights,
                         config,
                         device,
+                        device_id,
                     ),
                 )
                 children.append(subproc)
@@ -303,6 +304,7 @@ def run(
     custom_save_every_weights,
     config,
     device,
+    device_id,
 ):
     """
     Runs the training loop on a specific GPU or CPU.
@@ -338,7 +340,7 @@ def run(
     torch.manual_seed(config.train.seed)
 
     if torch.cuda.is_available():
-        torch.cuda.set_device(rank)
+        torch.cuda.set_device(device_id)
 
     # Create datasets and dataloaders
     from data_utils import (
@@ -389,8 +391,8 @@ def run(
     )
 
     if torch.cuda.is_available():
-        net_g = net_g.cuda(rank)
-        net_d = net_d.cuda(rank)
+        net_g = net_g.cuda(device_id)
+        net_d = net_d.cuda(device_id)
     else:
         net_g.to(device)
         net_d.to(device)
@@ -412,8 +414,8 @@ def run(
 
     # Wrap models with DDP for multi-gpu processing
     if n_gpus > 1 and device.type == "cuda":
-        net_g = DDP(net_g, device_ids=[rank])
-        net_d = DDP(net_d, device_ids=[rank])
+        net_g = DDP(net_g, device_ids=[device_id])
+        net_d = DDP(net_d, device_ids=[device_id])
 
     # Load checkpoint if available
     try:
@@ -497,11 +499,11 @@ def run(
             phone, phone_lengths, pitch, pitchf, _, _, _, _, sid = info
             if device.type == "cuda":
                 reference = (
-                    phone.cuda(rank, non_blocking=True),
-                    phone_lengths.cuda(rank, non_blocking=True),
-                    pitch.cuda(rank, non_blocking=True),
-                    pitchf.cuda(rank, non_blocking=True),
-                    sid.cuda(rank, non_blocking=True),
+                    phone.cuda(device_id, non_blocking=True),
+                    phone_lengths.cuda(device_id, non_blocking=True),
+                    pitch.cuda(device_id, non_blocking=True),
+                    pitchf.cuda(device_id, non_blocking=True),
+                    sid.cuda(device_id, non_blocking=True),
                 )            
             else:
                 reference = (
@@ -527,6 +529,7 @@ def run(
             custom_save_every_weights,
             custom_total_epoch,
             device,
+            device_id,
             reference,
             fn_mel_loss,
         )
@@ -548,6 +551,7 @@ def train_and_evaluate(
     custom_save_every_weights,
     custom_total_epoch,
     device,
+    device_id,
     reference,
     fn_mel_loss,
 ):
@@ -593,7 +597,7 @@ def train_and_evaluate(
         if cache == []:
             for batch_idx, info in enumerate(train_loader):
                 # phone, phone_lengths, pitch, pitchf, spec, spec_lengths, wave, wave_lengths, sid
-                info = [tensor.cuda(rank, non_blocking=True) for tensor in info]
+                info = [tensor.cuda(device_id, non_blocking=True) for tensor in info]
                 cache.append((batch_idx, info))
         else:
             shuffle(cache)
@@ -604,7 +608,7 @@ def train_and_evaluate(
     with tqdm(total=len(train_loader), leave=False) as pbar:
         for batch_idx, info in data_iterator:
             if device.type == "cuda" and not cache_data_in_gpu:
-                info = [tensor.cuda(rank, non_blocking=True) for tensor in info]
+                info = [tensor.cuda(device_id, non_blocking=True) for tensor in info]
             elif device.type != "cuda":
                 info = [tensor.to(device) for tensor in info]
             # else iterator is going thru a cached list with a device already assigned
