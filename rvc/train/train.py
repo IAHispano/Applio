@@ -1,17 +1,14 @@
 import os
-import re
 import sys
 import glob
 import json
 import torch
 import datetime
 
-import math
 from collections import deque
 from distutils.util import strtobool
 from random import randint, shuffle
 from time import time as ttime
-from time import sleep
 from tqdm import tqdm
 import numpy as np
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -178,8 +175,8 @@ def main():
 
     if torch.cuda.is_available():
         device = torch.device("cuda")
-        gpus = [int(item) for item in gpus.split('-')]
-        n_gpus = len(gpus) 
+        gpus = [int(item) for item in gpus.split("-")]
+        n_gpus = len(gpus)
     elif torch.backends.mps.is_available():
         device = torch.device("mps")
         gpus = [0]
@@ -384,7 +381,7 @@ def run(
         vocoder=vocoder,
         checkpointing=checkpointing,
     )
-    
+
     net_d = MultiPeriodDiscriminator(
         version, config.model.use_spectral_norm, checkpointing=checkpointing
     )
@@ -503,7 +500,7 @@ def run(
                     pitch.cuda(device_id, non_blocking=True),
                     pitchf.cuda(device_id, non_blocking=True),
                     sid.cuda(device_id, non_blocking=True),
-                )            
+                )
             else:
                 reference = (
                     phone.to(device),
