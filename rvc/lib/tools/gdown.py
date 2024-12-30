@@ -5,11 +5,10 @@ import json
 import time
 import shutil
 import tempfile
-import textwrap
 import warnings
-from typing import Tuple, Optional, Union, IO, List
+from typing import Optional, Union, IO
 import requests
-from urllib.parse import urlparse, parse_qs, unquote
+from urllib.parse import urlparse, unquote
 from tqdm import tqdm
 
 CHUNK_SIZE = 512 * 1024
@@ -25,8 +24,6 @@ def indent(text: str, prefix: str):
 
 class FileURLRetrievalError(Exception):
     """Custom exception for issues retrieving file URLs."""
-
-    pass
 
 
 def _extract_download_url_from_confirmation(contents: str, url_origin: str):
