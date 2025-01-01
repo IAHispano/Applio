@@ -954,20 +954,21 @@ def train_and_evaluate(
                 else net_g.state_dict()
             )
             for m in model_add:
-                if not os.path.exists(m):
-                    extract_model(
-                        ckpt=ckpt,
-                        sr=sample_rate,
-                        pitch_guidance=True,
-                        name=model_name,
-                        model_path=m,
-                        epoch=epoch,
-                        step=global_step,
-                        version=version,
-                        hps=hps,
-                        overtrain_info=overtrain_info,
-                        vocoder=vocoder,
-                    )
+                if os.path.exists(m):
+                    print(f'{m} already exists. Overwriting.')
+                extract_model(
+                    ckpt=ckpt,
+                    sr=sample_rate,
+                    pitch_guidance=True,
+                    name=model_name,
+                    model_path=m,
+                    epoch=epoch,
+                    step=global_step,
+                    version=version,
+                    hps=hps,
+                    overtrain_info=overtrain_info,
+                    vocoder=vocoder,
+                )
 
         # Check completion
         if epoch >= custom_total_epoch:
