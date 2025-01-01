@@ -49,7 +49,9 @@ def download_from_url(url):
             file_id = extract_google_drive_id(url)
             if file_id:
                 gdown.download(
-                    url=f"https://drive.google.com/uc?id={file_id}", quiet=False, fuzzy=True
+                    url=f"https://drive.google.com/uc?id={file_id}",
+                    quiet=False,
+                    fuzzy=True,
                 )
         elif "/blob/" in url or "/resolve/" in url:
             download_blob_or_resolve(url)
@@ -229,4 +231,3 @@ def clean_extracted_files(extract_folder_path, model_name):
         destination_path = os.path.join(extract_folder_path, new_file_name)
         if not os.path.exists(destination_path):
             os.rename(source_path, destination_path)
-
