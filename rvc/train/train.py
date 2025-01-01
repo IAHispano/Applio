@@ -960,7 +960,7 @@ def train_and_evaluate(
                         sr=sample_rate,
                         pitch_guidance=True,
                         name=model_name,
-                        model_dir=m,
+                        model_path=m,
                         epoch=epoch,
                         step=global_step,
                         version=version,

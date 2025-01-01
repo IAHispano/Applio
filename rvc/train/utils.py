@@ -102,20 +102,19 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
         "optimizer": optimizer.state_dict(),
         "learning_rate": learning_rate,
     }
-    torch.save(checkpoint_data, checkpoint_path)
 
     # Create a backwards-compatible checkpoint
-    old_version_path = checkpoint_path.replace(".pth", "_old_version.pth")
-    checkpoint_data = replace_keys_in_dict(
+    torch.save(
         replace_keys_in_dict(
-            checkpoint_data, ".parametrizations.weight.original1", ".weight_v"
+            replace_keys_in_dict(
+                checkpoint_data, ".parametrizations.weight.original1", ".weight_v"
+            ),
+            ".parametrizations.weight.original0",
+            ".weight_g",
         ),
-        ".parametrizations.weight.original0",
-        ".weight_g",
+        checkpoint_path
     )
-    torch.save(checkpoint_data, old_version_path)
 
-    os.replace(old_version_path, checkpoint_path)
     print(f"Saved model '{checkpoint_path}' (epoch {iteration})")
 
 
