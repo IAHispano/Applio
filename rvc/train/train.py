@@ -943,6 +943,10 @@ def train_and_evaluate(
                     )
                 )
 
+        # Clean-up old best epochs
+        for m in model_del:
+            os.remove(m)
+
         if model_add:
             ckpt = (
                 net_g.module.state_dict()
@@ -964,9 +968,6 @@ def train_and_evaluate(
                         overtrain_info=overtrain_info,
                         vocoder=vocoder,
                     )
-        # Clean-up old best epochs
-        for m in model_del:
-            os.remove(m)
 
         # Check completion
         if epoch >= custom_total_epoch:
