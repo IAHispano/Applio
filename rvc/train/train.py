@@ -71,8 +71,8 @@ overtraining_threshold = int(sys.argv[14])
 cleanup = strtobool(sys.argv[15])
 vocoder = sys.argv[16]
 checkpointing = strtobool(sys.argv[17])
-randomized=True
-optimizer="RAdam" # "AdamW"
+randomized = True
+optimizer = "RAdam"  # "AdamW"
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -400,7 +400,7 @@ def run(
         optimizer = torch.optim.AdamW
     elif optimizer == "RAdam":
         optimizer = torch.optim.RAdam
-     
+
     optim_g = optimizer(
         net_g.parameters(),
         config.train.learning_rate,

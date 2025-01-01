@@ -7,6 +7,7 @@ from torch.utils.checkpoint import checkpoint
 
 from rvc.lib.algorithm.commons import get_padding
 
+
 def kaiser_sinc_filter1d(cutoff, half_width, kernel_size):
     even = kernel_size % 2 == 0
     half_size = kernel_size // 2
@@ -56,6 +57,7 @@ class UpSample1d(torch.nn.Module):
         )
         x = x[..., self.pad_left : -self.pad_right]  # noqa
         return x
+
 
 class ResBlock(torch.nn.Module):
     """
@@ -164,7 +166,7 @@ class AdaIN(torch.nn.Module):
         *,
         channels: int,
         leaky_relu_slope: float = 0.2,
-        use_noise_gen = True,
+        use_noise_gen=True,
     ):
         super().__init__()
 
@@ -179,7 +181,8 @@ class AdaIN(torch.nn.Module):
             return self.activation(x + gaussian)
         else:
             return self.activation(x)
-        
+
+
 class ParallelResBlock(torch.nn.Module):
     """
     Parallel residual block that applies multiple residual blocks with different kernel sizes in parallel.
@@ -226,7 +229,7 @@ class ParallelResBlock(torch.nn.Module):
                         leaky_relu_slope=leaky_relu_slope,
                     ),
                     # disabled a second noise inductor as one is enough
-                    AdaIN(channels=out_channels, use_noise_gen = False),
+                    AdaIN(channels=out_channels, use_noise_gen=False),
                 )
                 for kernel_size in kernel_sizes
             ]
@@ -463,7 +466,9 @@ class RefineGANGenerator(torch.nn.Module):
             new_channels = channels // 2
 
             self.upsample_blocks.append(
-                UpSample1d(rate) # upsampler borrowed from BigVGAN, filters out mirrored harmonics
+                UpSample1d(
+                    rate
+                )  # upsampler borrowed from BigVGAN, filters out mirrored harmonics
             )
 
             self.upsample_conv_blocks.append(
