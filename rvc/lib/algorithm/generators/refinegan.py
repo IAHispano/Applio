@@ -8,57 +8,6 @@ from torch.utils.checkpoint import checkpoint
 from rvc.lib.algorithm.commons import get_padding
 
 
-def kaiser_sinc_filter1d(cutoff, half_width, kernel_size):
-    even = kernel_size % 2 == 0
-    half_size = kernel_size // 2
-
-    delta_f = 4 * half_width
-    A = 2.285 * (half_size - 1) * math.pi * delta_f + 7.95
-    if A > 50.0:
-        beta = 0.1102 * (A - 8.7)
-    elif A >= 21.0:
-        beta = 0.5842 * (A - 21) ** 0.4 + 0.07886 * (A - 21.0)
-    else:
-        beta = 0.0
-    window = torch.kaiser_window(kernel_size, beta=beta, periodic=False)
-
-    if even:
-        time = torch.arange(-half_size, half_size) + 0.5
-    else:
-        time = torch.arange(kernel_size) - half_size
-    if cutoff == 0:
-        filter_ = torch.zeros_like(time)
-    else:
-        filter_ = 2 * cutoff * window * torch.sinc(2 * cutoff * time)
-        filter_ /= filter_.sum()
-        filter = filter_.view(1, 1, kernel_size)
-    return filter
-
-
-class UpSample1d(torch.nn.Module):
-    def __init__(self, ratio=2, kernel_size=None):
-        super().__init__()
-        self.ratio = ratio
-        kernel_size = int(6 * ratio // 2) * 2 if kernel_size is None else kernel_size
-        self.stride = ratio
-        self.pad = kernel_size // ratio - 1
-        self.pad_left = self.pad * self.stride + (kernel_size - self.stride) // 2
-        self.pad_right = self.pad * self.stride + (kernel_size - self.stride + 1) // 2
-        filter = kaiser_sinc_filter1d(
-            cutoff=0.5 / ratio, half_width=0.6 / ratio, kernel_size=kernel_size
-        )
-        self.register_buffer("filter", filter)
-
-    def forward(self, x):
-        _, C, _ = x.shape
-        x = torch.nn.functional.pad(x, (self.pad, self.pad), mode="replicate")
-        x = self.ratio * torch.nn.functional.conv_transpose1d(
-            x, self.filter.expand(C, -1, -1), stride=self.stride, groups=C
-        )
-        x = x[..., self.pad_left : -self.pad_right]  # noqa
-        return x
-
-
 class ResBlock(torch.nn.Module):
     """
     Residual block with multiple dilated convolutions.
@@ -166,21 +115,17 @@ class AdaIN(torch.nn.Module):
         *,
         channels: int,
         leaky_relu_slope: float = 0.2,
-        use_noise_gen=True,
     ):
         super().__init__()
 
-        self.use_noise_gen = use_noise_gen
         self.weight = torch.nn.Parameter(torch.ones(channels))
         # safe to use in-place as it is used on a new x+gaussian tensor
         self.activation = torch.nn.LeakyReLU(leaky_relu_slope, inplace=True)
 
     def forward(self, x: torch.Tensor):
-        if self.use_noise_gen:
-            gaussian = torch.randn_like(x) * self.weight[None, :, None]
-            return self.activation(x + gaussian)
-        else:
-            return self.activation(x)
+        gaussian = torch.randn_like(x) * self.weight[None, :, None]
+
+        return self.activation(x + gaussian)
 
 
 class ParallelResBlock(torch.nn.Module):
@@ -228,8 +173,7 @@ class ParallelResBlock(torch.nn.Module):
                         dilation=dilation,
                         leaky_relu_slope=leaky_relu_slope,
                     ),
-                    # disabled a second noise inductor as one is enough
-                    AdaIN(channels=out_channels, use_noise_gen=False),
+                    AdaIN(channels=out_channels),
                 )
                 for kernel_size in kernel_sizes
             ]
@@ -466,9 +410,7 @@ class RefineGANGenerator(torch.nn.Module):
             new_channels = channels // 2
 
             self.upsample_blocks.append(
-                UpSample1d(
-                    rate
-                )  # upsampler borrowed from BigVGAN, filters out mirrored harmonics
+                torch.nn.Upsample(scale_factor=rate, mode="linear")
             )
 
             self.upsample_conv_blocks.append(
