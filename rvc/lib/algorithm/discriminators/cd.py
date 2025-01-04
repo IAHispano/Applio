@@ -1,4 +1,5 @@
 import torch
+
 class CombinedDiscriminator(torch.nn.Module):
     def __init__(self, discriminators):
         super().__init__()

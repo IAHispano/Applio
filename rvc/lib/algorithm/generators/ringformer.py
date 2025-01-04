@@ -5,7 +5,7 @@ from torch.nn import functional as F
 from torch.nn.utils import remove_weight_norm, spectral_norm
 from torch.nn.utils.parametrizations import weight_norm
 from rvc.lib.algorithm.commons import get_padding, init_weights
-from rvc.lib.algorithm.generators.conformer import Conformer
+from rvc.lib.algorithm.generators.modules.conformer import Conformer
 import einops
 
 LRELU_SLOPE = 0.1

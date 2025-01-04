@@ -4,7 +4,7 @@ from torch.nn.utils.parametrizations import spectral_norm, weight_norm
 from rvc.lib.algorithm.commons import get_padding
 from rvc.lib.algorithm.residuals import LRELU_SLOPE
 
-from rvc.lib.algorithm.san import SANConv1d, SANConv2d
+from rvc.lib.algorithm.discriminators.modules.san import SANConv1d, SANConv2d
 
 
 class MultiPeriodDiscriminator(torch.nn.Module):
