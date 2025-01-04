@@ -967,7 +967,7 @@ def train_and_evaluate(
             )
             for m in model_add:
                 if os.path.exists(m):
-                    print(f'{m} already exists. Overwriting.')
+                    print(f"{m} already exists. Overwriting.")
                 extract_model(
                     ckpt=ckpt,
                     sr=sample_rate,

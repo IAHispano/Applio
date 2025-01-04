@@ -112,7 +112,7 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
             ".parametrizations.weight.original0",
             ".weight_g",
         ),
-        checkpoint_path
+        checkpoint_path,
     )
 
     print(f"Saved model '{checkpoint_path}' (epoch {iteration})")
