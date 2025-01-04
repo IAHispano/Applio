@@ -747,8 +747,8 @@ def train_and_evaluate(
     # Logging and checkpointing
     if rank == 0:
 
-        avg_losses["disc_loss_queue"].append(epoch_disc_sum.item() / len(train_loader))
-        avg_losses["gen_loss_queue"].append(epoch_gen_sum.item() / len(train_loader))
+        avg_losses["disc_loss_queue"].append(epoch_disc_sum / len(train_loader))
+        avg_losses["gen_loss_queue"].append(epoch_gen_sum / len(train_loader))
 
         # used for tensorboard chart - all/mel
         mel = spec_to_mel_torch(
