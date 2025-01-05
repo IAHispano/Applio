@@ -371,7 +371,7 @@ def run(
 
     # Validations
     if len(train_loader) < 3:
-        print("Not enough data in in the training set. Perhaps you forgot to slice the audio files in preprocess?")
+        print("Not enough data present in the training set. Perhaps you forgot to slice the audio files in preprocess?")
         os._exit(2333333)
     else:
         g_file = latest_checkpoint_path(experiment_dir, "G_*.pth")
