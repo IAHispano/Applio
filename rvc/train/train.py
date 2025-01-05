@@ -369,6 +369,23 @@ def run(
         prefetch_factor=8,
     )
 
+    # Validations
+    if len(train_loader) < 3:
+        print("Not enough data in in the training set. Perhaps you forgot to slice the audio files in preprocess?")
+        os._exit(2333333)
+    else:
+        g_file = latest_checkpoint_path(experiment_dir, "G_*.pth")
+        if g_file != None:
+            print('Checking saved weights...')
+            g = torch.load(g_file, map_location = "cpu")
+            if optimizer == "RAdam" and "amsgrad" in g["optimizer"]["param_groups"][0].keys():
+                optimizer = "AdamW"
+                print(f"Optimizer choice has been reverted to {optimizer} to match the saved D/G weights.")
+            elif optimizer == "AdamW" and "decoupled_weight_decay" in g["optimizer"]["param_groups"][0].keys():
+                optimizer = "RAdam"
+                print(f"Optimizer choice has been reverted to {optimizer} to match the saved D/G weights.")
+            del g
+
     # Initialize models and optimizers
     from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
     from rvc.lib.algorithm.synthesizers import Synthesizer
