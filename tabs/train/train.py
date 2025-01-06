@@ -21,29 +21,6 @@ i18n = I18nAuto()
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-pretraineds_v1 = [
-    (
-        "pretrained_v1/",
-        [
-            "D32k.pth",
-            "D40k.pth",
-            "D48k.pth",
-            "G32k.pth",
-            "G40k.pth",
-            "G48k.pth",
-            "f0D32k.pth",
-            "f0D40k.pth",
-            "f0D48k.pth",
-            "f0G32k.pth",
-            "f0G40k.pth",
-            "f0G48k.pth",
-        ],
-    ),
-]
-
-folder_mapping = {
-    "pretrained_v1/": "rvc/models/pretraineds/pretrained_v1/",
-}
 
 sup_audioext = {
     "wav",
@@ -342,14 +319,6 @@ def train_tab():
                     interactive=False,
                     visible=True,
                 )
-                rvc_version = gr.Radio(
-                    label=i18n("Model Architecture"),
-                    info=i18n("Version of the model architecture."),
-                    choices=["v1", "v2"],
-                    value="v2",
-                    interactive=True,
-                    visible=False,
-                )
         with gr.Accordion(
             i18n("Advanced Settings"),
             open=False,
@@ -586,7 +555,6 @@ def train_tab():
             fn=run_extract_script,
             inputs=[
                 model_name,
-                rvc_version,
                 f0_method,
                 hop_length,
                 cpu_cores,
@@ -785,7 +753,6 @@ def train_tab():
                 inputs=[
                     terms_checkbox,
                     model_name,
-                    rvc_version,
                     save_every_epoch,
                     save_only_latest,
                     save_every_weights,
@@ -818,7 +785,7 @@ def train_tab():
             index_button = gr.Button(i18n("Generate Index"))
             index_button.click(
                 fn=run_index_script,
-                inputs=[model_name, rvc_version, index_algorithm],
+                inputs=[model_name, index_algorithm],
                 outputs=[train_output_info],
             )
 
@@ -904,35 +871,19 @@ def train_tab():
                     "__type__": "update",
                 }
 
-            def download_prerequisites(version):
-                if version == "v1":
+            def download_prerequisites():
                     gr.Info(
-                        "Checking for v1 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
+                        "Checking for prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
                     )
                     run_prerequisites_script(
-                        pretraineds_v1_f0=True,
-                        pretraineds_v1_nof0=False,
-                        pretraineds_v2_f0=False,
-                        pretraineds_v2_nof0=False,
-                        models=False,
-                        exe=False,
-                    )
-                elif version == "v2":
-                    gr.Info(
-                        "Checking for v2 prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
-                    )
-                    run_prerequisites_script(
-                        pretraineds_v1_f0=False,
-                        pretraineds_v1_nof0=False,
                         pretraineds_v2_f0=True,
                         pretraineds_v2_nof0=False,
                         models=False,
                         exe=False,
                     )
-
-                gr.Info(
-                    "Prerequisites check complete. Missing files were downloaded, and you may now start preprocessing."
-                )
+                    gr.Info(
+                        "Prerequisites check complete. Missing files were downloaded, and you may now start preprocessing."
+                    )
 
             def toggle_visible_embedder_custom(embedder_model):
                 if embedder_model == "custom":
@@ -962,11 +913,6 @@ def train_tab():
                 fn=update_slider_visibility,
                 inputs=noise_reduction,
                 outputs=clean_strength,
-            )
-            rvc_version.change(
-                fn=download_prerequisites,
-                inputs=[rvc_version],
-                outputs=[],
             )
             architecture.change(
                 fn=toggle_architecture,

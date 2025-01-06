@@ -434,7 +434,7 @@ class Pipeline:
             index: FAISS index for speaker embedding retrieval.
             big_npy: Speaker embeddings stored in a NumPy array.
             index_rate: Blending rate for speaker embedding retrieval.
-            version: Model version ("v1" or "v2").
+            version: Model version (Keep to support old models).
             protect: Protection level for preserving the original pitch.
         """
         with torch.no_grad():

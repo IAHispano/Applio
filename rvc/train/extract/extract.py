@@ -144,7 +144,7 @@ def run_pitch_extraction(files, devices, f0_method, hop_length, threads):
 
 
 def process_file_embedding(
-    files, version, embedder_model, embedder_model_custom, device_num, device, n_threads
+    files, embedder_model, embedder_model_custom, device_num, device, n_threads
 ):
     dtype = torch.float16 if (config.is_half and "cuda" in device) else torch.float32
     model = load_embedding(embedder_model, embedder_model_custom).to(dtype).to(device)
@@ -158,8 +158,6 @@ def process_file_embedding(
         feats = feats.view(1, -1)
         with torch.no_grad():
             result = model(feats)["last_hidden_state"]
-            if version == "v1":
-                result = model.final_proj(result[0]).unsqueeze(0)
         feats_out = result.squeeze(0).float().cpu().numpy()
         if not np.isnan(feats_out).any():
             np.save(out_file_path, feats_out, allow_pickle=False)
@@ -174,7 +172,7 @@ def process_file_embedding(
 
 
 def run_embedding_extraction(
-    files, devices, version, embedder_model, embedder_model_custom, threads
+    files, devices, embedder_model, embedder_model_custom, threads
 ):
     devices_str = ", ".join(devices)
     print(
@@ -186,7 +184,6 @@ def run_embedding_extraction(
             executor.submit(
                 process_file_embedding,
                 files[i :: len(devices)],
-                version,
                 embedder_model,
                 embedder_model_custom,
                 i,
@@ -206,16 +203,15 @@ if __name__ == "__main__":
     hop_length = int(sys.argv[3])
     num_processes = int(sys.argv[4])
     gpus = sys.argv[5]
-    version = sys.argv[6]
-    sample_rate = sys.argv[7]
-    embedder_model = sys.argv[8]
-    embedder_model_custom = sys.argv[9] if len(sys.argv) > 9 else None
-    include_mutes = int(sys.argv[10]) if len(sys.argv) > 10 else 2
+    sample_rate = sys.argv[6]
+    embedder_model = sys.argv[7]
+    embedder_model_custom = sys.argv[8] if len(sys.argv) > 8 else None
+    include_mutes = int(sys.argv[9]) if len(sys.argv) > 9 else 2
 
     wav_path = os.path.join(exp_dir, "sliced_audios_16k")
     os.makedirs(os.path.join(exp_dir, "f0"), exist_ok=True)
     os.makedirs(os.path.join(exp_dir, "f0_voiced"), exist_ok=True)
-    os.makedirs(os.path.join(exp_dir, version + "_extracted"), exist_ok=True)
+    os.makedirs(os.path.join(exp_dir, "extracted"), exist_ok=True)
 
     chosen_embedder_model = (
         embedder_model_custom if embedder_model == "custom" else embedder_model
@@ -238,7 +234,7 @@ if __name__ == "__main__":
             os.path.join(exp_dir, "f0", file_name + ".npy"),
             os.path.join(exp_dir, "f0_voiced", file_name + ".npy"),
             os.path.join(
-                exp_dir, version + "_extracted", file_name.replace("wav", "npy")
+                exp_dir, "extracted", file_name.replace("wav", "npy")
             ),
         ]
         files.append(file_info)
@@ -248,8 +244,8 @@ if __name__ == "__main__":
     run_pitch_extraction(files, devices, f0_method, hop_length, num_processes)
 
     run_embedding_extraction(
-        files, devices, version, embedder_model, embedder_model_custom, num_processes
+        files, devices, embedder_model, embedder_model_custom, num_processes
     )
 
-    generate_config(version, sample_rate, exp_dir)
-    generate_filelist(exp_dir, version, sample_rate, include_mutes)
+    generate_config(sample_rate, exp_dir)
+    generate_filelist(exp_dir, sample_rate, include_mutes)

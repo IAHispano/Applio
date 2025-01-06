@@ -47,7 +47,7 @@ class VoiceConverter:
         """
         Initializes the VoiceConverter with default configuration, and sets up models and parameters.
         """
-        self.config = Config()  # Load RVC configuration
+        self.config = Config()  # Load configuration
         self.hubert_model = (
             None  # Initialize the Hubert model (for embedding extraction)
         )

@@ -3,14 +3,10 @@ import json
 import os
 
 version_config_paths = [
-    os.path.join("v1", "32000.json"),
-    os.path.join("v1", "40000.json"),
-    os.path.join("v1", "44100.json"),
-    os.path.join("v1", "48000.json"),
-    os.path.join("v2", "48000.json"),
-    os.path.join("v2", "40000.json"),
-    os.path.join("v2", "44100.json"),
-    os.path.join("v2", "32000.json"),
+    os.path.join("48000.json"),
+    os.path.join("40000.json"),
+    os.path.join("44100.json"),
+    os.path.join("32000.json"),
 ]
 
 

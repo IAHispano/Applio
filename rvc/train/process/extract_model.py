@@ -32,10 +32,10 @@ def extract_model(
     model_path,
     epoch,
     step,
-    version,
     hps,
     overtrain_info,
     vocoder,
+    version="v2",
 ):
     try:
         model_dir = os.path.dirname(model_path)

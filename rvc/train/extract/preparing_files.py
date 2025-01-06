@@ -8,18 +8,18 @@ config = Config()
 current_directory = os.getcwd()
 
 
-def generate_config(rvc_version: str, sample_rate: int, model_path: str):
-    config_path = os.path.join("rvc", "configs", rvc_version, f"{sample_rate}.json")
+def generate_config(sample_rate: int, model_path: str):
+    config_path = os.path.join("rvc", "configs", f"{sample_rate}.json")
     config_save_path = os.path.join(model_path, "config.json")
     if not os.path.exists(config_save_path):
         shutil.copyfile(config_path, config_save_path)
 
 
 def generate_filelist(
-    model_path: str, rvc_version: str, sample_rate: int, include_mutes: int = 2
+    model_path: str, sample_rate: int, include_mutes: int = 2
 ):
     gt_wavs_dir = os.path.join(model_path, "sliced_audios")
-    feature_dir = os.path.join(model_path, f"{rvc_version}_extracted")
+    feature_dir = os.path.join(model_path, f"extracted")
 
     f0_dir, f0nsf_dir = None, None
     f0_dir = os.path.join(model_path, "f0")
@@ -40,7 +40,7 @@ def generate_filelist(
         if sid not in sids:
             sids.append(sid)
         options.append(
-            f"{gt_wavs_dir}/{name}.wav|{feature_dir}/{name}.npy|{f0_dir}/{name}.wav.npy|{f0nsf_dir}/{name}.wav.npy|{sid}"
+            f"{os.path.join(gt_wavs_dir, name)}.wav|{os.path.join(feature_dir, name)}.npy|{os.path.join(f0_dir, name)}.wav.npy|{os.path.join(f0nsf_dir, name)}.wav.npy|{sid}"
         )
 
     if include_mutes > 0:
@@ -48,7 +48,7 @@ def generate_filelist(
             mute_base_path, "sliced_audios", f"mute{sample_rate}.wav"
         )
         mute_feature_path = os.path.join(
-            mute_base_path, f"{rvc_version}_extracted", "mute.npy"
+            mute_base_path, f"extracted", "mute.npy"
         )
         mute_f0_path = os.path.join(mute_base_path, "f0", "mute.wav.npy")
         mute_f0nsf_path = os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")

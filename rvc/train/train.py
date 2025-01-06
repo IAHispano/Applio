@@ -59,18 +59,17 @@ save_every_epoch = int(sys.argv[2])
 total_epoch = int(sys.argv[3])
 pretrainG = sys.argv[4]
 pretrainD = sys.argv[5]
-version = sys.argv[6]
-gpus = sys.argv[7]
-batch_size = int(sys.argv[8])
-sample_rate = int(sys.argv[9])
-save_only_latest = strtobool(sys.argv[10])
-save_every_weights = strtobool(sys.argv[11])
-cache_data_in_gpu = strtobool(sys.argv[12])
-overtraining_detector = strtobool(sys.argv[13])
-overtraining_threshold = int(sys.argv[14])
-cleanup = strtobool(sys.argv[15])
-vocoder = sys.argv[16]
-checkpointing = strtobool(sys.argv[17])
+gpus = sys.argv[6]
+batch_size = int(sys.argv[7])
+sample_rate = int(sys.argv[8])
+save_only_latest = strtobool(sys.argv[9])
+save_every_weights = strtobool(sys.argv[10])
+cache_data_in_gpu = strtobool(sys.argv[11])
+overtraining_detector = strtobool(sys.argv[12])
+overtraining_threshold = int(sys.argv[13])
+cleanup = strtobool(sys.argv[14])
+vocoder = sys.argv[15]
+checkpointing = strtobool(sys.argv[16])
 randomized = True
 optimizer = "RAdam"  # "AdamW"
 
@@ -371,19 +370,31 @@ def run(
 
     # Validations
     if len(train_loader) < 3:
-        print("Not enough data present in the training set. Perhaps you forgot to slice the audio files in preprocess?")
+        print(
+            "Not enough data present in the training set. Perhaps you forgot to slice the audio files in preprocess?"
+        )
         os._exit(2333333)
     else:
         g_file = latest_checkpoint_path(experiment_dir, "G_*.pth")
         if g_file != None:
-            print('Checking saved weights...')
-            g = torch.load(g_file, map_location = "cpu")
-            if optimizer == "RAdam" and "amsgrad" in g["optimizer"]["param_groups"][0].keys():
+            print("Checking saved weights...")
+            g = torch.load(g_file, map_location="cpu")
+            if (
+                optimizer == "RAdam"
+                and "amsgrad" in g["optimizer"]["param_groups"][0].keys()
+            ):
                 optimizer = "AdamW"
-                print(f"Optimizer choice has been reverted to {optimizer} to match the saved D/G weights.")
-            elif optimizer == "AdamW" and "decoupled_weight_decay" in g["optimizer"]["param_groups"][0].keys():
+                print(
+                    f"Optimizer choice has been reverted to {optimizer} to match the saved D/G weights."
+                )
+            elif (
+                optimizer == "AdamW"
+                and "decoupled_weight_decay" in g["optimizer"]["param_groups"][0].keys()
+            ):
                 optimizer = "RAdam"
-                print(f"Optimizer choice has been reverted to {optimizer} to match the saved D/G weights.")
+                print(
+                    f"Optimizer choice has been reverted to {optimizer} to match the saved D/G weights."
+                )
             del g
 
     # Initialize models and optimizers
@@ -403,7 +414,7 @@ def run(
     )
 
     net_d = MultiPeriodDiscriminator(
-        version, config.model.use_spectral_norm, checkpointing=checkpointing
+        config.model.use_spectral_norm, checkpointing=checkpointing
     )
 
     if torch.cuda.is_available():
@@ -984,7 +995,7 @@ def train_and_evaluate(
             )
             for m in model_add:
                 if os.path.exists(m):
-                    print(f'{m} already exists. Overwriting.')
+                    print(f"{m} already exists. Overwriting.")
                 extract_model(
                     ckpt=ckpt,
                     sr=sample_rate,
@@ -993,7 +1004,6 @@ def train_and_evaluate(
                     model_path=m,
                     epoch=epoch,
                     step=global_step,
-                    version=version,
                     hps=hps,
                     overtrain_info=overtrain_info,
                     vocoder=vocoder,
