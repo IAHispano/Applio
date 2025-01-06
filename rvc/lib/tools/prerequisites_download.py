@@ -9,12 +9,6 @@ pretraineds_hifigan_list = [
     (
         "pretrained_v2/",
         [
-            "D32k.pth",
-            "D40k.pth",
-            "D48k.pth",
-            "G32k.pth",
-            "G40k.pth",
-            "G48k.pth",
             "f0D32k.pth",
             "f0D40k.pth",
             "f0D48k.pth",
@@ -106,14 +100,11 @@ def split_pretraineds(pretrained_list):
     return f0_list, non_f0_list
 
 
-pretraineds_v2_f0_list, pretraineds_v2_nof0_list = split_pretraineds(
-    pretraineds_hifigan_list
-)
+pretraineds_hifigan_list, _ = split_pretraineds(pretraineds_hifigan_list)
 
 
 def calculate_total_size(
-    pretraineds_v2_f0,
-    pretraineds_v2_nof0,
+    pretraineds_hifigan,
     models,
     exe,
 ):
@@ -126,14 +117,12 @@ def calculate_total_size(
         total_size += get_file_size_if_missing(embedders_list)
     if exe and os.name == "nt":
         total_size += get_file_size_if_missing(executables_list)
-    total_size += get_file_size_if_missing(pretraineds_v2_f0)
-    total_size += get_file_size_if_missing(pretraineds_v2_nof0)
+    total_size += get_file_size_if_missing(pretraineds_hifigan)
     return total_size
 
 
 def prequisites_download_pipeline(
-    pretraineds_v2_f0,
-    pretraineds_v2_nof0,
+    pretraineds_hifigan,
     models,
     exe,
 ):
@@ -141,8 +130,7 @@ def prequisites_download_pipeline(
     Manage the download pipeline for different categories of files.
     """
     total_size = calculate_total_size(
-        pretraineds_v2_f0_list if pretraineds_v2_f0 else [],
-        pretraineds_v2_nof0_list if pretraineds_v2_nof0 else [],
+        pretraineds_hifigan_list if pretraineds_hifigan else [],
         models,
         exe,
     )
@@ -159,9 +147,7 @@ def prequisites_download_pipeline(
                     download_mapping_files(executables_list, global_bar)
                 else:
                     print("No executables needed")
-            if pretraineds_v2_f0:
-                download_mapping_files(pretraineds_v2_f0_list, global_bar)
-            if pretraineds_v2_nof0:
-                download_mapping_files(pretraineds_v2_nof0_list, global_bar)
+            if pretraineds_hifigan:
+                download_mapping_files(pretraineds_hifigan_list, global_bar)
     else:
         pass

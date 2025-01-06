@@ -32,8 +32,7 @@ from tabs.settings.settings import settings_tab
 from core import run_prerequisites_script
 
 run_prerequisites_script(
-    pretraineds_v2_f0=True,
-    pretraineds_v2_nof0=False,
+    pretraineds_hifigan=True,
     models=True,
     exe=True,
 )

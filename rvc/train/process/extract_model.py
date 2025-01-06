@@ -27,7 +27,6 @@ def replace_keys_in_dict(d, old_key_part, new_key_part):
 def extract_model(
     ckpt,
     sr,
-    pitch_guidance,
     name,
     model_path,
     epoch,
@@ -35,6 +34,7 @@ def extract_model(
     hps,
     overtrain_info,
     vocoder,
+    pitch_guidance=True,
     version="v2",
 ):
     try:

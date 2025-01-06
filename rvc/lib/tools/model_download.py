@@ -15,14 +15,7 @@ from rvc.lib.utils import format_title
 from rvc.lib.tools import gdown
 
 
-def find_folder_parent(search_dir, folder_name):
-    for dirpath, dirnames, _ in os.walk(search_dir):
-        if folder_name in dirnames:
-            return os.path.abspath(dirpath)
-    return None
-
-
-file_path = find_folder_parent(now_dir, "logs")
+file_path = os.path.join(now_dir, "logs")
 zips_path = os.path.join(file_path, "zips")
 os.makedirs(zips_path, exist_ok=True)
 

@@ -876,8 +876,7 @@ def train_tab():
                         "Checking for prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
                     )
                     run_prerequisites_script(
-                        pretraineds_v2_f0=True,
-                        pretraineds_v2_nof0=False,
+                        pretraineds_hifigan=True,
                         models=False,
                         exe=False,
                     )

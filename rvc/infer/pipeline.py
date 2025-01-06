@@ -687,15 +687,6 @@ class Pipeline:
             audio_opt = AudioProcessor.change_rms(
                 audio, self.sample_rate, audio_opt, self.sample_rate, volume_envelope
             )
-        # if resample_sr >= self.sample_rate and tgt_sr != resample_sr:
-        #    audio_opt = librosa.resample(
-        #        audio_opt, orig_sr=tgt_sr, target_sr=resample_sr
-        #    )
-        # audio_max = np.abs(audio_opt).max() / 0.99
-        # max_int16 = 32768
-        # if audio_max > 1:
-        #    max_int16 /= audio_max
-        # audio_opt = (audio_opt * 32768).astype(np.int16)
         audio_max = np.abs(audio_opt).max() / 0.99
         if audio_max > 1:
             audio_opt /= audio_max

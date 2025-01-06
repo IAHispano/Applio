@@ -999,7 +999,6 @@ def train_and_evaluate(
                 extract_model(
                     ckpt=ckpt,
                     sr=sample_rate,
-                    pitch_guidance=True,
                     name=model_name,
                     model_path=m,
                     epoch=epoch,

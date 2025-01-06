@@ -602,14 +602,12 @@ def run_download_script(model_link: str):
 
 # Prerequisites
 def run_prerequisites_script(
-    pretraineds_v2_f0: bool,
-    pretraineds_v2_nof0: bool,
+    pretraineds_hifigan: bool,
     models: bool,
     exe: bool,
 ):
     prequisites_download_pipeline(
-        pretraineds_v2_f0,
-        pretraineds_v2_nof0,
+        pretraineds_hifigan,
         models,
         exe,
     )
@@ -2152,18 +2150,11 @@ def parse_arguments():
         "prerequisites", help="Install prerequisites for RVC."
     )
     prerequisites_parser.add_argument(
-        "--pretraineds_v2_f0",
+        "--pretraineds_hifigan",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
         default=True,
         help="Download pretrained models for RVC v2.",
-    )
-    prerequisites_parser.add_argument(
-        "--pretraineds_v2_nof0",
-        type=lambda x: bool(strtobool(x)),
-        choices=[True, False],
-        default=False,
-        help="Download non f0 pretrained models for RVC v2.",
     )
     prerequisites_parser.add_argument(
         "--models",
@@ -2423,8 +2414,7 @@ def main():
             )
         elif args.mode == "prerequisites":
             run_prerequisites_script(
-                pretraineds_v2_f0=args.pretraineds_v2_f0,
-                pretraineds_v2_nof0=args.pretraineds_v2_nof0,
+                pretraineds_hifigan=args.pretraineds_hifigan,
                 models=args.models,
                 exe=args.exe,
             )
