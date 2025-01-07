@@ -42,40 +42,6 @@ class Config:
                 configs[config_file] = json.load(f)
         return configs
 
-    def set_precision(self, precision):
-        if precision not in ["fp32", "fp16"]:
-            raise ValueError("Invalid precision type. Must be 'fp32' or 'fp16'.")
-
-        fp16_run_value = precision == "fp16"
-
-        for config_path in version_config_paths:
-            full_config_path = os.path.join("rvc", "configs", config_path)
-            try:
-                with open(full_config_path, "r") as f:
-                    config = json.load(f)
-                config["train"]["fp16_run"] = fp16_run_value
-                with open(full_config_path, "w") as f:
-                    json.dump(config, f, indent=4)
-            except FileNotFoundError:
-                print(f"File not found: {full_config_path}")
-
-        return f"Overwritten config to use {precision}."
-
-    def get_precision(self):
-        if not version_config_paths:
-            raise FileNotFoundError("No configuration paths provided.")
-
-        full_config_path = os.path.join("rvc", "configs", version_config_paths[0])
-        try:
-            with open(full_config_path, "r") as f:
-                config = json.load(f)
-            fp16_run_value = config["train"].get("fp16_run", False)
-            precision = "fp16" if fp16_run_value else "fp32"
-            return precision
-        except FileNotFoundError:
-            print(f"File not found: {full_config_path}")
-            return None
-
     def device_config(self):
         if self.device.startswith("cuda"):
             self.set_cuda_config()

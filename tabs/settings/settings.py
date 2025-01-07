@@ -6,7 +6,6 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from tabs.settings.sections.presence import presence_tab
-from tabs.settings.sections.precision import precision_tab
 from tabs.settings.sections.themes import theme_tab
 from tabs.settings.sections.version import version_tab
 from tabs.settings.sections.lang import lang_tab
@@ -21,6 +20,5 @@ def settings_tab():
         version_tab()
         lang_tab()
         restart_tab()
-    with gr.TabItem(label="Inference & Training"):
-        precision_tab()
+    with gr.TabItem(label="Training"):
         model_author_tab()
