@@ -15,9 +15,7 @@ def generate_config(sample_rate: int, model_path: str):
         shutil.copyfile(config_path, config_save_path)
 
 
-def generate_filelist(
-    model_path: str, sample_rate: int, include_mutes: int = 2
-):
+def generate_filelist(model_path: str, sample_rate: int, include_mutes: int = 2):
     gt_wavs_dir = os.path.join(model_path, "sliced_audios")
     feature_dir = os.path.join(model_path, f"extracted")
 
@@ -47,9 +45,7 @@ def generate_filelist(
         mute_audio_path = os.path.join(
             mute_base_path, "sliced_audios", f"mute{sample_rate}.wav"
         )
-        mute_feature_path = os.path.join(
-            mute_base_path, f"extracted", "mute.npy"
-        )
+        mute_feature_path = os.path.join(mute_base_path, f"extracted", "mute.npy")
         mute_f0_path = os.path.join(mute_base_path, "f0", "mute.wav.npy")
         mute_f0nsf_path = os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")
 

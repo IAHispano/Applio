@@ -48,7 +48,6 @@ try:
                 .cluster_centers_
             )
 
-
         n_ivf = min(int(16 * np.sqrt(big_npy.shape[0])), big_npy.shape[0] // 39)
 
         # index_added

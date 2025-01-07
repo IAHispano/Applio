@@ -658,7 +658,7 @@ def train_and_evaluate(
             y_hat, ids_slice, x_mask, z_mask, (z, z_p, m_p, logs_p, m_q, logs_q) = (
                 model_output
             )
-                # slice of the original waveform to match a generate slice
+            # slice of the original waveform to match a generate slice
             if randomized:
                 wave = commons.slice_segments(
                     wave,
@@ -679,7 +679,7 @@ def train_and_evaluate(
 
             # Generator backward and update
             _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
-            
+
             loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
             loss_env = envelope_loss(wave, y_hat)
             loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
@@ -741,7 +741,7 @@ def train_and_evaluate(
 
             pbar.update(1)
         # end of batch train
-    #end of tqdm
+    # end of tqdm
     with torch.no_grad():
         torch.cuda.empty_cache()
 
