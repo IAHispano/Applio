@@ -344,7 +344,6 @@ class MelSpectrogram(torch.nn.Module):
     Extracts Mel-spectrogram features from audio.
 
     Args:
-        is_half (bool): Whether to use half-precision floating-point numbers.
         n_mel_channels (int): Number of Mel-frequency bands.
         sample_rate (int): Sampling rate of the audio.
         win_length (int): Length of the window function in samples.
@@ -357,7 +356,6 @@ class MelSpectrogram(torch.nn.Module):
 
     def __init__(
         self,
-        is_half,
         n_mel_channels,
         sample_rate,
         win_length,
@@ -386,7 +384,6 @@ class MelSpectrogram(torch.nn.Module):
         self.sample_rate = sample_rate
         self.n_mel_channels = n_mel_channels
         self.clamp = clamp
-        self.is_half = is_half
 
     def forward(self, audio, keyshift=0, speed=1, center=True):
         factor = 2 ** (keyshift / 12)
@@ -416,8 +413,6 @@ class MelSpectrogram(torch.nn.Module):
                 magnitude = F.pad(magnitude, (0, 0, 0, size - resize))
             magnitude = magnitude[:, :size, :] * self.win_length / win_length_new
         mel_output = torch.matmul(self.mel_basis, magnitude)
-        if self.is_half:
-            mel_output = mel_output.half()
         log_mel_spec = torch.log(torch.clamp(mel_output, min=self.clamp))
         return log_mel_spec
 
@@ -428,24 +423,19 @@ class RMVPE0Predictor:
 
     Args:
         model_path (str): Path to the RMVPE0 model file.
-        is_half (bool): Whether to use half-precision floating-point numbers.
         device (str, optional): Device to use for computation. Defaults to None, which uses CUDA if available.
     """
 
-    def __init__(self, model_path, is_half, device=None):
+    def __init__(self, model_path, device=None):
         self.resample_kernel = {}
         model = E2E(4, 1, (2, 2))
         ckpt = torch.load(model_path, map_location="cpu")
         model.load_state_dict(ckpt)
         model.eval()
-        if is_half:
-            model = model.half()
         self.model = model
         self.resample_kernel = {}
-        self.is_half = is_half
         self.device = device
-        self.mel_extractor = MelSpectrogram(
-            is_half, N_MELS, 16000, 1024, 160, None, 30, 8000
+        self.mel_extractor = MelSpectrogram(N_MELS, 16000, 1024, 160, None, 30, 8000
         ).to(device)
         self.model = self.model.to(device)
         cents_mapping = 20 * np.arange(N_CLASS) + 1997.3794084376191
@@ -491,8 +481,6 @@ class RMVPE0Predictor:
         mel = self.mel_extractor(audio, center=True)
         hidden = self.mel2hidden(mel)
         hidden = hidden.squeeze(0).cpu().numpy()
-        if self.is_half == True:
-            hidden = hidden.astype("float32")
         f0 = self.decode(hidden, thred=thred)
         return f0
 

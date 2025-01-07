@@ -406,7 +406,6 @@ def run(
         config.train.segment_size // config.data.hop_length,
         **config.model,
         use_f0=True,
-        is_half=config.train.fp16_run and device.type == "cuda",
         sr=sample_rate,
         vocoder=vocoder,
         checkpointing=checkpointing,
@@ -489,15 +488,13 @@ def run(
                     torch.load(pretrainD, map_location="cpu")["model"]
                 )
 
-    # Initialize schedulers and scaler
+    # Initialize schedulers
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
         optim_g, gamma=config.train.lr_decay, last_epoch=epoch_str - 2
     )
     scheduler_d = torch.optim.lr_scheduler.ExponentialLR(
         optim_d, gamma=config.train.lr_decay, last_epoch=epoch_str - 2
     )
-
-    scaler = GradScaler(enabled=config.train.fp16_run and device.type == "cuda")
 
     cache = []
     # get the first sample as reference for tensorboard evaluation
@@ -554,7 +551,6 @@ def run(
             config,
             [net_g, net_d],
             [optim_g, optim_d],
-            scaler,
             [train_loader, None],
             [writer_eval],
             cache,
@@ -576,7 +572,6 @@ def train_and_evaluate(
     hps,
     nets,
     optims,
-    scaler,
     loaders,
     writers,
     cache,
@@ -596,7 +591,6 @@ def train_and_evaluate(
         hps (Namespace): Hyperparameters.
         nets (list): List of models [net_g, net_d].
         optims (list): List of optimizers [optim_g, optim_d].
-        scaler (GradScaler): Gradient scaler for mixed precision training.
         loaders (list): List of dataloaders [train_loader, eval_loader].
         writers (list): List of TensorBoard writers [writer_eval].
         cache (list): List to cache data in GPU memory.
@@ -658,76 +652,54 @@ def train_and_evaluate(
             ) = info
 
             # Forward pass
-            use_amp = config.train.fp16_run and device.type == "cuda"
-            with autocast(enabled=use_amp):
-                model_output = net_g(
-                    phone, phone_lengths, pitch, pitchf, spec, spec_lengths, sid
-                )
-                y_hat, ids_slice, x_mask, z_mask, (z, z_p, m_p, logs_p, m_q, logs_q) = (
-                    model_output
-                )
+            model_output = net_g(
+                phone, phone_lengths, pitch, pitchf, spec, spec_lengths, sid
+            )
+            y_hat, ids_slice, x_mask, z_mask, (z, z_p, m_p, logs_p, m_q, logs_q) = (
+                model_output
+            )
                 # slice of the original waveform to match a generate slice
-                if randomized:
-                    wave = commons.slice_segments(
-                        wave,
-                        ids_slice * config.data.hop_length,
-                        config.train.segment_size,
-                        dim=3,
-                    )
-                y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
-                with autocast(enabled=False):
-                    # if vocoder == "HiFi-GAN":
-                    #    loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
-                    # else:
-                    #    loss_disc, _, _ = discriminator_loss_scaled(y_d_hat_r, y_d_hat_g)
-                    loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
+            if randomized:
+                wave = commons.slice_segments(
+                    wave,
+                    ids_slice * config.data.hop_length,
+                    config.train.segment_size,
+                    dim=3,
+                )
+            y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
+            loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
             # Discriminator backward and update
             epoch_disc_sum += loss_disc.item()
             optim_d.zero_grad()
-            scaler.scale(loss_disc).backward()
-            scaler.unscale_(optim_d)
+            loss_disc.backward()
             grad_norm_d = torch.nn.utils.clip_grad_norm_(
                 net_d.parameters(), max_norm=1000.0
             )
-            scaler.step(optim_d)
-            scaler.update()
-            # if not math.isfinite(grad_norm_d):
-            #    print("\nWarning: grad_norm_d is NaN or Inf")
+            optim_d.step()
 
             # Generator backward and update
-            with autocast(enabled=use_amp):
-                _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
-                with autocast(enabled=False):
-                    loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
-                    loss_env = envelope_loss(wave, y_hat)
-                    loss_kl = (
-                        kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
-                    )
-                    loss_fm = feature_loss(fmap_r, fmap_g)
-                    # if vocoder == "HiFi-GAN":
-                    # 	loss_gen, _ = generator_loss(y_d_hat_g)
-                    # else:
-                    # 	loss_gen, _ = generator_loss_scaled(y_d_hat_g)
-                    loss_gen, _ = generator_loss(y_d_hat_g)
-                    loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl + loss_env
+            _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
+            
+            loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
+            loss_env = envelope_loss(wave, y_hat)
+            loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
+            loss_fm = feature_loss(fmap_r, fmap_g)
+            loss_gen, _ = generator_loss(y_d_hat_g)
+            loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl + loss_env
 
-                    if loss_gen_all < lowest_value["value"]:
-                        lowest_value = {
-                            "step": global_step,
-                            "value": loss_gen_all,
-                            "epoch": epoch,
-                        }
+            if loss_gen_all < lowest_value["value"]:
+                lowest_value = {
+                    "step": global_step,
+                    "value": loss_gen_all,
+                    "epoch": epoch,
+                }
             epoch_gen_sum += loss_gen_all.item()
             optim_g.zero_grad()
-            scaler.scale(loss_gen_all).backward()
-            scaler.unscale_(optim_g)
+            loss_gen_all.backward()
             grad_norm_g = torch.nn.utils.clip_grad_norm_(
                 net_g.parameters(), max_norm=1000.0
             )
-            scaler.step(optim_g)
-            scaler.update()
-            # if not math.isfinite(grad_norm_g):
-            #    print("\n Warning: grad_norm_g is NaN or Inf")
+            optim_g.step()
 
             global_step += 1
 
@@ -768,7 +740,8 @@ def train_and_evaluate(
                 )
 
             pbar.update(1)
-
+        # end of batch train
+    #end of tqdm
     with torch.no_grad():
         torch.cuda.empty_cache()
 
@@ -798,19 +771,16 @@ def train_and_evaluate(
         else:
             y_mel = mel
         # used for tensorboard chart - slice/mel_gen
-        with autocast(enabled=False):
-            y_hat_mel = mel_spectrogram_torch(
-                y_hat.float().squeeze(1),
-                config.data.filter_length,
-                config.data.n_mel_channels,
-                config.data.sample_rate,
-                config.data.hop_length,
-                config.data.win_length,
-                config.data.mel_fmin,
-                config.data.mel_fmax,
-            )
-            if use_amp:
-                y_hat_mel = y_hat_mel.half()
+        y_hat_mel = mel_spectrogram_torch(
+            y_hat.float().squeeze(1),
+            config.data.filter_length,
+            config.data.n_mel_channels,
+            config.data.sample_rate,
+            config.data.hop_length,
+            config.data.win_length,
+            config.data.mel_fmin,
+            config.data.mel_fmax,
+        )
 
         lr = optim_g.param_groups[0]["lr"]
 
@@ -827,10 +797,6 @@ def train_and_evaluate(
             "loss_avg_epoch/disc": np.mean(avg_losses["disc_loss_queue"]),
             "loss_avg_epoch/gen": np.mean(avg_losses["gen_loss_queue"]),
         }
-        # commented out
-        # scalar_dict.update({f"loss/g/{i}": v for i, v in enumerate(losses_gen)})
-        # scalar_dict.update({f"loss/d_r/{i}": v for i, v in enumerate(losses_disc_r)})
-        # scalar_dict.update({f"loss/d_g/{i}": v for i, v in enumerate(losses_disc_g)})
 
         image_dict = {
             "slice/mel_org": plot_spectrogram_to_numpy(y_mel[0].data.cpu().numpy()),

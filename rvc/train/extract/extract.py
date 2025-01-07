@@ -105,7 +105,6 @@ class FeatureInput:
         if f0_method == "rmvpe":
             self.model_rmvpe = RMVPE0Predictor(
                 os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-                is_half=False,
                 device=device,
             )
 
@@ -146,15 +145,15 @@ def run_pitch_extraction(files, devices, f0_method, hop_length, threads):
 def process_file_embedding(
     files, embedder_model, embedder_model_custom, device_num, device, n_threads
 ):
-    dtype = torch.float16 if (config.is_half and "cuda" in device) else torch.float32
-    model = load_embedding(embedder_model, embedder_model_custom).to(dtype).to(device)
+    model = load_embedding(embedder_model, embedder_model_custom).to(device).float()
+    model.eval()
     n_threads = max(1, n_threads)
 
     def worker(file_info):
         wav_file_path, _, _, out_file_path = file_info
         if os.path.exists(out_file_path):
             return
-        feats = torch.from_numpy(load_audio(wav_file_path, 16000)).to(dtype).to(device)
+        feats = torch.from_numpy(load_audio(wav_file_path, 16000)).to(device).float()
         feats = feats.view(1, -1)
         with torch.no_grad():
             result = model(feats)["last_hidden_state"]

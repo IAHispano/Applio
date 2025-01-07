@@ -79,7 +79,6 @@ class F0Extractor:
         elif method == "rmvpe":
             model_rmvpe = RMVPE0Predictor(
                 os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-                is_half=config.is_half,
                 device=config.device,
                 # hop_length=80
             )

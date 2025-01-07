@@ -519,7 +519,7 @@ def run_train_script(
 
         if custom_pretrained == False:
             pg, pd = pretrained_selector(
-                str(vocoder), True, int(sample_rate)
+                str(vocoder), int(sample_rate)
             )
         else:
             if g_pretrained_path is None or d_pretrained_path is None:

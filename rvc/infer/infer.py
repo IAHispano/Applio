@@ -70,12 +70,7 @@ class VoiceConverter:
             embedder_model_custom (str): Path to the custom HuBERT model.
         """
         self.hubert_model = load_embedding(embedder_model, embedder_model_custom)
-        self.hubert_model.to(self.config.device)
-        self.hubert_model = (
-            self.hubert_model.half()
-            if self.config.is_half
-            else self.hubert_model.float()
-        )
+        self.hubert_model = self.hubert_model.to(self.config.device).float()
         self.hubert_model.eval()
 
     @staticmethod
@@ -482,13 +477,12 @@ class VoiceConverter:
                 *self.cpt["config"],
                 use_f0=self.use_f0,
                 text_enc_hidden_dim=self.text_enc_hidden_dim,
-                is_half=False,
                 vocoder=self.vocoder,
             )
             del self.net_g.enc_q
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)
-            self.net_g.eval().to(self.config.device)
-            self.net_g = self.net_g.float()
+            self.net_g = self.net_g.to(self.config.device).float()
+            self.net_g.eval()
 
     def setup_vc_instance(self):
         """
