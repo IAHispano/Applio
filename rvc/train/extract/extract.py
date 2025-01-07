@@ -232,9 +232,7 @@ if __name__ == "__main__":
             file,
             os.path.join(exp_dir, "f0", file_name + ".npy"),
             os.path.join(exp_dir, "f0_voiced", file_name + ".npy"),
-            os.path.join(
-                exp_dir, "extracted", file_name.replace("wav", "npy")
-            ),
+            os.path.join(exp_dir, "extracted", file_name.replace("wav", "npy")),
         ]
         files.append(file_info)
 

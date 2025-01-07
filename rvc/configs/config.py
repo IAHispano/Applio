@@ -63,6 +63,7 @@ class Config:
             1024**3
         )
 
+
 def max_vram_gpu(gpu):
     if torch.cuda.is_available():
         gpu_properties = torch.cuda.get_device_properties(gpu)
@@ -70,6 +71,7 @@ def max_vram_gpu(gpu):
         return total_memory_gb
     else:
         return "8"
+
 
 def get_gpu_info():
     ngpu = torch.cuda.device_count()

@@ -435,7 +435,8 @@ class RMVPE0Predictor:
         self.model = model
         self.resample_kernel = {}
         self.device = device
-        self.mel_extractor = MelSpectrogram(N_MELS, 16000, 1024, 160, None, 30, 8000
+        self.mel_extractor = MelSpectrogram(
+            N_MELS, 16000, 1024, 160, None, 30, 8000
         ).to(device)
         self.model = self.model.to(device)
         cents_mapping = 20 * np.arange(N_CLASS) + 1997.3794084376191

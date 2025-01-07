@@ -872,17 +872,17 @@ def train_tab():
                 }
 
             def download_prerequisites():
-                    gr.Info(
-                        "Checking for prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
-                    )
-                    run_prerequisites_script(
-                        pretraineds_hifigan=True,
-                        models=False,
-                        exe=False,
-                    )
-                    gr.Info(
-                        "Prerequisites check complete. Missing files were downloaded, and you may now start preprocessing."
-                    )
+                gr.Info(
+                    "Checking for prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
+                )
+                run_prerequisites_script(
+                    pretraineds_hifigan=True,
+                    models=False,
+                    exe=False,
+                )
+                gr.Info(
+                    "Prerequisites check complete. Missing files were downloaded, and you may now start preprocessing."
+                )
 
             def toggle_visible_embedder_custom(embedder_model):
                 if embedder_model == "custom":

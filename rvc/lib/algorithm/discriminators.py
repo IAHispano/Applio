@@ -20,9 +20,7 @@ class MultiPeriodDiscriminator(torch.nn.Module):
             Defaults to False.
     """
 
-    def __init__(
-        self, use_spectral_norm: bool = False, checkpointing: bool = False
-    ):
+    def __init__(self, use_spectral_norm: bool = False, checkpointing: bool = False):
         super(MultiPeriodDiscriminator, self).__init__()
         periods = [2, 3, 5, 7, 11, 17, 23, 37]
         self.checkpointing = checkpointing
