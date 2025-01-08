@@ -41,7 +41,6 @@ from losses import (
     feature_loss,
     generator_loss,
     kl_loss,
-    envelope_loss,
 )
 from mel_processing import (
     mel_spectrogram_torch,
@@ -100,7 +99,6 @@ avg_losses = {
     "gen_loss_queue": deque(maxlen=10),
     "disc_loss_queue": deque(maxlen=10),
     "disc_loss_50": deque(maxlen=50),
-    "env_loss_50": deque(maxlen=50),
     "fm_loss_50": deque(maxlen=50),
     "kl_loss_50": deque(maxlen=50),
     "mel_loss_50": deque(maxlen=50),
@@ -681,11 +679,10 @@ def train_and_evaluate(
             _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
 
             loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
-            loss_env = envelope_loss(wave, y_hat)
             loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
             loss_fm = feature_loss(fmap_r, fmap_g)
             loss_gen, _ = generator_loss(y_d_hat_g)
-            loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl + loss_env
+            loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
 
             if loss_gen_all < lowest_value["value"]:
                 lowest_value = {
@@ -705,7 +702,6 @@ def train_and_evaluate(
 
             # queue for rolling losses over 50 steps
             avg_losses["disc_loss_50"].append(loss_disc.detach())
-            avg_losses["env_loss_50"].append(loss_env.detach())
             avg_losses["fm_loss_50"].append(loss_fm.detach())
             avg_losses["kl_loss_50"].append(loss_kl.detach())
             avg_losses["mel_loss_50"].append(loss_mel.detach())
@@ -716,9 +712,6 @@ def train_and_evaluate(
                 scalar_dict = {
                     "loss_avg_50/d/total": torch.mean(
                         torch.stack(list(avg_losses["disc_loss_50"]))
-                    ),
-                    "loss_avg_50/g/env": torch.mean(
-                        torch.stack(list(avg_losses["env_loss_50"]))
                     ),
                     "loss_avg_50/g/fm": torch.mean(
                         torch.stack(list(avg_losses["fm_loss_50"]))
@@ -793,7 +786,6 @@ def train_and_evaluate(
             "loss/g/fm": loss_fm,
             "loss/g/mel": loss_mel,
             "loss/g/kl": loss_kl,
-            "loss/g/env": loss_env,
             "loss_avg_epoch/disc": np.mean(avg_losses["disc_loss_queue"]),
             "loss_avg_epoch/gen": np.mean(avg_losses["gen_loss_queue"]),
         }
