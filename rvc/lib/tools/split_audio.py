@@ -26,31 +26,54 @@ def process_audio(audio, sr=16000, silence_thresh=-60, min_silence_len=250):
     return audio_segments, intervals
 
 
-def merge_audio(audio_segments, intervals, sr_orig, sr_new):
+def merge_audio(audio_segments_org, audio_segments_new, intervals, sr_orig, sr_new):
     """
     Merges audio segments back into a single audio signal, filling gaps with silence.
+    Assumes audio segments are already at sr_new.
 
     Parameters:
-    - audio_segments (list of np.ndarray): The non-silent audio segments.
+    - audio_segments_org (list of np.ndarray): The non-silent audio segments (at sr_orig).
+    - audio_segments_new (list of np.ndarray): The non-silent audio segments (at sr_new).
     - intervals (np.ndarray): The intervals used for splitting the original audio.
     - sr_orig (int): The sample rate of the original audio
     - sr_new (int): The sample rate of the model
-
     Returns:
     - np.ndarray: The merged audio signal with silent gaps restored.
     """
-    sr_ratio = sr_new / sr_orig if sr_new > sr_orig else 1.0
+    merged_audio = np.array([], dtype=audio_segments_new[0].dtype)
+    sr_ratio = sr_new / sr_orig
 
-    merged_audio = np.zeros(
-        int(intervals[0][0] * sr_ratio if intervals[0][0] > 0 else 0),
-        dtype=audio_segments[0].dtype,
-    )
+    for i, (start, end) in enumerate(intervals):
 
-    merged_audio = np.concatenate((merged_audio, audio_segments[0]))
+        start_new = int(start * sr_ratio)
+        end_new = int(end * sr_ratio)
 
-    for i in range(1, len(intervals)):
-        silence_duration = int((intervals[i][0] - intervals[i - 1][1]) * sr_ratio)
-        silence = np.zeros(silence_duration, dtype=audio_segments[0].dtype)
-        merged_audio = np.concatenate((merged_audio, silence, audio_segments[i]))
+        original_duration = len(audio_segments_org[i]) / sr_orig
+        new_duration = len(audio_segments_new[i]) / sr_new
+        duration_diff = new_duration - original_duration
+
+        silence_samples = int(abs(duration_diff) * sr_new)
+        silence_compensation = np.zeros(
+            silence_samples, dtype=audio_segments_new[0].dtype
+        )
+
+        if i == 0 and start_new > 0:
+            initial_silence = np.zeros(start_new, dtype=audio_segments_new[0].dtype)
+            merged_audio = np.concatenate((merged_audio, initial_silence))
+
+        if duration_diff > 0:
+            merged_audio = np.concatenate((merged_audio, silence_compensation))
+
+        merged_audio = np.concatenate((merged_audio, audio_segments_new[i]))
+
+        if duration_diff < 0:
+            merged_audio = np.concatenate((merged_audio, silence_compensation))
+
+        if i < len(intervals) - 1:
+            next_start_new = int(intervals[i + 1][0] * sr_ratio)
+            silence_duration = next_start_new - end_new
+            if silence_duration > 0:
+                silence = np.zeros(silence_duration, dtype=audio_segments_new[0].dtype)
+                merged_audio = np.concatenate((merged_audio, silence))
 
     return merged_audio
