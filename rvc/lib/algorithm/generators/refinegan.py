@@ -458,8 +458,8 @@ class RefineGANGenerator(torch.nn.Module):
 
         if g is not None:
             # adding expanded speaker embedding
-            x += self.cond(g)
-        x = torch.cat([x, mel], dim=1)
+            mel += self.cond(g)
+        x = torch.cat([mel, x], dim=1)
 
         for ups, res, down in zip(
             self.upsample_blocks,
