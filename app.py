@@ -114,7 +114,7 @@ with gr.Blocks(
     )
 
 
-def launch_gradio(server_name: str, server_port: int):
+def launch_gradio(server_name: str, server_port: int) -> None:
     Applio.launch(
         favicon_path="assets/ICON.ico",
         share="--share" in sys.argv,
