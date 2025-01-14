@@ -13,10 +13,10 @@ from tabs.inference.inference import (
 
 # Initialize FastAPI app
 app = FastAPI()
-
+print(names)
 # Default values
-default_voice_name = "ur-PK-AsadNeural"
-default_model_file = sorted(names, key=lambda x: extract_model_and_epoch(x))[4]
+default_voice_name = "ur-PK-UzmaNeural"
+default_model_file = sorted(names, key=lambda x: extract_model_and_epoch(x))[1]
 print(f"Using default model: {default_model_file}")
 default_index_file = match_index(default_model_file)
 default_sid = get_speakers_id(default_model_file)[0] if get_speakers_id(default_model_file) else 0
@@ -44,10 +44,10 @@ async def tts_endpoint(request: TTSRequest):
             tts_file=None,
             tts_text=request.tts_text,
             tts_voice=default_voice_name,
-            tts_rate=25,  # Default TTS speed
-            pitch=0,  # Default pitch
-            filter_radius=3,
-            index_rate=0.74,
+            tts_rate=1,  # Default TTS speed
+            pitch=5,  # Default pitch
+            filter_radius=5,
+            index_rate=0.65,
             volume_envelope=1,
             protect=0.5,
             hop_length=128,
