@@ -171,6 +171,9 @@ def plot_spectrogram_to_numpy(spectrogram):
 
     Args:
         spectrogram (numpy.ndarray): The spectrogram to plot.
+
+    Returns:
+        numpy.ndarray: The rendered spectrogram as an image array.
     """
     global MATPLOTLIB_FLAG
     if not MATPLOTLIB_FLAG:
@@ -184,11 +187,22 @@ def plot_spectrogram_to_numpy(spectrogram):
     plt.ylabel("Channels")
     plt.tight_layout()
 
+    # Render the figure
     fig.canvas.draw()
-    data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-    data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-    plt.close(fig)
+    
+    # Get ARGB data from canvas
+    data = np.frombuffer(fig.canvas.tostring_argb(), dtype=np.uint8)
+    width, height = fig.canvas.get_width_height()
+
+    # Reshape data to include 4 channels (ARGB)
+    data = data.reshape((height, width, 4))
+
+    # Convert ARGB to RGB by dropping the alpha channel
+    data = data[..., 1:]  # Retain R, G, B channels only
+
+    plt.close(fig)  # Close the figure to release memory
     return data
+
 
 
 def load_wav_to_torch(full_path):
