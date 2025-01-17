@@ -222,11 +222,11 @@ class SineGenerator(nn.Module):
         self.dim = self.harmonic_num + 1
         self.sampling_rate = samp_rate
         self.voiced_threshold = voiced_threshold
-        
+
         self.merge = nn.Sequential(
             nn.Linear(self.dim, 1, bias=False),
             nn.Tanh(),
-        )        
+        )
 
     def _f02uv(self, f0):
         # generate uv signal
@@ -275,11 +275,12 @@ class SineGenerator(nn.Module):
             noise = noise_amp * torch.randn_like(sine_waves)
 
             sine_waves = sine_waves * uv + noise
-        # correct DC offset    
+        # correct DC offset
         sine_waves = sine_waves - sine_waves.mean(dim=1, keepdim=True)
-        # merge with grad	
+        # merge with grad
         return self.merge(sine_waves)
-        
+
+
 class RefineGANGenerator(nn.Module):
     """
     RefineGAN generator for audio synthesis.
@@ -309,7 +310,7 @@ class RefineGANGenerator(nn.Module):
         num_mels: int = 128,
         start_channels: int = 16,
         gin_channels: int = 256,
-        checkpointing: bool =False,
+        checkpointing: bool = False,
     ):
         super().__init__()
         self.downsample_rates = downsample_rates
@@ -328,7 +329,7 @@ class RefineGANGenerator(nn.Module):
                 kernel_size=7,
                 stride=1,
                 padding=3,
-                bias=False
+                bias=False,
             )
         )
 
@@ -373,9 +374,7 @@ class RefineGANGenerator(nn.Module):
         for rate in upsample_rates:
             new_channels = channels // 2
 
-            self.upsample_blocks.append(
-                nn.Upsample(scale_factor=rate, mode="linear")
-            )
+            self.upsample_blocks.append(nn.Upsample(scale_factor=rate, mode="linear"))
 
             self.upsample_conv_blocks.append(
                 ParallelResBlock(
@@ -400,8 +399,10 @@ class RefineGANGenerator(nn.Module):
         )
 
     def forward(self, mel: torch.Tensor, f0: torch.Tensor, g: torch.Tensor = None):
-        
-        f0 = F.interpolate(f0.unsqueeze(1), size=mel.shape[-1] * self.upp, mode="linear")
+
+        f0 = F.interpolate(
+            f0.unsqueeze(1), size=mel.shape[-1] * self.upp, mode="linear"
+        )
         har_source = self.m_source(f0.transpose(1, 2)).transpose(1, 2)
 
         # expanding pitch source to 16 channels
