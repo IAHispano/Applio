@@ -3,6 +3,9 @@ import sys
 import os
 import logging
 
+from typing import Any
+
+DEFAULT_SERVER_NAME = "127.0.0.1"
 DEFAULT_PORT = 6969
 MAX_PORT_ATTEMPTS = 10
 
@@ -62,7 +65,7 @@ my_applio = loadThemes.load_theme() or "ParityError/Interstellar"
 
 # Define Gradio interface
 with gr.Blocks(
-    theme=my_applio, title="Applio", css="footer{display:none !important}"
+        theme=my_applio, title="Applio", css="footer{display:none !important}"
 ) as Applio:
     gr.Markdown("# Applio")
     gr.Markdown(
@@ -111,28 +114,31 @@ with gr.Blocks(
     )
 
 
-def launch_gradio(port):
+def launch_gradio(server_name: str, server_port: int) -> None:
     Applio.launch(
         favicon_path="assets/ICON.ico",
         share="--share" in sys.argv,
         inbrowser="--open" in sys.argv,
-        server_port=port,
+        server_name=server_name,
+        server_port=server_port,
     )
 
 
-def get_port_from_args():
-    if "--port" in sys.argv:
-        port_index = sys.argv.index("--port") + 1
-        if port_index < len(sys.argv):
-            return int(sys.argv[port_index])
-    return DEFAULT_PORT
+def get_value_from_args(key: str, default: Any = None) -> Any:
+    if key in sys.argv:
+        index = sys.argv.index(key) + 1
+        if index < len(sys.argv):
+            return sys.argv[index]
+    return default
 
 
 if __name__ == "__main__":
-    port = get_port_from_args()
+    port = int(get_value_from_args("--port", DEFAULT_PORT))
+    server = get_value_from_args("--server-name", DEFAULT_SERVER_NAME)
+
     for _ in range(MAX_PORT_ATTEMPTS):
         try:
-            launch_gradio(port)
+            launch_gradio(server, port)
             break
         except OSError:
             print(
