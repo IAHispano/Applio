@@ -1,5 +1,6 @@
 import os
 import sys
+os.environ["USE_LIBUV"] = "0" if sys.platform == 'win32' else "1"
 import glob
 import json
 import torch
@@ -326,7 +327,7 @@ def run(
         writer_eval = None
 
     dist.init_process_group(
-        backend="gloo",
+        backend='gloo' if sys.platform == 'win32' or device.type != 'cuda' else 'nccl',
         init_method="env://",
         world_size=n_gpus if device.type == "cuda" else 1,
         rank=rank if device.type == "cuda" else 0,
