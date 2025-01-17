@@ -313,7 +313,9 @@ class VoiceConverter:
                     print(f"Converted audio chunk {len(converted_chunks)}")
 
             if split_audio:
-                audio_opt = merge_audio(chunks, converted_chunks, intervals, 16000, self.tgt_sr)
+                audio_opt = merge_audio(
+                    chunks, converted_chunks, intervals, 16000, self.tgt_sr
+                )
             else:
                 audio_opt = converted_chunks[0]
 
