@@ -312,7 +312,7 @@ class RefineGANGenerator(nn.Module):
         start_channels: int = 16,
         gin_channels: int = 256,
         checkpointing: bool = False,
-        upsample_initial_channel = 512
+        upsample_initial_channel=512,
     ):
         super().__init__()
 
@@ -350,14 +350,14 @@ class RefineGANGenerator(nn.Module):
             padding = 0 if stride == 1 else (kernel - stride) // 2
 
             # f0 input gets upscaled to full segment size, then downscaled back to match each upscale step
-            
+
             self.downsample_blocks.append(
                 nn.Conv1d(
                     in_channels=1,
                     out_channels=channels // 2 ** (i + 2),
                     kernel_size=kernel,
                     stride=stride,
-                    padding = padding
+                    padding=padding,
                 )
             )
 
@@ -387,12 +387,13 @@ class RefineGANGenerator(nn.Module):
                 channels,
                 channels,
                 kernel_size=15,
-                padding=7, 
+                padding=7,
                 groups=channels,
-                bias=False)
+                bias=False,
+            )
 
             low_pass.weight.data.fill_(1.0 / 15)
-            
+
             self.filters.append(low_pass)
 
             self.upsample_conv_blocks.append(
@@ -416,7 +417,6 @@ class RefineGANGenerator(nn.Module):
                 padding=3,
             )
         )
-        
 
     def forward(self, mel: torch.Tensor, f0: torch.Tensor, g: torch.Tensor = None):
 
@@ -454,7 +454,7 @@ class RefineGANGenerator(nn.Module):
                 x = flt(x)
                 x = torch.cat([x, down(har_source)], dim=1)
                 x = res(x)
-                
+
         # in-place call
         x = F.leaky_relu_(x, self.leaky_relu_slope)
         x = self.conv_post(x)
