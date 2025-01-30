@@ -17,8 +17,8 @@ def extract(ckpt):
 def model_blender(name, path1, path2, ratio):
     try:
         message = f"Model {path1} and {path2} are merged with alpha {ratio}."
-        ckpt1 = torch.load(path1, map_location="cpu")
-        ckpt2 = torch.load(path2, map_location="cpu")
+        ckpt1 = torch.load(path1, map_location="cpu", weights_only=True)
+        ckpt2 = torch.load(path2, map_location="cpu", weights_only=True)
 
         if ckpt1["sr"] != ckpt2["sr"]:
             return "The sample rates of the two models are not the same."

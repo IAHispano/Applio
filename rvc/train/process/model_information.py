@@ -13,7 +13,7 @@ def prettify_date(date_str):
 
 
 def model_information(path):
-    model_data = torch.load(path, map_location="cpu")
+    model_data = torch.load(path, map_location="cpu", weights_only=True)
 
     print(f"Loaded model from {path}")
 

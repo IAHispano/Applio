@@ -4,7 +4,7 @@ import torch
 
 def change_info(path, info, name):
     try:
-        ckpt = torch.load(path, map_location="cpu")
+        ckpt = torch.load(path, map_location="cpu", weights_only=True)
         ckpt["info"] = info
 
         if not name:

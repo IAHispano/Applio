@@ -125,7 +125,7 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
         spec_filename = filename.replace(".wav", ".spec.pt")
         if os.path.exists(spec_filename):
             try:
-                spec = torch.load(spec_filename)
+                spec = torch.load(spec_filename, weights_only=True)
             except Exception as error:
                 print(f"An error occurred getting spec from {spec_filename}: {error}")
                 spec = spectrogram_torch(
