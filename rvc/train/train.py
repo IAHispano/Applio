@@ -134,7 +134,7 @@ class EpochRecorder:
 
 
 def verify_checkpoint_shapes(checkpoint_path, model):
-    checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
     checkpoint_state_dict = checkpoint["model"]
     try:
         if hasattr(model, "module"):

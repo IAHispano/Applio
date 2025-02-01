@@ -334,7 +334,7 @@ def refresh_embedders_folders():
 def get_speakers_id(model):
     if model:
         try:
-            model_data = torch.load(os.path.join(now_dir, model), map_location="cpu")
+            model_data = torch.load(os.path.join(now_dir, model), map_location="cpu", weights_only=True)
             speakers_id = model_data.get("speakers_id")
             if speakers_id:
                 return list(range(speakers_id))
