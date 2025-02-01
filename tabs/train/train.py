@@ -214,7 +214,6 @@ def refresh_embedders_folders():
 
 
 # Export
-## Get Pth and Index Files
 def get_pth_list():
     return [
         os.path.relpath(os.path.join(dirpath, filename), now_dir)
@@ -240,20 +239,32 @@ def refresh_pth_and_index_list():
     )
 
 
-## Export Pth and Index Files
+# Export Pth and Index Files
 def export_pth(pth_path):
-    if pth_path and os.path.exists(pth_path):
+    allowed_paths = get_pth_list()
+    normalized_allowed_paths = [os.path.abspath(os.path.join(now_dir, p)) for p in allowed_paths]
+    normalized_pth_path = os.path.abspath(os.path.join(now_dir, pth_path))
+
+    if normalized_pth_path in normalized_allowed_paths:
         return pth_path
-    return None
+    else:
+        print(f"Attempted to export invalid pth path: {pth_path}")
+        return None
 
 
 def export_index(index_path):
-    if index_path and os.path.exists(index_path):
+    allowed_paths = get_index_list()
+    normalized_allowed_paths = [os.path.abspath(os.path.join(now_dir, p)) for p in allowed_paths]
+    normalized_index_path = os.path.abspath(os.path.join(now_dir, index_path))
+
+    if normalized_index_path in normalized_allowed_paths:
         return index_path
-    return None
+    else:
+        print(f"Attempted to export invalid index path: {index_path}")
+        return None
 
 
-## Upload to Google Drive
+# Upload to Google Drive
 def upload_to_google_drive(pth_path, index_path):
     def upload_file(file_path):
         if file_path:
