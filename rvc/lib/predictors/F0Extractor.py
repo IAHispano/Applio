@@ -1,6 +1,5 @@
 import dataclasses
 import pathlib
-import libf0
 import librosa
 import numpy as np
 import resampy
@@ -86,7 +85,7 @@ class F0Extractor:
 
         else:
             raise ValueError(f"Unknown method: {self.method}")
-        return libf0.hz_to_cents(f0, librosa.midi_to_hz(0))
+        return self.hz_to_cents(f0, librosa.midi_to_hz(0))
 
     def plot_f0(self, f0):
         from matplotlib import pyplot as plt
@@ -97,3 +96,9 @@ class F0Extractor:
         plt.xlabel("Time (frames)")
         plt.ylabel("F0 (cents)")
         plt.show()
+
+    def hz_to_cents(F, F_ref=55.0):
+        F_temp = np.array(F).astype(float)
+        F_temp[F_temp == 0] = np.nan
+        F_cents = 1200 * np.log2(F_temp / F_ref)
+        return F_cents

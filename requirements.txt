@@ -28,7 +28,6 @@ torchvision==0.18.1
 torchcrepe==0.0.23
 torchfcpe
 einops
-libf0
 transformers==4.44.2
 
 # Visualization and UI
