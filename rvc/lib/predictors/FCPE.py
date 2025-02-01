@@ -728,7 +728,9 @@ class FCPEInfer:
         if device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
         self.device = device
-        ckpt = torch.load(model_path, map_location=torch.device(self.device), weights_only=True)
+        ckpt = torch.load(
+            model_path, map_location=torch.device(self.device), weights_only=True
+        )
         self.args = DotDict(ckpt["config"])
         self.dtype = dtype
         model = FCPE(
