@@ -469,11 +469,15 @@ def run(
                 print(f"Loaded pretrained (G) '{pretrainG}'")
             if hasattr(net_g, "module"):
                 net_g.module.load_state_dict(
-                    torch.load(pretrainG, map_location="cpu", weights_only=True)["model"]
+                    torch.load(pretrainG, map_location="cpu", weights_only=True)[
+                        "model"
+                    ]
                 )
             else:
                 net_g.load_state_dict(
-                    torch.load(pretrainG, map_location="cpu", weights_only=True)["model"]
+                    torch.load(pretrainG, map_location="cpu", weights_only=True)[
+                        "model"
+                    ]
                 )
 
         if pretrainD != "" and pretrainD != "None":
@@ -481,11 +485,15 @@ def run(
                 print(f"Loaded pretrained (D) '{pretrainD}'")
             if hasattr(net_d, "module"):
                 net_d.module.load_state_dict(
-                    torch.load(pretrainD, map_location="cpu", weights_only=True)["model"]
+                    torch.load(pretrainD, map_location="cpu", weights_only=True)[
+                        "model"
+                    ]
                 )
             else:
                 net_d.load_state_dict(
-                    torch.load(pretrainD, map_location="cpu", weights_only=True)["model"]
+                    torch.load(pretrainD, map_location="cpu", weights_only=True)[
+                        "model"
+                    ]
                 )
 
     # Initialize schedulers
