@@ -190,18 +190,23 @@ def create_folder_and_move_files(folder_name, bin_file, config_file):
     if not folder_name:
         return "Folder name must not be empty."
 
-    folder_name = os.path.join(custom_embedder_root, folder_name)
-    os.makedirs(folder_name, exist_ok=True)
+    folder_name = os.path.basename(folder_name)
+    target_folder = os.path.join(custom_embedder_root, folder_name)
+
+    normalized_target_folder = os.path.abspath(target_folder)
+    normalized_custom_embedder_root = os.path.abspath(custom_embedder_root)
+
+    if not normalized_target_folder.startswith(normalized_custom_embedder_root):
+        return "Invalid folder name. Folder must be within the custom embedder root directory."
+
+    os.makedirs(target_folder, exist_ok=True)
 
     if bin_file:
-        bin_file_path = os.path.join(folder_name, os.path.basename(bin_file))
-        shutil.copy(bin_file, bin_file_path)
-
+        shutil.copy(bin_file, os.path.join(target_folder, os.path.basename(bin_file)))
     if config_file:
-        config_file_path = os.path.join(folder_name, os.path.basename(config_file))
-        shutil.copy(config_file, config_file_path)
+        shutil.copy(config_file, os.path.join(target_folder, os.path.basename(config_file)))
 
-    return f"Files moved to folder {folder_name}"
+    return f"Files moved to folder {target_folder}"
 
 
 def refresh_embedders_folders():
