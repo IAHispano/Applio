@@ -87,10 +87,10 @@ def load_audio_infer(
 
 def format_title(title):
     formatted_title = (
-        unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode("utf-8")
+        unicodedata.normalize("NFKD", title)
     )
     formatted_title = re.sub(r"[\u2500-\u257F]+", "", formatted_title)
-    formatted_title = re.sub(r"[^\w\s.-]", "", formatted_title)
+    formatted_title = re.sub(r"[^\w\s.-]", "", formatted_title, flags=re.UNICODE)
     formatted_title = re.sub(r"\s+", "_", formatted_title)
     return formatted_title
 
