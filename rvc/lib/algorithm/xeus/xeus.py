@@ -86,17 +86,15 @@ class XeusModel(nn.Module):
         del state_dict["encoder.after_norm.weight"]
         del state_dict["encoder.after_norm.bias"]
         self.load_state_dict(state_dict, strict=True)
+        self.final_proj = nn.Linear(1024, 768)
         print("Xeus checkpoint loaded")
-    def encode(
-        self,
-        speech: torch.Tensor,
-        speech_lengths: torch.Tensor,
-    ):
+
+    def forward(self, speech):
         with torch.no_grad():
+            speech_lengths = torch.LongTensor([speech.shape[-1]]).to(speech.device)
             feats, feats_lengths = self.frontend(speech, speech_lengths)
             feats, feats_lengths = self.preencoder(feats, feats_lengths)
             encoder_out = self.encoder(feats, feats_lengths)
+            encoder_out = self.final_proj(encoder_out)
             del feats, feats_lengths
-        return encoder_out
-     
-    
+        return {"last_hidden_state": encoder_out}
