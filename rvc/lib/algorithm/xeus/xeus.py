@@ -71,24 +71,18 @@ class LinearProjection(torch.nn.Module):
         return output, input_lengths
 
 class XeusModel(nn.Module):
-    def __init__(self, model_path:str):
+    def __init__(self):
         super().__init__()
         self.frontend = Frontend()
         self.preencoder = LinearProjection()
         self.encoder = EBranchformerEncoder()
-    
-        state_dict = torch.load(model_path, map_location=torch.device('cpu'))
-        del state_dict["losses.0.decoder.final_proj.weight"]
-        del state_dict["losses.0.decoder.final_proj.bias"]
-        del state_dict["losses.0.decoder.label_embeddings.weight"]
-        del state_dict["losses.0.decoder.label_embeddings.bias"]
-        del state_dict["masker.mask_embedding"]
-        del state_dict["encoder.after_norm.weight"]
-        del state_dict["encoder.after_norm.bias"]
-        self.load_state_dict(state_dict, strict=True)
         self.final_proj = nn.Linear(1024, 768)
-        print("Xeus checkpoint loaded")
+        
+    def load_checkpoint(self, model_path:str):
+        state_dict = torch.load(model_path, map_location=torch.device('cpu'))
+        self.load_state_dict(state_dict, strict=True)
 
+        
     def forward(self, speech):
         with torch.no_grad():
             speech_lengths = torch.LongTensor([speech.shape[-1]]).to(speech.device)
