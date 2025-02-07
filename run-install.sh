@@ -163,7 +163,7 @@ if [ "$(uname)" = "Darwin" ]; then
     if [ "$python_version" = "3.9" ]; then
         log_message "Python 3.9 detected. Installing Python 3.10 using Homebrew..."
         brew install python@3.10
-        export PATH="/opt/homebrew/opt/python@3.10/bin:$PATH"
+        export PATH="$(brew --prefix)/opt/python@3.10/bin:$PATH"
     elif [ "$python_version" != "3.10" ]; then
         log_message "Unsupported Python version detected: $python_version. Please use Python 3.10."
         exit 1
@@ -172,7 +172,7 @@ if [ "$(uname)" = "Darwin" ]; then
     brew install faiss
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
-    export PATH="/opt/homebrew/bin:$PATH"  
+    export PATH="$(brew --prefix)/bin:$PATH"  
 elif [ "$(uname)" != "Linux" ]; then
     log_message "Unsupported operating system. Are you using Windows?"
     log_message "If yes, use the batch (.bat) file instead of this one!"
