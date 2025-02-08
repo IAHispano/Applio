@@ -11,10 +11,36 @@ set "ENV_DIR=%INSTALL_DIR%\env"
 set "MINICONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-py310_24.7.1-0-Windows-x86_64.exe"
 set "CONDA_EXE=%MINICONDA_DIR%\Scripts\conda.exe"
 
+set "startTime=%TIME%"
+set "startHour=%TIME:~0,2%"
+set "startMin=%TIME:~3,2%"
+set "startSec=%TIME:~6,2%"
+set /a startHour=1%startHour% - 100
+set /a startMin=1%startMin% - 100
+set /a startSec=1%startSec% - 100
+set /a startTotal = startHour*3600 + startMin*60 + startSec
+
 call :cleanup
 call :install_miniconda
 call :create_conda_env
 call :install_dependencies
+
+set "endTime=%TIME%"
+set "endHour=%TIME:~0,2%"
+set "endMin=%TIME:~3,2%"
+set "endSec=%TIME:~6,2%"
+set /a endHour=1%endHour% - 100
+set /a endMin=1%endMin% - 100
+set /a endSec=1%endSec% - 100
+set /a endTotal = endHour*3600 + endMin*60 + endSec
+set /a elapsed = endTotal - startTotal
+if %elapsed% lss 0 set /a elapsed += 86400
+set /a hours = elapsed / 3600
+set /a minutes = (elapsed %% 3600) / 60
+set /a seconds = elapsed %% 60
+
+echo Installation time: %hours% hours, %minutes% minutes, %seconds% seconds.
+echo.
 
 echo Applio has been installed successfully!
 echo To start Applio, please run 'run-applio.bat'.
@@ -69,7 +95,7 @@ call "%MINICONDA_DIR%\condabin\conda.bat" activate "%ENV_DIR%" || goto :error
 uv pip install --upgrade setuptools || goto :error
 uv pip install -r "%INSTALL_DIR%\requirements.txt" || goto :error
 uv pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --upgrade --index-url https://download.pytorch.org/whl/cu121 || goto :error
-uv pip install numpy==1.23.5 || goto : error
+uv pip install numpy==1.23.5 || goto :error
 call "%MINICONDA_DIR%\condabin\conda.bat" deactivate
 echo Dependencies installation complete.
 echo.
