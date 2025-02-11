@@ -1,4 +1,3 @@
-import math
 import numpy as np
 import torch
 from torch import nn
@@ -321,7 +320,7 @@ class RefineGANGenerator(nn.Module):
         self.checkpointing = checkpointing
         self.upp = int(np.prod(upsample_rates))
         assert self.upp == sample_rate // 100
-        
+
         self.m_source = SineGenerator(sample_rate)
 
         # expanded f0 sinegen -> match mel_conv
@@ -335,9 +334,9 @@ class RefineGANGenerator(nn.Module):
                 bias=False,
             )
         )
-        
+
         # f0 input gets upscaled to full segment size, then downscaled back to match each upscale step
-        
+
         # segment  upscaling mel           downscaling f0
         # 36     = input z               = 17280 / (2 x 2 x 10 x 12)
         # 432    = 36 x 12               = 17280 / (2 x 2 x 10)
@@ -347,23 +346,23 @@ class RefineGANGenerator(nn.Module):
 
         stride_f0s = [
             upsample_rates[1] * upsample_rates[2] * upsample_rates[3],
-                                upsample_rates[2] * upsample_rates[3],
-                                                    upsample_rates[3],
-                                                                    1,
+            upsample_rates[2] * upsample_rates[3],
+            upsample_rates[3],
+            1,
         ]
 
         channels = upsample_initial_channel
 
         self.downsample_blocks = nn.ModuleList([])
         for i, u in enumerate(upsample_rates):
-            
-			# 44k f0 downsampling is done using F.interpolate in the forward call due to 2.205 multiplier
+
+            # 44k f0 downsampling is done using F.interpolate in the forward call due to 2.205 multiplier
             if self.upp == 441:
                 self.downsample_blocks.append(
                     nn.Conv1d(
                         in_channels=1,
                         out_channels=channels // 2 ** (i + 2),
-                        kernel_size = 1
+                        kernel_size=1,
                     )
                 )
             else:
@@ -466,7 +465,7 @@ class RefineGANGenerator(nn.Module):
                 h = down(har_source)
                 if self.upp == 441:
                     h = F.interpolate(h, size=x.shape[-1], mode="linear")
-                x = torch.cat([x, h], dim=1)                    
+                x = torch.cat([x, h], dim=1)
                 x = checkpoint(res, x, use_reentrant=False)
             else:
                 x = ups(x)
