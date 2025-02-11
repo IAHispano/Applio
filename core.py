@@ -52,7 +52,6 @@ def get_config():
 # Infer
 def run_infer_script(
     pitch: int,
-    filter_radius: int,
     index_rate: float,
     volume_envelope: int,
     protect: float,
@@ -118,7 +117,6 @@ def run_infer_script(
         "model_path": pth_path,
         "index_path": index_path,
         "pitch": pitch,
-        "filter_radius": filter_radius,
         "index_rate": index_rate,
         "volume_envelope": volume_envelope,
         "protect": protect,
@@ -188,7 +186,6 @@ def run_infer_script(
 # Batch infer
 def run_batch_infer_script(
     pitch: int,
-    filter_radius: int,
     index_rate: float,
     volume_envelope: int,
     protect: float,
@@ -254,7 +251,6 @@ def run_batch_infer_script(
         "model_path": pth_path,
         "index_path": index_path,
         "pitch": pitch,
-        "filter_radius": filter_radius,
         "index_rate": index_rate,
         "volume_envelope": volume_envelope,
         "protect": protect,
@@ -327,7 +323,6 @@ def run_tts_script(
     tts_voice: str,
     tts_rate: int,
     pitch: int,
-    filter_radius: int,
     index_rate: float,
     volume_envelope: int,
     protect: float,
@@ -374,7 +369,6 @@ def run_tts_script(
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(
         pitch=pitch,
-        filter_radius=filter_radius,
         index_rate=index_rate,
         volume_envelope=volume_envelope,
         protect=protect,
@@ -646,14 +640,6 @@ def parse_arguments():
         help=pitch_description,
         choices=range(-24, 25),
         default=0,
-    )
-    filter_radius_description = "Apply median filtering to the extracted pitch values if this value is greater than or equal to three. This can help reduce breathiness in the output audio."
-    infer_parser.add_argument(
-        "--filter_radius",
-        type=int,
-        help=filter_radius_description,
-        choices=range(11),
-        default=3,
     )
     index_rate_description = "Control the influence of the index file on the output. Higher values mean stronger influence. Lower values can help reduce artifacts but may result in less accurate voice cloning."
     infer_parser.add_argument(
@@ -1180,13 +1166,6 @@ def parse_arguments():
         default=0,
     )
     batch_infer_parser.add_argument(
-        "--filter_radius",
-        type=int,
-        help=filter_radius_description,
-        choices=range(11),
-        default=3,
-    )
-    batch_infer_parser.add_argument(
         "--index_rate",
         type=float,
         help=index_rate_description,
@@ -1665,13 +1644,6 @@ def parse_arguments():
         help=pitch_description,
         choices=range(-24, 25),
         default=0,
-    )
-    tts_parser.add_argument(
-        "--filter_radius",
-        type=int,
-        help=filter_radius_description,
-        choices=range(11),
-        default=3,
     )
     tts_parser.add_argument(
         "--index_rate",
@@ -2193,7 +2165,6 @@ def main():
         if args.mode == "infer":
             run_infer_script(
                 pitch=args.pitch,
-                filter_radius=args.filter_radius,
                 index_rate=args.index_rate,
                 volume_envelope=args.volume_envelope,
                 protect=args.protect,
@@ -2256,7 +2227,6 @@ def main():
         elif args.mode == "batch_infer":
             run_batch_infer_script(
                 pitch=args.pitch,
-                filter_radius=args.filter_radius,
                 index_rate=args.index_rate,
                 volume_envelope=args.volume_envelope,
                 protect=args.protect,
@@ -2323,7 +2293,6 @@ def main():
                 tts_voice=args.tts_voice,
                 tts_rate=args.tts_rate,
                 pitch=args.pitch,
-                filter_radius=args.filter_radius,
                 index_rate=args.index_rate,
                 volume_envelope=args.volume_envelope,
                 protect=args.protect,
