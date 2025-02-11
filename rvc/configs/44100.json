@@ -16,7 +16,7 @@
         "filter_length": 2048,
         "hop_length": 441,
         "win_length": 2048,
-        "n_mel_channels": 160,
+        "n_mel_channels": 128,
         "mel_fmin": 0.0,
         "mel_fmax": null
     },
@@ -32,9 +32,9 @@
         "resblock": "1",
         "resblock_kernel_sizes": [3,7,11],
         "resblock_dilation_sizes": [[1,3,5], [1,3,5], [1,3,5]],
-        "upsample_rates": [7,7,3,3],
+        "upsample_rates": [10,10,2.205,2],
         "upsample_initial_channel": 512,
-        "upsample_kernel_sizes": [14,14,6,6],
+        "upsample_kernel_sizes": [20,20,4,4],
         "use_spectral_norm": false,
         "gin_channels": 256,
         "spk_embed_dim": 109

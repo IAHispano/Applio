@@ -260,8 +260,8 @@ class HiFiGANMRFGenerator(torch.nn.Module):
         super().__init__()
         self.num_kernels = len(resblock_kernel_sizes)
         self.checkpointing = checkpointing
-
-        self.f0_upsample = torch.nn.Upsample(scale_factor=np.prod(upsample_rates))
+        self.upp = int(np.prod(upsample_rates))
+        self.f0_upsample = torch.nn.Upsample(scale_factor=self.upp)
         self.m_source = SourceModuleHnNSF(sample_rate, harmonic_num)
 
         self.conv_pre = weight_norm(
@@ -270,57 +270,69 @@ class HiFiGANMRFGenerator(torch.nn.Module):
             )
         )
         self.upsamples = torch.nn.ModuleList()
+        self.upsampler = torch.nn.ModuleList()
         self.noise_convs = torch.nn.ModuleList()
 
+        # f0 input gets upscaled to full segment size, then downscaled back to match each upscale step
+        
+        # segment  upscaling mel           downscaling f0
+        # 36     = input z               = 17280 / (2 x 2 x 10 x 12)
+        # 432    = 36 x 12               = 17280 / (2 x 2 x 10)
+        # 4320   = 36 x 12 x 10          = 17280 / (2 x 2)
+        # 8640   = 36 x 12 x 10 x 2      = 17280 / (2)
+        # 17280  = 36 x 12 x 10 x 2 x 2  = 17280 / 1
+
         stride_f0s = [
-            math.prod(upsample_rates[i + 1 :]) if i + 1 < len(upsample_rates) else 1
-            for i in range(len(upsample_rates))
+            upsample_rates[1] * upsample_rates[2] * upsample_rates[3],
+                                upsample_rates[2] * upsample_rates[3],
+                                                    upsample_rates[3],
+                                                                    1,
         ]
 
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):
-            # handling odd upsampling rates
-            if u % 2 == 0:
-                # old method
-                padding = (k - u) // 2
-            else:
-                padding = u // 2 + u % 2
+            # 44k f0 downsampling is done using F.interpolate in the forward call due to 2.205 multiplier
+            if self.upp == 441:
+                self.upsampler.append(torch.nn.Upsample(scale_factor=u, mode="linear"))
 
-            self.upsamples.append(
-                weight_norm(
-                    torch.nn.ConvTranspose1d(
-                        upsample_initial_channel // (2**i),
-                        upsample_initial_channel // (2 ** (i + 1)),
-                        kernel_size=k,
-                        stride=u,
-                        padding=padding,
-                        output_padding=u % 2,
+                self.upsamples.append(
+                    weight_norm(
+                        torch.nn.Conv1d(
+                            upsample_initial_channel // (2**i),
+                            upsample_initial_channel // (2 ** (i + 1)),
+                            kernel_size=1,
+                        )
                     )
                 )
-            )
-            """ handling odd upsampling rates
-            #  s   k   p
-            # 40  80  20
-            # 32  64  16
-            #  4   8   2
-            #  2   3   1
-            # 63 125  31
-            #  9  17   4
-            #  3   5   1
-            #  1   1   0
-            """
-            stride = stride_f0s[i]
-            kernel = 1 if stride == 1 else stride * 2 - stride % 2
-            padding = 0 if stride == 1 else (kernel - stride) // 2
-
-            self.noise_convs.append(
-                torch.nn.Conv1d(
-                    1,
-                    upsample_initial_channel // (2 ** (i + 1)),
-                    kernel_size=kernel,
-                    stride=stride,
-                    padding=padding,
+                self.noise_convs.append(
+                    torch.nn.Conv1d(
+                        in_channels=1,
+                        out_channels=upsample_initial_channel // (2 ** (i + 1)),
+                        kernel_size = 1
+                    )
                 )
-            )
+            else:
+                self.upsampler.append(torch.nn.Identity())
+                self.upsamples.append(
+                    weight_norm(
+                        torch.nn.ConvTranspose1d(
+                            upsample_initial_channel // (2**i),
+                            upsample_initial_channel // (2 ** (i + 1)),
+                            kernel_size=k,
+                            stride=u,
+                            padding=(k - u) // 2,
+                        )
+                    )
+                )
+            
+                self.noise_convs.append(
+                    torch.nn.Conv1d(
+                        1,
+                        upsample_initial_channel // (2 ** (i + 1)),
+                        kernel_size=stride_f0s[i] * 2 if stride_f0s[i] > 1 else 1,
+                        stride=stride_f0s[i],
+                        padding=stride_f0s[i] // 2,
+                    )
+                )
         self.mrfs = torch.nn.ModuleList()
         for i in range(len(self.upsamples)):
             channel = upsample_initial_channel // (2 ** (i + 1))
@@ -351,16 +363,24 @@ class HiFiGANMRFGenerator(torch.nn.Module):
             # in-place call
             x += self.cond(g)
 
-        for ups, mrf, noise_conv in zip(self.upsamples, self.mrfs, self.noise_convs):
+        for ups, upr, mrf, noise_conv in zip(self.upsamples, self.upsampler, self.mrfs, self.noise_convs):
             # in-place call
             x = torch.nn.functional.leaky_relu_(x, LRELU_SLOPE)
 
             if self.training and self.checkpointing:
+                if self.upp == 441:
+                    x = upr(x)
                 x = checkpoint(ups, x, use_reentrant=False)
             else:
+                if self.upp == 441:
+                    x = upr(x)
                 x = ups(x)
 
-            x += noise_conv(har_source)
+            h = noise_conv(har_source)
+            if self.upp == 441:
+                h = torch.nn.functional.interpolate(h, size=x.shape[-1], mode="linear")
+            
+            x += h
 
             def mrf_sum(x, layers):
                 return sum(layer(x) for layer in layers) / self.num_kernels
