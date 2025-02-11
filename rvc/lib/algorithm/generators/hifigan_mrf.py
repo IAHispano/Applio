@@ -1,4 +1,3 @@
-import math
 from typing import Optional
 
 import numpy as np
@@ -274,7 +273,7 @@ class HiFiGANMRFGenerator(torch.nn.Module):
         self.noise_convs = torch.nn.ModuleList()
 
         # f0 input gets upscaled to full segment size, then downscaled back to match each upscale step
-        
+
         # segment  upscaling mel           downscaling f0
         # 36     = input z               = 17280 / (2 x 2 x 10 x 12)
         # 432    = 36 x 12               = 17280 / (2 x 2 x 10)
@@ -284,9 +283,9 @@ class HiFiGANMRFGenerator(torch.nn.Module):
 
         stride_f0s = [
             upsample_rates[1] * upsample_rates[2] * upsample_rates[3],
-                                upsample_rates[2] * upsample_rates[3],
-                                                    upsample_rates[3],
-                                                                    1,
+            upsample_rates[2] * upsample_rates[3],
+            upsample_rates[3],
+            1,
         ]
 
         for i, (u, k) in enumerate(zip(upsample_rates, upsample_kernel_sizes)):
@@ -307,7 +306,7 @@ class HiFiGANMRFGenerator(torch.nn.Module):
                     torch.nn.Conv1d(
                         in_channels=1,
                         out_channels=upsample_initial_channel // (2 ** (i + 1)),
-                        kernel_size = 1
+                        kernel_size=1,
                     )
                 )
             else:
@@ -323,7 +322,7 @@ class HiFiGANMRFGenerator(torch.nn.Module):
                         )
                     )
                 )
-            
+
                 self.noise_convs.append(
                     torch.nn.Conv1d(
                         1,
@@ -363,7 +362,9 @@ class HiFiGANMRFGenerator(torch.nn.Module):
             # in-place call
             x += self.cond(g)
 
-        for ups, upr, mrf, noise_conv in zip(self.upsamples, self.upsampler, self.mrfs, self.noise_convs):
+        for ups, upr, mrf, noise_conv in zip(
+            self.upsamples, self.upsampler, self.mrfs, self.noise_convs
+        ):
             # in-place call
             x = torch.nn.functional.leaky_relu_(x, LRELU_SLOPE)
 
@@ -379,7 +380,7 @@ class HiFiGANMRFGenerator(torch.nn.Module):
             h = noise_conv(har_source)
             if self.upp == 441:
                 h = torch.nn.functional.interpolate(h, size=x.shape[-1], mode="linear")
-            
+
             x += h
 
             def mrf_sum(x, layers):
