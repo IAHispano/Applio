@@ -131,14 +131,10 @@ def get_presets_data(pitch, index_rate, rms_mix_rate, protect):
     }
 
 
-def export_presets_button(
-    preset_name, pitch, index_rate, rms_mix_rate, protect
-):
+def export_presets_button(preset_name, pitch, index_rate, rms_mix_rate, protect):
     if preset_name:
         file_path = os.path.join(PRESETS_DIR, f"{preset_name}.json")
-        presets_data = get_presets_data(
-            pitch, index_rate, rms_mix_rate, protect
-        )
+        presets_data = get_presets_data(pitch, index_rate, rms_mix_rate, protect)
         with open(file_path, "w", encoding="utf-8") as json_file:
             json.dump(presets_data, json_file, ensure_ascii=False, indent=4)
         return "Export successful"
