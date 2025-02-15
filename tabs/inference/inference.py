@@ -94,7 +94,6 @@ def update_sliders(preset):
         values = json.load(json_file)
     return (
         values["pitch"],
-        values["filter_radius"],
         values["index_rate"],
         values["rms_mix_rate"],
         values["protect"],
@@ -123,10 +122,9 @@ def import_presets(file_path):
     return presets
 
 
-def get_presets_data(pitch, filter_radius, index_rate, rms_mix_rate, protect):
+def get_presets_data(pitch, index_rate, rms_mix_rate, protect):
     return {
         "pitch": pitch,
-        "filter_radius": filter_radius,
         "index_rate": index_rate,
         "rms_mix_rate": rms_mix_rate,
         "protect": protect,
@@ -134,12 +132,12 @@ def get_presets_data(pitch, filter_radius, index_rate, rms_mix_rate, protect):
 
 
 def export_presets_button(
-    preset_name, pitch, filter_radius, index_rate, rms_mix_rate, protect
+    preset_name, pitch, index_rate, rms_mix_rate, protect
 ):
     if preset_name:
         file_path = os.path.join(PRESETS_DIR, f"{preset_name}.json")
         presets_data = get_presets_data(
-            pitch, filter_radius, index_rate, rms_mix_rate, protect
+            pitch, index_rate, rms_mix_rate, protect
         )
         with open(file_path, "w", encoding="utf-8") as json_file:
             json.dump(presets_data, json_file, ensure_ascii=False, indent=4)
@@ -874,17 +872,6 @@ def inference_tab():
                     value=0,
                     interactive=True,
                 )
-                filter_radius = gr.Slider(
-                    minimum=0,
-                    maximum=7,
-                    label=i18n("Filter Radius"),
-                    info=i18n(
-                        "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
-                    ),
-                    value=3,
-                    step=1,
-                    interactive=True,
-                )
                 index_rate = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -920,7 +907,6 @@ def inference_tab():
                     inputs=preset_dropdown,
                     outputs=[
                         pitch,
-                        filter_radius,
                         index_rate,
                         rms_mix_rate,
                         protect,
@@ -931,7 +917,6 @@ def inference_tab():
                     inputs=[
                         preset_name_input,
                         pitch,
-                        filter_radius,
                         index_rate,
                         rms_mix_rate,
                         protect,
@@ -1518,17 +1503,6 @@ def inference_tab():
                     value=0,
                     interactive=True,
                 )
-                filter_radius_batch = gr.Slider(
-                    minimum=0,
-                    maximum=7,
-                    label=i18n("Filter Radius"),
-                    info=i18n(
-                        "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
-                    ),
-                    value=3,
-                    step=1,
-                    interactive=True,
-                )
                 index_rate_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -1564,7 +1538,6 @@ def inference_tab():
                     inputs=preset_dropdown,
                     outputs=[
                         pitch_batch,
-                        filter_radius_batch,
                         index_rate_batch,
                         rms_mix_rate_batch,
                         protect_batch,
@@ -1575,7 +1548,6 @@ def inference_tab():
                     inputs=[
                         preset_name_input,
                         pitch,
-                        filter_radius,
                         index_rate,
                         rms_mix_rate,
                         protect,
@@ -2053,7 +2025,6 @@ def inference_tab():
         inputs=[
             terms_checkbox,
             pitch,
-            filter_radius,
             index_rate,
             rms_mix_rate,
             protect,
@@ -2120,7 +2091,6 @@ def inference_tab():
         inputs=[
             terms_checkbox_batch,
             pitch_batch,
-            filter_radius_batch,
             index_rate_batch,
             rms_mix_rate_batch,
             protect_batch,

@@ -217,17 +217,6 @@ def tts_tab():
                 value=0,
                 interactive=True,
             )
-            filter_radius = gr.Slider(
-                minimum=0,
-                maximum=7,
-                label=i18n("Filter Radius"),
-                info=i18n(
-                    "If the number is greater than or equal to three, employing median filtering on the collected tone results has the potential to decrease respiration."
-                ),
-                value=3,
-                step=1,
-                interactive=True,
-            )
             index_rate = gr.Slider(
                 minimum=0,
                 maximum=1,
@@ -407,7 +396,6 @@ def tts_tab():
             tts_voice,
             tts_rate,
             pitch,
-            filter_radius,
             index_rate,
             rms_mix_rate,
             protect,
