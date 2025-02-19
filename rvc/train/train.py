@@ -100,6 +100,8 @@ training_file_path = os.path.join(experiment_dir, "training_data.json")
 avg_losses = {
     "gen_loss_queue": deque(maxlen=10),
     "disc_loss_queue": deque(maxlen=10),
+    "grad_d_50": deque(maxlen=50),
+    "grad_g_50": deque(maxlen=50),
     "disc_loss_50": deque(maxlen=50),
     "fm_loss_50": deque(maxlen=50),
     "kl_loss_50": deque(maxlen=50),
@@ -711,6 +713,8 @@ def train_and_evaluate(
             global_step += 1
 
             # queue for rolling losses over 50 steps
+            avg_losses["grad_d_50"].append(grad_norm_d.detach())
+            avg_losses["grad_g_50"].append(grad_norm_g.detach())
             avg_losses["disc_loss_50"].append(loss_disc.detach())
             avg_losses["fm_loss_50"].append(loss_fm.detach())
             avg_losses["kl_loss_50"].append(loss_kl.detach())
@@ -720,6 +724,12 @@ def train_and_evaluate(
             if rank == 0 and global_step % 50 == 0:
                 # logging rolling averages
                 scalar_dict = {
+                    "grad_avg_50/norm_d": torch.mean(
+                        torch.stack(list(avg_losses["grad_d_50"]))
+                    ),
+                    "grad_avg_50/norm_g": torch.mean(
+                        torch.stack(list(avg_losses["grad_g_50"]))
+                    ),
                     "loss_avg_50/d/total": torch.mean(
                         torch.stack(list(avg_losses["disc_loss_50"]))
                     ),
