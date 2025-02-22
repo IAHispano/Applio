@@ -27,7 +27,8 @@ def model_blender(name, path1, path2, ratio):
         cfg_f0 = ckpt1["f0"]
         cfg_version = ckpt1["version"]
         cfg_sr = ckpt1["sr"]
-
+        vocoder = ckpt1.get("vocoder", "HiFi-GAN")
+        
         if "model" in ckpt1:
             ckpt1 = extract(ckpt1)
         else:
@@ -59,6 +60,7 @@ def model_blender(name, path1, path2, ratio):
         opt["f0"] = cfg_f0
         opt["version"] = cfg_version
         opt["info"] = message
+        opt["vocoder"] = vocoder
 
         torch.save(opt, os.path.join("logs", f"{name}.pth"))
         print(message)
