@@ -321,7 +321,7 @@ def train_tab():
                     choices=["RVC", "Applio"],
                     value="RVC",
                     interactive=True,
-                    visible=True,
+                    visible=False, # to be visible once pretraineds are ready
                 )
             with gr.Column():
                 sampling_rate = gr.Radio(
@@ -339,7 +339,7 @@ def train_tab():
                     choices=["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"],
                     value="HiFi-GAN",
                     interactive=False,
-                    visible=True,
+                    visible=False,  # to be visible once pretraineds are ready
                 )
         with gr.Accordion(
             i18n("Advanced Settings"),
