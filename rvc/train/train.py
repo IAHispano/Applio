@@ -98,8 +98,6 @@ lowest_value = {"step": 0, "value": float("inf"), "epoch": 0}
 training_file_path = os.path.join(experiment_dir, "training_data.json")
 
 avg_losses = {
-    "gen_loss_queue": deque(maxlen=10),
-    "disc_loss_queue": deque(maxlen=10),
     "grad_d_50": deque(maxlen=50),
     "grad_g_50": deque(maxlen=50),
     "disc_loss_50": deque(maxlen=50),
@@ -613,9 +611,6 @@ def train_and_evaluate(
         consecutive_increases_gen = 0
         consecutive_increases_disc = 0
 
-    epoch_disc_sum = 0.0
-    epoch_gen_sum = 0.0
-
     net_g, net_d = nets
     optim_g, optim_d = optims
     train_loader = loaders[0] if loaders is not None else None
@@ -679,11 +674,10 @@ def train_and_evaluate(
             y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
             loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
             # Discriminator backward and update
-            epoch_disc_sum += loss_disc.item()
             optim_d.zero_grad()
             loss_disc.backward()
             grad_norm_d = torch.nn.utils.clip_grad_norm_(
-                net_d.parameters(), max_norm=1000.0
+                net_d.parameters(), max_norm=100.0
             )
             optim_d.step()
 
@@ -702,11 +696,10 @@ def train_and_evaluate(
                     "value": loss_gen_all,
                     "epoch": epoch,
                 }
-            epoch_gen_sum += loss_gen_all.item()
             optim_g.zero_grad()
             loss_gen_all.backward()
             grad_norm_g = torch.nn.utils.clip_grad_norm_(
-                net_g.parameters(), max_norm=1000.0
+                net_g.parameters(), max_norm=500.0
             )
             optim_g.step()
 
@@ -760,10 +753,6 @@ def train_and_evaluate(
 
     # Logging and checkpointing
     if rank == 0:
-
-        avg_losses["disc_loss_queue"].append(epoch_disc_sum / len(train_loader))
-        avg_losses["gen_loss_queue"].append(epoch_gen_sum / len(train_loader))
-
         # used for tensorboard chart - all/mel
         mel = spec_to_mel_torch(
             spec,
@@ -806,8 +795,6 @@ def train_and_evaluate(
             "loss/g/fm": loss_fm,
             "loss/g/mel": loss_mel,
             "loss/g/kl": loss_kl,
-            "loss_avg_epoch/disc": np.mean(avg_losses["disc_loss_queue"]),
-            "loss_avg_epoch/gen": np.mean(avg_losses["gen_loss_queue"]),
         }
 
         image_dict = {
