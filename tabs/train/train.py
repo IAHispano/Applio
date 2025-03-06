@@ -321,7 +321,7 @@ def train_tab():
                     choices=["RVC", "Applio"],
                     value="RVC",
                     interactive=True,
-                    visible=False, # to be visible once pretraineds are ready
+                    visible=False,  # to be visible once pretraineds are ready
                 )
             with gr.Column():
                 sampling_rate = gr.Radio(
