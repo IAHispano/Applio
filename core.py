@@ -1789,7 +1789,7 @@ def parse_arguments():
         "--sample_rate",
         type=int,
         help="Target sampling rate for the audio data.",
-        choices=[32000, 40000, 44100, 48000],
+        choices=[32000, 40000, 48000],
         required=True,
     )
     preprocess_parser.add_argument(

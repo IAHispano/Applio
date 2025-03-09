@@ -914,7 +914,7 @@ def train_tab():
             def toggle_architecture(architecture):
                 if architecture == "Applio":
                     return {
-                        "choices": ["32000", "40000", "44100", "48000"],
+                        "choices": ["32000", "40000", "48000"],
                         "__type__": "update",
                     }, {
                         "interactive": True,
