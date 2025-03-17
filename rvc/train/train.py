@@ -71,8 +71,12 @@ overtraining_threshold = int(sys.argv[13])
 cleanup = strtobool(sys.argv[14])
 vocoder = sys.argv[15]
 checkpointing = strtobool(sys.argv[16])
+# experimental settings
 randomized = True
-optimizer = "RAdam"  # "AdamW"
+optimizer = "AdamW"
+#optimizer = "RAdam"
+d_lr_coeff = 1.0
+g_lr_coeff = 1.0
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -430,13 +434,13 @@ def run(
 
     optim_g = optimizer(
         net_g.parameters(),
-        config.train.learning_rate,
+        config.train.learning_rate * g_lr_coeff,
         betas=config.train.betas,
         eps=config.train.eps,
     )
     optim_d = optimizer(
         net_d.parameters(),
-        config.train.learning_rate,
+        config.train.learning_rate * d_lr_coeff,
         betas=config.train.betas,
         eps=config.train.eps,
     )
@@ -676,9 +680,7 @@ def train_and_evaluate(
             # Discriminator backward and update
             optim_d.zero_grad()
             loss_disc.backward()
-            grad_norm_d = torch.nn.utils.clip_grad_norm_(
-                net_d.parameters(), max_norm=100.0
-            )
+            grad_norm_d = commons.grad_norm(net_d.parameters())
             optim_d.step()
 
             # Generator backward and update
@@ -698,16 +700,14 @@ def train_and_evaluate(
                 }
             optim_g.zero_grad()
             loss_gen_all.backward()
-            grad_norm_g = torch.nn.utils.clip_grad_norm_(
-                net_g.parameters(), max_norm=500.0
-            )
+            grad_norm_g = commons.grad_norm(net_g.parameters())
             optim_g.step()
 
             global_step += 1
 
             # queue for rolling losses over 50 steps
-            avg_losses["grad_d_50"].append(grad_norm_d.detach())
-            avg_losses["grad_g_50"].append(grad_norm_g.detach())
+            avg_losses["grad_d_50"].append(grad_norm_d)
+            avg_losses["grad_g_50"].append(grad_norm_g)
             avg_losses["disc_loss_50"].append(loss_disc.detach())
             avg_losses["fm_loss_50"].append(loss_fm.detach())
             avg_losses["kl_loss_50"].append(loss_kl.detach())
@@ -717,12 +717,8 @@ def train_and_evaluate(
             if rank == 0 and global_step % 50 == 0:
                 # logging rolling averages
                 scalar_dict = {
-                    "grad_avg_50/norm_d": torch.mean(
-                        torch.stack(list(avg_losses["grad_d_50"]))
-                    ),
-                    "grad_avg_50/norm_g": torch.mean(
-                        torch.stack(list(avg_losses["grad_g_50"]))
-                    ),
+                    "grad_avg_50/norm_d": sum(avg_losses["grad_d_50"])/len(avg_losses["grad_d_50"]),
+                    "grad_avg_50/norm_g": sum(avg_losses["grad_g_50"])/len(avg_losses["grad_g_50"]),
                     "loss_avg_50/d/total": torch.mean(
                         torch.stack(list(avg_losses["disc_loss_50"]))
                     ),
@@ -790,8 +786,8 @@ def train_and_evaluate(
             "loss/g/total": loss_gen_all,
             "loss/d/total": loss_disc,
             "learning_rate": lr,
-            "grad/norm_d": grad_norm_d.item(),
-            "grad/norm_g": grad_norm_g.item(),
+            "grad/norm_d": grad_norm_d,
+            "grad/norm_g": grad_norm_g,
             "loss/g/fm": loss_fm,
             "loss/g/mel": loss_mel,
             "loss/g/kl": loss_kl,
