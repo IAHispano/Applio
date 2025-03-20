@@ -61,7 +61,7 @@ json_url = "https://huggingface.co/IAHispano/Applio/raw/main/pretrains.json"
 
 def fetch_pretrained_data():
     pretraineds_custom_path = os.path.join(
-        "rvc", "models", "pretraineds", "pretraineds_custom"
+        "rvc", "models", "pretraineds", "custom"
     )
     os.makedirs(pretraineds_custom_path, exist_ok=True)
     try:
@@ -124,7 +124,7 @@ def download_pretrained_model(model, sample_rate):
     data = fetch_pretrained_data()
     paths = data[model][sample_rate]
     pretraineds_custom_path = os.path.join(
-        "rvc", "models", "pretraineds", "pretraineds_custom"
+        "rvc", "models", "pretraineds", "custom"
     )
     os.makedirs(pretraineds_custom_path, exist_ok=True)
 

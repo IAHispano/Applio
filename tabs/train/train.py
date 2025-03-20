@@ -40,7 +40,7 @@ sup_audioext = {
 
 # Custom Pretraineds
 pretraineds_custom_path = os.path.join(
-    now_dir, "rvc", "models", "pretraineds", "pretraineds_custom"
+    now_dir, "rvc", "models", "pretraineds", "custom"
 )
 
 pretraineds_custom_path_relative = os.path.relpath(pretraineds_custom_path, now_dir)
