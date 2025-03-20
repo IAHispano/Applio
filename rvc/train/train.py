@@ -74,7 +74,7 @@ checkpointing = strtobool(sys.argv[16])
 # experimental settings
 randomized = True
 optimizer = "AdamW"
-#optimizer = "RAdam"
+# optimizer = "RAdam"
 d_lr_coeff = 1.0
 g_lr_coeff = 1.0
 
@@ -717,8 +717,10 @@ def train_and_evaluate(
             if rank == 0 and global_step % 50 == 0:
                 # logging rolling averages
                 scalar_dict = {
-                    "grad_avg_50/norm_d": sum(avg_losses["grad_d_50"])/len(avg_losses["grad_d_50"]),
-                    "grad_avg_50/norm_g": sum(avg_losses["grad_g_50"])/len(avg_losses["grad_g_50"]),
+                    "grad_avg_50/norm_d": sum(avg_losses["grad_d_50"])
+                    / len(avg_losses["grad_d_50"]),
+                    "grad_avg_50/norm_g": sum(avg_losses["grad_g_50"])
+                    / len(avg_losses["grad_g_50"]),
                     "loss_avg_50/d/total": torch.mean(
                         torch.stack(list(avg_losses["disc_loss_50"]))
                     ),
