@@ -116,6 +116,7 @@ def sequence_mask(length: torch.Tensor, max_length: Optional[int] = None):
     x = torch.arange(max_length, dtype=length.dtype, device=length.device)
     return x.unsqueeze(0) < length.unsqueeze(1)
 
+
 def grad_norm(parameters, norm_type: float = 2.0):
     """
     Calculates norm of parameter gradients
@@ -128,10 +129,10 @@ def grad_norm(parameters, norm_type: float = 2.0):
         parameters = [parameters]
 
     parameters = [p for p in parameters if p.grad is not None]
-    
+
     if not parameters:
         return 0.0
-    
+
     return torch.linalg.vector_norm(
-            torch.stack([p.grad.norm(norm_type) for p in parameters]), ord=norm_type
-        ).item()
+        torch.stack([p.grad.norm(norm_type) for p in parameters]), ord=norm_type
+    ).item()
