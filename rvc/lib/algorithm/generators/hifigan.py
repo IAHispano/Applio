@@ -24,6 +24,7 @@ class HiFiGANGenerator(torch.nn.Module):
         upsample_initial_channel (int): Number of output channels from the initial convolutional layer, which is also the input to the first upsampling layer.
         upsample_kernel_sizes (list): List of kernel sizes for the transposed convolutional layers used for upsampling.
         gin_channels (int, optional): Number of input channels for the global conditioning. If 0, no global conditioning is used. Defaults to 0.
+        checkpointing (bool, optional): Whether to use gradient checkpointing to save memory. Defaults to False.
     """
 
     def __init__(
@@ -35,6 +36,7 @@ class HiFiGANGenerator(torch.nn.Module):
         upsample_initial_channel: int,
         upsample_kernel_sizes: list,
         gin_channels: int = 0,
+        checkpointing: bool = False,
     ):
         super(HiFiGANGenerator, self).__init__()
         self.num_kernels = len(resblock_kernel_sizes)
@@ -42,6 +44,7 @@ class HiFiGANGenerator(torch.nn.Module):
         self.conv_pre = torch.nn.Conv1d(
             initial_channel, upsample_initial_channel, 7, 1, padding=3
         )
+        self.checkpointing = checkpointing
 
         self.ups = torch.nn.ModuleList()
         self.resblocks = torch.nn.ModuleList()
@@ -84,10 +87,20 @@ class HiFiGANGenerator(torch.nn.Module):
             x = self.ups[i](x)
             xs = None
             for j in range(self.num_kernels):
-                if xs is None:
-                    xs = self.resblocks[i * self.num_kernels + j](x)
+                if self.checkpointing and self.training:
+                    if xs is None:
+                        xs = torch.utils.checkpoint.checkpoint(
+                            self.resblocks[i * self.num_kernels + j], x
+                        )
+                    else:
+                        xs += torch.utils.checkpoint.checkpoint(
+                            self.resblocks[i * self.num_kernels + j], x
+                        )
                 else:
-                    xs += self.resblocks[i * self.num_kernels + j](x)
+                    if xs is None:
+                        xs = self.resblocks[i * self.num_kernels + j](x)
+                    else:
+                        xs += self.resblocks[i * self.num_kernels + j](x)
             x = xs / self.num_kernels
         # in-place call
         x = torch.nn.functional.leaky_relu_(x)
