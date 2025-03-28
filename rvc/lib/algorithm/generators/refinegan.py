@@ -4,11 +4,10 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch.nn.utils.parametrizations import weight_norm
-from torch.nn.utils.parametrize import remove_parametrizations
+from torch.nn.utils import remove_weight_norm
 from torch.utils.checkpoint import checkpoint
 
-from rvc.lib.algorithm.commons import get_padding
-
+from rvc.lib.algorithm.commons import init_weights, get_padding       
 
 class ResBlock(nn.Module):
     """
@@ -27,79 +26,63 @@ class ResBlock(nn.Module):
 
     def __init__(
         self,
-        *,
-        in_channels: int,
-        out_channels: int,
+        channels: int,
         kernel_size: int = 7,
         dilation: tuple[int] = (1, 3, 5),
         leaky_relu_slope: float = 0.2,
     ):
-        super(ResBlock, self).__init__()
+        super().__init__()
 
         self.leaky_relu_slope = leaky_relu_slope
-        self.in_channels = in_channels
-        self.out_channels = out_channels
 
         self.convs1 = nn.ModuleList(
             [
                 weight_norm(
                     nn.Conv1d(
-                        in_channels=in_channels if idx == 0 else out_channels,
-                        out_channels=out_channels,
-                        kernel_size=kernel_size,
+                        channels,
+                        channels,
+                        kernel_size,
                         stride=1,
                         dilation=d,
                         padding=get_padding(kernel_size, d),
                     )
                 )
-                for idx, d in enumerate(dilation)
+                for d in dilation
             ]
         )
-        self.convs1.apply(self.init_weights)
+        self.convs1.apply(init_weights)
 
         self.convs2 = nn.ModuleList(
             [
                 weight_norm(
                     nn.Conv1d(
-                        in_channels=out_channels,
-                        out_channels=out_channels,
-                        kernel_size=kernel_size,
+                        channels,
+                        channels,
+                        kernel_size,
                         stride=1,
-                        dilation=d,
-                        padding=get_padding(kernel_size, d),
+                        dilation=1,
+                        padding=get_padding(kernel_size, 1),
                     )
                 )
-                for idx, d in enumerate(dilation)
+                for d in dilation
             ]
         )
-        self.convs2.apply(self.init_weights)
+        self.convs2.apply(init_weights)
 
     def forward(self, x: torch.Tensor):
-        for idx, (c1, c2) in enumerate(zip(self.convs1, self.convs2)):
-            # new tensor
+        for c1, c2 in zip(self.convs1, self.convs2):
             xt = F.leaky_relu(x, self.leaky_relu_slope)
             xt = c1(xt)
-            # in-place call
-            xt = F.leaky_relu_(xt, self.leaky_relu_slope)
+            xt = F.leaky_relu(xt, self.leaky_relu_slope)
             xt = c2(xt)
-
-            if idx != 0 or self.in_channels == self.out_channels:
-                x = xt + x
-            else:
-                x = xt
+            x = xt + x
 
         return x
 
-    def remove_parametrizations(self):
+    def remove_weight_norm(self):
         for c1, c2 in zip(self.convs1, self.convs2):
-            remove_parametrizations(c1)
-            remove_parametrizations(c2)
-
-    def init_weights(self, m):
-        if type(m) == nn.Conv1d:
-            m.weight.data.normal_(0, 0.01)
-            m.bias.data.fill_(0.0)
-
+            remove_weight_norm(c1)
+            remove_weight_norm(c2)
 
 class AdaIN(nn.Module):
     """
@@ -122,7 +105,7 @@ class AdaIN(nn.Module):
 
         self.weight = nn.Parameter(torch.ones(channels))
         # safe to use in-place as it is used on a new x+gaussian tensor
-        self.activation = nn.LeakyReLU(leaky_relu_slope, inplace=True)
+        self.activation = nn.LeakyReLU(leaky_relu_slope)
 
     def forward(self, x: torch.Tensor):
         gaussian = torch.randn_like(x) * self.weight[None, :, None]
@@ -164,13 +147,14 @@ class ParallelResBlock(nn.Module):
             padding=3,
         )
 
+        self.input_conv.apply(init_weights)
+
         self.blocks = nn.ModuleList(
             [
                 nn.Sequential(
                     AdaIN(channels=out_channels),
                     ResBlock(
-                        in_channels=out_channels,
-                        out_channels=out_channels,
+                        out_channels,
                         kernel_size=kernel_size,
                         dilation=dilation,
                         leaky_relu_slope=leaky_relu_slope,
@@ -183,14 +167,12 @@ class ParallelResBlock(nn.Module):
 
     def forward(self, x: torch.Tensor):
         x = self.input_conv(x)
+        return torch.stack([block(x) for block in self.blocks], dim=0).mean(dim=0)
 
-        results = [block(x) for block in self.blocks]
-
-        return torch.mean(torch.stack(results), dim=0)
-
-    def remove_parametrizations(self):
+    def remove_weight_norm(self):
+        remove_weight_norm(self.input_conv)
         for block in self.blocks:
-            block[1].remove_parametrizations()
+            block[1].remove_weight_norm()
 
 
 class SineGenerator(nn.Module):
@@ -276,8 +258,7 @@ class SineGenerator(nn.Module):
             noise = noise_amp * torch.randn_like(sine_waves)
 
             sine_waves = sine_waves * uv + noise
-        # correct DC offset
-        sine_waves = sine_waves - sine_waves.mean(dim=1, keepdim=True)
+          
         # merge with grad
         return self.merge(sine_waves)
 
@@ -305,17 +286,17 @@ class RefineGANGenerator(nn.Module):
         self,
         *,
         sample_rate: int = 44100,
-        downsample_rates: tuple[int] = (2, 2, 8, 8),
+        downsample_rates: tuple[int] = (2, 2, 8, 8),    # unused
         upsample_rates: tuple[int] = (8, 8, 2, 2),
         leaky_relu_slope: float = 0.2,
         num_mels: int = 128,
-        start_channels: int = 16,
+        start_channels: int = 16,                       # unused
         gin_channels: int = 256,
         checkpointing: bool = False,
         upsample_initial_channel=512,
     ):
         super().__init__()
-
+        print('v2')
         self.upsample_rates = upsample_rates
         self.leaky_relu_slope = leaky_relu_slope
         self.checkpointing = checkpointing
@@ -325,14 +306,7 @@ class RefineGANGenerator(nn.Module):
 
         # expanded f0 sinegen -> match mel_conv
         self.pre_conv = weight_norm(
-            nn.Conv1d(
-                in_channels=1,
-                out_channels=upsample_initial_channel // 2,
-                kernel_size=7,
-                stride=1,
-                padding=3,
-                bias=False,
-            )
+            nn.Conv1d(1, upsample_initial_channel // 2, 7, 1, padding=3, )
         )
 
         stride_f0s = [
@@ -352,49 +326,27 @@ class RefineGANGenerator(nn.Module):
             # f0 input gets upscaled to full segment size, then downscaled back to match each upscale step
 
             self.downsample_blocks.append(
-                nn.Conv1d(
-                    in_channels=1,
-                    out_channels=channels // 2 ** (i + 2),
-                    kernel_size=kernel,
-                    stride=stride,
-                    padding=padding,
+                weight_norm(
+                    nn.Conv1d(1, channels // 2 ** (i + 2), kernel, stride, padding=padding,)
                 )
             )
 
         self.mel_conv = weight_norm(
-            nn.Conv1d(
-                in_channels=num_mels,
-                out_channels=channels // 2,
-                kernel_size=7,
-                stride=1,
-                padding=3,
-            )
+            nn.Conv1d(num_mels, channels // 2, 7, 1, padding=3,)
         )
+        
+        self.mel_conv.apply(init_weights)
 
         if gin_channels != 0:
             self.cond = nn.Conv1d(256, channels // 2, 1)
 
         self.upsample_blocks = nn.ModuleList([])
         self.upsample_conv_blocks = nn.ModuleList([])
-        self.filters = nn.ModuleList([])
 
         for rate in upsample_rates:
             new_channels = channels // 2
 
             self.upsample_blocks.append(nn.Upsample(scale_factor=rate, mode="linear"))
-
-            low_pass = nn.Conv1d(
-                channels,
-                channels,
-                kernel_size=15,
-                padding=7,
-                groups=channels,
-                bias=False,
-            )
-
-            low_pass.weight.data.fill_(1.0 / 15)
-
-            self.filters.append(low_pass)
 
             self.upsample_conv_blocks.append(
                 ParallelResBlock(
@@ -409,14 +361,10 @@ class RefineGANGenerator(nn.Module):
             channels = new_channels
 
         self.conv_post = weight_norm(
-            nn.Conv1d(
-                in_channels=channels,
-                out_channels=1,
-                kernel_size=7,
-                stride=1,
-                padding=3,
-            )
+            nn.Conv1d(channels, 1, 7, 1, padding=3, bias=False)
         )
+        self.conv_post.apply(init_weights)
+        
 
     def forward(self, mel: torch.Tensor, f0: torch.Tensor, g: torch.Tensor = None):
 
@@ -432,44 +380,41 @@ class RefineGANGenerator(nn.Module):
 
         if g is not None:
             # adding expanded speaker embedding
-            mel += self.cond(g)
+            mel = mel + self.cond(g)
         x = torch.cat([mel, x], dim=1)
 
-        for ups, res, down, flt in zip(
+        for ups, res, down in zip(
             self.upsample_blocks,
             self.upsample_conv_blocks,
             self.downsample_blocks,
-            self.filters,
         ):
             # in-place call
-            x = F.leaky_relu_(x, self.leaky_relu_slope)
+            x = F.leaky_relu(x, self.leaky_relu_slope)
 
             if self.training and self.checkpointing:
                 x = checkpoint(ups, x, use_reentrant=False)
-                x = checkpoint(flt, x, use_reentrant=False)
                 x = torch.cat([x, down(har_source)], dim=1)
                 x = checkpoint(res, x, use_reentrant=False)
             else:
                 x = ups(x)
-                x = flt(x)
                 x = torch.cat([x, down(har_source)], dim=1)
                 x = res(x)
 
         # in-place call
-        x = F.leaky_relu_(x, self.leaky_relu_slope)
+        x = F.leaky_relu(x, self.leaky_relu_slope)
         x = self.conv_post(x)
         # in-place call
-        x = torch.tanh_(x)
+        x = torch.tanh(x)
 
         return x
 
-    def remove_parametrizations(self):
-        remove_parametrizations(self.source_conv)
-        remove_parametrizations(self.mel_conv)
-        remove_parametrizations(self.conv_post)
+    def remove_weight_norm(self):
+        remove_weight_norm(self.pre_conv)
+        remove_weight_norm(self.mel_conv)
+        remove_weight_norm(self.conv_post)
 
         for block in self.downsample_blocks:
-            block[1].remove_parametrizations()
+            block.remove_weight_norm()
 
         for block in self.upsample_conv_blocks:
-            block.remove_parametrizations()
+            block.remove_weight_norm()
