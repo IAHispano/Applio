@@ -475,9 +475,13 @@ class Pipeline:
                     feats = feats.to(feats0.dtype)
             else:
                 pitch, pitchf = None, None
+                
             p_len = torch.tensor([p_len], device=self.device).long()
+            
+            pitchf_input = pitchf.float() if pitchf is not None else None
+            
             audio1 = (
-                (net_g.infer(feats.float(), p_len, pitch, pitchf.float(), sid)[0][0, 0])
+                (net_g.infer(feats.float(), p_len, pitch, pitchf_input, sid)[0][0, 0])
                 .data.cpu()
                 .float()
                 .numpy()
