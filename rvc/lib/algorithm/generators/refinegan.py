@@ -296,7 +296,6 @@ class RefineGANGenerator(nn.Module):
         upsample_initial_channel=512,
     ):
         super().__init__()
-        print('v2')
         self.upsample_rates = upsample_rates
         self.leaky_relu_slope = leaky_relu_slope
         self.checkpointing = checkpointing
@@ -388,7 +387,6 @@ class RefineGANGenerator(nn.Module):
             self.upsample_conv_blocks,
             self.downsample_blocks,
         ):
-            # in-place call
             x = F.leaky_relu(x, self.leaky_relu_slope)
 
             if self.training and self.checkpointing:
@@ -400,10 +398,8 @@ class RefineGANGenerator(nn.Module):
                 x = torch.cat([x, down(har_source)], dim=1)
                 x = res(x)
 
-        # in-place call
         x = F.leaky_relu(x, self.leaky_relu_slope)
         x = self.conv_post(x)
-        # in-place call
         x = torch.tanh(x)
 
         return x
