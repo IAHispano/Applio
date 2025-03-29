@@ -7,7 +7,8 @@ from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils import remove_weight_norm
 from torch.utils.checkpoint import checkpoint
 
-from rvc.lib.algorithm.commons import init_weights, get_padding       
+from rvc.lib.algorithm.commons import init_weights, get_padding
+
 
 class ResBlock(nn.Module):
     """
@@ -83,6 +84,7 @@ class ResBlock(nn.Module):
         for c1, c2 in zip(self.convs1, self.convs2):
             remove_weight_norm(c1)
             remove_weight_norm(c2)
+
 
 class AdaIN(nn.Module):
     """
@@ -258,7 +260,7 @@ class SineGenerator(nn.Module):
             noise = noise_amp * torch.randn_like(sine_waves)
 
             sine_waves = sine_waves * uv + noise
-          
+
         # merge with grad
         return self.merge(sine_waves)
 
@@ -286,11 +288,11 @@ class RefineGANGenerator(nn.Module):
         self,
         *,
         sample_rate: int = 44100,
-        downsample_rates: tuple[int] = (2, 2, 8, 8),    # unused
+        downsample_rates: tuple[int] = (2, 2, 8, 8),  # unused
         upsample_rates: tuple[int] = (8, 8, 2, 2),
         leaky_relu_slope: float = 0.2,
         num_mels: int = 128,
-        start_channels: int = 16,                       # unused
+        start_channels: int = 16,  # unused
         gin_channels: int = 256,
         checkpointing: bool = False,
         upsample_initial_channel=512,
@@ -305,7 +307,13 @@ class RefineGANGenerator(nn.Module):
 
         # expanded f0 sinegen -> match mel_conv
         self.pre_conv = weight_norm(
-            nn.Conv1d(1, upsample_initial_channel // 2, 7, 1, padding=3, )
+            nn.Conv1d(
+                1,
+                upsample_initial_channel // 2,
+                7,
+                1,
+                padding=3,
+            )
         )
 
         stride_f0s = [
@@ -326,14 +334,26 @@ class RefineGANGenerator(nn.Module):
 
             self.downsample_blocks.append(
                 weight_norm(
-                    nn.Conv1d(1, channels // 2 ** (i + 2), kernel, stride, padding=padding,)
+                    nn.Conv1d(
+                        1,
+                        channels // 2 ** (i + 2),
+                        kernel,
+                        stride,
+                        padding=padding,
+                    )
                 )
             )
 
         self.mel_conv = weight_norm(
-            nn.Conv1d(num_mels, channels // 2, 7, 1, padding=3,)
+            nn.Conv1d(
+                num_mels,
+                channels // 2,
+                7,
+                1,
+                padding=3,
+            )
         )
-        
+
         self.mel_conv.apply(init_weights)
 
         if gin_channels != 0:
@@ -363,7 +383,6 @@ class RefineGANGenerator(nn.Module):
             nn.Conv1d(channels, 1, 7, 1, padding=3, bias=False)
         )
         self.conv_post.apply(init_weights)
-        
 
     def forward(self, mel: torch.Tensor, f0: torch.Tensor, g: torch.Tensor = None):
 
