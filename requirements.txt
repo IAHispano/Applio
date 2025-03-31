@@ -33,7 +33,7 @@ transformers==4.44.2
 # Visualization and UI
 matplotlib==3.7.2
 tensorboard
-gradio==5.14.0
+gradio==5.23.1
 
 # Miscellaneous utilities
 certifi>=2023.07.22; sys_platform == 'darwin'  

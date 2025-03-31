@@ -43,11 +43,9 @@ class MRFLayer(torch.nn.Module):
         )
 
     def forward(self, x: torch.Tensor):
-        # new tensor
         y = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
         y = self.conv1(y)
-        # in-place call
-        y = torch.nn.functional.leaky_relu_(y, LRELU_SLOPE)
+        y = torch.nn.functional.leaky_relu(y, LRELU_SLOPE)
         y = self.conv2(y)
         return x + y
 
@@ -344,36 +342,31 @@ class HiFiGANMRFGenerator(torch.nn.Module):
         f0 = self.f0_upsample(f0[:, None, :]).transpose(-1, -2)
         har_source, _, _ = self.m_source(f0)
         har_source = har_source.transpose(-1, -2)
-        # new tensor
         x = self.conv_pre(x)
 
         if g is not None:
-            # in-place call
-            x += self.cond(g)
+            x = x + self.cond(g)
 
         for ups, mrf, noise_conv in zip(self.upsamples, self.mrfs, self.noise_convs):
-            # in-place call
-            x = torch.nn.functional.leaky_relu_(x, LRELU_SLOPE)
+            x = torch.nn.functional.leaky_relu(x, LRELU_SLOPE)
 
             if self.training and self.checkpointing:
                 x = checkpoint(ups, x, use_reentrant=False)
+                x = x + noise_conv(har_source)
+                xs = sum([
+                    checkpoint(layer, x, use_reentrant=False)
+                    for layer in mrf])
             else:
                 x = ups(x)
+                x = x + noise_conv(har_source)
+                xs = sum([
+                    layer(x)
+                    for layer in mrf])
+            x = xs / self.num_kernels
 
-            x += noise_conv(har_source)
+        x = torch.nn.functional.leaky_relu(x)
+        x = torch.tanh(self.conv_post(x))
 
-            def mrf_sum(x, layers):
-                return sum(layer(x) for layer in layers) / self.num_kernels
-
-            if self.training and self.checkpointing:
-                x = checkpoint(mrf_sum, x, mrf, use_reentrant=False)
-            else:
-                x = mrf_sum(x, mrf)
-        # in-place call
-        x = torch.nn.functional.leaky_relu_(x)
-        x = self.conv_post(x)
-        # in-place call
-        x = torch.tanh_(x)
         return x
 
     def remove_weight_norm(self):

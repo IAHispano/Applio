@@ -179,37 +179,29 @@ class HiFiGANNSFGenerator(torch.nn.Module):
         x = self.conv_pre(x)
 
         if g is not None:
-            # in-place call
-            x += self.cond(g)
+            x = x + self.cond(g)
 
         for i, (ups, noise_convs) in enumerate(zip(self.ups, self.noise_convs)):
-            # in-place call
-            x = torch.nn.functional.leaky_relu_(x, self.lrelu_slope)
-
+            x = torch.nn.functional.leaky_relu(x, self.lrelu_slope)
             # Apply upsampling layer
             if self.training and self.checkpointing:
                 x = checkpoint(ups, x, use_reentrant=False)
+                x = x + noise_convs(har_source)
+                xs = sum([
+                    checkpoint(resblock, x, use_reentrant=False)
+                    for j, resblock in enumerate(self.resblocks)
+                    if j in range(i * self.num_kernels, (i + 1) * self.num_kernels)])
             else:
                 x = ups(x)
+                x = x + noise_convs(har_source)
+                xs = sum([
+                    resblock(x)
+                    for j, resblock in enumerate(self.resblocks)
+                    if j in range(i * self.num_kernels, (i + 1) * self.num_kernels)])
+            x = xs / self.num_kernels
 
-            # Add noise excitation
-            x += noise_convs(har_source)
-
-            # Apply residual blocks
-            def resblock_forward(x, blocks):
-                return sum(block(x) for block in blocks) / len(blocks)
-
-            blocks = self.resblocks[i * self.num_kernels : (i + 1) * self.num_kernels]
-
-            # Checkpoint or regular computation for ResBlocks
-            if self.training and self.checkpointing:
-                x = checkpoint(resblock_forward, x, blocks, use_reentrant=False)
-            else:
-                x = resblock_forward(x, blocks)
-        # in-place call
-        x = torch.nn.functional.leaky_relu_(x)
-        # in-place call
-        x = torch.tanh_(self.conv_post(x))
+        x = torch.nn.functional.leaky_relu(x)
+        x = torch.tanh(self.conv_post(x))
 
         return x
 
