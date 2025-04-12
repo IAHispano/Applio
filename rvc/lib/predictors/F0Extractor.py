@@ -97,6 +97,7 @@ class F0Extractor:
         plt.ylabel("F0 (cents)")
         plt.show()
 
+    @staticmethod
     def hz_to_cents(F, F_ref=55.0):
         F_temp = np.array(F).astype(float)
         F_temp[F_temp == 0] = np.nan
