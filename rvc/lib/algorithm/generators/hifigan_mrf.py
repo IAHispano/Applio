@@ -353,15 +353,11 @@ class HiFiGANMRFGenerator(torch.nn.Module):
             if self.training and self.checkpointing:
                 x = checkpoint(ups, x, use_reentrant=False)
                 x = x + noise_conv(har_source)
-                xs = sum([
-                    checkpoint(layer, x, use_reentrant=False)
-                    for layer in mrf])
+                xs = sum([checkpoint(layer, x, use_reentrant=False) for layer in mrf])
             else:
                 x = ups(x)
                 x = x + noise_conv(har_source)
-                xs = sum([
-                    layer(x)
-                    for layer in mrf])
+                xs = sum([layer(x) for layer in mrf])
             x = xs / self.num_kernels
 
         x = torch.nn.functional.leaky_relu(x)

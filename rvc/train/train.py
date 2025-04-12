@@ -997,7 +997,7 @@ def train_and_evaluate(
                 pid_data = json.load(pid_file)
             with open(pid_file_path, "w") as pid_file:
                 pid_data.pop("process_pids", None)
-                json.dump(pid_data, pid_file, indent=4)            
+                json.dump(pid_data, pid_file, indent=4)
             os._exit(2333333)
 
         with torch.no_grad():
