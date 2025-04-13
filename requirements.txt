@@ -21,7 +21,7 @@ soxr
 # Machine learning and deep learning
 omegaconf>=2.0.6; sys_platform == 'darwin' 
 numba; sys_platform == 'linux'
-numba==0.57.0; sys_platform == 'darwin' or sys_platform == 'win32'
+numba==0.61.0; sys_platform == 'darwin' or sys_platform == 'win32'
 torch==2.3.1
 torchaudio==2.3.1
 torchvision==0.18.1
