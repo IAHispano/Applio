@@ -2,7 +2,7 @@
 pip>=23.3; sys_platform == 'darwin'
 wheel; sys_platform == 'darwin'
 PyYAML; sys_platform == 'darwin'
-numpy==1.23.5
+numpy==1.26.4
 requests>=2.31.0,<2.32.0
 tqdm
 wget
