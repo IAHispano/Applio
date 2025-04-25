@@ -122,7 +122,7 @@ create_venv() {
     fi
 
     log_message "Installing PyTorch..."
-    python -m pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --upgrade --index-url https://download.pytorch.org/whl/cu121
+    python -m pip install torch==2.7.0 torchvision torchaudio==2.7.0 --upgrade --index-url https://download.pytorch.org/whl/cu128
 
     finish
 }
