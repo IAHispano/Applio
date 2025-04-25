@@ -975,9 +975,7 @@ def train_and_evaluate(
                 else net_g.state_dict()
             )
             for m in model_add:
-                if os.path.exists(m):
-                    print(f"{m} already exists, skipping.")
-                else:
+                if not os.path.exists(m):
                     extract_model(
                         ckpt=ckpt,
                         sr=sample_rate,
