@@ -2,57 +2,48 @@ import os
 import sys
 
 os.environ["USE_LIBUV"] = "0" if sys.platform == "win32" else "1"
+import datetime
 import glob
 import json
-import torch
-import datetime
-
 from collections import deque
 from distutils.util import strtobool
 from random import randint, shuffle
 from time import time as ttime
-from tqdm import tqdm
-import numpy as np
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.tensorboard import SummaryWriter
-from torch.cuda.amp import GradScaler, autocast
-from torch.utils.data import DataLoader
-from torch.nn import functional as F
 
+import numpy as np
+import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
+from torch.cuda.amp import GradScaler, autocast
+from torch.nn import functional as F
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
 
-# Zluda hijack
-import rvc.lib.zluda
-
-from utils import (
-    HParams,
-    plot_spectrogram_to_numpy,
-    summarize,
-    load_checkpoint,
-    save_checkpoint,
-    latest_checkpoint_path,
-    load_wav_to_torch,
-)
-
-from losses import (
-    discriminator_loss,
-    feature_loss,
-    generator_loss,
-    kl_loss,
-)
+from losses import discriminator_loss, feature_loss, generator_loss, kl_loss
 from mel_processing import (
+    MultiScaleMelSpectrogramLoss,
     mel_spectrogram_torch,
     spec_to_mel_torch,
-    MultiScaleMelSpectrogramLoss,
+)
+from utils import (
+    HParams,
+    latest_checkpoint_path,
+    load_checkpoint,
+    load_wav_to_torch,
+    plot_spectrogram_to_numpy,
+    save_checkpoint,
+    summarize,
 )
 
-from rvc.train.process.extract_model import extract_model
-
+# Zluda hijack
+import rvc.lib.zluda
 from rvc.lib.algorithm import commons
+from rvc.train.process.extract_model import extract_model
 
 # Parse command line arguments
 model_name = sys.argv[1]
@@ -83,9 +74,16 @@ experiment_dir = os.path.join(current_dir, "logs", model_name)
 config_save_path = os.path.join(experiment_dir, "config.json")
 dataset_path = os.path.join(experiment_dir, "sliced_audios")
 
-with open(config_save_path, "r") as f:
-    config = json.load(f)
-config = HParams(**config)
+try:
+    with open(config_save_path, "r") as f:
+        config = json.load(f)
+    config = HParams(**config)
+except FileNotFoundError:
+    print(
+        f"Config file not found at {config_save_path}. Did you run preprocessing and feature extraction steps?"
+    )
+    sys.exit(1)
+
 config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
 
 torch.backends.cudnn.deterministic = False

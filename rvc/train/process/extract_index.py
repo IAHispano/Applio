@@ -1,9 +1,10 @@
 import os
 import sys
+from multiprocessing import cpu_count
+
 import faiss
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
-from multiprocessing import cpu_count
 
 # Parse command line arguments
 exp_dir = str(sys.argv[1])
@@ -12,6 +13,12 @@ index_algorithm = str(sys.argv[2])
 try:
     feature_dir = os.path.join(exp_dir, f"extracted")
     model_name = os.path.basename(exp_dir)
+
+    if not os.path.exists(feature_dir):
+        print(
+            f"Feature to generate index file not found at {feature_dir}. Did you run preprocessing and feature extraction steps?"
+        )
+        sys.exit(1)
 
     index_filename_added = f"{model_name}.index"
     index_filepath_added = os.path.join(exp_dir, index_filename_added)
