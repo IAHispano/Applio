@@ -27,10 +27,10 @@ mp.set_start_method("spawn", force=True)
 
 
 class FeatureInput:
-    def __init__(self, f0_method="rmvpe", sample_rate=16000, device="cpu"):
+    def __init__(self, f0_method="rmvpe", device="cpu"):
         self.fs = sample_rate
-        self.hop_size = 160
-        self.sample_rate = 16000
+        self.hop_size = 160         # default
+        self.sample_rate = 16000    # default
         self.f0_bin = 256
         self.f0_max = 1100.0
         self.f0_min = 50.0
@@ -46,7 +46,6 @@ class FeatureInput:
         self.f0_method = f0_method
         
     def compute_f0(self, x, p_len=None):
-        print('method', self.f0_method)
         if self.f0_method == "crepe":
             f0 = self.model.get_f0(x, self.f0_min, self.f0_max, p_len, "full")
         elif self.f0_method == "crepe-tiny":
@@ -55,7 +54,6 @@ class FeatureInput:
             f0 = self.model.get_f0(x, filter_radius=0.03)
         elif self.f0_method == "fcpe":
             f0 = self.model.get_f0(x, p_len, filter_radius = 0.006)
-        print(f0.shape)
         return f0
 
     def coarse_f0(self, f0):
@@ -87,7 +85,6 @@ class FeatureInput:
             )
 
 def process_files(files, f0_method, device, threads):
-    print('creating feature extractor', f0_method, device, threads)
     fe = FeatureInput(f0_method=f0_method, device=device)    
     with tqdm.tqdm(total=len(files), leave=True) as pbar:
         for file_info in files:
