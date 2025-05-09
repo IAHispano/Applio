@@ -14,7 +14,6 @@ import numpy as np
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
-from torch.cuda.amp import GradScaler, autocast
 from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
@@ -68,6 +67,7 @@ optimizer = "AdamW"
 # optimizer = "RAdam"
 d_lr_coeff = 1.0
 g_lr_coeff = 1.0
+multiscale_mel_loss = True
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -442,8 +442,12 @@ def run(
         betas=config.train.betas,
         eps=config.train.eps,
     )
-
-    fn_mel_loss = MultiScaleMelSpectrogramLoss(sample_rate=sample_rate)
+    if multiscale_mel_loss:
+        fn_mel_loss = MultiScaleMelSpectrogramLoss(sample_rate=sample_rate)
+        print('Using Multi-Scale Mel loss function')
+    else:
+        fn_mel_loss = torch.nn.L1Loss()
+        print('Using Single-Scale Mel loss function')
 
     # Wrap models with DDP for multi-gpu processing
     if n_gpus > 1 and device.type == "cuda":
@@ -683,8 +687,30 @@ def train_and_evaluate(
 
             # Generator backward and update
             _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
-
-            loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
+            if multiscale_mel_loss:
+                loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
+            else:
+                wave_mel = mel_spectrogram_torch(
+                    wave.float().squeeze(1),
+                    config.data.filter_length,
+                    config.data.n_mel_channels,
+                    config.data.sample_rate,
+                    config.data.hop_length,
+                    config.data.win_length,
+                    config.data.mel_fmin,
+                    config.data.mel_fmax,
+                )
+                y_hat_mel = mel_spectrogram_torch(
+                    y_hat.float().squeeze(1),
+                    config.data.filter_length,
+                    config.data.n_mel_channels,
+                    config.data.sample_rate,
+                    config.data.hop_length,
+                    config.data.win_length,
+                    config.data.mel_fmin,
+                    config.data.mel_fmax,
+                )
+                loss_mel = fn_mel_loss(wave_mel, y_hat_mel) * config.train.c_mel
             loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
             loss_fm = feature_loss(fmap_r, fmap_g)
             loss_gen, _ = generator_loss(y_d_hat_g)

@@ -767,6 +767,7 @@ def parse_arguments():
         help=embedder_model_description,
         choices=[
             "contentvec",
+            "spin",
             "chinese-hubert-base",
             "japanese-hubert-base",
             "korean-hubert-base",
@@ -1275,6 +1276,7 @@ def parse_arguments():
         help=embedder_model_description,
         choices=[
             "contentvec",
+            "spin",
             "chinese-hubert-base",
             "japanese-hubert-base",
             "korean-hubert-base",
@@ -1755,6 +1757,7 @@ def parse_arguments():
         help=embedder_model_description,
         choices=[
             "contentvec",
+            "spin",
             "chinese-hubert-base",
             "japanese-hubert-base",
             "korean-hubert-base",
@@ -1862,6 +1865,7 @@ def parse_arguments():
             "crepe",
             "crepe-tiny",
             "rmvpe",
+            "fcpe",
         ],
         default="rmvpe",
     )
@@ -1898,6 +1902,7 @@ def parse_arguments():
         help=embedder_model_description,
         choices=[
             "contentvec",
+            "spin",
             "chinese-hubert-base",
             "japanese-hubert-base",
             "korean-hubert-base",

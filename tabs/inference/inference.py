@@ -940,7 +940,6 @@ def inference_tab():
                         "crepe-tiny",
                         "rmvpe",
                         "fcpe",
-                        "hybrid[rmvpe+fcpe]",
                     ],
                     value="rmvpe",
                     interactive=True,
@@ -950,6 +949,7 @@ def inference_tab():
                     info=i18n("Model used for learning speaker embedding."),
                     choices=[
                         "contentvec",
+                        "spin",
                         "chinese-hubert-base",
                         "japanese-hubert-base",
                         "korean-hubert-base",
@@ -1572,7 +1572,6 @@ def inference_tab():
                         "crepe-tiny",
                         "rmvpe",
                         "fcpe",
-                        "hybrid[rmvpe+fcpe]",
                     ],
                     value="rmvpe",
                     interactive=True,
@@ -1582,6 +1581,7 @@ def inference_tab():
                     info=i18n("Model used for learning speaker embedding."),
                     choices=[
                         "contentvec",
+                        "spin",
                         "chinese-hubert-base",
                         "japanese-hubert-base",
                         "korean-hubert-base",

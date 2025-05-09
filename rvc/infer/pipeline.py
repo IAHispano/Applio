@@ -14,8 +14,7 @@ from torch import Tensor
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.lib.predictors.RMVPE import RMVPE0Predictor
-from rvc.lib.predictors.FCPE import FCPEF0Predictor
+from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE
 
 import logging
 
@@ -205,59 +204,6 @@ class Pipeline:
         ]
         self.autotune = Autotune(self.ref_freqs)
         self.note_dict = self.autotune.note_dict
-        self.model_rmvpe = RMVPE0Predictor(
-            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-            device=self.device,
-        )
-
-    def get_f0_crepe(
-        self,
-        x,
-        f0_min,
-        f0_max,
-        p_len,
-        hop_length,
-        model="full",
-    ):
-        """
-        Estimates the fundamental frequency (F0) of a given audio signal using the Crepe model.
-
-        Args:
-            x: The input audio signal as a NumPy array.
-            f0_min: Minimum F0 value to consider.
-            f0_max: Maximum F0 value to consider.
-            p_len: Desired length of the F0 output.
-            hop_length: Hop length for the Crepe model.
-            model: Crepe model size to use ("full" or "tiny").
-        """
-        x = x.astype(np.float32)
-        x /= np.quantile(np.abs(x), 0.999)
-        audio = torch.from_numpy(x).to(self.device, copy=True)
-        audio = torch.unsqueeze(audio, dim=0)
-        if audio.ndim == 2 and audio.shape[0] > 1:
-            audio = torch.mean(audio, dim=0, keepdim=True).detach()
-        audio = audio.detach()
-        pitch: Tensor = torchcrepe.predict(
-            audio,
-            self.sample_rate,
-            hop_length,
-            f0_min,
-            f0_max,
-            model,
-            batch_size=hop_length * 2,
-            device=self.device,
-            pad=True,
-        )
-        p_len = p_len or x.shape[0] // hop_length
-        source = np.array(pitch.squeeze(0).cpu().float().numpy())
-        source[source < 0.001] = np.nan
-        target = np.interp(
-            np.arange(0, len(source) * p_len, len(source)) / p_len,
-            np.arange(0, len(source)),
-            source,
-        )
-        f0 = np.nan_to_num(target)
-        return f0
 
     def get_f0_hybrid(
         self,
@@ -344,27 +290,24 @@ class Pipeline:
             inp_f0: Optional input F0 contour to use instead of estimating.
         """
         global input_audio_path2wav
+        
         if f0_method == "crepe":
-            f0 = self.get_f0_crepe(x, self.f0_min, self.f0_max, p_len, int(hop_length))
+            model = CREPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.window)
+            f0 = model.get_f0(x, self.f0_min, self.f0_max, p_len, "full")
+            del model
         elif f0_method == "crepe-tiny":
-            f0 = self.get_f0_crepe(
-                x, self.f0_min, self.f0_max, p_len, int(hop_length), "tiny"
-            )
+            model = CREPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.window)
+            f0 = model.get_f0(x, self.f0_min, self.f0_max, p_len, "tiny")
+            del model
         elif f0_method == "rmvpe":
-            f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
+            model = RMVPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.window)
+            f0 = model.get_f0(x, filter_radius=0.03)
+            del model
         elif f0_method == "fcpe":
-            self.model_fcpe = FCPEF0Predictor(
-                os.path.join("rvc", "models", "predictors", "fcpe.pt"),
-                f0_min=int(self.f0_min),
-                f0_max=int(self.f0_max),
-                dtype=torch.float32,
-                device=self.device,
-                sample_rate=self.sample_rate,
-                threshold=0.03,
-            )
-            f0 = self.model_fcpe.compute_f0(x, p_len=p_len)
-            del self.model_fcpe
-            gc.collect()
+            model = FCPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.window)
+            f0 = model.get_f0(x, p_len, filter_radius = 0.006)
+            del model
+
         elif "hybrid" in f0_method:
             input_audio_path2wav[input_audio_path] = x.astype(np.double)
             f0 = self.get_f0_hybrid(
@@ -375,7 +318,7 @@ class Pipeline:
                 p_len,
                 hop_length,
             )
-
+        print(f0.shape)
         if f0_autotune is True:
             f0 = Autotune.autotune_f0(self, f0, f0_autotune_strength)
 
