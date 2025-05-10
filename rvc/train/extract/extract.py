@@ -28,7 +28,6 @@ mp.set_start_method("spawn", force=True)
 
 class FeatureInput:
     def __init__(self, f0_method="rmvpe", device="cpu"):
-        self.fs = sample_rate
         self.hop_size = 160         # default
         self.sample_rate = 16000    # default
         self.f0_bin = 256
@@ -74,7 +73,7 @@ class FeatureInput:
             return
 
         try:
-            np_arr = load_audio(inp_path, self.fs)
+            np_arr = load_audio(inp_path, self.sample_rate)
             feature_pit = self.compute_f0(np_arr)
             np.save(opt_path_full, feature_pit, allow_pickle=False)
             coarse_pit = self.coarse_f0(feature_pit)
