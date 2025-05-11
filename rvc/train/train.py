@@ -73,6 +73,7 @@ current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
 config_save_path = os.path.join(experiment_dir, "config.json")
 dataset_path = os.path.join(experiment_dir, "sliced_audios")
+model_info_path = os.path.join(experiment_dir, "model_info.json")
 
 try:
     with open(config_save_path, "r") as f:
@@ -376,29 +377,6 @@ def run(
             "Not enough data present in the training set. Perhaps you forgot to slice the audio files in preprocess?"
         )
         os._exit(2333333)
-    else:
-        g_file = latest_checkpoint_path(experiment_dir, "G_*.pth")
-        if g_file != None:
-            print("Checking saved weights...")
-            g = torch.load(g_file, map_location="cpu")
-            if (
-                optimizer == "RAdam"
-                and "amsgrad" in g["optimizer"]["param_groups"][0].keys()
-            ):
-                optimizer = "AdamW"
-                print(
-                    f"Optimizer choice has been reverted to {optimizer} to match the saved D/G weights."
-                )
-            elif (
-                optimizer == "AdamW"
-                and "decoupled_weight_decay" in g["optimizer"]["param_groups"][0].keys()
-            ):
-                optimizer = "RAdam"
-                print(
-                    f"Optimizer choice has been reverted to {optimizer} to match the saved D/G weights."
-                )
-            del g
-
     # Initialize models and optimizers
     from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
     from rvc.lib.algorithm.synthesizers import Synthesizer
@@ -424,7 +402,8 @@ def run(
     else:
         net_g = net_g.to(device)
         net_d = net_d.to(device)
-
+    
+    print("Using", optimizer, "optimizer")
     if optimizer == "AdamW":
         optimizer = torch.optim.AdamW
     elif optimizer == "RAdam":
@@ -513,20 +492,20 @@ def run(
     cache = []
     # get the first sample as reference for tensorboard evaluation
     # custom reference temporarily disabled
-    if True == False and os.path.isfile(
-        os.path.join("logs", "reference", f"ref{sample_rate}.wav")
-    ):
-        phone = np.load(
-            os.path.join("logs", "reference", f"ref{sample_rate}_feats.npy")
-        )
+    with open(model_info_path, "r") as f:
+        model_info = json.load(f)
+        embedder_name = model_info["embedder_model"]
+    if os.path.isfile(os.path.join("logs", "reference", embedder_name, "feats.npy")):
+        print("Using", embedder_name, "reference set for validation")
+        phone = np.load(os.path.join("logs", "reference", embedder_name, "feats.npy"))
         # expanding x2 to match pitch size
         phone = np.repeat(phone, 2, axis=0)
+        phone_lengths = torch.LongTensor([phone.shape[0]]).to(device)
         phone = torch.FloatTensor(phone).unsqueeze(0).to(device)
-        phone_lengths = torch.LongTensor(phone.size(0)).to(device)
-        pitch = np.load(os.path.join("logs", "reference", f"ref{sample_rate}_f0c.npy"))
+        pitch = np.load(os.path.join("logs", "reference", "pitch_coarse.npy"))
         # removed last frame to match features
         pitch = torch.LongTensor(pitch[:-1]).unsqueeze(0).to(device)
-        pitchf = np.load(os.path.join("logs", "reference", f"ref{sample_rate}_f0f.npy"))
+        pitchf = np.load(os.path.join("logs", "reference", "pitch_fine.npy"))
         # removed last frame to match features
         pitchf = torch.FloatTensor(pitchf[:-1]).unsqueeze(0).to(device)
         sid = torch.LongTensor([0]).to(device)
@@ -538,25 +517,16 @@ def run(
             sid,
         )
     else:
-        for info in train_loader:
-            phone, phone_lengths, pitch, pitchf, _, _, _, _, sid = info
-            if device.type == "cuda":
-                reference = (
-                    phone.cuda(device_id, non_blocking=True),
-                    phone_lengths.cuda(device_id, non_blocking=True),
-                    pitch.cuda(device_id, non_blocking=True),
-                    pitchf.cuda(device_id, non_blocking=True),
-                    sid.cuda(device_id, non_blocking=True),
-                )
-            else:
-                reference = (
-                    phone.to(device),
-                    phone_lengths.to(device),
-                    pitch.to(device),
-                    pitchf.to(device),
-                    sid.to(device),
-                )
-            break
+        print("No custom reference found, using a default audio sample for validation")
+        info = next(iter(train_loader))
+        phone, phone_lengths, pitch, pitchf, _, _, _, _, sid = info
+        reference = (
+                phone.to(device),
+                phone_lengths.to(device),
+                pitch.to(device),
+                pitchf.to(device),
+                sid.to(device),
+            )
 
     for epoch in range(epoch_str, total_epoch + 1):
         train_and_evaluate(
