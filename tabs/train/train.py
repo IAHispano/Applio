@@ -595,7 +595,7 @@ def train_tab():
             batch_size = gr.Slider(
                 1,
                 50,
-                max_vram_gpu(0),
+                4,
                 step=1,
                 label=i18n("Batch Size"),
                 info=i18n(
