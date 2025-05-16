@@ -67,6 +67,7 @@ optimizer = "AdamW"
 # optimizer = "RAdam"
 d_lr_coeff = 1.0
 g_lr_coeff = 1.0
+d_step_per_g_step = 1
 multiscale_mel_loss = True
 
 current_dir = os.getcwd()
@@ -647,14 +648,15 @@ def train_and_evaluate(
                     config.train.segment_size,
                     dim=3,
                 )
-            y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
-            loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
-            # Discriminator backward and update
-            optim_d.zero_grad()
-            loss_disc.backward()
-            grad_norm_d = commons.grad_norm(net_d.parameters())
-            optim_d.step()
-
+            for _ in range(d_step_per_g_step): # default x1
+                y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
+                loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
+                # Discriminator backward and update
+                optim_d.zero_grad()
+                loss_disc.backward()
+                grad_norm_d = commons.grad_norm(net_d.parameters())
+                optim_d.step()
+            
             # Generator backward and update
             _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
             if multiscale_mel_loss:
