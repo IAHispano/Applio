@@ -105,6 +105,7 @@ avg_losses = {
     "grad_d_50": deque(maxlen=50),
     "grad_g_50": deque(maxlen=50),
     "disc_loss_50": deque(maxlen=50),
+    "adv_loss_50":  deque(maxlen=50),
     "fm_loss_50": deque(maxlen=50),
     "kl_loss_50": deque(maxlen=50),
     "mel_loss_50": deque(maxlen=50),
@@ -705,6 +706,7 @@ def train_and_evaluate(
             avg_losses["grad_d_50"].append(grad_norm_d)
             avg_losses["grad_g_50"].append(grad_norm_g)
             avg_losses["disc_loss_50"].append(loss_disc.detach())
+            avg_losses["adv_loss_50"].append(loss_gen.detach())
             avg_losses["fm_loss_50"].append(loss_fm.detach())
             avg_losses["kl_loss_50"].append(loss_kl.detach())
             avg_losses["mel_loss_50"].append(loss_mel.detach())
@@ -720,6 +722,9 @@ def train_and_evaluate(
                     "loss_avg_50/d/total": torch.mean(
                         torch.stack(list(avg_losses["disc_loss_50"]))
                     ),
+                    "loss_avg_50/g/adv": torch.mean(
+                        torch.stack(list(avg_losses["adv_loss_50"]))
+                    ),                    
                     "loss_avg_50/g/fm": torch.mean(
                         torch.stack(list(avg_losses["fm_loss_50"]))
                     ),
@@ -786,6 +791,7 @@ def train_and_evaluate(
             "learning_rate": lr,
             "grad/norm_d": grad_norm_d,
             "grad/norm_g": grad_norm_g,
+            "loss/g/adv": loss_gen,
             "loss/g/fm": loss_fm,
             "loss/g/mel": loss_mel,
             "loss/g/kl": loss_kl,
