@@ -719,7 +719,7 @@ def train_and_evaluate(
                     / len(avg_losses["grad_d_50"]),
                     "grad_avg_50/norm_g": sum(avg_losses["grad_g_50"])
                     / len(avg_losses["grad_g_50"]),
-                    "loss_avg_50/d/total": torch.mean(
+                    "loss_avg_50/d/adv": torch.mean(
                         torch.stack(list(avg_losses["disc_loss_50"]))
                     ),
                     "loss_avg_50/g/adv": torch.mean(
@@ -787,7 +787,7 @@ def train_and_evaluate(
 
         scalar_dict = {
             "loss/g/total": loss_gen_all,
-            "loss/d/total": loss_disc,
+            "loss/d/adv": loss_disc,
             "learning_rate": lr,
             "grad/norm_d": grad_norm_d,
             "grad/norm_g": grad_norm_g,
