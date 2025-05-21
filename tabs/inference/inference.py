@@ -196,7 +196,8 @@ def change_choices(model):
         os.path.join(root, name)
         for root, _, files in os.walk(audio_root_relative, topdown=False)
         for name in files
-        if name.endswith(tuple(sup_audioext))
+    if name.lower().endswith(tuple(sup_audioext))
+        if name.lower().endswith(tuple(sup_audioext))
         and root == audio_root_relative
         and "_output" not in name
     ]
@@ -272,7 +273,7 @@ def delete_outputs():
     gr.Info(f"Outputs cleared!")
     for root, _, files in os.walk(audio_root_relative, topdown=False):
         for name in files:
-            if name.endswith(tuple(sup_audioext)) and name.__contains__("_output"):
+            if name.lower().endswith(tuple(sup_audioext)) and name.__contains__("_output"):
                 os.remove(os.path.join(root, name))
 
 
