@@ -197,7 +197,6 @@ def change_choices(model):
         for root, _, files in os.walk(audio_root_relative, topdown=False)
         for name in files
     if name.lower().endswith(tuple(sup_audioext))
-        if name.lower().endswith(tuple(sup_audioext))
         and root == audio_root_relative
         and "_output" not in name
     ]
