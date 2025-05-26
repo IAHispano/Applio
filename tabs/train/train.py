@@ -533,18 +533,6 @@ def train_tab():
             value=True,
             interactive=True,
         )
-        hop_length = gr.Slider(
-            1,
-            512,
-            128,
-            step=1,
-            label=i18n("Hop Length"),
-            info=i18n(
-                "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
-            ),
-            visible=False,
-            interactive=True,
-        )
         with gr.Row(visible=False) as embedder_custom:
             with gr.Accordion("Custom Embedder", open=True):
                 with gr.Row():
@@ -578,7 +566,7 @@ def train_tab():
             inputs=[
                 model_name,
                 f0_method,
-                hop_length,
+                160,
                 cpu_cores,
                 gpu,
                 sampling_rate,
@@ -864,11 +852,6 @@ def train_tab():
             def toggle_visible(checkbox):
                 return {"visible": checkbox, "__type__": "update"}
 
-            def toggle_visible_hop_length(f0_method):
-                if f0_method == "crepe" or f0_method == "crepe-tiny":
-                    return {"visible": True, "__type__": "update"}
-                return {"visible": False, "__type__": "update"}
-
             def toggle_pretrained(pretrained, custom_pretrained):
                 if custom_pretrained == False:
                     return {"visible": pretrained, "__type__": "update"}, {
@@ -954,11 +937,6 @@ def train_tab():
                 fn=save_drop_dataset_audio,
                 inputs=[upload_audio_dataset, dataset_name],
                 outputs=[upload_audio_dataset, dataset_path],
-            )
-            f0_method.change(
-                fn=toggle_visible_hop_length,
-                inputs=[f0_method],
-                outputs=[hop_length],
             )
             embedder_model.change(
                 fn=toggle_visible_embedder_custom,
