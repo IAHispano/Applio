@@ -170,13 +170,12 @@ def run_embedding_extraction(
 if __name__ == "__main__":
     exp_dir = sys.argv[1]
     f0_method = sys.argv[2]
-    hop_length = int(sys.argv[3])
-    num_processes = int(sys.argv[4])
-    gpus = sys.argv[5]
-    sample_rate = sys.argv[6]
-    embedder_model = sys.argv[7]
-    embedder_model_custom = sys.argv[8] if len(sys.argv) > 8 else None
-    include_mutes = int(sys.argv[9]) if len(sys.argv) > 9 else 2
+    num_processes = int(sys.argv[3])
+    gpus = sys.argv[4]
+    sample_rate = sys.argv[5]
+    embedder_model = sys.argv[6]
+    embedder_model_custom = sys.argv[7] if len(sys.argv) > 7 else None
+    include_mutes = int(sys.argv[8]) if len(sys.argv) > 8 else 2
 
     wav_path = os.path.join(exp_dir, "sliced_audios_16k")
     os.makedirs(os.path.join(exp_dir, "f0"), exist_ok=True)

@@ -566,7 +566,6 @@ def train_tab():
             inputs=[
                 model_name,
                 f0_method,
-                160,
                 cpu_cores,
                 gpu,
                 sampling_rate,

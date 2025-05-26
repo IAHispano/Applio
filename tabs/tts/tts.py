@@ -247,17 +247,6 @@ def tts_tab():
                 value=0.5,
                 interactive=True,
             )
-            hop_length = gr.Slider(
-                minimum=1,
-                maximum=512,
-                step=1,
-                label=i18n("Hop Length"),
-                info=i18n(
-                    "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
-                ),
-                value=128,
-                interactive=True,
-            )
             f0_method = gr.Radio(
                 label=i18n("Pitch extraction algorithm"),
                 info=i18n(
@@ -399,7 +388,6 @@ def tts_tab():
             index_rate,
             rms_mix_rate,
             protect,
-            hop_length,
             f0_method,
             output_tts_path,
             output_rvc_path,

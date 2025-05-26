@@ -55,7 +55,6 @@ def run_infer_script(
     index_rate: float,
     volume_envelope: int,
     protect: float,
-    hop_length: int,
     f0_method: str,
     input_path: str,
     output_path: str,
@@ -120,7 +119,6 @@ def run_infer_script(
         "index_rate": index_rate,
         "volume_envelope": volume_envelope,
         "protect": protect,
-        "hop_length": hop_length,
         "f0_method": f0_method,
         "pth_path": pth_path,
         "index_path": index_path,
@@ -189,7 +187,6 @@ def run_batch_infer_script(
     index_rate: float,
     volume_envelope: int,
     protect: float,
-    hop_length: int,
     f0_method: str,
     input_folder: str,
     output_folder: str,
@@ -254,7 +251,6 @@ def run_batch_infer_script(
         "index_rate": index_rate,
         "volume_envelope": volume_envelope,
         "protect": protect,
-        "hop_length": hop_length,
         "f0_method": f0_method,
         "pth_path": pth_path,
         "index_path": index_path,
@@ -326,7 +322,6 @@ def run_tts_script(
     index_rate: float,
     volume_envelope: int,
     protect: float,
-    hop_length: int,
     f0_method: str,
     output_tts_path: str,
     output_rvc_path: str,
@@ -372,7 +367,6 @@ def run_tts_script(
         index_rate=index_rate,
         volume_envelope=volume_envelope,
         protect=protect,
-        hop_length=hop_length,
         f0_method=f0_method,
         audio_input_path=output_tts_path,
         audio_output_path=output_rvc_path,
@@ -451,7 +445,6 @@ def run_preprocess_script(
 def run_extract_script(
     model_name: str,
     f0_method: str,
-    hop_length: int,
     cpu_cores: int,
     gpu: int,
     sample_rate: int,
@@ -471,7 +464,6 @@ def run_extract_script(
             [
                 model_path,
                 f0_method,
-                hop_length,
                 cpu_cores,
                 gpu,
                 sample_rate,
@@ -664,14 +656,6 @@ def parse_arguments():
         help=protect_description,
         choices=[i / 1000.0 for i in range(0, 501)],
         default=0.33,
-    )
-    hop_length_description = "Only applicable for the Crepe pitch extraction method. Determines the time it takes for the system to react to a significant pitch change. Smaller values require more processing time but can lead to better pitch accuracy."
-    infer_parser.add_argument(
-        "--hop_length",
-        type=int,
-        help=hop_length_description,
-        choices=range(1, 513),
-        default=128,
     )
     f0_method_description = "Choose the pitch extraction algorithm for the conversion. 'rmvpe' is the default and generally recommended."
     infer_parser.add_argument(
@@ -1188,13 +1172,6 @@ def parse_arguments():
         default=0.33,
     )
     batch_infer_parser.add_argument(
-        "--hop_length",
-        type=int,
-        help=hop_length_description,
-        choices=range(1, 513),
-        default=128,
-    )
-    batch_infer_parser.add_argument(
         "--f0_method",
         type=str,
         help=f0_method_description,
@@ -1669,13 +1646,6 @@ def parse_arguments():
         default=0.33,
     )
     tts_parser.add_argument(
-        "--hop_length",
-        type=int,
-        help=hop_length_description,
-        choices=range(1, 513),
-        default=128,
-    )
-    tts_parser.add_argument(
         "--f0_method",
         type=str,
         help=f0_method_description,
@@ -1868,13 +1838,6 @@ def parse_arguments():
             "fcpe",
         ],
         default="rmvpe",
-    )
-    extract_parser.add_argument(
-        "--hop_length",
-        type=int,
-        help="Hop length for feature extraction. Only applicable for Crepe pitch extraction.",
-        choices=range(1, 513),
-        default=128,
     )
     extract_parser.add_argument(
         "--cpu_cores",
@@ -2173,7 +2136,6 @@ def main():
                 index_rate=args.index_rate,
                 volume_envelope=args.volume_envelope,
                 protect=args.protect,
-                hop_length=args.hop_length,
                 f0_method=args.f0_method,
                 input_path=args.input_path,
                 output_path=args.output_path,
@@ -2235,7 +2197,6 @@ def main():
                 index_rate=args.index_rate,
                 volume_envelope=args.volume_envelope,
                 protect=args.protect,
-                hop_length=args.hop_length,
                 f0_method=args.f0_method,
                 input_folder=args.input_folder,
                 output_folder=args.output_folder,
@@ -2301,7 +2262,6 @@ def main():
                 index_rate=args.index_rate,
                 volume_envelope=args.volume_envelope,
                 protect=args.protect,
-                hop_length=args.hop_length,
                 f0_method=args.f0_method,
                 output_tts_path=args.output_tts_path,
                 output_rvc_path=args.output_rvc_path,
@@ -2334,7 +2294,6 @@ def main():
             run_extract_script(
                 model_name=args.model_name,
                 f0_method=args.f0_method,
-                hop_length=args.hop_length,
                 cpu_cores=args.cpu_cores,
                 gpu=args.gpu,
                 sample_rate=args.sample_rate,
