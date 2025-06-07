@@ -247,6 +247,8 @@ class VoiceConverter:
             return
 
         self.get_vc(model_path, sid)
+        self.model_name = os.path.basename(model_path)
+        self.pitch = pitch
 
         try:
             start_time = time.time()
@@ -394,7 +396,8 @@ class VoiceConverter:
             print(f"Detected {len(audio_files)} audio files for inference.")
             for a in audio_files:
                 new_input = os.path.join(audio_input_paths, a)
-                new_output = os.path.splitext(a)[0] + "_output.wav"
+                base_name, ext = os.path.splitext(a)
+                new_output = f"{base_name} pitch shift{self.pitch} {self.model_name}_output{ext}"
                 new_output = os.path.join(audio_output_path, new_output)
                 if os.path.exists(new_output):
                     continue
