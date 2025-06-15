@@ -538,7 +538,6 @@ def run_train_script(
                 pd,
                 gpu,
                 batch_size,
-                sample_rate,
                 save_only_latest,
                 save_every_weights,
                 cache_data_in_gpu,

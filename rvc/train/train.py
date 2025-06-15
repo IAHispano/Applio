@@ -34,7 +34,6 @@ from utils import (
     HParams,
     latest_checkpoint_path,
     load_checkpoint,
-    load_wav_to_torch,
     plot_spectrogram_to_numpy,
     save_checkpoint,
     summarize,
@@ -53,15 +52,14 @@ pretrainG = sys.argv[4]
 pretrainD = sys.argv[5]
 gpus = sys.argv[6]
 batch_size = int(sys.argv[7])
-sample_rate = int(sys.argv[8])
-save_only_latest = strtobool(sys.argv[9])
-save_every_weights = strtobool(sys.argv[10])
-cache_data_in_gpu = strtobool(sys.argv[11])
-overtraining_detector = strtobool(sys.argv[12])
-overtraining_threshold = int(sys.argv[13])
-cleanup = strtobool(sys.argv[14])
-vocoder = sys.argv[15]
-checkpointing = strtobool(sys.argv[16])
+save_only_latest = strtobool(sys.argv[8])
+save_every_weights = strtobool(sys.argv[9])
+cache_data_in_gpu = strtobool(sys.argv[10])
+overtraining_detector = strtobool(sys.argv[11])
+overtraining_threshold = int(sys.argv[12])
+cleanup = strtobool(sys.argv[13])
+vocoder = sys.argv[14]
+checkpointing = strtobool(sys.argv[15])
 # experimental settings
 randomized = True
 optimizer = "AdamW"
@@ -162,19 +160,6 @@ def main():
 
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
-    # Check sample rate
-    wavs = glob.glob(
-        os.path.join(os.path.join(experiment_dir, "sliced_audios"), "*.wav")
-    )
-    if wavs:
-        _, sr = load_wav_to_torch(wavs[0])
-        if sr != sample_rate:
-            print(
-                f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz)."
-            )
-            os._exit(1)
-    else:
-        print("No wav file found.")
 
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -408,7 +393,7 @@ def run(
         config.train.segment_size // config.data.hop_length,
         **config.model,
         use_f0=True,
-        sr=sample_rate,
+        sr=config.data.sample_rate,
         vocoder=vocoder,
         checkpointing=checkpointing,
         randomized=randomized,
@@ -443,7 +428,7 @@ def run(
         eps=config.train.eps,
     )
 
-    fn_mel_loss = MultiScaleMelSpectrogramLoss(sample_rate=sample_rate)
+    fn_mel_loss = MultiScaleMelSpectrogramLoss(sample_rate=config.data.sample_rate)
 
     # Wrap models with DDP for multi-gpu processing
     if n_gpus > 1 and device.type == "cuda":
@@ -510,19 +495,19 @@ def run(
     # get the first sample as reference for tensorboard evaluation
     # custom reference temporarily disabled
     if True == False and os.path.isfile(
-        os.path.join("logs", "reference", f"ref{sample_rate}.wav")
+        os.path.join("logs", "reference", f"ref{config.data.sample_rate}.wav")
     ):
         phone = np.load(
-            os.path.join("logs", "reference", f"ref{sample_rate}_feats.npy")
+            os.path.join("logs", "reference", f"ref{config.data.sample_rate}_feats.npy")
         )
         # expanding x2 to match pitch size
         phone = np.repeat(phone, 2, axis=0)
         phone = torch.FloatTensor(phone).unsqueeze(0).to(device)
         phone_lengths = torch.LongTensor(phone.size(0)).to(device)
-        pitch = np.load(os.path.join("logs", "reference", f"ref{sample_rate}_f0c.npy"))
+        pitch = np.load(os.path.join("logs", "reference", f"ref{config.data.sample_rate}_f0c.npy"))
         # removed last frame to match features
         pitch = torch.LongTensor(pitch[:-1]).unsqueeze(0).to(device)
-        pitchf = np.load(os.path.join("logs", "reference", f"ref{sample_rate}_f0f.npy"))
+        pitchf = np.load(os.path.join("logs", "reference", f"ref{config.data.sample_rate}_f0f.npy"))
         # removed last frame to match features
         pitchf = torch.FloatTensor(pitchf[:-1]).unsqueeze(0).to(device)
         sid = torch.LongTensor([0]).to(device)
@@ -976,7 +961,7 @@ def train_and_evaluate(
                 if not os.path.exists(m):
                     extract_model(
                         ckpt=ckpt,
-                        sr=sample_rate,
+                        sr=config.data.sample_rate,
                         name=model_name,
                         model_path=m,
                         epoch=epoch,
