@@ -1,4 +1,14 @@
 @echo off
+
+net session >nul 2>&1
+if %errorlevel% == 0 (
+    color 0C
+    echo Please run this script as a regular user. Applio does not require administrator permissions.
+    echo.
+    pause
+    exit /b 1
+)
+
 setlocal
 for %%F in ("%~dp0.") do set "folder_name=%%~nF"
 
