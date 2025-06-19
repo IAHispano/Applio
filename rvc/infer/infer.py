@@ -197,10 +197,8 @@ class VoiceConverter:
         model_path: str,
         index_path: str,
         pitch: int = 0,
-        f0_file: str = None,
         f0_method: str = "rmvpe",
         index_rate: float = 0.75,
-        volume_envelope: float = 1,
         protect: float = 0.5,
         hop_length: int = 128,
         split_audio: bool = False,
@@ -214,6 +212,8 @@ class VoiceConverter:
         post_process: bool = False,
         resample_sr: int = 0,
         sid: int = 0,
+        proposed_pitch: bool = False,
+        proposed_pitch_threshold: float = 155.0,
         **kwargs,
     ):
         """
@@ -297,13 +297,12 @@ class VoiceConverter:
                     file_index=file_index,
                     index_rate=index_rate,
                     pitch_guidance=self.use_f0,
-                    volume_envelope=volume_envelope,
                     version=self.version,
                     protect=protect,
-                    hop_length=hop_length,
                     f0_autotune=f0_autotune,
                     f0_autotune_strength=f0_autotune_strength,
-                    f0_file=f0_file,
+                    proposed_pitch=proposed_pitch,
+                    proposed_pitch_threshold=proposed_pitch_threshold,
                 )
                 converted_chunks.append(audio_opt)
                 if split_audio:

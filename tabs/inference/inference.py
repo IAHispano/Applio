@@ -95,7 +95,6 @@ def update_sliders(preset):
     return (
         values["pitch"],
         values["index_rate"],
-        values["rms_mix_rate"],
         values["protect"],
     )
 
@@ -122,19 +121,18 @@ def import_presets(file_path):
     return presets
 
 
-def get_presets_data(pitch, index_rate, rms_mix_rate, protect):
+def get_presets_data(pitch, index_rate, protect):
     return {
         "pitch": pitch,
         "index_rate": index_rate,
-        "rms_mix_rate": rms_mix_rate,
         "protect": protect,
     }
 
 
-def export_presets_button(preset_name, pitch, index_rate, rms_mix_rate, protect):
+def export_presets_button(preset_name, pitch, index_rate, protect):
     if preset_name:
         file_path = os.path.join(PRESETS_DIR, f"{preset_name}.json")
-        presets_data = get_presets_data(pitch, index_rate, rms_mix_rate, protect)
+        presets_data = get_presets_data(pitch, index_rate, protect)
         with open(file_path, "w", encoding="utf-8") as json_file:
             json.dump(presets_data, json_file, ensure_ascii=False, indent=4)
         return "Export successful"
@@ -463,6 +461,24 @@ def inference_tab():
                     ),
                     visible=False,
                     value=1,
+                    interactive=True,
+                )
+                proposed_pitch = gr.Checkbox(
+                    label=i18n("Proposed Pitch"),
+                    info=i18n(
+                        "Adjust the input audio pitch to match the voice model range."
+                    ),
+                    visible=True,
+                    value=False,
+                    interactive=True,
+                )
+                proposed_pitch_threshold = gr.Slider(
+                    minimum=50.0,
+                    maximum=1200.0,
+                    label=i18n("Proposed Pitch Threshold"),
+                    info=i18n("Male voice models typically use 155.0 and female voice models typically use 255.0."),
+                    visible=False,
+                    value=155.0,
                     interactive=True,
                 )
                 clean_audio = gr.Checkbox(
@@ -878,16 +894,6 @@ def inference_tab():
                     value=0.75,
                     interactive=True,
                 )
-                rms_mix_rate = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Volume Envelope"),
-                    info=i18n(
-                        "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
-                    ),
-                    value=1,
-                    interactive=True,
-                )
                 protect = gr.Slider(
                     minimum=0,
                     maximum=0.5,
@@ -904,7 +910,6 @@ def inference_tab():
                     outputs=[
                         pitch,
                         index_rate,
-                        rms_mix_rate,
                         protect,
                     ],
                 )
@@ -914,7 +919,6 @@ def inference_tab():
                         preset_name_input,
                         pitch,
                         index_rate,
-                        rms_mix_rate,
                         protect,
                     ],
                 )
@@ -975,13 +979,6 @@ def inference_tab():
                         move_files_button = gr.Button(
                             i18n("Move files to custom embedder folder")
                         )
-
-                f0_file = gr.File(
-                    label=i18n(
-                        "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."
-                    ),
-                    visible=True,
-                )
 
         def enforce_terms(terms_accepted, *args):
             if not terms_accepted:
@@ -1083,6 +1080,24 @@ def inference_tab():
                     value=1,
                     interactive=True,
                 )
+                proposed_pitch_batch = gr.Checkbox(
+                    label=i18n("Proposed Pitch"),
+                    info=i18n(
+                        "Adjust the input audio pitch to match the voice model range."
+                    ),
+                    visible=True,
+                    value=False,
+                    interactive=True,
+                )
+                proposed_pitch_threshold_batch = gr.Slider(
+                    minimum=50.0,
+                    maximum=1200.0,
+                    label=i18n("Proposed Pitch Threshold"),
+                    info=i18n("Male voice models typically use 155.0 and female voice models typically use 255.0."),
+                    visible=False,
+                    value=155.0,
+                    interactive=True,
+                )                
                 clean_audio_batch = gr.Checkbox(
                     label=i18n("Clean Audio"),
                     info=i18n(
@@ -1497,16 +1512,6 @@ def inference_tab():
                     value=0.75,
                     interactive=True,
                 )
-                rms_mix_rate_batch = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Volume Envelope"),
-                    info=i18n(
-                        "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
-                    ),
-                    value=1,
-                    interactive=True,
-                )
                 protect_batch = gr.Slider(
                     minimum=0,
                     maximum=0.5,
@@ -1523,7 +1528,6 @@ def inference_tab():
                     outputs=[
                         pitch_batch,
                         index_rate_batch,
-                        rms_mix_rate_batch,
                         protect_batch,
                     ],
                 )
@@ -1533,7 +1537,6 @@ def inference_tab():
                         preset_name_input,
                         pitch,
                         index_rate,
-                        rms_mix_rate,
                         protect,
                     ],
                     outputs=[],
@@ -1565,12 +1568,6 @@ def inference_tab():
                     ],
                     value="contentvec",
                     interactive=True,
-                )
-                f0_file_batch = gr.File(
-                    label=i18n(
-                        "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."
-                    ),
-                    visible=True,
                 )
                 with gr.Column(visible=False) as embedder_custom_batch:
                     with gr.Accordion(i18n("Custom Embedder"), open=True):
@@ -1687,6 +1684,16 @@ def inference_tab():
         inputs=[autotune],
         outputs=[autotune_strength],
     )
+    proposed_pitch.change(
+        fn=toggle_visible,
+        inputs=[proposed_pitch],
+        outputs=[proposed_pitch_threshold],
+    )
+    proposed_pitch_batch.change(
+        fn=toggle_visible,
+        inputs=[proposed_pitch_batch],
+        outputs=[proposed_pitch_threshold_batch],
+    )      
     clean_audio.change(
         fn=toggle_visible,
         inputs=[clean_audio],
@@ -1983,7 +1990,6 @@ def inference_tab():
             terms_checkbox,
             pitch,
             index_rate,
-            rms_mix_rate,
             protect,
             f0_method,
             audio,
@@ -1993,10 +1999,11 @@ def inference_tab():
             split_audio,
             autotune,
             autotune_strength,
+            proposed_pitch,
+            proposed_pitch_threshold,
             clean_audio,
             clean_strength,
             export_format,
-            f0_file,
             embedder_model,
             embedder_model_custom,
             formant_shifting,
@@ -2048,7 +2055,6 @@ def inference_tab():
             terms_checkbox_batch,
             pitch_batch,
             index_rate_batch,
-            rms_mix_rate_batch,
             protect_batch,
             f0_method_batch,
             input_folder_batch,
@@ -2058,10 +2064,11 @@ def inference_tab():
             split_audio_batch,
             autotune_batch,
             autotune_strength_batch,
+            proposed_pitch_batch,
+            proposed_pitch_threshold_batch,
             clean_audio_batch,
             clean_strength_batch,
             export_format_batch,
-            f0_file_batch,
             embedder_model_batch,
             embedder_model_custom_batch,
             formant_shifting_batch,

@@ -335,5 +335,9 @@
   "Overlap length (sec)": "Overlap length (sec)",
   "Length of the overlap between slices for 'Simple' method.": "Length of the overlap between slices for 'Simple' method.",
   "Silent training files": "Silent training files",
-  "Adding several silent files to the training set enables the model to handle pure silence in inferred audio files. Select 0 if your dataset is clean and already contains segments of pure silence.": "Adding several silent files to the training set enables the model to handle pure silence in inferred audio files. Select 0 if your dataset is clean and already contains segments of pure silence."
+  "Adding several silent files to the training set enables the model to handle pure silence in inferred audio files. Select 0 if your dataset is clean and already contains segments of pure silence.": "Adding several silent files to the training set enables the model to handle pure silence in inferred audio files. Select 0 if your dataset is clean and already contains segments of pure silence.",
+  "Proposed Pitch": "Proposed Pitch",
+  "Adjust the input audio pitch to match the voice model range.": "Adjust the input audio pitch to match the voice model range.",
+  "Proposed Pitch Threshold": "Proposed Pitch Threshold",
+  "Male voice models typically use 155.0 and female voice models typically use 255.0.": "Male voice models typically use 155.0 and female voice models typically use 255.0."
 }
