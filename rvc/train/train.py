@@ -68,7 +68,7 @@ optimizer = "AdamW"
 d_lr_coeff = 1.0
 g_lr_coeff = 1.0
 d_step_per_g_step = 1
-multiscale_mel_loss = True
+multiscale_mel_loss = False
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
