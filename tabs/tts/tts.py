@@ -210,7 +210,7 @@ def tts_tab():
                     "Clean your audio output using noise detection algorithms, recommended for speaking audios."
                 ),
                 visible=True,
-                value=True,
+                value=False,
                 interactive=True,
             )
             clean_strength = gr.Slider(
@@ -243,16 +243,6 @@ def tts_tab():
                     "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
                 ),
                 value=0.75,
-                interactive=True,
-            )
-            rms_mix_rate = gr.Slider(
-                minimum=0,
-                maximum=1,
-                label=i18n("Volume Envelope"),
-                info=i18n(
-                    "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
-                ),
-                value=1,
                 interactive=True,
             )
             protect = gr.Slider(
@@ -409,7 +399,6 @@ def tts_tab():
             tts_rate,
             pitch,
             index_rate,
-            rms_mix_rate,
             protect,
             f0_method,
             output_tts_path,
@@ -424,7 +413,6 @@ def tts_tab():
             clean_audio,
             clean_strength,
             export_format,
-            f0_file,
             embedder_model,
             embedder_model_custom,
             sid,
