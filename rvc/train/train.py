@@ -69,6 +69,8 @@ d_lr_coeff = 1.0
 g_lr_coeff = 1.0
 d_step_per_g_step = 1
 multiscale_mel_loss = False
+#train_dtype = torch.bfloat16
+train_dtype = torch.float32
 
 current_dir = os.getcwd()
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -633,24 +635,26 @@ def train_and_evaluate(
                 wave_lengths,
                 sid,
             ) = info
-
-            # Forward pass
-            model_output = net_g(
-                phone, phone_lengths, pitch, pitchf, spec, spec_lengths, sid
-            )
-            y_hat, ids_slice, x_mask, z_mask, (z, z_p, m_p, logs_p, m_q, logs_q) = (
-                model_output
-            )
-            # slice of the original waveform to match a generate slice
-            if randomized:
-                wave = commons.slice_segments(
-                    wave,
-                    ids_slice * config.data.hop_length,
-                    config.train.segment_size,
-                    dim=3,
+            
+            with torch.amp.autocast("cuda", dtype=train_dtype):
+                # Forward pass
+                model_output = net_g(
+                    phone, phone_lengths, pitch, pitchf, spec, spec_lengths, sid
                 )
+                y_hat, ids_slice, x_mask, z_mask, (z, z_p, m_p, logs_p, m_q, logs_q) = (
+                    model_output
+                )
+                # slice of the original waveform to match a generate slice
+                if randomized:
+                    wave = commons.slice_segments(
+                        wave,
+                        ids_slice * config.data.hop_length,
+                        config.train.segment_size,
+                        dim=3,
+                    )
             for _ in range(d_step_per_g_step): # default x1
-                y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
+                with torch.amp.autocast("cuda", dtype=train_dtype):
+                    y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
                 loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
                 # Discriminator backward and update
                 optim_d.zero_grad()
@@ -658,8 +662,10 @@ def train_and_evaluate(
                 grad_norm_d = commons.grad_norm(net_d.parameters())
                 optim_d.step()
             
-            # Generator backward and update
-            _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
+            with torch.amp.autocast("cuda", dtype=train_dtype):
+                # Generator backward and update
+                _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
+                
             if multiscale_mel_loss:
                 loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
             else:
@@ -804,11 +810,12 @@ def train_and_evaluate(
         }
 
         if epoch % save_every_epoch == 0:
-            with torch.no_grad():
-                if hasattr(net_g, "module"):
-                    o, *_ = net_g.module.infer(*reference)
-                else:
-                    o, *_ = net_g.infer(*reference)
+            with torch.amp.autocast("cuda", dtype=train_dtype):            
+                with torch.no_grad():
+                    if hasattr(net_g, "module"):
+                        o, *_ = net_g.module.infer(*reference)
+                    else:
+                        o, *_ = net_g.infer(*reference)
             audio_dict = {f"gen/audio_{global_step:07d}": o[0, :, :]}
             summarize(
                 writer=writer,
