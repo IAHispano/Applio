@@ -13,10 +13,12 @@ faiss-cpu==1.7.3
 librosa==0.11.0
 scipy==1.11.1
 soundfile==0.12.1
+sounddevice
 noisereduce
 pedalboard
 stftpitchshift
 soxr
+webrtcvad-wheels
 
 # Machine learning and deep learning
 omegaconf>=2.0.6; sys_platform == 'darwin' 
