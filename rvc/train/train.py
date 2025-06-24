@@ -173,9 +173,9 @@ def main():
     )
     if wavs:
         _, sr = load_wav_to_torch(wavs[0])
-        if sr != sample_rate:
+        if sr != config.data.sample_rate:
             print(
-                f"Error: Pretrained model sample rate ({sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz)."
+                f"Error: Pretrained model sample rate ({config.data.sample_rate} Hz) does not match dataset audio sample rate ({sr} Hz)."
             )
             os._exit(1)
     else:
@@ -390,7 +390,7 @@ def run(
         config.train.segment_size // config.data.hop_length,
         **config.model,
         use_f0=True,
-        sr=sample_rate,
+        sr=config.data.sample_rate,
         vocoder=vocoder,
         checkpointing=checkpointing,
         randomized=randomized,
@@ -426,7 +426,7 @@ def run(
         eps=config.train.eps,
     )
     if multiscale_mel_loss:
-        fn_mel_loss = MultiScaleMelSpectrogramLoss(sample_rate=sample_rate)
+        fn_mel_loss = MultiScaleMelSpectrogramLoss(sample_rate=config.data.sample_rate)
         print('Using Multi-Scale Mel loss function')
     else:
         fn_mel_loss = torch.nn.L1Loss()
@@ -987,7 +987,7 @@ def train_and_evaluate(
                 if not os.path.exists(m):
                     extract_model(
                         ckpt=ckpt,
-                        sr=sample_rate,
+                        sr=config.data.sample_rate,
                         name=model_name,
                         model_path=m,
                         epoch=epoch,
