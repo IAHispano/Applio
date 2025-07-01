@@ -139,26 +139,6 @@ class EpochRecorder:
         current_time = datetime.datetime.now().strftime("%H:%M:%S")
         return f"time={current_time} | training_speed={elapsed_time_str}"
 
-
-def verify_checkpoint_shapes(checkpoint_path, model):
-    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
-    checkpoint_state_dict = checkpoint["model"]
-    try:
-        if hasattr(model, "module"):
-            model_state_dict = model.module.load_state_dict(checkpoint_state_dict)
-        else:
-            model_state_dict = model.load_state_dict(checkpoint_state_dict)
-    except RuntimeError:
-        print(
-            "The parameters of the pretrain model such as the sample rate or architecture do not match the selected model."
-        )
-        sys.exit(1)
-    else:
-        del checkpoint
-        del checkpoint_state_dict
-        del model_state_dict
-
-
 def main():
     """
     Main function to start the training process.
@@ -381,6 +361,16 @@ def run(
             "Not enough data present in the training set. Perhaps you forgot to slice the audio files in preprocess?"
         )
         os._exit(2333333)
+
+    try:
+        with open(model_info_path, "r") as f:
+            model_info = json.load(f)
+            embedder_name = model_info["embedder_model"]
+            # net_g will be initialized with the number of speakers from the dataset
+            config.model.spk_embed_dim = model_info["speakers_id"]
+    except:
+        embedder_name = "contentvec"
+        
     # Initialize models and optimizers
     from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
     from rvc.lib.algorithm.synthesizers import Synthesizer
@@ -452,22 +442,33 @@ def run(
     except:
         epoch_str = 1
         global_step = 0
+
         if pretrainG != "" and pretrainG != "None":
             if rank == 0:
-                verify_checkpoint_shapes(pretrainG, net_g)
                 print(f"Loaded pretrained (G) '{pretrainG}'")
-            if hasattr(net_g, "module"):
-                net_g.module.load_state_dict(
-                    torch.load(pretrainG, map_location="cpu", weights_only=True)[
-                        "model"
-                    ]
+                
+            ckpt = torch.load(pretrainG, map_location="cpu", weights_only=True)["model"]
+            ckpt_speaker_count = ckpt["emb_g.weight"].shape[0]
+        
+            # adjust speaker embedding if necessary in order to match the model
+            if config.model.spk_embed_dim != ckpt_speaker_count:
+                # get weights from the net_g model (random)
+                state_dict = net_g.module.state_dict() if hasattr(net_g, "module") else net_g.state_dict()
+				# copy random embedding weights to the checkpoint we are trying to load to match the dimensions
+                ckpt["emb_g.weight"] = state_dict["emb_g.weight"]
+                del state_dict
+			# attempt to load the checkpoint g weights
+            try:
+                if hasattr(net_g, "module"):
+                    net_g.module.load_state_dict(ckpt)
+                else:
+                    net_g.load_state_dict(ckpt)
+            except:
+                print(
+                    "The parameters of the pretrain model such as the sample rate or architecture do not match the selected model."
                 )
-            else:
-                net_g.load_state_dict(
-                    torch.load(pretrainG, map_location="cpu", weights_only=True)[
-                        "model"
-                    ]
-                )
+                sys.exit(1)
+            del ckpt
 
         if pretrainD != "" and pretrainD != "None":
             if rank == 0:
@@ -494,11 +495,7 @@ def run(
     )
 
     cache = []
-    # get the first sample as reference for tensorboard evaluation
-    # custom reference temporarily disabled
-    with open(model_info_path, "r") as f:
-        model_info = json.load(f)
-        embedder_name = model_info["embedder_model"]
+    # collect the reference audio for tensorboard evaluation
     if os.path.isfile(os.path.join("logs", "reference", embedder_name, "feats.npy")):
         print("Using", embedder_name, "reference set for validation")
         phone = np.load(os.path.join("logs", "reference", embedder_name, "feats.npy"))
@@ -602,6 +599,8 @@ def train_and_evaluate(
     net_g.train()
     net_d.train()
 
+    use_amp = device.type == "cuda" and train_dtype == torch.bfloat16
+
     # Data caching
     if device.type == "cuda" and cache_data_in_gpu:
         data_iterator = cache
@@ -635,8 +634,8 @@ def train_and_evaluate(
                 wave_lengths,
                 sid,
             ) = info
-            
-            with torch.amp.autocast("cuda", dtype=train_dtype):
+
+            with torch.amp.autocast(device_type = "cuda", enabled=use_amp, dtype=train_dtype):
                 # Forward pass
                 model_output = net_g(
                     phone, phone_lengths, pitch, pitchf, spec, spec_lengths, sid
@@ -653,7 +652,7 @@ def train_and_evaluate(
                         dim=3,
                     )
             for _ in range(d_step_per_g_step): # default x1
-                with torch.amp.autocast("cuda", dtype=train_dtype):
+                with torch.amp.autocast(device_type = "cuda", enabled=use_amp, dtype=train_dtype):
                     y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
                 loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
                 # Discriminator backward and update
@@ -662,7 +661,7 @@ def train_and_evaluate(
                 grad_norm_d = commons.grad_norm(net_d.parameters())
                 optim_d.step()
             
-            with torch.amp.autocast("cuda", dtype=train_dtype):
+            with torch.amp.autocast(device_type = "cuda", enabled=use_amp, dtype=train_dtype):
                 # Generator backward and update
                 _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
                 
@@ -810,7 +809,7 @@ def train_and_evaluate(
         }
 
         if epoch % save_every_epoch == 0:
-            with torch.amp.autocast("cuda", dtype=train_dtype):            
+            with torch.amp.autocast(device_type = "cuda", enabled=use_amp, dtype=train_dtype):            
                 with torch.no_grad():
                     if hasattr(net_g, "module"):
                         o, *_ = net_g.module.infer(*reference)
