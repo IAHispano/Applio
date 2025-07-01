@@ -440,7 +440,7 @@ def train_tab():
 
             with gr.Row():
                 process_effects = gr.Checkbox(
-                    label=i18n("Process effects"),
+                    label=i18n("Noise filter"),
                     info=i18n(
                         "It's recommended to deactivate this option if your dataset has already been processed."
                     ),
@@ -448,6 +448,18 @@ def train_tab():
                     interactive=True,
                     visible=True,
                 )
+                
+                normalization_mode = gr.Radio(
+                    label=i18n("Normalization mode"),
+                    info=i18n(
+                        "Audio normalization: Select 'none' if the files are already normalized, 'pre' to normalize the entire input file at once, or 'post' to normalize each slice individually."
+                    ),
+                    choices=["none", "pre", "post"],
+                    value="none",
+                    interactive=True,
+                    visible=True,
+                )
+
                 noise_reduction = gr.Checkbox(
                     label=i18n("Noise Reduction"),
                     info=i18n(
@@ -491,6 +503,7 @@ def train_tab():
                     clean_strength,
                     chunk_len,
                     overlap_len,
+                    normalization_mode
                 ],
                 outputs=[preprocess_output_info],
             )

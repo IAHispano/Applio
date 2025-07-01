@@ -67,10 +67,13 @@ class PreProcess:
         sid: int,
         idx0: int,
         idx1: int,
+        normalization_mode: str,
     ):
         if normalized_audio is None:
             print(f"{sid}-{idx0}-{idx1}-filtered")
             return
+        if normalization_mode == "post":
+            normalized_audio = self._normalize_audio(normalized_audio)
         wavfile.write(
             os.path.join(self.gt_wavs_dir, f"{sid}_{idx0}_{idx1}.wav"),
             self.sr,
@@ -95,12 +98,15 @@ class PreProcess:
         idx0: int,
         chunk_len: float,
         overlap_len: float,
+        normalization_mode: str,
     ):
         chunk_length = int(self.sr * chunk_len)
         overlap_length = int(self.sr * overlap_len)
         i = 0
         while i < len(audio):
             chunk = audio[i : i + chunk_length]
+            if normalization_mode == "post":
+                chunk = self._normalize_audio(chunk)
             if len(chunk) == chunk_length:
                 # full SR for training
                 wavfile.write(
@@ -136,6 +142,7 @@ class PreProcess:
         reduction_strength: float,
         chunk_len: float,
         overlap_len: float,
+        normalization_mode: str
     ):
         audio_length = 0
         try:
@@ -144,6 +151,7 @@ class PreProcess:
 
             if process_effects:
                 audio = signal.lfilter(self.b_high, self.a_high, audio)
+            if normalization_mode == "pre":
                 audio = self._normalize_audio(audio)
             if noise_reduction:
                 audio = nr.reduce_noise(
@@ -156,10 +164,11 @@ class PreProcess:
                     sid,
                     idx0,
                     0,
+                    normalization_mode,
                 )
             elif cut_preprocess == "Simple":
                 # simple
-                self.simple_cut(audio, sid, idx0, chunk_len, overlap_len)
+                self.simple_cut(audio, sid, idx0, chunk_len, overlap_len, normalization_mode,)
             elif cut_preprocess == "Automatic":
                 idx1 = 0
                 # legacy
@@ -180,6 +189,7 @@ class PreProcess:
                                 sid,
                                 idx0,
                                 idx1,
+                                normalization_mode,
                             )
                             idx1 += 1
                         else:
@@ -189,6 +199,7 @@ class PreProcess:
                                 sid,
                                 idx0,
                                 idx1,
+                                normalization_mode,
                             )
                             idx1 += 1
                             break
@@ -233,6 +244,7 @@ def process_audio_wrapper(args):
         reduction_strength,
         chunk_len,
         overlap_len,
+        normalization_mode,
     ) = args
     file_path, idx0, sid = file
     return pp.process_audio(
@@ -245,6 +257,7 @@ def process_audio_wrapper(args):
         reduction_strength,
         chunk_len,
         overlap_len,
+        normalization_mode,
     )
 
 
@@ -259,6 +272,7 @@ def preprocess_training_set(
     reduction_strength: float,
     chunk_len: float,
     overlap_len: float,
+    normalization_mode: str,
 ):
     start_time = time.time()
     pp = PreProcess(sr, exp_dir)
@@ -297,6 +311,7 @@ def preprocess_training_set(
                         reduction_strength,
                         chunk_len,
                         overlap_len,
+                        normalization_mode
                     ),
                 )
                 for file in files
@@ -330,7 +345,7 @@ if __name__ == "__main__":
     reduction_strength = float(sys.argv[8])
     chunk_len = float(sys.argv[9])
     overlap_len = float(sys.argv[10])
-
+    normalization_mode = str(sys.argv[11])
     preprocess_training_set(
         input_root,
         sample_rate,
@@ -342,4 +357,5 @@ if __name__ == "__main__":
         reduction_strength,
         chunk_len,
         overlap_len,
+        normalization_mode
     )

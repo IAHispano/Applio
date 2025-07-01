@@ -418,6 +418,7 @@ def run_preprocess_script(
     clean_strength: float,
     chunk_len: float,
     overlap_len: float,
+    normalization_mode: str = "none",
 ):
     preprocess_script_path = os.path.join("rvc", "train", "preprocess", "preprocess.py")
     command = [
@@ -436,6 +437,7 @@ def run_preprocess_script(
                 clean_strength,
                 chunk_len,
                 overlap_len,
+                normalization_mode,
             ],
         ),
     ]
@@ -1828,6 +1830,14 @@ def parse_arguments():
         default=0.3,
         required=False,
     )
+    preprocess_parser.add_argument(
+        "--norm_mode",
+        type=str,
+        help="Normalization mode.",
+        choices=["none", "pre", "post"],
+        default="none",
+        required=False,
+    )
 
     # Parser for 'extract' mode
     extract_parser = subparsers.add_parser(
@@ -2298,6 +2308,7 @@ def main():
                 clean_strength=args.noise_reduction_strength,
                 chunk_len=args.chunk_len,
                 overlap_len=args.overlap_len,
+                normalization_mode=args.normalization_mode,
             )
         elif args.mode == "extract":
             run_extract_script(
