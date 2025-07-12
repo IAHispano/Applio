@@ -243,6 +243,18 @@ def extract_model_and_epoch(path):
         return model, int(epoch)
     return "", 0
 
+def get_latest_audio(directory):
+    try:
+        files = [
+            os.path.join(directory, f)
+            for f in os.listdir(directory)
+            if os.path.isfile(os.path.join(directory, f))
+        ]
+        retval = sorted(files, key=os.path.getmtime, reverse=True)[0] if files else ""
+        retval = os.path.relpath(retval, now_dir)
+        return retval
+    except Exception:
+        return os.path.join(directory, "input.wav")
 
 def save_to_wav(record_button):
     if record_button is None:
@@ -1018,7 +1030,7 @@ def inference_tab():
             interactive=True,
         )
 
-        convert_button1 = gr.Button(i18n("Convert"))
+        convert_button1 = gr.Button(i18n("Convert"), interactive = False)
 
         with gr.Row():
             vc_output1 = gr.Textbox(
@@ -1710,6 +1722,50 @@ def inference_tab():
 
     def delay_visible(checkbox):
         return update_visibility(checkbox, 3)
+
+    def validate_inputs(model, audio, terms):
+        is_valid = all((
+            os.path.isfile(model),
+            os.path.isfile(audio),
+            terms
+        ))
+        return gr.update(interactive=is_valid)
+
+    def validate_audio_path(audio_path):
+        if (
+            not audio_path
+            or not os.path.abspath(audio_path).startswith(os.path.abspath(audio_root))
+            or not os.path.exists(audio_path)
+            or os.path.isdir(audio_path)
+        ):
+            return gr.update(value=get_latest_audio(audio_root))
+        return gr.update(value=audio_path)
+
+    model_file.change(
+        validate_inputs,
+        inputs=[model_file, audio, terms_checkbox],
+        outputs=convert_button1,
+    )
+
+    audio.change(
+        validate_inputs,
+        inputs=[model_file, audio, terms_checkbox],
+        outputs=convert_button1,
+    )
+
+    terms_checkbox.change(
+        validate_inputs,
+        inputs=[model_file, audio, terms_checkbox],
+        outputs=convert_button1,
+    )
+
+    terms_checkbox_batch.change(
+        validate_inputs,
+        inputs=[model_file, audio, terms_checkbox_batch],
+        outputs=convert_button1,
+    )
+
+    audio.blur(fn=validate_audio_path, inputs=audio, outputs=audio)
 
     autotune.change(
         fn=toggle_visible,
