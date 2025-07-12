@@ -145,7 +145,17 @@ The Docker setup creates persistent volumes for:
 
 ### Using Portainer App Templates
 
-If you prefer using app templates, you can create a custom template with the following configuration:
+If you prefer using app templates, you can create a custom template with the `portainer-app-template.json` file included in this repository:
+
+1. In Portainer, go to "Settings" → "App Templates"
+2. Add a new template URL pointing to the raw file:
+   ```
+   https://raw.githubusercontent.com/IAHispano/Applio/main/portainer-app-template.json
+   ```
+3. Or manually import the template JSON content
+4. The template provides both CPU and GPU variants of Applio
+
+Alternatively, you can use the following template configuration:
 
 ```json
 {

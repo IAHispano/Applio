@@ -148,6 +148,8 @@ For Portainer users, you can deploy Applio as a stack:
 4. Configure environment variables as needed
 5. Deploy the stack
 
+**App Template:** You can also use the included `portainer-app-template.json` for easier deployment through Portainer's app templates feature.
+
 ### Docker Commands
 
 ```bash

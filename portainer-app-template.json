@@ -1,0 +1,182 @@
+{
+  "version": "2",
+  "templates": [
+    {
+      "type": 2,
+      "title": "Applio",
+      "description": "AI Voice Conversion Tool - High-quality voice conversion with simple interface",
+      "note": "Applio is a powerful voice conversion tool focused on simplicity, quality, and performance.",
+      "categories": ["AI", "Audio", "Machine Learning"],
+      "platform": "linux",
+      "logo": "https://github.com/IAHispano/Applio/assets/133521603/78e975d8-b07f-47ba-ab23-5a31592f322a",
+      "repository": {
+        "url": "https://github.com/IAHispano/Applio",
+        "stackfile": "docker-compose.yaml"
+      },
+      "env": [
+        {
+          "name": "APPLIO_PORT",
+          "label": "Web Interface Port",
+          "description": "Port for the web interface",
+          "default": "6969"
+        },
+        {
+          "name": "APPLIO_HOST",
+          "label": "Host Interface",
+          "description": "Host interface to bind to (leave as 0.0.0.0)",
+          "default": "0.0.0.0"
+        },
+        {
+          "name": "APPLIO_SHARE",
+          "label": "Enable Public Sharing",
+          "description": "Enable public sharing via Gradio",
+          "default": "false",
+          "select": [
+            {
+              "text": "Disabled",
+              "value": "false"
+            },
+            {
+              "text": "Enabled",
+              "value": "true"
+            }
+          ]
+        },
+        {
+          "name": "APPLIO_DEBUG",
+          "label": "Debug Mode",
+          "description": "Enable debug mode for troubleshooting",
+          "default": "false",
+          "select": [
+            {
+              "text": "Disabled",
+              "value": "false"
+            },
+            {
+              "text": "Enabled",
+              "value": "true"
+            }
+          ]
+        }
+      ],
+      "volumes": [
+        {
+          "container": "/app/logs",
+          "description": "Application logs directory"
+        },
+        {
+          "container": "/app/assets/models",
+          "description": "AI models directory"
+        },
+        {
+          "container": "/app/assets/audio",
+          "description": "Audio files directory"
+        },
+        {
+          "container": "/app/assets/weights",
+          "description": "Model weights directory"
+        }
+      ],
+      "ports": [
+        {
+          "label": "Web Interface",
+          "description": "Applio web interface port",
+          "default": "6969"
+        }
+      ],
+      "restart_policy": "unless-stopped"
+    },
+    {
+      "type": 2,
+      "title": "Applio (GPU)",
+      "description": "AI Voice Conversion Tool with GPU acceleration - High-quality voice conversion with NVIDIA GPU support",
+      "note": "Applio with GPU acceleration. Requires NVIDIA Docker runtime and compatible GPU.",
+      "categories": ["AI", "Audio", "Machine Learning", "GPU"],
+      "platform": "linux",
+      "logo": "https://github.com/IAHispano/Applio/assets/133521603/78e975d8-b07f-47ba-ab23-5a31592f322a",
+      "repository": {
+        "url": "https://github.com/IAHispano/Applio",
+        "stackfile": "docker-compose.yaml"
+      },
+      "command": "--profile gpu",
+      "env": [
+        {
+          "name": "APPLIO_PORT",
+          "label": "Web Interface Port",
+          "description": "Port for the web interface",
+          "default": "6969"
+        },
+        {
+          "name": "APPLIO_HOST",
+          "label": "Host Interface",
+          "description": "Host interface to bind to (leave as 0.0.0.0)",
+          "default": "0.0.0.0"
+        },
+        {
+          "name": "APPLIO_SHARE",
+          "label": "Enable Public Sharing",
+          "description": "Enable public sharing via Gradio",
+          "default": "false",
+          "select": [
+            {
+              "text": "Disabled",
+              "value": "false"
+            },
+            {
+              "text": "Enabled",
+              "value": "true"
+            }
+          ]
+        },
+        {
+          "name": "APPLIO_DEBUG",
+          "label": "Debug Mode",
+          "description": "Enable debug mode for troubleshooting",
+          "default": "false",
+          "select": [
+            {
+              "text": "Disabled",
+              "value": "false"
+            },
+            {
+              "text": "Enabled",
+              "value": "true"
+            }
+          ]
+        },
+        {
+          "name": "CUDA_VISIBLE_DEVICES",
+          "label": "GPU Devices",
+          "description": "GPU devices to use (e.g., 0,1 for first two GPUs)",
+          "default": "0"
+        }
+      ],
+      "volumes": [
+        {
+          "container": "/app/logs",
+          "description": "Application logs directory"
+        },
+        {
+          "container": "/app/assets/models",
+          "description": "AI models directory"
+        },
+        {
+          "container": "/app/assets/audio",
+          "description": "Audio files directory"
+        },
+        {
+          "container": "/app/assets/weights",
+          "description": "Model weights directory"
+        }
+      ],
+      "ports": [
+        {
+          "label": "Web Interface",
+          "description": "Applio web interface port",
+          "default": "6969"
+        }
+      ],
+      "restart_policy": "unless-stopped"
+    }
+  ]
+}
