@@ -1,12 +1,60 @@
-version: '1'
-
 services:
   applio:
     build:
       context: ./
       dockerfile: Dockerfile
+    container_name: applio
     ports:
-      - "6969"
+      - "${APPLIO_PORT:-6969}:6969"
+    volumes:
+      # Persistent data volumes
+      - applio_logs:/app/logs
+      - applio_models:/app/assets/models
+      - applio_audio:/app/assets/audio
+      - applio_pretrained:/app/assets/pretrained
+      - applio_pretrained_v2:/app/assets/pretrained_v2
+      - applio_indices:/app/assets/indices
+      - applio_audios:/app/assets/audios
+      - applio_weights:/app/assets/weights
+      # Configuration and cache
+      - applio_cache:/app/.cache
+      - applio_config:/app/config
+    environment:
+      - APPLIO_HOST=${APPLIO_HOST:-0.0.0.0}
+      - APPLIO_PORT=${APPLIO_PORT:-6969}
+      - APPLIO_SHARE=${APPLIO_SHARE:-false}
+      - APPLIO_DEBUG=${APPLIO_DEBUG:-false}
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-}
+    restart: unless-stopped
+
+  # GPU-enabled version (optional)
+  applio-gpu:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: applio-gpu
+    ports:
+      - "${APPLIO_PORT:-6969}:6969"
+    volumes:
+      # Persistent data volumes
+      - applio_logs:/app/logs
+      - applio_models:/app/assets/models
+      - applio_audio:/app/assets/audio
+      - applio_pretrained:/app/assets/pretrained
+      - applio_pretrained_v2:/app/assets/pretrained_v2
+      - applio_indices:/app/assets/indices
+      - applio_audios:/app/assets/audios
+      - applio_weights:/app/assets/weights
+      # Configuration and cache
+      - applio_cache:/app/.cache
+      - applio_config:/app/config
+    environment:
+      - APPLIO_HOST=${APPLIO_HOST:-0.0.0.0}
+      - APPLIO_PORT=${APPLIO_PORT:-6969}
+      - APPLIO_SHARE=${APPLIO_SHARE:-false}
+      - APPLIO_DEBUG=${APPLIO_DEBUG:-false}
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+    restart: unless-stopped
     deploy:
       resources:
         reservations:
@@ -14,3 +62,27 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+    profiles:
+      - gpu
+
+volumes:
+  applio_logs:
+    driver: local
+  applio_models:
+    driver: local
+  applio_audio:
+    driver: local
+  applio_pretrained:
+    driver: local
+  applio_pretrained_v2:
+    driver: local
+  applio_indices:
+    driver: local
+  applio_audios:
+    driver: local
+  applio_weights:
+    driver: local
+  applio_cache:
+    driver: local
+  applio_config:
+    driver: local

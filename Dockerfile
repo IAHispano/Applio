@@ -28,7 +28,9 @@ VOLUME ["/app/logs/"]
 
 # Set environment variables if necessary
 ENV PATH="/app/.venv/bin:$PATH"
+ENV APPLIO_HOST=0.0.0.0
+ENV APPLIO_PORT=6969
 
 # Run the app
 ENTRYPOINT ["python3"]
-CMD ["app.py"]
+CMD ["app.py", "--server-name", "0.0.0.0"]

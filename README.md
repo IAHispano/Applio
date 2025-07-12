@@ -82,6 +82,106 @@ To monitor training or visualize data:
 
 For more detailed instructions, visit the [documentation](https://docs.applio.org).
 
+## Docker Support
+
+Applio provides full Docker support with Docker Compose for easy deployment and management, especially useful for NAS systems and container orchestration platforms like Portainer.
+
+### Prerequisites
+
+- Docker Engine 20.10+ and Docker Compose v2.0+
+- For GPU support: NVIDIA Docker runtime and compatible GPU drivers
+
+### Quick Start with Docker Compose
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/IAHispano/Applio.git
+   cd Applio
+   ```
+
+2. **Copy and configure environment variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env file with your preferred settings
+   ```
+
+3. **Run with Docker Compose:**
+   ```bash
+   # CPU-only version
+   docker compose up -d
+   
+   # OR GPU-enabled version (requires NVIDIA Docker)
+   docker compose --profile gpu up -d
+   ```
+
+4. **Access Applio:**
+   Open your browser and navigate to `http://localhost:6969`
+
+### Configuration Options
+
+The `.env` file contains configuration options:
+
+- `APPLIO_HOST`: Host interface (default: 0.0.0.0)
+- `APPLIO_PORT`: Port number (default: 6969)
+- `APPLIO_SHARE`: Enable public sharing (default: false)
+- `APPLIO_DEBUG`: Enable debug mode (default: false)
+- `CUDA_VISIBLE_DEVICES`: GPU selection for GPU profile
+
+### Volume Persistence
+
+The Docker setup automatically creates persistent volumes for:
+- `applio_logs`: Application logs
+- `applio_models`: AI models
+- `applio_audio`: Audio files
+- `applio_pretrained`: Pre-trained models
+- `applio_weights`: Model weights
+- `applio_cache`: Application cache
+- `applio_config`: Configuration files
+
+### Portainer Stack Deployment
+
+For Portainer users, you can deploy Applio as a stack:
+
+1. In Portainer, go to "Stacks" → "Add Stack"
+2. Choose "Repository" and enter: `https://github.com/IAHispano/Applio.git`
+3. Set the compose file path to `docker-compose.yaml`
+4. Configure environment variables as needed
+5. Deploy the stack
+
+### Docker Commands
+
+```bash
+# Start services
+docker compose up -d
+
+# Start with GPU support
+docker compose --profile gpu up -d
+
+# Stop services
+docker compose down
+
+# View logs
+docker compose logs -f applio
+
+# Update and rebuild
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+
+# Remove all data (WARNING: This will delete all your models and data!)
+docker compose down -v
+```
+
+### Troubleshooting
+
+**Permission Issues:** Ensure Docker daemon is running and your user has Docker permissions.
+
+**GPU Not Detected:** Verify NVIDIA Docker runtime is installed and configured properly.
+
+**Port Conflicts:** Change the `APPLIO_PORT` in your `.env` file if port 6969 is in use.
+
+**Volume Issues:** Check Docker volume permissions and available disk space.
+
 ## References
 
 Applio is made possible thanks to these projects and their references:
