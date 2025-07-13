@@ -211,7 +211,7 @@
   "Enter text to synthesize": "Wprowadź tekst do syntezy",
   "Output Path for TTS Audio": "Ścieżka wyjściowa dla dźwięku TTS",
   "The path to the text file that contains content for text to speech.": "Ścieżka do pliku tekstowego, którego zawartość ma być syntezowana.",
-  "It will activate the possibility of displaying the current Applio activity in Discord.": "Aktywuje to możliwość wyświetlania  aktywności Applio w aplikacji Discord.",
+  "It will activate the possibility of displaying the current Applio activity in Discord.": "Aktywuje to możliwość wyświetlania aktywności Applio w aplikacji Discord.",
   "Enable Applio integration with Discord presence": "Włącz integrację Applio z Discord",
   "Enable Applio integration with applio.org/models using flask": "Włącz integrację Applio z applio.org/models za pomocą Flask",
   "Enable fake GPU": "Symuluj GPU",
