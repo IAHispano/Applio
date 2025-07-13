@@ -32,7 +32,7 @@ from tabs.plugins.plugins import plugins_tab
 from tabs.settings.settings import settings_tab
 
 # Run prerequisites
-from core import run_prerequisites_script
+from core import run_prerequisites_script, online
 
 run_prerequisites_script(
     pretraineds_hifigan=True,
@@ -84,8 +84,9 @@ with gr.Blocks(
     with gr.Tab(i18n("Training")):
         train_tab()
 
-    with gr.Tab(i18n("TTS")):
-        tts_tab()
+    if online:
+        with gr.Tab(i18n("TTS")):
+            tts_tab()
 
     with gr.Tab(i18n("Voice Blender")):
         voice_blender_tab()
@@ -93,8 +94,9 @@ with gr.Blocks(
     with gr.Tab(i18n("Plugins")):
         plugins_tab()
 
-    with gr.Tab(i18n("Download")):
-        download_tab()
+    if online:
+        with gr.Tab(i18n("Download")):
+            download_tab()
 
     with gr.Tab(i18n("Report a Bug")):
         report_tab()
