@@ -13,6 +13,21 @@ i18n = I18nAuto()
 def update_model_fusion(dropbox):
     return dropbox, None
 
+def validate_inputs(name, path_a, path_b):
+    def is_valid_model_path(p):
+        return (
+            isinstance(p, str)
+            and p.lower().endswith(".pth")
+            and os.path.isfile(p)
+        )
+
+    all_valid = (
+        name.strip()
+        and is_valid_model_path(path_a)
+        and is_valid_model_path(path_b)
+        and os.path.abspath(path_a) != os.path.abspath(path_b)
+    )
+    return gr.update(interactive=all_valid)
 
 def voice_blender_tab():
     gr.Markdown(i18n("## Voice Blender"))
@@ -63,7 +78,7 @@ def voice_blender_tab():
                 "Adjusting the position more towards one side or the other will make the model more similar to the first or second."
             ),
         )
-        model_fusion_button = gr.Button(i18n("Fusion"))
+        model_fusion_button = gr.Button(i18n("Fusion"), interactive = False)
         with gr.Row():
             model_fusion_output_info = gr.Textbox(
                 label=i18n("Output Information"),
@@ -73,6 +88,24 @@ def voice_blender_tab():
             model_fusion_pth_output = gr.File(
                 label=i18n("Download Model"), type="filepath", interactive=False
             )
+
+    model_fusion_name.change(
+        validate_inputs,
+        inputs=[model_fusion_name, model_fusion_a, model_fusion_b],
+        outputs=model_fusion_button,
+    )
+
+    model_fusion_a.blur(
+        validate_inputs,
+        inputs=[model_fusion_name, model_fusion_a, model_fusion_b],
+        outputs=model_fusion_button,
+    )
+
+    model_fusion_b.blur(
+        validate_inputs,
+        inputs=[model_fusion_name, model_fusion_a, model_fusion_b],
+        outputs=model_fusion_button,
+    )
 
     model_fusion_button.click(
         fn=run_model_blender_script,
