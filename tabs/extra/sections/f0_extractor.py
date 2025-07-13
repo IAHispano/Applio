@@ -12,10 +12,10 @@ i18n = I18nAuto()
 
 def validate_upload(path):
     if all((
-		path,
-		os.path.isfile(path),
-		path.lower().endswith(sup_audioext)
-	)):
+        path,
+        os.path.isfile(path),
+        path.lower().endswith(sup_audioext)
+    )):
         return gr.update(interactive=True)
     return gr.update(interactive=False)
 
