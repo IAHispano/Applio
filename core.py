@@ -4,6 +4,7 @@ import json
 import argparse
 import subprocess
 from functools import lru_cache
+from urllib import parse, request
 from distutils.util import strtobool
 
 now_dir = os.getcwd()
@@ -587,6 +588,17 @@ def run_model_blender_script(
 def run_tensorboard_script():
     launch_tensorboard_pipeline()
 
+# Internet
+def internet_on(attempts: int = 3) -> bool:
+    for attempt in range(attempts):
+        try:
+            request.urlopen("https://google.com", timeout = 3)
+            return True
+        except (request.URLError, TimeoutError) as err:
+            pass
+    return False
+
+online = internet_on()
 
 # Download
 def run_download_script(model_link: str):
