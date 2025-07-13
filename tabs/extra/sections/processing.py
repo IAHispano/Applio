@@ -12,6 +12,8 @@ from assets.i18n.i18n import I18nAuto
 i18n = I18nAuto()
 
 def validate_upload(path):
+    if not path:
+        return gr.update(interactive=False)
     if path.lower().endswith(".pth") and os.path.isfile(path):
         return gr.update(interactive=True)
     return gr.update(interactive=False)
