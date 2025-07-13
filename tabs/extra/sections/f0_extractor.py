@@ -5,7 +5,6 @@ from matplotlib import pyplot as plt
 
 from rvc.lib.predictors.F0Extractor import F0Extractor
 from tabs.inference.inference import sup_audioext
-
 from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
@@ -14,7 +13,7 @@ def validate_upload(path):
     if all((
         path,
         os.path.isfile(path),
-        path.lower().endswith(sup_audioext)
+        path.lower().endswith(tuple(sup_audioext))
     )):
         return gr.update(interactive=True)
     return gr.update(interactive=False)
@@ -77,5 +76,10 @@ def f0_extractor_tab():
     audio.change(
         fn=validate_upload,
         inputs=[audio],
+        outputs=[button],
+    )
+
+    audio.clear(
+        lambda: gr.update(interactive=False),
         outputs=[button],
     )
