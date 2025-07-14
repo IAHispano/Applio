@@ -336,4 +336,6 @@
   "Length of the overlap between slices for 'Simple' method.": "Length of the overlap between slices for 'Simple' method.",
   "Silent training files": "Silent training files",
   "Adding several silent files to the training set enables the model to handle pure silence in inferred audio files. Select 0 if your dataset is clean and already contains segments of pure silence.": "Adding several silent files to the training set enables the model to handle pure silence in inferred audio files. Select 0 if your dataset is clean and already contains segments of pure silence."
+  "Provided audio file path is invalid:": "Provided audio file path is invalid:",
+  "Reverting path to latest file:": "Provided audio file path is invalid:"
 }
