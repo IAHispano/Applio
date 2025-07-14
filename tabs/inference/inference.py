@@ -1733,11 +1733,14 @@ def inference_tab():
 
     def validate_audio_path(audio_path):
         if (
-            not audio_path
-            or not os.path.abspath(audio_path).startswith(os.path.abspath(audio_root))
+            os.path.normpath(audio_path) in (os.curdir, os.pardir, os.sep)
+            or not audio_path
+            or not audio_root in os.path.abspath(audio_path)
             or not os.path.exists(audio_path)
             or os.path.isdir(audio_path)
         ):
+            gr.Warning(i18n("Provided audio path is invalid:") + "\n" + audio_path)
+            gr.Info(i18n("Reverting path to latest file:") + "\n" + os.path.basename(get_latest_audio(audio_root)))
             return gr.update(value=get_latest_audio(audio_root))
         return gr.update(value=audio_path)
 
