@@ -192,7 +192,7 @@ def tts_tab():
                     "Clean your audio output using noise detection algorithms, recommended for speaking audios."
                 ),
                 visible=True,
-                value=True,
+                value=False,
                 interactive=True,
             )
             clean_strength = gr.Slider(
