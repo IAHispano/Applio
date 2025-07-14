@@ -7,7 +7,7 @@
   "Audio Analyzer": "Analizator dźwięku",
   "The output information will be displayed here.": "Informacje wyjściowe zostaną wyświetlone w tym miejscu.",
   "Download": "Pobierz",
-  "Output Information": "Informacje ",
+  "Output Information": "Informacje wyjściowe",
   "This section contains some extra utilities that often may be in experimental phases.": "Ta sekcja zawiera kilka dodatkowych narzędzi, które często mogą być w fazie eksperymentalnej.",
   "Model Information": "Informacje modelu",
   "Preprocess": "Przetwórz wstępnie",
@@ -105,7 +105,7 @@
   "Index File": "Plik indeksu",
   "Single": "Pojedynczy",
   "Unload Voice": "Rozładuj głos",
-  "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Przycisk \"Prześlij\" jest przeznaczony tylko dla Coogle Colab: Przesyła wyeksportowane pliki do folderu pod nazwą \"ApplioExported\" na Dysku Google.",
+  "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Przycisk \"Prześlij\" jest przeznaczony tylko dla Google Colab: Przesyła wyeksportowane pliki do folderu pod nazwą \"ApplioExported\" na Dysku Google.",
   "Select the voice model to use for the conversion.": "Wybierz model głosu, który ma zostać użyty do konwersji.",
   "Select the index file to use for the conversion.": "Wybierz plik indeksu, który ma zostać użyty do konwersji.",
   "Upload Audio": "Prześlij dźwięk",
@@ -278,7 +278,7 @@
   "Chorus Mix": "Mix chorus",
   "Set the chorus depth.": "Ustawianie głębokości chorus.",
   "Chorus Feedback": "Sprzężenie zwrotne chorus",
-  "Bitcrush": "Bitchrush",
+  "Bitcrush": "Bitcrush",
   "Set the chorus feedback.": "Ustaw sprzężenie zwrotne chorus.",
   "Set the chorus mix.": "Ustaw miks chorus.",
   "Clipping": "Clipping",
@@ -321,5 +321,8 @@
   "Select the speaker ID to use for the conversion.": "Wybierz identyfikator głośnika, który ma zostać użyty do konwersji.",
   "The name that will appear in the model information.": "Nazwa, która pojawi się w informacjach o modelu.",
   "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid.": "Ustaw siłę autotune - im bardziej ją zwiększysz, tym bardziej będzie przyciągana do tonów.",
-  "Set name": "Ustaw nazwę"
+  "Set name": "Ustaw nazwę",
+  "No internet connection could be established, some features may not be available.": "Nie udało się nawiązać połączenia internetowego. Niektóre funkcje mogą nie być dostępne.",
+  "Provided audio file path is invalid:": "Podana ścieżka pliku dźwiękowego jest nieprawidłowa:",
+  "Reverting path to latest file:": "Przywracanie ścieżki do najnowszego pliku:"
 }
