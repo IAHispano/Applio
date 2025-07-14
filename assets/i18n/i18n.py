@@ -43,7 +43,12 @@ class I18nAuto:
                 )
 
         with open(file_path, "r", encoding="utf-8") as file:
-            return json.load(file)
+            lang = json.load(file)
+
+        lang = {k: k if not v else v for k, v in lang.items()}
+        lang = {k: v.strip("") for k, v in lang.items()}
+
+        return lang
 
     def _get_available_languages(self):
         language_files = [path.stem for path in Path(self.LANGUAGE_PATH).glob("*.json")]
