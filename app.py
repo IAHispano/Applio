@@ -45,13 +45,19 @@ from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
 
-# Start Discord presence if enabled
-from tabs.settings.sections.presence import load_config_presence
+if not online:
+    msg = i18n("No internet connection could be established, some features may not be available.")
+    print(msg + "\n")
+    gr.Warning(msg)
 
-if load_config_presence():
-    from assets.discord_presence import RPCManager
+if online:
+    # Start Discord presence if enabled
+    from tabs.settings.sections.presence import load_config_presence
 
-    RPCManager.start_presence()
+    if load_config_presence():
+        from assets.discord_presence import RPCManager
+
+        RPCManager.start_presence()
 
 # Check installation
 import assets.installation_checker as installation_checker
