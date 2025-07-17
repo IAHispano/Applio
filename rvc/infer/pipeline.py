@@ -27,6 +27,60 @@ bh, ah = signal.butter(
     N=FILTER_ORDER, Wn=CUTOFF_FREQUENCY, btype="high", fs=SAMPLE_RATE
 )
 
+class AudioProcessor:
+    """
+    A class for processing audio signals, specifically for adjusting RMS levels.
+    """
+
+    def change_rms(
+        source_audio: np.ndarray,
+        source_rate: int,
+        target_audio: np.ndarray,
+        target_rate: int,
+        rate: float,
+    ):
+        """
+        Adjust the RMS level of target_audio to match the RMS of source_audio, with a given blending rate.
+
+        Args:
+            source_audio: The source audio signal as a NumPy array.
+            source_rate: The sampling rate of the source audio.
+            target_audio: The target audio signal to adjust.
+            target_rate: The sampling rate of the target audio.
+            rate: The blending rate between the source and target RMS levels.
+        """
+        # Calculate RMS of both audio data
+        rms1 = librosa.feature.rms(
+            y=source_audio,
+            frame_length=source_rate // 2 * 2,
+            hop_length=source_rate // 2,
+        )
+        rms2 = librosa.feature.rms(
+            y=target_audio,
+            frame_length=target_rate // 2 * 2,
+            hop_length=target_rate // 2,
+        )
+
+        # Interpolate RMS to match target audio length
+        rms1 = F.interpolate(
+            torch.from_numpy(rms1).float().unsqueeze(0),
+            size=target_audio.shape[0],
+            mode="linear",
+        ).squeeze()
+        rms2 = F.interpolate(
+            torch.from_numpy(rms2).float().unsqueeze(0),
+            size=target_audio.shape[0],
+            mode="linear",
+        ).squeeze()
+        rms2 = torch.maximum(rms2, torch.zeros_like(rms2) + 1e-6)
+
+        # Adjust target audio RMS based on the source audio RMS
+        adjusted_audio = (
+            target_audio
+            * (torch.pow(rms1, 1 - rate) * torch.pow(rms2, rate - 1)).numpy()
+        )
+        return adjusted_audio
+
 class Autotune:
     """
     A class for applying autotune to a given fundamental frequency (F0) contour.
@@ -126,6 +180,7 @@ class Pipeline:
         self.x_center = config.x_center
         self.x_max = config.x_max
         self.sample_rate = 16000
+        self.tgt_sr = tgt_sr
         self.window = 160
         self.t_pad = self.sample_rate * self.x_pad
         self.t_pad_tgt = tgt_sr * self.x_pad
@@ -315,6 +370,7 @@ class Pipeline:
         file_index,
         index_rate,
         pitch_guidance,
+        volume_envelope,
         version,
         protect,
         f0_autotune,
@@ -459,6 +515,10 @@ class Pipeline:
                 )[self.t_pad_tgt : -self.t_pad_tgt]
             )
         audio_opt = np.concatenate(audio_opt)
+        if volume_envelope != 1:
+            audio_opt = AudioProcessor.change_rms(
+                audio, self.sample_rate, audio_opt, self.tgt_sr, volume_envelope
+            )        
         audio_max = np.abs(audio_opt).max() / 0.99
         if audio_max > 1:
             audio_opt /= audio_max

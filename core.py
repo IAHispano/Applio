@@ -53,6 +53,7 @@ def get_config():
 def run_infer_script(
     pitch: int,
     index_rate: float,
+    volume_envelope: float,
     protect: float,
     f0_method: str,
     input_path: str,
@@ -115,6 +116,7 @@ def run_infer_script(
         "audio_output_path": output_path,
         "model_path": pth_path,
         "index_path": index_path,
+        "volume_envelope": volume_envelope,
         "pitch": pitch,
         "index_rate": index_rate,
         "protect": protect,
@@ -172,7 +174,6 @@ def run_infer_script(
         "delay_mix": delay_mix,
         "sid": sid,
     }
-    print(kwargs)
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(
         **kwargs,
@@ -186,6 +187,7 @@ def run_infer_script(
 def run_batch_infer_script(
     pitch: int,
     index_rate: float,
+    volume_envelope: float,
     protect: float,
     f0_method: str,
     input_folder: str,
@@ -250,6 +252,7 @@ def run_batch_infer_script(
         "index_path": index_path,
         "pitch": pitch,
         "index_rate": index_rate,
+        "volume_envelope": volume_envelope,
         "protect": protect,
         "f0_method": f0_method,
         "pth_path": pth_path,
@@ -305,7 +308,6 @@ def run_batch_infer_script(
         "delay_mix": delay_mix,
         "sid": sid,
     }
-    print(kwargs)
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio_batch(
         **kwargs,
@@ -322,6 +324,7 @@ def run_tts_script(
     tts_rate: int,
     pitch: int,
     index_rate: float,
+    volume_envelope: float,
     protect: float,
     f0_method: str,
     output_tts_path: str,
@@ -367,6 +370,7 @@ def run_tts_script(
     infer_pipeline.convert_audio(
         pitch=pitch,
         index_rate=index_rate,
+        volume_envelope=volume_envelope,
         protect=protect,
         f0_method=f0_method,
         audio_input_path=output_tts_path,
@@ -644,6 +648,14 @@ def parse_arguments():
         help=index_rate_description,
         choices=[i / 100.0 for i in range(0, 101)],
         default=0.3,
+    )
+    volume_envelope_description = "Control the blending of the output's volume envelope. A value of 1 means the output envelope is fully used."
+    infer_parser.add_argument(
+        "--volume_envelope",
+        type=float,
+        help=volume_envelope_description,
+        choices=[i / 100.0 for i in range(0, 101)],
+        default=1,
     )
     protect_description = "Protect consonants and breathing sounds from artifacts. A value of 0.5 offers the strongest protection, while lower values may reduce the protection level but potentially mitigate the indexing effect."
     infer_parser.add_argument(
@@ -1163,6 +1175,13 @@ def parse_arguments():
         default=0.3,
     )
     batch_infer_parser.add_argument(
+        "--volume_envelope",
+        type=float,
+        help=volume_envelope_description,
+        choices=[i / 100.0 for i in range(0, 101)],
+        default=1,
+    )    
+    batch_infer_parser.add_argument(
         "--protect",
         type=float,
         help=protect_description,
@@ -1639,6 +1658,13 @@ def parse_arguments():
         choices=[(i / 10) for i in range(11)],
         default=0.3,
     )
+    tts_parser.add_argument(
+        "--volume_envelope",
+        type=float,
+        help=volume_envelope_description,
+        choices=[(i / 10) for i in range(11)],
+        default=1,
+    )    
     tts_parser.add_argument(
         "--protect",
         type=float,
@@ -2153,6 +2179,7 @@ def main():
             run_infer_script(
                 pitch=args.pitch,
                 index_rate=args.index_rate,
+                volume_envelope=args.volume_envelope,
                 protect=args.protect,
                 f0_method=args.f0_method,
                 input_path=args.input_path,
@@ -2214,6 +2241,7 @@ def main():
             run_batch_infer_script(
                 pitch=args.pitch,
                 index_rate=args.index_rate,
+                volume_envelope=args.volume_envelope,
                 protect=args.protect,
                 f0_method=args.f0_method,
                 input_folder=args.input_folder,
@@ -2279,6 +2307,7 @@ def main():
                 tts_rate=args.tts_rate,
                 pitch=args.pitch,
                 index_rate=args.index_rate,
+                volume_envelope=args.volume_envelope,
                 protect=args.protect,
                 f0_method=args.f0_method,
                 output_tts_path=args.output_tts_path,

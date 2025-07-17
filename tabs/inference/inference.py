@@ -95,6 +95,7 @@ def update_sliders(preset):
     return (
         values["pitch"],
         values["index_rate"],
+        values["rms_mix_rate"],
         values["protect"],
     )
 
@@ -121,18 +122,19 @@ def import_presets(file_path):
     return presets
 
 
-def get_presets_data(pitch, index_rate, protect):
+def get_presets_data(pitch, index_rate, rms_mix_rate, protect):
     return {
         "pitch": pitch,
         "index_rate": index_rate,
+        "rms_mix_rate": rms_mix_rate,
         "protect": protect,
     }
 
 
-def export_presets_button(preset_name, pitch, index_rate, protect):
+def export_presets_button(preset_name, pitch, index_rate, rms_mix_rate, protect):
     if preset_name:
         file_path = os.path.join(PRESETS_DIR, f"{preset_name}.json")
-        presets_data = get_presets_data(pitch, index_rate, protect)
+        presets_data = get_presets_data(pitch, index_rate, rms_mix_rate, protect)
         with open(file_path, "w", encoding="utf-8") as json_file:
             json.dump(presets_data, json_file, ensure_ascii=False, indent=4)
         return "Export successful"
@@ -894,6 +896,16 @@ def inference_tab():
                     value=0.75,
                     interactive=True,
                 )
+                rms_mix_rate = gr.Slider(
+                    minimum=0,
+                    maximum=1,
+                    label=i18n("Volume Envelope"),
+                    info=i18n(
+                        "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
+                    ),
+                    value=1,
+                    interactive=True,
+                )
                 protect = gr.Slider(
                     minimum=0,
                     maximum=0.5,
@@ -910,6 +922,7 @@ def inference_tab():
                     outputs=[
                         pitch,
                         index_rate,
+                        rms_mix_rate,
                         protect,
                     ],
                 )
@@ -919,6 +932,7 @@ def inference_tab():
                         preset_name_input,
                         pitch,
                         index_rate,
+                        rms_mix_rate,
                         protect,
                     ],
                 )
@@ -1512,6 +1526,16 @@ def inference_tab():
                     value=0.75,
                     interactive=True,
                 )
+                rms_mix_rate_batch = gr.Slider(
+                    minimum=0,
+                    maximum=1,
+                    label=i18n("Volume Envelope"),
+                    info=i18n(
+                        "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
+                    ),
+                    value=1,
+                    interactive=True,
+                )
                 protect_batch = gr.Slider(
                     minimum=0,
                     maximum=0.5,
@@ -1528,6 +1552,7 @@ def inference_tab():
                     outputs=[
                         pitch_batch,
                         index_rate_batch,
+                        rms_mix_rate_batch,
                         protect_batch,
                     ],
                 )
@@ -1537,6 +1562,7 @@ def inference_tab():
                         preset_name_input,
                         pitch,
                         index_rate,
+                        rms_mix_rate_batch,
                         protect,
                     ],
                     outputs=[],
@@ -1990,6 +2016,7 @@ def inference_tab():
             terms_checkbox,
             pitch,
             index_rate,
+            rms_mix_rate,
             protect,
             f0_method,
             audio,
@@ -2055,6 +2082,7 @@ def inference_tab():
             terms_checkbox_batch,
             pitch_batch,
             index_rate_batch,
+            rms_mix_rate_batch,
             protect_batch,
             f0_method_batch,
             input_folder_batch,

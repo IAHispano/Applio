@@ -245,6 +245,16 @@ def tts_tab():
                 value=0.75,
                 interactive=True,
             )
+            rms_mix_rate = gr.Slider(
+                minimum=0,
+                maximum=1,
+                label=i18n("Volume Envelope"),
+                info=i18n(
+                    "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
+                ),
+                value=1,
+                interactive=True,
+            )
             protect = gr.Slider(
                 minimum=0,
                 maximum=0.5,
@@ -399,6 +409,7 @@ def tts_tab():
             tts_rate,
             pitch,
             index_rate,
+            rms_mix_rate,
             protect,
             f0_method,
             output_tts_path,
