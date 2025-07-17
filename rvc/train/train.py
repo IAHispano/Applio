@@ -76,11 +76,15 @@ try:
     with open(os.path.join(current_dir, "assets", "config.json"), "r") as f:
         config = json.load(f)
         precision = config["precision"]
-        if precision == "bf16" and torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+        if (
+            precision == "bf16"
+            and torch.cuda.is_available()
+            and torch.cuda.is_bf16_supported()
+        ):
             train_dtype = torch.bfloat16
         else:
             train_dtype = torch.float32
-except(FileNotFoundError, json.JSONDecodeError, KeyError):
+except (FileNotFoundError, json.JSONDecodeError, KeyError):
     train_dtype = torch.float32
 
 experiment_dir = os.path.join(current_dir, "logs", model_name)
