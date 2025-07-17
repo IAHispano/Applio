@@ -97,6 +97,7 @@ def load_embedding(embedder_model, custom_embedder=None):
     embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
     embedding_list = {
         "contentvec": os.path.join(embedder_root, "contentvec"),
+        "spin": os.path.join(embedder_root, "spin"),
         "chinese-hubert-base": os.path.join(embedder_root, "chinese_hubert_base"),
         "japanese-hubert-base": os.path.join(embedder_root, "japanese_hubert_base"),
         "korean-hubert-base": os.path.join(embedder_root, "korean_hubert_base"),
@@ -104,6 +105,7 @@ def load_embedding(embedder_model, custom_embedder=None):
 
     online_embedders = {
         "contentvec": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/contentvec/pytorch_model.bin",
+        "spin": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/spin/pytorch_model.bin",
         "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/chinese_hubert_base/pytorch_model.bin",
         "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/japanese_hubert_base/pytorch_model.bin",
         "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/korean_hubert_base/pytorch_model.bin",
@@ -111,6 +113,7 @@ def load_embedding(embedder_model, custom_embedder=None):
 
     config_files = {
         "contentvec": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/contentvec/config.json",
+        "spin": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/spin/config.json",
         "chinese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/chinese_hubert_base/config.json",
         "japanese-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/japanese_hubert_base/config.json",
         "korean-hubert-base": "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/embedders/korean_hubert_base/config.json",

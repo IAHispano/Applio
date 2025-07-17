@@ -14,8 +14,7 @@ from torch import Tensor
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.lib.predictors.RMVPE import RMVPE0Predictor
-from rvc.lib.predictors.FCPE import FCPEF0Predictor
+from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE
 
 import logging
 
@@ -27,9 +26,6 @@ SAMPLE_RATE = 16000  # Hz
 bh, ah = signal.butter(
     N=FILTER_ORDER, Wn=CUTOFF_FREQUENCY, btype="high", fs=SAMPLE_RATE
 )
-
-input_audio_path2wav = {}
-
 
 class AudioProcessor:
     """
@@ -85,69 +81,16 @@ class AudioProcessor:
         )
         return adjusted_audio
 
-
 class Autotune:
     """
     A class for applying autotune to a given fundamental frequency (F0) contour.
     """
 
-    def __init__(self, ref_freqs):
+    def __init__(self):
         """
         Initializes the Autotune class with a set of reference frequencies.
-
-        Args:
-            ref_freqs: A list of reference frequencies representing musical notes.
         """
-        self.ref_freqs = ref_freqs
-        self.note_dict = self.ref_freqs  # No interpolation needed
-
-    def autotune_f0(self, f0, f0_autotune_strength):
-        """
-        Autotunes a given F0 contour by snapping each frequency to the closest reference frequency.
-
-        Args:
-            f0: The input F0 contour as a NumPy array.
-        """
-        autotuned_f0 = np.zeros_like(f0)
-        for i, freq in enumerate(f0):
-            closest_note = min(self.note_dict, key=lambda x: abs(x - freq))
-            autotuned_f0[i] = freq + (closest_note - freq) * f0_autotune_strength
-        return autotuned_f0
-
-
-class Pipeline:
-    """
-    The main pipeline class for performing voice conversion, including preprocessing, F0 estimation,
-    voice conversion using a model, and post-processing.
-    """
-
-    def __init__(self, tgt_sr, config):
-        """
-        Initializes the Pipeline class with target sampling rate and configuration parameters.
-
-        Args:
-            tgt_sr: The target sampling rate for the output audio.
-            config: A configuration object containing various parameters for the pipeline.
-        """
-        self.x_pad = config.x_pad
-        self.x_query = config.x_query
-        self.x_center = config.x_center
-        self.x_max = config.x_max
-        self.sample_rate = 16000
-        self.window = 160
-        self.t_pad = self.sample_rate * self.x_pad
-        self.t_pad_tgt = tgt_sr * self.x_pad
-        self.t_pad2 = self.t_pad * 2
-        self.t_query = self.sample_rate * self.x_query
-        self.t_center = self.sample_rate * self.x_center
-        self.t_max = self.sample_rate * self.x_max
-        self.time_step = self.window / self.sample_rate * 1000
-        self.f0_min = 50
-        self.f0_max = 1100
-        self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
-        self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
-        self.device = config.device
-        self.ref_freqs = [
+        self.note_dict = [
             49.00,  # G1
             51.91,  # G#1 / Ab1
             55.00,  # A1
@@ -203,195 +146,111 @@ class Pipeline:
             987.77,  # B5
             1046.50,  # C6
         ]
-        self.autotune = Autotune(self.ref_freqs)
-        self.note_dict = self.autotune.note_dict
-        self.model_rmvpe = RMVPE0Predictor(
-            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
-            device=self.device,
-        )
 
-    def get_f0_crepe(
-        self,
-        x,
-        f0_min,
-        f0_max,
-        p_len,
-        hop_length,
-        model="full",
-    ):
+    def autotune_f0(self, f0, f0_autotune_strength):
         """
-        Estimates the fundamental frequency (F0) of a given audio signal using the Crepe model.
+        Autotunes a given F0 contour by snapping each frequency to the closest reference frequency.
 
         Args:
-            x: The input audio signal as a NumPy array.
-            f0_min: Minimum F0 value to consider.
-            f0_max: Maximum F0 value to consider.
-            p_len: Desired length of the F0 output.
-            hop_length: Hop length for the Crepe model.
-            model: Crepe model size to use ("full" or "tiny").
+            f0: The input F0 contour as a NumPy array.
         """
-        x = x.astype(np.float32)
-        x /= np.quantile(np.abs(x), 0.999)
-        audio = torch.from_numpy(x).to(self.device, copy=True)
-        audio = torch.unsqueeze(audio, dim=0)
-        if audio.ndim == 2 and audio.shape[0] > 1:
-            audio = torch.mean(audio, dim=0, keepdim=True).detach()
-        audio = audio.detach()
-        pitch: Tensor = torchcrepe.predict(
-            audio,
-            self.sample_rate,
-            hop_length,
-            f0_min,
-            f0_max,
-            model,
-            batch_size=hop_length * 2,
-            device=self.device,
-            pad=True,
-        )
-        p_len = p_len or x.shape[0] // hop_length
-        source = np.array(pitch.squeeze(0).cpu().float().numpy())
-        source[source < 0.001] = np.nan
-        target = np.interp(
-            np.arange(0, len(source) * p_len, len(source)) / p_len,
-            np.arange(0, len(source)),
-            source,
-        )
-        f0 = np.nan_to_num(target)
-        return f0
+        autotuned_f0 = np.zeros_like(f0)
+        for i, freq in enumerate(f0):
+            closest_note = min(self.note_dict, key=lambda x: abs(x - freq))
+            autotuned_f0[i] = freq + (closest_note - freq) * f0_autotune_strength
+        return autotuned_f0
 
-    def get_f0_hybrid(
-        self,
-        methods_str,
-        x,
-        f0_min,
-        f0_max,
-        p_len,
-        hop_length,
-    ):
+
+class Pipeline:
+    """
+    The main pipeline class for performing voice conversion, including preprocessing, F0 estimation,
+    voice conversion using a model, and post-processing.
+    """
+
+    def __init__(self, tgt_sr, config):
         """
-        Estimates the fundamental frequency (F0) using a hybrid approach combining multiple methods.
+        Initializes the Pipeline class with target sampling rate and configuration parameters.
 
         Args:
-            methods_str: A string specifying the methods to combine (e.g., "hybrid[crepe+rmvpe]").
-            x: The input audio signal as a NumPy array.
-            f0_min: Minimum F0 value to consider.
-            f0_max: Maximum F0 value to consider.
-            p_len: Desired length of the F0 output.
-            hop_length: Hop length for F0 estimation methods.
+            tgt_sr: The target sampling rate for the output audio.
+            config: A configuration object containing various parameters for the pipeline.
         """
-        methods_str = re.search("hybrid\[(.+)\]", methods_str)
-        if methods_str:
-            methods = [method.strip() for method in methods_str.group(1).split("+")]
-        f0_computation_stack = []
-        print(f"Calculating f0 pitch estimations for methods: {', '.join(methods)}")
-        x = x.astype(np.float32)
-        x /= np.quantile(np.abs(x), 0.999)
-        for method in methods:
-            f0 = None
-            if method == "crepe":
-                f0 = self.get_f0_crepe_computation(
-                    x, f0_min, f0_max, p_len, int(hop_length)
-                )
-            elif method == "rmvpe":
-                f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
-                f0 = f0[1:]
-            elif method == "fcpe":
-                self.model_fcpe = FCPEF0Predictor(
-                    os.path.join("rvc", "models", "predictors", "fcpe.pt"),
-                    f0_min=int(f0_min),
-                    f0_max=int(f0_max),
-                    dtype=torch.float32,
-                    device=self.device,
-                    sample_rate=self.sample_rate,
-                    threshold=0.03,
-                )
-                f0 = self.model_fcpe.compute_f0(x, p_len=p_len)
-                del self.model_fcpe
-                gc.collect()
-            f0_computation_stack.append(f0)
-
-        f0_computation_stack = [fc for fc in f0_computation_stack if fc is not None]
-        f0_median_hybrid = None
-        if len(f0_computation_stack) == 1:
-            f0_median_hybrid = f0_computation_stack[0]
-        else:
-            f0_median_hybrid = np.nanmedian(f0_computation_stack, axis=0)
-        return f0_median_hybrid
+        self.x_pad = config.x_pad
+        self.x_query = config.x_query
+        self.x_center = config.x_center
+        self.x_max = config.x_max
+        self.sample_rate = 16000
+        self.tgt_sr = tgt_sr
+        self.window = 160
+        self.t_pad = self.sample_rate * self.x_pad
+        self.t_pad_tgt = tgt_sr * self.x_pad
+        self.t_pad2 = self.t_pad * 2
+        self.t_query = self.sample_rate * self.x_query
+        self.t_center = self.sample_rate * self.x_center
+        self.t_max = self.sample_rate * self.x_max
+        self.time_step = self.window / self.sample_rate * 1000
+        self.f0_min = 50
+        self.f0_max = 1100
+        self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
+        self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
+        self.device = config.device
+        self.autotune = Autotune()
 
     def get_f0(
         self,
-        input_audio_path,
         x,
         p_len,
-        pitch,
-        f0_method,
-        hop_length,
-        f0_autotune,
-        f0_autotune_strength,
-        inp_f0=None,
+        f0_method: str = "rmvpe",
+        pitch: int = 0,
+        f0_autotune: bool = False,
+        f0_autotune_strength: float = 1.0,
+        proposed_pitch: bool = False,
+        proposed_pitch_threshold: float = 155.0,
     ):
         """
         Estimates the fundamental frequency (F0) of a given audio signal using various methods.
 
         Args:
-            input_audio_path: Path to the input audio file.
             x: The input audio signal as a NumPy array.
             p_len: Desired length of the F0 output.
             pitch: Key to adjust the pitch of the F0 contour.
             f0_method: Method to use for F0 estimation (e.g., "crepe").
-            hop_length: Hop length for F0 estimation methods.
             f0_autotune: Whether to apply autotune to the F0 contour.
-            inp_f0: Optional input F0 contour to use instead of estimating.
+            proposed_pitch: whether to apply proposed pitch adjustment
+            proposed_pitch_threshold: target frequency, 155.0 for male, 255.0 for female
         """
-        global input_audio_path2wav
         if f0_method == "crepe":
-            f0 = self.get_f0_crepe(x, self.f0_min, self.f0_max, p_len, int(hop_length))
+            model = CREPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.window)
+            f0 = model.get_f0(x, self.f0_min, self.f0_max, p_len, "full")
+            del model
         elif f0_method == "crepe-tiny":
-            f0 = self.get_f0_crepe(
-                x, self.f0_min, self.f0_max, p_len, int(hop_length), "tiny"
-            )
+            model = CREPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.window)
+            f0 = model.get_f0(x, self.f0_min, self.f0_max, p_len, "tiny")
+            del model
         elif f0_method == "rmvpe":
-            f0 = self.model_rmvpe.infer_from_audio(x, thred=0.03)
+            model = RMVPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.window)
+            f0 = model.get_f0(x, filter_radius=0.03)
+            del model
         elif f0_method == "fcpe":
-            self.model_fcpe = FCPEF0Predictor(
-                os.path.join("rvc", "models", "predictors", "fcpe.pt"),
-                f0_min=int(self.f0_min),
-                f0_max=int(self.f0_max),
-                dtype=torch.float32,
-                device=self.device,
-                sample_rate=self.sample_rate,
-                threshold=0.03,
-            )
-            f0 = self.model_fcpe.compute_f0(x, p_len=p_len)
-            del self.model_fcpe
-            gc.collect()
-        elif "hybrid" in f0_method:
-            input_audio_path2wav[input_audio_path] = x.astype(np.double)
-            f0 = self.get_f0_hybrid(
-                f0_method,
-                x,
-                self.f0_min,
-                self.f0_max,
-                p_len,
-                hop_length,
-            )
+            model = FCPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.window)
+            f0 = model.get_f0(x, p_len, filter_radius = 0.006)
+            del model
 
+        # f0 adjustments
         if f0_autotune is True:
             f0 = Autotune.autotune_f0(self, f0, f0_autotune_strength)
-
-        f0 *= pow(2, pitch / 12)
-        tf0 = self.sample_rate // self.window
-        if inp_f0 is not None:
-            delta_t = np.round(
-                (inp_f0[:, 0].max() - inp_f0[:, 0].min()) * tf0 + 1
-            ).astype("int16")
-            replace_f0 = np.interp(
-                list(range(delta_t)), inp_f0[:, 0] * 100, inp_f0[:, 1]
-            )
-            shape = f0[self.x_pad * tf0 : self.x_pad * tf0 + len(replace_f0)].shape[0]
-            f0[self.x_pad * tf0 : self.x_pad * tf0 + len(replace_f0)] = replace_f0[
-                :shape
-            ]
+        elif proposed_pitch is True:
+            limit = 12
+            # calculate median f0 of the audio
+            _f0 = np.where(f0 == 0, np.nan, f0)
+            _f0 = float(np.median(np.interp(np.arange(len(_f0)), np.where(~np.isnan(_f0))[0], f0[~np.isnan(_f0)])))
+            # calculate proposed shift
+            up_key = max(-limit, min(limit, int(np.round(12 * np.log2(proposed_pitch_threshold / _f0)))))
+            print("calculated pitch offset:", up_key)
+            f0 *= pow(2, (pitch + up_key) / 12)
+        else:
+            f0 *= pow(2, pitch / 12)
+        # quantizing f0 to 255 buckets to make coarse f0
         f0bak = f0.copy()
         f0_mel = 1127 * np.log(1 + f0 / 700)
         f0_mel[f0_mel > 0] = (f0_mel[f0_mel > 0] - self.f0_mel_min) * 254 / (
@@ -514,10 +373,10 @@ class Pipeline:
         volume_envelope,
         version,
         protect,
-        hop_length,
         f0_autotune,
         f0_autotune_strength,
-        f0_file,
+        proposed_pitch,
+        proposed_pitch_threshold
     ):
         """
         The main pipeline function for performing voice conversion.
@@ -535,12 +394,10 @@ class Pipeline:
             pitch_guidance: Whether to use pitch guidance during voice conversion.
             tgt_sr: Target sampling rate for the output audio.
             resample_sr: Resampling rate for the output audio.
-            volume_envelope: Blending rate for adjusting the RMS level of the output audio.
             version: Model version.
             protect: Protection level for preserving the original pitch.
             hop_length: Hop length for F0 estimation methods.
             f0_autotune: Whether to apply autotune to the F0 contour.
-            f0_file: Path to a file containing an F0 contour to use.
         """
         if file_index != "" and os.path.exists(file_index) and index_rate > 0:
             try:
@@ -572,29 +429,17 @@ class Pipeline:
         t = None
         audio_pad = np.pad(audio, (self.t_pad, self.t_pad), mode="reflect")
         p_len = audio_pad.shape[0] // self.window
-        inp_f0 = None
-        if hasattr(f0_file, "name"):
-            try:
-                with open(f0_file.name, "r") as f:
-                    lines = f.read().strip("\n").split("\n")
-                inp_f0 = []
-                for line in lines:
-                    inp_f0.append([float(i) for i in line.split(",")])
-                inp_f0 = np.array(inp_f0, dtype="float32")
-            except Exception as error:
-                print(f"An error occurred reading the F0 file: {error}")
         sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
         if pitch_guidance:
             pitch, pitchf = self.get_f0(
-                "input_audio_path",  # questionable purpose of making a key for an array
                 audio_pad,
                 p_len,
-                pitch,
                 f0_method,
-                hop_length,
+                pitch,
                 f0_autotune,
                 f0_autotune_strength,
-                inp_f0,
+                proposed_pitch,
+                proposed_pitch_threshold
             )
             pitch = pitch[:p_len]
             pitchf = pitchf[:p_len]
@@ -672,8 +517,8 @@ class Pipeline:
         audio_opt = np.concatenate(audio_opt)
         if volume_envelope != 1:
             audio_opt = AudioProcessor.change_rms(
-                audio, self.sample_rate, audio_opt, self.sample_rate, volume_envelope
-            )
+                audio, self.sample_rate, audio_opt, self.tgt_sr, volume_envelope
+            )        
         audio_max = np.abs(audio_opt).max() / 0.99
         if audio_max > 1:
             audio_opt /= audio_max

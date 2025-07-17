@@ -30,8 +30,20 @@ def generate_filelist(model_path: str, sample_rate: int, include_mutes: int = 2)
     f0nsf_files = set(name.split(".")[0] for name in os.listdir(f0nsf_dir))
     names = gt_wavs_files & feature_files & f0_files & f0nsf_files
 
+    try:
+        model_info_path = os.path.join(model_path, "model_info.json")
+        with open(model_info_path, "r") as f:
+            model_info = json.load(f)
+            embedder_name = model_info["embedder_model"]
+    except:
+            embedder_name = "contentvec"
+    
+    if embedder_name == "spin":
+        mute_base_path = os.path.join(current_directory, "logs", "mute_spin")
+    else:
+        mute_base_path = os.path.join(current_directory, "logs", "mute")
+    
     options = []
-    mute_base_path = os.path.join(current_directory, "logs", "mute")
     sids = []
     for name in names:
         sid = name.split("_")[0]

@@ -465,6 +465,24 @@ def inference_tab():
                     value=1,
                     interactive=True,
                 )
+                proposed_pitch = gr.Checkbox(
+                    label=i18n("Proposed Pitch"),
+                    info=i18n(
+                        "Adjust the input audio pitch to match the voice model range."
+                    ),
+                    visible=True,
+                    value=False,
+                    interactive=True,
+                )
+                proposed_pitch_threshold = gr.Slider(
+                    minimum=50.0,
+                    maximum=1200.0,
+                    label=i18n("Proposed Pitch Threshold"),
+                    info=i18n("Male voice models typically use 155.0 and female voice models typically use 255.0."),
+                    visible=False,
+                    value=155.0,
+                    interactive=True,
+                )
                 clean_audio = gr.Checkbox(
                     label=i18n("Clean Audio"),
                     info=i18n(
@@ -918,18 +936,6 @@ def inference_tab():
                         protect,
                     ],
                 )
-                hop_length = gr.Slider(
-                    minimum=1,
-                    maximum=512,
-                    step=1,
-                    label=i18n("Hop Length"),
-                    info=i18n(
-                        "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
-                    ),
-                    visible=False,
-                    value=128,
-                    interactive=True,
-                )
                 f0_method = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
                     info=i18n(
@@ -940,7 +946,6 @@ def inference_tab():
                         "crepe-tiny",
                         "rmvpe",
                         "fcpe",
-                        "hybrid[rmvpe+fcpe]",
                     ],
                     value="rmvpe",
                     interactive=True,
@@ -950,6 +955,7 @@ def inference_tab():
                     info=i18n("Model used for learning speaker embedding."),
                     choices=[
                         "contentvec",
+                        "spin",
                         "chinese-hubert-base",
                         "japanese-hubert-base",
                         "korean-hubert-base",
@@ -987,13 +993,6 @@ def inference_tab():
                         move_files_button = gr.Button(
                             i18n("Move files to custom embedder folder")
                         )
-
-                f0_file = gr.File(
-                    label=i18n(
-                        "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."
-                    ),
-                    visible=True,
-                )
 
         def enforce_terms(terms_accepted, *args):
             if not terms_accepted:
@@ -1095,6 +1094,24 @@ def inference_tab():
                     value=1,
                     interactive=True,
                 )
+                proposed_pitch_batch = gr.Checkbox(
+                    label=i18n("Proposed Pitch"),
+                    info=i18n(
+                        "Adjust the input audio pitch to match the voice model range."
+                    ),
+                    visible=True,
+                    value=False,
+                    interactive=True,
+                )
+                proposed_pitch_threshold_batch = gr.Slider(
+                    minimum=50.0,
+                    maximum=1200.0,
+                    label=i18n("Proposed Pitch Threshold"),
+                    info=i18n("Male voice models typically use 155.0 and female voice models typically use 255.0."),
+                    visible=False,
+                    value=155.0,
+                    interactive=True,
+                )                
                 clean_audio_batch = gr.Checkbox(
                     label=i18n("Clean Audio"),
                     info=i18n(
@@ -1545,22 +1562,10 @@ def inference_tab():
                         preset_name_input,
                         pitch,
                         index_rate,
-                        rms_mix_rate,
+                        rms_mix_rate_batch,
                         protect,
                     ],
                     outputs=[],
-                )
-                hop_length_batch = gr.Slider(
-                    minimum=1,
-                    maximum=512,
-                    step=1,
-                    label=i18n("Hop Length"),
-                    info=i18n(
-                        "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
-                    ),
-                    visible=False,
-                    value=128,
-                    interactive=True,
                 )
                 f0_method_batch = gr.Radio(
                     label=i18n("Pitch extraction algorithm"),
@@ -1572,7 +1577,6 @@ def inference_tab():
                         "crepe-tiny",
                         "rmvpe",
                         "fcpe",
-                        "hybrid[rmvpe+fcpe]",
                     ],
                     value="rmvpe",
                     interactive=True,
@@ -1582,6 +1586,7 @@ def inference_tab():
                     info=i18n("Model used for learning speaker embedding."),
                     choices=[
                         "contentvec",
+                        "spin",
                         "chinese-hubert-base",
                         "japanese-hubert-base",
                         "korean-hubert-base",
@@ -1589,12 +1594,6 @@ def inference_tab():
                     ],
                     value="contentvec",
                     interactive=True,
-                )
-                f0_file_batch = gr.File(
-                    label=i18n(
-                        "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls."
-                    ),
-                    visible=True,
                 )
                 with gr.Column(visible=False) as embedder_custom_batch:
                     with gr.Accordion(i18n("Custom Embedder"), open=True):
@@ -1646,11 +1645,6 @@ def inference_tab():
 
     def toggle_visible(checkbox):
         return {"visible": checkbox, "__type__": "update"}
-
-    def toggle_visible_hop_length(f0_method):
-        if f0_method == "crepe" or f0_method == "crepe-tiny":
-            return {"visible": True, "__type__": "update"}
-        return {"visible": False, "__type__": "update"}
 
     def toggle_visible_embedder_custom(embedder_model):
         if embedder_model == "custom":
@@ -1716,6 +1710,16 @@ def inference_tab():
         inputs=[autotune],
         outputs=[autotune_strength],
     )
+    proposed_pitch.change(
+        fn=toggle_visible,
+        inputs=[proposed_pitch],
+        outputs=[proposed_pitch_threshold],
+    )
+    proposed_pitch_batch.change(
+        fn=toggle_visible,
+        inputs=[proposed_pitch_batch],
+        outputs=[proposed_pitch_threshold_batch],
+    )      
     clean_audio.change(
         fn=toggle_visible,
         inputs=[clean_audio],
@@ -1942,16 +1946,6 @@ def inference_tab():
         inputs=[clean_audio_batch],
         outputs=[clean_strength_batch],
     )
-    f0_method.change(
-        fn=toggle_visible_hop_length,
-        inputs=[f0_method],
-        outputs=[hop_length],
-    )
-    f0_method_batch.change(
-        fn=toggle_visible_hop_length,
-        inputs=[f0_method_batch],
-        outputs=[hop_length_batch],
-    )
     refresh_button.click(
         fn=change_choices,
         inputs=[model_file],
@@ -2024,7 +2018,6 @@ def inference_tab():
             index_rate,
             rms_mix_rate,
             protect,
-            hop_length,
             f0_method,
             audio,
             output_path,
@@ -2033,10 +2026,11 @@ def inference_tab():
             split_audio,
             autotune,
             autotune_strength,
+            proposed_pitch,
+            proposed_pitch_threshold,
             clean_audio,
             clean_strength,
             export_format,
-            f0_file,
             embedder_model,
             embedder_model_custom,
             formant_shifting,
@@ -2090,7 +2084,6 @@ def inference_tab():
             index_rate_batch,
             rms_mix_rate_batch,
             protect_batch,
-            hop_length_batch,
             f0_method_batch,
             input_folder_batch,
             output_folder_batch,
@@ -2099,10 +2092,11 @@ def inference_tab():
             split_audio_batch,
             autotune_batch,
             autotune_strength_batch,
+            proposed_pitch_batch,
+            proposed_pitch_threshold_batch,
             clean_audio_batch,
             clean_strength_batch,
             export_format_batch,
-            f0_file_batch,
             embedder_model_batch,
             embedder_model_custom_batch,
             formant_shifting_batch,

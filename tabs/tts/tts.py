@@ -186,13 +186,31 @@ def tts_tab():
                 value=1,
                 interactive=True,
             )
+            proposed_pitch = gr.Checkbox(
+                label=i18n("Proposed Pitch"),
+                info=i18n(
+                    "Adjust the input audio pitch to match the voice model range."
+                ),
+                visible=True,
+                value=False,
+                interactive=True,
+            )
+            proposed_pitch_threshold = gr.Slider(
+                minimum=50.0,
+                maximum=1200.0,
+                label=i18n("Proposed Pitch Threshold"),
+                info=i18n("Male voice models typically use 155.0 and female voice models typically use 255.0."),
+                visible=False,
+                value=155.0,
+                interactive=True,
+            )
             clean_audio = gr.Checkbox(
                 label=i18n("Clean Audio"),
                 info=i18n(
                     "Clean your audio output using noise detection algorithms, recommended for speaking audios."
                 ),
                 visible=True,
-                value=True,
+                value=False,
                 interactive=True,
             )
             clean_strength = gr.Slider(
@@ -247,17 +265,6 @@ def tts_tab():
                 value=0.5,
                 interactive=True,
             )
-            hop_length = gr.Slider(
-                minimum=1,
-                maximum=512,
-                step=1,
-                label=i18n("Hop Length"),
-                info=i18n(
-                    "Denotes the duration it takes for the system to transition to a significant pitch change. Smaller hop lengths require more time for inference but tend to yield higher pitch accuracy."
-                ),
-                value=128,
-                interactive=True,
-            )
             f0_method = gr.Radio(
                 label=i18n("Pitch extraction algorithm"),
                 info=i18n(
@@ -268,7 +275,6 @@ def tts_tab():
                     "crepe-tiny",
                     "rmvpe",
                     "fcpe",
-                    "hybrid[rmvpe+fcpe]",
                 ],
                 value="rmvpe",
                 interactive=True,
@@ -278,6 +284,7 @@ def tts_tab():
                 info=i18n("Model used for learning speaker embedding."),
                 choices=[
                     "contentvec",
+                    "spin",
                     "chinese-hubert-base",
                     "japanese-hubert-base",
                     "korean-hubert-base",
@@ -357,6 +364,11 @@ def tts_tab():
         inputs=[autotune],
         outputs=[autotune_strength],
     )
+    proposed_pitch.change(
+        fn=toggle_visible,
+        inputs=[proposed_pitch],
+        outputs=[proposed_pitch_threshold],
+    )    
     clean_audio.change(
         fn=toggle_visible,
         inputs=[clean_audio],
@@ -399,7 +411,6 @@ def tts_tab():
             index_rate,
             rms_mix_rate,
             protect,
-            hop_length,
             f0_method,
             output_tts_path,
             output_rvc_path,
@@ -408,10 +419,11 @@ def tts_tab():
             split_audio,
             autotune,
             autotune_strength,
+            proposed_pitch,
+            proposed_pitch_threshold,
             clean_audio,
             clean_strength,
             export_format,
-            f0_file,
             embedder_model,
             embedder_model_custom,
             sid,
