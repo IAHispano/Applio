@@ -199,7 +199,9 @@ def tts_tab():
                 minimum=50.0,
                 maximum=1200.0,
                 label=i18n("Proposed Pitch Threshold"),
-                info=i18n("Male voice models typically use 155.0 and female voice models typically use 255.0."),
+                info=i18n(
+                    "Male voice models typically use 155.0 and female voice models typically use 255.0."
+                ),
                 visible=False,
                 value=155.0,
                 interactive=True,
@@ -368,7 +370,7 @@ def tts_tab():
         fn=toggle_visible,
         inputs=[proposed_pitch],
         outputs=[proposed_pitch_threshold],
-    )    
+    )
     clean_audio.change(
         fn=toggle_visible,
         inputs=[clean_audio],

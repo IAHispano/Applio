@@ -448,7 +448,7 @@ def train_tab():
                     interactive=True,
                     visible=True,
                 )
-                
+
                 normalization_mode = gr.Radio(
                     label=i18n("Normalization mode"),
                     info=i18n(
@@ -503,7 +503,7 @@ def train_tab():
                     clean_strength,
                     chunk_len,
                     overlap_len,
-                    normalization_mode
+                    normalization_mode,
                 ],
                 outputs=[preprocess_output_info],
             )
@@ -525,7 +525,8 @@ def train_tab():
                 label=i18n("Embedder Model"),
                 info=i18n("Model used for learning speaker embedding."),
                 choices=[
-                    "contentvec", "spin",
+                    "contentvec",
+                    "spin",
                     "chinese-hubert-base",
                     "japanese-hubert-base",
                     "korean-hubert-base",

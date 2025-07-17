@@ -1,6 +1,5 @@
 import os
 import gc
-import re
 import sys
 import torch
 import torch.nn.functional as F
@@ -26,6 +25,7 @@ SAMPLE_RATE = 16000  # Hz
 bh, ah = signal.butter(
     N=FILTER_ORDER, Wn=CUTOFF_FREQUENCY, btype="high", fs=SAMPLE_RATE
 )
+
 
 class AudioProcessor:
     """
@@ -80,6 +80,7 @@ class AudioProcessor:
             * (torch.pow(rms1, 1 - rate) * torch.pow(rms2, rate - 1)).numpy()
         )
         return adjusted_audio
+
 
 class Autotune:
     """
@@ -220,20 +221,28 @@ class Pipeline:
             proposed_pitch_threshold: target frequency, 155.0 for male, 255.0 for female
         """
         if f0_method == "crepe":
-            model = CREPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.window)
+            model = CREPE(
+                device=self.device, sample_rate=self.sample_rate, hop_size=self.window
+            )
             f0 = model.get_f0(x, self.f0_min, self.f0_max, p_len, "full")
             del model
         elif f0_method == "crepe-tiny":
-            model = CREPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.window)
+            model = CREPE(
+                device=self.device, sample_rate=self.sample_rate, hop_size=self.window
+            )
             f0 = model.get_f0(x, self.f0_min, self.f0_max, p_len, "tiny")
             del model
         elif f0_method == "rmvpe":
-            model = RMVPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.window)
+            model = RMVPE(
+                device=self.device, sample_rate=self.sample_rate, hop_size=self.window
+            )
             f0 = model.get_f0(x, filter_radius=0.03)
             del model
         elif f0_method == "fcpe":
-            model = FCPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.window)
-            f0 = model.get_f0(x, p_len, filter_radius = 0.006)
+            model = FCPE(
+                device=self.device, sample_rate=self.sample_rate, hop_size=self.window
+            )
+            f0 = model.get_f0(x, p_len, filter_radius=0.006)
             del model
 
         # f0 adjustments
@@ -243,9 +252,20 @@ class Pipeline:
             limit = 12
             # calculate median f0 of the audio
             _f0 = np.where(f0 == 0, np.nan, f0)
-            _f0 = float(np.median(np.interp(np.arange(len(_f0)), np.where(~np.isnan(_f0))[0], f0[~np.isnan(_f0)])))
+            _f0 = float(
+                np.median(
+                    np.interp(
+                        np.arange(len(_f0)),
+                        np.where(~np.isnan(_f0))[0],
+                        f0[~np.isnan(_f0)],
+                    )
+                )
+            )
             # calculate proposed shift
-            up_key = max(-limit, min(limit, int(np.round(12 * np.log2(proposed_pitch_threshold / _f0)))))
+            up_key = max(
+                -limit,
+                min(limit, int(np.round(12 * np.log2(proposed_pitch_threshold / _f0)))),
+            )
             print("calculated pitch offset:", up_key)
             f0 *= pow(2, (pitch + up_key) / 12)
         else:
@@ -376,7 +396,7 @@ class Pipeline:
         f0_autotune,
         f0_autotune_strength,
         proposed_pitch,
-        proposed_pitch_threshold
+        proposed_pitch_threshold,
     ):
         """
         The main pipeline function for performing voice conversion.
@@ -439,7 +459,7 @@ class Pipeline:
                 f0_autotune,
                 f0_autotune_strength,
                 proposed_pitch,
-                proposed_pitch_threshold
+                proposed_pitch_threshold,
             )
             pitch = pitch[:p_len]
             pitchf = pitchf[:p_len]
@@ -518,7 +538,7 @@ class Pipeline:
         if volume_envelope != 1:
             audio_opt = AudioProcessor.change_rms(
                 audio, self.sample_rate, audio_opt, self.tgt_sr, volume_envelope
-            )        
+            )
         audio_max = np.abs(audio_opt).max() / 0.99
         if audio_max > 1:
             audio_opt /= audio_max

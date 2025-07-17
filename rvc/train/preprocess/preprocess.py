@@ -142,7 +142,7 @@ class PreProcess:
         reduction_strength: float,
         chunk_len: float,
         overlap_len: float,
-        normalization_mode: str
+        normalization_mode: str,
     ):
         audio_length = 0
         try:
@@ -168,7 +168,14 @@ class PreProcess:
                 )
             elif cut_preprocess == "Simple":
                 # simple
-                self.simple_cut(audio, sid, idx0, chunk_len, overlap_len, normalization_mode,)
+                self.simple_cut(
+                    audio,
+                    sid,
+                    idx0,
+                    chunk_len,
+                    overlap_len,
+                    normalization_mode,
+                )
             elif cut_preprocess == "Automatic":
                 idx1 = 0
                 # legacy
@@ -311,7 +318,7 @@ def preprocess_training_set(
                         reduction_strength,
                         chunk_len,
                         overlap_len,
-                        normalization_mode
+                        normalization_mode,
                     ),
                 )
                 for file in files
@@ -357,5 +364,5 @@ if __name__ == "__main__":
         reduction_strength,
         chunk_len,
         overlap_len,
-        normalization_mode
+        normalization_mode,
     )
