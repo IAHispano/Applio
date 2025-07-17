@@ -69,7 +69,7 @@ d_lr_coeff = 1.0
 g_lr_coeff = 1.0
 d_step_per_g_step = 1
 multiscale_mel_loss = False
-#train_dtype = torch.bfloat16
+# train_dtype = torch.bfloat16
 train_dtype = torch.float32
 
 current_dir = os.getcwd()
@@ -107,7 +107,7 @@ avg_losses = {
     "grad_d_50": deque(maxlen=50),
     "grad_g_50": deque(maxlen=50),
     "disc_loss_50": deque(maxlen=50),
-    "adv_loss_50":  deque(maxlen=50),
+    "adv_loss_50": deque(maxlen=50),
     "fm_loss_50": deque(maxlen=50),
     "kl_loss_50": deque(maxlen=50),
     "mel_loss_50": deque(maxlen=50),
@@ -138,6 +138,7 @@ class EpochRecorder:
         elapsed_time_str = str(datetime.timedelta(seconds=int(elapsed_time)))
         current_time = datetime.datetime.now().strftime("%H:%M:%S")
         return f"time={current_time} | training_speed={elapsed_time_str}"
+
 
 def main():
     """
@@ -370,7 +371,7 @@ def run(
             config.model.spk_embed_dim = model_info["speakers_id"]
     except:
         embedder_name = "contentvec"
-        
+
     # Initialize models and optimizers
     from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
     from rvc.lib.algorithm.synthesizers import Synthesizer
@@ -396,7 +397,7 @@ def run(
     else:
         net_g = net_g.to(device)
         net_d = net_d.to(device)
-    
+
     print("Using", optimizer, "optimizer")
     if optimizer == "AdamW":
         optimizer = torch.optim.AdamW
@@ -417,10 +418,10 @@ def run(
     )
     if multiscale_mel_loss:
         fn_mel_loss = MultiScaleMelSpectrogramLoss(sample_rate=config.data.sample_rate)
-        print('Using Multi-Scale Mel loss function')
+        print("Using Multi-Scale Mel loss function")
     else:
         fn_mel_loss = torch.nn.L1Loss()
-        print('Using Single-Scale Mel loss function')
+        print("Using Single-Scale Mel loss function")
 
     # Wrap models with DDP for multi-gpu processing
     if n_gpus > 1 and device.type == "cuda":
@@ -446,18 +447,22 @@ def run(
         if pretrainG != "" and pretrainG != "None":
             if rank == 0:
                 print(f"Loaded pretrained (G) '{pretrainG}'")
-                
+
             ckpt = torch.load(pretrainG, map_location="cpu", weights_only=True)["model"]
             ckpt_speaker_count = ckpt["emb_g.weight"].shape[0]
-        
+
             # adjust speaker embedding if necessary in order to match the model
             if config.model.spk_embed_dim != ckpt_speaker_count:
                 # get weights from the net_g model (random)
-                state_dict = net_g.module.state_dict() if hasattr(net_g, "module") else net_g.state_dict()
-				# copy random embedding weights to the checkpoint we are trying to load to match the dimensions
+                state_dict = (
+                    net_g.module.state_dict()
+                    if hasattr(net_g, "module")
+                    else net_g.state_dict()
+                )
+                # copy random embedding weights to the checkpoint we are trying to load to match the dimensions
                 ckpt["emb_g.weight"] = state_dict["emb_g.weight"]
                 del state_dict
-			# attempt to load the checkpoint g weights
+            # attempt to load the checkpoint g weights
             try:
                 if hasattr(net_g, "module"):
                     net_g.module.load_state_dict(ckpt)
@@ -522,12 +527,12 @@ def run(
         info = next(iter(train_loader))
         phone, phone_lengths, pitch, pitchf, _, _, _, _, sid = info
         reference = (
-                phone.to(device),
-                phone_lengths.to(device),
-                pitch.to(device),
-                pitchf.to(device),
-                sid.to(device),
-            )
+            phone.to(device),
+            phone_lengths.to(device),
+            pitch.to(device),
+            pitchf.to(device),
+            sid.to(device),
+        )
 
     for epoch in range(epoch_str, total_epoch + 1):
         train_and_evaluate(
@@ -635,7 +640,9 @@ def train_and_evaluate(
                 sid,
             ) = info
 
-            with torch.amp.autocast(device_type = "cuda", enabled=use_amp, dtype=train_dtype):
+            with torch.amp.autocast(
+                device_type="cuda", enabled=use_amp, dtype=train_dtype
+            ):
                 # Forward pass
                 model_output = net_g(
                     phone, phone_lengths, pitch, pitchf, spec, spec_lengths, sid
@@ -651,8 +658,10 @@ def train_and_evaluate(
                         config.train.segment_size,
                         dim=3,
                     )
-            for _ in range(d_step_per_g_step): # default x1
-                with torch.amp.autocast(device_type = "cuda", enabled=use_amp, dtype=train_dtype):
+            for _ in range(d_step_per_g_step):  # default x1
+                with torch.amp.autocast(
+                    device_type="cuda", enabled=use_amp, dtype=train_dtype
+                ):
                     y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
                 loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
                 # Discriminator backward and update
@@ -660,11 +669,13 @@ def train_and_evaluate(
                 loss_disc.backward()
                 grad_norm_d = commons.grad_norm(net_d.parameters())
                 optim_d.step()
-            
-            with torch.amp.autocast(device_type = "cuda", enabled=use_amp, dtype=train_dtype):
+
+            with torch.amp.autocast(
+                device_type="cuda", enabled=use_amp, dtype=train_dtype
+            ):
                 # Generator backward and update
                 _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
-                
+
             if multiscale_mel_loss:
                 loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
             else:
@@ -729,7 +740,7 @@ def train_and_evaluate(
                     ),
                     "loss_avg_50/g/adv": torch.mean(
                         torch.stack(list(avg_losses["adv_loss_50"]))
-                    ),                    
+                    ),
                     "loss_avg_50/g/fm": torch.mean(
                         torch.stack(list(avg_losses["fm_loss_50"]))
                     ),
@@ -809,7 +820,9 @@ def train_and_evaluate(
         }
 
         if epoch % save_every_epoch == 0:
-            with torch.amp.autocast(device_type = "cuda", enabled=use_amp, dtype=train_dtype):            
+            with torch.amp.autocast(
+                device_type="cuda", enabled=use_amp, dtype=train_dtype
+            ):
                 with torch.no_grad():
                     if hasattr(net_g, "module"):
                         o, *_ = net_g.module.infer(*reference)

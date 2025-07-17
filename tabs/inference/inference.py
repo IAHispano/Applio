@@ -478,7 +478,9 @@ def inference_tab():
                     minimum=50.0,
                     maximum=1200.0,
                     label=i18n("Proposed Pitch Threshold"),
-                    info=i18n("Male voice models typically use 155.0 and female voice models typically use 255.0."),
+                    info=i18n(
+                        "Male voice models typically use 155.0 and female voice models typically use 255.0."
+                    ),
                     visible=False,
                     value=155.0,
                     interactive=True,
@@ -1107,11 +1109,13 @@ def inference_tab():
                     minimum=50.0,
                     maximum=1200.0,
                     label=i18n("Proposed Pitch Threshold"),
-                    info=i18n("Male voice models typically use 155.0 and female voice models typically use 255.0."),
+                    info=i18n(
+                        "Male voice models typically use 155.0 and female voice models typically use 255.0."
+                    ),
                     visible=False,
                     value=155.0,
                     interactive=True,
-                )                
+                )
                 clean_audio_batch = gr.Checkbox(
                     label=i18n("Clean Audio"),
                     info=i18n(
@@ -1719,7 +1723,7 @@ def inference_tab():
         fn=toggle_visible,
         inputs=[proposed_pitch_batch],
         outputs=[proposed_pitch_threshold_batch],
-    )      
+    )
     clean_audio.change(
         fn=toggle_visible,
         inputs=[clean_audio],

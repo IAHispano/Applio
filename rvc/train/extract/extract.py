@@ -28,8 +28,8 @@ mp.set_start_method("spawn", force=True)
 
 class FeatureInput:
     def __init__(self, f0_method="rmvpe", device="cpu"):
-        self.hop_size = 160         # default
-        self.sample_rate = 16000    # default
+        self.hop_size = 160  # default
+        self.sample_rate = 16000  # default
         self.f0_bin = 256
         self.f0_max = 1100.0
         self.f0_min = 50.0
@@ -37,13 +37,19 @@ class FeatureInput:
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
         self.device = device
         if f0_method in ("crepe", "crepe-tiny"):
-            self.model = CREPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size)
+            self.model = CREPE(
+                device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
+            )
         elif f0_method == "rmvpe":
-            self.model = RMVPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size)
+            self.model = RMVPE(
+                device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
+            )
         elif f0_method == "fcpe":
-            self.model = FCPE(device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size)
+            self.model = FCPE(
+                device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
+            )
         self.f0_method = f0_method
-        
+
     def compute_f0(self, x, p_len=None):
         if self.f0_method == "crepe":
             f0 = self.model.get_f0(x, self.f0_min, self.f0_max, p_len, "full")
@@ -52,7 +58,7 @@ class FeatureInput:
         elif self.f0_method == "rmvpe":
             f0 = self.model.get_f0(x, filter_radius=0.03)
         elif self.f0_method == "fcpe":
-            f0 = self.model.get_f0(x, p_len, filter_radius = 0.006)
+            f0 = self.model.get_f0(x, p_len, filter_radius=0.006)
         return f0
 
     def coarse_f0(self, f0):
@@ -83,20 +89,20 @@ class FeatureInput:
                 f"An error occurred extracting file {inp_path} on {self.device}: {error}"
             )
 
+
 def process_files(files, f0_method, device, threads):
-    fe = FeatureInput(f0_method=f0_method, device=device)    
+    fe = FeatureInput(f0_method=f0_method, device=device)
     with tqdm.tqdm(total=len(files), leave=True) as pbar:
         for file_info in files:
             fe.process_file(file_info)
             pbar.update(1)
 
+
 def run_pitch_extraction(files, devices, f0_method, threads):
     devices_str = ", ".join(devices)
-    print(
-        f"Starting pitch extraction on {devices_str} using {f0_method}..."
-    )
+    print(f"Starting pitch extraction on {devices_str} using {f0_method}...")
     start_time = time.time()
-    
+
     with concurrent.futures.ProcessPoolExecutor(max_workers=len(devices)) as executor:
         tasks = [
             executor.submit(

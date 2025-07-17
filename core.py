@@ -726,7 +726,7 @@ def parse_arguments():
         choices=[(i / 10) for i in range(11)],
         default=1.0,
     )
-    proposed_pitch_description="Proposed Pitch"
+    proposed_pitch_description = "Proposed Pitch"
     infer_parser.add_argument(
         "--proposed_pitch",
         type=bool,
@@ -734,7 +734,7 @@ def parse_arguments():
         choices=[True, False],
         default=False,
     )
-    proposed_pitch_threshold_description="Proposed Pitch Threshold"
+    proposed_pitch_threshold_description = "Proposed Pitch Threshold"
     infer_parser.add_argument(
         "--proposed_pitch_threshold",
         type=float,
@@ -1180,7 +1180,7 @@ def parse_arguments():
         help=volume_envelope_description,
         choices=[i / 100.0 for i in range(0, 101)],
         default=1,
-    )    
+    )
     batch_infer_parser.add_argument(
         "--protect",
         type=float,
@@ -1243,7 +1243,7 @@ def parse_arguments():
         choices=[(i / 10) for i in range(11)],
         default=1.0,
     )
-    proposed_pitch_description="Proposed Pitch adjustment"
+    proposed_pitch_description = "Proposed Pitch adjustment"
     batch_infer_parser.add_argument(
         "--proposed_pitch",
         type=bool,
@@ -1251,14 +1251,14 @@ def parse_arguments():
         choices=[True, False],
         default=False,
     )
-    proposed_pitch_threshold_description="Proposed Pitch adjustment value"
+    proposed_pitch_threshold_description = "Proposed Pitch adjustment value"
     batch_infer_parser.add_argument(
         "--proposed_pitch_threshold",
         type=float,
         help=proposed_pitch_threshold_description,
         choices=[i for i in range(50, 1200)],
         default=155.0,
-    )    
+    )
     batch_infer_parser.add_argument(
         "--clean_audio",
         type=lambda x: bool(strtobool(x)),
@@ -1664,7 +1664,7 @@ def parse_arguments():
         help=volume_envelope_description,
         choices=[(i / 10) for i in range(11)],
         default=1,
-    )    
+    )
     tts_parser.add_argument(
         "--protect",
         type=float,
@@ -1727,7 +1727,7 @@ def parse_arguments():
         choices=[(i / 10) for i in range(11)],
         default=1.0,
     )
-    proposed_pitch_description="Proposed Pitch adjustment"
+    proposed_pitch_description = "Proposed Pitch adjustment"
     tts_parser.add_argument(
         "--proposed_pitch",
         type=bool,
@@ -1735,14 +1735,14 @@ def parse_arguments():
         choices=[True, False],
         default=False,
     )
-    proposed_pitch_threshold_description="Proposed Pitch adjustment value"
+    proposed_pitch_threshold_description = "Proposed Pitch adjustment value"
     tts_parser.add_argument(
         "--proposed_pitch_threshold",
         type=float,
         help=proposed_pitch_threshold_description,
         choices=[i for i in range(100, 500)],
         default=155.0,
-    )    
+    )
     tts_parser.add_argument(
         "--clean_audio",
         type=lambda x: bool(strtobool(x)),
