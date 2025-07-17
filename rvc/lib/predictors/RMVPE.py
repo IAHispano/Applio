@@ -442,7 +442,7 @@ class RMVPE0Predictor:
         cents_mapping = 20 * np.arange(N_CLASS) + 1997.3794084376191
         self.cents_mapping = np.pad(cents_mapping, (4, 4))
 
-    def mel2hidden(self, mel):
+    def mel2hidden(self, mel, chunk_size=32000):
         """
         Converts Mel-spectrogram features to hidden representation.
 
@@ -451,11 +451,33 @@ class RMVPE0Predictor:
         """
         with torch.no_grad():
             n_frames = mel.shape[-1]
+            #print('n_frames', n_frames)
+            #print('mel shape before padding', mel.shape)
             mel = F.pad(
                 mel, (0, 32 * ((n_frames - 1) // 32 + 1) - n_frames), mode="reflect"
             )
-            hidden = self.model(mel)
-            return hidden[:, :n_frames]
+            #print('mel shape after padding', mel.shape)
+          
+            output_chunks = []
+            pad_frames = mel.shape[-1]
+            for start in range(0, pad_frames, chunk_size):
+                #print('chunk @', start)
+                end = min(start + chunk_size, pad_frames)
+                mel_chunk  = mel[..., start:end]
+                assert mel_chunk.shape[-1] % 32 == 0, "chunk_size must be divisible by 32"
+                #print(' before padding', mel_chunk.shape)
+                #mel_chunk = F.pad(mel_chunk, (320, 320), mode="reflect")
+                #print(' after padding', mel_chunk.shape)
+                
+                out_chunk = self.model(mel_chunk)
+                #print(' result chunk', out_chunk.shape)
+                #out_chunk = out_chunk[:, 320:-320, :]
+                #print(' trimmed chunk', out_chunk.shape)
+                output_chunks.append(out_chunk)
+        
+            hidden = torch.cat(output_chunks, dim=1)
+        #print('output', hidden[:, :n_frames].shape)
+        return hidden[:, :n_frames]
 
     def decode(self, hidden, thred=0.03):
         """
@@ -480,6 +502,9 @@ class RMVPE0Predictor:
         """
         audio = torch.from_numpy(audio).float().to(self.device).unsqueeze(0)
         mel = self.mel_extractor(audio, center=True)
+        del audio
+        with torch.no_grad():
+            torch.cuda.empty_cache()
         hidden = self.mel2hidden(mel)
         hidden = hidden.squeeze(0).cpu().numpy()
         f0 = self.decode(hidden, thred=thred)
