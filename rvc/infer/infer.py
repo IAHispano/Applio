@@ -374,7 +374,7 @@ class VoiceConverter:
             audio_files = [
                 f
                 for f in os.listdir(audio_input_paths)
-                if f.endswith(
+                if f.lower().endswith(
                     (
                         "wav",
                         "mp3",

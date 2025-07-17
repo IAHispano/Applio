@@ -20,7 +20,7 @@ RUN python3 -m venv /app/.venv && \
     . /app/.venv/bin/activate && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir python-ffmpeg && \
-    pip install --no-cache-dir torch==2.7.0 torchvision torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128 && \
+    pip install --no-cache-dir torch==2.7.1 torchvision torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu128 && \
     if [ -f "requirements.txt" ]; then pip install --no-cache-dir -r requirements.txt; fi
 
 # Define volumes for persistent storage

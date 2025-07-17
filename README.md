@@ -32,21 +32,28 @@
   <a href="https://colab.research.google.com/github/iahispano/applio/blob/master/assets/Applio_NoUI.ipynb" target="_blank">🔎 Google Colab (No UI)</a>
 </p>
 
+> [!NOTE]  
+> Applio will no longer receive frequent updates. Going forward, development will focus mainly on security patches, dependency updates, and occasional feature improvements. This is because the project is already stable and mature with limited room for further improvements. Pull requests are still welcome and will be reviewed.
+
 ## Introduction
 
 Applio is a powerful voice conversion tool focused on simplicity, quality, and performance. Whether you're an artist, developer, or researcher, Applio offers a straightforward platform for high-quality voice transformations. Its flexible design allows for customization through plugins and configurations, catering to a wide range of projects.
 
 ## Terms of Use and Commercial Usage
 
-Using Applio responsibly is essential. Here’s a summary of our Terms of Use and commercial guidelines:
+Using Applio responsibly is essential.
 
 - Users must respect copyrights, intellectual property, and privacy rights.
 - Applio is intended for lawful and ethical purposes, including personal, academic, and investigative projects.
 - Commercial usage is permitted, provided users adhere to legal and ethical guidelines, secure appropriate rights and permissions, and comply with the [MIT license](./LICENSE).
 
-For commercial purposes, we recommend contacting us at [support@applio.org](mailto:support@applio.org) to ensure ethical use. All audio files generated with Applio must comply with applicable copyrights. If you find Applio helpful, consider supporting its development [through a donation](https://ko-fi.com/iahispano).
+The source code and model weights in this repository are licensed under the permissive [MIT license](./LICENSE), allowing modification, redistribution, and commercial use.
 
-By using Applio, you accept full responsibility for adhering to these terms. Applio and its contributors are not liable for misuse. For more details, please refer to the full [Terms of Use](./TERMS_OF_USE.md).
+However, if you choose to use this official version of Applio (as provided in this repository, without significant modification), you must also comply with our [Terms of Use](./TERMS_OF_USE.md). These terms apply to our integrations, configurations, and default project behavior, and are intended to ensure responsible and ethical use without limiting their use in any way.
+
+For commercial use, we recommend contacting us at [support@applio.org](mailto:support@applio.org) to ensure your usage aligns with ethical standards. All audio generated with Applio must comply with applicable copyright laws. If you find Applio helpful, consider supporting its development [through a donation](https://ko-fi.com/iahispano).
+
+By using the official version of Applio, you accept full responsibility for complying with both the MIT license and our Terms of Use. Applio and its contributors are not liable for misuse. For full legal details, see the [Terms of Use](./TERMS_OF_USE.md).
 
 ## Getting Started
 
