@@ -11,6 +11,7 @@ from tabs.settings.sections.version import version_tab
 from tabs.settings.sections.lang import lang_tab
 from tabs.settings.sections.restart import restart_tab
 from tabs.settings.sections.model_author import model_author_tab
+from tabs.settings.sections.precision import precision_tab
 
 
 def settings_tab():
@@ -22,3 +23,4 @@ def settings_tab():
         restart_tab()
     with gr.TabItem(label="Training"):
         model_author_tab()
+        precision_tab()

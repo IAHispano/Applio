@@ -1,14 +1,15 @@
 {
-  "theme": {
-    "file": "Applio.py",
-    "class": "Applio"
-  },
-  "plugins": [],
-  "discord_presence": true,
-  "lang": {
-    "override": false,
-    "selected_lang": "en_US"
-  },
-  "version": "3.2.9",
-  "model_author": "None"
+    "theme": {
+        "file": "Applio.py",
+        "class": "Applio"
+    },
+    "plugins": [],
+    "discord_presence": true,
+    "lang": {
+        "override": false,
+        "selected_lang": "en_US"
+    },
+    "version": "3.2.9",
+    "model_author": "None",
+    "precision": "fp32"
 }

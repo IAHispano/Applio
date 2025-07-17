@@ -69,10 +69,20 @@ d_lr_coeff = 1.0
 g_lr_coeff = 1.0
 d_step_per_g_step = 1
 multiscale_mel_loss = False
-# train_dtype = torch.bfloat16
-train_dtype = torch.float32
 
 current_dir = os.getcwd()
+
+try:
+    with open(os.path.join(current_dir, "assets", "config.json"), "r") as f:
+        config = json.load(f)
+        precision = config["precision"]
+        if precision == "bf16" and torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+            train_dtype = torch.bfloat16
+        else:
+            train_dtype = torch.float32
+except(FileNotFoundError, json.JSONDecodeError, KeyError):
+    train_dtype = torch.float32
+
 experiment_dir = os.path.join(current_dir, "logs", model_name)
 config_save_path = os.path.join(experiment_dir, "config.json")
 dataset_path = os.path.join(experiment_dir, "sliced_audios")
@@ -427,6 +437,9 @@ def run(
     if n_gpus > 1 and device.type == "cuda":
         net_g = DDP(net_g, device_ids=[device_id])
         net_d = DDP(net_d, device_ids=[device_id])
+
+    if rank == 0 and train_dtype == torch.bfloat16:
+        print("Using BFloat16 for training.")
 
     # Load checkpoint if available
     try:
