@@ -115,6 +115,7 @@ def run_infer_script(
         "audio_output_path": output_path,
         "model_path": pth_path,
         "index_path": index_path,
+        "volume_envelope": volume_envelope,
         "pitch": pitch,
         "index_rate": index_rate,
         "protect": protect,
