@@ -27,6 +27,9 @@ def plugins_tab():
         )
 
     for plugin in os.listdir(os.path.join(now_dir, "tabs", "plugins", "installed")):
+        if os.path.isfile(plugin):
+            continue
+
         plugin_main = f"tabs.plugins.installed.{plugin}.plugin"
         plugin_import = importlib.import_module(plugin_main)
 
