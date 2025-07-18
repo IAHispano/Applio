@@ -63,8 +63,6 @@ def run_infer_script(
     split_audio: bool,
     f0_autotune: bool,
     f0_autotune_strength: float,
-    proposed_pitch: bool,
-    proposed_pitch_threshold: float,
     clean_audio: bool,
     clean_strength: float,
     export_format: str,
@@ -110,13 +108,13 @@ def run_infer_script(
     delay_feedback: float = 0.0,
     delay_mix: float = 0.5,
     sid: int = 0,
+    auto_pitch: bool = False,
 ):
     kwargs = {
         "audio_input_path": input_path,
         "audio_output_path": output_path,
         "model_path": pth_path,
         "index_path": index_path,
-        "volume_envelope": volume_envelope,
         "pitch": pitch,
         "index_rate": index_rate,
         "protect": protect,
@@ -126,8 +124,6 @@ def run_infer_script(
         "split_audio": split_audio,
         "f0_autotune": f0_autotune,
         "f0_autotune_strength": f0_autotune_strength,
-        "proposed_pitch": proposed_pitch,
-        "proposed_pitch_threshold": proposed_pitch_threshold,
         "clean_audio": clean_audio,
         "clean_strength": clean_strength,
         "export_format": export_format,
@@ -173,6 +169,7 @@ def run_infer_script(
         "delay_feedback": delay_feedback,
         "delay_mix": delay_mix,
         "sid": sid,
+        "auto_pitch": auto_pitch,
     }
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(
@@ -197,8 +194,6 @@ def run_batch_infer_script(
     split_audio: bool,
     f0_autotune: bool,
     f0_autotune_strength: float,
-    proposed_pitch: bool,
-    proposed_pitch_threshold: float,
     clean_audio: bool,
     clean_strength: float,
     export_format: str,
@@ -244,6 +239,7 @@ def run_batch_infer_script(
     delay_feedback: float = 0.0,
     delay_mix: float = 0.5,
     sid: int = 0,
+    auto_pitch: bool = False,
 ):
     kwargs = {
         "audio_input_paths": input_folder,
@@ -260,8 +256,6 @@ def run_batch_infer_script(
         "split_audio": split_audio,
         "f0_autotune": f0_autotune,
         "f0_autotune_strength": f0_autotune_strength,
-        "proposed_pitch": proposed_pitch,
-        "proposed_pitch_threshold": proposed_pitch_threshold,
         "clean_audio": clean_audio,
         "clean_strength": clean_strength,
         "export_format": export_format,
@@ -307,6 +301,7 @@ def run_batch_infer_script(
         "delay_feedback": delay_feedback,
         "delay_mix": delay_mix,
         "sid": sid,
+        "auto_pitch": auto_pitch,
     }
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio_batch(
@@ -334,14 +329,13 @@ def run_tts_script(
     split_audio: bool,
     f0_autotune: bool,
     f0_autotune_strength: float,
-    proposed_pitch: bool,
-    proposed_pitch_threshold: float,
     clean_audio: bool,
     clean_strength: float,
     export_format: str,
     embedder_model: str,
     embedder_model_custom: str = None,
     sid: int = 0,
+    auto_pitch: bool = False,
 ):
 
     tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
@@ -380,14 +374,13 @@ def run_tts_script(
         split_audio=split_audio,
         f0_autotune=f0_autotune,
         f0_autotune_strength=f0_autotune_strength,
-        proposed_pitch=proposed_pitch,
-        proposed_pitch_threshold=proposed_pitch_threshold,
         clean_audio=clean_audio,
         clean_strength=clean_strength,
         export_format=export_format,
         embedder_model=embedder_model,
         embedder_model_custom=embedder_model_custom,
         sid=sid,
+        auto_pitch=auto_pitch,
         formant_shifting=None,
         formant_qfrency=None,
         formant_timbre=None,
@@ -726,22 +719,6 @@ def parse_arguments():
         choices=[(i / 10) for i in range(11)],
         default=1.0,
     )
-    proposed_pitch_description = "Proposed Pitch"
-    infer_parser.add_argument(
-        "--proposed_pitch",
-        type=bool,
-        help=proposed_pitch_description,
-        choices=[True, False],
-        default=False,
-    )
-    proposed_pitch_threshold_description = "Proposed Pitch Threshold"
-    infer_parser.add_argument(
-        "--proposed_pitch_threshold",
-        type=float,
-        help=proposed_pitch_threshold_description,
-        choices=[i for i in range(50, 1200)],
-        default=155.0,
-    )
     clean_audio_description = "Clean the output audio using noise reduction algorithms. Recommended for speech conversions."
     infer_parser.add_argument(
         "--clean_audio",
@@ -821,6 +798,15 @@ def parse_arguments():
         type=int,
         help=sid_description,
         default=0,
+        required=False,
+    )
+    auto_pitch_description = "Automatically change pitch automatically based on voice model."
+    infer_parser.add_argument(
+        "--auto_pitch",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=auto_pitch_description,
+        default=False,
         required=False,
     )
     post_process_description = "Apply post-processing effects to the output audio."
@@ -1243,22 +1229,6 @@ def parse_arguments():
         choices=[(i / 10) for i in range(11)],
         default=1.0,
     )
-    proposed_pitch_description = "Proposed Pitch adjustment"
-    batch_infer_parser.add_argument(
-        "--proposed_pitch",
-        type=bool,
-        help=proposed_pitch_description,
-        choices=[True, False],
-        default=False,
-    )
-    proposed_pitch_threshold_description = "Proposed Pitch adjustment value"
-    batch_infer_parser.add_argument(
-        "--proposed_pitch_threshold",
-        type=float,
-        help=proposed_pitch_threshold_description,
-        choices=[i for i in range(50, 1200)],
-        default=155.0,
-    )
     batch_infer_parser.add_argument(
         "--clean_audio",
         type=lambda x: bool(strtobool(x)),
@@ -1327,6 +1297,14 @@ def parse_arguments():
         type=int,
         help=sid_description,
         default=0,
+        required=False,
+    )
+    batch_infer_parser.add_argument(
+        "--auto_pitch",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=auto_pitch_description,
+        default=False,
         required=False,
     )
     batch_infer_parser.add_argument(
@@ -1727,22 +1705,6 @@ def parse_arguments():
         choices=[(i / 10) for i in range(11)],
         default=1.0,
     )
-    proposed_pitch_description = "Proposed Pitch adjustment"
-    tts_parser.add_argument(
-        "--proposed_pitch",
-        type=bool,
-        help=proposed_pitch_description,
-        choices=[True, False],
-        default=False,
-    )
-    proposed_pitch_threshold_description = "Proposed Pitch adjustment value"
-    tts_parser.add_argument(
-        "--proposed_pitch_threshold",
-        type=float,
-        help=proposed_pitch_threshold_description,
-        choices=[i for i in range(100, 500)],
-        default=155.0,
-    )
     tts_parser.add_argument(
         "--clean_audio",
         type=lambda x: bool(strtobool(x)),
@@ -1783,6 +1745,14 @@ def parse_arguments():
         type=str,
         help=embedder_model_custom_description,
         default=None,
+    )
+    tts_parser.add_argument(
+        "--auto_pitch",
+        type=lambda x: bool(strtobool(x)),
+        choices=[True, False],
+        help=auto_pitch_description,
+        default=False,
+        required=False,
     )
 
     # Parser for 'preprocess' mode
@@ -2189,8 +2159,6 @@ def main():
                 split_audio=args.split_audio,
                 f0_autotune=args.f0_autotune,
                 f0_autotune_strength=args.f0_autotune_strength,
-                proposed_pitch=args.proposed_pitch,
-                proposed_pitch_threshold=args.proposed_pitch_threshold,
                 clean_audio=args.clean_audio,
                 clean_strength=args.clean_strength,
                 export_format=args.export_format,
@@ -2200,6 +2168,7 @@ def main():
                 formant_qfrency=args.formant_qfrency,
                 formant_timbre=args.formant_timbre,
                 sid=args.sid,
+                auto_pitch=args.auto_pitch,
                 post_process=args.post_process,
                 reverb=args.reverb,
                 pitch_shift=args.pitch_shift,
@@ -2251,8 +2220,6 @@ def main():
                 split_audio=args.split_audio,
                 f0_autotune=args.f0_autotune,
                 f0_autotune_strength=args.f0_autotune_strength,
-                proposed_pitch=args.proposed_pitch,
-                proposed_pitch_threshold=args.proposed_pitch_threshold,
                 clean_audio=args.clean_audio,
                 clean_strength=args.clean_strength,
                 export_format=args.export_format,
@@ -2262,6 +2229,7 @@ def main():
                 formant_qfrency=args.formant_qfrency,
                 formant_timbre=args.formant_timbre,
                 sid=args.sid,
+                auto_pitch=args.auto_pitch,
                 post_process=args.post_process,
                 reverb=args.reverb,
                 pitch_shift=args.pitch_shift,
@@ -2317,13 +2285,12 @@ def main():
                 split_audio=args.split_audio,
                 f0_autotune=args.f0_autotune,
                 f0_autotune_strength=args.f0_autotune_strength,
-                proposed_pitch=args.proposed_pitch,
-                proposed_pitch_threshold=args.proposed_pitch_threshold,
                 clean_audio=args.clean_audio,
                 clean_strength=args.clean_strength,
                 export_format=args.export_format,
                 embedder_model=args.embedder_model,
                 embedder_model_custom=args.embedder_model_custom,
+                auto_pitch=args.auto_pitch,
             )
         elif args.mode == "preprocess":
             run_preprocess_script(
