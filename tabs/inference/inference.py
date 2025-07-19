@@ -54,21 +54,29 @@ sup_audioext = {
 
 names = [
     os.path.join(root, file)
-    for root, _, files in os.walk(model_root_relative, topdown=False)
+    for root, _, files in os.walk(model_root_relative, topdown=False, followlinks=True)
     for file in files
     if (
-        file.endswith((".pth", ".onnx"))
+        file.lower().endswith((".pth", ".onnx"))
         and not (file.startswith("G_") or file.startswith("D_"))
+        # ↓ prevents appearing with symbolic links
+        and os.path.join("logs", "indexes") not in os.path.normpath(root).lower()
     )
 ]
+
 
 default_weight = names[0] if names else None
 
 indexes_list = [
     os.path.join(root, name)
-    for root, _, files in os.walk(model_root_relative, topdown=False)
+    for root, _, files in os.walk(model_root_relative, topdown=False, followlinks=True)
     for name in files
-    if name.endswith(".index") and "trained" not in name
+    if (
+        name.endswith(".index")
+        and "trained" not in name
+        # ↓ prevents appearing with symbolic links
+        and os.path.join("logs", "zips") not in os.path.normpath(root).lower()
+    )
 ]
 
 audio_paths = [
@@ -177,19 +185,23 @@ def change_choices(model):
         speakers = [0]
     names = [
         os.path.join(root, file)
-        for root, _, files in os.walk(model_root_relative, topdown=False)
+        for root, _, files in os.walk(model_root_relative, topdown=False, followlinks=True)
         for file in files
         if (
             file.endswith((".pth", ".onnx"))
             and not (file.startswith("G_") or file.startswith("D_"))
+            # ↓ prevents appearing with symbolic links
+            and os.path.join("logs", "indexes") not in os.path.normpath(root).lower()
         )
     ]
 
     indexes_list = [
         os.path.join(root, name)
-        for root, _, files in os.walk(model_root_relative, topdown=False)
+        for root, _, files in os.walk(model_root_relative, topdown=False, followlinks=True)
         for name in files
         if name.endswith(".index") and "trained" not in name
+        # ↓ prevents appearing with symbolic links
+        and os.path.join("logs", "zips") not in os.path.normpath(root).lower()
     ]
 
     audio_paths = [
@@ -227,11 +239,15 @@ def change_choices(model):
 def get_indexes():
     indexes_list = [
         os.path.join(dirpath, filename)
-        for dirpath, _, filenames in os.walk(model_root_relative)
+        for dirpath, _, filenames in os.walk(model_root_relative, followlinks=True)
         for filename in filenames
-        if filename.endswith(".index") and "trained" not in filename
+        if (
+            filename.endswith(".index") 
+            and "trained" not in filename
+            # ↓ prevents appearing with symbolic links
+            and os.path.join("logs", "zips") not in os.path.normpath(dirpath).lower()
+        )
     ]
-
     return indexes_list if indexes_list else ""
 
 
@@ -276,20 +292,88 @@ def delete_outputs():
                 os.remove(os.path.join(root, name))
 
 
+def rel_under(kind, path):
+    # normalize to forward‐slashes and lowercase
+    p   = os.path.normpath(path).replace("\\", "/").lower()
+    key = f"logs/{kind}/"
+    if key in p:
+        return p.split(key, 1)[1]
+    return None
+
 def match_index(model_file_value):
-    if model_file_value:
-        model_folder = os.path.dirname(model_file_value)
-        model_name = os.path.basename(model_file_value)
-        index_files = get_indexes()
-        pattern = r"^(.*?)_"
-        match = re.match(pattern, model_name)
-        for index_file in index_files:
-            if os.path.dirname(index_file) == model_folder:
-                return index_file
-            elif match and match.group(1) in os.path.basename(index_file):
-                return index_file
-            elif model_name in os.path.basename(index_file):
-                return index_file
+    if not model_file_value:
+        return ""
+
+    model_folder = os.path.dirname(model_file_value)
+    model_name = os.path.basename(model_file_value)
+    base_name = os.path.splitext(model_name)[0]
+    common = re.sub(r"_e\d+_s\d+$", "", base_name)  # Ignore training suffixes
+    match = re.match(r"^(.*?)_", model_name)
+    prefix = match.group(1) if match else None
+    model_rel = rel_under("zips", model_folder)  # Get path under logs/zips/
+
+    same_substr = None
+    same_prefixed = None
+    external_exact = None
+    external_substr = None
+    external_pref = None
+
+    same_count = 0
+    last_same = None
+
+    for idx in get_indexes():
+        idx_folder = os.path.dirname(idx)
+        idx_name = os.path.basename(idx)
+        idx_base = os.path.splitext(idx_name)[0]
+
+        # Check if in same folder (blind to logs/indexes)
+        literal_same = (idx_folder == model_folder)
+        parallel_same = (model_rel is not None and 
+                        rel_under("indexes", idx_folder) == model_rel)
+        in_same = literal_same or parallel_same
+
+        if in_same:
+            same_count += 1
+            last_same = idx
+
+        # 1) Same-folder exact match → highest priority
+        if in_same and idx_base == base_name:
+            return idx
+
+        # 2) Same-folder substring match
+        if in_same and common in idx_base and same_substr is None:
+            same_substr = idx
+
+        # 3) Same-folder prefix match
+        if in_same and prefix and idx_base.startswith(prefix) and same_prefixed is None:
+            same_prefixed = idx
+
+        # External matches (only check if not in same/parallel folder)
+        if not in_same:
+            # 4) External exact match
+            if idx_base == base_name and external_exact is None:
+                external_exact = idx
+            # 5) External substring match
+            if common in idx_base and external_substr is None:
+                external_substr = idx
+            # 6) External prefix match
+            if prefix and idx_base.startswith(prefix) and external_pref is None:
+                external_pref = idx
+
+    # Fallback priority
+    if same_substr:
+        return same_substr
+    if same_prefixed:
+        return same_prefixed
+    if same_count == 1:
+        return last_same
+    if external_exact:
+        return external_exact
+    if external_substr:
+        return external_substr
+    if external_pref:
+        return external_pref
+
     return ""
 
 
@@ -349,6 +433,21 @@ def get_speakers_id(model):
         return [0]
 
 
+def filter_dropdowns(filter_text):
+    ft = filter_text.lower()
+    # original lists
+    all_models = sorted(names, key=lambda x: extract_model_and_epoch(x))
+    all_indexes = get_indexes()
+    # apply filter
+    filtered_models = [m for m in all_models if ft in m.lower()]
+    filtered_indexes = [i for i in all_indexes if ft in i.lower()]
+    # return updates for both dropdowns
+    return (
+        gr.update(choices=filtered_models),
+        gr.update(choices=filtered_indexes)
+    )
+
+
 # Inference tab
 def inference_tab():
     with gr.Column():
@@ -361,7 +460,13 @@ def inference_tab():
                 value=default_weight,
                 allow_custom_value=True,
             )
-
+            filter_box_inf = gr.Textbox(
+                label=i18n("Filter"),
+                info=i18n("Path must contain:"),
+                placeholder=i18n("Type to filter..."),
+                interactive=True,
+                scale=.1
+            )
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 info=i18n("Select the index file to use for the conversion."),
@@ -369,6 +474,11 @@ def inference_tab():
                 value=match_index(default_weight) if default_weight else "",
                 interactive=True,
                 allow_custom_value=True,
+            )
+            filter_box_inf.blur(
+                fn=filter_dropdowns,
+                inputs=[filter_box_inf],
+                outputs=[model_file, index_file],
             )
         with gr.Row():
             unload_button = gr.Button(i18n("Unload Voice"))
@@ -1954,6 +2064,10 @@ def inference_tab():
         fn=change_choices,
         inputs=[model_file],
         outputs=[model_file, index_file, audio, sid, sid_batch],
+    ).then(
+        fn=filter_dropdowns,
+        inputs=[filter_box_inf],
+        outputs=[model_file, index_file],
     )
     audio.change(
         fn=output_path_fn,

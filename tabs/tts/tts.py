@@ -20,6 +20,7 @@ from tabs.inference.inference import (
     extract_model_and_epoch,
     names,
     default_weight,
+    filter_dropdowns,
 )
 
 i18n = I18nAuto()
@@ -56,14 +57,25 @@ def tts_tab():
                 value=default_weight,
                 allow_custom_value=True,
             )
-            best_default_index_path = match_index(model_file.value)
+            filter_box_tts = gr.Textbox(
+                label=i18n("Filter"),
+                info=i18n("Path must contain:"),
+                placeholder=i18n("Type to filter..."),
+                interactive=True,
+                scale=.1
+            )
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 info=i18n("Select the index file to use for the conversion."),
                 choices=get_indexes(),
-                value=best_default_index_path,
+                value=match_index(default_weight) if default_weight else "",
                 interactive=True,
                 allow_custom_value=True,
+            )
+            filter_box_tts.blur(
+                fn=filter_dropdowns,
+                inputs=[filter_box_tts],
+                outputs=[model_file, index_file],
             )
         with gr.Row():
             unload_button = gr.Button(i18n("Unload Voice"))
@@ -380,6 +392,10 @@ def tts_tab():
         fn=change_choices,
         inputs=[model_file],
         outputs=[model_file, index_file, sid, sid],
+    ).then(
+        fn=filter_dropdowns,
+        inputs=[filter_box_tts],
+        outputs=[model_file, index_file],
     )
     txt_file.upload(
         fn=process_input,
