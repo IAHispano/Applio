@@ -408,7 +408,7 @@ def tts_tab():
             embedder_model,
             embedder_model_custom,
             sid,
-            auto_pitch
+            auto_pitch,
         ],
         outputs=[vc_output1, vc_output2],
     )

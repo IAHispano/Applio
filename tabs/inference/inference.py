@@ -2037,7 +2037,7 @@ def inference_tab():
             delay_feedback,
             delay_mix,
             sid,
-            auto_pitch
+            auto_pitch,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -2102,7 +2102,7 @@ def inference_tab():
             delay_feedback_batch,
             delay_mix_batch,
             sid_batch,
-            auto_pitch_batch
+            auto_pitch_batch,
         ],
         outputs=[vc_output3],
     )

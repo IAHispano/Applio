@@ -453,21 +453,25 @@ class Pipeline:
         sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
         if pitch_guidance:
             if auto_pitch:
-                if not hasattr(self, "autopitch"): 
+                if not hasattr(self, "autopitch"):
                     from rvc.lib.algorithm.autopitch import AutoPitch
 
                     self.autopitch = AutoPitch(
-                        self, 
-                        os.path.join("assets", "autopitch", "rvc_feats.npz"), 
-                        os.path.join("assets", "autopitch", "emb_feats.npz"), 
-                        pitch_guidance, 
-                        version
+                        self,
+                        os.path.join("assets", "autopitch", "rvc_feats.npz"),
+                        os.path.join("assets", "autopitch", "emb_feats.npz"),
+                        pitch_guidance,
+                        version,
                     )
 
                 # May not be accurate with some models so manual threshold option can be added.
-                proposed_pitch_threshold, proposed_pitch = self.autopitch.autopitch(model, net_g, sid), True
+                proposed_pitch_threshold, proposed_pitch = (
+                    self.autopitch.autopitch(model, net_g, sid),
+                    True,
+                )
                 print("Frequency threshold:", proposed_pitch_threshold)
-            else: proposed_pitch_threshold, proposed_pitch = 0, False
+            else:
+                proposed_pitch_threshold, proposed_pitch = 0, False
 
             pitch, pitchf = self.get_f0(
                 audio_pad,

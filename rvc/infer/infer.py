@@ -303,7 +303,7 @@ class VoiceConverter:
                     protect=protect,
                     f0_autotune=f0_autotune,
                     f0_autotune_strength=f0_autotune_strength,
-                    auto_pitch=auto_pitch
+                    auto_pitch=auto_pitch,
                 )
                 converted_chunks.append(audio_opt)
                 if split_audio:
