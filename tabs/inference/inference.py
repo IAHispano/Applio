@@ -465,26 +465,6 @@ def inference_tab():
                     value=1,
                     interactive=True,
                 )
-                proposed_pitch = gr.Checkbox(
-                    label=i18n("Proposed Pitch"),
-                    info=i18n(
-                        "Adjust the input audio pitch to match the voice model range."
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
-                proposed_pitch_threshold = gr.Slider(
-                    minimum=50.0,
-                    maximum=1200.0,
-                    label=i18n("Proposed Pitch Threshold"),
-                    info=i18n(
-                        "Male voice models typically use 155.0 and female voice models typically use 255.0."
-                    ),
-                    visible=False,
-                    value=155.0,
-                    interactive=True,
-                )
                 clean_audio = gr.Checkbox(
                     label=i18n("Clean Audio"),
                     info=i18n(
@@ -517,6 +497,12 @@ def inference_tab():
                 post_process = gr.Checkbox(
                     label=i18n("Post-Process"),
                     info=i18n("Post-process the audio to apply effects to the output."),
+                    value=False,
+                    interactive=True,
+                )
+                auto_pitch = gr.Checkbox(
+                    label=i18n("Auto-pitch"),
+                    info=i18n("Change pitch automatically based on voice model."),
                     value=False,
                     interactive=True,
                 )
@@ -1096,26 +1082,6 @@ def inference_tab():
                     value=1,
                     interactive=True,
                 )
-                proposed_pitch_batch = gr.Checkbox(
-                    label=i18n("Proposed Pitch"),
-                    info=i18n(
-                        "Adjust the input audio pitch to match the voice model range."
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
-                proposed_pitch_threshold_batch = gr.Slider(
-                    minimum=50.0,
-                    maximum=1200.0,
-                    label=i18n("Proposed Pitch Threshold"),
-                    info=i18n(
-                        "Male voice models typically use 155.0 and female voice models typically use 255.0."
-                    ),
-                    visible=False,
-                    value=155.0,
-                    interactive=True,
-                )
                 clean_audio_batch = gr.Checkbox(
                     label=i18n("Clean Audio"),
                     info=i18n(
@@ -1148,6 +1114,12 @@ def inference_tab():
                 post_process_batch = gr.Checkbox(
                     label=i18n("Post-Process"),
                     info=i18n("Post-process the audio to apply effects to the output."),
+                    value=False,
+                    interactive=True,
+                )
+                auto_pitch_batch = gr.Checkbox(
+                    label=i18n("Auto-pitch"),
+                    info=i18n("Change pitch automatically based on voice model."),
                     value=False,
                     interactive=True,
                 )
@@ -1714,16 +1686,6 @@ def inference_tab():
         inputs=[autotune],
         outputs=[autotune_strength],
     )
-    proposed_pitch.change(
-        fn=toggle_visible,
-        inputs=[proposed_pitch],
-        outputs=[proposed_pitch_threshold],
-    )
-    proposed_pitch_batch.change(
-        fn=toggle_visible,
-        inputs=[proposed_pitch_batch],
-        outputs=[proposed_pitch_threshold_batch],
-    )
     clean_audio.change(
         fn=toggle_visible,
         inputs=[clean_audio],
@@ -2030,8 +1992,6 @@ def inference_tab():
             split_audio,
             autotune,
             autotune_strength,
-            proposed_pitch,
-            proposed_pitch_threshold,
             clean_audio,
             clean_strength,
             export_format,
@@ -2077,6 +2037,7 @@ def inference_tab():
             delay_feedback,
             delay_mix,
             sid,
+            auto_pitch
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -2096,8 +2057,6 @@ def inference_tab():
             split_audio_batch,
             autotune_batch,
             autotune_strength_batch,
-            proposed_pitch_batch,
-            proposed_pitch_threshold_batch,
             clean_audio_batch,
             clean_strength_batch,
             export_format_batch,
@@ -2143,6 +2102,7 @@ def inference_tab():
             delay_feedback_batch,
             delay_mix_batch,
             sid_batch,
+            auto_pitch_batch
         ],
         outputs=[vc_output3],
     )
