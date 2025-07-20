@@ -801,7 +801,7 @@ def parse_arguments():
         default=0,
         required=False,
     )
-    auto_pitch_description = "Automatically change pitch automatically based on voice model."
+    auto_pitch_description = "Change pitch automatically based on voice model."
     infer_parser.add_argument(
         "--auto_pitch",
         type=lambda x: bool(strtobool(x)),

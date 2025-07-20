@@ -502,7 +502,7 @@ def inference_tab():
                 )
                 auto_pitch = gr.Checkbox(
                     label=i18n("Auto-pitch"),
-                    info=i18n("Automatically change pitch automatically based on voice model."),
+                    info=i18n("Change pitch automatically based on voice model."),
                     value=False,
                     interactive=True,
                 )
@@ -1119,7 +1119,7 @@ def inference_tab():
                 )
                 auto_pitch_batch = gr.Checkbox(
                     label=i18n("Auto-pitch"),
-                    info=i18n("Automatically change pitch automatically based on voice model."),
+                    info=i18n("Change pitch automatically based on voice model."),
                     value=False,
                     interactive=True,
                 )
