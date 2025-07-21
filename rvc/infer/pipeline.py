@@ -195,7 +195,6 @@ class Pipeline:
         self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
         self.device = config.device
-        self.tgt_sr = tgt_sr
         self.autotune = Autotune()
 
     def get_f0(
@@ -396,7 +395,8 @@ class Pipeline:
         protect,
         f0_autotune,
         f0_autotune_strength,
-        auto_pitch=False,
+        proposed_pitch,
+        proposed_pitch_threshold,
     ):
         """
         The main pipeline function for performing voice conversion.
@@ -418,7 +418,6 @@ class Pipeline:
             protect: Protection level for preserving the original pitch.
             hop_length: Hop length for F0 estimation methods.
             f0_autotune: Whether to apply autotune to the F0 contour.
-            auto_pitch: Automatic pitch adjustment option.
         """
         if file_index != "" and os.path.exists(file_index) and index_rate > 0:
             try:
@@ -452,27 +451,6 @@ class Pipeline:
         p_len = audio_pad.shape[0] // self.window
         sid = torch.tensor(sid, device=self.device).unsqueeze(0).long()
         if pitch_guidance:
-            if auto_pitch:
-                if not hasattr(self, "autopitch"):
-                    from rvc.lib.algorithm.autopitch import AutoPitch
-
-                    self.autopitch = AutoPitch(
-                        self,
-                        os.path.join("assets", "autopitch", "rvc_feats.npz"),
-                        os.path.join("assets", "autopitch", "emb_feats.npz"),
-                        pitch_guidance,
-                        version,
-                    )
-
-                # May not be accurate with some models so manual threshold option can be added.
-                proposed_pitch_threshold, proposed_pitch = (
-                    self.autopitch.autopitch(model, net_g, sid),
-                    True,
-                )
-                print("Frequency threshold:", proposed_pitch_threshold)
-            else:
-                proposed_pitch_threshold, proposed_pitch = 0, False
-
             pitch, pitchf = self.get_f0(
                 audio_pad,
                 p_len,
