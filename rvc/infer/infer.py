@@ -213,7 +213,8 @@ class VoiceConverter:
         post_process: bool = False,
         resample_sr: int = 0,
         sid: int = 0,
-        auto_pitch: bool = False,
+        proposed_pitch: bool = False,
+        proposed_pitch_threshold: float = 155.0,
         **kwargs,
     ):
         """
@@ -240,7 +241,8 @@ class VoiceConverter:
             embedder_model_custom (str): Path to the custom embedder model.
             resample_sr (int, optional): Resample sampling rate. Default is 0.
             sid (int, optional): Speaker ID. Default is 0.
-            auto_pitch: Automatic pitch adjustment option. Default is False.
+            proposed_pitch (bool, optional): Whether to propose a pitch. Default is False.
+            proposed_pitch_threshold (float): Threshold for pitch proposal.
             **kwargs: Additional keyword arguments.
         """
         if not model_path:
@@ -303,7 +305,8 @@ class VoiceConverter:
                     protect=protect,
                     f0_autotune=f0_autotune,
                     f0_autotune_strength=f0_autotune_strength,
-                    auto_pitch=auto_pitch,
+                    proposed_pitch=proposed_pitch,
+                    proposed_pitch_threshold=proposed_pitch_threshold,
                 )
                 converted_chunks.append(audio_opt)
                 if split_audio:
