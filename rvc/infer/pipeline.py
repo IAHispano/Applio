@@ -248,7 +248,7 @@ class Pipeline:
 
         # f0 adjustments
         if f0_autotune is True:
-            f0 = Autotune.autotune_f0(self, f0, f0_autotune_strength)
+            f0 = self.autotune.autotune_f0(f0, f0_autotune_strength)
         elif proposed_pitch is True:
             limit = 12
             # calculate median f0 of the audio
