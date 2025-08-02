@@ -377,14 +377,33 @@ def run(
         )
         os._exit(2333333)
 
-    try:
+    # defaults
+    embedder_name = "contentvec"
+    spk_dim = config.model.spk_embed_dim # 109 default speakers
+
+    try:    
         with open(model_info_path, "r") as f:
             model_info = json.load(f)
             embedder_name = model_info["embedder_model"]
-            # net_g will be initialized with the number of speakers from the dataset
-            config.model.spk_embed_dim = model_info["speakers_id"]
-    except:
-        embedder_name = "contentvec"
+            spk_dim = model_info["speakers_id"]
+    except Exception as e:
+        print(f"Could not load model info file: {e}. Using defaults.")
+    
+    # Try to load speaker dim from latest checkpoint or pretrainG
+    try:
+        last_g = latest_checkpoint_path(experiment_dir, "G_*.pth")
+        chk_path = last_g if last_g else (pretrainG if pretrainG not in ("", "None") else None)
+        
+        if chk_path:
+            ckpt = torch.load(chk_path, map_location="cpu", weights_only=True)
+            spk_dim = ckpt["model"]["emb_g.weight"].shape[0]
+            del ckpt
+    except Exception as e:
+        print(f"Failed to load checkpoint: {e}. Using default number of speakers.")
+
+    # update config before the model init
+    print(f"Initializing the generator with {spk_dim} speakers.")
+    config.model.spk_embed_dim = spk_dim
 
     # Initialize models and optimizers
     from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
@@ -456,57 +475,44 @@ def run(
         )
         epoch_str += 1
         global_step = (epoch_str - 1) * len(train_loader)
-
-    except:
+ 
+    except Exception as e:
         epoch_str = 1
         global_step = 0
 
-        if pretrainG != "" and pretrainG != "None":
+        if pretrainG not in ("", "None"):
             if rank == 0:
                 print(f"Loaded pretrained (G) '{pretrainG}'")
-
-            ckpt = torch.load(pretrainG, map_location="cpu", weights_only=True)["model"]
-            ckpt_speaker_count = ckpt["emb_g.weight"].shape[0]
-
-            # adjust speaker embedding if necessary in order to match the model
-            if config.model.spk_embed_dim != ckpt_speaker_count:
-                # get weights from the net_g model (random)
-                state_dict = (
-                    net_g.module.state_dict()
-                    if hasattr(net_g, "module")
-                    else net_g.state_dict()
-                )
-                # copy random embedding weights to the checkpoint we are trying to load to match the dimensions
-                ckpt["emb_g.weight"] = state_dict["emb_g.weight"]
-                del state_dict
-            # attempt to load the checkpoint g weights
             try:
+                ckpt = torch.load(pretrainG, map_location="cpu", weights_only=True)["model"]
                 if hasattr(net_g, "module"):
                     net_g.module.load_state_dict(ckpt)
                 else:
                     net_g.load_state_dict(ckpt)
-            except:
+                del ckpt
+            except Exception as e:
                 print(
                     "The parameters of the pretrain model such as the sample rate or architecture do not match the selected model."
                 )
+                print(e)
                 sys.exit(1)
-            del ckpt
 
-        if pretrainD != "" and pretrainD != "None":
+        if pretrainD not in ("", "None"):
             if rank == 0:
                 print(f"Loaded pretrained (D) '{pretrainD}'")
-            if hasattr(net_d, "module"):
-                net_d.module.load_state_dict(
-                    torch.load(pretrainD, map_location="cpu", weights_only=True)[
-                        "model"
-                    ]
+            try:
+                ckpt = torch.load(pretrainD, map_location="cpu", weights_only=True)["model"]
+                if hasattr(net_d, "module"):
+                    net_d.module.load_state_dict(ckpt)
+                else:
+                    net_d.load_state_dict(ckpt)
+                del ckpt
+            except Exception as e:
+                print(
+                    "The parameters of the pretrain model such as the sample rate or architecture do not match the selected model."
                 )
-            else:
-                net_d.load_state_dict(
-                    torch.load(pretrainD, map_location="cpu", weights_only=True)[
-                        "model"
-                    ]
-                )
+                print(e)
+                sys.exit(1)
 
     # Initialize schedulers
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
