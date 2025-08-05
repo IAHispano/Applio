@@ -251,21 +251,25 @@ class Pipeline:
         elif proposed_pitch is True:
             limit = 12
             # calculate median f0 of the audio
-            _f0 = np.where(f0 == 0, np.nan, f0)
-            _f0 = float(
-                np.median(
-                    np.interp(
-                        np.arange(len(_f0)),
-                        np.where(~np.isnan(_f0))[0],
-                        f0[~np.isnan(_f0)],
+            try:
+                _f0 = np.where(f0 == 0, np.nan, f0)
+                _f0 = float(
+                    np.median(
+                        np.interp(
+                            np.arange(len(_f0)),
+                            np.where(~np.isnan(_f0))[0],
+                            f0[~np.isnan(_f0)],
+                        )
                     )
                 )
-            )
-            # calculate proposed shift
-            up_key = max(
-                -limit,
-                min(limit, int(np.round(12 * np.log2(proposed_pitch_threshold / _f0)))),
-            )
+                # calculate proposed shift
+                up_key = max(
+                    -limit,
+                    min(limit, int(np.round(12 * np.log2(proposed_pitch_threshold / _f0)))),
+                )
+            except ValueError:
+                # for empty sample point array
+                up_key = 0
             print("calculated pitch offset:", up_key)
             f0 *= pow(2, (pitch + up_key) / 12)
         else:
