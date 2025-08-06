@@ -28,7 +28,7 @@ torchvision
 torchcrepe==0.0.23
 torchfcpe
 einops
-transformers==4.44.2
+transformers==4.53.0
 
 # Visualization and UI
 matplotlib==3.7.2
