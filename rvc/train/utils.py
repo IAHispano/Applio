@@ -7,7 +7,7 @@ from collections import OrderedDict
 import matplotlib.pyplot as plt
 
 MATPLOTLIB_FLAG = False
-realign_keys_for_refine = True
+realign_keys_for_applio = True
 
 
 def replace_keys_in_dict(d, old_key_part, new_key_part):
@@ -49,7 +49,6 @@ def load_checkpoint(architecture, checkpoint_path, model, optimizer=None, load_o
 
     # Backwards compatibility for mainline for "RVC" architecture
     if architecture == "RVC":
-        print(f"█  Detected {architecture} architecture. Performing keys replacement in dict for mainline backwards compatibility.")
         checkpoint_dict = replace_keys_in_dict(
             checkpoint_dict, 
             ".weight_v", 
@@ -61,9 +60,9 @@ def load_checkpoint(architecture, checkpoint_path, model, optimizer=None, load_o
             ".parametrizations.weight.original0"
         )
 
-    # Safety future-proof fix for RefineGan models that were saved before the better key handling was added ~ Codename.
-    # Optional, according to 'realign_keys_for_refine' flag.
-    if architecture == "Applio" and realign_keys_for_refine:
+    # Safety future-proof fix for RefineGan and MRF-HiFiGAN models that were saved before the better key handling was added ~ Codename.
+    # Optional, according to 'realign_keys_for_applio' flag.
+    if architecture == "Applio" and realign_keys_for_applio:
         if any(key.endswith(".weight_v") for key in checkpoint_dict["model"].keys()) and any(key.endswith(".weight_g") for key in checkpoint_dict["model"].keys()):
             print(f"Detected {architecture} architecture, fixing keys by converting .weight_v and .weight_g back to .parametrizations.weight.original1 and .parametrizations.weight.original0.")
             checkpoint_dict = replace_keys_in_dict(
