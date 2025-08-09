@@ -386,7 +386,7 @@ class RefineGANGenerator(nn.Module):
         self.conv_post.apply(init_weights)
 
     def forward(self, mel: torch.Tensor, f0: torch.Tensor, g: torch.Tensor = None):
-        f0_size = size=mel.shape[-1]
+        f0_size = mel.shape[-1]
         # change f0 helper to full size
         f0 = F.interpolate(f0.unsqueeze(1), size=f0_size*self.upp, mode="linear")
         # get f0 turned into sines harmonics
