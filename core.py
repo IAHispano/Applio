@@ -507,6 +507,7 @@ def run_train_script(
     g_pretrained_path: str = None,
     d_pretrained_path: str = None,
     vocoder: str = "HiFi-GAN",
+    architecture: str = "RVC",
     checkpointing: bool = False,
 ):
 
@@ -546,6 +547,7 @@ def run_train_script(
                 overtraining_threshold,
                 cleanup,
                 vocoder,
+                architecture,
                 checkpointing,
             ],
         ),
@@ -1946,6 +1948,14 @@ def parse_arguments():
         default="HiFi-GAN",
     )
     train_parser.add_argument(
+        "--architecture",
+        type=str,
+        help="Chose the architecture to be used",
+        choices=["RVC", "Applio"],
+        default="RVC",
+        required=True,
+    )
+    train_parser.add_argument(
         "--checkpointing",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
@@ -2370,6 +2380,7 @@ def main():
                 g_pretrained_path=args.g_pretrained_path,
                 d_pretrained_path=args.d_pretrained_path,
                 vocoder=args.vocoder,
+                architecture=args.architecture,
                 checkpointing=args.checkpointing,
             )
         elif args.mode == "index":
