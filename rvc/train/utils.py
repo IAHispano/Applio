@@ -7,6 +7,7 @@ from collections import OrderedDict
 import matplotlib.pyplot as plt
 
 MATPLOTLIB_FLAG = False
+realign_keys_for_refine = True
 
 
 def replace_keys_in_dict(d, old_key_part, new_key_part):
@@ -31,36 +32,53 @@ def replace_keys_in_dict(d, old_key_part, new_key_part):
     return updated_dict
 
 
-def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
+def load_checkpoint(architecture, checkpoint_path, model, optimizer=None, load_opt=1):
     """
     Load a checkpoint into a model and optionally the optimizer.
 
     Args:
+        architecture (str): Chosen architecture for training.
         checkpoint_path (str): Path to the checkpoint file.
         model (torch.nn.Module): The model to load the checkpoint into.
         optimizer (torch.optim.Optimizer, optional): The optimizer to load the state from. Defaults to None.
         load_opt (int, optional): Whether to load the optimizer state. Defaults to 1.
     """
-    assert os.path.isfile(
-        checkpoint_path
-    ), f"Checkpoint file not found: {checkpoint_path}"
+    assert os.path.isfile(checkpoint_path), f"Checkpoint file not found: {checkpoint_path}"
 
     checkpoint_dict = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
-    checkpoint_dict = replace_keys_in_dict(
-        replace_keys_in_dict(
-            checkpoint_dict, ".weight_v", ".parametrizations.weight.original1"
-        ),
-        ".weight_g",
-        ".parametrizations.weight.original0",
-    )
 
-    # Update model state_dict
-    model_state_dict = (
-        model.module.state_dict() if hasattr(model, "module") else model.state_dict()
-    )
-    new_state_dict = {
-        k: checkpoint_dict["model"].get(k, v) for k, v in model_state_dict.items()
-    }
+    # Backwards compatibility for mainline for "RVC" architecture
+    if architecture == "RVC":
+        print(f"█  Detected {architecture} architecture. Performing keys replacement in dict for mainline backwards compatibility.")
+        checkpoint_dict = replace_keys_in_dict(
+            checkpoint_dict, 
+            ".weight_v", 
+            ".parametrizations.weight.original1"
+        )
+        checkpoint_dict = replace_keys_in_dict(
+            checkpoint_dict, 
+            ".weight_g", 
+            ".parametrizations.weight.original0"
+        )
+
+    # Safety future-proof fix for RefineGan models that were saved before the better key handling was added ~ Codename.
+    # Optional, according to 'realign_keys_for_refine' flag.
+    if architecture == "Applio" and realign_keys_for_refine:
+        if any(key.endswith(".weight_v") for key in checkpoint_dict["model"].keys()) and any(key.endswith(".weight_g") for key in checkpoint_dict["model"].keys()):
+            print(f"Detected {architecture} architecture, fixing keys by converting .weight_v and .weight_g back to .parametrizations.weight.original1 and .parametrizations.weight.original0.")
+            checkpoint_dict = replace_keys_in_dict(
+                checkpoint_dict, 
+                ".weight_v", 
+                ".parametrizations.weight.original1"
+            )
+            checkpoint_dict = replace_keys_in_dict(
+                checkpoint_dict, 
+                ".weight_g", 
+                ".parametrizations.weight.original0"
+            )
+
+    model_state_dict = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
+    new_state_dict = {k: checkpoint_dict["model"].get(k, v) for k, v in model_state_dict.items()}
 
     # Load state_dict into model
     if hasattr(model, "module"):
@@ -69,11 +87,11 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
         model.load_state_dict(new_state_dict, strict=False)
 
     if optimizer and load_opt == 1:
-        optimizer.load_state_dict(checkpoint_dict.get("optimizer", {}))
+        opt_state = checkpoint_dict.get("optimizer", {})
+        optimizer.load_state_dict(opt_state)
 
-    print(
-        f"Loaded checkpoint '{checkpoint_path}' (epoch {checkpoint_dict['iteration']})"
-    )
+    print(f"Loaded checkpoint '{checkpoint_path}' (epoch {checkpoint_dict['iteration']})")
+
     return (
         model,
         optimizer,
@@ -82,11 +100,12 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
     )
 
 
-def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path):
+def save_checkpoint(architecture, model, optimizer, learning_rate, iteration, checkpoint_path):
     """
     Save the model and optimizer state to a checkpoint file.
 
     Args:
+        architecture (str): Chosen architecture for training.
         model (torch.nn.Module): The model to save.
         optimizer (torch.optim.Optimizer): The optimizer to save the state of.
         learning_rate (float): The current learning rate.
@@ -103,17 +122,17 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
         "learning_rate": learning_rate,
     }
 
-    # Create a backwards-compatible checkpoint
-    torch.save(
-        replace_keys_in_dict(
-            replace_keys_in_dict(
-                checkpoint_data, ".parametrizations.weight.original1", ".weight_v"
-            ),
-            ".parametrizations.weight.original0",
-            ".weight_g",
-        ),
-        checkpoint_path,
-    )
+    # Backwards compatibility for mainline for "RVC" architecture
+    if architecture == "RVC":
+        checkpoint_data = replace_keys_in_dict(
+            checkpoint_data, ".parametrizations.weight.original1", ".weight_v"
+        )
+        checkpoint_data = replace_keys_in_dict(
+            checkpoint_data, ".parametrizations.weight.original0", ".weight_g"
+        )
+
+    # Save the checkpoint data
+    torch.save(checkpoint_data, checkpoint_path)
 
     print(f"Saved model '{checkpoint_path}' (epoch {iteration})")
 
