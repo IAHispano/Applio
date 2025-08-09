@@ -98,10 +98,8 @@ def extract_model(
         opt["speakers_id"] = speakers_id
         opt["vocoder"] = vocoder
 
-        torch.save(
-
         # Backwards compatibility for mainline for "RVC" architecture
-        if architecture in ["RVC", "Fork/Applio"]:
+        if architecture == "RVC":
             opt = replace_keys_in_dict(
                 replace_keys_in_dict(
                     opt, ".parametrizations.weight.original1", ".weight_v"
@@ -109,6 +107,19 @@ def extract_model(
                 ".parametrizations.weight.original0",
                 ".weight_g",
             )
+        # Check for old keys for non-RVC architecture
+        elif architecture == "Applio":
+            if any(key.endswith(".weight_v") for key in opt.keys()) and any(key.endswith(".weight_g") for key in opt.keys()):
+                opt = replace_keys_in_dict(
+                    opt, 
+                    ".weight_v", 
+                    ".parametrizations.weight.original1"
+                )
+                opt = replace_keys_in_dict(
+                    opt, 
+                    ".weight_g", 
+                    ".parametrizations.weight.original0"
+                )
 
         torch.save(opt, model_path)
         print(f"Saved model '{model_path}' (epoch {epoch} and step {step})")
