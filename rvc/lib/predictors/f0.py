@@ -7,12 +7,12 @@ import torchcrepe
 
 
 class RMVPE:
-    def __init__(self, device, sample_rate=16000, hop_size=160):
+    def __init__(self, device, model_name = "rmvpe.pt", sample_rate=16000, hop_size=160):
         self.device = device
         self.sample_rate = sample_rate
         self.hop_size = hop_size
         self.model = RMVPE0Predictor(
-            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
+            os.path.join("rvc", "models", "predictors", model_name),
             device=self.device,
         )
 
