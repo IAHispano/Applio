@@ -34,6 +34,7 @@ def extract_model(
     hps,
     overtrain_info,
     vocoder,
+    architecture,
     pitch_guidance=True,
     version="v2",
 ):
@@ -98,16 +99,18 @@ def extract_model(
         opt["vocoder"] = vocoder
 
         torch.save(
-            replace_keys_in_dict(
+
+        # Backwards compatibility for mainline for "RVC" architecture
+        if architecture in ["RVC", "Fork/Applio"]:
+            opt = replace_keys_in_dict(
                 replace_keys_in_dict(
                     opt, ".parametrizations.weight.original1", ".weight_v"
                 ),
                 ".parametrizations.weight.original0",
                 ".weight_g",
-            ),
-            model_path,
-        )
+            )
 
+        torch.save(opt, model_path)
         print(f"Saved model '{model_path}' (epoch {epoch} and step {step})")
 
     except Exception as error:
