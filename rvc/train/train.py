@@ -42,6 +42,7 @@ from utils import (
 # Zluda hijack
 import rvc.lib.zluda
 from rvc.lib.algorithm import commons
+from rvc.train.utils import replace_keys_in_dict
 from rvc.train.process.extract_model import extract_model
 
 # Parse command line arguments
@@ -153,6 +154,46 @@ class EpochRecorder:
         elapsed_time_str = str(datetime.timedelta(seconds=int(elapsed_time)))
         current_time = datetime.datetime.now().strftime("%H:%M:%S")
         return f"time={current_time} | training_speed={elapsed_time_str}"
+
+
+def verify_remap_checkpoint(checkpoint_path, model, architecture):
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    checkpoint_state_dict = checkpoint["model"]
+    print(f"Verifying checkpoint for architecture: {architecture}")
+    try:
+        if architecture == "RVC":
+            if hasattr(model, "module"):
+                model.module.load_state_dict(checkpoint_state_dict)
+            else:
+                model.load_state_dict(checkpoint_state_dict)
+        elif architecture == "Applio":
+            print(f"non-RVC architecture pretrains detected. Checking for old keys ...")
+            if any(key.endswith(".weight_v") for key in checkpoint_state_dict.keys()) and any(key.endswith(".weight_g") for key in checkpoint_state_dict.keys()):
+                print(f"Old keys detected. Converting .weight_v and .weight_g to new format.")
+                checkpoint_state_dict = replace_keys_in_dict(
+                    checkpoint_state_dict, 
+                    ".weight_v", 
+                    ".parametrizations.weight.original1"
+                )
+                checkpoint_state_dict = replace_keys_in_dict(
+                    checkpoint_state_dict, 
+                    ".weight_g", 
+                    ".parametrizations.weight.original0"
+                )
+            else:
+                print("No old keys detected.. proceeding without remapping.")
+
+            if hasattr(model, "module"):
+                model.module.load_state_dict(checkpoint_state_dict)
+            else:
+                model.load_state_dict(checkpoint_state_dict)
+
+    except RuntimeError:
+        print(f"The parameters of the pretrain model such as the sample rate or architecture (Detected: {architecture}) doesn't match the selected model settings.")
+        sys.exit(1)
+    else:
+        del checkpoint
+        del checkpoint_state_dict
 
 
 def main():
@@ -465,55 +506,37 @@ def run(
     if rank == 0 and train_dtype == torch.bfloat16:
         print("Using BFloat16 for training.")
 
-    # Load checkpoint if available
+    # If available, resuming from: D_*, G_* checkpoints
     try:
-        print("Starting training...")
+        print("    ██████  Starting the training ...")
+        # Discriminator
         _, _, _, epoch_str = load_checkpoint(
             architecture, latest_checkpoint_path(experiment_dir, "D_*.pth"), net_d, optim_d
         )
+        # Generator
         _, _, _, epoch_str = load_checkpoint(
             architecture, latest_checkpoint_path(experiment_dir, "G_*.pth"), net_g, optim_g
         )
+
         epoch_str += 1
         global_step = (epoch_str - 1) * len(train_loader)
  
     except Exception as e:
+    # If no checkpoints are available, using the Pretrains directly
         epoch_str = 1
         global_step = 0
 
-        if pretrainG not in ("", "None"):
+        # Loading the pretrained Generator model
+        if pretrainG != "" and pretrainG != "None":
             if rank == 0:
-                print(f"Loaded pretrained (G) '{pretrainG}'")
-            try:
-                ckpt = torch.load(pretrainG, map_location="cpu", weights_only=True)["model"]
-                if hasattr(net_g, "module"):
-                    net_g.module.load_state_dict(ckpt)
-                else:
-                    net_g.load_state_dict(ckpt)
-                del ckpt
-            except Exception as e:
-                print(
-                    f"The parameters of the pretrain model such as the sample rate or architecture ( detected: {architecture} ) do not match the selected model."
-                )
-                print(e)
-                sys.exit(1)
+                print(f"Loading pretrained (G) '{pretrainG}'")
+            verify_remap_checkpoint(pretrainG, net_g, architecture)
 
-        if pretrainD not in ("", "None"):
+        # Loading the pretrained Discriminator model
+        if pretrainD != "" and pretrainD != "None":
             if rank == 0:
-                print(f"Loaded pretrained (D) '{pretrainD}'")
-            try:
-                ckpt = torch.load(pretrainD, map_location="cpu", weights_only=True)["model"]
-                if hasattr(net_d, "module"):
-                    net_d.module.load_state_dict(ckpt)
-                else:
-                    net_d.load_state_dict(ckpt)
-                del ckpt
-            except Exception as e:
-                print(
-                    f"The parameters of the pretrain model such as the sample rate or architecture ( detected: {architecture} ) do not match the selected model."
-                )
-                print(e)
-                sys.exit(1)
+                print(f"Loading pretrained (D) '{pretrainD}'")
+            verify_remap_checkpoint(pretrainD, net_d, architecture)
 
     # Initialize schedulers
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
