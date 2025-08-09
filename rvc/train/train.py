@@ -82,6 +82,11 @@ try:
             and torch.cuda.is_bf16_supported()
         ):
             train_dtype = torch.bfloat16
+        elif (
+            precision == "fp16"
+            and torch.cuda.is_available()
+        ):
+            train_dtype = torch.float16
         else:
             train_dtype = torch.float32
 except (FileNotFoundError, json.JSONDecodeError, KeyError):
@@ -463,6 +468,8 @@ def run(
 
     if rank == 0 and train_dtype == torch.bfloat16:
         print("Using BFloat16 for training.")
+    elif rank == 0 and train_dtype == torch.float16:
+        print("Using Float16 for training.")
 
     # Load checkpoint if available
     try:
@@ -522,6 +529,9 @@ def run(
         optim_d, gamma=config.train.lr_decay, last_epoch=epoch_str - 2
     )
 
+    use_scaler = device.type == "cuda" and train_dtype == torch.float16
+    scaler = torch.amp.GradScaler(enabled=use_scaler)
+
     cache = []
     # collect the reference audio for tensorboard evaluation
     if os.path.isfile(os.path.join("logs", "reference", embedder_name, "feats.npy")):
@@ -573,6 +583,7 @@ def run(
             device_id,
             reference,
             fn_mel_loss,
+            scaler,
         )
 
         scheduler_g.step()
@@ -594,6 +605,7 @@ def train_and_evaluate(
     device_id,
     reference,
     fn_mel_loss,
+    scaler,
 ):
     """
     Trains and evaluates the model for one epoch.
@@ -627,7 +639,7 @@ def train_and_evaluate(
     net_g.train()
     net_d.train()
 
-    use_amp = device.type == "cuda" and train_dtype == torch.bfloat16
+    use_amp = device.type == "cuda" and (train_dtype == torch.bfloat16 or train_dtype == torch.float16)
 
     # Data caching
     if device.type == "cuda" and cache_data_in_gpu:
@@ -689,9 +701,15 @@ def train_and_evaluate(
                 loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
                 # Discriminator backward and update
                 optim_d.zero_grad()
-                loss_disc.backward()
-                grad_norm_d = commons.grad_norm(net_d.parameters())
-                optim_d.step()
+                if train_dtype == torch.float16:
+                    scaler.scale(loss_disc).backward()
+                    scaler.unscale_(optim_d)
+                    grad_norm_d = commons.grad_norm(net_d.parameters())
+                    scaler.step(optim_d)
+                else:
+                    loss_disc.backward()
+                    grad_norm_d = commons.grad_norm(net_d.parameters())
+                    optim_d.step()
 
             with torch.amp.autocast(
                 device_type="cuda", enabled=use_amp, dtype=train_dtype
@@ -735,9 +753,16 @@ def train_and_evaluate(
                     "epoch": epoch,
                 }
             optim_g.zero_grad()
-            loss_gen_all.backward()
-            grad_norm_g = commons.grad_norm(net_g.parameters())
-            optim_g.step()
+            if train_dtype == torch.float16:
+                scaler.scale(loss_gen_all).backward()
+                scaler.unscale_(optim_g)
+                grad_norm_g = commons.grad_norm(net_g.parameters())
+                scaler.step(optim_g)
+                scaler.update()                
+            else:
+                loss_gen_all.backward()
+                grad_norm_g = commons.grad_norm(net_g.parameters())
+                optim_g.step()
 
             global_step += 1
 

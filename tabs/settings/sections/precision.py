@@ -36,7 +36,7 @@ def precision_tab():
         label=i18n("Precision"),
         info=i18n("Select the precision you want to use for training and inference."),
         value=get_precision(),
-        choices=["fp32", "bf16"],
+        choices=["fp32", "fp16", "bf16"],
         interactive=True,
     )
     precision_info = gr.Textbox(
