@@ -60,7 +60,8 @@ overtraining_detector = strtobool(sys.argv[12])
 overtraining_threshold = int(sys.argv[13])
 cleanup = strtobool(sys.argv[14])
 vocoder = sys.argv[15]
-checkpointing = strtobool(sys.argv[16])
+architecture = sys.argv[16]
+checkpointing = strtobool(sys.argv[17])
 # experimental settings
 randomized = True
 optimizer = "AdamW"
@@ -468,10 +469,10 @@ def run(
     try:
         print("Starting training...")
         _, _, _, epoch_str = load_checkpoint(
-            latest_checkpoint_path(experiment_dir, "D_*.pth"), net_d, optim_d
+            architecture, latest_checkpoint_path(experiment_dir, "D_*.pth"), net_d, optim_d
         )
         _, _, _, epoch_str = load_checkpoint(
-            latest_checkpoint_path(experiment_dir, "G_*.pth"), net_g, optim_g
+            architecture, latest_checkpoint_path(experiment_dir, "G_*.pth"), net_g, optim_g
         )
         epoch_str += 1
         global_step = (epoch_str - 1) * len(train_loader)
@@ -492,7 +493,7 @@ def run(
                 del ckpt
             except Exception as e:
                 print(
-                    "The parameters of the pretrain model such as the sample rate or architecture do not match the selected model."
+                    f"The parameters of the pretrain model such as the sample rate or architecture ( detected: {architecture} ) do not match the selected model."
                 )
                 print(e)
                 sys.exit(1)
@@ -509,7 +510,7 @@ def run(
                 del ckpt
             except Exception as e:
                 print(
-                    "The parameters of the pretrain model such as the sample rate or architecture do not match the selected model."
+                    f"The parameters of the pretrain model such as the sample rate or architecture ( detected: {architecture} ) do not match the selected model."
                 )
                 print(e)
                 sys.exit(1)
@@ -970,6 +971,7 @@ def train_and_evaluate(
         if epoch % save_every_epoch == 0:
             checkpoint_suffix = f"{2333333 if save_only_latest else global_step}.pth"
             save_checkpoint(
+                architecture,
                 net_g,
                 optim_g,
                 config.train.learning_rate,
@@ -977,6 +979,7 @@ def train_and_evaluate(
                 os.path.join(experiment_dir, "G_" + checkpoint_suffix),
             )
             save_checkpoint(
+                architecture,
                 net_d,
                 optim_d,
                 config.train.learning_rate,
@@ -1030,6 +1033,7 @@ def train_and_evaluate(
                         hps=hps,
                         overtrain_info=overtrain_info,
                         vocoder=vocoder,
+                        architecture=architecture,
                     )
 
         if done:
