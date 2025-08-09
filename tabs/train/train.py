@@ -793,6 +793,7 @@ def train_tab():
                     g_pretrained_path,
                     d_pretrained_path,
                     vocoder,
+                    architecture,
                     checkpointing,
                 ],
                 outputs=[train_output_info],
