@@ -82,10 +82,7 @@ try:
             and torch.cuda.is_bf16_supported()
         ):
             train_dtype = torch.bfloat16
-        elif (
-            precision == "fp16"
-            and torch.cuda.is_available()
-        ):
+        elif precision == "fp16" and torch.cuda.is_available():
             train_dtype = torch.float16
         else:
             train_dtype = torch.float32
@@ -384,21 +381,23 @@ def run(
 
     # defaults
     embedder_name = "contentvec"
-    spk_dim = config.model.spk_embed_dim # 109 default speakers
+    spk_dim = config.model.spk_embed_dim  # 109 default speakers
 
-    try:    
+    try:
         with open(model_info_path, "r") as f:
             model_info = json.load(f)
             embedder_name = model_info["embedder_model"]
             spk_dim = model_info["speakers_id"]
     except Exception as e:
         print(f"Could not load model info file: {e}. Using defaults.")
-    
+
     # Try to load speaker dim from latest checkpoint or pretrainG
     try:
         last_g = latest_checkpoint_path(experiment_dir, "G_*.pth")
-        chk_path = last_g if last_g else (pretrainG if pretrainG not in ("", "None") else None)
-        
+        chk_path = (
+            last_g if last_g else (pretrainG if pretrainG not in ("", "None") else None)
+        )
+
         if chk_path:
             ckpt = torch.load(chk_path, map_location="cpu", weights_only=True)
             spk_dim = ckpt["model"]["emb_g.weight"].shape[0]
@@ -482,7 +481,7 @@ def run(
         )
         epoch_str += 1
         global_step = (epoch_str - 1) * len(train_loader)
- 
+
     except Exception as e:
         epoch_str = 1
         global_step = 0
@@ -491,7 +490,9 @@ def run(
             if rank == 0:
                 print(f"Loaded pretrained (G) '{pretrainG}'")
             try:
-                ckpt = torch.load(pretrainG, map_location="cpu", weights_only=True)["model"]
+                ckpt = torch.load(pretrainG, map_location="cpu", weights_only=True)[
+                    "model"
+                ]
                 if hasattr(net_g, "module"):
                     net_g.module.load_state_dict(ckpt)
                 else:
@@ -508,7 +509,9 @@ def run(
             if rank == 0:
                 print(f"Loaded pretrained (D) '{pretrainD}'")
             try:
-                ckpt = torch.load(pretrainD, map_location="cpu", weights_only=True)["model"]
+                ckpt = torch.load(pretrainD, map_location="cpu", weights_only=True)[
+                    "model"
+                ]
                 if hasattr(net_d, "module"):
                     net_d.module.load_state_dict(ckpt)
                 else:
@@ -639,7 +642,9 @@ def train_and_evaluate(
     net_g.train()
     net_d.train()
 
-    use_amp = device.type == "cuda" and (train_dtype == torch.bfloat16 or train_dtype == torch.float16)
+    use_amp = device.type == "cuda" and (
+        train_dtype == torch.bfloat16 or train_dtype == torch.float16
+    )
 
     # Data caching
     if device.type == "cuda" and cache_data_in_gpu:
@@ -758,7 +763,7 @@ def train_and_evaluate(
                 scaler.unscale_(optim_g)
                 grad_norm_g = commons.grad_norm(net_g.parameters())
                 scaler.step(optim_g)
-                scaler.update()                
+                scaler.update()
             else:
                 loss_gen_all.backward()
                 grad_norm_g = commons.grad_norm(net_g.parameters())

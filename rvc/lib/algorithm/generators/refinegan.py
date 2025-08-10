@@ -1,4 +1,3 @@
-import math
 import numpy as np
 import torch
 import torchaudio
@@ -308,43 +307,43 @@ class RefineGANGenerator(nn.Module):
 
         # expanded f0 sinegen -> match mel_conv
         # (8, 1, 17280) -> (8, 16, 17280)
-        self.pre_conv = weight_norm(nn.Conv1d(1, 16, 7, 1, padding=3,))
-        
+        self.pre_conv = weight_norm(
+            nn.Conv1d(
+                1,
+                16,
+                7,
+                1,
+                padding=3,
+            )
+        )
+
         # (8,  16, 17280) = 4th upscale
         # (8,  32, 8640)  = 3rd upscale
         # (8,  64, 4320)  = 2nd upscale
         # (8, 128, 432)   = 1st upscale
         # (8, 256, 36) merged to mel
-        
+
         # f0 downsampling and upchanneling
         channels = start_channels
         size = self.upp
         self.downsample_blocks = nn.ModuleList([])
         self.df0 = []
         for i, u in enumerate(upsample_rates):
-            
-            new_size = int(size / upsample_rates[-i-1])
+
+            new_size = int(size / upsample_rates[-i - 1])
             # T dimension factors for torchaudio.functional.resample
             self.df0.append([size, new_size])
             size = new_size
-            
+
             new_channels = channels * 2
             self.downsample_blocks.append(
-                weight_norm(
-                    nn.Conv1d(
-                        channels,
-                        new_channels,
-                        7,
-                        1, 
-                        padding=3
-                        )
-                )
+                weight_norm(nn.Conv1d(channels, new_channels, 7, 1, padding=3))
             )
             channels = new_channels
 
         # mel handling
         channels = upsample_initial_channel
-        
+
         self.mel_conv = weight_norm(
             nn.Conv1d(
                 num_mels,
@@ -388,7 +387,7 @@ class RefineGANGenerator(nn.Module):
     def forward(self, mel: torch.Tensor, f0: torch.Tensor, g: torch.Tensor = None):
         f0_size = mel.shape[-1]
         # change f0 helper to full size
-        f0 = F.interpolate(f0.unsqueeze(1), size=f0_size*self.upp, mode="linear")
+        f0 = F.interpolate(f0.unsqueeze(1), size=f0_size * self.upp, mode="linear")
         # get f0 turned into sines harmonics
         har_source = self.m_source(f0.transpose(1, 2)).transpose(1, 2)
         # prepare for fusion to mel
@@ -409,7 +408,7 @@ class RefineGANGenerator(nn.Module):
                 beta=14.769656459379492,
             )
             x = block(x)
-        
+
         # expanding spectrogram from 192 to 256 channels
         mel = self.mel_conv(mel)
         if g is not None:
