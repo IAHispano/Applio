@@ -33,6 +33,7 @@ class HubertModelWithFinalProj(HubertModel):
         super().__init__(config)
         self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
 
+
 def load_audio_16k(file):
     # this is used by f0 and feature extractions that load preprocessed 16k files, so there's no need to resample
     try:
@@ -41,7 +42,8 @@ def load_audio_16k(file):
         raise RuntimeError(f"An error occurred loading the audio: {error}")
 
     return audio.flatten()
-  
+
+
 def load_audio(file, sample_rate):
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
