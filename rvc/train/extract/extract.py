@@ -16,7 +16,7 @@ sys.path.append(os.path.join(now_dir))
 # Zluda hijack
 import rvc.lib.zluda
 
-from rvc.lib.utils import load_audio, load_embedding
+from rvc.lib.utils import load_audio_16k, load_embedding
 from rvc.train.extract.preparing_files import generate_config, generate_filelist
 from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE
 from rvc.configs.config import Config
@@ -79,7 +79,7 @@ class FeatureInput:
             return
 
         try:
-            np_arr = load_audio(inp_path, self.sample_rate)
+            np_arr = load_audio_16k(inp_path)
             feature_pit = self.compute_f0(np_arr)
             np.save(opt_path_full, feature_pit, allow_pickle=False)
             coarse_pit = self.coarse_f0(feature_pit)
@@ -130,7 +130,7 @@ def process_file_embedding(
         wav_file_path, _, _, out_file_path = file_info
         if os.path.exists(out_file_path):
             return
-        feats = torch.from_numpy(load_audio(wav_file_path, 16000)).to(device).float()
+        feats = torch.from_numpy(load_audio_16k(wav_file_path)).to(device).float()
         feats = feats.view(1, -1)
         with torch.no_grad():
             result = model(feats)["last_hidden_state"]
