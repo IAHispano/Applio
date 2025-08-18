@@ -298,6 +298,12 @@ def upload_to_google_drive(pth_path, index_path):
     upload_file(pth_path)
     upload_file(index_path)
 
+def auto_enable_checkpointing():
+    try:
+        return max_vram_gpu(0) < 6
+    except:
+        return False
+
 
 # Train Tab
 def train_tab():
@@ -673,7 +679,7 @@ def train_tab():
                         info=i18n(
                             "Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate."
                         ),
-                        value=False,
+                        value=auto_enable_checkpointing(),
                         interactive=True,
                     )
             with gr.Row():
