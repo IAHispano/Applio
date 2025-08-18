@@ -298,6 +298,7 @@ def upload_to_google_drive(pth_path, index_path):
     upload_file(pth_path)
     upload_file(index_path)
 
+
 def auto_enable_checkpointing():
     try:
         return max_vram_gpu(0) < 6
