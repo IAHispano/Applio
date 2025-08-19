@@ -1857,7 +1857,7 @@ def parse_arguments():
         required=False,
     )
     preprocess_parser.add_argument(
-        "--norm_mode",
+        "--normalization_mode",
         type=str,
         help="Normalization mode.",
         choices=["none", "pre", "post"],
