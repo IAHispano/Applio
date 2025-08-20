@@ -1,14 +1,8 @@
 @echo off
 
-net session >nul 2>&1
-if %errorlevel% == 0 (
+if /i "%cd%"=="C:\Windows\System32" (
     color 0C
     echo Applio does not require administrator permissions and should be run as a regular user.
-    echo If you want to disable User Account Control (UAC) temporarily, follow these steps:
-    echo   1. Open the Control Panel.
-    echo   2. Go to "Security and Maintenance" > "Security" > "Change User Account Control settings".
-    echo   3. Move the slider up to "Always notify".
-    echo   4. Click "OK" and restart if prompted.
     echo.
     pause
     exit /b 1
