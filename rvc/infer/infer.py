@@ -431,7 +431,10 @@ class VoiceConverter:
             if self.cpt is not None:
                 self.setup_network()
                 self.setup_vc_instance()
-            self.loaded_model = weight_root
+                self.loaded_model = weight_root
+            else:
+                self.vc = None
+                self.loaded_model = None
 
     def cleanup_model(self):
         """
