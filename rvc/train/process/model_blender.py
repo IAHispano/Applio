@@ -24,7 +24,9 @@ def model_blender(name, path1, path2, ratio):
         sr2 = str(ckpt2["sr"]).lower().replace("k", "000")
 
         if sr1 != sr2:
-            print(f"Sample rate of {path1} {sr1} does not match the sample rate of {path2} {sr2}.")
+            print(
+                f"Sample rate of {path1} {sr1} does not match the sample rate of {path2} {sr2}."
+            )
             return "The sample rates of the two models are not the same."
 
         cfg = ckpt1["config"]
