@@ -63,12 +63,11 @@ vocoder = sys.argv[15]
 checkpointing = strtobool(sys.argv[16])
 # experimental settings
 randomized = True
-optimizer = "AdamW"
-# optimizer = "RAdam"
 d_lr_coeff = 1.0
 g_lr_coeff = 1.0
 d_step_per_g_step = 1
 multiscale_mel_loss = False
+bf16_adamw = False
 
 current_dir = os.getcwd()
 
@@ -321,7 +320,7 @@ def run(
         config (object): Configuration object containing training parameters.
         device (torch.device): The device to use for training (CPU or GPU).
     """
-    global global_step, smoothed_value_gen, smoothed_value_disc, optimizer
+    global global_step, smoothed_value_gen, smoothed_value_disc
 
     smoothed_value_gen = 0
     smoothed_value_disc = 0
@@ -435,11 +434,13 @@ def run(
         net_g = net_g.to(device)
         net_d = net_d.to(device)
 
-    print("Using", optimizer, "optimizer")
-    if optimizer == "AdamW":
+    if bf16_adamw == True and train_dtype == torch.bfloat16:
+        print("Using BFload16 AdamW optimizer")
+        from rvc.train.anyprecision_optimizer import AnyPrecisionAdamW
+        optimizer = AnyPrecisionAdamW
+    else:
+        print("Using AdamW optimizer")
         optimizer = torch.optim.AdamW
-    elif optimizer == "RAdam":
-        optimizer = torch.optim.RAdam
 
     optim_g = optimizer(
         net_g.parameters(),
