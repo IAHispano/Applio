@@ -437,6 +437,7 @@ def run(
     if bf16_adamw == True and train_dtype == torch.bfloat16:
         print("Using BFload16 AdamW optimizer")
         from rvc.train.anyprecision_optimizer import AnyPrecisionAdamW
+
         optimizer = AnyPrecisionAdamW
     else:
         print("Using AdamW optimizer")
