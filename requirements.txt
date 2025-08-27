@@ -22,9 +22,9 @@ soxr
 omegaconf>=2.0.6; sys_platform == 'darwin' 
 numba; sys_platform == 'linux'
 numba==0.61.0; sys_platform == 'darwin' or sys_platform == 'win32'
-torch==2.7.1
-torchaudio==2.7.1
-torchvision
+torch==2.7.1+cu128
+torchaudio==2.7.1+cu128
+torchvision==0.22.1+cu128
 torchcrepe==0.0.23
 torchfcpe
 einops

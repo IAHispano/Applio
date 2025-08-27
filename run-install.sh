@@ -115,14 +115,11 @@ create_venv() {
 
     log_message "Installing dependencies..."
     if [ -f "requirements.txt" ]; then
-        python -m pip install -r requirements.txt
+        python -m pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128
     else
         log_message "requirements.txt not found. Please ensure it exists."
         exit 1
     fi
-
-    log_message "Installing PyTorch..."
-    python -m pip install torch==2.7.1 torchvision torchaudio==2.7.1 --upgrade --index-url https://download.pytorch.org/whl/cu128
 
     finish
 }
