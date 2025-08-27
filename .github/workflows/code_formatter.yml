@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '**/*.py'
+      - '.github/workflows/code_formatter.yml'
 
 jobs:
   push_format:
