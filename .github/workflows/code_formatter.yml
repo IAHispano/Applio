@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - '**/*.py'
+      - '**/*.ipynb'
       - '.github/workflows/code_formatter.yml'
 
 jobs:
