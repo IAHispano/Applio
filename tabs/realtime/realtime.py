@@ -262,7 +262,7 @@ def realtime_tab():
                 chunk_size = gr.Slider(
                     minimum=2.7, 
                     maximum=2730.7, 
-                    value=32, 
+                    value=192, 
                     step=1, 
                     label="Chunk Size (ms)", 
                     info="Audio buffer size in milliseconds. Lower values may reduce latency but increase CPU load.",
