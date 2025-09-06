@@ -30,6 +30,7 @@ torchvision==0.22.1; sys_platform == 'darwin'
 torchvision==0.22.1+cu128; sys_platform == 'linux' or sys_platform == 'win32'
 torchcrepe==0.0.23
 torchfcpe
+swift_f0
 einops
 transformers==4.44.2
 
@@ -45,5 +46,5 @@ tensorboardX
 edge-tts==7.2.0
 pypresence
 beautifulsoup4
-
-
+sounddevice
+webrtcvad
