@@ -137,7 +137,7 @@ def start_realtime(
         if hasattr(audio_manager, "latency"):
             yield f"Latency: {audio_manager.latency:.2f} ms", interactive_false, interactive_true
 
-    return "Realtime not started.", interactive_true, interactive_false
+    return gr.update(), gr.update(), gr.update()
 
 def stop_realtime():
     global running, callbacks, audio_manager
@@ -145,11 +145,11 @@ def stop_realtime():
         audio_manager.stop()
         running = False
         if hasattr(audio_manager, "latency"): del audio_manager.latency
-        del audio_manager, callbacks
         audio_manager = callbacks = None
+
+        return gr.update(value="Stopping..."), gr.update(), gr.update()
     else:
         return "Realtime pipeline not found!", interactive_true, interactive_false
-    return "Realtime stopped!", interactive_true, interactive_false
 
 def get_audio_devices_formatted():
     try:
@@ -327,7 +327,11 @@ def realtime_tab():
             outputs=[latency_info, start_button, stop_button],
         )
 
-        stop_button.click(fn=stop_realtime, outputs=[latency_info, start_button, stop_button])
+        stop_button.click(fn=stop_realtime, outputs=[latency_info, start_button, stop_button]).then(
+            fn=lambda: (yield gr.update(value="Stopped"), interactive_true, interactive_false),
+            inputs=None,
+            outputs=[latency_info, start_button, stop_button]
+        )
         unload_button.click(fn=lambda: ({"value": "", "__type__": "update"}, {"value": "", "__type__": "update"}), inputs=[], outputs=[model_file, index_file])
         model_file.select(fn=update_on_model_change, inputs=[model_file], outputs=[index_file, sid])
 
