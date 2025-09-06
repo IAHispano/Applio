@@ -41,6 +41,9 @@ cv_model = HubertModel.from_pretrained(cv_path)
 spin_path = r"rvc\models\embedders\spin"
 spin_model = HubertModel.from_pretrained(spin_path)
 
+spin2_path = r"rvc\models\embedders\spin-v2"
+spin2_model = HubertModel.from_pretrained(spin2_path)
+
 feats = torch.from_numpy(audio).to(torch.float32).to("cpu")
 feats = torch.nn.functional.pad(feats.unsqueeze(0), (40, 40), mode="reflect")
 feats = feats.view(1, -1)
@@ -53,7 +56,13 @@ with torch.no_grad():
     spin_feats = spin_model(feats)["last_hidden_state"]
     spin_feats = spin_feats.squeeze(0).float().cpu().numpy()
     print("spin", spin_feats.shape)
+
+    spin2_feats = spin2_model(feats)["last_hidden_state"]
+    spin2_feats = spin2_feats.squeeze(0).float().cpu().numpy()
+    print("spin-v2", spin2_feats.shape)
+
 np.save(r"logs\reference\contentvec\feats.npy", cv_feats)
 np.save(r"logs\reference\spin\feats.npy", spin_feats)
+np.save(r"logs\reference\spin-v2\feats.npy", spin2_feats)
 np.save(r"logs\reference\pitch_coarse.npy", f0c)
 np.save(r"logs\reference\pitch_fine.npy", f0)

@@ -40,6 +40,8 @@ def generate_filelist(model_path: str, sample_rate: int, include_mutes: int = 2)
 
     if embedder_name == "spin":
         mute_base_path = os.path.join(current_directory, "logs", "mute_spin")
+    elif embedder_name == "spin-v2":
+        mute_base_path = os.path.join(current_directory, "logs", "mute_spin-v2")
     else:
         mute_base_path = os.path.join(current_directory, "logs", "mute")
 
