@@ -87,9 +87,9 @@ class Audio:
         f0_autotune_strength: float = 1,
         proposed_pitch = False,
         proposed_pitch_threshold: float = 155.0,
-        input_audio_gan: float = 1.0,
-        output_audio_gan: float = 1.0,
-        monitor_audio_gan: float = 1.0,
+        input_audio_gain: float = 1.0,
+        output_audio_gain: float = 1.0,
+        monitor_audio_gain: float = 1.0,
         monitor: bool = False
     ):
         self.callbacks = callbacks
@@ -97,9 +97,9 @@ class Audio:
         self.stream = None
         self.monitor = None
         self.running = False
-        self.input_audio_gan = input_audio_gan
-        self.output_audio_gan = output_audio_gan
-        self.monitor_audio_gan = monitor_audio_gan
+        self.input_audio_gain = input_audio_gain
+        self.output_audio_gain = output_audio_gain
+        self.monitor_audio_gain = monitor_audio_gain
         self.use_monitor = monitor
         self.f0_up_key = f0_up_key
         self.index_rate = index_rate
@@ -116,14 +116,14 @@ class Audio:
 
         return serverAudioDevice[0] if len(serverAudioDevice) > 0 else None
 
-    def get_ourput_audio_device(self, index: int):
+    def get_output_audio_device(self, index: int):
         _, audiooutput = list_audio_device()
         serverAudioDevice = [x for x in audiooutput if x.index == index]
 
         return serverAudioDevice[0] if len(serverAudioDevice) > 0 else None
     
     def process_data(self, indata: np.ndarray):
-        indata = indata * self.input_audio_gan
+        indata = indata * self.input_audio_gain
         unpacked_data = librosa.to_mono(indata.T)
 
         return self.callbacks.change_voice(
@@ -153,7 +153,7 @@ class Audio:
             output_channels = outdata.shape[1]
             if self.use_monitor: self.mon_queue.put(out_wav)
 
-            outdata[:] = (np.repeat(out_wav, output_channels).reshape(-1, output_channels) * self.output_audio_gan)
+            outdata[:] = (np.repeat(out_wav, output_channels).reshape(-1, output_channels) * self.output_audio_gain)
         except Exception as error:
             print(f"An error occurred while running the audio stream: {error}")
             print(traceback.format_exc())
@@ -166,7 +166,7 @@ class Audio:
                 self.mon_queue.get()
 
             output_channels = outdata.shape[1]
-            outdata[:] = (np.repeat(mon_wav, output_channels).reshape(-1, output_channels) * self.monitor_audio_gan)
+            outdata[:] = (np.repeat(mon_wav, output_channels).reshape(-1, output_channels) * self.monitor_audio_gain)
         except Exception as error:
             print(f"An error occurred while running the audio queue: {error}")
             print(traceback.format_exc())
@@ -235,7 +235,7 @@ class Audio:
         sd._terminate()
         sd._initialize()
 
-        input_audio_device, output_audio_device = self.get_input_audio_device(input_device_id), self.get_ourput_audio_device(output_device_id)
+        input_audio_device, output_audio_device = self.get_input_audio_device(input_device_id), self.get_output_audio_device(output_device_id)
         input_channels, output_channels = input_audio_device.max_input_channels, output_audio_device.max_output_channels
     
         input_extra_setting, output_extra_setting, output_monitor_extra_setting, monitor_channels = None, None, None, None
@@ -254,7 +254,7 @@ class Audio:
             output_channels = 1
 
         if self.use_monitor:
-            output_monitor_device = self.get_ourput_audio_device(output_monitor_id)
+            output_monitor_device = self.get_output_audio_device(output_monitor_id)
             monitor_channels = output_monitor_device.max_output_channels
 
             if output_monitor_device and "WASAPI" in output_monitor_device.host_api:

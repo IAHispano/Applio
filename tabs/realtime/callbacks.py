@@ -29,9 +29,9 @@ class AudioCallbacks:
         f0_autotune_strength: float = 1,
         proposed_pitch: bool = False,
         proposed_pitch_threshold: float = 155.0,
-        input_audio_gan: float = 1.0,
-        output_audio_gan: float = 1.0,
-        monitor_audio_gan: float = 1.0,
+        input_audio_gain: float = 1.0,
+        output_audio_gain: float = 1.0,
+        monitor_audio_gain: float = 1.0,
         monitor: bool = False,
         vad_enabled: bool = False,
         vad_sensitivity: int = 3,
@@ -67,9 +67,9 @@ class AudioCallbacks:
             f0_autotune_strength, 
             proposed_pitch, 
             proposed_pitch_threshold,
-            input_audio_gan, 
-            output_audio_gan, 
-            monitor_audio_gan,
+            input_audio_gain, 
+            output_audio_gain, 
+            monitor_audio_gain,
             monitor
         )
 
