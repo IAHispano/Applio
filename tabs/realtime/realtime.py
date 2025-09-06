@@ -154,8 +154,21 @@ def stop_realtime():
 def get_audio_devices_formatted():
     try:
         input_devices, output_devices = list_audio_device()
-        input_device_list = [f"{d.index}: {d.name} ({d.host_api})" for d in input_devices if 'virtual' not in d.name.lower() or 'vb' not in d.name.lower()]
-        output_device_list = [f"{d.index}: {d.name} ({d.host_api})" for d in output_devices if 'virtual' in d.name.lower() or 'vb' in d.name.lower()]
+
+        def priority(name: str) -> int:
+            n = name.lower()
+            if 'virtual' in n:
+                return 0 
+            if 'vb' in n:
+                return 1
+            return 2
+
+        output_sorted = sorted(output_devices, key=lambda d: priority(d.name))
+        input_sorted = sorted(input_devices, key=lambda d: priority(d.name), reverse=True)
+
+        input_device_list = [f"{d.index}: {d.name} ({d.host_api})" for d in input_sorted]
+        output_device_list = [f"{d.index}: {d.name} ({d.host_api})" for d in output_sorted]
+
         return input_device_list, output_device_list
     except Exception:
         return [], []
