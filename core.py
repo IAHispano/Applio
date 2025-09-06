@@ -776,6 +776,7 @@ def parse_arguments():
         choices=[
             "contentvec",
             "spin",
+            "spin-v2",
             "chinese-hubert-base",
             "japanese-hubert-base",
             "korean-hubert-base",
@@ -1287,6 +1288,7 @@ def parse_arguments():
         choices=[
             "contentvec",
             "spin",
+            "spin-v2",
             "chinese-hubert-base",
             "japanese-hubert-base",
             "korean-hubert-base",
@@ -1771,6 +1773,7 @@ def parse_arguments():
         choices=[
             "contentvec",
             "spin",
+            "spin-v2",
             "chinese-hubert-base",
             "japanese-hubert-base",
             "korean-hubert-base",
@@ -1911,6 +1914,7 @@ def parse_arguments():
         choices=[
             "contentvec",
             "spin",
+            "spin-v2",
             "chinese-hubert-base",
             "japanese-hubert-base",
             "korean-hubert-base",
