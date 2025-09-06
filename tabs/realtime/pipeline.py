@@ -14,7 +14,7 @@ from .torchutils import circular_write
 from rvc.configs.config import Config
 from rvc.infer.pipeline import Autotune, AudioProcessor
 from rvc.lib.algorithm.synthesizers import Synthesizer
-from rvc.lib.predictors.f0 import FCPE, RMVPE
+from rvc.lib.predictors.f0 import FCPE, RMVPE, SWIFT
 from rvc.lib.utils import load_embedding, HubertModelWithFinalProj
 
 class RealtimeVoiceConverter:
