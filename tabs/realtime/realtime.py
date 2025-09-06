@@ -203,48 +203,47 @@ def realtime_tab():
                 with gr.Row():
                     unload_button = gr.Button(i18n("Unload Voice"))
                     refresh_button = gr.Button(i18n("Refresh"))
-                with gr.Accordion(i18n("Advanced Settings"), open=False):
-                    with gr.Column():
-                        autotune = gr.Checkbox(label=i18n("Autotune"), info=i18n("Apply a soft autotune to your inferences, recommended for singing conversions."), visible=True, value=False, interactive=True)
-                        autotune_strength = gr.Slider(minimum=0, maximum=1, label=i18n("Autotune Strength"), info=i18n("Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."), visible=False, value=1, interactive=True)
-                        proposed_pitch = gr.Checkbox(label=i18n("Proposed Pitch"), info=i18n("Adjust the input audio pitch to match the voice model range."), visible=True, value=False, interactive=True)
-                        proposed_pitch_threshold = gr.Slider(minimum=50.0, maximum=1200.0, label=i18n("Proposed Pitch Threshold"), info=i18n("Male voice models typically use 155.0 and female voice models typically use 255.0."), visible=False, value=155.0, interactive=True)
-                        sid = gr.Dropdown(label=i18n("Speaker ID"), choices=get_speakers_id(default_weight) if default_weight else [0], value=0, interactive=True)
-                        pitch = gr.Slider(minimum=-24, maximum=24, step=1, label=i18n("Pitch"), info=i18n("Set the pitch of the audio, the higher the value, the higher the pitch."), value=0, interactive=True)
-                        index_rate = gr.Slider(minimum=0, maximum=1, label=i18n("Search Feature Ratio"), info=i18n("Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."), value=0.75, interactive=True)
-                        volume_envelope = gr.Slider(minimum=0, maximum=1, value=1, label=i18n("Volume Envelope"), info=i18n("Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."), interactive=True)
-                        protect = gr.Slider(minimum=0, maximum=0.5, value=0.5, label=i18n("Protect Voiceless Consonants"), info=i18n("Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."), interactive=True)
-                        f0_method = gr.Radio(choices=["rmvpe", "fcpe", "swift"], value="swift", label=i18n("Pitch extraction algorithm"), info=i18n("Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."), interactive=True)
-                        embedder_model = gr.Radio(choices=["contentvec", "spin", "chinese-hubert-base", "japanese-hubert-base", "korean-hubert-base", "custom"], value="contentvec", label=i18n("Embedder Model"), info=i18n("Model used for learning speaker embedding."), interactive=True)
-                        with gr.Column(visible=False) as embedder_custom:
-                            with gr.Accordion(i18n("Custom Embedder"), open=True):
-                                with gr.Row():
-                                    embedder_model_custom = gr.Dropdown(
-                                        label=i18n("Select Custom Embedder"),
-                                        choices=refresh_embedders_folders(),
-                                        interactive=True,
-                                        allow_custom_value=True,
-                                    )
-                                    refresh_embedders_button = gr.Button(
-                                        i18n("Refresh embedders")
-                                    )
-                                folder_name_input = gr.Textbox(
-                                    label=i18n("Folder Name"), interactive=True
+                with gr.Column():
+                    autotune = gr.Checkbox(label=i18n("Autotune"), info=i18n("Apply a soft autotune to your inferences, recommended for singing conversions."), visible=True, value=False, interactive=True)
+                    autotune_strength = gr.Slider(minimum=0, maximum=1, label=i18n("Autotune Strength"), info=i18n("Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."), visible=False, value=1, interactive=True)
+                    proposed_pitch = gr.Checkbox(label=i18n("Proposed Pitch"), info=i18n("Adjust the input audio pitch to match the voice model range."), visible=True, value=False, interactive=True)
+                    proposed_pitch_threshold = gr.Slider(minimum=50.0, maximum=1200.0, label=i18n("Proposed Pitch Threshold"), info=i18n("Male voice models typically use 155.0 and female voice models typically use 255.0."), visible=False, value=155.0, interactive=True)
+                    sid = gr.Dropdown(label=i18n("Speaker ID"), choices=get_speakers_id(default_weight) if default_weight else [0], value=0, interactive=True)
+                    pitch = gr.Slider(minimum=-24, maximum=24, step=1, label=i18n("Pitch"), info=i18n("Set the pitch of the audio, the higher the value, the higher the pitch."), value=0, interactive=True)
+                    index_rate = gr.Slider(minimum=0, maximum=1, label=i18n("Search Feature Ratio"), info=i18n("Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."), value=0.75, interactive=True)
+                    volume_envelope = gr.Slider(minimum=0, maximum=1, value=1, label=i18n("Volume Envelope"), info=i18n("Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."), interactive=True)
+                    protect = gr.Slider(minimum=0, maximum=0.5, value=0.5, label=i18n("Protect Voiceless Consonants"), info=i18n("Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."), interactive=True)
+                    f0_method = gr.Radio(choices=["rmvpe", "fcpe", "swift"], value="swift", label=i18n("Pitch extraction algorithm"), info=i18n("Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."), interactive=True)
+                    embedder_model = gr.Radio(choices=["contentvec", "spin", "chinese-hubert-base", "japanese-hubert-base", "korean-hubert-base", "custom"], value="contentvec", label=i18n("Embedder Model"), info=i18n("Model used for learning speaker embedding."), interactive=True)
+                    with gr.Column(visible=False) as embedder_custom:
+                        with gr.Accordion(i18n("Custom Embedder"), open=True):
+                            with gr.Row():
+                                embedder_model_custom = gr.Dropdown(
+                                    label=i18n("Select Custom Embedder"),
+                                    choices=refresh_embedders_folders(),
+                                    interactive=True,
+                                    allow_custom_value=True,
                                 )
-                                with gr.Row():
-                                    bin_file_upload = gr.File(
-                                        label=i18n("Upload .bin"),
-                                        type="filepath",
-                                        interactive=True,
-                                    )
-                                    config_file_upload = gr.File(
-                                        label=i18n("Upload .json"),
-                                        type="filepath",
-                                        interactive=True,
-                                    )
-                                move_files_button = gr.Button(
-                                    i18n("Move files to custom embedder folder")
+                                refresh_embedders_button = gr.Button(
+                                    i18n("Refresh embedders")
                                 )
+                            folder_name_input = gr.Textbox(
+                                label=i18n("Folder Name"), interactive=True
+                            )
+                            with gr.Row():
+                                bin_file_upload = gr.File(
+                                    label=i18n("Upload .bin"),
+                                    type="filepath",
+                                    interactive=True,
+                                )
+                                config_file_upload = gr.File(
+                                    label=i18n("Upload .json"),
+                                    type="filepath",
+                                    interactive=True,
+                                )
+                            move_files_button = gr.Button(
+                                i18n("Move files to custom embedder folder")
+                            )
 
             with gr.TabItem("Performance Settings"):
                 chunk_size = gr.Slider(
