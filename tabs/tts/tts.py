@@ -277,6 +277,7 @@ def tts_tab():
                     "crepe-tiny",
                     "rmvpe",
                     "fcpe",
+                    "swift",
                 ],
                 value="rmvpe",
                 interactive=True,
