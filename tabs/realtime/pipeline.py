@@ -17,6 +17,7 @@ from rvc.lib.algorithm.synthesizers import Synthesizer
 from rvc.lib.predictors.f0 import FCPE, RMVPE, SWIFT
 from rvc.lib.utils import load_embedding, HubertModelWithFinalProj
 
+
 class RealtimeVoiceConverter:
     """
     A class for performing realtime voice conversion using the Retrieval-Based Voice Conversion (RVC) method.
@@ -72,7 +73,7 @@ class RealtimeVoiceConverter:
             self.net_g = self.net_g.to(self.config.device).float()
             self.net_g.eval()
             self.net_g.remove_weight_norm()
-    
+
     def inference(
         self,
         feats: Tensor,
@@ -81,25 +82,18 @@ class RealtimeVoiceConverter:
         pitch: Tensor,
         pitchf: Tensor,
     ):
-        output = (
-            self.net_g.infer(
-                feats, 
-                p_len, 
-                pitch, 
-                pitchf,
-                sid
-            )[0][0, 0]
-        )
+        output = self.net_g.infer(feats, p_len, pitch, pitchf, sid)[0][0, 0]
 
         return torch.clip(output, -1.0, 1.0, out=output)
-    
+
+
 class Realtime_Pipeline:
     def __init__(
         self,
         vc: RealtimeVoiceConverter,
         hubert_model: HubertModelWithFinalProj = None,
-        index = None,
-        big_npy = None,
+        index=None,
+        big_npy=None,
         f0_method: str = "rmvpe",
         sid: int = 0,
     ):
@@ -144,21 +138,33 @@ class Realtime_Pipeline:
         if self.f0_method == "rmvpe":
             if self.f0_model is None:
                 self.f0_model = RMVPE(
-                    device=self.device, sample_rate=self.sample_rate, hop_size=self.window
+                    device=self.device,
+                    sample_rate=self.sample_rate,
+                    hop_size=self.window,
                 )
             f0 = self.f0_model.get_f0(x, filter_radius=0.03)
         elif self.f0_method == "fcpe":
             if self.f0_model is None:
                 self.f0_model = FCPE(
-                    device=self.device, sample_rate=self.sample_rate, hop_size=self.window
+                    device=self.device,
+                    sample_rate=self.sample_rate,
+                    hop_size=self.window,
                 )
             f0 = self.f0_model.get_f0(x, x.shape[0] // self.window, filter_radius=0.006)
         elif self.f0_method == "swift":
             if self.f0_model is None:
                 self.f0_model = SWIFT(
-                    device=self.device, sample_rate=self.sample_rate, hop_size=self.window
+                    device=self.device,
+                    sample_rate=self.sample_rate,
+                    hop_size=self.window,
                 )
-            f0 = self.f0_model.get_f0(x, self.f0_min, self.f0_max, x.shape[0] // self.window, confidence_threshold=0.887)
+            f0 = self.f0_model.get_f0(
+                x,
+                self.f0_min,
+                self.f0_max,
+                x.shape[0] // self.window,
+                confidence_threshold=0.887,
+            )
 
         # f0 adjustments
         if f0_autotune is True:
@@ -189,7 +195,9 @@ class Realtime_Pipeline:
                             ),
                         ),
                     )
-            print("calculated pitch offset:", up_key) # Might need to hide so terminal output doesn't become a mess
+            print(
+                "calculated pitch offset:", up_key
+            )  # Might need to hide so terminal output doesn't become a mess
             f0 *= pow(2, (f0_up_key + up_key) / 12)
         else:
             f0 *= pow(2, f0_up_key / 12)
@@ -199,7 +207,12 @@ class Realtime_Pipeline:
 
         # quantizing f0 to 255 buckets to make coarse f0
         f0_mel = 1127.0 * torch.log(1.0 + f0 / 700.0)
-        f0_mel = torch.clip((f0_mel - self.f0_min) * 254 / (self.f0_max - self.f0_min) + 1, 1, 255, out=f0_mel)
+        f0_mel = torch.clip(
+            (f0_mel - self.f0_min) * 254 / (self.f0_max - self.f0_min) + 1,
+            1,
+            255,
+            out=f0_mel,
+        )
         f0_coarse = torch.round(f0_mel, out=f0_mel).long()
 
         if pitch is not None and pitchf is not None:
@@ -210,23 +223,23 @@ class Realtime_Pipeline:
             pitchf = f0
 
         return pitch.unsqueeze(0), pitchf.unsqueeze(0)
-    
+
     def voice_conversion(
-        self, 
-        audio: Tensor, 
-        pitch: Tensor = None, 
-        pitchf: Tensor = None, 
-        f0_up_key: int = 0, 
-        index_rate: float = 0.5, 
-        p_len: int = 0, 
-        silence_front: int = 0, 
-        skip_head: int = None, 
-        return_length: int = None, 
-        protect: float = 0.5, 
-        volume_envelope: float = 1, 
-        f0_autotune: bool = False, 
-        f0_autotune_strength: float = 1, 
-        proposed_pitch: bool = False, 
+        self,
+        audio: Tensor,
+        pitch: Tensor = None,
+        pitchf: Tensor = None,
+        f0_up_key: int = 0,
+        index_rate: float = 0.5,
+        p_len: int = 0,
+        silence_front: int = 0,
+        skip_head: int = None,
+        return_length: int = None,
+        protect: float = 0.5,
+        volume_envelope: float = 1,
+        f0_autotune: bool = False,
+        f0_autotune_strength: float = 1,
+        proposed_pitch: bool = False,
         proposed_pitch_threshold: float = 155.0,
     ):
         """
@@ -237,21 +250,27 @@ class Realtime_Pipeline:
 
         formant_length = int(np.ceil(return_length * 1.0))
 
-        pitch, pitchf = self.get_f0(
-            audio[silence_front:], 
-            pitch, 
-            pitchf, 
-            f0_up_key, 
-            f0_autotune, 
-            f0_autotune_strength, 
-            proposed_pitch, 
-            proposed_pitch_threshold,
-        ) if self.use_f0 else (None, None)
+        pitch, pitchf = (
+            self.get_f0(
+                audio[silence_front:],
+                pitch,
+                pitchf,
+                f0_up_key,
+                f0_autotune,
+                f0_autotune_strength,
+                proposed_pitch,
+                proposed_pitch_threshold,
+            )
+            if self.use_f0
+            else (None, None)
+        )
 
         # extract features
         feats = self.hubert_model(feats)["last_hidden_state"]
         feats = (
-            self.hubert_model.final_proj(feats[0]).unsqueeze(0) if self.version == "v1" else feats
+            self.hubert_model.final_proj(feats[0]).unsqueeze(0)
+            if self.version == "v1"
+            else feats
         )
 
         feats = torch.cat((feats, feats[:, -1:, :]), 1)
@@ -265,13 +284,17 @@ class Realtime_Pipeline:
                 skip_head, feats, self.index, self.big_npy, index_rate
             )
         # feature upsampling
-        feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)[:, :p_len, :]
+        feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)[
+            :, :p_len, :
+        ]
 
         if self.use_f0:
             feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
                 0, 2, 1
             )[:, :p_len, :]
-            pitch, pitchf = pitch[:, -p_len:], pitchf[:, -p_len:] * (formant_length / return_length)
+            pitch, pitchf = pitch[:, -p_len:], pitchf[:, -p_len:] * (
+                formant_length / return_length
+            )
 
             # Pitch protection blending
             if protect < 0.5:
@@ -287,31 +310,41 @@ class Realtime_Pipeline:
 
         p_len = torch.tensor([p_len], device=self.device, dtype=torch.int64)
         out_audio = self.vc.inference(feats, p_len, self.sid, pitch, pitchf).float()
-        if volume_envelope != 1: 
+        if volume_envelope != 1:
             out_audio = AudioProcessor.change_rms(
                 audio, self.sample_rate, out_audio, self.tgt_sr, volume_envelope
             )
 
         scaled_window = int(np.floor(1.0 * self.model_window))
-    
+
         if scaled_window != self.model_window:
-            if scaled_window not in self.resamplers: self.resamplers[scaled_window] = tat.Resample(orig_freq=scaled_window, new_freq=self.model_window, dtype=torch.float32).to(self.device)
-            out_audio = self.resamplers[scaled_window](out_audio[: return_length * scaled_window])
+            if scaled_window not in self.resamplers:
+                self.resamplers[scaled_window] = tat.Resample(
+                    orig_freq=scaled_window,
+                    new_freq=self.model_window,
+                    dtype=torch.float32,
+                ).to(self.device)
+            out_audio = self.resamplers[scaled_window](
+                out_audio[: return_length * scaled_window]
+            )
 
         return out_audio
 
-    def _retrieve_speaker_embeddings(self, skip_head, feats, index, big_npy, index_rate):
+    def _retrieve_speaker_embeddings(
+        self, skip_head, feats, index, big_npy, index_rate
+    ):
         skip_offset = skip_head // 2
-        npy = feats[0][skip_offset :].cpu().numpy()
+        npy = feats[0][skip_offset:].cpu().numpy()
         score, ix = index.search(npy, k=8)
         weight = np.square(1 / score)
         weight /= weight.sum(axis=1, keepdims=True)
         npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
-        feats[0][skip_offset :] = (
+        feats[0][skip_offset:] = (
             torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
-            + (1 - index_rate) * feats[0][skip_offset :]
+            + (1 - index_rate) * feats[0][skip_offset:]
         )
         return feats
+
 
 def load_faiss_index(file_index):
     if file_index != "" and os.path.exists(file_index):
@@ -326,13 +359,14 @@ def load_faiss_index(file_index):
 
     return index, big_npy
 
+
 def create_pipeline(
     model_path: str = None,
     index_path: str = None,
     f0_method: str = "rmvpe",
     embedder_model: str = None,
     embedder_model_custom: str = None,
-    # device: str = "cuda", 
+    # device: str = "cuda",
     sid: int = 0,
 ):
     """
@@ -341,7 +375,12 @@ def create_pipeline(
 
     vc = RealtimeVoiceConverter(model_path)
     index, big_npy = load_faiss_index(
-        index_path.strip().strip('"').strip("\n").strip('"').strip().replace("trained", "added")
+        index_path.strip()
+        .strip('"')
+        .strip("\n")
+        .strip('"')
+        .strip()
+        .replace("trained", "added")
     )
 
     hubert_model = load_embedding(embedder_model, embedder_model_custom)
