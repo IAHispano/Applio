@@ -10,16 +10,18 @@ sys.path.append(now_dir)
 
 from assets.i18n.i18n import I18nAuto
 from core import run_tts_script
+from tabs.settings.sections.filter import get_filter_trigger, load_config_filter
 from tabs.inference.inference import (
     change_choices,
     create_folder_and_move_files,
-    get_indexes,
+    get_files,
     get_speakers_id,
     match_index,
     refresh_embedders_folders,
     extract_model_and_epoch,
-    names,
     default_weight,
+    filter_dropdowns,
+    update_filter_visibility,
 )
 
 i18n = I18nAuto()
@@ -46,24 +48,47 @@ def process_input(file_path):
 
 # TTS tab
 def tts_tab():
+    trigger = get_filter_trigger()
     with gr.Column():
         with gr.Row():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
                 info=i18n("Select the voice model to use for the conversion."),
-                choices=sorted(names, key=lambda x: extract_model_and_epoch(x)),
+                choices=sorted(
+                    get_files("model"),
+                    key=extract_model_and_epoch
+                ),
                 interactive=True,
                 value=default_weight,
                 allow_custom_value=True,
             )
-            best_default_index_path = match_index(model_file.value)
+            filter_box_tts = gr.Textbox(
+                label=i18n("Filter"),
+                info=i18n("Path must contain:"),
+                placeholder=i18n("Type to filter..."),
+                interactive=True,
+                scale=0.1,
+                visible=load_config_filter(),
+                elem_id="filter_box_tts",
+            )
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 info=i18n("Select the index file to use for the conversion."),
-                choices=get_indexes(),
-                value=best_default_index_path,
+                choices=sorted(get_files("index")),
+                value=match_index(default_weight),
                 interactive=True,
                 allow_custom_value=True,
+            )
+            filter_box_tts.blur(
+                fn=filter_dropdowns,
+                inputs=[filter_box_tts],
+                outputs=[model_file, index_file],
+            )
+            trigger.change(
+                fn=update_filter_visibility,
+                inputs=[trigger],
+                outputs=[filter_box_tts, model_file, index_file],
+                show_progress=False
             )
         with gr.Row():
             unload_button = gr.Button(i18n("Unload Voice"))
@@ -382,6 +407,10 @@ def tts_tab():
         fn=change_choices,
         inputs=[model_file],
         outputs=[model_file, index_file, sid, sid],
+    ).then(
+        fn=filter_dropdowns,
+        inputs=[filter_box_tts],
+        outputs=[model_file, index_file],
     )
     txt_file.upload(
         fn=process_input,
