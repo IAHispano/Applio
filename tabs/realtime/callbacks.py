@@ -8,7 +8,8 @@ sys.path.append(os.getcwd())
 from .audio import Audio
 from .core import VoiceChanger
 
-class AudioCallbacks:    
+
+class AudioCallbacks:
     def __init__(
         self,
         pass_through: bool = False,
@@ -58,19 +59,19 @@ class AudioCallbacks:
             # device,
         )
         self.audio = Audio(
-            self, 
-            f0_up_key, 
-            index_rate, 
-            protect, 
+            self,
+            f0_up_key,
+            index_rate,
+            protect,
             volume_envelope,
-            f0_autotune, 
-            f0_autotune_strength, 
-            proposed_pitch, 
+            f0_autotune,
+            f0_autotune_strength,
+            proposed_pitch,
             proposed_pitch_threshold,
-            input_audio_gain, 
-            output_audio_gain, 
+            input_audio_gain,
+            output_audio_gain,
             monitor_audio_gain,
-            monitor
+            monitor,
         )
 
     def change_voice(
@@ -83,26 +84,24 @@ class AudioCallbacks:
         f0_autotune: bool = False,
         f0_autotune_strength: float = 1,
         proposed_pitch: bool = False,
-        proposed_pitch_threshold: float = 155.0
+        proposed_pitch_threshold: float = 155.0,
     ):
         if self.pass_through:  # through
-            vol = float(np.sqrt(
-                np.square(received_data).mean(dtype=np.float32)
-            ))
+            vol = float(np.sqrt(np.square(received_data).mean(dtype=np.float32)))
             return received_data, vol, [0, 0, 0], None
 
         try:
             with self.lock:
                 audio, vol, perf = self.vc.on_request(
-                    received_data, 
-                    f0_up_key, 
-                    index_rate, 
-                    protect, 
-                    volume_envelope, 
-                    f0_autotune, 
-                    f0_autotune_strength, 
-                    proposed_pitch, 
-                    proposed_pitch_threshold
+                    received_data,
+                    f0_up_key,
+                    index_rate,
+                    protect,
+                    volume_envelope,
+                    f0_autotune,
+                    f0_autotune_strength,
+                    proposed_pitch,
+                    proposed_pitch_threshold,
                 )
 
             return audio, vol, perf, None

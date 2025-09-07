@@ -248,7 +248,9 @@ class Pipeline:
             model = SWIFT(
                 device=self.device, sample_rate=self.sample_rate, hop_size=self.window
             )
-            f0 = model.get_f0(x, self.f0_min, self.f0_max, p_len, confidence_threshold=0.887)
+            f0 = model.get_f0(
+                x, self.f0_min, self.f0_max, p_len, confidence_threshold=0.887
+            )
             del model
 
         # f0 adjustments

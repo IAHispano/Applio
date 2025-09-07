@@ -3,6 +3,7 @@
 import webrtcvad
 import numpy as np
 
+
 class VADProcessor:
     def __init__(self, sensitivity_mode=3, sample_rate=16000, frame_duration_ms=30):
         """
@@ -48,7 +49,9 @@ class VADProcessor:
         # Convert float32 audio to int16 PCM
         # WebRTC VAD expects 16-bit linear PCM audio.
         if np.max(np.abs(audio_chunk_float32)) > 1.0:
-            print(f"VAD Warning: Input audio chunk has values outside [-1.0, 1.0]: min={np.min(audio_chunk_float32)}, max={np.max(audio_chunk_float32)}. Clipping.")
+            print(
+                f"VAD Warning: Input audio chunk has values outside [-1.0, 1.0]: min={np.min(audio_chunk_float32)}, max={np.max(audio_chunk_float32)}. Clipping."
+            )
             audio_chunk_float32 = np.clip(audio_chunk_float32, -1.0, 1.0)
 
         audio_chunk_int16 = (audio_chunk_float32 * 32767).astype(np.int16)
@@ -57,11 +60,13 @@ class VADProcessor:
         if num_frames == 0 and len(audio_chunk_int16) > 0:
             # If the chunk is smaller than one frame, pad it for VAD analysis
             # This might not be ideal but handles small initial chunks
-            padding = np.zeros(self.frame_length - len(audio_chunk_int16), dtype=np.int16)
+            padding = np.zeros(
+                self.frame_length - len(audio_chunk_int16), dtype=np.int16
+            )
             audio_chunk_int16 = np.concatenate((audio_chunk_int16, padding))
             num_frames = 1
         elif num_frames == 0 and len(audio_chunk_int16) == 0:
-            return False # Empty chunk
+            return False  # Empty chunk
 
         try:
             for i in range(num_frames):
@@ -75,6 +80,8 @@ class VADProcessor:
         except Exception as e:
             # webrtcvad can sometimes throw "Error talking to VAD" or similar
             # if frame length is not perfect.
-            print(f"VAD processing error: {e}. Chunk length: {len(audio_chunk_int16)}, Frame length: {self.frame_length}")
+            print(
+                f"VAD processing error: {e}. Chunk length: {len(audio_chunk_int16)}, Frame length: {self.frame_length}"
+            )
             # Fallback: assume no speech on error to avoid processing noise
             return False
