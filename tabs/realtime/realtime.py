@@ -2,13 +2,14 @@ import gradio as gr
 import os
 import sys
 import time
+import json
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from .callbacks import AudioCallbacks
-from .audio import list_audio_device
-from .core import AUDIO_SAMPLE_RATE
+from rvc.realtime.callbacks import AudioCallbacks
+from rvc.realtime.audio import list_audio_device
+from rvc.realtime.core import AUDIO_SAMPLE_RATE
 
 from tabs.inference.inference import (
     i18n,
@@ -28,6 +29,106 @@ PASS_THROUGH = False
 interactive_true = gr.update(interactive=True)
 interactive_false = gr.update(interactive=False)
 running, callbacks, audio_manager = False, None, None
+
+CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
+
+
+def save_realtime_settings(input_device, output_device, monitor_device, model_file, index_file):
+    """Save realtime settings to config.json"""
+    try:
+        if os.path.exists(CONFIG_PATH):
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+        else:
+            config = {}
+        
+        if 'realtime' not in config:
+            config['realtime'] = {}
+        
+        # Only save non-None values, preserve existing values for None inputs
+        if input_device is not None:
+            config['realtime']['input_device'] = input_device or ""
+        if output_device is not None:
+            config['realtime']['output_device'] = output_device or ""
+        if monitor_device is not None:
+            config['realtime']['monitor_device'] = monitor_device or ""
+        if model_file is not None:
+            config['realtime']['model_file'] = model_file or ""
+        if index_file is not None:
+            config['realtime']['index_file'] = index_file or ""
+        
+        with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Error saving realtime settings: {e}")
+
+
+def load_realtime_settings():
+    """Load realtime settings from config.json"""
+    try:
+        if os.path.exists(CONFIG_PATH):
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                realtime_config = config.get('realtime', {})
+                return {
+                    'input_device': realtime_config.get('input_device', ''),
+                    'output_device': realtime_config.get('output_device', ''),
+                    'monitor_device': realtime_config.get('monitor_device', ''),
+                    'model_file': realtime_config.get('model_file', ''),
+                    'index_file': realtime_config.get('index_file', '')
+                }
+    except Exception as e:
+        print(f"Error loading realtime settings: {e}")
+    
+    return {
+        'input_device': '',
+        'output_device': '',
+        'monitor_device': '',
+        'model_file': '',
+        'index_file': ''
+    }
+
+
+def get_safe_dropdown_value(saved_value, choices, fallback_value=None):
+    """Safely get a dropdown value, ensuring it exists in choices"""
+    if saved_value and saved_value in choices:
+        return saved_value
+    elif fallback_value and fallback_value in choices:
+        return fallback_value
+    elif choices:
+        return choices[0]
+    else:
+        return None
+
+
+def get_safe_index_value(saved_value, choices, fallback_value=None):
+    """Safely get an index file value, handling file path matching"""
+    # Handle empty string, None, or whitespace-only values
+    if not saved_value or (isinstance(saved_value, str) and not saved_value.strip()):
+        if fallback_value and fallback_value in choices:
+            return fallback_value
+        elif choices:
+            return choices[0]
+        else:
+            return None
+    
+    # Check exact match first
+    if saved_value in choices:
+        return saved_value
+    
+    # Check if saved value is a filename that matches any choice
+    saved_filename = os.path.basename(saved_value)
+    for choice in choices:
+        if os.path.basename(choice) == saved_filename:
+            return choice
+    
+    # Fallback to default or first choice
+    if fallback_value and fallback_value in choices:
+        return fallback_value
+    elif choices:
+        return choices[0]
+    else:
+        return None
 
 
 def start_realtime(
@@ -201,6 +302,9 @@ def get_audio_devices_formatted():
 def realtime_tab():
     gr.Markdown("## Realtime Voice Changer")
     input_devices, output_devices = get_audio_devices_formatted()
+    
+    # Load saved settings
+    saved_settings = load_realtime_settings()
 
     with gr.Blocks() as ui:
         with gr.Row():
@@ -213,56 +317,58 @@ def realtime_tab():
                 with gr.Row():
                     refresh_devices_button = gr.Button("Refresh Audio Devices")
                 with gr.Row():
-                    with gr.Column():
-                        gr.Markdown("### Input Device")
-                        input_audio_device = gr.Dropdown(
-                            label="Input Device",
-                            info="Select the microphone or audio interface you will be speaking into.",
-                            choices=input_devices,
-                            interactive=True,
-                        )
-                        input_audio_gain = gr.Slider(
-                            minimum=0,
-                            maximum=200,
-                            value=100,
-                            label="Input Gain (%)",
-                            info="Adjusts the input volume before processing. Prevents clipping or boosts a quiet mic.",
-                            interactive=True,
-                        )
-                        input_asio_channels = gr.Slider(
-                            minimum=-1,
-                            maximum=16,
-                            value=-1,
-                            step=1,
-                            label="Input ASIO Channel",
-                            info="For ASIO drivers, selects a specific input channel. Leave at -1 for default.",
-                            interactive=True,
-                        )
-                    with gr.Column():
-                        gr.Markdown("### Output Device")
-                        output_audio_device = gr.Dropdown(
-                            label="Output Device",
-                            info="Select the device where the final converted voice will be sent (e.g., a virtual cable).",
-                            choices=output_devices,
-                            interactive=True,
-                        )
-                        output_audio_gain = gr.Slider(
-                            minimum=0,
-                            maximum=200,
-                            value=100,
-                            label="Output Gain (%)",
-                            info="Adjusts the final volume of the converted voice after processing.",
-                            interactive=True,
-                        )
-                        output_asio_channels = gr.Slider(
-                            minimum=-1,
-                            maximum=16,
-                            value=-1,
-                            step=1,
-                            label="Output ASIO Channel",
-                            info="For ASIO drivers, selects a specific output channel. Leave at -1 for default.",
-                            interactive=True,
-                        )
+                    with gr.Accordion("Input Device", open=True):
+                        with gr.Column():
+                            input_audio_device = gr.Dropdown(
+                                label="Input Device",
+                                info="Select the microphone or audio interface you will be speaking into.",
+                                choices=input_devices,
+                                value=get_safe_dropdown_value(saved_settings['input_device'], input_devices),
+                                interactive=True,
+                            )
+                            input_audio_gain = gr.Slider(
+                                minimum=0,
+                                maximum=200,
+                                value=100,
+                                label="Input Gain (%)",
+                                info="Adjusts the input volume before processing. Prevents clipping or boosts a quiet mic.",
+                                interactive=True,
+                            )
+                            input_asio_channels = gr.Slider(
+                                minimum=-1,
+                                maximum=16,
+                                value=-1,
+                                step=1,
+                                label="Input ASIO Channel",
+                                info="For ASIO drivers, selects a specific input channel. Leave at -1 for default.",
+                                interactive=True,
+                            )
+                    with gr.Accordion("Output Device", open=True):
+                        with gr.Column():
+                            output_audio_device = gr.Dropdown(
+                                label="Output Device",
+                                info="Select the device where the final converted voice will be sent (e.g., a virtual cable).",
+                                choices=output_devices,
+                                value=get_safe_dropdown_value(saved_settings['output_device'], output_devices),
+                                interactive=True,
+                            )
+                            output_audio_gain = gr.Slider(
+                                minimum=0,
+                                maximum=200,
+                                value=100,
+                                label="Output Gain (%)",
+                                info="Adjusts the final volume of the converted voice after processing.",
+                                interactive=True,
+                            )
+                            output_asio_channels = gr.Slider(
+                                minimum=-1,
+                                maximum=16,
+                                value=-1,
+                                step=1,
+                                label="Output ASIO Channel",
+                                info="For ASIO drivers, selects a specific output channel. Leave at -1 for default.",
+                                interactive=True,
+                            )
                 with gr.Accordion("Monitor Device (Optional)", open=False):
                     with gr.Column():
                         use_monitor_device = gr.Checkbox(
@@ -272,6 +378,7 @@ def realtime_tab():
                             label="Monitor Device",
                             info="Select the device for monitoring your voice (e.g., your headphones).",
                             choices=output_devices,
+                            value=get_safe_dropdown_value(saved_settings['monitor_device'], output_devices),
                             interactive=True,
                         )
                         monitor_audio_gain = gr.Slider(
@@ -307,18 +414,18 @@ def realtime_tab():
 
             with gr.TabItem("Model Settings"):
                 with gr.Row():
+                    model_choices = sorted(names, key=extract_model_and_epoch) if names else []
                     model_file = gr.Dropdown(
                         label=i18n("Voice Model"),
-                        choices=(
-                            sorted(names, key=extract_model_and_epoch) if names else []
-                        ),
+                        choices=model_choices,
                         interactive=True,
-                        value=default_weight,
+                        value=get_safe_dropdown_value(saved_settings['model_file'], model_choices, default_weight),
                     )
+                    index_choices = get_indexes()
                     index_file = gr.Dropdown(
                         label=i18n("Index File"),
-                        choices=get_indexes(),
-                        value=match_index(default_weight) if default_weight else "",
+                        choices=index_choices,
+                        value=get_safe_index_value(saved_settings['index_file'], index_choices, match_index(default_weight) if default_weight else None),
                         interactive=True,
                     )
 
@@ -508,7 +615,14 @@ def realtime_tab():
         def update_on_model_change(model_path):
             new_index = match_index(model_path)
             new_sids = get_speakers_id(model_path)
-            return gr.update(value=new_index), gr.update(
+            
+            # Get updated index choices
+            new_index_choices = get_indexes()
+            # Use the matched index as fallback, but handle empty strings
+            fallback_index = new_index if new_index and new_index.strip() else None
+            safe_index_value = get_safe_index_value("", new_index_choices, fallback_index)
+            
+            return gr.update(choices=new_index_choices, value=safe_index_value), gr.update(
                 choices=new_sids, value=0 if new_sids else None
             )
 
@@ -620,6 +734,59 @@ def realtime_tab():
         )
         model_file.select(
             fn=update_on_model_change, inputs=[model_file], outputs=[index_file, sid]
+        )
+        
+        # Save settings when devices or model change
+        def save_input_device(input_device):
+            if input_device:
+                save_realtime_settings(input_device, None, None, None, None)
+        
+        def save_output_device(output_device):
+            if output_device:
+                save_realtime_settings(None, output_device, None, None, None)
+        
+        def save_monitor_device(monitor_device):
+            if monitor_device:
+                save_realtime_settings(None, None, monitor_device, None, None)
+        
+        def save_model_file(model_file):
+            if model_file:
+                save_realtime_settings(None, None, None, model_file, None)
+        
+        def save_index_file(index_file):
+            # Only save if index_file is not None and not empty
+            if index_file:
+                save_realtime_settings(None, None, None, None, index_file)
+        
+        # Add event handlers to save settings
+        input_audio_device.change(
+            fn=save_input_device,
+            inputs=[input_audio_device],
+            outputs=[]
+        )
+        
+        output_audio_device.change(
+            fn=save_output_device,
+            inputs=[output_audio_device],
+            outputs=[]
+        )
+        
+        monitor_output_device.change(
+            fn=save_monitor_device,
+            inputs=[monitor_output_device],
+            outputs=[]
+        )
+        
+        model_file.change(
+            fn=save_model_file,
+            inputs=[model_file],
+            outputs=[]
+        )
+        
+        index_file.change(
+            fn=save_index_file,
+            inputs=[index_file],
+            outputs=[]
         )
 
         def refresh_all():

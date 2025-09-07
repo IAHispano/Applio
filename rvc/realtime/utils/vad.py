@@ -1,5 +1,3 @@
-# VADProcessor is taken from the Applio-text-realtime-voice-conversion branch [Discarded because the experiment failed].
-
 import webrtcvad
 import numpy as np
 

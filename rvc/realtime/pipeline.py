@@ -10,7 +10,7 @@ from torch import Tensor
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from .torchutils import circular_write
+from rvc.realtime.utils.torch import circular_write
 from rvc.configs.config import Config
 from rvc.infer.pipeline import Autotune, AudioProcessor
 from rvc.lib.algorithm.synthesizers import Synthesizer

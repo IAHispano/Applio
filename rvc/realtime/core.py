@@ -9,11 +9,10 @@ import numpy as np
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from .torchutils import circular_write
-from .vad_utils import VADProcessor
-from .pipeline import create_pipeline
+from rvc.realtime.utils.torch import circular_write
+from rvc.realtime.utils.vad import VADProcessor
+from rvc.realtime.pipeline import create_pipeline
 
-# Set both input and output audio devices to a fixed sample rate of 48k.
 SAMPLE_RATE = 16000
 AUDIO_SAMPLE_RATE = 48000
 
