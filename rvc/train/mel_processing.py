@@ -3,49 +3,6 @@ import torch.utils.data
 from librosa.filters import mel as librosa_mel_fn
 
 
-def dynamic_range_compression_torch(x, C=1, clip_val=1e-5):
-    """
-    Dynamic range compression using log10.
-
-    Args:
-        x (torch.Tensor): Input tensor.
-        C (float, optional): Scaling factor. Defaults to 1.
-        clip_val (float, optional): Minimum value for clamping. Defaults to 1e-5.
-    """
-    return torch.log(torch.clamp(x, min=clip_val) * C)
-
-
-def dynamic_range_decompression_torch(x, C=1):
-    """
-    Dynamic range decompression using exp.
-
-    Args:
-        x (torch.Tensor): Input tensor.
-        C (float, optional): Scaling factor. Defaults to 1.
-    """
-    return torch.exp(x) / C
-
-
-def spectral_normalize_torch(magnitudes):
-    """
-    Spectral normalization using dynamic range compression.
-
-    Args:
-        magnitudes (torch.Tensor): Magnitude spectrogram.
-    """
-    return dynamic_range_compression_torch(magnitudes)
-
-
-def spectral_de_normalize_torch(magnitudes):
-    """
-    Spectral de-normalization using dynamic range decompression.
-
-    Args:
-        magnitudes (torch.Tensor): Normalized spectrogram.
-    """
-    return dynamic_range_decompression_torch(magnitudes)
-
-
 mel_basis = {}
 hann_window = {}
 
@@ -118,7 +75,7 @@ def spec_to_mel_torch(spec, n_fft, num_mels, sample_rate, fmin, fmax):
         )
 
     melspec = torch.matmul(mel_basis[fmax_dtype_device], spec)
-    melspec = spectral_normalize_torch(melspec)
+    melspec = torch.log(melspec.clamp(min=1e-5) * 1)
     return melspec
 
 
