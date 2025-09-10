@@ -68,7 +68,7 @@ install_ffmpeg_flatpak() {
 
 install_python_ffmpeg() {
     log_message "Installing python-ffmpeg..."
-    python -m pip install python-ffmpeg
+    uv pip install python-ffmpeg
 }
 
 # Function to create or activate a virtual environment
@@ -102,21 +102,12 @@ create_venv() {
     log_message "Activating virtual environment..."
     source .venv/bin/activate
 
-    # Install pip if necessary and upgrade
-    log_message "Ensuring pip is installed..."
-    python -m ensurepip --upgrade || {
-        log_message "ensurepip failed, attempting manual pip installation..."
-        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        python get-pip.py
-    }
-    python -m pip install --upgrade pip
-
     install_ffmpeg
     install_python_ffmpeg  
 
     log_message "Installing dependencies..."
     if [ -f "requirements.txt" ]; then
-        python -m pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
+        uv pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
     else
         log_message "requirements.txt not found. Please ensure it exists."
         exit 1
@@ -129,13 +120,13 @@ create_venv() {
 finish() {
     log_message "Verifying installed packages..."
     if [ -f "requirements.txt" ]; then
-        installed_packages=$(python -m pip freeze)
+        installed_packages=$(uv pip freeze)
         while IFS= read -r package; do
             expr "${package}" : "^#.*" > /dev/null && continue
             package_name=$(echo "${package}" | sed 's/[<>=!].*//')
             if ! echo "${installed_packages}" | grep -q "${package_name}"; then
                 log_message "${package_name} not found. Attempting to install..."
-                python -m pip install --upgrade "${package}"
+                uv pip install --upgrade "${package}"
             fi
         done < "requirements.txt"
     else
