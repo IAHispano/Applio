@@ -118,22 +118,6 @@ create_venv() {
 
 # Function to finish installation
 finish() {
-    log_message "Verifying installed packages..."
-    if [ -f "requirements.txt" ]; then
-        installed_packages=$(uv pip freeze)
-        while IFS= read -r package; do
-            expr "${package}" : "^#.*" > /dev/null && continue
-            package_name=$(echo "${package}" | sed 's/[<>=!].*//')
-            if ! echo "${installed_packages}" | grep -q "${package_name}"; then
-                log_message "${package_name} not found. Attempting to install..."
-                uv pip install --upgrade "${package}"
-            fi
-        done < "requirements.txt"
-    else
-        log_message "requirements.txt not found. Please ensure it exists."
-        exit 1
-    fi
-
     clear
     echo "Applio has been successfully installed. Run the file run-applio.sh to start the web interface!"
     exit 0
