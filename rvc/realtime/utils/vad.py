@@ -47,9 +47,9 @@ class VADProcessor:
         # Convert float32 audio to int16 PCM
         # WebRTC VAD expects 16-bit linear PCM audio.
         if np.max(np.abs(audio_chunk_float32)) > 1.0:
-            print(
-                f"VAD Warning: Input audio chunk has values outside [-1.0, 1.0]: min={np.min(audio_chunk_float32)}, max={np.max(audio_chunk_float32)}. Clipping."
-            )
+            # print(
+            #     f"VAD Warning: Input audio chunk has values outside [-1.0, 1.0]: min={np.min(audio_chunk_float32)}, max={np.max(audio_chunk_float32)}. Clipping."
+            # )
             audio_chunk_float32 = np.clip(audio_chunk_float32, -1.0, 1.0)
 
         audio_chunk_int16 = (audio_chunk_float32 * 32767).astype(np.int16)

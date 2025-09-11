@@ -169,23 +169,26 @@ def start_realtime(
     running = True
 
     if not input_audio_device or not output_audio_device:
-        return (
+        yield (
             "Please select valid input/output devices!",
             interactive_true,
             interactive_false,
         )
+        return
     if use_monitor_device and not monitor_output_device:
-        return (
+        yield (
             "Please select a valid monitor device!",
             interactive_true,
             interactive_false,
         )
+        return
     if not pth_path:
-        return (
+        yield (
             "Model path not provided. Aborting conversion.",
             interactive_true,
             interactive_false,
         )
+        return
 
     yield "Starting Realtime...", interactive_false, interactive_true
 
@@ -198,10 +201,11 @@ def start_realtime(
     monitor_audio_gain /= 100.0
 
     try:
-        input_device_id = int(input_audio_device.split(":")[0])
-        output_device_id = int(output_audio_device.split(":")[0])
+        input_devices, output_devices = get_audio_devices_formatted()
+        input_device_id = input_devices[input_audio_device]
+        output_device_id = output_devices[output_audio_device]
         output_monitor_id = (
-            int(monitor_output_device.split(":")[0]) if use_monitor_device else None
+            output_devices[monitor_output_device] if use_monitor_device else None
         )
     except (ValueError, IndexError):
         yield "Incorrectly formatted audio device. Stopping.", interactive_true, interactive_false
@@ -213,7 +217,7 @@ def start_realtime(
         cross_fade_overlap_size=cross_fade_overlap_size,
         extra_convert_size=extra_convert_size,
         model_path=pth_path,
-        index_path=index_path,
+        index_path=str(index_path),
         f0_method=f0_method,
         embedder_model=embedder_model,
         embedder_model_custom=embedder_model_custom,
@@ -289,12 +293,12 @@ def get_audio_devices_formatted():
             input_devices, key=lambda d: priority(d.name), reverse=True
         )
 
-        input_device_list = [
-            f"{d.index}: {d.name} ({d.host_api})" for d in input_sorted
-        ]
-        output_device_list = [
-            f"{d.index}: {d.name} ({d.host_api})" for d in output_sorted
-        ]
+        input_device_list = {
+            f"{input_sorted.index(d)+1}: {d.name} ({d.host_api})": d.index for d in input_sorted
+        }
+        output_device_list = {
+            f"{output_sorted.index(d)+1}: {d.name} ({d.host_api})": d.index for d in output_sorted
+        }
 
         return input_device_list, output_device_list
     except Exception:
@@ -304,6 +308,7 @@ def get_audio_devices_formatted():
 def realtime_tab():
     gr.Markdown("## Realtime Voice Changer")
     input_devices, output_devices = get_audio_devices_formatted()
+    input_devices, output_devices = list(input_devices.keys()), list(output_devices.keys())
 
     # Load saved settings
     saved_settings = load_realtime_settings()
@@ -313,6 +318,14 @@ def realtime_tab():
             start_button = gr.Button("Start", variant="primary")
             stop_button = gr.Button("Stop", interactive=False)
         latency_info = gr.Label(label=i18n("Status"), value="Realtime not started.")
+        terms_checkbox = gr.Checkbox(
+            label=i18n("I agree to the terms of use"),
+            info=i18n(
+                "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your realtime."
+            ),
+            value=False,
+            interactive=True,
+        )
 
         with gr.Tabs():
             with gr.TabItem("Audio Settings"):
@@ -628,6 +641,14 @@ def realtime_tab():
                     interactive=True,
                 )
 
+        def enforce_terms(terms_accepted, *args):
+            if not terms_accepted:
+                message = "You must agree to the Terms of Use to proceed."
+                gr.Info(message)
+                yield message, interactive_true, interactive_false
+                return
+            yield from start_realtime(*args)
+
         def update_on_model_change(model_path):
             new_index = match_index(model_path)
             new_sids = get_speakers_id(model_path)
@@ -646,6 +667,7 @@ def realtime_tab():
 
         def refresh_devices():
             input_choices, output_choices = get_audio_devices_formatted()
+            input_choices, output_choices = list(input_choices.keys()), list(output_choices.keys())
             return (
                 gr.update(choices=input_choices),
                 gr.update(choices=output_choices),
@@ -695,8 +717,9 @@ def realtime_tab():
         )
 
         start_button.click(
-            fn=start_realtime,
+            fn=enforce_terms,
             inputs=[
+                terms_checkbox,
                 input_audio_device,
                 input_audio_gain,
                 input_asio_channels,
@@ -803,6 +826,7 @@ def realtime_tab():
             ]
             new_indexes = get_indexes()
             input_choices, output_choices = get_audio_devices_formatted()
+            input_choices, output_choices = list(input_choices.keys()), list(output_choices.keys())
             return (
                 gr.update(choices=sorted(new_names, key=extract_model_and_epoch)),
                 gr.update(choices=new_indexes),
