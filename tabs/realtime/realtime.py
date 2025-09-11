@@ -294,10 +294,12 @@ def get_audio_devices_formatted():
         )
 
         input_device_list = {
-            f"{input_sorted.index(d)+1}: {d.name} ({d.host_api})": d.index for d in input_sorted
+            f"{input_sorted.index(d)+1}: {d.name} ({d.host_api})": d.index
+            for d in input_sorted
         }
         output_device_list = {
-            f"{output_sorted.index(d)+1}: {d.name} ({d.host_api})": d.index for d in output_sorted
+            f"{output_sorted.index(d)+1}: {d.name} ({d.host_api})": d.index
+            for d in output_sorted
         }
 
         return input_device_list, output_device_list
@@ -308,7 +310,9 @@ def get_audio_devices_formatted():
 def realtime_tab():
     gr.Markdown("## Realtime Voice Changer")
     input_devices, output_devices = get_audio_devices_formatted()
-    input_devices, output_devices = list(input_devices.keys()), list(output_devices.keys())
+    input_devices, output_devices = list(input_devices.keys()), list(
+        output_devices.keys()
+    )
 
     # Load saved settings
     saved_settings = load_realtime_settings()
@@ -667,7 +671,9 @@ def realtime_tab():
 
         def refresh_devices():
             input_choices, output_choices = get_audio_devices_formatted()
-            input_choices, output_choices = list(input_choices.keys()), list(output_choices.keys())
+            input_choices, output_choices = list(input_choices.keys()), list(
+                output_choices.keys()
+            )
             return (
                 gr.update(choices=input_choices),
                 gr.update(choices=output_choices),
@@ -826,7 +832,9 @@ def realtime_tab():
             ]
             new_indexes = get_indexes()
             input_choices, output_choices = get_audio_devices_formatted()
-            input_choices, output_choices = list(input_choices.keys()), list(output_choices.keys())
+            input_choices, output_choices = list(input_choices.keys()), list(
+                output_choices.keys()
+            )
             return (
                 gr.update(choices=sorted(new_names, key=extract_model_and_epoch)),
                 gr.update(choices=new_indexes),
