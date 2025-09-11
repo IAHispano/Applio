@@ -22,6 +22,13 @@ class ServerAudioDevice:
     max_output_channels: int = 0
     default_samplerate: int = 0
 
+def check_the_device(device, type: str = "input"):
+    stream_cls = sd.InputStream if type == "input" else sd.OutputStream
+    try:
+        with stream_cls(device=device["index"], dtype=np.float32, samplerate=device["default_samplerate"]):
+            return True
+    except Exception:
+        return False
 
 def list_audio_device():
     """
@@ -38,10 +45,10 @@ def list_audio_device():
         audio_device_list = []
 
     input_audio_device_list = [
-        d for d in audio_device_list if d["max_input_channels"] > 0
+        d for d in audio_device_list if d["max_input_channels"] > 0 and check_the_device(d, "input")
     ]
     output_audio_device_list = [
-        d for d in audio_device_list if d["max_output_channels"] > 0
+        d for d in audio_device_list if d["max_output_channels"] > 0 and check_the_device(d, "output")
     ]
 
     try:

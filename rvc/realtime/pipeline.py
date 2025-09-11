@@ -3,6 +3,7 @@ import sys
 import faiss
 import numpy as np
 import torch
+import torch.nn.utils.parametrize
 import torch.nn.functional as F
 import torchaudio.transforms as tat
 from torch import Tensor
@@ -70,9 +71,10 @@ class RealtimeVoiceConverter:
             )
 
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)
+            strip_parametrizations(self.net_g)
             self.net_g = self.net_g.to(self.config.device).float()
             self.net_g.eval()
-            self.net_g.remove_weight_norm()
+            # self.net_g.remove_weight_norm()
 
     def inference(
         self,
@@ -397,3 +399,13 @@ def create_pipeline(
     )
 
     return pipeline
+
+def strip_parametrizations(module: torch.nn.Module):
+    """
+    Remove all parametrizations (e.g., weight norm) from a module and log each removal.
+    """
+    for name, submodule in module.named_modules():
+        if hasattr(submodule, "parametrizations"):
+            for pname, plist in list(submodule.parametrizations.items()):
+                # print(f"Removing parametrizations from {name}.{pname}: {[p.__class__.__name__ for p in plist]}")
+                torch.nn.utils.parametrize.remove_parametrizations(submodule, pname, leave_parametrized=True)
