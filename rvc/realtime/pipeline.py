@@ -400,6 +400,7 @@ def create_pipeline(
 
     return pipeline
 
+
 def strip_parametrizations(module: torch.nn.Module):
     """
     Remove all parametrizations (e.g., weight norm) from a module and log each removal.
@@ -408,4 +409,6 @@ def strip_parametrizations(module: torch.nn.Module):
         if hasattr(submodule, "parametrizations"):
             for pname, plist in list(submodule.parametrizations.items()):
                 # print(f"Removing parametrizations from {name}.{pname}: {[p.__class__.__name__ for p in plist]}")
-                torch.nn.utils.parametrize.remove_parametrizations(submodule, pname, leave_parametrized=True)
+                torch.nn.utils.parametrize.remove_parametrizations(
+                    submodule, pname, leave_parametrized=True
+                )
