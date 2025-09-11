@@ -565,7 +565,9 @@ def train_tab():
                         allow_custom_value=True,
                     )
                     refresh_embedders_button = gr.Button(i18n("Refresh embedders"))
-                folder_name_input = gr.Textbox(label=i18n("Folder Name"), interactive=True)
+                folder_name_input = gr.Textbox(
+                    label=i18n("Folder Name"), interactive=True
+                )
                 with gr.Row():
                     bin_file_upload = gr.File(
                         label=i18n("Upload .bin"), type="filepath", interactive=True
@@ -573,7 +575,9 @@ def train_tab():
                     config_file_upload = gr.File(
                         label=i18n("Upload .json"), type="filepath", interactive=True
                     )
-                move_files_button = gr.Button(i18n("Move files to custom embedder folder"))
+                move_files_button = gr.Button(
+                    i18n("Move files to custom embedder folder")
+                )
 
         extract_output_info = gr.Textbox(
             label=i18n("Output Information"),
