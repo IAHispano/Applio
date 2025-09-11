@@ -108,14 +108,14 @@ def tts_tab():
     )
 
     with gr.Tabs():
-        with gr.Tab(label="Text to Speech"):
+        with gr.Tab(label=i18n("Text to Speech")):
             tts_text = gr.Textbox(
                 label=i18n("Text to Synthesize"),
                 info=i18n("Enter the text to synthesize."),
                 placeholder=i18n("Enter text to synthesize"),
                 lines=3,
             )
-        with gr.Tab(label="File to Speech"):
+        with gr.Tab(label=i18n("File to Speech")):
             txt_file = gr.File(
                 label=i18n("Upload a .txt file"),
                 type="filepath",

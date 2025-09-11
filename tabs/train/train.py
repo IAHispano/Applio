@@ -556,24 +556,24 @@ def train_tab():
             interactive=True,
         )
         with gr.Row(visible=False) as embedder_custom:
-            with gr.Accordion("Custom Embedder", open=True):
+            with gr.Accordion(i18n("Custom Embedder"), open=True):
                 with gr.Row():
                     embedder_model_custom = gr.Dropdown(
-                        label="Select Custom Embedder",
+                        label=i18n("Select Custom Embedder"),
                         choices=refresh_embedders_folders(),
                         interactive=True,
                         allow_custom_value=True,
                     )
-                    refresh_embedders_button = gr.Button("Refresh embedders")
-                folder_name_input = gr.Textbox(label="Folder Name", interactive=True)
+                    refresh_embedders_button = gr.Button(i18n("Refresh embedders"))
+                folder_name_input = gr.Textbox(label=i18n("Folder Name"), interactive=True)
                 with gr.Row():
                     bin_file_upload = gr.File(
-                        label="Upload .bin", type="filepath", interactive=True
+                        label=i18n("Upload .bin"), type="filepath", interactive=True
                     )
                     config_file_upload = gr.File(
-                        label="Upload .json", type="filepath", interactive=True
+                        label=i18n("Upload .json"), type="filepath", interactive=True
                     )
-                move_files_button = gr.Button("Move files to custom embedder folder")
+                move_files_button = gr.Button(i18n("Move files to custom embedder folder"))
 
         extract_output_info = gr.Textbox(
             label=i18n("Output Information"),

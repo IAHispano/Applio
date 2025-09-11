@@ -689,7 +689,7 @@ def inference_tab():
                     visible=False,
                 )
                 chorus = gr.Checkbox(
-                    label=i18n("chorus"),
+                    label=i18n("Chorus"),
                     info=i18n("Apply chorus to the audio."),
                     value=False,
                     interactive=True,
@@ -707,7 +707,7 @@ def inference_tab():
                 chorus_depth = gr.Slider(
                     minimum=0,
                     maximum=1,
-                    label=i18n("chorus Depth"),
+                    label=i18n("Chorus Depth"),
                     info=i18n("Set the chorus depth."),
                     value=0.25,
                     interactive=True,
@@ -716,7 +716,7 @@ def inference_tab():
                 chorus_center_delay = gr.Slider(
                     minimum=7,
                     maximum=8,
-                    label=i18n("chorus Center Delay ms"),
+                    label=i18n("Chorus Center Delay ms"),
                     info=i18n("Set the chorus center delay ms."),
                     value=7,
                     interactive=True,
@@ -725,7 +725,7 @@ def inference_tab():
                 chorus_feedback = gr.Slider(
                     minimum=0,
                     maximum=1,
-                    label=i18n("chorus Feedback"),
+                    label=i18n("Chorus Feedback"),
                     info=i18n("Set the chorus feedback."),
                     value=0.0,
                     interactive=True,
@@ -1322,7 +1322,7 @@ def inference_tab():
                     visible=False,
                 )
                 chorus_batch = gr.Checkbox(
-                    label=i18n("chorus"),
+                    label=i18n("Chorus"),
                     info=i18n("Apply chorus to the audio."),
                     value=False,
                     interactive=True,
@@ -1340,7 +1340,7 @@ def inference_tab():
                 chorus_depth_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
-                    label=i18n("chorus Depth"),
+                    label=i18n("Chorus Depth"),
                     info=i18n("Set the chorus depth."),
                     value=0.25,
                     interactive=True,
@@ -1349,7 +1349,7 @@ def inference_tab():
                 chorus_center_delay_batch = gr.Slider(
                     minimum=7,
                     maximum=8,
-                    label=i18n("chorus Center Delay ms"),
+                    label=i18n("Chorus Center Delay ms"),
                     info=i18n("Set the chorus center delay ms."),
                     value=7,
                     interactive=True,
@@ -1358,7 +1358,7 @@ def inference_tab():
                 chorus_feedback_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
-                    label=i18n("chorus Feedback"),
+                    label=i18n("Chorus Feedback"),
                     info=i18n("Set the chorus feedback."),
                     value=0.0,
                     interactive=True,
