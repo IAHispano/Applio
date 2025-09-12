@@ -40,7 +40,7 @@ py_files = Path(".").rglob("*.py")
 code_keys = set()
 
 for py_file in py_files:
-    if py_file.parts and py_file.parts[0] == 'env':
+    if py_file.parts and py_file.parts[0] == "env":
         continue
     strings = process_file(py_file)
     code_keys.update(strings)
