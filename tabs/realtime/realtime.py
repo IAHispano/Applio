@@ -1,4 +1,5 @@
 import gradio as gr
+import sounddevice as sd
 import os
 import sys
 import time
@@ -21,7 +22,6 @@ from tabs.inference.inference import (
     get_speakers_id,
     create_folder_and_move_files,
     refresh_embedders_folders,
-    custom_embedder_root_relative,
     model_root_relative,
 )
 
@@ -472,6 +472,7 @@ def realtime_tab():
                         value=get_safe_dropdown_value(
                             saved_settings["model_file"], model_choices, default_weight
                         ),
+                        allow_custom_value=True,
                     )
                     index_choices = get_indexes()
                     index_file = gr.Dropdown(
@@ -483,6 +484,7 @@ def realtime_tab():
                             match_index(default_weight) if default_weight else None,
                         ),
                         interactive=True,
+                        allow_custom_value=True,
                     )
 
                 with gr.Row():
@@ -701,6 +703,9 @@ def realtime_tab():
             ), gr.update(choices=new_sids, value=0 if new_sids else None)
 
         def refresh_devices():
+            sd._terminate()
+            sd._initialize()
+
             input_choices, output_choices = get_audio_devices_formatted()
             input_choices, output_choices = list(input_choices.keys()), list(
                 output_choices.keys()
