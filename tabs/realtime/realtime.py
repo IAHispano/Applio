@@ -308,7 +308,6 @@ def get_audio_devices_formatted():
 
 
 def realtime_tab():
-    gr.Markdown("## Realtime Voice Changer")
     input_devices, output_devices = get_audio_devices_formatted()
     input_devices, output_devices = list(input_devices.keys()), list(
         output_devices.keys()
@@ -332,7 +331,7 @@ def realtime_tab():
         )
 
         with gr.Tabs():
-            with gr.TabItem("Audio Settings"):
+            with gr.TabItem(i18n("Audio Settings")):
                 with gr.Row():
                     refresh_devices_button = gr.Button(i18n("Refresh Audio Devices"))
                 with gr.Row():
@@ -461,7 +460,7 @@ def realtime_tab():
                         interactive=True,
                     )
 
-            with gr.TabItem("Model Settings"):
+            with gr.TabItem(i18n("Model Settings")):
                 with gr.Row():
                     model_choices = (
                         sorted(names, key=extract_model_and_epoch) if names else []
@@ -632,7 +631,7 @@ def realtime_tab():
                                 i18n("Move files to custom embedder folder")
                             )
 
-            with gr.TabItem("Performance Settings"):
+            with gr.TabItem(i18n("Performance Settings")):
                 chunk_size = gr.Slider(
                     minimum=2.7,
                     maximum=2730.7,
