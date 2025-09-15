@@ -265,9 +265,6 @@ class Audio:
     ):
         self.stop()
 
-        sd._terminate()
-        sd._initialize()
-
         input_audio_device, output_audio_device = self.get_input_audio_device(
             input_device_id
         ), self.get_output_audio_device(output_device_id)
