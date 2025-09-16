@@ -648,7 +648,8 @@ def realtime_tab():
                 cross_fade_overlap_size = gr.Slider(
                     minimum=0.05,
                     maximum=0.2,
-                    value=0.01,
+                    value=0.05,
+                    step=0.01,
                     label=i18n("Crossfade Overlap Size (s)"),
                     info=i18n(
                         "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency."
