@@ -423,9 +423,7 @@ def run(
         randomized=randomized,
     )
 
-    net_d = MultiPeriodDiscriminator(
-        config.model.use_spectral_norm, checkpointing=checkpointing
-    )
+    net_d = MultiPeriodDiscriminator(checkpointing=checkpointing)
 
     if torch.cuda.is_available():
         net_g = net_g.cuda(device_id)
