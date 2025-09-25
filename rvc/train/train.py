@@ -473,12 +473,13 @@ def run(
         print("Using Float16 for training.")
 
     # Load checkpoint if available
+    scaler_dict = {}
     try:
         print("Starting training...")
-        _, _, _, epoch_str = load_checkpoint(
+        _, _, _, epoch_str, scaler_dict = load_checkpoint(
             latest_checkpoint_path(experiment_dir, "D_*.pth"), net_d, optim_d
         )
-        _, _, _, epoch_str = load_checkpoint(
+        _, _, _, epoch_str, _ = load_checkpoint(
             latest_checkpoint_path(experiment_dir, "G_*.pth"), net_g, optim_g
         )
         epoch_str += 1
@@ -536,6 +537,8 @@ def run(
 
     use_scaler = device.type == "cuda" and train_dtype == torch.float16
     scaler = torch.amp.GradScaler(enabled=use_scaler)
+    if len(scaler_dict) > 0:
+        scaler.load_state_dict(scaler_dict)
 
     cache = []
     # collect the reference audio for tensorboard evaluation
@@ -1007,6 +1010,7 @@ def train_and_evaluate(
                 config.train.learning_rate,
                 epoch,
                 os.path.join(experiment_dir, "G_" + checkpoint_suffix),
+                scaler,
             )
             save_checkpoint(
                 net_d,
@@ -1014,6 +1018,7 @@ def train_and_evaluate(
                 config.train.learning_rate,
                 epoch,
                 os.path.join(experiment_dir, "D_" + checkpoint_suffix),
+                scaler,
             )
             if custom_save_every_weights:
                 model_add.append(

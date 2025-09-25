@@ -79,10 +79,11 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
         optimizer,
         checkpoint_dict.get("learning_rate", 0),
         checkpoint_dict["iteration"],
+        checkpoint_dict.get("scaler", {})
     )
 
 
-def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path):
+def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path, scaler):
     """
     Save the model and optimizer state to a checkpoint file.
 
@@ -101,6 +102,7 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, checkpoint_path)
         "iteration": iteration,
         "optimizer": optimizer.state_dict(),
         "learning_rate": learning_rate,
+        "scaler": scaler.state_dict(),
     }
 
     # Create a backwards-compatible checkpoint
