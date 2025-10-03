@@ -39,18 +39,18 @@ class Applio(Base):
             font=font,
             font_mono=font_mono,
         )
-        self.name = ("Applio",)
-        self.secondary_100 = ("#dbeafe",)
-        self.secondary_200 = ("#bfdbfe",)
-        self.secondary_300 = ("#93c5fd",)
-        self.secondary_400 = ("#60a5fa",)
-        self.secondary_50 = ("#eff6ff",)
-        self.secondary_500 = ("#3b82f6",)
-        self.secondary_600 = ("#2563eb",)
-        self.secondary_700 = ("#1d4ed8",)
-        self.secondary_800 = ("#1e40af",)
-        self.secondary_900 = ("#1e3a8a",)
-        self.secondary_950 = ("#1d3660",)
+        self.name = "Applio"
+        self.secondary_100 = "#dbeafe"
+        self.secondary_200 = "#bfdbfe"
+        self.secondary_300 = "#93c5fd"
+        self.secondary_400 = "#60a5fa"
+        self.secondary_50 = "#eff6ff"
+        self.secondary_500 = "#3b82f6"
+        self.secondary_600 = "#2563eb"
+        self.secondary_700 = "#1d4ed8"
+        self.secondary_800 = "#1e40af"
+        self.secondary_900 = "#1e3a8a"
+        self.secondary_950 = "#1d3660"
 
         super().set(
             # Blaise
