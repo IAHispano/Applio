@@ -54,13 +54,21 @@ sup_audioext = {
 }
 
 
-def normalize_path(p): return os.path.normpath(p).replace("\\", "/").lower()
+def normalize_path(p):
+    return os.path.normpath(p).replace("\\", "/").lower()
+
 
 # BASE model/index folder names for many latin languages (legacy: zips = models)
 MODEL_FOLDER = re.compile(r"^(?:model.{0,4}|mdl(?:s)?|weight.{0,4}|zip(?:s)?)$")
 INDEX_FOLDER = re.compile(r"^(?:ind.{0,4}|idx(?:s)?)$")
-def is_mdl_alias(name: str) -> bool: return bool(MODEL_FOLDER.match(name))
-def is_idx_alias(name: str) -> bool: return bool(INDEX_FOLDER.match(name))
+
+
+def is_mdl_alias(name: str) -> bool:
+    return bool(MODEL_FOLDER.match(name))
+
+
+def is_idx_alias(name: str) -> bool:
+    return bool(INDEX_FOLDER.match(name))
 
 
 def alias_score(path: str, want_model: bool) -> int:
@@ -81,7 +89,7 @@ def alias_score(path: str, want_model: bool) -> int:
 
 def get_files(type="model"):
     assert type in ("model", "index"), "Invalid type for get_files (models or index)"
-    is_model = (type == "model")
+    is_model = type == "model"
     exts = (".pth", ".onnx") if is_model else (".index",)
     exclude_prefixes = ("G_", "D_") if is_model else ()
     exclude_substr = None if is_model else "trained"
@@ -103,7 +111,9 @@ def get_files(type="model"):
             score = alias_score(full, is_model)
 
             prev = best.get(real)
-            if prev is None: # Prefer higher score; if equal score, use first encountered
+            if (
+                prev is None
+            ):  # Prefer higher score; if equal score, use first encountered
                 best[real] = (score, order, full)
             else:
                 prev_score, prev_order, _ = prev
@@ -297,7 +307,9 @@ def delete_outputs():
                 os.remove(os.path.join(root, name))
 
 
-def folders_same(a: str, b: str) -> bool: # Used to "pair" index and model folders based on path names
+def folders_same(
+    a: str, b: str
+) -> bool:  # Used to "pair" index and model folders based on path names
     """
     True if:
       1) The two normalized paths are totally identical..OR
@@ -315,7 +327,7 @@ def folders_same(a: str, b: str) -> bool: # Used to "pair" index and model folde
         for i, part in enumerate(parts):
             if is_mdl_alias(part) or is_idx_alias(part):
                 base = part
-                rel  = "/".join(parts[i+1:])
+                rel = "/".join(parts[i + 1 :])
                 return base, rel
         return None, None
 
@@ -326,8 +338,8 @@ def folders_same(a: str, b: str) -> bool: # Used to "pair" index and model folde
         return False
 
     if rel_a == rel_b and (
-        (is_mdl_alias(base_a) and is_idx_alias(base_b)) or
-        (is_idx_alias(base_a) and is_mdl_alias(base_b))
+        (is_mdl_alias(base_a) and is_idx_alias(base_b))
+        or (is_idx_alias(base_a) and is_mdl_alias(base_b))
     ):
         return True
     return False
@@ -339,25 +351,25 @@ def match_index(model_file_value):
 
     # Derive the information about the model's name and path for index matching
     model_folder = normalize_path(os.path.dirname(model_file_value))
-    model_name   = os.path.basename(model_file_value)
-    base_name    = os.path.splitext(model_name)[0]
-    common       = re.sub(r"[_\-\.\+](?:e|s|v|V)\d.*$", "", base_name)
+    model_name = os.path.basename(model_file_value)
+    base_name = os.path.splitext(model_name)[0]
+    common = re.sub(r"[_\-\.\+](?:e|s|v|V)\d.*$", "", base_name)
     prefix_match = re.match(r"^(.*?)[_\-\.\+]", base_name)
-    prefix       = prefix_match.group(1) if prefix_match else None
+    prefix = prefix_match.group(1) if prefix_match else None
 
-    same_count      = 0
-    last_same       = None
-    same_substr     = None
-    same_prefixed   = None
-    external_exact  = None
+    same_count = 0
+    last_same = None
+    same_substr = None
+    same_prefixed = None
+    external_exact = None
     external_substr = None
-    external_pref   = None
+    external_pref = None
 
     for idx in get_files("index"):
-        idx_folder   = os.path.dirname(idx)
+        idx_folder = os.path.dirname(idx)
         idx_folder_n = normalize_path(idx_folder)
-        idx_name     = os.path.basename(idx)
-        idx_base     = os.path.splitext(idx_name)[0]
+        idx_name = os.path.basename(idx)
+        idx_base = os.path.splitext(idx_name)[0]
 
         in_same = folders_same(model_folder, idx_folder_n)
         if in_same:
@@ -392,14 +404,20 @@ def match_index(model_file_value):
 
     # Fallback: If there is exactly one index file in the same (or paired) folder,
     # we should assume that's the intended index file even if the name doesnt match
-    if same_count == 1: return last_same 
+    if same_count == 1:
+        return last_same
 
     # Then by remaining priority queue:
-    if same_substr:     return same_substr
-    if same_prefixed:   return same_prefixed
-    if external_exact:  return external_exact
-    if external_substr: return external_substr
-    if external_pref:   return external_pref
+    if same_substr:
+        return same_substr
+    if same_prefixed:
+        return same_prefixed
+    if external_exact:
+        return external_exact
+    if external_substr:
+        return external_substr
+    if external_pref:
+        return external_pref
 
     return ""
 
@@ -414,7 +432,9 @@ def create_folder_and_move_files(folder_name, bin_file, config_file):
     normalize_pathd_target_folder = os.path.abspath(target_folder)
     normalize_pathd_custom_embedder_root = os.path.abspath(custom_embedder_root)
 
-    if not normalize_pathd_target_folder.startswith(normalize_pathd_custom_embedder_root):
+    if not normalize_pathd_target_folder.startswith(
+        normalize_pathd_custom_embedder_root
+    ):
         return "Invalid folder name. Folder must be within the custom embedder root directory."
 
     os.makedirs(target_folder, exist_ok=True)
@@ -466,10 +486,7 @@ def filter_dropdowns(filter_text):
     all_indexes = sorted(get_files("index"))
     filtered_models = [m for m in all_models if ft in m.lower()]
     filtered_indexes = [i for i in all_indexes if ft in i.lower()]
-    return (
-        gr.update(choices=filtered_models),
-        gr.update(choices=filtered_indexes)
-    )
+    return (gr.update(choices=filtered_models), gr.update(choices=filtered_indexes))
 
 
 def update_filter_visibility(_):
@@ -489,10 +506,7 @@ def inference_tab():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
                 info=i18n("Select the voice model to use for the conversion."),
-                choices=sorted(
-                    get_files("model"),
-                    key=extract_model_and_epoch
-                ),
+                choices=sorted(get_files("model"), key=extract_model_and_epoch),
                 value=default_weight,
                 interactive=True,
                 allow_custom_value=True,
@@ -503,7 +517,7 @@ def inference_tab():
                 placeholder=i18n("Type to filter..."),
                 interactive=True,
                 scale=0.1,
-                visible=load_config_filter()
+                visible=load_config_filter(),
             )
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
@@ -522,7 +536,7 @@ def inference_tab():
             fn=update_filter_visibility,
             inputs=[trigger],
             outputs=[filter_box_inf, model_file, index_file],
-            show_progress=False
+            show_progress=False,
         )
         with gr.Row():
             unload_button = gr.Button(i18n("Unload Voice"))

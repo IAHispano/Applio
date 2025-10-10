@@ -30,7 +30,7 @@ def settings_tab(filter_state_trigger=None):
             fn=lambda checked: gr.update(value=str(checked)),
             inputs=[filter_component],
             outputs=[filter_state_trigger],
-            show_progress=False
+            show_progress=False,
         )
         presence_tab()
         theme_tab()

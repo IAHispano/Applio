@@ -54,10 +54,7 @@ def tts_tab():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
                 info=i18n("Select the voice model to use for the conversion."),
-                choices=sorted(
-                    get_files("model"),
-                    key=extract_model_and_epoch
-                ),
+                choices=sorted(get_files("model"), key=extract_model_and_epoch),
                 interactive=True,
                 value=default_weight,
                 allow_custom_value=True,
@@ -88,7 +85,7 @@ def tts_tab():
                 fn=update_filter_visibility,
                 inputs=[trigger],
                 outputs=[filter_box_tts, model_file, index_file],
-                show_progress=False
+                show_progress=False,
             )
         with gr.Row():
             unload_button = gr.Button(i18n("Unload Voice"))
