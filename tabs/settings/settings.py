@@ -16,10 +16,22 @@ from tabs.settings.sections.lang import lang_tab
 from tabs.settings.sections.restart import restart_tab
 from tabs.settings.sections.model_author import model_author_tab
 from tabs.settings.sections.precision import precision_tab
+from tabs.settings.sections.filter import filter_tab, get_filter_trigger
 
 
-def settings_tab():
+def settings_tab(filter_state_trigger=None):
+    if filter_state_trigger is None:
+        filter_state_trigger = get_filter_trigger()
+
     with gr.TabItem(label=i18n("General")):
+        filter_component = filter_tab()
+
+        filter_component.change(
+            fn=lambda checked: gr.update(value=str(checked)),
+            inputs=[filter_component],
+            outputs=[filter_state_trigger],
+            show_progress=False
+        )
         presence_tab()
         theme_tab()
         version_tab()
