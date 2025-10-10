@@ -132,7 +132,6 @@ class Synthesizer(torch.nn.Module):
                     upsample_initial_channel,
                     upsample_kernel_sizes,
                     gin_channels=gin_channels,
-                    checkpointing=checkpointing,
                 )
         self.enc_q = PosteriorEncoder(
             spec_channels,

@@ -19,14 +19,18 @@ stftpitchshift
 soxr
 
 # Machine learning and deep learning
-omegaconf>=2.0.6; sys_platform == 'darwin' 
+omegaconf>=2.0.6; sys_platform == 'darwin'
 numba; sys_platform == 'linux'
 numba==0.61.0; sys_platform == 'darwin' or sys_platform == 'win32'
-torch==2.7.1
-torchaudio==2.7.1
-torchvision
+torch==2.7.1; sys_platform == 'darwin'
+torch==2.7.1+cu128; sys_platform == 'linux' or sys_platform == 'win32'
+torchaudio==2.7.1; sys_platform == 'darwin'
+torchaudio==2.7.1+cu128; sys_platform == 'linux' or sys_platform == 'win32'
+torchvision==0.22.1; sys_platform == 'darwin'
+torchvision==0.22.1+cu128; sys_platform == 'linux' or sys_platform == 'win32'
 torchcrepe==0.0.23
 torchfcpe
+swift_f0
 einops
 transformers==4.44.2
 
@@ -36,9 +40,11 @@ tensorboard
 gradio==5.23.1
 
 # Miscellaneous utilities
-certifi>=2023.07.22; sys_platform == 'darwin'  
+certifi>=2023.07.22; sys_platform == 'darwin'
 antlr4-python3-runtime==4.8; sys_platform == 'darwin'
 tensorboardX
-edge-tts==6.1.9
+edge-tts==7.2.0
 pypresence
 beautifulsoup4
+sounddevice
+webrtcvad

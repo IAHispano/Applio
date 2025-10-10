@@ -1,9 +1,8 @@
 @echo off
 
-net session >nul 2>&1
-if %errorlevel% == 0 (
+if /i "%cd%"=="C:\Windows\System32" (
     color 0C
-    echo Please run this script as a regular user. Applio does not require administrator permissions.
+    echo Applio does not require administrator permissions and should be run as a regular user.
     echo.
     pause
     exit /b 1

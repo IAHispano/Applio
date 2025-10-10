@@ -299,6 +299,13 @@ def upload_to_google_drive(pth_path, index_path):
     upload_file(index_path)
 
 
+def auto_enable_checkpointing():
+    try:
+        return max_vram_gpu(0) < 6
+    except:
+        return False
+
+
 # Train Tab
 def train_tab():
     # Model settings section
@@ -527,6 +534,7 @@ def train_tab():
                 choices=[
                     "contentvec",
                     "spin",
+                    "spin-v2",
                     "chinese-hubert-base",
                     "japanese-hubert-base",
                     "korean-hubert-base",
@@ -548,24 +556,28 @@ def train_tab():
             interactive=True,
         )
         with gr.Row(visible=False) as embedder_custom:
-            with gr.Accordion("Custom Embedder", open=True):
+            with gr.Accordion(i18n("Custom Embedder"), open=True):
                 with gr.Row():
                     embedder_model_custom = gr.Dropdown(
-                        label="Select Custom Embedder",
+                        label=i18n("Select Custom Embedder"),
                         choices=refresh_embedders_folders(),
                         interactive=True,
                         allow_custom_value=True,
                     )
-                    refresh_embedders_button = gr.Button("Refresh embedders")
-                folder_name_input = gr.Textbox(label="Folder Name", interactive=True)
+                    refresh_embedders_button = gr.Button(i18n("Refresh embedders"))
+                folder_name_input = gr.Textbox(
+                    label=i18n("Folder Name"), interactive=True
+                )
                 with gr.Row():
                     bin_file_upload = gr.File(
-                        label="Upload .bin", type="filepath", interactive=True
+                        label=i18n("Upload .bin"), type="filepath", interactive=True
                     )
                     config_file_upload = gr.File(
-                        label="Upload .json", type="filepath", interactive=True
+                        label=i18n("Upload .json"), type="filepath", interactive=True
                     )
-                move_files_button = gr.Button("Move files to custom embedder folder")
+                move_files_button = gr.Button(
+                    i18n("Move files to custom embedder folder")
+                )
 
         extract_output_info = gr.Textbox(
             label=i18n("Output Information"),
@@ -595,7 +607,7 @@ def train_tab():
         with gr.Row():
             batch_size = gr.Slider(
                 1,
-                50,
+                64,
                 4,
                 step=1,
                 label=i18n("Batch Size"),
@@ -673,7 +685,7 @@ def train_tab():
                         info=i18n(
                             "Enables memory-efficient training. This reduces VRAM usage at the cost of slower training speed. It is useful for GPUs with limited memory (e.g., <6GB VRAM) or when training with a batch size larger than what your GPU can normally accommodate."
                         ),
-                        value=False,
+                        value=auto_enable_checkpointing(),
                         interactive=True,
                     )
             with gr.Row():

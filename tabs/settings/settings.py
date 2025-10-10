@@ -5,6 +5,10 @@ import gradio as gr
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+from assets.i18n.i18n import I18nAuto
+
+i18n = I18nAuto()
+
 from tabs.settings.sections.presence import presence_tab
 from tabs.settings.sections.themes import theme_tab
 from tabs.settings.sections.version import version_tab
@@ -19,7 +23,7 @@ def settings_tab(filter_state_trigger=None):
     if filter_state_trigger is None:
         filter_state_trigger = get_filter_trigger()
 
-    with gr.TabItem(label="General"):
+    with gr.TabItem(label=i18n("General")):
         filter_component = filter_tab()
 
         filter_component.change(
@@ -33,6 +37,6 @@ def settings_tab(filter_state_trigger=None):
         version_tab()
         lang_tab()
         restart_tab()
-    with gr.TabItem(label="Training"):
+    with gr.TabItem(label=i18n("Training")):
         model_author_tab()
         precision_tab()

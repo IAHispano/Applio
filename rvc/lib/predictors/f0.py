@@ -4,15 +4,17 @@ import torch
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 from torchfcpe import spawn_bundled_infer_model
 import torchcrepe
+from swift_f0 import SwiftF0
+import numpy as np
 
 
 class RMVPE:
-    def __init__(self, device, sample_rate=16000, hop_size=160):
+    def __init__(self, device, model_name="rmvpe.pt", sample_rate=16000, hop_size=160):
         self.device = device
         self.sample_rate = sample_rate
         self.hop_size = hop_size
         self.model = RMVPE0Predictor(
-            os.path.join("rvc", "models", "predictors", "rmvpe.pt"),
+            os.path.join("rvc", "models", "predictors", model_name),
             device=self.device,
         )
 
@@ -80,5 +82,37 @@ class FCPE:
             .cpu()
             .numpy()
         )
+
+        return f0
+
+
+class SWIFT:
+    def __init__(self, device, sample_rate=16000, hop_size=160):
+        self.device = "cpu"
+        self.sample_rate = sample_rate
+        self.hop_size = hop_size
+
+    def get_f0(self, x, f0_min=50, f0_max=1100, p_len=None, confidence_threshold=0.9):
+        if torch.is_tensor(x):
+            x = x.cpu().numpy()
+
+        if p_len is None:
+            p_len = x.shape[0] // self.hop_size
+
+        f0_min = max(f0_min, 46.875)
+        f0_max = min(f0_max, 2093.75)
+
+        detector = SwiftF0(
+            fmin=f0_min, fmax=f0_max, confidence_threshold=confidence_threshold
+        )
+        result = detector.detect_from_array(x, self.sample_rate)
+        if len(result.timestamps) == 0:
+            return np.zeros(p_len)
+        target_time = (
+            np.arange(p_len) * self.hop_size + self.hop_size / 2
+        ) / self.sample_rate
+        pitch = np.nan_to_num(result.pitch_hz, nan=0.0)
+        pitch[~result.voicing] = 0.0
+        f0 = np.interp(target_time, result.timestamps, pitch, left=0.0, right=0.0)
 
         return f0

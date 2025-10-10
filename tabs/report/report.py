@@ -54,7 +54,7 @@ def report_tab():
     ]
     components = [gr.Markdown(value=instruction) for instruction in instructions]
 
-    start_button = gr.Button("Record Screen")
+    start_button = gr.Button(i18n("Record Screen"))
     video_component = gr.Video(interactive=False)
 
     def toggle_button_label(returned_string):

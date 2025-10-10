@@ -675,6 +675,7 @@ def parse_arguments():
             "crepe-tiny",
             "rmvpe",
             "fcpe",
+            "swift",
             "hybrid[crepe+rmvpe]",
             "hybrid[crepe+fcpe]",
             "hybrid[rmvpe+fcpe]",
@@ -776,6 +777,7 @@ def parse_arguments():
         choices=[
             "contentvec",
             "spin",
+            "spin-v2",
             "chinese-hubert-base",
             "japanese-hubert-base",
             "korean-hubert-base",
@@ -1197,6 +1199,7 @@ def parse_arguments():
             "crepe-tiny",
             "rmvpe",
             "fcpe",
+            "swift",
             "hybrid[crepe+rmvpe]",
             "hybrid[crepe+fcpe]",
             "hybrid[rmvpe+fcpe]",
@@ -1287,6 +1290,7 @@ def parse_arguments():
         choices=[
             "contentvec",
             "spin",
+            "spin-v2",
             "chinese-hubert-base",
             "japanese-hubert-base",
             "korean-hubert-base",
@@ -1681,6 +1685,7 @@ def parse_arguments():
             "crepe-tiny",
             "rmvpe",
             "fcpe",
+            "swift",
             "hybrid[crepe+rmvpe]",
             "hybrid[crepe+fcpe]",
             "hybrid[rmvpe+fcpe]",
@@ -1771,6 +1776,7 @@ def parse_arguments():
         choices=[
             "contentvec",
             "spin",
+            "spin-v2",
             "chinese-hubert-base",
             "japanese-hubert-base",
             "korean-hubert-base",
@@ -1857,7 +1863,7 @@ def parse_arguments():
         required=False,
     )
     preprocess_parser.add_argument(
-        "--norm_mode",
+        "--normalization_mode",
         type=str,
         help="Normalization mode.",
         choices=["none", "pre", "post"],
@@ -1911,6 +1917,7 @@ def parse_arguments():
         choices=[
             "contentvec",
             "spin",
+            "spin-v2",
             "chinese-hubert-base",
             "japanese-hubert-base",
             "korean-hubert-base",

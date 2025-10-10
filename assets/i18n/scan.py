@@ -23,7 +23,7 @@ def extract_i18n_strings(node):
 
 
 def process_file(file_path):
-    with open(file_path, "r", encoding="utf8") as file:
+    with open(file_path, "r", encoding="utf8", errors="ignore") as file:
         code = file.read()
         if "I18nAuto" in code:
             tree = ast.parse(code)
@@ -40,13 +40,16 @@ py_files = Path(".").rglob("*.py")
 code_keys = set()
 
 for py_file in py_files:
+    if py_file.parts and py_file.parts[0] == "env":
+        continue
     strings = process_file(py_file)
     code_keys.update(strings)
 
 print()
 print("Total unique:", len(code_keys))
 
-standard_file = "languages/en_US.json"
+standard_file = Path(__file__).parent / "languages" / "en_US.json"
+
 with open(standard_file, "r", encoding="utf-8") as file:
     standard_data = json.load(file, object_pairs_hook=OrderedDict)
 standard_keys = set(standard_data.keys())

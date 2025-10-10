@@ -13,13 +13,13 @@ log_message() {
 
 # Function to find a suitable Python version
 find_python() {
-    for py in python3.10 python3 python; do
+    for py in python3.11 python3 python; do
         if command -v "$py" > /dev/null 2>&1; then
             echo "$py"
             return
         fi
     done
-    log_message "No compatible Python installation found. Please install Python 3.10."
+    log_message "No compatible Python installation found. Please install Python 3.11."
     exit 1
 }
 
@@ -68,7 +68,7 @@ install_ffmpeg_flatpak() {
 
 install_python_ffmpeg() {
     log_message "Installing python-ffmpeg..."
-    python -m pip install python-ffmpeg
+    uv pip install python-ffmpeg
 }
 
 # Function to create or activate a virtual environment
@@ -96,55 +96,28 @@ create_venv() {
     log_message "Creating virtual environment..."
     py=$(find_python)
 
-    "$py" -m venv .venv
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    uv venv .venv --python 3.11
 
     log_message "Activating virtual environment..."
     source .venv/bin/activate
-
-    # Install pip if necessary and upgrade
-    log_message "Ensuring pip is installed..."
-    python -m ensurepip --upgrade || {
-        log_message "ensurepip failed, attempting manual pip installation..."
-        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        python get-pip.py
-    }
-    python -m pip install --upgrade pip
 
     install_ffmpeg
     install_python_ffmpeg  
 
     log_message "Installing dependencies..."
     if [ -f "requirements.txt" ]; then
-        python -m pip install -r requirements.txt
+        uv pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
     else
         log_message "requirements.txt not found. Please ensure it exists."
         exit 1
     fi
-
-    log_message "Installing PyTorch..."
-    python -m pip install torch==2.7.1 torchvision torchaudio==2.7.1 --upgrade --index-url https://download.pytorch.org/whl/cu128
 
     finish
 }
 
 # Function to finish installation
 finish() {
-    log_message "Verifying installed packages..."
-    if [ -f "requirements.txt" ]; then
-        installed_packages=$(python -m pip freeze)
-        while IFS= read -r package; do
-            expr "${package}" : "^#.*" > /dev/null && continue
-            package_name=$(echo "${package}" | sed 's/[<>=!].*//')
-            if ! echo "${installed_packages}" | grep -q "${package_name}"; then
-                log_message "${package_name} not found. Attempting to install..."
-                python -m pip install --upgrade "${package}"
-            fi
-        done < "requirements.txt"
-    else
-        log_message "requirements.txt not found. Please ensure it exists."
-        exit 1
-    fi
-
     clear
     echo "Applio has been successfully installed. Run the file run-applio.sh to start the web interface!"
     exit 0
@@ -161,27 +134,27 @@ if [ "$(uname)" = "Darwin" ]; then
     # Add more detailed Python version check
     log_message "Checking Python versions..."
     log_message "python3 path: $(which python3)"
-    log_message "python3.10 path: $(which python3.10 2>/dev/null || echo 'not found')"
+    log_message "python3.11 path: $(which python3.11 2>/dev/null || echo 'not found')"
     
-    if command -v python3.10 >/dev/null 2>&1; then
-        python_version=$(python3.10 --version | awk '{print $2}' | cut -d'.' -f1,2)
+    if command -v python3.11 >/dev/null 2>&1; then
+        python_version=$(python3.11 --version | awk '{print $2}' | cut -d'.' -f1,2)
     else
         python_version=$(python3 --version | awk '{print $2}' | cut -d'.' -f1,2)
     fi
     
     log_message "Detected Python version: $python_version"
 
-    if [ "$python_version" = "3.10" ]; then
-        log_message "Found compatible Python 3.10"
+    if [ "$python_version" = "3.11" ]; then
+        log_message "Found compatible Python 3.11"
     else
-        log_message "Python version $python_version is not 3.10. Installing Python 3.10 using Homebrew..."
-        brew install python@3.10
-        export PATH="$(brew --prefix)/opt/python@3.10/bin:$PATH"
+        log_message "Python version $python_version is not 3.11. Installing Python 3.11 using Homebrew..."
+        brew install python@3.11
+        export PATH="$(brew --prefix)/opt/python@3.11/bin:$PATH"
         # Verify the installed version
         log_message "Verifying installed Python version..."
-        python_version=$(python3.10 --version | awk '{print $2}' | cut -d'.' -f1,2)
-        if [ "$python_version" != "3.10" ]; then
-            log_message "Failed to install Python 3.10. Current version: $python_version"
+        python_version=$(python3.11 --version | awk '{print $2}' | cut -d'.' -f1,2)
+        if [ "$python_version" != "3.11" ]; then
+            log_message "Failed to install Python 3.11. Current version: $python_version"
             exit 1
         fi
     fi

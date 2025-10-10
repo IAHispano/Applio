@@ -8,7 +8,7 @@ echo.
 set "INSTALL_DIR=%cd%"
 set "MINICONDA_DIR=%UserProfile%\Miniconda3"
 set "ENV_DIR=%INSTALL_DIR%\env"
-set "MINICONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-py310_24.7.1-0-Windows-x86_64.exe"
+set "MINICONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-py311_25.5.1-1-Windows-x86_64.exe"
 set "CONDA_EXE=%MINICONDA_DIR%\Scripts\conda.exe"
 
 set "startTime=%TIME%"
@@ -75,7 +75,7 @@ exit /b 0
 
 :create_conda_env
 echo Creating Conda environment...
-call "%MINICONDA_DIR%\_conda.exe" create --no-shortcuts -y -k --prefix "%ENV_DIR%" python=3.10
+call "%MINICONDA_DIR%\_conda.exe" create --no-shortcuts -y -k --prefix "%ENV_DIR%" python=3.11
 if errorlevel 1 goto :error
 echo Conda environment created successfully.
 echo.
@@ -93,8 +93,7 @@ exit /b 0
 echo Installing dependencies...
 call "%MINICONDA_DIR%\condabin\conda.bat" activate "%ENV_DIR%" || goto :error
 uv pip install --upgrade setuptools || goto :error
-uv pip install torch==2.7.1 torchvision torchaudio==2.7.1 --upgrade --index-url https://download.pytorch.org/whl/cu128 || goto :error
-uv pip install -r "%INSTALL_DIR%\requirements.txt" || goto :error
+uv pip install -r "%INSTALL_DIR%\requirements.txt" --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match || goto :error
 call "%MINICONDA_DIR%\condabin\conda.bat" deactivate
 echo Dependencies installation complete.
 echo.

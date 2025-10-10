@@ -1,15 +1,22 @@
 {
-    "theme": {
-        "file": "Applio.py",
-        "class": "Applio"
-    },
-    "plugins": [],
-    "discord_presence": true,
-    "lang": {
-        "override": false,
-        "selected_lang": "en_US"
-    },
-    "version": "3.2.9",
-    "model_author": "None",
-    "precision": "fp32"
+  "theme": {
+    "file": "Applio.py",
+    "class": "Applio"
+  },
+  "plugins": [],
+  "discord_presence": true,
+  "lang": {
+    "override": false,
+    "selected_lang": "en_US"
+  },
+  "version": "3.5.0",
+  "model_author": "None",
+  "precision": "fp16",
+  "realtime": {
+    "input_device": "",
+    "output_device": "",
+    "monitor_device": "",
+    "model_file": "",
+    "index_file": ""
+  }
 }

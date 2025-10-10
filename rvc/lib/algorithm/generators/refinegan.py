@@ -1,6 +1,6 @@
-import math
 import numpy as np
 import torch
+import torchaudio
 from torch import nn
 from torch.nn import functional as F
 from torch.nn.utils.parametrizations import weight_norm
@@ -105,7 +105,7 @@ class AdaIN(nn.Module):
     ):
         super().__init__()
 
-        self.weight = nn.Parameter(torch.ones(channels))
+        self.weight = nn.Parameter(torch.ones(channels) * 1e-4)
         # safe to use in-place as it is used on a new x+gaussian tensor
         self.activation = nn.LeakyReLU(leaky_relu_slope)
 
@@ -306,43 +306,43 @@ class RefineGANGenerator(nn.Module):
         self.m_source = SineGenerator(sample_rate)
 
         # expanded f0 sinegen -> match mel_conv
+        # (8, 1, 17280) -> (8, 16, 17280)
         self.pre_conv = weight_norm(
             nn.Conv1d(
                 1,
-                upsample_initial_channel // 2,
+                16,
                 7,
                 1,
                 padding=3,
             )
         )
 
-        stride_f0s = [
-            math.prod(upsample_rates[i + 1 :]) if i + 1 < len(upsample_rates) else 1
-            for i in range(len(upsample_rates))
-        ]
+        # (8,  16, 17280) = 4th upscale
+        # (8,  32, 8640)  = 3rd upscale
+        # (8,  64, 4320)  = 2nd upscale
+        # (8, 128, 432)   = 1st upscale
+        # (8, 256, 36) merged to mel
 
-        channels = upsample_initial_channel
-
+        # f0 downsampling and upchanneling
+        channels = start_channels
+        size = self.upp
         self.downsample_blocks = nn.ModuleList([])
+        self.df0 = []
         for i, u in enumerate(upsample_rates):
-            # handling odd upsampling rates
-            stride = stride_f0s[i]
-            kernel = 1 if stride == 1 else stride * 2 - stride % 2
-            padding = 0 if stride == 1 else (kernel - stride) // 2
 
-            # f0 input gets upscaled to full segment size, then downscaled back to match each upscale step
+            new_size = int(size / upsample_rates[-i - 1])
+            # T dimension factors for torchaudio.functional.resample
+            self.df0.append([size, new_size])
+            size = new_size
 
+            new_channels = channels * 2
             self.downsample_blocks.append(
-                weight_norm(
-                    nn.Conv1d(
-                        1,
-                        channels // 2 ** (i + 2),
-                        kernel,
-                        stride,
-                        padding=padding,
-                    )
-                )
+                weight_norm(nn.Conv1d(channels, new_channels, 7, 1, padding=3))
             )
+            channels = new_channels
+
+        # mel handling
+        channels = upsample_initial_channel
 
         self.mel_conv = weight_norm(
             nn.Conv1d(
@@ -385,36 +385,52 @@ class RefineGANGenerator(nn.Module):
         self.conv_post.apply(init_weights)
 
     def forward(self, mel: torch.Tensor, f0: torch.Tensor, g: torch.Tensor = None):
-
-        f0 = F.interpolate(
-            f0.unsqueeze(1), size=mel.shape[-1] * self.upp, mode="linear"
-        )
+        f0_size = mel.shape[-1]
+        # change f0 helper to full size
+        f0 = F.interpolate(f0.unsqueeze(1), size=f0_size * self.upp, mode="linear")
+        # get f0 turned into sines harmonics
         har_source = self.m_source(f0.transpose(1, 2)).transpose(1, 2)
-
+        # prepare for fusion to mel
         x = self.pre_conv(har_source)
-        x = F.interpolate(x, size=mel.shape[-1], mode="linear")
+        # downsampled/upchanneled versions for each upscale
+        downs = []
+        for block, (old_size, new_size) in zip(self.downsample_blocks, self.df0):
+            x = F.leaky_relu(x, self.leaky_relu_slope)
+            downs.append(x)
+            # attempt to cancel spectral aliasing
+            x = torchaudio.functional.resample(
+                x.contiguous(),
+                orig_freq=int(f0_size * old_size),
+                new_freq=int(f0_size * new_size),
+                lowpass_filter_width=64,
+                rolloff=0.9475937167399596,
+                resampling_method="sinc_interp_kaiser",
+                beta=14.769656459379492,
+            )
+            x = block(x)
+
         # expanding spectrogram from 192 to 256 channels
         mel = self.mel_conv(mel)
-
         if g is not None:
             # adding expanded speaker embedding
             mel = mel + self.cond(g)
+
         x = torch.cat([mel, x], dim=1)
 
         for ups, res, down in zip(
             self.upsample_blocks,
             self.upsample_conv_blocks,
-            self.downsample_blocks,
+            reversed(downs),
         ):
             x = F.leaky_relu(x, self.leaky_relu_slope)
 
             if self.training and self.checkpointing:
                 x = checkpoint(ups, x, use_reentrant=False)
-                x = torch.cat([x, down(har_source)], dim=1)
+                x = torch.cat([x, down], dim=1)
                 x = checkpoint(res, x, use_reentrant=False)
             else:
                 x = ups(x)
-                x = torch.cat([x, down(har_source)], dim=1)
+                x = torch.cat([x, down], dim=1)
                 x = res(x)
 
         x = F.leaky_relu(x, self.leaky_relu_slope)

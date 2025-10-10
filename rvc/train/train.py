@@ -63,12 +63,11 @@ vocoder = sys.argv[15]
 checkpointing = strtobool(sys.argv[16])
 # experimental settings
 randomized = True
-optimizer = "AdamW"
-# optimizer = "RAdam"
 d_lr_coeff = 1.0
 g_lr_coeff = 1.0
 d_step_per_g_step = 1
 multiscale_mel_loss = False
+bf16_adamw = False
 
 current_dir = os.getcwd()
 
@@ -76,11 +75,17 @@ try:
     with open(os.path.join(current_dir, "assets", "config.json"), "r") as f:
         config = json.load(f)
         precision = config["precision"]
-        if precision == "bf16" and torch.cuda.is_available() and torch.cuda.is_bf16_supported():
+        if (
+            precision == "bf16"
+            and torch.cuda.is_available()
+            and torch.cuda.is_bf16_supported()
+        ):
             train_dtype = torch.bfloat16
+        elif precision == "fp16" and torch.cuda.is_available():
+            train_dtype = torch.float16
         else:
             train_dtype = torch.float32
-except(FileNotFoundError, json.JSONDecodeError, KeyError):
+except (FileNotFoundError, json.JSONDecodeError, KeyError):
     train_dtype = torch.float32
 
 experiment_dir = os.path.join(current_dir, "logs", model_name)
@@ -315,7 +320,7 @@ def run(
         config (object): Configuration object containing training parameters.
         device (torch.device): The device to use for training (CPU or GPU).
     """
-    global global_step, smoothed_value_gen, smoothed_value_disc, optimizer
+    global global_step, smoothed_value_gen, smoothed_value_disc
 
     smoothed_value_gen = 0
     smoothed_value_disc = 0
@@ -373,14 +378,35 @@ def run(
         )
         os._exit(2333333)
 
+    # defaults
+    embedder_name = "contentvec"
+    spk_dim = config.model.spk_embed_dim  # 109 default speakers
+
     try:
         with open(model_info_path, "r") as f:
             model_info = json.load(f)
             embedder_name = model_info["embedder_model"]
-            # net_g will be initialized with the number of speakers from the dataset
-            config.model.spk_embed_dim = model_info["speakers_id"]
-    except:
-        embedder_name = "contentvec"
+            spk_dim = model_info["speakers_id"]
+    except Exception as e:
+        print(f"Could not load model info file: {e}. Using defaults.")
+
+    # Try to load speaker dim from latest checkpoint or pretrainG
+    try:
+        last_g = latest_checkpoint_path(experiment_dir, "G_*.pth")
+        chk_path = (
+            last_g if last_g else (pretrainG if pretrainG not in ("", "None") else None)
+        )
+
+        if chk_path:
+            ckpt = torch.load(chk_path, map_location="cpu", weights_only=True)
+            spk_dim = ckpt["model"]["emb_g.weight"].shape[0]
+            del ckpt
+    except Exception as e:
+        print(f"Failed to load checkpoint: {e}. Using default number of speakers.")
+
+    # update config before the model init
+    print(f"Initializing the generator with {spk_dim} speakers.")
+    config.model.spk_embed_dim = spk_dim
 
     # Initialize models and optimizers
     from rvc.lib.algorithm.discriminators import MultiPeriodDiscriminator
@@ -408,11 +434,14 @@ def run(
         net_g = net_g.to(device)
         net_d = net_d.to(device)
 
-    print("Using", optimizer, "optimizer")
-    if optimizer == "AdamW":
+    if bf16_adamw == True and train_dtype == torch.bfloat16:
+        print("Using BFload16 AdamW optimizer")
+        from rvc.train.anyprecision_optimizer import AnyPrecisionAdamW
+
+        optimizer = AnyPrecisionAdamW
+    else:
+        print("Using AdamW optimizer")
         optimizer = torch.optim.AdamW
-    elif optimizer == "RAdam":
-        optimizer = torch.optim.RAdam
 
     optim_g = optimizer(
         net_g.parameters(),
@@ -440,69 +469,63 @@ def run(
 
     if rank == 0 and train_dtype == torch.bfloat16:
         print("Using BFloat16 for training.")
+    elif rank == 0 and train_dtype == torch.float16:
+        print("Using Float16 for training.")
 
     # Load checkpoint if available
+    scaler_dict = {}
     try:
         print("Starting training...")
-        _, _, _, epoch_str = load_checkpoint(
+        _, _, _, epoch_str, scaler_dict = load_checkpoint(
             latest_checkpoint_path(experiment_dir, "D_*.pth"), net_d, optim_d
         )
-        _, _, _, epoch_str = load_checkpoint(
+        _, _, _, epoch_str, _ = load_checkpoint(
             latest_checkpoint_path(experiment_dir, "G_*.pth"), net_g, optim_g
         )
         epoch_str += 1
         global_step = (epoch_str - 1) * len(train_loader)
 
-    except:
+    except Exception as e:
         epoch_str = 1
         global_step = 0
 
-        if pretrainG != "" and pretrainG != "None":
+        if pretrainG not in ("", "None"):
             if rank == 0:
                 print(f"Loaded pretrained (G) '{pretrainG}'")
-
-            ckpt = torch.load(pretrainG, map_location="cpu", weights_only=True)["model"]
-            ckpt_speaker_count = ckpt["emb_g.weight"].shape[0]
-
-            # adjust speaker embedding if necessary in order to match the model
-            if config.model.spk_embed_dim != ckpt_speaker_count:
-                # get weights from the net_g model (random)
-                state_dict = (
-                    net_g.module.state_dict()
-                    if hasattr(net_g, "module")
-                    else net_g.state_dict()
-                )
-                # copy random embedding weights to the checkpoint we are trying to load to match the dimensions
-                ckpt["emb_g.weight"] = state_dict["emb_g.weight"]
-                del state_dict
-            # attempt to load the checkpoint g weights
             try:
+                ckpt = torch.load(pretrainG, map_location="cpu", weights_only=True)[
+                    "model"
+                ]
                 if hasattr(net_g, "module"):
                     net_g.module.load_state_dict(ckpt)
                 else:
                     net_g.load_state_dict(ckpt)
-            except:
+                del ckpt
+            except Exception as e:
                 print(
                     "The parameters of the pretrain model such as the sample rate or architecture do not match the selected model."
                 )
+                print(e)
                 sys.exit(1)
-            del ckpt
 
-        if pretrainD != "" and pretrainD != "None":
+        if pretrainD not in ("", "None"):
             if rank == 0:
                 print(f"Loaded pretrained (D) '{pretrainD}'")
-            if hasattr(net_d, "module"):
-                net_d.module.load_state_dict(
-                    torch.load(pretrainD, map_location="cpu", weights_only=True)[
-                        "model"
-                    ]
+            try:
+                ckpt = torch.load(pretrainD, map_location="cpu", weights_only=True)[
+                    "model"
+                ]
+                if hasattr(net_d, "module"):
+                    net_d.module.load_state_dict(ckpt)
+                else:
+                    net_d.load_state_dict(ckpt)
+                del ckpt
+            except Exception as e:
+                print(
+                    "The parameters of the pretrain model such as the sample rate or architecture do not match the selected model."
                 )
-            else:
-                net_d.load_state_dict(
-                    torch.load(pretrainD, map_location="cpu", weights_only=True)[
-                        "model"
-                    ]
-                )
+                print(e)
+                sys.exit(1)
 
     # Initialize schedulers
     scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
@@ -511,6 +534,11 @@ def run(
     scheduler_d = torch.optim.lr_scheduler.ExponentialLR(
         optim_d, gamma=config.train.lr_decay, last_epoch=epoch_str - 2
     )
+
+    use_scaler = device.type == "cuda" and train_dtype == torch.float16
+    scaler = torch.amp.GradScaler(enabled=use_scaler)
+    if len(scaler_dict) > 0:
+        scaler.load_state_dict(scaler_dict)
 
     cache = []
     # collect the reference audio for tensorboard evaluation
@@ -563,6 +591,7 @@ def run(
             device_id,
             reference,
             fn_mel_loss,
+            scaler,
         )
 
         scheduler_g.step()
@@ -584,6 +613,7 @@ def train_and_evaluate(
     device_id,
     reference,
     fn_mel_loss,
+    scaler,
 ):
     """
     Trains and evaluates the model for one epoch.
@@ -617,7 +647,9 @@ def train_and_evaluate(
     net_g.train()
     net_d.train()
 
-    use_amp = device.type == "cuda" and train_dtype == torch.bfloat16
+    use_amp = device.type == "cuda" and (
+        train_dtype == torch.bfloat16 or train_dtype == torch.float16
+    )
 
     # Data caching
     if device.type == "cuda" and cache_data_in_gpu:
@@ -679,9 +711,15 @@ def train_and_evaluate(
                 loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
                 # Discriminator backward and update
                 optim_d.zero_grad()
-                loss_disc.backward()
-                grad_norm_d = commons.grad_norm(net_d.parameters())
-                optim_d.step()
+                if train_dtype == torch.float16:
+                    scaler.scale(loss_disc).backward()
+                    scaler.unscale_(optim_d)
+                    grad_norm_d = commons.grad_norm(net_d.parameters())
+                    scaler.step(optim_d)
+                else:
+                    loss_disc.backward()
+                    grad_norm_d = commons.grad_norm(net_d.parameters())
+                    optim_d.step()
 
             with torch.amp.autocast(
                 device_type="cuda", enabled=use_amp, dtype=train_dtype
@@ -725,9 +763,16 @@ def train_and_evaluate(
                     "epoch": epoch,
                 }
             optim_g.zero_grad()
-            loss_gen_all.backward()
-            grad_norm_g = commons.grad_norm(net_g.parameters())
-            optim_g.step()
+            if train_dtype == torch.float16:
+                scaler.scale(loss_gen_all).backward()
+                scaler.unscale_(optim_g)
+                grad_norm_g = commons.grad_norm(net_g.parameters())
+                scaler.step(optim_g)
+                scaler.update()
+            else:
+                loss_gen_all.backward()
+                grad_norm_g = commons.grad_norm(net_g.parameters())
+                optim_g.step()
 
             global_step += 1
 
@@ -965,6 +1010,7 @@ def train_and_evaluate(
                 config.train.learning_rate,
                 epoch,
                 os.path.join(experiment_dir, "G_" + checkpoint_suffix),
+                scaler,
             )
             save_checkpoint(
                 net_d,
@@ -972,6 +1018,7 @@ def train_and_evaluate(
                 config.train.learning_rate,
                 epoch,
                 os.path.join(experiment_dir, "D_" + checkpoint_suffix),
+                scaler,
             )
             if custom_save_every_weights:
                 model_add.append(

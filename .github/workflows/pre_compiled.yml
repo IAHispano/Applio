@@ -12,7 +12,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11"]
 
     steps:
       - uses: actions/checkout@v4
@@ -56,71 +56,6 @@ jobs:
           commit_message=f'{version}',
           path_or_fileobj=repo_file_path,
           path_in_repo=f'Compiled/Windows/ApplioV{version}.zip',
-          repo_id=repo_id,
-          token=token)
-          "
-  Linux:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10.12"]
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Free up space on runner
-        run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Read version from config.json
-        id: get-version
-        run: |
-          version=$(jq -r '.version' assets/config.json)
-          echo "version=$version" >> $GITHUB_OUTPUT
-      - name: Create virtual environment
-        run: |
-          pip install huggingface_hub
-          python -m venv .venv
-          . .venv/bin/activate
-          python -m ensurepip
-          python -m pip install "pip<24.1"
-          python -m pip install -r requirements.txt
-          python -m pip install torch==2.7.1 torchvision torchaudio==2.7.1 --upgrade --index-url https://download.pytorch.org/whl/cu128
-          python core.py "prerequisites" --pretraineds_hifigan "True" --models "True" --exe "True"
-          find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
-          deactivate
-          rm -f .venv/bin/Activate.ps1 .venv/bin/activate .venv/bin/activate.csh .venv/bin/activate.fish .venv/bin/pip .venv/bin/pip3 .venv/bin/pip3.10 .venv/bin/python .venv/bin/python3 .venv/bin/python3.10
-      - name: Clean up unnecessary files
-        run: |
-          rm -f LICENSE run-tensorboard.bat run-install.bat run-applio.bat run-install.sh requirements.txt .gitignore
-          rm -rf .github .git
-      - name: Create ZIP file
-        run: |
-          zip -9 -r ApplioV${{ steps.get-version.outputs.version }}.zip .
-      - name: Upload Linux Compiled
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          version: ${{ steps.get-version.outputs.version }}
-        run: |
-          python -c "
-          import os
-          from huggingface_hub import login, upload_file
-
-          token = os.getenv('HF_TOKEN')
-          version = os.getenv('version')
-          login(token)
-          repo_id = 'IAHispano/Applio'
-          repo_file_path = f'ApplioV{version}.zip'
-
-          upload_file(
-          commit_message=f'{version}',
-          path_or_fileobj=repo_file_path,
-          path_in_repo=f'Compiled/Linux/ApplioV{version}.zip',
           repo_id=repo_id,
           token=token)
           "

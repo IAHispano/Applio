@@ -13,7 +13,7 @@ from torch import Tensor
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE
+from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE, SWIFT
 
 import logging
 
@@ -244,28 +244,44 @@ class Pipeline:
             )
             f0 = model.get_f0(x, p_len, filter_radius=0.006)
             del model
+        elif f0_method == "swift":
+            model = SWIFT(
+                device=self.device, sample_rate=self.sample_rate, hop_size=self.window
+            )
+            f0 = model.get_f0(
+                x, self.f0_min, self.f0_max, p_len, confidence_threshold=0.887
+            )
+            del model
 
         # f0 adjustments
         if f0_autotune is True:
-            f0 = Autotune.autotune_f0(self, f0, f0_autotune_strength)
+            f0 = self.autotune.autotune_f0(f0, f0_autotune_strength)
         elif proposed_pitch is True:
             limit = 12
             # calculate median f0 of the audio
-            _f0 = np.where(f0 == 0, np.nan, f0)
-            _f0 = float(
-                np.median(
-                    np.interp(
-                        np.arange(len(_f0)),
-                        np.where(~np.isnan(_f0))[0],
-                        f0[~np.isnan(_f0)],
-                    )
+            valid_f0 = np.where(f0 > 0)[0]
+            if len(valid_f0) < 2:
+                # no valid f0 detected
+                up_key = 0
+            else:
+                median_f0 = float(
+                    np.median(np.interp(np.arange(len(f0)), valid_f0, f0[valid_f0]))
                 )
-            )
-            # calculate proposed shift
-            up_key = max(
-                -limit,
-                min(limit, int(np.round(12 * np.log2(proposed_pitch_threshold / _f0)))),
-            )
+                if median_f0 <= 0 or np.isnan(median_f0):
+                    up_key = 0
+                else:
+                    # calculate proposed shift
+                    up_key = max(
+                        -limit,
+                        min(
+                            limit,
+                            int(
+                                np.round(
+                                    12 * np.log2(proposed_pitch_threshold / median_f0)
+                                )
+                            ),
+                        ),
+                    )
             print("calculated pitch offset:", up_key)
             f0 *= pow(2, (pitch + up_key) / 12)
         else:

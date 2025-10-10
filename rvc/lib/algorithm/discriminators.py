@@ -112,6 +112,7 @@ class DiscriminatorP(torch.nn.Module):
 
         in_channels = [1, 32, 128, 512, 1024]
         out_channels = [32, 128, 512, 1024, 1024]
+        strides = [3, 3, 3, 3, 1]
 
         self.convs = torch.nn.ModuleList(
             [
@@ -120,11 +121,11 @@ class DiscriminatorP(torch.nn.Module):
                         in_ch,
                         out_ch,
                         (kernel_size, 1),
-                        (stride, 1),
+                        (s, 1),
                         padding=(get_padding(kernel_size, 1), 0),
                     )
                 )
-                for in_ch, out_ch in zip(in_channels, out_channels)
+                for in_ch, out_ch, s in zip(in_channels, out_channels, strides)
             ]
         )
 
