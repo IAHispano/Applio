@@ -4,6 +4,9 @@ import os
 import sys
 import time
 import json
+import regex as re
+import shutil
+import torch
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -12,18 +15,257 @@ from rvc.realtime.callbacks import AudioCallbacks
 from rvc.realtime.audio import list_audio_device
 from rvc.realtime.core import AUDIO_SAMPLE_RATE
 
-from tabs.inference.inference import (
-    i18n,
-    names,
-    default_weight,
-    get_indexes,
-    extract_model_and_epoch,
-    match_index,
-    get_speakers_id,
-    create_folder_and_move_files,
-    refresh_embedders_folders,
-    model_root_relative,
+from assets.i18n.i18n import I18nAuto
+
+i18n = I18nAuto()
+
+model_root = os.path.join(now_dir, "logs")
+custom_embedder_root = os.path.join(
+    now_dir, "rvc", "models", "embedders", "embedders_custom"
 )
+
+os.makedirs(custom_embedder_root, exist_ok=True)
+
+custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
+model_root_relative = os.path.relpath(model_root, now_dir)
+
+def normalize_path(p):
+    return os.path.normpath(p).replace("\\", "/").lower()
+
+MODEL_FOLDER = re.compile(r"^(?:model.{0,4}|mdl(?:s)?|weight.{0,4}|zip(?:s)?)$")
+INDEX_FOLDER = re.compile(r"^(?:ind.{0,4}|idx(?:s)?)$")
+
+
+def is_mdl_alias(name: str) -> bool:
+    return bool(MODEL_FOLDER.match(name))
+
+
+def is_idx_alias(name: str) -> bool:
+    return bool(INDEX_FOLDER.match(name))
+
+
+def alias_score(path: str, want_model: bool) -> int:
+    parts = normalize_path(os.path.dirname(path)).split("/")
+    has_mdl = any(is_mdl_alias(p) for p in parts)
+    has_idx = any(is_idx_alias(p) for p in parts)
+    if want_model:
+        return 2 if has_mdl else (1 if has_idx else 0)
+    else:
+        return 2 if has_idx else (1 if has_mdl else 0)
+
+
+def get_files(type="model"):
+    assert type in ("model", "index"), "Invalid type for get_files (models or index)"
+    is_model = type == "model"
+    exts = (".pth", ".onnx") if is_model else (".index",)
+    exclude_prefixes = ("G_", "D_") if is_model else ()
+    exclude_substr = None if is_model else "trained"
+
+    best = {}
+    order = 0
+
+    for root, _, files in os.walk(model_root_relative, followlinks=True):
+        for file in files:
+            if not file.endswith(exts):
+                continue
+            if any(file.startswith(p) for p in exclude_prefixes):
+                continue
+            if exclude_substr and exclude_substr in file:
+                continue
+
+            full = os.path.join(root, file)
+            real = os.path.realpath(full)
+            score = alias_score(full, is_model)
+
+            prev = best.get(real)
+            if (
+                prev is None
+            ):  # Prefer higher score; if equal score, use first encountered
+                best[real] = (score, order, full)
+            else:
+                prev_score, prev_order, _ = prev
+                if score > prev_score:
+                    best[real] = (score, prev_order, full)
+            order += 1
+
+    return [t[2] for t in sorted(best.values(), key=lambda x: x[1])]
+
+
+def folders_same(
+    a: str, b: str
+) -> bool:  # Used to "pair" index and model folders based on path names
+    """
+    True if:
+      1) The two normalized paths are totally identical..OR
+      2) One lives under a MODEL_FOLDER and the other lives
+         under an INDEX_FOLDER, at the same relative subpath
+         i.e.  logs/models/miku  and  logs/index/miku  =  "SAME FOLDER"
+    """
+    a = normalize_path(a)
+    b = normalize_path(b)
+    if a == b:
+        return True
+
+    def split_after_alias(p):
+        parts = p.split("/")
+        for i, part in enumerate(parts):
+            if is_mdl_alias(part) or is_idx_alias(part):
+                base = part
+                rel = "/".join(parts[i + 1 :])
+                return base, rel
+        return None, None
+
+    base_a, rel_a = split_after_alias(a)
+    base_b, rel_b = split_after_alias(b)
+
+    if rel_a is None or rel_b is None:
+        return False
+
+    if rel_a == rel_b and (
+        (is_mdl_alias(base_a) and is_idx_alias(base_b))
+        or (is_idx_alias(base_a) and is_mdl_alias(base_b))
+    ):
+        return True
+    return False
+
+
+def match_index(model_file_value):
+    if not model_file_value:
+        return ""
+
+    # Derive the information about the model's name and path for index matching
+    model_folder = normalize_path(os.path.dirname(model_file_value))
+    model_name = os.path.basename(model_file_value)
+    base_name = os.path.splitext(model_name)[0]
+    common = re.sub(r"[_\-\.\+](?:e|s|v|V)\d.*$", "", base_name)
+    prefix_match = re.match(r"^(.*?)[_\-\.\+]", base_name)
+    prefix = prefix_match.group(1) if prefix_match else None
+
+    same_count = 0
+    last_same = None
+    same_substr = None
+    same_prefixed = None
+    external_exact = None
+    external_substr = None
+    external_pref = None
+
+    for idx in get_files("index"):
+        idx_folder = os.path.dirname(idx)
+        idx_folder_n = normalize_path(idx_folder)
+        idx_name = os.path.basename(idx)
+        idx_base = os.path.splitext(idx_name)[0]
+
+        in_same = folders_same(model_folder, idx_folder_n)
+        if in_same:
+            same_count += 1
+            last_same = idx
+
+            # 1) EXACT match to loaded model name and folders_same = True
+            if idx_base == base_name:
+                return idx
+
+            # 2) Substring match to model name and folders_same
+            if common in idx_base and same_substr is None:
+                same_substr = idx
+
+            # 3) Prefix match to model name and folders_same
+            if prefix and idx_base.startswith(prefix) and same_prefixed is None:
+                same_prefixed = idx
+
+        # If it's NOT in a paired folder (folders_same = False) we look elseware:
+        else:
+            # 4) EXACT match to model name in external directory
+            if idx_base == base_name and external_exact is None:
+                external_exact = idx
+
+            # 5) Substring match to model name in ED
+            if common in idx_base and external_substr is None:
+                external_substr = idx
+
+            # 6) Prefix match to model name in ED
+            if prefix and idx_base.startswith(prefix) and external_pref is None:
+                external_pref = idx
+
+    # Fallback: If there is exactly one index file in the same (or paired) folder,
+    # we should assume that's the intended index file even if the name doesnt match
+    if same_count == 1:
+        return last_same
+
+    # Then by remaining priority queue:
+    if same_substr:
+        return same_substr
+    if same_prefixed:
+        return same_prefixed
+    if external_exact:
+        return external_exact
+    if external_substr:
+        return external_substr
+    if external_pref:
+        return external_pref
+
+    return ""
+
+def extract_model_and_epoch(path):
+    base_name = os.path.basename(path)
+    match = re.match(r"(.+?)_(\d+)e_", base_name)
+    if match:
+        model, epoch = match.groups()
+        return model, int(epoch)
+    return "", 0
+
+
+def get_speakers_id(model):
+    if model:
+        try:
+            model_data = torch.load(
+                os.path.join(now_dir, model), map_location="cpu", weights_only=True
+            )
+            speakers_id = model_data.get("speakers_id")
+            if speakers_id:
+                return list(range(speakers_id))
+            else:
+                return [0]
+        except Exception as e:
+            return [0]
+    else:
+        return [0]
+
+
+def create_folder_and_move_files(folder_name, bin_file, config_file):
+    if not folder_name:
+        return "Folder name must not be empty."
+
+    folder_name = os.path.basename(folder_name)
+    target_folder = os.path.join(custom_embedder_root, folder_name)
+
+    normalized_target_folder = os.path.abspath(target_folder)
+    normalized_custom_embedder_root = os.path.abspath(custom_embedder_root)
+
+    if not normalized_target_folder.startswith(normalized_custom_embedder_root):
+        return "Invalid folder name. Folder must be within the custom embedder root directory."
+
+    os.makedirs(target_folder, exist_ok=True)
+
+    if bin_file:
+        shutil.copy(bin_file, os.path.join(target_folder, os.path.basename(bin_file)))
+    if config_file:
+        shutil.copy(
+            config_file, os.path.join(target_folder, os.path.basename(config_file))
+        )
+
+    return f"Files moved to folder {target_folder}"
+
+
+def refresh_embedders_folders():
+    custom_embedders = [
+        os.path.join(dirpath, dirname)
+        for dirpath, dirnames, _ in os.walk(custom_embedder_root_relative)
+        for dirname in dirnames
+    ]
+    return custom_embedders
+
+names = get_files("model")
+default_weight = names[0] if names else None
 
 PASS_THROUGH = False
 interactive_true = gr.update(interactive=True)
@@ -31,7 +273,6 @@ interactive_false = gr.update(interactive=False)
 running, callbacks, audio_manager = False, None, None
 
 CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
-
 
 def save_realtime_settings(
     input_device, output_device, monitor_device, model_file, index_file
@@ -474,7 +715,7 @@ def realtime_tab():
                         ),
                         allow_custom_value=True,
                     )
-                    index_choices = get_indexes()
+                    index_choices = get_files("index")
                     index_file = gr.Dropdown(
                         label=i18n("Index File"),
                         choices=index_choices,
@@ -692,7 +933,7 @@ def realtime_tab():
             new_sids = get_speakers_id(model_path)
 
             # Get updated index choices
-            new_index_choices = get_indexes()
+            new_index_choices = get_files("index")
             # Use the matched index as fallback, but handle empty strings
             fallback_index = new_index if new_index and new_index.strip() else None
             safe_index_value = get_safe_index_value(
@@ -724,6 +965,8 @@ def realtime_tab():
             if embedder_model == "custom":
                 return {"visible": True, "__type__": "update"}
             return {"visible": False, "__type__": "update"}
+
+        
 
         refresh_devices_button.click(
             fn=refresh_devices,
@@ -855,19 +1098,9 @@ def realtime_tab():
             fn=save_monitor_device, inputs=[monitor_output_device], outputs=[]
         )
 
-        model_file.change(fn=save_model_file, inputs=[model_file], outputs=[])
-
-        index_file.change(fn=save_index_file, inputs=[index_file], outputs=[])
-
         def refresh_all():
-            new_names = [
-                os.path.join(root, file)
-                for root, _, files in os.walk(model_root_relative, topdown=False)
-                for file in files
-                if file.endswith((".pth", ".onnx"))
-                and not (file.startswith("G_") or file.startswith("D_"))
-            ]
-            new_indexes = get_indexes()
+            new_names = get_files("model")
+            new_indexes = get_files("index")
             input_choices, output_choices = get_audio_devices_formatted()
             input_choices, output_choices = list(input_choices.keys()), list(
                 output_choices.keys()
@@ -879,6 +1112,10 @@ def realtime_tab():
                 gr.update(choices=output_choices),
                 gr.update(choices=output_choices),
             )
+
+        model_file.change(fn=save_model_file, inputs=[model_file], outputs=[])
+
+        index_file.change(fn=save_index_file, inputs=[index_file], outputs=[])
 
         refresh_button.click(
             fn=refresh_all,
