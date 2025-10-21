@@ -524,10 +524,10 @@ def train_tab():
                     "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
                 ),
                 choices=[
-                    "crepe", 
-                    "crepe-tiny", 
-                    "rmvpe", 
-                    #"fcpe"
+                    "crepe",
+                    "crepe-tiny",
+                    "rmvpe",
+                    # "fcpe"
                 ],
                 value="rmvpe",
                 interactive=True,
@@ -538,11 +538,11 @@ def train_tab():
                 info=i18n("Model used for learning speaker embedding."),
                 choices=[
                     "contentvec",
-                    #"spin",
+                    # "spin",
                     "spin-v2",
-                    #"chinese-hubert-base",
-                    #"japanese-hubert-base",
-                    #"korean-hubert-base",
+                    # "chinese-hubert-base",
+                    # "japanese-hubert-base",
+                    # "korean-hubert-base",
                     "custom",
                 ],
                 value="contentvec",
