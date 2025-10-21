@@ -523,7 +523,12 @@ def train_tab():
                 info=i18n(
                     "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
                 ),
-                choices=["crepe", "crepe-tiny", "rmvpe", "fcpe"],
+                choices=[
+                    "crepe", 
+                    "crepe-tiny", 
+                    "rmvpe", 
+                    #"fcpe"
+                ],
                 value="rmvpe",
                 interactive=True,
             )
@@ -533,11 +538,11 @@ def train_tab():
                 info=i18n("Model used for learning speaker embedding."),
                 choices=[
                     "contentvec",
-                    "spin",
+                    #"spin",
                     "spin-v2",
-                    "chinese-hubert-base",
-                    "japanese-hubert-base",
-                    "korean-hubert-base",
+                    #"chinese-hubert-base",
+                    #"japanese-hubert-base",
+                    #"korean-hubert-base",
                     "custom",
                 ],
                 value="contentvec",
@@ -628,7 +633,7 @@ def train_tab():
             total_epoch = gr.Slider(
                 1,
                 10000,
-                500,
+                200,
                 step=1,
                 label=i18n("Total Epoch"),
                 info=i18n(
