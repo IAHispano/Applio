@@ -29,8 +29,10 @@ os.makedirs(custom_embedder_root, exist_ok=True)
 custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
 model_root_relative = os.path.relpath(model_root, now_dir)
 
+
 def normalize_path(p):
     return os.path.normpath(p).replace("\\", "/").lower()
+
 
 MODEL_FOLDER = re.compile(r"^(?:model.{0,4}|mdl(?:s)?|weight.{0,4}|zip(?:s)?)$")
 INDEX_FOLDER = re.compile(r"^(?:ind.{0,4}|idx(?:s)?)$")
@@ -205,6 +207,7 @@ def match_index(model_file_value):
 
     return ""
 
+
 def extract_model_and_epoch(path):
     base_name = os.path.basename(path)
     match = re.match(r"(.+?)_(\d+)e_", base_name)
@@ -264,6 +267,7 @@ def refresh_embedders_folders():
     ]
     return custom_embedders
 
+
 names = get_files("model")
 default_weight = names[0] if names else None
 
@@ -273,6 +277,7 @@ interactive_false = gr.update(interactive=False)
 running, callbacks, audio_manager = False, None, None
 
 CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
+
 
 def save_realtime_settings(
     input_device, output_device, monitor_device, model_file, index_file
@@ -965,8 +970,6 @@ def realtime_tab():
             if embedder_model == "custom":
                 return {"visible": True, "__type__": "update"}
             return {"visible": False, "__type__": "update"}
-
-        
 
         refresh_devices_button.click(
             fn=refresh_devices,
