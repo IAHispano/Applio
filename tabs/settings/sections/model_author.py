@@ -12,20 +12,26 @@ i18n = I18nAuto()
 
 
 def set_model_author(model_author: str):
-    with open(os.path.join(now_dir, "assets", "config.json"), "r") as f:
+    with open(
+        os.path.join(now_dir, "assets", "config.json"), "r", encoding="utf-8"
+    ) as f:
         config = json.load(f)
 
     config["model_author"] = model_author
 
-    with open(os.path.join(now_dir, "assets", "config.json"), "w") as f:
-        json.dump(config, f, indent=4)
+    with open(
+        os.path.join(now_dir, "assets", "config.json"), "w", encoding="utf-8"
+    ) as f:
+        json.dump(config, f, indent=4, ensure_ascii=False)
 
     print(f"Model author set to {model_author}.")
     return f"Model author set to {model_author}."
 
 
 def get_model_author():
-    with open(os.path.join(now_dir, "assets", "config.json"), "r") as f:
+    with open(
+        os.path.join(now_dir, "assets", "config.json"), "r", encoding="utf-8"
+    ) as f:
         config = json.load(f)
 
     return config["model_author"] if "model_author" in config else None

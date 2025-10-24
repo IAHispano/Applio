@@ -12,20 +12,26 @@ i18n = I18nAuto()
 
 
 def set_precision(precision: str):
-    with open(os.path.join(now_dir, "assets", "config.json"), "r") as f:
+    with open(
+        os.path.join(now_dir, "assets", "config.json"), "r", encoding="utf-8"
+    ) as f:
         config = json.load(f)
 
     config["precision"] = precision
 
-    with open(os.path.join(now_dir, "assets", "config.json"), "w") as f:
-        json.dump(config, f, indent=4)
+    with open(
+        os.path.join(now_dir, "assets", "config.json"), "w", encoding="utf-8"
+    ) as f:
+        json.dump(config, f, indent=4, ensure_ascii=False)
 
     print(f"Precision set to {precision}.")
     return f"Precision set to {precision}."
 
 
 def get_precision():
-    with open(os.path.join(now_dir, "assets", "config.json"), "r") as f:
+    with open(
+        os.path.join(now_dir, "assets", "config.json"), "r", encoding="utf-8"
+    ) as f:
         config = json.load(f)
 
     return config["precision"] if "precision" in config else None
