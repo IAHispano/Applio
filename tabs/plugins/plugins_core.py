@@ -22,7 +22,7 @@ current_folders = os.listdir(plugins_path)
 
 def get_existing_folders():
     if os.path.exists(json_file_path):
-        with open(json_file_path, "r") as file:
+        with open(json_file_path, "r", encoding="utf-8") as file:
             config = json.load(file)
             return config["plugins"]
     else:
@@ -30,11 +30,11 @@ def get_existing_folders():
 
 
 def save_existing_folders(existing_folders):
-    with open(json_file_path, "r") as file:
+    with open(json_file_path, "r", encoding="utf-8") as file:
         config = json.load(file)
         config["plugins"] = existing_folders
-    with open(json_file_path, "w") as file:
-        json.dump(config, file, indent=2)
+    with open(json_file_path, "w", encoding="utf-8") as file:
+        json.dump(config, file, indent=2, ensure_ascii=False)
 
 
 def save_plugin_dropbox(dropbox):
