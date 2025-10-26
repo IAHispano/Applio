@@ -15,7 +15,7 @@ from rvc.realtime.utils.torch import circular_write
 from rvc.configs.config import Config
 from rvc.infer.pipeline import Autotune, AudioProcessor
 from rvc.lib.algorithm.synthesizers import Synthesizer
-from rvc.lib.predictors.f0 import FCPE, RMVPE, SWIFT
+from rvc.lib.predictors.f0 import FCPE, RMVPE
 from rvc.lib.utils import load_embedding, HubertModelWithFinalProj
 
 
@@ -153,21 +153,6 @@ class Realtime_Pipeline:
                     hop_size=self.window,
                 )
             f0 = self.f0_model.get_f0(x, x.shape[0] // self.window, filter_radius=0.006)
-        elif self.f0_method == "swift":
-            if self.f0_model is None:
-                self.f0_model = SWIFT(
-                    device=self.device,
-                    sample_rate=self.sample_rate,
-                    hop_size=self.window,
-                )
-            f0 = self.f0_model.get_f0(
-                x,
-                self.f0_min,
-                self.f0_max,
-                x.shape[0] // self.window,
-                confidence_threshold=0.887,
-            )
-
         # f0 adjustments
         if f0_autotune is True:
             f0 = self.autotune.autotune_f0(f0, f0_autotune_strength)

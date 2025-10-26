@@ -827,8 +827,8 @@ def realtime_tab():
                         interactive=True,
                     )
                     f0_method = gr.Radio(
-                        choices=["rmvpe", "fcpe", "swift"],
-                        value="swift",
+                        choices=["rmvpe", "fcpe"],
+                        value="fcpe",
                         label=i18n("Pitch extraction algorithm"),
                         info=i18n(
                             "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
