@@ -287,9 +287,9 @@ class Realtime_Pipeline:
                     skip_head, feats, self.index, self.big_npy, index_rate
                 )
             # feature upsampling
-            feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(0, 2, 1)[
-                :, :p_len, :
-            ]
+            feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(
+                0, 2, 1
+            )[:, :p_len, :]
 
             if self.use_f0:
                 feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
@@ -315,7 +315,11 @@ class Realtime_Pipeline:
             out_audio = self.vc.inference(feats, p_len, self.sid, pitch, pitchf).float()
             if volume_envelope != 1:
                 out_audio = AudioProcessor.change_rms(
-                    audio.cpu().numpy(), self.sample_rate, out_audio.cpu().numpy(), self.tgt_sr, volume_envelope
+                    audio.cpu().numpy(),
+                    self.sample_rate,
+                    out_audio.cpu().numpy(),
+                    self.tgt_sr,
+                    volume_envelope,
                 )
                 out_audio = torch.as_tensor(out_audio, device=self.device)
 

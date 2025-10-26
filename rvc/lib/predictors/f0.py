@@ -62,7 +62,11 @@ class FCPE:
         self.device = device
         self.sample_rate = sample_rate
         self.hop_size = hop_size
-        self.model = spawn_infer_model_from_pt(os.path.join("rvc", "models", "predictors", "fcpe.pt"), self.device, bundled_model=True)
+        self.model = spawn_infer_model_from_pt(
+            os.path.join("rvc", "models", "predictors", "fcpe.pt"),
+            self.device,
+            bundled_model=True,
+        )
 
     def get_f0(self, x, p_len=None, filter_radius=0.006):
         if p_len is None:
