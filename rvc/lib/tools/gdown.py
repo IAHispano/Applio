@@ -280,9 +280,12 @@ def download(
             file_obj.close()
             shutil.move(temp_file_path, download_path)
     except Exception:
-        # Ensure file is closed on error
-        if temp_file_path and hasattr(file_obj, 'close'):
-            file_obj.close()
+        # Ensure file is closed on error if it was opened
+        if temp_file_path and 'file_obj' in locals():
+            try:
+                file_obj.close()
+            except Exception:
+                pass  # Ignore close errors
         raise
     finally:
         sess.close()
