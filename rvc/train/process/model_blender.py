@@ -44,7 +44,7 @@ def model_blender(name, path1, path2, ratio):
         else:
             ckpt2 = ckpt2["weight"]
 
-        if sorted(list(ckpt1.keys())) != sorted(list(ckpt2.keys())):
+        if sorted(ckpt1.keys()) != sorted(ckpt2.keys()):
             return "Fail to merge the models. The model architectures are not the same."
 
         opt = OrderedDict()
