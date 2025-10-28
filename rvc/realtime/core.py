@@ -151,7 +151,7 @@ class Realtime:
         vol = max(vol_t.item(), 0)
 
         if self.vad is not None:
-            is_speech = self.vad.is_speech(audio_input_16k.cpu().numpy().copy())
+            is_speech = self.vad.is_speech(audio_input_16k.cpu().numpy())
             if not is_speech:
                 # Busy wait to keep power manager happy and clocks stable. Running pipeline on-demand seems to lag when the delay between
                 # voice changer activation is too high.

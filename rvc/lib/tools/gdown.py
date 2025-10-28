@@ -236,50 +236,77 @@ def download(
             )
 
         try:
-            file_obj: IO = open(temp_file_path, "ab")
+            with open(temp_file_path, "ab") as file_obj:
+                if temp_file_path is not None and file_obj.tell() != 0:
+                    headers = {"Range": f"bytes={file_obj.tell()}-"}
+                    res = sess.get(url, headers=headers, stream=True, verify=verify)
+                    res.raise_for_status()
+
+                total = int(res.headers.get("Content-Length", 0))
+                if total > 0:
+                    if not quiet:
+                        pbar = tqdm(
+                            total=total, unit="B", unit_scale=True, desc=filename_from_url
+                        )
+                else:
+                    if not quiet:
+                        pbar = tqdm(unit="B", unit_scale=True, desc=filename_from_url)
+
+                t_start = time.time()
+                for chunk in res.iter_content(chunk_size=CHUNK_SIZE):
+                    file_obj.write(chunk)
+                    if not quiet:
+                        pbar.update(len(chunk))
+                    if speed is not None:
+                        elapsed_time_expected = 1.0 * pbar.n / speed
+                        elapsed_time = time.time() - t_start
+                        if elapsed_time < elapsed_time_expected:
+                            time.sleep(elapsed_time_expected - elapsed_time)
+                if not quiet:
+                    pbar.close()
+
+            shutil.move(temp_file_path, download_path)
         except Exception as e:
             print(
-                f"Could not open the temporary file {temp_file_path}: {e}",
+                f"Could not open or write to the temporary file {temp_file_path}: {e}",
                 file=sys.stderr,
             )
             return None
+        finally:
+            sess.close()
     else:
         temp_file_path = None
         file_obj = download_path
 
-    if temp_file_path is not None and file_obj.tell() != 0:
-        headers = {"Range": f"bytes={file_obj.tell()}-"}
-        res = sess.get(url, headers=headers, stream=True, verify=verify)
-        res.raise_for_status()
+        if temp_file_path is not None and file_obj.tell() != 0:
+            headers = {"Range": f"bytes={file_obj.tell()}-"}
+            res = sess.get(url, headers=headers, stream=True, verify=verify)
+            res.raise_for_status()
 
-    try:
-        total = int(res.headers.get("Content-Length", 0))
-        if total > 0:
-            if not quiet:
-                pbar = tqdm(
-                    total=total, unit="B", unit_scale=True, desc=filename_from_url
-                )
-        else:
-            if not quiet:
-                pbar = tqdm(unit="B", unit_scale=True, desc=filename_from_url)
+        try:
+            total = int(res.headers.get("Content-Length", 0))
+            if total > 0:
+                if not quiet:
+                    pbar = tqdm(
+                        total=total, unit="B", unit_scale=True, desc=filename_from_url
+                    )
+            else:
+                if not quiet:
+                    pbar = tqdm(unit="B", unit_scale=True, desc=filename_from_url)
 
-        t_start = time.time()
-        for chunk in res.iter_content(chunk_size=CHUNK_SIZE):
-            file_obj.write(chunk)
+            t_start = time.time()
+            for chunk in res.iter_content(chunk_size=CHUNK_SIZE):
+                file_obj.write(chunk)
+                if not quiet:
+                    pbar.update(len(chunk))
+                if speed is not None:
+                    elapsed_time_expected = 1.0 * pbar.n / speed
+                    elapsed_time = time.time() - t_start
+                    if elapsed_time < elapsed_time_expected:
+                        time.sleep(elapsed_time_expected - elapsed_time)
             if not quiet:
-                pbar.update(len(chunk))
-            if speed is not None:
-                elapsed_time_expected = 1.0 * pbar.n / speed
-                elapsed_time = time.time() - t_start
-                if elapsed_time < elapsed_time_expected:
-                    time.sleep(elapsed_time_expected - elapsed_time)
-        if not quiet:
-            pbar.close()
-
-        if temp_file_path:
-            file_obj.close()
-            shutil.move(temp_file_path, download_path)
-    finally:
-        sess.close()
+                pbar.close()
+        finally:
+            sess.close()
 
     return download_path

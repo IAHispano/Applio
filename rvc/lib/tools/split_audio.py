@@ -40,8 +40,10 @@ def merge_audio(audio_segments_org, audio_segments_new, intervals, sr_orig, sr_n
     Returns:
     - np.ndarray: The merged audio signal with silent gaps restored.
     """
-    merged_audio = np.array([], dtype=audio_segments_new[0].dtype)
+    # Collect all segments in a list first to avoid O(n²) concatenation complexity
+    segments_to_merge = []
     sr_ratio = sr_new / sr_orig
+    dtype = audio_segments_new[0].dtype
 
     for i, (start, end) in enumerate(intervals):
 
@@ -53,27 +55,23 @@ def merge_audio(audio_segments_org, audio_segments_new, intervals, sr_orig, sr_n
         duration_diff = new_duration - original_duration
 
         silence_samples = int(abs(duration_diff) * sr_new)
-        silence_compensation = np.zeros(
-            silence_samples, dtype=audio_segments_new[0].dtype
-        )
 
         if i == 0 and start_new > 0:
-            initial_silence = np.zeros(start_new, dtype=audio_segments_new[0].dtype)
-            merged_audio = np.concatenate((merged_audio, initial_silence))
+            segments_to_merge.append(np.zeros(start_new, dtype=dtype))
 
         if duration_diff > 0:
-            merged_audio = np.concatenate((merged_audio, silence_compensation))
+            segments_to_merge.append(np.zeros(silence_samples, dtype=dtype))
 
-        merged_audio = np.concatenate((merged_audio, audio_segments_new[i]))
+        segments_to_merge.append(audio_segments_new[i])
 
         if duration_diff < 0:
-            merged_audio = np.concatenate((merged_audio, silence_compensation))
+            segments_to_merge.append(np.zeros(silence_samples, dtype=dtype))
 
         if i < len(intervals) - 1:
             next_start_new = int(intervals[i + 1][0] * sr_ratio)
             silence_duration = next_start_new - end_new
             if silence_duration > 0:
-                silence = np.zeros(silence_duration, dtype=audio_segments_new[0].dtype)
-                merged_audio = np.concatenate((merged_audio, silence))
+                segments_to_merge.append(np.zeros(silence_duration, dtype=dtype))
 
-    return merged_audio
+    # Single concatenation at the end - much more efficient
+    return np.concatenate(segments_to_merge) if segments_to_merge else np.array([], dtype=dtype)
