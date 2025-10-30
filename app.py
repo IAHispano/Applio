@@ -91,8 +91,9 @@ with gr.Blocks(
     with gr.Tab(i18n("Voice Blender")):
         voice_blender_tab()
 
-    with gr.Tab(i18n("Realtime")):
-        realtime_tab()
+    if "--notebook" not in sys.argv:
+        with gr.Tab(i18n("Realtime")):
+            realtime_tab()
 
     with gr.Tab(i18n("Plugins")):
         plugins_tab()
