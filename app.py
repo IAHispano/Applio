@@ -8,6 +8,7 @@ from typing import Any
 DEFAULT_SERVER_NAME = "127.0.0.1"
 DEFAULT_PORT = 6969
 MAX_PORT_ATTEMPTS = 10
+RUNNING_IN_NOTEBOOK = "--notebook" in sys.argv
 
 # Set up logging
 logging.getLogger("uvicorn").setLevel(logging.WARNING)
@@ -91,8 +92,9 @@ with gr.Blocks(
     with gr.Tab(i18n("Voice Blender")):
         voice_blender_tab()
 
-    with gr.Tab(i18n("Realtime")):
-        realtime_tab()
+    if not RUNNING_IN_NOTEBOOK:
+        with gr.Tab(i18n("Realtime")):
+            realtime_tab()
 
     with gr.Tab(i18n("Plugins")):
         plugins_tab()
