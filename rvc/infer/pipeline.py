@@ -279,7 +279,6 @@ class Pipeline:
         else:
             f0 *= pow(2, pitch / 12)
         # quantizing f0 to 255 buckets to make coarse f0
-        f0bak = f0.copy()
         f0_mel = 1127 * np.log(1 + f0 / 700)
         f0_mel[f0_mel > 0] = (f0_mel[f0_mel > 0] - self.f0_mel_min) * 254 / (
             self.f0_mel_max - self.f0_mel_min
@@ -288,7 +287,7 @@ class Pipeline:
         f0_mel[f0_mel > 255] = 255
         f0_coarse = np.rint(f0_mel).astype(int)
 
-        return f0_coarse, f0bak
+        return f0_coarse, f0
 
     def voice_conversion(
         self,
