@@ -1,9 +1,15 @@
 import gradio as gr
 import sys
 import os
+import platform
 import logging
 
 from typing import Any
+
+if sys.platform == "darwin" and platform.machine() == "arm64":
+    os.environ["OMP_NUM_THREADS"] = "1"
+    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 
 DEFAULT_SERVER_NAME = "127.0.0.1"
 DEFAULT_PORT = 6969
