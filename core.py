@@ -1,7 +1,7 @@
+import platform_config
 import os
 import sys
 import json
-import platform
 import argparse
 import subprocess
 from functools import lru_cache
@@ -21,10 +21,6 @@ from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
 from rvc.lib.tools.model_download import model_download_pipeline
 
 python = sys.executable
-
-if sys.platform == "darwin" and platform.machine() == "arm64":
-    os.environ["OMP_NUM_THREADS"] = "1"
-    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 
 # Get TTS Voices -> https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4
