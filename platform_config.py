@@ -17,6 +17,10 @@ def configure_macos_arm64():
     in FAISS index searches. This function sets environment variables to force
     single-threaded operation, which is slower but stable.
     
+    Sets OMP_NUM_THREADS=1 to force single-threaded operation.
+    Sets KMP_DUPLICATE_LIB_OK=TRUE to suppress warnings about multiple OpenMP library instances being loaded,
+    which can occur in certain conda/pip installation configurations.
+    
     This function is idempotent and safe to call multiple times.
     """
     if sys.platform == "darwin" and platform.machine() == "arm64":
