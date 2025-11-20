@@ -124,20 +124,38 @@ def download_pretrained_model(model, sample_rate, url_g="", url_d=""):
     tasks = []
 
     if url_g or url_d:
-        tasks = [(u, os.path.join(save_path, os.path.basename(u))) for u in [url_g, url_d] if u]
+        tasks = [
+            (u, os.path.join(save_path, os.path.basename(u)))
+            for u in [url_g, url_d]
+            if u
+        ]
         if not tasks:
             return gr.Warning(i18n("Please provide at least one URL."))
     else:
         data = fetch_pretrained_data()
         paths = data[model][sample_rate]
-        tasks = [(f"https://huggingface.co/{p}", os.path.join(save_path, os.path.basename(p))) for p in [paths["D"], paths["G"]]]
+        tasks = [
+            (
+                f"https://huggingface.co/{p}",
+                os.path.join(save_path, os.path.basename(p)),
+            )
+            for p in [paths["D"], paths["G"]]
+        ]
 
     gr.Info(i18n("Downloading pretrained model..."))
 
-    with tqdm(total=sum(get_file_size(u) for u, _ in tasks), unit="iB", unit_scale=True, desc="Downloading files") as pbar:
+    with tqdm(
+        total=sum(get_file_size(u) for u, _ in tasks),
+        unit="iB",
+        unit_scale=True,
+        desc="Downloading files",
+    ) as pbar:
         with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = [executor.submit(download_file, url, dst, pbar) for url, dst in tasks]
-            for f in futures: f.result()
+            futures = [
+                executor.submit(download_file, url, dst, pbar) for url, dst in tasks
+            ]
+            for f in futures:
+                f.result()
 
     gr.Info(i18n("Pretrained model downloaded successfully!"))
     print("Pretrained model downloaded successfully!")
@@ -153,7 +171,12 @@ def update_sample_rate_dropdown(model):
 
 def download_handler(is_custom, model, sample_rate, url_g, url_d):
     if is_custom:
-        download_pretrained_model(None, None, url_g.replace("?download=true", ""), url_d.replace("?download=true", ""))
+        download_pretrained_model(
+            None,
+            None,
+            url_g.replace("?download=true", ""),
+            url_d.replace("?download=true", ""),
+        )
     else:
         download_pretrained_model(model, sample_rate, "", "")
 
@@ -193,7 +216,7 @@ def download_tab():
             outputs=[dropbox],
         )
         gr.Markdown(value=i18n("## Download Pretrained Models"))
-        
+
         with gr.Group():
             with gr.Group(visible=True) as default:
                 pretrained_model = gr.Dropdown(
@@ -211,16 +234,10 @@ def download_tab():
                     interactive=True,
                     allow_custom_value=True,
                 )
-            
+
             with gr.Group(visible=False) as custom:
-                url_g = gr.Textbox(
-                    label=i18n("Pretrained G"),
-                    interactive=True
-                )
-                url_d = gr.Textbox(
-                    label=i18n("Pretrained D"), 
-                    interactive=True
-                )
+                url_g = gr.Textbox(label=i18n("Pretrained G"), interactive=True)
+                url_d = gr.Textbox(label=i18n("Pretrained D"), interactive=True)
 
             use_custom = gr.Checkbox(
                 label=i18n("Custom Pretrained"),
@@ -238,21 +255,15 @@ def download_tab():
 
         use_custom.change(
             fn=lambda x: (
-                {"visible": not x, "__type__": "update"}, 
-                {"visible": x, "__type__": "update"}
+                {"visible": not x, "__type__": "update"},
+                {"visible": x, "__type__": "update"},
             ),
             inputs=[use_custom],
-            outputs=[default, custom]
+            outputs=[default, custom],
         )
 
         download_pretrained.click(
             fn=download_handler,
-            inputs=[
-                use_custom, 
-                pretrained_model, 
-                pretrained_sample_rate, 
-                url_g, 
-                url_d
-            ],
+            inputs=[use_custom, pretrained_model, pretrained_sample_rate, url_g, url_d],
             outputs=[],
         )
