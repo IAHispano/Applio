@@ -118,41 +118,28 @@ def download_file(url, destination_path, progress_bar):
             progress_bar.update(len(data))
 
 
-def download_pretrained_model(model, sample_rate):
-    data = fetch_pretrained_data()
-    paths = data[model][sample_rate]
-    pretraineds_custom_path = os.path.join("rvc", "models", "pretraineds", "custom")
-    os.makedirs(pretraineds_custom_path, exist_ok=True)
+def download_pretrained_model(model, sample_rate, url_g="", url_d=""):
+    save_path = os.path.join("rvc", "models", "pretraineds", "custom")
+    os.makedirs(save_path, exist_ok=True)
+    tasks = []
 
-    d_url = f"https://huggingface.co/{paths['D']}"
-    g_url = f"https://huggingface.co/{paths['G']}"
+    if url_g or url_d:
+        tasks = [(u, os.path.join(save_path, os.path.basename(u))) for u in [url_g, url_d] if u]
+        if not tasks:
+            return gr.Warning(i18n("Please provide at least one URL."))
+    else:
+        data = fetch_pretrained_data()
+        paths = data[model][sample_rate]
+        tasks = [(f"https://huggingface.co/{p}", os.path.join(save_path, os.path.basename(p))) for p in [paths["D"], paths["G"]]]
 
-    total_size = get_file_size(d_url) + get_file_size(g_url)
+    gr.Info(i18n("Downloading pretrained model..."))
 
-    gr.Info("Downloading pretrained model...")
-
-    with tqdm(
-        total=total_size, unit="iB", unit_scale=True, desc="Downloading files"
-    ) as progress_bar:
+    with tqdm(total=sum(get_file_size(u) for u, _ in tasks), unit="iB", unit_scale=True, desc="Downloading files") as pbar:
         with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = [
-                executor.submit(
-                    download_file,
-                    d_url,
-                    os.path.join(pretraineds_custom_path, os.path.basename(paths["D"])),
-                    progress_bar,
-                ),
-                executor.submit(
-                    download_file,
-                    g_url,
-                    os.path.join(pretraineds_custom_path, os.path.basename(paths["G"])),
-                    progress_bar,
-                ),
-            ]
-            for future in futures:
-                future.result()
+            futures = [executor.submit(download_file, url, dst, pbar) for url, dst in tasks]
+            for f in futures: f.result()
 
-    gr.Info("Pretrained model downloaded successfully!")
+    gr.Info(i18n("Pretrained model downloaded successfully!"))
     print("Pretrained model downloaded successfully!")
 
 
@@ -162,6 +149,13 @@ def update_sample_rate_dropdown(model):
         "value": get_pretrained_sample_rates(model)[0],
         "__type__": "update",
     }
+
+
+def download_handler(is_custom, model, sample_rate, url_g, url_d):
+    if is_custom:
+        download_pretrained_model(None, None, url_g.replace("?download=true", ""), url_d.replace("?download=true", ""))
+    else:
+        download_pretrained_model(model, sample_rate, "", "")
 
 
 def download_tab():
@@ -199,29 +193,66 @@ def download_tab():
             outputs=[dropbox],
         )
         gr.Markdown(value=i18n("## Download Pretrained Models"))
-        pretrained_model = gr.Dropdown(
-            label=i18n("Pretrained"),
-            info=i18n("Select the pretrained model you want to download."),
-            choices=get_pretrained_list(),
-            value="Titan",
-            interactive=True,
-        )
-        pretrained_sample_rate = gr.Dropdown(
-            label=i18n("Sampling Rate"),
-            info=i18n("And select the sampling rate."),
-            choices=get_pretrained_sample_rates(pretrained_model.value),
-            value="40k",
-            interactive=True,
-            allow_custom_value=True,
-        )
+        
+        with gr.Group():
+            with gr.Group(visible=True) as default:
+                pretrained_model = gr.Dropdown(
+                    label=i18n("Pretrained"),
+                    info=i18n("Select the pretrained model you want to download."),
+                    choices=get_pretrained_list(),
+                    value="Titan",
+                    interactive=True,
+                )
+                pretrained_sample_rate = gr.Dropdown(
+                    label=i18n("Sampling Rate"),
+                    info=i18n("And select the sampling rate."),
+                    choices=get_pretrained_sample_rates(pretrained_model.value),
+                    value="40k",
+                    interactive=True,
+                    allow_custom_value=True,
+                )
+            
+            with gr.Group(visible=False) as custom:
+                url_g = gr.Textbox(
+                    label=i18n("Pretrained G"),
+                    interactive=True
+                )
+                url_d = gr.Textbox(
+                    label=i18n("Pretrained D"), 
+                    interactive=True
+                )
+
+            use_custom = gr.Checkbox(
+                label=i18n("Custom Pretrained"),
+                value=False,
+                interactive=True,
+            )
+
+        download_pretrained = gr.Button(i18n("Download"))
+
         pretrained_model.change(
             update_sample_rate_dropdown,
             inputs=[pretrained_model],
             outputs=[pretrained_sample_rate],
         )
-        download_pretrained = gr.Button(i18n("Download"))
+
+        use_custom.change(
+            fn=lambda x: (
+                {"visible": not x, "__type__": "update"}, 
+                {"visible": x, "__type__": "update"}
+            ),
+            inputs=[use_custom],
+            outputs=[default, custom]
+        )
+
         download_pretrained.click(
-            fn=download_pretrained_model,
-            inputs=[pretrained_model, pretrained_sample_rate],
+            fn=download_handler,
+            inputs=[
+                use_custom, 
+                pretrained_model, 
+                pretrained_sample_rate, 
+                url_g, 
+                url_d
+            ],
             outputs=[],
         )
