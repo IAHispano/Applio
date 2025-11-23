@@ -134,13 +134,13 @@ def launch_gradio(server_name: str, server_port: int) -> None:
         prevent_thread_lock=client_mode
     )
 
-    import time
-    from rvc.realtime.client import app as fastapi_app 
-    app.mount("/api", fastapi_app)
+    if client_mode:
+        import time
+        from rvc.realtime.client import app as fastapi_app 
+        app.mount("/api", fastapi_app)
 
-    while True:
-        time.sleep(5)
-
+        while True:
+            time.sleep(5)
 
 def get_value_from_args(key: str, default: Any = None) -> Any:
     if key in sys.argv:
