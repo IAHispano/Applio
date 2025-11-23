@@ -231,6 +231,10 @@
         const devices = await window.getAudioDevices()
         input_audio_device = devices["inputs"][input_audio_device]
         output_audio_device = devices["outputs"][output_audio_device]
+        
+        if (use_monitor_device && devices["outputs"][monitor_output_device]) {
+            monitor_output_device = devices["outputs"][monitor_output_device];
+        }
 
         try {
             if (!input_audio_device || !output_audio_device) {
