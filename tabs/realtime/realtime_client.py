@@ -381,6 +381,14 @@ def realtime_tab():
                             interactive=True,
                         )
                 with gr.Row():
+                    exclusive_mode = gr.Checkbox(
+                        label=i18n("Exclusive Mode"),
+                        info=i18n(
+                            "Gives the app exclusive control for potentially lower latency."
+                        ),
+                        value=True,
+                        interactive=True,
+                    )
                     vad_enabled = gr.Checkbox(
                         label=i18n("Enable VAD"),
                         info=i18n(
@@ -697,6 +705,7 @@ def realtime_tab():
                 proposed_pitch_threshold,
                 embedder_model,
                 embedder_model_custom,
+                exclusive_mode,
             ],
             outputs=[json_button_hidden],
         )

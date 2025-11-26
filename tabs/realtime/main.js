@@ -217,6 +217,7 @@
         proposed_pitch_threshold,
         embedder_model,
         embedder_model_custom,
+        exclusive_mode,
     ) {
         const SampleRate = 48000;
         const ReadChunkSize = Math.round(chunk_size * SampleRate / 1000 / 128);
@@ -260,14 +261,17 @@
                     channelCount: 1,
                     sampleRate: SampleRate,
                     // disable all browser processing (You can make it optional)
-                    echoCancellation: false,
-                    noiseSuppression: false,
-                    autoGainControl: false
+                    echoCancellation: !exclusive_mode,
+                    noiseSuppression: !exclusive_mode,
+                    autoGainControl: !exclusive_mode
                 }
             });
 
+            let latencyHint = "playback";
+            if (exclusive_mode) latencyHint = "interactive";
+
             window._activeStream = stream;
-            window._audioCtx = new AudioContext({ sampleRate: SampleRate, latencyHint: "interactive" });
+            window._audioCtx = new AudioContext({ sampleRate: SampleRate, latencyHint: latencyHint });
 
             // Load processing modules.
             await addModuleFromString(window._audioCtx, inputWorkletSource);
