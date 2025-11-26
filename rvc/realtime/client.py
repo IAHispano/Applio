@@ -43,6 +43,8 @@ async def websocket_audio(ws: WebSocket):
                 vad_sensitivity=3, 
                 vad_frame_ms=30,
                 sid=params["sid"],
+                clean_audio=params["clean_audio"],
+                clean_strength=params["clean_strength"],
             )
         
         print("Realtime is ready!")

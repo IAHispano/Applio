@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 import torchaudio.transforms as tat
 import numpy as np
-
+from noisereduce.torchgate import TorchGate
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
@@ -30,6 +30,8 @@ class Realtime:
         vad_sensitivity: int = 3,
         vad_frame_ms: int = 30,
         sid: int = 0,
+        clean_audio: bool = False,
+        clean_strength: float = 0.5,
         # device: str = "cuda",
     ):
         self.sample_rate = SAMPLE_RATE
@@ -64,6 +66,15 @@ class Realtime:
             sid,
         )
         self.device = self.pipeline.device
+        # noise reduce
+        self.reduced_noise = (
+            TorchGate(
+                self.sample_rate,
+                prop_decrease=clean_strength,
+            ).to(self.device)
+            if clean_audio
+            else None
+        )
         # Resampling of inputs and outputs.
         self.resample_in = tat.Resample(
             orig_freq=AUDIO_SAMPLE_RATE, new_freq=self.sample_rate, dtype=torch.float32
@@ -219,6 +230,7 @@ class Realtime:
             proposed_pitch_threshold,
         )
 
+        if self.reduced_noise is not None: audio_model = self.reduced_noise(audio_model.unsqueeze(0)).squeeze(0)
         audio_out: torch.Tensor = self.resample_out(audio_model * torch.sqrt(vol_t))
         return audio_out, vol
 
@@ -242,6 +254,8 @@ class VoiceChanger:
         vad_sensitivity: int = 3,
         vad_frame_ms: int = 30,
         sid: int = 0,
+        clean_audio: bool = False,
+        clean_strength: float = 0.5,
         # device: str = "cuda",
     ):
         self.block_frame = read_chunk_size * 128
@@ -260,6 +274,8 @@ class VoiceChanger:
             vad_sensitivity,
             vad_frame_ms,
             sid,
+            clean_audio,
+            clean_strength,
             # device
         )
         self.device = self.vc_model.device

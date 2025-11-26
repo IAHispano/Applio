@@ -410,6 +410,8 @@ def start_realtime(
     proposed_pitch_threshold: float,
     embedder_model: str,
     embedder_model_custom: str = None,
+    clean_audio: bool = False,
+    clean_strength: float = 0.5,
 ):
     global running, callbacks, audio_manager
     running = True
@@ -484,6 +486,8 @@ def start_realtime(
         vad_sensitivity=3,
         vad_frame_ms=30,
         sid=sid,
+        clean_audio=clean_audio,
+        clean_strength=clean_strength,
     )
 
     audio_manager = callbacks.audio
@@ -777,6 +781,26 @@ def realtime_tab():
                         value=155.0,
                         interactive=True,
                     )
+                    clean_audio = gr.Checkbox(
+                        label=i18n("Clean Audio"),
+                        info=i18n(
+                            "Clean your audio output using noise detection algorithms, recommended for speaking audios."
+                        ),
+                        visible=True,
+                        value=False,
+                        interactive=True,
+                    )
+                    clean_strength = gr.Slider(
+                        minimum=0,
+                        maximum=1,
+                        label=i18n("Clean Strength"),
+                        info=i18n(
+                            "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
+                        ),
+                        visible=False,
+                        value=0.5,
+                        interactive=True,
+                    )
                     sid = gr.Dropdown(
                         label=i18n("Speaker ID"),
                         choices=(
@@ -988,6 +1012,12 @@ def realtime_tab():
             outputs=[proposed_pitch_threshold],
         )
 
+        clean_audio.change(
+            fn=toggle_visible,
+            inputs=[clean_audio],
+            outputs=[clean_strength],
+        )
+
         embedder_model.change(
             fn=toggle_visible_embedder_custom,
             inputs=[embedder_model],
@@ -1039,6 +1069,8 @@ def realtime_tab():
                 proposed_pitch_threshold,
                 embedder_model,
                 embedder_model_custom,
+                clean_audio,
+                clean_strength,
             ],
             outputs=[latency_info, start_button, stop_button],
         )

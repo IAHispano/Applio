@@ -218,6 +218,8 @@
         embedder_model,
         embedder_model_custom,
         exclusive_mode,
+        clean_audio,
+        clean_strength,
     ) {
         const SampleRate = 48000;
         const ReadChunkSize = Math.round(chunk_size * SampleRate / 1000 / 128);
@@ -331,7 +333,9 @@
                         autotune: autotune,
                         autotune_strength: autotune_strength,
                         proposed_pitch: proposed_pitch,
-                        proposed_pitch_threshold: proposed_pitch_threshold
+                        proposed_pitch_threshold: proposed_pitch_threshold,
+                        clean_audio: clean_audio,
+                        clean_strength: clean_strength,
                     })
                 );
             };

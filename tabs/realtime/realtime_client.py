@@ -463,6 +463,26 @@ def realtime_tab():
                         value=155.0,
                         interactive=True,
                     )
+                    clean_audio = gr.Checkbox(
+                        label=i18n("Clean Audio"),
+                        info=i18n(
+                            "Clean your audio output using noise detection algorithms, recommended for speaking audios."
+                        ),
+                        visible=True,
+                        value=False,
+                        interactive=True,
+                    )
+                    clean_strength = gr.Slider(
+                        minimum=0,
+                        maximum=1,
+                        label=i18n("Clean Strength"),
+                        info=i18n(
+                            "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
+                        ),
+                        visible=False,
+                        value=0.5,
+                        interactive=True,
+                    )
                     sid = gr.Dropdown(
                         label=i18n("Speaker ID"),
                         choices=(
@@ -657,6 +677,12 @@ def realtime_tab():
             outputs=[proposed_pitch_threshold],
         )
 
+        clean_audio.change(
+            fn=toggle_visible,
+            inputs=[clean_audio],
+            outputs=[clean_strength],
+        )
+
         embedder_model.change(
             fn=toggle_visible_embedder_custom,
             inputs=[embedder_model],
@@ -706,6 +732,8 @@ def realtime_tab():
                 embedder_model,
                 embedder_model_custom,
                 exclusive_mode,
+                clean_audio,
+                clean_strength
             ],
             outputs=[json_button_hidden],
         )
