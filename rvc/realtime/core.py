@@ -6,6 +6,19 @@ import torch.nn.functional as F
 import torchaudio.transforms as tat
 import numpy as np
 from noisereduce.torchgate import TorchGate
+from pedalboard import (
+    Pedalboard,
+    Chorus,
+    Distortion,
+    Reverb,
+    PitchShift,
+    Limiter,
+    Gain,
+    Bitcrush,
+    Clipping,
+    Compressor,
+    Delay,
+)
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
@@ -32,6 +45,8 @@ class Realtime:
         sid: int = 0,
         clean_audio: bool = False,
         clean_strength: float = 0.5,
+        post_process: bool = False,
+        **kwargs
         # device: str = "cuda",
     ):
         self.sample_rate = SAMPLE_RATE
@@ -55,6 +70,13 @@ class Realtime:
             if vad_enabled
             else None
         )
+        self.board = (
+            self.setup_pedalboard(
+                **kwargs
+            )
+            if post_process
+            else None
+        )
         # Create conversion pipelines
         self.pipeline = create_pipeline(
             model_path,
@@ -69,7 +91,7 @@ class Realtime:
         # noise reduce
         self.reduced_noise = (
             TorchGate(
-                self.sample_rate,
+                AUDIO_SAMPLE_RATE,
                 prop_decrease=clean_strength,
             ).to(self.device)
             if clean_audio
@@ -84,6 +106,66 @@ class Realtime:
             new_freq=AUDIO_SAMPLE_RATE,
             dtype=torch.float32,
         ).to(self.device)
+
+    def setup_pedalboard(self, **kwargs):
+        board = Pedalboard()
+        if kwargs.get("reverb", False):
+            reverb = Reverb(
+                room_size=kwargs.get("reverb_room_size", 0.5),
+                damping=kwargs.get("reverb_damping", 0.5),
+                wet_level=kwargs.get("reverb_wet_level", 0.33),
+                dry_level=kwargs.get("reverb_dry_level", 0.4),
+                width=kwargs.get("reverb_width", 1.0),
+                freeze_mode=kwargs.get("reverb_freeze_mode", 0),
+            )
+            board.append(reverb)
+        if kwargs.get("pitch_shift", False):
+            pitch_shift = PitchShift(semitones=kwargs.get("pitch_shift_semitones", 0))
+            board.append(pitch_shift)
+        if kwargs.get("limiter", False):
+            limiter = Limiter(
+                threshold_db=kwargs.get("limiter_threshold", -6),
+                release_ms=kwargs.get("limiter_release", 0.05),
+            )
+            board.append(limiter)
+        if kwargs.get("gain", False):
+            gain = Gain(gain_db=kwargs.get("gain_db", 0))
+            board.append(gain)
+        if kwargs.get("distortion", False):
+            distortion = Distortion(drive_db=kwargs.get("distortion_gain", 25))
+            board.append(distortion)
+        if kwargs.get("chorus", False):
+            chorus = Chorus(
+                rate_hz=kwargs.get("chorus_rate", 1.0),
+                depth=kwargs.get("chorus_depth", 0.25),
+                centre_delay_ms=kwargs.get("chorus_delay", 7),
+                feedback=kwargs.get("chorus_feedback", 0.0),
+                mix=kwargs.get("chorus_mix", 0.5),
+            )
+            board.append(chorus)
+        if kwargs.get("bitcrush", False):
+            bitcrush = Bitcrush(bit_depth=kwargs.get("bitcrush_bit_depth", 8))
+            board.append(bitcrush)
+        if kwargs.get("clipping", False):
+            clipping = Clipping(threshold_db=kwargs.get("clipping_threshold", 0))
+            board.append(clipping)
+        if kwargs.get("compressor", False):
+            compressor = Compressor(
+                threshold_db=kwargs.get("compressor_threshold", 0),
+                ratio=kwargs.get("compressor_ratio", 1),
+                attack_ms=kwargs.get("compressor_attack", 1.0),
+                release_ms=kwargs.get("compressor_release", 100),
+            )
+            board.append(compressor)
+        if kwargs.get("delay", False):
+            delay = Delay(
+                delay_seconds=kwargs.get("delay_seconds", 0.5),
+                feedback=kwargs.get("delay_feedback", 0.0),
+                mix=kwargs.get("delay_mix", 0.5),
+            )
+            board.append(delay)
+
+        return board
 
     def realloc(
         self,
@@ -230,8 +312,16 @@ class Realtime:
             proposed_pitch_threshold,
         )
 
-        if self.reduced_noise is not None: audio_model = self.reduced_noise(audio_model.unsqueeze(0)).squeeze(0)
         audio_out: torch.Tensor = self.resample_out(audio_model * torch.sqrt(vol_t))
+
+        if self.reduced_noise is not None:
+            audio_out = self.reduced_noise(audio_out.unsqueeze(0)).squeeze(0)
+        if self.board is not None:
+            audio_out = torch.as_tensor(
+                self.board(audio_out.cpu().numpy(), AUDIO_SAMPLE_RATE),
+                device=self.device
+            )
+
         return audio_out, vol
 
     def __del__(self):
@@ -256,6 +346,8 @@ class VoiceChanger:
         sid: int = 0,
         clean_audio: bool = False,
         clean_strength: float = 0.5,
+        post_process: bool = False,
+        **kwargs
         # device: str = "cuda",
     ):
         self.block_frame = read_chunk_size * 128
@@ -276,6 +368,8 @@ class VoiceChanger:
             sid,
             clean_audio,
             clean_strength,
+            post_process,
+            **kwargs
             # device
         )
         self.device = self.vc_model.device

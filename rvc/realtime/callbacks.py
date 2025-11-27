@@ -40,6 +40,8 @@ class AudioCallbacks:
         sid: int = 0,
         clean_audio: bool = False,
         clean_strength: float = 0.5,
+        post_process: bool = False,
+        **kwargs
         # device: str = "cuda",
     ):
         self.pass_through = pass_through
@@ -60,6 +62,8 @@ class AudioCallbacks:
             sid,
             clean_audio,
             clean_strength,
+            post_process,
+            **kwargs
             # device,
         )
         self.audio = Audio(

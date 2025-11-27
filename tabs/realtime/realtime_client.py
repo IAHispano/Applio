@@ -483,6 +483,307 @@ def realtime_tab():
                         value=0.5,
                         interactive=True,
                     )
+                    post_process = gr.Checkbox(
+                        label=i18n("Post-Process"),
+                        info=i18n("Post-process the audio to apply effects to the output."),
+                        value=False,
+                        interactive=True,
+                    )
+                    reverb = gr.Checkbox(
+                        label=i18n("Reverb"),
+                        info=i18n("Apply reverb to the audio."),
+                        value=False,
+                        interactive=True,
+                        visible=False,
+                    )
+                    reverb_room_size = gr.Slider(
+                        minimum=0,
+                        maximum=1,
+                        label=i18n("Reverb Room Size"),
+                        info=i18n("Set the room size of the reverb."),
+                        value=0.5,
+                        interactive=True,
+                        visible=False,
+                    )
+                    reverb_damping = gr.Slider(
+                        minimum=0,
+                        maximum=1,
+                        label=i18n("Reverb Damping"),
+                        info=i18n("Set the damping of the reverb."),
+                        value=0.5,
+                        interactive=True,
+                        visible=False,
+                    )
+                    reverb_wet_gain = gr.Slider(
+                        minimum=0,
+                        maximum=1,
+                        label=i18n("Reverb Wet Gain"),
+                        info=i18n("Set the wet gain of the reverb."),
+                        value=0.33,
+                        interactive=True,
+                        visible=False,
+                    )
+                    reverb_dry_gain = gr.Slider(
+                        minimum=0,
+                        maximum=1,
+                        label=i18n("Reverb Dry Gain"),
+                        info=i18n("Set the dry gain of the reverb."),
+                        value=0.4,
+                        interactive=True,
+                        visible=False,
+                    )
+                    reverb_width = gr.Slider(
+                        minimum=0,
+                        maximum=1,
+                        label=i18n("Reverb Width"),
+                        info=i18n("Set the width of the reverb."),
+                        value=1.0,
+                        interactive=True,
+                        visible=False,
+                    )
+                    reverb_freeze_mode = gr.Slider(
+                        minimum=0,
+                        maximum=1,
+                        label=i18n("Reverb Freeze Mode"),
+                        info=i18n("Set the freeze mode of the reverb."),
+                        value=0.0,
+                        interactive=True,
+                        visible=False,
+                    )
+                    pitch_shift = gr.Checkbox(
+                        label=i18n("Pitch Shift"),
+                        info=i18n("Apply pitch shift to the audio."),
+                        value=False,
+                        interactive=True,
+                        visible=False,
+                    )
+                    pitch_shift_semitones = gr.Slider(
+                        minimum=-12,
+                        maximum=12,
+                        label=i18n("Pitch Shift Semitones"),
+                        info=i18n("Set the pitch shift semitones."),
+                        value=0,
+                        interactive=True,
+                        visible=False,
+                    )
+                    limiter = gr.Checkbox(
+                        label=i18n("Limiter"),
+                        info=i18n("Apply limiter to the audio."),
+                        value=False,
+                        interactive=True,
+                        visible=False,
+                    )
+                    limiter_threshold = gr.Slider(
+                        minimum=-60,
+                        maximum=0,
+                        label=i18n("Limiter Threshold dB"),
+                        info=i18n("Set the limiter threshold dB."),
+                        value=-6,
+                        interactive=True,
+                        visible=False,
+                    )
+                    limiter_release_time = gr.Slider(
+                        minimum=0.01,
+                        maximum=1,
+                        label=i18n("Limiter Release Time"),
+                        info=i18n("Set the limiter release time."),
+                        value=0.05,
+                        interactive=True,
+                        visible=False,
+                    )
+                    gain = gr.Checkbox(
+                        label=i18n("Gain"),
+                        info=i18n("Apply gain to the audio."),
+                        value=False,
+                        interactive=True,
+                        visible=False,
+                    )
+                    gain_db = gr.Slider(
+                        minimum=-60,
+                        maximum=60,
+                        label=i18n("Gain dB"),
+                        info=i18n("Set the gain dB."),
+                        value=0,
+                        interactive=True,
+                        visible=False,
+                    )
+                    distortion = gr.Checkbox(
+                        label=i18n("Distortion"),
+                        info=i18n("Apply distortion to the audio."),
+                        value=False,
+                        interactive=True,
+                        visible=False,
+                    )
+                    distortion_gain = gr.Slider(
+                        minimum=-60,
+                        maximum=60,
+                        label=i18n("Distortion Gain"),
+                        info=i18n("Set the distortion gain."),
+                        value=25,
+                        interactive=True,
+                        visible=False,
+                    )
+                    chorus = gr.Checkbox(
+                        label=i18n("Chorus"),
+                        info=i18n("Apply chorus to the audio."),
+                        value=False,
+                        interactive=True,
+                        visible=False,
+                    )
+                    chorus_rate = gr.Slider(
+                        minimum=0,
+                        maximum=100,
+                        label=i18n("Chorus Rate Hz"),
+                        info=i18n("Set the chorus rate Hz."),
+                        value=1.0,
+                        interactive=True,
+                        visible=False,
+                    )
+                    chorus_depth = gr.Slider(
+                        minimum=0,
+                        maximum=1,
+                        label=i18n("Chorus Depth"),
+                        info=i18n("Set the chorus depth."),
+                        value=0.25,
+                        interactive=True,
+                        visible=False,
+                    )
+                    chorus_center_delay = gr.Slider(
+                        minimum=7,
+                        maximum=8,
+                        label=i18n("Chorus Center Delay ms"),
+                        info=i18n("Set the chorus center delay ms."),
+                        value=7,
+                        interactive=True,
+                        visible=False,
+                    )
+                    chorus_feedback = gr.Slider(
+                        minimum=0,
+                        maximum=1,
+                        label=i18n("Chorus Feedback"),
+                        info=i18n("Set the chorus feedback."),
+                        value=0.0,
+                        interactive=True,
+                        visible=False,
+                    )
+                    chorus_mix = gr.Slider(
+                        minimum=0,
+                        maximum=1,
+                        label=i18n("Chorus Mix"),
+                        info=i18n("Set the chorus mix."),
+                        value=0.5,
+                        interactive=True,
+                        visible=False,
+                    )
+                    bitcrush = gr.Checkbox(
+                        label=i18n("Bitcrush"),
+                        info=i18n("Apply bitcrush to the audio."),
+                        value=False,
+                        interactive=True,
+                        visible=False,
+                    )
+                    bitcrush_bit_depth = gr.Slider(
+                        minimum=1,
+                        maximum=32,
+                        label=i18n("Bitcrush Bit Depth"),
+                        info=i18n("Set the bitcrush bit depth."),
+                        value=8,
+                        interactive=True,
+                        visible=False,
+                    )
+                    clipping = gr.Checkbox(
+                        label=i18n("Clipping"),
+                        info=i18n("Apply clipping to the audio."),
+                        value=False,
+                        interactive=True,
+                        visible=False,
+                    )
+                    clipping_threshold = gr.Slider(
+                        minimum=-60,
+                        maximum=0,
+                        label=i18n("Clipping Threshold"),
+                        info=i18n("Set the clipping threshold."),
+                        value=-6,
+                        interactive=True,
+                        visible=False,
+                    )
+                    compressor = gr.Checkbox(
+                        label=i18n("Compressor"),
+                        info=i18n("Apply compressor to the audio."),
+                        value=False,
+                        interactive=True,
+                        visible=False,
+                    )
+                    compressor_threshold = gr.Slider(
+                        minimum=-60,
+                        maximum=0,
+                        label=i18n("Compressor Threshold dB"),
+                        info=i18n("Set the compressor threshold dB."),
+                        value=0,
+                        interactive=True,
+                        visible=False,
+                    )
+                    compressor_ratio = gr.Slider(
+                        minimum=1,
+                        maximum=20,
+                        label=i18n("Compressor Ratio"),
+                        info=i18n("Set the compressor ratio."),
+                        value=1,
+                        interactive=True,
+                        visible=False,
+                    )
+                    compressor_attack = gr.Slider(
+                        minimum=0.0,
+                        maximum=100,
+                        label=i18n("Compressor Attack ms"),
+                        info=i18n("Set the compressor attack ms."),
+                        value=1.0,
+                        interactive=True,
+                        visible=False,
+                    )
+                    compressor_release = gr.Slider(
+                        minimum=0.01,
+                        maximum=100,
+                        label=i18n("Compressor Release ms"),
+                        info=i18n("Set the compressor release ms."),
+                        value=100,
+                        interactive=True,
+                        visible=False,
+                    )
+                    delay = gr.Checkbox(
+                        label=i18n("Delay"),
+                        info=i18n("Apply delay to the audio."),
+                        value=False,
+                        interactive=True,
+                        visible=False,
+                    )
+                    delay_seconds = gr.Slider(
+                        minimum=0.0,
+                        maximum=5.0,
+                        label=i18n("Delay Seconds"),
+                        info=i18n("Set the delay seconds."),
+                        value=0.5,
+                        interactive=True,
+                        visible=False,
+                    )
+                    delay_feedback = gr.Slider(
+                        minimum=0.0,
+                        maximum=1.0,
+                        label=i18n("Delay Feedback"),
+                        info=i18n("Set the delay feedback."),
+                        value=0.0,
+                        interactive=True,
+                        visible=False,
+                    )
+                    delay_mix = gr.Slider(
+                        minimum=0.0,
+                        maximum=1.0,
+                        label=i18n("Delay Mix"),
+                        info=i18n("Set the delay mix."),
+                        value=0.5,
+                        interactive=True,
+                        visible=False,
+                    )
                     sid = gr.Dropdown(
                         label=i18n("Speaker ID"),
                         choices=(
@@ -700,6 +1001,116 @@ def realtime_tab():
             outputs=[embedder_model_custom],
         )
 
+        def update_visibility(checkbox, count):
+            return [gr.update(visible=checkbox) for _ in range(count)]
+
+        def post_process_visible(checkbox):
+            return update_visibility(checkbox, 10)
+        
+        def reverb_visible(checkbox):
+            return update_visibility(checkbox, 6)
+
+        def limiter_visible(checkbox):
+            return update_visibility(checkbox, 2)
+
+        def chorus_visible(checkbox):
+            return update_visibility(checkbox, 6)
+
+        def bitcrush_visible(checkbox):
+            return update_visibility(checkbox, 1)
+
+        def compress_visible(checkbox):
+            return update_visibility(checkbox, 4)
+
+        def delay_visible(checkbox):
+            return update_visibility(checkbox, 3)
+        
+        post_process.change(
+            fn=post_process_visible,
+            inputs=[post_process],
+            outputs=[
+                reverb,
+                pitch_shift,
+                limiter,
+                gain,
+                distortion,
+                chorus,
+                bitcrush,
+                clipping,
+                compressor,
+                delay,
+            ],
+        )
+
+        reverb.change(
+            fn=reverb_visible,
+            inputs=[reverb],
+            outputs=[
+                reverb_room_size,
+                reverb_damping,
+                reverb_wet_gain,
+                reverb_dry_gain,
+                reverb_width,
+                reverb_freeze_mode,
+            ],
+        )
+        pitch_shift.change(
+            fn=toggle_visible,
+            inputs=[pitch_shift],
+            outputs=[pitch_shift_semitones],
+        )
+        limiter.change(
+            fn=limiter_visible,
+            inputs=[limiter],
+            outputs=[limiter_threshold, limiter_release_time],
+        )
+        gain.change(
+            fn=toggle_visible,
+            inputs=[gain],
+            outputs=[gain_db],
+        )
+        distortion.change(
+            fn=toggle_visible,
+            inputs=[distortion],
+            outputs=[distortion_gain],
+        )
+        chorus.change(
+            fn=chorus_visible,
+            inputs=[chorus],
+            outputs=[
+                chorus_rate,
+                chorus_depth,
+                chorus_center_delay,
+                chorus_feedback,
+                chorus_mix,
+            ],
+        )
+        bitcrush.change(
+            fn=bitcrush_visible,
+            inputs=[bitcrush],
+            outputs=[bitcrush_bit_depth],
+        )
+        clipping.change(
+            fn=toggle_visible,
+            inputs=[clipping],
+            outputs=[clipping_threshold],
+        )
+        compressor.change(
+            fn=compress_visible,
+            inputs=[compressor],
+            outputs=[
+                compressor_threshold,
+                compressor_ratio,
+                compressor_attack,
+                compressor_release,
+            ],
+        )
+        delay.change(
+            fn=delay_visible,
+            inputs=[delay],
+            outputs=[delay_seconds, delay_feedback, delay_mix],
+        )
+
         start_button.click(
             fn=None,
             js="StreamAudioRealtime",
@@ -733,7 +1144,43 @@ def realtime_tab():
                 embedder_model_custom,
                 exclusive_mode,
                 clean_audio,
-                clean_strength
+                clean_strength,
+                post_process,
+                reverb,
+                pitch_shift,
+                limiter,
+                gain,
+                distortion,
+                chorus,
+                bitcrush,
+                clipping,
+                compressor,
+                delay,
+                reverb_room_size,
+                reverb_damping,
+                reverb_wet_gain,
+                reverb_dry_gain,
+                reverb_width,
+                reverb_freeze_mode,
+                pitch_shift_semitones,
+                limiter_threshold,
+                limiter_release_time,
+                gain_db,
+                distortion_gain,
+                chorus_rate,
+                chorus_depth,
+                chorus_center_delay,
+                chorus_feedback,
+                chorus_mix,
+                bitcrush_bit_depth,
+                clipping_threshold,
+                compressor_threshold,
+                compressor_ratio,
+                compressor_attack,
+                compressor_release,
+                delay_seconds,
+                delay_feedback,
+                delay_mix,
             ],
             outputs=[json_button_hidden],
         )
