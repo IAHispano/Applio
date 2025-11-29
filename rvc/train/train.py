@@ -68,6 +68,7 @@ g_lr_coeff = 1.0
 d_step_per_g_step = 1
 multiscale_mel_loss = False
 bf16_adamw = False
+disc_version = "v2"
 
 current_dir = os.getcwd()
 
@@ -424,7 +425,7 @@ def run(
     )
 
     net_d = MultiPeriodDiscriminator(
-        config.model.use_spectral_norm, checkpointing=checkpointing
+        config.model.use_spectral_norm, checkpointing=checkpointing, version=disc_version,
     )
 
     if torch.cuda.is_available():
