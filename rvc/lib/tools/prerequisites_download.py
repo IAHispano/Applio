@@ -16,7 +16,16 @@ pretraineds_hifigan_list = [
             "f0G40k.pth",
             "f0G48k.pth",
         ],
-    )
+    ),
+]
+pretraineds_refinegan_list = [
+    (
+        "refinegan/",
+        [
+            "f0D32k.pth",
+            "f0G32k.pth",
+        ],
+    ),
 ]
 models_list = [("predictors/", ["rmvpe.pt", "fcpe.pt"])]
 embedders_list = [("embedders/contentvec/", ["pytorch_model.bin", "config.json"])]
@@ -26,6 +35,7 @@ executables_list = [
 
 folder_mapping_list = {
     "pretrained_v2/": "rvc/models/pretraineds/hifi-gan/",
+    "refinegan/": "rvc/models/pretraineds/refinegan/",
     "embedders/contentvec/": "rvc/models/embedders/contentvec/",
     "predictors/": "rvc/models/predictors/",
     "formant/": "rvc/models/formant/",
@@ -118,6 +128,7 @@ def calculate_total_size(
     if exe and os.name == "nt":
         total_size += get_file_size_if_missing(executables_list)
     total_size += get_file_size_if_missing(pretraineds_hifigan)
+    total_size += get_file_size_if_missing(pretraineds_refinegan_list)
     return total_size
 
 
@@ -149,5 +160,6 @@ def prequisites_download_pipeline(
                     print("No executables needed")
             if pretraineds_hifigan:
                 download_mapping_files(pretraineds_hifigan_list, global_bar)
+                download_mapping_files(pretraineds_refinegan_list, global_bar)
     else:
         pass

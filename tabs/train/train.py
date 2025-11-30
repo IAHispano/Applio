@@ -328,7 +328,7 @@ def train_tab():
                     choices=["RVC", "Applio"],
                     value="RVC",
                     interactive=True,
-                    visible=False,  # to be visible once pretraineds are ready
+                    visible=False,
                 )
             with gr.Column():
                 sampling_rate = gr.Radio(
@@ -343,10 +343,10 @@ def train_tab():
                     info=i18n(
                         "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only."
                     ),
-                    choices=["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"],
+                    choices=["HiFi-GAN", "RefineGAN"], #"MRF HiFi-GAN", ],
                     value="HiFi-GAN",
-                    interactive=False,
-                    visible=False,  # to be visible once pretraineds are ready
+                    interactive=True,
+                    visible=True,
                 )
         with gr.Accordion(
             i18n("Advanced Settings"),
@@ -451,7 +451,7 @@ def train_tab():
                     info=i18n(
                         "It's recommended to deactivate this option if your dataset has already been processed."
                     ),
-                    value=True,
+                    value=False,
                     interactive=True,
                     visible=True,
                 )
@@ -462,7 +462,7 @@ def train_tab():
                         "Audio normalization: Select 'none' if the files are already normalized, 'pre' to normalize the entire input file at once, or 'post' to normalize each slice individually."
                     ),
                     choices=["none", "pre", "post"],
-                    value="none",
+                    value="post",
                     interactive=True,
                     visible=True,
                 )
