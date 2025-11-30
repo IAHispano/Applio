@@ -429,7 +429,9 @@ def run(
     )
 
     net_d = MultiPeriodDiscriminator(
-        config.model.use_spectral_norm, checkpointing=checkpointing, version=disc_version,
+        config.model.use_spectral_norm,
+        checkpointing=checkpointing,
+        version=disc_version,
     )
 
     if torch.cuda.is_available():

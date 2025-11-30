@@ -343,7 +343,7 @@ def train_tab():
                     info=i18n(
                         "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only."
                     ),
-                    choices=["HiFi-GAN", "RefineGAN"], #"MRF HiFi-GAN", ],
+                    choices=["HiFi-GAN", "RefineGAN"],  # "MRF HiFi-GAN", ],
                     value="HiFi-GAN",
                     interactive=True,
                     visible=True,
