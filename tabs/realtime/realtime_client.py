@@ -846,6 +846,7 @@ def realtime_tab():
                         choices=[
                             "contentvec",
                             "spin",
+                            "spin-v2",
                             "chinese-hubert-base",
                             "japanese-hubert-base",
                             "korean-hubert-base",
