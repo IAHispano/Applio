@@ -1,3 +1,8 @@
+# Plataform config
+from rvc.lib.platform import platform_config
+
+platform_config()
+
 import gradio as gr
 import sys
 import os
