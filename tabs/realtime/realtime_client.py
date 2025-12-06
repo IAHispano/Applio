@@ -297,7 +297,7 @@ def realtime_tab():
         with gr.Row():
             start_button = gr.Button(i18n("Start"), variant="primary")
             stop_button = gr.Button(i18n("Stop"), interactive=False)
-        gr.Label(label=i18n("Status"), value="Realtime not started.", elem_id="realtime-status-info")
+        gr.Label(label=i18n("Status"), value=i18n("Realtime not started."), elem_id="realtime-status-info")
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
             info=i18n(
@@ -354,7 +354,7 @@ def realtime_tab():
                                 ),
                                 interactive=True,
                             )
-                with gr.Accordion("Monitor Device (Optional)", open=False):
+                with gr.Accordion(i18n("Monitor Device (Optional)"), open=False):
                     with gr.Column():
                         use_monitor_device = gr.Checkbox(
                             label=i18n("Use Monitor Device"),
