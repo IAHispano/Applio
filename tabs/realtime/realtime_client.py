@@ -268,9 +268,9 @@ default_weight = names[0] if names else None
 def update_dropdowns_from_json(data):
     if not data:
         return [
-            gr.update(choices=[], value=None), 
-            gr.update(choices=[], value=None), 
-            gr.update(choices=[], value=None)
+            gr.update(choices=[], value=None),
+            gr.update(choices=[], value=None),
+            gr.update(choices=[], value=None),
         ]
 
     inputs = list(data.get("inputs", {}).keys())
@@ -286,18 +286,23 @@ def update_dropdowns_from_json(data):
 def update_button_from_json(data):
     if not data:
         return [gr.update(interactive=True), gr.update(interactive=False)]
-    
+
     return [
         gr.update(interactive=data.get("start_button", True)),
-        gr.update(interactive=data.get("stop_button", False))
+        gr.update(interactive=data.get("stop_button", False)),
     ]
+
 
 def realtime_tab():
     with gr.Blocks() as ui:
         with gr.Row():
             start_button = gr.Button(i18n("Start"), variant="primary")
             stop_button = gr.Button(i18n("Stop"), interactive=False)
-        gr.Label(label=i18n("Status"), value=i18n("Realtime not started."), elem_id="realtime-status-info")
+        gr.Label(
+            label=i18n("Status"),
+            value=i18n("Realtime not started."),
+            elem_id="realtime-status-info",
+        )
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
             info=i18n(
@@ -485,7 +490,9 @@ def realtime_tab():
                     )
                     post_process = gr.Checkbox(
                         label=i18n("Post-Process"),
-                        info=i18n("Post-process the audio to apply effects to the output."),
+                        info=i18n(
+                            "Post-process the audio to apply effects to the output."
+                        ),
                         value=False,
                         interactive=True,
                     )
@@ -943,9 +950,9 @@ def realtime_tab():
             # Get updated index choices
             new_index_choices = get_files("index")
             # Use the matched index as fallback, but handle empty strings
-            return gr.update(
-                choices=new_index_choices, value=new_index
-            ), gr.update(choices=new_sids, value=0 if new_sids else None)
+            return gr.update(choices=new_index_choices, value=new_index), gr.update(
+                choices=new_sids, value=0 if new_sids else None
+            )
 
         def toggle_visible(checkbox):
             return {"visible": checkbox, "__type__": "update"}
@@ -964,7 +971,7 @@ def realtime_tab():
         json_audio_hidden.change(
             fn=update_dropdowns_from_json,
             inputs=[json_audio_hidden],
-            outputs=[input_audio_device, output_audio_device, monitor_output_device]
+            outputs=[input_audio_device, output_audio_device, monitor_output_device],
         )
 
         autotune.change(
@@ -1007,7 +1014,7 @@ def realtime_tab():
 
         def post_process_visible(checkbox):
             return update_visibility(checkbox, 10)
-        
+
         def reverb_visible(checkbox):
             return update_visibility(checkbox, 6)
 
@@ -1025,7 +1032,7 @@ def realtime_tab():
 
         def delay_visible(checkbox):
             return update_visibility(checkbox, 3)
-        
+
         post_process.change(
             fn=post_process_visible,
             inputs=[post_process],
@@ -1186,14 +1193,12 @@ def realtime_tab():
             outputs=[json_button_hidden],
         )
 
-        stop_button.click(
-            fn=None, js="StopAudioStream", outputs=[json_button_hidden]
-        )
+        stop_button.click(fn=None, js="StopAudioStream", outputs=[json_button_hidden])
 
         json_button_hidden.change(
             fn=update_button_from_json,
             inputs=[json_button_hidden],
-            outputs=[start_button, stop_button]
+            outputs=[start_button, stop_button],
         )
 
         unload_button.click(

@@ -644,7 +644,9 @@ def realtime_tab():
         with gr.Row():
             start_button = gr.Button(i18n("Start"), variant="primary")
             stop_button = gr.Button(i18n("Stop"), interactive=False)
-        latency_info = gr.Label(label=i18n("Status"), value=i18n("Realtime not started."))
+        latency_info = gr.Label(
+            label=i18n("Status"), value=i18n("Realtime not started.")
+        )
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
             info=i18n(
@@ -877,7 +879,9 @@ def realtime_tab():
                     )
                     post_process = gr.Checkbox(
                         label=i18n("Post-Process"),
-                        info=i18n("Post-process the audio to apply effects to the output."),
+                        info=i18n(
+                            "Post-process the audio to apply effects to the output."
+                        ),
                         value=False,
                         interactive=True,
                     )
@@ -1416,7 +1420,7 @@ def realtime_tab():
 
         def post_process_visible(checkbox):
             return update_visibility(checkbox, 10)
-        
+
         def reverb_visible(checkbox):
             return update_visibility(checkbox, 6)
 
@@ -1434,7 +1438,7 @@ def realtime_tab():
 
         def delay_visible(checkbox):
             return update_visibility(checkbox, 3)
-        
+
         post_process.change(
             fn=post_process_visible,
             inputs=[post_process],

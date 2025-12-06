@@ -19,6 +19,7 @@ from pedalboard import (
     Compressor,
     Delay,
 )
+
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
@@ -46,7 +47,7 @@ class Realtime:
         clean_audio: bool = False,
         clean_strength: float = 0.5,
         post_process: bool = False,
-        **kwargs
+        **kwargs,
         # device: str = "cuda",
     ):
         self.sample_rate = SAMPLE_RATE
@@ -70,13 +71,7 @@ class Realtime:
             if vad_enabled
             else None
         )
-        self.board = (
-            self.setup_pedalboard(
-                **kwargs
-            )
-            if post_process
-            else None
-        )
+        self.board = self.setup_pedalboard(**kwargs) if post_process else None
         # Create conversion pipelines
         self.pipeline = create_pipeline(
             model_path,
@@ -319,7 +314,7 @@ class Realtime:
         if self.board is not None:
             audio_out = torch.as_tensor(
                 self.board(audio_out.cpu().numpy(), AUDIO_SAMPLE_RATE),
-                device=self.device
+                device=self.device,
             )
 
         return audio_out, vol
@@ -347,7 +342,7 @@ class VoiceChanger:
         clean_audio: bool = False,
         clean_strength: float = 0.5,
         post_process: bool = False,
-        **kwargs
+        **kwargs,
         # device: str = "cuda",
     ):
         self.block_frame = read_chunk_size * 128
@@ -369,7 +364,7 @@ class VoiceChanger:
             clean_audio,
             clean_strength,
             post_process,
-            **kwargs
+            **kwargs,
             # device
         )
         self.device = self.vc_model.device
