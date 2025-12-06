@@ -1,19 +1,12 @@
 import gradio as gr
-import sounddevice as sd
 import os
 import sys
-import time
-import json
 import regex as re
 import shutil
 import torch
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
-
-from rvc.realtime.callbacks import AudioCallbacks
-from rvc.realtime.audio import list_audio_device
-from rvc.realtime.core import AUDIO_SAMPLE_RATE
 
 from assets.i18n.i18n import I18nAuto
 
@@ -271,380 +264,40 @@ def refresh_embedders_folders():
 names = get_files("model")
 default_weight = names[0] if names else None
 
-PASS_THROUGH = False
-interactive_true = gr.update(interactive=True)
-interactive_false = gr.update(interactive=False)
-running, callbacks, audio_manager = False, None, None
 
-CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
+def update_dropdowns_from_json(data):
+    if not data:
+        return [
+            gr.update(choices=[], value=None), 
+            gr.update(choices=[], value=None), 
+            gr.update(choices=[], value=None)
+        ]
 
+    inputs = list(data.get("inputs", {}).keys())
+    outputs = list(data.get("outputs", {}).keys())
 
-def save_realtime_settings(
-    input_device, output_device, monitor_device, model_file, index_file
-):
-    """Save realtime settings to config.json"""
-    try:
-        if os.path.exists(CONFIG_PATH):
-            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-                config = json.load(f)
-        else:
-            config = {}
-
-        if "realtime" not in config:
-            config["realtime"] = {}
-
-        # Only save non-None values, preserve existing values for None inputs
-        if input_device is not None:
-            config["realtime"]["input_device"] = input_device or ""
-        if output_device is not None:
-            config["realtime"]["output_device"] = output_device or ""
-        if monitor_device is not None:
-            config["realtime"]["monitor_device"] = monitor_device or ""
-        if model_file is not None:
-            config["realtime"]["model_file"] = model_file or ""
-        if index_file is not None:
-            config["realtime"]["index_file"] = index_file or ""
-
-        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-            json.dump(config, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        print(f"Error saving realtime settings: {e}")
+    return [
+        gr.update(choices=inputs, value=inputs[0] if len(inputs) > 0 else None),
+        gr.update(choices=outputs, value=outputs[0] if len(outputs) > 0 else None),
+        gr.update(choices=outputs, value=outputs[0] if len(outputs) > 0 else None),
+    ]
 
 
-def load_realtime_settings():
-    """Load realtime settings from config.json"""
-    try:
-        if os.path.exists(CONFIG_PATH):
-            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-                config = json.load(f)
-                realtime_config = config.get("realtime", {})
-                return {
-                    "input_device": realtime_config.get("input_device", ""),
-                    "output_device": realtime_config.get("output_device", ""),
-                    "monitor_device": realtime_config.get("monitor_device", ""),
-                    "model_file": realtime_config.get("model_file", ""),
-                    "index_file": realtime_config.get("index_file", ""),
-                }
-    except Exception as e:
-        print(f"Error loading realtime settings: {e}")
-
-    return {
-        "input_device": "",
-        "output_device": "",
-        "monitor_device": "",
-        "model_file": "",
-        "index_file": "",
-    }
-
-
-def get_safe_dropdown_value(saved_value, choices, fallback_value=None):
-    """Safely get a dropdown value, ensuring it exists in choices"""
-    if saved_value and saved_value in choices:
-        return saved_value
-    elif fallback_value and fallback_value in choices:
-        return fallback_value
-    elif choices:
-        return choices[0]
-    else:
-        return None
-
-
-def get_safe_index_value(saved_value, choices, fallback_value=None):
-    """Safely get an index file value, handling file path matching"""
-    # Handle empty string, None, or whitespace-only values
-    if not saved_value or (isinstance(saved_value, str) and not saved_value.strip()):
-        if fallback_value and fallback_value in choices:
-            return fallback_value
-        elif choices:
-            return choices[0]
-        else:
-            return None
-
-    # Check exact match first
-    if saved_value in choices:
-        return saved_value
-
-    # Check if saved value is a filename that matches any choice
-    saved_filename = os.path.basename(saved_value)
-    for choice in choices:
-        if os.path.basename(choice) == saved_filename:
-            return choice
-
-    # Fallback to default or first choice
-    if fallback_value and fallback_value in choices:
-        return fallback_value
-    elif choices:
-        return choices[0]
-    else:
-        return None
-
-
-def start_realtime(
-    input_audio_device: str,
-    input_audio_gain: int,
-    input_asio_channels: int,
-    output_audio_device: str,
-    output_audio_gain: int,
-    output_asio_channels: int,
-    monitor_output_device: str,
-    monitor_audio_gain: int,
-    monitor_asio_channels: int,
-    use_monitor_device: bool,
-    exclusive_mode: bool,
-    vad_enabled: bool,
-    chunk_size: float,
-    cross_fade_overlap_size: float,
-    extra_convert_size: float,
-    silent_threshold: int,
-    pitch: int,
-    index_rate: float,
-    volume_envelope: float,
-    protect: float,
-    f0_method: str,
-    pth_path: str,
-    index_path: str,
-    sid: int,
-    f0_autotune: bool,
-    f0_autotune_strength: float,
-    proposed_pitch: bool,
-    proposed_pitch_threshold: float,
-    embedder_model: str,
-    embedder_model_custom: str = None,
-    clean_audio: bool = False,
-    clean_strength: float = 0.5,
-    post_process: bool = False,
-    reverb: bool = False,
-    pitch_shift: bool = False,
-    limiter: bool = False,
-    gain: bool = False,
-    distortion: bool = False,
-    chorus: bool = False,
-    bitcrush: bool = False,
-    clipping: bool = False,
-    compressor: bool = False,
-    delay: bool = False,
-    reverb_room_size: float = 0.5,
-    reverb_damping: float = 0.5,
-    reverb_wet_gain: float = 0.5,
-    reverb_dry_gain: float = 0.5,
-    reverb_width: float = 0.5,
-    reverb_freeze_mode: float = 0.5,
-    pitch_shift_semitones: float = 0.0,
-    limiter_threshold: float = -6,
-    limiter_release_time: float = 0.01,
-    gain_db: float = 0.0,
-    distortion_gain: float = 25,
-    chorus_rate: float = 1.0,
-    chorus_depth: float = 0.25,
-    chorus_center_delay: float = 7,
-    chorus_feedback: float = 0.0,
-    chorus_mix: float = 0.5,
-    bitcrush_bit_depth: int = 8,
-    clipping_threshold: float = -6,
-    compressor_threshold: float = 0,
-    compressor_ratio: float = 1,
-    compressor_attack: float = 1.0,
-    compressor_release: float = 100,
-    delay_seconds: float = 0.5,
-    delay_feedback: float = 0.0,
-    delay_mix: float = 0.5,
-):
-    global running, callbacks, audio_manager
-    running = True
-
-    if not input_audio_device or not output_audio_device:
-        yield (
-            "Please select valid input/output devices!",
-            interactive_true,
-            interactive_false,
-        )
-        return
-    if use_monitor_device and not monitor_output_device:
-        yield (
-            "Please select a valid monitor device!",
-            interactive_true,
-            interactive_false,
-        )
-        return
-    if not pth_path:
-        yield (
-            "Model path not provided. Aborting conversion.",
-            interactive_true,
-            interactive_false,
-        )
-        return
-
-    yield "Starting Realtime...", interactive_false, interactive_true
-
-    read_chunk_size = int(chunk_size * AUDIO_SAMPLE_RATE / 1000 / 128)
-
-    sid = int(sid) if sid is not None else 0
-
-    input_audio_gain /= 100.0
-    output_audio_gain /= 100.0
-    monitor_audio_gain /= 100.0
-
-    try:
-        input_devices, output_devices = get_audio_devices_formatted()
-        input_device_id = input_devices[input_audio_device]
-        output_device_id = output_devices[output_audio_device]
-        output_monitor_id = (
-            output_devices[monitor_output_device] if use_monitor_device else None
-        )
-    except (ValueError, IndexError):
-        yield "Incorrectly formatted audio device. Stopping.", interactive_true, interactive_false
-        return
-
-    callbacks = AudioCallbacks(
-        pass_through=PASS_THROUGH,
-        read_chunk_size=read_chunk_size,
-        cross_fade_overlap_size=cross_fade_overlap_size,
-        extra_convert_size=extra_convert_size,
-        model_path=pth_path,
-        index_path=str(index_path),
-        f0_method=f0_method,
-        embedder_model=embedder_model,
-        embedder_model_custom=embedder_model_custom,
-        silent_threshold=silent_threshold,
-        f0_up_key=pitch,
-        index_rate=index_rate,
-        protect=protect,
-        volume_envelope=volume_envelope,
-        f0_autotune=f0_autotune,
-        f0_autotune_strength=f0_autotune_strength,
-        proposed_pitch=proposed_pitch,
-        proposed_pitch_threshold=proposed_pitch_threshold,
-        input_audio_gain=input_audio_gain,
-        output_audio_gain=output_audio_gain,
-        monitor_audio_gain=monitor_audio_gain,
-        monitor=use_monitor_device,
-        vad_enabled=vad_enabled,
-        vad_sensitivity=3,
-        vad_frame_ms=30,
-        sid=sid,
-        clean_audio=clean_audio,
-        clean_strength=clean_strength,
-        post_process=post_process,
-        **{
-            "reverb": reverb,
-            "pitch_shift": pitch_shift,
-            "limiter": limiter,
-            "gain": gain,
-            "distortion": distortion,
-            "chorus": chorus,
-            "bitcrush": bitcrush,
-            "clipping": clipping,
-            "compressor": compressor,
-            "delay": delay,
-            "reverb_room_size": reverb_room_size,
-            "reverb_damping": reverb_damping,
-            "reverb_wet_level": reverb_wet_gain,
-            "reverb_dry_level": reverb_dry_gain,
-            "reverb_width": reverb_width,
-            "reverb_freeze_mode": reverb_freeze_mode,
-            "pitch_shift_semitones": pitch_shift_semitones,
-            "limiter_threshold": limiter_threshold,
-            "limiter_release": limiter_release_time,
-            "gain_db": gain_db,
-            "distortion_gain": distortion_gain,
-            "chorus_rate": chorus_rate,
-            "chorus_depth": chorus_depth,
-            "chorus_delay": chorus_center_delay,
-            "chorus_feedback": chorus_feedback,
-            "chorus_mix": chorus_mix,
-            "bitcrush_bit_depth": bitcrush_bit_depth,
-            "clipping_threshold": clipping_threshold,
-            "compressor_threshold": compressor_threshold,
-            "compressor_ratio": compressor_ratio,
-            "compressor_attack": compressor_attack,
-            "compressor_release": compressor_release,
-            "delay_seconds": delay_seconds,
-            "delay_feedback": delay_feedback,
-            "delay_mix": delay_mix,
-        },
-    )
-
-    audio_manager = callbacks.audio
-    audio_manager.start(
-        input_device_id=input_device_id,
-        output_device_id=output_device_id,
-        output_monitor_id=output_monitor_id,
-        exclusive_mode=exclusive_mode,
-        asio_input_channel=input_asio_channels,
-        asio_output_channel=output_asio_channels,
-        asio_output_monitor_channel=monitor_asio_channels,
-        read_chunk_size=read_chunk_size,
-    )
-
-    yield "Realtime is ready!", interactive_false, interactive_true
-
-    while running and callbacks is not None and audio_manager is not None:
-        time.sleep(0.1)
-        if hasattr(audio_manager, "latency"):
-            yield f"Latency: {audio_manager.latency:.2f} ms", interactive_false, interactive_true
-
-    return gr.update(), gr.update(), gr.update()
-
-
-def stop_realtime():
-    global running, callbacks, audio_manager
-    if running and audio_manager is not None and callbacks is not None:
-        audio_manager.stop()
-        running = False
-        if hasattr(audio_manager, "latency"):
-            del audio_manager.latency
-        audio_manager = callbacks = None
-
-        return gr.update(value="Stopping..."), gr.update(), gr.update()
-    else:
-        return "Realtime pipeline not found!", interactive_true, interactive_false
-
-
-def get_audio_devices_formatted():
-    try:
-        input_devices, output_devices = list_audio_device()
-
-        def priority(name: str) -> int:
-            n = name.lower()
-            if "virtual" in n:
-                return 0
-            if "vb" in n:
-                return 1
-            return 2
-
-        output_sorted = sorted(output_devices, key=lambda d: priority(d.name))
-        input_sorted = sorted(
-            input_devices, key=lambda d: priority(d.name), reverse=True
-        )
-
-        input_device_list = {
-            f"{input_sorted.index(d)+1}: {d.name} ({d.host_api})": d.index
-            for d in input_sorted
-        }
-        output_device_list = {
-            f"{output_sorted.index(d)+1}: {d.name} ({d.host_api})": d.index
-            for d in output_sorted
-        }
-
-        return input_device_list, output_device_list
-    except Exception:
-        return [], []
-
+def update_button_from_json(data):
+    if not data:
+        return [gr.update(interactive=True), gr.update(interactive=False)]
+    
+    return [
+        gr.update(interactive=data.get("start_button", True)),
+        gr.update(interactive=data.get("stop_button", False))
+    ]
 
 def realtime_tab():
-    input_devices, output_devices = get_audio_devices_formatted()
-    input_devices, output_devices = list(input_devices.keys()), list(
-        output_devices.keys()
-    )
-
-    # Load saved settings
-    saved_settings = load_realtime_settings()
-
     with gr.Blocks() as ui:
         with gr.Row():
             start_button = gr.Button(i18n("Start"), variant="primary")
             stop_button = gr.Button(i18n("Stop"), interactive=False)
-        latency_info = gr.Label(label=i18n("Status"), value=i18n("Realtime not started."))
+        gr.Label(label=i18n("Status"), value=i18n("Realtime not started."), elem_id="realtime-status-info")
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
             info=i18n(
@@ -666,10 +319,8 @@ def realtime_tab():
                                 info=i18n(
                                     "Select the microphone or audio interface you will be speaking into."
                                 ),
-                                choices=input_devices,
-                                value=get_safe_dropdown_value(
-                                    saved_settings["input_device"], input_devices
-                                ),
+                                choices=[],
+                                value=None,
                                 interactive=True,
                             )
                             input_audio_gain = gr.Slider(
@@ -682,17 +333,6 @@ def realtime_tab():
                                 ),
                                 interactive=True,
                             )
-                            input_asio_channels = gr.Slider(
-                                minimum=-1,
-                                maximum=16,
-                                value=-1,
-                                step=1,
-                                label=i18n("Input ASIO Channel"),
-                                info=i18n(
-                                    "For ASIO drivers, selects a specific input channel. Leave at -1 for default."
-                                ),
-                                interactive=True,
-                            )
                     with gr.Accordion("Output Device", open=True):
                         with gr.Column():
                             output_audio_device = gr.Dropdown(
@@ -700,10 +340,8 @@ def realtime_tab():
                                 info=i18n(
                                     "Select the device where the final converted voice will be sent (e.g., a virtual cable)."
                                 ),
-                                choices=output_devices,
-                                value=get_safe_dropdown_value(
-                                    saved_settings["output_device"], output_devices
-                                ),
+                                choices=[],
+                                value=None,
                                 interactive=True,
                             )
                             output_audio_gain = gr.Slider(
@@ -713,17 +351,6 @@ def realtime_tab():
                                 label=i18n("Output Gain (%)"),
                                 info=i18n(
                                     "Adjusts the final volume of the converted voice after processing."
-                                ),
-                                interactive=True,
-                            )
-                            output_asio_channels = gr.Slider(
-                                minimum=-1,
-                                maximum=16,
-                                value=-1,
-                                step=1,
-                                label=i18n("Output ASIO Channel"),
-                                info=i18n(
-                                    "For ASIO drivers, selects a specific output channel. Leave at -1 for default."
                                 ),
                                 interactive=True,
                             )
@@ -739,10 +366,8 @@ def realtime_tab():
                             info=i18n(
                                 "Select the device for monitoring your voice (e.g., your headphones)."
                             ),
-                            choices=output_devices,
-                            value=get_safe_dropdown_value(
-                                saved_settings["monitor_device"], output_devices
-                            ),
+                            choices=[],
+                            value=None,
                             interactive=True,
                         )
                         monitor_audio_gain = gr.Slider(
@@ -755,22 +380,11 @@ def realtime_tab():
                             ),
                             interactive=True,
                         )
-                        monitor_asio_channels = gr.Slider(
-                            minimum=-1,
-                            maximum=16,
-                            value=-1,
-                            step=1,
-                            label=i18n("Monitor ASIO Channel"),
-                            info=i18n(
-                                "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default."
-                            ),
-                            interactive=True,
-                        )
                 with gr.Row():
                     exclusive_mode = gr.Checkbox(
-                        label=i18n("Exclusive Mode (WASAPI)"),
+                        label=i18n("Exclusive Mode"),
                         info=i18n(
-                            "For WASAPI (Windows), gives the app exclusive control for potentially lower latency."
+                            "Gives the app exclusive control for potentially lower latency."
                         ),
                         value=True,
                         interactive=True,
@@ -793,20 +407,14 @@ def realtime_tab():
                         label=i18n("Voice Model"),
                         choices=model_choices,
                         interactive=True,
-                        value=get_safe_dropdown_value(
-                            saved_settings["model_file"], model_choices, default_weight
-                        ),
+                        value=default_weight,
                         allow_custom_value=True,
                     )
                     index_choices = get_files("index")
                     index_file = gr.Dropdown(
                         label=i18n("Index File"),
                         choices=index_choices,
-                        value=get_safe_index_value(
-                            saved_settings["index_file"],
-                            index_choices,
-                            match_index(default_weight) if default_weight else None,
-                        ),
+                        value=match_index(default_weight) if default_weight else None,
                         interactive=True,
                         allow_custom_value=True,
                     )
@@ -1325,13 +933,8 @@ def realtime_tab():
                     interactive=True,
                 )
 
-        def enforce_terms(terms_accepted, *args):
-            if not terms_accepted:
-                message = "You must agree to the Terms of Use to proceed."
-                gr.Info(message)
-                yield message, interactive_true, interactive_false
-                return
-            yield from start_realtime(*args)
+        json_audio_hidden = gr.JSON(visible=False)
+        json_button_hidden = gr.JSON(visible=False)
 
         def update_on_model_change(model_path):
             new_index = match_index(model_path)
@@ -1340,28 +943,9 @@ def realtime_tab():
             # Get updated index choices
             new_index_choices = get_files("index")
             # Use the matched index as fallback, but handle empty strings
-            fallback_index = new_index if new_index and new_index.strip() else None
-            safe_index_value = get_safe_index_value(
-                "", new_index_choices, fallback_index
-            )
-
             return gr.update(
-                choices=new_index_choices, value=safe_index_value
+                choices=new_index_choices, value=new_index
             ), gr.update(choices=new_sids, value=0 if new_sids else None)
-
-        def refresh_devices():
-            sd._terminate()
-            sd._initialize()
-
-            input_choices, output_choices = get_audio_devices_formatted()
-            input_choices, output_choices = list(input_choices.keys()), list(
-                output_choices.keys()
-            )
-            return (
-                gr.update(choices=input_choices),
-                gr.update(choices=output_choices),
-                gr.update(choices=output_choices),
-            )
 
         def toggle_visible(checkbox):
             return {"visible": checkbox, "__type__": "update"}
@@ -1372,8 +956,15 @@ def realtime_tab():
             return {"visible": False, "__type__": "update"}
 
         refresh_devices_button.click(
-            fn=refresh_devices,
-            outputs=[input_audio_device, output_audio_device, monitor_output_device],
+            fn=None,
+            js="getAudioDevices",
+            outputs=[json_audio_hidden],
+        )
+
+        json_audio_hidden.change(
+            fn=update_dropdowns_from_json,
+            inputs=[json_audio_hidden],
+            outputs=[input_audio_device, output_audio_device, monitor_output_device]
         )
 
         autotune.change(
@@ -1522,20 +1113,17 @@ def realtime_tab():
         )
 
         start_button.click(
-            fn=enforce_terms,
+            fn=None,
+            js="StreamAudioRealtime",
             inputs=[
                 terms_checkbox,
                 input_audio_device,
                 input_audio_gain,
-                input_asio_channels,
                 output_audio_device,
                 output_audio_gain,
-                output_asio_channels,
                 monitor_output_device,
                 monitor_audio_gain,
-                monitor_asio_channels,
                 use_monitor_device,
-                exclusive_mode,
                 vad_enabled,
                 chunk_size,
                 cross_fade_overlap_size,
@@ -1555,6 +1143,7 @@ def realtime_tab():
                 proposed_pitch_threshold,
                 embedder_model,
                 embedder_model_custom,
+                exclusive_mode,
                 clean_audio,
                 clean_strength,
                 post_process,
@@ -1594,20 +1183,19 @@ def realtime_tab():
                 delay_feedback,
                 delay_mix,
             ],
-            outputs=[latency_info, start_button, stop_button],
+            outputs=[json_button_hidden],
         )
 
         stop_button.click(
-            fn=stop_realtime, outputs=[latency_info, start_button, stop_button]
-        ).then(
-            fn=lambda: (
-                yield gr.update(value="Stopped"),
-                interactive_true,
-                interactive_false,
-            ),
-            inputs=None,
-            outputs=[latency_info, start_button, stop_button],
+            fn=None, js="StopAudioStream", outputs=[json_button_hidden]
         )
+
+        json_button_hidden.change(
+            fn=update_button_from_json,
+            inputs=[json_button_hidden],
+            outputs=[start_button, stop_button]
+        )
+
         unload_button.click(
             fn=lambda: (
                 {"value": "", "__type__": "update"},
@@ -1620,67 +1208,18 @@ def realtime_tab():
             fn=update_on_model_change, inputs=[model_file], outputs=[index_file, sid]
         )
 
-        # Save settings when devices or model change
-        def save_input_device(input_device):
-            if input_device:
-                save_realtime_settings(input_device, None, None, None, None)
-
-        def save_output_device(output_device):
-            if output_device:
-                save_realtime_settings(None, output_device, None, None, None)
-
-        def save_monitor_device(monitor_device):
-            if monitor_device:
-                save_realtime_settings(None, None, monitor_device, None, None)
-
-        def save_model_file(model_file):
-            if model_file:
-                save_realtime_settings(None, None, None, model_file, None)
-
-        def save_index_file(index_file):
-            # Only save if index_file is not None and not empty
-            if index_file:
-                save_realtime_settings(None, None, None, None, index_file)
-
-        # Add event handlers to save settings
-        input_audio_device.change(
-            fn=save_input_device, inputs=[input_audio_device], outputs=[]
-        )
-
-        output_audio_device.change(
-            fn=save_output_device, inputs=[output_audio_device], outputs=[]
-        )
-
-        monitor_output_device.change(
-            fn=save_monitor_device, inputs=[monitor_output_device], outputs=[]
-        )
-
         def refresh_all():
             new_names = get_files("model")
             new_indexes = get_files("index")
-            input_choices, output_choices = get_audio_devices_formatted()
-            input_choices, output_choices = list(input_choices.keys()), list(
-                output_choices.keys()
-            )
             return (
                 gr.update(choices=sorted(new_names, key=extract_model_and_epoch)),
                 gr.update(choices=new_indexes),
-                gr.update(choices=input_choices),
-                gr.update(choices=output_choices),
-                gr.update(choices=output_choices),
             )
-
-        model_file.change(fn=save_model_file, inputs=[model_file], outputs=[])
-
-        index_file.change(fn=save_index_file, inputs=[index_file], outputs=[])
 
         refresh_button.click(
             fn=refresh_all,
             outputs=[
                 model_file,
                 index_file,
-                input_audio_device,
-                output_audio_device,
-                monitor_output_device,
             ],
         )

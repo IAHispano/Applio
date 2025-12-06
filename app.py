@@ -6,6 +6,7 @@ platform_config()
 import gradio as gr
 import sys
 import os
+import pathlib
 import logging
 
 from typing import Any
@@ -35,7 +36,6 @@ from tabs.tts.tts import tts_tab
 from tabs.voice_blender.voice_blender import voice_blender_tab
 from tabs.plugins.plugins import plugins_tab
 from tabs.settings.settings import settings_tab
-from tabs.realtime.realtime import realtime_tab
 
 # Run prerequisites
 from core import run_prerequisites_script
@@ -68,10 +68,11 @@ installation_checker.check_installation()
 import assets.themes.loadThemes as loadThemes
 
 my_applio = loadThemes.load_theme() or "ParityError/Interstellar"
+client_mode = "--client" in sys.argv
 
 # Define Gradio interface
 with gr.Blocks(
-    theme=my_applio, title="Applio", css="footer{display:none !important}"
+    theme=my_applio, title="Applio", css="footer{display:none !important}", js=pathlib.Path(os.path.join(now_dir, "tabs", "realtime", "main.js")).read_text() if client_mode else None
 ) as Applio:
     gr.Markdown("# Applio")
     gr.Markdown(
@@ -97,6 +98,11 @@ with gr.Blocks(
         voice_blender_tab()
 
     with gr.Tab(i18n("Realtime")):
+        if client_mode:
+            from tabs.realtime.realtime_client import realtime_tab
+        else:
+            from tabs.realtime.realtime import realtime_tab
+
         realtime_tab()
 
     with gr.Tab(i18n("Plugins")):
@@ -124,14 +130,22 @@ with gr.Blocks(
 
 
 def launch_gradio(server_name: str, server_port: int) -> None:
-    Applio.launch(
+    app, _, _ = Applio.launch(
         favicon_path="assets/ICON.ico",
         share="--share" in sys.argv,
         inbrowser="--open" in sys.argv,
         server_name=server_name,
         server_port=server_port,
+        prevent_thread_lock=client_mode
     )
 
+    if client_mode:
+        import time
+        from rvc.realtime.client import app as fastapi_app 
+        app.mount("/api", fastapi_app)
+
+        while True:
+            time.sleep(5)
 
 def get_value_from_args(key: str, default: Any = None) -> Any:
     if key in sys.argv:

@@ -699,7 +699,7 @@ def inference_tab():
                         interactive=True,
                     )
                     formant_refresh_button = gr.Button(
-                        value="Refresh",
+                        value=i18n("Refresh"),
                         visible=False,
                     )
                 formant_qfrency = gr.Slider(
@@ -1331,7 +1331,7 @@ def inference_tab():
                         interactive=True,
                     )
                     formant_refresh_button_batch = gr.Button(
-                        value="Refresh",
+                        value=i18n("Refresh"),
                         visible=False,
                     )
                 formant_qfrency_batch = gr.Slider(
