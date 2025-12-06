@@ -12,6 +12,7 @@ from .core import VoiceChanger
 app = FastAPI()
 vc_instance = None
 
+
 @app.websocket("/ws-audio")
 async def websocket_audio(ws: WebSocket):
     global vc_instance
@@ -30,17 +31,17 @@ async def websocket_audio(ws: WebSocket):
 
         if vc_instance is None:
             vc_instance = VoiceChanger(
-                read_chunk_size=read_chunk_size, 
-                cross_fade_overlap_size=params["cross_fade_overlap_size"], 
+                read_chunk_size=read_chunk_size,
+                cross_fade_overlap_size=params["cross_fade_overlap_size"],
                 extra_convert_size=params["extra_convert_size"],
-                model_path=params["model_file"], 
-                index_path=str(params["index_file"]), 
-                f0_method=params["f0_method"], 
+                model_path=params["model_file"],
+                index_path=str(params["index_file"]),
+                f0_method=params["f0_method"],
                 embedder_model=params["embedder_model"],
                 embedder_model_custom=params["embedder_model_custom"],
-                silent_threshold=params["silent_threshold"], 
-                vad_enabled=params["vad_enabled"], 
-                vad_sensitivity=3, 
+                silent_threshold=params["silent_threshold"],
+                vad_enabled=params["vad_enabled"],
+                vad_sensitivity=3,
                 vad_frame_ms=30,
                 sid=params["sid"],
                 clean_audio=params["clean_audio"],
@@ -48,7 +49,7 @@ async def websocket_audio(ws: WebSocket):
                 post_process=params["post_process"],
                 **params["kwargs"]
             )
-        
+
         print("Realtime is ready!")
 
         while True:
@@ -56,18 +57,22 @@ async def websocket_audio(ws: WebSocket):
             arr = np.frombuffer(audio, dtype=np.float32)
 
             if arr.size != block_frame:
-                arr = np.pad(arr, (0, block_frame - arr.size)).astype(np.float32) if arr.size < block_frame else arr[:block_frame].astype(np.float32)
+                arr = (
+                    np.pad(arr, (0, block_frame - arr.size)).astype(np.float32)
+                    if arr.size < block_frame
+                    else arr[:block_frame].astype(np.float32)
+                )
 
             audio_output, _, perf = vc_instance.on_request(
-                arr * (params["input_audio_gain"] / 100.0), 
-                f0_up_key=params["pitch"], 
-                index_rate=params["index_rate"], 
-                protect=params["protect"], 
-                volume_envelope=params["volume_envelope"], 
-                f0_autotune=params["autotune"], 
-                f0_autotune_strength=params["autotune_strength"], 
-                proposed_pitch=params["proposed_pitch"], 
-                proposed_pitch_threshold=params["proposed_pitch_threshold"]
+                arr * (params["input_audio_gain"] / 100.0),
+                f0_up_key=params["pitch"],
+                index_rate=params["index_rate"],
+                protect=params["protect"],
+                volume_envelope=params["volume_envelope"],
+                f0_autotune=params["autotune"],
+                f0_autotune_strength=params["autotune_strength"],
+                proposed_pitch=params["proposed_pitch"],
+                proposed_pitch_threshold=params["proposed_pitch_threshold"],
             )
 
             await ws.send_text(json.dumps({"type": "latency", "value": perf[1]}))
