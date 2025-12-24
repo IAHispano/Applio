@@ -10,6 +10,7 @@ WORKDIR /app
 # Install system dependencies, clean up cache to keep image size small
 RUN apt update && \
     apt install -y -qq ffmpeg && \
+    apt install -y -qq libportaudio2 && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
 # Copy application files into the container

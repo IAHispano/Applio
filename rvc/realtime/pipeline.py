@@ -228,6 +228,8 @@ class Realtime_Pipeline:
         f0_autotune_strength: float = 1,
         proposed_pitch: bool = False,
         proposed_pitch_threshold: float = 155.0,
+        reduced_noise = None,
+        board = None,
     ):
         """
         Performs realtime voice conversion on a given audio segment.
@@ -319,6 +321,14 @@ class Realtime_Pipeline:
                     ).to(self.device)
                 out_audio = self.resamplers[scaled_window](
                     out_audio[: return_length * scaled_window]
+                )
+
+            if reduced_noise is not None:
+                out_audio = reduced_noise(out_audio.unsqueeze(0)).squeeze(0)
+            if board is not None:
+                out_audio = torch.as_tensor(
+                    board(out_audio.cpu().numpy(), self.tgt_sr),
+                    device=self.device,
                 )
 
         return out_audio

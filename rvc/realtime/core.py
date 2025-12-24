@@ -86,7 +86,7 @@ class Realtime:
         # noise reduce
         self.reduced_noise = (
             TorchGate(
-                AUDIO_SAMPLE_RATE,
+                self.pipeline.tgt_sr,
                 prop_decrease=clean_strength,
             ).to(self.device)
             if clean_audio
@@ -244,7 +244,7 @@ class Realtime:
                 # Busy wait to keep power manager happy and clocks stable. Running pipeline on-demand seems to lag when the delay between
                 # voice changer activation is too high.
                 # https://forums.developer.nvidia.com/t/why-kernel-calculate-speed-got-slower-after-waiting-for-a-while/221059/9
-                self.pipeline.voice_conversion(
+                audio_model = self.pipeline.voice_conversion(
                     self.convert_buffer,
                     self.pitch_buffer,
                     self.pitchf_buffer,
@@ -260,14 +260,14 @@ class Realtime:
                     f0_autotune_strength,
                     proposed_pitch,
                     proposed_pitch_threshold,
+                    self.reduced_noise,
+                    self.board,
                 )
-                return None, vol
+
+                return torch.zeros(audio_model.shape, dtype=self.dtype, device=self.device), vol
 
         if vol < self.input_sensitivity:
-            # Busy wait to keep power manager happy and clocks stable. Running pipeline on-demand seems to lag when the delay between
-            # voice changer activation is too high.
-            # https://forums.developer.nvidia.com/t/why-kernel-calculate-speed-got-slower-after-waiting-for-a-while/221059/9
-            self.pipeline.voice_conversion(
+            audio_model = self.pipeline.voice_conversion(
                 self.convert_buffer,
                 self.pitch_buffer,
                 self.pitchf_buffer,
@@ -283,9 +283,11 @@ class Realtime:
                 f0_autotune_strength,
                 proposed_pitch,
                 proposed_pitch_threshold,
+                self.reduced_noise,
+                self.board,
             )
 
-            return None, vol
+            return torch.zeros(audio_model.shape, dtype=self.dtype, device=self.device), vol
 
         circular_write(audio_input_16k, self.convert_buffer)
 
@@ -305,18 +307,11 @@ class Realtime:
             f0_autotune_strength,
             proposed_pitch,
             proposed_pitch_threshold,
+            self.reduced_noise,
+            self.board,
         )
 
         audio_out: torch.Tensor = self.resample_out(audio_model * torch.sqrt(vol_t))
-
-        if self.reduced_noise is not None:
-            audio_out = self.reduced_noise(audio_out.unsqueeze(0)).squeeze(0)
-        if self.board is not None:
-            audio_out = torch.as_tensor(
-                self.board(audio_out.cpu().numpy(), AUDIO_SAMPLE_RATE),
-                device=self.device,
-            )
-
         return audio_out, vol
 
     def __del__(self):
@@ -424,9 +419,9 @@ class VoiceChanger:
             proposed_pitch_threshold,
         )
 
-        if audio is None:
+        # if audio is None:
             # In case there's an actual silence - send full block with zeros
-            return np.zeros(block_size, dtype=np.float32), vol
+            # return np.zeros(block_size, dtype=np.float32), vol
 
         conv_input = audio[None, None, : self.crossfade_frame + self.sola_search_frame]
         cor_nom = F.conv1d(conv_input, self.sola_buffer[None, None, :])
