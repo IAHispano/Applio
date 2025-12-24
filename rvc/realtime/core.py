@@ -264,7 +264,12 @@ class Realtime:
                     self.board,
                 )
 
-                return torch.zeros(audio_model.shape, dtype=self.dtype, device=self.device), vol
+                return (
+                    torch.zeros(
+                        audio_model.shape, dtype=self.dtype, device=self.device
+                    ),
+                    vol,
+                )
 
         if vol < self.input_sensitivity:
             audio_model = self.pipeline.voice_conversion(
@@ -287,7 +292,10 @@ class Realtime:
                 self.board,
             )
 
-            return torch.zeros(audio_model.shape, dtype=self.dtype, device=self.device), vol
+            return (
+                torch.zeros(audio_model.shape, dtype=self.dtype, device=self.device),
+                vol,
+            )
 
         circular_write(audio_input_16k, self.convert_buffer)
 
@@ -420,8 +428,8 @@ class VoiceChanger:
         )
 
         # if audio is None:
-            # In case there's an actual silence - send full block with zeros
-            # return np.zeros(block_size, dtype=np.float32), vol
+        # In case there's an actual silence - send full block with zeros
+        # return np.zeros(block_size, dtype=np.float32), vol
 
         conv_input = audio[None, None, : self.crossfade_frame + self.sola_search_frame]
         cor_nom = F.conv1d(conv_input, self.sola_buffer[None, None, :])
