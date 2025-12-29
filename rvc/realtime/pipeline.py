@@ -228,8 +228,8 @@ class Realtime_Pipeline:
         f0_autotune_strength: float = 1,
         proposed_pitch: bool = False,
         proposed_pitch_threshold: float = 155.0,
-        reduced_noise = None,
-        board = None,
+        reduced_noise=None,
+        board=None,
     ):
         """
         Performs realtime voice conversion on a given audio segment.
