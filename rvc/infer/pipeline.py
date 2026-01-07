@@ -350,7 +350,7 @@ class Pipeline:
                 feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
                     0, 2, 1
                 )
-                pitch, pitchf = pitch[:, :p_len], pitchf[:, :p_len]
+                pitch, pitchf = pitch[:, :p_len], pitchf[:, :p_len].float()
                 # Pitch protection blending
                 if protect < 0.5:
                     pitchff = pitchf.clone()
@@ -364,7 +364,7 @@ class Pipeline:
                 pitch, pitchf = None, None
             p_len = torch.tensor([p_len], device=self.device).long()
             audio1 = (
-                (net_g.infer(feats.float(), p_len, pitch, pitchf.float(), sid)[0][0, 0])
+                (net_g.infer(feats.float(), p_len, pitch, pitchf, sid)[0][0, 0])
                 .data.cpu()
                 .float()
                 .numpy()
