@@ -22,6 +22,8 @@ pretraineds_refinegan_list = [
     (
         "refinegan/",
         [
+            "f0D24k.pth",
+            "f0G24k.pth",
             "f0D32k.pth",
             "f0G32k.pth",
         ],
