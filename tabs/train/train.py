@@ -940,6 +940,20 @@ def train_tab():
                         "value": "40000",
                     }, {"interactive": False, "__type__": "update", "value": "HiFi-GAN"}
 
+            def toggle_vocoder(vocoder):
+                if vocoder == "HiFi-GAN":
+                    return {
+                        "choices": ["32000", "40000", "48000"],
+                        "__type__": "update",
+                        "value": "40000",
+                    }
+                else:
+                    return {
+                        "choices": ["24000", "32000"],
+                        "__type__": "update",
+                        "value": "32000",                    
+                    }
+
             def update_slider_visibility(noise_reduction):
                 return gr.update(visible=noise_reduction)
 
@@ -952,6 +966,11 @@ def train_tab():
                 fn=toggle_architecture,
                 inputs=[architecture],
                 outputs=[sampling_rate, vocoder],
+            )
+            vocoder.change(
+                fn=toggle_vocoder,
+                inputs=[vocoder],
+                outputs=[sampling_rate],
             )
             refresh.click(
                 fn=refresh_models_and_datasets,
