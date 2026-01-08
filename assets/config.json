@@ -17,6 +17,9 @@
     "output_device": "",
     "monitor_device": "",
     "model_file": "",
-    "index_file": ""
+    "index_file": "",
+    "client_input_device": "",
+    "client_output_device": "",
+    "client_monitor_device": ""
   }
 }
