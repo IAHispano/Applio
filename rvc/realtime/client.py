@@ -11,11 +11,58 @@ from .core import VoiceChanger
 
 app = FastAPI()
 vc_instance = None
+params = {}
+
+
+@app.websocket("/change-config")
+async def change_config(ws: WebSocket):
+    global vc_instance, params
+    await ws.accept()
+
+    text = await ws.receive_text()
+    jsons = json.loads(text)
+
+    if jsons["if_kwargs"]:
+        params["kwargs"][jsons["key"]] = jsons["value"]
+    else:
+        params[jsons["key"]] = jsons["value"]
+
+    if vc_instance is not None:
+        vad_enabled = params.get("vad_enabled", True)
+        if vad_enabled is False:
+            vc_instance.vc_model.vad = None
+        elif vad_enabled and vc_instance.vc_model.vad is None:
+            from rvc.realtime.utils.vad import VADProcessor
+
+            vc_instance.vc_model.vad = VADProcessor(
+                sensitivity_mode=3,
+                sample_rate=vc_instance.vc_model.sample_rate,
+                frame_duration_ms=30,  
+            )
+
+
+        clean_audio = params.get("clean_audio", False)
+        clean_strength = params.get("clean_strength", 0.5)
+
+        if clean_audio is False:
+            vc_instance.vc_model.reduced_noise = None
+        elif clean_audio and vc_instance.vc_model.reduced_noise is None:
+            from noisereduce.torchgate import TorchGate
+
+            vc_instance.vc_model.reduced_noise = (
+                TorchGate(
+                    vc_instance.vc_model.pipeline.tgt_sr,
+                    prop_decrease=clean_strength,
+                ).to(vc_instance.vc_model.device)
+            )
+
+        if vc_instance.vc_model.reduced_noise is not None:
+            vc_instance.vc_model.reduced_noise.prop_decrease = clean_strength
 
 
 @app.websocket("/ws-audio")
 async def websocket_audio(ws: WebSocket):
-    global vc_instance
+    global vc_instance, params
     await ws.accept()
 
     print("[WS] Connected!")
@@ -65,7 +112,7 @@ async def websocket_audio(ws: WebSocket):
 
             audio_output, _, perf = vc_instance.on_request(
                 arr * (params["input_audio_gain"] / 100.0),
-                f0_up_key=params["pitch"],
+                f0_up_key=params["f0_up_key"],
                 index_rate=params["index_rate"],
                 protect=params["protect"],
                 volume_envelope=params["volume_envelope"],

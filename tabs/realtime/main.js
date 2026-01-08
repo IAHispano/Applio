@@ -4,6 +4,8 @@
     window._workletNode = null;
     window._playbackNode = null;
     window._ws = null;
+    window.OutputAudioRoute = null;
+    window.MonitorAudioRoute = null;
 
     // Function to display status
     function setStatus(msg, use_alert = true) {
@@ -330,8 +332,8 @@
             src.connect(inputNode);
 
             // Create audio and monitor output
-            createOutputRoute(window._audioCtx, playbackNode, output_audio_device, output_audio_gain / 100);
-            if (use_monitor_device && monitor_output_device) createOutputRoute(window._audioCtx, playbackNode, monitor_output_device, monitor_audio_gain / 100);
+            window.OutputAudioRoute = createOutputRoute(window._audioCtx, playbackNode, output_audio_device, output_audio_gain / 100);
+            if (use_monitor_device && monitor_output_device) window.MonitorAudioRoute = createOutputRoute(window._audioCtx, playbackNode, monitor_output_device, monitor_audio_gain / 100);
             // Configure path and websocket
             const protocol = (location.protocol === "https:") ? "wss:" : "ws:";
             const wsUrl = protocol + '//' + location.hostname + `:${location.port}` + '/api/ws-audio';
@@ -362,7 +364,7 @@
                         vad_enabled: vad_enabled,
                         sid: sid,
                         input_audio_gain: input_audio_gain,
-                        pitch: pitch,
+                        f0_up_key: pitch,
                         index_rate: index_rate,
                         protect: protect,
                         volume_envelope: volume_envelope,
@@ -450,6 +452,32 @@
         }
     };
 
+    window.ChangeConfig = async function(value, key, if_kwargs=false) {
+        if (key === "output_audio_gain") {
+            window.OutputAudioRoute.gainNode.gain.value = value / 100
+        } else if (key == "monitor_audio_gain") {
+            if (window.MonitorAudioRoute) window.MonitorAudioRoute.gainNode.gain.value = value / 100
+        } else {
+            const protocol = (location.protocol === "https:") ? "wss:" : "ws:";
+            const wsUrl = protocol + '//' + location.hostname + `:${location.port}` + '/api/change-config';
+            const ws = new WebSocket(wsUrl);
+
+            ws.binaryType = "arraybuffer";
+            ws.onopen = () => {
+                ws.send(
+                    JSON.stringify({
+                        type: 'init',
+                        key: key,
+                        value: value,
+                        if_kwargs: if_kwargs
+                    })
+                );
+    
+                ws.close();
+            };
+        }
+    }
+
     window.StopAudioStream = async function() {
         try {
             if (window._ws) {
@@ -476,6 +504,9 @@
                 await window._audioCtx.close();
                 window._audioCtx = null;
             }
+
+            if (window.OutputAudioRoute) window.OutputAudioRoute = null;
+            if (window.MonitorAudioRoute) window.MonitorAudioRoute = null;
 
             document.querySelectorAll('audio').forEach(a => a.remove());
             setStatus("Stopped", use_alert=false);

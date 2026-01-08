@@ -36,6 +36,7 @@ from tabs.tts.tts import tts_tab
 from tabs.voice_blender.voice_blender import voice_blender_tab
 from tabs.plugins.plugins import plugins_tab
 from tabs.settings.settings import settings_tab
+from tabs.realtime.realtime import realtime_tab
 
 # Run prerequisites
 from core import run_prerequisites_script
@@ -105,11 +106,6 @@ with gr.Blocks(
         voice_blender_tab()
 
     with gr.Tab(i18n("Realtime")):
-        if client_mode:
-            from tabs.realtime.realtime_client import realtime_tab
-        else:
-            from tabs.realtime.realtime import realtime_tab
-
         realtime_tab()
 
     with gr.Tab(i18n("Plugins")):

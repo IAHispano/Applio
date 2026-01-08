@@ -61,6 +61,7 @@ class Realtime:
         self.input_sensitivity = 10 ** (silent_threshold / 20)
         self.window_size = self.sample_rate // 100
         self.dtype = torch.float32  # torch.float16 if config.is_half else torch.float32
+        self.kwargs = kwargs
 
         self.vad = (
             VADProcessor(

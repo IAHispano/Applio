@@ -268,7 +268,7 @@ class Realtime_Pipeline:
             feats0 = feats.detach().clone() if self.use_f0 else None
 
             if (
-                self.index
+                self.index and index_rate > 0
             ):  # set by parent function, only true if index is available, loaded, and index rate > 0
                 feats = self._retrieve_speaker_embeddings(
                     skip_head, feats, self.index, self.big_npy, index_rate
