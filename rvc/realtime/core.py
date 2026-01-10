@@ -61,7 +61,11 @@ class Realtime:
         self.input_sensitivity = 10 ** (silent_threshold / 20)
         self.window_size = self.sample_rate // 100
         self.dtype = torch.float32  # torch.float16 if config.is_half else torch.float32
-        self.kwargs = kwargs
+        self.kwargs = None
+        self.model_path = model_path
+        self.index_path = index_path
+        self.embedder_model = embedder_model
+        self.embedder_model_custom = embedder_model_custom
 
         self.vad = (
             VADProcessor(
@@ -239,6 +243,9 @@ class Realtime:
         vol_t = torch.sqrt(torch.square(self.audio_buffer).mean())
         vol = max(vol_t.item(), 0)
 
+        board = self.board
+        reduced_noise = self.reduced_noise
+
         if self.vad is not None:
             is_speech = self.vad.is_speech(audio_input_16k.cpu().numpy().copy())
             if not is_speech:
@@ -261,8 +268,8 @@ class Realtime:
                     f0_autotune_strength,
                     proposed_pitch,
                     proposed_pitch_threshold,
-                    self.reduced_noise,
-                    self.board,
+                    reduced_noise,
+                    board,
                 )
 
                 return (
@@ -289,8 +296,8 @@ class Realtime:
                 f0_autotune_strength,
                 proposed_pitch,
                 proposed_pitch_threshold,
-                self.reduced_noise,
-                self.board,
+                reduced_noise,
+                board,
             )
 
             return (
@@ -316,8 +323,8 @@ class Realtime:
             f0_autotune_strength,
             proposed_pitch,
             proposed_pitch_threshold,
-            self.reduced_noise,
-            self.board,
+            reduced_noise,
+            board,
         )
 
         audio_out: torch.Tensor = self.resample_out(audio_model * torch.sqrt(vol_t))
