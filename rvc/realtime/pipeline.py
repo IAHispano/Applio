@@ -113,10 +113,26 @@ class Realtime_Pipeline:
         self.f0_min = 50.0
         self.f0_max = 1100.0
         self.device = vc.config.device
-        self.sid = torch.tensor([sid], device=self.device, dtype=torch.int64)
+        self.sid = sid
+        self.torch_sid = torch.tensor([sid], device=self.device, dtype=torch.int64)
         self.autotune = Autotune()
         self.resamplers = {}
-        self.f0_model = None
+        self.f0_model = self.setup_f0(self.f0_method)
+
+    def setup_f0(self, f0_method: str = "fcpe"):
+        if f0_method == "rmvpe":
+            f0_model = RMVPE(
+                device=self.device,
+                sample_rate=self.sample_rate,
+                hop_size=self.window,
+            )
+        elif f0_method == "fcpe":
+            f0_model = FCPE(
+                device=self.device,
+                sample_rate=self.sample_rate,
+                hop_size=self.window,
+            )
+        return f0_model
 
     def get_f0(
         self,
@@ -138,20 +154,8 @@ class Realtime_Pipeline:
             x = x.cpu().numpy()
 
         if self.f0_method == "rmvpe":
-            if self.f0_model is None:
-                self.f0_model = RMVPE(
-                    device=self.device,
-                    sample_rate=self.sample_rate,
-                    hop_size=self.window,
-                )
             f0 = self.f0_model.get_f0(x, filter_radius=0.03)
         elif self.f0_method == "fcpe":
-            if self.f0_model is None:
-                self.f0_model = FCPE(
-                    device=self.device,
-                    sample_rate=self.sample_rate,
-                    hop_size=self.window,
-                )
             f0 = self.f0_model.get_f0(x, x.shape[0] // self.window, filter_radius=0.006)
         # f0 adjustments
         if f0_autotune is True:
@@ -267,12 +271,17 @@ class Realtime_Pipeline:
             # make a copy for pitch guidance and protection
             feats0 = feats.detach().clone() if self.use_f0 else None
 
-            if (
-                self.index and index_rate > 0
-            ):  # set by parent function, only true if index is available, loaded, and index rate > 0
-                feats = self._retrieve_speaker_embeddings(
-                    skip_head, feats, self.index, self.big_npy, index_rate
-                )
+            try:
+                if (
+                    self.index and index_rate > 0
+                ):  # set by parent function, only true if index is available, loaded, and index rate > 0
+                    feats = self._retrieve_speaker_embeddings(
+                        skip_head, feats, self.index, self.big_npy, index_rate
+                    )
+            except AssertionError:
+                print("The index file structure is incompatible with the model.")
+                self.index = None
+
             # feature upsampling
             feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(
                 0, 2, 1
@@ -299,7 +308,7 @@ class Realtime_Pipeline:
                 pitch, pitchf = None, None
 
             p_len = torch.tensor([p_len], device=self.device, dtype=torch.int64)
-            out_audio = self.vc.inference(feats, p_len, self.sid, pitch, pitchf).float()
+            out_audio = self.vc.inference(feats, p_len, self.torch_sid, pitch, pitchf).float()
             if volume_envelope != 1:
                 out_audio = AudioProcessor.change_rms(
                     audio.cpu().numpy(),
