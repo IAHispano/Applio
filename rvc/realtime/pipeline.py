@@ -34,6 +34,8 @@ class RealtimeVoiceConverter:
         self.cpt = None  # Checkpoint for loading model weights
         self.version = None  # Model version
         self.use_f0 = None  # Whether the model uses F0
+        # Change this when you need to test FP16, and it may not be faster.
+        self.dtype = torch.float32 # torch.float16 if config.is_half else torch.float32
         # load weights and setup model network.
         self.load_model(weight_root)
         self.setup_network()
@@ -72,7 +74,7 @@ class RealtimeVoiceConverter:
 
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)
             strip_parametrizations(self.net_g)
-            self.net_g = self.net_g.to(self.config.device).float()
+            self.net_g = self.net_g.to(self.config.device).to(self.dtype)
             self.net_g.eval()
             # self.net_g.remove_weight_norm()
 
@@ -118,6 +120,7 @@ class Realtime_Pipeline:
         self.autotune = Autotune()
         self.resamplers = {}
         self.f0_model = self.setup_f0(self.f0_method)
+        self.dtype = vc.dtype
 
     def setup_f0(self, f0_method: str = "fcpe"):
         if f0_method == "rmvpe":
@@ -307,6 +310,7 @@ class Realtime_Pipeline:
             else:
                 pitch, pitchf = None, None
 
+            pitchf = pitchf.to(self.dtype) if self.use_f0 else None
             p_len = torch.tensor([p_len], device=self.device, dtype=torch.int64)
             out_audio = self.vc.inference(feats, p_len, self.torch_sid, pitch, pitchf).float()
             if volume_envelope != 1:
@@ -347,10 +351,14 @@ class Realtime_Pipeline:
     ):
         skip_offset = skip_head // 2
         npy = feats[0][skip_offset:].cpu().numpy()
+        if self.dtype == torch.float16:
+            npy = npy.astype(np.float32)
         score, ix = index.search(npy, k=8)
         weight = np.square(1 / score)
         weight /= weight.sum(axis=1, keepdims=True)
         npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
+        if self.dtype == torch.float16:
+            npy = npy.astype(np.float16)
         feats[0][skip_offset:] = (
             torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
             + (1 - index_rate) * feats[0][skip_offset:]
@@ -396,7 +404,7 @@ def create_pipeline(
     )
 
     hubert_model = load_embedding(embedder_model, embedder_model_custom)
-    hubert_model = hubert_model.to(vc.config.device).float()
+    hubert_model = hubert_model.to(vc.config.device).to(vc.dtype)
     hubert_model.eval()
 
     pipeline = Realtime_Pipeline(

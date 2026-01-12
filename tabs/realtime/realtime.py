@@ -597,18 +597,35 @@ def change_callbacks_config():
 
         # It will need to create a new stream to work.
         # callbacks.vc.block_frame = callbacks_kwargs.get("read_chunk_size", 192) * 128
-        # callbacks.vc.crossfade_frame = int(callbacks_kwargs.get("cross_fade_overlap_size", 0.1) * AUDIO_SAMPLE_RATE)
-        # callbacks.vc.extra_frame = int(callbacks_kwargs.get("extra_convert_size", 0.5) * AUDIO_SAMPLE_RATE)
-        callbacks.vc.vc_model.input_sensitivity = 10 ** (callbacks_kwargs.get("silent_threshold", -90) / 20)
+        crossfade_frame = int(callbacks_kwargs.get("cross_fade_overlap_size", 0.1) * AUDIO_SAMPLE_RATE)
+        extra_frame = int(callbacks_kwargs.get("extra_convert_size", 0.5) * AUDIO_SAMPLE_RATE)
 
-        # callbacks.vc.vc_model.realloc(
-        #     callbacks.vc.block_frame,
-        #     callbacks.vc.extra_frame,
-        #     callbacks.vc.crossfade_frame,
-        #     callbacks.vc.sola_search_frame,
-        # )
-        # callbacks.vc.generate_strength()
-        
+        if (
+            callbacks.vc.crossfade_frame != crossfade_frame or
+            callbacks.vc.extra_frame != extra_frame
+        ):
+            del (
+                callbacks.vc.vc_model.audio_buffer,
+                callbacks.vc.vc_model.convert_buffer,
+                callbacks.vc.vc_model.pitch_buffer,
+                callbacks.vc.vc_model.pitchf_buffer,
+            )
+            del (
+                callbacks.vc.fade_in_window,
+                callbacks.vc.fade_out_window,
+                callbacks.vc.sola_buffer
+            )
+
+            callbacks.vc.vc_model.realloc(
+                callbacks.vc.block_frame,
+                callbacks.vc.extra_frame,
+                callbacks.vc.crossfade_frame,
+                callbacks.vc.sola_search_frame,
+            )
+            callbacks.vc.generate_strength()
+
+        callbacks.vc.vc_model.input_sensitivity = 10 ** (callbacks_kwargs.get("silent_threshold", -90) / 20)
+ 
         vad_enabled = callbacks_kwargs.get("vad_enabled", True)
         if vad_enabled is False:
             callbacks.vc.vc_model.vad = None
@@ -1994,11 +2011,11 @@ def realtime_tab():
         output_audio_gain.change(js="(value) => window.ChangeConfig(value, 'output_audio_gain')" if client_mode else None, fn=lambda value: change_config(value / 100.0, "output_audio_gain") if not client_mode else None, inputs=[output_audio_gain], outputs=[])
         monitor_audio_gain.change(js="(value) => window.ChangeConfig(value, 'monitor_audio_gain')" if client_mode else None, fn=lambda value: change_config(value / 100.0, "monitor_audio_gain") if not client_mode else None, inputs=[monitor_audio_gain], outputs=[])
         vad_enabled.change(js="(value) => window.ChangeConfig(value, 'vad_enabled')" if client_mode else None, fn=lambda value: change_config(value, "vad_enabled") if not client_mode else None, inputs=[vad_enabled], outputs=[])
+        cross_fade_overlap_size.change(js="(value) => window.ChangeConfig(value, 'cross_fade_overlap_size')" if client_mode else None, fn=lambda value: change_config(value, "cross_fade_overlap_size") if not client_mode else None, inputs=[cross_fade_overlap_size], outputs=[])
+        extra_convert_size.change(js="(value) => window.ChangeConfig(value, 'extra_convert_size')" if client_mode else None, fn=lambda value: change_config(value, "extra_convert_size") if not client_mode else None, inputs=[extra_convert_size], outputs=[])
         silent_threshold.change(js="(value) => window.ChangeConfig(value, 'silent_threshold')" if client_mode else None, fn=lambda value: change_config(value, "silent_threshold") if not client_mode else None, inputs=[silent_threshold], outputs=[])
 
         # chunk_size.change(fn=lambda value: change_config(int(value * AUDIO_SAMPLE_RATE / 1000 / 128) if not client_mode else None, "read_chunk_size"), inputs=[chunk_size], outputs=[])
-        # cross_fade_overlap_size.change(fn=lambda value: change_config(value, "cross_fade_overlap_size"), inputs=[cross_fade_overlap_size], outputs=[])
-        # extra_convert_size.change(fn=lambda value: change_config(value, "extra_convert_size"), inputs=[extra_convert_size], outputs=[])
 
         pitch.change(js="(value) => window.ChangeConfig(value, 'f0_up_key')" if client_mode else None, fn=lambda value: change_config(value, "f0_up_key") if not client_mode else None, inputs=[pitch], outputs=[])
         index_rate.change(js="(value) => window.ChangeConfig(value, 'index_rate')" if client_mode else None, fn=lambda value: change_config(value, "index_rate") if not client_mode else None, inputs=[index_rate], outputs=[])

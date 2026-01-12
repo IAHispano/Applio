@@ -60,7 +60,6 @@ class Realtime:
         # Convert dB to RMS
         self.input_sensitivity = 10 ** (silent_threshold / 20)
         self.window_size = self.sample_rate // 100
-        self.dtype = torch.float32  # torch.float16 if config.is_half else torch.float32
         self.kwargs = None
         self.model_path = model_path
         self.index_path = index_path
@@ -88,6 +87,7 @@ class Realtime:
             sid,
         )
         self.device = self.pipeline.device
+        self.dtype = self.pipeline.dtype
         # noise reduce
         self.reduced_noise = (
             TorchGate(
@@ -274,7 +274,7 @@ class Realtime:
 
                 return (
                     torch.zeros(
-                        audio_model.shape, dtype=self.dtype, device=self.device
+                        audio_model.shape, dtype=torch.float32, device=self.device
                     ),
                     vol,
                 )
@@ -301,7 +301,7 @@ class Realtime:
             )
 
             return (
-                torch.zeros(audio_model.shape, dtype=self.dtype, device=self.device),
+                torch.zeros(audio_model.shape, dtype=torch.float32, device=self.device),
                 vol,
             )
 
@@ -439,7 +439,7 @@ class VoiceChanger:
         # In case there's an actual silence - send full block with zeros
         # return np.zeros(block_size, dtype=np.float32), vol
 
-        conv_input = audio[None, None, : self.crossfade_frame + self.sola_search_frame]
+        conv_input = audio[None, None, : self.crossfade_frame + self.sola_search_frame].float()
         cor_nom = F.conv1d(conv_input, self.sola_buffer[None, None, :])
         cor_den = torch.sqrt(
             F.conv1d(
