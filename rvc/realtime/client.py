@@ -7,7 +7,7 @@ import torch
 
 sys.path.append(os.getcwd())
 
-from .core import VoiceChanger
+from .core import VoiceChanger, AUDIO_SAMPLE_RATE
 
 app = FastAPI()
 vc_instance = None
@@ -31,6 +31,34 @@ async def change_config(ws: WebSocket):
     else:
         params[jsons["key"]] = jsons["value"]
 
+    crossfade_frame = int(params.get("cross_fade_overlap_size", 0.1) * AUDIO_SAMPLE_RATE)
+    extra_frame = int(params.get("extra_convert_size", 0.5) * AUDIO_SAMPLE_RATE)
+
+    if (
+        vc_instance.crossfade_frame != crossfade_frame or
+        vc_instance.extra_frame != extra_frame
+    ):
+        del (
+            vc_instance.vc_model.audio_buffer,
+            vc_instance.vc_model.convert_buffer,
+            vc_instance.vc_model.pitch_buffer,
+            vc_instance.vc_model.pitchf_buffer,
+        )
+        del (
+            vc_instance.fade_in_window,
+            vc_instance.fade_out_window,
+            vc_instance.sola_buffer
+        )
+
+        vc_instance.vc_model.realloc(
+            vc_instance.block_frame,
+            vc_instance.extra_frame,
+            vc_instance.crossfade_frame,
+            vc_instance.sola_search_frame,
+        )
+        vc_instance.generate_strength()
+
+    vc_instance.vc_model.input_sensitivity = 10 ** (params.get("silent_threshold", -90) / 20)
 
     vad_enabled = params.get("vad_enabled", True)
     if vad_enabled is False:
