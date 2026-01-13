@@ -353,9 +353,16 @@ class VoiceChanger:
         clean_audio: bool = False,
         clean_strength: float = 0.5,
         post_process: bool = False,
+        record_audio: bool = False,
+        record_audio_path: str = None,
+        export_format: str = "WAV",
         **kwargs,
         # device: str = "cuda",
     ):
+        self.soundfile = None
+        self.record_audio = record_audio
+        self.record_audio_path = record_audio_path
+        self.export_format = export_format
         self.block_frame = read_chunk_size * 128
         self.crossfade_frame = int(cross_fade_overlap_size * AUDIO_SAMPLE_RATE)
         self.extra_frame = int(extra_convert_size * AUDIO_SAMPLE_RATE)
@@ -386,6 +393,7 @@ class VoiceChanger:
             self.sola_search_frame,
         )
         self.generate_strength()
+        self.setup_soundfile_record()
 
     def generate_strength(self):
         self.fade_in_window: torch.Tensor = (
@@ -408,6 +416,17 @@ class VoiceChanger:
         self.sola_buffer = torch.zeros(
             self.crossfade_frame, device=self.device, dtype=torch.float32
         )
+
+    def setup_soundfile_record(self):
+        import soundfile as sf
+
+        self.soundfile = sf.SoundFile(
+            self.record_audio_path,
+            mode="w",
+            samplerate=AUDIO_SAMPLE_RATE,
+            channels=1,
+            format=self.export_format.lower(),
+        ) if self.record_audio else None
 
     def process_audio(
         self,
@@ -455,7 +474,12 @@ class VoiceChanger:
         audio[: self.crossfade_frame] += self.sola_buffer * self.fade_out_window
 
         self.sola_buffer[:] = audio[block_size : block_size + self.crossfade_frame]
-        return audio[:block_size].detach().cpu().numpy(), vol
+        audio_output = audio[:block_size].detach().cpu().numpy()
+
+        if self.record_audio and self.soundfile is not None:
+            self.soundfile.write(audio_output)
+
+        return audio_output, vol
 
     @torch.no_grad()
     def on_request(
