@@ -1,11 +1,12 @@
 import os
 import sys
 import json
-from fastapi import FastAPI, WebSocketDisconnect, WebSocket
+from fastapi import FastAPI, WebSocketDisconnect, WebSocket, Request
 import numpy as np
 import torch
 
-sys.path.append(os.getcwd())
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 
 from .core import VoiceChanger, AUDIO_SAMPLE_RATE
 
@@ -167,6 +168,49 @@ async def change_config(ws: WebSocket):
         vc_instance.vc_model.embedder_model = embedder_model
         vc_instance.vc_model.embedder_model_custom = embedder_model_custom
 
+@app.post("/record")
+async def record(request: Request):
+    global vc_instance
+
+    data = await request.json()
+    record_button = data.get("record_button", "Stop")
+    record_audio_path = data.get("record_audio_path", None)
+    export_format = data.get("export_format", "WAV")
+
+    if vc_instance is None:
+        return {
+            "type": "warnings",
+            "value": "Realtime pipeline not found!",
+            "button": "Start",
+            "path": None
+        }
+
+    if record_button == "Start":
+        if not record_audio_path:
+            record_audio_path = os.path.join(now_dir, "assets", "audios", "record_audio.wav")
+
+        vc_instance.record_audio = True
+        vc_instance.record_audio_path = record_audio_path
+        vc_instance.export_format = export_format
+        vc_instance.setup_soundfile_record()
+
+        return {
+            "type": "info",
+            "value": "Start recording...",
+            "button": "Stop",
+            "path": None
+        }
+    else:
+        vc_instance.record_audio = False
+        vc_instance.record_audio_path = None
+        vc_instance.soundfile = None
+
+        return {
+            "type": "info",
+            "value": "Stop recording!",
+            "button": "Start",
+            "path": record_audio_path
+        }
 
 @app.websocket("/ws-audio")
 async def websocket_audio(ws: WebSocket):

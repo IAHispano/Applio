@@ -449,6 +449,9 @@ def start_realtime(
     delay_seconds: float = 0.5,
     delay_feedback: float = 0.0,
     delay_mix: float = 0.5,
+    record_audio: bool = False,
+    record_audio_path: str = None,
+    export_format: str = "WAV",
 ):
     global running, callbacks, audio_manager, callbacks_kwargs
     running = True
@@ -526,6 +529,9 @@ def start_realtime(
         "clean_audio": clean_audio,
         "clean_strength": clean_strength,
         "post_process": post_process,
+"        record_audio": record_audio,
+        "record_audio_path": record_audio_path,
+        "export_format": export_format,
         "kwargs": {
             "reverb": reverb,
             "pitch_shift": pitch_shift,
@@ -834,6 +840,49 @@ def update_button_from_json(data):
     ]
 
 
+def update_value_from_json(data):
+    if not data:
+        return [gr.update(), gr.update(value=None)]
+    
+    return [
+        data.get("button", "Start"),
+        data.get("path", None),
+    ]
+
+
+def soundfile_record_audio(
+    record_button,
+    record_audio_path: str = None,
+    export_format: str = "WAV"
+):
+    global callbacks
+
+    if running and audio_manager is not None and callbacks is not None:
+        if record_button == "Start":
+            gr.Info("Start recording...")
+
+            if not record_audio_path:
+                record_audio_path = os.path.join(now_dir, "assets", "audios", "record_audio.wav")
+
+            callbacks.vc.record_audio = True
+            callbacks.vc.record_audio_path = record_audio_path
+            callbacks.vc.export_format = export_format
+            callbacks.vc.setup_soundfile_record()
+
+            return "Stop", None
+        else:
+            gr.Info("Stop recording!")
+
+            callbacks.vc.record_audio = False
+            callbacks.vc.record_audio_path = None
+            callbacks.vc.soundfile = None
+
+            return "Start", record_audio_path
+
+    gr.Warning("Realtime pipeline not found!")
+    return "Start", None
+
+
 def realtime_tab():
     input_devices, output_devices = [], []
     saved_settings = load_realtime_settings()
@@ -982,6 +1031,26 @@ def realtime_tab():
                             interactive=True,
                             visible=not client_mode,
                         )
+                with gr.Accordion(i18n("Record Audio (Optional)"), open=False):
+                    with gr.Column():
+                        record_audio_path = gr.Textbox(
+                            label=i18n("Output Path"),
+                            placeholder=i18n("Enter output path"),
+                            info=i18n(
+                                "The path where the output audio will be saved, by default in assets/audios/output.wav"
+                            ),
+                            value=os.path.join(now_dir, "assets", "audios", "output.wav"),
+                            interactive=True,
+                        )
+                    export_format = gr.Radio(
+                        label=i18n("Export Format"),
+                        info=i18n("Select the format to export the audio."),
+                        choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+                        value="WAV",
+                        interactive=True,
+                    )
+                    record_audio = gr.Button(i18n("Start"))
+                    record_output = gr.Audio(label=i18n("Export Audio"))
                 with gr.Row():
                     exclusive_mode = gr.Checkbox(
                         label=i18n("Exclusive Mode"),
@@ -1548,6 +1617,7 @@ def realtime_tab():
 
         json_audio_hidden = gr.JSON(visible=False)
         json_button_hidden = gr.JSON(visible=False)
+        json_value_hidden = gr.JSON(visible=False)
 
         def enforce_terms(terms_accepted, *args):
             if not terms_accepted:
@@ -1612,6 +1682,12 @@ def realtime_tab():
                 fn=update_button_from_json,
                 inputs=[json_button_hidden],
                 outputs=[start_button, stop_button],
+            )
+
+            json_value_hidden.change(
+                fn=update_value_from_json,
+                inputs=[json_value_hidden],
+                outputs=[record_audio, record_output]
             )
         else:
             refresh_devices_button.click(
@@ -1840,6 +1916,19 @@ def realtime_tab():
             )
 
             stop_button.click(fn=None, js="StopAudioStream", outputs=[json_button_hidden])
+
+            record_audio.click(
+                fn=None,
+                js="SoundfileRecordAudio",
+                inputs=[
+                    record_audio,
+                    record_audio_path,
+                    export_format
+                ],
+                outputs=[
+                    json_value_hidden
+                ]
+            )
         else:
             start_button.click(
                 fn=enforce_terms,
@@ -1928,6 +2017,19 @@ def realtime_tab():
             #     inputs=None,
             #     outputs=[latency_info, start_button, stop_button],
             # )
+
+            record_audio.click(
+                fn=soundfile_record_audio,
+                inputs=[
+                    record_audio,
+                    record_audio_path,
+                    export_format
+                ],
+                outputs=[
+                    record_audio,
+                    record_output
+                ]
+            )
 
         unload_button.click(
             fn=lambda: (

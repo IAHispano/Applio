@@ -41,6 +41,9 @@ class AudioCallbacks:
         clean_audio: bool = False,
         clean_strength: float = 0.5,
         post_process: bool = False,
+        record_audio: bool = False,
+        record_audio_path: str = None,
+        export_format: str = "WAV",
         **kwargs,
         # device: str = "cuda",
     ):
@@ -63,6 +66,9 @@ class AudioCallbacks:
             clean_audio,
             clean_strength,
             post_process,
+            record_audio,
+            record_audio_path,
+            export_format,
             **kwargs,
             # device,
         )

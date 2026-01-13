@@ -518,4 +518,32 @@
             return {"start_button": false, "stop_button": true}
         }
     };
+
+    window.SoundfileRecordAudio = async function (RecordButton, RecordAudioPath, ExportFormat) {
+        const protocol = (location.protocol === "https:") ? "https:" : "http:";
+        const url = protocol + '//' + location.hostname + `:${location.port}` + '/api/record';
+
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                record_button: RecordButton,
+                record_audio_path: RecordAudioPath,
+                export_format: ExportFormat
+            })
+        });
+
+        const msg = await res.json();
+
+        if (msg.type === "info" || msg.type === "warnings") {
+            alert(msg.value);
+
+            return {
+                "button": msg.button,
+                "path": msg.path
+            };
+        }
+    };
 }

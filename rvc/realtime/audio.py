@@ -289,11 +289,10 @@ class Audio:
             output_monitor_extra_setting,
             monitor_channels,
         ) = (None, None, None, None)
-        wasapi_exclusive_mode = bool(exclusive_mode)
 
         if input_audio_device and "WASAPI" in input_audio_device.host_api:
             input_extra_setting = sd.WasapiSettings(
-                exclusive=wasapi_exclusive_mode, auto_convert=not wasapi_exclusive_mode
+                exclusive=exclusive_mode, auto_convert=not exclusive_mode
             )
         elif (
             input_audio_device
@@ -307,7 +306,7 @@ class Audio:
 
         if output_audio_device and "WASAPI" in output_audio_device.host_api:
             output_extra_setting = sd.WasapiSettings(
-                exclusive=wasapi_exclusive_mode, auto_convert=not wasapi_exclusive_mode
+                exclusive=exclusive_mode, auto_convert=not exclusive_mode
             )
         elif (
             input_audio_device
@@ -325,8 +324,8 @@ class Audio:
 
             if output_monitor_device and "WASAPI" in output_monitor_device.host_api:
                 output_monitor_extra_setting = sd.WasapiSettings(
-                    exclusive=wasapi_exclusive_mode,
-                    auto_convert=not wasapi_exclusive_mode,
+                    exclusive=exclusive_mode,
+                    auto_convert=not exclusive_mode,
                 )
             elif (
                 output_monitor_device
