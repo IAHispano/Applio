@@ -262,6 +262,10 @@ async def websocket_audio(ws: WebSocket):
                     else arr[:block_frame].astype(np.float32)
                 )
 
+            if vc_instance is None:
+                # Avoid errors when disconnecting.
+                return
+
             audio_output, _, perf = vc_instance.on_request(
                 arr * (params["input_audio_gain"] / 100.0),
                 f0_up_key=params["f0_up_key"],
