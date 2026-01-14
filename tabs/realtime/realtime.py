@@ -274,8 +274,9 @@ default_weight = names[0] if names else None
 client_mode = "--client" in sys.argv
 
 PASS_THROUGH = False
-interactive_true = gr.update(interactive=True)
-interactive_false = gr.update(interactive=False)
+interactive_true = gr.update(interactive=True, visible=True)
+interactive_false = gr.update(interactive=False, visible=False)
+interactive_visible = gr.update(interactive=False, visible=True)
 running, callbacks, audio_manager = False, None, None
 callbacks_kwargs = {}
 
@@ -478,7 +479,7 @@ def start_realtime(
         )
         return
 
-    yield "Starting Realtime...", interactive_false, interactive_true
+    yield "Starting Realtime...", interactive_false, interactive_visible
 
     read_chunk_size = int(chunk_size * AUDIO_SAMPLE_RATE / 1000 / 128)
 
@@ -585,7 +586,7 @@ def start_realtime(
         read_chunk_size=read_chunk_size,
     )
 
-    yield "Realtime is ready!", interactive_false, interactive_true
+    yield "Realtime is ready!", interactive_false, interactive_visible
 
     while running and callbacks is not None and audio_manager is not None:
         time.sleep(0.1)
@@ -773,6 +774,7 @@ def stop_realtime():
         running = False
         if hasattr(audio_manager, "latency"):
             del audio_manager.latency
+        del audio_manager, callbacks
         audio_manager = callbacks = None
         time.sleep(0.1)
 
@@ -832,11 +834,11 @@ def update_dropdowns_from_json(data):
 
 def update_button_from_json(data):
     if not data:
-        return [gr.update(interactive=True), gr.update(interactive=False)]
+        return [gr.update(interactive=True, visible=True), gr.update(interactive=False, visible=False)]
 
     return [
-        gr.update(interactive=data.get("start_button", True)),
-        gr.update(interactive=data.get("stop_button", False)),
+        gr.update(interactive=data.get("start_button", True), visible=data.get("start_button", True)),
+        gr.update(interactive=data.get("stop_button", False), visible=data.get("stop_button", False)),
     ]
 
 
@@ -901,7 +903,7 @@ def realtime_tab():
     with gr.Blocks() as ui:
         with gr.Row():
             start_button = gr.Button(i18n("Start"), variant="primary")
-            stop_button = gr.Button(i18n("Stop"), interactive=False)
+            stop_button = gr.Button(i18n("Stop"), interactive=False, visible=False)
         latency_info = gr.Label(
             label=i18n("Status"),
             value=i18n("Realtime not started."),
@@ -1841,6 +1843,12 @@ def realtime_tab():
         )
 
         if client_mode:
+            start_button.click(
+                fn=lambda: [interactive_false, interactive_visible],
+                inputs=[],
+                outputs=[start_button, stop_button]
+            )
+
             start_button.click(
                 fn=None,
                 js="StreamAudioRealtime",
