@@ -39,12 +39,13 @@ async def change_config(ws: WebSocket):
         vc_instance.crossfade_frame != crossfade_frame or
         vc_instance.extra_frame != extra_frame
     ):
-        del (
-            vc_instance.vc_model.audio_buffer,
-            vc_instance.vc_model.convert_buffer,
-            vc_instance.vc_model.pitch_buffer,
-            vc_instance.vc_model.pitchf_buffer,
-        )
+        # Deleting these things is not a good idea; they should only be overwritten directly.
+        # del (
+        #     vc_instance.vc_model.audio_buffer,
+        #     vc_instance.vc_model.convert_buffer,
+        #     vc_instance.vc_model.pitch_buffer,
+        #     vc_instance.vc_model.pitchf_buffer,
+        # )
         del (
             vc_instance.fade_in_window,
             vc_instance.fade_out_window,
@@ -266,7 +267,7 @@ async def websocket_audio(ws: WebSocket):
                 # Avoid errors when disconnecting.
                 return
 
-            audio_output, _, perf = vc_instance.on_request(
+            audio_output, vol, perf = vc_instance.on_request(
                 arr * (params["input_audio_gain"] / 100.0),
                 f0_up_key=params["f0_up_key"],
                 index_rate=params["index_rate"],
@@ -278,7 +279,7 @@ async def websocket_audio(ws: WebSocket):
                 proposed_pitch_threshold=params["proposed_pitch_threshold"],
             )
 
-            await ws.send_text(json.dumps({"type": "latency", "value": perf[1]}))
+            await ws.send_text(json.dumps({"type": "latency", "value": perf[1], "volume": vol}))
             await ws.send_bytes(audio_output.tobytes())
     except WebSocketDisconnect:
         print("[WS] Disconnected!")

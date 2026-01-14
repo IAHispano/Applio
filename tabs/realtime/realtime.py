@@ -284,7 +284,7 @@ CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
 
 
 def save_realtime_settings(
-    value, key
+    input_device, output_device, monitor_device, model_file, index_file
 ):
     """Save realtime settings to config.json"""
     try:
@@ -298,8 +298,16 @@ def save_realtime_settings(
             config["realtime"] = {}
 
         # Only save non-None values, preserve existing values for None inputs
-        if value is not None:
-            config["realtime"][key] = value or ""
+        if input_device is not None:
+            config["realtime"]["client_input_device" if client_mode else "input_device"] = input_device or ""
+        if output_device is not None:
+            config["realtime"]["client_output_device" if client_mode else "output_device"] = output_device or ""
+        if monitor_device is not None:
+            config["realtime"]["client_monitor_device" if client_mode else "monitor_device"] = monitor_device or ""
+        if model_file is not None:
+            config["realtime"]["model_file"] = model_file or ""
+        if monitor_device is not None:
+            config["realtime"]["index_file"] = index_file or ""
 
         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
@@ -590,8 +598,8 @@ def start_realtime(
 
     while running and callbacks is not None and audio_manager is not None:
         time.sleep(0.1)
-        if hasattr(audio_manager, "latency"):
-            yield f"Latency: {audio_manager.latency:.2f} ms", interactive_false, interactive_true
+        if hasattr(audio_manager, "latency") and hasattr(audio_manager, "volume"):
+            yield f"Latency: {audio_manager.latency:.2f} ms | Volume: {audio_manager.volume:.2f} dB", interactive_false, interactive_true
 
     return gr.update(), gr.update(), gr.update()
 
@@ -611,12 +619,13 @@ def change_callbacks_config():
             callbacks.vc.crossfade_frame != crossfade_frame or
             callbacks.vc.extra_frame != extra_frame
         ):
-            del (
-                callbacks.vc.vc_model.audio_buffer,
-                callbacks.vc.vc_model.convert_buffer,
-                callbacks.vc.vc_model.pitch_buffer,
-                callbacks.vc.vc_model.pitchf_buffer,
-            )
+            # Deleting these things is not a good idea; they should only be overwritten directly.
+            # del (
+            #     callbacks.vc.vc_model.audio_buffer,
+            #     callbacks.vc.vc_model.convert_buffer,
+            #     callbacks.vc.vc_model.pitch_buffer,
+            #     callbacks.vc.vc_model.pitchf_buffer,
+            # )
             del (
                 callbacks.vc.fade_in_window,
                 callbacks.vc.fade_out_window,
@@ -2053,20 +2062,24 @@ def realtime_tab():
 
         # Add event handlers to save settings
         input_audio_device.change(
-            fn=lambda key: save_realtime_settings(key, "client_input_device" if client_mode else "input_device"), inputs=[input_audio_device], outputs=[]
+            fn=save_realtime_settings, inputs=[input_audio_device, output_audio_device, monitor_output_device, model_file, index_file], outputs=[]
         )
 
         output_audio_device.change(
-            fn=lambda key: save_realtime_settings(key, "client_output_device" if client_mode else "output_device"), inputs=[output_audio_device], outputs=[]
+            fn=save_realtime_settings, inputs=[input_audio_device, output_audio_device, monitor_output_device, model_file, index_file], outputs=[]
         )
 
         monitor_output_device.change(
-            fn=lambda key: save_realtime_settings(key, "client_monitor_device" if client_mode else "monitor_device"), inputs=[monitor_output_device], outputs=[]
+            fn=save_realtime_settings, inputs=[input_audio_device, output_audio_device, monitor_output_device, model_file, index_file], outputs=[]
         )
 
-        model_file.change(fn=lambda key: save_realtime_settings(key, "model_file"), inputs=[model_file], outputs=[])
+        model_file.change(
+            fn=save_realtime_settings, inputs=[input_audio_device, output_audio_device, monitor_output_device, model_file, index_file], outputs=[]
+        )
 
-        index_file.change(fn=lambda key: save_realtime_settings(key, "index_file"), inputs=[index_file], outputs=[])
+        index_file.change(
+            fn=save_realtime_settings, inputs=[input_audio_device, output_audio_device, monitor_output_device, model_file, index_file], outputs=[]
+        )
 
         if client_mode:
             def refresh_all():

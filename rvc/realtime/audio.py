@@ -164,10 +164,11 @@ class Audio:
         )
 
     def process_data_with_time(self, indata: np.ndarray):
-        out_wav, _, perf, _ = self.process_data(indata)
+        out_wav, vol, perf, _ = self.process_data(indata)
         performance_ms = perf[1]
         # print(f"real-time voice conversion performance: {performance_ms:.2f} ms")
         self.latency = performance_ms  # latency to display on the application interface
+        self.volume = vol
 
         return out_wav
 

@@ -6,6 +6,8 @@
     window._ws = null;
     window.OutputAudioRoute = null;
     window.MonitorAudioRoute = null;
+    window.lastSend = 0;
+    window.responseMs = 0;
 
     // Function to display status
     function setStatus(msg, use_alert = true) {
@@ -420,7 +422,10 @@
                 const chunk = e.data && e.data.chunk;
 
                 if (!chunk) return;
-                if (ws.readyState === WebSocket.OPEN) ws.send(chunk); // Send raw audio
+                if (ws.readyState === WebSocket.OPEN) {
+                    window.lastSend = performance.now();
+                    ws.send(chunk); // Send raw audio
+                }
             };
 
             ws.onmessage = (ev) => { 
@@ -428,12 +433,14 @@
                 if (typeof ev.data === 'string') {
                     const msg = JSON.parse(ev.data);
                     // Show latency information in the status bar of the interface
-                    if (msg.type === 'latency') setStatus(`Latency: ${msg.value.toFixed(1)} ms`, use_alert=false)
+                    if (msg.type === 'latency') setStatus(`Latency: ${msg.value.toFixed(2)} ms | Volume: ${msg.volume.toFixed(2)} dB | Response: ${window.responseMs.toFixed(2)} ms`, use_alert=false)
                     return;
                 }
                 // Send audio to the playback node to the audio device
                 const ab = ev.data;
                 playbackNode.port.postMessage({ chunk: ab }, [ab]);
+
+                window.responseMs = performance.now() - window.lastSend;
             };
 
             ws.onclose = () => console.log("[WS] Closed!");
