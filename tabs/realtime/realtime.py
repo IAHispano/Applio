@@ -820,7 +820,7 @@ def get_audio_devices_formatted():
 
         return input_device_list, output_device_list
     except Exception:
-        return [], []
+        return {}, {}
 
 
 def update_dropdowns_from_json(data):
