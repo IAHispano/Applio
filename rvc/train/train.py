@@ -77,7 +77,7 @@ if vocoder == "RefineGAN":
 current_dir = os.getcwd()
 
 try:
-    with open(os.path.join(current_dir, "assets", "config.json"), "r") as f:
+    with open(os.path.join(current_dir, "assets", "config.json"), "r", encoding = 'utf-8') as f:
         config = json.load(f)
         precision = config["precision"]
         if (
