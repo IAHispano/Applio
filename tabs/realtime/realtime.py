@@ -2143,7 +2143,7 @@ def realtime_tab():
         pitch.change(js="(value) => window.ChangeConfig(value, 'f0_up_key')" if client_mode else None, fn=lambda value: change_config(value, "f0_up_key") if not client_mode else None, inputs=[pitch], outputs=[])
         index_rate.change(js="(value) => window.ChangeConfig(value, 'index_rate')" if client_mode else None, fn=lambda value: change_config(value, "index_rate") if not client_mode else None, inputs=[index_rate], outputs=[])
         volume_envelope.change(js="(value) => window.ChangeConfig(value, 'volume_envelope')" if client_mode else None, fn=lambda value: change_config(value, "volume_envelope") if not client_mode else None, inputs=[volume_envelope], outputs=[])
-        protect.change(js="(value) => window.ChangeConfig(value, 'protect')" if client_mode else None if client_mode else None, fn=lambda value: change_config(value, "protect") if not client_mode else None, inputs=[protect], outputs=[])
+        protect.change(js="(value) => window.ChangeConfig(value, 'protect')" if client_mode else None, fn=lambda value: change_config(value, "protect") if not client_mode else None, inputs=[protect], outputs=[])
 
         autotune.change(js="(value) => window.ChangeConfig(value, 'autotune')" if client_mode else None, fn=lambda value: change_config(value, "autotune") if not client_mode else None, inputs=[autotune], outputs=[])
         autotune_strength.change(js="(value) => window.ChangeConfig(value, 'autotune_strength')" if client_mode else None, fn=lambda value: change_config(value, "autotune_strength") if not client_mode else None, inputs=[autotune_strength], outputs=[])
