@@ -126,21 +126,22 @@ async def change_config(ws: WebSocket):
         )
 
     index_path = params.get("index_path", None)
-    if index_path and vc_instance.vc_model.index_path != index_path:
-        from rvc.realtime.pipeline import load_faiss_index
+    if index_path:
+        if vc_instance.vc_model.index_path != index_path:
+            from rvc.realtime.pipeline import load_faiss_index
 
-        index, big_npy = load_faiss_index(
-            index_path.strip()
-            .strip('"')
-            .strip("\n")
-            .strip('"')
-            .strip()
-            .replace("trained", "added")
-        )
+            index, big_npy = load_faiss_index(
+                index_path.strip()
+                .strip('"')
+                .strip("\n")
+                .strip('"')
+                .strip()
+                .replace("trained", "added")
+            )
 
-        vc_instance.vc_model.pipeline.index = index
-        vc_instance.vc_model.pipeline.big_npy = big_npy
-        vc_instance.vc_model.index_path = index_path
+            vc_instance.vc_model.pipeline.index = index
+            vc_instance.vc_model.pipeline.big_npy = big_npy
+            vc_instance.vc_model.index_path = index_path
     else:
         vc_instance.vc_model.pipeline.index = None
         vc_instance.vc_model.pipeline.big_npy = None
@@ -159,6 +160,9 @@ async def change_config(ws: WebSocket):
         vc_instance.vc_model.embedder_model != embedder_model or
         vc_instance.vc_model.embedder_model_custom != embedder_model_custom
     ):
+        old_hubert_model = vc_instance.vc_model.pipeline.hubert_model
+        del old_hubert_model
+
         from rvc.lib.utils import load_embedding
 
         hubert_model = load_embedding(embedder_model, embedder_model_custom)
