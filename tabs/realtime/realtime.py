@@ -720,21 +720,22 @@ def change_callbacks_config():
             )
 
         index_path = callbacks_kwargs.get("index_path", None)
-        if index_path and callbacks.vc.vc_model.index_path != index_path:
-            from rvc.realtime.pipeline import load_faiss_index
+        if index_path:
+            if callbacks.vc.vc_model.index_path != index_path:
+                from rvc.realtime.pipeline import load_faiss_index
 
-            index, big_npy = load_faiss_index(
-                index_path.strip()
-                .strip('"')
-                .strip("\n")
-                .strip('"')
-                .strip()
-                .replace("trained", "added")
-            )
+                index, big_npy = load_faiss_index(
+                    index_path.strip()
+                    .strip('"')
+                    .strip("\n")
+                    .strip('"')
+                    .strip()
+                    .replace("trained", "added")
+                )
 
-            callbacks.vc.vc_model.pipeline.index = index
-            callbacks.vc.vc_model.pipeline.big_npy = big_npy
-            callbacks.vc.vc_model.index_path = index_path
+                callbacks.vc.vc_model.pipeline.index = index
+                callbacks.vc.vc_model.pipeline.big_npy = big_npy
+                callbacks.vc.vc_model.index_path = index_path
         else:
             callbacks.vc.vc_model.pipeline.index = None
             callbacks.vc.vc_model.pipeline.big_npy = None
@@ -753,6 +754,9 @@ def change_callbacks_config():
             callbacks.vc.vc_model.embedder_model != embedder_model or
             callbacks.vc.vc_model.embedder_model_custom != embedder_model_custom
         ):
+            old_hubert_model = callbacks.vc.vc_model.pipeline.hubert_model
+            del old_hubert_model
+
             from rvc.lib.utils import load_embedding
 
             hubert_model = load_embedding(embedder_model, embedder_model_custom)

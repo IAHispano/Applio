@@ -283,7 +283,7 @@ class Realtime_Pipeline:
                     )
             except AssertionError:
                 print("The index file structure is incompatible with the model.")
-                self.index = None
+                self.index = self.big_npy = None
 
             # feature upsampling
             feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(
