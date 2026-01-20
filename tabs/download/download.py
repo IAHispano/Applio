@@ -10,7 +10,6 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 
-
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 

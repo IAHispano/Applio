@@ -420,13 +420,17 @@ class VoiceChanger:
     def setup_soundfile_record(self):
         import soundfile as sf
 
-        self.soundfile = sf.SoundFile(
-            self.record_audio_path,
-            mode="w",
-            samplerate=AUDIO_SAMPLE_RATE,
-            channels=1,
-            format=self.export_format.lower(),
-        ) if self.record_audio else None
+        self.soundfile = (
+            sf.SoundFile(
+                self.record_audio_path,
+                mode="w",
+                samplerate=AUDIO_SAMPLE_RATE,
+                channels=1,
+                format=self.export_format.lower(),
+            )
+            if self.record_audio
+            else None
+        )
 
     def process_audio(
         self,
@@ -458,7 +462,9 @@ class VoiceChanger:
         # In case there's an actual silence - send full block with zeros
         # return np.zeros(block_size, dtype=np.float32), vol
 
-        conv_input = audio[None, None, : self.crossfade_frame + self.sola_search_frame].float()
+        conv_input = audio[
+            None, None, : self.crossfade_frame + self.sola_search_frame
+        ].float()
         cor_nom = F.conv1d(conv_input, self.sola_buffer[None, None, :])
         cor_den = torch.sqrt(
             F.conv1d(

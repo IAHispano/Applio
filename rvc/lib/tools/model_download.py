@@ -14,7 +14,6 @@ sys.path.append(now_dir)
 from rvc.lib.utils import format_title
 from rvc.lib.tools import gdown
 
-
 file_path = os.path.join(now_dir, "logs")
 zips_path = os.path.join(file_path, "zips")
 os.makedirs(zips_path, exist_ok=True)
