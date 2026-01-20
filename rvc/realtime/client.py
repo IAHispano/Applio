@@ -32,12 +32,14 @@ async def change_config(ws: WebSocket):
     else:
         params[jsons["key"]] = jsons["value"]
 
-    crossfade_frame = int(params.get("cross_fade_overlap_size", 0.1) * AUDIO_SAMPLE_RATE)
+    crossfade_frame = int(
+        params.get("cross_fade_overlap_size", 0.1) * AUDIO_SAMPLE_RATE
+    )
     extra_frame = int(params.get("extra_convert_size", 0.5) * AUDIO_SAMPLE_RATE)
 
     if (
-        vc_instance.crossfade_frame != crossfade_frame or
-        vc_instance.extra_frame != extra_frame
+        vc_instance.crossfade_frame != crossfade_frame
+        or vc_instance.extra_frame != extra_frame
     ):
         # Deleting these things is not a good idea; they should only be overwritten directly.
         # del (
@@ -49,7 +51,7 @@ async def change_config(ws: WebSocket):
         del (
             vc_instance.fade_in_window,
             vc_instance.fade_out_window,
-            vc_instance.sola_buffer
+            vc_instance.sola_buffer,
         )
 
         vc_instance.vc_model.realloc(
@@ -60,7 +62,9 @@ async def change_config(ws: WebSocket):
         )
         vc_instance.generate_strength()
 
-    vc_instance.vc_model.input_sensitivity = 10 ** (params.get("silent_threshold", -90) / 20)
+    vc_instance.vc_model.input_sensitivity = 10 ** (
+        params.get("silent_threshold", -90) / 20
+    )
 
     vad_enabled = params.get("vad_enabled", True)
     if vad_enabled is False:
@@ -71,7 +75,7 @@ async def change_config(ws: WebSocket):
         vc_instance.vc_model.vad = VADProcessor(
             sensitivity_mode=3,
             sample_rate=vc_instance.vc_model.sample_rate,
-            frame_duration_ms=30,  
+            frame_duration_ms=30,
         )
 
     # The VAD parameters have been assigned by default.
@@ -87,12 +91,10 @@ async def change_config(ws: WebSocket):
     elif clean_audio and vc_instance.vc_model.reduced_noise is None:
         from noisereduce.torchgate import TorchGate
 
-        vc_instance.vc_model.reduced_noise = (
-            TorchGate(
-                vc_instance.vc_model.pipeline.tgt_sr,
-                prop_decrease=clean_strength,
-            ).to(vc_instance.vc_model.device)
-        )
+        vc_instance.vc_model.reduced_noise = TorchGate(
+            vc_instance.vc_model.pipeline.tgt_sr,
+            prop_decrease=clean_strength,
+        ).to(vc_instance.vc_model.device)
 
     if vc_instance.vc_model.reduced_noise is not None:
         vc_instance.vc_model.reduced_noise.prop_decrease = clean_strength
@@ -120,6 +122,7 @@ async def change_config(ws: WebSocket):
     sid = params.get("sid", vc_instance.vc_model.pipeline.sid)
     if vc_instance.vc_model.pipeline.sid != sid:
         import torch
+
         # This is for multi-SID models.
         vc_instance.vc_model.pipeline.torch_sid = torch.tensor(
             [sid], device=vc_instance.vc_model.pipeline.device, dtype=torch.int64
@@ -154,11 +157,13 @@ async def change_config(ws: WebSocket):
         vc_instance.vc_model.pipeline.f0_method = f0_method
 
     embedder_model = params.get("embedder_model", vc_instance.vc_model.embedder_model)
-    embedder_model_custom = params.get("embedder_model_custom", vc_instance.vc_model.embedder_model_custom)
+    embedder_model_custom = params.get(
+        "embedder_model_custom", vc_instance.vc_model.embedder_model_custom
+    )
 
     if (
-        vc_instance.vc_model.embedder_model != embedder_model or
-        vc_instance.vc_model.embedder_model_custom != embedder_model_custom
+        vc_instance.vc_model.embedder_model != embedder_model
+        or vc_instance.vc_model.embedder_model_custom != embedder_model_custom
     ):
         old_hubert_model = vc_instance.vc_model.pipeline.hubert_model
         del old_hubert_model
@@ -172,6 +177,7 @@ async def change_config(ws: WebSocket):
         vc_instance.vc_model.pipeline.hubert_model = hubert_model
         vc_instance.vc_model.embedder_model = embedder_model
         vc_instance.vc_model.embedder_model_custom = embedder_model_custom
+
 
 @app.post("/record")
 async def record(request: Request):
@@ -187,12 +193,14 @@ async def record(request: Request):
             "type": "warnings",
             "value": "Realtime pipeline not found!",
             "button": "Start",
-            "path": None
+            "path": None,
         }
 
     if record_button == "Start":
         if not record_audio_path:
-            record_audio_path = os.path.join(now_dir, "assets", "audios", "record_audio.wav")
+            record_audio_path = os.path.join(
+                now_dir, "assets", "audios", "record_audio.wav"
+            )
 
         vc_instance.record_audio = True
         vc_instance.record_audio_path = record_audio_path
@@ -203,7 +211,7 @@ async def record(request: Request):
             "type": "info",
             "value": "Start recording...",
             "button": "Stop",
-            "path": None
+            "path": None,
         }
     else:
         vc_instance.record_audio = False
@@ -214,8 +222,9 @@ async def record(request: Request):
             "type": "info",
             "value": "Stop recording!",
             "button": "Start",
-            "path": record_audio_path
+            "path": record_audio_path,
         }
+
 
 @app.websocket("/ws-audio")
 async def websocket_audio(ws: WebSocket):
@@ -283,7 +292,9 @@ async def websocket_audio(ws: WebSocket):
                 proposed_pitch_threshold=params["proposed_pitch_threshold"],
             )
 
-            await ws.send_text(json.dumps({"type": "latency", "value": perf[1], "volume": vol}))
+            await ws.send_text(
+                json.dumps({"type": "latency", "value": perf[1], "volume": vol})
+            )
             await ws.send_bytes(audio_output.tobytes())
     except WebSocketDisconnect:
         print("[WS] Disconnected!")

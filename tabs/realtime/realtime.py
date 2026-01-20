@@ -299,11 +299,17 @@ def save_realtime_settings(
 
         # Only save non-None values, preserve existing values for None inputs
         if input_device is not None:
-            config["realtime"]["client_input_device" if client_mode else "input_device"] = input_device or ""
+            config["realtime"][
+                "client_input_device" if client_mode else "input_device"
+            ] = (input_device or "")
         if output_device is not None:
-            config["realtime"]["client_output_device" if client_mode else "output_device"] = output_device or ""
+            config["realtime"][
+                "client_output_device" if client_mode else "output_device"
+            ] = (output_device or "")
         if monitor_device is not None:
-            config["realtime"]["client_monitor_device" if client_mode else "monitor_device"] = monitor_device or ""
+            config["realtime"][
+                "client_monitor_device" if client_mode else "monitor_device"
+            ] = (monitor_device or "")
         if model_file is not None:
             config["realtime"]["model_file"] = model_file or ""
         if monitor_device is not None:
@@ -326,9 +332,15 @@ def load_realtime_settings():
                     "input_device": realtime_config.get("input_device", ""),
                     "output_device": realtime_config.get("output_device", ""),
                     "monitor_device": realtime_config.get("monitor_device", ""),
-                    "client_input_device": realtime_config.get("client_input_device", ""),
-                    "client_output_device": realtime_config.get("client_output_device", ""),
-                    "client_monitor_device": realtime_config.get("client_monitor_device", ""),
+                    "client_input_device": realtime_config.get(
+                        "client_input_device", ""
+                    ),
+                    "client_output_device": realtime_config.get(
+                        "client_output_device", ""
+                    ),
+                    "client_monitor_device": realtime_config.get(
+                        "client_monitor_device", ""
+                    ),
                     "model_file": realtime_config.get("model_file", ""),
                     "index_file": realtime_config.get("index_file", ""),
                 }
@@ -507,7 +519,7 @@ def start_realtime(
     except (ValueError, IndexError):
         yield "Incorrectly formatted audio device. Stopping.", interactive_true, interactive_false
         return
-    
+
     callbacks_kwargs = {
         "pass_through": PASS_THROUGH,
         "read_chunk_size": read_chunk_size,
@@ -538,7 +550,7 @@ def start_realtime(
         "clean_audio": clean_audio,
         "clean_strength": clean_strength,
         "post_process": post_process,
-"        record_audio": record_audio,
+        "        record_audio": record_audio,
         "record_audio_path": record_audio_path,
         "export_format": export_format,
         "kwargs": {
@@ -577,7 +589,7 @@ def start_realtime(
             "delay_seconds": delay_seconds,
             "delay_feedback": delay_feedback,
             "delay_mix": delay_mix,
-        }
+        },
     }
 
     callbacks = AudioCallbacks(**callbacks_kwargs)
@@ -612,12 +624,16 @@ def change_callbacks_config():
 
         # It will need to create a new stream to work.
         # callbacks.vc.block_frame = callbacks_kwargs.get("read_chunk_size", 192) * 128
-        crossfade_frame = int(callbacks_kwargs.get("cross_fade_overlap_size", 0.1) * AUDIO_SAMPLE_RATE)
-        extra_frame = int(callbacks_kwargs.get("extra_convert_size", 0.5) * AUDIO_SAMPLE_RATE)
+        crossfade_frame = int(
+            callbacks_kwargs.get("cross_fade_overlap_size", 0.1) * AUDIO_SAMPLE_RATE
+        )
+        extra_frame = int(
+            callbacks_kwargs.get("extra_convert_size", 0.5) * AUDIO_SAMPLE_RATE
+        )
 
         if (
-            callbacks.vc.crossfade_frame != crossfade_frame or
-            callbacks.vc.extra_frame != extra_frame
+            callbacks.vc.crossfade_frame != crossfade_frame
+            or callbacks.vc.extra_frame != extra_frame
         ):
             # Deleting these things is not a good idea; they should only be overwritten directly.
             # del (
@@ -629,7 +645,7 @@ def change_callbacks_config():
             del (
                 callbacks.vc.fade_in_window,
                 callbacks.vc.fade_out_window,
-                callbacks.vc.sola_buffer
+                callbacks.vc.sola_buffer,
             )
 
             callbacks.vc.vc_model.realloc(
@@ -640,8 +656,10 @@ def change_callbacks_config():
             )
             callbacks.vc.generate_strength()
 
-        callbacks.vc.vc_model.input_sensitivity = 10 ** (callbacks_kwargs.get("silent_threshold", -90) / 20)
- 
+        callbacks.vc.vc_model.input_sensitivity = 10 ** (
+            callbacks_kwargs.get("silent_threshold", -90) / 20
+        )
+
         vad_enabled = callbacks_kwargs.get("vad_enabled", True)
         if vad_enabled is False:
             callbacks.vc.vc_model.vad = None
@@ -651,7 +669,7 @@ def change_callbacks_config():
             callbacks.vc.vc_model.vad = VADProcessor(
                 sensitivity_mode=3,
                 sample_rate=callbacks.vc.vc_model.sample_rate,
-                frame_duration_ms=30,  
+                frame_duration_ms=30,
             )
 
         # The VAD parameters have been assigned by default.
@@ -667,12 +685,10 @@ def change_callbacks_config():
         elif clean_audio and callbacks.vc.vc_model.reduced_noise is None:
             from noisereduce.torchgate import TorchGate
 
-            callbacks.vc.vc_model.reduced_noise = (
-                TorchGate(
-                    callbacks.vc.vc_model.pipeline.tgt_sr,
-                    prop_decrease=clean_strength,
-                ).to(callbacks.vc.vc_model.device)
-            )
+            callbacks.vc.vc_model.reduced_noise = TorchGate(
+                callbacks.vc.vc_model.pipeline.tgt_sr,
+                prop_decrease=clean_strength,
+            ).to(callbacks.vc.vc_model.device)
 
         if callbacks.vc.vc_model.reduced_noise is not None:
             callbacks.vc.vc_model.reduced_noise.prop_decrease = clean_strength
@@ -695,13 +711,21 @@ def change_callbacks_config():
         callbacks.audio.volume_envelope = callbacks_kwargs.get("volume_envelope", 1)
 
         callbacks.audio.f0_autotune = callbacks_kwargs.get("f0_autotune", False)
-        callbacks.audio.f0_autotune_strength = callbacks_kwargs.get("f0_autotune_strength", 1.0)
+        callbacks.audio.f0_autotune_strength = callbacks_kwargs.get(
+            "f0_autotune_strength", 1.0
+        )
         callbacks.audio.proposed_pitch = callbacks_kwargs.get("proposed_pitch", False)
-        callbacks.audio.proposed_pitch_threshold = callbacks_kwargs.get("proposed_pitch_threshold", 155.0)
+        callbacks.audio.proposed_pitch_threshold = callbacks_kwargs.get(
+            "proposed_pitch_threshold", 155.0
+        )
 
         callbacks.audio.input_audio_gain = callbacks_kwargs.get("input_audio_gain", 1.0)
-        callbacks.audio.output_audio_gain = callbacks_kwargs.get("output_audio_gain", 1.0)
-        callbacks.audio.monitor_audio_gain = callbacks_kwargs.get("monitor_audio_gain", 1.0)
+        callbacks.audio.output_audio_gain = callbacks_kwargs.get(
+            "output_audio_gain", 1.0
+        )
+        callbacks.audio.monitor_audio_gain = callbacks_kwargs.get(
+            "monitor_audio_gain", 1.0
+        )
 
         model_pth = callbacks_kwargs.get("model_path", callbacks.vc.vc_model.model_path)
         if model_pth and callbacks.vc.vc_model.model_path != model_pth:
@@ -709,11 +733,14 @@ def change_callbacks_config():
             callbacks.vc.vc_model.pipeline.vc.load_model(model_pth)
             callbacks.vc.vc_model.pipeline.vc.setup_network()
             # Set a new version, otherwise it will crash.
-            callbacks.vc.vc_model.pipeline.version = callbacks.vc.vc_model.pipeline.vc.version
+            callbacks.vc.vc_model.pipeline.version = (
+                callbacks.vc.vc_model.pipeline.vc.version
+            )
 
         sid = callbacks_kwargs.get("sid", callbacks.vc.vc_model.pipeline.sid)
         if callbacks.vc.vc_model.pipeline.sid != sid:
             import torch
+
             # This is for multi-SID models.
             callbacks.vc.vc_model.pipeline.torch_sid = torch.tensor(
                 [sid], device=callbacks.vc.vc_model.pipeline.device, dtype=torch.int64
@@ -741,18 +768,24 @@ def change_callbacks_config():
             callbacks.vc.vc_model.pipeline.big_npy = None
             callbacks.vc.vc_model.index_path = None
 
-        f0_method = callbacks_kwargs.get("f0_method", callbacks.vc.vc_model.pipeline.f0_method)
+        f0_method = callbacks_kwargs.get(
+            "f0_method", callbacks.vc.vc_model.pipeline.f0_method
+        )
         if callbacks.vc.vc_model.pipeline.f0_method != f0_method:
             f0_model = callbacks.vc.vc_model.pipeline.setup_f0(f0_method)
             callbacks.vc.vc_model.pipeline.f0_model = f0_model
             callbacks.vc.vc_model.pipeline.f0_method = f0_method
 
-        embedder_model = callbacks_kwargs.get("embedder_model", callbacks.vc.vc_model.embedder_model)
-        embedder_model_custom = callbacks_kwargs.get("embedder_model_custom", callbacks.vc.vc_model.embedder_model_custom)
+        embedder_model = callbacks_kwargs.get(
+            "embedder_model", callbacks.vc.vc_model.embedder_model
+        )
+        embedder_model_custom = callbacks_kwargs.get(
+            "embedder_model_custom", callbacks.vc.vc_model.embedder_model_custom
+        )
 
         if (
-            callbacks.vc.vc_model.embedder_model != embedder_model or
-            callbacks.vc.vc_model.embedder_model_custom != embedder_model_custom
+            callbacks.vc.vc_model.embedder_model != embedder_model
+            or callbacks.vc.vc_model.embedder_model_custom != embedder_model_custom
         ):
             old_hubert_model = callbacks.vc.vc_model.pipeline.hubert_model
             del old_hubert_model
@@ -791,7 +824,11 @@ def stop_realtime():
         audio_manager = callbacks = None
         time.sleep(0.1)
 
-        return "Stopped", interactive_true, interactive_false,
+        return (
+            "Stopped",
+            interactive_true,
+            interactive_false,
+        )
     else:
         return "Realtime pipeline not found!", interactive_true, interactive_false
 
@@ -847,18 +884,27 @@ def update_dropdowns_from_json(data):
 
 def update_button_from_json(data):
     if not data:
-        return [gr.update(interactive=True, visible=True), gr.update(interactive=False, visible=False)]
+        return [
+            gr.update(interactive=True, visible=True),
+            gr.update(interactive=False, visible=False),
+        ]
 
     return [
-        gr.update(interactive=data.get("start_button", True), visible=data.get("start_button", True)),
-        gr.update(interactive=data.get("stop_button", False), visible=data.get("stop_button", False)),
+        gr.update(
+            interactive=data.get("start_button", True),
+            visible=data.get("start_button", True),
+        ),
+        gr.update(
+            interactive=data.get("stop_button", False),
+            visible=data.get("stop_button", False),
+        ),
     ]
 
 
 def update_value_from_json(data):
     if not data:
         return [gr.update(), gr.update(value=None)]
-    
+
     return [
         data.get("button", "Start"),
         data.get("path", None),
@@ -866,9 +912,7 @@ def update_value_from_json(data):
 
 
 def soundfile_record_audio(
-    record_button,
-    record_audio_path: str = None,
-    export_format: str = "WAV"
+    record_button, record_audio_path: str = None, export_format: str = "WAV"
 ):
     global callbacks
 
@@ -877,7 +921,9 @@ def soundfile_record_audio(
             gr.Info("Start recording...")
 
             if not record_audio_path:
-                record_audio_path = os.path.join(now_dir, "assets", "audios", "record_audio.wav")
+                record_audio_path = os.path.join(
+                    now_dir, "assets", "audios", "record_audio.wav"
+                )
 
             callbacks.vc.record_audio = True
             callbacks.vc.record_audio_path = record_audio_path
@@ -908,8 +954,16 @@ def realtime_tab():
             output_devices.keys()
         )
     else:
-        input_devices = [saved_settings["client_input_device"]] if saved_settings["client_input_device"] else []
-        output_devices = [saved_settings["client_output_device"]] if saved_settings["client_output_device"] else []
+        input_devices = (
+            [saved_settings["client_input_device"]]
+            if saved_settings["client_input_device"]
+            else []
+        )
+        output_devices = (
+            [saved_settings["client_output_device"]]
+            if saved_settings["client_output_device"]
+            else []
+        )
 
     # Load saved settings
 
@@ -945,7 +999,14 @@ def realtime_tab():
                                 ),
                                 choices=input_devices,
                                 value=get_safe_dropdown_value(
-                                    saved_settings["client_input_device" if client_mode else "input_device"], input_devices
+                                    saved_settings[
+                                        (
+                                            "client_input_device"
+                                            if client_mode
+                                            else "input_device"
+                                        )
+                                    ],
+                                    input_devices,
                                 ),
                                 interactive=True,
                             )
@@ -980,7 +1041,14 @@ def realtime_tab():
                                 ),
                                 choices=output_devices,
                                 value=get_safe_dropdown_value(
-                                    saved_settings["client_output_device" if client_mode else "output_device"], output_devices
+                                    saved_settings[
+                                        (
+                                            "client_output_device"
+                                            if client_mode
+                                            else "output_device"
+                                        )
+                                    ],
+                                    output_devices,
                                 ),
                                 interactive=True,
                             )
@@ -1020,7 +1088,14 @@ def realtime_tab():
                             ),
                             choices=output_devices,
                             value=get_safe_dropdown_value(
-                                saved_settings["client_monitor_device" if client_mode else "monitor_device"], output_devices
+                                saved_settings[
+                                    (
+                                        "client_monitor_device"
+                                        if client_mode
+                                        else "monitor_device"
+                                    )
+                                ],
+                                output_devices,
                             ),
                             interactive=True,
                         )
@@ -1054,7 +1129,9 @@ def realtime_tab():
                             info=i18n(
                                 "The path where the output audio will be saved, by default in assets/audios/output.wav"
                             ),
-                            value=os.path.join(now_dir, "assets", "audios", "output.wav"),
+                            value=os.path.join(
+                                now_dir, "assets", "audios", "output.wav"
+                            ),
                             interactive=True,
                         )
                     export_format = gr.Radio(
@@ -1071,12 +1148,12 @@ def realtime_tab():
                         label=i18n("Exclusive Mode"),
                         info=i18n(
                             "For WASAPI (Windows), gives the app exclusive control for potentially lower latency."
-                            if not client_mode else
-                            "Gives the app exclusive control for potentially lower latency."
+                            if not client_mode
+                            else "Gives the app exclusive control for potentially lower latency."
                         ),
                         value=False,
                         interactive=True,
-                        visible=client_mode # This is quite bad because it's prone to errors when used locally.
+                        visible=client_mode,  # This is quite bad because it's prone to errors when used locally.
                     )
                     vad_enabled = gr.Checkbox(
                         label=i18n("Enable VAD"),
@@ -1507,7 +1584,7 @@ def realtime_tab():
                         info=i18n(
                             "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
                         ),
-                        value=0, # The index is not always necessary, so disabling it can help improve latency.
+                        value=0,  # The index is not always necessary, so disabling it can help improve latency.
                         interactive=True,
                     )
                     volume_envelope = gr.Slider(
@@ -1690,7 +1767,11 @@ def realtime_tab():
             json_audio_hidden.change(
                 fn=update_dropdowns_from_json,
                 inputs=[json_audio_hidden],
-                outputs=[input_audio_device, output_audio_device, monitor_output_device],
+                outputs=[
+                    input_audio_device,
+                    output_audio_device,
+                    monitor_output_device,
+                ],
             )
 
             json_button_hidden.change(
@@ -1702,12 +1783,16 @@ def realtime_tab():
             json_value_hidden.change(
                 fn=update_value_from_json,
                 inputs=[json_value_hidden],
-                outputs=[record_audio, record_output]
+                outputs=[record_audio, record_output],
             )
         else:
             refresh_devices_button.click(
                 fn=refresh_devices,
-                outputs=[input_audio_device, output_audio_device, monitor_output_device],
+                outputs=[
+                    input_audio_device,
+                    output_audio_device,
+                    monitor_output_device,
+                ],
             )
 
         autotune.change(
@@ -1859,7 +1944,7 @@ def realtime_tab():
             start_button.click(
                 fn=lambda: [interactive_false, interactive_visible],
                 inputs=[],
-                outputs=[start_button, stop_button]
+                outputs=[start_button, stop_button],
             )
 
             start_button.click(
@@ -1936,19 +2021,15 @@ def realtime_tab():
                 outputs=[json_button_hidden],
             )
 
-            stop_button.click(fn=None, js="StopAudioStream", outputs=[json_button_hidden])
+            stop_button.click(
+                fn=None, js="StopAudioStream", outputs=[json_button_hidden]
+            )
 
             record_audio.click(
                 fn=None,
                 js="SoundfileRecordAudio",
-                inputs=[
-                    record_audio,
-                    record_audio_path,
-                    export_format
-                ],
-                outputs=[
-                    json_value_hidden
-                ]
+                inputs=[record_audio, record_audio_path, export_format],
+                outputs=[json_value_hidden],
             )
         else:
             start_button.click(
@@ -2029,7 +2110,7 @@ def realtime_tab():
 
             stop_button.click(
                 fn=stop_realtime, outputs=[latency_info, start_button, stop_button]
-            ) # .then(
+            )  # .then(
             #     fn=lambda: (
             #         yield gr.update(value="Stopped"),
             #         interactive_true,
@@ -2041,15 +2122,8 @@ def realtime_tab():
 
             record_audio.click(
                 fn=soundfile_record_audio,
-                inputs=[
-                    record_audio,
-                    record_audio_path,
-                    export_format
-                ],
-                outputs=[
-                    record_audio,
-                    record_output
-                ]
+                inputs=[record_audio, record_audio_path, export_format],
+                outputs=[record_audio, record_output],
             )
 
         unload_button.click(
@@ -2066,26 +2140,67 @@ def realtime_tab():
 
         # Add event handlers to save settings
         input_audio_device.change(
-            fn=save_realtime_settings, inputs=[input_audio_device, output_audio_device, monitor_output_device, model_file, index_file], outputs=[]
+            fn=save_realtime_settings,
+            inputs=[
+                input_audio_device,
+                output_audio_device,
+                monitor_output_device,
+                model_file,
+                index_file,
+            ],
+            outputs=[],
         )
 
         output_audio_device.change(
-            fn=save_realtime_settings, inputs=[input_audio_device, output_audio_device, monitor_output_device, model_file, index_file], outputs=[]
+            fn=save_realtime_settings,
+            inputs=[
+                input_audio_device,
+                output_audio_device,
+                monitor_output_device,
+                model_file,
+                index_file,
+            ],
+            outputs=[],
         )
 
         monitor_output_device.change(
-            fn=save_realtime_settings, inputs=[input_audio_device, output_audio_device, monitor_output_device, model_file, index_file], outputs=[]
+            fn=save_realtime_settings,
+            inputs=[
+                input_audio_device,
+                output_audio_device,
+                monitor_output_device,
+                model_file,
+                index_file,
+            ],
+            outputs=[],
         )
 
         model_file.change(
-            fn=save_realtime_settings, inputs=[input_audio_device, output_audio_device, monitor_output_device, model_file, index_file], outputs=[]
+            fn=save_realtime_settings,
+            inputs=[
+                input_audio_device,
+                output_audio_device,
+                monitor_output_device,
+                model_file,
+                index_file,
+            ],
+            outputs=[],
         )
 
         index_file.change(
-            fn=save_realtime_settings, inputs=[input_audio_device, output_audio_device, monitor_output_device, model_file, index_file], outputs=[]
+            fn=save_realtime_settings,
+            inputs=[
+                input_audio_device,
+                output_audio_device,
+                monitor_output_device,
+                model_file,
+                index_file,
+            ],
+            outputs=[],
         )
 
         if client_mode:
+
             def refresh_all():
                 new_names = get_files("model")
                 new_indexes = get_files("index")
@@ -2102,6 +2217,7 @@ def realtime_tab():
                 ],
             )
         else:
+
             def refresh_all():
                 new_names = get_files("model")
                 new_indexes = get_files("index")
@@ -2128,73 +2244,793 @@ def realtime_tab():
                 ],
             )
 
-        model_file.change(js="(value) => window.ChangeConfig(value, 'model_path')" if client_mode else None, fn=lambda value: change_config(value, "model_path") if not client_mode else None, inputs=[model_file], outputs=[])
-        index_file.change(js="(value) => window.ChangeConfig(value, 'index_path')" if client_mode else None, fn=lambda value: change_config(value, "index_path") if not client_mode else None, inputs=[index_file], outputs=[])
-        f0_method.change(js="(value) => window.ChangeConfig(value, 'f0_method')" if client_mode else None, fn=lambda value: change_config(value, "f0_method") if not client_mode else None, inputs=[f0_method], outputs=[])
-        embedder_model.change(js="(value) => window.ChangeConfig(value, 'embedder_model')" if client_mode else None, fn=lambda value: change_config(value, "embedder_model") if not client_mode else None, inputs=[embedder_model], outputs=[])
-        embedder_model_custom.change(js="(value) => window.ChangeConfig(value, 'embedder_model_custom')" if client_mode else None, fn=lambda value: change_config(value, "embedder_model_custom") if not client_mode else None, inputs=[embedder_model_custom], outputs=[])
+        model_file.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'model_path')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "model_path") if not client_mode else None
+            ),
+            inputs=[model_file],
+            outputs=[],
+        )
+        index_file.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'index_path')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "index_path") if not client_mode else None
+            ),
+            inputs=[index_file],
+            outputs=[],
+        )
+        f0_method.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'f0_method')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "f0_method") if not client_mode else None
+            ),
+            inputs=[f0_method],
+            outputs=[],
+        )
+        embedder_model.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'embedder_model')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "embedder_model") if not client_mode else None
+            ),
+            inputs=[embedder_model],
+            outputs=[],
+        )
+        embedder_model_custom.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'embedder_model_custom')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "embedder_model_custom")
+                if not client_mode
+                else None
+            ),
+            inputs=[embedder_model_custom],
+            outputs=[],
+        )
 
-        input_audio_gain.change(js="(value) => window.ChangeConfig(value, 'input_audio_gain')" if client_mode else None, fn=lambda value: change_config(value / 100.0, "input_audio_gain") if not client_mode else None, inputs=[input_audio_gain], outputs=[])
-        output_audio_gain.change(js="(value) => window.ChangeConfig(value, 'output_audio_gain')" if client_mode else None, fn=lambda value: change_config(value / 100.0, "output_audio_gain") if not client_mode else None, inputs=[output_audio_gain], outputs=[])
-        monitor_audio_gain.change(js="(value) => window.ChangeConfig(value, 'monitor_audio_gain')" if client_mode else None, fn=lambda value: change_config(value / 100.0, "monitor_audio_gain") if not client_mode else None, inputs=[monitor_audio_gain], outputs=[])
-        vad_enabled.change(js="(value) => window.ChangeConfig(value, 'vad_enabled')" if client_mode else None, fn=lambda value: change_config(value, "vad_enabled") if not client_mode else None, inputs=[vad_enabled], outputs=[])
-        cross_fade_overlap_size.change(js="(value) => window.ChangeConfig(value, 'cross_fade_overlap_size')" if client_mode else None, fn=lambda value: change_config(value, "cross_fade_overlap_size") if not client_mode else None, inputs=[cross_fade_overlap_size], outputs=[])
-        extra_convert_size.change(js="(value) => window.ChangeConfig(value, 'extra_convert_size')" if client_mode else None, fn=lambda value: change_config(value, "extra_convert_size") if not client_mode else None, inputs=[extra_convert_size], outputs=[])
-        silent_threshold.change(js="(value) => window.ChangeConfig(value, 'silent_threshold')" if client_mode else None, fn=lambda value: change_config(value, "silent_threshold") if not client_mode else None, inputs=[silent_threshold], outputs=[])
+        input_audio_gain.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'input_audio_gain')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value / 100.0, "input_audio_gain")
+                if not client_mode
+                else None
+            ),
+            inputs=[input_audio_gain],
+            outputs=[],
+        )
+        output_audio_gain.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'output_audio_gain')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value / 100.0, "output_audio_gain")
+                if not client_mode
+                else None
+            ),
+            inputs=[output_audio_gain],
+            outputs=[],
+        )
+        monitor_audio_gain.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'monitor_audio_gain')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value / 100.0, "monitor_audio_gain")
+                if not client_mode
+                else None
+            ),
+            inputs=[monitor_audio_gain],
+            outputs=[],
+        )
+        vad_enabled.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'vad_enabled')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "vad_enabled") if not client_mode else None
+            ),
+            inputs=[vad_enabled],
+            outputs=[],
+        )
+        cross_fade_overlap_size.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'cross_fade_overlap_size')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "cross_fade_overlap_size")
+                if not client_mode
+                else None
+            ),
+            inputs=[cross_fade_overlap_size],
+            outputs=[],
+        )
+        extra_convert_size.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'extra_convert_size')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "extra_convert_size") if not client_mode else None
+            ),
+            inputs=[extra_convert_size],
+            outputs=[],
+        )
+        silent_threshold.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'silent_threshold')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "silent_threshold") if not client_mode else None
+            ),
+            inputs=[silent_threshold],
+            outputs=[],
+        )
 
         # chunk_size.change(fn=lambda value: change_config(int(value * AUDIO_SAMPLE_RATE / 1000 / 128) if not client_mode else None, "read_chunk_size"), inputs=[chunk_size], outputs=[])
 
-        pitch.change(js="(value) => window.ChangeConfig(value, 'f0_up_key')" if client_mode else None, fn=lambda value: change_config(value, "f0_up_key") if not client_mode else None, inputs=[pitch], outputs=[])
-        index_rate.change(js="(value) => window.ChangeConfig(value, 'index_rate')" if client_mode else None, fn=lambda value: change_config(value, "index_rate") if not client_mode else None, inputs=[index_rate], outputs=[])
-        volume_envelope.change(js="(value) => window.ChangeConfig(value, 'volume_envelope')" if client_mode else None, fn=lambda value: change_config(value, "volume_envelope") if not client_mode else None, inputs=[volume_envelope], outputs=[])
-        protect.change(js="(value) => window.ChangeConfig(value, 'protect')" if client_mode else None, fn=lambda value: change_config(value, "protect") if not client_mode else None, inputs=[protect], outputs=[])
+        pitch.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'f0_up_key')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "f0_up_key") if not client_mode else None
+            ),
+            inputs=[pitch],
+            outputs=[],
+        )
+        index_rate.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'index_rate')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "index_rate") if not client_mode else None
+            ),
+            inputs=[index_rate],
+            outputs=[],
+        )
+        volume_envelope.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'volume_envelope')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "volume_envelope") if not client_mode else None
+            ),
+            inputs=[volume_envelope],
+            outputs=[],
+        )
+        protect.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'protect')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "protect") if not client_mode else None
+            ),
+            inputs=[protect],
+            outputs=[],
+        )
 
-        autotune.change(js="(value) => window.ChangeConfig(value, 'autotune')" if client_mode else None, fn=lambda value: change_config(value, "autotune") if not client_mode else None, inputs=[autotune], outputs=[])
-        autotune_strength.change(js="(value) => window.ChangeConfig(value, 'autotune_strength')" if client_mode else None, fn=lambda value: change_config(value, "autotune_strength") if not client_mode else None, inputs=[autotune_strength], outputs=[])
-        proposed_pitch.change(js="(value) => window.ChangeConfig(value, 'proposed_pitch')" if client_mode else None, fn=lambda value: change_config(value, "proposed_pitch") if not client_mode else None, inputs=[proposed_pitch], outputs=[])
-        proposed_pitch_threshold.change(js="(value) => window.ChangeConfig(value, 'proposed_pitch_threshold')" if client_mode else None, fn=lambda value: change_config(value, "proposed_pitch_threshold") if not client_mode else None, inputs=[proposed_pitch_threshold], outputs=[])
-        clean_audio.change(js="(value) => window.ChangeConfig(value, 'clean_audio')" if client_mode else None, fn=lambda value: change_config(value, "clean_audio") if not client_mode else None, inputs=[clean_audio], outputs=[])
-        clean_strength.change(js="(value) => window.ChangeConfig(value, 'clean_strength')" if client_mode else None, fn=lambda value: change_config(value, "clean_strength") if not client_mode else None, inputs=[clean_strength], outputs=[])
+        autotune.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'autotune')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "autotune") if not client_mode else None
+            ),
+            inputs=[autotune],
+            outputs=[],
+        )
+        autotune_strength.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'autotune_strength')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "autotune_strength") if not client_mode else None
+            ),
+            inputs=[autotune_strength],
+            outputs=[],
+        )
+        proposed_pitch.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'proposed_pitch')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "proposed_pitch") if not client_mode else None
+            ),
+            inputs=[proposed_pitch],
+            outputs=[],
+        )
+        proposed_pitch_threshold.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'proposed_pitch_threshold')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "proposed_pitch_threshold")
+                if not client_mode
+                else None
+            ),
+            inputs=[proposed_pitch_threshold],
+            outputs=[],
+        )
+        clean_audio.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'clean_audio')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "clean_audio") if not client_mode else None
+            ),
+            inputs=[clean_audio],
+            outputs=[],
+        )
+        clean_strength.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'clean_strength')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "clean_strength") if not client_mode else None
+            ),
+            inputs=[clean_strength],
+            outputs=[],
+        )
 
-        post_process.change(js="(value) => window.ChangeConfig(value, 'post_process')" if client_mode else None, fn=lambda value: change_config(value, "post_process") if not client_mode else None, inputs=[post_process], outputs=[])
-        reverb.change(js="(value) => window.ChangeConfig(value, 'reverb', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "reverb", if_kwargs=True) if not client_mode else None, inputs=[reverb], outputs=[])
-        pitch_shift.change(js="(value) => window.ChangeConfig(value, 'pitch_shift', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "pitch_shift", if_kwargs=True) if not client_mode else None, inputs=[pitch_shift], outputs=[])
-        limiter.change(js="(value) => window.ChangeConfig(value, 'limiter', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "limiter", if_kwargs=True) if not client_mode else None, inputs=[limiter], outputs=[])
-        gain.change(js="(value) => window.ChangeConfig(value, 'gain', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "gain", if_kwargs=True) if not client_mode else None, inputs=[gain], outputs=[])
-        distortion.change(js="(value) => window.ChangeConfig(value, 'distortion', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "distortion", if_kwargs=True) if not client_mode else None, inputs=[distortion], outputs=[])
-        chorus.change(js="(value) => window.ChangeConfig(value, 'chorus', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "chorus", if_kwargs=True) if not client_mode else None, inputs=[chorus], outputs=[])
-        bitcrush.change(js="(value) => window.ChangeConfig(value, 'bitcrush', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "bitcrush", if_kwargs=True) if not client_mode else None, inputs=[bitcrush], outputs=[])
-        clipping.change(js="(value) => window.ChangeConfig(value, 'clipping', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "clipping", if_kwargs=True) if not client_mode else None, inputs=[clipping], outputs=[])
-        compressor.change(js="(value) => window.ChangeConfig(value, 'compressor', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "compressor", if_kwargs=True) if not client_mode else None, inputs=[compressor], outputs=[])
-        delay.change(js="(value) => window.ChangeConfig(value, 'delay', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "delay", if_kwargs=True) if not client_mode else None, inputs=[delay], outputs=[])
-    
-        reverb_room_size.change(js="(value) => window.ChangeConfig(value, 'reverb_room_size', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "reverb_room_size", if_kwargs=True) if not client_mode else None, inputs=[reverb_room_size], outputs=[])
-        reverb_damping.change(js="(value) => window.ChangeConfig(value, 'reverb_damping', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "reverb_damping", if_kwargs=True) if not client_mode else None, inputs=[reverb_damping], outputs=[])
-        reverb_wet_gain.change(js="(value) => window.ChangeConfig(value, 'reverb_wet_gain', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "reverb_wet_gain", if_kwargs=True) if not client_mode else None, inputs=[reverb_wet_gain], outputs=[])
-        reverb_dry_gain.change(js="(value) => window.ChangeConfig(value, 'reverb_dry_gain', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "reverb_dry_gain", if_kwargs=True) if not client_mode else None, inputs=[reverb_dry_gain], outputs=[])
-        reverb_width.change(js="(value) => window.ChangeConfig(value, 'reverb_width', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "reverb_width", if_kwargs=True) if not client_mode else None, inputs=[reverb_width], outputs=[])
-        reverb_freeze_mode.change(js="(value) => window.ChangeConfig(value, 'reverb_freeze_mode', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "reverb_freeze_mode", if_kwargs=True) if not client_mode else None, inputs=[reverb_freeze_mode], outputs=[])
-    
-        pitch_shift_semitones.change(js="(value) => window.ChangeConfig(value, 'pitch_shift_semitones', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "pitch_shift_semitones", if_kwargs=True) if not client_mode else None, inputs=[pitch_shift_semitones], outputs=[])
-        limiter_threshold.change(js="(value) => window.ChangeConfig(value, 'limiter_threshold', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "limiter_threshold", if_kwargs=True) if not client_mode else None, inputs=[limiter_threshold], outputs=[])
-        limiter_release_time.change(js="(value) => window.ChangeConfig(value, 'limiter_release_time', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "limiter_release_time", if_kwargs=True) if not client_mode else None, inputs=[limiter_release_time], outputs=[])
-        gain_db.change(js="(value) => window.ChangeConfig(value, 'gain_db', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "gain_db", if_kwargs=True) if not client_mode else None, inputs=[gain_db], outputs=[])
-        distortion_gain.change(js="(value) => window.ChangeConfig(value, 'distortion_gain', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "distortion_gain", if_kwargs=True) if not client_mode else None, inputs=[distortion_gain], outputs=[])
+        post_process.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'post_process')"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "post_process") if not client_mode else None
+            ),
+            inputs=[post_process],
+            outputs=[],
+        )
+        reverb.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'reverb', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "reverb", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[reverb],
+            outputs=[],
+        )
+        pitch_shift.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'pitch_shift', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "pitch_shift", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[pitch_shift],
+            outputs=[],
+        )
+        limiter.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'limiter', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "limiter", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[limiter],
+            outputs=[],
+        )
+        gain.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'gain', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "gain", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[gain],
+            outputs=[],
+        )
+        distortion.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'distortion', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "distortion", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[distortion],
+            outputs=[],
+        )
+        chorus.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'chorus', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "chorus", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[chorus],
+            outputs=[],
+        )
+        bitcrush.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'bitcrush', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "bitcrush", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[bitcrush],
+            outputs=[],
+        )
+        clipping.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'clipping', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "clipping", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[clipping],
+            outputs=[],
+        )
+        compressor.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'compressor', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "compressor", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[compressor],
+            outputs=[],
+        )
+        delay.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'delay', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "delay", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[delay],
+            outputs=[],
+        )
 
-        chorus_rate.change(js="(value) => window.ChangeConfig(value, 'chorus_rate', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "chorus_rate", if_kwargs=True) if not client_mode else None, inputs=[chorus_rate], outputs=[])
-        chorus_depth.change(js="(value) => window.ChangeConfig(value, 'chorus_depth', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "chorus_depth", if_kwargs=True) if not client_mode else None, inputs=[chorus_depth], outputs=[])
-        chorus_center_delay.change(js="(value) => window.ChangeConfig(value, 'chorus_center_delay', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "chorus_center_delay", if_kwargs=True) if not client_mode else None, inputs=[chorus_center_delay], outputs=[])
-        chorus_feedback.change(js="(value) => window.ChangeConfig(value, 'chorus_feedback', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "chorus_feedback", if_kwargs=True) if not client_mode else None, inputs=[chorus_feedback], outputs=[])
-        chorus_mix.change(js="(value) => window.ChangeConfig(value, 'chorus_mix', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "chorus_mix", if_kwargs=True) if not client_mode else None, inputs=[chorus_mix], outputs=[])
+        reverb_room_size.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'reverb_room_size', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "reverb_room_size", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[reverb_room_size],
+            outputs=[],
+        )
+        reverb_damping.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'reverb_damping', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "reverb_damping", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[reverb_damping],
+            outputs=[],
+        )
+        reverb_wet_gain.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'reverb_wet_gain', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "reverb_wet_gain", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[reverb_wet_gain],
+            outputs=[],
+        )
+        reverb_dry_gain.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'reverb_dry_gain', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "reverb_dry_gain", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[reverb_dry_gain],
+            outputs=[],
+        )
+        reverb_width.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'reverb_width', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "reverb_width", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[reverb_width],
+            outputs=[],
+        )
+        reverb_freeze_mode.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'reverb_freeze_mode', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "reverb_freeze_mode", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[reverb_freeze_mode],
+            outputs=[],
+        )
 
-        bitcrush_bit_depth.change(js="(value) => window.ChangeConfig(value, 'bitcrush_bit_depth', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "bitcrush_bit_depth", if_kwargs=True) if not client_mode else None, inputs=[bitcrush_bit_depth], outputs=[])
-        clipping_threshold.change(js="(value) => window.ChangeConfig(value, 'clipping_threshold', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "clipping_threshold", if_kwargs=True) if not client_mode else None, inputs=[clipping_threshold], outputs=[])
+        pitch_shift_semitones.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'pitch_shift_semitones', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "pitch_shift_semitones", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[pitch_shift_semitones],
+            outputs=[],
+        )
+        limiter_threshold.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'limiter_threshold', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "limiter_threshold", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[limiter_threshold],
+            outputs=[],
+        )
+        limiter_release_time.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'limiter_release_time', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "limiter_release_time", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[limiter_release_time],
+            outputs=[],
+        )
+        gain_db.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'gain_db', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "gain_db", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[gain_db],
+            outputs=[],
+        )
+        distortion_gain.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'distortion_gain', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "distortion_gain", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[distortion_gain],
+            outputs=[],
+        )
 
-        compressor_threshold.change(js="(value) => window.ChangeConfig(value, 'compressor_threshold', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "compressor_threshold", if_kwargs=True) if not client_mode else None, inputs=[compressor_threshold], outputs=[])
-        compressor_ratio.change(js="(value) => window.ChangeConfig(value, 'compressor_ratio', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "compressor_ratio", if_kwargs=True) if not client_mode else None, inputs=[compressor_ratio], outputs=[])
-        compressor_attack.change(js="(value) => window.ChangeConfig(value, 'compressor_attack', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "compressor_attack", if_kwargs=True) if not client_mode else None, inputs=[compressor_attack], outputs=[])
-        compressor_release.change(js="(value) => window.ChangeConfig(value, 'compressor_release', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "compressor_release", if_kwargs=True) if not client_mode else None, inputs=[compressor_release], outputs=[])
+        chorus_rate.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'chorus_rate', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "chorus_rate", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[chorus_rate],
+            outputs=[],
+        )
+        chorus_depth.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'chorus_depth', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "chorus_depth", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[chorus_depth],
+            outputs=[],
+        )
+        chorus_center_delay.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'chorus_center_delay', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "chorus_center_delay", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[chorus_center_delay],
+            outputs=[],
+        )
+        chorus_feedback.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'chorus_feedback', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "chorus_feedback", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[chorus_feedback],
+            outputs=[],
+        )
+        chorus_mix.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'chorus_mix', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "chorus_mix", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[chorus_mix],
+            outputs=[],
+        )
 
-        delay_seconds.change(js="(value) => window.ChangeConfig(value, 'delay_seconds', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "delay_seconds", if_kwargs=True) if not client_mode else None, inputs=[delay_seconds], outputs=[])
-        delay_feedback.change(js="(value) => window.ChangeConfig(value, 'delay_feedback', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "delay_feedback", if_kwargs=True) if not client_mode else None, inputs=[delay_feedback], outputs=[])
-        delay_mix.change(js="(value) => window.ChangeConfig(value, 'delay_mix', if_kwargs=true)" if client_mode else None, fn=lambda value: change_config(value, "delay_mix", if_kwargs=True) if not client_mode else None, inputs=[delay_mix], outputs=[])
+        bitcrush_bit_depth.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'bitcrush_bit_depth', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "bitcrush_bit_depth", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[bitcrush_bit_depth],
+            outputs=[],
+        )
+        clipping_threshold.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'clipping_threshold', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "clipping_threshold", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[clipping_threshold],
+            outputs=[],
+        )
+
+        compressor_threshold.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'compressor_threshold', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "compressor_threshold", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[compressor_threshold],
+            outputs=[],
+        )
+        compressor_ratio.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'compressor_ratio', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "compressor_ratio", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[compressor_ratio],
+            outputs=[],
+        )
+        compressor_attack.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'compressor_attack', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "compressor_attack", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[compressor_attack],
+            outputs=[],
+        )
+        compressor_release.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'compressor_release', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "compressor_release", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[compressor_release],
+            outputs=[],
+        )
+
+        delay_seconds.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'delay_seconds', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "delay_seconds", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[delay_seconds],
+            outputs=[],
+        )
+        delay_feedback.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'delay_feedback', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "delay_feedback", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[delay_feedback],
+            outputs=[],
+        )
+        delay_mix.change(
+            js=(
+                "(value) => window.ChangeConfig(value, 'delay_mix', if_kwargs=true)"
+                if client_mode
+                else None
+            ),
+            fn=lambda value: (
+                change_config(value, "delay_mix", if_kwargs=True)
+                if not client_mode
+                else None
+            ),
+            inputs=[delay_mix],
+            outputs=[],
+        )

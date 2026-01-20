@@ -35,7 +35,7 @@ class RealtimeVoiceConverter:
         self.version = None  # Model version
         self.use_f0 = None  # Whether the model uses F0
         # Change this when you need to test FP16, and it may not be faster.
-        self.dtype = torch.float32 # torch.float16 if config.is_half else torch.float32
+        self.dtype = torch.float32  # torch.float16 if config.is_half else torch.float32
         # load weights and setup model network.
         self.load_model(weight_root)
         self.setup_network()
@@ -312,7 +312,9 @@ class Realtime_Pipeline:
 
             pitchf = pitchf.to(self.dtype) if self.use_f0 else None
             p_len = torch.tensor([p_len], device=self.device, dtype=torch.int64)
-            out_audio = self.vc.inference(feats, p_len, self.torch_sid, pitch, pitchf).float()
+            out_audio = self.vc.inference(
+                feats, p_len, self.torch_sid, pitch, pitchf
+            ).float()
             if volume_envelope != 1:
                 out_audio = AudioProcessor.change_rms(
                     audio.cpu().numpy(),

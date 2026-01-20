@@ -214,8 +214,7 @@ class Audio:
 
             output_channels = outdata.shape[1]
             outdata[:] = (
-                np.repeat(mon_wav, output_channels).reshape(-1, output_channels)
-                * gain
+                np.repeat(mon_wav, output_channels).reshape(-1, output_channels) * gain
             )
         except Exception as error:
             print(f"An error occurred while running the audio queue: {error}")
@@ -247,14 +246,16 @@ class Audio:
                 extra_settings=input_extra_setting,
             )
             self.output_stream = sd.OutputStream(
-                callback=lambda outdata, frames, times, status: self.audio_queue(outdata, self.output_audio_gain),
+                callback=lambda outdata, frames, times, status: self.audio_queue(
+                    outdata, self.output_audio_gain
+                ),
                 latency="low",
                 dtype=np.float32,
                 device=output_device_id,
                 blocksize=block_frame,
                 samplerate=AUDIO_SAMPLE_RATE,
                 channels=output_max_channel,
-                extra_settings=output_extra_setting
+                extra_settings=output_extra_setting,
             )
             self.input_stream.start()
             self.output_stream.start()
@@ -273,7 +274,9 @@ class Audio:
 
         if self.use_monitor:
             self.monitor = sd.OutputStream(
-                callback=lambda outdata, frames, times, status: self.audio_queue(outdata, self.monitor_audio_gain),
+                callback=lambda outdata, frames, times, status: self.audio_queue(
+                    outdata, self.monitor_audio_gain
+                ),
                 latency="low",
                 dtype=np.float32,
                 device=output_monitor_id,
