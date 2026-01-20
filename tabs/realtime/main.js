@@ -4,6 +4,10 @@
     window._workletNode = null;
     window._playbackNode = null;
     window._ws = null;
+    window.OutputAudioRoute = null;
+    window.MonitorAudioRoute = null;
+    window.lastSend = 0;
+    window.responseMs = 0;
 
     // Function to display status
     function setStatus(msg, use_alert = true) {
@@ -330,8 +334,8 @@
             src.connect(inputNode);
 
             // Create audio and monitor output
-            createOutputRoute(window._audioCtx, playbackNode, output_audio_device, output_audio_gain / 100);
-            if (use_monitor_device && monitor_output_device) createOutputRoute(window._audioCtx, playbackNode, monitor_output_device, monitor_audio_gain / 100);
+            window.OutputAudioRoute = createOutputRoute(window._audioCtx, playbackNode, output_audio_device, output_audio_gain / 100);
+            if (use_monitor_device && monitor_output_device) window.MonitorAudioRoute = createOutputRoute(window._audioCtx, playbackNode, monitor_output_device, monitor_audio_gain / 100);
             // Configure path and websocket
             const protocol = (location.protocol === "https:") ? "wss:" : "ws:";
             const wsUrl = protocol + '//' + location.hostname + `:${location.port}` + '/api/ws-audio';
@@ -353,8 +357,8 @@
                         chunk_size: ReadChunkSize,
                         cross_fade_overlap_size: cross_fade_overlap_size,
                         extra_convert_size: extra_convert_size,
-                        model_file: model_file,
-                        index_file: index_file || '',
+                        model_path: model_file,
+                        index_path: index_file || '',
                         f0_method: f0_method,
                         embedder_model: embedder_model,
                         embedder_model_custom: embedder_model_custom || '',
@@ -362,7 +366,7 @@
                         vad_enabled: vad_enabled,
                         sid: sid,
                         input_audio_gain: input_audio_gain,
-                        pitch: pitch,
+                        f0_up_key: pitch,
                         index_rate: index_rate,
                         protect: protect,
                         volume_envelope: volume_envelope,
@@ -418,7 +422,10 @@
                 const chunk = e.data && e.data.chunk;
 
                 if (!chunk) return;
-                if (ws.readyState === WebSocket.OPEN) ws.send(chunk); // Send raw audio
+                if (ws.readyState === WebSocket.OPEN) {
+                    window.lastSend = performance.now();
+                    ws.send(chunk); // Send raw audio
+                }
             };
 
             ws.onmessage = (ev) => { 
@@ -426,12 +433,14 @@
                 if (typeof ev.data === 'string') {
                     const msg = JSON.parse(ev.data);
                     // Show latency information in the status bar of the interface
-                    if (msg.type === 'latency') setStatus(`Latency: ${msg.value.toFixed(1)} ms`, use_alert=false)
+                    if (msg.type === 'latency') setStatus(`Latency: ${msg.value.toFixed(2)} ms | Volume: ${msg.volume.toFixed(2)} dB | Response: ${window.responseMs.toFixed(2)} ms`, use_alert=false)
                     return;
                 }
                 // Send audio to the playback node to the audio device
                 const ab = ev.data;
                 playbackNode.port.postMessage({ chunk: ab }, [ab]);
+
+                window.responseMs = performance.now() - window.lastSend;
             };
 
             ws.onclose = () => console.log("[WS] Closed!");
@@ -449,6 +458,32 @@
             return StopAudioStream();
         }
     };
+
+    window.ChangeConfig = async function(value, key, if_kwargs=false) {
+        if (key === "output_audio_gain") {
+            window.OutputAudioRoute.gainNode.gain.value = value / 100
+        } else if (key == "monitor_audio_gain") {
+            if (window.MonitorAudioRoute) window.MonitorAudioRoute.gainNode.gain.value = value / 100
+        } else {
+            const protocol = (location.protocol === "https:") ? "wss:" : "ws:";
+            const wsUrl = protocol + '//' + location.hostname + `:${location.port}` + '/api/change-config';
+            const ws = new WebSocket(wsUrl);
+
+            ws.binaryType = "arraybuffer";
+            ws.onopen = () => {
+                ws.send(
+                    JSON.stringify({
+                        type: 'init',
+                        key: key,
+                        value: value,
+                        if_kwargs: if_kwargs
+                    })
+                );
+    
+                ws.close();
+            };
+        }
+    }
 
     window.StopAudioStream = async function() {
         try {
@@ -477,6 +512,9 @@
                 window._audioCtx = null;
             }
 
+            if (window.OutputAudioRoute) window.OutputAudioRoute = null;
+            if (window.MonitorAudioRoute) window.MonitorAudioRoute = null;
+
             document.querySelectorAll('audio').forEach(a => a.remove());
             setStatus("Stopped", use_alert=false);
 
@@ -485,6 +523,34 @@
             setStatus(`An error has occurred: ${e}`);
 
             return {"start_button": false, "stop_button": true}
+        }
+    };
+
+    window.SoundfileRecordAudio = async function (RecordButton, RecordAudioPath, ExportFormat) {
+        const protocol = (location.protocol === "https:") ? "https:" : "http:";
+        const url = protocol + '//' + location.hostname + `:${location.port}` + '/api/record';
+
+        const res = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                record_button: RecordButton,
+                record_audio_path: RecordAudioPath,
+                export_format: ExportFormat
+            })
+        });
+
+        const msg = await res.json();
+
+        if (msg.type === "info" || msg.type === "warnings") {
+            alert(msg.value);
+
+            return {
+                "button": msg.button,
+                "path": msg.path
+            };
         }
     };
 }

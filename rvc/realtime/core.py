@@ -60,7 +60,11 @@ class Realtime:
         # Convert dB to RMS
         self.input_sensitivity = 10 ** (silent_threshold / 20)
         self.window_size = self.sample_rate // 100
-        self.dtype = torch.float32  # torch.float16 if config.is_half else torch.float32
+        self.kwargs = None
+        self.model_path = model_path
+        self.index_path = index_path
+        self.embedder_model = embedder_model
+        self.embedder_model_custom = embedder_model_custom
 
         self.vad = (
             VADProcessor(
@@ -83,6 +87,7 @@ class Realtime:
             sid,
         )
         self.device = self.pipeline.device
+        self.dtype = self.pipeline.dtype
         # noise reduce
         self.reduced_noise = (
             TorchGate(
@@ -238,6 +243,9 @@ class Realtime:
         vol_t = torch.sqrt(torch.square(self.audio_buffer).mean())
         vol = max(vol_t.item(), 0)
 
+        board = self.board
+        reduced_noise = self.reduced_noise
+
         if self.vad is not None:
             is_speech = self.vad.is_speech(audio_input_16k.cpu().numpy().copy())
             if not is_speech:
@@ -260,13 +268,13 @@ class Realtime:
                     f0_autotune_strength,
                     proposed_pitch,
                     proposed_pitch_threshold,
-                    self.reduced_noise,
-                    self.board,
+                    reduced_noise,
+                    board,
                 )
 
                 return (
                     torch.zeros(
-                        audio_model.shape, dtype=self.dtype, device=self.device
+                        audio_model.shape, dtype=torch.float32, device=self.device
                     ),
                     vol,
                 )
@@ -288,12 +296,12 @@ class Realtime:
                 f0_autotune_strength,
                 proposed_pitch,
                 proposed_pitch_threshold,
-                self.reduced_noise,
-                self.board,
+                reduced_noise,
+                board,
             )
 
             return (
-                torch.zeros(audio_model.shape, dtype=self.dtype, device=self.device),
+                torch.zeros(audio_model.shape, dtype=torch.float32, device=self.device),
                 vol,
             )
 
@@ -315,8 +323,8 @@ class Realtime:
             f0_autotune_strength,
             proposed_pitch,
             proposed_pitch_threshold,
-            self.reduced_noise,
-            self.board,
+            reduced_noise,
+            board,
         )
 
         audio_out: torch.Tensor = self.resample_out(audio_model * torch.sqrt(vol_t))
@@ -345,9 +353,16 @@ class VoiceChanger:
         clean_audio: bool = False,
         clean_strength: float = 0.5,
         post_process: bool = False,
+        record_audio: bool = False,
+        record_audio_path: str = None,
+        export_format: str = "WAV",
         **kwargs,
         # device: str = "cuda",
     ):
+        self.soundfile = None
+        self.record_audio = record_audio
+        self.record_audio_path = record_audio_path
+        self.export_format = export_format
         self.block_frame = read_chunk_size * 128
         self.crossfade_frame = int(cross_fade_overlap_size * AUDIO_SAMPLE_RATE)
         self.extra_frame = int(extra_convert_size * AUDIO_SAMPLE_RATE)
@@ -378,6 +393,7 @@ class VoiceChanger:
             self.sola_search_frame,
         )
         self.generate_strength()
+        self.setup_soundfile_record()
 
     def generate_strength(self):
         self.fade_in_window: torch.Tensor = (
@@ -400,6 +416,17 @@ class VoiceChanger:
         self.sola_buffer = torch.zeros(
             self.crossfade_frame, device=self.device, dtype=torch.float32
         )
+
+    def setup_soundfile_record(self):
+        import soundfile as sf
+
+        self.soundfile = sf.SoundFile(
+            self.record_audio_path,
+            mode="w",
+            samplerate=AUDIO_SAMPLE_RATE,
+            channels=1,
+            format=self.export_format.lower(),
+        ) if self.record_audio else None
 
     def process_audio(
         self,
@@ -431,7 +458,7 @@ class VoiceChanger:
         # In case there's an actual silence - send full block with zeros
         # return np.zeros(block_size, dtype=np.float32), vol
 
-        conv_input = audio[None, None, : self.crossfade_frame + self.sola_search_frame]
+        conv_input = audio[None, None, : self.crossfade_frame + self.sola_search_frame].float()
         cor_nom = F.conv1d(conv_input, self.sola_buffer[None, None, :])
         cor_den = torch.sqrt(
             F.conv1d(
@@ -447,7 +474,12 @@ class VoiceChanger:
         audio[: self.crossfade_frame] += self.sola_buffer * self.fade_out_window
 
         self.sola_buffer[:] = audio[block_size : block_size + self.crossfade_frame]
-        return audio[:block_size].detach().cpu().numpy(), vol
+        audio_output = audio[:block_size].detach().cpu().numpy()
+
+        if self.record_audio and self.soundfile is not None:
+            self.soundfile.write(audio_output)
+
+        return audio_output, vol
 
     @torch.no_grad()
     def on_request(

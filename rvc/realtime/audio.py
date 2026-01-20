@@ -24,6 +24,9 @@ class ServerAudioDevice:
 
 
 def check_the_device(device, type: str = "input"):
+    if sys.platform == "linux" and "hw:" not in device["name"]:
+        return False
+
     stream_cls = sd.InputStream if type == "input" else sd.OutputStream
     try:
         with stream_cls(
@@ -109,7 +112,7 @@ class Audio:
         volume_envelope: float = 1,
         f0_autotune: bool = False,
         f0_autotune_strength: float = 1,
-        proposed_pitch=False,
+        proposed_pitch: bool = False,
         proposed_pitch_threshold: float = 155.0,
         input_audio_gain: float = 1.0,
         output_audio_gain: float = 1.0,
@@ -119,6 +122,8 @@ class Audio:
         self.callbacks = callbacks
         self.mon_queue = Queue()
         self.stream = None
+        self.input_stream = None
+        self.output_stream = None
         self.monitor = None
         self.running = False
         self.input_audio_gain = input_audio_gain
@@ -163,12 +168,24 @@ class Audio:
         )
 
     def process_data_with_time(self, indata: np.ndarray):
-        out_wav, _, perf, _ = self.process_data(indata)
+        out_wav, vol, perf, _ = self.process_data(indata)
         performance_ms = perf[1]
         # print(f"real-time voice conversion performance: {performance_ms:.2f} ms")
         self.latency = performance_ms  # latency to display on the application interface
+        self.volume = vol
 
         return out_wav
+
+    def audio_stream_no_output_callback(
+        self, indata: np.ndarray, frames, times, status
+    ):
+        try:
+            out_wav = self.process_data_with_time(indata)
+
+            self.mon_queue.put(out_wav)
+        except Exception as error:
+            print(f"An error occurred while running the audio stream: {error}")
+            print(traceback.format_exc())
 
     def audio_stream_callback(
         self, indata: np.ndarray, outdata: np.ndarray, frames, times, status
@@ -188,7 +205,7 @@ class Audio:
             print(f"An error occurred while running the audio stream: {error}")
             print(traceback.format_exc())
 
-    def audio_queue(self, outdata: np.ndarray, frames, times, status):
+    def audio_queue(self, outdata: np.ndarray, gain: float):
         try:
             mon_wav = self.mon_queue.get()
 
@@ -198,7 +215,7 @@ class Audio:
             output_channels = outdata.shape[1]
             outdata[:] = (
                 np.repeat(mon_wav, output_channels).reshape(-1, output_channels)
-                * self.monitor_audio_gain
+                * gain
             )
         except Exception as error:
             print(f"An error occurred while running the audio queue: {error}")
@@ -217,21 +234,47 @@ class Audio:
         output_extra_setting,
         output_monitor_extra_setting,
     ):
-        self.stream = sd.Stream(
-            callback=self.audio_stream_callback,
-            latency="low",
-            dtype=np.float32,
-            device=(input_device_id, output_device_id),
-            blocksize=block_frame,
-            samplerate=AUDIO_SAMPLE_RATE,
-            channels=(input_max_channel, output_max_channel),
-            extra_settings=(input_extra_setting, output_extra_setting),
-        )
-        self.stream.start()
+        if input_device_id != output_device_id:
+            # Only use in cases involving different backends devices.
+            self.input_stream = sd.InputStream(
+                callback=self.audio_stream_no_output_callback,
+                latency="low",
+                dtype=np.float32,
+                device=input_device_id,
+                blocksize=block_frame,
+                samplerate=AUDIO_SAMPLE_RATE,
+                channels=input_max_channel,
+                extra_settings=input_extra_setting,
+            )
+            self.output_stream = sd.OutputStream(
+                callback=lambda outdata, frames, times, status: self.audio_queue(outdata, self.output_audio_gain),
+                latency="low",
+                dtype=np.float32,
+                device=output_device_id,
+                blocksize=block_frame,
+                samplerate=AUDIO_SAMPLE_RATE,
+                channels=output_max_channel,
+                extra_settings=output_extra_setting
+            )
+            self.input_stream.start()
+            self.output_stream.start()
+        else:
+            self.stream = sd.Stream(
+                callback=self.audio_stream_callback,
+                latency="low",
+                dtype=np.float32,
+                device=(input_device_id, output_device_id),
+                blocksize=block_frame,
+                samplerate=AUDIO_SAMPLE_RATE,
+                channels=(input_max_channel, output_max_channel),
+                extra_settings=(input_extra_setting, output_extra_setting),
+            )
+            self.stream.start()
 
         if self.use_monitor:
             self.monitor = sd.OutputStream(
-                callback=self.audio_queue,
+                callback=lambda outdata, frames, times, status: self.audio_queue(outdata, self.monitor_audio_gain),
+                latency="low",
                 dtype=np.float32,
                 device=output_monitor_id,
                 blocksize=block_frame,
@@ -247,6 +290,14 @@ class Audio:
         if self.stream is not None:
             self.stream.close()
             self.stream = None
+
+        if self.input_stream is not None:
+            self.input_stream.close()
+            self.input_stream = None
+
+        if self.output_stream is not None:
+            self.output_stream.close()
+            self.output_stream = None
 
         if self.monitor is not None:
             self.monitor.close()
@@ -279,11 +330,10 @@ class Audio:
             output_monitor_extra_setting,
             monitor_channels,
         ) = (None, None, None, None)
-        wasapi_exclusive_mode = bool(exclusive_mode)
 
         if input_audio_device and "WASAPI" in input_audio_device.host_api:
             input_extra_setting = sd.WasapiSettings(
-                exclusive=wasapi_exclusive_mode, auto_convert=not wasapi_exclusive_mode
+                exclusive=exclusive_mode, auto_convert=not exclusive_mode
             )
         elif (
             input_audio_device
@@ -297,7 +347,7 @@ class Audio:
 
         if output_audio_device and "WASAPI" in output_audio_device.host_api:
             output_extra_setting = sd.WasapiSettings(
-                exclusive=wasapi_exclusive_mode, auto_convert=not wasapi_exclusive_mode
+                exclusive=exclusive_mode, auto_convert=not exclusive_mode
             )
         elif (
             input_audio_device
@@ -315,8 +365,8 @@ class Audio:
 
             if output_monitor_device and "WASAPI" in output_monitor_device.host_api:
                 output_monitor_extra_setting = sd.WasapiSettings(
-                    exclusive=wasapi_exclusive_mode,
-                    auto_convert=not wasapi_exclusive_mode,
+                    exclusive=exclusive_mode,
+                    auto_convert=not exclusive_mode,
                 )
             elif (
                 output_monitor_device
