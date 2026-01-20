@@ -42,7 +42,7 @@ gradio==5.23.1
 certifi>=2023.07.22; sys_platform == 'darwin'
 antlr4-python3-runtime==4.8; sys_platform == 'darwin'
 tensorboardX
-edge-tts==7.2.0
+edge-tts==7.2.7
 pypresence
 beautifulsoup4
 sounddevice
