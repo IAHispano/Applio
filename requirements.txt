@@ -46,4 +46,4 @@ edge-tts==7.2.7
 pypresence
 beautifulsoup4
 sounddevice
-webrtcvad
+webrtcvad-wheels
