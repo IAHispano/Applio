@@ -25,9 +25,8 @@ gradio_temp_dir = os.path.join(tempfile.gettempdir(), "gradio")
 if os.path.exists(gradio_temp_dir):
     shutil.rmtree(gradio_temp_dir)
 
-
 def save_drop_model(dropbox):
-    if "pth" not in dropbox and "index" not in dropbox:
+    if "pth" not in dropbox and "index" not in dropbox.lower():
         raise gr.Error(
             message="The file you dropped is not a valid model file. Please try again."
         )
@@ -35,13 +34,13 @@ def save_drop_model(dropbox):
     file_name = format_title(os.path.basename(dropbox))
     model_name = file_name
 
-    if ".pth" in model_name:
+    if ".pth" in model_name.lower():
         model_name = model_name.split(".pth")[0]
-    elif ".index" in model_name:
+    elif ".index" in model_name.lower():
         replacements = ["nprobe_1_", "_v1", "_v2", "added_"]
         for rep in replacements:
             model_name = model_name.replace(rep, "")
-        model_name = model_name.split(".index")[0]
+        model_name = model_name.lower().split(".index")[0]
 
     model_path = os.path.join(now_dir, "logs", model_name)
     if not os.path.exists(model_path):
@@ -167,6 +166,32 @@ def update_sample_rate_dropdown(model):
         "__type__": "update",
     }
 
+def update_sample_rate_dropdown_and_check(model):
+    sample_rates = get_pretrained_sample_rates(model)
+    default = sample_rates[0] if sample_rates else ""
+    return (
+        gr.update(choices=sample_rates, value=default),
+        validate_pretrained_download(model, default),
+    )
+
+def validate_model_link(link):
+    if not online or not link.strip() or "http:" not in link.lower() or "ftp:" not in link.lower():
+        return gr.update(interactive=False)
+    return gr.update(interactive=True)
+
+def validate_pretrained_download(model, sample_rate):
+    valid = (
+        model.strip() in get_pretrained_list()
+        and sample_rate.strip() in get_pretrained_sample_rates(model.strip())
+    )
+    return gr.update(interactive=valid)
+
+def validate_inputs(name, url):
+    all_valid = (
+        online,
+        url.lower().startswith(("http:", "ftp:"))
+    )
+    return gr.update(interactive=all_valid)
 
 def download_handler(is_custom, model, sample_rate, url_g, url_d):
     if is_custom:
@@ -195,7 +220,7 @@ def download_tab():
             max_lines=8,
             interactive=False,
         )
-        model_download_button = gr.Button(i18n("Download Model"))
+        model_download_button = gr.Button(i18n("Download Model"), interactive=False)
         model_download_button.click(
             fn=run_download_script,
             inputs=[model_link],
@@ -265,4 +290,28 @@ def download_tab():
             fn=download_handler,
             inputs=[use_custom, pretrained_model, pretrained_sample_rate, url_g, url_d],
             outputs=[],
+        )
+
+        model_link.input(
+            fn=validate_model_link,
+            inputs=[model_link],
+            outputs=[model_download_button],
+        )
+
+        pretrained_model.change(
+            validate_pretrained_download,
+            inputs=[pretrained_model, pretrained_sample_rate],
+            outputs=[download_pretrained],
+        )
+
+        pretrained_sample_rate.input(
+            validate_pretrained_download,
+            inputs=[pretrained_model, pretrained_sample_rate],
+            outputs=[download_pretrained],
+        )
+
+        pretrained_model.change(
+            fn=update_sample_rate_dropdown_and_check,
+            inputs=[pretrained_model],
+            outputs=[pretrained_sample_rate, download_pretrained],
         )

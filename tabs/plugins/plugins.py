@@ -12,6 +12,7 @@ sys.path.append(now_dir)
 
 plugins_core.check_new_folders()
 
+plugin_dir = os.path.join(now_dir, "tabs", "plugins", "installed")
 
 def plugins_tab():
     with gr.TabItem(i18n("Plugin Installer")):
@@ -26,7 +27,10 @@ def plugins_tab():
             outputs=[dropbox],
         )
 
-    for plugin in os.listdir(os.path.join(now_dir, "tabs", "plugins", "installed")):
+    for plugin in os.listdir(plugin_dir):
+        if os.path.isfile(os.path.join(plugin_dir, plugin)):
+            continue
+
         plugin_main = f"tabs.plugins.installed.{plugin}.plugin"
         plugin_import = importlib.import_module(plugin_main)
 

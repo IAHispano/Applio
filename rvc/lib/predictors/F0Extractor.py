@@ -33,9 +33,16 @@ class F0Extractor:
         return self.hop_length / self.sample_rate
 
     @property
-    def wav16k(self):
-        return resampy.resample(self.x, self.sample_rate, 16000)
+    def wav16k(self) -> np.ndarray:
+        if self.sample_rate == 16000:
+            return self.x
 
+        gcd = math.gcd(self.sample_rate, 16000)
+        up = 16000 // gcd
+        down = self.sample_rate // gcd
+
+        return resample_poly(self.x, up, down)
+    
     def extract_f0(self):
         f0 = None
         method = self.method

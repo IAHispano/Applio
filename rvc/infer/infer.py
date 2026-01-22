@@ -1,6 +1,6 @@
 import os
-import sys
 import soxr
+import math
 import time
 import torch
 import librosa
@@ -23,8 +23,10 @@ from pedalboard import (
     Delay,
 )
 
+from scipy.signal import resample_poly
+
 now_dir = os.getcwd()
-sys.path.append(now_dir)
+os.sys.path.append(now_dir)
 
 from rvc.infer.pipeline import Pipeline as VC
 from rvc.lib.utils import load_audio_infer, load_embedding
@@ -37,6 +39,10 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("faiss").setLevel(logging.WARNING)
 logging.getLogger("faiss.loader").setLevel(logging.WARNING)
 
+def safe_float(value, default):
+    if isinstance(value, (int, float)):
+        return float(value)
+    return default
 
 class VoiceConverter:
     """
@@ -118,9 +124,12 @@ class VoiceConverter:
                     48000,
                 ]
                 target_sr = min(common_sample_rates, key=lambda x: abs(x - sample_rate))
-                audio = librosa.resample(
-                    audio, orig_sr=sample_rate, target_sr=target_sr, res_type="soxr_vhq"
-                )
+
+                gcd = math.gcd(sample_rate, target_sr)
+                up = target_sr // gcd
+                down = sample_rate // gcd
+                audio = resample_poly(audio, up, down)
+
                 sf.write(output_path, audio, target_sr, format=output_format.lower())
             return output_path
         except Exception as error:
@@ -168,7 +177,7 @@ class VoiceConverter:
             )
             board.append(chorus)
         if kwargs.get("bitcrush", False):
-            bitcrush = Bitcrush(bit_depth=kwargs.get("bitcrush_bit_depth", 8))
+            bitcrush = Bitcrush(bit_depth=safe_float(kwargs.get("bitcrush_bit_depth", 8), 8))
             board.append(bitcrush)
         if kwargs.get("clipping", False):
             clipping = Clipping(threshold_db=kwargs.get("clipping_threshold", 0))
@@ -215,6 +224,7 @@ class VoiceConverter:
         sid: int = 0,
         proposed_pitch: bool = False,
         proposed_pitch_threshold: float = 155.0,
+        stereoize: bool = False,
         **kwargs,
     ):
         """
@@ -241,6 +251,7 @@ class VoiceConverter:
             embedder_model_custom (str): Path to the custom embedder model.
             resample_sr (int, optional): Resample sampling rate. Default is 0.
             sid (int, optional): Speaker ID. Default is 0.
+            stereoize (bool, optional): Determines whether result is mono or stereo.
             **kwargs: Additional keyword arguments.
         """
         if not model_path:
@@ -253,13 +264,8 @@ class VoiceConverter:
             start_time = time.time()
             print(f"Converting audio '{audio_input_path}'...")
 
-            audio = load_audio_infer(
-                audio_input_path,
-                16000,
-                **kwargs,
-            )
+            audio = load_audio_infer(audio_input_path, 16000, **kwargs)
             audio_max = np.abs(audio).max() / 0.95
-
             if audio_max > 1:
                 audio /= audio_max
 
@@ -283,61 +289,102 @@ class VoiceConverter:
                 chunks, intervals = process_audio(audio, 16000)
                 print(f"Audio split into {len(chunks)} chunks for processing.")
             else:
-                chunks = []
-                chunks.append(audio)
+                chunks = [audio]
 
-            converted_chunks = []
-            for c in chunks:
-                audio_opt = self.vc.pipeline(
-                    model=self.hubert_model,
-                    net_g=self.net_g,
-                    sid=sid,
-                    audio=c,
-                    pitch=pitch,
-                    f0_method=f0_method,
-                    file_index=file_index,
-                    index_rate=index_rate,
-                    pitch_guidance=self.use_f0,
-                    volume_envelope=volume_envelope,
-                    version=self.version,
-                    protect=protect,
-                    f0_autotune=f0_autotune,
-                    f0_autotune_strength=f0_autotune_strength,
-                    proposed_pitch=proposed_pitch,
-                    proposed_pitch_threshold=proposed_pitch_threshold,
-                )
-                converted_chunks.append(audio_opt)
-                if split_audio:
-                    print(f"Converted audio chunk {len(converted_chunks)}")
+            # ---------- helper ----------
+            def infer_chunks(chunks):
+                out = []
+                for c in chunks:
+                    out.append(
+                        self.vc.pipeline(
+                            model=self.hubert_model,
+                            net_g=self.net_g,
+                            sid=sid,
+                            audio=c,
+                            pitch=pitch,
+                            f0_method=f0_method,
+                            file_index=file_index,
+                            index_rate=index_rate,
+                            pitch_guidance=self.use_f0,
+                            volume_envelope=volume_envelope,
+                            version=self.version,
+                            protect=protect,
+                            f0_autotune=f0_autotune,
+                            f0_autotune_strength=f0_autotune_strength,
+                            proposed_pitch=proposed_pitch,
+                            proposed_pitch_threshold=proposed_pitch_threshold,
+                        )
+                    )
+                return out
 
-            if split_audio:
-                audio_opt = merge_audio(
-                    chunks, converted_chunks, intervals, 16000, self.tgt_sr
-                )
+            # ================== STEREO ==================
+            if stereoize:
+                print("Stereo mode enabled. Running dual inference...")
+                channels = []
+
+                for i in range(2):
+                    print(f"Processing channel {i+1}...")
+                    converted_chunks = infer_chunks(chunks)
+
+                    if split_audio:
+                        audio_channel = merge_audio(chunks, converted_chunks, intervals, 16000, self.tgt_sr)
+                    else:
+                        audio_channel = converted_chunks[0]
+
+                    if clean_audio:
+                        audio_channel = self.remove_audio_noise(audio_channel, self.tgt_sr, clean_strength) or audio_channel
+
+                    if post_process:
+                        audio_channel = self.post_process_audio(audio_channel, self.tgt_sr, **kwargs)
+
+                    channels.append(audio_channel)
+
+                audio_opt = np.stack(channels, axis=1)
+            # ================== MONO ==================
             else:
-                audio_opt = converted_chunks[0]
+                converted_chunks = infer_chunks(chunks)
 
-            if clean_audio:
-                cleaned_audio = self.remove_audio_noise(
-                    audio_opt, self.tgt_sr, clean_strength
-                )
-                if cleaned_audio is not None:
-                    audio_opt = cleaned_audio
+                if split_audio:
+                    audio_opt = merge_audio(
+                        chunks, converted_chunks, intervals, 16000, self.tgt_sr
+                    )
+                else:
+                    audio_opt = converted_chunks[0]
 
-            if post_process:
-                audio_opt = self.post_process_audio(
-                    audio_input=audio_opt,
-                    sample_rate=self.tgt_sr,
-                    **kwargs,
-                )
+                if clean_audio:
+                    audio_opt = (
+                        self.remove_audio_noise(audio_opt, self.tgt_sr, clean_strength)
+                        or audio_opt
+                    )
+
+                if post_process:
+                    audio_opt = self.post_process_audio(
+                        audio_input=audio_opt,
+                        sample_rate=self.tgt_sr,
+                        **kwargs,
+                    )
 
             sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
-            output_path_format = audio_output_path.replace(
-                ".wav", f".{export_format.lower()}"
-            )
-            audio_output_path = self.convert_audio_format(
-                audio_output_path, output_path_format, export_format
-            )
+
+            base, _ = os.path.splitext(audio_output_path)
+
+            # determine final format
+            if export_format.lower() == "inherit":
+                final_format = os.path.splitext(audio_input_path)[1].lstrip(".").lower()
+            else:
+                final_format = export_format.lower()
+
+            final_output_path = f"{base}.{final_format}"
+
+            # convert only if needed
+            if final_format != "wav":
+                audio_output_path = self.convert_audio_format(
+                    audio_output_path,
+                    final_output_path,
+                    final_format
+                )
+            else:
+                audio_output_path = audio_output_path
 
             elapsed_time = time.time() - start_time
             print(
@@ -399,6 +446,7 @@ class VoiceConverter:
                 new_output = os.path.join(audio_output_path, new_output)
                 if os.path.exists(new_output):
                     continue
+                os.makedirs(audio_output_path, exist_ok = True)
                 self.convert_audio(
                     audio_input_path=new_input,
                     audio_output_path=new_output,

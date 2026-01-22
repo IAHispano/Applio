@@ -39,7 +39,7 @@ from tabs.settings.settings import settings_tab
 from tabs.realtime.realtime import realtime_tab
 
 # Run prerequisites
-from core import run_prerequisites_script
+from core import run_prerequisites_script, online
 
 run_prerequisites_script(
     pretraineds_hifigan=True,
@@ -52,13 +52,18 @@ from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
 
+if not online:
+    msg = i18n("No internet connection could be established, some features may not be available.")
+    print(msg + "\n")
+    gr.Warning(msg)
+
 # Start Discord presence if enabled
-from tabs.settings.sections.presence import load_config_presence
+if online:
+    from tabs.settings.sections.presence import load_config_presence
 
-if load_config_presence():
-    from assets.discord_presence import RPCManager
-
-    RPCManager.start_presence()
+    if load_config_presence():
+        from assets.discord_presence import RPCManager
+        RPCManager.start_presence()
 
 # Check installation
 import assets.installation_checker as installation_checker
@@ -99,20 +104,27 @@ with gr.Blocks(
     with gr.Tab(i18n("Training")):
         train_tab()
 
-    with gr.Tab(i18n("TTS")):
-        tts_tab()
+    if online:
+        with gr.Tab(i18n("TTS")):
+            tts_tab()
 
     with gr.Tab(i18n("Voice Blender")):
         voice_blender_tab()
 
-    with gr.Tab(i18n("Realtime")):
-        realtime_tab()
+    try:
+        import webrtcvad
+
+        with gr.Tab(i18n("Realtime")):
+            realtime_tab()
+    except ImportError:
+        pass
 
     with gr.Tab(i18n("Plugins")):
         plugins_tab()
 
-    with gr.Tab(i18n("Download")):
-        download_tab()
+    if online:
+        with gr.Tab(i18n("Download")):
+            download_tab()
 
     with gr.Tab(i18n("Report a Bug")):
         report_tab()

@@ -1,4 +1,5 @@
-import os, sys
+import os
+import time
 import gradio as gr
 import regex as re
 import shutil
@@ -20,7 +21,7 @@ from tabs.settings.sections.filter import get_filter_trigger, load_config_filter
 i18n = I18nAuto()
 
 now_dir = os.getcwd()
-sys.path.append(now_dir)
+os.sys.path.append(now_dir)
 
 model_root = os.path.join(now_dir, "logs")
 audio_root = os.path.join(now_dir, "assets", "audios")
@@ -53,6 +54,21 @@ sup_audioext = {
     "ac3",
 }
 
+def validate_audio_path(audio_path):
+    if (
+        os.path.normpath(audio_path) in (os.curdir, os.pardir, os.sep)
+        or not audio_path
+
+        or not audio_root in os.path.abspath(audio_path)
+        or not os.path.exists(audio_path)
+        or os.path.isdir(audio_path)
+    ):
+        gr.Warning(i18n("Provided audio path is invalid:") + "\n" + audio_path)
+        gr.Info(i18n("Reverting path to latest file:") + "\n" + os.path.basename(get_latest_audio(audio_root)))
+
+        return gr.update(value=get_latest_audio(audio_root))
+
+    return gr.update(value=audio_path)
 
 def normalize_path(p):
     return os.path.normpath(p).replace("\\", "/").lower()
@@ -273,6 +289,29 @@ def extract_model_and_epoch(path):
         model, epoch = match.groups()
         return model, int(epoch)
     return "", 0
+
+def get_latest_audio(directory, include_outs: bool = False):
+    try:
+        files = []
+
+        for f in os.listdir(directory):
+            fp = os.path.join(directory, f)
+
+            if not os.path.isfile(fp):
+                continue
+
+            if not include_outs and os.path.splitext(f.lower())[0].endswith("_output"):
+                continue
+
+            files.append(fp)
+
+        if not files:
+            return ""
+
+        latest = max(files, key=os.path.getmtime)
+        return os.path.relpath(latest, now_dir)
+    except Exception:
+        return os.path.join(directory, "input.wav")
 
 
 def save_to_wav(record_button):
@@ -567,7 +606,7 @@ def inference_tab():
                     label=i18n("Select Audio"),
                     info=i18n("Select the audio to convert."),
                     choices=sorted(audio_paths),
-                    value=audio_paths[0] if audio_paths else "",
+                    value=get_latest_audio(audio_root),
                     interactive=True,
                     allow_custom_value=True,
                 )
@@ -584,7 +623,7 @@ def inference_tab():
                         "The path where the output audio will be saved, by default in assets/audios/output.wav"
                     ),
                     value=(
-                        output_path_fn(audio_paths[0])
+                        output_path_fn(get_latest_audio(audio_root))
                         if audio_paths
                         else os.path.join(now_dir, "assets", "audios", "output.wav")
                     ),
@@ -593,7 +632,7 @@ def inference_tab():
                 export_format = gr.Radio(
                     label=i18n("Export Format"),
                     info=i18n("Select the format to export the audio."),
-                    choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+                    choices=["WAV", "MP3", "FLAC", "OGG", "M4A", "Inherit"],
                     value="WAV",
                     interactive=True,
                 )
@@ -1135,6 +1174,14 @@ def inference_tab():
                     value="contentvec",
                     interactive=True,
                 )
+                stereo_checkbox = gr.Checkbox(
+                    label=i18n("Stereoize"),
+                    info=i18n(
+                        "1 file per channel. Doubles inference time."
+                    ),
+                    value=False,
+                    interactive=True,
+                )
                 with gr.Column(visible=False) as embedder_custom:
                     with gr.Accordion(i18n("Custom Embedder"), open=True):
                         with gr.Row():
@@ -1188,7 +1235,7 @@ def inference_tab():
             interactive=True,
         )
 
-        convert_button1 = gr.Button(i18n("Convert"))
+        convert_button1 = gr.Button(i18n("Convert"), interactive = False)
 
         with gr.Row():
             vc_output1 = gr.Textbox(
@@ -1205,7 +1252,7 @@ def inference_tab():
                     label=i18n("Input Folder"),
                     info=i18n("Select the folder containing the audios to convert."),
                     placeholder=i18n("Enter input path"),
-                    value=os.path.join(now_dir, "assets", "audios"),
+                    value=os.path.join(os.path.dirname(get_latest_audio(audio_root)), ""),
                     interactive=True,
                 )
                 output_folder_batch = gr.Textbox(
@@ -1214,7 +1261,7 @@ def inference_tab():
                         "Select the folder where the output audios will be saved."
                     ),
                     placeholder=i18n("Enter output path"),
-                    value=os.path.join(now_dir, "assets", "audios"),
+                    value=os.path.join(os.path.dirname(get_latest_audio(audio_root)), "outputs", str(time.time()).split(".")[0], ""),
                     interactive=True,
                 )
         with gr.Accordion(i18n("Advanced Settings"), open=False):
@@ -1769,6 +1816,14 @@ def inference_tab():
                     value="contentvec",
                     interactive=True,
                 )
+                stereo_checkbox_batch = gr.Checkbox(
+                    label=i18n("Stereoize"),
+                    info=i18n(
+                        "1 file per channel. Doubles inference time."
+                    ),
+                    value=False,
+                    interactive=True,
+                )
                 with gr.Column(visible=False) as embedder_custom_batch:
                     with gr.Accordion(i18n("Custom Embedder"), open=True):
                         with gr.Row():
@@ -1878,6 +1933,53 @@ def inference_tab():
 
     def delay_visible(checkbox):
         return update_visibility(checkbox, 3)
+
+    def validate_inputs(model, audio, terms):
+        is_valid = all((
+            os.path.isfile(model),
+            os.path.isfile(audio),
+            terms
+        ))
+        return gr.update(interactive=is_valid)
+
+    def validate_audio_path(audio_path):
+        if (
+            not audio_path
+            or not os.path.abspath(audio_path).startswith(os.path.abspath(audio_root))
+            or not os.path.exists(audio_path)
+            or os.path.isdir(audio_path)
+        ):
+            return gr.update(value=get_latest_audio(audio_root, True))
+        return gr.update(value=audio_path)
+
+    model_file.change(
+        validate_inputs,
+        inputs=[model_file, audio, terms_checkbox],
+        outputs=convert_button1,
+    )
+
+    audio.change(
+        validate_inputs,
+        inputs=[model_file, audio, terms_checkbox],
+        outputs=convert_button1,
+    )
+
+    terms_checkbox.change(
+        validate_inputs,
+        inputs=[model_file, audio, terms_checkbox],
+        outputs=convert_button1,
+    )
+
+    terms_checkbox_batch.change(
+        validate_inputs,
+        inputs=[model_file, audio, terms_checkbox_batch],
+        outputs=convert_button1,
+    )
+
+    audio.blur(fn=validate_audio_path, inputs=audio, outputs=audio)
+
+
+
 
     autotune.change(
         fn=toggle_visible,
@@ -2251,6 +2353,7 @@ def inference_tab():
             delay_feedback,
             delay_mix,
             sid,
+            stereo_checkbox,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -2317,6 +2420,7 @@ def inference_tab():
             delay_feedback_batch,
             delay_mix_batch,
             sid_batch,
+            stereo_checkbox_batch,
         ],
         outputs=[vc_output3],
     )
@@ -2330,3 +2434,4 @@ def inference_tab():
         inputs=[],
         outputs=[convert_button_batch, stop_button],
     )
+
