@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import argparse
 import requests
@@ -9,7 +8,7 @@ from urllib import parse, request
 from distutils.util import strtobool
 
 now_dir = os.getcwd()
-sys.path.append(now_dir)
+os.sys.path.append(now_dir)
 
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")
@@ -21,7 +20,7 @@ from rvc.lib.tools.analyzer import analyze_audio
 from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
 from rvc.lib.tools.model_download import model_download_pipeline
 
-python = sys.executable
+python = os.sys.executable
 
 
 # Get TTS Voices -> https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list?trustedclienttoken=6A5AA1D4EAFF4E9FB37E23D68491D6F4
@@ -112,7 +111,7 @@ def run_infer_script(
     delay_feedback: float = 0.0,
     delay_mix: float = 0.5,
     sid: int = 0,
-	stereoize: bool = False,
+    stereoize: bool = False,
 ):
     kwargs = {
         "audio_input_path": input_path,
@@ -176,15 +175,14 @@ def run_infer_script(
         "delay_feedback": delay_feedback,
         "delay_mix": delay_mix,
         "sid": sid,
-		"stereoize": stereoize,
+        "stereoize": stereoize,
     }
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(
         **kwargs,
     )
-    return f"File {input_path} inferred successfully.", output_path.replace(
-        ".wav", f".{export_format.lower()}"
-    )
+    op = output_path.replace(".wav", f".{export_format.lower()}")
+    return f"File {input_path} inferred successfully:\n" + op.strip(), op
 
 
 # Batch infer
@@ -248,7 +246,7 @@ def run_batch_infer_script(
     delay_feedback: float = 0.0,
     delay_mix: float = 0.5,
     sid: int = 0,
-	stereoize: bool = False,
+    stereoize: bool = False,
 ):
     kwargs = {
         "audio_input_paths": input_folder,
@@ -312,14 +310,14 @@ def run_batch_infer_script(
         "delay_feedback": delay_feedback,
         "delay_mix": delay_mix,
         "sid": sid,
-		"stereoize": stereoize,
+        "stereoize": stereoize,
     }
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio_batch(
         **kwargs,
     )
-
-    return f"Files from {input_folder} inferred successfully."
+    ofs = [os.path.join(output_folder, f) for f in os.listdir(output_folder)]
+    return f"Files from {input_folder} inferred successfully:\n" + "\n".join(ofs).strip()
 
 
 # TTS
@@ -2234,9 +2232,9 @@ def parse_arguments():
 
 
 def main():
-    if len(sys.argv) == 1:
+    if len(os.sys.argv) == 1:
         print("Please run the script with '-h' for more information.")
-        sys.exit(1)
+        os.sys.exit(1)
 
     args = parse_arguments()
 
@@ -2302,7 +2300,7 @@ def main():
                 delay_seconds=args.delay_seconds,
                 delay_feedback=args.delay_feedback,
                 delay_mix=args.delay_mix,
-				stereoize=args.stereoize,
+                stereoize=args.stereoize,
             )
         elif args.mode == "batch_infer":
             run_batch_infer_script(
@@ -2365,7 +2363,7 @@ def main():
                 delay_seconds=args.delay_seconds,
                 delay_feedback=args.delay_feedback,
                 delay_mix=args.delay_mix,
-				stereoize=args.stereoize,
+                stereoize=args.stereoize,
             )
         elif args.mode == "tts":
             run_tts_script(
