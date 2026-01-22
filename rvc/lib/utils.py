@@ -9,6 +9,9 @@ import unicodedata
 import wget
 from torch import nn
 
+import math
+from scipy.signal import resample_poly
+
 import logging
 from transformers import HubertModel
 import warnings
@@ -59,24 +62,34 @@ def load_audio(file, sample_rate):
 
     return audio.flatten()
 
-
 def load_audio_infer(
     file,
     sample_rate,
     **kwargs,
 ):
     formant_shifting = kwargs.get("formant_shifting", False)
+
     try:
-        file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+        # Clean file path
+        file = file.strip().strip('"').strip("\n")
         if not os.path.isfile(file):
             raise FileNotFoundError(f"File not found: {file}")
+
+        # Load audio
         audio, sr = sf.read(file)
+
+        # Convert to mono
         if len(audio.shape) > 1:
             audio = librosa.to_mono(audio.T)
+
+        # Resample if needed
         if sr != sample_rate:
-            audio = librosa.resample(
-                audio, orig_sr=sr, target_sr=sample_rate, res_type="soxr_vhq"
-            )
+            gcd = math.gcd(sr, sample_rate)
+            up = sample_rate // gcd
+            down = sr // gcd
+            audio = resample_poly(audio, up, down)
+
+        # Optional formant shifting
         if formant_shifting:
             formant_qfrency = kwargs.get("formant_qfrency", 0.8)
             formant_timbre = kwargs.get("formant_timbre", 0.8)
@@ -90,9 +103,12 @@ def load_audio_infer(
                 quefrency=formant_qfrency * 1e-3,
                 distortion=formant_timbre,
             )
+
     except Exception as error:
         raise RuntimeError(f"An error occurred loading the audio: {error}")
+
     return np.array(audio).flatten()
+
 
 
 def format_title(title):

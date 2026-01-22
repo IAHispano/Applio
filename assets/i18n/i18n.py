@@ -10,7 +10,7 @@ sys.path.append(now_dir)
 class I18nAuto:
     LANGUAGE_PATH = os.path.join(now_dir, "assets", "i18n", "languages")
 
-    def __init__(self, language=None):
+    def __init__(self, language=None, fallback=False):
         with open(
             os.path.join(now_dir, "assets", "config.json"), "r", encoding="utf8"
         ) as file:
@@ -29,17 +29,26 @@ class I18nAuto:
             ]
             self.language = matching_languages[0] if matching_languages else "en_US"
 
-        self.language_map = self._load_language_list()
+        self.language_map = self._load_language_list(fallback)
 
-    def _load_language_list(self):
-        try:
-            file_path = Path(self.LANGUAGE_PATH) / f"{self.language}.json"
-            with open(file_path, "r", encoding="utf-8") as file:
-                return json.load(file)
-        except FileNotFoundError:
-            raise FileNotFoundError(
-                f"Failed to load language file for {self.language}. Check if the correct .json file exists."
-            )
+    def _load_language_list(self, fallback):
+        file_path = Path(self.LANGUAGE_PATH) / (self.language + ".json")
+
+        if not file_path.exists():
+            if fallback:
+                file_path = Path(self.LANGUAGE_PATH) / "en_US.json"
+            else:
+                raise FileNotFoundError(
+                    f"Failed to load language file for {self.language}. Check if the correct .json file exists."
+                )
+
+        with open(file_path, "r", encoding="utf-8") as file:
+            lang = json.load(file)
+
+        lang = {k: k if not v else v for k, v in lang.items()}
+        lang = {k: v.strip("") for k, v in lang.items()}
+
+        return lang
 
     def _get_available_languages(self):
         language_files = [path.stem for path in Path(self.LANGUAGE_PATH).glob("*.json")]
