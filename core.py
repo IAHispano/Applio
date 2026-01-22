@@ -182,7 +182,7 @@ def run_infer_script(
         **kwargs,
     )
     op = output_path.replace(".wav", f".{export_format.lower()}")
-    return f"File {input_path} inferred successfully:\n" + op.strip(), op
+    return f"File {input_path} inferred successfully.", op
 
 
 # Batch infer
@@ -316,8 +316,7 @@ def run_batch_infer_script(
     infer_pipeline.convert_audio_batch(
         **kwargs,
     )
-    ofs = [os.path.join(output_folder, f) for f in os.listdir(output_folder)]
-    return f"Files from {input_folder} inferred successfully:\n" + "\n".join(ofs).strip()
+    return f"Files from {input_folder} inferred successfully."
 
 
 # TTS
