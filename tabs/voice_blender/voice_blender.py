@@ -1,8 +1,8 @@
-import os, sys
+import os
 import gradio as gr
 
 now_dir = os.getcwd()
-sys.path.append(now_dir)
+os.sys.path.append(now_dir)
 
 from assets.i18n.i18n import I18nAuto
 from core import run_model_blender_script
@@ -48,7 +48,7 @@ def voice_blender_tab():
         model_fusion_name = gr.Textbox(
             label=i18n("Model Name"),
             info=i18n("Name of the new model."),
-            value=default_weight,
+            value="",
             max_lines=1,
             interactive=True,
             placeholder=i18n("Enter model name"),
@@ -61,7 +61,7 @@ def voice_blender_tab():
                 model_fusion_a = gr.Dropdown(
                     label=i18n("Path to Model A"),
                     choices=model_choices,
-                    value=None,
+                    value=str(default_weight),
                     interactive=True,
                     allow_custom_value=True,
                     info=i18n("You can also use a custom path."),
