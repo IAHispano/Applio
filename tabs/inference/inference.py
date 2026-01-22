@@ -623,7 +623,7 @@ def inference_tab():
                         "The path where the output audio will be saved, by default in assets/audios/output.wav"
                     ),
                     value=(
-                        output_path_fn(audio_paths[0])
+                        output_path_fn(get_latest_audio(audio_root))
                         if audio_paths
                         else os.path.join(now_dir, "assets", "audios", "output.wav")
                     ),
@@ -2434,3 +2434,4 @@ def inference_tab():
         inputs=[],
         outputs=[convert_button_batch, stop_button],
     )
+
