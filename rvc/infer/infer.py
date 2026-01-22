@@ -1,6 +1,6 @@
 import os
-import sys
 import soxr
+import math
 import time
 import torch
 import librosa
@@ -23,8 +23,10 @@ from pedalboard import (
     Delay,
 )
 
+from scipy.signal import resample_poly
+
 now_dir = os.getcwd()
-sys.path.append(now_dir)
+os.sys.path.append(now_dir)
 
 from rvc.infer.pipeline import Pipeline as VC
 from rvc.lib.utils import load_audio_infer, load_embedding
@@ -122,9 +124,12 @@ class VoiceConverter:
                     48000,
                 ]
                 target_sr = min(common_sample_rates, key=lambda x: abs(x - sample_rate))
-                audio = librosa.resample(
-                    audio, orig_sr=sample_rate, target_sr=target_sr, res_type="soxr_vhq"
-                )
+
+                gcd = math.gcd(sample_rate, target_sr)
+                up = target_sr // gcd
+                down = sample_rate // gcd
+                audio = resample_poly(audio, up, down)
+
                 sf.write(output_path, audio, target_sr, format=output_format.lower())
             return output_path
         except Exception as error:
@@ -335,7 +340,6 @@ class VoiceConverter:
                     channels.append(audio_channel)
 
                 audio_opt = np.stack(channels, axis=1)
-
             # ================== MONO ==================
             else:
                 converted_chunks = infer_chunks(chunks)
@@ -360,21 +364,32 @@ class VoiceConverter:
                         **kwargs,
                     )
 
-            sf.write(audio_output_path, audio_opt, self.tgt_sr, format = "WAV")
+            sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
 
-            if export_format.lower() != "inherit":
-                output_path_format = audio_output_path.replace(
-                    ".wav", f".{export_format.lower()}"
-                )
+            base, _ = os.path.splitext(audio_output_path)
+
+            # determine final format
+            if export_format.lower() == "inherit":
+                final_format = os.path.splitext(audio_input_path)[1].lstrip(".").lower()
+            else:
+                final_format = export_format.lower()
+
+            final_output_path = f"{base}.{final_format}"
+
+            # convert only if needed
+            if final_format != "wav":
                 audio_output_path = self.convert_audio_format(
-                    audio_output_path, output_path_format, export_format
+                    audio_output_path,
+                    final_output_path,
+                    final_format
                 )
+            else:
+                audio_output_path = audio_output_path
 
             elapsed_time = time.time() - start_time
             print(
                 f"Conversion completed at '{audio_output_path}' in {elapsed_time:.2f} seconds."
             )
-
         except Exception as error:
             print(f"An error occurred during audio conversion: {error}")
             print(traceback.format_exc())
