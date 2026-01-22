@@ -1262,7 +1262,7 @@ def inference_tab():
                 export_format_batch = gr.Radio(
                     label=i18n("Export Format"),
                     info=i18n("Select the format to export the audio."),
-                    choices=["WAV", "MP3", "FLAC", "OGG", "M4A", "Inherit"],
+                    choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
                     value="WAV",
                     interactive=True,
                 )
