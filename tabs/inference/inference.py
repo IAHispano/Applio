@@ -290,20 +290,29 @@ def extract_model_and_epoch(path):
         return model, int(epoch)
     return "", 0
 
-def get_latest_audio(directory):
+def get_latest_audio(directory, include_outs: bool = False):
     try:
-        files = [
-            os.path.join(directory, f)
-            for f in os.listdir(directory)
-            if os.path.isfile(os.path.join(directory, f))
-        ]
+        files = []
 
-        retval = sorted(files, key=os.path.getmtime, reverse=True)[0] if files else ""
-        retval = os.path.relpath(retval, now_dir)
+        for f in os.listdir(directory):
+            fp = os.path.join(directory, f)
 
-        return retval
+            if not os.path.isfile(fp):
+                continue
+
+            if not include_outs and os.path.splitext(f.lower())[0].endswith("_output"):
+                continue
+
+            files.append(fp)
+
+        if not files:
+            return ""
+
+        latest = max(files, key=os.path.getmtime)
+        return os.path.relpath(latest, now_dir)
     except Exception:
         return os.path.join(directory, "input.wav")
+
 
 def save_to_wav(record_button):
     if record_button is None:
@@ -1940,7 +1949,7 @@ def inference_tab():
             or not os.path.exists(audio_path)
             or os.path.isdir(audio_path)
         ):
-            return gr.update(value=get_latest_audio(audio_root))
+            return gr.update(value=get_latest_audio(audio_root, True))
         return gr.update(value=audio_path)
 
     model_file.change(
