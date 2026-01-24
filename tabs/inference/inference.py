@@ -1,21 +1,18 @@
-import os, sys
-import gradio as gr
-import regex as re
-import shutil
 import datetime
 import json
+import os
+import shutil
+import sys
+
+import gradio as gr
+import regex as re
 import torch
 
-from core import (
-    run_infer_script,
-    run_batch_infer_script,
-)
-
 from assets.i18n.i18n import I18nAuto
-
+from core import run_batch_infer_script, run_infer_script
 from rvc.lib.utils import format_title
-from tabs.settings.sections.restart import stop_infer
 from tabs.settings.sections.filter import get_filter_trigger, load_config_filter
+from tabs.settings.sections.restart import stop_infer
 
 i18n = I18nAuto()
 
@@ -481,7 +478,7 @@ def get_speakers_id(model):
 
 
 def filter_dropdowns(filter_text):
-    ft = filter_text.lower()
+    ft = (filter_text or "").lower()
     all_models = sorted(get_files("model"), key=extract_model_and_epoch)
     all_indexes = sorted(get_files("index"))
     filtered_models = [m for m in all_models if ft in m.lower()]
