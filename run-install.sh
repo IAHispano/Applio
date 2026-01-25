@@ -1,4 +1,3 @@
-
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
 
@@ -8,17 +7,17 @@ NC='\033[0m' # No Color
 
 printf "\033]0;Installer\007"
 clear
-rm -f *.bat  
+rm -f *.bat
 
 # Function to log messages with timestamps
 log_message() {
     local msg="$1"
     echo -e "${GREEN}$(date '+%Y-%m-%d %H:%M:%S') - $msg${NC}"
 }
+
 log_error() {
     echo -e "${RED}[ERROR]$(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
 }
-
 
 # Helper function for yes/no user prompt
 confirm() {
@@ -97,18 +96,16 @@ prepare_install() {
 
 # Function to create the virtual environment and install dependencies
 create_venv() {
+    install_build_tools
+
     if ! command -v uv --version >/dev/null 2>&1; then
         log_message "Installing uv"
         curl -LsSf https://astral.sh/uv/install.sh | sh
     fi
 
-    log_message "Creating virtual environment..."
-    uv venv .venv --python 3.11
-
     log_message "Activating virtual environment..."
     source .venv/bin/activate
 
-    install_build_tools
     install_ffmpeg
     log_message "Installing python-ffmpeg..."
     uv pip install python-ffmpeg
@@ -152,7 +149,6 @@ if [ "$(uname)" = "Darwin" ]; then
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0  
 
-    install_build_tools
     brew install faiss
 elif [ "$(uname)" != "Linux" ]; then
     log_message "Unsupported operating system. Are you using Windows?"
