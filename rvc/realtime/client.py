@@ -19,10 +19,10 @@ params = {}
 async def change_config(ws: WebSocket):
     global vc_instance, params
 
+    await ws.accept()
+
     if vc_instance is None:
         return
-
-    await ws.accept()
 
     text = await ws.receive_text()
     jsons = json.loads(text)
