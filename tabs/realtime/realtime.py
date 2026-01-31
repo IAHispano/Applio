@@ -2250,8 +2250,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "model_path") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "model_path"))
+                if not client_mode
+                else None
             ),
             inputs=[model_file],
             outputs=[],
@@ -2262,8 +2264,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "index_path") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "index_path"))
+                if not client_mode
+                else None
             ),
             inputs=[index_file],
             outputs=[],
@@ -2274,8 +2278,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "f0_method") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "f0_method"))
+                if not client_mode
+                else None
             ),
             inputs=[f0_method],
             outputs=[],
@@ -2286,8 +2292,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "embedder_model") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "embedder_model"))
+                if not client_mode
+                else None
             ),
             inputs=[embedder_model],
             outputs=[],
@@ -2298,8 +2306,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "embedder_model_custom")
+            fn=(
+                (lambda value: change_config(value, "embedder_model_custom"))
                 if not client_mode
                 else None
             ),
@@ -2313,8 +2321,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value / 100.0, "input_audio_gain")
+            fn=(
+                (lambda value: change_config(value / 100.0, "input_audio_gain"))
                 if not client_mode
                 else None
             ),
@@ -2327,8 +2335,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value / 100.0, "output_audio_gain")
+            fn=(
+                (lambda value: change_config(value / 100.0, "output_audio_gain"))
                 if not client_mode
                 else None
             ),
@@ -2341,8 +2349,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value / 100.0, "monitor_audio_gain")
+            fn=(
+                (lambda value: change_config(value / 100.0, "monitor_audio_gain"))
                 if not client_mode
                 else None
             ),
@@ -2355,8 +2363,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "vad_enabled") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "vad_enabled"))
+                if not client_mode
+                else None
             ),
             inputs=[vad_enabled],
             outputs=[],
@@ -2367,8 +2377,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "cross_fade_overlap_size")
+            fn=(
+                (lambda value: change_config(value, "cross_fade_overlap_size"))
                 if not client_mode
                 else None
             ),
@@ -2381,8 +2391,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "extra_convert_size") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "extra_convert_size"))
+                if not client_mode
+                else None
             ),
             inputs=[extra_convert_size],
             outputs=[],
@@ -2393,8 +2405,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "silent_threshold") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "silent_threshold"))
+                if not client_mode
+                else None
             ),
             inputs=[silent_threshold],
             outputs=[],
@@ -2408,8 +2422,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "f0_up_key") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "f0_up_key"))
+                if not client_mode
+                else None
             ),
             inputs=[pitch],
             outputs=[],
@@ -2420,8 +2436,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "index_rate") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "index_rate"))
+                if not client_mode
+                else None
             ),
             inputs=[index_rate],
             outputs=[],
@@ -2432,8 +2450,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "volume_envelope") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "volume_envelope"))
+                if not client_mode
+                else None
             ),
             inputs=[volume_envelope],
             outputs=[],
@@ -2444,8 +2464,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "protect") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "protect"))
+                if not client_mode
+                else None
             ),
             inputs=[protect],
             outputs=[],
@@ -2457,8 +2479,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "autotune") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "autotune"))
+                if not client_mode
+                else None
             ),
             inputs=[autotune],
             outputs=[],
@@ -2469,8 +2493,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "autotune_strength") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "autotune_strength"))
+                if not client_mode
+                else None
             ),
             inputs=[autotune_strength],
             outputs=[],
@@ -2481,8 +2507,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "proposed_pitch") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "proposed_pitch"))
+                if not client_mode
+                else None
             ),
             inputs=[proposed_pitch],
             outputs=[],
@@ -2493,8 +2521,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "proposed_pitch_threshold")
+            fn=(
+                (lambda value: change_config(value, "proposed_pitch_threshold"))
                 if not client_mode
                 else None
             ),
@@ -2507,8 +2535,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "clean_audio") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "clean_audio"))
+                if not client_mode
+                else None
             ),
             inputs=[clean_audio],
             outputs=[],
@@ -2519,8 +2549,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "clean_strength") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "clean_strength"))
+                if not client_mode
+                else None
             ),
             inputs=[clean_strength],
             outputs=[],
@@ -2532,8 +2564,10 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "post_process") if not client_mode else None
+            fn=(
+                (lambda value: change_config(value, "post_process"))
+                if not client_mode
+                else None
             ),
             inputs=[post_process],
             outputs=[],
@@ -2544,8 +2578,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "reverb", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "reverb", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2558,8 +2592,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "pitch_shift", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "pitch_shift", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2572,8 +2606,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "limiter", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "limiter", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2586,8 +2620,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "gain", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "gain", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2600,8 +2634,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "distortion", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "distortion", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2614,8 +2648,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "chorus", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "chorus", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2628,8 +2662,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "bitcrush", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "bitcrush", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2642,8 +2676,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "clipping", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "clipping", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2656,8 +2690,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "compressor", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "compressor", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2670,8 +2704,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "delay", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "delay", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2685,8 +2719,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "reverb_room_size", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "reverb_room_size", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2699,8 +2733,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "reverb_damping", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "reverb_damping", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2713,8 +2747,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "reverb_wet_gain", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "reverb_wet_gain", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2727,8 +2761,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "reverb_dry_gain", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "reverb_dry_gain", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2741,8 +2775,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "reverb_width", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "reverb_width", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2755,8 +2789,12 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "reverb_freeze_mode", if_kwargs=True)
+            fn=(
+                (
+                    lambda value: change_config(
+                        value, "reverb_freeze_mode", if_kwargs=True
+                    )
+                )
                 if not client_mode
                 else None
             ),
@@ -2770,8 +2808,12 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "pitch_shift_semitones", if_kwargs=True)
+            fn=(
+                (
+                    lambda value: change_config(
+                        value, "pitch_shift_semitones", if_kwargs=True
+                    )
+                )
                 if not client_mode
                 else None
             ),
@@ -2784,8 +2826,12 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "limiter_threshold", if_kwargs=True)
+            fn=(
+                (
+                    lambda value: change_config(
+                        value, "limiter_threshold", if_kwargs=True
+                    )
+                )
                 if not client_mode
                 else None
             ),
@@ -2798,8 +2844,12 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "limiter_release_time", if_kwargs=True)
+            fn=(
+                (
+                    lambda value: change_config(
+                        value, "limiter_release_time", if_kwargs=True
+                    )
+                )
                 if not client_mode
                 else None
             ),
@@ -2812,8 +2862,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "gain_db", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "gain_db", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2826,8 +2876,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "distortion_gain", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "distortion_gain", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2841,8 +2891,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "chorus_rate", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "chorus_rate", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2855,8 +2905,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "chorus_depth", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "chorus_depth", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2869,8 +2919,12 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "chorus_center_delay", if_kwargs=True)
+            fn=(
+                (
+                    lambda value: change_config(
+                        value, "chorus_center_delay", if_kwargs=True
+                    )
+                )
                 if not client_mode
                 else None
             ),
@@ -2883,8 +2937,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "chorus_feedback", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "chorus_feedback", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2897,8 +2951,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "chorus_mix", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "chorus_mix", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2912,8 +2966,12 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "bitcrush_bit_depth", if_kwargs=True)
+            fn=(
+                (
+                    lambda value: change_config(
+                        value, "bitcrush_bit_depth", if_kwargs=True
+                    )
+                )
                 if not client_mode
                 else None
             ),
@@ -2926,8 +2984,12 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "clipping_threshold", if_kwargs=True)
+            fn=(
+                (
+                    lambda value: change_config(
+                        value, "clipping_threshold", if_kwargs=True
+                    )
+                )
                 if not client_mode
                 else None
             ),
@@ -2941,8 +3003,12 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "compressor_threshold", if_kwargs=True)
+            fn=(
+                (
+                    lambda value: change_config(
+                        value, "compressor_threshold", if_kwargs=True
+                    )
+                )
                 if not client_mode
                 else None
             ),
@@ -2955,8 +3021,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "compressor_ratio", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "compressor_ratio", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -2969,8 +3035,12 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "compressor_attack", if_kwargs=True)
+            fn=(
+                (
+                    lambda value: change_config(
+                        value, "compressor_attack", if_kwargs=True
+                    )
+                )
                 if not client_mode
                 else None
             ),
@@ -2983,8 +3053,12 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "compressor_release", if_kwargs=True)
+            fn=(
+                (
+                    lambda value: change_config(
+                        value, "compressor_release", if_kwargs=True
+                    )
+                )
                 if not client_mode
                 else None
             ),
@@ -2998,8 +3072,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "delay_seconds", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "delay_seconds", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -3012,8 +3086,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "delay_feedback", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "delay_feedback", if_kwargs=True))
                 if not client_mode
                 else None
             ),
@@ -3026,8 +3100,8 @@ def realtime_tab():
                 if client_mode
                 else None
             ),
-            fn=lambda value: (
-                change_config(value, "delay_mix", if_kwargs=True)
+            fn=(
+                (lambda value: change_config(value, "delay_mix", if_kwargs=True))
                 if not client_mode
                 else None
             ),
