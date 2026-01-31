@@ -27,7 +27,7 @@ torchaudio==2.7.1; sys_platform == 'darwin'
 torchaudio==2.7.1+cu128; sys_platform == 'linux' or sys_platform == 'win32'
 torchvision==0.22.1; sys_platform == 'darwin'
 torchvision==0.22.1+cu128; sys_platform == 'linux' or sys_platform == 'win32'
-torchcrepe==0.0.23
+torchcrepe
 torchfcpe
 einops
 transformers==4.44.2
