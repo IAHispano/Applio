@@ -42,7 +42,9 @@ def extract_model(
         os.makedirs(model_dir, exist_ok=True)
 
         if os.path.exists(os.path.join(model_dir, "model_info.json")):
-            with open(os.path.join(model_dir, "model_info.json"), "r") as f:
+            with open(
+                os.path.join(model_dir, "model_info.json"), "r", encoding="utf-8"
+            ) as f:
                 data = json.load(f)
                 dataset_length = data.get("total_dataset_duration", None)
                 embedder_model = data.get("embedder_model", None)
@@ -50,7 +52,9 @@ def extract_model(
         else:
             dataset_length = None
 
-        with open(os.path.join(now_dir, "assets", "config.json"), "r") as f:
+        with open(
+            os.path.join(now_dir, "assets", "config.json"), "r", encoding="utf-8"
+        ) as f:
             data = json.load(f)
             model_author = data.get("model_author", None)
 

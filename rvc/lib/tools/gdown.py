@@ -87,7 +87,7 @@ def _create_session(
     cookies_file = os.path.join(HOME, ".cache/gdown/cookies.json")
     if os.path.exists(cookies_file) and use_cookies:
         try:
-            with open(cookies_file) as f:
+            with open(cookies_file, "r", encoding="utf-8") as f:
                 cookies = json.load(f)
             for k, v in cookies:
                 sess.cookies[k] = v

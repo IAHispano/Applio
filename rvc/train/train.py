@@ -77,7 +77,11 @@ if vocoder == "RefineGAN":
 current_dir = os.getcwd()
 
 try:
-    with open(os.path.join(current_dir, "assets", "config.json"), "r") as f:
+    with open(
+        os.path.join(current_dir, "assets", "config.json"),
+        "r",
+        encoding="utf-8",
+    ) as f:
         config = json.load(f)
         precision = config["precision"]
         if (
@@ -99,7 +103,7 @@ dataset_path = os.path.join(experiment_dir, "sliced_audios")
 model_info_path = os.path.join(experiment_dir, "model_info.json")
 
 try:
-    with open(config_save_path, "r") as f:
+    with open(config_save_path, "r", encoding="utf-8") as f:
         config = json.load(f)
     config = HParams(**config)
 except FileNotFoundError:
@@ -202,7 +206,7 @@ def main():
         """
         children = []
         pid_data = {"process_pids": []}
-        with open(config_save_path, "r") as pid_file:
+        with open(config_save_path, "r", encoding="utf-8") as pid_file:
             try:
                 existing_data = json.load(pid_file)
                 pid_data.update(existing_data)
@@ -241,7 +245,7 @@ def main():
             file_path (str): The path to the JSON file.
         """
         if os.path.exists(file_path):
-            with open(file_path, "r") as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 return (
                     data.get("loss_disc_history", []),
@@ -388,7 +392,7 @@ def run(
     spk_dim = config.model.spk_embed_dim  # 109 default speakers
 
     try:
-        with open(model_info_path, "r") as f:
+        with open(model_info_path, "r", encoding="utf-8") as f:
             model_info = json.load(f)
             embedder_name = model_info["embedder_model"]
             spk_dim = model_info["speakers_id"]
@@ -1079,7 +1083,7 @@ def train_and_evaluate(
         if done:
             # Clean-up process IDs from config.json
             pid_file_path = os.path.join(experiment_dir, "config.json")
-            with open(pid_file_path, "r") as pid_file:
+            with open(pid_file_path, "r", encoding="utf-8") as pid_file:
                 pid_data = json.load(pid_file)
             with open(pid_file_path, "w") as pid_file:
                 pid_data.pop("process_pids", None)

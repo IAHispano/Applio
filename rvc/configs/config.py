@@ -38,7 +38,7 @@ class Config:
         configs = {}
         for config_file in version_config_paths:
             config_path = os.path.join("rvc", "configs", config_file)
-            with open(config_path, "r") as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 configs[config_file] = json.load(f)
         return configs
 
