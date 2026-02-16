@@ -63,7 +63,9 @@ def fetch_pretrained_data():
     os.makedirs(pretraineds_custom_path, exist_ok=True)
     try:
         with open(
-            os.path.join(pretraineds_custom_path, json_url.split("/")[-1]), "r"
+            os.path.join(pretraineds_custom_path, json_url.split("/")[-1]),
+            "r",
+            encoding="utf-8",
         ) as f:
             data = json.load(f)
     except:
