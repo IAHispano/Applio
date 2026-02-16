@@ -73,14 +73,7 @@ client_mode = "--client" in sys.argv
 
 # Define Gradio interface
 with gr.Blocks(
-    theme=my_applio,
     title="Applio",
-    css="footer{display:none !important}",
-    js=(
-        pathlib.Path(os.path.join(now_dir, "tabs", "realtime", "main.js")).read_text()
-        if client_mode
-        else None
-    ),
 ) as Applio:
     gr.Markdown("# Applio")
     gr.Markdown(
@@ -138,6 +131,13 @@ def launch_gradio(server_name: str, server_port: int) -> None:
         server_name=server_name,
         server_port=server_port,
         prevent_thread_lock=client_mode,
+        theme=my_applio,
+        css="footer{display:none !important}",
+        js=(
+            pathlib.Path(os.path.join(now_dir, "tabs", "realtime", "main.js")).read_text()
+            if client_mode
+            else None
+        ),
     )
 
     if client_mode:
