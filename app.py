@@ -134,7 +134,9 @@ def launch_gradio(server_name: str, server_port: int) -> None:
         theme=my_applio,
         css="footer{display:none !important}",
         js=(
-            pathlib.Path(os.path.join(now_dir, "tabs", "realtime", "main.js")).read_text()
+            pathlib.Path(
+                os.path.join(now_dir, "tabs", "realtime", "main.js")
+            ).read_text()
             if client_mode
             else None
         ),
