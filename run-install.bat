@@ -92,7 +92,6 @@ exit /b 0
 :install_dependencies
 echo Installing dependencies...
 call "%MINICONDA_DIR%\condabin\conda.bat" activate "%ENV_DIR%" || goto :error
-uv pip install --upgrade setuptools || goto :error
 uv pip install -r "%INSTALL_DIR%\requirements.txt" --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match || goto :error
 call "%MINICONDA_DIR%\condabin\conda.bat" deactivate
 echo Dependencies installation complete.
