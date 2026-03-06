@@ -1867,9 +1867,6 @@ def inference_tab():
     def chorus_visible(checkbox):
         return update_visibility(checkbox, 6)
 
-    def bitcrush_visible(checkbox):
-        return update_visibility(checkbox, 1)
-
     def compress_visible(checkbox):
         return update_visibility(checkbox, 4)
 
@@ -1999,7 +1996,7 @@ def inference_tab():
         ],
     )
     bitcrush.change(
-        fn=bitcrush_visible,
+        fn=toggle_visible,
         inputs=[bitcrush],
         outputs=[bitcrush_bit_depth],
     )
@@ -2083,7 +2080,7 @@ def inference_tab():
         ],
     )
     bitcrush_batch.change(
-        fn=bitcrush_visible,
+        fn=toggle_visible,
         inputs=[bitcrush_batch],
         outputs=[bitcrush_bit_depth_batch],
     )
