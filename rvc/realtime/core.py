@@ -479,6 +479,10 @@ class VoiceChanger:
         audio[: self.crossfade_frame] *= self.fade_in_window
         audio[: self.crossfade_frame] += self.sola_buffer * self.fade_out_window
 
+        min_len = block_size + self.crossfade_frame + self.sola_search_frame
+        if audio.shape[0] < min_len:
+            audio = F.pad(audio, (0, min_len - audio.shape[0]))
+
         self.sola_buffer[:] = audio[block_size : block_size + self.crossfade_frame]
         audio_output = audio[:block_size].detach().cpu().numpy()
 
