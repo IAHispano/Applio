@@ -590,8 +590,10 @@ def run_tensorboard_script():
 
 # Download
 def run_download_script(model_link: str):
-    model_download_pipeline(model_link)
-    return f"Model downloaded successfully."
+    result = model_download_pipeline(model_link)
+    if result == "Error" or result is None:
+        return "An error occurred downloading the model. Check the console for details."
+    return "Model downloaded successfully."
 
 
 # Prerequisites
