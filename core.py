@@ -182,7 +182,7 @@ def run_infer_script(
             ".wav", f".{export_format.lower()}"
         )
     except Exception:
-        print(traceback.format_exc())
+        traceback.print_exc()
         return (
             "An error occurred during audio conversion. Check the console for details.",
             None,
@@ -319,7 +319,7 @@ def run_batch_infer_script(
         infer_pipeline.convert_audio_batch(**kwargs)
         return f"Files from {input_folder} inferred successfully."
     except Exception:
-        print(traceback.format_exc())
+        traceback.print_exc()
         return "An error occurred during audio batch conversion. Check the console for details."
 
 
