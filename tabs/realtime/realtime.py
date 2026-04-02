@@ -1181,9 +1181,11 @@ def realtime_tab():
                     index_choices = sorted(get_files("index"))
                     index_file = gr.Dropdown(
                         label=i18n("Index File"),
-                        choices=[("No Index", "")] + [(x, x) for x in index_choices]
-                        if index_choices
-                        else [],
+                        choices=(
+                            [("No Index", "")] + [(x, x) for x in index_choices]
+                            if index_choices
+                            else []
+                        ),
                         value=get_safe_index_value(
                             saved_settings["index_file"],
                             index_choices,
