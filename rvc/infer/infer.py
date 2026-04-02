@@ -218,7 +218,7 @@ class VoiceConverter:
     ):
         """
         Performs voice conversion on the input audio.
-    
+
         Args:
             pitch (int): Key for F0 up-sampling.
             index_rate (float): Rate for index matching.
@@ -245,26 +245,26 @@ class VoiceConverter:
         if not model_path:
             print("No model path provided. Aborting conversion.")
             return
-    
+
         self.get_vc(model_path, sid)
-    
+
         start_time = time.time()
         print(f"Converting audio '{audio_input_path}'...")
-    
+
         audio = load_audio_infer(
             audio_input_path,
             16000,
             **kwargs,
         )
         audio_max = np.abs(audio).max() / 0.95
-    
+
         if audio_max > 1:
             audio /= audio_max
-    
+
         if not self.hubert_model or embedder_model != self.last_embedder_model:
             self.load_hubert(embedder_model, embedder_model_custom)
             self.last_embedder_model = embedder_model
-    
+
         file_index = (
             index_path.strip()
             .strip('"')
@@ -273,17 +273,17 @@ class VoiceConverter:
             .strip()
             .replace("trained", "added")
         )
-    
+
         if self.tgt_sr != resample_sr >= 16000:
             self.tgt_sr = resample_sr
-    
+
         if split_audio:
             chunks, intervals = process_audio(audio, 16000)
             print(f"Audio split into {len(chunks)} chunks for processing.")
         else:
             chunks = []
             chunks.append(audio)
-    
+
         converted_chunks = []
         for c in chunks:
             audio_opt = self.vc.pipeline(
@@ -307,28 +307,28 @@ class VoiceConverter:
             converted_chunks.append(audio_opt)
             if split_audio:
                 print(f"Converted audio chunk {len(converted_chunks)}")
-    
+
         if split_audio:
             audio_opt = merge_audio(
                 chunks, converted_chunks, intervals, 16000, self.tgt_sr
             )
         else:
             audio_opt = converted_chunks[0]
-    
+
         if clean_audio:
             cleaned_audio = self.remove_audio_noise(
                 audio_opt, self.tgt_sr, clean_strength
             )
             if cleaned_audio is not None:
                 audio_opt = cleaned_audio
-    
+
         if post_process:
             audio_opt = self.post_process_audio(
                 audio_input=audio_opt,
                 sample_rate=self.tgt_sr,
                 **kwargs,
             )
-    
+
         sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
         output_path_format = audio_output_path.replace(
             ".wav", f".{export_format.lower()}"
@@ -336,13 +336,12 @@ class VoiceConverter:
         audio_output_path = self.convert_audio_format(
             audio_output_path, output_path_format, export_format
         )
-    
+
         elapsed_time = time.time() - start_time
         print(
             f"Conversion completed at '{audio_output_path}' in {elapsed_time:.2f} seconds."
         )
-    
-    
+
     def convert_audio_batch(
         self,
         audio_input_paths: str,
@@ -351,7 +350,7 @@ class VoiceConverter:
     ):
         """
         Performs voice conversion on a batch of input audio files.
-    
+
         Args:
             audio_input_paths (str): List of paths to the input audio files.
             audio_output_path (str): Path to the output audio file.

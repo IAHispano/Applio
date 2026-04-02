@@ -525,9 +525,11 @@ def inference_tab():
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 info=i18n("Select the index file to use for the conversion."),
-                choices=[("No Index", "")] + [(x, x) for x in index_files]
-                if index_files
-                else [],
+                choices=(
+                    [("No Index", "")] + [(x, x) for x in index_files]
+                    if index_files
+                    else []
+                ),
                 value=match_index(default_weight),
                 interactive=True,
                 allow_custom_value=True,
