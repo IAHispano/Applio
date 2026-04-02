@@ -2,6 +2,7 @@ import json
 import os
 import random
 import sys
+import traceback
 
 import gradio as gr
 
@@ -10,19 +11,19 @@ sys.path.append(now_dir)
 
 from assets.i18n.i18n import I18nAuto
 from core import run_tts_script
-from tabs.settings.sections.filter import get_filter_trigger, load_config_filter
 from tabs.inference.inference import (
     change_choices,
     create_folder_and_move_files,
+    default_weight,
+    extract_model_and_epoch,
+    filter_dropdowns,
     get_files,
     get_speakers_id,
     match_index,
     refresh_embedders_folders,
-    extract_model_and_epoch,
-    default_weight,
-    filter_dropdowns,
     update_filter_visibility,
 )
+from tabs.settings.sections.filter import get_filter_trigger, load_config_filter
 
 i18n = I18nAuto()
 
@@ -357,7 +358,14 @@ def tts_tab():
             message = "You must agree to the Terms of Use to proceed."
             gr.Info(message)
             return message, None
-        return run_tts_script(*args)
+        try:
+            return run_tts_script(*args)
+        except Exception:
+            traceback.print_exc()
+            return (
+                "An error occurred during TTS conversion. Check the console for details.",
+                None,
+            )
 
     terms_checkbox = gr.Checkbox(
         label=i18n("I agree to the terms of use"),

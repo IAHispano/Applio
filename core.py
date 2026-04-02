@@ -1,11 +1,11 @@
-import os
-import sys
-import json
 import argparse
+import json
+import os
 import subprocess
-from functools import lru_cache
+import sys
 import traceback
 from distutils.util import strtobool
+from functools import lru_cache
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -13,12 +13,12 @@ sys.path.append(now_dir)
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")
 
-from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
-from rvc.train.process.model_blender import model_blender
-from rvc.train.process.model_information import model_information
 from rvc.lib.tools.analyzer import analyze_audio
 from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
 from rvc.lib.tools.model_download import model_download_pipeline
+from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
+from rvc.train.process.model_blender import model_blender
+from rvc.train.process.model_information import model_information
 
 python = sys.executable
 
@@ -122,8 +122,6 @@ def run_infer_script(
         "index_rate": index_rate,
         "protect": protect,
         "f0_method": f0_method,
-        "pth_path": pth_path,
-        "index_path": index_path,
         "split_audio": split_audio,
         "f0_autotune": f0_autotune,
         "f0_autotune_strength": f0_autotune_strength,
@@ -175,18 +173,11 @@ def run_infer_script(
         "delay_mix": delay_mix,
         "sid": sid,
     }
-    try:
-        infer_pipeline = import_voice_converter()
-        infer_pipeline.convert_audio(**kwargs)
-        return f"File {input_path} inferred successfully.", output_path.replace(
-            ".wav", f".{export_format.lower()}"
-        )
-    except Exception:
-        traceback.print_exc()
-        return (
-            "An error occurred during audio conversion. Check the console for details.",
-            None,
-        )
+    infer_pipeline = import_voice_converter()
+    infer_pipeline.convert_audio(**kwargs)
+    return f"File {input_path} inferred successfully.", output_path.replace(
+        ".wav", f".{export_format.lower()}"
+    )
 
 
 # Batch infer
@@ -261,8 +252,6 @@ def run_batch_infer_script(
         "volume_envelope": volume_envelope,
         "protect": protect,
         "f0_method": f0_method,
-        "pth_path": pth_path,
-        "index_path": index_path,
         "split_audio": split_audio,
         "f0_autotune": f0_autotune,
         "f0_autotune_strength": f0_autotune_strength,
@@ -314,13 +303,9 @@ def run_batch_infer_script(
         "delay_mix": delay_mix,
         "sid": sid,
     }
-    try:
-        infer_pipeline = import_voice_converter()
-        infer_pipeline.convert_audio_batch(**kwargs)
-        return f"Files from {input_folder} inferred successfully."
-    except Exception:
-        traceback.print_exc()
-        return "An error occurred during audio batch conversion. Check the console for details."
+    infer_pipeline = import_voice_converter()
+    infer_pipeline.convert_audio_batch(**kwargs)
+    return f"Files from {input_folder} inferred successfully."
 
 
 # TTS
@@ -371,7 +356,7 @@ def run_tts_script(
             ],
         ),
     ]
-    subprocess.run(command_tts)
+    subprocess.run(command_tts, check=True)
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(
         pitch=pitch,
@@ -397,7 +382,7 @@ def run_tts_script(
         formant_shifting=None,
         formant_qfrency=None,
         formant_timbre=None,
-        post_process=None,
+        post_process=False,
         reverb=None,
         pitch_shift=None,
         limiter=None,

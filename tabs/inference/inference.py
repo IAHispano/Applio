@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import sys
+import traceback
 
 import gradio as gr
 import regex as re
@@ -474,7 +475,7 @@ def get_speakers_id(model):
                 return list(range(speakers_id))
             else:
                 return [0]
-        except Exception as e:
+        except Exception:
             return [0]
     else:
         return [0]
@@ -1174,14 +1175,25 @@ def inference_tab():
                 message = "You must agree to the Terms of Use to proceed."
                 gr.Info(message)
                 return message, None
-            return run_infer_script(*args)
+            try:
+                return run_infer_script(*args)
+            except Exception:
+                traceback.print_exc()
+                return (
+                    "An error occurred during audio conversion. Check the console for details.",
+                    None,
+                )
 
         def enforce_terms_batch(terms_accepted, *args):
             if not terms_accepted:
                 message = "You must agree to the Terms of Use to proceed."
                 gr.Info(message)
                 return message
-            return run_batch_infer_script(*args)
+            try:
+                return run_batch_infer_script(*args)
+            except Exception:
+                traceback.print_exc()
+                return "An error occurred during audio batch conversion. Check the console for details."
 
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
