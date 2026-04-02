@@ -4,6 +4,7 @@ import json
 import argparse
 import subprocess
 from functools import lru_cache
+import traceback
 from distutils.util import strtobool
 
 now_dir = os.getcwd()
@@ -174,13 +175,18 @@ def run_infer_script(
         "delay_mix": delay_mix,
         "sid": sid,
     }
-    infer_pipeline = import_voice_converter()
-    infer_pipeline.convert_audio(
-        **kwargs,
-    )
-    return f"File {input_path} inferred successfully.", output_path.replace(
-        ".wav", f".{export_format.lower()}"
-    )
+    try:
+        infer_pipeline = import_voice_converter()
+        infer_pipeline.convert_audio(**kwargs)
+        return f"File {input_path} inferred successfully.", output_path.replace(
+            ".wav", f".{export_format.lower()}"
+        )
+    except Exception:
+        print(traceback.format_exc())
+        return (
+            "An error occurred during audio conversion. Check the console for details.",
+            None,
+        )
 
 
 # Batch infer
@@ -308,12 +314,13 @@ def run_batch_infer_script(
         "delay_mix": delay_mix,
         "sid": sid,
     }
-    infer_pipeline = import_voice_converter()
-    infer_pipeline.convert_audio_batch(
-        **kwargs,
-    )
-
-    return f"Files from {input_folder} inferred successfully."
+    try:
+        infer_pipeline = import_voice_converter()
+        infer_pipeline.convert_audio_batch(**kwargs)
+        return f"Files from {input_folder} inferred successfully."
+    except Exception:
+        print(traceback.format_exc())
+        return "An error occurred during audio batch conversion. Check the console for details."
 
 
 # TTS
@@ -343,7 +350,6 @@ def run_tts_script(
     embedder_model_custom: str = None,
     sid: int = 0,
 ):
-
     tts_script_path = os.path.join("rvc", "lib", "tools", "tts.py")
 
     if os.path.exists(output_tts_path) and os.path.abspath(output_tts_path).startswith(
@@ -460,7 +466,6 @@ def run_extract_script(
     embedder_model_custom: str = None,
     include_mutes: int = 2,
 ):
-
     model_path = os.path.join(logs_path, model_name)
     extract = os.path.join("rvc", "train", "extract", "extract.py")
 
@@ -509,7 +514,6 @@ def run_train_script(
     vocoder: str = "HiFi-GAN",
     checkpointing: bool = False,
 ):
-
     if pretrained == True:
         from rvc.lib.tools.pretrained_selector import pretrained_selector
 

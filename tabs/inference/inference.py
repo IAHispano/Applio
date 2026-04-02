@@ -1173,7 +1173,7 @@ def inference_tab():
             if not terms_accepted:
                 message = "You must agree to the Terms of Use to proceed."
                 gr.Info(message)
-                return message, None
+                return message
             return run_batch_infer_script(*args)
 
         terms_checkbox = gr.Checkbox(
@@ -1822,7 +1822,12 @@ def inference_tab():
             return {"visible": True, "__type__": "update"}
         return {"visible": False, "__type__": "update"}
 
-    def enable_stop_convert_button():
+    def enable_stop_convert_button(terms_accepted):
+        if not terms_accepted:
+            return {"visible": True, "__type__": "update"}, {
+                "visible": False,
+                "__type__": "update",
+            }
         return {"visible": False, "__type__": "update"}, {
             "visible": True,
             "__type__": "update",
@@ -2249,6 +2254,10 @@ def inference_tab():
         outputs=[vc_output1, vc_output2],
     )
     convert_button_batch.click(
+        fn=enable_stop_convert_button,
+        inputs=[terms_checkbox_batch],
+        outputs=[convert_button_batch, stop_button],
+    ).then(
         fn=enforce_terms_batch,
         inputs=[
             terms_checkbox_batch,
@@ -2313,9 +2322,8 @@ def inference_tab():
             sid_batch,
         ],
         outputs=[vc_output3],
-    )
-    convert_button_batch.click(
-        fn=enable_stop_convert_button,
+    ).then(
+        fn=disable_stop_convert_button,
         inputs=[],
         outputs=[convert_button_batch, stop_button],
     )
