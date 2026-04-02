@@ -2416,9 +2416,6 @@ def main():
             )
     except Exception as error:
         print(f"An error occurred during execution: {error}")
-
-        import traceback
-
         traceback.print_exc()
 
 
