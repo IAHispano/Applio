@@ -228,7 +228,7 @@ def get_speakers_id(model):
                 return list(range(speakers_id))
             else:
                 return [0]
-        except Exception as e:
+        except Exception:
             return [0]
     else:
         return [0]
@@ -1178,10 +1178,12 @@ def realtime_tab():
                         ),
                         allow_custom_value=True,
                     )
-                    index_choices = get_files("index")
+                    index_choices = sorted(get_files("index"))
                     index_file = gr.Dropdown(
                         label=i18n("Index File"),
-                        choices=index_choices,
+                        choices=[("No Index", "")] + [(x, x) for x in index_choices]
+                        if index_choices
+                        else [],
                         value=get_safe_index_value(
                             saved_settings["index_file"],
                             index_choices,
@@ -2200,7 +2202,9 @@ def realtime_tab():
 
             def refresh_all():
                 new_names = get_files("model")
-                new_indexes = get_files("index")
+                new_indexes = sorted(get_files("index"))
+                if new_indexes:
+                    new_indexes = [("No Index", "")] + [(x, x) for x in new_indexes]
                 return (
                     gr.update(choices=sorted(new_names, key=extract_model_and_epoch)),
                     gr.update(choices=new_indexes),
@@ -2217,7 +2221,9 @@ def realtime_tab():
 
             def refresh_all():
                 new_names = get_files("model")
-                new_indexes = get_files("index")
+                new_indexes = sorted(get_files("index"))
+                if new_indexes:
+                    new_indexes = [("No Index", "")] + [(x, x) for x in new_indexes]
                 input_choices, output_choices = get_audio_devices_formatted()
                 input_choices, output_choices = list(input_choices.keys()), list(
                     output_choices.keys()
