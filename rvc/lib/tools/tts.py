@@ -1,6 +1,7 @@
 import asyncio
 import os
 import sys
+
 import edge_tts
 
 
@@ -21,10 +22,7 @@ async def main():
             with open(tts_file, "r") as file:
                 text = file.read()
 
-    try:
-        await edge_tts.Communicate(text, voice, rate=rates).save(output_file)
-    except Exception:
-        sys.exit(1)
+    await edge_tts.Communicate(text, voice, rate=rates).save(output_file)
 
 
 if __name__ == "__main__":

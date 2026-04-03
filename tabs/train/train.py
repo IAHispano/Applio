@@ -768,7 +768,10 @@ def train_tab():
                 message = "You must agree to the Terms of Use to proceed."
                 gr.Info(message)
                 return message
-            return run_train_script(*args)
+            try:
+                return run_train_script(*args)
+            except Exception as e:
+                return e
 
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
@@ -788,32 +791,6 @@ def train_tab():
 
         with gr.Row():
             train_button = gr.Button(i18n("Start Training"))
-            train_button.click(
-                fn=enforce_terms,
-                inputs=[
-                    terms_checkbox,
-                    model_name,
-                    save_every_epoch,
-                    save_only_latest,
-                    save_every_weights,
-                    total_epoch,
-                    sampling_rate,
-                    batch_size,
-                    gpu,
-                    overtraining_detector,
-                    overtraining_threshold,
-                    pretrained,
-                    cleanup,
-                    index_algorithm,
-                    cache_dataset_in_gpu,
-                    custom_pretrained,
-                    g_pretrained_path,
-                    d_pretrained_path,
-                    vocoder,
-                    checkpointing,
-                ],
-                outputs=[train_output_info],
-            )
 
             stop_train_button = gr.Button(i18n("Stop Training"), visible=False)
             stop_train_button.click(
@@ -880,31 +857,21 @@ def train_tab():
                     )
 
             def toggle_visible(checkbox):
-                return {"visible": checkbox, "__type__": "update"}
+                return gr.update(visible=checkbox)
 
             def toggle_pretrained(pretrained, custom_pretrained):
-                if custom_pretrained == False:
-                    return {"visible": pretrained, "__type__": "update"}, {
-                        "visible": False,
-                        "__type__": "update",
-                    }
+                if not custom_pretrained:
+                    return gr.update(visible=pretrained), gr.update(visible=False)
                 else:
-                    return {"visible": pretrained, "__type__": "update"}, {
-                        "visible": pretrained,
-                        "__type__": "update",
-                    }
+                    return gr.update(visible=pretrained), gr.update(visible=pretrained)
 
-            def enable_stop_train_button():
-                return {"visible": False, "__type__": "update"}, {
-                    "visible": True,
-                    "__type__": "update",
-                }
+            def enable_stop_train_button(terms_accepted):
+                if not terms_accepted:
+                    return gr.update(visible=True), gr.update(visible=False)
+                return gr.update(visible=False), gr.update(visible=True)
 
             def disable_stop_train_button():
-                return {"visible": True, "__type__": "update"}, {
-                    "visible": False,
-                    "__type__": "update",
-                }
+                return gr.update(visible=True), gr.update(visible=False)
 
             def download_prerequisites():
                 gr.Info(
@@ -1030,11 +997,38 @@ def train_tab():
                 inputs=[overtraining_detector],
                 outputs=[overtraining_settings],
             )
+
             train_button.click(
                 fn=enable_stop_train_button,
-                inputs=[],
+                inputs=[terms_checkbox],
                 outputs=[train_button, stop_train_button],
+            ).then(
+                fn=enforce_terms,
+                inputs=[
+                    terms_checkbox,
+                    model_name,
+                    save_every_epoch,
+                    save_only_latest,
+                    save_every_weights,
+                    total_epoch,
+                    sampling_rate,
+                    batch_size,
+                    gpu,
+                    overtraining_detector,
+                    overtraining_threshold,
+                    pretrained,
+                    cleanup,
+                    index_algorithm,
+                    cache_dataset_in_gpu,
+                    custom_pretrained,
+                    g_pretrained_path,
+                    d_pretrained_path,
+                    vocoder,
+                    checkpointing,
+                ],
+                outputs=[train_output_info],
             )
+
             train_output_info.change(
                 fn=disable_stop_train_button,
                 inputs=[],

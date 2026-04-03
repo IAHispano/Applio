@@ -1181,11 +1181,7 @@ def realtime_tab():
                     index_choices = sorted(get_files("index"))
                     index_file = gr.Dropdown(
                         label=i18n("Index File"),
-                        choices=(
-                            [("No Index", "")] + [(x, x) for x in index_choices]
-                            if index_choices
-                            else []
-                        ),
+                        choices=index_choices,
                         value=get_safe_index_value(
                             saved_settings["index_file"],
                             index_choices,
@@ -2205,8 +2201,6 @@ def realtime_tab():
             def refresh_all():
                 new_names = get_files("model")
                 new_indexes = sorted(get_files("index"))
-                if new_indexes:
-                    new_indexes = [("No Index", "")] + [(x, x) for x in new_indexes]
                 return (
                     gr.update(choices=sorted(new_names, key=extract_model_and_epoch)),
                     gr.update(choices=new_indexes),
@@ -2224,8 +2218,6 @@ def realtime_tab():
             def refresh_all():
                 new_names = get_files("model")
                 new_indexes = sorted(get_files("index"))
-                if new_indexes:
-                    new_indexes = [("No Index", "")] + [(x, x) for x in new_indexes]
                 input_choices, output_choices = get_audio_devices_formatted()
                 input_choices, output_choices = list(input_choices.keys()), list(
                     output_choices.keys()
