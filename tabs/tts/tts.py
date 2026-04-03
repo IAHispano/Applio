@@ -19,7 +19,6 @@ from tabs.inference.inference import (
     filter_dropdowns,
     get_files,
     get_speakers_id,
-    index_files,
     match_index,
     refresh_embedders_folders,
     update_filter_visibility,
@@ -73,11 +72,7 @@ def tts_tab():
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 info=i18n("Select the index file to use for the conversion."),
-                choices=(
-                    [("No Index", "")] + [(x, x) for x in index_files]
-                    if index_files
-                    else []
-                ),
+                choices=sorted(get_files("index")),
                 value=match_index(default_weight),
                 interactive=True,
                 allow_custom_value=True,

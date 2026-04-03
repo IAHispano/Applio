@@ -123,7 +123,6 @@ def get_files(type="model"):
 
 
 default_weight = next(iter(get_files("model")), None)
-index_files = sorted(get_files("index"))
 
 audio_paths = [
     os.path.join(root, name)
@@ -232,8 +231,6 @@ def change_choices(model):
 
     models_list = sorted(get_files("model"))
     indexes_list = sorted(get_files("index"))
-    if indexes_list:
-        indexes_list = [("No Index", "")] + [(x, x) for x in indexes_list]
 
     audio_paths = [
         os.path.join(root, name)
@@ -487,8 +484,6 @@ def filter_dropdowns(filter_text):
     all_indexes = sorted(get_files("index"))
     filtered_models = [m for m in all_models if ft in m.lower()]
     filtered_indexes = [i for i in all_indexes if ft in i.lower()]
-    if filtered_indexes:
-        filtered_indexes = [("No Index", "")] + [(x, x) for x in filtered_indexes]
     return (gr.update(choices=filtered_models), gr.update(choices=filtered_indexes))
 
 
@@ -525,11 +520,7 @@ def inference_tab():
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 info=i18n("Select the index file to use for the conversion."),
-                choices=(
-                    [("No Index", "")] + [(x, x) for x in index_files]
-                    if index_files
-                    else []
-                ),
+                choices=sorted(get_files("index")),
                 value=match_index(default_weight),
                 interactive=True,
                 allow_custom_value=True,
