@@ -47,3 +47,4 @@ pypresence
 beautifulsoup4
 sounddevice
 webrtcvad-wheels
+psutil

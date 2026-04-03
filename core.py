@@ -356,7 +356,9 @@ def run_tts_script(
             ],
         ),
     ]
-    subprocess.run(command_tts, check=True)
+    result = subprocess.run(command_tts, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip())
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(
         pitch=pitch,
@@ -539,7 +541,11 @@ def run_train_script(
             ],
         ),
     ]
-    subprocess.run(command)
+    result = subprocess.run(command)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Training failed for model {model_name}. Please check the console logs for more details."
+        )
     run_index_script(model_name, index_algorithm)
     return f"Model {model_name} trained successfully."
 
