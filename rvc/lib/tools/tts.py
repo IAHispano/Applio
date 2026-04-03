@@ -3,6 +3,7 @@ import os
 import sys
 import edge_tts
 
+
 async def main():
     tts_file = str(sys.argv[1])
     text = str(sys.argv[2])
