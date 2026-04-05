@@ -550,7 +550,7 @@ def start_realtime(
         "clean_audio": clean_audio,
         "clean_strength": clean_strength,
         "post_process": post_process,
-        "        record_audio": record_audio,
+        "record_audio": record_audio,
         "record_audio_path": record_audio_path,
         "export_format": export_format,
         "kwargs": {
