@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM python:3.10-bullseye
+FROM python:3.12-trixie
 
 # Expose the required port
 EXPOSE 6969
