@@ -1173,7 +1173,7 @@ def inference_tab():
             except Exception:
                 traceback.print_exc()
                 return (
-                    "An error occurred during audio conversion. Check the console for details.",
+                    "An error occurred during audio conversion. Please check the console logs for more details.",
                     None,
                 )
 
@@ -1186,7 +1186,7 @@ def inference_tab():
                 return run_batch_infer_script(*args)
             except Exception:
                 traceback.print_exc()
-                return "An error occurred during audio batch conversion. Check the console for details."
+                return "An error occurred during audio batch conversion. Please check the console logs for more details."
 
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),

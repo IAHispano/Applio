@@ -438,7 +438,10 @@ def run_preprocess_script(
             ],
         ),
     ]
-    subprocess.run(command)
+    result = subprocess.run(command)
+    if result.returncode != 0:
+        return f"Preprocessing failed for model {model_name}. Please check the console logs for more details."
+
     return f"Model {model_name} preprocessed successfully."
 
 
@@ -474,7 +477,9 @@ def run_extract_script(
         ),
     ]
 
-    subprocess.run(command_1)
+    result = subprocess.run(command_1)
+    if result.returncode != 0:
+        return f"Feature extraction failed for model {model_name}. Please check the console logs for more details."
 
     return f"Model {model_name} extracted successfully."
 
@@ -543,9 +548,8 @@ def run_train_script(
     ]
     result = subprocess.run(command)
     if result.returncode != 0:
-        raise RuntimeError(
-            f"Training failed for model {model_name}. Please check the console logs for more details."
-        )
+        return f"Training failed for model {model_name}. Please check the console logs for more details."
+
     run_index_script(model_name, index_algorithm)
     return f"Model {model_name} trained successfully."
 
@@ -560,7 +564,10 @@ def run_index_script(model_name: str, index_algorithm: str):
         index_algorithm,
     ]
 
-    subprocess.run(command)
+    result = subprocess.run(command)
+    if result.returncode != 0:
+        return f"Index generation failed for model {model_name}. Make sure you have enough GPU available to generate the Index file. Please check the console logs for more details."
+
     return f"Index file for {model_name} generated successfully."
 
 
@@ -587,7 +594,7 @@ def run_tensorboard_script():
 def run_download_script(model_link: str):
     result = model_download_pipeline(model_link)
     if result == "Error" or result is None:
-        return "An error occurred downloading the model. Check the console for details."
+        return "An error occurred downloading the model. Please check the console logs for more details."
     return "Model downloaded successfully."
 
 

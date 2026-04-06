@@ -1,25 +1,26 @@
+import concurrent.futures
+import json
+import multiprocessing
 import os
 import sys
 import time
+from distutils.util import strtobool
+
+import librosa
+import noisereduce as nr
+import numpy as np
+import soxr
 from scipy import signal
 from scipy.io import wavfile
-import numpy as np
-import concurrent.futures
 from tqdm import tqdm
-import json
-from distutils.util import strtobool
-import librosa
-import multiprocessing
-import noisereduce as nr
-import soxr
 
 now_directory = os.getcwd()
 sys.path.append(now_directory)
 
+import logging
+
 from rvc.lib.utils import load_audio
 from rvc.train.preprocess.slicer import Slicer
-
-import logging
 
 logging.getLogger("numba.core.byteflow").setLevel(logging.WARNING)
 logging.getLogger("numba.core.ssa").setLevel(logging.WARNING)
@@ -281,6 +282,13 @@ def preprocess_training_set(
     overlap_len: float,
     normalization_mode: str,
 ):
+    if not os.path.exists(input_root):
+        print(f"The dataset path does not exist: '{input_root}'.")
+        sys.exit(1)
+
+    if not os.path.isdir(input_root):
+        print(f"The dataset path is not a directory: '{input_root}'.")
+        sys.exit(1)
     start_time = time.time()
     pp = PreProcess(sr, exp_dir)
     print(f"Starting preprocess with {num_processes} processes...")
@@ -301,6 +309,11 @@ def preprocess_training_set(
             )
 
     # print(f"Number of files: {len(files)}")
+    if len(files) == 0:
+        print(
+            f"No audio files found in the dataset path: '{input_root}'. Please check that the path is correct and contains valid audio files."
+        )
+        sys.exit(1)
     audio_length = []
     with tqdm(total=len(files)) as pbar:
         with concurrent.futures.ProcessPoolExecutor(

@@ -1,25 +1,24 @@
+import concurrent.futures
+import glob
+import json
+import multiprocessing as mp
 import os
 import sys
-import glob
 import time
-import tqdm
-import torch
-import torchcrepe
+
 import numpy as np
-import concurrent.futures
-import multiprocessing as mp
-import json
+import torch
+import tqdm
 
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
 
 # Zluda hijack
 import rvc.lib.zluda
-
+from rvc.configs.config import Config
+from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE
 from rvc.lib.utils import load_audio_16k, load_embedding
 from rvc.train.extract.preparing_files import generate_config, generate_filelist
-from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE
-from rvc.configs.config import Config
 
 # Load config
 config = Config()
@@ -184,6 +183,13 @@ if __name__ == "__main__":
     include_mutes = int(sys.argv[8]) if len(sys.argv) > 8 else 2
 
     wav_path = os.path.join(exp_dir, "sliced_audios_16k")
+
+    if not os.path.exists(wav_path):
+        print(
+            f"Folder for feature extraction not found at {wav_path}. Did you run the preprocessing step?"
+        )
+        sys.exit(1)
+
     os.makedirs(os.path.join(exp_dir, "f0"), exist_ok=True)
     os.makedirs(os.path.join(exp_dir, "f0_voiced"), exist_ok=True)
     os.makedirs(os.path.join(exp_dir, "extracted"), exist_ok=True)
@@ -211,6 +217,12 @@ if __name__ == "__main__":
             os.path.join(exp_dir, "extracted", file_name.replace("wav", "npy")),
         ]
         files.append(file_info)
+
+    if not files:
+        print(
+            f"Sliced audios not found at {wav_path}. Did you run the preprocessing step?"
+        )
+        sys.exit(1)
 
     devices = ["cpu"] if gpus == "-" else [f"cuda:{idx}" for idx in gpus.split("-")]
 
