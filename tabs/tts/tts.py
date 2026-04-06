@@ -363,7 +363,7 @@ def tts_tab():
         except Exception:
             traceback.print_exc()
             return (
-                "An error occurred during TTS conversion. Check the console for details.",
+                "An error occurred during TTS conversion. Please check the console logs for more details.",
                 None,
             )
 
