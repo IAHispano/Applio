@@ -44,6 +44,7 @@ class AudioCallbacks:
         record_audio: bool = False,
         record_audio_path: str = None,
         export_format: str = "WAV",
+        audio_sample_rate: int = AUDIO_SAMPLE_RATE,
         **kwargs,
         # device: str = "cuda",
     ):
@@ -71,6 +72,7 @@ class AudioCallbacks:
             record_audio=record_audio,
             record_audio_path=record_audio_path,
             export_format=export_format,
+            audio_sample_rate=audio_sample_rate,
             **kwargs,
         )
         self.vc = VoiceChangerWorker(vc_kwargs)

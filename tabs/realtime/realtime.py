@@ -12,7 +12,7 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from rvc.realtime.callbacks import AudioCallbacks
-from rvc.realtime.audio import list_audio_device
+from rvc.realtime.audio import list_audio_device, resolve_sample_rate
 from rvc.realtime.core import AUDIO_SAMPLE_RATE
 
 from assets.i18n.i18n import I18nAuto
@@ -284,7 +284,8 @@ CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
 
 
 def save_realtime_settings(
-    input_device, output_device, monitor_device, model_file, index_file
+    input_device, output_device, monitor_device, model_file, index_file,
+    asio_enabled=None, audio_sample_rate=None,
 ):
     """Save realtime settings to config.json"""
     try:
@@ -314,6 +315,10 @@ def save_realtime_settings(
             config["realtime"]["model_file"] = model_file or ""
         if monitor_device is not None:
             config["realtime"]["index_file"] = index_file or ""
+        if asio_enabled is not None:
+            config["realtime"]["asio_enabled"] = asio_enabled
+        if audio_sample_rate is not None:
+            config["realtime"]["audio_sample_rate"] = audio_sample_rate
 
         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
@@ -343,6 +348,8 @@ def load_realtime_settings():
                     ),
                     "model_file": realtime_config.get("model_file", ""),
                     "index_file": realtime_config.get("index_file", ""),
+                    "asio_enabled": realtime_config.get("asio_enabled", False),
+                    "audio_sample_rate": realtime_config.get("audio_sample_rate", 48000),
                 }
     except Exception as e:
         print(f"Error loading realtime settings: {e}")
@@ -356,6 +363,8 @@ def load_realtime_settings():
         "client_monitor_device": "",
         "model_file": "",
         "index_file": "",
+        "asio_enabled": False,
+        "audio_sample_rate": AUDIO_SAMPLE_RATE,
     }
 
 
@@ -408,6 +417,7 @@ def start_realtime(
     output_audio_device: str,
     output_audio_gain: int,
     output_asio_channels: int,
+    asio_output_stereo: bool,
     monitor_output_device: str,
     monitor_audio_gain: int,
     monitor_asio_channels: int,
@@ -518,7 +528,12 @@ def start_realtime(
         yield "Incorrectly formatted audio device. Stopping.", interactive_true, interactive_false
         return
 
-    read_chunk_size = int(chunk_size * AUDIO_SAMPLE_RATE / 1000 / 128)
+    # Load ASIO and sample rate settings from config.
+    _rt_cfg = load_realtime_settings()
+    asio_enabled = _rt_cfg["asio_enabled"]
+    audio_sample_rate = _rt_cfg["audio_sample_rate"]
+    audio_sample_rate = resolve_sample_rate(input_device_id, asio_enabled, audio_sample_rate)
+    read_chunk_size = int(chunk_size * audio_sample_rate / 1000 / 128)
 
     callbacks_kwargs = {
         "pass_through": PASS_THROUGH,
@@ -553,6 +568,7 @@ def start_realtime(
         "record_audio": record_audio,
         "record_audio_path": record_audio_path,
         "export_format": export_format,
+        "audio_sample_rate": audio_sample_rate,
         "kwargs": {
             "reverb": reverb,
             "pitch_shift": pitch_shift,
@@ -601,10 +617,12 @@ def start_realtime(
             output_device_id=output_device_id,
             output_monitor_id=output_monitor_id,
             exclusive_mode=exclusive_mode,
-            asio_input_channel=input_asio_channels,
-            asio_output_channel=output_asio_channels,
-            asio_output_monitor_channel=monitor_asio_channels,
+            asio_input_channel=input_asio_channels if asio_enabled else -1,
+            asio_output_channel=output_asio_channels if asio_enabled else -1,
+            asio_output_monitor_channel=monitor_asio_channels if asio_enabled else -1,
             read_chunk_size=read_chunk_size,
+            audio_sample_rate=audio_sample_rate,
+            asio_output_stereo=asio_output_stereo,
         )
     except Exception as error:
         running = False
@@ -922,16 +940,13 @@ def realtime_tab():
                                 interactive=True,
                             )
                             input_asio_channels = gr.Slider(
-                                minimum=-1,
+                                minimum=0,
                                 maximum=16,
-                                value=-1,
+                                value=0,
                                 step=1,
                                 label=i18n("Input ASIO Channel"),
-                                info=i18n(
-                                    "For ASIO drivers, selects a specific input channel. Leave at -1 for default."
-                                ),
                                 interactive=True,
-                                visible=not client_mode,
+                                visible=saved_settings["asio_enabled"],
                             )
                     with gr.Accordion("Output Device", open=True):
                         with gr.Column():
@@ -964,16 +979,19 @@ def realtime_tab():
                                 interactive=True,
                             )
                             output_asio_channels = gr.Slider(
-                                minimum=-1,
+                                minimum=0,
                                 maximum=16,
-                                value=-1,
+                                value=0,
                                 step=1,
                                 label=i18n("Output ASIO Channel"),
-                                info=i18n(
-                                    "For ASIO drivers, selects a specific output channel. Leave at -1 for default."
-                                ),
                                 interactive=True,
-                                visible=not client_mode,
+                                visible=saved_settings["asio_enabled"],
+                            )
+                            asio_output_stereo = gr.Checkbox(
+                                label=i18n("Stereo"),
+                                value=True,
+                                interactive=True,
+                                visible=saved_settings["asio_enabled"],
                             )
                 with gr.Accordion(i18n("Monitor Device (Optional)"), open=False):
                     with gr.Column():
@@ -1011,16 +1029,13 @@ def realtime_tab():
                             interactive=True,
                         )
                         monitor_asio_channels = gr.Slider(
-                            minimum=-1,
+                            minimum=0,
                             maximum=16,
-                            value=-1,
+                            value=0,
                             step=1,
                             label=i18n("Monitor ASIO Channel"),
-                            info=i18n(
-                                "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default."
-                            ),
                             interactive=True,
-                            visible=not client_mode,
+                            visible=saved_settings["asio_enabled"],
                         )
                 with gr.Accordion(i18n("Record Audio (Optional)"), open=False):
                     with gr.Column():
@@ -1941,6 +1956,7 @@ def realtime_tab():
                     output_audio_device,
                     output_audio_gain,
                     output_asio_channels,
+                    asio_output_stereo,
                     monitor_output_device,
                     monitor_audio_gain,
                     monitor_asio_channels,
