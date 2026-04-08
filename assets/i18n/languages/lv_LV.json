@@ -371,6 +371,7 @@
     "Voice Model": "Balss modelis",
     "Volume Envelope": "Skaļuma aploksne",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Skaļuma līmenis, zem kura audio tiek uzskatīts par klusumu un netiek apstrādāts. Palīdz ietaupīt CPU resursus un samazināt fona troksni.",
+    "Warming up... ({} blocks remaining)": "Iesildīšana... (atlikuši {} bloki)",
     "You can also use a custom path.": "Varat izmantot arī pielāgotu ceļu.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Atbalsts](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

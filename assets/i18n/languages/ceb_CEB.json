@@ -371,6 +371,7 @@
     "Voice Model": "Modelo sa Tingog",
     "Volume Envelope": "Volume Envelope",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Lebel sa volume diin sa ubos niini ang audio isipon nga kahilom ug dili i-proseso. Makatabang sa pagdaginot sa mga kapanguhaan sa CPU ug pagkunhod sa kasaba sa palibot.",
+    "Warming up... ({} blocks remaining)": "Nag-init... ({} ka block ang nahabilin)",
     "You can also use a custom path.": "Mahimo ka usab mogamit og custom nga dalanan.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Suporta](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

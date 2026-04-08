@@ -371,6 +371,7 @@
     "Voice Model": "የድምፅ ሞዴል",
     "Volume Envelope": "የድምፅ ኤንቨሎፕ",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "ከዚህ በታች ያለው የድምፅ መጠን እንደ ጸጥታ የሚቆጠርበት እና የማይቀናበርበት ደረጃ። የCPU ሀብቶችን ለመቆጠብ እና የጀርባ ጫጫታን ለመቀነስ ይረዳል።",
+    "Warming up... ({} blocks remaining)": "Warming up... ({} ብሎኮች ቀሪ)",
     "You can also use a custom path.": "ብጁ ዱካም መጠቀም ይችላሉ።",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[ድጋፍ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

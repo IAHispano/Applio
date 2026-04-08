@@ -371,6 +371,7 @@
     "Voice Model": "Stemmodel",
     "Volume Envelope": "Volume-envelop",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Volumeniveau waaronder audio als stilte wordt behandeld en niet wordt verwerkt. Helpt CPU-bronnen te besparen en achtergrondgeluid te verminderen.",
+    "Warming up... ({} blocks remaining)": "Opwarmen... ({} blokken resterend)",
     "You can also use a custom path.": "U kunt ook een aangepast pad gebruiken.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Ondersteuning](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

@@ -371,6 +371,7 @@
     "Voice Model": "Maodelim-peo",
     "Volume Envelope": "Fonon'ny Haavo",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Haavon'ny feo izay heverina ho fahanginana ary tsy karakaraina ny feo eo ambaniny. Manampy amin'ny fitsitsiana ny loharanon-karen'ny CPU sy mampihena ny tabataba any aoriana.",
+    "Warming up... ({} blocks remaining)": "Mafana... ({} bolongana sisa)",
     "You can also use a custom path.": "Afaka mampiasa lalana manokana koa ianao.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Fanohanana](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

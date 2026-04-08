@@ -371,6 +371,7 @@
     "Voice Model": "Hangmodell",
     "Volume Envelope": "Hangerő-görbe",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Az a hangerőszint, amely alatt a hang csendnek minősül és nem kerül feldolgozásra. Segít a CPU-erőforrások megtakarításában és a háttérzaj csökkentésében.",
+    "Warming up... ({} blocks remaining)": "Bemelegítés... ({} blokk hátravan)",
     "You can also use a custom path.": "Használhat egyéni útvonalat is.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Támogatás](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

@@ -371,6 +371,7 @@
     "Voice Model": "Гласовни модел",
     "Volume Envelope": "Волуменска омотница",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Nivo jačine zvuka ispod kojeg se zvuk tretira kao tišina i ne obrađuje. Pomaže u uštedi CPU resursa i smanjenju pozadinske buke.",
+    "Warming up... ({} blocks remaining)": "Загревање... (преостало {} блокова)",
     "You can also use a custom path.": "Такође можете користити прилагођену путању.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Подршка](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

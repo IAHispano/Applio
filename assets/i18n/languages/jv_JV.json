@@ -371,6 +371,7 @@
     "Voice Model": "Model Swara",
     "Volume Envelope": "Amplop Volume",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Tingkat volume ing ngendi audio dianggep sepi lan ora diproses. Mbantu ngirit sumber daya CPU lan nyuda swara latar mburi.",
+    "Warming up... ({} blocks remaining)": "Panasake... ({} blok isih)",
     "You can also use a custom path.": "Sampeyan uga bisa nggunakake path kustom.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Dhukungan](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

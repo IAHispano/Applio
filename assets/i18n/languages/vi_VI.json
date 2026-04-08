@@ -371,6 +371,7 @@
     "Voice Model": "Mô hình Giọng nói",
     "Volume Envelope": "Đường bao Âm lượng",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Mức âm lượng mà dưới đó âm thanh được coi là tĩnh lặng và không được xử lý. Giúp tiết kiệm tài nguyên CPU và giảm tiếng ồn nền.",
+    "Warming up... ({} blocks remaining)": "Đang khởi động... (còn {} khối)",
     "You can also use a custom path.": "Bạn cũng có thể sử dụng một đường dẫn tùy chỉnh.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Hỗ trợ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

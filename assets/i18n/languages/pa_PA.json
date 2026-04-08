@@ -371,6 +371,7 @@
     "Voice Model": "ਵੌਇਸ ਮਾਡਲ",
     "Volume Envelope": "ਵਾਲੀਅਮ ਲਿਫਾਫਾ",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "ਵਾਲੀਅਮ ਦਾ ਪੱਧਰ ਜਿਸ ਤੋਂ ਹੇਠਾਂ ਆਡੀਓ ਨੂੰ ਚੁੱਪ ਮੰਨਿਆ ਜਾਂਦਾ ਹੈ ਅਤੇ ਪ੍ਰੋਸੈਸ ਨਹੀਂ ਕੀਤਾ ਜਾਂਦਾ ਹੈ। CPU ਸਰੋਤਾਂ ਨੂੰ ਬਚਾਉਣ ਅਤੇ ਪਿਛੋਕੜ ਦੇ ਸ਼ੋਰ ਨੂੰ ਘਟਾਉਣ ਵਿੱਚ ਮਦਦ ਕਰਦਾ ਹੈ।",
+    "Warming up... ({} blocks remaining)": "ਵਾਰਮਿੰਗ ਅੱਪ... ({} ਬਲਾਕ ਬਾਕੀ)",
     "You can also use a custom path.": "ਤੁਸੀਂ ਇੱਕ ਕਸਟਮ ਮਾਰਗ ਦੀ ਵਰਤੋਂ ਵੀ ਕਰ ਸਕਦੇ ਹੋ।",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[ਸਮਰਥਨ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

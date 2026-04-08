@@ -371,6 +371,7 @@
     "Voice Model": "Галасавая мадэль",
     "Volume Envelope": "Агінаючая гучнасці",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Узровень гучнасці, ніжэй за які аўдыя лічыцца цішынёй і не апрацоўваецца. Дапамагае эканоміць рэсурсы CPU і памяншаць фонавы шум.",
+    "Warming up... ({} blocks remaining)": "Разагрэў... (засталося {} блокаў)",
     "You can also use a custom path.": "Вы таксама можаце выкарыстоўваць карыстальніцкі шлях.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Падтрымка](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

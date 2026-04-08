@@ -371,6 +371,7 @@
     "Voice Model": "Hlasový model",
     "Volume Envelope": "Obálka hlasitosti",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Úroveň hlasitosti, pod kterou je zvuk považován za ticho a není zpracováván. Pomáhá šetřit zdroje CPU a redukovat šum na pozadí.",
+    "Warming up... ({} blocks remaining)": "Zahřívání... (zbývá {} bloků)",
     "You can also use a custom path.": "Můžete také použít vlastní cestu.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Podpora](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

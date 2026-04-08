@@ -371,6 +371,7 @@
     "Voice Model": "Fa'ata'ita'iga Leo",
     "Volume Envelope": "Teutusi o le Leo",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Le maualuga o le leo e manatu ai o le leo o le filemu ma e le fa'agaoioia. E fesoasoani e sefe ai punaoa a le CPU ma fa'aitiitia ai le pisa i tua.",
+    "Warming up... ({} blocks remaining)": "Fa'amafanafana... ({} poloka o totoe)",
     "You can also use a custom path.": "E mafai fo'i ona e fa'aaogaina se ala fa'apitoa.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }
