@@ -85,8 +85,9 @@ class RealtimeVoiceConverter:
         sid: Tensor,
         pitch: Tensor,
         pitchf: Tensor,
+        rate: Tensor = None,
     ):
-        output = self.net_g.infer(feats, p_len, pitch, pitchf, sid)[0][0, 0]
+        output = self.net_g.infer(feats, p_len, pitch, pitchf, sid, rate)[0][0, 0]
 
         return torch.clip(output, -1.0, 1.0, out=output)
 
@@ -210,8 +211,11 @@ class Realtime_Pipeline:
         f0_coarse = torch.round(f0_mel, out=f0_mel).long()
 
         if pitch is not None and pitchf is not None:
-            circular_write(f0_coarse, pitch)
-            circular_write(f0, pitchf)
+            # Trim unreliable boundary frames before writing to cache.
+            f0_interior = f0_coarse[3:-1] if f0_coarse.shape[0] > 4 else f0_coarse
+            f0f_interior = f0[3:-1] if f0.shape[0] > 4 else f0
+            circular_write(f0_interior, pitch)
+            circular_write(f0f_interior, pitchf)
         else:
             pitch = f0_coarse
             pitchf = f0
@@ -247,20 +251,37 @@ class Realtime_Pipeline:
 
             formant_length = int(np.ceil(return_length * 1.0))
 
-            pitch, pitchf = (
-                self.get_f0(
-                    audio[silence_front:],
-                    pitch,
-                    pitchf,
+            if self.use_f0:
+                # Extract F0 from the most recent audio window only.
+                shift = (skip_head * self.window) // self.window
+                f0_frame = skip_head * self.window + 800
+                if self.f0_method == "rmvpe":
+                    f0_frame = 5120 * ((f0_frame - 1) // 5120 + 1) - 160
+                f0_frame = min(f0_frame, audio.shape[0])
+
+                f0_coarse_new, f0_new = self.get_f0(
+                    audio[-f0_frame:],
+                    None,
+                    None,
                     f0_up_key,
                     f0_autotune,
                     f0_autotune_strength,
                     proposed_pitch,
                     proposed_pitch_threshold,
                 )
-                if self.use_f0
-                else (None, None)
-            )
+                # Remove batch dimension.
+                f0_coarse_new = f0_coarse_new.squeeze(0)
+                f0_new        = f0_new.squeeze(0)
+
+                # Shift pitch cache left by one block and append new frames (trimmed [3:-1]).
+                pitch[:-shift] = pitch[shift:].clone()
+                pitchf[:-shift] = pitchf[shift:].clone()
+                interior_coarse = f0_coarse_new[3:-1] if f0_coarse_new.shape[0] > 4 else f0_coarse_new
+                interior_f      = f0_new[3:-1]        if f0_new.shape[0] > 4        else f0_new
+                pitch[-interior_coarse.shape[0]:]  = interior_coarse
+                pitchf[-interior_f.shape[0]:]      = interior_f
+            else:
+                pitch, pitchf = None, None
 
             # extract features
             feats = self.hubert_model(feats)["last_hidden_state"]
@@ -294,30 +315,35 @@ class Realtime_Pipeline:
                 feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
                     0, 2, 1
                 )[:, :p_len, :]
-                pitch, pitchf = pitch[:, -p_len:], pitchf[:, -p_len:] * (
-                    formant_length / return_length
-                )
+                pitch_p  = pitch[-p_len:].unsqueeze(0)
+                pitchf_p = pitchf[-p_len:].unsqueeze(0) * (formant_length / return_length)
 
                 # Pitch protection blending
                 if protect < 0.5:
-                    pitchff = pitchf.detach().clone()
-                    pitchff[pitchf > 0] = 1
-                    pitchff[pitchf < 1] = protect
+                    pitchff = pitchf_p.detach().clone()
+                    pitchff[pitchf_p > 0] = 1
+                    pitchff[pitchf_p < 1] = protect
                     feats = feats * pitchff.unsqueeze(-1) + feats0 * (
                         1 - pitchff.unsqueeze(-1)
                     )
                     feats = feats.to(feats0.dtype)
             else:
-                pitch, pitchf = None, None
+                pitch_p, pitchf_p = None, None
 
-            pitchf = pitchf.to(self.dtype) if self.use_f0 else None
+            pitchf_p = pitchf_p.to(self.dtype) if self.use_f0 else None
+            # Trim oldest context so model output covers only the current block.
+            rate = torch.tensor(
+                [return_length / p_len], device=self.device, dtype=torch.float32
+            )
             p_len = torch.tensor([p_len], device=self.device, dtype=torch.int64)
             out_audio = self.vc.inference(
-                feats, p_len, self.torch_sid, pitch, pitchf
+                feats, p_len, self.torch_sid, pitch_p, pitchf_p, rate
             ).float()
-            if volume_envelope != 1:
+            # Match output RMS to the current block's input RMS.
+            if volume_envelope < 1:
+                rms_src = audio[-(return_length * self.window):].cpu().numpy()
                 out_audio = AudioProcessor.change_rms(
-                    audio.cpu().numpy(),
+                    rms_src,
                     self.sample_rate,
                     out_audio.cpu().numpy(),
                     self.tgt_sr,
