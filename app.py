@@ -23,6 +23,18 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+# Suppress ConnectionResetError on Windows when a remote peer forcibly closes the
+# connection during asyncio shutdown (WinError 10054 / ProactorBasePipeTransport).
+if sys.platform == "win32":
+    import asyncio.proactor_events as _pe
+    _orig_ccl = _pe._ProactorBasePipeTransport._call_connection_lost
+    def _ccl_patched(self, exc):
+        try:
+            _orig_ccl(self, exc)
+        except ConnectionResetError:
+            pass
+    _pe._ProactorBasePipeTransport._call_connection_lost = _ccl_patched
+
 # Zluda hijack
 import rvc.lib.zluda
 
