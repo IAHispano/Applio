@@ -74,8 +74,10 @@ def _apply_config(vc, cfg):
             vc.crossfade_frame = cf
             vc.extra_frame = ef
             vc.vc_model.realloc(
-                vc.block_frame, vc.extra_frame,
-                vc.crossfade_frame, vc.sola_search_frame,
+                vc.block_frame,
+                vc.extra_frame,
+                vc.crossfade_frame,
+                vc.sola_search_frame,
             )
             vc.generate_strength()
 
@@ -89,6 +91,7 @@ def _apply_config(vc, cfg):
             vc.vc_model.vad = None
         elif vc.vc_model.vad is None:
             from rvc.realtime.utils.vad import VADProcessor
+
             vc.vc_model.vad = VADProcessor(
                 sensitivity_mode=cfg.get("vad_sensitivity", 3),
                 sample_rate=vc.vc_model.sample_rate,
@@ -103,6 +106,7 @@ def _apply_config(vc, cfg):
             strength = cfg.get("clean_strength", 0.5)
             if vc.vc_model.reduced_noise is None:
                 from noisereduce.torchgate import TorchGate
+
                 vc.vc_model.reduced_noise = TorchGate(
                     vc.vc_model.pipeline.tgt_sr,
                     prop_decrease=strength,
@@ -124,6 +128,7 @@ def _apply_config(vc, cfg):
     if model_path and vc.vc_model.model_path != model_path:
         import torch
         import torchaudio.transforms as tat
+
         vc.vc_model.model_path = model_path
         vc.vc_model.pipeline.vc.load_model(model_path)
         vc.vc_model.pipeline.vc.setup_network()
@@ -138,6 +143,7 @@ def _apply_config(vc, cfg):
     sid = cfg.get("sid")
     if sid is not None and vc.vc_model.pipeline.sid != sid:
         import torch
+
         vc.vc_model.pipeline.torch_sid = torch.tensor(
             [sid], device=vc.vc_model.pipeline.device, dtype=torch.int64
         )
@@ -147,9 +153,14 @@ def _apply_config(vc, cfg):
     if index_path is not None:
         if index_path and vc.vc_model.index_path != index_path:
             from rvc.realtime.pipeline import load_faiss_index
+
             index, big_npy = load_faiss_index(
-                index_path.strip().strip('"').strip("\n").strip('"')
-                .strip().replace("trained", "added")
+                index_path.strip()
+                .strip('"')
+                .strip("\n")
+                .strip('"')
+                .strip()
+                .replace("trained", "added")
             )
             vc.vc_model.pipeline.index = index
             vc.vc_model.pipeline.big_npy = big_npy
@@ -174,6 +185,7 @@ def _apply_config(vc, cfg):
         or vc.vc_model.embedder_model_custom != emb_custom
     ):
         from rvc.lib.utils import load_embedding
+
         old = vc.vc_model.pipeline.hubert_model
         del old
         hubert_model = load_embedding(emb, emb_custom)

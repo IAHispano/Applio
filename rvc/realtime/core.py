@@ -366,9 +366,7 @@ class Realtime:
         )
 
         # Scale output by the current input RMS to suppress residue during silence.
-        audio_out: torch.Tensor = self.resample_out(
-            audio_model * vol_t
-        )
+        audio_out: torch.Tensor = self.resample_out(audio_model * vol_t)
         return audio_out, vol, False
 
     def __del__(self):
@@ -531,11 +529,7 @@ class VoiceChanger:
             n_hops = block_size // hop
             if n_hops >= 1:
                 hop_energy = (
-                    audio[: n_hops * hop]
-                    .reshape(n_hops, hop)
-                    .abs()
-                    .max(dim=1)
-                    .values
+                    audio[: n_hops * hop].reshape(n_hops, hop).abs().max(dim=1).values
                 )
                 peak = hop_energy.max().item()
                 onset_sample = 0
@@ -562,7 +556,9 @@ class VoiceChanger:
         # Pad if audio is shorter than block_size + crossfade_frame.
         _need = block_size + self.crossfade_frame
         if audio.shape[0] < _need:
-            pad = torch.zeros(_need - audio.shape[0], device=audio.device, dtype=audio.dtype)
+            pad = torch.zeros(
+                _need - audio.shape[0], device=audio.device, dtype=audio.dtype
+            )
             audio = torch.cat([audio, pad])
         self.sola_buffer[:] = audio[block_size : block_size + self.crossfade_frame]
         audio_output = audio[:block_size].detach().cpu().numpy()

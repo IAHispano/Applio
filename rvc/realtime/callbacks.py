@@ -130,7 +130,10 @@ class AudioCallbacks:
             return audio, vol, [0, perf_ms, 0], None
 
         # No result ready yet; replay previous output to avoid underrun.
-        if self._last_output is not None and self._last_output.shape[0] == received_data.shape[0]:
+        if (
+            self._last_output is not None
+            and self._last_output.shape[0] == received_data.shape[0]
+        ):
             return self._last_output, self._last_vol, [0, 0, 0], None
 
         return np.zeros(received_data.shape[0], dtype=np.float32), 0, [0, 0, 0], None
