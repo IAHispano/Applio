@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Toso lau plugin.zip e fa'apipi'i ai",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Le umi o le mou malie atu i le va o vaega o leo e puipuia ai ni kiliki. O tau maualuluga e fa'atupuina ai ni suiga lamolemole ae ono fa'ateleina ai le tuai.",
     "Embedder Model": "Fa'ata'ita'iga Embedder",
+    "Enable ASIO": "Fa'aagaina ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Fa'aagaina le lagolago o le ASIO driver. (E mana'omia le toe amataina o le Applio)",
     "Enable Applio integration with Discord presence": "Fa'agaoioi le tu'ufa'atasiga a le Applio ma le i ai i le Discord",
     "Enable VAD": "Fa'agaoioi le VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Fa'agaoioi le fesiita'iga o le formant. E fa'aaogaina mo le liua mai le leo o le tane i le fafine ma le fa'afeagai.",
@@ -134,9 +136,6 @@
     "File to Speech": "Faila i le Tautalaga",
     "Filter": "Faamama",
     "Folder Name": "Igoa o le faila",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Mo aveta'avale ASIO, filifili se alalaupapa fa'aulu fa'apitoa. Tu'u i le -1 mo le fa'aletonu.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Mo aveta'avale ASIO, filifili se alalaupapa mata'itū fa'apitoa e alu atu. Tu'u i le -1 mo le fa'aletonu.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Mo aveta'avale ASIO, filifili se alalaupapa fa'apitoa e alu atu. Tu'u i le -1 mo le fa'aletonu.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Mo le WASAPI (Windows), e tu'uina atu ai i le polokalama le pule fa'apitoa mo se avanoa e maualalo ai le tuai.",
     "Formant Shifting": "Fesiita'iga o le Formant",
     "Fresh Training": "A'oa'oga Fou",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Reverb Wet Gain",
     "Reverb Width": "Reverb Width",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Puipuia konesane ma'oti ma leo o le mānava e taofia ai le masaesae o le leo eletise ma isi mea sese. O le tosoina o le parameter i lona tau aupito maualuga o le 0.5 e ofoina mai ai se puipuiga atoatoa. Ae peita'i, o le fa'aitiitia o lenei tau e ono fa'aitiitia ai le lautele o le puipuiga a'o ono fa'aitiitia ai le a'afiaga o le fa'asino.",
+    "Sample Rate": "Fua o Fa'ata'ita'iga",
     "Sampling Rate": "Fua Fa'atatau o le Fa'ata'ita'iga",
     "Save Every Epoch": "Sefe i Epoch Ta'itasi",
     "Save Every Weights": "Sefe Fua Fa'atatau Uma",
@@ -326,6 +326,7 @@
     "Start": "Amata",
     "Start Training": "Amata A'oa'oga",
     "Status": "Tulaga",
+    "Stereo": "Stereo",
     "Stop": "Taofi",
     "Stop Training": "Taofi A'oa'oga",
     "Stop convert": "Taofi le liua",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Le maualuga o le leo e manatu ai o le leo o le filemu ma e le fa'agaoioia. E fesoasoani e sefe ai punaoa a le CPU ma fa'aitiitia ai le pisa i tua.",
     "Warming up... ({} blocks remaining)": "Fa'amafanafana... ({} poloka o totoe)",
     "You can also use a custom path.": "E mafai fo'i ona e fa'aaogaina se ala fa'apitoa.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Fua o fa'ata'ita'iga e fa'aogaina mo le audio streaming. Suia lenei mea pe a lipotia e le driver se fua sese (e.g. 48000 Hz nai lo 44100 Hz)."
 }

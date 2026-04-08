@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Kéo tệp plugin.zip của bạn để cài đặt",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Thời lượng mờ dần giữa các đoạn âm thanh để ngăn tiếng lách cách. Giá trị cao hơn tạo ra chuyển tiếp mượt mà hơn nhưng có thể làm tăng độ trễ.",
     "Embedder Model": "Mô hình Embedder",
+    "Enable ASIO": "Bật ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Bật hỗ trợ driver ASIO. (Yêu cầu khởi động lại Applio)",
     "Enable Applio integration with Discord presence": "Bật tích hợp Applio với trạng thái Discord",
     "Enable VAD": "Bật VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Bật dịch chuyển formant. Dùng cho việc chuyển đổi giọng nam sang nữ và ngược lại.",
@@ -134,9 +136,6 @@
     "File to Speech": "Tệp sang Lời nói",
     "Filter": "Bộ lọc",
     "Folder Name": "Tên Thư mục",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Đối với trình điều khiển ASIO, chọn một kênh đầu vào cụ thể. Để ở -1 để dùng mặc định.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Đối với trình điều khiển ASIO, chọn một kênh đầu ra giám sát (monitor) cụ thể. Để ở -1 để dùng mặc định.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Đối với trình điều khiển ASIO, chọn một kênh đầu ra cụ thể. Để ở -1 để dùng mặc định.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Đối với WASAPI (Windows), cấp cho ứng dụng quyền kiểm soát độc quyền để có thể giảm độ trễ.",
     "Formant Shifting": "Dịch chuyển Formant",
     "Fresh Training": "Huấn luyện Mới",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Độ khuếch đại ướt Reverb",
     "Reverb Width": "Độ rộng Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Bảo vệ các phụ âm riêng biệt và âm thanh hơi thở để ngăn chặn hiện tượng xé âm thanh điện và các tạp âm khác. Kéo tham số lên giá trị tối đa 0.5 sẽ cung cấp sự bảo vệ toàn diện. Tuy nhiên, việc giảm giá trị này có thể làm giảm mức độ bảo vệ nhưng có khả năng giảm thiểu hiệu ứng chỉ mục hóa.",
+    "Sample Rate": "Tần số lấy mẫu",
     "Sampling Rate": "Tốc độ Lấy mẫu",
     "Save Every Epoch": "Lưu mỗi Epoch",
     "Save Every Weights": "Lưu mỗi Trọng số",
@@ -326,6 +326,7 @@
     "Start": "Bắt đầu",
     "Start Training": "Bắt đầu Huấn luyện",
     "Status": "Trạng thái",
+    "Stereo": "Âm thanh nổi",
     "Stop": "Dừng",
     "Stop Training": "Dừng Huấn luyện",
     "Stop convert": "Dừng chuyển đổi",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Mức âm lượng mà dưới đó âm thanh được coi là tĩnh lặng và không được xử lý. Giúp tiết kiệm tài nguyên CPU và giảm tiếng ồn nền.",
     "Warming up... ({} blocks remaining)": "Đang khởi động... (còn {} khối)",
     "You can also use a custom path.": "Bạn cũng có thể sử dụng một đường dẫn tùy chỉnh.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Hỗ trợ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Hỗ trợ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Tần số lấy mẫu được sử dụng cho phát trực tiếp âm thanh. Ghi đè điều này nếu driver báo tốc độ không chính xác (ví dụ 48000 Hz thay vì 44100 Hz)."
 }

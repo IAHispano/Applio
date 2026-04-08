@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "ਇਸਨੂੰ ਸਥਾਪਿਤ ਕਰਨ ਲਈ ਆਪਣੀ plugin.zip ਫਾਈਲ ਨੂੰ ਖਿੱਚੋ",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "ਕਲਿੱਕਾਂ ਨੂੰ ਰੋਕਣ ਲਈ ਆਡੀਓ ਚੰਕਸ ਦੇ ਵਿਚਕਾਰ ਫੇਡ ਦੀ ਮਿਆਦ। ਉੱਚੇ ਮੁੱਲ ਨਿਰਵਿਘਨ ਤਬਦੀਲੀਆਂ ਬਣਾਉਂਦੇ ਹਨ ਪਰ ਲੇਟੈਂਸੀ ਵਧਾ ਸਕਦੇ ਹਨ।",
     "Embedder Model": "ਏਮਬੇਡਰ ਮਾਡਲ",
+    "Enable ASIO": "ASIO ਸਮਰੱਥ ਕਰੋ",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO ਡਰਾਈਵਰ ਸਮਰਥਨ ਸਮਰੱਥ ਕਰੋ। ASIO ਡਿਵਾਈਸ ਨੂੰ ਇਨਪੁੱਟ/ਆਉਟਪੁੱਟ ਵਜੋਂ ਚੁਣੋ ਅਤੇ ਉੱਪਰ ਚੈਨਲ ਨੰਬਰ ਸੈੱਟ ਕਰੋ। ਬਦਲਾਅ ਲਾਗੂ ਕਰਨ ਲਈ Applio ਨੂੰ ਮੁੜ ਚਾਲੂ ਕਰਨਾ ਜ਼ਰੂਰੀ ਹੈ।(Applio ਨੂੰ ਮੁੜ-ਚਾਲੂ ਕਰਨ ਦੀ ਲੋੜ ਹੈ)",
     "Enable Applio integration with Discord presence": "Discord ਮੌਜੂਦਗੀ ਨਾਲ Applio ਏਕੀਕਰਣ ਨੂੰ ਸਮਰੱਥ ਕਰੋ",
     "Enable VAD": "VAD ਨੂੰ ਸਮਰੱਥ ਕਰੋ",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "ਫਾਰਮੈਂਟ ਸ਼ਿਫਟਿੰਗ ਨੂੰ ਸਮਰੱਥ ਕਰੋ। ਮਰਦ ਤੋਂ ਔਰਤ ਅਤੇ ਇਸਦੇ ਉਲਟ ਪਰਿਵਰਤਨ ਲਈ ਵਰਤਿਆ ਜਾਂਦਾ ਹੈ।",
@@ -134,9 +136,6 @@
     "File to Speech": "ਫਾਈਲ ਤੋਂ ਬੋਲੀ",
     "Filter": "ਫਿਲਟਰ",
     "Folder Name": "ਫੋਲਡਰ ਦਾ ਨਾਮ",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO ਡਰਾਈਵਰਾਂ ਲਈ, ਇੱਕ ਖਾਸ ਇਨਪੁਟ ਚੈਨਲ ਚੁਣਦਾ ਹੈ। ਡਿਫੌਲਟ ਲਈ -1 'ਤੇ ਛੱਡੋ।",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO ਡਰਾਈਵਰਾਂ ਲਈ, ਇੱਕ ਖਾਸ ਮਾਨੀਟਰ ਆਉਟਪੁੱਟ ਚੈਨਲ ਚੁਣਦਾ ਹੈ। ਡਿਫੌਲਟ ਲਈ -1 'ਤੇ ਛੱਡੋ।",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO ਡਰਾਈਵਰਾਂ ਲਈ, ਇੱਕ ਖਾਸ ਆਉਟਪੁੱਟ ਚੈਨਲ ਚੁਣਦਾ ਹੈ। ਡਿਫੌਲਟ ਲਈ -1 'ਤੇ ਛੱਡੋ।",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (Windows) ਲਈ, ਐਪ ਨੂੰ ਸੰਭਾਵੀ ਤੌਰ 'ਤੇ ਘੱਟ ਲੇਟੈਂਸੀ ਲਈ ਵਿਸ਼ੇਸ਼ ਨਿਯੰਤਰਣ ਦਿੰਦਾ ਹੈ।",
     "Formant Shifting": "ਫਾਰਮੈਂਟ ਸ਼ਿਫਟਿੰਗ",
     "Fresh Training": "ਤਾਜ਼ਾ ਸਿਖਲਾਈ",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "ਰੀਵਰਬ ਵੈੱਟ ਗੇਨ",
     "Reverb Width": "ਰੀਵਰਬ ਚੌੜਾਈ",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "ਵੱਖ-ਵੱਖ ਵਿਅੰਜਨਾਂ ਅਤੇ ਸਾਹ ਲੈਣ ਦੀਆਂ ਆਵਾਜ਼ਾਂ ਨੂੰ ਇਲੈਕਟ੍ਰੋ-ਅਕੌਸਟਿਕ ਫਟਣ ਅਤੇ ਹੋਰ ਕਲਾਤਮਕ ਚੀਜ਼ਾਂ ਤੋਂ ਬਚਾਉਣ ਲਈ ਸੁਰੱਖਿਅਤ ਕਰੋ। ਪੈਰਾਮੀਟਰ ਨੂੰ ਇਸਦੇ ਵੱਧ ਤੋਂ ਵੱਧ ਮੁੱਲ 0.5 'ਤੇ ਖਿੱਚਣਾ ਵਿਆਪਕ ਸੁਰੱਖਿਆ ਪ੍ਰਦਾਨ ਕਰਦਾ ਹੈ। ਹਾਲਾਂਕਿ, ਇਸ ਮੁੱਲ ਨੂੰ ਘਟਾਉਣ ਨਾਲ ਸੁਰੱਖਿਆ ਦੀ ਹੱਦ ਘੱਟ ਸਕਦੀ ਹੈ ਜਦਕਿ ਸੰਭਾਵੀ ਤੌਰ 'ਤੇ ਇੰਡੈਕਸਿੰਗ ਪ੍ਰਭਾਵ ਨੂੰ ਘੱਟ ਕੀਤਾ ਜਾ ਸਕਦਾ ਹੈ।",
+    "Sample Rate": "ਸੈਂਪਲ ਦਰ",
     "Sampling Rate": "ਨਮੂਨਾ ਦਰ",
     "Save Every Epoch": "ਹਰ ਯੁੱਗ ਨੂੰ ਸੁਰੱਖਿਅਤ ਕਰੋ",
     "Save Every Weights": "ਹਰ ਵਜ਼ਨ ਨੂੰ ਸੁਰੱਖਿਅਤ ਕਰੋ",
@@ -326,6 +326,7 @@
     "Start": "ਸ਼ੁਰੂ ਕਰੋ",
     "Start Training": "ਸਿਖਲਾਈ ਸ਼ੁਰੂ ਕਰੋ",
     "Status": "ਸਥਿਤੀ",
+    "Stereo": "ਸਟੀਰਿਓ",
     "Stop": "ਰੋਕੋ",
     "Stop Training": "ਸਿਖਲਾਈ ਰੋਕੋ",
     "Stop convert": "ਬਦਲਣਾ ਬੰਦ ਕਰੋ",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "ਵਾਲੀਅਮ ਦਾ ਪੱਧਰ ਜਿਸ ਤੋਂ ਹੇਠਾਂ ਆਡੀਓ ਨੂੰ ਚੁੱਪ ਮੰਨਿਆ ਜਾਂਦਾ ਹੈ ਅਤੇ ਪ੍ਰੋਸੈਸ ਨਹੀਂ ਕੀਤਾ ਜਾਂਦਾ ਹੈ। CPU ਸਰੋਤਾਂ ਨੂੰ ਬਚਾਉਣ ਅਤੇ ਪਿਛੋਕੜ ਦੇ ਸ਼ੋਰ ਨੂੰ ਘਟਾਉਣ ਵਿੱਚ ਮਦਦ ਕਰਦਾ ਹੈ।",
     "Warming up... ({} blocks remaining)": "ਵਾਰਮਿੰਗ ਅੱਪ... ({} ਬਲਾਕ ਬਾਕੀ)",
     "You can also use a custom path.": "ਤੁਸੀਂ ਇੱਕ ਕਸਟਮ ਮਾਰਗ ਦੀ ਵਰਤੋਂ ਵੀ ਕਰ ਸਕਦੇ ਹੋ।",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[ਸਮਰਥਨ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[ਸਮਰਥਨ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ਆਡੀਓ ਸਟ੍ਰੀਮਿੰਗ ਲਈ ਵਰਤੀ ਗਈ ਸੈਂਪਲ ਦਰ। ਜੇ ਡਰਾਈਵਰ ਗਲਤ ਦਰ ਦੱਸੇ ਤਾਂ ਇਸਨੂੰ ਬਦਲੋ (ਜਿਵੇਂ 44100 Hz ਦੀ ਬਜਾਏ 48000 Hz)।"
 }

@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Seret plugin.zip sampeyan kanggo nginstal",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Durasi fade antarane potongan audio kanggo nyegah klik. Nilai sing luwih dhuwur nggawe transisi luwih alus nanging bisa nambah latensi.",
     "Embedder Model": "Model Embedder",
+    "Enable ASIO": "Aktifake ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Aktifake dhukungan driver ASIO. (Mbutuhake miwiti ulang Applio)",
     "Enable Applio integration with Discord presence": "Aktifake integrasi Applio karo kehadiran Discord",
     "Enable VAD": "Aktifake VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Aktifake pergeseran forman. Digunakake kanggo konversi lanang menyang wadon lan kosok balene.",
@@ -134,9 +136,6 @@
     "File to Speech": "File dadi Wicara",
     "Filter": "Filter",
     "Folder Name": "Jeneng Folder",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Kanggo driver ASIO, milih saluran input tartamtu. Jarke ing -1 kanggo gawan.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Kanggo driver ASIO, milih saluran output monitor tartamtu. Jarke ing -1 kanggo gawan.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Kanggo driver ASIO, milih saluran output tartamtu. Jarke ing -1 kanggo gawan.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Kanggo WASAPI (Windows), menehi aplikasi kontrol eksklusif kanggo latensi sing luwih cilik.",
     "Formant Shifting": "Pergeseran Formant",
     "Fresh Training": "Latihan Anyar",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Gain Basah Reverb",
     "Reverb Width": "Ambane Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Jaga konsonan sing beda lan swara ambegan kanggo nyegah sobek elektro-akustik lan artefak liyane. Narik parameter menyang nilai maksimal 0,5 menehi perlindungan sing komprehensif. Nanging, nyuda nilai iki bisa nyuda tingkat perlindungan nalika bisa nyuda efek indeksasi.",
+    "Sample Rate": "Tingkat Sampel",
     "Sampling Rate": "Tingkat Sampling",
     "Save Every Epoch": "Simpen Saben Epoch",
     "Save Every Weights": "Simpen Saben Bobot",
@@ -326,6 +326,7 @@
     "Start": "Miwiti",
     "Start Training": "Miwiti Latihan",
     "Status": "Status",
+    "Stereo": "Stereo",
     "Stop": "Mandheg",
     "Stop Training": "Manden Latihan",
     "Stop convert": "Manden konversi",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Tingkat volume ing ngendi audio dianggep sepi lan ora diproses. Mbantu ngirit sumber daya CPU lan nyuda swara latar mburi.",
     "Warming up... ({} blocks remaining)": "Panasake... ({} blok isih)",
     "You can also use a custom path.": "Sampeyan uga bisa nggunakake path kustom.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Dhukungan](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Dhukungan](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Tingkat sampel sing digunakake kanggo streaming audio. Ganti iki yen driver nglaporke tingkat sing salah (contone 48000 Hz tinimbang 44100 Hz)."
 }

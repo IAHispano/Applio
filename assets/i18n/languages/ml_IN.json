@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "ഇൻസ്റ്റാൾ ചെയ്യാൻ നിങ്ങളുടെ plugin.zip വലിച്ചിടുക",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "ക്ലിക്കുകൾ തടയാൻ ഓഡിയോ ചങ്കുകൾക്കിടയിലുള്ള ഫേഡിന്റെ ദൈർഘ്യം. ഉയർന്ന മൂല്യങ്ങൾ സുഗമമായ മാറ്റങ്ങൾ നൽകുമെങ്കിലും ലേറ്റൻസി വർദ്ധിപ്പിച്ചേക്കാം.",
     "Embedder Model": "എംബെഡർ മോഡൽ",
+    "Enable ASIO": "ASIO പ്രവർത്തനക്ഷമമാക്കുക",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO ഡ്രൈവർ പിന്തുണ പ്രവർത്തനക്ഷമമാക്കുക. (Applio പുനരാരംഭിക്കേണ്ടതുണ്ട്)",
     "Enable Applio integration with Discord presence": "ഡിസ്കോർഡ് പ്രെസൻസുമായി Applio സംയോജനം പ്രവർത്തനക്ഷമമാക്കുക",
     "Enable VAD": "VAD പ്രവർത്തനക്ഷമമാക്കുക",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "ഫോർമാന്റ് ഷിഫ്റ്റിംഗ് പ്രവർത്തനക്ഷമമാക്കുക. പുരുഷനിൽ നിന്ന് സ്ത്രീയിലേക്കും തിരിച്ചുമുള്ള പരിവർത്തനങ്ങൾക്ക് ഉപയോഗിക്കുന്നു.",
@@ -134,9 +136,6 @@
     "File to Speech": "ഫയലിൽ നിന്ന് സംഭാഷണം",
     "Filter": "ഫിൽട്ടർ",
     "Folder Name": "ഫോൾഡറിന്റെ പേര്",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO ഡ്രൈവറുകൾക്കായി, ഒരു പ്രത്യേക ഇൻപുട്ട് ചാനൽ തിരഞ്ഞെടുക്കുന്നു. ഡിഫോൾട്ടിനായി -1 ൽ വിടുക.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO ഡ്രൈവറുകൾക്കായി, ഒരു പ്രത്യേക മോണിറ്റർ ഔട്ട്പുട്ട് ചാനൽ തിരഞ്ഞെടുക്കുന്നു. ഡിഫോൾട്ടിനായി -1 ൽ വിടുക.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO ഡ്രൈവറുകൾക്കായി, ഒരു പ്രത്യേക ഔട്ട്പുട്ട് ചാനൽ തിരഞ്ഞെടുക്കുന്നു. ഡിഫോൾട്ടിനായി -1 ൽ വിടുക.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (വിൻഡോസ്)-നായി, കുറഞ്ഞ ലേറ്റൻസിക്ക് വേണ്ടി ആപ്പിന് എക്സ്ക്ലൂസീവ് നിയന്ത്രണം നൽകുന്നു.",
     "Formant Shifting": "ഫോർമാന്റ് ഷിഫ്റ്റിംഗ്",
     "Fresh Training": "പുതിയ പരിശീലനം",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "റിവേർബ് വെറ്റ് ഗെയിൻ",
     "Reverb Width": "റിവേർബ് വീതി",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "ഇലക്ട്രോ-അക്കോസ്റ്റിക് ടിയറിംഗും മറ്റ് ആർട്ടിഫാക്റ്റുകളും തടയുന്നതിന് വ്യതിരിക്തമായ വ്യഞ്ജനാക്ഷരങ്ങളെയും ശ്വാസമെടുക്കുന്ന ശബ്ദങ്ങളെയും സംരക്ഷിക്കുക. പാരാമീറ്റർ അതിന്റെ പരമാവധി മൂല്യമായ 0.5-ലേക്ക് വലിക്കുന്നത് സമഗ്രമായ സംരക്ഷണം നൽകുന്നു. എന്നിരുന്നാലും, ഈ മൂല്യം കുറയ്ക്കുന്നത് സംരക്ഷണത്തിന്റെ വ്യാപ്തി കുറയ്ക്കുകയും ഇൻഡെക്സിംഗ് പ്രഭാവം ലഘൂകരിക്കുകയും ചെയ്യും.",
+    "Sample Rate": "സാമ്പിൾ നിരക്ക്",
     "Sampling Rate": "സാമ്പിളിംഗ് നിരക്ക്",
     "Save Every Epoch": "ഓരോ എപ്പോക്കിലും സംരക്ഷിക്കുക",
     "Save Every Weights": "എല്ലാ വെയ്റ്റുകളും സംരക്ഷിക്കുക",
@@ -326,6 +326,7 @@
     "Start": "തുടങ്ങുക",
     "Start Training": "പരിശീലനം ആരംഭിക്കുക",
     "Status": "നില",
+    "Stereo": "സ്റ്റീരിയോ",
     "Stop": "നിർത്തുക",
     "Stop Training": "പരിശീലനം നിർത്തുക",
     "Stop convert": "പരിവർത്തനം നിർത്തുക",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "ഓഡിയോ നിശ്ശബ്ദമായി കണക്കാക്കുന്ന വോളിയം പരിധി. ഇത് CPU വിഭവങ്ങൾ ലാഭിക്കാനും പശ്ചാത്തല ശബ്ദം കുറയ്ക്കാനും സഹായിക്കുന്നു.",
     "Warming up... ({} blocks remaining)": "വാമിംഗ് അപ്... ({} ബ്ലോക്കുകൾ ശേഷിക്കുന്നു)",
     "You can also use a custom path.": "നിങ്ങൾക്ക് ഒരു കസ്റ്റം പാതയും ഉപയോഗിക്കാം.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[പിന്തുണ](https://discord.gg/urxFjYmYYh) — [ഗിറ്റ്ഹബ്ബ്](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[പിന്തുണ](https://discord.gg/urxFjYmYYh) — [ഗിറ്റ്ഹബ്ബ്](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ഓഡിയോ സ്ട്രീമിങ്ങിനായി ഉപയോഗിക്കുന്ന സാമ്പിൾ നിരക്ക്. ഡ്രൈവർ തെറ്റായ നിരക്ക് റിപ്പോർട്ട് ചെയ്യുന്നുണ്ടെങ്കിൽ ഇത് ഓവർറൈഡ് ചെയ്യുക (ഉദാ. 44100 Hz ന് പകരം 48000 Hz)."
 }

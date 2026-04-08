@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Glise plugin.zip ou a pou enstale li",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Dire tranzisyon ant moso odyo yo pou anpeche klik. Valè ki pi wo yo kreye tranzisyon pi dous men yo ka ogmante latans.",
     "Embedder Model": "Modèl Enkòporatè",
+    "Enable ASIO": "Aktive ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Aktive sipò chofè ASIO. (Mande pou redemare Applio)",
     "Enable Applio integration with Discord presence": "Aktive entegrasyon Applio ak prezans Discord",
     "Enable VAD": "Aktive VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Aktive chanjman fòmant. Itilize pou konvèsyon gason an fi ak vis vèsa.",
@@ -134,9 +136,6 @@
     "File to Speech": "Fichye an Pawòl",
     "Filter": "Filtè",
     "Folder Name": "Non Dosye",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Pou pilòt ASIO, chwazi yon kanal antre espesifik. Kite l sou -1 pou valè pa defo.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Pou pilòt ASIO, chwazi yon kanal sòti monitè espesifik. Kite l sou -1 pou valè pa defo.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Pou pilòt ASIO, chwazi yon kanal sòti espesifik. Kite l sou -1 pou valè pa defo.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Pou WASAPI (Windows), bay aplikasyon an kontwòl eksklizif pou potansyèlman diminye latans.",
     "Formant Shifting": "Chanjman Fòmant",
     "Fresh Training": "Fòmasyon Depi Zero",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Gain Mouye Reverb",
     "Reverb Width": "Lajè Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Pwoteje konsòn distenk ak son respirasyon pou anpeche dechiri elektwo-akoustik ak lòt artefak. Mete paramèt la nan valè maksimòm li ki se 0.5 ofri yon pwoteksyon konplè. Sepandan, diminye valè sa a ka diminye nivo pwoteksyon an pandan l ap potansyèlman diminye efè endèksasyon an.",
+    "Sample Rate": "Vitès echantiyonaj",
     "Sampling Rate": "To Echantiyonaj",
     "Save Every Epoch": "Sove Chak Epòk",
     "Save Every Weights": "Sove Chak Pwa",
@@ -326,6 +326,7 @@
     "Start": "Kòmanse",
     "Start Training": "Kòmanse Fòmasyon",
     "Status": "Estati",
+    "Stereo": "Esteywo",
     "Stop": "Sispann",
     "Stop Training": "Sispann Fòmasyon",
     "Stop convert": "Sispann konvèsyon",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Nivo volim kote odyo a konsidere kòm silans epi li pa trete. Sa ede ekonomize resous CPU epi redwi bri anbyan.",
     "Warming up... ({} blocks remaining)": "Ap chofe... ({} blòk ki rete)",
     "You can also use a custom path.": "Ou ka itilize yon chemen pèsonalize tou.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Sipò](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Sipò](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Vitès echantiyonaj ki itilize pou difizyon odyo. Ranplase sa a si chofè rapòte yon vitès enkòrèk (pa egz. 48000 Hz olye 44100 Hz)."
 }

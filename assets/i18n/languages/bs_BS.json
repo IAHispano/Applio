@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Prevucite vaš plugin.zip da ga instalirate",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Trajanje postepenog prelaza (fade) između audio isječaka kako bi se spriječili klikovi. Veće vrijednosti stvaraju glađe prelaze, ali mogu povećati latenciju.",
     "Embedder Model": "Model embeddera",
+    "Enable ASIO": "Omogući ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Omogući podršku za ASIO drajver. (Zahtijeva ponovno pokretanje Applio aplikacije)",
     "Enable Applio integration with Discord presence": "Omogući Applio integraciju sa Discord prisutnošću",
     "Enable VAD": "Omogući VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Omogući pomicanje formanata. Koristi se za konverzije iz muškog u ženski glas i obrnuto.",
@@ -134,9 +136,6 @@
     "File to Speech": "Datoteka u govor",
     "Filter": "Filter",
     "Folder Name": "Naziv foldera",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Za ASIO drajvere, bira specifičan ulazni kanal. Ostavite na -1 za zadanu vrijednost.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Za ASIO drajvere, bira specifičan izlazni kanal za praćenje (monitor). Ostavite na -1 za zadanu vrijednost.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Za ASIO drajvere, bira specifičan izlazni kanal. Ostavite na -1 za zadanu vrijednost.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Za WASAPI (Windows), daje aplikaciji ekskluzivnu kontrolu za potencijalno nižu latenciju.",
     "Formant Shifting": "Pomicanje formanata",
     "Fresh Training": "Svježe treniranje",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Mokro pojačanje reverba",
     "Reverb Width": "Širina reverba",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Zaštitite izražene suglasnike i zvukove disanja kako biste spriječili elektro-akustičko kidanje i druge artefakte. Postavljanje parametra na maksimalnu vrijednost od 0.5 nudi sveobuhvatnu zaštitu. Međutim, smanjenje ove vrijednosti može umanjiti stepen zaštite, dok potencijalno ublažava efekat indeksiranja.",
+    "Sample Rate": "Frekvencija uzorkovanja",
     "Sampling Rate": "Brzina uzorkovanja",
     "Save Every Epoch": "Spremi svaku epohu",
     "Save Every Weights": "Spremi sve težine",
@@ -326,6 +326,7 @@
     "Start": "Pokreni",
     "Start Training": "Započni treniranje",
     "Status": "Status",
+    "Stereo": "Stereo",
     "Stop": "Zaustavi",
     "Stop Training": "Zaustavi treniranje",
     "Stop convert": "Zaustavi konverziju",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Nivo jačine zvuka ispod kojeg se audio tretira kao tišina i ne obrađuje se. Pomaže u uštedi CPU resursa i smanjenju pozadinske buke.",
     "Warming up... ({} blocks remaining)": "Zagrijavanje... ({} blokova preostalo)",
     "You can also use a custom path.": "Možete koristiti i prilagođenu putanju.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Podrška](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Podrška](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Frekvencija uzorkovanja korištena za audio prijenos. Zamijeni ovo ako drajver prijavi netačnu frekvenciju (npr. 48000 Hz umjesto 44100 Hz)."
 }

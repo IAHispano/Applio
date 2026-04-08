@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Drag your plugin.zip to install it",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.",
     "Embedder Model": "Embedder Model",
+    "Enable ASIO": "Enable ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Enable ASIO driver support. (Requires restarting Applio)",
     "Enable Applio integration with Discord presence": "Enable Applio integration with Discord presence",
     "Enable VAD": "Enable VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Enable formant shifting. Used for male to female and vice-versa convertions.",
@@ -134,9 +136,6 @@
     "File to Speech": "File to Speech",
     "Filter": "Filter",
     "Folder Name": "Folder Name",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "For ASIO drivers, selects a specific input channel. Leave at -1 for default.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "For ASIO drivers, selects a specific output channel. Leave at -1 for default.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.",
     "Formant Shifting": "Formant Shifting",
     "Fresh Training": "Fresh Training",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Reverb Wet Gain",
     "Reverb Width": "Reverb Width",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.",
+    "Sample Rate": "Sample Rate",
     "Sampling Rate": "Sampling Rate",
     "Save Every Epoch": "Save Every Epoch",
     "Save Every Weights": "Save Every Weights",
@@ -326,6 +326,7 @@
     "Start": "Start",
     "Start Training": "Start Training",
     "Status": "Status",
+    "Stereo": "Stereo",
     "Stop": "Stop",
     "Stop Training": "Stop Training",
     "Stop convert": "Stop convert",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.",
     "Warming up... ({} blocks remaining)": "Warming up... ({} blocks remaining)",
     "You can also use a custom path.": "You can also use a custom path.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values."
 }

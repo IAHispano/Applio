@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Tarraing do plugin.zip chun é a shuiteáil",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Fad an chéimnithe idir smutaí fuaime chun cliceanna a chosc. Cruthaíonn luachanna níos airde aistrithe níos míne ach d'fhéadfadh siad an t-aga folaigh a mhéadú.",
     "Embedder Model": "Múnla Leabaitheora",
+    "Enable ASIO": "Cumasaigh ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Cumasaigh tacaíocht tiománaí ASIO. (Éilíonn sé Applio a atosú)",
     "Enable Applio integration with Discord presence": "Cumasaigh comhtháthú Applio le láithreacht Discord",
     "Enable VAD": "Cumasaigh VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Cumasaigh aistriú formant. Úsáidtear é do chomhshóite ó fhireann go baineann agus a mhalairt.",
@@ -134,9 +136,6 @@
     "File to Speech": "Comhad go Caint",
     "Filter": "Scagaire",
     "Folder Name": "Ainm an Fhillteáin",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "I gcás tiománaithe ASIO, roghnaíonn sé cainéal ionchuir ar leith. Fág ag -1 don réamhshocrú.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "I gcás tiománaithe ASIO, roghnaíonn sé cainéal aschuir monatóireachta ar leith. Fág ag -1 don réamhshocrú.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "I gcás tiománaithe ASIO, roghnaíonn sé cainéal aschuir ar leith. Fág ag -1 don réamhshocrú.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "I gcás WASAPI (Windows), tugann sé smacht eisiach don aip le haghaidh aga folaigh a d'fhéadfadh a bheith níos ísle.",
     "Formant Shifting": "Aistriú Formant",
     "Fresh Training": "Traenáil Úrnua",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Gnóthachan Fliuch an Aisfhuaimnithe",
     "Reverb Width": "Leithead an Aisfhuaimnithe",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Cosain consain ar leith agus fuaimeanna anála chun cuimilt leictrea-fhuaimiúil agus déantáin eile a chosc. Tugann an paraiméadar a tharraingt chuig a uasluach de 0.5 cosaint chuimsitheach. Mar sin féin, d'fhéadfadh laghdú an luacha seo méid na cosanta a laghdú agus an éifeacht innéacsaithe a mhaolú b'fhéidir.",
+    "Sample Rate": "Ráta Samplála",
     "Sampling Rate": "Ráta Samplála",
     "Save Every Epoch": "Sábháil Gach Eapach",
     "Save Every Weights": "Sábháil Gach Meáchan",
@@ -326,6 +326,7 @@
     "Start": "Tosaigh",
     "Start Training": "Cuir tús leis an Traenáil",
     "Status": "Stádas",
+    "Stereo": "Steirió",
     "Stop": "Stad",
     "Stop Training": "Stop an Traenáil",
     "Stop convert": "Stop an comhshó",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "An leibhéal toirte faoina ndéileáiltear le fuaim mar thost agus nach bpróiseáiltear í. Cuidíonn sé seo le hacmhainní CPU a shábháil agus le torann cúlra a laghdú.",
     "Warming up... ({} blocks remaining)": "Ag téamh suas... ({} bloc fágtha)",
     "You can also use a custom path.": "Is féidir leat cosán saincheaptha a úsáid freisin.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Tacaíocht](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Tacaíocht](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Ráta samplála a úsáidtear le haghaidh sruthú fuaime. Sáraigh é seo má thuairiscíonn an tiománaí ráta mícheart (m.sh. 48000 Hz in ionad 44100 Hz)."
 }

@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Eklentiyi yüklemek için plugin.zip dosyanızı sürükleyin",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Tıklamaları önlemek için ses yığınları arasındaki geçişin süresi. Daha yüksek değerler daha pürüzsüz geçişler oluşturur ancak gecikmeyi artırabilir.",
     "Embedder Model": "Gömücü Modeli",
+    "Enable ASIO": "ASIO'yu etkinleştir",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO sürücü desteğini etkinleştir. (Applio'nun yeniden başlatılmasını gerektirir)",
     "Enable Applio integration with Discord presence": "Applio'nun Discord aktivite durumu entegrasyonunu etkinleştir",
     "Enable VAD": "VAD'ı Etkinleştir",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Formant kaydırmayı etkinleştirin. Erkekten kadına ve tersi dönüşümler için kullanılır.",
@@ -134,9 +136,6 @@
     "File to Speech": "Dosyadan Konuşmaya",
     "Filter": "Filtre",
     "Folder Name": "Klasör Adı",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO sürücüleri için belirli bir giriş kanalını seçer. Varsayılan için -1'de bırakın.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO sürücüleri için belirli bir monitör çıkış kanalını seçer. Varsayılan için -1'de bırakın.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO sürücüleri için belirli bir çıkış kanalını seçer. Varsayılan için -1'de bırakın.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (Windows) için, potansiyel olarak daha düşük gecikme için uygulamaya özel denetim verir.",
     "Formant Shifting": "Formant Kaydırma",
     "Fresh Training": "Sıfırdan Eğitim",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Yankı Islak Kazanç",
     "Reverb Width": "Yankı Genişliği",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Elektro-akustik yırtılmayı ve diğer yapaylıkları önlemek için belirgin ünsüzleri ve nefes seslerini koruyun. Parametreyi maksimum 0.5 değerine çekmek kapsamlı koruma sağlar. Ancak, bu değeri düşürmek koruma derecesini azaltabilirken potansiyel olarak indeksleme etkisini hafifletebilir.",
+    "Sample Rate": "Örnekleme Hızı",
     "Sampling Rate": "Örnekleme Hızı",
     "Save Every Epoch": "Her Epokta Kaydet",
     "Save Every Weights": "Her Ağırlığı Kaydet",
@@ -326,6 +326,7 @@
     "Start": "Başlat",
     "Start Training": "Eğitimi Başlat",
     "Status": "Durum",
+    "Stereo": "Stereo",
     "Stop": "Durdur",
     "Stop Training": "Eğitimi Durdur",
     "Stop convert": "Dönüştürmeyi durdur",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Sesin sessizlik olarak kabul edildiği ve işlenmediği ses seviyesi. CPU kaynaklarından tasarruf etmeye ve arka plan gürültüsünü azaltmaya yardımcı olur.",
     "Warming up... ({} blocks remaining)": "Isınıyor... ({} blok kaldı)",
     "You can also use a custom path.": "Ayrıca özel bir yol da kullanabilirsiniz.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Destek](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Destek](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Ses akışı için kullanılan örnekleme hızı. Sürücü yanlış bir hız bildirirse bunu geçersiz kıl (örn. 44100 Hz yerine 48000 Hz)."
 }

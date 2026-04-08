@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Nuvilkite savo plugin.zip, kad jį įdiegtumėte",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Garso fragmentų perėjimo trukmė, siekiant išvengti spragtelėjimų. Didesnės reikšmės sukuria sklandesnius perėjimus, bet gali padidinti delsą.",
     "Embedder Model": "Įterpimo modelis",
+    "Enable ASIO": "Įjungti ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Įjunkite ASIO tvarkyklės palaikymą. (Reikia perkrauti Applio)",
     "Enable Applio integration with Discord presence": "Įjungti Applio integraciją su Discord būsena",
     "Enable VAD": "Įjungti VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Įjungti formančių poslinkį. Naudojama konvertuojant vyrišką balsą į moterišką ir atvirkščiai.",
@@ -134,9 +136,6 @@
     "File to Speech": "Failas į kalbą",
     "Filter": "Filtras",
     "Folder Name": "Aplanko pavadinimas",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO tvarkyklėms: pasirenka konkretų įvesties kanalą. Palikite -1 numatytajai reikšmei.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO tvarkyklėms: pasirenka konkretų monitoringo išvesties kanalą. Palikite -1 numatytajai reikšmei.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO tvarkyklėms: pasirenka konkretų išvesties kanalą. Palikite -1 numatytajai reikšmei.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (Windows) atveju: suteikia programėlei išskirtinę kontrolę, galimai sumažinant delsą.",
     "Formant Shifting": "Formančių poslinkis",
     "Fresh Training": "Naujas apmokymas",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Reverberacijos šlapio signalo stiprinimas",
     "Reverb Width": "Reverberacijos plotis",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Apsaugokite aiškius priebalsius ir kvėpavimo garsus, kad išvengtumėte elektroakustinių iškraipymų ir kitų artefaktų. Nustačius parametrą į maksimalią 0.5 reikšmę, užtikrinama visapusiška apsauga. Tačiau sumažinus šią reikšmę, apsaugos lygis gali sumažėti, bet kartu gali būti sušvelnintas indeksavimo poveikis.",
+    "Sample Rate": "Diskretizavimo dažnis",
     "Sampling Rate": "Diskretizavimo dažnis",
     "Save Every Epoch": "Išsaugoti kas epochą",
     "Save Every Weights": "Išsaugoti visus svorius",
@@ -326,6 +326,7 @@
     "Start": "Pradėti",
     "Start Training": "Pradėti apmokymą",
     "Status": "Būsena",
+    "Stereo": "Stereo",
     "Stop": "Stabdyti",
     "Stop Training": "Sustabdyti apmokymą",
     "Stop convert": "Sustabdyti konvertavimą",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Garso lygis, žemiau kurio garsas laikomas tyla ir neapdorojamas. Padeda taupyti CPU resursus ir sumažinti foninį triukšmą.",
     "Warming up... ({} blocks remaining)": "Šildoma... (liko {} blokų)",
     "You can also use a custom path.": "Taip pat galite naudoti pasirinktinį kelią.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Pagalba](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Pagalba](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Diskretizavimo dažnis, naudojamas garso srautui. Pakeiskite tai, jei tvarkyklė praneša neteisingą dažnį (pvz. 48000 Hz vietoj 44100 Hz)."
 }

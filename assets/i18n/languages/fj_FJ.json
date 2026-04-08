@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Yaroca na nomu plugin.zip mo vakacuruma",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Na balavu ni gauna ni veisau malumu ena maliwa ni tiki ni rorogo me tarova na rorogo vakatotolo ('clicks'). Na i wiliwili lelevu e bulia na veisau malumu ia e rawa ni vakalevutaka na berabera.",
     "Embedder Model": "iVakarau ni iVakacurumi",
+    "Enable ASIO": "Vakayagataka ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Vakayagataka na veivukei ni ASIO driver. (E gadrevi me tekivutaki tale na Applio)",
     "Enable Applio integration with Discord presence": "Vakabula na semati ni Applio kei na tiko ni Discord",
     "Enable VAD": "Vakabula na VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Vakabula na veisau ni formant. E vakayagataki me baleta na veisau mai na tagane ki na yalewa kei na kena veibasai.",
@@ -134,9 +136,6 @@
     "File to Speech": "Faile ki na Vosa",
     "Filter": "Filter",
     "Folder Name": "Yaca ni iLalawa",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Vei ira na draiva ni ASIO, e digitaka e dua na sala vakatabakidua ni ka e curu mai. Biuta tu ena -1 me baleta na kena i tuvaki taumada.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Vei ira na draiva ni ASIO, e digitaka e dua na sala vakatabakidua ni ka e curu yani me vakarorogotaki. Biuta tu ena -1 me baleta na kena i tuvaki taumada.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Vei ira na draiva ni ASIO, e digitaka e dua na sala vakatabakidua ni ka e curu yani. Biuta tu ena -1 me baleta na kena i tuvaki taumada.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Me baleta na WASAPI (Windows), e solia ki na 'app' na lewa vakatabakidua me rawa ni lailai sobu kina na berabera.",
     "Formant Shifting": "Veisau ni Formant",
     "Fresh Training": "Vuli Vou",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Gain Suasua ni Reverb",
     "Reverb Width": "Raba ni Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Taqlomaka na vosa duidui kei na rorogo ni icegu me tarova na dresulaki ni rorogo kei na veicala tale eso. Na kena tosoi na ivakarau ki na kena iwiliwili cecere duadua e 0.5 e solia na veitaqomaki taucoko. Ia, na vakalailaitaki ni iwiliwili oqo e rawa ni vakalailaitaka na veitaqomaki ka rawa ni vakalailaitaka talega na revurevu ni vakadikevi.",
+    "Sample Rate": "Reiti ni Ivakatokai",
     "Sampling Rate": "iWiliwili ni Vakatovotovo",
     "Save Every Epoch": "Maroroya na Veigauna Kece",
     "Save Every Weights": "Maroroya na Veibibi Kece",
@@ -326,6 +326,7 @@
     "Start": "Tekivu",
     "Start Training": "Tekivu na Vuli",
     "Status": "iTuvaki",
+    "Stereo": "Stereo",
     "Stop": "Cegu",
     "Stop Training": "Vakacegu na Vuli",
     "Stop convert": "Vakacegu na veisau",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Na i vakatagedegede ni rorogo e lailai sobu mai kina e okati na rorogo me galu ka sega ni cakacakataki. E vukea me maroroi na kaukauwa ni CPU ka vakalailaitaka na rorogo e muri.",
     "Warming up... ({} blocks remaining)": "E vakarautaki... ({} na ivolau e tiko ga)",
     "You can also use a custom path.": "E rawa talega ni ko vakayagataka e dua na sala vakayagataki.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Veitokoni](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Veitokoni](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Reiti ni ivakatokai e vakayagataki me na audio streaming. Vakacava oqo me vakacaucautaka na reiti e tukuna na driver (e.g. 48000 Hz e sega ni 44100 Hz)."
 }
