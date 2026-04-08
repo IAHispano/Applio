@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Sleep jou plugin.zip om dit te installeer",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Duur van die oorgang tussen klankstukke om klikgeluide te voorkom. Hoër waardes skep gladder oorgange, maar kan latensie verhoog.",
     "Embedder Model": "Inbedder Model",
+    "Enable ASIO": "Aktiveer ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Aktiveer ASIO-bestuurder ondersteuning. (Vereis herbegin van Applio)",
     "Enable Applio integration with Discord presence": "Aktiveer Applio-integrasie met Discord-teenwoordigheid",
     "Enable VAD": "Aktiveer VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Aktiveer formantverskuiwing. Word gebruik vir manlike na vroulike en omgekeerde omskakelings.",
@@ -134,9 +136,6 @@
     "File to Speech": "Lêer na Spraak",
     "Filter": "Filter",
     "Folder Name": "Lêergids Naam",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Vir ASIO-drywers, kies 'n spesifieke invoerkanaal. Laat op -1 vir verstek.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Vir ASIO-drywers, kies 'n spesifieke monitor-uitvoerkanaal. Laat op -1 vir verstek.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Vir ASIO-drywers, kies 'n spesifieke uitvoerkanaal. Laat op -1 vir verstek.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Vir WASAPI (Windows), gee die toepassing eksklusiewe beheer vir potensieel laer latensie.",
     "Formant Shifting": "Formantverskuiwing",
     "Fresh Training": "Vars Opleiding",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Galm Nat Versterking",
     "Reverb Width": "Galm Breedte",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Beskerm duidelike konsonante en asemhalingsgeluide om elektro-akoestiese skeur en ander artefakte te voorkom. Deur die parameter na sy maksimum waarde van 0.5 te trek, bied dit omvattende beskerming. Die vermindering van hierdie waarde kan egter die mate van beskerming verminder terwyl die indekseringseffek moontlik versag word.",
+    "Sample Rate": "Monsterkoers",
     "Sampling Rate": "Monsternemingskoers",
     "Save Every Epoch": "Stoor Elke Epog",
     "Save Every Weights": "Stoor Alle Gewigte",
@@ -326,6 +326,7 @@
     "Start": "Begin",
     "Start Training": "Begin Opleiding",
     "Status": "Status",
+    "Stereo": "Stereo",
     "Stop": "Stop",
     "Stop Training": "Stop Opleiding",
     "Stop convert": "Stop omskakeling",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Volumevlak waaronder klank as stilte behandel word en nie verwerk word nie. Help om SVE-hulpbronne te bespaar en agtergrondgeraas te verminder.",
     "Warming up... ({} blocks remaining)": "Warming up... ({} blokke oor)",
     "You can also use a custom path.": "U kan ook 'n pasgemaakte pad gebruik.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Ondersteuning](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Ondersteuning](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Monsterkoers wat vir oudio-stroom gebruik word. Ignoreer dit as die bestuurder 'n verkeerde koers aanmeld (bv. 48000 Hz in plaas van 44100 Hz)."
 }

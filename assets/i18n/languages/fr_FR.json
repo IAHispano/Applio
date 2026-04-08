@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Glissez votre plugin.zip pour l'installer",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Durée du fondu entre les blocs audio pour éviter les clics. Des valeurs plus élevées créent des transitions plus douces mais peuvent augmenter la latence.",
     "Embedder Model": "Modèle d'intégration",
+    "Enable ASIO": "Activer ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Activer le support du pilote ASIO. (Redémarrage d'Applio requis)",
     "Enable Applio integration with Discord presence": "Activer l'intégration d'Applio avec la présence Discord",
     "Enable VAD": "Activer la VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Activer le décalage des formants. Utilisé pour les conversions de voix d'homme à femme et vice-versa.",
@@ -134,9 +136,6 @@
     "File to Speech": "Fichier vers parole",
     "Filter": "Filtre",
     "Folder Name": "Nom du dossier",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Pour les pilotes ASIO, sélectionne un canal d'entrée spécifique. Laissez à -1 pour la valeur par défaut.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Pour les pilotes ASIO, sélectionne un canal de sortie pour le retour audio. Laissez à -1 pour la valeur par défaut.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Pour les pilotes ASIO, sélectionne un canal de sortie spécifique. Laissez à -1 pour la valeur par défaut.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Pour WASAPI (Windows), donne à l'application un contrôle exclusif pour une latence potentiellement plus faible.",
     "Formant Shifting": "Décalage des formants",
     "Fresh Training": "Nouvel entraînement",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Gain humide de la réverbération",
     "Reverb Width": "Largeur de la réverbération",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Protégez les consonnes distinctes et les bruits de respiration pour éviter les déchirements électro-acoustiques et autres artefacts. Pousser le paramètre à sa valeur maximale de 0.5 offre une protection complète. Cependant, réduire cette valeur peut diminuer le niveau de protection tout en atténuant potentiellement l'effet d'indexation.",
+    "Sample Rate": "Fréquence d'échantillonnage",
     "Sampling Rate": "Fréquence d'échantillonnage",
     "Save Every Epoch": "Sauvegarder à chaque époque",
     "Save Every Weights": "Sauvegarder tous les poids",
@@ -326,6 +326,7 @@
     "Start": "Démarrer",
     "Start Training": "Démarrer l'entraînement",
     "Status": "Statut",
+    "Stereo": "Stéréo",
     "Stop": "Arrêter",
     "Stop Training": "Arrêter l'entraînement",
     "Stop convert": "Arrêter la conversion",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Niveau de volume en dessous duquel l'audio est considéré comme du silence et n'est pas traité. Aide à économiser les ressources CPU et à réduire le bruit de fond.",
     "Warming up... ({} blocks remaining)": "Préchauffage... ({} blocs restants)",
     "You can also use a custom path.": "Vous pouvez également utiliser un chemin personnalisé.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Fréquence d'échantillonnage utilisée pour le flux audio. Remplacez ceci si le pilote signale une fréquence incorrecte (p. ex. 48000 Hz au lieu de 44100 Hz)."
 }

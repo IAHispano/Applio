@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Ikaxkar il-plugin.zip tiegħek biex tinstallah",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Tul tal-fade bejn il-blokki tal-awdjo biex jiġu evitati l-ħsejjes (clicks). Valuri ogħla joħolqu tranżizzjonijiet aktar fluwidi imma jistgħu jżidu d-dewmien (latency).",
     "Embedder Model": "Mudell tal-Embedder",
+    "Enable ASIO": "Ippermetti ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Ippermetti l-appoġġ tal-driver ASIO. (Jeħtieġ li terġa' tibda Applio)",
     "Enable Applio integration with Discord presence": "Attiva l-integrazzjoni ta' Applio mal-preżenza ta' Discord",
     "Enable VAD": "Attiva VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Attiva l-formant shifting. Użat għal konverżjonijiet minn raġel għal mara u viċi versa.",
@@ -134,9 +136,6 @@
     "File to Speech": "Fajl għad-Diskors",
     "Filter": "Filtru",
     "Folder Name": "Isem tal-Folder",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Għad-drivers ASIO, jagħżel kanal speċifiku tal-input. Ħallih fuq -1 għall-default.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Għad-drivers ASIO, jagħżel kanal speċifiku tal-output tal-monitor. Ħallih fuq -1 għall-default.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Għad-drivers ASIO, jagħżel kanal speċifiku tal-output. Ħallih fuq -1 għall-default.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Għal WASAPI (Windows), jagħti lill-app kontroll esklussiv għal dewmien (latency) potenzjalment aktar baxx.",
     "Formant Shifting": "Formant Shifting",
     "Fresh Training": "Taħriġ Frisk",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Wet Gain tar-Reverb",
     "Reverb Width": "Wisa' tar-Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Issalvagwardja l-konsonanti distinti u l-ħsejjes tan-nifs biex tevita tiċrit elettro-akustiku u artifatti oħra. It-tlugħ tal-parametru sal-valur massimu tiegħu ta' 0.5 joffri protezzjoni komprensiva. Madankollu, it-tnaqqis ta' dan il-valur jista' jnaqqas il-firxa tal-protezzjoni filwaqt li potenzjalment itaffi l-effett tal-indiċjar.",
+    "Sample Rate": "Rata tal-Kampjun",
     "Sampling Rate": "Rata ta' Kampjunar",
     "Save Every Epoch": "Issejvja Kull Epoka",
     "Save Every Weights": "Issejvja Kull Piż",
@@ -326,6 +326,7 @@
     "Start": "Ibda",
     "Start Training": "Ibda t-Taħriġ",
     "Status": "Status",
+    "Stereo": "Stereo",
     "Stop": "Waqqaf",
     "Stop Training": "Waqqaf it-Taħriġ",
     "Stop convert": "Waqqaf il-konverżjoni",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Il-livell tal-volum li taħtu l-awdjo jiġi ttrattat bħala silenzju u ma jiġix ipproċessat. Jgħin biex jiffranka r-riżorsi tas-CPU u jnaqqas il-ħoss fl-isfond.",
     "Warming up... ({} blocks remaining)": "Tisħin... ({} blokki fadal)",
     "You can also use a custom path.": "Tista' wkoll tuża post personalizzat.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Appoġġ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Appoġġ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Rata tal-kampjun użata għall-istreaming tal-awdjo. Ibdel dan jekk il-driver jirrapporta rata incorretta (eż. 48000 Hz minflok 44100 Hz)."
 }

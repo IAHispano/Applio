@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "ለመጫን የእርስዎን plugin.zip ይጎትቱ",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "የሚሰነጠቁ ድምፆችን ለመከላከል በድምፅ ክፋዮች መካከል ያለው የድምፅ መደብዘዝ ቆይታ። ከፍተኛ እሴቶች ለስላሳ ሽግግሮችን ይፈጥራሉ ነገር ግን መዘግየትን ሊጨምሩ ይችላሉ።",
     "Embedder Model": "የኢምቤደር ሞዴል",
+    "Enable ASIO": "ASIO ን አንቃ",
+    "Enable ASIO driver support. (Requires restarting Applio)": "የ ASIO ድራይቨር ድጋፍን ያንቁ። ከላይ ያሉትን የቻናል ቁጥሮች አዘጋጅተው ASIO መሣሪያን እንደ ግቤት/ውፅዓት ይምረጡ። ለውጡ ተግባራዊ ለመሆን Applio ን ዳግም ማስጀመር ያስፈልጋል።(Applioን እንደገና ማስጀመር ያስፈልጋል)",
     "Enable Applio integration with Discord presence": "የ Applio ውህደትን ከ Discord መገኘት ጋር ያንቁ",
     "Enable VAD": "VAD አንቃ",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "የፎርማንት ሽግግርን አንቃ። ለወንድ ወደ ሴት እና ለተገላቢጦሽ ልወጣዎች ያገለግላል።",
@@ -134,9 +136,6 @@
     "File to Speech": "ከፋይል ወደ ንግግር",
     "Filter": "አጣራ",
     "Folder Name": "የአቃፊ ስም",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ለASIO ሾፌሮች፣ የተወሰነ የግቤት ቻናል ይመርጣል። ለነባሪው በ-1 ላይ ይተዉት።",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ለASIO ሾፌሮች፣ የተወሰነ የክትትል ውፅዓት ቻናል ይመርጣል። ለነባሪው በ-1 ላይ ይተዉት።",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ለASIO ሾፌሮች፣ የተወሰነ የውፅዓት ቻናል ይመርጣል። ለነባሪው በ-1 ላይ ይተዉት።",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "ለWASAPI (Windows)፣ ዝቅተኛ መዘግየትን ለማምጣት መተግበሪያው ብቸኛ ቁጥጥር እንዲኖረው ያደርጋል።",
     "Formant Shifting": "የፎርማንት ሽግግር",
     "Fresh Training": "አዲስ ስልጠና",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "የሪቨርብ ዌት ጌይን",
     "Reverb Width": "የሪቨርብ ስፋት",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "የኤሌክትሮ-አኮስቲክ መበጣጠስ እና ሌሎች ጉድለቶችን ለመከላከል ልዩ ተነባቢዎችን እና የአተነፋፈስ ድምፆችን ይጠብቁ። ፓራሜተሩን ወደ ከፍተኛው 0.5 እሴት መሳብ አጠቃላይ ጥበቃን ይሰጣል። ሆኖም ይህንን እሴት መቀነስ የማውጫውን ውጤት እየቀነሰ የጥበቃውን መጠን ሊቀንስ ይችላል።",
+    "Sample Rate": "የናሙና መጠን",
     "Sampling Rate": "የናሙና መጠን",
     "Save Every Epoch": "በእያንዳንዱ ኢፖክ አስቀምጥ",
     "Save Every Weights": "ሁሉንም ክብደቶች አስቀምጥ",
@@ -326,6 +326,7 @@
     "Start": "ጀምር",
     "Start Training": "ስልጠና ጀምር",
     "Status": "ሁኔታ",
+    "Stereo": "ስቴሪዮ",
     "Stop": "አቁም",
     "Stop Training": "ስልጠና አቁም",
     "Stop convert": "ልወጣ አቁም",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "ከዚህ በታች ያለው የድምፅ መጠን እንደ ጸጥታ የሚቆጠርበት እና የማይቀናበርበት ደረጃ። የCPU ሀብቶችን ለመቆጠብ እና የጀርባ ጫጫታን ለመቀነስ ይረዳል።",
     "Warming up... ({} blocks remaining)": "Warming up... ({} ብሎኮች ቀሪ)",
     "You can also use a custom path.": "ብጁ ዱካም መጠቀም ይችላሉ።",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[ድጋፍ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[ድጋፍ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ለድምጽ ዥረት የሚያገለግለው የናሙና ሬሽዮ። ድራይቨሩ የተሳሳተ ሬሽዮ ሲያሳይ ይሄን ይቀይሩ (ለምሳሌ 44100 Hz ፈንታ 48000 Hz)።"
 }

@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Seret plugin.zip anda untuk memasangnya",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Tempoh pudar antara cebisan audio untuk mengelakkan bunyi 'klik'. Nilai yang lebih tinggi menghasilkan peralihan yang lebih lancar tetapi mungkin meningkatkan kependaman.",
     "Embedder Model": "Model Pembedam",
+    "Enable ASIO": "Aktifkan ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Aktifkan sokongan pemacu ASIO. (Memerlukan Applio dimulakan semula)",
     "Enable Applio integration with Discord presence": "Dayakan integrasi Applio dengan kehadiran Discord",
     "Enable VAD": "Aktifkan VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Dayakan anjakan forman. Digunakan untuk penukaran lelaki ke perempuan dan sebaliknya.",
@@ -134,9 +136,6 @@
     "File to Speech": "Fail ke Ucapan",
     "Filter": "Penapis",
     "Folder Name": "Nama Folder",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Untuk pemacu ASIO, pilih saluran input tertentu. Biarkan pada -1 untuk lalai.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Untuk pemacu ASIO, pilih saluran output monitor tertentu. Biarkan pada -1 untuk lalai.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Untuk pemacu ASIO, pilih saluran output tertentu. Biarkan pada -1 untuk lalai.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Untuk WASAPI (Windows), memberikan aplikasi kawalan eksklusif untuk potensi kependaman yang lebih rendah.",
     "Formant Shifting": "Anjakan Forman",
     "Fresh Training": "Latihan Baharu",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Gandaan Basah Gema",
     "Reverb Width": "Lebar Gema",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Lindungi konsonan yang berbeza dan bunyi pernafasan untuk mengelakkan koyakan elektro-akustik dan artefak lain. Menarik parameter ke nilai maksimumnya iaitu 0.5 menawarkan perlindungan komprehensif. Walau bagaimanapun, mengurangkan nilai ini mungkin mengurangkan tahap perlindungan sambil berpotensi mengurangkan kesan pengindeksan.",
+    "Sample Rate": "Kadar Sampel",
     "Sampling Rate": "Kadar Pensampelan",
     "Save Every Epoch": "Simpan Setiap Epok",
     "Save Every Weights": "Simpan Setiap Pemberat",
@@ -326,6 +326,7 @@
     "Start": "Mula",
     "Start Training": "Mula Latihan",
     "Status": "Status",
+    "Stereo": "Stereo",
     "Stop": "Henti",
     "Stop Training": "Henti Latihan",
     "Stop convert": "Henti tukar",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Tahap kelantangan di mana audio dianggap sebagai senyap dan tidak diproses. Membantu menjimatkan sumber CPU dan mengurangkan hingar latar.",
     "Warming up... ({} blocks remaining)": "Memanaskan... ({} blok berbaki)",
     "You can also use a custom path.": "Anda juga boleh menggunakan laluan tersuai.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Sokongan](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Sokongan](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Kadar sampel yang digunakan untuk penstriman audio. Ganti ini jika pemacu melaporkan kadar yang tidak betul (cth. 48000 Hz dan bukannya 44100 Hz)."
 }

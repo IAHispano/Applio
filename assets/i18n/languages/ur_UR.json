@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "اسے انسٹال کرنے کے لیے اپنی plugin.zip کو گھسیٹیں",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "کلکس کو روکنے کے لیے آڈیو چنکس کے درمیان فیڈ کا دورانیہ۔ اعلیٰ اقدار ہموار منتقلی پیدا کرتی ہیں لیکن تاخیر میں اضافہ کر سکتی ہیں۔",
     "Embedder Model": "ایمبیڈر ماڈل",
+    "Enable ASIO": "ASIO فعال کریں",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO ڈرائیور سپورٹ فعال کریں۔ ASIO ڈیوائس کو ان پٹ/آؤٹ پٹ کے طور پر منتخب کریں اور اوپر چینل نمبر سیٹ کریں۔ تبدیلیاں نافذ کرنے کے لیے Applio کو دوبارہ شروع کرنا ضروری ہے۔(Applio کو دوبارہ شروع کرنے کی ضرورت ہے)",
     "Enable Applio integration with Discord presence": "ڈسکارڈ موجودگی کے ساتھ Applio انٹیگریشن کو فعال کریں",
     "Enable VAD": "VAD کو فعال کریں",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "فارمینٹ شفٹنگ کو فعال کریں۔ مرد سے عورت اور اس کے برعکس تبدیلیوں کے لیے استعمال ہوتا ہے۔",
@@ -134,9 +136,6 @@
     "File to Speech": "فائل سے تقریر",
     "Filter": "فلٹر",
     "Folder Name": "فولڈر کا نام",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO ڈرائیورز کے لیے، ایک مخصوص ان پٹ چینل منتخب کرتا ہے۔ ڈیفالٹ کے لیے -1 پر چھوڑ دیں۔",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO ڈرائیورز کے لیے، ایک مخصوص مانیٹر آؤٹ پٹ چینل منتخب کرتا ہے۔ ڈیفالٹ کے لیے -1 پر چھوڑ دیں۔",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO ڈرائیورز کے لیے، ایک مخصوص آؤٹ پٹ چینل منتخب کرتا ہے۔ ڈیفالٹ کے لیے -1 پر چھوڑ دیں۔",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (ونڈوز) کے لیے، ممکنہ طور پر کم تاخیر کے لیے ایپ کو خصوصی کنٹرول دیتا ہے۔",
     "Formant Shifting": "فارمینٹ شفٹنگ",
     "Fresh Training": "نئی تربیت",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "ریورب ویٹ گین",
     "Reverb Width": "ریورب وڈتھ",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "الیکٹرو-اکوسٹک پھاڑ اور دیگر نقائص کو روکنے کے لیے مخصوص حروف صحیح اور سانس کی آوازوں کی حفاظت کریں۔ پیرامیٹر کو اس کی زیادہ سے زیادہ قیمت 0.5 تک کھینچنا جامع تحفظ فراہم کرتا ہے۔ تاہم، اس قیمت کو کم کرنے سے تحفظ کی حد کم ہو سکتی ہے جبکہ ممکنہ طور پر انڈیکسنگ اثر کو کم کیا جا سکتا ہے۔",
+    "Sample Rate": "سیمپل ریٹ",
     "Sampling Rate": "نمونے لینے کی شرح",
     "Save Every Epoch": "ہر دور (epoch) کو محفوظ کریں",
     "Save Every Weights": "ہر وزن کو محفوظ کریں",
@@ -326,6 +326,7 @@
     "Start": "شروع کریں",
     "Start Training": "تربیت شروع کریں",
     "Status": "اسٹیٹس",
+    "Stereo": "سٹیریو",
     "Stop": "روکیں",
     "Stop Training": "تربیت روکیں",
     "Stop convert": "تبدیلی روکیں",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "والیوم کی سطح جس سے نیچے آڈیو کو خاموشی سمجھا جاتا ہے اور اس پر کارروائی نہیں ہوتی۔ یہ CPU وسائل کو بچانے اور پس منظر کے شور کو کم کرنے میں مدد کرتا ہے۔",
     "Warming up... ({} blocks remaining)": "وارم اپ... ({} بلاکس باقی)",
     "You can also use a custom path.": "آپ کسٹم راستہ بھی استعمال کر سکتے ہیں۔",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[سپورٹ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[سپورٹ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "آڈیو سٹریمنگ کے لیے استعمال ہونے والا سیمپل ریٹ۔ اگر ڈرائیور غلط ریٹ رپورٹ کرے تو اسے تبدیل کریں (مثلاً 44100 Hz کی بجائے 48000 Hz)۔"
 }

@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "దీన్ని ఇన్‌స్టాల్ చేయడానికి మీ plugin.zipని లాగండి",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "క్లిక్‌లను నివారించడానికి ఆడియో చంక్‌ల మధ్య ఫేడ్ యొక్క వ్యవధి. అధిక విలువలు సున్నితమైన మార్పులను సృష్టిస్తాయి కానీ జాప్యాన్ని పెంచవచ్చు.",
     "Embedder Model": "ఎంబెడ్డర్ మోడల్",
+    "Enable ASIO": "ASIO ని ప్రారంభించండి",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO డ్రైవర్ మద్దతును ప్రారంభించండి. (Applioను పునఃప్రారంభించడం అవసరం)",
     "Enable Applio integration with Discord presence": "Discord ప్రెజెన్స్‌తో Applio ఇంటిగ్రేషన్‌ను ప్రారంభించండి",
     "Enable VAD": "VAD ప్రారంభించు",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "ఫార్మాంట్ షిఫ్టింగ్‌ను ప్రారంభించండి. పురుషుల నుండి మహిళలకు మరియు వైస్-వర్సా మార్పిడుల కోసం ఉపయోగించబడుతుంది.",
@@ -134,9 +136,6 @@
     "File to Speech": "ఫైల్ నుండి ప్రసంగం",
     "Filter": "ఫిల్టర్",
     "Folder Name": "ఫోల్డర్ పేరు",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO డ్రైవర్ల కోసం, ఒక నిర్దిష్ట ఇన్‌పుట్ ఛానెల్‌ను ఎంచుకుంటుంది. డిఫాల్ట్ కోసం -1 వద్ద వదిలివేయండి.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO డ్రైవర్ల కోసం, ఒక నిర్దిష్ట మానిటర్ అవుట్‌పుట్ ఛానెల్‌ను ఎంచుకుంటుంది. డిఫాల్ట్ కోసం -1 వద్ద వదిలివేయండి.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO డ్రైవర్ల కోసం, ఒక నిర్దిష్ట అవుట్‌పుట్ ఛానెల్‌ను ఎంచుకుంటుంది. డిఫాల్ట్ కోసం -1 వద్ద వదిలివేయండి.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (Windows) కోసం, తక్కువ జాప్యం కోసం యాప్‌కు ప్రత్యేక నియంత్రణను ఇస్తుంది.",
     "Formant Shifting": "ఫార్మాంట్ షిఫ్టింగ్",
     "Fresh Training": "తాజా శిక్షణ",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "రెవెర్బ్ వెట్ గెయిన్",
     "Reverb Width": "రెవెర్బ్ వెడల్పు",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "ఎలక్ట్రో-అకౌస్టిక్ టియరింగ్ మరియు ఇతర ఆర్టిఫ్యాక్ట్‌లను నివారించడానికి విభిన్న హల్లులు మరియు శ్వాస శబ్దాలను కాపాడండి. పారామీటర్‌ను దాని గరిష్ట విలువ 0.5కి లాగడం సమగ్ర రక్షణను అందిస్తుంది. అయితే, ఈ విలువను తగ్గించడం వల్ల రక్షణ పరిధిని తగ్గించవచ్చు మరియు ఇండెక్సింగ్ ప్రభావాన్ని తగ్గించవచ్చు.",
+    "Sample Rate": "శాంపిల్ రేట్",
     "Sampling Rate": "నమూనా రేటు",
     "Save Every Epoch": "ప్రతి ఎపోక్‌లో సేవ్ చేయండి",
     "Save Every Weights": "ప్రతి వెయిట్స్‌ను సేవ్ చేయండి",
@@ -326,6 +326,7 @@
     "Start": "ప్రారంభించు",
     "Start Training": "శిక్షణను ప్రారంభించండి",
     "Status": "స్థితి",
+    "Stereo": "స్టీరియో",
     "Stop": "ఆపు",
     "Stop Training": "శిక్షణను ఆపండి",
     "Stop convert": "మార్పిడిని ఆపండి",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "ఏ వాల్యూమ్ స్థాయి కంటే తక్కువ ఉన్న ఆడియో నిశ్శబ్దంగా పరిగణించబడుతుంది మరియు ప్రాసెస్ చేయబడదు. ఇది CPU వనరులను ఆదా చేయడానికి మరియు నేపథ్య శబ్దాన్ని తగ్గించడానికి సహాయపడుతుంది.",
     "Warming up... ({} blocks remaining)": "వార్మింగ్ అప్... ({} బ్లాక్‌లు మిగిలి ఉన్నాయి)",
     "You can also use a custom path.": "మీరు అనుకూల మార్గాన్ని కూడా ఉపయోగించవచ్చు.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[మద్దతు](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[మద్దతు](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ఆడియో స్ట్రీమింగ్‌కు ఉపయోగించే శాంపిల్ రేట్. డ్రైవర్ తప్పుడు రేట్ నివేదిస్తే దీన్ని ఓవర్‌రైడ్ చేయండి (ఉదా. 44100 Hz బదులు 48000 Hz)."
 }

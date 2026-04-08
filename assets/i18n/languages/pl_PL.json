@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Przeciągnij swój plik plugin.zip, aby go zainstalować",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Czas trwania przenikania między fragmentami audio, aby zapobiec trzaskom. Wyższe wartości tworzą płynniejsze przejścia, ale mogą zwiększyć opóźnienie.",
     "Embedder Model": "Model embeddera",
+    "Enable ASIO": "Włącz ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Włącz obsługę sterownika ASIO. (Wymaga ponownego uruchomienia Applio)",
     "Enable Applio integration with Discord presence": "Włącz integrację Applio ze statusem Discord",
     "Enable VAD": "Włącz VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Włącz przesunięcie formantów. Używane do konwersji z głosu męskiego na żeński i na odwrót.",
@@ -134,9 +136,6 @@
     "File to Speech": "Plik na mowę",
     "Filter": "Filtr",
     "Folder Name": "Nazwa folderu",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Dla sterowników ASIO, wybiera określony kanał wejściowy. Pozostaw -1 dla wartości domyślnej.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Dla sterowników ASIO, wybiera określony kanał wyjściowy odsłuchu. Pozostaw -1 dla wartości domyślnej.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Dla sterowników ASIO, wybiera określony kanał wyjściowy. Pozostaw -1 dla wartości domyślnej.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Dla WASAPI (Windows), daje aplikacji wyłączną kontrolę w celu potencjalnie niższego opóźnienia.",
     "Formant Shifting": "Przesunięcie formantów",
     "Fresh Training": "Świeży trening",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Wzmocnienie sygnału mokrego (reverb)",
     "Reverb Width": "Szerokość pogłosu",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Chroń wyraziste spółgłoski i dźwięki oddechu, aby zapobiec rozrywaniu elektroakustycznemu i innym artefaktom. Ustawienie parametru na maksymalną wartość 0.5 oferuje kompleksową ochronę. Jednakże, zmniejszenie tej wartości może obniżyć poziom ochrony, jednocześnie potencjalnie łagodząc efekt indeksowania.",
+    "Sample Rate": "Częstotliwość próbkowania",
     "Sampling Rate": "Częstotliwość próbkowania",
     "Save Every Epoch": "Zapisuj co epokę",
     "Save Every Weights": "Zapisuj każdą wagę",
@@ -326,6 +326,7 @@
     "Start": "Uruchom",
     "Start Training": "Rozpocznij trening",
     "Status": "Status",
+    "Stereo": "Stereo",
     "Stop": "Zatrzymaj",
     "Stop Training": "Zatrzymaj trening",
     "Stop convert": "Zatrzymaj konwersję",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Poziom głośności, poniżej którego dźwięk jest traktowany jako cisza i nie jest przetwarzany. Pomaga oszczędzać zasoby procesora i redukować hałas w tle.",
     "Warming up... ({} blocks remaining)": "Rozgrzewanie... (pozostało {} bloków)",
     "You can also use a custom path.": "Możesz również użyć niestandardowej ścieżki.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Wsparcie](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Wsparcie](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Częstotliwość próbkowania używana do transmisji dźwięku. Zmień to, jeśli sterownik raportuje nieprawidłową częstotliwość (np. 48000 Hz zamiast 44100 Hz)."
 }

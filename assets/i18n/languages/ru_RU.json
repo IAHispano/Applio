@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Перетащите ваш plugin.zip для установки",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Длительность затухания между аудиочанками для предотвращения щелчков. Более высокие значения создают более плавные переходы, но могут увеличить задержку.",
     "Embedder Model": "Модель эмбеддера",
+    "Enable ASIO": "Включить ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Включить поддержку ASIO-драйвера. (Требуется перезапуск Applio)",
     "Enable Applio integration with Discord presence": "Включить интеграцию Applio с Discord Presence",
     "Enable VAD": "Включить VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Включить формантный сдвиг. Используется для преобразования мужского голоса в женский и наоборот.",
@@ -134,9 +136,6 @@
     "File to Speech": "Файл в речь",
     "Filter": "Фильтр",
     "Folder Name": "Имя папки",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Для драйверов ASIO, выбирает определённый входной канал. Оставьте -1 для значения по умолчанию.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Для драйверов ASIO, выбирает определённый выходной канал мониторинга. Оставьте -1 для значения по умолчанию.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Для драйверов ASIO, выбирает определённый выходной канал. Оставьте -1 для значения по умолчанию.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Для WASAPI (Windows), предоставляет приложению эксклюзивный контроль для потенциально меньшей задержки.",
     "Formant Shifting": "Формантный сдвиг",
     "Fresh Training": "Обучение с нуля",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Уровень обработанного сигнала реверберации",
     "Reverb Width": "Ширина реверберации",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Защита отчётливых согласных и звуков дыхания для предотвращения электроакустических разрывов и других артефактов. Установка параметра на максимальное значение 0.5 обеспечивает всестороннюю защиту. Однако уменьшение этого значения может снизить степень защиты, потенциально ослабляя эффект индексации.",
+    "Sample Rate": "Частота дискретизации",
     "Sampling Rate": "Частота дискретизации",
     "Save Every Epoch": "Сохранять каждую эпоху",
     "Save Every Weights": "Сохранять все веса",
@@ -326,6 +326,7 @@
     "Start": "Старт",
     "Start Training": "Начать обучение",
     "Status": "Статус",
+    "Stereo": "Стерео",
     "Stop": "Стоп",
     "Stop Training": "Остановить обучение",
     "Stop convert": "Остановить конвертацию",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Уровень громкости, ниже которого аудио считается тишиной и не обрабатывается. Помогает экономить ресурсы CPU и уменьшать фоновый шум.",
     "Warming up... ({} blocks remaining)": "Прогрев... (осталось {} блоков)",
     "You can also use a custom path.": "Вы также можете использовать пользовательский путь.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Поддержка](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Поддержка](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Частота дискретизации, используемая для аудиопотока. Измените это, если драйвер сообщает неверную частоту (например, 48000 Гц вместо 44100 Гц)."
 }

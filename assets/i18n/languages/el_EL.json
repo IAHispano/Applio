@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Σύρετε το plugin.zip σας για να το εγκαταστήσετε",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Διάρκεια του σβησίματος (fade) μεταξύ των τεμαχίων ήχου για την αποφυγή «κλικ». Υψηλότερες τιμές δημιουργούν ομαλότερες μεταβάσεις αλλά μπορεί να αυξήσουν την καθυστέρηση (latency).",
     "Embedder Model": "Μοντέλο Ενσωματωτή",
+    "Enable ASIO": "Ενεργοποίηση ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Ενεργοποίηση υποστήριξης προγράμματος οδήγησης ASIO. (Απαιτεί επανεκκίνηση του Applio)",
     "Enable Applio integration with Discord presence": "Ενεργοποίηση ενσωμάτωσης του Applio με την παρουσία στο Discord",
     "Enable VAD": "Ενεργοποίηση VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Ενεργοποίηση μετατόπισης formant. Χρησιμοποιείται για μετατροπές από ανδρική σε γυναικεία φωνή και αντίστροφα.",
@@ -134,9 +136,6 @@
     "File to Speech": "Αρχείο σε Ομιλία",
     "Filter": "Φίλτρο",
     "Folder Name": "Όνομα Φακέλου",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Για προγράμματα οδήγησης ASIO, επιλέγει ένα συγκεκριμένο κανάλι εισόδου. Αφήστε στο -1 για την προεπιλογή.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Για προγράμματα οδήγησης ASIO, επιλέγει ένα συγκεκριμένο κανάλι εξόδου παρακολούθησης (monitor). Αφήστε στο -1 για την προεπιλογή.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Για προγράμματα οδήγησης ASIO, επιλέγει ένα συγκεκριμένο κανάλι εξόδου. Αφήστε στο -1 για την προεπιλογή.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Για WASAPI (Windows), δίνει στην εφαρμογή αποκλειστικό έλεγχο για δυνητικά χαμηλότερη καθυστέρηση (latency).",
     "Formant Shifting": "Μετατόπιση Formant",
     "Fresh Training": "Εκπαίδευση από την Αρχή",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Ενίσχυση Wet Αντήχησης",
     "Reverb Width": "Εύρος Αντήχησης",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Προστατέψτε τα ευδιάκριτα σύμφωνα και τους ήχους της αναπνοής για να αποτρέψετε το ηλεκτροακουστικό σκίσιμο και άλλα τεχνουργήματα (artifacts). Η μετακίνηση της παραμέτρου στη μέγιστη τιμή της, 0.5, προσφέρει ολοκληρωμένη προστασία. Ωστόσο, η μείωση αυτής της τιμής μπορεί να μειώσει το βαθμό προστασίας, ενώ πιθανώς να μετριάσει την επίδραση της ευρετηρίασης.",
+    "Sample Rate": "Ρυθμός δειγματοληψίας",
     "Sampling Rate": "Ρυθμός Δειγματοληψίας",
     "Save Every Epoch": "Αποθήκευση Κάθε Εποχή",
     "Save Every Weights": "Αποθήκευση Όλων των Βαρών",
@@ -326,6 +326,7 @@
     "Start": "Έναρξη",
     "Start Training": "Έναρξη Εκπαίδευσης",
     "Status": "Κατάσταση",
+    "Stereo": "Στερεοφωνικό",
     "Stop": "Διακοπή",
     "Stop Training": "Διακοπή Εκπαίδευσης",
     "Stop convert": "Διακοπή μετατροπής",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Επίπεδο έντασης κάτω από το οποίο ο ήχος θεωρείται σιγή και δεν επεξεργάζεται. Βοηθά στην εξοικονόμηση πόρων CPU και στη μείωση του θορύβου περιβάλλοντος.",
     "Warming up... ({} blocks remaining)": "Προθέρμανση... ({} μπλοκ απομένουν)",
     "You can also use a custom path.": "Μπορείτε επίσης να χρησιμοποιήσετε μια προσαρμοσμένη διαδρομή.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Υποστήριξη](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Υποστήριξη](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Ρυθμός δειγματοληψίας που χρησιμοποιείται για ροή ήχου. Παρακάμψτε αυτό αν ο οδηγός αναφέρει λάθος ρυθμό (π.χ. 48000 Hz αντί 44100 Hz)."
 }

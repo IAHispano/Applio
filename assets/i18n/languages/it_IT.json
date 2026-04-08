@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Trascina il tuo plugin.zip per installarlo",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Durata della dissolvenza tra i chunk audio per prevenire i click. Valori più alti creano transizioni più fluide ma possono aumentare la latenza.",
     "Embedder Model": "Modello Embedder",
+    "Enable ASIO": "Abilita ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Abilita il supporto al driver ASIO. (Richiede il riavvio di Applio)",
     "Enable Applio integration with Discord presence": "Abilita l'integrazione di Applio con la presenza su Discord",
     "Enable VAD": "Abilita VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Abilita lo spostamento dei formanti (formant shifting). Usato per conversioni da maschile a femminile e viceversa.",
@@ -134,9 +136,6 @@
     "File to Speech": "File in Voce",
     "Filter": "Filtro",
     "Folder Name": "Nome Cartella",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Per i driver ASIO, seleziona un canale di ingresso specifico. Lasciare -1 per il valore predefinito.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Per i driver ASIO, seleziona un canale di uscita monitor specifico. Lasciare -1 per il valore predefinito.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Per i driver ASIO, seleziona un canale di uscita specifico. Lasciare -1 per il valore predefinito.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Per WASAPI (Windows), conferisce all'app il controllo esclusivo per una latenza potenzialmente inferiore.",
     "Formant Shifting": "Spostamento Formanti",
     "Fresh Training": "Addestramento da Zero",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Guadagno Wet Riverbero",
     "Reverb Width": "Larghezza Riverbero",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Salva le consonanti distinte e i suoni del respiro per prevenire tearing elettro-acustico e altri artefatti. Portare il parametro al suo valore massimo di 0.5 offre una protezione completa. Tuttavia, ridurre questo valore potrebbe diminuire il grado di protezione, mitigando potenzialmente l'effetto di indicizzazione.",
+    "Sample Rate": "Frequenza di campionamento",
     "Sampling Rate": "Frequenza di Campionamento",
     "Save Every Epoch": "Salva a Ogni Epoca",
     "Save Every Weights": "Salva Tutti i Pesi",
@@ -326,6 +326,7 @@
     "Start": "Avvia",
     "Start Training": "Avvia Addestramento",
     "Status": "Stato",
+    "Stereo": "Stereo",
     "Stop": "Ferma",
     "Stop Training": "Ferma Addestramento",
     "Stop convert": "Ferma conversione",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Livello di volume al di sotto del quale l'audio è considerato silenzio e non viene elaborato. Aiuta a risparmiare risorse della CPU e a ridurre il rumore di fondo.",
     "Warming up... ({} blocks remaining)": "Riscaldamento... ({} blocchi rimanenti)",
     "You can also use a custom path.": "Puoi anche usare un percorso personalizzato.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Supporto](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Supporto](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Frequenza di campionamento utilizzata per lo streaming audio. Sovrascrivila se il driver riporta una frequenza errata (es. 48000 Hz invece di 44100 Hz)."
 }
