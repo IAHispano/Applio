@@ -501,8 +501,6 @@ def start_realtime(
 
     yield "Starting Realtime...", interactive_false, interactive_visible
 
-    read_chunk_size = int(chunk_size * AUDIO_SAMPLE_RATE / 1000 / 128)
-
     sid = int(sid) if sid is not None else 0
 
     input_audio_gain /= 100.0
@@ -519,6 +517,8 @@ def start_realtime(
     except (ValueError, IndexError):
         yield "Incorrectly formatted audio device. Stopping.", interactive_true, interactive_false
         return
+
+    read_chunk_size = int(chunk_size * AUDIO_SAMPLE_RATE / 1000 / 128)
 
     callbacks_kwargs = {
         "pass_through": PASS_THROUGH,
@@ -595,23 +595,39 @@ def start_realtime(
     callbacks = AudioCallbacks(**callbacks_kwargs)
 
     audio_manager = callbacks.audio
-    audio_manager.start(
-        input_device_id=input_device_id,
-        output_device_id=output_device_id,
-        output_monitor_id=output_monitor_id,
-        exclusive_mode=exclusive_mode,
-        asio_input_channel=input_asio_channels,
-        asio_output_channel=output_asio_channels,
-        asio_output_monitor_channel=monitor_asio_channels,
-        read_chunk_size=read_chunk_size,
-    )
+    try:
+        audio_manager.start(
+            input_device_id=input_device_id,
+            output_device_id=output_device_id,
+            output_monitor_id=output_monitor_id,
+            exclusive_mode=exclusive_mode,
+            asio_input_channel=input_asio_channels,
+            asio_output_channel=output_asio_channels,
+            asio_output_monitor_channel=monitor_asio_channels,
+            read_chunk_size=read_chunk_size,
+        )
+    except Exception as error:
+        running = False
+        yield str(error), interactive_true, interactive_false
+        return
 
     yield "Realtime is ready!", interactive_false, interactive_visible
 
     while running and callbacks is not None and audio_manager is not None:
         time.sleep(0.1)
         if hasattr(audio_manager, "latency") and hasattr(audio_manager, "volume"):
-            yield f"Latency: {audio_manager.latency:.2f} ms | Volume: {audio_manager.volume:.2f} dB", interactive_false, interactive_true
+            warmup_remaining = (
+                callbacks.vc.vc_model.warmup_blocks
+                if callbacks is not None
+                and hasattr(callbacks, "vc")
+                and hasattr(callbacks.vc, "vc_model")
+                and hasattr(callbacks.vc.vc_model, "warmup_blocks")
+                else 0
+            )
+            if warmup_remaining > 0:
+                yield i18n("Warming up... ({} blocks remaining)").format(warmup_remaining), interactive_false, interactive_true
+            else:
+                yield f"Latency: {audio_manager.latency:.2f} ms | Volume: {audio_manager.volume:.2f} dB", interactive_false, interactive_true
 
     return gr.update(), gr.update(), gr.update()
 
@@ -631,79 +647,37 @@ def change_callbacks_config():
             callbacks_kwargs.get("extra_convert_size", 0.5) * AUDIO_SAMPLE_RATE
         )
 
+        cfg = {}
+
         if (
             callbacks.vc.crossfade_frame != crossfade_frame
             or callbacks.vc.extra_frame != extra_frame
         ):
-            # Deleting these things is not a good idea; they should only be overwritten directly.
-            # del (
-            #     callbacks.vc.vc_model.audio_buffer,
-            #     callbacks.vc.vc_model.convert_buffer,
-            #     callbacks.vc.vc_model.pitch_buffer,
-            #     callbacks.vc.vc_model.pitchf_buffer,
-            # )
-            del (
-                callbacks.vc.fade_in_window,
-                callbacks.vc.fade_out_window,
-                callbacks.vc.sola_buffer,
-            )
+            cfg["crossfade_frame"] = crossfade_frame
+            cfg["extra_frame"] = extra_frame
+            callbacks.vc.crossfade_frame = crossfade_frame
+            callbacks.vc.extra_frame = extra_frame
 
-            callbacks.vc.vc_model.realloc(
-                callbacks.vc.block_frame,
-                callbacks.vc.extra_frame,
-                callbacks.vc.crossfade_frame,
-                callbacks.vc.sola_search_frame,
-            )
-            callbacks.vc.generate_strength()
+        cfg["silent_threshold"] = callbacks_kwargs.get("silent_threshold", -90)
 
-        callbacks.vc.vc_model.input_sensitivity = 10 ** (
-            callbacks_kwargs.get("silent_threshold", -90) / 20
-        )
+        cfg["vad_enabled"] = callbacks_kwargs.get("vad_enabled", True)
+        cfg["vad_sensitivity"] = callbacks_kwargs.get("vad_sensitivity", 3)
+        cfg["vad_frame_ms"] = callbacks_kwargs.get("vad_frame_ms", 30)
 
-        vad_enabled = callbacks_kwargs.get("vad_enabled", True)
-        if vad_enabled is False:
-            callbacks.vc.vc_model.vad = None
-        elif vad_enabled and callbacks.vc.vc_model.vad is None:
-            from rvc.realtime.utils.vad import VADProcessor
+        cfg["clean_audio"] = callbacks_kwargs.get("clean_audio", False)
+        cfg["clean_strength"] = callbacks_kwargs.get("clean_strength", 0.5)
 
-            callbacks.vc.vc_model.vad = VADProcessor(
-                sensitivity_mode=3,
-                sample_rate=callbacks.vc.vc_model.sample_rate,
-                frame_duration_ms=30,
-            )
+        cfg["post_process"] = callbacks_kwargs.get("post_process", False)
+        cfg["pedalboard_kwargs"] = callbacks_kwargs.get("kwargs", {})
 
-        # The VAD parameters have been assigned by default.
-        # if callbacks.vc.vc_model.vad is not None:
-        #     callbacks.vc.vc_model.vad.vad.set_mode(vad_sensitivity)
-        #     callbacks.vc.vc_model.vad.frame_length = int(callbacks.vc.vc_model.sample_rate * (vad_frame_ms / 1000.0))
+        cfg["model_path"] = callbacks_kwargs.get("model_path", "")
+        cfg["sid"] = callbacks_kwargs.get("sid", 0)
+        cfg["index_path"] = callbacks_kwargs.get("index_path", "")
+        cfg["f0_method"] = callbacks_kwargs.get("f0_method", "")
+        cfg["embedder_model"] = callbacks_kwargs.get("embedder_model", "")
+        cfg["embedder_model_custom"] = callbacks_kwargs.get("embedder_model_custom", "")
 
-        clean_audio = callbacks_kwargs.get("clean_audio", False)
-        clean_strength = callbacks_kwargs.get("clean_strength", 0.5)
-
-        if clean_audio is False:
-            callbacks.vc.vc_model.reduced_noise = None
-        elif clean_audio and callbacks.vc.vc_model.reduced_noise is None:
-            from noisereduce.torchgate import TorchGate
-
-            callbacks.vc.vc_model.reduced_noise = TorchGate(
-                callbacks.vc.vc_model.pipeline.tgt_sr,
-                prop_decrease=clean_strength,
-            ).to(callbacks.vc.vc_model.device)
-
-        if callbacks.vc.vc_model.reduced_noise is not None:
-            callbacks.vc.vc_model.reduced_noise.prop_decrease = clean_strength
-
-        post_process = callbacks_kwargs.get("post_process", False)
-        kwargs = callbacks_kwargs.get("kwargs", {})
-
-        if post_process is False:
-            callbacks.vc.vc_model.board = None
-            callbacks.vc.vc_model.kwargs = None
-        elif post_process and callbacks.vc.vc_model.kwargs != kwargs:
-            # Post-process requires creating a new pendalboard.
-            new_board = callbacks.vc.vc_model.setup_pedalboard(**kwargs)
-            callbacks.vc.vc_model.board = new_board
-            callbacks.vc.vc_model.kwargs = kwargs.copy()
+        callbacks.vc.send_config(cfg)
 
         callbacks.audio.f0_up_key = callbacks_kwargs.get("f0_up_key", 0)
         callbacks.audio.index_rate = callbacks_kwargs.get("index_rate", 0.75)
@@ -727,79 +701,6 @@ def change_callbacks_config():
             "monitor_audio_gain", 1.0
         )
 
-        model_pth = callbacks_kwargs.get("model_path", callbacks.vc.vc_model.model_path)
-        if model_pth and callbacks.vc.vc_model.model_path != model_pth:
-            callbacks.vc.vc_model.model_path = model_pth
-            callbacks.vc.vc_model.pipeline.vc.load_model(model_pth)
-            callbacks.vc.vc_model.pipeline.vc.setup_network()
-            # Set a new version, otherwise it will crash.
-            callbacks.vc.vc_model.pipeline.version = (
-                callbacks.vc.vc_model.pipeline.vc.version
-            )
-
-        sid = callbacks_kwargs.get("sid", callbacks.vc.vc_model.pipeline.sid)
-        if callbacks.vc.vc_model.pipeline.sid != sid:
-            import torch
-
-            # This is for multi-SID models.
-            callbacks.vc.vc_model.pipeline.torch_sid = torch.tensor(
-                [sid], device=callbacks.vc.vc_model.pipeline.device, dtype=torch.int64
-            )
-
-        index_path = callbacks_kwargs.get("index_path", None)
-        if index_path:
-            if callbacks.vc.vc_model.index_path != index_path:
-                from rvc.realtime.pipeline import load_faiss_index
-
-                index, big_npy = load_faiss_index(
-                    index_path.strip()
-                    .strip('"')
-                    .strip("\n")
-                    .strip('"')
-                    .strip()
-                    .replace("trained", "added")
-                )
-
-                callbacks.vc.vc_model.pipeline.index = index
-                callbacks.vc.vc_model.pipeline.big_npy = big_npy
-                callbacks.vc.vc_model.index_path = index_path
-        else:
-            callbacks.vc.vc_model.pipeline.index = None
-            callbacks.vc.vc_model.pipeline.big_npy = None
-            callbacks.vc.vc_model.index_path = None
-
-        f0_method = callbacks_kwargs.get(
-            "f0_method", callbacks.vc.vc_model.pipeline.f0_method
-        )
-        if callbacks.vc.vc_model.pipeline.f0_method != f0_method:
-            f0_model = callbacks.vc.vc_model.pipeline.setup_f0(f0_method)
-            callbacks.vc.vc_model.pipeline.f0_model = f0_model
-            callbacks.vc.vc_model.pipeline.f0_method = f0_method
-
-        embedder_model = callbacks_kwargs.get(
-            "embedder_model", callbacks.vc.vc_model.embedder_model
-        )
-        embedder_model_custom = callbacks_kwargs.get(
-            "embedder_model_custom", callbacks.vc.vc_model.embedder_model_custom
-        )
-
-        if (
-            callbacks.vc.vc_model.embedder_model != embedder_model
-            or callbacks.vc.vc_model.embedder_model_custom != embedder_model_custom
-        ):
-            old_hubert_model = callbacks.vc.vc_model.pipeline.hubert_model
-            del old_hubert_model
-
-            from rvc.lib.utils import load_embedding
-
-            hubert_model = load_embedding(embedder_model, embedder_model_custom)
-            hubert_model = hubert_model.to(callbacks.vc.device).float()
-            hubert_model.eval()
-
-            callbacks.vc.vc_model.pipeline.hubert_model = hubert_model
-            callbacks.vc.vc_model.embedder_model = embedder_model
-            callbacks.vc.vc_model.embedder_model_custom = embedder_model_custom
-
 
 def change_config(value, key, if_kwargs=False):
     global callbacks_kwargs
@@ -817,6 +718,7 @@ def stop_realtime():
     global running, callbacks, audio_manager
     if running and audio_manager is not None and callbacks is not None:
         audio_manager.stop()
+        callbacks.vc.stop()
         running = False
         if hasattr(audio_manager, "latency"):
             del audio_manager.latency
@@ -925,18 +827,17 @@ def soundfile_record_audio(
                     now_dir, "assets", "audios", "record_audio.wav"
                 )
 
-            callbacks.vc.record_audio = True
-            callbacks.vc.record_audio_path = record_audio_path
-            callbacks.vc.export_format = export_format
-            callbacks.vc.setup_soundfile_record()
+            callbacks.vc.send_config({
+                "record_start": True,
+                "record_audio_path": record_audio_path,
+                "export_format": export_format,
+            })
 
             return "Stop", None
         else:
             gr.Info("Stop recording!")
 
-            callbacks.vc.record_audio = False
-            callbacks.vc.record_audio_path = None
-            callbacks.vc.soundfile = None
+            callbacks.vc.send_config({"record_stop": True})
 
             return "Start", record_audio_path
 
@@ -1163,6 +1064,7 @@ def realtime_tab():
                         value=True,
                         interactive=True,
                     )
+
 
             with gr.TabItem(i18n("Model Settings")):
                 with gr.Row():
@@ -1600,7 +1502,7 @@ def realtime_tab():
                     protect = gr.Slider(
                         minimum=0,
                         maximum=0.5,
-                        value=0.5,
+                        value=0.33,
                         label=i18n("Protect Voiceless Consonants"),
                         info=i18n(
                             "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
@@ -1665,7 +1567,7 @@ def realtime_tab():
                 chunk_size = gr.Slider(
                     minimum=2.7,
                     maximum=2730.7,
-                    value=768,
+                    value=250,
                     step=1,
                     label=i18n("Chunk Size (ms)"),
                     info=i18n(
@@ -1687,7 +1589,7 @@ def realtime_tab():
                 extra_convert_size = gr.Slider(
                     minimum=0.1,
                     maximum=5,
-                    value=0.5,
+                    value=2.5,
                     step=0.1,
                     label=i18n("Extra Conversion Size (s)"),
                     info=i18n(
@@ -1698,7 +1600,7 @@ def realtime_tab():
                 silent_threshold = gr.Slider(
                     minimum=-90,
                     maximum=-60,
-                    value=-90,
+                    value=-60,
                     step=1,
                     label=i18n("Silence Threshold (dB)"),
                     info=i18n(
