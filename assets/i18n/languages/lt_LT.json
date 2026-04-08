@@ -371,6 +371,7 @@
     "Voice Model": "Balso modelis",
     "Volume Envelope": "Garsumo apvalkalas",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Garso lygis, žemiau kurio garsas laikomas tyla ir neapdorojamas. Padeda taupyti CPU resursus ir sumažinti foninį triukšmą.",
+    "Warming up... ({} blocks remaining)": "Šildoma... (liko {} blokų)",
     "You can also use a custom path.": "Taip pat galite naudoti pasirinktinį kelią.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Pagalba](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

@@ -371,6 +371,7 @@
     "Voice Model": "വോയിസ് മോഡൽ",
     "Volume Envelope": "വോളിയം എൻവലപ്പ്",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "ഓഡിയോ നിശ്ശബ്ദമായി കണക്കാക്കുന്ന വോളിയം പരിധി. ഇത് CPU വിഭവങ്ങൾ ലാഭിക്കാനും പശ്ചാത്തല ശബ്ദം കുറയ്ക്കാനും സഹായിക്കുന്നു.",
+    "Warming up... ({} blocks remaining)": "വാമിംഗ് അപ്... ({} ബ്ലോക്കുകൾ ശേഷിക്കുന്നു)",
     "You can also use a custom path.": "നിങ്ങൾക്ക് ഒരു കസ്റ്റം പാതയും ഉപയോഗിക്കാം.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[പിന്തുണ](https://discord.gg/urxFjYmYYh) — [ഗിറ്റ്ഹബ്ബ്](https://github.com/IAHispano/Applio)"
 }

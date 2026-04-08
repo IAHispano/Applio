@@ -371,6 +371,7 @@
     "Voice Model": "Mudell tal-Vuċi",
     "Volume Envelope": "Invilupp tal-Volum",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Il-livell tal-volum li taħtu l-awdjo jiġi ttrattat bħala silenzju u ma jiġix ipproċessat. Jgħin biex jiffranka r-riżorsi tas-CPU u jnaqqas il-ħoss fl-isfond.",
+    "Warming up... ({} blocks remaining)": "Tisħin... ({} blokki fadal)",
     "You can also use a custom path.": "Tista' wkoll tuża post personalizzat.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Appoġġ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

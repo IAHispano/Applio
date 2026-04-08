@@ -371,6 +371,7 @@
     "Voice Model": "Modèle vocal",
     "Volume Envelope": "Enveloppe de volume",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Niveau de volume en dessous duquel l'audio est considéré comme du silence et n'est pas traité. Aide à économiser les ressources CPU et à réduire le bruit de fond.",
+    "Warming up... ({} blocks remaining)": "Préchauffage... ({} blocs restants)",
     "You can also use a custom path.": "Vous pouvez également utiliser un chemin personnalisé.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

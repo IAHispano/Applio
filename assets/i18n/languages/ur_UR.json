@@ -371,6 +371,7 @@
     "Voice Model": "وائس ماڈل",
     "Volume Envelope": "والیوم انویلپ",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "والیوم کی سطح جس سے نیچے آڈیو کو خاموشی سمجھا جاتا ہے اور اس پر کارروائی نہیں ہوتی۔ یہ CPU وسائل کو بچانے اور پس منظر کے شور کو کم کرنے میں مدد کرتا ہے۔",
+    "Warming up... ({} blocks remaining)": "وارم اپ... ({} بلاکس باقی)",
     "You can also use a custom path.": "آپ کسٹم راستہ بھی استعمال کر سکتے ہیں۔",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[سپورٹ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

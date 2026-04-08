@@ -371,6 +371,7 @@
     "Voice Model": "Mfumo wa Sauti",
     "Volume Envelope": "Bahasha ya Sauti",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Kiwango cha sauti ambacho chini yake sauti huchukuliwa kama kimya na haichakatwi. Husaidia kuokoa rasilimali za CPU na kupunguza kelele za mandharinyuma.",
+    "Warming up... ({} blocks remaining)": "Inapasha joto... (zimebaki vitalu {})",
     "You can also use a custom path.": "Unaweza pia kutumia njia maalum.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Usaidizi](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

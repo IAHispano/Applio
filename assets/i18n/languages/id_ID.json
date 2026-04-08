@@ -371,6 +371,7 @@
     "Voice Model": "Model Suara",
     "Volume Envelope": "Selubung Volume",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Tingkat volume di mana audio dianggap hening dan tidak diproses. Membantu menghemat sumber daya CPU dan mengurangi kebisingan latar belakang.",
+    "Warming up... ({} blocks remaining)": "Pemanasan... ({} blok tersisa)",
     "You can also use a custom path.": "Anda juga dapat menggunakan jalur kustom.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Dukungan](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

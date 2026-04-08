@@ -371,6 +371,7 @@
     "Voice Model": "Μοντέλο Φωνής",
     "Volume Envelope": "Καμπύλη Έντασης",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Επίπεδο έντασης κάτω από το οποίο ο ήχος θεωρείται σιγή και δεν επεξεργάζεται. Βοηθά στην εξοικονόμηση πόρων CPU και στη μείωση του θορύβου περιβάλλοντος.",
+    "Warming up... ({} blocks remaining)": "Προθέρμανση... ({} μπλοκ απομένουν)",
     "You can also use a custom path.": "Μπορείτε επίσης να χρησιμοποιήσετε μια προσαρμοσμένη διαδρομή.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Υποστήριξη](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

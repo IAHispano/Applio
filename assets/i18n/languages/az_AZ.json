@@ -371,6 +371,7 @@
     "Voice Model": "Səs Modeli",
     "Volume Envelope": "Səs Zərfi",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Səsin səssizlik kimi qəbul edildiyi və emal edilmədiyi səs səviyyəsi. CPU resurslarına qənaət etməyə və arxa plan səs-küyünü azaltmağa kömək edir.",
+    "Warming up... ({} blocks remaining)": "Hazırlanır... ({} blok qalıb)",
     "You can also use a custom path.": "Siz həmçinin xüsusi bir yoldan istifadə edə bilərsiniz.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Dəstək](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

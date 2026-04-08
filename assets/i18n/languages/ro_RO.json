@@ -371,6 +371,7 @@
     "Voice Model": "Model Vocal",
     "Volume Envelope": "Anvelopă Volum",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Nivelul de volum sub care sunetul este tratat ca liniște și nu este procesat. Ajută la economisirea resurselor CPU și la reducerea zgomotului de fond.",
+    "Warming up... ({} blocks remaining)": "Încălzire... ({} blocuri rămase)",
     "You can also use a custom path.": "Poți folosi și o cale personalizată.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Suport](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

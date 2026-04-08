@@ -371,6 +371,7 @@
     "Voice Model": "Ahots Eredua",
     "Volume Envelope": "Bolumen Inguratzailea",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Bolumen-maila honen azpitik, audioa isiltasuntzat hartzen da eta ez da prozesatzen. CPU baliabideak aurrezten eta atzeko zarata murrizten laguntzen du.",
+    "Warming up... ({} blocks remaining)": "Berotzen... ({} bloke geratzen dira)",
     "You can also use a custom path.": "Bide pertsonalizatu bat ere erabil dezakezu.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Laguntza](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

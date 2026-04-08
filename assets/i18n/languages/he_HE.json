@@ -371,6 +371,7 @@
     "Voice Model": "מודל קול",
     "Volume Envelope": "מעטפת ווליום",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "עוצמת קול שמתחתיה השמע יטופל כשקט ולא יעובד. מסייע לחסוך במשאבי מעבד (CPU) ולהפחית רעשי רקע.",
+    "Warming up... ({} blocks remaining)": "מתחמם... ({} בלוקים נותרו)",
     "You can also use a custom path.": "ניתן גם להשתמש בנתיב מותאם אישית.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[תמיכה](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

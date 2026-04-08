@@ -371,6 +371,7 @@
     "Voice Model": "مدل صدا",
     "Volume Envelope": "پوشش حجمی",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "سطح صدایی که پایین‌تر از آن، صوت به عنوان سکوت در نظر گرفته شده و پردازش نمی‌شود. به صرفه‌جویی در منابع CPU و کاهش نویز پس‌زمینه کمک می‌کند.",
+    "Warming up... ({} blocks remaining)": "گرم کردن... ({} بلاک باقی‌مانده)",
     "You can also use a custom path.": "شما همچنین می‌توانید از یک مسیر سفارشی استفاده کنید.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[پشتیبانی](https://discord.gg/urxFjYmYYh) — [گیت‌هاب](https://github.com/IAHispano/Applio)"
 }

@@ -371,6 +371,7 @@
     "Voice Model": "iVakarau ni Domo",
     "Volume Envelope": "iBulubulu ni Rorogo",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Na i vakatagedegede ni rorogo e lailai sobu mai kina e okati na rorogo me galu ka sega ni cakacakataki. E vukea me maroroi na kaukauwa ni CPU ka vakalailaitaka na rorogo e muri.",
+    "Warming up... ({} blocks remaining)": "E vakarautaki... ({} na ivolau e tiko ga)",
     "You can also use a custom path.": "E rawa talega ni ko vakayagataka e dua na sala vakayagataki.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Veitokoni](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }
