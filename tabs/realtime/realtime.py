@@ -284,8 +284,13 @@ CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
 
 
 def save_realtime_settings(
-    input_device, output_device, monitor_device, model_file, index_file,
-    asio_enabled=None, audio_sample_rate=None,
+    input_device,
+    output_device,
+    monitor_device,
+    model_file,
+    index_file,
+    asio_enabled=None,
+    audio_sample_rate=None,
 ):
     """Save realtime settings to config.json"""
     try:
@@ -349,7 +354,9 @@ def load_realtime_settings():
                     "model_file": realtime_config.get("model_file", ""),
                     "index_file": realtime_config.get("index_file", ""),
                     "asio_enabled": realtime_config.get("asio_enabled", False),
-                    "audio_sample_rate": realtime_config.get("audio_sample_rate", 48000),
+                    "audio_sample_rate": realtime_config.get(
+                        "audio_sample_rate", 48000
+                    ),
                 }
     except Exception as e:
         print(f"Error loading realtime settings: {e}")
@@ -532,7 +539,9 @@ def start_realtime(
     _rt_cfg = load_realtime_settings()
     asio_enabled = _rt_cfg["asio_enabled"]
     audio_sample_rate = _rt_cfg["audio_sample_rate"]
-    audio_sample_rate = resolve_sample_rate(input_device_id, asio_enabled, audio_sample_rate)
+    audio_sample_rate = resolve_sample_rate(
+        input_device_id, asio_enabled, audio_sample_rate
+    )
     read_chunk_size = int(chunk_size * audio_sample_rate / 1000 / 128)
 
     callbacks_kwargs = {
@@ -643,7 +652,9 @@ def start_realtime(
                 else 0
             )
             if warmup_remaining > 0:
-                yield i18n("Warming up... ({} blocks remaining)").format(warmup_remaining), interactive_false, interactive_true
+                yield i18n("Warming up... ({} blocks remaining)").format(
+                    warmup_remaining
+                ), interactive_false, interactive_true
             else:
                 yield f"Latency: {audio_manager.latency:.2f} ms | Volume: {audio_manager.volume:.2f} dB", interactive_false, interactive_true
 
@@ -845,11 +856,13 @@ def soundfile_record_audio(
                     now_dir, "assets", "audios", "record_audio.wav"
                 )
 
-            callbacks.vc.send_config({
-                "record_start": True,
-                "record_audio_path": record_audio_path,
-                "export_format": export_format,
-            })
+            callbacks.vc.send_config(
+                {
+                    "record_start": True,
+                    "record_audio_path": record_audio_path,
+                    "export_format": export_format,
+                }
+            )
 
             return "Stop", None
         else:
@@ -1079,7 +1092,6 @@ def realtime_tab():
                         value=True,
                         interactive=True,
                     )
-
 
             with gr.TabItem(i18n("Model Settings")):
                 with gr.Row():

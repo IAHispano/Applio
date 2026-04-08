@@ -62,9 +62,7 @@ def realtime_audio_tab():
         with gr.Column():
             asio_enabled = gr.Checkbox(
                 label=i18n("Enable ASIO"),
-                info=i18n(
-                    "Enable ASIO driver support. (Requires restarting Applio)"
-                ),
+                info=i18n("Enable ASIO driver support. (Requires restarting Applio)"),
                 value=saved_asio,
                 interactive=True,
                 visible=IS_WINDOWS,

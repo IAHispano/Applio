@@ -27,12 +27,15 @@ sys.path.append(now_dir)
 # connection during asyncio shutdown (WinError 10054 / ProactorBasePipeTransport).
 if sys.platform == "win32":
     import asyncio.proactor_events as _pe
+
     _orig_ccl = _pe._ProactorBasePipeTransport._call_connection_lost
+
     def _ccl_patched(self, exc):
         try:
             _orig_ccl(self, exc)
         except ConnectionResetError:
             pass
+
     _pe._ProactorBasePipeTransport._call_connection_lost = _ccl_patched
 
 # Zluda hijack

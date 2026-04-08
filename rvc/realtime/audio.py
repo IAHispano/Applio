@@ -390,9 +390,7 @@ class Audio:
                 if asio_output_stereo
                 else [asio_output_channel]
             )
-            output_extra_setting = sd.AsioSettings(
-                channel_selectors=output_selectors
-            )
+            output_extra_setting = sd.AsioSettings(channel_selectors=output_selectors)
             output_channels = len(output_selectors)
 
         if self.use_monitor:
@@ -414,7 +412,9 @@ class Audio:
                 )
                 monitor_channels = 1
 
-        block_frame = int((read_chunk_size * 128 / AUDIO_SAMPLE_RATE) * audio_sample_rate)
+        block_frame = int(
+            (read_chunk_size * 128 / AUDIO_SAMPLE_RATE) * audio_sample_rate
+        )
 
         try:
             self.run_audio_stream(
