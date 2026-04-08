@@ -255,7 +255,11 @@ class Realtime_Pipeline:
             if self.use_f0:
                 # Extract F0 from the most recent audio window only.
                 shift = (block_size_16k or skip_head * self.window) // self.window
-                f0_frame = block_size_16k + 800 if block_size_16k else skip_head * self.window + 800
+                f0_frame = (
+                    block_size_16k + 800
+                    if block_size_16k
+                    else skip_head * self.window + 800
+                )
                 if self.f0_method == "rmvpe":
                     f0_frame = 5120 * ((f0_frame - 1) // 5120 + 1) - 160
                 f0_frame = min(f0_frame, audio.shape[0])
@@ -272,15 +276,17 @@ class Realtime_Pipeline:
                 )
                 # Remove batch dimension.
                 f0_coarse_new = f0_coarse_new.squeeze(0)
-                f0_new        = f0_new.squeeze(0)
+                f0_new = f0_new.squeeze(0)
 
                 # Shift pitch cache left by one block and append new frames (trimmed [3:-1]).
                 pitch[:-shift] = pitch[shift:].clone()
                 pitchf[:-shift] = pitchf[shift:].clone()
-                interior_coarse = f0_coarse_new[3:-1] if f0_coarse_new.shape[0] > 4 else f0_coarse_new
-                interior_f      = f0_new[3:-1]        if f0_new.shape[0] > 4        else f0_new
-                pitch[-interior_coarse.shape[0]:]  = interior_coarse
-                pitchf[-interior_f.shape[0]:]      = interior_f
+                interior_coarse = (
+                    f0_coarse_new[3:-1] if f0_coarse_new.shape[0] > 4 else f0_coarse_new
+                )
+                interior_f = f0_new[3:-1] if f0_new.shape[0] > 4 else f0_new
+                pitch[-interior_coarse.shape[0] :] = interior_coarse
+                pitchf[-interior_f.shape[0] :] = interior_f
             else:
                 pitch, pitchf = None, None
 
@@ -316,8 +322,10 @@ class Realtime_Pipeline:
                 feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
                     0, 2, 1
                 )[:, :p_len, :]
-                pitch_p  = pitch[-p_len:].unsqueeze(0)
-                pitchf_p = pitchf[-p_len:].unsqueeze(0) * (formant_length / return_length)
+                pitch_p = pitch[-p_len:].unsqueeze(0)
+                pitchf_p = pitchf[-p_len:].unsqueeze(0) * (
+                    formant_length / return_length
+                )
 
                 # Pitch protection blending
                 if protect < 0.5:
@@ -342,7 +350,7 @@ class Realtime_Pipeline:
             ).float()
             # Match output RMS to the current block's input RMS.
             if volume_envelope < 1:
-                rms_src = audio[-(return_length * self.window):].cpu().numpy()
+                rms_src = audio[-(return_length * self.window) :].cpu().numpy()
                 out_audio = AudioProcessor.change_rms(
                     rms_src,
                     self.sample_rate,
