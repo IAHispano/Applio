@@ -241,6 +241,7 @@ class Realtime_Pipeline:
         proposed_pitch_threshold: float = 155.0,
         reduced_noise=None,
         board=None,
+        block_size_16k: int = None,
     ):
         """
         Performs realtime voice conversion on a given audio segment.
@@ -253,8 +254,8 @@ class Realtime_Pipeline:
 
             if self.use_f0:
                 # Extract F0 from the most recent audio window only.
-                shift = (skip_head * self.window) // self.window
-                f0_frame = skip_head * self.window + 800
+                shift = (block_size_16k or skip_head * self.window) // self.window
+                f0_frame = block_size_16k + 800 if block_size_16k else skip_head * self.window + 800
                 if self.f0_method == "rmvpe":
                     f0_frame = 5120 * ((f0_frame - 1) // 5120 + 1) - 160
                 f0_frame = min(f0_frame, audio.shape[0])
