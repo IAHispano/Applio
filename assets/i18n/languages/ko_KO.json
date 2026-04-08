@@ -371,6 +371,7 @@
     "Voice Model": "음성 모델",
     "Volume Envelope": "볼륨 엔벨로프",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "이 볼륨 레벨 이하의 오디오는 무음으로 간주되어 처리되지 않습니다. CPU 리소스를 절약하고 배경 소음을 줄이는 데 도움이 됩니다.",
+    "Warming up... ({} blocks remaining)": "워밍업 중... ({}블록 남음)",
     "You can also use a custom path.": "사용자 지정 경로를 사용할 수도 있습니다.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[지원](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

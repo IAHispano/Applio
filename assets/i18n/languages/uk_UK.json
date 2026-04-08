@@ -371,6 +371,7 @@
     "Voice Model": "Голосова модель",
     "Volume Envelope": "Обвідна гучності",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Рівень гучності, нижче якого аудіо вважається тишею і не обробляється. Допомагає заощаджувати ресурси ЦП та зменшувати фоновий шум.",
+    "Warming up... ({} blocks remaining)": "Прогрів... (залишилось {} блоків)",
     "You can also use a custom path.": "Ви також можете використовувати власний шлях.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Підтримка](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

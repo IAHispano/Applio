@@ -371,6 +371,7 @@
     "Voice Model": "Mōtele ʻo e Leʻo",
     "Volume Envelope": "Tefitoʻi Voliume",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Ko e tuʻunga ʻo e leʻó ʻa ia ʻoku lau ai ʻa e ongo ʻi laló ko e fakalongolongo pea ʻikai ngāueʻi. ʻOkú ne tokoni ke hao ai e ngaahi maʻuʻanga ivi ʻo e CPU pea fakasiʻisiʻi e longoaʻa ʻi tuʻá.",
+    "Warming up... ({} blocks remaining)": "Fakamafana... ({} poloka kei toe)",
     "You can also use a custom path.": "ʻE lava foki ke ke ngāueʻaki ha hala fakafoʻituitui.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Tokoni](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

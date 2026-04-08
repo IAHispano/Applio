@@ -371,6 +371,7 @@
     "Voice Model": "Múnla Gutha",
     "Volume Envelope": "Clúdach Toirte",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "An leibhéal toirte faoina ndéileáiltear le fuaim mar thost agus nach bpróiseáiltear í. Cuidíonn sé seo le hacmhainní CPU a shábháil agus le torann cúlra a laghdú.",
+    "Warming up... ({} blocks remaining)": "Ag téamh suas... ({} bloc fágtha)",
     "You can also use a custom path.": "Is féidir leat cosán saincheaptha a úsáid freisin.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Tacaíocht](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

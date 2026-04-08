@@ -371,6 +371,7 @@
     "Voice Model": "Modèl Vwa",
     "Volume Envelope": "Anvlòp Volim",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Nivo volim kote odyo a konsidere kòm silans epi li pa trete. Sa ede ekonomize resous CPU epi redwi bri anbyan.",
+    "Warming up... ({} blocks remaining)": "Ap chofe... ({} blòk ki rete)",
     "You can also use a custom path.": "Ou ka itilize yon chemen pèsonalize tou.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Sipò](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

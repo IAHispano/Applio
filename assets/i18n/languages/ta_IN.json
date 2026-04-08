@@ -371,6 +371,7 @@
     "Voice Model": "குரல் மாடல்",
     "Volume Envelope": "ஒலி அளவு உறை",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "இந்த ஒலி அளவிற்கு கீழே உள்ள ஆடியோ மௌனமாகக் கருதப்பட்டு செயலாக்கப்படாது. இது CPU வளங்களைச் சேமிக்கவும் பின்னணி இரைச்சலைக் குறைக்கவும் உதவுகிறது.",
+    "Warming up... ({} blocks remaining)": "வார்ம் அப்... ({} தொகுதிகள் மீதம்)",
     "You can also use a custom path.": "நீங்கள் ஒரு தனிப்பயன் பாதையையும் பயன்படுத்தலாம்.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[ஆதரவு](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }

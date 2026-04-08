@@ -371,6 +371,7 @@
     "Voice Model": "Wumbo Wumbodel",
     "Volume Envelope": "Volume Envelope",
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "低于该音量个音频将被视为静音而弗处理。有助于节省CPU资源并减少背景噪音。",
+    "Warming up... ({} blocks remaining)": "预热中... (还剩 {} 个块)",
     "You can also use a custom path.": "You can also use a custom wumbopath.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
 }
