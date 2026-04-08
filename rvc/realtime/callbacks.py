@@ -1,12 +1,12 @@
 import os
 import sys
-import threading
 import numpy as np
 
 sys.path.append(os.getcwd())
 
 from rvc.realtime.audio import Audio
-from rvc.realtime.core import VoiceChanger
+from rvc.realtime.core import AUDIO_SAMPLE_RATE
+from rvc.realtime.worker import VoiceChangerWorker
 
 
 class AudioCallbacks:
@@ -48,30 +48,34 @@ class AudioCallbacks:
         # device: str = "cuda",
     ):
         self.pass_through = pass_through
-        self.lock = threading.Lock()
-        self.vc = VoiceChanger(
-            read_chunk_size,
-            cross_fade_overlap_size,
-            extra_convert_size,
-            model_path,
-            index_path,
-            f0_method,
-            embedder_model,
-            embedder_model_custom,
-            silent_threshold,
-            vad_enabled,
-            vad_sensitivity,
-            vad_frame_ms,
-            sid,
-            clean_audio,
-            clean_strength,
-            post_process,
-            record_audio,
-            record_audio_path,
-            export_format,
+        self._last_output = None
+        self._last_vol = 0
+
+        vc_kwargs = dict(
+            read_chunk_size=read_chunk_size,
+            cross_fade_overlap_size=cross_fade_overlap_size,
+            extra_convert_size=extra_convert_size,
+            model_path=model_path,
+            index_path=index_path,
+            f0_method=f0_method,
+            embedder_model=embedder_model,
+            embedder_model_custom=embedder_model_custom,
+            silent_threshold=silent_threshold,
+            vad_enabled=vad_enabled,
+            vad_sensitivity=vad_sensitivity,
+            vad_frame_ms=vad_frame_ms,
+            sid=sid,
+            clean_audio=clean_audio,
+            clean_strength=clean_strength,
+            post_process=post_process,
+            record_audio=record_audio,
+            record_audio_path=record_audio_path,
+            export_format=export_format,
             **kwargs,
-            # device,
         )
+        self.vc = VoiceChangerWorker(vc_kwargs)
+        self.vc.start()
+
         self.audio = Audio(
             self,
             f0_up_key,
@@ -100,29 +104,31 @@ class AudioCallbacks:
         proposed_pitch: bool = False,
         proposed_pitch_threshold: float = 155.0,
     ):
-        if self.pass_through:  # through
+        if self.pass_through:
             vol = float(np.sqrt(np.square(received_data).mean(dtype=np.float32)))
             return received_data, vol, [0, 0, 0], None
 
-        try:
-            with self.lock:
-                audio, vol, perf = self.vc.on_request(
-                    received_data,
-                    f0_up_key,
-                    index_rate,
-                    protect,
-                    volume_envelope,
-                    f0_autotune,
-                    f0_autotune_strength,
-                    proposed_pitch,
-                    proposed_pitch_threshold,
-                )
+        params = dict(
+            f0_up_key=f0_up_key,
+            index_rate=index_rate,
+            protect=protect,
+            volume_envelope=volume_envelope,
+            f0_autotune=f0_autotune,
+            f0_autotune_strength=f0_autotune_strength,
+            proposed_pitch=proposed_pitch,
+            proposed_pitch_threshold=proposed_pitch_threshold,
+        )
+        self.vc.submit(received_data, params)
 
-            return audio, vol, perf, None
-        except RuntimeError as error:
-            import traceback
+        result = self.vc.retrieve()
+        if result is not None:
+            audio, vol, perf_ms, _warmup = result
+            self._last_output = audio
+            self._last_vol = vol
+            return audio, vol, [0, perf_ms, 0], None
 
-            print(f"An error occurred during real-time voice conversion: {error}")
-            print(traceback.format_exc())
+        # No result ready yet; replay previous output to avoid underrun.
+        if self._last_output is not None and self._last_output.shape[0] == received_data.shape[0]:
+            return self._last_output, self._last_vol, [0, 0, 0], None
 
-            return np.zeros(1, dtype=np.float32), 0, [0, 0, 0], None
+        return np.zeros(received_data.shape[0], dtype=np.float32), 0, [0, 0, 0], None
