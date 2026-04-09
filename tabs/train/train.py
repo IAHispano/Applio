@@ -763,6 +763,15 @@ def train_tab():
                 interactive=True,
             )
 
+        shutdown_check = gr.Checkbox(
+            label=i18n("Shutdown after finishing"),
+            info=i18n(
+                "Automatically shut down computer when training is finished."
+            ),
+            value=False,
+            interactive=True,
+        )
+
         def enforce_terms(terms_accepted, *args):
             if not terms_accepted:
                 message = "You must agree to the Terms of Use to proceed."
@@ -1022,6 +1031,7 @@ def train_tab():
                     d_pretrained_path,
                     vocoder,
                     checkpointing,
+                    shutdown_check
                 ],
                 outputs=[train_output_info],
             )
