@@ -6,6 +6,7 @@ import sys
 import traceback
 from distutils.util import strtobool
 from functools import lru_cache
+from datetime import datetime, timedelta
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -483,6 +484,58 @@ def run_extract_script(
 
     return f"Model {model_name} extracted successfully."
 
+def shutdown_after_training():
+    os_name = sys.platform
+    shutdown_time = None
+
+    # Windows
+    if os_name == 'win32':
+        delay_seconds = 300
+        shutdown_time = datetime.now() + timedelta(seconds=delay_seconds)
+        os.system(f'shutdown /s /t {delay_seconds}')
+
+    # MacOS
+    elif os_name == 'darwin':
+        shutdown_time = datetime.now()
+        os.system('osascript -e \'tell app "System Events" to shut down\'')
+
+    # Linux
+    elif os_name.startswith('linux'):
+        delay_minutes = 5
+        shutdown_time = datetime.now() + timedelta(minutes=delay_minutes)
+        os.system(f'shutdown -h +{delay_minutes}')
+
+    # Unknown
+    else:
+        print('Unsupported OS')
+        return os_name, None
+
+    return os_name, shutdown_time
+
+def append_data_shutdown_log(
+    model_name,
+    total_epoch,
+    batch_size,
+    sample_rate,
+    gpu,
+    shutdown_time,
+    os_name
+):
+    log_file = "training_shutdown_log.txt"
+
+    log_entry = (
+        f"[{datetime.now()}] "
+        f"Model: {model_name} | "
+        f"Epochs: {total_epoch} | "
+        f"Batch: {batch_size} | "
+        f"SR: {sample_rate} | "
+        f"GPU: {gpu} | "
+        f"OS: {os_name} | "
+        f"Shutdown at: {shutdown_time}\n"
+    )
+
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(log_entry)
 
 # Train
 def run_train_script(
@@ -505,6 +558,7 @@ def run_train_script(
     d_pretrained_path: str = None,
     vocoder: str = "HiFi-GAN",
     checkpointing: bool = False,
+    shutdown_check:bool = False,
 ):
     if pretrained == True:
         from rvc.lib.tools.pretrained_selector import pretrained_selector
@@ -551,6 +605,23 @@ def run_train_script(
         return f"Training failed for model {model_name}. Please check the console logs for more details."
 
     run_index_script(model_name, index_algorithm)
+
+    if shutdown_check:
+        os_name, shutdown_datetime = shutdown_after_training()
+
+        append_data_shutdown_log(
+            model_name=model_name,
+            total_epoch=total_epoch,
+            batch_size=batch_size,
+            sample_rate=sample_rate,
+            gpu=gpu,
+            shutdown_time=shutdown_datetime,
+            os_name=os_name
+        )
+
+        print(f"Model {model_name} trained successfully. Shutdown scheduled at {shutdown_datetime}")
+        return f"Model {model_name} trained successfully. Shutdown scheduled at {shutdown_datetime}"
+
     return f"Model {model_name} trained successfully."
 
 
