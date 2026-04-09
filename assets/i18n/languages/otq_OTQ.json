@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Arrastra ir plugin.zip pa instalarlo",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Duración ar desvanecimiento entre ya trozos ar audio pa hingi nja ya clics. Ya hñei más altos pe̱'tsi transiciones más suaves pero tsa ñäni ar latencia.",
     "Embedder Model": "Modelo Incrustador",
+    "Enable ASIO": "Habilitär ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Habilitär el soporte del driver ASIO. (Requiere reiniciar Applio)",
     "Enable Applio integration with Discord presence": "Habilita ar integración de Applio ko ar presencia de Discord",
     "Enable VAD": "Pe̱hni VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Habilita ar cambio de formantes. Se usa pa njot'i de ñ'o̲ho̲ ma 'ñäni ne viceversa.",
@@ -134,9 +136,6 @@
     "File to Speech": "Hets'i ma Hñä",
     "Filter": "Filter",
     "Folder Name": "Thuhu de Carpeta",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Pa ya controladores ASIO, pe̱hni 'nar canal entrada específico. Deja ja -1 pa ar predeterminado.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Pa ya controladores ASIO, pe̱hni 'nar canal salida monitor específico. Deja ja -1 pa ar predeterminado.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Pa ya controladores ASIO, pe̱hni 'nar canal salida específico. Deja ja -1 pa ar predeterminado.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Pa WASAPI (Windows), uni ar nt'ot'e control exclusivo pa 'nar latencia potencialmente más hñets'i.",
     "Formant Shifting": "Cambio de Formantes",
     "Fresh Training": "Entrenamiento 'Ra'yo",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Ganancia Húmeda de Reverberación",
     "Reverb Width": "Ancho de Reverberación",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Protege ya consonantes distintas ne ya ya'bu̲ de respiración pa nu'bu da 'nar desgarro electroacústico ne ma'ra artefactos. Llevar ar parámetro ma ár hñei máximo de 0.5 ofrece 'nar protección integral. Wat'i, reducir nuna ar hñei podría disminuir ar alcance de ar protección mi mientra mitiga ar efecto de indexación.",
+    "Sample Rate": "Tasa de Muestreo",
     "Sampling Rate": "Frecuencia de Muestreo",
     "Save Every Epoch": "Guardar 'nar Época",
     "Save Every Weights": "Guardar 'nar Pesos",
@@ -326,6 +326,7 @@
     "Start": "Du'mi",
     "Start Training": "M'u̲i Entrenamiento",
     "Status": "Estado",
+    "Stereo": "Estéreo",
     "Stop": "Poni",
     "Stop Training": "Pa'i Entrenamiento",
     "Stop convert": "Pa'i njot'i",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Nivel ar ndähi debajo ar cual ar audio ar trata komongu silencio ne hingi ar procesa. Ayuda pa hingi gastar recursos CPU ne reducir ar ruido ar fondo.",
     "Warming up... ({} blocks remaining)": "Warming up... ({} bloques di faltan)",
     "You can also use a custom path.": "También tsa̲ da usar 'nar ruta personalizada.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Soporte](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Soporte](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Tasa de muestreo usadä para transmisión de audio. Anulä esto si el driver reportä una tasa incorrectä (ej. 48000 Hz en lugar de 44100 Hz)."
 }

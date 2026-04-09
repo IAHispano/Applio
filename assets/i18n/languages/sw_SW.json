@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Buruta plugin.zip yako ili kuisakinisha",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Muda wa kufifisha kati ya sehemu za sauti ili kuzuia milio. Thamani za juu huleta mabadiliko laini lakini zinaweza kuongeza ucheleweshaji.",
     "Embedder Model": "Mfumo wa Kipachikaji",
+    "Enable ASIO": "Wezesha ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Wezesha msaada wa dereva wa ASIO. (Inahitaji kuanzisha upya Applio)",
     "Enable Applio integration with Discord presence": "Washa muunganisho wa Applio na uwepo wa Discord",
     "Enable VAD": "Washa VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Washa uhamishaji wa formant. Hutumika kwa ubadilishaji kutoka kwa mwanaume kwenda kwa mwanamke na kinyume chake.",
@@ -134,9 +136,6 @@
     "File to Speech": "Faili kwa Hotuba",
     "Filter": "Kichujio",
     "Folder Name": "Jina la Folda",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Kwa madereva ya ASIO, huchagua chaneli maalum ya ingizo. Acha kwa -1 kwa chaguo-msingi.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Kwa madereva ya ASIO, huchagua chaneli maalum ya tokeo la ufuatiliaji. Acha kwa -1 kwa chaguo-msingi.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Kwa madereva ya ASIO, huchagua chaneli maalum ya tokeo. Acha kwa -1 kwa chaguo-msingi.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Kwa WASAPI (Windows), huipa programu udhibiti wa kipekee kwa uwezekano wa ucheleweshaji mdogo.",
     "Formant Shifting": "Uhamishaji wa Formant",
     "Fresh Training": "Mafunzo Mapya",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Gain Lowa ya Reverb",
     "Reverb Width": "Upana wa Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Linda konsonanti tofauti na sauti za kupumua ili kuzuia mipasuko ya kielektroniki-akustisk na vizalia vingine. Kuweka kigezo kwenye thamani yake ya juu ya 0.5 kunatoa ulinzi kamili. Hata hivyo, kupunguza thamani hii kunaweza kupunguza kiwango cha ulinzi huku ukiweza kupunguza athari ya uorodheshaji.",
+    "Sample Rate": "Kiwango cha Sampuli",
     "Sampling Rate": "Kiwango cha Sampuli",
     "Save Every Epoch": "Hifadhi Kila Epoksi",
     "Save Every Weights": "Hifadhi Kila Uzito",
@@ -326,6 +326,7 @@
     "Start": "Anza",
     "Start Training": "Anza Mafunzo",
     "Status": "Hali",
+    "Stereo": "Stereo",
     "Stop": "Simamisha",
     "Stop Training": "Acha Mafunzo",
     "Stop convert": "Acha kubadilisha",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Kiwango cha sauti ambacho chini yake sauti huchukuliwa kama kimya na haichakatwi. Husaidia kuokoa rasilimali za CPU na kupunguza kelele za mandharinyuma.",
     "Warming up... ({} blocks remaining)": "Inapasha joto... (zimebaki vitalu {})",
     "You can also use a custom path.": "Unaweza pia kutumia njia maalum.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Usaidizi](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Usaidizi](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Kiwango cha sampuli kinachotumiwa kwa utiririshaji wa sauti. Badilisha hii ikiwa dereva inaripoti kiwango kisicho sahihi (mfano 48000 Hz badala ya 44100 Hz)."
 }

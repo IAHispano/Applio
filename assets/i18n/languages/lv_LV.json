@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Ievelciet savu plugin.zip, lai to instalētu",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Audio segmentu sapludināšanas ilgums, lai novērstu klikšķus. Augstākas vērtības rada plūstošākas pārejas, bet var palielināt latentumu.",
     "Embedder Model": "Iegūlēja (Embedder) modelis",
+    "Enable ASIO": "Iespējot ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Iespējojiet ASIO draivera atbalstu. (Nepieciešama Applio restartēšana)",
     "Enable Applio integration with Discord presence": "Iespējot Applio integrāciju ar Discord klātbūtni",
     "Enable VAD": "Iespējot VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Iespējot formantu nobīdi. Izmanto vīriešu balss konvertēšanai uz sieviešu un otrādi.",
@@ -134,9 +136,6 @@
     "File to Speech": "Fails uz runu",
     "Filter": "Filtrs",
     "Folder Name": "Mapes nosaukums",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO draiveriem, izvēlas konkrētu ievades kanālu. Atstājiet -1 noklusējuma vērtībai.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO draiveriem, izvēlas konkrētu monitora izejas kanālu. Atstājiet -1 noklusējuma vērtībai.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO draiveriem, izvēlas konkrētu izejas kanālu. Atstājiet -1 noklusējuma vērtībai.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (Windows) gadījumā, piešķir lietotnei ekskluzīvu kontroli, lai potenciāli samazinātu latentumu.",
     "Formant Shifting": "Formantu nobīde",
     "Fresh Training": "Apmācība no nulles",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Reverberācijas slapjais pastiprinājums",
     "Reverb Width": "Reverberācijas platums",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Aizsargājiet atšķirīgus līdzskaņus un elpošanas skaņas, lai novērstu elektroakustiskus kropļojumus un citus artefaktus. Parametra palielināšana līdz maksimālajai vērtībai 0.5 piedāvā visaptverošu aizsardzību. Tomēr šīs vērtības samazināšana var mazināt aizsardzības līmeni, potenciāli mazinot indeksēšanas efektu.",
+    "Sample Rate": "Izlases biežums",
     "Sampling Rate": "Izlases biežums",
     "Save Every Epoch": "Saglabāt katru epohu",
     "Save Every Weights": "Saglabāt visus svarus",
@@ -326,6 +326,7 @@
     "Start": "Sākt",
     "Start Training": "Sākt apmācību",
     "Status": "Statuss",
+    "Stereo": "Stereo",
     "Stop": "Apturēt",
     "Stop Training": "Pārtraukt apmācību",
     "Stop convert": "Pārtraukt konvertēšanu",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Skaļuma līmenis, zem kura audio tiek uzskatīts par klusumu un netiek apstrādāts. Palīdz ietaupīt CPU resursus un samazināt fona troksni.",
     "Warming up... ({} blocks remaining)": "Iesildīšana... (atlikuši {} bloki)",
     "You can also use a custom path.": "Varat izmantot arī pielāgotu ceļu.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Atbalsts](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Atbalsts](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Izlases biežums, ko izmanto audio straumēšanai. Aizstājiet šo, ja draiveris ziņo par nepareizu biežumu (piem. 48000 Hz, nevis 44100 Hz)."
 }

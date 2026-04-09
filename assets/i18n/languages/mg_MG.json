@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Tariho eto ny plugin.zip anao mba hametrahana azy",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Faharetan'ny fihenan'ny feo eo anelanelan'ny ampahany mba hisorohana ny 'clics'. Ny sanda ambony dia miteraka tetezamita milamina kokoa saingy mety hampitombo ny fahatarana.",
     "Embedder Model": "Maodely Embedder",
+    "Enable ASIO": "Alefaso ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Alefaso ny fanohanana ny driver ASIO. (Mila averina alefa ny Applio)",
     "Enable Applio integration with Discord presence": "Alefaso ny fampidirana ny Applio amin'ny fisian'ny Discord",
     "Enable VAD": "Alefaso ny VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Alefaso ny formant shifting. Ampiasaina amin'ny fanovana feo lahy ho vavy ary ny mifamadika amin'izany.",
@@ -134,9 +136,6 @@
     "File to Speech": "Rakitra ho Lahateny",
     "Filter": "Sivana",
     "Folder Name": "Anaran'ny Lahatahiry",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Ho an'ny mpamily ASIO, mifidy fantsona fampidirana manokana. Avelao ho -1 raha tiana ny mahazatra.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Ho an'ny mpamily ASIO, mifidy fantsona fivoahana fanaraha-maso manokana. Avelao ho -1 raha tiana ny mahazatra.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Ho an'ny mpamily ASIO, mifidy fantsona fivoahana manokana. Avelao ho -1 raha tiana ny mahazatra.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Ho an'ny WASAPI (Windows), manome fifehezana manokana ho an'ny fampiharana mba hahazoana fahatarana ambany kokoa.",
     "Formant Shifting": "Formant Shifting",
     "Fresh Training": "Fanofanana Vaovao",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Gain Lena Reverb",
     "Reverb Width": "Sakan'ny Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Arovy ny renifeo miavaka sy ny feon'ny fisefoana mba hisorohana ny fahasimbana elektro-akostika sy ny lesoka hafa. Ny fisintonana ny masontsivana ho amin'ny sandany ambony indrindra 0.5 dia manome fiarovana feno. Na izany aza, ny fampihenana ity sanda ity dia mety hampihena ny fiarovana sady mety hanamaivana ny vokatry ny fanondroana.",
+    "Sample Rate": "Tahan'ny Santiona",
     "Sampling Rate": "Tahan'ny Fakan-tsantionany",
     "Save Every Epoch": "Tehirizo isaky ny Epoch",
     "Save Every Weights": "Tehirizo ny Lanja Rehetra",
@@ -326,6 +326,7 @@
     "Start": "Atombohy",
     "Start Training": "Atombohy ny Fanofanana",
     "Status": "Sata",
+    "Stereo": "Stereo",
     "Stop": "Atsaharo",
     "Stop Training": "Atsaharo ny Fanofanana",
     "Stop convert": "Atsaharo ny fanovana",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Haavon'ny feo izay heverina ho fahanginana ary tsy karakaraina ny feo eo ambaniny. Manampy amin'ny fitsitsiana ny loharanon-karen'ny CPU sy mampihena ny tabataba any aoriana.",
     "Warming up... ({} blocks remaining)": "Mafana... ({} bolongana sisa)",
     "You can also use a custom path.": "Afaka mampiasa lalana manokana koa ianao.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Fanohanana](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Fanohanana](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Tahan'ny santiona ampiasaina ho an'ny fampitana feo. Hanovana izany raha milaza tahan'ny diso ny mpamily (ohatra 48000 Hz fa tsy 44100 Hz)."
 }

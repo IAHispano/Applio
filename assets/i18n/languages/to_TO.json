@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Toho mai hoʻo plugin.zip ke fola ia",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Ko e lōloa ʻo e mole māmālie ʻi he vahaʻa ʻo e ngaahi konga ongo ke taʻofi e ngaahi patapatá. Ko e mahuʻinga māʻolungá ʻokú ne fakatupu ha ngaahi liliu molū ange ka ʻe lava ke ne fakaʻāsili e toloí.",
     "Embedder Model": "Mōtele Embedder",
+    "Enable ASIO": "Fakamālō ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Fakamālō tokoni ki he ASIO driver. (ʻOku fiemaʻu ke toe kamataʻi ʻa e Applio)",
     "Enable Applio integration with Discord presence": "Fakangofua ʻa e fehokotaki ʻa e Applio mo e ʻi ai ʻa e Discord",
     "Enable VAD": "Fakangofua e VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Fakangofua ʻa e liliu ʻo e formant. Ngāueʻaki ki he liliu mei he tangata ki he fefine pea pehē foki ki mui.",
@@ -134,9 +136,6 @@
     "File to Speech": "Faile ki he Lea",
     "Filter": "Filtre",
     "Folder Name": "Hingoa ʻo e Tōʻanga Faile",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Ki he kau fakaʻuli ʻa e ASIO, fili ha senolo huʻu pau. Tuku ia ʻi he -1 ki he tuʻunga angamahení.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Ki he kau fakaʻuli ʻa e ASIO, fili ha senolo ʻaútiputi fakaʻaliʻali pau. Tuku ia ʻi he -1 ki he tuʻunga angamahení.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Ki he kau fakaʻuli ʻa e ASIO, fili ha senolo ʻaútiputi pau. Tuku ia ʻi he -1 ki he tuʻunga angamahení.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Ki he WASAPI (Windows), ʻokú ne ʻoange ki he polokalamá ha mafai fakaʻataʻatā ke fakasiʻisiʻi e toloí.",
     "Formant Shifting": "Liliu ʻo e Formant",
     "Fresh Training": "Ako Foʻou",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Tupu ʻAʻau ʻo e Reverb",
     "Reverb Width": "Fālahinga ʻo e Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Maluʻi ʻa e ngaahi konisonanite makehe mo e ngaahi ongo mānavá ke taʻofi ʻa e mahae fakaʻilekitulōnika-fakaongo mo e ngaahi meʻa kehe. Ko hono toho ʻo e fakangatangatá ki hono tuʻunga māʻolunga taha ʻo e 0.5 ʻokú ne ʻomi ha maluʻi kakato. Kae kehe, ko hono fakasiʻisiʻi ʻo e mahuʻinga ko ʻení ʻe lava ke ne fakasiʻisiʻi ai ʻa e tuʻunga maluʻí kae malava ke ne fakasiʻisiʻi ai ʻa e ola ʻo e ʻinitekisí.",
+    "Sample Rate": "Fua Tauhi",
     "Sampling Rate": "Tuʻunga ʻo e Sampling",
     "Save Every Epoch": "Seivi ʻa e Epoch Kotoa Pē",
     "Save Every Weights": "Seivi ʻa e Mamafa Kotoa Pē",
@@ -326,6 +326,7 @@
     "Start": "Kamata",
     "Start Training": "Kamataʻi ʻa e Ako",
     "Status": "Tuʻunga",
+    "Stereo": "Stereo",
     "Stop": "Taʻofi",
     "Stop Training": "Tuku ʻa e Ako",
     "Stop convert": "Tuku ʻa e Liliu",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Ko e tuʻunga ʻo e leʻó ʻa ia ʻoku lau ai ʻa e ongo ʻi laló ko e fakalongolongo pea ʻikai ngāueʻi. ʻOkú ne tokoni ke hao ai e ngaahi maʻuʻanga ivi ʻo e CPU pea fakasiʻisiʻi e longoaʻa ʻi tuʻá.",
     "Warming up... ({} blocks remaining)": "Fakamafana... ({} poloka kei toe)",
     "You can also use a custom path.": "ʻE lava foki ke ke ngāueʻaki ha hala fakafoʻituitui.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Tokoni](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Tokoni](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Ko e fua tauhi ʻoku ngāue ʻaki ki he audio streaming. Liliu eni kapau ʻoku lipooti ʻe he driver ha fua hala (e.g. 48000 Hz ʻi hono ʻo 44100 Hz)."
 }

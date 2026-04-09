@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Prevucite vaš plugin.zip da ga instalirate",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Шартлауҙарҙы булдырмау өсөн аудио өлөштәре араһындағы шыма күсеү оҙонлоғо. Юғарыраҡ ҡиммәттәр шымараҡ күсеүҙәр булдыра, ләкин тотҡарлыҡты арттырырға мөмкин.",
     "Embedder Model": "Model embeddera",
+    "Enable ASIO": "ASIO-ны яратырыу",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO драйвер ярҙамын яратырыу. (Zahtijeva ponovno pokretanje Applio-a)",
     "Enable Applio integration with Discord presence": "Omogući Applio integraciju sa Discord prisutnošću",
     "Enable VAD": "VAD-ты ҡабыҙырға",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Omogući pomjeranje formanta. Koristi se za konverzije sa muškog na ženski glas i obrnuto.",
@@ -134,9 +136,6 @@
     "File to Speech": "Datoteka u govor",
     "Filter": "Фильтр",
     "Folder Name": "Naziv foldera",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO драйверҙары өсөн, билдәле бер инеү каналын һайлай. Стандарт буйынса ҡалдырыу өсөн -1 итеп ҡалдырығыҙ.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO драйверҙары өсөн, билдәле бер монитор сығыш каналын һайлай. Стандарт буйынса ҡалдырыу өсөн -1 итеп ҡалдырығыҙ.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO драйверҙары өсөн, билдәле бер сығыш каналын һайлай. Стандарт буйынса ҡалдырыу өсөн -1 итеп ҡалдырығыҙ.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (Windows) өсөн, тотҡарлыҡты кәметеү мөмкинлеге өсөн ҡушымтаға эксклюзив контроль бирә.",
     "Formant Shifting": "Pomjeranje formanta",
     "Fresh Training": "Novo treniranje",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Mokro pojačanje reverba",
     "Reverb Width": "Širina reverba",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Zaštitite izrazite suglasnike i zvukove disanja kako biste spriječili elektroakustično kidanje i druge artefakte. Povlačenje parametra na njegovu maksimalnu vrijednost od 0.5 nudi sveobuhvatnu zaštitu. Međutim, smanjenje ove vrijednosti može smanjiti stepen zaštite, dok potencijalno ublažava efekat indeksiranja.",
+    "Sample Rate": "Үлгө тейзеһе",
     "Sampling Rate": "Brzina uzorkovanja",
     "Save Every Epoch": "Sačuvaj svaku epohu",
     "Save Every Weights": "Sačuvaj sve težine",
@@ -326,6 +326,7 @@
     "Start": "Башларға",
     "Start Training": "Započni treniranje",
     "Status": "Статус",
+    "Stereo": "Стерео",
     "Stop": "Туҡтатырға",
     "Stop Training": "Zaustavi treniranje",
     "Stop convert": "Zaustavi pretvaranje",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Тауыш кимәле, унан түбән булғанда аудио тыныслыҡ тип һанала һәм эшкәртелмәй. CPU ресурстарын экономияларға һәм фон шау-шыуын кәметергә ярҙам итә.",
     "Warming up... ({} blocks remaining)": "Warming up... ({} blokova preostalo)",
     "You can also use a custom path.": "Možete koristiti i prilagođenu putanju.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Podrška](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Podrška](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Аудио ағым өсөн ҡулланылған үлгө тейзеһе. Драйвер дөрөҫ булмаған тейзе биреп, был урынды үҙгәртегеҙ (мәҫ. 44100 Hz урынына 48000 Hz)."
 }

@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "plugin.zipをドラッグしてインストールします",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "クリックノイズを防ぐためのオーディオチャンク間のフェード時間。値を大きくするとトランジションが滑らかになりますが、遅延が増加する可能性があります。",
     "Embedder Model": "エンベッダーモデル",
+    "Enable ASIO": "ASIOを有効にする",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIOドライバーサポートを有効にします。（Applioの再起動が必要です）",
     "Enable Applio integration with Discord presence": "ApplioとDiscordのプレゼンス連携を有効にする",
     "Enable VAD": "VADを有効化",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "フォルマントシフトを有効にします。男性から女性、またはその逆の変換に使用されます。",
@@ -134,9 +136,6 @@
     "File to Speech": "ファイルから音声合成",
     "Filter": "フィルター",
     "Folder Name": "フォルダ名",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIOドライバーの場合、特定の入力チャンネルを選択します。デフォルトの場合は-1のままにしてください。",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIOドライバーの場合、特定のモニター出力チャンネルを選択します。デフォルトの場合は-1のままにしてください。",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIOドライバーの場合、特定の出力チャンネルを選択します。デフォルトの場合は-1のままにしてください。",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (Windows)の場合、アプリに排他的な制御権を与え、潜在的な遅延を低減させます。",
     "Formant Shifting": "フォルマントシフト",
     "Fresh Training": "新規トレーニング",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "リバーブのウェットゲイン",
     "Reverb Width": "リバーブのウィドス",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "特徴的な子音や呼吸音を保護し、電気音響的な音割れやその他のアーティファクトを防ぎます。パラメータを最大値の0.5にすると、包括的な保護が得られます。ただし、この値を下げると保護の度合いが低下する可能性がありますが、インデックス効果を緩和できる場合があります。",
+    "Sample Rate": "サンプルレート",
     "Sampling Rate": "サンプリングレート",
     "Save Every Epoch": "エポックごとに保存",
     "Save Every Weights": "重みを毎エポック保存",
@@ -326,6 +326,7 @@
     "Start": "開始",
     "Start Training": "トレーニングを開始",
     "Status": "ステータス",
+    "Stereo": "ステレオ",
     "Stop": "停止",
     "Stop Training": "トレーニングを停止",
     "Stop convert": "変換を停止",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "この音量レベル以下の音声は無音として扱われ、処理されません。CPUリソースの節約とバックグラウンドノイズの低減に役立ちます。",
     "Warming up... ({} blocks remaining)": "ウォームアップ中... (残り {} ブロック)",
     "You can also use a custom path.": "カスタムパスを使用することもできます。",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[サポート](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[サポート](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "オーディオストリーミングに使用するサンプルレートです。ドライバーが誤った値を返すことがあるため、実際に設定されているサンプルレートを指定してください。"
 }

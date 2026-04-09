@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "I-drag ang imong plugin.zip aron i-install kini",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Gidugayon sa fade tali sa mga tipik sa audio aron malikayan ang mga pag-klik. Ang mas taas nga mga bili makahimo og mas hapsay nga mga transisyon apan mahimong makapadugang sa latency.",
     "Embedder Model": "Modelo sa Embedder",
+    "Enable ASIO": "I-enable ang ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "I-enable ang suporta sa ASIO driver. (Nagkinahanglan og pag-restart sa Applio)",
     "Enable Applio integration with Discord presence": "I-enable ang Applio integration sa presensya sa Discord",
     "Enable VAD": "I-on ang VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "I-enable ang formant shifting. Gigamit alang sa mga conversion gikan sa lalaki ngadto sa babaye ug vice-versa.",
@@ -134,9 +136,6 @@
     "File to Speech": "File ngadto sa Pagsulti",
     "Filter": "Filter",
     "Folder Name": "Ngalan sa Folder",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Alang sa mga ASIO driver, nagpili og usa ka piho nga input channel. Biyai sa -1 para sa default.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Alang sa mga ASIO driver, nagpili og usa ka piho nga monitor output channel. Biyai sa -1 para sa default.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Alang sa mga ASIO driver, nagpili og usa ka piho nga output channel. Biyai sa -1 para sa default.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Alang sa WASAPI (Windows), naghatag sa app og eksklusibong kontrol para sa posibleng mas ubos nga latency.",
     "Formant Shifting": "Pagbalhin sa Formant",
     "Fresh Training": "Bag-ong Pagbansay",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Wet Gain sa Reverb",
     "Reverb Width": "Lapad sa Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Panalipdi ang lahi nga mga consonant ug mga tingog sa pagginhawa aron mapugngan ang electro-acoustic tearing ug uban pang mga artifact. Ang pagbira sa parameter sa iyang maximum nga bili nga 0.5 nagtanyag og komprehensibong proteksyon. Apan, ang pagkunhod niini nga bili mahimong makapakunhod sa gidak-on sa proteksyon samtang posibleng makapaminus sa epekto sa pag-index.",
+    "Sample Rate": "Sample Rate",
     "Sampling Rate": "Sampling Rate",
     "Save Every Epoch": "I-save Matag Epoch",
     "Save Every Weights": "I-save Matag Weight",
@@ -326,6 +326,7 @@
     "Start": "Sugdi",
     "Start Training": "Sugdi ang Pagbansay",
     "Status": "Kahimtang",
+    "Stereo": "Stereo",
     "Stop": "Hunonga",
     "Stop Training": "Hunonga ang Pagbansay",
     "Stop convert": "Hunonga ang pag-convert",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Lebel sa volume diin sa ubos niini ang audio isipon nga kahilom ug dili i-proseso. Makatabang sa pagdaginot sa mga kapanguhaan sa CPU ug pagkunhod sa kasaba sa palibot.",
     "Warming up... ({} blocks remaining)": "Nag-init... ({} ka block ang nahabilin)",
     "You can also use a custom path.": "Mahimo ka usab mogamit og custom nga dalanan.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Suporta](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Suporta](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Sample rate nga gigamit alang sa audio streaming. I-override kini kung ang driver nagrepport og sayop nga rate (hal. 48000 Hz imbes nga 44100 Hz)."
 }
