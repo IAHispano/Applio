@@ -3,7 +3,9 @@ set -e  # Exit immediately if a command exits with a non-zero status
 
 printf "\033]0;Installer\007"
 clear
-rm -f *.bat
+
+# Delete Windows batch files (.bat) in current folder and subfolders
+find . -type f -iname "*.bat" -delete
 
 # Function to log messages with timestamps
 log_message() {
@@ -131,7 +133,6 @@ if [ "$(uname)" = "Darwin" ]; then
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
-    # Add more detailed Python version check
     log_message "Checking Python versions..."
     log_message "python3 path: $(which python3)"
     log_message "python3.12 path: $(which python3.12 2>/dev/null || echo 'not found')"
@@ -150,9 +151,10 @@ if [ "$(uname)" = "Darwin" ]; then
         log_message "Python version $python_version is not 3.12. Installing Python 3.12 using Homebrew..."
         brew install python@3.12
         export PATH="$(brew --prefix)/opt/python@3.12/bin:$PATH"
-        # Verify the installed version
+
         log_message "Verifying installed Python version..."
         python_version=$(python3.12 --version | awk '{print $2}' | cut -d'.' -f1,2)
+
         if [ "$python_version" != "3.12" ]; then
             log_message "Failed to install Python 3.12. Current version: $python_version"
             exit 1
@@ -163,6 +165,7 @@ if [ "$(uname)" = "Darwin" ]; then
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
     export PATH="$(brew --prefix)/bin:$PATH"
+
 elif [ "$(uname)" != "Linux" ]; then
     log_message "Unsupported operating system. Are you using Windows?"
     log_message "If yes, use the batch (.bat) file instead of this one!"
