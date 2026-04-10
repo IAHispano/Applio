@@ -8,7 +8,7 @@ NC='\033[0m' # No Color
 printf "\033]0;Installer\007"
 clear
 
-# Delete Windows bat files (.bat) 
+# Delete Windows bat files (.bat)
 find . -type f -iname "*.bat" -delete
 
 # Function to log messages with timestamps
