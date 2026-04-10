@@ -98,11 +98,12 @@ prepare_install() {
 create_venv() {
     install_build_tools
 
-    if ! command -v uv --version >/dev/null 2>&1; then
-        log_message "Installing uv"
+    if ! command -v uv > /dev/null 2>&1; then
+        log_message "Installing uv..."
         curl -LsSf https://astral.sh/uv/install.sh | sh
     fi
 
+    uv venv .venv --python 3.12
     log_message "Activating virtual environment..."
     source .venv/bin/activate
 
