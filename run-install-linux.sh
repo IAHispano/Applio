@@ -1,4 +1,3 @@
-
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
 
@@ -15,10 +14,10 @@ log_message() {
     local msg="$1"
     echo -e "${GREEN}$(date '+%Y-%m-%d %H:%M:%S') - $msg${NC}"
 }
+
 log_error() {
     echo -e "${RED}[ERROR]$(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
 }
-
 
 # Helper function for yes/no user prompt
 confirm() {
@@ -42,7 +41,6 @@ install_ffmpeg() {
             log_message "Installing FFmpeg using dnf..."
             sudo dnf install -y ffmpeg --allowerasing
         else
-            # try using flatpack
             if command -v flatpak > /dev/null; then
                 log_message "Installing FFmpeg using Flatpak..."
                 flatpak install --user -y flathub org.freedesktop.Platform.ffmpeg
@@ -98,14 +96,17 @@ create_venv() {
     log_message "Activating virtual environment..."
     source .venv/bin/activate
 
-    install_build_tools
+    if [ "$(uname)" = "Linux" ]; then
+        install_build_tools
+    fi
+
     install_ffmpeg
     log_message "Installing python-ffmpeg..."
     uv pip install python-ffmpeg
 
     log_message "Installing dependencies..."
     if [ -f "requirements.txt" ]; then
-        export UV_HTTP_TIMEOUT=300 # for slow internet
+        export UV_HTTP_TIMEOUT=300
         uv pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
     else
         log_message "requirements.txt not found. Please ensure it exists."
@@ -117,7 +118,6 @@ create_venv() {
 
 # Function to finish installation
 finish() {
-    # clear
     log_message "##########"
     log_message "Applio has been successfully installed. Run the file run-applio.sh to start the web interface!"
     log_message "##########"
