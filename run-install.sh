@@ -4,7 +4,7 @@ set -e  # Exit immediately if a command exits with a non-zero status
 printf "\033]0;Installer\007"
 clear
 
-# Delete Windows batch files (.bat) in current folder and subfolders
+# Delete Windows bat files (.bat) 
 find . -type f -iname "*.bat" -delete
 
 # Function to log messages with timestamps
@@ -98,9 +98,12 @@ create_venv() {
     log_message "Creating virtual environment..."
     py=$(find_python)
 
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    uv venv .venv --python 3.12
+    if ! command -v uv > /dev/null 2>&1; then
+        log_message "Installing uv..."
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+    fi
 
+    uv venv .venv --python 3.12
     log_message "Activating virtual environment..."
     source .venv/bin/activate
 
@@ -109,6 +112,7 @@ create_venv() {
 
     log_message "Installing dependencies..."
     if [ -f "requirements.txt" ]; then
+        export UV_HTTP_TIMEOUT=300
         uv pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
     else
         log_message "requirements.txt not found. Please ensure it exists."
@@ -133,6 +137,7 @@ if [ "$(uname)" = "Darwin" ]; then
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
+    # Add more detailed Python version check
     log_message "Checking Python versions..."
     log_message "python3 path: $(which python3)"
     log_message "python3.12 path: $(which python3.12 2>/dev/null || echo 'not found')"
@@ -151,10 +156,9 @@ if [ "$(uname)" = "Darwin" ]; then
         log_message "Python version $python_version is not 3.12. Installing Python 3.12 using Homebrew..."
         brew install python@3.12
         export PATH="$(brew --prefix)/opt/python@3.12/bin:$PATH"
-
+        # Verify the installed version
         log_message "Verifying installed Python version..."
         python_version=$(python3.12 --version | awk '{print $2}' | cut -d'.' -f1,2)
-
         if [ "$python_version" != "3.12" ]; then
             log_message "Failed to install Python 3.12. Current version: $python_version"
             exit 1
@@ -165,7 +169,6 @@ if [ "$(uname)" = "Darwin" ]; then
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
     export PATH="$(brew --prefix)/bin:$PATH"
-
 elif [ "$(uname)" != "Linux" ]; then
     log_message "Unsupported operating system. Are you using Windows?"
     log_message "If yes, use the batch (.bat) file instead of this one!"
