@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Sleep uw plugin.zip hierheen om het te installeren",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Duur van de overgang tussen audiochunks om klikken te voorkomen. Hogere waarden creëren vloeiendere overgangen, maar kunnen de latentie verhogen.",
     "Embedder Model": "Embedder-model",
+    "Enable ASIO": "ASIO inschakelen",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO-stuurprogramma-ondersteuning inschakelen. (Vereist herstarten van Applio)",
     "Enable Applio integration with Discord presence": "Applio-integratie met Discord-aanwezigheid inschakelen",
     "Enable VAD": "VAD inschakelen",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Formantverschuiving inschakelen. Wordt gebruikt voor conversies van man naar vrouw en vice versa.",
@@ -134,9 +136,6 @@
     "File to Speech": "Bestand naar Spraak",
     "Filter": "Filter",
     "Folder Name": "Mapnaam",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Voor ASIO-drivers, selecteert een specifiek ingangskanaal. Laat op -1 staan voor standaard.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Voor ASIO-drivers, selecteert een specifiek monitoruitgangskanaal. Laat op -1 staan voor standaard.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Voor ASIO-drivers, selecteert een specifiek uitgangskanaal. Laat op -1 staan voor standaard.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Voor WASAPI (Windows), geeft de app exclusieve controle voor mogelijk lagere latentie.",
     "Formant Shifting": "Formantverschuiving",
     "Fresh Training": "Nieuwe Training",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Galm Natte Gain",
     "Reverb Width": "Galmbreedte",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Bescherm duidelijke medeklinkers en ademgeluiden om elektro-akoestische vervorming en andere artefacten te voorkomen. Het instellen van de parameter op de maximale waarde van 0.5 biedt uitgebreide bescherming. Echter, het verlagen van deze waarde kan de mate van bescherming verminderen, terwijl het mogelijk het indexeringseffect verzacht.",
+    "Sample Rate": "Samplefrequentie",
     "Sampling Rate": "Samplefrequentie",
     "Save Every Epoch": "Elke Epoch Opslaan",
     "Save Every Weights": "Alle Gewichten Opslaan",
@@ -326,6 +326,7 @@
     "Start": "Start",
     "Start Training": "Training Starten",
     "Status": "Status",
+    "Stereo": "Stereo",
     "Stop": "Stop",
     "Stop Training": "Training Stoppen",
     "Stop convert": "Converteren stoppen",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Volumeniveau waaronder audio als stilte wordt behandeld en niet wordt verwerkt. Helpt CPU-bronnen te besparen en achtergrondgeluid te verminderen.",
     "Warming up... ({} blocks remaining)": "Opwarmen... ({} blokken resterend)",
     "You can also use a custom path.": "U kunt ook een aangepast pad gebruiken.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Ondersteuning](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Ondersteuning](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Samplefrequentie die wordt gebruikt voor audiostreaming. Overschrijf dit als de driver een onjuiste frequentie rapporteert (bijv. 48000 Hz in plaats van 44100 Hz)."
 }

@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Presuňte sem váš plugin.zip na inštaláciu",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Dĺžka prelínania medzi zvukovými blokmi na zabránenie praskaniu. Vyššie hodnoty vytvárajú plynulejšie prechody, ale môžu zvýšiť oneskorenie.",
     "Embedder Model": "Model embeddera",
+    "Enable ASIO": "Povoliť ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Aktivovať podporu ovládača ASIO. (Vyžaduje reštartovanie Applio)",
     "Enable Applio integration with Discord presence": "Povoliť integráciu Applio s prítomnosťou na Discorde",
     "Enable VAD": "Povoliť VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Povoliť posun formantov. Používa sa pri konverziách z mužského na ženský hlas a naopak.",
@@ -134,9 +136,6 @@
     "File to Speech": "Súbor na reč",
     "Filter": "Filter",
     "Folder Name": "Názov priečinka",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Pre ovládače ASIO, vyberá špecifický vstupný kanál. Ponechajte -1 pre predvolenú hodnotu.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Pre ovládače ASIO, vyberá špecifický výstupný kanál pre monitoring. Ponechajte -1 pre predvolenú hodnotu.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Pre ovládače ASIO, vyberá špecifický výstupný kanál. Ponechajte -1 pre predvolenú hodnotu.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Pre WASAPI (Windows), dáva aplikácii exkluzívnu kontrolu pre potenciálne nižšie oneskorenie.",
     "Formant Shifting": "Posun formantov",
     "Fresh Training": "Nové trénovanie",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Zosilnenie mokrého signálu dozvuku",
     "Reverb Width": "Šírka dozvuku",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Ochráňte zreteľné spoluhlásky a zvuky dýchania, aby ste predišli elektroakustickému trhaniu a iným artefaktom. Nastavenie parametra na maximálnu hodnotu 0,5 ponúka komplexnú ochranu. Zníženie tejto hodnoty však môže znížiť mieru ochrany, ale zároveň potenciálne zmierniť efekt indexovania.",
+    "Sample Rate": "Vzorkovacia frekvencia",
     "Sampling Rate": "Vzorkovacia frekvencia",
     "Save Every Epoch": "Ukladať každú epochu",
     "Save Every Weights": "Ukladať všetky váhy",
@@ -326,6 +326,7 @@
     "Start": "Spustiť",
     "Start Training": "Spustiť trénovanie",
     "Status": "Stav",
+    "Stereo": "Stereo",
     "Stop": "Zastaviť",
     "Stop Training": "Zastaviť trénovanie",
     "Stop convert": "Zastaviť konverziu",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Úroveň hlasitosti, pod ktorou sa zvuk považuje za ticho a nespracováva sa. Pomáha šetriť zdroje CPU a znižovať šum v pozadí.",
     "Warming up... ({} blocks remaining)": "Zahrievanie... (zostáva {} blokov)",
     "You can also use a custom path.": "Môžete použiť aj vlastnú cestu.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Podpora](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Podpora](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Vzorkovacia frekvencia používaná pre audio stream. Zmeňte toto, ak ovládač hlási nesprávnu frekvenciu (napr. 48000 Hz namiesto 44100 Hz)."
 }

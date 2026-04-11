@@ -3,7 +3,9 @@ set -e  # Exit immediately if a command exits with a non-zero status
 
 printf "\033]0;Installer\007"
 clear
-rm -f *.bat
+
+# Delete Windows bat files (.bat)
+find . -type f -iname "*.bat" -delete
 
 # Function to log messages with timestamps
 log_message() {
@@ -96,9 +98,12 @@ create_venv() {
     log_message "Creating virtual environment..."
     py=$(find_python)
 
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    uv venv .venv --python 3.12
+    if ! command -v uv > /dev/null 2>&1; then
+        log_message "Installing uv..."
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+    fi
 
+    uv venv .venv --python 3.12
     log_message "Activating virtual environment..."
     source .venv/bin/activate
 
@@ -107,6 +112,7 @@ create_venv() {
 
     log_message "Installing dependencies..."
     if [ -f "requirements.txt" ]; then
+        export UV_HTTP_TIMEOUT=300
         uv pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
     else
         log_message "requirements.txt not found. Please ensure it exists."

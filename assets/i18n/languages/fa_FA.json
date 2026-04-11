@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "فایل plugin.zip خود را برای نصب اینجا بکشید",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "مدت زمان محوشدگی بین قطعات صوتی برای جلوگیری از کلیک. مقادیر بالاتر انتقال‌های نرم‌تری ایجاد می‌کنند اما ممکن است تأخیر را افزایش دهند.",
     "Embedder Model": "مدل جاسازی‌کننده",
+    "Enable ASIO": "فعال کردن ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "فعال کردن پشتیبانی درایور ASIO. (نیاز به راه‌اندازی مجدد Applio دارد)",
     "Enable Applio integration with Discord presence": "فعال‌سازی یکپارچه‌سازی Applio با وضعیت دیسکورد",
     "Enable VAD": "فعال‌سازی VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "فعال‌سازی تغییر فرمانت. برای تبدیل‌های مرد به زن و بالعکس استفاده می‌شود.",
@@ -134,9 +136,6 @@
     "File to Speech": "فایل به گفتار",
     "Filter": "فیلتر",
     "Folder Name": "نام پوشه",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "برای درایورهای ASIO، یک کانال ورودی خاص را انتخاب می‌کند. برای حالت پیش‌فرض، روی -1 باقی بگذارید.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "برای درایورهای ASIO، یک کانال خروجی مانیتور خاص را انتخاب می‌کند. برای حالت پیش‌فرض، روی -1 باقی بگذارید.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "برای درایورهای ASIO، یک کانال خروجی خاص را انتخاب می‌کند. برای حالت پیش‌فرض، روی -1 باقی بگذارید.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "برای WASAPI (ویندوز)، کنترل انحصاری را برای تأخیر بالقوه کمتر به برنامه می‌دهد.",
     "Formant Shifting": "تغییر فرمانت",
     "Fresh Training": "آموزش از نو",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "گین مرطوب ریورب",
     "Reverb Width": "عرض ریورب",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "از همخوان‌های متمایز و صداهای تنفس برای جلوگیری از پارگی الکترو-آکوستیک و سایر آرتیفکت‌ها محافظت کنید. کشیدن پارامتر به حداکثر مقدار خود یعنی ۰.۵، حفاظت جامعی را ارائه می‌دهد. با این حال، کاهش این مقدار ممکن است میزان حفاظت را کاهش دهد در حالی که به طور بالقوه اثر ایندکس‌گذاری را کاهش می‌دهد.",
+    "Sample Rate": "نرخ نمونه‌برداری",
     "Sampling Rate": "نرخ نمونه‌برداری",
     "Save Every Epoch": "ذخیره در هر ایپاک",
     "Save Every Weights": "ذخیره تمام وزن‌ها",
@@ -326,6 +326,7 @@
     "Start": "شروع",
     "Start Training": "شروع آموزش",
     "Status": "وضعیت",
+    "Stereo": "استریو",
     "Stop": "توقف",
     "Stop Training": "توقف آموزش",
     "Stop convert": "توقف تبدیل",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "سطح صدایی که پایین‌تر از آن، صوت به عنوان سکوت در نظر گرفته شده و پردازش نمی‌شود. به صرفه‌جویی در منابع CPU و کاهش نویز پس‌زمینه کمک می‌کند.",
     "Warming up... ({} blocks remaining)": "گرم کردن... ({} بلاک باقی‌مانده)",
     "You can also use a custom path.": "شما همچنین می‌توانید از یک مسیر سفارشی استفاده کنید.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[پشتیبانی](https://discord.gg/urxFjYmYYh) — [گیت‌هاب](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[پشتیبانی](https://discord.gg/urxFjYmYYh) — [گیت‌هاب](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "نرخ نمونه‌برداری که برای پخش صوت استفاده می‌شود. اگر درایور نرخ نادرستی گزارش می‌دهد این را تغییر دهید (مثلاً 48000 هرتز به جای 44100 هرتز)."
 }

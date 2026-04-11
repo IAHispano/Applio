@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "اسحب ملف plugin.zip لتثبيته",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "مدة التلاشي بين قطع الصوت لمنع النقرات. القيم الأعلى تنشئ انتقالات أكثر سلاسة ولكنها قد تزيد من زمن الاستجابة.",
     "Embedder Model": "نموذج التضمين",
+    "Enable ASIO": "تفعيل ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "تفعيل دعم مشغل ASIO. (يتطلب إعادة تشغيل Applio)",
     "Enable Applio integration with Discord presence": "تمكين تكامل Applio مع حالة Discord",
     "Enable VAD": "تمكين VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "تمكين إزاحة الترددات. يستخدم للتحويلات من ذكر إلى أنثى والعكس.",
@@ -134,9 +136,6 @@
     "File to Speech": "ملف إلى كلام",
     "Filter": "عامل تصفية (فلتر)",
     "Folder Name": "اسم المجلد",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "لمشغلات ASIO، يحدد قناة إدخال معينة. اتركه عند -1 للافتراضي.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "لمشغلات ASIO، يحدد قناة إخراج مراقبة معينة. اتركه عند -1 للافتراضي.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "لمشغلات ASIO، يحدد قناة إخراج معينة. اتركه عند -1 للافتراضي.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "لـ WASAPI (Windows)، يمنح التطبيق تحكمًا حصريًا لزمن استجابة أقل محتمل.",
     "Formant Shifting": "إزاحة الترددات",
     "Fresh Training": "تدريب من البداية",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "كسب رطب للصدى",
     "Reverb Width": "عرض الصدى",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "حماية الحروف الساكنة المميزة وأصوات التنفس لمنع التمزق الصوتي الكهربائي والتشوهات الأخرى. سحب المُعامِل إلى قيمته القصوى البالغة 0.5 يوفر حماية شاملة. ومع ذلك، فإن تقليل هذه القيمة قد يقلل من مدى الحماية مع احتمالية تخفيف تأثير الفهرسة.",
+    "Sample Rate": "معدل أخذ العينات",
     "Sampling Rate": "معدل العينة",
     "Save Every Epoch": "حفظ كل حقبة",
     "Save Every Weights": "حفظ كل الأوزان",
@@ -326,6 +326,7 @@
     "Start": "ابدأ",
     "Start Training": "بدء التدريب",
     "Status": "الحالة",
+    "Stereo": "ستيريو",
     "Stop": "إيقاف",
     "Stop Training": "إيقاف التدريب",
     "Stop convert": "إيقاف التحويل",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "مستوى الصوت الذي يُعتبر الصوت دونه صمتًا ولا تتم معالجته. يساعد على توفير موارد وحدة المعالجة المركزية (CPU) وتقليل الضوضاء الخلفية.",
     "Warming up... ({} blocks remaining)": "جارٍ التحضير... ({} كتل متبقية)",
     "You can also use a custom path.": "يمكنك أيضًا استخدام مسار مخصص.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[الدعم](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[الدعم](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "معدل أخذ العينات المستخدم لبث الصوت. تجاوز هذا إذا أبلغ المشغل عن معدل غير صحيح (مثلاً 48000 هرتز بدلاً من 44100 هرتز)."
 }

@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "ઇન્સ્ટોલ કરવા માટે તમારું plugin.zip ખેંચો",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "ક્લિક્સને રોકવા માટે ઓડિયો ચંક્સ વચ્ચેના ફેડનો સમયગાળો. ઊંચા મૂલ્યો સરળ સંક્રમણ બનાવે છે પરંતુ લેટન્સી વધારી શકે છે.",
     "Embedder Model": "એમ્બેડર મોડેલ",
+    "Enable ASIO": "ASIO સક્ષમ કરો",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO ડ્રાઇવર સપોર્ટ સક્ષમ કરો. (Applio પુનઃપ્રારંભ કરવાની જરૂર છે)",
     "Enable Applio integration with Discord presence": "Discord પ્રેઝન્સ સાથે Applio એકીકરણ સક્ષમ કરો",
     "Enable VAD": "VAD સક્ષમ કરો",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "ફોર્મેન્ટ શિફ્ટિંગ સક્ષમ કરો. પુરુષથી સ્ત્રી અને ઊલટું રૂપાંતરણ માટે વપરાય છે.",
@@ -134,9 +136,6 @@
     "File to Speech": "ફાઇલ ટુ સ્પીચ",
     "Filter": "ફિલ્ટર",
     "Folder Name": "ફોલ્ડરનું નામ",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO ડ્રાઇવરો માટે, એક વિશિષ્ટ ઇનપુટ ચેનલ પસંદ કરે છે. ડિફોલ્ટ માટે -1 પર રાખો.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO ડ્રાઇવરો માટે, એક વિશિષ્ટ મોનિટર આઉટપુટ ચેનલ પસંદ કરે છે. ડિફોલ્ટ માટે -1 પર રાખો.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO ડ્રાઇવરો માટે, એક વિશિષ્ટ આઉટપુટ ચેનલ પસંદ કરે છે. ડિફોલ્ટ માટે -1 પર રાખો.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (Windows) માટે, સંભવિતપણે ઓછી લેટન્સી માટે એપ્લિકેશનને વિશિષ્ટ નિયંત્રણ આપે છે.",
     "Formant Shifting": "ફોર્મેન્ટ શિફ્ટિંગ",
     "Fresh Training": "ફ્રેશ ટ્રેનિંગ",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "રિવર્બ વેટ ગેઇન",
     "Reverb Width": "રિવર્બ વિડ્થ",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "ઇલેક્ટ્રો-એકોસ્ટિક ટિયરિંગ અને અન્ય આર્ટિફેક્ટ્સને રોકવા માટે વિશિષ્ટ વ્યંજનો અને શ્વાસના અવાજોનું રક્ષણ કરો. પેરામીટરને તેના મહત્તમ મૂલ્ય 0.5 પર ખેંચવાથી વ્યાપક સુરક્ષા મળે છે. જો કે, આ મૂલ્ય ઘટાડવાથી સુરક્ષાની હદ ઘટી શકે છે જ્યારે સંભવિતપણે ઇન્ડેક્સિંગ અસરને ઘટાડી શકે છે.",
+    "Sample Rate": "સેમ્પલ રેટ",
     "Sampling Rate": "સેમ્પલિંગ રેટ",
     "Save Every Epoch": "દરેક યુગ સાચવો",
     "Save Every Weights": "દરેક વજન સાચવો",
@@ -326,6 +326,7 @@
     "Start": "શરૂ કરો",
     "Start Training": "તાલીમ શરૂ કરો",
     "Status": "સ્થિતિ",
+    "Stereo": "સ્ટીરિઓ",
     "Stop": "બંધ કરો",
     "Stop Training": "તાલીમ બંધ કરો",
     "Stop convert": "રૂપાંતરણ રોકો",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "વોલ્યુમનું સ્તર જેના નીચે ઓડિયોને મૌન તરીકે ગણવામાં આવે છે અને તેના પર પ્રક્રિયા થતી નથી. CPU સંસાધનો બચાવવા અને પૃષ્ઠભૂમિ ઘોંઘાટ ઘટાડવામાં મદદ કરે છે.",
     "Warming up... ({} blocks remaining)": "વોર્મિંગ અપ... ({} બ્લોક બાકી)",
     "You can also use a custom path.": "તમે કસ્ટમ પાથનો પણ ઉપયોગ કરી શકો છો.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[સપોર્ટ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[સપોર્ટ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ઓડિઓ સ્ટ્રીમિંગ માટે ઉપયોગ કરવામાં આવતો સેમ્પલ રેટ. ડ્રાઇવર ખોટો રેટ દર્શાવે તો આ ઓવરરાઇડ કરો (દા.ત. 44100 Hz ને બદલે 48000 Hz)."
 }

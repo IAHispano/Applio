@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Trage fișierul tău plugin.zip pentru a-l instala",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Durata atenuării (fade) între fragmentele audio pentru a preveni pocnetele (clicks). Valorile mai mari creează tranziții mai line, dar pot crește latența.",
     "Embedder Model": "Model Embedder",
+    "Enable ASIO": "Activează ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Activează suportul pentru driverul ASIO. (Necesită repornirea Applio)",
     "Enable Applio integration with Discord presence": "Activează integrarea Applio cu prezența pe Discord",
     "Enable VAD": "Activează VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Activează deplasarea formanților. Folosit pentru conversii de la bărbat la femeie și invers.",
@@ -134,9 +136,6 @@
     "File to Speech": "Fișier către Voce",
     "Filter": "Filtru",
     "Folder Name": "Nume Dosar",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Pentru driverele ASIO, selectează un canal de intrare specific. Lăsați la -1 pentru valoarea implicită.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Pentru driverele ASIO, selectează un canal de ieșire specific pentru monitorizare. Lăsați la -1 pentru valoarea implicită.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Pentru driverele ASIO, selectează un canal de ieșire specific. Lăsați la -1 pentru valoarea implicită.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Pentru WASAPI (Windows), oferă aplicației control exclusiv pentru o latență potențial mai mică.",
     "Formant Shifting": "Deplasare Formanți",
     "Fresh Training": "Antrenament Nou",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Amplificare Umedă Reverberație",
     "Reverb Width": "Lățime Reverberație",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Protejează consoanele distincte și sunetele de respirație pentru a preveni distorsiunile electro-acustice și alte artefacte. Tragerea parametrului la valoarea sa maximă de 0.5 oferă protecție completă. Totuși, reducerea acestei valori ar putea diminua gradul de protecție, atenuând în același timp potențial efectul de indexare.",
+    "Sample Rate": "Frecvență de eșantionare",
     "Sampling Rate": "Rată de Eșantionare",
     "Save Every Epoch": "Salvează la Fiecare Epocă",
     "Save Every Weights": "Salvează Toate Ponderile",
@@ -326,6 +326,7 @@
     "Start": "Pornește",
     "Start Training": "Pornește Antrenamentul",
     "Status": "Stare",
+    "Stereo": "Stereo",
     "Stop": "Oprește",
     "Stop Training": "Oprește Antrenamentul",
     "Stop convert": "Oprește conversia",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Nivelul de volum sub care sunetul este tratat ca liniște și nu este procesat. Ajută la economisirea resurselor CPU și la reducerea zgomotului de fond.",
     "Warming up... ({} blocks remaining)": "Încălzire... ({} blocuri rămase)",
     "You can also use a custom path.": "Poți folosi și o cale personalizată.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Suport](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Suport](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Frecvența de eșantionare utilizată pentru streaming audio. Înlocuiește aceasta dacă driverul raportează o frecvență incorectă (de ex. 48000 Hz în loc de 44100 Hz)."
 }

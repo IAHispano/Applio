@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Arrastatu zure plugin.zip fitxategia instalatzeko",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Audio-zatien arteko fundituaren iraupena klikak saihesteko. Balio altuagoek trantsizio leunagoak sortzen dituzte, baina latentzia handitu dezakete.",
     "Embedder Model": "Embedder Eredua",
+    "Enable ASIO": "Gaitu ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Gaitu ASIO gidari-laguntza. (Applio berrabiaraztea eskatzen du)",
     "Enable Applio integration with Discord presence": "Gaitu Applioren integrazioa Discord-eko presentziarekin",
     "Enable VAD": "Gaitu VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Gaitu formanteen aldaketa. Gizonetik emakumera eta alderantzizko bihurketetarako erabiltzen da.",
@@ -134,9 +136,6 @@
     "File to Speech": "Fitxategitik Hitzera",
     "Filter": "Iragazkia",
     "Folder Name": "Karpetaren Izena",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO driverrentzat, sarrerako kanal espezifiko bat hautatzen du. Utzi -1 balioan lehenetsitakoa erabiltzeko.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO driverrentzat, monitorearen irteerako kanal espezifiko bat hautatzen du. Utzi -1 balioan lehenetsitakoa erabiltzeko.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO driverrentzat, irteerako kanal espezifiko bat hautatzen du. Utzi -1 balioan lehenetsitakoa erabiltzeko.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (Windows) erabiltzean, aplikazioari kontrol esklusiboa ematen dio, potentzialki latentzia txikiagoa lortzeko.",
     "Formant Shifting": "Formanteen Aldaketa",
     "Fresh Training": "Entrenamendu Berria",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Reverb Irabazi Hezea",
     "Reverb Width": "Reverb Zabalera",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Babestu kontsonante bereizgarriak eta arnasketa soinuak urradura elektro-akustikoa eta beste artefaktu batzuk saihesteko. Parametroa 0.5eko gehienezko baliora eramateak babes osoa eskaintzen du. Hala ere, balio hau murrizteak babes-maila jaitsi dezake, indexazio-efektua arindu dezakeen bitartean.",
+    "Sample Rate": "Lagin-tasa",
     "Sampling Rate": "Laginketa-tasa",
     "Save Every Epoch": "Gorde Epoka Bakoitzean",
     "Save Every Weights": "Gorde Pisu Guztiak",
@@ -326,6 +326,7 @@
     "Start": "Hasi",
     "Start Training": "Hasi Entrenamendua",
     "Status": "Egoera",
+    "Stereo": "Estereo",
     "Stop": "Gelditu",
     "Stop Training": "Gelditu Entrenamendua",
     "Stop convert": "Gelditu bihurketa",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Bolumen-maila honen azpitik, audioa isiltasuntzat hartzen da eta ez da prozesatzen. CPU baliabideak aurrezten eta atzeko zarata murrizten laguntzen du.",
     "Warming up... ({} blocks remaining)": "Berotzen... ({} bloke geratzen dira)",
     "You can also use a custom path.": "Bide pertsonalizatu bat ere erabil dezakezu.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Laguntza](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Laguntza](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Audio irteera-fluxurako erabiltzen den lagin-tasa. Gainidatzi hau gidaria tasa okerra jakinarazten badu (adib. 44100 Hz-ren ordez 48000 Hz)."
 }

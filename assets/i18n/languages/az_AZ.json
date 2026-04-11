@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Quraşdırmaq üçün plugin.zip faylınızı sürükləyin",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Kliklərin qarşısını almaq üçün səs hissələri arasındakı keçidin müddəti. Daha yüksək dəyərlər daha rəvan keçidlər yaradır, lakin gecikməni artıra bilər.",
     "Embedder Model": "Daxil Edici Model",
+    "Enable ASIO": "ASIO-nu aktivləşdirin",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO sürücü dəstəyini aktivləşdirin. (Applio-nu yenidən başlatmağı tələb edir)",
     "Enable Applio integration with Discord presence": "Applio-nun Discord mövcudluğu ilə inteqrasiyasını aktivləşdirin",
     "Enable VAD": "VAD-ı Aktivləşdir",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Formant sürüşməsini aktivləşdirin. Kişidən qadına və əksinə çevirmələr üçün istifadə olunur.",
@@ -134,9 +136,6 @@
     "File to Speech": "Fayldan Nitqə",
     "Filter": "Filtr",
     "Folder Name": "Qovluq Adı",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO drayverləri üçün xüsusi bir giriş kanalı seçir. Standart üçün -1-də saxlayın.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO drayverləri üçün xüsusi bir monitor çıxış kanalı seçir. Standart üçün -1-də saxlayın.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO drayverləri üçün xüsusi bir çıxış kanalı seçir. Standart üçün -1-də saxlayın.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (Windows) üçün potensial olaraq daha aşağı gecikmə üçün tətbiqə eksklüziv nəzarət verir.",
     "Formant Shifting": "Formant Sürüşməsi",
     "Fresh Training": "Yeni Təlim",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Reverb Nəm Gücləndirmə",
     "Reverb Width": "Reverb Genişliyi",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Elektro-akustik cırılma və digər artefaktların qarşısını almaq üçün fərqli samitləri və nəfəs səslərini qoruyun. Parametri maksimum 0.5 dəyərinə çəkmək hərtərəfli qoruma təmin edir. Lakin bu dəyərin azaldılması, indeksasiya effektini potensial olaraq yüngülləşdirərkən qorunma dərəcəsini azalda bilər.",
+    "Sample Rate": "Nümunə Dərəcəsi",
     "Sampling Rate": "Nümunə Götürmə Tezliyi",
     "Save Every Epoch": "Hər Epoxda Yadda Saxla",
     "Save Every Weights": "Hər Çəkini Yadda Saxla",
@@ -326,6 +326,7 @@
     "Start": "Başlat",
     "Start Training": "Təlimə Başla",
     "Status": "Status",
+    "Stereo": "Stereo",
     "Stop": "Dayandır",
     "Stop Training": "Təlimi Dayandır",
     "Stop convert": "Çevirməni dayandır",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Səsin səssizlik kimi qəbul edildiyi və emal edilmədiyi səs səviyyəsi. CPU resurslarına qənaət etməyə və arxa plan səs-küyünü azaltmağa kömək edir.",
     "Warming up... ({} blocks remaining)": "Hazırlanır... ({} blok qalıb)",
     "You can also use a custom path.": "Siz həmçinin xüsusi bir yoldan istifadə edə bilərsiniz.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Dəstək](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Dəstək](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Audio axını üçün istifadə edilən nümunə dərəcəsi. Sürücü yanlış dərəcə bildirirsə bunu dəyişdirin (məs. 44100 Hz əvəzinə 48000 Hz)."
 }

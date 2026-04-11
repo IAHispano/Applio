@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "আপনার plugin.zip ফাইলটি ইনস্টল করতে এখানে টেনে আনুন",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "অডিও চাঙ্কের মধ্যে ক্লিকের শব্দ প্রতিরোধ করার জন্য ফেডের সময়কাল। উচ্চ মান মসৃণ রূপান্তর তৈরি করে তবে লেটেন্সি বাড়াতে পারে।",
     "Embedder Model": "এমবেডার মডেল",
+    "Enable ASIO": "ASIO সক্ষম করুন",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO ড্রাইভার সমর্থন সক্ষম করুন। ASIO ডিভাইসটি ইনপুট/আউটপুট হিসেবে নির্বাচন করুন এবং উপরের চ্যানেল নম্বরগুলি সেট করুন। পরিবর্তন কার্যকর হতে Applio পুনরায় চালু করতে হবে।(Applio পুনরায় চালু করতে হবে)",
     "Enable Applio integration with Discord presence": "Discord presence-এর সাথে Applio ইন্টিগ্রেশন সক্রিয় করুন",
     "Enable VAD": "VAD সক্ষম করুন",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "ফরমান্ট শিফটিং সক্রিয় করুন। এটি পুরুষ থেকে মহিলা এবং বিপরীত রূপান্তরের জন্য ব্যবহৃত হয়।",
@@ -134,9 +136,6 @@
     "File to Speech": "ফাইল থেকে স্পিচ",
     "Filter": "ফিল্টার",
     "Folder Name": "ফোল্ডারের নাম",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO ড্রাইভারের জন্য, একটি নির্দিষ্ট ইনপুট চ্যানেল নির্বাচন করে। ডিফল্টের জন্য -1 রাখুন।",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO ড্রাইভারের জন্য, একটি নির্দিষ্ট মনিটর আউটপুট চ্যানেল নির্বাচন করে। ডিফল্টের জন্য -1 রাখুন।",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO ড্রাইভারের জন্য, একটি নির্দিষ্ট আউটপুট চ্যানেল নির্বাচন করে। ডিফল্টের জন্য -1 রাখুন।",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (Windows) এর জন্য, অ্যাপটিকে সম্ভাব্য কম লেটেন্সি পেতে এক্সক্লুসিভ নিয়ন্ত্রণ দেয়।",
     "Formant Shifting": "ফরমান্ট শিফটিং",
     "Fresh Training": "ফ্রেশ ট্রেনিং",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "রিভার্ব ওয়েট গেইন",
     "Reverb Width": "রিভার্ব উইডথ",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "ইলেক্ট্রো-অ্যাকোস্টিক টিয়ারিং এবং অন্যান্য আর্টিফ্যাক্ট প্রতিরোধ করতে স্বতন্ত্র ব্যঞ্জনবর্ণ এবং শ্বাস-প্রশ্বাসের শব্দ রক্ষা করুন। প্যারামিটারটিকে তার সর্বোচ্চ মান 0.5-এ টানলে ব্যাপক সুরক্ষা পাওয়া যায়। তবে, এই মান কমালে সুরক্ষার মাত্রা কমতে পারে এবং ইনডেক্সিং প্রভাব প্রশমিত হতে পারে।",
+    "Sample Rate": "স্যাম্পল রেট",
     "Sampling Rate": "স্যাম্পলিং রেট",
     "Save Every Epoch": "প্রতি এপক-এ সেভ করুন",
     "Save Every Weights": "প্রতিটি ওয়েট সেভ করুন",
@@ -326,6 +326,7 @@
     "Start": "শুরু",
     "Start Training": "ট্রেনিং শুরু করুন",
     "Status": "স্ট্যাটাস",
+    "Stereo": "স্টেরিও",
     "Stop": "থামান",
     "Stop Training": "ট্রেনিং বন্ধ করুন",
     "Stop convert": "রূপান্তর বন্ধ করুন",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "যে ভলিউম লেভেলের নিচে অডিওকে নীরবতা হিসাবে ধরা হয় এবং প্রসেস করা হয় না। এটি CPU রিসোর্স বাঁচাতে এবং ব্যাকগ্রাউন্ডের শব্দ কমাতে সাহায্য করে।",
     "Warming up... ({} blocks remaining)": "ওয়ার্মিং আপ... ({} ব্লক বাকি)",
     "You can also use a custom path.": "আপনি একটি কাস্টম পাথও ব্যবহার করতে পারেন।",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[সাপোর্ট](https://discord.gg/urxFjYmYYh) — [গিটহাব](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[সাপোর্ট](https://discord.gg/urxFjYmYYh) — [গিটহাব](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "অডিও স্ট্রিমিংয়ের জন্য ব্যবহৃত স্যাম্পল রেট। ড্রাইভার ভুল রেট রিপোর্ট করলে এটি পরিবর্তন করুন (যেমন 44100 Hz এর পরিবর্তে 48000 Hz)।"
 }

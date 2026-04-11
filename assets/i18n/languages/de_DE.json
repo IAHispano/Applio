@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Ziehen Sie Ihre plugin.zip hierher, um es zu installieren",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Dauer der Überblendung zwischen Audio-Chunks, um Klickgeräusche zu vermeiden. Höhere Werte erzeugen sanftere Übergänge, können aber die Latenz erhöhen.",
     "Embedder Model": "Embedder-Modell",
+    "Enable ASIO": "ASIO aktivieren",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO-Treiber-Unterstützung aktivieren. (Erfordert einen Neustart von Applio)",
     "Enable Applio integration with Discord presence": "Applio-Integration mit Discord-Präsenz aktivieren",
     "Enable VAD": "VAD aktivieren",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Formantverschiebung aktivieren. Wird für Umwandlungen von männlich zu weiblich und umgekehrt verwendet.",
@@ -134,9 +136,6 @@
     "File to Speech": "Datei zu Sprache",
     "Filter": "Filter",
     "Folder Name": "Ordnername",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Wählt für ASIO-Treiber einen bestimmten Eingangskanal aus. Für Standardeinstellung bei -1 belassen.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Wählt für ASIO-Treiber einen bestimmten Monitor-Ausgangskanal aus. Für Standardeinstellung bei -1 belassen.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Wählt für ASIO-Treiber einen bestimmten Ausgangskanal aus. Für Standardeinstellung bei -1 belassen.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Gibt der App für WASAPI (Windows) exklusive Kontrolle für potenziell niedrigere Latenz.",
     "Formant Shifting": "Formantverschiebung",
     "Fresh Training": "Neues Training",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Hall-Nassverstärkung",
     "Reverb Width": "Hall-Breite",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Schützen Sie ausgeprägte Konsonanten und Atemgeräusche, um elektroakustisches Reißen und andere Artefakte zu verhindern. Das Setzen des Parameters auf seinen Maximalwert von 0.5 bietet umfassenden Schutz. Eine Verringerung dieses Wertes kann jedoch den Schutzumfang verringern und gleichzeitig möglicherweise den Indexierungseffekt abschwächen.",
+    "Sample Rate": "Abtastrate",
     "Sampling Rate": "Abtastrate",
     "Save Every Epoch": "Jede Epoche speichern",
     "Save Every Weights": "Alle Gewichte speichern",
@@ -326,6 +326,7 @@
     "Start": "Starten",
     "Start Training": "Training starten",
     "Status": "Status",
+    "Stereo": "Stereo",
     "Stop": "Stoppen",
     "Stop Training": "Training beenden",
     "Stop convert": "Umwandlung stoppen",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Lautstärkepegel, unter dem Audio als Stille behandelt und nicht verarbeitet wird. Hilft, CPU-Ressourcen zu sparen und Hintergrundgeräusche zu reduzieren.",
     "Warming up... ({} blocks remaining)": "Aufwärmen... ({} Blöcke verbleibend)",
     "You can also use a custom path.": "Sie können auch einen benutzerdefinierten Pfad verwenden.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Abtastrate für den Audio-Stream. Ändere diesen Wert, wenn der Treiber eine falsche Rate meldet (z.B. 48000 Hz statt 44100 Hz)."
 }

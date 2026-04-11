@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Arraste seu plugin.zip para instalá-lo",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Duração do fade entre os blocos de áudio para evitar cliques. Valores mais altos criam transições mais suaves, mas podem aumentar a latência.",
     "Embedder Model": "Modelo de Embedder",
+    "Enable ASIO": "Ativar ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Ativar o suporte ao driver ASIO. (Requer reiniciar o Applio)",
     "Enable Applio integration with Discord presence": "Habilitar integração do Applio com o status do Discord",
     "Enable VAD": "Ativar VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Habilitar deslocamento de formantes (formant shifting). Usado para conversões de masculino para feminino e vice-versa.",
@@ -134,9 +136,6 @@
     "File to Speech": "Arquivo para Fala",
     "Filter": "Filtro",
     "Folder Name": "Nome da Pasta",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Para drivers ASIO, seleciona um canal de entrada específico. Deixe em -1 para o padrão.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Para drivers ASIO, seleciona um canal de saída de monitor específico. Deixe em -1 para o padrão.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Para drivers ASIO, seleciona um canal de saída específico. Deixe em -1 para o padrão.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Para WASAPI (Windows), concede ao aplicativo controle exclusivo para uma latência potencialmente menor.",
     "Formant Shifting": "Deslocamento de Formantes",
     "Fresh Training": "Treinamento do Zero",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Ganho Molhado do Reverb",
     "Reverb Width": "Largura do Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Proteja consoantes distintas e sons de respiração para evitar distorções eletroacústicas e outros artefatos. Puxar o parâmetro para seu valor máximo de 0,5 oferece proteção abrangente. No entanto, reduzir esse valor pode diminuir a extensão da proteção, enquanto potencialmente mitiga o efeito da indexação.",
+    "Sample Rate": "Taxa de amostragem",
     "Sampling Rate": "Taxa de Amostragem",
     "Save Every Epoch": "Salvar a Cada Época",
     "Save Every Weights": "Salvar Todos os Pesos",
@@ -326,6 +326,7 @@
     "Start": "Iniciar",
     "Start Training": "Iniciar Treinamento",
     "Status": "Status",
+    "Stereo": "Estéreo",
     "Stop": "Parar",
     "Stop Training": "Parar Treinamento",
     "Stop convert": "Parar conversão",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Nível de volume abaixo do qual o áudio é tratado como silêncio e não é processado. Ajuda a economizar recursos de CPU e a reduzir o ruído de fundo.",
     "Warming up... ({} blocks remaining)": "Aquecendo... ({} blocos restantes)",
     "You can also use a custom path.": "Você também pode usar um caminho personalizado.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Suporte](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Suporte](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Taxa de amostragem usada para transmissão de áudio. Substitua isso se o driver reportar uma taxa incorreta (ex.: 48000 Hz em vez de 44100 Hz)."
 }

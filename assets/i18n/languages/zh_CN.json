@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "拖动您的 plugin.zip 文件以进行安装",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "音频块之间交叉淡化的持续时间，以防止产生咔哒声。值越高过渡越平滑，但可能会增加延迟。",
     "Embedder Model": "嵌入器模型",
+    "Enable ASIO": "启用 ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "启用 ASIO 驱动程序支持。（需要重启 Applio）",
     "Enable Applio integration with Discord presence": "启用 Applio 与 Discord 状态的集成",
     "Enable VAD": "启用 VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "启用共振峰移位。用于男声转女声或女声转男声的转换。",
@@ -134,9 +136,6 @@
     "File to Speech": "文件转语音",
     "Filter": "过滤器",
     "Folder Name": "文件夹名称",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "用于 ASIO 驱动，选择一个特定的输入通道。保留 -1 为默认值。",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "用于 ASIO 驱动，选择一个特定的监听输出通道。保留 -1 为默认值。",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "用于 ASIO 驱动，选择一个特定的输出通道。保留 -1 为默认值。",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "用于 WASAPI (Windows)，授予应用独占控制权以可能降低延迟。",
     "Formant Shifting": "共振峰移位",
     "Fresh Training": "全新训练",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "混响湿声增益",
     "Reverb Width": "混响宽度",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "保护独特的辅音和呼吸声，以防止电声撕裂和其他杂音。将参数拉到最大值 0.5 可提供全面保护。然而，降低此值可能会减少保护程度，但可能减轻索引效应。",
+    "Sample Rate": "采样率",
     "Sampling Rate": "采样率",
     "Save Every Epoch": "每轮都保存",
     "Save Every Weights": "保存每个权重",
@@ -326,6 +326,7 @@
     "Start": "开始",
     "Start Training": "开始训练",
     "Status": "状态",
+    "Stereo": "立体声",
     "Stop": "停止",
     "Stop Training": "停止训练",
     "Stop convert": "停止转换",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "低于此音量级别的音频将被视为静音且不作处理。这有助于节省 CPU 资源并减少背景噪音。",
     "Warming up... ({} blocks remaining)": "预热中... (还剩 {} 个块)",
     "You can also use a custom path.": "您也可以使用自定义路径。",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[支持](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[支持](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "用于音频流传输的采样率。如果驱动程序报告的采样率不正确（例如 48000 Hz 而非 44100 Hz），请在此处覆盖。"
 }

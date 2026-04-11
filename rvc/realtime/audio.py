@@ -27,16 +27,10 @@ def check_the_device(device, type: str = "input"):
     if sys.platform == "linux" and "hw:" not in device["name"]:
         return False
 
-    stream_cls = sd.InputStream if type == "input" else sd.OutputStream
-    try:
-        with stream_cls(
-            device=device["index"],
-            dtype=np.float32,
-            samplerate=device["default_samplerate"],
-        ):
-            return True
-    except Exception:
-        return False
+    if type == "input":
+        return device["max_input_channels"] > 0
+    else:
+        return device["max_output_channels"] > 0
 
 
 def list_audio_device():
@@ -100,6 +94,27 @@ def list_audio_device():
         audio_output_device.append(output_audio_device)
 
     return audio_input_device, audio_output_device
+
+
+def resolve_sample_rate(
+    input_device_id: int,
+    asio_enabled: bool,
+    audio_sample_rate: int,
+) -> int:
+    """Return the sample rate to use for audio streaming.
+
+    For ASIO the user-selected rate is used as-is because ASIO drivers
+    do not expose a reliable default_samplerate via PortAudio.
+    For all other host APIs the input device's default_samplerate is used
+    so that the stream matches the rate the OS/driver actually operates at.
+    """
+    if asio_enabled:
+        return audio_sample_rate
+    try:
+        device = sd.query_devices(input_device_id)
+        return int(device["default_samplerate"])
+    except Exception:
+        return audio_sample_rate
 
 
 class Audio:
@@ -232,7 +247,18 @@ class Audio:
         input_extra_setting,
         output_extra_setting,
         output_monitor_extra_setting,
+        audio_sample_rate: int,
     ):
+        use_asio = isinstance(input_extra_setting, sd.AsioSettings) or isinstance(
+            output_extra_setting, sd.AsioSettings
+        )
+        if use_asio:
+            # Re-initialize PortAudio to ensure a clean ASIO driver state.
+            try:
+                sd._terminate()
+                sd._initialize()
+            except Exception:
+                pass
         if input_device_id != output_device_id:
             # Only use in cases involving different backends devices.
             self.input_stream = sd.InputStream(
@@ -241,7 +267,7 @@ class Audio:
                 dtype=np.float32,
                 device=input_device_id,
                 blocksize=block_frame,
-                samplerate=AUDIO_SAMPLE_RATE,
+                samplerate=audio_sample_rate,
                 channels=input_max_channel,
                 extra_settings=input_extra_setting,
             )
@@ -253,7 +279,7 @@ class Audio:
                 dtype=np.float32,
                 device=output_device_id,
                 blocksize=block_frame,
-                samplerate=AUDIO_SAMPLE_RATE,
+                samplerate=audio_sample_rate,
                 channels=output_max_channel,
                 extra_settings=output_extra_setting,
             )
@@ -266,7 +292,7 @@ class Audio:
                 dtype=np.float32,
                 device=(input_device_id, output_device_id),
                 blocksize=block_frame,
-                samplerate=AUDIO_SAMPLE_RATE,
+                samplerate=audio_sample_rate,
                 channels=(input_max_channel, output_max_channel),
                 extra_settings=(input_extra_setting, output_extra_setting),
             )
@@ -281,7 +307,7 @@ class Audio:
                 dtype=np.float32,
                 device=output_monitor_id,
                 blocksize=block_frame,
-                samplerate=AUDIO_SAMPLE_RATE,
+                samplerate=audio_sample_rate,
                 channels=output_monitor_max_channel,
                 extra_settings=output_monitor_extra_setting,
             )
@@ -312,10 +338,12 @@ class Audio:
         output_device_id: int,
         output_monitor_id: int = None,
         exclusive_mode: bool = False,
-        asio_input_channel: int = -1,
-        asio_output_channel: int = -1,
-        asio_output_monitor_channel: int = -1,
+        asio_input_channel: int = 0,
+        asio_output_channel: int = 0,
+        asio_output_monitor_channel: int = 0,
         read_chunk_size: int = 192,
+        audio_sample_rate: int = AUDIO_SAMPLE_RATE,
+        asio_output_stereo: bool = True,
     ):
         self.stop()
 
@@ -353,14 +381,17 @@ class Audio:
                 exclusive=exclusive_mode, auto_convert=not exclusive_mode
             )
         elif (
-            input_audio_device
-            and "ASIO" in input_audio_device.host_api
+            output_audio_device
+            and "ASIO" in output_audio_device.host_api
             and asio_output_channel != -1
         ):
-            output_extra_setting = sd.AsioSettings(
-                channel_selectors=[asio_output_channel]
+            output_selectors = (
+                [asio_output_channel, asio_output_channel + 1]
+                if asio_output_stereo
+                else [asio_output_channel]
             )
-            output_channels = 1
+            output_extra_setting = sd.AsioSettings(channel_selectors=output_selectors)
+            output_channels = len(output_selectors)
 
         if self.use_monitor:
             output_monitor_device = self.get_output_audio_device(output_monitor_id)
@@ -381,7 +412,9 @@ class Audio:
                 )
                 monitor_channels = 1
 
-        block_frame = int((read_chunk_size * 128 / 48000) * AUDIO_SAMPLE_RATE)
+        block_frame = int(
+            (read_chunk_size * 128 / AUDIO_SAMPLE_RATE) * audio_sample_rate
+        )
 
         try:
             self.run_audio_stream(
@@ -395,8 +428,10 @@ class Audio:
                 input_extra_setting,
                 output_extra_setting,
                 output_monitor_extra_setting,
+                audio_sample_rate,
             )
             self.running = True
         except Exception as error:
             print(f"An error occurred while streaming audio: {error}")
             print(traceback.format_exc())
+            raise

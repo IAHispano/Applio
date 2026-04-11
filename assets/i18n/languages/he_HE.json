@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "גררו את קובץ ה-plugin.zip שלכם כדי להתקין אותו",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "משך המעבר (fade) בין נתחי שמע למניעת קליקים. ערכים גבוהים יותר יוצרים מעברים חלקים יותר אך עלולים להגביר את ההשהיה (latency).",
     "Embedder Model": "מודל Embedder",
+    "Enable ASIO": "הפעל ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "הפעל תמיכה במנהל התקן ASIO. (דורש הפעלה מחדש של Applio)",
     "Enable Applio integration with Discord presence": "הפעל אינטגרציה של Applio עם נוכחות Discord",
     "Enable VAD": "הפעל זיהוי פעילות קולית (VAD)",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "הפעל הזזת פורמנטים (formant shifting). משמש להמרות מזכר לנקבה ולהיפך.",
@@ -134,9 +136,6 @@
     "File to Speech": "קובץ לדיבור",
     "Filter": "מסנן",
     "Folder Name": "שם תיקייה",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "עבור מנהלי התקן של ASIO, בוחר ערוץ כניסה ספציפי. יש להשאיר על -1 לברירת המחדל.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "עבור מנהלי התקן של ASIO, בוחר ערוץ יציאת ניטור ספציפי. יש להשאיר על -1 לברירת המחדל.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "עבור מנהלי התקן של ASIO, בוחר ערוץ יציאה ספציפי. יש להשאיר על -1 לברירת המחדל.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "עבור WASAPI (Windows), מעניק לאפליקציה שליטה בלעדית להשהיה (latency) נמוכה יותר באופן פוטנציאלי.",
     "Formant Shifting": "הזזת פורמנטים",
     "Fresh Training": "אימון חדש",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "עוצמה רטובה (Wet) של Reverb",
     "Reverb Width": "רוחב Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "שמירה על עיצורים ברורים וצלילי נשימה כדי למנוע קריעה אלקטרו-אקוסטית וארטיפקטים אחרים. משיכת הפרמטר לערכו המרבי של 0.5 מציעה הגנה מקיפה. עם זאת, הקטנת ערך זה עשויה להפחית את רמת ההגנה תוך הפחתה פוטנציאלית של אפקט האינדוקס.",
+    "Sample Rate": "קצב דגימה",
     "Sampling Rate": "קצב דגימה",
     "Save Every Epoch": "שמור כל איפוק",
     "Save Every Weights": "שמור את כל המשקלים",
@@ -326,6 +326,7 @@
     "Start": "התחל",
     "Start Training": "התחל אימון",
     "Status": "מצב",
+    "Stereo": "סטריאו",
     "Stop": "עצור",
     "Stop Training": "עצור אימון",
     "Stop convert": "עצור המרה",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "עוצמת קול שמתחתיה השמע יטופל כשקט ולא יעובד. מסייע לחסוך במשאבי מעבד (CPU) ולהפחית רעשי רקע.",
     "Warming up... ({} blocks remaining)": "מתחמם... ({} בלוקים נותרו)",
     "You can also use a custom path.": "ניתן גם להשתמש בנתיב מותאם אישית.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[תמיכה](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[תמיכה](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "קצב הדגימה המשמש להזרמת שמע. עקוף זאת אם מנהל ההתקן מדווח על קצב שגוי (למשל 48000 הרץ במקום 44100 הרץ)."
 }

@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "ลากไฟล์ plugin.zip ของคุณมาเพื่อติดตั้ง",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "ระยะเวลาของการเฟดระหว่างชิ้นส่วนเสียงเพื่อป้องกันเสียงคลิก ค่าที่สูงขึ้นจะทำให้การเปลี่ยนเสียงราบรื่นขึ้นแต่อาจเพิ่มความหน่วงแฝง",
     "Embedder Model": "โมเดล Embedder",
+    "Enable ASIO": "เปิดใช้งาน ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "เปิดใช้งานการรองรับไดรเวอร์ ASIO เลือกอุปกรณ์ ASIO เป็นอินพุต/เอาต์พุต และตั้งค่าหมายเลขช่องสัญญาณด้านบน ต้องรีสตาร์ท Applio เพื่อให้การเปลี่ยนแปลงมีผล(ต้องรีสตาร์ท Applio)",
     "Enable Applio integration with Discord presence": "เปิดใช้งานการเชื่อมต่อ Applio กับสถานะ Discord",
     "Enable VAD": "เปิดใช้งาน VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "เปิดใช้งานการเลื่อนฟอร์แมนต์ (formant shifting) ใช้สำหรับการแปลงเสียงชายเป็นหญิงและกลับกัน",
@@ -134,9 +136,6 @@
     "File to Speech": "ไฟล์เป็นเสียงพูด",
     "Filter": "ตัวกรอง",
     "Folder Name": "ชื่อโฟลเดอร์",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "สำหรับไดรเวอร์ ASIO ใช้เลือกช่องสัญญาณอินพุตเฉพาะ หากไม่ต้องการระบุให้ใช้ค่า -1 (ค่าเริ่มต้น)",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "สำหรับไดรเวอร์ ASIO ใช้เลือกช่องสัญญาณเอาต์พุตมอนิเตอร์เฉพาะ หากไม่ต้องการระบุให้ใช้ค่า -1 (ค่าเริ่มต้น)",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "สำหรับไดรเวอร์ ASIO ใช้เลือกช่องสัญญาณเอาต์พุตเฉพาะ หากไม่ต้องการระบุให้ใช้ค่า -1 (ค่าเริ่มต้น)",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "สำหรับ WASAPI (Windows) จะให้แอปควบคุมอุปกรณ์ได้โดยเฉพาะ ซึ่งอาจช่วยลดความหน่วงแฝงได้",
     "Formant Shifting": "การเลื่อนฟอร์แมนต์ (Formant Shifting)",
     "Fresh Training": "การฝึกใหม่ทั้งหมด",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Reverb Wet Gain",
     "Reverb Width": "ความกว้าง Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "ป้องกันเสียงพยัญชนะและเสียงลมหายใจที่ชัดเจนเพื่อป้องกันการฉีกขาดของเสียงและสิ่งแปลกปลอมอื่นๆ การดึงพารามิเตอร์ไปที่ค่าสูงสุด 0.5 จะให้การป้องกันที่ครอบคลุม อย่างไรก็ตาม การลดค่านี้อาจลดระดับการป้องกันในขณะที่อาจลดผลกระทบของดัชนี (indexing effect) ลงได้",
+    "Sample Rate": "อัตราการสุ่มตัวอย่าง",
     "Sampling Rate": "อัตราการสุ่มตัวอย่าง (Sampling Rate)",
     "Save Every Epoch": "บันทึกทุก Epoch",
     "Save Every Weights": "บันทึกน้ำหนัก (Weights) ทุกครั้ง",
@@ -326,6 +326,7 @@
     "Start": "เริ่ม",
     "Start Training": "เริ่มการฝึก",
     "Status": "สถานะ",
+    "Stereo": "สเตอริโอ",
     "Stop": "หยุด",
     "Stop Training": "หยุดการฝึก",
     "Stop convert": "หยุดการแปลง",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "ระดับเสียงที่ต่ำกว่าเกณฑ์นี้จะถูกนับเป็นความเงียบและจะไม่ถูกประมวลผล ช่วยประหยัดทรัพยากร CPU และลดเสียงรบกวน",
     "Warming up... ({} blocks remaining)": "กำลังอุ่นเครื่อง... (เหลืออีก {} บล็อก)",
     "You can also use a custom path.": "คุณสามารถใช้เส้นทางที่กำหนดเองได้เช่นกัน",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[สนับสนุน](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[สนับสนุน](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "อัตราการสุ่มตัวอย่างที่ใช้สำหรับการสตรีมเสียง เปลี่ยนค่านี้หากไดรเวอร์รายงานอัตราที่ไม่ถูกต้อง (เช่น 48000 Hz แทน 44100 Hz)"
 }

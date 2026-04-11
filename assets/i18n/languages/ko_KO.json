@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "plugin.zip을 드래그하여 설치하세요",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "클릭을 방지하기 위한 오디오 청크 간 페이드 지속 시간입니다. 값이 높을수록 더 부드러운 전환을 만들지만 지연 시간이 증가할 수 있습니다.",
     "Embedder Model": "임베더 모델",
+    "Enable ASIO": "ASIO 활성화",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO 드라이버 지원을 활성화합니다. (Applio 재시작 필요)",
     "Enable Applio integration with Discord presence": "Discord Presence와 Applio 연동 활성화",
     "Enable VAD": "VAD 활성화",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "포먼트 시프팅을 활성화합니다. 남성에서 여성 또는 그 반대의 변환에 사용됩니다.",
@@ -134,9 +136,6 @@
     "File to Speech": "파일로 음성 합성",
     "Filter": "필터",
     "Folder Name": "폴더 이름",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO 드라이버의 경우 특정 입력 채널을 선택합니다. 기본값으로 두려면 -1로 남겨두세요.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO 드라이버의 경우 특정 모니터 출력 채널을 선택합니다. 기본값으로 두려면 -1로 남겨두세요.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO 드라이버의 경우 특정 출력 채널을 선택합니다. 기본값으로 두려면 -1로 남겨두세요.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI(Windows)의 경우, 앱에 독점 제어 권한을 부여하여 잠재적으로 더 낮은 지연 시간을 제공합니다.",
     "Formant Shifting": "포먼트 시프팅",
     "Fresh Training": "새 학습",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "리버브 웻 게인",
     "Reverb Width": "리버브 너비",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "전자음 같은 찢어짐이나 기타 잡음을 방지하기 위해 뚜렷한 자음과 숨소리를 보호합니다. 매개변수를 최댓값인 0.5로 설정하면 포괄적인 보호를 제공합니다. 그러나 이 값을 줄이면 보호 수준은 감소하지만 인덱싱 효과를 완화할 수 있습니다.",
+    "Sample Rate": "샘플 레이트",
     "Sampling Rate": "샘플링 레이트",
     "Save Every Epoch": "매 에포크마다 저장",
     "Save Every Weights": "매번 가중치 저장",
@@ -326,6 +326,7 @@
     "Start": "시작",
     "Start Training": "학습 시작",
     "Status": "상태",
+    "Stereo": "스테레오",
     "Stop": "중지",
     "Stop Training": "학습 중지",
     "Stop convert": "변환 중지",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "이 볼륨 레벨 이하의 오디오는 무음으로 간주되어 처리되지 않습니다. CPU 리소스를 절약하고 배경 소음을 줄이는 데 도움이 됩니다.",
     "Warming up... ({} blocks remaining)": "워밍업 중... ({}블록 남음)",
     "You can also use a custom path.": "사용자 지정 경로를 사용할 수도 있습니다.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[지원](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[지원](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "오디오 스트리밍에 사용되는 샘플 레이트입니다. 드라이버가 잘못된 레이트를 보고하는 경우 이를 재정의하세요 (예: 44100 Hz 대신 48000 Hz)."
 }

@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Přetáhněte soubor plugin.zip pro instalaci",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Doba trvání prolínání mezi zvukovými chunky pro zamezení praskání. Vyšší hodnoty vytvářejí plynulejší přechody, ale mohou zvýšit latenci.",
     "Embedder Model": "Model embedderu",
+    "Enable ASIO": "Povolit ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Aktivujte podporu ovladače ASIO. (Vyžaduje restartování Applio)",
     "Enable Applio integration with Discord presence": "Povolit integraci Applio s Discord presence",
     "Enable VAD": "Povolit VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Povolit posun formantů. Používá se pro konverze z mužského na ženský hlas a naopak.",
@@ -134,9 +136,6 @@
     "File to Speech": "Soubor na řeč",
     "Filter": "Filtr",
     "Folder Name": "Název složky",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Pro ovladače ASIO, vybere konkrétní vstupní kanál. Ponechte -1 pro výchozí.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Pro ovladače ASIO, vybere konkrétní výstupní kanál pro odposlech. Ponechte -1 pro výchozí.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Pro ovladače ASIO, vybere konkrétní výstupní kanál. Ponechte -1 pro výchozí.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Pro WASAPI (Windows), dává aplikaci exkluzivní kontrolu pro potenciálně nižší latenci.",
     "Formant Shifting": "Posun formantů",
     "Fresh Training": "Nové trénování",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Mokrý zisk dozvuku (Wet Gain)",
     "Reverb Width": "Šířka dozvuku",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Chraňte zřetelné souhlásky a zvuky dýchání, abyste předešli elektroakustickému trhání a dalším artefaktům. Nastavení parametru na maximální hodnotu 0,5 nabízí komplexní ochranu. Snížení této hodnoty však může snížit míru ochrany a zároveň potenciálně zmírnit efekt indexování.",
+    "Sample Rate": "Vzorkovací frekvence",
     "Sampling Rate": "Vzorkovací frekvence",
     "Save Every Epoch": "Uložit každou epochu",
     "Save Every Weights": "Uložit všechny váhy",
@@ -326,6 +326,7 @@
     "Start": "Spustit",
     "Start Training": "Spustit trénování",
     "Status": "Stav",
+    "Stereo": "Stereo",
     "Stop": "Zastavit",
     "Stop Training": "Zastavit trénování",
     "Stop convert": "Zastavit převod",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Úroveň hlasitosti, pod kterou je zvuk považován za ticho a není zpracováván. Pomáhá šetřit zdroje CPU a redukovat šum na pozadí.",
     "Warming up... ({} blocks remaining)": "Zahřívání... (zbývá {} bloků)",
     "You can also use a custom path.": "Můžete také použít vlastní cestu.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Podpora](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Podpora](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Vzorkovací frekvence používaná pro audio stream. Změňte toto, pokud ovladač hlásí nesprávnou frekvenci (např. 48000 Hz místo 44100 Hz)."
 }

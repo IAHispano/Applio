@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Перацягніце ваш plugin.zip, каб усталяваць яго",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Працягласць згасання паміж аўдыякавалкамі для прадухілення пстрычак. Большыя значэнні ствараюць больш плыўныя пераходы, але могуць павялічыць затрымку.",
     "Embedder Model": "Мадэль эмбэдэра",
+    "Enable ASIO": "Уключыць ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Уключыць падтрымку драйвера ASIO. (Патрабуецца перазапуск Applio)",
     "Enable Applio integration with Discord presence": "Уключыць інтэграцыю Applio з прысутнасцю ў Discord",
     "Enable VAD": "Уключыць VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Уключыць зрух фармант. Выкарыстоўваецца для пераўтварэнняў з мужчынскага голасу ў жаночы і наадварот.",
@@ -134,9 +136,6 @@
     "File to Speech": "Файл у маўленне",
     "Filter": "Фільтр",
     "Folder Name": "Назва папкі",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Для драйвераў ASIO выбірае пэўны ўваходны канал. Пакіньце -1 для значэння па змаўчанні.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Для драйвераў ASIO выбірае пэўны маніторны канал выхаду. Пакіньце -1 для значэння па змаўчанні.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Для драйвераў ASIO выбірае пэўны канал выхаду. Пакіньце -1 для значэння па змаўчанні.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Для WASAPI (Windows), дае праграме эксклюзіўны кантроль для патэнцыйна меншай затрымкі.",
     "Formant Shifting": "Зрух фармант",
     "Fresh Training": "Навучанне з нуля",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Вільготнае ўзмацненне рэверберацыі",
     "Reverb Width": "Шырыня рэверберацыі",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Абарона выразных зычных і гукаў дыхання для прадухілення электраакустычных разрываў і іншых артэфактаў. Устаноўка параметра на максімальнае значэнне 0.5 забяспечвае ўсебаковую абарону. Аднак зніжэнне гэтага значэння можа паменшыць ступень абароны, патэнцыйна змякчаючы эфект індэксацыі.",
+    "Sample Rate": "Частата дыскрэтызацыі",
     "Sampling Rate": "Частата дыскрэтызацыі",
     "Save Every Epoch": "Захоўваць кожную эпоху",
     "Save Every Weights": "Захоўваць усе вагі",
@@ -326,6 +326,7 @@
     "Start": "Пачаць",
     "Start Training": "Пачаць навучанне",
     "Status": "Статус",
+    "Stereo": "Стэрэа",
     "Stop": "Спыніць",
     "Stop Training": "Спыніць навучанне",
     "Stop convert": "Спыніць пераўтварэнне",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Узровень гучнасці, ніжэй за які аўдыя лічыцца цішынёй і не апрацоўваецца. Дапамагае эканоміць рэсурсы CPU і памяншаць фонавы шум.",
     "Warming up... ({} blocks remaining)": "Разагрэў... (засталося {} блокаў)",
     "You can also use a custom path.": "Вы таксама можаце выкарыстоўваць карыстальніцкі шлях.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Падтрымка](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Падтрымка](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Частата дыскрэтызацыі для аўдыяпатоку. Замяніце гэта, калі драйвер паведамляе няправільную частату (напр. 48000 Гц замест 44100 Гц)."
 }

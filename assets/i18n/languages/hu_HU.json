@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Húzza ide a plugin.zip fájlt a telepítéshez",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Az audio darabok közötti áttűnés időtartama a kattanások elkerülése érdekében. A magasabb értékek simább átmeneteket eredményeznek, de növelhetik a késleltetést.",
     "Embedder Model": "Beágyazó (Embedder) modell",
+    "Enable ASIO": "ASIO engedélyezése",
+    "Enable ASIO driver support. (Requires restarting Applio)": "ASIO illesztőprogram-támogatás engedélyezése. (Az Applio újraindítása szükséges)",
     "Enable Applio integration with Discord presence": "Applio integráció engedélyezése a Discord jelenléttel",
     "Enable VAD": "VAD engedélyezése",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Formáns-eltolás engedélyezése. Férfi-nő és nő-férfi hangátalakításokhoz használatos.",
@@ -134,9 +136,6 @@
     "File to Speech": "Fájlból beszéd",
     "Filter": "Szűrő",
     "Folder Name": "Mappa neve",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "ASIO meghajtók esetén egy adott bemeneti csatornát választ ki. Hagyja -1-en az alapértelmezett beállításhoz.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "ASIO meghajtók esetén egy adott monitor kimeneti csatornát választ ki. Hagyja -1-en az alapértelmezett beállításhoz.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "ASIO meghajtók esetén egy adott kimeneti csatornát választ ki. Hagyja -1-en az alapértelmezett beállításhoz.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "WASAPI (Windows) esetén kizárólagos vezérlést biztosít az alkalmazásnak a potenciálisan alacsonyabb késleltetés érdekében.",
     "Formant Shifting": "Formáns-eltolás",
     "Fresh Training": "Új tanítás",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Zengés nedves erősítés",
     "Reverb Width": "Zengés szélesség",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Védje a megkülönböztethető mássalhangzókat és légzési hangokat az elektroakusztikus szakadás és egyéb műtermékek megelőzése érdekében. A paraméter 0.5 maximális értékre húzása átfogó védelmet nyújt. Ennek az értéknek a csökkentése azonban csökkentheti a védelem mértékét, miközben potenciálisan enyhítheti az indexelési hatást.",
+    "Sample Rate": "Mintavételi frekvencia",
     "Sampling Rate": "Mintavételezési frekvencia",
     "Save Every Epoch": "Mentés minden epoch után",
     "Save Every Weights": "Minden súly mentése",
@@ -326,6 +326,7 @@
     "Start": "Indítás",
     "Start Training": "Tanítás indítása",
     "Status": "Állapot",
+    "Stereo": "Sztereó",
     "Stop": "Leállítás",
     "Stop Training": "Tanítás leállítása",
     "Stop convert": "Átalakítás leállítása",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Az a hangerőszint, amely alatt a hang csendnek minősül és nem kerül feldolgozásra. Segít a CPU-erőforrások megtakarításában és a háttérzaj csökkentésében.",
     "Warming up... ({} blocks remaining)": "Bemelegítés... ({} blokk hátravan)",
     "You can also use a custom path.": "Használhat egyéni útvonalat is.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Támogatás](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Támogatás](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Az audio streameléshez használt mintavételi frekvencia. Felülírja ezt, ha az illesztőprogram helytelen frekvenciát jelez (pl. 44100 Hz helyett 48000 Hz)."
 }

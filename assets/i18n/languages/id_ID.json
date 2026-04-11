@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Seret plugin.zip Anda untuk menginstalnya",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "Durasi fade di antara potongan audio untuk mencegah bunyi klik. Nilai yang lebih tinggi menciptakan transisi yang lebih halus tetapi dapat meningkatkan latensi.",
     "Embedder Model": "Model Embedder",
+    "Enable ASIO": "Aktifkan ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "Aktifkan dukungan driver ASIO. (Memerlukan memulai ulang Applio)",
     "Enable Applio integration with Discord presence": "Aktifkan integrasi Applio dengan kehadiran Discord",
     "Enable VAD": "Aktifkan VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Aktifkan pergeseran forman. Digunakan untuk konversi pria ke wanita dan sebaliknya.",
@@ -134,9 +136,6 @@
     "File to Speech": "File ke Ucapan",
     "Filter": "Filter",
     "Folder Name": "Nama Folder",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "Untuk driver ASIO, memilih saluran input tertentu. Biarkan -1 untuk default.",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "Untuk driver ASIO, memilih saluran output monitor tertentu. Biarkan -1 untuk default.",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "Untuk driver ASIO, memilih saluran output tertentu. Biarkan -1 untuk default.",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "Untuk WASAPI (Windows), memberikan aplikasi kontrol eksklusif untuk potensi latensi yang lebih rendah.",
     "Formant Shifting": "Pergeseran Forman",
     "Fresh Training": "Pelatihan Baru",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Gain Basah Reverb",
     "Reverb Width": "Lebar Reverb",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Lindungi konsonan yang berbeda dan suara napas untuk mencegah robekan elektro-akustik dan artefak lainnya. Menarik parameter ke nilai maksimum 0.5 menawarkan perlindungan komprehensif. Namun, mengurangi nilai ini mungkin menurunkan tingkat perlindungan sambil berpotensi mengurangi efek pengindeksan.",
+    "Sample Rate": "Laju Sampel",
     "Sampling Rate": "Laju Sampel",
     "Save Every Epoch": "Simpan Setiap Epoch",
     "Save Every Weights": "Simpan Setiap Bobot",
@@ -326,6 +326,7 @@
     "Start": "Mulai",
     "Start Training": "Mulai Pelatihan",
     "Status": "Status",
+    "Stereo": "Stereo",
     "Stop": "Hentikan",
     "Stop Training": "Hentikan Pelatihan",
     "Stop convert": "Hentikan konversi",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "Tingkat volume di mana audio dianggap hening dan tidak diproses. Membantu menghemat sumber daya CPU dan mengurangi kebisingan latar belakang.",
     "Warming up... ({} blocks remaining)": "Pemanasan... ({} blok tersisa)",
     "You can also use a custom path.": "Anda juga dapat menggunakan jalur kustom.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Dukungan](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Dukungan](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Laju sampel yang digunakan untuk streaming audio. Timpa ini jika driver melaporkan laju yang salah (mis. 48000 Hz bukan 44100 Hz)."
 }

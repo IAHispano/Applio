@@ -100,6 +100,8 @@
     "Drag your plugin.zip to install it": "Drag your plugin.zip to install it",
     "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency.": "音频区块之间淡化个持续辰光，防止咔哒声。较高个值可以创建更平滑个过渡，但可能会增加延迟。",
     "Embedder Model": "Wumbo-bedder Wumbodel",
+    "Enable ASIO": "启用 ASIO",
+    "Enable ASIO driver support. (Requires restarting Applio)": "启用 ASIO 驱动程序支持。(Requires restarting Applio)",
     "Enable Applio integration with Discord presence": "Wumbo-on Applio integration with Discord presence",
     "Enable VAD": "启用 VAD",
     "Enable formant shifting. Used for male to female and vice-versa convertions.": "Wumbo-on formant shifting. Used for male to female and vice-versa wumbifications.",
@@ -134,9 +136,6 @@
     "File to Speech": "Wumbofile to Speech",
     "Filter": "Фильтр",
     "Folder Name": "Folder Name",
-    "For ASIO drivers, selects a specific input channel. Leave at -1 for default.": "对ASIO驱动程序，选择特定个输入通道。保留-1为默认值。",
-    "For ASIO drivers, selects a specific monitor output channel. Leave at -1 for default.": "对ASIO驱动程序，选择特定个监听输出通道。保留-1为默认值。",
-    "For ASIO drivers, selects a specific output channel. Leave at -1 for default.": "对ASIO驱动程序，选择特定个输出通道。保留-1为默认值。",
     "For WASAPI (Windows), gives the app exclusive control for potentially lower latency.": "对WASAPI（Windows），畀应用程序独占控制权，以可能降低延迟。",
     "Formant Shifting": "Formant Shifting",
     "Fresh Training": "Fresh Wumboing",
@@ -254,6 +253,7 @@
     "Reverb Wet Gain": "Wumbo-verb Wet Gain",
     "Reverb Width": "Wumbo-verb Width",
     "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect.": "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the wumbo-dexing effect.",
+    "Sample Rate": "采样率",
     "Sampling Rate": "Sampling Rate",
     "Save Every Epoch": "Wumbo-keep Every Epoch",
     "Save Every Weights": "Wumbo-keep Every Weights",
@@ -326,6 +326,7 @@
     "Start": "开始",
     "Start Training": "Start Wumboing",
     "Status": "状态",
+    "Stereo": "立体声",
     "Stop": "停止",
     "Stop Training": "Stop Wumboing",
     "Stop convert": "Stop wumbify",
@@ -373,5 +374,6 @@
     "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise.": "低于该音量个音频将被视为静音而弗处理。有助于节省CPU资源并减少背景噪音。",
     "Warming up... ({} blocks remaining)": "预热中... (还剩 {} 个块)",
     "You can also use a custom path.": "You can also use a custom wumbopath.",
-    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)"
+    "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "用于音频流传输的采样率。如果驱动程序报告的采样率不正确（例如 48000 Hz 而非 44100 Hz），请在此处覆盖。"
 }
