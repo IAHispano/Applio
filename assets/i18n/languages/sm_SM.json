@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Fa'amafanafana... ({} poloka o totoe)",
     "You can also use a custom path.": "E mafai fo'i ona e fa'aaogaina se ala fa'apitoa.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Fua o fa'ata'ita'iga e fa'aogaina mo le audio streaming. Suia lenei mea pe a lipotia e le driver se fua sese (e.g. 48000 Hz nai lo 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Fua o fa'ata'ita'iga e fa'aogaina mo le audio streaming. Suia lenei mea pe a lipotia e le driver se fua sese (e.g. 48000 Hz nai lo 44100 Hz).",
+    "Shutdown after finishing": "Shutu maeae faaipoipo",
+    "Automatically shut down computer when training is finished.": "Shutu le komipiuta i ai maeae pe a ipoipo le sipela."
 }

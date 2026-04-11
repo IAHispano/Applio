@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "A aquecer... ({} blocos restantes)",
     "You can also use a custom path.": "Também pode usar um caminho personalizado.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Suporte](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Taxa de amostragem utilizada para transmissão de áudio. Substitua isto se o controlador reportar uma taxa incorreta (p. ex. 48000 Hz em vez de 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Taxa de amostragem utilizada para transmissão de áudio. Substitua isto se o controlador reportar uma taxa incorreta (p. ex. 48000 Hz em vez de 44100 Hz).",
+    "Shutdown after finishing": "Encerrar após conclusão",
+    "Automatically shut down computer when training is finished.": "Desligar automaticamente o computador quando o treinamento for concluído."
 }

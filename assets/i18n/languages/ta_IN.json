@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "வார்ம் அப்... ({} தொகுதிகள் மீதம்)",
     "You can also use a custom path.": "நீங்கள் ஒரு தனிப்பயன் பாதையையும் பயன்படுத்தலாம்.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[ஆதரவு](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ஆடியோ ஸ்ட்ரீமிங்கிற்கு பயன்படுத்தப்படும் மாதிரி விகிதம். இயக்கி தவறான விகிதத்தை தெரிவிக்கும்போது இதை மேலிடவும் (எ.கா. 44100 Hz க்கு பதிலாக 48000 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ஆடியோ ஸ்ட்ரீமிங்கிற்கு பயன்படுத்தப்படும் மாதிரி விகிதம். இயக்கி தவறான விகிதத்தை தெரிவிக்கும்போது இதை மேலிடவும் (எ.கா. 44100 Hz க்கு பதிலாக 48000 Hz).",
+    "Shutdown after finishing": "முடிந்த பிறகு நிறுத்தவும்",
+    "Automatically shut down computer when training is finished.": "பயிற்சி முடிந்த பிறகு கணினியை தானாக நிறுத்தவும்."
 }

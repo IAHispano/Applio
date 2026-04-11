@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Încălzire... ({} blocuri rămase)",
     "You can also use a custom path.": "Poți folosi și o cale personalizată.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Suport](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Frecvența de eșantionare utilizată pentru streaming audio. Înlocuiește aceasta dacă driverul raportează o frecvență incorectă (de ex. 48000 Hz în loc de 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Frecvența de eșantionare utilizată pentru streaming audio. Înlocuiește aceasta dacă driverul raportează o frecvență incorectă (de ex. 48000 Hz în loc de 44100 Hz).",
+    "Shutdown after finishing": "Oprire după finalizare",
+    "Automatically shut down computer when training is finished.": "Oprește automat computerul la finalizarea antrenamentului."
 }

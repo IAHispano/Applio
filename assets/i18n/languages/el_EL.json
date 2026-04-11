@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Προθέρμανση... ({} μπλοκ απομένουν)",
     "You can also use a custom path.": "Μπορείτε επίσης να χρησιμοποιήσετε μια προσαρμοσμένη διαδρομή.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Υποστήριξη](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Ρυθμός δειγματοληψίας που χρησιμοποιείται για ροή ήχου. Παρακάμψτε αυτό αν ο οδηγός αναφέρει λάθος ρυθμό (π.χ. 48000 Hz αντί 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Ρυθμός δειγματοληψίας που χρησιμοποιείται για ροή ήχου. Παρακάμψτε αυτό αν ο οδηγός αναφέρει λάθος ρυθμό (π.χ. 48000 Hz αντί 44100 Hz).",
+    "Shutdown after finishing": "Κλείσιμο μετά το τέλος",
+    "Automatically shut down computer when training is finished.": "Αυτόματη διακοπή του υπολογιστή όταν ολοκληρωθεί η εκπαίδευση."
 }

@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "वार्मिंग अप... ({} ब्लॉक शेष)",
     "You can also use a custom path.": "आप एक कस्टम पथ का भी उपयोग कर सकते हैं।",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[समर्थन](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ऑडियो स्ट्रीमिंग के लिए उपयोग किया जाने वाला सैम्पल रेट। यदि ड्राइवर गलत रेट रिपोर्ट करे तो इसे बदलें (जैसे 44100 Hz की जगह 48000 Hz)।"
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ऑडियो स्ट्रीमिंग के लिए उपयोग किया जाने वाला सैम्पल रेट। यदि ड्राइवर गलत रेट रिपोर्ट करे तो इसे बदलें (जैसे 44100 Hz की जगह 48000 Hz)।",
+    "Shutdown after finishing": "समाप्ति के बाद बंद करें",
+    "Automatically shut down computer when training is finished.": "प्रशिक्षण समाप्त होने पर कंप्यूटर को स्वचालित रूप से बंद करें।"
 }

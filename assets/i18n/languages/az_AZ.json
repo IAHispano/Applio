@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Hazırlanır... ({} blok qalıb)",
     "You can also use a custom path.": "Siz həmçinin xüsusi bir yoldan istifadə edə bilərsiniz.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Dəstək](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Audio axını üçün istifadə edilən nümunə dərəcəsi. Sürücü yanlış dərəcə bildirirsə bunu dəyişdirin (məs. 44100 Hz əvəzinə 48000 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Audio axını üçün istifadə edilən nümunə dərəcəsi. Sürücü yanlış dərəcə bildirirsə bunu dəyişdirin (məs. 44100 Hz əvəzinə 48000 Hz).",
+    "Shutdown after finishing": "Bitiş sonrası söndür",
+    "Automatically shut down computer when training is finished.": "Təlim tamamlandıqdan sonra kompüteri avtomatik olaraq söndürün."
 }

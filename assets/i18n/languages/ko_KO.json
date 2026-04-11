@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "워밍업 중... ({}블록 남음)",
     "You can also use a custom path.": "사용자 지정 경로를 사용할 수도 있습니다.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[지원](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "오디오 스트리밍에 사용되는 샘플 레이트입니다. 드라이버가 잘못된 레이트를 보고하는 경우 이를 재정의하세요 (예: 44100 Hz 대신 48000 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "오디오 스트리밍에 사용되는 샘플 레이트입니다. 드라이버가 잘못된 레이트를 보고하는 경우 이를 재정의하세요 (예: 44100 Hz 대신 48000 Hz).",
+    "Shutdown after finishing": "완료 후 종료",
+    "Automatically shut down computer when training is finished.": "교육 완료 후 컴퓨터를 자동으로 종료합니다."
 }

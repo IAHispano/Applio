@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "వార్మింగ్ అప్... ({} బ్లాక్‌లు మిగిలి ఉన్నాయి)",
     "You can also use a custom path.": "మీరు అనుకూల మార్గాన్ని కూడా ఉపయోగించవచ్చు.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[మద్దతు](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ఆడియో స్ట్రీమింగ్‌కు ఉపయోగించే శాంపిల్ రేట్. డ్రైవర్ తప్పుడు రేట్ నివేదిస్తే దీన్ని ఓవర్‌రైడ్ చేయండి (ఉదా. 44100 Hz బదులు 48000 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ఆడియో స్ట్రీమింగ్‌కు ఉపయోగించే శాంపిల్ రేట్. డ్రైవర్ తప్పుడు రేట్ నివేదిస్తే దీన్ని ఓవర్‌రైడ్ చేయండి (ఉదా. 44100 Hz బదులు 48000 Hz).",
+    "Shutdown after finishing": "పూర్తిత్వానికి తర్వాత షట్‌డౌన్ చేయండి",
+    "Automatically shut down computer when training is finished.": "శిక్షణ పూర్తిచేసిన తర్వాత కంప్యూటర్‌ను స్వయంచాలకంగా షట్‌డౌన్ చేయండి."
 }

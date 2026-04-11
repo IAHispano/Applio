@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "جارٍ التحضير... ({} كتل متبقية)",
     "You can also use a custom path.": "يمكنك أيضًا استخدام مسار مخصص.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[الدعم](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "معدل أخذ العينات المستخدم لبث الصوت. تجاوز هذا إذا أبلغ المشغل عن معدل غير صحيح (مثلاً 48000 هرتز بدلاً من 44100 هرتز)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "معدل أخذ العينات المستخدم لبث الصوت. تجاوز هذا إذا أبلغ المشغل عن معدل غير صحيح (مثلاً 48000 هرتز بدلاً من 44100 هرتز).",
+    "Shutdown after finishing": "إيقاف التشغيل بعد الانتهاء",
+    "Automatically shut down computer when training is finished.": "إيقاف تشغيل الكمبيوتر تلقائياً عند انتهاء التدريب."
 }

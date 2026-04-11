@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Ag téamh suas... ({} bloc fágtha)",
     "You can also use a custom path.": "Is féidir leat cosán saincheaptha a úsáid freisin.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Tacaíocht](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Ráta samplála a úsáidtear le haghaidh sruthú fuaime. Sáraigh é seo má thuairiscíonn an tiománaí ráta mícheart (m.sh. 48000 Hz in ionad 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Ráta samplála a úsáidtear le haghaidh sruthú fuaime. Sáraigh é seo má thuairiscíonn an tiománaí ráta mícheart (m.sh. 48000 Hz in ionad 44100 Hz).",
+    "Shutdown after finishing": "Múch tar éis a bheith críochnaithe",
+    "Automatically shut down computer when training is finished.": "Múch an ríomhaire go huathoibríoch nuair a bhíonn an traenáil críochnaithe."
 }

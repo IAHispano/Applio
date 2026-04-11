@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Warming up... ({} ብሎኮች ቀሪ)",
     "You can also use a custom path.": "ብጁ ዱካም መጠቀም ይችላሉ።",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[ድጋፍ](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ለድምጽ ዥረት የሚያገለግለው የናሙና ሬሽዮ። ድራይቨሩ የተሳሳተ ሬሽዮ ሲያሳይ ይሄን ይቀይሩ (ለምሳሌ 44100 Hz ፈንታ 48000 Hz)።"
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ለድምጽ ዥረት የሚያገለግለው የናሙና ሬሽዮ። ድራይቨሩ የተሳሳተ ሬሽዮ ሲያሳይ ይሄን ይቀይሩ (ለምሳሌ 44100 Hz ፈንታ 48000 Hz)።",
+    "Shutdown after finishing": "ጥሪት ከተጠናቀቀ በኋላ",
+    "Automatically shut down computer when training is finished.": "ስልጠናው ከተጠናቀቀ በኋላ ኮምፒውተሩን በራስ-ሰር ዝግ ይዝ።"
 }

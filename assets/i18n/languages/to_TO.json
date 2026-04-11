@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Fakamafana... ({} poloka kei toe)",
     "You can also use a custom path.": "ʻE lava foki ke ke ngāueʻaki ha hala fakafoʻituitui.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Tokoni](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Ko e fua tauhi ʻoku ngāue ʻaki ki he audio streaming. Liliu eni kapau ʻoku lipooti ʻe he driver ha fua hala (e.g. 48000 Hz ʻi hono ʻo 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Ko e fua tauhi ʻoku ngāue ʻaki ki he audio streaming. Liliu eni kapau ʻoku lipooti ʻe he driver ha fua hala (e.g. 48000 Hz ʻi hono ʻo 44100 Hz).",
+    "Shutdown after finishing": "Toka he kuonga foki",
+    "Automatically shut down computer when training is finished.": "Toka he kuonga `a e komipiuta taka mei foki `o e ako."
 }
