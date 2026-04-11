@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "گرم کردن... ({} بلاک باقی‌مانده)",
     "You can also use a custom path.": "شما همچنین می‌توانید از یک مسیر سفارشی استفاده کنید.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[پشتیبانی](https://discord.gg/urxFjYmYYh) — [گیت‌هاب](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "نرخ نمونه‌برداری که برای پخش صوت استفاده می‌شود. اگر درایور نرخ نادرستی گزارش می‌دهد این را تغییر دهید (مثلاً 48000 هرتز به جای 44100 هرتز)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "نرخ نمونه‌برداری که برای پخش صوت استفاده می‌شود. اگر درایور نرخ نادرستی گزارش می‌دهد این را تغییر دهید (مثلاً 48000 هرتز به جای 44100 هرتز).",
+    "Shutdown after finishing": "خاموش کردن بعد از تمام شدن",
+    "Automatically shut down computer when training is finished.": "خاموش کردن خودکار کامپیوتر پس از اتمام آموزش."
 }

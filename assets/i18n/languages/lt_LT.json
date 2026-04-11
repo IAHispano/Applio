@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Šildoma... (liko {} blokų)",
     "You can also use a custom path.": "Taip pat galite naudoti pasirinktinį kelią.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Pagalba](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Diskretizavimo dažnis, naudojamas garso srautui. Pakeiskite tai, jei tvarkyklė praneša neteisingą dažnį (pvz. 48000 Hz vietoj 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Diskretizavimo dažnis, naudojamas garso srautui. Pakeiskite tai, jei tvarkyklė praneša neteisingą dažnį (pvz. 48000 Hz vietoj 44100 Hz).",
+    "Shutdown after finishing": "Išjungti po baigimo",
+    "Automatically shut down computer when training is finished.": "Automatiškai išjungti kompiuterį, kai mokymas baigtas."
 }

@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Inapasha joto... (zimebaki vitalu {})",
     "You can also use a custom path.": "Unaweza pia kutumia njia maalum.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Usaidizi](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Kiwango cha sampuli kinachotumiwa kwa utiririshaji wa sauti. Badilisha hii ikiwa dereva inaripoti kiwango kisicho sahihi (mfano 48000 Hz badala ya 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Kiwango cha sampuli kinachotumiwa kwa utiririshaji wa sauti. Badilisha hii ikiwa dereva inaripoti kiwango kisicho sahihi (mfano 48000 Hz badala ya 44100 Hz).",
+    "Shutdown after finishing": "Zima baada ya kumalizia",
+    "Automatically shut down computer when training is finished.": "Zima kiotomatiki kinara mwisho wa mafunzo."
 }

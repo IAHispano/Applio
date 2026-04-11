@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Warming up... ({} bloques di faltan)",
     "You can also use a custom path.": "También tsa̲ da usar 'nar ruta personalizada.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Soporte](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Tasa de muestreo usadä para transmisión de audio. Anulä esto si el driver reportä una tasa incorrectä (ej. 48000 Hz en lugar de 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Tasa de muestreo usadä para transmisión de audio. Anulä esto si el driver reportä una tasa incorrectä (ej. 48000 Hz en lugar de 44100 Hz).",
+    "Shutdown after finishing": "Ketsi después de terminar",
+    "Automatically shut down computer when training is finished.": "Ketsi otomáticamente la computadora cuando da otsi entrenamiento."
 }

@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Nag-init... ({} ka block ang nahabilin)",
     "You can also use a custom path.": "Mahimo ka usab mogamit og custom nga dalanan.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Suporta](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Sample rate nga gigamit alang sa audio streaming. I-override kini kung ang driver nagrepport og sayop nga rate (hal. 48000 Hz imbes nga 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Sample rate nga gigamit alang sa audio streaming. I-override kini kung ang driver nagrepport og sayop nga rate (hal. 48000 Hz imbes nga 44100 Hz).",
+    "Shutdown after finishing": "I-shut down pagkatapos ng pagtatapos",
+    "Automatically shut down computer when training is finished.": "I-automatically na i-shut down ang computer pagkatapos ng training."
 }

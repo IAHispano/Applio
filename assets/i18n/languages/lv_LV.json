@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Iesildīšana... (atlikuši {} bloki)",
     "You can also use a custom path.": "Varat izmantot arī pielāgotu ceļu.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Atbalsts](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Izlases biežums, ko izmanto audio straumēšanai. Aizstājiet šo, ja draiveris ziņo par nepareizu biežumu (piem. 48000 Hz, nevis 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Izlases biežums, ko izmanto audio straumēšanai. Aizstājiet šo, ja draiveris ziņo par nepareizu biežumu (piem. 48000 Hz, nevis 44100 Hz).",
+    "Shutdown after finishing": "Izslēgt pēc pabeigšanas",
+    "Automatically shut down computer when training is finished.": "Automātiski izslēgt datoru pēc apmācības pabeigšanas."
 }

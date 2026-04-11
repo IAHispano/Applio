@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "ウォームアップ中... (残り {} ブロック)",
     "You can also use a custom path.": "カスタムパスを使用することもできます。",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[サポート](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "オーディオストリーミングに使用するサンプルレートです。ドライバーが誤った値を返すことがあるため、実際に設定されているサンプルレートを指定してください。"
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "オーディオストリーミングに使用するサンプルレートです。ドライバーが誤った値を返すことがあるため、実際に設定されているサンプルレートを指定してください。",
+    "Shutdown after finishing": "終了後にシャットダウン",
+    "Automatically shut down computer when training is finished.": "トレーニング完了後にコンピューターを自動的にシャットダウンします。"
 }

@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Warming up... ({} blocks remaining)",
     "You can also use a custom path.": "You can also use a custom path.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.",
+    "Shutdown after finishing": "Shutdown after finishing",
+    "Automatically shut down computer when training is finished.": "Automatically shut down computer when training is finished."
 }
