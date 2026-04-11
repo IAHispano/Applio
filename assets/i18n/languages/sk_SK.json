@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Zahrievanie... (zostáva {} blokov)",
     "You can also use a custom path.": "Môžete použiť aj vlastnú cestu.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Podpora](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Vzorkovacia frekvencia používaná pre audio stream. Zmeňte toto, ak ovládač hlási nesprávnu frekvenciu (napr. 48000 Hz namiesto 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Vzorkovacia frekvencia používaná pre audio stream. Zmeňte toto, ak ovládač hlási nesprávnu frekvenciu (napr. 48000 Hz namiesto 44100 Hz).",
+    "Shutdown after finishing": "Vypnúť po dokončení",
+    "Automatically shut down computer when training is finished.": "Počítač automaticky vypnúť po dokončení trénovania."
 }

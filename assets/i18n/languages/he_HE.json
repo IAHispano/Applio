@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "מתחמם... ({} בלוקים נותרו)",
     "You can also use a custom path.": "ניתן גם להשתמש בנתיב מותאם אישית.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[תמיכה](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "קצב הדגימה המשמש להזרמת שמע. עקוף זאת אם מנהל ההתקן מדווח על קצב שגוי (למשל 48000 הרץ במקום 44100 הרץ)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "קצב הדגימה המשמש להזרמת שמע. עקוף זאת אם מנהל ההתקן מדווח על קצב שגוי (למשל 48000 הרץ במקום 44100 הרץ).",
+    "Shutdown after finishing": "כיבוי לאחר סיום",
+    "Automatically shut down computer when training is finished.": "כיבוי אוטומטי של המחשב כאשר הסיום של ההכשרה."
 }

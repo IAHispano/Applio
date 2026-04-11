@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Warming up... ({} blokova preostalo)",
     "You can also use a custom path.": "Možete koristiti i prilagođenu putanju.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Podrška](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Аудио ағым өсөн ҡулланылған үлгө тейзеһе. Драйвер дөрөҫ булмаған тейзе биреп, был урынды үҙгәртегеҙ (мәҫ. 44100 Hz урынына 48000 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Аудио ағым өсөн ҡулланылған үлгө тейзеһе. Драйвер дөрөҫ булмаған тейзе биреп, был урынды үҙгәртегеҙ (мәҫ. 44100 Hz урынына 48000 Hz).",
+    "Shutdown after finishing": "Tамамлағандан һуңдан сүндерергә",
+    "Automatically shut down computer when training is finished.": "Уҡытыу тамамланғандан һуңдан компьютерҙы автоматик рәүеште сүндерегез."
 }

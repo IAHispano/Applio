@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Разагрэў... (засталося {} блокаў)",
     "You can also use a custom path.": "Вы таксама можаце выкарыстоўваць карыстальніцкі шлях.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Падтрымка](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Частата дыскрэтызацыі для аўдыяпатоку. Замяніце гэта, калі драйвер паведамляе няправільную частату (напр. 48000 Гц замест 44100 Гц)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Частата дыскрэтызацыі для аўдыяпатоку. Замяніце гэта, калі драйвер паведамляе няправільную частату (напр. 48000 Гц замест 44100 Гц).",
+    "Shutdown after finishing": "Выключыць пасля завяршэння",
+    "Automatically shut down computer when training is finished.": "Аўтаматычна выключыць компьютар пасля завяршэння навучання."
 }

@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Opwarmen... ({} blokken resterend)",
     "You can also use a custom path.": "U kunt ook een aangepast pad gebruiken.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Ondersteuning](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Samplefrequentie die wordt gebruikt voor audiostreaming. Overschrijf dit als de driver een onjuiste frequentie rapporteert (bijv. 48000 Hz in plaats van 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Samplefrequentie die wordt gebruikt voor audiostreaming. Overschrijf dit als de driver een onjuiste frequentie rapporteert (bijv. 48000 Hz in plaats van 44100 Hz).",
+    "Shutdown after finishing": "Afsluiten na afronding",
+    "Automatically shut down computer when training is finished.": "Computer automatisch afsluiten wanneer training is voltooid."
 }

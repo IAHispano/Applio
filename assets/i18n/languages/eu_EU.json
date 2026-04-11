@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Berotzen... ({} bloke geratzen dira)",
     "You can also use a custom path.": "Bide pertsonalizatu bat ere erabil dezakezu.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Laguntza](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Audio irteera-fluxurako erabiltzen den lagin-tasa. Gainidatzi hau gidaria tasa okerra jakinarazten badu (adib. 44100 Hz-ren ordez 48000 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Audio irteera-fluxurako erabiltzen den lagin-tasa. Gainidatzi hau gidaria tasa okerra jakinarazten badu (adib. 44100 Hz-ren ordez 48000 Hz).",
+    "Shutdown after finishing": "Itzali amaitzean",
+    "Automatically shut down computer when training is finished.": "Ordenagailua automatikoki itzali entrenaketa amaitzean."
 }

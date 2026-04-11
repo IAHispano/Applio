@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Préchauffage... ({} blocs restants)",
     "You can also use a custom path.": "Vous pouvez également utiliser un chemin personnalisé.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Fréquence d'échantillonnage utilisée pour le flux audio. Remplacez ceci si le pilote signale une fréquence incorrecte (p. ex. 48000 Hz au lieu de 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Fréquence d'échantillonnage utilisée pour le flux audio. Remplacez ceci si le pilote signale une fréquence incorrecte (p. ex. 48000 Hz au lieu de 44100 Hz).",
+    "Shutdown after finishing": "Arrêter après terminer",
+    "Automatically shut down computer when training is finished.": "Arrêter automatiquement l'ordinateur à la fin de l'entraînement."
 }

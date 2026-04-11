@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "预热中... (还剩 {} 个块)",
     "You can also use a custom path.": "You can also use a custom wumbopath.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "用于音频流传输的采样率。如果驱动程序报告的采样率不正确（例如 48000 Hz 而非 44100 Hz），请在此处覆盖。"
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "用于音频流传输的采样率。如果驱动程序报告的采样率不正确（例如 48000 Hz 而非 44100 Hz），请在此处覆盖。",
+    "Shutdown after finishing": "完成后关闭",
+    "Automatically shut down computer when training is finished.": "训练完成后自动关闭计算机。"
 }

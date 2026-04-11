@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "E vakarautaki... ({} na ivolau e tiko ga)",
     "You can also use a custom path.": "E rawa talega ni ko vakayagataka e dua na sala vakayagataki.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Veitokoni](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Reiti ni ivakatokai e vakayagataki me na audio streaming. Vakacava oqo me vakacaucautaka na reiti e tukuna na driver (e.g. 48000 Hz e sega ni 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Reiti ni ivakatokai e vakayagataki me na audio streaming. Vakacava oqo me vakacaucautaka na reiti e tukuna na driver (e.g. 48000 Hz e sega ni 44100 Hz).",
+    "Shutdown after finishing": "Okitaka yani na kena wakataki",
+    "Automatically shut down computer when training is finished.": "Okitaka wakanikoni na kena wakataki ni training."
 }
