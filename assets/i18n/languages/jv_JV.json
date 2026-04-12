@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Panasake... ({} blok isih)",
     "You can also use a custom path.": "Sampeyan uga bisa nggunakake path kustom.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Dhukungan](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Tingkat sampel sing digunakake kanggo streaming audio. Ganti iki yen driver nglaporke tingkat sing salah (contone 48000 Hz tinimbang 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Tingkat sampel sing digunakake kanggo streaming audio. Ganti iki yen driver nglaporke tingkat sing salah (contone 48000 Hz tinimbang 44100 Hz).",
+    "Shutdown after finishing": "Matèni sawise rampung",
+    "Automatically shut down computer when training is finished.": "Matèni komputer sacara otomatis nalika latihan rampung."
 }

@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Bemelegítés... ({} blokk hátravan)",
     "You can also use a custom path.": "Használhat egyéni útvonalat is.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Támogatás](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Az audio streameléshez használt mintavételi frekvencia. Felülírja ezt, ha az illesztőprogram helytelen frekvenciát jelez (pl. 44100 Hz helyett 48000 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Az audio streameléshez használt mintavételi frekvencia. Felülírja ezt, ha az illesztőprogram helytelen frekvenciát jelez (pl. 44100 Hz helyett 48000 Hz).",
+    "Shutdown after finishing": "Leállítás az befejezés után",
+    "Automatically shut down computer when training is finished.": "A számítógép automatikus leállítása a képzés befejezésekor."
 }

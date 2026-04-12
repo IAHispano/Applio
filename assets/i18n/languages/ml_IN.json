@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "വാമിംഗ് അപ്... ({} ബ്ലോക്കുകൾ ശേഷിക്കുന്നു)",
     "You can also use a custom path.": "നിങ്ങൾക്ക് ഒരു കസ്റ്റം പാതയും ഉപയോഗിക്കാം.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[പിന്തുണ](https://discord.gg/urxFjYmYYh) — [ഗിറ്റ്ഹബ്ബ്](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ഓഡിയോ സ്ട്രീമിങ്ങിനായി ഉപയോഗിക്കുന്ന സാമ്പിൾ നിരക്ക്. ഡ്രൈവർ തെറ്റായ നിരക്ക് റിപ്പോർട്ട് ചെയ്യുന്നുണ്ടെങ്കിൽ ഇത് ഓവർറൈഡ് ചെയ്യുക (ഉദാ. 44100 Hz ന് പകരം 48000 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "ഓഡിയോ സ്ട്രീമിങ്ങിനായി ഉപയോഗിക്കുന്ന സാമ്പിൾ നിരക്ക്. ഡ്രൈവർ തെറ്റായ നിരക്ക് റിപ്പോർട്ട് ചെയ്യുന്നുണ്ടെങ്കിൽ ഇത് ഓവർറൈഡ് ചെയ്യുക (ഉദാ. 44100 Hz ന് പകരം 48000 Hz).",
+    "Shutdown after finishing": "പൂർത്തിയായതിനുശേഷം ഷട്ട്ഡൗൺ ചെയ്യുക",
+    "Automatically shut down computer when training is finished.": "പരിശീലനം പൂർത്തിയായതിനുശേഷം കമ്പ്യൂട്ടർ സ്വയമായി ഷട്ട്ഡൗൺ ചെയ്യുക."
 }

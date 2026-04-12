@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "Warming up... ({} blokke oor)",
     "You can also use a custom path.": "U kan ook 'n pasgemaakte pad gebruik.",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[Ondersteuning](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Monsterkoers wat vir oudio-stroom gebruik word. Ignoreer dit as die bestuurder 'n verkeerde koers aanmeld (bv. 48000 Hz in plaas van 44100 Hz)."
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "Monsterkoers wat vir oudio-stroom gebruik word. Ignoreer dit as die bestuurder 'n verkeerde koers aanmeld (bv. 48000 Hz in plaas van 44100 Hz).",
+    "Shutdown after finishing": "Sluit af na voltooiing",
+    "Automatically shut down computer when training is finished.": "Sluit rekenaar outomaties af nadat opleiding voltooi is."
 }

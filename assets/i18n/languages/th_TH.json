@@ -375,5 +375,7 @@
     "Warming up... ({} blocks remaining)": "กำลังอุ่นเครื่อง... (เหลืออีก {} บล็อก)",
     "You can also use a custom path.": "คุณสามารถใช้เส้นทางที่กำหนดเองได้เช่นกัน",
     "[Support](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)": "[สนับสนุน](https://discord.gg/urxFjYmYYh) — [GitHub](https://github.com/IAHispano/Applio)",
-    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "อัตราการสุ่มตัวอย่างที่ใช้สำหรับการสตรีมเสียง เปลี่ยนค่านี้หากไดรเวอร์รายงานอัตราที่ไม่ถูกต้อง (เช่น 48000 Hz แทน 44100 Hz)"
+    "Sample rate used for audio streaming. Specify the actual sample rate configured on your device, as drivers may report incorrect values.": "อัตราการสุ่มตัวอย่างที่ใช้สำหรับการสตรีมเสียง เปลี่ยนค่านี้หากไดรเวอร์รายงานอัตราที่ไม่ถูกต้อง (เช่น 48000 Hz แทน 44100 Hz)",
+    "Shutdown after finishing": "ปิดหลังจากเสร็จสิ้น",
+    "Automatically shut down computer when training is finished.": "ปิดคอมพิวเตอร์โดยอัตโนมัติเมื่อการฝึกอบรมเสร็จสิ้น"
 }
