@@ -693,6 +693,14 @@ def train_tab():
                         value=auto_enable_checkpointing(),
                         interactive=True,
                     )
+                    shutdown_check = gr.Checkbox(
+                        label=i18n("Shutdown after finishing"),
+                        info=i18n(
+                            "Automatically shut down computer when training is finished."
+                        ),
+                        value=False,
+                        interactive=True,
+                    )
             with gr.Row():
                 custom_pretrained = gr.Checkbox(
                     label=i18n("Custom Pretrained"),
@@ -762,15 +770,6 @@ def train_tab():
                 value="Auto",
                 interactive=True,
             )
-
-        shutdown_check = gr.Checkbox(
-            label=i18n("Shutdown after finishing"),
-            info=i18n(
-                "Automatically shut down computer when training is finished."
-            ),
-            value=False,
-            interactive=True,
-        )
 
         def enforce_terms(terms_accepted, *args):
             if not terms_accepted:
@@ -1031,7 +1030,7 @@ def train_tab():
                     d_pretrained_path,
                     vocoder,
                     checkpointing,
-                    shutdown_check
+                    shutdown_check,
                 ],
                 outputs=[train_output_info],
             )
