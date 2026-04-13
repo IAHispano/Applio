@@ -65,6 +65,11 @@ class Realtime:
         self.index_path = index_path
         self.embedder_model = embedder_model
         self.embedder_model_custom = embedder_model_custom
+        # During silence, keep GPU clocks warm at a lower duty cycle to reduce
+        # unnecessary compute while avoiding wake-up latency spikes.
+        self.keepalive_interval_s = max(float(kwargs.get("keepalive_ms", 200.0)), 0.0) / 1000.0
+        self.last_keepalive_time = 0.0
+        self._silence_template = torch.zeros(1, dtype=torch.float32)
 
         self.vad = (
             VADProcessor(
@@ -88,6 +93,7 @@ class Realtime:
         )
         self.device = self.pipeline.device
         self.dtype = self.pipeline.dtype
+        self._silence_template = self._silence_template.to(self.device)
         # noise reduce
         self.reduced_noise = (
             TorchGate(
@@ -248,6 +254,7 @@ class Realtime:
 
         board = self.board
         reduced_noise = self.reduced_noise
+        now = time.perf_counter()
 
         # Fill convert_buffer with real audio, output zeros during warmup.
         if self.warmup_blocks > 0:
@@ -282,19 +289,10 @@ class Realtime:
         if self.vad is not None:
             is_speech = self.vad.is_speech(audio_input_16k.cpu().numpy().copy())
             if not is_speech:
-                # Busy wait to keep power manager happy and clocks stable. Running pipeline on-demand seems to lag when the delay between
-                # voice changer activation is too high.
-                # https://forums.developer.nvidia.com/t/why-kernel-calculate-speed-got-slower-after-waiting-for-a-while/221059/9
-                audio_model = self.pipeline.voice_conversion(
-                    self.convert_buffer,
-                    self.pitch_buffer,
-                    self.pitchf_buffer,
+                self._run_silence_keepalive(
+                    now,
                     f0_up_key,
                     index_rate,
-                    self.convert_feature_size_16k,
-                    self.silence_front,
-                    self.skip_head,
-                    self.return_length,
                     protect,
                     volume_envelope,
                     f0_autotune,
@@ -303,28 +301,18 @@ class Realtime:
                     proposed_pitch_threshold,
                     reduced_noise,
                     board,
-                    block_size_16k=self.block_frame_16k,
                 )
-
                 return (
-                    torch.zeros(
-                        audio_model.shape, dtype=torch.float32, device=self.device
-                    ),
+                    self._silence_template,
                     vol,
                     True,
                 )
 
         if vol < self.input_sensitivity:
-            audio_model = self.pipeline.voice_conversion(
-                self.convert_buffer,
-                self.pitch_buffer,
-                self.pitchf_buffer,
+            self._run_silence_keepalive(
+                now,
                 f0_up_key,
                 index_rate,
-                self.convert_feature_size_16k,
-                self.silence_front,
-                self.skip_head,
-                self.return_length,
                 protect,
                 volume_envelope,
                 f0_autotune,
@@ -333,11 +321,9 @@ class Realtime:
                 proposed_pitch_threshold,
                 reduced_noise,
                 board,
-                block_size_16k=self.block_frame_16k,
             )
-
             return (
-                torch.zeros(audio_model.shape, dtype=torch.float32, device=self.device),
+                self._silence_template,
                 vol,
                 True,
             )
@@ -368,6 +354,44 @@ class Realtime:
         # Scale output by the current input RMS to suppress residue during silence.
         audio_out: torch.Tensor = self.resample_out(audio_model * vol_t)
         return audio_out, vol, False
+
+    def _run_silence_keepalive(
+        self,
+        now: float,
+        f0_up_key: int,
+        index_rate: float,
+        protect: float,
+        volume_envelope: float,
+        f0_autotune: bool,
+        f0_autotune_strength: float,
+        proposed_pitch: bool,
+        proposed_pitch_threshold: float,
+        reduced_noise,
+        board,
+    ):
+        if now - self.last_keepalive_time < self.keepalive_interval_s:
+            return
+        self.last_keepalive_time = now
+        self.pipeline.voice_conversion(
+            self.convert_buffer,
+            self.pitch_buffer,
+            self.pitchf_buffer,
+            f0_up_key,
+            index_rate,
+            self.convert_feature_size_16k,
+            self.silence_front,
+            self.skip_head,
+            self.return_length,
+            protect,
+            volume_envelope,
+            f0_autotune,
+            f0_autotune_strength,
+            proposed_pitch,
+            proposed_pitch_threshold,
+            reduced_noise,
+            board,
+            block_size_16k=self.block_frame_16k,
+        )
 
     def __del__(self):
         del self.pipeline
@@ -451,6 +475,10 @@ class VoiceChanger:
         )
 
         self.fade_out_window: torch.Tensor = 1 - self.fade_in_window
+        self.sola_norm_kernel = torch.ones(
+            1, 1, self.crossfade_frame, device=self.device, dtype=torch.float32
+        )
+        self.onset_fade_window = self.fade_in_window
         # The size will change from the previous result, so the record will be deleted.
         self.sola_buffer = torch.zeros(
             self.crossfade_frame, device=self.device, dtype=torch.float32
@@ -513,11 +541,7 @@ class VoiceChanger:
         ].float()
         cor_nom = F.conv1d(conv_input, self.sola_buffer[None, None, :])
         cor_den = torch.sqrt(
-            F.conv1d(
-                conv_input**2,
-                torch.ones(1, 1, self.crossfade_frame, device=self.device),
-            )
-            + 1e-8
+            F.conv1d(conv_input**2, self.sola_norm_kernel) + 1e-8
         )
         sola_offset = torch.argmax(cor_nom[0, 0] / cor_den[0, 0])
 
@@ -543,12 +567,9 @@ class VoiceChanger:
             # Apply sin² fade-in over crossfade_frame duration from onset.
             fade_len = min(block_size - onset_sample, self.crossfade_frame)
             if fade_len > 0:
-                t = torch.linspace(
-                    0.0, 1.0, steps=fade_len, device=self.device, dtype=torch.float32
-                )
-                audio[onset_sample : onset_sample + fade_len] *= (
-                    torch.sin(0.5 * np.pi * t) ** 2
-                )
+                audio[onset_sample : onset_sample + fade_len] *= self.onset_fade_window[
+                    :fade_len
+                ]
         else:
             audio[: self.crossfade_frame] *= self.fade_in_window
             audio[: self.crossfade_frame] += self.sola_buffer * self.fade_out_window
