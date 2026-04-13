@@ -106,6 +106,9 @@ class Realtime:
             new_freq=AUDIO_SAMPLE_RATE,
             dtype=torch.float32,
         ).to(self.device)
+        # Cached kernels/windows to avoid per-block allocations in SOLA path.
+        self.sola_den_kernel = None
+        self.onset_fade_window = None
 
     def setup_pedalboard(self, **kwargs):
         board = Pedalboard()
@@ -455,6 +458,10 @@ class VoiceChanger:
         self.sola_buffer = torch.zeros(
             self.crossfade_frame, device=self.device, dtype=torch.float32
         )
+        self.sola_den_kernel = torch.ones(
+            1, 1, self.crossfade_frame, device=self.device, dtype=torch.float32
+        )
+        self.onset_fade_window = self.fade_in_window
 
     def setup_soundfile_record(self):
         import soundfile as sf
@@ -515,7 +522,7 @@ class VoiceChanger:
         cor_den = torch.sqrt(
             F.conv1d(
                 conv_input**2,
-                torch.ones(1, 1, self.crossfade_frame, device=self.device),
+                self.sola_den_kernel,
             )
             + 1e-8
         )
@@ -543,12 +550,9 @@ class VoiceChanger:
             # Apply sin² fade-in over crossfade_frame duration from onset.
             fade_len = min(block_size - onset_sample, self.crossfade_frame)
             if fade_len > 0:
-                t = torch.linspace(
-                    0.0, 1.0, steps=fade_len, device=self.device, dtype=torch.float32
-                )
-                audio[onset_sample : onset_sample + fade_len] *= (
-                    torch.sin(0.5 * np.pi * t) ** 2
-                )
+                audio[onset_sample : onset_sample + fade_len] *= self.onset_fade_window[
+                    :fade_len
+                ]
         else:
             audio[: self.crossfade_frame] *= self.fade_in_window
             audio[: self.crossfade_frame] += self.sola_buffer * self.fade_out_window

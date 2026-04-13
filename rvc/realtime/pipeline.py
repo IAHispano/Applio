@@ -299,8 +299,9 @@ class Realtime_Pipeline:
             )
 
             feats = torch.cat((feats, feats[:, -1:, :]), 1)
-            # make a copy for pitch guidance and protection
-            feats0 = feats.detach().clone() if self.use_f0 else None
+            # Only allocate a protection branch when blending is enabled.
+            use_protection_blend = self.use_f0 and protect < 0.5
+            feats0 = feats.detach().clone() if use_protection_blend else None
 
             try:
                 if (
@@ -328,7 +329,7 @@ class Realtime_Pipeline:
                 )
 
                 # Pitch protection blending
-                if protect < 0.5:
+                if use_protection_blend:
                     pitchff = pitchf_p.detach().clone()
                     pitchff[pitchf_p > 0] = 1
                     pitchff[pitchf_p < 1] = protect
@@ -391,8 +392,10 @@ class Realtime_Pipeline:
         if self.dtype == torch.float16:
             npy = npy.astype(np.float32)
         score, ix = index.search(npy, k=8)
-        weight = np.square(1 / score)
-        weight /= weight.sum(axis=1, keepdims=True)
+        # Stabilize inverse-distance weighting to avoid inf/nan when score ~= 0.
+        safe_score = np.maximum(score, 1e-6)
+        weight = np.square(1.0 / safe_score)
+        weight /= np.maximum(weight.sum(axis=1, keepdims=True), 1e-6)
         npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
         if self.dtype == torch.float16:
             npy = npy.astype(np.float16)
