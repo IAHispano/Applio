@@ -122,6 +122,9 @@ class Realtime_Pipeline:
         self.resamplers = {}
         self.f0_model = self.setup_f0(self.f0_method)
         self.dtype = vc.dtype
+        # Reuse scalar tensors to avoid per-block allocations.
+        self._rate_tensor = torch.zeros(1, device=self.device, dtype=torch.float32)
+        self._p_len_tensor = torch.zeros(1, device=self.device, dtype=torch.int64)
 
     def setup_f0(self, f0_method: str = "fcpe"):
         if f0_method == "rmvpe":
@@ -279,8 +282,9 @@ class Realtime_Pipeline:
                 f0_new = f0_new.squeeze(0)
 
                 # Shift pitch cache left by one block and append new frames (trimmed [3:-1]).
-                pitch[:-shift] = pitch[shift:].clone()
-                pitchf[:-shift] = pitchf[shift:].clone()
+                if shift > 0:
+                    pitch[:-shift] = pitch[shift:].clone()
+                    pitchf[:-shift] = pitchf[shift:].clone()
                 interior_coarse = (
                     f0_coarse_new[3:-1] if f0_coarse_new.shape[0] > 4 else f0_coarse_new
                 )
@@ -341,12 +345,15 @@ class Realtime_Pipeline:
 
             pitchf_p = pitchf_p.to(self.dtype) if self.use_f0 else None
             # Trim oldest context so model output covers only the current block.
-            rate = torch.tensor(
-                [return_length / p_len], device=self.device, dtype=torch.float32
-            )
-            p_len = torch.tensor([p_len], device=self.device, dtype=torch.int64)
+            self._rate_tensor.fill_(return_length / p_len)
+            self._p_len_tensor.fill_(p_len)
             out_audio = self.vc.inference(
-                feats, p_len, self.torch_sid, pitch_p, pitchf_p, rate
+                feats,
+                self._p_len_tensor,
+                self.torch_sid,
+                pitch_p,
+                pitchf_p,
+                self._rate_tensor,
             ).float()
             # Match output RMS to the current block's input RMS.
             if volume_envelope < 1:
