@@ -338,7 +338,7 @@
     "Text to Synthesize": "Teksto nga I-synthesize",
     "The GPU information will be displayed here.": "Ang impormasyon sa GPU ipakita dinhi.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Ang audio file malampuson nga nadugang sa dataset. Palihug i-klik ang preprocess button.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Ang button nga 'Upload' para lang sa google colab: I-upload ang mga gi-export nga file sa ApplioExported folder sa imong Google Drive.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Ang 'Upload' button mo-package sa modelo ngadto sa usa ka .zip file ug i-save kini sa ApplioExported folder sa imong Google Drive.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "Ang f0 curve nagrepresentar sa mga kausaban sa base frequency sa usa ka tingog sa paglabay sa panahon, nga nagpakita kon giunsa pagsaka ug pagkanaog sa pitch.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Ang file nga imong gihulog dili balido nga pretrained file. Palihug sulayi pag-usab.",
     "The name that will appear in the model information.": "Ang ngalan nga makita sa impormasyon sa modelo.",

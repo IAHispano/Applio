@@ -338,7 +338,7 @@
     "Text to Synthesize": "Teks untuk Disintesis",
     "The GPU information will be displayed here.": "Informasi GPU akan ditampilkan di sini.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "File audio telah berhasil ditambahkan ke dataset. Silakan klik tombol pra-proses.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Tombol 'Unggah' hanya untuk google colab: Mengunggah file yang diekspor ke folder ApplioExported di Google Drive Anda.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Tombol 'Unggah' mengemas model ke dalam file .zip dan menyimpannya ke folder ApplioExported di Google Drive Anda.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "Kurva f0 mewakili variasi frekuensi dasar suara dari waktu ke waktu, menunjukkan bagaimana nada naik dan turun.",
     "The file you dropped is not a valid pretrained file. Please try again.": "File yang Anda letakkan bukan file pre-trained yang valid. Silakan coba lagi.",
     "The name that will appear in the model information.": "Nama yang akan muncul di informasi model.",

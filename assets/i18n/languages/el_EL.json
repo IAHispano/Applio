@@ -338,7 +338,7 @@
     "Text to Synthesize": "Κείμενο προς Σύνθεση",
     "The GPU information will be displayed here.": "Οι πληροφορίες της GPU θα εμφανιστούν εδώ.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Το αρχείο ήχου προστέθηκε με επιτυχία στο σύνολο δεδομένων. Παρακαλώ κάντε κλικ στο κουμπί προεπεξεργασίας.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Το κουμπί 'Μεταφόρτωση' είναι μόνο για το google colab: Μεταφορτώνει τα εξαγόμενα αρχεία στον φάκελο ApplioExported στο Google Drive σας.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Το κουμπί 'Μεταφόρτωση' πακετάρει το μοντέλο σε ένα αρχείο .zip και το αποθηκεύει στον φάκελο ApplioExported στο Google Drive σας.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "Η καμπύλη f0 αναπαριστά τις μεταβολές στη θεμελιώδη συχνότητα μιας φωνής με την πάροδο του χρόνου, δείχνοντας πώς το τονικό ύψος ανεβαίνει και κατεβαίνει.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Το αρχείο που αποθέσατε δεν είναι έγκυρο προεκπαιδευμένο αρχείο. Παρακαλώ προσπαθήστε ξανά.",
     "The name that will appear in the model information.": "Το όνομα που θα εμφανίζεται στις πληροφορίες του μοντέλου.",

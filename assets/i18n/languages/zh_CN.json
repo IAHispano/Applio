@@ -338,7 +338,7 @@
     "Text to Synthesize": "要合成的文本",
     "The GPU information will be displayed here.": "GPU 信息将在此处显示。",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "音频文件已成功添加到数据集。请点击预处理按钮。",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "“上传”按钮仅适用于 Google Colab：将导出的文件上传到您 Google Drive 中的 ApplioExported 文件夹。",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "“上传”按钮会将模型打包为 .zip 文件，并将其保存到您 Google Drive 中的 ApplioExported 文件夹中。",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "f0 曲线表示声音基频随时间的变化，显示音高如何上升和下降。",
     "The file you dropped is not a valid pretrained file. Please try again.": "您拖放的文件不是有效的预训练文件。请重试。",
     "The name that will appear in the model information.": "将出现在模型信息中的名称。",

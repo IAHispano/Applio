@@ -338,7 +338,7 @@
     "Text to Synthesize": "Tekstas sintezei",
     "The GPU information will be displayed here.": "Čia bus rodoma GPU informacija.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Garso failas sėkmingai pridėtas prie duomenų rinkinio. Prašome spausti paruošiamojo apdorojimo mygtuką.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Mygtukas „Įkelti“ skirtas tik Google Colab: Eksportuotus failus įkelia į „ApplioExported“ aplanką jūsų Google Drive.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Mygtukas „Įkelti“ supakuoja modelį į .zip failą ir išsaugo jį „ApplioExported“ aplanke jūsų Google Drive.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "F0 kreivė parodo balso pagrindinio dažnio pokyčius laike, atspindėdama, kaip tono aukštis kyla ir krenta.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Jūsų įkeltas failas nėra tinkamas iš anksto apmokytas failas. Bandykite dar kartą.",
     "The name that will appear in the model information.": "Pavadinimas, kuris bus rodomas modelio informacijoje.",

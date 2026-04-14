@@ -338,7 +338,7 @@
     "Text to Synthesize": "Tekst za sintezu",
     "The GPU information will be displayed here.": "Informacije o GPU-u će biti prikazane ovdje.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Audio datoteka je uspješno dodana u skup podataka. Molimo kliknite gumb za predobradu.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Gumb 'Upload' je samo za Google Colab: Prenosi izvezene datoteke u mapu ApplioExported na vašem Google Driveu.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Gumb 'Upload' pakira model u .zip datoteku i sprema ga u mapu ApplioExported na vašem Google Driveu.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "F0 krivulja predstavlja varijacije u osnovnoj frekvenciji glasa tijekom vremena, pokazujući kako visina tona raste i pada.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Datoteka koju ste ispustili nije valjana pred-trenirana datoteka. Molimo pokušajte ponovno.",
     "The name that will appear in the model information.": "Naziv koji će se pojaviti u informacijama o modelu.",

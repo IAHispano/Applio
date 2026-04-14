@@ -338,7 +338,7 @@
     "Text to Synthesize": "Lahatsoratra Hoforonina",
     "The GPU information will be displayed here.": "Hiseho eto ny fampahalalana momba ny GPU.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Tafiditra soa aman-tsara ao anatin'ny angona ny raki-peo. Azafady, tsindrio ny bokotra 'preprocess'.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Ny bokotra 'Upload' dia ho an'ny google colab ihany: Mampiakatra ireo rakitra naondrana mankany amin'ny lahatahiry ApplioExported ao amin'ny Google Drive anao.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Ny bokotra 'Upload' dia mamono ny modely anaty rakitra .zip ary mitahiry izany ao amin'ny lahatahiry ApplioExported ao amin'ny Google Drive anao.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "Ny f0 curve dia maneho ny fiovaovan'ny matetika fototry ny feo rehefa mandeha ny fotoana, mampiseho ny fiakaran'ny sy ny fidinan'ny haavony.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Tsy rakitra efa voaofana mialoha manan-kery ilay napetrakao. Azafady, andramo indray.",
     "The name that will appear in the model information.": "Ny anarana izay hiseho ao amin'ny fampahalalana momba ny maodely.",

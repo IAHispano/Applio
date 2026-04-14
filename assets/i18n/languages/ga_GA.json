@@ -338,7 +338,7 @@
     "Text to Synthesize": "Téacs le Sintéisiú",
     "The GPU information will be displayed here.": "Taispeánfar faisnéis an GPU anseo.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Cuireadh an comhad fuaime leis an tacar sonraí go rathúil. Cliceáil ar an gcnaipe réamhphróiseála le do thoil.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Is le haghaidh google colab amháin an cnaipe 'Uaslódáil': Uaslódálann sé na comhaid easpórtáilte chuig an bhfillteán ApplioExported i do Google Drive.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Déanann an cnaipe 'Uaslódáil' an tsamhail a phacáistiú i gcomhad .zip agus sábhálann sé é chuig an bhfillteán ApplioExported i do Google Drive.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "Léiríonn an cuar F0 na hathruithe i mbunmhinicíocht gutha le himeacht ama, ag taispeáint conas a ardaíonn agus a thiteann an tuinairde.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Ní comhad réamhthraenáilte bailí é an comhad a scaoil tú. Bain triail eile as.",
     "The name that will appear in the model information.": "An t-ainm a bheidh le feiceáil i bhfaisnéis an mhúnla.",

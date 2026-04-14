@@ -338,7 +338,7 @@
     "Text to Synthesize": "合成するテキスト",
     "The GPU information will be displayed here.": "GPU情報がここに表示されます。",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "音声ファイルがデータセットに正常に追加されました。前処理ボタンをクリックしてください。",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "「アップロード」ボタンはGoogle Colab専用です：エクスポートされたファイルをGoogleドライブのApplioExportedフォルダにアップロードします。",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "「アップロード」ボタンは、モデルを.zipファイルにパッケージ化し、GoogleドライブのApplioExportedフォルダに保存します。",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "f0カーブは、声の基本周波数の時間的な変化を表し、ピッチの上下を示します。",
     "The file you dropped is not a valid pretrained file. Please try again.": "ドロップされたファイルは有効な事前学習済みファイルではありません。もう一度お試しください。",
     "The name that will appear in the model information.": "モデル情報に表示される名前。",

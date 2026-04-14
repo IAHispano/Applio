@@ -338,7 +338,7 @@
     "Text to Synthesize": "Szintetizálandó szöveg",
     "The GPU information will be displayed here.": "A GPU információk itt fognak megjelenni.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "A hangfájl sikeresen hozzá lett adva az adathalmazhoz. Kérjük, kattintson az előfeldolgozás gombra.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "A 'Feltöltés' gomb csak a Google Colab-hoz használható: Feltölti az exportált fájlokat a Google Drive-on lévő ApplioExported mappába.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "A 'Feltöltés' gomb egy .zip fájlba csomagolja a modellt, és elmenti a Google Drive-on lévő ApplioExported mappába.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "Az f0 görbe a hang alapfrekvenciájának időbeli változásait ábrázolja, megmutatva, hogyan emelkedik és süllyed a hangmagasság.",
     "The file you dropped is not a valid pretrained file. Please try again.": "A behúzott fájl nem érvényes előtanított fájl. Kérjük, próbálja újra.",
     "The name that will appear in the model information.": "A név, amely a modell információi között fog megjelenni.",
