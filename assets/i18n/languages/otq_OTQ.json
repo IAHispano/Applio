@@ -338,7 +338,7 @@
     "Text to Synthesize": "Texto pa Sintetizar",
     "The GPU information will be displayed here.": "Ar hñäki de ar GPU se mostrará nuwa.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Ar hets'i de audio se ha agregado ko éxito ar conjunto de datos. Y'o̲t'e clic ja ar botón de preprocesamiento.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Ar botón 'Cargar' ar Honto pa Google Colab: Carga ya hets'i exportados ma carpeta ApplioExported jar ir Google Drive.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Ar botón 'Cargar' empaqueta ar modelo jar un hets'i .zip ne lo guarda ma carpeta ApplioExported jar ir Google Drive.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "Ar curva f0 representa ya variaciones ja ar frecuencia 'ba̲ts'i de 'nar hñä ma través de ar pa, mostrando Tema sube ne baxtho ar tono.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Ar hets'i da togi hingi 'nar hets'i mbayentrenado válido. Inténtalo de 'ra'yo.",
     "The name that will appear in the model information.": "Ar thuhu da aparecerá ja ar hñäki de ar modelo.",

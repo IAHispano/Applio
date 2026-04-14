@@ -338,7 +338,7 @@
     "Text to Synthesize": "தொகுக்க வேண்டிய உரை",
     "The GPU information will be displayed here.": "GPU தகவல் இங்கே காட்டப்படும்.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "ஆடியோ கோப்பு வெற்றிகரமாக தரவுத்தொகுப்பில் சேர்க்கப்பட்டது. தயவுசெய்து முன் செயலாக்க பொத்தானைக் கிளிக் செய்யவும்.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "'பதிவேற்று' பொத்தான் கூகிள் கோலாபிற்கு மட்டுமே: ஏற்றுமதி செய்யப்பட்ட கோப்புகளை உங்கள் கூகிள் டிரைவில் உள்ள ApplioExported கோப்புறைக்கு பதிவேற்றுகிறது.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "'பதிவேற்று' பொத்தான் மாதிரியை ஒரு .zip கோப்பில் தொகுத்து, அதை உங்கள் கூகிள் டிரைவில் உள்ள ApplioExported கோப்புறையில் சேமிக்கிறது.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "f0 வளைவு என்பது காலப்போக்கில் ஒரு குரலின் அடிப்படை அதிர்வெண்ணில் ஏற்படும் மாறுபாடுகளைக் குறிக்கிறது, சுருதி எப்படி உயர்கிறது மற்றும் குறைகிறது என்பதைக் காட்டுகிறது.",
     "The file you dropped is not a valid pretrained file. Please try again.": "நீங்கள் இழுத்து விட்ட கோப்பு ஒரு சரியான முன்பயிற்சி பெற்ற கோப்பு அல்ல. மீண்டும் முயற்சிக்கவும்.",
     "The name that will appear in the model information.": "மாடல் தகவலில் தோன்றும் பெயர்.",

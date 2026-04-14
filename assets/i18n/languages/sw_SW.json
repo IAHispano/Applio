@@ -338,7 +338,7 @@
     "Text to Synthesize": "Maandishi ya Kusanisi",
     "The GPU information will be displayed here.": "Taarifa za GPU zitaonyeshwa hapa.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Faili ya sauti imeongezwa kwa mafanikio kwenye hifadhidata. Tafadhali bofya kitufe cha kuchakata awali.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Kitufe cha 'Pakia' ni kwa ajili ya google colab pekee: Hupakia faili zilizohamishwa kwenye folda ya ApplioExported katika Hifadhi yako ya Google.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Kitufe cha 'Pakia' hupakia modeli ndani ya faili la .zip na kuihifadhi kwenye folda ya ApplioExported katika Hifadhi yako ya Google.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "Mzingo wa f0 unawakilisha mabadiliko katika masafa ya msingi ya sauti kwa muda, ukionyesha jinsi toni inavyopanda na kushuka.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Faili uliyodondosha si faili halali iliyofunzwa awali. Tafadhali jaribu tena.",
     "The name that will appear in the model information.": "Jina litakaloonekana katika taarifa za mfumo.",

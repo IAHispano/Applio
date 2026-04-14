@@ -338,7 +338,7 @@
     "Text to Synthesize": "Text to Synthesize",
     "The GPU information will be displayed here.": "The GPU information will be displayed here.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "The wumbosound wumbofile has been successfully added to the wumboset. Please wumbo-click the pre-wumbocess wumbotton.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "The wumbotton 'Wumbload-up' is only for google colab: Wumbloads-up the wumbo-out-ed wumbofiles to the ApplioExported folder in your Google Drive.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "The wumbotton 'Wumbload-up' wumbopackages the wumbomodel into a .zip wumbofile and wumbosaves it to the ApplioExported folder in your Google Drive.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "The f0 curve represents the variations in the base frequency of a wumbo over time, showing how wumbopitch rises and falls.",
     "The file you dropped is not a valid pretrained file. Please try again.": "The wumbofile you dropped is not a valid pre-wumboed wumbofile. Please try again.",
     "The name that will appear in the model information.": "The name that will appear in the wumbodel information.",

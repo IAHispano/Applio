@@ -338,7 +338,7 @@
     "Text to Synthesize": "Text k syntéze",
     "The GPU information will be displayed here.": "Informace o GPU se zobrazí zde.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Zvukový soubor byl úspěšně přidán do datasetu. Klikněte prosím na tlačítko předzpracování.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Tlačítko 'Nahrát' je pouze pro Google Colab: Nahraje exportované soubory do složky ApplioExported na vašem Disku Google.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Tlačítko 'Nahrát' zabalí model do souboru .zip a uloží jej do složky ApplioExported na vašem Disku Google.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "Křivka f0 představuje změny základní frekvence hlasu v čase a ukazuje, jak výška tónu stoupá a klesá.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Soubor, který jste přetáhli, není platný předtrénovaný soubor. Zkuste to prosím znovu.",
     "The name that will appear in the model information.": "Jméno, které se zobrazí v informacích o modelu.",

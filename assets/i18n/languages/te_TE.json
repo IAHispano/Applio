@@ -338,7 +338,7 @@
     "Text to Synthesize": "సంశ్లేషణ చేయాల్సిన వచనం",
     "The GPU information will be displayed here.": "GPU సమాచారం ఇక్కడ ప్రదర్శించబడుతుంది.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "ఆడియో ఫైల్ డేటాసెట్‌కు విజయవంతంగా జోడించబడింది. దయచేసి ప్రీప్రాసెస్ బటన్‌పై క్లిక్ చేయండి.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "'అప్‌లోడ్' బటన్ కేవలం గూగుల్ కోలాబ్ కోసం మాత్రమే: ఎగుమతి చేయబడిన ఫైళ్లను మీ గూగుల్ డ్రైవ్‌లోని ApplioExported ఫోల్డర్‌కు అప్‌లోడ్ చేస్తుంది.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "'అప్‌లోడ్' బటన్ మోడల్‌ను .zip ఫైల్‌లో ప్యాకేజ్ చేస్తుంది మరియు దానిని మీ గూగుల్ డ్రైవ్‌లోని ApplioExported ఫోల్డర్‌లో సేవ్ చేస్తుంది.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "f0 కర్వ్ కాలక్రమేణా వాయిస్ యొక్క బేస్ ఫ్రీక్వెన్సీలో వైవిధ్యాలను సూచిస్తుంది, పిచ్ ఎలా పెరుగుతుంది మరియు తగ్గుతుంది అని చూపిస్తుంది.",
     "The file you dropped is not a valid pretrained file. Please try again.": "మీరు వదిలిన ఫైల్ చెల్లుబాటు అయ్యే ముందే శిక్షణ పొందిన ఫైల్ కాదు. దయచేసి మళ్లీ ప్రయత్నించండి.",
     "The name that will appear in the model information.": "మోడల్ సమాచారంలో కనిపించే పేరు.",

@@ -338,7 +338,7 @@
     "Text to Synthesize": "Vosa me Buli",
     "The GPU information will be displayed here.": "Na itukutuku ni GPU ena vakaraitaki eke.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Sa vakacurumi vinaka na faile rorogo ki na isoqoni ni itukutuku. Yalovinaka toboqa na butoni ni vakarautaka taumada.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Na butoni 'Upload' e me baleta ga na google colab: E vakacuruma na faile sa vakarautaki ki na ilalawa ApplioExported ena nomu Google Drive.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Na butoni 'Upload' e paketetaka na model ki loma ni dua na .zip faile ka maroroya ki na ilalawa ApplioExported ena nomu Google Drive.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "Na f0 curve e matataka na veisau ni frequency ni dua na domo ena loma ni gauna, ka vakaraitaka na kena tubu cake ka siro sobu na cere ni domo.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Na faile ko biuta e sega ni faile vuli oti dina. Yalovinaka tovolea tale.",
     "The name that will appear in the model information.": "Na yaca ena rairai ena itukutuku ni ivakarau.",

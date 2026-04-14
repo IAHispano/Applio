@@ -338,7 +338,7 @@
     "Text to Synthesize": "Kupuʻilea ke Synthesize",
     "The GPU information will be displayed here.": "ʻE fakahā ʻa e fakamatala ʻo e GPU ʻi heni.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Kuo tānaki lavameʻa ʻa e faile ongo ki he seti fakamatalá. Kātaki ʻo lomiʻi ʻa e meʻa-lomi ngāueʻi kimuʻa.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Ko e meʻa-lomi 'Upload' ʻoku ki he google colab pē: ʻOkú ne ʻupload ʻa e ngaahi faile naʻe hū atu ki he tōʻanga faile ApplioExported ʻi hoʻo Google Drive.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Ko e meʻa-lomi 'Upload' ʻokú ne faʻo ʻa e sīpingá ki ha faile .zip pea seivi ia ki he tōʻanga faile ApplioExported ʻi hoʻo Google Drive.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "ʻOku fakafofongaʻi ʻe he kave f0 ʻa e ngaahi liliu ʻi he tuʻunga fakaʻauliki ʻo ha leʻo ʻi he faai mai ʻa e taimi, ʻo fakahā ai ʻa e founga ʻoku māʻolunga mo maʻulalo ai ʻa e leʻo.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Ko e faile naʻá ke lī maí ʻoku ʻikai ko ha faile akoʻi mua totonu. Kātaki ʻo toe feinga.",
     "The name that will appear in the model information.": "Ko e hingoa ʻe hā ʻi he fakamatala ʻo e mōtele.",

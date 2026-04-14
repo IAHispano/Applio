@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+import zipfile
 from multiprocessing import cpu_count
 
 import gradio as gr
@@ -276,27 +277,28 @@ def export_index(index_path):
 
 
 # Upload to Google Drive
-def upload_to_google_drive(pth_path, index_path):
-    def upload_file(file_path):
-        if file_path:
-            try:
-                gr.Info(f"Uploading {pth_path} to Google Drive...")
-                google_drive_folder = "/content/drive/MyDrive/ApplioExported"
-                if not os.path.exists(google_drive_folder):
-                    os.makedirs(google_drive_folder)
-                google_drive_file_path = os.path.join(
-                    google_drive_folder, os.path.basename(file_path)
-                )
-                if os.path.exists(google_drive_file_path):
-                    os.remove(google_drive_file_path)
-                shutil.copy2(file_path, google_drive_file_path)
-                gr.Info("File uploaded successfully.")
-            except Exception as error:
-                print(f"An error occurred uploading to Google Drive: {error}")
-                gr.Info("Error uploading to Google Drive")
-
-    upload_file(pth_path)
-    upload_file(index_path)
+def upload_to_google_drive(pth_path, index_path, model_name):
+    if not os.path.exists(os.path.join(models_path, model_name)):
+        return gr.Info("Model folder not found.")
+    if not pth_path or not os.path.exists(pth_path):
+        return gr.Info(".pth not found.")
+    try:
+        zip_path = f"{model_name}.zip"
+        gr.Info("Uploading...")
+        with zipfile.ZipFile(zip_path, "w") as zipf:
+            zipf.write(pth_path, os.path.basename(pth_path))
+            if index_path and os.path.exists(index_path):
+                zipf.write(index_path, os.path.basename(index_path))
+        drive_folder = "/content/drive/MyDrive/ApplioExported"
+        os.makedirs(drive_folder, exist_ok=True)
+        dest = os.path.join(drive_folder, zip_path)
+        if os.path.exists(dest):
+            os.remove(dest)
+        shutil.move(zip_path, dest)
+        gr.Info("Uploaded.")
+    except Exception as error:
+        print(f"An error occurred uploading to Google Drive: {error}")
+        gr.Info("Upload failed.")
 
 
 def auto_enable_checkpointing():
@@ -813,10 +815,10 @@ def train_tab():
 
     # Export Model section
     with gr.Accordion(i18n("Export Model"), open=False):
-        if not os.name == "nt":
+        if os.getenv("COLAB_RELEASE_TAG"):
             gr.Markdown(
                 i18n(
-                    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive."
+                    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive."
                 )
             )
         with gr.Row():
@@ -853,11 +855,11 @@ def train_tab():
         with gr.Row():
             with gr.Column():
                 refresh_export = gr.Button(i18n("Refresh"))
-                if not os.name == "nt":
+                if os.getenv("COLAB_RELEASE_TAG"):
                     upload_exported = gr.Button(i18n("Upload"))
                     upload_exported.click(
                         fn=upload_to_google_drive,
-                        inputs=[pth_dropdown_export, index_dropdown_export],
+                        inputs=[pth_dropdown_export, index_dropdown_export, model_name],
                         outputs=[],
                     )
 

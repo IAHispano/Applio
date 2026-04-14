@@ -338,7 +338,7 @@
     "Text to Synthesize": "Text a sintetitzar",
     "The GPU information will be displayed here.": "La informació de la GPU es mostrarà aquí.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "El fitxer d'àudio s'ha afegit correctament al conjunt de dades. Si us plau, fes clic al botó de preprocessament.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "El botó 'Pujar' (Upload) és només per a Google Colab: Puja els fitxers exportats a la carpeta ApplioExported del teu Google Drive.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "El botó 'Pujar' empaqueta el model en un fitxer .zip i el desa a la carpeta ApplioExported del teu Google Drive.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "La corba F0 representa les variacions en la freqüència base d'una veu al llarg del temps, mostrant com el to puja i baixa.",
     "The file you dropped is not a valid pretrained file. Please try again.": "El fitxer que has deixat anar no és un fitxer preentrenat vàlid. Si us plau, torna-ho a provar.",
     "The name that will appear in the model information.": "El nom que apareixerà a la informació del model.",

@@ -338,7 +338,7 @@
     "Text to Synthesize": "합성할 텍스트",
     "The GPU information will be displayed here.": "GPU 정보가 여기에 표시됩니다.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "오디오 파일이 데이터셋에 성공적으로 추가되었습니다. 전처리 버튼을 클릭하세요.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "'업로드' 버튼은 구글 코랩 전용입니다: 내보낸 파일을 구글 드라이브의 ApplioExported 폴더에 업로드합니다.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "'업로드' 버튼은 모델을 .zip 파일로 패키징하여 구글 드라이브의 ApplioExported 폴더에 저장합니다.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "f0 곡선은 시간 경과에 따른 음성의 기본 주파수 변화를 나타내며, 피치가 어떻게 오르내리는지 보여줍니다.",
     "The file you dropped is not a valid pretrained file. Please try again.": "드롭한 파일은 유효한 사전 학습된 파일이 아닙니다. 다시 시도하세요.",
     "The name that will appear in the model information.": "모델 정보에 표시될 이름입니다.",

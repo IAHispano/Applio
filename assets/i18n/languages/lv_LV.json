@@ -338,7 +338,7 @@
     "Text to Synthesize": "Teksts sintezēšanai",
     "The GPU information will be displayed here.": "GPU informācija tiks parādīta šeit.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Audio fails ir veiksmīgi pievienots datu kopai. Lūdzu, noklikšķiniet uz priekšapstrādes pogas.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Poga 'Augšupielādēt' ir paredzēta tikai Google Colab: Augšupielādē eksportētos failus uz ApplioExported mapi jūsu Google diskā.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Poga 'Augšupielādēt' iepako modeli .zip failā un saglabā to jūsu Google diska mapē ApplioExported.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "F0 līkne attēlo balss pamatfrekvences izmaiņas laika gaitā, parādot, kā toņa augstums paceļas un krītas.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Iemestais fails nav derīgs iepriekš apmācīts fails. Lūdzu, mēģiniet vēlreiz.",
     "The name that will appear in the model information.": "Nosaukums, kas parādīsies modeļa informācijā.",

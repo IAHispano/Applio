@@ -338,7 +338,7 @@
     "Text to Synthesize": "Tèks pou Sentetize",
     "The GPU information will be displayed here.": "Enfòmasyon GPU a ap afiche isit la.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Fichye odyo a te ajoute nan ansanm done a avèk siksè. Tanpri klike sou bouton pre-trete a.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "Bouton 'Telechaje' a se sèlman pou google colab: Li telechaje fichye ekspòte yo nan dosye ApplioExported ki nan Google Drive ou a.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "Bouton 'Telechaje' a pake modèl la nan yon fichye .zip epi sove li nan dosye ApplioExported ki nan Google Drive ou a.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "Koub f0 a reprezante varyasyon nan frekans de baz yon vwa sou tan, ki montre kijan wotè son an monte ak desann.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Fichye ou depoze a pa yon fichye pre-antrene ki valab. Tanpri eseye ankò.",
     "The name that will appear in the model information.": "Non ki pral parèt nan enfòmasyon modèl la.",

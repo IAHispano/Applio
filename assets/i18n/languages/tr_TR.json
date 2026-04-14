@@ -338,7 +338,7 @@
     "Text to Synthesize": "Sentezlenecek Metin",
     "The GPU information will be displayed here.": "GPU bilgileri burada görüntülenecektir.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "Ses dosyası veri setine başarıyla eklendi. Lütfen ön işleme düğmesine tıklayın.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "'Yükle' düğmesi yalnızca Google Colab içindir: Dışa aktarılan dosyaları Google Drive'ınızdaki ApplioExported klasörüne yükler.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "'Yükle' düğmesi modeli bir .zip dosyası olarak paketler ve Google Drive'ınızdaki ApplioExported klasörüne kaydeder.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "F0 eğrisi, bir sesin temel frekansındaki zaman içindeki değişimleri temsil eder ve perdenin nasıl yükselip alçaldığını gösterir.",
     "The file you dropped is not a valid pretrained file. Please try again.": "Bıraktığınız dosya geçerli bir önceden eğitilmiş dosya değil. Lütfen tekrar deneyin.",
     "The name that will appear in the model information.": "Model bilgilerinde görünecek olan ad.",

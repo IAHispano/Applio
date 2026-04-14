@@ -338,7 +338,7 @@
     "Text to Synthesize": "Texto a Sintetizar",
     "The GPU information will be displayed here.": "As informações da GPU serão exibidas aqui.",
     "The audio file has been successfully added to the dataset. Please click the preprocess button.": "O arquivo de áudio foi adicionado com sucesso ao dataset. Por favor, clique no botão de pré-processar.",
-    "The button 'Upload' is only for google colab: Uploads the exported files to the ApplioExported folder in your Google Drive.": "O botão 'Upload' é apenas para o Google Colab: Envia os arquivos exportados para a pasta ApplioExported no seu Google Drive.",
+    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive.": "O botão 'Upload' empacota o modelo em um arquivo .zip e o salva na pasta ApplioExported no seu Google Drive.",
     "The f0 curve represents the variations in the base frequency of a voice over time, showing how pitch rises and falls.": "A curva f0 representa as variações na frequência base de uma voz ao longo do tempo, mostrando como o tom sobe e desce.",
     "The file you dropped is not a valid pretrained file. Please try again.": "O arquivo que você arrastou não é um arquivo pré-treinado válido. Por favor, tente novamente.",
     "The name that will appear in the model information.": "O nome que aparecerá nas informações do modelo.",
