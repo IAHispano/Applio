@@ -451,6 +451,9 @@ class VoiceChanger:
         )
 
         self.fade_out_window: torch.Tensor = 1 - self.fade_in_window
+        self.sola_denominator_kernel = torch.ones(
+            1, 1, self.crossfade_frame, device=self.device, dtype=torch.float32
+        )
         # The size will change from the previous result, so the record will be deleted.
         self.sola_buffer = torch.zeros(
             self.crossfade_frame, device=self.device, dtype=torch.float32
@@ -513,10 +516,7 @@ class VoiceChanger:
         ].float()
         cor_nom = F.conv1d(conv_input, self.sola_buffer[None, None, :])
         cor_den = torch.sqrt(
-            F.conv1d(
-                conv_input**2,
-                torch.ones(1, 1, self.crossfade_frame, device=self.device),
-            )
+            F.conv1d(conv_input**2, self.sola_denominator_kernel)
             + 1e-8
         )
         sola_offset = torch.argmax(cor_nom[0, 0] / cor_den[0, 0])
@@ -543,12 +543,9 @@ class VoiceChanger:
             # Apply sin² fade-in over crossfade_frame duration from onset.
             fade_len = min(block_size - onset_sample, self.crossfade_frame)
             if fade_len > 0:
-                t = torch.linspace(
-                    0.0, 1.0, steps=fade_len, device=self.device, dtype=torch.float32
-                )
-                audio[onset_sample : onset_sample + fade_len] *= (
-                    torch.sin(0.5 * np.pi * t) ** 2
-                )
+                audio[onset_sample : onset_sample + fade_len] *= self.fade_in_window[
+                    :fade_len
+                ]
         else:
             audio[: self.crossfade_frame] *= self.fade_in_window
             audio[: self.crossfade_frame] += self.sola_buffer * self.fade_out_window
