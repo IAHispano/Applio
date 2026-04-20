@@ -516,8 +516,7 @@ class VoiceChanger:
         ].float()
         cor_nom = F.conv1d(conv_input, self.sola_buffer[None, None, :])
         cor_den = torch.sqrt(
-            F.conv1d(conv_input**2, self.sola_denominator_kernel)
-            + 1e-8
+            F.conv1d(conv_input**2, self.sola_denominator_kernel) + 1e-8
         )
         sola_offset = torch.argmax(cor_nom[0, 0] / cor_den[0, 0])
 
