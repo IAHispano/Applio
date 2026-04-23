@@ -39,7 +39,7 @@ if sys.platform == "win32":
     _pe._ProactorBasePipeTransport._call_connection_lost = _ccl_patched
 
 # detect gradio
-GRADIO_6 = int(gr.__version__.split('.')[0]) >= 6
+GRADIO_6 = int(gr.__version__.split(".")[0]) >= 6
 
 # Zluda hijack
 import rvc.lib.zluda
