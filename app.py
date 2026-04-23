@@ -38,6 +38,9 @@ if sys.platform == "win32":
 
     _pe._ProactorBasePipeTransport._call_connection_lost = _ccl_patched
 
+# detect gradio
+GRADIO_6 = int(gr.__version__.split('.')[0]) >= 6
+
 # Zluda hijack
 import rvc.lib.zluda
 
@@ -89,6 +92,25 @@ client_mode = "--client" in sys.argv
 # Define Gradio interface
 with gr.Blocks(
     title="Applio",
+    **(
+        {
+            "theme": my_applio,
+            "css": "footer{display:none !important}",
+            "js": (
+                (
+                    "() => {\n"
+                    + pathlib.Path(
+                        os.path.join(now_dir, "tabs", "realtime", "main.js")
+                    ).read_text()
+                    + "\n}"
+                )
+                if client_mode
+                else None
+            ),
+        }
+        if not GRADIO_6
+        else {}
+    ),
 ) as Applio:
     gr.Markdown("# Applio")
     gr.Markdown(
@@ -146,14 +168,20 @@ def launch_gradio(server_name: str, server_port: int) -> None:
         server_name=server_name,
         server_port=server_port,
         prevent_thread_lock=client_mode,
-        theme=my_applio,
-        css="footer{display:none !important}",
-        js=(
-            pathlib.Path(
-                os.path.join(now_dir, "tabs", "realtime", "main.js")
-            ).read_text()
-            if client_mode
-            else None
+        **(
+            {
+                "theme": my_applio,
+                "css": "footer{display:none !important}",
+                "js": (
+                    pathlib.Path(
+                        os.path.join(now_dir, "tabs", "realtime", "main.js")
+                    ).read_text()
+                    if client_mode
+                    else None
+                ),
+            }
+            if GRADIO_6
+            else {}
         ),
     )
 
