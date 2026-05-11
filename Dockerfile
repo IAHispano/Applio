@@ -32,4 +32,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Run the app
 ENTRYPOINT ["python3"]
-CMD ["app.py"]
+CMD ["app.py", "--server-name", "0.0.0.0", "--port", "6969"]
