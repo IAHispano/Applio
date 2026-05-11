@@ -1,5 +1,9 @@
 #!/bin/bash
-set -e  # Exit immediately if a command exits with a non-zero status
+set -e # Exit immediately if a command exits with a non-zero status
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
 printf "\033]0;Installer\007"
 clear
@@ -10,19 +14,19 @@ find . -type f -iname "*.bat" -delete
 # Function to log messages with timestamps
 log_message() {
     local msg="$1"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $msg"
+    echo -e "${GREEN}$(date '+%Y-%m-%d %H:%M:%S') - $msg${NC}"
 }
 
-# Function to find a suitable Python version
-find_python() {
-    for py in python3.12 python3 python; do
-        if command -v "$py" > /dev/null 2>&1; then
-            echo "$py"
-            return
-        fi
-    done
-    log_message "No compatible Python installation found. Please install Python 3.12."
-    exit 1
+log_error() {
+    echo -e "${RED}[ERROR]$(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
+}
+
+# Helper function for yes/no user prompt
+confirm() {
+    local prompt="${1:-Are you sure?}"
+    read -p "$prompt [y/N]: " -n 1 -r
+    echo
+    [[ $REPLY =~ ^[Yy]$ ]]
 }
 
 # Function to install FFmpeg based on the distribution
@@ -77,16 +81,13 @@ install_python_ffmpeg() {
 prepare_install() {
     if [ -d ".venv" ]; then
         log_message "Virtual environment found. This implies Applio has been already installed or this is a broken install."
-        printf "Do you want to execute run-applio.sh? (Y/N): " >&2
-        read -r r
-        r=$(echo "$r" | tr '[:upper:]' '[:lower:]')
-        if [ "$r" = "y" ]; then
-            chmod +x run-applio.sh
-            ./run-applio.sh && exit 0
-        else
+        if confirm "Do you want to execute the install script again?"; then
             log_message "Continuing with the installation."
             rm -rf .venv
             create_venv
+        else
+            chmod +x run-applio.sh
+            ./run-applio.sh && exit 0
         fi
     else
         create_venv
@@ -95,25 +96,31 @@ prepare_install() {
 
 # Function to create the virtual environment and install dependencies
 create_venv() {
-    log_message "Creating virtual environment..."
-    py=$(find_python)
+    install_build_tools
 
-    if ! command -v uv > /dev/null 2>&1; then
-        log_message "Installing uv..."
+    if ! command -v uv --version >/dev/null 2>&1; then
+        log_message "Installing uv"
         curl -LsSf https://astral.sh/uv/install.sh | sh
     fi
 
+    log_message "Creating virtual environment..."
     uv venv .venv --python 3.12
     log_message "Activating virtual environment..."
     source .venv/bin/activate
 
     install_ffmpeg
-    install_python_ffmpeg
+    log_message "Installing python-ffmpeg..."
+    uv pip install python-ffmpeg
 
     log_message "Installing dependencies..."
-    if [ -f "requirements.txt" ]; then
-        export UV_HTTP_TIMEOUT=300
-        uv pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
+    if [ -f  "requirements.txt" ]; then
+        export UV_HTTP_TIMEOUT=300 # for slow internet
+        if [ "$(uname)" = "Darwin" ]; then
+            uv pip install -r requirements.txt
+        else 
+            # nvidia-smi &>/dev/null; then
+            uv pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
+        fi
     else
         log_message "requirements.txt not found. Please ensure it exists."
         exit 1
@@ -124,51 +131,26 @@ create_venv() {
 
 # Function to finish installation
 finish() {
-    clear
-    echo "Applio has been successfully installed. Run the file run-applio.sh to start the web interface!"
+    # clear
+    log_message "##########"
+    log_message "Applio has been successfully installed. Run the file run-applio.sh to start the web interface!"
+    log_message "##########"
     exit 0
 }
 
 # Main script execution
 if [ "$(uname)" = "Darwin" ]; then
     log_message "Detected macOS..."
+
     if ! command -v brew >/dev/null 2>&1; then
         log_message "Homebrew not found. Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
-    # Add more detailed Python version check
-    log_message "Checking Python versions..."
-    log_message "python3 path: $(which python3)"
-    log_message "python3.12 path: $(which python3.12 2>/dev/null || echo 'not found')"
-
-    if command -v python3.12 >/dev/null 2>&1; then
-        python_version=$(python3.12 --version | awk '{print $2}' | cut -d'.' -f1,2)
-    else
-        python_version=$(python3 --version | awk '{print $2}' | cut -d'.' -f1,2)
-    fi
-
-    log_message "Detected Python version: $python_version"
-
-    if [ "$python_version" = "3.12" ]; then
-        log_message "Found compatible Python 3.12"
-    else
-        log_message "Python version $python_version is not 3.12. Installing Python 3.12 using Homebrew..."
-        brew install python@3.12
-        export PATH="$(brew --prefix)/opt/python@3.12/bin:$PATH"
-        # Verify the installed version
-        log_message "Verifying installed Python version..."
-        python_version=$(python3.12 --version | awk '{print $2}' | cut -d'.' -f1,2)
-        if [ "$python_version" != "3.12" ]; then
-            log_message "Failed to install Python 3.12. Current version: $python_version"
-            exit 1
-        fi
-    fi
-
-    brew install faiss
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
     export PATH="$(brew --prefix)/bin:$PATH"
+    brew install faiss
 elif [ "$(uname)" != "Linux" ]; then
     log_message "Unsupported operating system. Are you using Windows?"
     log_message "If yes, use the batch (.bat) file instead of this one!"
