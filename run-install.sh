@@ -1,5 +1,10 @@
+
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
 printf "\033]0;Installer\007"
 clear
@@ -8,83 +13,82 @@ rm -f *.bat
 # Function to log messages with timestamps
 log_message() {
     local msg="$1"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $msg"
+    echo -e "${GREEN}$(date '+%Y-%m-%d %H:%M:%S') - $msg${NC}"
+}
+log_error() {
+    echo -e "${RED}[ERROR]$(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
 }
 
-# Function to find a suitable Python version
-find_python() {
-    for py in python3.11 python3 python; do
-        if command -v "$py" > /dev/null 2>&1; then
-            echo "$py"
-            return
-        fi
-    done
-    log_message "No compatible Python installation found. Please install Python 3.11."
-    exit 1
+
+# Helper function for yes/no user prompt
+confirm() {
+    local prompt="${1:-Are you sure?}"
+    read -p "$prompt [y/N]: " -n 1 -r
+    echo
+    [[ $REPLY =~ ^[Yy]$ ]]
 }
 
 # Function to install FFmpeg based on the distribution
 install_ffmpeg() {
-    if command -v brew > /dev/null; then
-        log_message "Installing FFmpeg using Homebrew on macOS..."
-        brew install ffmpeg
-    elif command -v apt > /dev/null; then
-        log_message "Installing FFmpeg using apt..."
-        sudo apt update && sudo apt install -y ffmpeg
-    elif command -v pacman > /dev/null; then
-        log_message "Installing FFmpeg using pacman..."
-        sudo pacman -Syu --noconfirm ffmpeg
-    elif command -v dnf > /dev/null; then
-        log_message "Installing FFmpeg using dnf..."
-        sudo dnf install -y ffmpeg --allowerasing || install_ffmpeg_flatpak
-    else
-        log_message "Unsupported distribution for FFmpeg installation. Trying Flatpak..."
-        install_ffmpeg_flatpak
-    fi
-}
-
-# Function to install FFmpeg using Flatpak
-install_ffmpeg_flatpak() {
-    if command -v flatpak > /dev/null; then
-        log_message "Installing FFmpeg using Flatpak..."
-        flatpak install --user -y flathub org.freedesktop.Platform.ffmpeg
-    else
-        log_message "Flatpak is not installed. Installing Flatpak..."
+    if ! command -v ffmpeg > /dev/null; then
+        log_message "Attempting to install FFmpeg..."
         if command -v apt > /dev/null; then
-            sudo apt install -y flatpak
+            log_message "Installing FFmpeg using apt..."
+            sudo apt update && sudo apt install -y ffmpeg
         elif command -v pacman > /dev/null; then
-            sudo pacman -Syu --noconfirm flatpak
+            log_message "Installing FFmpeg using pacman..."
+            sudo pacman -Sy --noconfirm ffmpeg
         elif command -v dnf > /dev/null; then
-            sudo dnf install -y flatpak
+            log_message "Installing FFmpeg using dnf..."
+            sudo dnf install -y ffmpeg --allowerasing
         elif command -v brew > /dev/null; then
-            brew install flatpak
+            log_message "Installing FFmpeg using Homebrew on macOS..."
+            brew install ffmpeg
         else
-            log_message "Unable to install Flatpak automatically. Please install Flatpak and try again."
-            exit 1
+            # try using flatpack
+            if command -v flatpak > /dev/null; then
+                log_message "Installing FFmpeg using Flatpak..."
+                flatpak install --user -y flathub org.freedesktop.Platform.ffmpeg
+            else
+                log_error "Unsupported distribution for FFmpeg installation. Install FFmpeg and try again."
+            fi
         fi
-        flatpak install --user -y flathub org.freedesktop.Platform.ffmpeg
     fi
 }
 
-install_python_ffmpeg() {
-    log_message "Installing python-ffmpeg..."
-    uv pip install python-ffmpeg
+# Function to install build tools based on the distribution (reguired for wheel)
+install_build_tools() {
+    log_message "Attempting to install build tools..."
+    if command -v apt > /dev/null; then
+        log_message "Installing build-essential using apt..."
+        sudo apt update && sudo apt install -y build-essential
+    elif command -v pacman > /dev/null; then
+        log_message "Installing base-devel using pacman..."
+        sudo pacman -Sy --noconfirm base-devel
+    elif command -v dnf > /dev/null; then
+        log_message "Installing Development Tools using dnf..."
+        sudo dnf groupinstall -y "Development Tools" --allowerasing
+    elif [ "$(uname)" = "Darwin" ]; then
+        if ! xcode-select -p &>/dev/null; then
+            log_message "Installing Command Line Tools..."
+            xcode-select --install
+        fi
+    else
+        log_error "Unsupported distribution for build tools installation. Install build tools equivelant for your distribution and try again."
+    fi
 }
 
 # Function to create or activate a virtual environment
 prepare_install() {
     if [ -d ".venv" ]; then
         log_message "Virtual environment found. This implies Applio has been already installed or this is a broken install."
-        printf "Do you want to execute run-applio.sh? (Y/N): " >&2
-        read -r r
-        r=$(echo "$r" | tr '[:upper:]' '[:lower:]')
-        if [ "$r" = "y" ]; then
-            chmod +x run-applio.sh
-            ./run-applio.sh && exit 0
-        else
+        if confirm "Do you want to execute the install script again?"; then
             log_message "Continuing with the installation."
             rm -rf .venv
             create_venv
+        else
+            chmod +x run-applio.sh
+            ./run-applio.sh && exit 0
         fi
     else
         create_venv
@@ -93,21 +97,31 @@ prepare_install() {
 
 # Function to create the virtual environment and install dependencies
 create_venv() {
-    log_message "Creating virtual environment..."
-    py=$(find_python)
+    if ! command -v uv --version >/dev/null 2>&1; then
+        log_message "Installing uv"
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+    fi
 
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    log_message "Creating virtual environment..."
     uv venv .venv --python 3.11
 
     log_message "Activating virtual environment..."
     source .venv/bin/activate
 
+    install_build_tools
     install_ffmpeg
-    install_python_ffmpeg  
+    log_message "Installing python-ffmpeg..."
+    uv pip install python-ffmpeg
 
     log_message "Installing dependencies..."
-    if [ -f "requirements.txt" ]; then
-        uv pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
+    if [ -f  "requirements.txt" ]; then
+        export UV_HTTP_TIMEOUT=300 # for slow internet
+        if [ "$(uname)" = "Darwin" ]; then
+            uv pip install -r requirements.txt
+        else 
+            # nvidia-smi &>/dev/null; then
+            uv pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
+        fi
     else
         log_message "requirements.txt not found. Please ensure it exists."
         exit 1
@@ -118,51 +132,28 @@ create_venv() {
 
 # Function to finish installation
 finish() {
-    clear
-    echo "Applio has been successfully installed. Run the file run-applio.sh to start the web interface!"
+    # clear
+    log_message "##########"
+    log_message "Applio has been successfully installed. Run the file run-applio.sh to start the web interface!"
+    log_message "##########"
     exit 0
 }
 
 # Main script execution
 if [ "$(uname)" = "Darwin" ]; then
     log_message "Detected macOS..."
+
     if ! command -v brew >/dev/null 2>&1; then
         log_message "Homebrew not found. Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     fi
 
-    # Add more detailed Python version check
-    log_message "Checking Python versions..."
-    log_message "python3 path: $(which python3)"
-    log_message "python3.11 path: $(which python3.11 2>/dev/null || echo 'not found')"
-    
-    if command -v python3.11 >/dev/null 2>&1; then
-        python_version=$(python3.11 --version | awk '{print $2}' | cut -d'.' -f1,2)
-    else
-        python_version=$(python3 --version | awk '{print $2}' | cut -d'.' -f1,2)
-    fi
-    
-    log_message "Detected Python version: $python_version"
-
-    if [ "$python_version" = "3.11" ]; then
-        log_message "Found compatible Python 3.11"
-    else
-        log_message "Python version $python_version is not 3.11. Installing Python 3.11 using Homebrew..."
-        brew install python@3.11
-        export PATH="$(brew --prefix)/opt/python@3.11/bin:$PATH"
-        # Verify the installed version
-        log_message "Verifying installed Python version..."
-        python_version=$(python3.11 --version | awk '{print $2}' | cut -d'.' -f1,2)
-        if [ "$python_version" != "3.11" ]; then
-            log_message "Failed to install Python 3.11. Current version: $python_version"
-            exit 1
-        fi
-    fi
-
-    brew install faiss
+    export PATH="$(brew --prefix)/bin:$PATH"
     export PYTORCH_ENABLE_MPS_FALLBACK=1
-    export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
-    export PATH="$(brew --prefix)/bin:$PATH"  
+    export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0  
+
+    install_build_tools
+    brew install faiss
 elif [ "$(uname)" != "Linux" ]; then
     log_message "Unsupported operating system. Are you using Windows?"
     log_message "If yes, use the batch (.bat) file instead of this one!"
@@ -170,5 +161,3 @@ elif [ "$(uname)" != "Linux" ]; then
 fi
 
 prepare_install
-
-
