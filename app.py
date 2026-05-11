@@ -1,15 +1,31 @@
 # Plataform config
+import assets.themes.loadThemes as loadThemes
+import assets.installation_checker as installation_checker
+from tabs.settings.sections.presence import load_config_presence
+from assets.i18n.i18n import I18nAuto
+from core import run_prerequisites_script
+from tabs.realtime.realtime import realtime_tab
+from tabs.settings.settings import settings_tab
+from tabs.plugins.plugins import plugins_tab
+from tabs.voice_blender.voice_blender import voice_blender_tab
+from tabs.tts.tts import tts_tab
+from tabs.download.download import download_tab
+from tabs.report.report import report_tab
+from tabs.extra.extra import extra_tab
+from tabs.train.train import train_tab
+from tabs.inference.inference import inference_tab
+import rvc.lib.zluda
+from typing import Any
+import logging
+import pathlib
+import shutil
+import os
+import sys
+import gradio as gr
 from rvc.lib.platform import platform_config
 
 platform_config()
 
-import gradio as gr
-import sys
-import os
-import pathlib
-import logging
-
-from typing import Any
 
 DEFAULT_SERVER_NAME = "127.0.0.1"
 DEFAULT_PORT = 6969
@@ -42,22 +58,23 @@ if sys.platform == "win32":
 GRADIO_6 = int(gr.__version__.split(".")[0]) >= 6
 
 # Zluda hijack
-import rvc.lib.zluda
+
+# Make sure config file exists
+
+# TODO: This path is regenerated all over the place in Applio
+# should probably be in a static module for everything to reference
+CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
+
+# The base config file to start from
+CONFIG_TEMPLATE_PATH = os.path.join(now_dir, "assets", "config_template.json")
+
+if not os.path.exists(CONFIG_PATH):
+    print("Config file not found. Creating fresh from template.")
+    shutil.copy(CONFIG_TEMPLATE_PATH, CONFIG_PATH)
 
 # Import Tabs
-from tabs.inference.inference import inference_tab
-from tabs.train.train import train_tab
-from tabs.extra.extra import extra_tab
-from tabs.report.report import report_tab
-from tabs.download.download import download_tab
-from tabs.tts.tts import tts_tab
-from tabs.voice_blender.voice_blender import voice_blender_tab
-from tabs.plugins.plugins import plugins_tab
-from tabs.settings.settings import settings_tab
-from tabs.realtime.realtime import realtime_tab
 
 # Run prerequisites
-from core import run_prerequisites_script
 
 run_prerequisites_script(
     pretraineds_hifigan=True,
@@ -66,12 +83,10 @@ run_prerequisites_script(
 )
 
 # Initialize i18n
-from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
 
 # Start Discord presence if enabled
-from tabs.settings.sections.presence import load_config_presence
 
 if load_config_presence():
     from assets.discord_presence import RPCManager
@@ -79,12 +94,10 @@ if load_config_presence():
     RPCManager.start_presence()
 
 # Check installation
-import assets.installation_checker as installation_checker
 
 installation_checker.check_installation()
 
 # Load theme
-import assets.themes.loadThemes as loadThemes
 
 my_applio = loadThemes.load_theme() or "ParityError/Interstellar"
 client_mode = "--client" in sys.argv
