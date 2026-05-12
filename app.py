@@ -1,6 +1,7 @@
 # Make sure the config file exists
 import os
 import shutil
+import sys
 
 # We need the CWD for finding the config file, but while we're at it, add it to sys.path
 now_dir = os.getcwd()
@@ -22,7 +23,6 @@ from rvc.lib.platform import platform_config
 platform_config()
 
 import gradio as gr
-import sys
 import pathlib
 import logging
 
