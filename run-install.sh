@@ -29,6 +29,23 @@ confirm() {
     [[ $REPLY =~ ^[Yy]$ ]]
 }
 
+# Function to install build tools based on the distribution (reguired for wheel)
+install_build_tools() {
+    log_message "Attempting to install build tools..."
+    if command -v apt > /dev/null; then
+        log_message "Installing build-essential using apt..."
+        sudo apt update && sudo apt install -y build-essential
+    elif command -v pacman > /dev/null; then
+        log_message "Installing base-devel using pacman..."
+        sudo pacman -Sy --noconfirm base-devel
+    elif command -v dnf > /dev/null; then
+        log_message "Installing Development Tools using dnf..."
+        sudo dnf groupinstall -y "Development Tools" --allowerasing
+    else
+        log_error "Unsupported distribution for build tools installation. Install build tools equivelant for your distribution and try again."
+    fi
+}
+
 # Function to install FFmpeg based on the distribution
 install_ffmpeg() {
     if command -v brew > /dev/null; then
