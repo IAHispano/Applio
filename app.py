@@ -1,9 +1,10 @@
-# Plataform config
-from rvc.lib.platform import platform_config
-
-# Make sure config file exists
-import os  # We will also use this later, but we need it now
+# Make sure the config file exists
+import os
 import shutil
+
+# We need the CWD for finding the config file, but while we're at it, add it to sys.path
+now_dir = os.getcwd()
+sys.path.append(now_dir)
 
 # TODO: This path is regenerated all over the place in Applio
 # should probably be in a static module for everything to reference
@@ -15,7 +16,9 @@ CONFIG_TEMPLATE_PATH = os.path.join(now_dir, "assets", "config_template.json")
 if not os.path.exists(CONFIG_PATH):
     print("Config file not found. Creating fresh from template.")
     shutil.copy(CONFIG_TEMPLATE_PATH, CONFIG_PATH)
-
+    
+# Plataform config
+from rvc.lib.platform import platform_config
 platform_config()
 
 import gradio as gr
@@ -32,10 +35,6 @@ MAX_PORT_ATTEMPTS = 10
 # Set up logging
 logging.getLogger("uvicorn").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
-
-# Add current directory to sys.path
-now_dir = os.getcwd()
-sys.path.append(now_dir)
 
 # Suppress ConnectionResetError on Windows when a remote peer forcibly closes the
 # connection during asyncio shutdown (WinError 10054 / ProactorBasePipeTransport).
