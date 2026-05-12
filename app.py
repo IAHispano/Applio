@@ -1,6 +1,19 @@
 # Plataform config
 from rvc.lib.platform import platform_config
 
+# Make sure config file exists
+
+# TODO: This path is regenerated all over the place in Applio
+# should probably be in a static module for everything to reference
+CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
+
+# The base config file to start from
+CONFIG_TEMPLATE_PATH = os.path.join(now_dir, "assets", "config_template.json")
+
+if not os.path.exists(CONFIG_PATH):
+    print("Config file not found. Creating fresh from template.")
+    shutil.copy(CONFIG_TEMPLATE_PATH, CONFIG_PATH)
+
 platform_config()
 
 import gradio as gr
@@ -44,19 +57,6 @@ GRADIO_6 = int(gr.__version__.split(".")[0]) >= 6
 
 # Zluda hijack
 import rvc.lib.zluda
-
-# Make sure config file exists
-
-# TODO: This path is regenerated all over the place in Applio
-# should probably be in a static module for everything to reference
-CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
-
-# The base config file to start from
-CONFIG_TEMPLATE_PATH = os.path.join(now_dir, "assets", "config_template.json")
-
-if not os.path.exists(CONFIG_PATH):
-    print("Config file not found. Creating fresh from template.")
-    shutil.copy(CONFIG_TEMPLATE_PATH, CONFIG_PATH)
 
 # Import Tabs
 from tabs.inference.inference import inference_tab
