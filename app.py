@@ -2,6 +2,8 @@
 from rvc.lib.platform import platform_config
 
 # Make sure config file exists
+import os  # We will also use this later, but we need it now
+import shutil
 
 # TODO: This path is regenerated all over the place in Applio
 # should probably be in a static module for everything to reference
@@ -18,8 +20,6 @@ platform_config()
 
 import gradio as gr
 import sys
-import os
-import shutil
 import pathlib
 import logging
 
