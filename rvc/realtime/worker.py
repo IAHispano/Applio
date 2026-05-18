@@ -1,19 +1,17 @@
 import os
 import sys
 import multiprocessing as mp
-import numpy as np
 import time
 from queue import Empty, Full
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.realtime.core import AUDIO_SAMPLE_RATE
+from rvc.realtime.core import VoiceChanger, AUDIO_SAMPLE_RATE
 
 
 def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt):
     """Entry point for the voice conversion worker process."""
-    from rvc.realtime.core import VoiceChanger
 
     vc = VoiceChanger(**vc_kwargs)
 
@@ -50,7 +48,7 @@ def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt):
             pass
 
 
-def _apply_config(vc, cfg):
+def _apply_config(vc: VoiceChanger, cfg):
     """Apply a configuration update to the VoiceChanger in the worker process."""
     if "record_start" in cfg:
         vc.record_audio = True
@@ -152,22 +150,34 @@ def _apply_config(vc, cfg):
     index_path = cfg.get("index_path")
     if index_path is not None:
         if index_path and vc.vc_model.index_path != index_path:
-            from rvc.realtime.pipeline import load_faiss_index
+            from rvc.realtime.utils.torch import IndexWrapper
 
-            index, big_npy = load_faiss_index(
+            index = IndexWrapper(
                 index_path.strip()
                 .strip('"')
                 .strip("\n")
                 .strip('"')
                 .strip()
-                .replace("trained", "added")
+                .replace("trained", "added"),
+                device=vc.device,
+                dtype=vc.vc_model.dtype
             )
+            big_tsr, _ = index.read_index_tensor()
+
+            # index, big_npy = load_faiss_index(
+            #     index_path.strip()
+            #     .strip('"')
+            #     .strip("\n")
+            #     .strip('"')
+            #     .strip()
+            #     .replace("trained", "added")
+            # )
             vc.vc_model.pipeline.index = index
-            vc.vc_model.pipeline.big_npy = big_npy
+            vc.vc_model.pipeline.big_tsr = big_tsr
             vc.vc_model.index_path = index_path
         elif not index_path:
             vc.vc_model.pipeline.index = None
-            vc.vc_model.pipeline.big_npy = None
+            vc.vc_model.pipeline.big_tsr = None
             vc.vc_model.index_path = None
 
     # F0 method change.

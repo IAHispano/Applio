@@ -1,6 +1,5 @@
 import os
 import sys
-import faiss
 import numpy as np
 import torch
 import torch.nn.utils.parametrize
@@ -11,9 +10,9 @@ from torch import Tensor
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.realtime.utils.torch import circular_write
+from rvc.realtime.utils.torch import circular_write, AudioProcessorTorch, IndexWrapper
 from rvc.configs.config import Config
-from rvc.infer.pipeline import Autotune, AudioProcessor
+from rvc.infer.pipeline import Autotune
 from rvc.lib.algorithm.synthesizers import Synthesizer
 from rvc.lib.predictors.f0 import FCPE, RMVPE
 from rvc.lib.utils import load_embedding, HubertModelWithFinalProj
@@ -98,14 +97,14 @@ class Realtime_Pipeline:
         vc: RealtimeVoiceConverter,
         hubert_model: HubertModelWithFinalProj = None,
         index=None,
-        big_npy=None,
+        big_tsr=None,
         f0_method: str = "rmvpe",
         sid: int = 0,
     ):
         self.vc = vc
         self.hubert_model = hubert_model
         self.index = index
-        self.big_npy = big_npy
+        self.big_tsr = big_tsr
         self.use_f0 = vc.use_f0
         self.version = vc.version
         self.f0_method = f0_method
@@ -311,11 +310,11 @@ class Realtime_Pipeline:
                     self.index and index_rate > 0
                 ):  # set by parent function, only true if index is available, loaded, and index rate > 0
                     feats = self._retrieve_speaker_embeddings(
-                        skip_head, feats, self.index, self.big_npy, index_rate
+                        skip_head, feats, self.index, self.big_tsr, index_rate
                     )
             except AssertionError:
                 print("The index file structure is incompatible with the model.")
-                self.index = self.big_npy = None
+                self.index = self.big_tsr = None
 
             # feature upsampling
             feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(
@@ -354,18 +353,19 @@ class Realtime_Pipeline:
                 pitch_p,
                 pitchf_p,
                 self._rate_tensor,
-            ).float()
+            )
             # Match output RMS to the current block's input RMS.
             if volume_envelope < 1:
-                rms_src = audio[-(return_length * self.window) :].cpu().numpy()
-                out_audio = AudioProcessor.change_rms(
+                rms_src = audio[-(return_length * self.window) :]
+                out_audio = AudioProcessorTorch.change_rms(
                     rms_src,
                     self.sample_rate,
-                    out_audio.cpu().numpy(),
+                    out_audio,
                     self.tgt_sr,
                     volume_envelope,
+                    device=self.device,
+                    dtype=self.dtype,
                 )
-                out_audio = torch.as_tensor(out_audio, device=self.device)
 
             scaled_window = int(np.floor(1.0 * self.model_window))
 
@@ -388,40 +388,37 @@ class Realtime_Pipeline:
                     device=self.device,
                 )
 
-        return out_audio
+        return out_audio.float()
 
     def _retrieve_speaker_embeddings(
-        self, skip_head, feats, index, big_npy, index_rate
+        self, skip_head, feats: torch.Tensor, index: IndexWrapper, big_tsr: torch.Tensor, index_rate: float
     ):
+        # skip_offset = skip_head // 2
+        # npy = feats[0][skip_offset:].cpu().numpy()
+        # if self.dtype == torch.float16:
+        #     npy = npy.astype(np.float32)
+        # score, ix = index.search(npy, k=8)
+        # weight = np.square(1 / score)
+        # weight /= weight.sum(axis=1, keepdims=True)
+        # npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
+        # if self.dtype == torch.float16:
+        #     npy = npy.astype(np.float16)
+        # feats[0][skip_offset:] = (
+        #     torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
+        #     + (1 - index_rate) * feats[0][skip_offset:]
+        # )
         skip_offset = skip_head // 2
-        npy = feats[0][skip_offset:].cpu().numpy()
-        if self.dtype == torch.float16:
-            npy = npy.astype(np.float32)
-        score, ix = index.search(npy, k=8)
-        weight = np.square(1 / score)
-        weight /= weight.sum(axis=1, keepdims=True)
-        npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
-        if self.dtype == torch.float16:
-            npy = npy.astype(np.float16)
-        feats[0][skip_offset:] = (
-            torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
-            + (1 - index_rate) * feats[0][skip_offset:]
+        tsr = feats[0][skip_offset:]
+        score, ix = index.search(tsr, k=8)
+        weight = (1 / score).square()
+        weight /= weight.sum(dim=1, keepdim=True)
+        query = (big_tsr[ix] * weight.unsqueeze(2)).sum(dim=1)
+
+        feats[0][skip_offset :] = (
+            query.unsqueeze(0) * index_rate
+            + (1.0 - index_rate) * feats[0][skip_offset :]
         )
         return feats
-
-
-def load_faiss_index(file_index):
-    if file_index != "" and os.path.exists(file_index):
-        try:
-            index = faiss.read_index(file_index)
-            big_npy = index.reconstruct_n(0, index.ntotal)
-        except Exception as error:
-            print(f"An error occurred reading the FAISS index: {error}")
-            index = big_npy = None
-    else:
-        index = big_npy = None
-
-    return index, big_npy
 
 
 def create_pipeline(
@@ -438,14 +435,26 @@ def create_pipeline(
     """
 
     vc = RealtimeVoiceConverter(model_path)
-    index, big_npy = load_faiss_index(
+    # index, big_npy = load_faiss_index(
+    #     index_path.strip()
+    #     .strip('"')
+    #     .strip("\n")
+    #     .strip('"')
+    #     .strip()
+    #     .replace("trained", "added")
+    # )
+
+    index = IndexWrapper(
         index_path.strip()
         .strip('"')
         .strip("\n")
         .strip('"')
         .strip()
-        .replace("trained", "added")
+        .replace("trained", "added"),
+        device=vc.config.device,
+        dtype=vc.dtype
     )
+    big_tsr, _ = index.read_index_tensor()
 
     hubert_model = load_embedding(embedder_model, embedder_model_custom)
     hubert_model = hubert_model.to(vc.config.device).to(vc.dtype)
@@ -455,7 +464,7 @@ def create_pipeline(
         vc,
         hubert_model,
         index,
-        big_npy,
+        big_tsr,
         f0_method,
         sid,
     )
