@@ -14,7 +14,7 @@ from rvc.realtime.utils.torch import circular_write, AudioProcessorTorch, IndexW
 from rvc.configs.config import Config
 from rvc.infer.pipeline import Autotune
 from rvc.lib.algorithm.synthesizers import Synthesizer
-from rvc.lib.predictors.f0 import FCPE, RMVPE
+from rvc.lib.predictors.f0 import FCPE, RMVPE, CREPE
 from rvc.lib.utils import load_embedding, HubertModelWithFinalProj
 
 
@@ -138,6 +138,13 @@ class Realtime_Pipeline:
                 sample_rate=self.sample_rate,
                 hop_size=self.window,
             )
+        elif f0_method in ("crepe", "crepe-tiny"):
+            f0_model = CREPE(
+                device=self.device,
+                sample_rate=self.sample_rate,
+                hop_size=self.window,
+            )
+
         return f0_model
 
     def get_f0(
@@ -155,14 +162,12 @@ class Realtime_Pipeline:
         Estimates the fundamental frequency (F0) of a given audio signal using various methods.
         """
 
-        if torch.is_tensor(x):
-            # If the input is a tensor, it will need to be converted to numpy array to calculate with RMVPE and FCPE.
-            x = x.cpu().numpy()
-
         if self.f0_method == "rmvpe":
-            f0 = self.f0_model.get_f0(x, filter_radius=0.03)
+            f0 = self.f0_model.get_f0(x.cpu().numpy(), filter_radius=0.03)
         elif self.f0_method == "fcpe":
             f0 = self.f0_model.get_f0(x, x.shape[0] // self.window, filter_radius=0.006)
+        elif self.f0_method in ("crepe", "crepe-tiny"):
+            f0 = self.f0_model.get_f0(x, self.f0_min, self.f0_max, x.shape[0] // self.window, "tiny" if "-tiny" in self.f0_method else "full")
         # f0 adjustments
         if f0_autotune is True:
             f0 = self.autotune.autotune_f0(f0, f0_autotune_strength)
