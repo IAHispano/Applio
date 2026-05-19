@@ -160,7 +160,7 @@ class IndexWrapper:
     - Performing brute-force L2 distance search with PyTorch
     """
 
-    def __init__(self, index_path: str, nprobe: int = 1, device: str = "cuda", dtype: torch.dtype = torch.float32, clamp: float = 1e-8):
+    def __init__(self, index_path: str, nprobe: int = 12, device: str = "cuda", dtype: torch.dtype = torch.float32, clamp: float = 1e-8):
         """
         Initialize the index wrapper.
 
@@ -177,6 +177,7 @@ class IndexWrapper:
         self.device = device
         self.dtype = dtype
         self.clamp = clamp
+        self.faiss_cpu = False
         self.index = None
         self.big_npy = None
         self.b_norms = None
@@ -232,14 +233,31 @@ class IndexWrapper:
         """
 
         with torch.inference_mode():
-            # Compute ||a||^2 for query vectors
-            q_norm = (query ** 2).sum(dim=-1, keepdim=True)
-            # Compute squared L2 distances
-            distances = torch.addmm(self.b_norms, query, self.big_tensor.T, alpha=-2.0, beta=1.0) + q_norm
-            # Prevent negative values caused by floating-point precision
-            distances = distances.clamp(min=self.clamp)
+            if not self.faiss_cpu:
+                try:
+                    # Compute ||a||^2 for query vectors
+                    q_norm = (query ** 2).sum(dim=-1, keepdim=True)
+                    # Compute squared L2 distances
+                    distances = torch.addmm(self.b_norms, query, self.big_tensor.T, alpha=-2.0, beta=1.0) + q_norm
+                    # Prevent negative values caused by floating-point precision
+                    distances = distances.clamp(min=self.clamp)
 
-            # Retrieve smallest distances
-            scores, indices = torch.topk(-distances, k=k, dim=-1)
+                    # Retrieve smallest distances
+                    scores, indices = torch.topk(-distances, k=k, dim=-1)
 
-            return -scores, indices
+                    return -scores, indices
+                except (torch.OutOfMemoryError, RuntimeError):
+                    print(
+                        "[Warning]: An error occurred when using Faiss with the GPU. Fallback to the CPU."
+                    )
+
+                    self.faiss_cpu = True
+                    return self.search(query, k)
+            else:
+                npy = query.cpu().numpy()
+                score, ix = self.index.search(npy, k)
+
+                return (
+                    torch.from_numpy(score).to(self.device).to(self.dtype), 
+                    torch.from_numpy(ix).to(self.device).long()
+                )
