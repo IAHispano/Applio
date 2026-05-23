@@ -1,11 +1,13 @@
 import os
 import sys
+import types
 import numpy as np
 import torch
 import torch.nn.utils.parametrize
 import torch.nn.functional as F
 import torchaudio.transforms as tat
 from torch import Tensor
+import torchcrepe
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -14,7 +16,7 @@ from rvc.realtime.utils.torch import circular_write, AudioProcessorTorch, IndexW
 from rvc.configs.config import Config
 from rvc.infer.pipeline import Autotune
 from rvc.lib.algorithm.synthesizers import Synthesizer
-from rvc.lib.predictors.f0 import FCPE, RMVPE, CREPE
+from rvc.lib.predictors.f0 import FCPE, RMVPE
 from rvc.lib.utils import load_embedding, HubertModelWithFinalProj
 
 
@@ -124,26 +126,53 @@ class Realtime_Pipeline:
         # Reuse scalar tensors to avoid per-block allocations.
         self._rate_tensor = torch.zeros(1, device=self.device, dtype=torch.float32)
         self._p_len_tensor = torch.zeros(1, device=self.device, dtype=torch.int64)
+    
+    def autotune_f0(self, f0, f0_autotune_strength):
+        notes = torch.as_tensor(self.autotune.note_dict, dtype=f0.dtype, device=f0.device)
+        nearest = notes[torch.cdist(f0[:, None], notes[:, None]).argmin(dim=1)]
+
+        return f0 + (nearest - f0) * f0_autotune_strength
 
     def setup_f0(self, f0_method: str = "fcpe"):
         if f0_method == "rmvpe":
+            def _infer_from_audio(self, audio, thred=0.03):
+                mel = self.mel_extractor(audio.unsqueeze(0), center=True)
+                hidden = self.mel2hidden(mel)
+                hidden = hidden.squeeze(0)
+                f0 = self.decode(hidden, thred=thred)
+                return f0
+
+            def _to_local_average_cents(self, salience, thred=0.05):
+                center = torch.argmax(salience, dim=1)
+                salience = torch.nn.functional.pad(salience, (4, 4))
+                center += 4
+                offsets = torch.arange(-4, 5, device=salience.device)
+                idx = center[:, None] + offsets[None, :]
+                local_salience = salience[torch.arange(salience.shape[0], device=salience.device)[:, None], idx]
+                product_sum = (local_salience * self.cents_mapping[idx]).sum(dim=1)
+                weight_sum = local_salience.sum(dim=1)
+                devided = product_sum / weight_sum
+                maxx = salience.max(dim=1).values
+                devided = torch.where(maxx <= thred, torch.zeros_like(devided), devided)
+                return devided
+
             f0_model = RMVPE(
                 device=self.device,
                 sample_rate=self.sample_rate,
                 hop_size=self.window,
             )
+
+            f0_model.model.cents_mapping = torch.from_numpy(f0_model.model.cents_mapping).to(self.device)
+            f0_model.model.infer_from_audio = types.MethodType(_infer_from_audio, f0_model.model)
+            f0_model.model.to_local_average_cents = types.MethodType(_to_local_average_cents, f0_model.model)
         elif f0_method == "fcpe":
             f0_model = FCPE(
                 device=self.device,
                 sample_rate=self.sample_rate,
                 hop_size=self.window,
             )
-        elif f0_method in ("crepe", "crepe-tiny"):
-            f0_model = CREPE(
-                device=self.device,
-                sample_rate=self.sample_rate,
-                hop_size=self.window,
-            )
+        elif self.f0_method in ("crepe", "crepe-tiny"):
+            f0_model = None
 
         return f0_model
 
@@ -163,24 +192,45 @@ class Realtime_Pipeline:
         """
 
         if self.f0_method == "rmvpe":
-            f0 = self.f0_model.get_f0(x.cpu().numpy(), filter_radius=0.03)
+            f0 = self.f0_model.get_f0(x, filter_radius=0.03)
         elif self.f0_method == "fcpe":
-            f0 = self.f0_model.get_f0(x, x.shape[0] // self.window, filter_radius=0.006)
+            f0 = self.f0_model.model.infer(
+                x.float().to(self.device).unsqueeze(0),
+                sr=self.f0_model.sample_rate,
+                decoder_mode="local_argmax",
+                threshold=0.006
+            ).squeeze()
         elif self.f0_method in ("crepe", "crepe-tiny"):
-            f0 = self.f0_model.get_f0(x, self.f0_min, self.f0_max, x.shape[0] // self.window, "tiny" if "-tiny" in self.f0_method else "full")
+            f0, pd = torchcrepe.predict(
+                x.float().to(self.device).unsqueeze(dim=0),
+                self.sample_rate,
+                self.window,
+                self.f0_min,
+                self.f0_max,
+                model="tiny" if "-tiny" in self.f0_method else "full",
+                batch_size=512,
+                device=self.device,
+                return_periodicity=True,
+            )
+            pd = torchcrepe.filter.median(pd, 3)
+            f0 = torchcrepe.filter.mean(f0, 3)
+            f0[pd < 0.1] = 0
+            f0 = f0[0]
+
         # f0 adjustments
         if f0_autotune is True:
-            f0 = self.autotune.autotune_f0(f0, f0_autotune_strength)
+            f0 = self.autotune_f0(f0, f0_autotune_strength)
         elif proposed_pitch is True:
             limit = 12
+            _f0 = f0.cpu().numpy().copy()
             # calculate median f0 of the audio
-            valid_f0 = np.where(f0 > 0)[0]
+            valid_f0 = np.where(_f0 > 0)[0]
             if len(valid_f0) < 2:
                 # no valid f0 detected
                 up_key = 0
             else:
                 median_f0 = float(
-                    np.median(np.interp(np.arange(len(f0)), valid_f0, f0[valid_f0]))
+                    np.median(np.interp(np.arange(len(_f0)), valid_f0, _f0[valid_f0]))
                 )
                 if median_f0 <= 0 or np.isnan(median_f0):
                     up_key = 0
@@ -200,12 +250,12 @@ class Realtime_Pipeline:
             print(
                 "calculated pitch offset:", up_key
             )  # Might need to hide so terminal output doesn't become a mess
-            f0 *= pow(2, (f0_up_key + up_key) / 12)
+            f0 *= 2 ** ((f0_up_key + up_key) / 12)
         else:
-            f0 *= pow(2, f0_up_key / 12)
+            f0 *= 2 ** (f0_up_key / 12)
 
         # Convert to Tensor for computational use
-        f0 = torch.from_numpy(f0).to(self.device).float()
+        # f0 = torch.from_numpy(f0).to(self.device).float()
 
         # quantizing f0 to 255 buckets to make coarse f0
         f0_mel = 1127.0 * torch.log(1.0 + f0 / 700.0)
