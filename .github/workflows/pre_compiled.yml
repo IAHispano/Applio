@@ -28,10 +28,10 @@ jobs:
         run: |
           Remove-Item -Path 'LICENSE', 'run-tensorboard.sh', 'run-install.sh', 'run-applio.sh', 'run-install.bat', 'requirements.txt', '.gitignore', '.github', '.git' -Recurse -Force -ErrorAction SilentlyContinue
           Get-ChildItem -Path . -Include __pycache__ -Recurse -Directory | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
-      - name: Read version from config.json
+      - name: Read version from config_template.json
         id: get-version
         run: |
-          $version = (Get-Content -Path './assets/config.json' | ConvertFrom-Json).version
+          $version = (Get-Content -Path './assets/config_template.json' | ConvertFrom-Json).version
           echo "version=$version" >> $env:GITHUB_OUTPUT
       - name: Create ZIP file
         run: |
