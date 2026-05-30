@@ -6,7 +6,7 @@ on:
       - main
       - master
     paths:
-      - 'assets/config.json'
+      - 'assets/config_template.json'
       - '.github/workflows/release.yml'
 
 jobs:
