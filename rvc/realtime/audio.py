@@ -412,9 +412,7 @@ class Audio:
                 )
                 monitor_channels = 1
 
-        block_frame = int(
-            (read_chunk_size * 128 / AUDIO_SAMPLE_RATE) * audio_sample_rate
-        )
+        block_frame = read_chunk_size * 128
 
         try:
             self.run_audio_stream(

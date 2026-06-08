@@ -131,11 +131,22 @@ def _apply_config(vc: VoiceChanger, cfg):
         vc.vc_model.pipeline.vc.load_model(model_path)
         vc.vc_model.pipeline.vc.setup_network()
         vc.vc_model.pipeline.version = vc.vc_model.pipeline.vc.version
+        vc.vc_model.pipeline.use_f0 = vc.vc_model.pipeline.vc.use_f0
+        vc.vc_model.pipeline.tgt_sr = vc.vc_model.pipeline.vc.tgt_sr
         vc.vc_model.resample_out = tat.Resample(
             orig_freq=vc.vc_model.pipeline.tgt_sr,
             new_freq=AUDIO_SAMPLE_RATE,
             dtype=torch.float32,
         ).to(vc.vc_model.device)
+        if cfg["clean_audio"]:
+            from noisereduce.torchgate import TorchGate
+
+            strength = cfg.get("clean_strength", 0.5)
+
+            vc.vc_model.reduced_noise = TorchGate(
+                vc.vc_model.pipeline.tgt_sr,
+                prop_decrease=strength,
+            ).to(vc.vc_model.device)
 
     # SID change.
     sid = cfg.get("sid")

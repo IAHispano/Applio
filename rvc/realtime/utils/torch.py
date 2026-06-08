@@ -252,6 +252,9 @@ class IndexWrapper:
                     )
 
                     self.faiss_cpu = True
+                    self.b_norms = None
+
+                    torch.cuda.empty_cache()
                     return self.search(query, k)
             else:
                 npy = query.cpu().numpy()

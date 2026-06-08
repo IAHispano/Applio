@@ -5,7 +5,6 @@ import numpy as np
 import torch
 import torch.nn.utils.parametrize
 import torch.nn.functional as F
-import torchaudio.transforms as tat
 from torch import Tensor
 import torchcrepe
 
@@ -113,7 +112,6 @@ class Realtime_Pipeline:
         self.sample_rate = 16000
         self.tgt_sr = vc.tgt_sr
         self.window = 160
-        self.model_window = self.tgt_sr // 100
         self.f0_min = 50.0
         self.f0_max = 1100.0
         self.device = vc.config.device
@@ -420,19 +418,6 @@ class Realtime_Pipeline:
                     volume_envelope,
                     device=self.device,
                     dtype=self.dtype,
-                )
-
-            scaled_window = int(np.floor(1.0 * self.model_window))
-
-            if scaled_window != self.model_window:
-                if scaled_window not in self.resamplers:
-                    self.resamplers[scaled_window] = tat.Resample(
-                        orig_freq=scaled_window,
-                        new_freq=self.model_window,
-                        dtype=torch.float32,
-                    ).to(self.device)
-                out_audio = self.resamplers[scaled_window](
-                    out_audio[: return_length * scaled_window]
                 )
 
             if reduced_noise is not None:
