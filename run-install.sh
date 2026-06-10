@@ -217,7 +217,7 @@ install_ffmpeg_flatpak() {
         local pm
         pm=$(detect_package_manager) || true
         case "$pm" in
-            apt)        sudo apt install -y flatpak ;;
+            apt)        sudo apt update && sudo apt install -y flatpak ;;
             pacman)     sudo pacman -Syu --noconfirm flatpak ;;
             dnf|yum)    sudo $pm install -y flatpak ;;
             zypper)     sudo zypper install -y flatpak ;;
@@ -232,6 +232,9 @@ install_ffmpeg_flatpak() {
                 ;;
         esac
         flatpak install --user -y flathub org.freedesktop.Platform.ffmpeg
+        if ! command -v ffmpeg >/dev/null 2>&1; then
+            log_warn "FFmpeg is still not available on PATH after Flatpak install. Please install FFmpeg using your system package manager."
+        fi
     fi
 }
 
