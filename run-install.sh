@@ -217,6 +217,9 @@ install_ffmpeg_flatpak() {
     if command -v flatpak >/dev/null; then
         log_message "Installing FFmpeg using Flatpak..."
         flatpak install --user -y flathub org.freedesktop.Platform.ffmpeg
+        if ! command -v ffmpeg >/dev/null 2>&1; then
+            log_warn "FFmpeg is still not available on PATH after Flatpak install. Please install FFmpeg using your system package manager."
+        fi
     else
         log_message "Flatpak is not installed. Installing Flatpak..."
         local pm
