@@ -8,9 +8,6 @@ NC='\033[0m' # No Color
 printf "\033]0;Installer\007"
 clear
 
-# Delete Windows bat files (.bat)
-find . -type f -iname "*.bat" -delete
-
 # Function to log messages with timestamps
 log_message() {
     local msg="$1"
@@ -63,7 +60,7 @@ detect_package_manager() {
                 command -v xbps-install >/dev/null && { echo "xbps"; return 0; }
                 ;;
             nixos)
-                command -v nix-env >/dev/null && { echo "nix"; return 0; }
+                command -v nix >/dev/null && { echo "nix"; return 0; }
                 ;;
             solus|serpent)
                 command -v eopkg >/dev/null && { echo "eopkg"; return 0; }
@@ -84,6 +81,7 @@ detect_package_manager() {
     if command -v emerge >/dev/null; then echo "emerge"; return 0; fi
     if command -v apk >/dev/null; then echo "apk"; return 0; fi
     if command -v xbps-install >/dev/null; then echo "xbps"; return 0; fi
+    if command -v nix >/dev/null; then echo "nix"; return 0; fi
 
     echo "unknown"
     return 1
@@ -147,6 +145,10 @@ install_build_tools() {
             log_message "Using swupd..."
             sudo swupd bundle-add c-basic
             ;;
+        nix)
+            log_message "Using nix..."
+            nix profile install nixpkgs#gcc nixpkgs#gnumake
+            ;;
         *)
             log_warn "Could not detect a supported package manager."
             log_warn "If pip fails to build wheels, install gcc and make manually and re-run."
@@ -200,6 +202,9 @@ install_ffmpeg() {
         swupd)
             sudo swupd bundle-add ffmpeg
             ;;
+        nix)
+            nix profile install nixpkgs#ffmpeg
+            ;;
         *)
             log_message "No native package manager for FFmpeg. Trying Flatpak..."
             install_ffmpeg_flatpak
@@ -226,6 +231,7 @@ install_ffmpeg_flatpak() {
             emerge)     sudo emerge -q sys-apps/flatpak ;;
             brew)       brew install flatpak ;;
             eopkg)      sudo eopkg install -y flatpak ;;
+            nix)        nix profile install nixpkgs#flatpak ;;
             *)
                 log_error "Unable to install Flatpak automatically. Please install Flatpak and try again."
                 exit 1
@@ -257,6 +263,9 @@ prepare_install() {
 
 # Function to create the virtual environment and install dependencies
 create_venv() {
+    log_message "Removing Windows batch files..."
+    find . -type f -iname "*.bat" -maxdepth 2 -delete
+
     install_build_tools
 
     if ! command -v uv >/dev/null 2>&1; then
@@ -311,7 +320,11 @@ if [ "$(uname)" = "Darwin" ]; then
     export PYTORCH_ENABLE_MPS_FALLBACK=1
     export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0
     export PATH="$(brew --prefix)/bin:$PATH"
-    brew install faiss
+    if command -v brew >/dev/null 2>&1; then
+        brew install faiss || log_warn "Failed to install faiss via Homebrew."
+    else
+        log_warn "Homebrew not found on PATH. Skipping faiss install."
+    fi
 elif [ "$(uname)" != "Linux" ]; then
     log_message "Unsupported operating system. Are you using Windows?"
     log_message "If yes, use the batch (.bat) file instead of this one!"
