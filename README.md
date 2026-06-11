@@ -17,7 +17,7 @@
   •
   <a href="https://docs.applio.org" target="_blank">📚 Documentation</a>
   •
-  <a href="https://discord.gg/urxFjYmYYh" target="_blank">☎️ Discord</a>
+  <a href="https://discord.gg/wY7gmqTyEV" target="_blank">☎️ Discord</a>
 </p>
 
 <p align="center">
