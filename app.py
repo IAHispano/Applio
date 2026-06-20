@@ -17,9 +17,10 @@ CONFIG_TEMPLATE_PATH = os.path.join(now_dir, "assets", "config_template.json")
 if not os.path.exists(CONFIG_PATH):
     print("Config file not found. Creating fresh from template.")
     shutil.copy(CONFIG_TEMPLATE_PATH, CONFIG_PATH)
-    
+
 # Plataform config
 from rvc.lib.platform import platform_config
+
 platform_config()
 
 import gradio as gr
