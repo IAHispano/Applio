@@ -40,7 +40,7 @@ install_build_tools() {
         sudo pacman -Sy --noconfirm base-devel
     elif command -v dnf > /dev/null; then
         log_message "Installing Development Tools using dnf..."
-        sudo dnf groupinstall -y "Development Tools" --allowerasing
+        sudo dnf install -y @development-tools --allowerasing
     else
         log_error "Unsupported distribution for build tools installation. Install build tools equivelant for your distribution and try again."
     fi
