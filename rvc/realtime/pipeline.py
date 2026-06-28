@@ -124,15 +124,18 @@ class Realtime_Pipeline:
         # Reuse scalar tensors to avoid per-block allocations.
         self._rate_tensor = torch.zeros(1, device=self.device, dtype=torch.float32)
         self._p_len_tensor = torch.zeros(1, device=self.device, dtype=torch.int64)
-    
+
     def autotune_f0(self, f0, f0_autotune_strength):
-        notes = torch.as_tensor(self.autotune.note_dict, dtype=f0.dtype, device=f0.device)
+        notes = torch.as_tensor(
+            self.autotune.note_dict, dtype=f0.dtype, device=f0.device
+        )
         nearest = notes[torch.cdist(f0[:, None], notes[:, None]).argmin(dim=1)]
 
         return f0 + (nearest - f0) * f0_autotune_strength
 
     def setup_f0(self, f0_method: str = "fcpe"):
         if f0_method == "rmvpe":
+
             def _infer_from_audio(self, audio, thred=0.03):
                 mel = self.mel_extractor(audio.unsqueeze(0), center=True)
                 hidden = self.mel2hidden(mel)
@@ -146,7 +149,10 @@ class Realtime_Pipeline:
                 center += 4
                 offsets = torch.arange(-4, 5, device=salience.device)
                 idx = center[:, None] + offsets[None, :]
-                local_salience = salience[torch.arange(salience.shape[0], device=salience.device)[:, None], idx]
+                local_salience = salience[
+                    torch.arange(salience.shape[0], device=salience.device)[:, None],
+                    idx,
+                ]
                 product_sum = (local_salience * self.cents_mapping[idx]).sum(dim=1)
                 weight_sum = local_salience.sum(dim=1)
                 devided = product_sum / weight_sum
@@ -160,9 +166,15 @@ class Realtime_Pipeline:
                 hop_size=self.window,
             )
 
-            f0_model.model.cents_mapping = torch.from_numpy(f0_model.model.cents_mapping).to(self.device)
-            f0_model.model.infer_from_audio = types.MethodType(_infer_from_audio, f0_model.model)
-            f0_model.model.to_local_average_cents = types.MethodType(_to_local_average_cents, f0_model.model)
+            f0_model.model.cents_mapping = torch.from_numpy(
+                f0_model.model.cents_mapping
+            ).to(self.device)
+            f0_model.model.infer_from_audio = types.MethodType(
+                _infer_from_audio, f0_model.model
+            )
+            f0_model.model.to_local_average_cents = types.MethodType(
+                _to_local_average_cents, f0_model.model
+            )
         elif f0_method == "fcpe":
             f0_model = FCPE(
                 device=self.device,
@@ -196,7 +208,7 @@ class Realtime_Pipeline:
                 x.float().to(self.device).unsqueeze(0),
                 sr=self.f0_model.sample_rate,
                 decoder_mode="local_argmax",
-                threshold=0.006
+                threshold=0.006,
             ).squeeze()
         elif self.f0_method in ("crepe", "crepe-tiny"):
             f0, pd = torchcrepe.predict(
@@ -431,7 +443,12 @@ class Realtime_Pipeline:
         return out_audio.float()
 
     def _retrieve_speaker_embeddings(
-        self, skip_head, feats: torch.Tensor, index: IndexWrapper, big_tsr: torch.Tensor, index_rate: float
+        self,
+        skip_head,
+        feats: torch.Tensor,
+        index: IndexWrapper,
+        big_tsr: torch.Tensor,
+        index_rate: float,
     ):
         # skip_offset = skip_head // 2
         # npy = feats[0][skip_offset:].cpu().numpy()
@@ -454,9 +471,9 @@ class Realtime_Pipeline:
         weight /= weight.sum(dim=1, keepdim=True)
         query = (big_tsr[ix] * weight.unsqueeze(2)).sum(dim=1)
 
-        feats[0][skip_offset :] = (
+        feats[0][skip_offset:] = (
             query.unsqueeze(0) * index_rate
-            + (1.0 - index_rate) * feats[0][skip_offset :]
+            + (1.0 - index_rate) * feats[0][skip_offset:]
         )
         return feats
 
@@ -492,7 +509,7 @@ def create_pipeline(
         .strip()
         .replace("trained", "added"),
         device=vc.config.device,
-        dtype=vc.dtype
+        dtype=vc.dtype,
     )
     big_tsr, _ = index.read_index_tensor()
 

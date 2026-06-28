@@ -171,7 +171,7 @@ def _apply_config(vc: VoiceChanger, cfg):
                 .strip()
                 .replace("trained", "added"),
                 device=vc.device,
-                dtype=vc.vc_model.dtype
+                dtype=vc.vc_model.dtype,
             )
             big_tsr, _ = index.read_index_tensor()
 

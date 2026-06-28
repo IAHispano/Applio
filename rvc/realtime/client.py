@@ -160,7 +160,7 @@ async def change_config(ws: WebSocket):
                 .strip()
                 .replace("trained", "added"),
                 device=vc_instance.device,
-                dtype=vc_instance.vc_model.dtype
+                dtype=vc_instance.vc_model.dtype,
             )
             big_tsr, _ = index.read_index_tensor()
 
