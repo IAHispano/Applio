@@ -1537,7 +1537,7 @@ def realtime_tab():
                         interactive=True,
                     )
                     f0_method = gr.Radio(
-                        choices=["rmvpe", "fcpe"],
+                        choices=["rmvpe", "fcpe", "crepe", "crepe-tiny"],
                         value="fcpe",
                         label=i18n("Pitch extraction algorithm"),
                         info=i18n(

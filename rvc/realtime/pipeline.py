@@ -1,19 +1,19 @@
 import os
 import sys
-import faiss
+import types
 import numpy as np
 import torch
 import torch.nn.utils.parametrize
 import torch.nn.functional as F
-import torchaudio.transforms as tat
 from torch import Tensor
+import torchcrepe
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.realtime.utils.torch import circular_write
+from rvc.realtime.utils.torch import circular_write, AudioProcessorTorch, IndexWrapper
 from rvc.configs.config import Config
-from rvc.infer.pipeline import Autotune, AudioProcessor
+from rvc.infer.pipeline import Autotune
 from rvc.lib.algorithm.synthesizers import Synthesizer
 from rvc.lib.predictors.f0 import FCPE, RMVPE
 from rvc.lib.utils import load_embedding, HubertModelWithFinalProj
@@ -98,21 +98,20 @@ class Realtime_Pipeline:
         vc: RealtimeVoiceConverter,
         hubert_model: HubertModelWithFinalProj = None,
         index=None,
-        big_npy=None,
+        big_tsr=None,
         f0_method: str = "rmvpe",
         sid: int = 0,
     ):
         self.vc = vc
         self.hubert_model = hubert_model
         self.index = index
-        self.big_npy = big_npy
+        self.big_tsr = big_tsr
         self.use_f0 = vc.use_f0
         self.version = vc.version
         self.f0_method = f0_method
         self.sample_rate = 16000
         self.tgt_sr = vc.tgt_sr
         self.window = 160
-        self.model_window = self.tgt_sr // 100
         self.f0_min = 50.0
         self.f0_max = 1100.0
         self.device = vc.config.device
@@ -125,20 +124,54 @@ class Realtime_Pipeline:
         # Reuse scalar tensors to avoid per-block allocations.
         self._rate_tensor = torch.zeros(1, device=self.device, dtype=torch.float32)
         self._p_len_tensor = torch.zeros(1, device=self.device, dtype=torch.int64)
+    
+    def autotune_f0(self, f0, f0_autotune_strength):
+        notes = torch.as_tensor(self.autotune.note_dict, dtype=f0.dtype, device=f0.device)
+        nearest = notes[torch.cdist(f0[:, None], notes[:, None]).argmin(dim=1)]
+
+        return f0 + (nearest - f0) * f0_autotune_strength
 
     def setup_f0(self, f0_method: str = "fcpe"):
         if f0_method == "rmvpe":
+            def _infer_from_audio(self, audio, thred=0.03):
+                mel = self.mel_extractor(audio.unsqueeze(0), center=True)
+                hidden = self.mel2hidden(mel)
+                hidden = hidden.squeeze(0)
+                f0 = self.decode(hidden, thred=thred)
+                return f0
+
+            def _to_local_average_cents(self, salience, thred=0.05):
+                center = torch.argmax(salience, dim=1)
+                salience = torch.nn.functional.pad(salience, (4, 4))
+                center += 4
+                offsets = torch.arange(-4, 5, device=salience.device)
+                idx = center[:, None] + offsets[None, :]
+                local_salience = salience[torch.arange(salience.shape[0], device=salience.device)[:, None], idx]
+                product_sum = (local_salience * self.cents_mapping[idx]).sum(dim=1)
+                weight_sum = local_salience.sum(dim=1)
+                devided = product_sum / weight_sum
+                maxx = salience.max(dim=1).values
+                devided = torch.where(maxx <= thred, torch.zeros_like(devided), devided)
+                return devided
+
             f0_model = RMVPE(
                 device=self.device,
                 sample_rate=self.sample_rate,
                 hop_size=self.window,
             )
+
+            f0_model.model.cents_mapping = torch.from_numpy(f0_model.model.cents_mapping).to(self.device)
+            f0_model.model.infer_from_audio = types.MethodType(_infer_from_audio, f0_model.model)
+            f0_model.model.to_local_average_cents = types.MethodType(_to_local_average_cents, f0_model.model)
         elif f0_method == "fcpe":
             f0_model = FCPE(
                 device=self.device,
                 sample_rate=self.sample_rate,
                 hop_size=self.window,
             )
+        elif self.f0_method in ("crepe", "crepe-tiny"):
+            f0_model = None
+
         return f0_model
 
     def get_f0(
@@ -156,27 +189,46 @@ class Realtime_Pipeline:
         Estimates the fundamental frequency (F0) of a given audio signal using various methods.
         """
 
-        if torch.is_tensor(x):
-            # If the input is a tensor, it will need to be converted to numpy array to calculate with RMVPE and FCPE.
-            x = x.cpu().numpy()
-
         if self.f0_method == "rmvpe":
             f0 = self.f0_model.get_f0(x, filter_radius=0.03)
         elif self.f0_method == "fcpe":
-            f0 = self.f0_model.get_f0(x, x.shape[0] // self.window, filter_radius=0.006)
+            f0 = self.f0_model.model.infer(
+                x.float().to(self.device).unsqueeze(0),
+                sr=self.f0_model.sample_rate,
+                decoder_mode="local_argmax",
+                threshold=0.006
+            ).squeeze()
+        elif self.f0_method in ("crepe", "crepe-tiny"):
+            f0, pd = torchcrepe.predict(
+                x.float().to(self.device).unsqueeze(dim=0),
+                self.sample_rate,
+                self.window,
+                self.f0_min,
+                self.f0_max,
+                model="tiny" if "-tiny" in self.f0_method else "full",
+                batch_size=512,
+                device=self.device,
+                return_periodicity=True,
+            )
+            pd = torchcrepe.filter.median(pd, 3)
+            f0 = torchcrepe.filter.mean(f0, 3)
+            f0[pd < 0.1] = 0
+            f0 = f0[0]
+
         # f0 adjustments
         if f0_autotune is True:
-            f0 = self.autotune.autotune_f0(f0, f0_autotune_strength)
+            f0 = self.autotune_f0(f0, f0_autotune_strength)
         elif proposed_pitch is True:
             limit = 12
+            _f0 = f0.cpu().numpy().copy()
             # calculate median f0 of the audio
-            valid_f0 = np.where(f0 > 0)[0]
+            valid_f0 = np.where(_f0 > 0)[0]
             if len(valid_f0) < 2:
                 # no valid f0 detected
                 up_key = 0
             else:
                 median_f0 = float(
-                    np.median(np.interp(np.arange(len(f0)), valid_f0, f0[valid_f0]))
+                    np.median(np.interp(np.arange(len(_f0)), valid_f0, _f0[valid_f0]))
                 )
                 if median_f0 <= 0 or np.isnan(median_f0):
                     up_key = 0
@@ -196,12 +248,12 @@ class Realtime_Pipeline:
             print(
                 "calculated pitch offset:", up_key
             )  # Might need to hide so terminal output doesn't become a mess
-            f0 *= pow(2, (f0_up_key + up_key) / 12)
+            f0 *= 2 ** ((f0_up_key + up_key) / 12)
         else:
-            f0 *= pow(2, f0_up_key / 12)
+            f0 *= 2 ** (f0_up_key / 12)
 
         # Convert to Tensor for computational use
-        f0 = torch.from_numpy(f0).to(self.device).float()
+        # f0 = torch.from_numpy(f0).to(self.device).float()
 
         # quantizing f0 to 255 buckets to make coarse f0
         f0_mel = 1127.0 * torch.log(1.0 + f0 / 700.0)
@@ -311,11 +363,11 @@ class Realtime_Pipeline:
                     self.index and index_rate > 0
                 ):  # set by parent function, only true if index is available, loaded, and index rate > 0
                     feats = self._retrieve_speaker_embeddings(
-                        skip_head, feats, self.index, self.big_npy, index_rate
+                        skip_head, feats, self.index, self.big_tsr, index_rate
                     )
             except AssertionError:
                 print("The index file structure is incompatible with the model.")
-                self.index = self.big_npy = None
+                self.index = self.big_tsr = None
 
             # feature upsampling
             feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(
@@ -354,30 +406,18 @@ class Realtime_Pipeline:
                 pitch_p,
                 pitchf_p,
                 self._rate_tensor,
-            ).float()
+            )
             # Match output RMS to the current block's input RMS.
             if volume_envelope < 1:
-                rms_src = audio[-(return_length * self.window) :].cpu().numpy()
-                out_audio = AudioProcessor.change_rms(
+                rms_src = audio[-(return_length * self.window) :]
+                out_audio = AudioProcessorTorch.change_rms(
                     rms_src,
                     self.sample_rate,
-                    out_audio.cpu().numpy(),
+                    out_audio,
                     self.tgt_sr,
                     volume_envelope,
-                )
-                out_audio = torch.as_tensor(out_audio, device=self.device)
-
-            scaled_window = int(np.floor(1.0 * self.model_window))
-
-            if scaled_window != self.model_window:
-                if scaled_window not in self.resamplers:
-                    self.resamplers[scaled_window] = tat.Resample(
-                        orig_freq=scaled_window,
-                        new_freq=self.model_window,
-                        dtype=torch.float32,
-                    ).to(self.device)
-                out_audio = self.resamplers[scaled_window](
-                    out_audio[: return_length * scaled_window]
+                    device=self.device,
+                    dtype=self.dtype,
                 )
 
             if reduced_noise is not None:
@@ -388,40 +428,37 @@ class Realtime_Pipeline:
                     device=self.device,
                 )
 
-        return out_audio
+        return out_audio.float()
 
     def _retrieve_speaker_embeddings(
-        self, skip_head, feats, index, big_npy, index_rate
+        self, skip_head, feats: torch.Tensor, index: IndexWrapper, big_tsr: torch.Tensor, index_rate: float
     ):
+        # skip_offset = skip_head // 2
+        # npy = feats[0][skip_offset:].cpu().numpy()
+        # if self.dtype == torch.float16:
+        #     npy = npy.astype(np.float32)
+        # score, ix = index.search(npy, k=8)
+        # weight = np.square(1 / score)
+        # weight /= weight.sum(axis=1, keepdims=True)
+        # npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
+        # if self.dtype == torch.float16:
+        #     npy = npy.astype(np.float16)
+        # feats[0][skip_offset:] = (
+        #     torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
+        #     + (1 - index_rate) * feats[0][skip_offset:]
+        # )
         skip_offset = skip_head // 2
-        npy = feats[0][skip_offset:].cpu().numpy()
-        if self.dtype == torch.float16:
-            npy = npy.astype(np.float32)
-        score, ix = index.search(npy, k=8)
-        weight = np.square(1 / score)
-        weight /= weight.sum(axis=1, keepdims=True)
-        npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
-        if self.dtype == torch.float16:
-            npy = npy.astype(np.float16)
-        feats[0][skip_offset:] = (
-            torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
-            + (1 - index_rate) * feats[0][skip_offset:]
+        tsr = feats[0][skip_offset:]
+        score, ix = index.search(tsr, k=8)
+        weight = (1 / score).square()
+        weight /= weight.sum(dim=1, keepdim=True)
+        query = (big_tsr[ix] * weight.unsqueeze(2)).sum(dim=1)
+
+        feats[0][skip_offset :] = (
+            query.unsqueeze(0) * index_rate
+            + (1.0 - index_rate) * feats[0][skip_offset :]
         )
         return feats
-
-
-def load_faiss_index(file_index):
-    if file_index != "" and os.path.exists(file_index):
-        try:
-            index = faiss.read_index(file_index)
-            big_npy = index.reconstruct_n(0, index.ntotal)
-        except Exception as error:
-            print(f"An error occurred reading the FAISS index: {error}")
-            index = big_npy = None
-    else:
-        index = big_npy = None
-
-    return index, big_npy
 
 
 def create_pipeline(
@@ -438,14 +475,26 @@ def create_pipeline(
     """
 
     vc = RealtimeVoiceConverter(model_path)
-    index, big_npy = load_faiss_index(
+    # index, big_npy = load_faiss_index(
+    #     index_path.strip()
+    #     .strip('"')
+    #     .strip("\n")
+    #     .strip('"')
+    #     .strip()
+    #     .replace("trained", "added")
+    # )
+
+    index = IndexWrapper(
         index_path.strip()
         .strip('"')
         .strip("\n")
         .strip('"')
         .strip()
-        .replace("trained", "added")
+        .replace("trained", "added"),
+        device=vc.config.device,
+        dtype=vc.dtype
     )
+    big_tsr, _ = index.read_index_tensor()
 
     hubert_model = load_embedding(embedder_model, embedder_model_custom)
     hubert_model = hubert_model.to(vc.config.device).to(vc.dtype)
@@ -455,7 +504,7 @@ def create_pipeline(
         vc,
         hubert_model,
         index,
-        big_npy,
+        big_tsr,
         f0_method,
         sid,
     )

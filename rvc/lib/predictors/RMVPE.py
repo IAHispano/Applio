@@ -523,17 +523,11 @@ class RMVPE0Predictor:
         center = np.argmax(salience, axis=1)
         salience = np.pad(salience, ((0, 0), (4, 4)))
         center += 4
-        todo_salience = []
-        todo_cents_mapping = []
-        starts = center - 4
-        ends = center + 5
-        for idx in range(salience.shape[0]):
-            todo_salience.append(salience[:, starts[idx] : ends[idx]][idx])
-            todo_cents_mapping.append(self.cents_mapping[starts[idx] : ends[idx]])
-        todo_salience = np.array(todo_salience)
-        todo_cents_mapping = np.array(todo_cents_mapping)
-        product_sum = np.sum(todo_salience * todo_cents_mapping, 1)
-        weight_sum = np.sum(todo_salience, 1)
+        offsets = np.arange(-4, 5)
+        idx = center[:, None] + offsets[None, :]
+        local_salience = salience[np.arange(salience.shape[0])[:, None], idx]
+        product_sum = np.sum(local_salience * self.cents_mapping[idx], axis=1)
+        weight_sum = np.sum(local_salience, axis=1)
         devided = product_sum / weight_sum
         maxx = np.max(salience, axis=1)
         devided[maxx <= thred] = 0

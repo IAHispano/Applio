@@ -1,19 +1,17 @@
 import os
 import sys
 import multiprocessing as mp
-import numpy as np
 import time
 from queue import Empty, Full
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.realtime.core import AUDIO_SAMPLE_RATE
+from rvc.realtime.core import VoiceChanger, AUDIO_SAMPLE_RATE
 
 
 def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt):
     """Entry point for the voice conversion worker process."""
-    from rvc.realtime.core import VoiceChanger
 
     vc = VoiceChanger(**vc_kwargs)
 
@@ -50,7 +48,7 @@ def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt):
             pass
 
 
-def _apply_config(vc, cfg):
+def _apply_config(vc: VoiceChanger, cfg):
     """Apply a configuration update to the VoiceChanger in the worker process."""
     if "record_start" in cfg:
         vc.record_audio = True
@@ -133,11 +131,22 @@ def _apply_config(vc, cfg):
         vc.vc_model.pipeline.vc.load_model(model_path)
         vc.vc_model.pipeline.vc.setup_network()
         vc.vc_model.pipeline.version = vc.vc_model.pipeline.vc.version
+        vc.vc_model.pipeline.use_f0 = vc.vc_model.pipeline.vc.use_f0
+        vc.vc_model.pipeline.tgt_sr = vc.vc_model.pipeline.vc.tgt_sr
         vc.vc_model.resample_out = tat.Resample(
             orig_freq=vc.vc_model.pipeline.tgt_sr,
             new_freq=AUDIO_SAMPLE_RATE,
             dtype=torch.float32,
         ).to(vc.vc_model.device)
+        if cfg["clean_audio"]:
+            from noisereduce.torchgate import TorchGate
+
+            strength = cfg.get("clean_strength", 0.5)
+
+            vc.vc_model.reduced_noise = TorchGate(
+                vc.vc_model.pipeline.tgt_sr,
+                prop_decrease=strength,
+            ).to(vc.vc_model.device)
 
     # SID change.
     sid = cfg.get("sid")
@@ -152,22 +161,34 @@ def _apply_config(vc, cfg):
     index_path = cfg.get("index_path")
     if index_path is not None:
         if index_path and vc.vc_model.index_path != index_path:
-            from rvc.realtime.pipeline import load_faiss_index
+            from rvc.realtime.utils.torch import IndexWrapper
 
-            index, big_npy = load_faiss_index(
+            index = IndexWrapper(
                 index_path.strip()
                 .strip('"')
                 .strip("\n")
                 .strip('"')
                 .strip()
-                .replace("trained", "added")
+                .replace("trained", "added"),
+                device=vc.device,
+                dtype=vc.vc_model.dtype
             )
+            big_tsr, _ = index.read_index_tensor()
+
+            # index, big_npy = load_faiss_index(
+            #     index_path.strip()
+            #     .strip('"')
+            #     .strip("\n")
+            #     .strip('"')
+            #     .strip()
+            #     .replace("trained", "added")
+            # )
             vc.vc_model.pipeline.index = index
-            vc.vc_model.pipeline.big_npy = big_npy
+            vc.vc_model.pipeline.big_tsr = big_tsr
             vc.vc_model.index_path = index_path
         elif not index_path:
             vc.vc_model.pipeline.index = None
-            vc.vc_model.pipeline.big_npy = None
+            vc.vc_model.pipeline.big_tsr = None
             vc.vc_model.index_path = None
 
     # F0 method change.

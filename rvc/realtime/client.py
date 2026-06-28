@@ -113,11 +113,30 @@ async def change_config(ws: WebSocket):
 
     model_pth = params.get("model_path", vc_instance.vc_model.model_path)
     if model_pth and vc_instance.vc_model.model_path != model_pth:
+        import torch
+        import torchaudio.transforms as tat
+
         vc_instance.vc_model.model_path = model_pth
         vc_instance.vc_model.pipeline.vc.load_model(model_pth)
         vc_instance.vc_model.pipeline.vc.setup_network()
         # Set a new version, otherwise it will crash.
         vc_instance.vc_model.pipeline.version = vc_instance.vc_model.pipeline.vc.version
+        vc_instance.vc_model.pipeline.use_f0 = vc_instance.vc_model.pipeline.vc.use_f0
+        vc_instance.vc_model.pipeline.tgt_sr = vc_instance.vc_model.pipeline.vc.tgt_sr
+
+        vc_instance.vc_model.resample_out = tat.Resample(
+            orig_freq=vc_instance.vc_model.pipeline.tgt_sr,
+            new_freq=AUDIO_SAMPLE_RATE,
+            dtype=torch.float32,
+        ).to(vc_instance.vc_model.device)
+
+        if clean_audio:
+            from noisereduce.torchgate import TorchGate
+
+            vc_instance.vc_model.reduced_noise = TorchGate(
+                vc_instance.vc_model.pipeline.tgt_sr,
+                prop_decrease=clean_strength,
+            ).to(vc_instance.vc_model.device)
 
     sid = params.get("sid", vc_instance.vc_model.pipeline.sid)
     if vc_instance.vc_model.pipeline.sid != sid:
@@ -131,23 +150,34 @@ async def change_config(ws: WebSocket):
     index_path = params.get("index_path", None)
     if index_path:
         if vc_instance.vc_model.index_path != index_path:
-            from rvc.realtime.pipeline import load_faiss_index
+            from rvc.realtime.utils.torch import IndexWrapper
 
-            index, big_npy = load_faiss_index(
+            index = IndexWrapper(
                 index_path.strip()
                 .strip('"')
                 .strip("\n")
                 .strip('"')
                 .strip()
-                .replace("trained", "added")
+                .replace("trained", "added"),
+                device=vc_instance.device,
+                dtype=vc_instance.vc_model.dtype
             )
+            big_tsr, _ = index.read_index_tensor()
 
+            # index, big_npy = load_faiss_index(
+            #     index_path.strip()
+            #     .strip('"')
+            #     .strip("\n")
+            #     .strip('"')
+            #     .strip()
+            #     .replace("trained", "added")
+            # )
             vc_instance.vc_model.pipeline.index = index
-            vc_instance.vc_model.pipeline.big_npy = big_npy
+            vc_instance.vc_model.pipeline.big_tsr = big_tsr
             vc_instance.vc_model.index_path = index_path
     else:
         vc_instance.vc_model.pipeline.index = None
-        vc_instance.vc_model.pipeline.big_npy = None
+        vc_instance.vc_model.pipeline.big_tsr = None
         vc_instance.vc_model.index_path = None
 
     f0_method = params.get("f0_method", vc_instance.vc_model.pipeline.f0_method)
