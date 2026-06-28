@@ -28,18 +28,23 @@ def frame(x: torch.Tensor, frame_length: int, hop_length: int, axis: int = -1):
         )
 
     axis = axis % x.ndim
-    if axis != x.ndim - 1: # Move target axis to the last dimension for easier processing
+    if (
+        axis != x.ndim - 1
+    ):  # Move target axis to the last dimension for easier processing
         x = x.movedim(axis, -1)
 
     # Compute output shape and stride configuration
     size = x.shape[:-1] + (1 + (x.shape[-1] - frame_length) // hop_length, frame_length)
     stride = x.stride()[:-1] + (hop_length * x.stride()[-1], x.stride()[-1])
 
-    xw = torch.as_strided(x, size=size, stride=stride)  # Create framed tensor without copying memory
-    if axis != x.ndim - 1: # Restore original axis order if needed
+    xw = torch.as_strided(
+        x, size=size, stride=stride
+    )  # Create framed tensor without copying memory
+    if axis != x.ndim - 1:  # Restore original axis order if needed
         xw = xw.movedim(-2, axis)
 
     return xw
+
 
 def rms(
     y,
@@ -48,7 +53,7 @@ def rms(
     center: bool = True,
     pad_mode: str = "constant",
     dtype: torch.dtype = torch.float32,
-    device: str = "cpu"
+    device: str = "cpu",
 ):
     """
     Compute the Root Mean Square (RMS) energy of an audio signal.
@@ -65,23 +70,21 @@ def rms(
 
     # Convert input to tensor and move to target device/dtype
     y = (
-        y.to(device=device, dtype=dtype) 
-        if torch.is_tensor(y) else 
-        torch.from_numpy(y.copy()).to(device=device, dtype=dtype)
+        y.to(device=device, dtype=dtype)
+        if torch.is_tensor(y)
+        else torch.from_numpy(y.copy()).to(device=device, dtype=dtype)
     )
 
-    if center: # Pad signal so frames are centered
+    if center:  # Pad signal so frames are centered
         y = torch.nn.functional.pad(
-            y, 
-            (frame_length // 2, frame_length // 2), 
-            mode=pad_mode
+            y, (frame_length // 2, frame_length // 2), mode=pad_mode
         )
-    
+
     x = frame(y, frame_length=frame_length, hop_length=hop_length)
     # Compute mean square energy per frame
     power = x.square().mean(dim=-1, keepdim=True)
     # Convert power to RMS
-    result = power.sqrt().mT 
+    result = power.sqrt().mT
 
     return result
 
@@ -97,8 +100,8 @@ class AudioProcessorTorch:
         target_audio: torch,
         target_rate: int,
         rate: float,
-        dtype = torch.float32,
-        device = "cpu",
+        dtype=torch.float32,
+        device="cpu",
     ):
         """
         Adjust the RMS level of target_audio to match the RMS of source_audio, with a given blending rate.
@@ -142,9 +145,8 @@ class AudioProcessorTorch:
         rms2 = torch.maximum(rms2, torch.zeros_like(rms2) + 1e-6)
 
         # Adjust target audio RMS based on the source audio RMS
-        adjusted_audio = (
-            target_audio
-            * (torch.pow(rms1, 1 - rate) * torch.pow(rms2, rate - 1))
+        adjusted_audio = target_audio * (
+            torch.pow(rms1, 1 - rate) * torch.pow(rms2, rate - 1)
         )
         return adjusted_audio
 
@@ -160,7 +162,14 @@ class IndexWrapper:
     - Performing brute-force L2 distance search with PyTorch
     """
 
-    def __init__(self, index_path: str, nprobe: int = 12, device: str = "cuda", dtype: torch.dtype = torch.float32, clamp: float = 1e-8):
+    def __init__(
+        self,
+        index_path: str,
+        nprobe: int = 12,
+        device: str = "cuda",
+        dtype: torch.dtype = torch.float32,
+        clamp: float = 1e-8,
+    ):
         """
         Initialize the index wrapper.
 
@@ -182,7 +191,7 @@ class IndexWrapper:
         self.big_npy = None
         self.b_norms = None
         self.big_tensor = None
-    
+
     def read_index(self):
         """
         Load a FAISS index and reconstruct all stored vectors.
@@ -198,12 +207,13 @@ class IndexWrapper:
         else:
             index = big_npy = None
 
-        if index is not None: index.nprobe = self.nprobe
+        if index is not None:
+            index.nprobe = self.nprobe
         self.index = index
         self.big_npy = big_npy
 
         return index, big_npy
-    
+
     def read_index_tensor(self):
         """
         Load the FAISS index and convert reconstructed vectors into contiguous PyTorch tensors. Also precomputes squared norms for efficient L2 distance search.
@@ -215,14 +225,16 @@ class IndexWrapper:
             self.big_tensor = None
             self.b_norms = None
         else:
-            self.big_tensor = torch.from_numpy(self.big_npy).to(device=self.device, dtype=self.dtype).contiguous()
-            # Precompute ||b||² for distance calculation
-            self.b_norms = (
-                (self.big_tensor ** 2).sum(dim=-1, keepdim=True).T.contiguous()
+            self.big_tensor = (
+                torch.from_numpy(self.big_npy)
+                .to(device=self.device, dtype=self.dtype)
+                .contiguous()
             )
+            # Precompute ||b||² for distance calculation
+            self.b_norms = (self.big_tensor**2).sum(dim=-1, keepdim=True).T.contiguous()
 
         return self.big_tensor, self.b_norms
-    
+
     def search(self, query, k=8):
         """
         Perform brute-force L2 nearest neighbor search using PyTorch.
@@ -236,9 +248,14 @@ class IndexWrapper:
             if not self.faiss_cpu:
                 try:
                     # Compute ||a||^2 for query vectors
-                    q_norm = (query ** 2).sum(dim=-1, keepdim=True)
+                    q_norm = (query**2).sum(dim=-1, keepdim=True)
                     # Compute squared L2 distances
-                    distances = torch.addmm(self.b_norms, query, self.big_tensor.T, alpha=-2.0, beta=1.0) + q_norm
+                    distances = (
+                        torch.addmm(
+                            self.b_norms, query, self.big_tensor.T, alpha=-2.0, beta=1.0
+                        )
+                        + q_norm
+                    )
                     # Prevent negative values caused by floating-point precision
                     distances = distances.clamp(min=self.clamp)
 
@@ -261,6 +278,6 @@ class IndexWrapper:
                 score, ix = self.index.search(npy, k)
 
                 return (
-                    torch.from_numpy(score).to(self.device).to(self.dtype), 
-                    torch.from_numpy(ix).to(self.device).long()
+                    torch.from_numpy(score).to(self.device).to(self.dtype),
+                    torch.from_numpy(ix).to(self.device).long(),
                 )
