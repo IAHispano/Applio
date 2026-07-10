@@ -30,13 +30,18 @@ verification on an actual NVIDIA Tesla T4 (16GB, sm_75/Turing).
   ```
   RuntimeError: Input type (torch.cuda.FloatTensor) and weight type (torch.cuda.HalfTensor) should be the same
   ```
-- There is no bf16 code path in the repo either (0 matches for bf16 handling),
-  so bf16-capable GPUs (e.g. this T4, `is_bf16_supported()=True`) gain nothing
-  and also hit no bf16-specific bugs — the only currently working precision
-  is fp32.
+- The *inference* pipeline has no bf16 code path either — it's all fp32 as
+  described above. (Training is a separate story: `tabs/settings/sections/precision.py`,
+  `rvc/train/train.py`, and `rvc/train/anyprecision_optimizer.py` do have real
+  bf16 support gated on `torch.cuda.is_bf16_supported()`, but that's unrelated
+  to the inference path this note covers.) So for inference specifically,
+  bf16-capable GPUs (e.g. this T4, `is_bf16_supported()=True`) gain nothing
+  and also hit no bf16-specific bugs — the only currently working inference
+  precision is fp32.
 - Net effect for T4/Turing and similar GPUs: no fp16/bf16 tensor-core
-  acceleration is available through this codebase today; treat fp32 as the
-  only supported precision until the hardcoded casts are refactored (tracked
+  acceleration is available through the *inference* codepath today; treat
+  fp32 as the only supported inference precision until the hardcoded casts
+  are refactored (tracked
   as a code-logic issue, out of scope for this doc-only note).
 
 ## Positive findings on T4

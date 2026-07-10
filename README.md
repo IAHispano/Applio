@@ -87,7 +87,7 @@ This launches the Gradio interface in your default browser.
 If the GUI doesn't come up in your environment, Applio can also run fully headless via the CLI, e.g.:
 
 ```
-python core.py infer --pitch 0 --index_rate 0.75 --volume_envelope 1 --protect 0.5 --hop_length 128 --f0_method rmvpe --input_path input.wav --output_path output.wav --pth_path logs/<model>/model.pth --index_path logs/<model>/model.index --split_audio False --f0_autotune False --clean_audio False --clean_strength 0.5 --export_format WAV --embedder_model contentvec --sid 0
+python core.py infer --pitch 0 --index_rate 0.75 --volume_envelope 1 --protect 0.5 --f0_method rmvpe --input_path input.wav --output_path output.wav --pth_path logs/<model>/model.pth --index_path logs/<model>/model.index --split_audio False --f0_autotune False --clean_audio False --clean_strength 0.5 --export_format WAV --embedder_model contentvec --sid 0
 ```
 
 This is the same entry point used by the official [No-UI Colab notebook](https://colab.research.google.com/github/iahispano/applio/blob/main/assets/Applio_NoUI.ipynb) and requires no GUI/browser.
