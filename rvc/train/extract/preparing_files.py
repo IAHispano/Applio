@@ -52,21 +52,27 @@ def generate_filelist(model_path: str, sample_rate: int, include_mutes: int = 2)
         if sid not in sids:
             sids.append(sid)
 
-        # Calculate relative pathing 
+        # Calculate relative pathing
         rel_wav = os.path.relpath(f"{os.path.join(gt_wavs_dir, name)}.wav")
         rel_feat = os.path.relpath(f"{os.path.join(feature_dir, name)}.npy")
         rel_f0 = os.path.relpath(f"{os.path.join(f0_dir, name)}.wav.npy")
         rel_f0nsf = os.path.relpath(f"{os.path.join(f0nsf_dir, name)}.wav.npy")
-        
+
         options.append(f"{rel_wav}|{rel_feat}|{rel_f0}|{rel_f0nsf}|{sid}")
 
     if include_mutes > 0:
-        mute_audio_path = os.path.relpath(os.path.join(
-            mute_base_path, "sliced_audios", f"mute{sample_rate}.wav"
-        ))
-        mute_feature_path = os.path.relpath(os.path.join(mute_base_path, f"extracted", "mute.npy"))
-        mute_f0_path = os.path.relpath(os.path.join(mute_base_path, "f0", "mute.wav.npy"))
-        mute_f0nsf_path = os.path.relpath(os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy"))
+        mute_audio_path = os.path.relpath(
+            os.path.join(mute_base_path, "sliced_audios", f"mute{sample_rate}.wav")
+        )
+        mute_feature_path = os.path.relpath(
+            os.path.join(mute_base_path, f"extracted", "mute.npy")
+        )
+        mute_f0_path = os.path.relpath(
+            os.path.join(mute_base_path, "f0", "mute.wav.npy")
+        )
+        mute_f0nsf_path = os.path.relpath(
+            os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")
+        )
 
         # adding x files per sid
         for sid in sids * include_mutes:
