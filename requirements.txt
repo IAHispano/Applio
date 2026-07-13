@@ -31,7 +31,7 @@ torchvision==0.22.1+cu128; sys_platform == 'linux' or sys_platform == 'win32'
 torchcrepe
 torchfcpe
 einops
-transformers==5.4.0
+transformers==5.5.0
 
 # Visualization and UI
 matplotlib==3.10.8
