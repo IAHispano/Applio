@@ -6,7 +6,6 @@ import datetime
 import glob
 import json
 from collections import deque
-from distutils.util import strtobool
 from random import randint, shuffle
 from time import time as ttime
 
@@ -23,13 +22,13 @@ from tqdm import tqdm
 now_dir = os.getcwd()
 sys.path.append(os.path.join(now_dir))
 
-from losses import discriminator_loss, feature_loss, generator_loss, kl_loss
-from mel_processing import (
+from rvc.train.losses import discriminator_loss, feature_loss, generator_loss, kl_loss
+from rvc.train.mel_processing import (
     MultiScaleMelSpectrogramLoss,
     mel_spectrogram_torch,
     spec_to_mel_torch,
 )
-from utils import (
+from rvc.train.utils import (
     HParams,
     latest_checkpoint_path,
     load_checkpoint,
@@ -53,14 +52,17 @@ pretrainD = sys.argv[5]
 gpus = sys.argv[6]
 batch_size = int(sys.argv[7])
 sample_rate = int(sys.argv[8])
-save_only_latest = strtobool(sys.argv[9])
-save_every_weights = strtobool(sys.argv[10])
-cache_data_in_gpu = strtobool(sys.argv[11])
-overtraining_detector = strtobool(sys.argv[12])
+def _strtobool(val):
+    return val.lower() in ("yes", "true", "t", "y", "1")
+
+save_only_latest = _strtobool(sys.argv[9])
+save_every_weights = _strtobool(sys.argv[10])
+cache_data_in_gpu = _strtobool(sys.argv[11])
+overtraining_detector = _strtobool(sys.argv[12])
 overtraining_threshold = int(sys.argv[13])
-cleanup = strtobool(sys.argv[14])
+cleanup = _strtobool(sys.argv[14])
 vocoder = sys.argv[15]
-checkpointing = strtobool(sys.argv[16])
+checkpointing = _strtobool(sys.argv[16])
 # experimental settings
 randomized = True
 d_lr_coeff = 1.0
