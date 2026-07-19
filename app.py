@@ -203,6 +203,33 @@ def launch_gradio(server_name: str, server_port: int) -> None:
         ),
     )
 
+    # Mount TensorBoard proxy so it's accessible from any origin
+    from rvc.lib.tools.launch_tensorboard import get_tb_url
+    import httpx
+    from fastapi import Request, Response
+
+    @app.api_route("/tensorboard/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
+    @app.api_route("/tensorboard", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
+    async def tb_proxy(request: Request, path: str = ""):
+        tb_url = get_tb_url()
+        if not tb_url:
+            return Response("TensorBoard not started", status_code=503)
+        url = f"{tb_url.rstrip('/')}/{path}"
+        if request.url.query:
+            url = f"{url}?{request.url.query}"
+        async with httpx.AsyncClient() as client:
+            resp = await client.request(
+                method=request.method,
+                url=url,
+                headers={k: v for k, v in request.headers.items() if k.lower() not in ["host"]},
+                content=await request.body(),
+            )
+        return Response(
+            content=resp.content,
+            status_code=resp.status_code,
+            media_type=resp.headers.get("content-type"),
+        )
+
     if client_mode:
         import time
         from rvc.realtime.client import app as fastapi_app
