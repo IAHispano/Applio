@@ -1,12 +1,8 @@
-# Core dependencies
-setuptools==81.0.0
 numpy==2.4.6
 requests==2.34.2
 tqdm==4.68.4
 wget==3.2
 
-# Audio processing
-ffmpeg-python==0.2.0
 faiss-cpu==1.14.3
 librosa==0.11.0
 scipy==1.18.0
@@ -16,25 +12,17 @@ pedalboard==0.9.24
 stftpitchshift==2.0
 soxr==1.1.0
 
-# Machine learning and deep learning
-omegaconf==2.3.0
-numba==0.66.0
 torch==2.11.0
 torchaudio==2.11.0
-torchvision==0.26.0
 torchcrepe==0.0.24
 torchfcpe==0.0.4
 einops==0.8.2
 transformers==5.13.1
 
-# Visualization and UI
 matplotlib==3.11.0
 tensorboard==2.21.0
 gradio==6.20.0
 
-# Miscellaneous utilities
-certifi==2026.6.17
-tensorboardX==2.6.5
 edge-tts==7.2.8
 pypresence==4.6.2
 beautifulsoup4==4.15.0
