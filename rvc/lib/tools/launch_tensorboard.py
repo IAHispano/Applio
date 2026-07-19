@@ -24,6 +24,7 @@ def launch_tensorboard_pipeline():
 
     while True:
         import time
+
         time.sleep(600)
 
 
@@ -57,4 +58,5 @@ def _start_tb():
     print(f"TensorBoard running at: {_tb_url}{pinned}")
     while True:
         import time
+
         time.sleep(600)
