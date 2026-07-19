@@ -208,8 +208,14 @@ def launch_gradio(server_name: str, server_port: int) -> None:
     import httpx
     from fastapi import Request, Response
 
-    @app.api_route("/tensorboard/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
-    @app.api_route("/tensorboard", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
+    @app.api_route(
+        "/tensorboard/{path:path}",
+        methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+    )
+    @app.api_route(
+        "/tensorboard",
+        methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+    )
     async def tb_proxy(request: Request, path: str = ""):
         tb_url = get_tb_url()
         if not tb_url:
@@ -221,7 +227,11 @@ def launch_gradio(server_name: str, server_port: int) -> None:
             resp = await client.request(
                 method=request.method,
                 url=url,
-                headers={k: v for k, v in request.headers.items() if k.lower() not in ["host"]},
+                headers={
+                    k: v
+                    for k, v in request.headers.items()
+                    if k.lower() not in ["host"]
+                },
                 content=await request.body(),
             )
         return Response(

@@ -4,9 +4,13 @@ import os
 import subprocess
 import sys
 import traceback
+
+
 def strtobool(val):
     """Convert a string representation of truth to a bool."""
     return val.lower() in ("yes", "true", "t", "y", "1")
+
+
 from functools import lru_cache
 from datetime import datetime, timedelta
 
