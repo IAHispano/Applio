@@ -105,22 +105,27 @@ my_applio = loadThemes.load_theme() or "ParityError/Interstellar"
 client_mode = "--client" in sys.argv
 
 # Define Gradio interface
-js_code = (
-    (
-        "() => {\n"
-        + pathlib.Path(
-            os.path.join(now_dir, "tabs", "realtime", "main.js")
-        ).read_text()
-        + "\n}"
-    )
-    if client_mode
-    else None
-)
 with gr.Blocks(
     title="Applio",
-    theme=my_applio,
-    css="footer{display:none !important}",
-    js=js_code,
+    **(
+        {
+            "theme": my_applio,
+            "css": "footer{display:none !important}",
+            "js": (
+                (
+                    "() => {\n"
+                    + pathlib.Path(
+                        os.path.join(now_dir, "tabs", "realtime", "main.js")
+                    ).read_text()
+                    + "\n}"
+                )
+                if client_mode
+                else None
+            ),
+        }
+        if not GRADIO_6
+        else {}
+    ),
 ) as Applio:
     gr.Markdown("# Applio")
     gr.Markdown(
@@ -181,6 +186,21 @@ def launch_gradio(server_name: str, server_port: int) -> None:
         server_name=server_name,
         server_port=server_port,
         prevent_thread_lock=client_mode,
+        **(
+            {
+                "theme": my_applio,
+                "css": "footer{display:none !important}",
+                "js": (
+                    pathlib.Path(
+                        os.path.join(now_dir, "tabs", "realtime", "main.js")
+                    ).read_text()
+                    if client_mode
+                    else None
+                ),
+            }
+            if GRADIO_6
+            else {}
+        ),
     )
 
     if client_mode:
