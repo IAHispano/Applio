@@ -58,7 +58,7 @@ def generate_filelist(model_path: str, sample_rate: int, include_mutes: int = 2)
         rel_f0 = os.path.relpath(f"{os.path.join(f0_dir, name)}.wav.npy")
         rel_f0nsf = os.path.relpath(f"{os.path.join(f0nsf_dir, name)}.wav.npy")
 
-        options.append(f"{rel_wav}|{rel_feat}|{rel_f0}|{rel_f0nsf}|{sid}")
+        options.append(f"{rel_wav}|{rel_feat}|{rel_f0}|{rel_f0nsf}|{sid}".replace("\\", "/"))
 
     if include_mutes > 0:
         mute_audio_path = os.path.relpath(
