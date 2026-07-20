@@ -61,8 +61,8 @@ gr.Number.preprocess = types.MethodType(
         or (self.minimum is not None and payload < self.minimum)
         or (self.maximum is not None and payload > self.maximum)
         else self.round_to_precision(payload, self.precision)
-    ), 
-    gr.Number
+    ),
+    gr.Number,
 )
 
 # detect gradio
