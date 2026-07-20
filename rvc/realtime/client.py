@@ -27,9 +27,9 @@ async def change_config(ws: WebSocket):
     text = await ws.receive_text()
     jsons = json.loads(text)
 
-    if jsons["if_kwargs"]:
+    if jsons["if_kwargs"] and jsons["value"] is not None:
         params["kwargs"][jsons["key"]] = jsons["value"]
-    else:
+    elif jsons["value"] is not None:
         params[jsons["key"]] = jsons["value"]
 
     crossfade_frame = int(

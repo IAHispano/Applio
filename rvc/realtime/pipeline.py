@@ -420,7 +420,7 @@ class Realtime_Pipeline:
                 self._rate_tensor,
             )
             # Match output RMS to the current block's input RMS.
-            if volume_envelope is not None and volume_envelope < 1:
+            if volume_envelope < 1:
                 rms_src = audio[-(return_length * self.window) :]
                 out_audio = AudioProcessorTorch.change_rms(
                     rms_src,

@@ -51,114 +51,122 @@ function createOutputRoute(audioCtx, playbackNode, sinkId, gainValue = 1.0) {
 }
 
 const inputWorkletSource = `
-    class InputProcessor extends AudioWorkletProcessor {
-        constructor() {
-            super();
-            // Initialize a buffer to hold incoming audio data. Starts empty.
-            this.buffer = new Float32Array(0);
-            // The desired size for each chunk of audio data to be sent out. Default is 128 samples.
-            this.block_frame = 128;
-            // Set up an event listener.
-            this.port.onmessage = (e) => {
-                // Allows the main thread to dynamically change the chunk size.
-                if (e.data && e.data.block_frame) this.block_frame = e.data.block_frame;
-            };
-        }
+class InputProcessor extends AudioWorkletProcessor {
+    constructor() {
+        super();
+        this.bufferCapacity = 48000; // Stores up to 1 second of audio at 48kHz
+        this.buffer = new Float32Array(this.bufferCapacity);
+        this.writePointer = 0;
+        this.readPointer = 0;
+        this.availableSamples = 0;
+        this.block_frame = 960; // Standard layout processing slice size
+        // Handle dynamic frame configuration updates from the main main thread
+        this.port.onmessage = (e) => {
+            if (e.data && e.data.block_frame) this.block_frame = e.data.block_frame;
+        };
+    }
 
-        // The main method called by the AudioWorklet system every processing block (usually 128 samples).
-        process(inputs) {
-            // Get the data from the first input port (inputs[0]) and the first audio channel (input[0]).
-            const input = inputs[0];
-            // Check if there is valid input data. If not, return 'true' to continue running.
-            if (!input || !input[0]) return true;
-            const frame = input[0]; // 'frame' is a Float32Array containing the 128 new audio samples.
+    process(inputs) {
+        const input = inputs[0];
+        if (!input || !input[0]) return true; // Keep worklet alive if no stream is active
 
-            // Create a new array with a size equal to the length of the old buffer plus the new frame.
-            const newBuf = new Float32Array(this.buffer.length + frame.length);
-            newBuf.set(this.buffer, 0); // Copy the old buffer data to the start of the new array.
-            newBuf.set(frame, this.buffer.length); // Append the new frame data to the end of the new array.
-            this.buffer = newBuf;
+        const frame = input[0];
+        const frameSize = frame.length;
 
-            // Loop until the buffer is smaller than the required 'block_frame' size.
-            while (this.buffer.length >= this.block_frame) {
-                // Slice the required chunk size from the beginning of the buffer.
-                const chunk = this.buffer.slice(0, this.block_frame);
-                // Send the audio chunk
-                this.port.postMessage({chunk}, [chunk.buffer]);
-                // Remove the sent chunk from the buffer
-                this.buffer = this.buffer.slice(this.block_frame);
+        // Push new incoming samples into the internal circular ring buffer
+        if (this.availableSamples + frameSize <= this.bufferCapacity) {
+            for (let i = 0; i < frameSize; i++) {
+                this.buffer[this.writePointer] = frame[i];
+                this.writePointer = (this.writePointer + 1) % this.bufferCapacity;
             }
 
-            return true;
+            this.availableSamples += frameSize;
         }
+
+        // Slice accumulated audio into uniform blocks and dispatch them to the main thread
+        while (this.availableSamples >= this.block_frame) {
+            const chunk = new Float32Array(this.block_frame);
+
+            for (let i = 0; i < this.block_frame; i++) {
+                chunk[i] = this.buffer[this.readPointer];
+                this.readPointer = (this.readPointer + 1) % this.bufferCapacity;
+            }
+
+            this.availableSamples -= this.block_frame;
+            this.port.postMessage({ chunk }); 
+        }
+        return true;
     }
-    registerProcessor('input-processor', InputProcessor);
-    `;
+}
+registerProcessor('input-processor', InputProcessor);
+`;
 
 const playbackWorkletSource = `
-        class PlaybackProcessor extends AudioWorkletProcessor {
-            constructor(options) {
-                super(options);
-                // Get the buffer size from options (or use a default value of 98304).
-                const bufferSize = options.processorOptions && options.processorOptions.bufferSize ? options.processorOptions.bufferSize: 98304;
-                // Circular Buffer initialization:
-                this.buffer = new Float32Array(bufferSize); // The array holding the audio data.
-                this.bufferCapacity = bufferSize; // The maximum capacity of the buffer.
-                this.writePointer = 0; // The next position to write new data.
-                this.readPointer = 0; // The next position to read data.
-                this.availableSamples = 0; // The count of audio samples currently in the buffer.
-                // Set up a listener for incoming audio chunks from the main.
-                this.port.onmessage = (e) => {
-                    if (e.data && e.data.chunk) {
-                        const chunk = new Float32Array(e.data.chunk); // The received audio data chunk.
-                        const chunkSize = chunk.length;
+class PlaybackProcessor extends AudioWorkletProcessor {
+    constructor(options) {
+        super(options);
+        const bufferSize = options.processorOptions && options.processorOptions.bufferSize ? options.processorOptions.bufferSize : 98304;
+        this.buffer = new Float32Array(bufferSize);
+        this.bufferCapacity = bufferSize;
+        this.writePointer = 0;
+        this.readPointer = 0;
+        this.availableSamples = 0;
 
-                        // Check if adding the new chunk would overflow the buffer. If so, discard it.
-                        if (this.availableSamples + chunkSize > this.bufferCapacity) return;
+        // Listen for returned server-processed audio chunks and load them into the playback ring buffer
+        this.port.onmessage = (e) => {
+            if (e.data && e.data.chunk) {
+                const chunk = new Float32Array(e.data.chunk);
+                const chunkSize = chunk.length;
 
-                        // Write the data chunk into the circular buffer.
-                        for (let i = 0; i < chunkSize; i++) {
-                            this.buffer[this.writePointer] = chunk[i];
-                            // Advance the write pointer, wrapping around when reaching the end.
-                            this.writePointer = (this.writePointer + 1) % this.bufferCapacity;
-                        }
+                // Guard against ring buffer overflows (drop chunk if filled)
+                if (this.availableSamples + chunkSize > this.bufferCapacity) return;
 
-                        // Update the count of available samples.
-                        this.availableSamples += chunkSize;
-                    }
-                };
-            }
-
-            // The main method called when the system needs audio data for playback.
-            process(inputs, outputs) {
-                // Get the first channel of the first output port.
-                const output = outputs[0];
-                if (!output || !output[0]) return true;
-
-                const frame = output[0]; // 'frame' is the Float32Array that must be filled with output audio data.
-                const frameSize = frame.length;
-
-                // Check if there are enough samples in the buffer to fill the output frame.
-                if (this.availableSamples >= frameSize) {
-                    // Read data from the circular buffer and fill the output frame.
-                    for (let i = 0; i < frameSize; i++) {
-                        frame[i] = this.buffer[this.readPointer];
-                        // Advance the read pointer, wrapping around.
-                        this.readPointer = (this.readPointer + 1) % this.bufferCapacity;
-                    }
-                    // Update the count of available samples.
-                    this.availableSamples -= frameSize;
+                // Handle standard inline write vs circular wrapping wrap-around logic
+                if (this.writePointer + chunkSize <= this.bufferCapacity) {
+                    this.buffer.set(chunk, this.writePointer);
                 } else {
-                    frame.fill(0);
+                    const firstPart = this.bufferCapacity - this.writePointer;
+                    this.buffer.set(chunk.subarray(0, firstPart), this.writePointer);
+                    this.buffer.set(chunk.subarray(firstPart), 0);
                 }
 
-                // If a second channel exists (for stereo playback), copy the data from the first channel (mono-to-stereo).
-                if (output.length > 1) output[1].set(output[0]);
-                return true;
+                this.writePointer = (this.writePointer + chunkSize) % this.bufferCapacity;
+                this.availableSamples += chunkSize;
             }
+        };
+    }
+
+    process(inputs, outputs) {
+        const output = outputs[0];
+        if (!output || !output[0]) return true;
+
+        const frame = output[0];
+        const frameSize = frame.length;
+
+        // Populate the hardware output frame if there are enough accumulated samples
+        if (this.availableSamples >= frameSize) {
+            if (this.readPointer + frameSize <= this.bufferCapacity) {
+                frame.set(this.buffer.subarray(this.readPointer, this.readPointer + frameSize));
+            } else {
+                const firstPart = this.bufferCapacity - this.readPointer;
+                frame.set(this.buffer.subarray(this.readPointer, this.bufferCapacity), 0);
+                frame.set(this.buffer.subarray(0, frameSize - firstPart), firstPart);
+            }
+
+            this.readPointer = (this.readPointer + frameSize) % this.bufferCapacity;
+            this.availableSamples -= frameSize;
+        } else {
+            // Underflow protection: fill buffer with silence (zeros) to prevent harsh digital crackling
+            frame.fill(0);
         }
-        registerProcessor('playback-processor', PlaybackProcessor);
-        `;
+
+        // Duplicate audio channel configurations for stereo topologies if supported
+        if (output.length > 1) output[1].set(output[0]);
+        return true;
+    }
+}
+registerProcessor('playback-processor', PlaybackProcessor);
+`;
 
 window.getAudioDevices = async function () {
   if (!navigator.mediaDevices) {
@@ -184,9 +192,9 @@ window.getAudioDevices = async function () {
 
   for (const device of devices) {
     if (device.kind === "audioinput") {
-      inputs[device.label] = device.deviceId;
+      inputs[device.label + ` (${device.deviceId.slice(0, 10)})`] = device.deviceId;
     } else if (device.kind === "audiooutput") {
-      outputs[device.label] = device.deviceId;
+      outputs[device.label + ` (${device.deviceId.slice(0, 10)})`] = device.deviceId;
     }
   }
 
@@ -303,8 +311,9 @@ window.StreamAudioRealtime = async function (
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
         deviceId: { exact: input_audio_device }, // audio: input_audio_device ? { deviceId: { exact: input_audio_device } } : true
-        channelCount: 1,
-        sampleRate: SampleRate,
+        channelCount: { exact: 1 },
+        sampleRate: { exact: SampleRate },
+        latency: { ideal: 0 },
         // disable all browser processing (You can make it optional)
         echoCancellation: !exclusive_mode,
         noiseSuppression: !exclusive_mode,
@@ -552,7 +561,11 @@ window.StopAudioStream = async function () {
     if (window.OutputAudioRoute) window.OutputAudioRoute = null;
     if (window.MonitorAudioRoute) window.MonitorAudioRoute = null;
 
-    document.querySelectorAll("audio").forEach((a) => a.remove());
+    document.querySelectorAll("audio").forEach((a) => {
+      a.pause();
+      a.srcObject = null;
+      a.remove();
+    });
     setStatus("Stopped", (use_alert = false));
 
     return { start_button: true, stop_button: false };

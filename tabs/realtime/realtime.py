@@ -735,9 +735,9 @@ def change_config(value, key, if_kwargs=False):
     global callbacks_kwargs
 
     if running and audio_manager is not None and callbacks is not None:
-        if if_kwargs:
+        if if_kwargs and value is not None:
             callbacks_kwargs["kwargs"][key] = value
-        else:
+        elif value is not None:
             callbacks_kwargs[key] = value
 
         change_callbacks_config()
