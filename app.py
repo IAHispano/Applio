@@ -23,6 +23,7 @@ from rvc.lib.platform import platform_config
 
 platform_config()
 
+import types
 import gradio as gr
 import pathlib
 import logging
@@ -51,6 +52,18 @@ if sys.platform == "win32":
             pass
 
     _pe._ProactorBasePipeTransport._call_connection_lost = _ccl_patched
+
+# Fix Gradio NoneType error when entering an invalid value
+gr.Number.preprocess = types.MethodType(
+    lambda self, payload: (
+        None
+        if payload is None
+        or (self.minimum is not None and payload < self.minimum)
+        or (self.maximum is not None and payload > self.maximum)
+        else self.round_to_precision(payload, self.precision)
+    ), 
+    gr.Number
+)
 
 # detect gradio
 GRADIO_6 = int(gr.__version__.split(".")[0]) >= 6
