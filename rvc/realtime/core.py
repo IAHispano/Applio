@@ -35,7 +35,7 @@ def phase_vocoder(a, b, fade_out, fade_in):
     """
     Performs a phase vocoder crossfade between two audio segments.
 
-    This function blends segment `a` and segment `b` by aligning their phases 
+    This function blends segment `a` and segment `b` by aligning their phases
     in the frequency domain to prevent phase cancellation during the transition,
     while applying the provided fade-out and fade-in windows.
 
@@ -59,26 +59,39 @@ def phase_vocoder(a, b, fade_out, fade_in):
     n = a.shape[0]
 
     # Compensate for the energy of negative frequencies (except DC and Nyquist components)
-    if n % 2 == 0: absab[1:-1] *= 2
-    else: absab[1:] *= 2
+    if n % 2 == 0:
+        absab[1:-1] *= 2
+    else:
+        absab[1:] *= 2
 
     # Extract initial phase and calculate the raw phase difference
     phia = fa.angle()
     deltaphase = fb.angle() - phia
 
-    # Reconstruct the signal using a combination of time-domain crossfade 
+    # Reconstruct the signal using a combination of time-domain crossfade
     # and phase-aligned sinusoidal synthesis (Phase Vocoder)
     return (
-        a * (fade_out ** 2) + b * (fade_in ** 2) + (
-            absab * (
+        a * (fade_out**2)
+        + b * (fade_in**2)
+        + (
+            absab
+            * (
                 (
                     # Base frequency grid for each bin
-                    2 * torch.pi * torch.arange(n // 2 + 1).to(a) + 
+                    2 * torch.pi * torch.arange(n // 2 + 1).to(a)
+                    +
                     # Phase unwrapping (wrapping delta phase to the [-pi, pi] range)
-                    (deltaphase - 2 * torch.pi * (deltaphase / 2 / torch.pi + 0.5).floor()) 
-                ) * (torch.arange(n).unsqueeze(-1).to(a) / n) + phia # Continuous phase evolution over time
+                    (
+                        deltaphase
+                        - 2 * torch.pi * (deltaphase / 2 / torch.pi + 0.5).floor()
+                    )
+                )
+                * (torch.arange(n).unsqueeze(-1).to(a) / n)
+                + phia  # Continuous phase evolution over time
             ).cos()
-        ).sum(-1) * window / n # Sum the sinusoidal components (IFFT equivalent) and normalize
+        ).sum(-1)
+        * window
+        / n  # Sum the sinusoidal components (IFFT equivalent) and normalize
     )
 
 
@@ -579,7 +592,7 @@ class VoiceChanger:
                 self.sola_buffer,
                 audio[: self.crossfade_frame],
                 self.fade_out_window,
-                self.fade_in_window
+                self.fade_in_window,
             )
         else:
             if is_onset:
@@ -588,7 +601,11 @@ class VoiceChanger:
                 n_hops = block_size // hop
                 if n_hops >= 1:
                     hop_energy = (
-                        audio[: n_hops * hop].reshape(n_hops, hop).abs().max(dim=1).values
+                        audio[: n_hops * hop]
+                        .reshape(n_hops, hop)
+                        .abs()
+                        .max(dim=1)
+                        .values
                     )
                     peak = hop_energy.max().item()
                     onset_sample = 0
@@ -602,9 +619,9 @@ class VoiceChanger:
                 # Apply sin² fade-in over crossfade_frame duration from onset.
                 fade_len = min(block_size - onset_sample, self.crossfade_frame)
                 if fade_len > 0:
-                    audio[onset_sample : onset_sample + fade_len] *= self.fade_in_window[
-                        :fade_len
-                    ]
+                    audio[
+                        onset_sample : onset_sample + fade_len
+                    ] *= self.fade_in_window[:fade_len]
             else:
                 audio[: self.crossfade_frame] *= self.fade_in_window
                 audio[: self.crossfade_frame] += self.sola_buffer * self.fade_out_window
