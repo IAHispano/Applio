@@ -7,7 +7,6 @@ import json
 import regex as re
 import shutil
 import torch
-import datetime
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -20,15 +19,12 @@ from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
 
-
-
-
-
 def progress_str(remaining, total):
     pct = max(0, min(100, int((total - remaining) / total * 100))) if total > 0 else 0
     filled = "█" * (pct // 10)
     empty = "░" * (10 - pct // 10)
     return f"[{filled}{empty}] {pct}%"
+
 
 model_root = os.path.join(now_dir, "logs")
 custom_embedder_root = os.path.join(
