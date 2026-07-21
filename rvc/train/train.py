@@ -879,8 +879,7 @@ def train_and_evaluate(
 
     if rank == 0:
         # Print training progress
-        lowest_value_rounded = float(lowest_value["value"])
-        lowest_value_rounded = round(lowest_value_rounded, 3)
+        lowest_value_rounded = round(lowest_value["value"].detach().item(), 3)
 
         record = f"{model_name} | epoch={epoch} | step={global_step} | {epoch_recorder.record()}"
         if epoch > 1:

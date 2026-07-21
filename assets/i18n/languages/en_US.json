@@ -54,7 +54,7 @@
     "Check which version of Applio is the latest to see if you need to update.": "Check which version of Applio is the latest to see if you need to update.",
     "Checkpointing": "Checkpointing",
     "Choose the model architecture:\n- **RVC (V2)**: Default option, compatible with all clients.\n- **Applio**: Advanced quality with improved vocoders and higher sample rates, Applio-only.": "Choose the model architecture:\n- **RVC (V2)**: Default option, compatible with all clients.\n- **Applio**: Advanced quality with improved vocoders and higher sample rates, Applio-only.",
-    "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only.": "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only.",
+    "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **RefineGAN**: Superior audio quality, Applio-only.": "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **RefineGAN**: Superior audio quality, Applio-only.",
     "Chorus": "Chorus",
     "Chorus Center Delay ms": "Chorus Center Delay ms",
     "Chorus Depth": "Chorus Depth",
