@@ -7,6 +7,7 @@ import json
 import regex as re
 import shutil
 import torch
+import datetime
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -18,6 +19,24 @@ from rvc.realtime.core import AUDIO_SAMPLE_RATE
 from assets.i18n.i18n import I18nAuto
 
 i18n = I18nAuto()
+
+
+BADGE_STYLE = 'display:inline-block;padding:2px 10px;border-radius:9999px;color:#fff;font-size:0.75rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap'
+STATUS_STYLE = 'font-size:0.9rem'
+BAR_TRACK = 'margin-top:6px;height:6px;background:#e5e7eb;border-radius:9999px;overflow:hidden'
+BAR_FILL = 'height:100%;background:linear-gradient(90deg,#f59e0b,#10b981);border-radius:9999px;transition:width 0.3s'
+
+
+def status_html(text, badge, badge_color):
+    return f"""<div style="display:flex;align-items:center;gap:10px">
+<span style="{BADGE_STYLE};background:{badge_color}">{badge}</span>
+<span style="{STATUS_STYLE}">{text}</span>
+</div>"""
+
+
+def progress_html(remaining, total):
+    pct = max(0, min(100, int((total - remaining) / total * 100))) if total > 0 else 0
+    return f"""<div style="{BAR_TRACK}"><div style="{BAR_FILL};width:{pct}%"></div></div>"""
 
 model_root = os.path.join(now_dir, "logs")
 custom_embedder_root = os.path.join(
@@ -496,27 +515,28 @@ def start_realtime(
 
     if not input_audio_device or not output_audio_device:
         yield (
-            "Please select valid input/output devices!",
+            status_html("Please select valid input/output devices!", "error", "#ef4444"),
             interactive_true,
             interactive_false,
         )
         return
     if use_monitor_device and not monitor_output_device:
         yield (
-            "Please select a valid monitor device!",
+            status_html("Please select a valid monitor device!", "error", "#ef4444"),
             interactive_true,
             interactive_false,
         )
         return
     if not pth_path:
         yield (
-            "Model path not provided. Aborting conversion.",
+            status_html("Model path not provided. Aborting conversion.", "error", "#ef4444"),
             interactive_true,
             interactive_false,
         )
         return
 
-    yield "Starting Realtime...", interactive_false, interactive_visible
+    print(f"Starting Realtime...")
+    yield status_html("Starting Realtime...", "starting", "#f59e0b"), interactive_false, interactive_visible
 
     sid = int(sid) if sid is not None else 0
 
@@ -532,7 +552,8 @@ def start_realtime(
             output_devices[monitor_output_device] if use_monitor_device else None
         )
     except (ValueError, IndexError):
-        yield "Incorrectly formatted audio device. Stopping.", interactive_true, interactive_false
+        print(f"Error: incorrectly formatted audio device.")
+        yield status_html("Incorrectly formatted audio device. Stopping.", "error", "#ef4444"), interactive_true, interactive_false
         return
 
     # Load ASIO and sample rate settings from config.
@@ -635,10 +656,12 @@ def start_realtime(
         )
     except Exception as error:
         running = False
-        yield str(error), interactive_true, interactive_false
+        print(f"Realtime error: {error}")
+        yield status_html(f"Error: {error}", "error", "#ef4444"), interactive_true, interactive_false
         return
 
-    yield "Realtime is ready!", interactive_false, interactive_visible
+    print(f"Realtime is ready!")
+    yield status_html("Realtime is ready!", "ready", "#10b981"), interactive_false, interactive_visible
 
     while running and callbacks is not None and audio_manager is not None:
         time.sleep(0.1)
@@ -651,14 +674,30 @@ def start_realtime(
                 and hasattr(callbacks.vc.vc_model, "warmup_blocks")
                 else 0
             )
+            warmup_total = (
+                callbacks.vc.vc_model.warmup_blocks_total
+                if callbacks is not None
+                and hasattr(callbacks, "vc")
+                and hasattr(callbacks.vc, "vc_model")
+                and hasattr(callbacks.vc.vc_model, "warmup_blocks_total")
+                else warmup_remaining
+            )
             if warmup_remaining > 0:
-                yield i18n("Warming up... ({} blocks remaining)").format(
-                    warmup_remaining
-                ), interactive_false, interactive_true
+                bar = progress_html(warmup_remaining, warmup_total)
+                yield status_html(
+                    f"Warming up... ({warmup_remaining} blocks remaining)", "warming up", "#f59e0b"
+                ) + bar, interactive_false, interactive_true
             else:
-                yield f"Latency: {audio_manager.latency:.2f} ms | Volume: {audio_manager.volume:.2f} dB", interactive_false, interactive_true
+                yield status_html(
+                    f"Latency: {audio_manager.latency:.2f} ms | Volume: {audio_manager.volume:.2f} dB",
+                    "running", "#10b981"
+                ), interactive_false, interactive_true
 
-    return gr.update(), gr.update(), gr.update()
+    return (
+        status_html(i18n("Realtime stopped."), "stopped", "#6b7280"),
+        interactive_true,
+        interactive_false,
+    )
 
 
 def change_callbacks_config():
@@ -755,13 +794,14 @@ def stop_realtime():
         audio_manager = callbacks = None
         time.sleep(0.1)
 
+        print(f"Realtime stopped.")
         return (
-            "Stopped",
+            status_html("Realtime stopped.", "stopped", "#6b7280"),
             interactive_true,
             interactive_false,
         )
     else:
-        return "Realtime pipeline not found!", interactive_true, interactive_false
+        return status_html("Realtime pipeline not found!", "error", "#ef4444"), interactive_true, interactive_false
 
 
 def get_audio_devices_formatted():
@@ -903,10 +943,8 @@ def realtime_tab():
         with gr.Row():
             start_button = gr.Button(i18n("Start"), variant="primary")
             stop_button = gr.Button(i18n("Stop"), interactive=False, visible=False)
-        latency_info = gr.Label(
-            label=i18n("Status"),
-            value=i18n("Realtime not started."),
-            elem_id="realtime-status-info",
+        latency_info = gr.HTML(
+            value=status_html(i18n("Realtime not started."), "idle", "#6b7280"),
         )
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
@@ -1644,7 +1682,7 @@ def realtime_tab():
             if not terms_accepted:
                 message = "You must agree to the Terms of Use to proceed."
                 gr.Info(message)
-                yield message, interactive_true, interactive_false
+                yield status_html(message, "error", "#ef4444"), interactive_true, interactive_false
                 return
             yield from start_realtime(*args)
 
