@@ -96,7 +96,7 @@ jobs:
                   content: $content
                 }
               ],
-              model: "moonshotai/kimi-k2-instruct-0905",
+              model: "openai/gpt-oss-120b",
               temperature: 0.6,
               max_tokens: 600,
               top_p: 1,
