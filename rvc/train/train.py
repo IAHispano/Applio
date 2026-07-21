@@ -917,8 +917,7 @@ def train_and_evaluate(
 
         # Check completion
         if epoch >= custom_total_epoch:
-            lowest_value_rounded = float(lowest_value["value"])
-            lowest_value_rounded = round(lowest_value_rounded, 3)
+            lowest_value_rounded = round(lowest_value["value"].detach().item(), 3)
             print(
                 f"Training has been successfully completed with {epoch} epoch, {global_step} steps and {round(loss_gen_all.item(), 3)} loss gen."
             )
