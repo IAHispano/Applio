@@ -550,8 +550,6 @@ def run_train_script(
     sample_rate: int,
     batch_size: int,
     gpu: int,
-    overtraining_detector: bool,
-    overtraining_threshold: int,
     pretrained: bool,
     cleanup: bool,
     index_algorithm: str = "Auto",
@@ -595,8 +593,6 @@ def run_train_script(
                 save_only_latest,
                 save_every_weights,
                 cache_data_in_gpu,
-                overtraining_detector,
-                overtraining_threshold,
                 cleanup,
                 vocoder,
                 checkpointing,
@@ -2114,20 +2110,6 @@ def parse_arguments():
         help="Path to the pretrained discriminator model file.",
     )
     train_parser.add_argument(
-        "--overtraining_detector",
-        type=lambda x: bool(strtobool(x)),
-        choices=[True, False],
-        help="Enable overtraining detection.",
-        default=False,
-    )
-    train_parser.add_argument(
-        "--overtraining_threshold",
-        type=int,
-        help="Threshold for overtraining detection.",
-        choices=range(1, 101),
-        default=50,
-    )
-    train_parser.add_argument(
         "--cleanup",
         type=lambda x: bool(strtobool(x)),
         choices=[True, False],
@@ -2444,8 +2426,6 @@ def main():
                 sample_rate=args.sample_rate,
                 batch_size=args.batch_size,
                 gpu=args.gpu,
-                overtraining_detector=args.overtraining_detector,
-                overtraining_threshold=args.overtraining_threshold,
                 pretrained=args.pretrained,
                 custom_pretrained=args.custom_pretrained,
                 cleanup=args.cleanup,

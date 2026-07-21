@@ -32,7 +32,6 @@ def extract_model(
     epoch,
     step,
     hps,
-    overtrain_info,
     vocoder,
     pitch_guidance=True,
     version="v2",
@@ -93,7 +92,6 @@ def extract_model(
 
         hash_input = f"{name}-{epoch}-{step}-{sr}-{version}-{opt['config']}"
         opt["model_hash"] = hashlib.sha256(hash_input.encode()).hexdigest()
-        opt["overtrain_info"] = overtrain_info
         opt["dataset_length"] = dataset_length
         opt["model_name"] = name
         opt["author"] = model_author

@@ -26,7 +26,6 @@ def model_information(path):
     vocoder = model_data.get("vocoder", "None")
     creation_date = model_data.get("creation_date", "None")
     model_hash = model_data.get("model_hash", None)
-    overtrain_info = model_data.get("overtrain_info", "None")
     model_author = model_data.get("author", "None")
     embedder_model = model_data.get("embedder_model", "None")
     speakers_id = model_data.get("speakers_id", 0)
@@ -42,7 +41,6 @@ def model_information(path):
         f"Sampling Rate: {sr}\n"
         f"Dataset Length: {dataset_length}\n"
         f"Creation Date: {creation_date_str}\n"
-        f"Overtrain Info: {overtrain_info}\n"
         f"Embedder Model: {embedder_model}\n"
         f"Max Speakers ID: {speakers_id}"
         f"Hash: {model_hash}\n"

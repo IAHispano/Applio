@@ -712,14 +712,6 @@ def train_tab():
                     value=False,
                     interactive=True,
                 )
-                overtraining_detector = gr.Checkbox(
-                    label=i18n("Overtraining Detector"),
-                    info=i18n(
-                        "Detect overtraining to prevent the model from learning the training data too well and losing the ability to generalize to new data."
-                    ),
-                    value=False,
-                    interactive=True,
-                )
             with gr.Row():
                 with gr.Column(visible=False) as pretrained_custom_settings:
                     with gr.Accordion(i18n("Pretrained Custom Settings")):
@@ -750,19 +742,6 @@ def train_tab():
                             allow_custom_value=True,
                         )
 
-                with gr.Column(visible=False) as overtraining_settings:
-                    with gr.Accordion(i18n("Overtraining Detector Settings")):
-                        overtraining_threshold = gr.Slider(
-                            1,
-                            100,
-                            50,
-                            step=1,
-                            label=i18n("Overtraining Threshold"),
-                            info=i18n(
-                                "Set the maximum number of epochs you want your model to stop training if no improvement is detected."
-                            ),
-                            interactive=True,
-                        )
             index_algorithm = gr.Radio(
                 label=i18n("Index Algorithm"),
                 info=i18n(
@@ -999,12 +978,6 @@ def train_tab():
                 inputs=[upload_pretrained],
                 outputs=[upload_pretrained],
             )
-            overtraining_detector.change(
-                fn=toggle_visible,
-                inputs=[overtraining_detector],
-                outputs=[overtraining_settings],
-            )
-
             train_button.click(
                 fn=enable_stop_train_button,
                 inputs=[terms_checkbox],
@@ -1021,8 +994,6 @@ def train_tab():
                     sampling_rate,
                     batch_size,
                     gpu,
-                    overtraining_detector,
-                    overtraining_threshold,
                     pretrained,
                     cleanup,
                     index_algorithm,
