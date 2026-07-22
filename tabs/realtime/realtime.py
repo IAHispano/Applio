@@ -648,28 +648,28 @@ def start_realtime(
         yield "Error: " + str(error), interactive_true, interactive_false
         return
 
-    print(f"Loading model...")
-    yield "Loading model...", interactive_false, interactive_visible
+    # print(f"Loading model...")
+    # yield "Loading model...", interactive_false, interactive_visible
 
-    # Wait for the worker process to finish loading the model
-    load_start = time.time()
-    last_report = 0
-    while running and callbacks is not None:
-        time.sleep(0.1)
-        if not callbacks.vc._process.is_alive():
-            print(f"Worker process died during model loading.")
-            yield "Worker process crashed during model loading.", interactive_true, interactive_false
-            return
-        if callbacks.vc.ready:
-            break
-        if time.time() - load_start > 300:
-            print(f"Model loading timed out.")
-            yield "Model loading timed out.", interactive_true, interactive_false
-            return
-        elapsed = int(time.time() - load_start)
-        if elapsed > last_report:
-            last_report = elapsed
-            print(f"Loading model... ({elapsed}s)")
+    # # Wait for the worker process to finish loading the model
+    # load_start = time.time()
+    # last_report = 0
+    # while running and callbacks is not None:
+    #     time.sleep(0.1)
+    #     if not callbacks.vc._process.is_alive():
+    #         print(f"Worker process died during model loading.")
+    #         yield "Worker process crashed during model loading.", interactive_true, interactive_false
+    #         return
+    #     if callbacks.vc.ready:
+    #         break
+    #     if time.time() - load_start > 300:
+    #         print(f"Model loading timed out.")
+    #         yield "Model loading timed out.", interactive_true, interactive_false
+    #         return
+    #     elapsed = int(time.time() - load_start)
+    #     if elapsed > last_report:
+    #         last_report = elapsed
+    #         print(f"Loading model... ({elapsed}s)")
 
     print(f"Realtime is ready!")
     yield "Realtime is ready!", interactive_false, interactive_visible
