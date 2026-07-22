@@ -66,6 +66,13 @@ install_ffmpeg() {
     fi
 }
 
+install_deps() {
+    if command -v dnf > /dev/null; then
+        log_message "Installing deps needed using dnf..."
+        sudo dnf install -y portaudio --allowerasing 
+    fi
+}
+
 # Function to install FFmpeg using Flatpak
 install_ffmpeg_flatpak() {
     if command -v flatpak > /dev/null; then
@@ -114,6 +121,7 @@ prepare_install() {
 # Function to create the virtual environment and install dependencies
 create_venv() {
     install_build_tools
+    install_deps
 
     if ! command -v uv --version >/dev/null 2>&1; then
         log_message "Installing uv"
