@@ -19,11 +19,6 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.8"
-
       - name: Detect and tag new version
         id: check-version
         uses: salsify/action-detect-and-tag-new-version@v2.0.3
@@ -32,86 +27,67 @@ jobs:
           version-command: |
             bash -o pipefail -c "cat ./assets/config_template.json | jq -r '.version'"
 
-      - name: Create CHANGELOG.md
+      - name: Get commit history and summarize
+        id: generate-changelog
         if: steps.check-version.outputs.tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PREV_TAG: ${{ steps.check-version.outputs.previous-version }}
+          NEW_TAG: ${{ steps.check-version.outputs.tag }}
         run: |
-          cd /home/runner/work/Applio/Applio
-          cat > CHANGELOG.md << EOF
-          ## Important Installation Guidelines
+          compare_url="https://api.github.com/repos/IAHispano/Applio/compare/${PREV_TAG}...${NEW_TAG}"
+          compare_data=$(curl -s "$compare_url" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json")
 
-          ### Before You Install Applio
-          Please review these essential instructions to ensure a smooth installation:
+          files_str=$(echo "$compare_data" | jq -r \
+            '.files[]? | "[\(.status | ascii_upcase)] \(.filename | split("/") | last) (+\(.additions) -\(.deletions) lines)"')
 
-          - **File Location**: Place the Applio files in a dedicated folder on your C drive.
-          - **Access Control**: Avoid placing Applio in folders that require elevated privileges.
-          - **Administrator Rights**: Do not run the \`run-install.bat\` script with administrator privileges.
-          - **Path Requirements**: Ensure the installation path is free of spaces or special characters.
-          - **Security Settings**: Temporarily disable your antivirus and firewall to prevent any issues with missing dependencies during installation.
+          commits_str=$(echo "$compare_data" | jq -r \
+            '.commits[]?.commit.message | split("\n")[0] | select(test("merge|chore|format|run black"; "i") | not) | "- \(.)"')
 
-          ### Installation Steps
-          - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/resolve/main/Compiled/Windows/ApplioV${{ steps.check-version.outputs.tag }}.zip).
-          - **Run Applio**: Extract the `.zip` file, then open the \`run-applio.bat\` file.
+          {
+            echo "GLOBAL MODIFIED FILES IN THIS RELEASE:"
+            echo "$files_str"
+            echo ""
+            echo "COMMIT HISTORY:"
+            echo "$commits_str"
+          } > commits.txt
 
-          **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}
+          SYSTEM_INSTRUCTION="You are an expert release notes generator. You will receive a list of commit messages and a detailed global list of files modified in this release (including their status: ADDED, REMOVED, MODIFIED, and line counts).\nYour task is to extract, group, and present the most relevant changes as a concise bulleted list (maximum 5-7 items).\n\n### CORE RULES:\n1. **Internal File Context:** Use the detailed file list ONLY internally to understand which modules or areas were impacted. If multiple commits seem to touch the same area based on the file names, commit logic, or shared modified files, YOU MUST merge them into a single, cohesive bullet point. Focus on the overall problem solved rather than the individual steps taken.\n2. **Overarching Impact over Micro-Commits:** Do not list every single fix. If a developer made multiple commits addressing the same general area or feature, summarize the final result. Ignore intermediate debugging steps (e.g., if a feature was added and then fixed in a later commit, only list the feature as functional).\n3. **Filter Noise:** Ignore commits related to CI/CD workflows, generic formatting, linter configurations, merges, and generic 'update file' messages without functional context. Explicitly ignore and exclude any mentions or references to 'volume envelope' as they are not relevant.\n4. **Action-Oriented & Brief:** Each item must start with an uppercase verb (Added, Fixed, Improved, Updated, Removed, Optimized). Keep descriptions brief and focused on the feature or user impact.\n5. **Smart Deduplication:** If a commit reverts a previous commit, ignore both. If a commit is just a follow-up fix (e.g., adding a missing import after a main feature commit), combine them into the main feature entry.\n6. **NO FILE NAMES & BANNED WORDS:** NEVER include file names, file paths, or file extensions in the final output. The output must be purely functional and user-facing. NEVER mention, use, or reference the phrase 'volume envelope' in the final output under any circumstances.\n\n### OUTPUT FORMAT:\nReturn ONLY the bulleted list. No introductions, no conclusions, no markdown code blocks, just the raw text list starting with '- '."
 
-          EOF
+          COMMIT_HISTORY=$(cat commits.txt)
 
-      - name: Get commit history
-        if: steps.check-version.outputs.tag
-        run: |
-          previous_tag="${{ steps.check-version.outputs.previous-version }}"
-          echo "Previous Tag: $previous_tag"
-
-          commit_data=$(curl -s "https://api.github.com/repos/IAHispano/Applio/commits?sha=$previous_tag&per_page=1" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}")
-
-          if [[ "$commit_data" == "[]" ]]; then
-            echo "No commits found for tag $previous_tag. Using current date."
-            commit_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          else
-            commit_date=$(echo "$commit_data" | jq -r '.[0].commit.committer.date')
-          fi
-
-          echo "Fetching commits since: $commit_date"
-          curl -s "https://api.github.com/repos/IAHispano/Applio/commits?since=$commit_date&per_page=600" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            | jq -r '.[] | .sha + " " + .commit.message' > commits.txt
-          cat commits.txt
-
-      - name: Summarize changelog with Groq API
-        if: steps.check-version.outputs.tag
-        id: summarize-changelog
-        run: |
-          changelog=$(cat commits.txt)
           json_payload=$(jq -n \
-            --arg content "$changelog" \
+            --arg input "$COMMIT_HISTORY" \
+            --arg sys_inst "$SYSTEM_INSTRUCTION" \
             '{
-              messages: [
-                {
-                  role: "system",
-                  content: "You will receive a commit history. Your task is to extract and present the most relevant changes as a concise list (0-15 items), each item preceded by a bullet point (-). Each entry should be as brief as possible, ideally 1 to 4 words, summarizing the key updates and enhancements. Ignore changes related to .yml files, Git Keep, chore(format), \"colab,\" \"Major fix,\" and phrases like \"Updating Files\" or similar cases (e.g., \"Update Applio (train.py, preprocess.py, core.py)\"). Summarization Rules: Summarize commits like Update ___.py, Fix _____.py, Disable, Delete, or Merge as \"Fixing Code Issues\" and include specific details in parentheses only if they refer to a specific feature, module, or file name. For entries starting with \"Add,\" \"Fix,\" \"Improving,\" \"Improve,\" \"Rework,\" \"Update,\" or \"Updating,\" ensure they are merged into a single entry, with specific details included in parentheses. Ensure the details within parentheses are concise and directly relevant to the change, focusing on the affected feature or module. If multiple commits fall under \"Fixing Code Issues,\" consolidate them into one entry, mentioning only the major areas or modules affected without listing every specific fix. If the commit is related to \"tab\" or \"UI,\" merge it under \"Improving Code\" and include specific details in parentheses if necessary. Replace entries that use phrases like \"Updating Files\" or similar detailed updates (e.g., \"Update Applio (train.py, preprocess.py, core.py)\") with a summary of the actual changes or enhancements made, focusing on the specific impact or feature. Eliminate duplicates by merging similar entries into a single summary where possible. Ensure each entry is distinct and avoids repetition of similar details or terminology. Final Checks: After generating the list, review it to identify and merge any similar entries or duplicates. Ensure that each entry is concise, distinct, and free of redundancy. Limit the list to a maximum of 5 items. Each entry should start with an uppercase letter. Exclude any entries that include \"Major fix\" and ignore them if found. Note: Do not include any commentary or additional text; return only the list.  This prompt could be improved by adding examples of commit messages and their expected summaries to provide clearer guidance."
-                },
-                {
-                  role: "user",
-                  content: $content
-                }
-              ],
-              model: "openai/gpt-oss-120b",
-              temperature: 0.6,
-              max_tokens: 600,
-              top_p: 1,
-              stream: false,
-              stop: null
+              model: "gemini-3.6-flash",
+              input: $input,
+              system_instruction: $sys_inst,
+              generation_config: {
+                max_output_tokens: 8192,
+                thinking_level: "low"
+              }
             }')
 
-          echo "json_payload: $json_payload"
-
-          curl "https://api.groq.com/openai/v1/chat/completions" \
+          gemini_response=$(curl -s "https://generativelanguage.googleapis.com/v1beta/interactions" \
             -X POST \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.GROQ_API_KEY }}" \
-            -d "$json_payload" \
-            | jq -r '.choices[0].message.content' > summarized_changelog.txt
+            -H "x-goog-api-key: $GEMINI_API_KEY" \
+            -d "$json_payload")
+
+          summary=$(echo "$gemini_response" | jq -r \
+            '.steps[]? | select(.type == "model_output") | .content[]? | select(.type == "text") | .text')
+
+          if [ -z "$summary" ] || [ "$summary" == "null" ]; then
+            echo "::warning::Gemini API call failed or returned empty. Proceeding with empty changelog."
+            echo "$gemini_response"
+            echo "" > summarized_changelog.txt
+          else
+            echo "$summary" > summarized_changelog.txt
+          fi
 
       - name: Set up Node.js
         if: steps.check-version.outputs.tag
@@ -134,7 +110,6 @@ jobs:
             --arg url "git+https://github.com/IAHispano/Applio.git" \
             '. + {version: $version, repository: {url: $url}}' \
             package.json > tmp.$$.json && mv tmp.$$.json package.json
-          cat package.json
 
       - name: Publish release
         if: steps.check-version.outputs.tag
@@ -157,7 +132,7 @@ jobs:
             - **Security Settings**: Temporarily disable your antivirus and firewall to prevent any issues with missing dependencies during installation.
             ### Installation Steps
             - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/resolve/main/Compiled/Windows/ApplioV${{ steps.check-version.outputs.tag }}.zip).
-            - **Run Applio**: Extract the `.zip` file, then open the \`run-applio.bat\` file.
+            - **Run Applio**: Extract the \`.zip\` file, then open the \`run-applio.bat\` file.
           ## What's New in This Release
             ${changelog}
 
