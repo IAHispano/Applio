@@ -23,16 +23,42 @@ from rvc.lib.platform import platform_config
 
 platform_config()
 
+import argparse
 import types
 import gradio as gr
 import pathlib
 import logging
 
-from typing import Any
-
 DEFAULT_SERVER_NAME = "127.0.0.1"
 DEFAULT_PORT = 6969
 MAX_PORT_ATTEMPTS = 10
+
+_ARG_PARSER = argparse.ArgumentParser(
+    description="Applio Web UI",
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+)
+_ARG_PARSER.add_argument(
+    "--port", type=int, default=DEFAULT_PORT, help="Server port (default: %(default)s)"
+)
+_ARG_PARSER.add_argument(
+    "--server-name",
+    type=str,
+    default=DEFAULT_SERVER_NAME,
+    help="Server hostname (default: %(default)s)",
+)
+_ARG_PARSER.add_argument(
+    "--share", action="store_true", help="Create a public Gradio share link"
+)
+_ARG_PARSER.add_argument(
+    "--open", action="store_true", help="Open the browser automatically"
+)
+_ARG_PARSER.add_argument(
+    "--client", action="store_true", help="Enable client mode (mounts realtime API)"
+)
+_args, _ = _ARG_PARSER.parse_known_args()
+client_mode = _args.client
+_has_share = _args.share
+_has_open = _args.open
 
 # Set up logging
 logging.getLogger("uvicorn").setLevel(logging.WARNING)
@@ -115,7 +141,6 @@ installation_checker.check_installation()
 import assets.themes.loadThemes as loadThemes
 
 my_applio = loadThemes.load_theme() or "ParityError/Interstellar"
-client_mode = "--client" in sys.argv
 
 # Define Gradio interface
 with gr.Blocks(
@@ -194,8 +219,8 @@ with gr.Blocks(
 def launch_gradio(server_name: str, server_port: int) -> None:
     app, _, _ = Applio.launch(
         favicon_path="assets/ICON.ico",
-        share="--share" in sys.argv,
-        inbrowser="--open" in sys.argv,
+        share=_has_share,
+        inbrowser=_has_open,
         server_name=server_name,
         server_port=server_port,
         prevent_thread_lock=client_mode,
@@ -263,17 +288,9 @@ def launch_gradio(server_name: str, server_port: int) -> None:
             time.sleep(5)
 
 
-def get_value_from_args(key: str, default: Any = None) -> Any:
-    if key in sys.argv:
-        index = sys.argv.index(key) + 1
-        if index < len(sys.argv):
-            return sys.argv[index]
-    return default
-
-
 if __name__ == "__main__":
-    port = int(get_value_from_args("--port", DEFAULT_PORT))
-    server = get_value_from_args("--server-name", DEFAULT_SERVER_NAME)
+    port = _args.port
+    server = _args.server_name
 
     for _ in range(MAX_PORT_ATTEMPTS):
         try:
