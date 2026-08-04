@@ -1,5 +1,7 @@
 import os
 import sys
+import shutil
+import subprocess
 import soxr
 import librosa
 import soundfile as sf
@@ -44,10 +46,28 @@ def load_audio_16k(file):
     return audio.flatten()
 
 
+def read_audio_any(file, sample_rate):
+    # libsndfile cannot decode AAC/M4A; fall back to ffmpeg for those formats
+    try:
+        return sf.read(file)
+    except sf.LibsndfileError:
+        ffmpeg = shutil.which("ffmpeg")
+        if not ffmpeg:
+            raise
+        result = subprocess.run(
+            [ffmpeg, "-v", "error", "-i", file, "-f", "f32le",
+             "-acodec", "pcm_f32le", "-ac", "1", "-ar", str(sample_rate), "-"],
+            capture_output=True,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr.decode(errors="ignore"))
+        return np.frombuffer(result.stdout, dtype=np.float32), sample_rate
+
+
 def load_audio(file, sample_rate):
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        audio, sr = sf.read(file)
+        audio, sr = read_audio_any(file, sample_rate)
         if len(audio.shape) > 1:
             audio = librosa.to_mono(audio.T)
         if sr != sample_rate:
@@ -70,7 +90,7 @@ def load_audio_infer(
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
         if not os.path.isfile(file):
             raise FileNotFoundError(f"File not found: {file}")
-        audio, sr = sf.read(file)
+        audio, sr = read_audio_any(file, sample_rate)
         if len(audio.shape) > 1:
             audio = librosa.to_mono(audio.T)
         if sr != sample_rate:
