@@ -440,7 +440,7 @@ class Realtime:
 class VoiceChanger:
     def __init__(
         self,
-        read_chunk_size: int,
+        block_frame: int,
         cross_fade_overlap_size: float,
         extra_convert_size: float,
         model_path: str = None,
@@ -466,7 +466,7 @@ class VoiceChanger:
         self.record_audio = record_audio
         self.record_audio_path = record_audio_path
         self.export_format = export_format
-        self.block_frame = read_chunk_size * 128
+        self.block_frame = block_frame
         self.crossfade_frame = int(cross_fade_overlap_size * AUDIO_SAMPLE_RATE)
         self.extra_frame = int(extra_convert_size * AUDIO_SAMPLE_RATE)
         self.sola_search_frame = AUDIO_SAMPLE_RATE // 100

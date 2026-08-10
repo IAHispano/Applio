@@ -273,8 +273,7 @@ window.StreamAudioRealtime = async function (
   delay_mix,
 ) {
   const SampleRate = 48000;
-  const ReadChunkSize = Math.round((chunk_size * SampleRate) / 1000 / 128);
-  const block_frame = parseInt(ReadChunkSize) * 128;
+  const block_frame = parseInt(Math.round((chunk_size * SampleRate) / 1000));
   const ButtonState = { start_button: true, stop_button: false };
 
   if (!terms_checkbox) {
@@ -389,7 +388,7 @@ window.StreamAudioRealtime = async function (
       ws.send(
         JSON.stringify({
           type: "init",
-          chunk_size: ReadChunkSize,
+          block_frame: block_frame,
           cross_fade_overlap_size: cross_fade_overlap_size,
           extra_convert_size: extra_convert_size,
           model_path: model_file,

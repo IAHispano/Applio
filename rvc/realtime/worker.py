@@ -242,7 +242,7 @@ class VoiceChangerWorker:
         self.extra_frame = int(
             vc_kwargs.get("extra_convert_size", 0.5) * AUDIO_SAMPLE_RATE
         )
-        self.block_frame = vc_kwargs.get("read_chunk_size", 192) * 128
+        self.block_frame = vc_kwargs.get("block_frame", 24576)
         self.sola_search_frame = AUDIO_SAMPLE_RATE // 100
         self.vc_model = _RealtimeState()
 
