@@ -672,28 +672,18 @@ def start_realtime(
     #         last_report = elapsed
     #         print(f"Loading model... ({elapsed}s)")
 
-    print(f"Realtime is ready!")
-    yield "Realtime is ready!", interactive_false, interactive_visible
+    print(f"Realtime is starting!")
+    yield "Realtime is starting!", interactive_false, interactive_visible
+
+    warmup_total = 0
+    while warmup_total == 0:
+        warmup_total = callbacks.vc.vc_model.warmup_blocks
 
     while running and callbacks is not None and audio_manager is not None:
         time.sleep(0.1)
         if hasattr(audio_manager, "latency") and hasattr(audio_manager, "volume"):
-            warmup_remaining = (
-                callbacks.vc.vc_model.warmup_blocks
-                if callbacks is not None
-                and hasattr(callbacks, "vc")
-                and hasattr(callbacks.vc, "vc_model")
-                and hasattr(callbacks.vc.vc_model, "warmup_blocks")
-                else 0
-            )
-            warmup_total = (
-                callbacks.vc.vc_model.warmup_blocks_total
-                if callbacks is not None
-                and hasattr(callbacks, "vc")
-                and hasattr(callbacks.vc, "vc_model")
-                and hasattr(callbacks.vc.vc_model, "warmup_blocks_total")
-                else warmup_remaining
-            )
+            warmup_remaining = callbacks.vc.vc_model.warmup_blocks
+
             if warmup_remaining > 0:
                 bar = progress_str(warmup_remaining, warmup_total)
                 yield f"Warming up... ({warmup_remaining} blocks) {bar}", interactive_false, interactive_true
