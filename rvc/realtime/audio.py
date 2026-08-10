@@ -183,8 +183,7 @@ class Audio:
         )
 
     def process_data_with_time(self, indata: np.ndarray):
-        out_wav, vol, perf, _ = self.process_data(indata)
-        performance_ms = perf[1]
+        out_wav, vol, performance_ms = self.process_data(indata)
         # print(f"real-time voice conversion performance: {performance_ms:.2f} ms")
         self.latency = performance_ms  # latency to display on the application interface
         self.volume = vol
@@ -341,7 +340,7 @@ class Audio:
         asio_input_channel: int = 0,
         asio_output_channel: int = 0,
         asio_output_monitor_channel: int = 0,
-        read_chunk_size: int = 192,
+        block_frame: int = 24576,
         audio_sample_rate: int = AUDIO_SAMPLE_RATE,
         asio_output_stereo: bool = True,
     ):
@@ -411,8 +410,6 @@ class Audio:
                     channel_selectors=[asio_output_monitor_channel]
                 )
                 monitor_channels = 1
-
-        block_frame = read_chunk_size * 128
 
         try:
             self.run_audio_stream(
