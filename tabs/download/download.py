@@ -183,6 +183,16 @@ def download_handler(is_custom, model, sample_rate, url_g, url_d):
 
 
 def download_tab():
+    def _download_with_toast(*args):
+        gr.Info(i18n("Downloading model..."))
+        result = run_download_script(*args)
+        if isinstance(result, str):
+            if "error" in result.lower() or "failed" in result.lower():
+                gr.Warning(result)
+            else:
+                gr.Info(result)
+        return result
+
     with gr.Column():
         gr.Markdown(value=i18n("## Download Model"))
         model_link = gr.Textbox(
@@ -199,7 +209,7 @@ def download_tab():
         )
         model_download_button = gr.Button(i18n("Download Model"))
         model_download_button.click(
-            fn=run_download_script,
+            fn=_download_with_toast,
             inputs=[model_link],
             outputs=[model_download_output_info],
         )

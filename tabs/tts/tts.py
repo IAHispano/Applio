@@ -359,9 +359,17 @@ def tts_tab():
             gr.Info(message)
             return message, None
         try:
-            return run_tts_script(*args)
+            gr.Info(i18n("Starting text-to-speech..."))
+            result = run_tts_script(*args)
+            gr.Info(result[0])
+            return result
         except Exception:
             traceback.print_exc()
+            gr.Warning(
+                i18n(
+                    "An error occurred during TTS conversion. Please check the console logs for more details."
+                )
+            )
             return (
                 "An error occurred during TTS conversion. Please check the console logs for more details.",
                 None,

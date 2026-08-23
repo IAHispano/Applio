@@ -310,6 +310,26 @@ def auto_enable_checkpointing():
 
 # Train Tab
 def train_tab():
+    def _preprocess_with_toast(*args):
+        gr.Info(i18n("Preprocessing dataset..."))
+        result = run_preprocess_script(*args)
+        if isinstance(result, str):
+            if "error" in result.lower() or "failed" in result.lower():
+                gr.Warning(result)
+            else:
+                gr.Info(result)
+        return result
+
+    def _extract_with_toast(*args):
+        gr.Info(i18n("Extracting features..."))
+        result = run_extract_script(*args)
+        if isinstance(result, str):
+            if "error" in result.lower() or "failed" in result.lower():
+                gr.Warning(result)
+            else:
+                gr.Info(result)
+        return result
+
     # Model settings section
     with gr.Accordion(i18n("Model Settings")):
         with gr.Row():
@@ -500,7 +520,7 @@ def train_tab():
         with gr.Row():
             preprocess_button = gr.Button(i18n("Preprocess Dataset"))
             preprocess_button.click(
-                fn=run_preprocess_script,
+                fn=_preprocess_with_toast,
                 inputs=[
                     model_name,
                     dataset_path,
@@ -595,7 +615,7 @@ def train_tab():
         )
         extract_button = gr.Button(i18n("Extract Features"))
         extract_button.click(
-            fn=run_extract_script,
+            fn=_extract_with_toast,
             inputs=[
                 model_name,
                 f0_method,
@@ -757,6 +777,7 @@ def train_tab():
                 message = "You must agree to the Terms of Use to proceed."
                 gr.Info(message)
                 return message
+            gr.Info(i18n("Training started..."))
             return run_train_script(*args)
 
         terms_checkbox = gr.Checkbox(
