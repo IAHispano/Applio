@@ -1923,7 +1923,7 @@ def inference_tab():
     )
     formant_shifting_batch.change(
         fn=toggle_visible_formant_shifting,
-        inputs=[formant_shifting],
+        inputs=[formant_shifting_batch],
         outputs=[
             formant_row_batch,
             formant_preset_batch,
