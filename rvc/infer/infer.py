@@ -37,6 +37,17 @@ logging.getLogger("faiss").setLevel(logging.WARNING)
 logging.getLogger("faiss.loader").setLevel(logging.WARNING)
 
 
+def _toast(message, warning=False):
+    """Shows a toast notification in the Gradio UI, falling back to stdout
+    when Gradio is unavailable (e.g. when the engine runs headless)."""
+    try:
+        import gradio as gr
+
+        (gr.Warning if warning else gr.Info)(message)
+    except Exception:
+        print(message)
+
+
 class VoiceConverter:
     """
     A class for performing voice conversion using the Retrieval-Based Voice Conversion (RVC) method.
@@ -388,20 +399,46 @@ class VoiceConverter:
                 )
             ]
             print(f"Detected {len(audio_files)} audio files for inference.")
+            total = len(audio_files)
+            converted = skipped = 0
+            _next_milestone = 25
+            _toast(f"Batch conversion started: {total} files")
             for a in audio_files:
                 new_input = os.path.join(audio_input_paths, a)
                 new_output = os.path.splitext(a)[0] + "_output.wav"
                 new_output = os.path.join(audio_output_path, new_output)
                 if os.path.exists(new_output):
-                    continue
-                self.convert_audio(
-                    audio_input_path=new_input,
-                    audio_output_path=new_output,
-                    **kwargs,
-                )
+                    skipped += 1
+                else:
+                    self.convert_audio(
+                        audio_input_path=new_input,
+                        audio_output_path=new_output,
+                        **kwargs,
+                    )
+                    converted += 1
+                processed = converted + skipped
+                # Milestone toast: fires at the first file past each threshold
+                # (the label carries the threshold). processed < total
+                # suppresses the 100% milestone (it would double-announce with
+                # the terminal toast); total >= 8 keeps small batches
+                # toast-free between start and terminal.
+                if (
+                    total >= 8
+                    and processed < total
+                    and processed * 100 // total >= _next_milestone
+                ):
+                    _toast(f"{processed}/{total} files converted ({_next_milestone}%)")
+                    _next_milestone += 25
             print(f"Conversion completed at '{audio_input_paths}'.")
             elapsed_time = time.time() - start_time
             print(f"Batch conversion completed in {elapsed_time:.2f} seconds.")
+            _toast(
+                f"Batch conversion completed: {converted} converted, "
+                f"{skipped} skipped in {elapsed_time:.0f}s"
+            )
+        except Exception as e:
+            _toast(f"Batch conversion failed: {e}", warning=True)
+            raise
         finally:
             os.remove(os.path.join(now_dir, "assets", "infer_pid.txt"))
 
