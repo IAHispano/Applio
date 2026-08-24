@@ -40,6 +40,10 @@ class FeatureInput:
                 device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
             )
         elif f0_method == "rmvpe":
+            # Training labels must be the TRUE pitch, never fold-mode values
+            # (fold is an inference-side trick for models trained on stock
+            # octave-folded labels). Only relevant when RMVPE_HIGH_FIX=1.
+            os.environ.setdefault("RMVPE_HIGH_MODE", "true")
             self.model = RMVPE(
                 device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
             )
