@@ -15,7 +15,7 @@ def model_information_tab():
             interactive=True,
         )
         model_information_output_info = gr.Textbox(
-            label=i18n("Output Information"),
+            label=i18n("Model information output"),
             info=i18n("The output information will be displayed here."),
             value="",
             max_lines=12,
