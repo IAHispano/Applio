@@ -12,6 +12,11 @@ i18n = I18nAuto()
 
 
 def processing_tab():
+    def _model_info_with_toast(pth_path):
+        result = run_model_information_script(pth_path)
+        gr.Info(i18n("Model information loaded."))
+        return result
+
     model_view_model_path = gr.Textbox(
         label=i18n("Path to Model"),
         info=i18n("Introduce the model pth path"),
@@ -28,7 +33,7 @@ def processing_tab():
     )
     model_view_button = gr.Button(i18n("View"))
     model_view_button.click(
-        fn=run_model_information_script,
+        fn=_model_info_with_toast,
         inputs=[model_view_model_path],
         outputs=[model_view_output_info],
     )
