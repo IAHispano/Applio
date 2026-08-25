@@ -11,10 +11,30 @@ i18n = I18nAuto()
 
 
 def update_model_fusion(dropbox):
+    gr.Info(i18n("Model added. It is now selected in the 'Path to Model' field."))
     return dropbox, None
 
 
 def voice_blender_tab():
+    def _blend_with_toast(*args):
+        gr.Info(i18n("Blending models..."))
+        try:
+            result = run_model_blender_script(*args)
+        except Exception:
+            gr.Warning(
+                i18n(
+                    "An error occurred blending the models. Please check the console logs for more details."
+                )
+            )
+            raise
+        message = result[0] if isinstance(result, tuple) else result
+        if isinstance(message, str):
+            if "error" in message.lower() or "failed" in message.lower():
+                gr.Warning(message)
+            else:
+                gr.Info(message)
+        return result
+
     gr.Markdown(i18n("## Voice Blender"))
     gr.Markdown(
         i18n(
@@ -75,7 +95,7 @@ def voice_blender_tab():
             )
 
     model_fusion_button.click(
-        fn=run_model_blender_script,
+        fn=_blend_with_toast,
         inputs=[
             model_fusion_name,
             model_fusion_a,

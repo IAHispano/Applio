@@ -1685,6 +1685,37 @@ def realtime_tab():
                 return
             yield from start_realtime(*args)
 
+        def _realtime_with_toast(terms_accepted, *args):
+            if terms_accepted:
+                gr.Info(i18n("Starting real-time conversion..."))
+            # start_realtime reports failures as yielded status strings
+            # ("Error: ...", "Please select valid input/output devices!",
+            # "Model path not provided. Aborting conversion.") instead of
+            # raising, so scan every yielded update for failure markers.
+            failures = (
+                "error",
+                "failed",
+                "stopping",
+                "aborting",
+                "please select",
+                "not provided",
+            )
+            try:
+                for update in enforce_terms(terms_accepted, *args):
+                    status = update[0] if isinstance(update, tuple) else update
+                    if isinstance(status, str) and any(
+                        marker in status.lower() for marker in failures
+                    ):
+                        gr.Warning(status)
+                    yield update
+            except Exception:
+                gr.Warning(
+                    i18n(
+                        "An error occurred during real-time conversion. Please check the console logs for more details."
+                    )
+                )
+                raise
+
         def update_on_model_change(model_path):
             new_index = match_index(model_path)
             new_sids = get_speakers_id(model_path)
@@ -1996,7 +2027,7 @@ def realtime_tab():
             )
         else:
             start_button.click(
-                fn=enforce_terms,
+                fn=_realtime_with_toast,
                 inputs=[
                     terms_checkbox,
                     input_audio_device,
