@@ -1,4 +1,5 @@
 import os
+import json
 import torch
 
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor
@@ -7,12 +8,44 @@ import torchcrepe
 import numpy as np
 import librosa
 
+# Defaults for the "rmvpe_high_register" section of assets/config.json
+# (edited from the Settings tab; see assets/config_template.json).
+HIGH_REGISTER_DEFAULTS = {"enabled": False, "mode": "true_pitch", "f0_ceil": 1250.0}
+
+
+def load_high_register_settings():
+    # Missing file, malformed JSON or missing keys fall back to the defaults
+    # (corrector disabled), so RMVPE keeps stock behaviour outside the UI.
+    settings = dict(HIGH_REGISTER_DEFAULTS)
+    try:
+        with open(os.path.join("assets", "config.json"), "r", encoding="utf-8") as f:
+            section = json.load(f).get("rmvpe_high_register")
+        if isinstance(section, dict):
+            settings.update(section)
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    return settings
+
 
 class RMVPE:
-    def __init__(self, device, model_name="rmvpe.pt", sample_rate=16000, hop_size=160):
+    def __init__(
+        self,
+        device,
+        model_name="rmvpe.pt",
+        sample_rate=16000,
+        hop_size=160,
+        high_register=None,
+    ):
         self.device = device
         self.sample_rate = sample_rate
         self.hop_size = hop_size
+        # high_register: settings for the high-register corrector (keys:
+        # enabled, mode, f0_ceil). None reads them from assets/config.json;
+        # callers pass a dict to override (extraction pins the mode, realtime
+        # disables it).
+        if high_register is None:
+            high_register = load_high_register_settings()
+        self.high_register = {**HIGH_REGISTER_DEFAULTS, **high_register}
         self.model = RMVPE0Predictor(
             os.path.join("rvc", "models", "predictors", model_name),
             device=self.device,
@@ -20,7 +53,7 @@ class RMVPE:
 
     def get_f0(self, x, filter_radius=0.03):
         f0 = self.model.infer_from_audio(x, thred=filter_radius)
-        if os.environ.get("RMVPE_HIGH_FIX", "0") == "1":
+        if self.high_register["enabled"]:
             f0 = self._fix_high_register(x, f0, filter_radius)
         return f0
 
@@ -31,14 +64,14 @@ class RMVPE:
         # pass on octave-down-resampled audio reads those registers correctly;
         # it is used only to fix the octave class of the normal pass, keeping
         # the normal 10 ms contour wherever it already agrees.
-        # RMVPE_HIGH_MODE=true (default) writes the true pitch, capped at
-        # RMVPE_F0_CEIL (default 1250 Hz) because RVC models trained on stock
-        # rmvpe labels cannot synthesize above that and collapse; above the
-        # ceiling stock's octave-down drive is kept (the vocoder folds its
-        # harmonics back up). RMVPE_HIGH_MODE=fold is a compatibility mode for
-        # such models: it fixes only wrong-pitch-class frames, using half the
-        # true pitch so every drive stays in the model's trained register.
-        ceil = float(os.environ.get("RMVPE_F0_CEIL", "1250"))
+        # Mode "true_pitch" (default) writes the true pitch, capped at f0_ceil
+        # (default 1250 Hz) because RVC models trained on stock rmvpe labels
+        # cannot synthesize above that and collapse; above the ceiling stock's
+        # octave-down drive is kept (the vocoder folds its harmonics back up).
+        # Mode "fold" is a compatibility mode for such models: it fixes only
+        # wrong-pitch-class frames, using half the true pitch so every drive
+        # stays in the model's trained register.
+        ceil = float(self.high_register["f0_ceil"])
         guide = self._half_speed_guide(x, len(normal), thred)
         out = normal.copy()
         nv, gv = normal > 0, guide > 0
@@ -49,7 +82,7 @@ class RMVPE:
         c_double[both] = np.abs(1200.0 * np.log2(2.0 * normal[both] / guide[both]))
         agree = both & (c_keep < gate)
         cand_dbl = both & ~agree & (c_double < gate)
-        if os.environ.get("RMVPE_HIGH_MODE", "true") == "fold":
+        if self.high_register["mode"] == "fold":
             fold_other = (both & ~agree & ~cand_dbl) & (guide >= 990.0)
             fold_fill = (~nv) & gv & (guide >= 900.0)
             out[fold_other] = guide[fold_other] / 2.0

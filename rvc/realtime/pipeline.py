@@ -164,6 +164,10 @@ class Realtime_Pipeline:
                 device=self.device,
                 sample_rate=self.sample_rate,
                 hop_size=self.window,
+                # The high-register corrector is an offline two-pass method
+                # (numpy/librosa) and this path swaps infer_from_audio for a
+                # tensor-based variant, so it stays disabled here.
+                high_register={"enabled": False},
             )
 
             f0_model.model.cents_mapping = torch.from_numpy(

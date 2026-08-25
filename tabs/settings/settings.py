@@ -18,6 +18,7 @@ from tabs.settings.sections.restart import restart_tab
 from tabs.settings.sections.model_author import model_author_tab
 from tabs.settings.sections.precision import precision_tab
 from tabs.settings.sections.filter import filter_tab, get_filter_trigger
+from tabs.settings.sections.rmvpe_high_register import rmvpe_high_register_tab
 
 
 def settings_tab(filter_state_trigger=None):
@@ -33,6 +34,7 @@ def settings_tab(filter_state_trigger=None):
             outputs=[filter_state_trigger],
             show_progress=False,
         )
+        rmvpe_high_register_tab()
         presence_tab()
         realtime_audio_tab()
         theme_tab()
