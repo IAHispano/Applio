@@ -500,6 +500,7 @@ def update_filter_visibility(_):
 def inference_tab():
     trigger = get_filter_trigger()
     with gr.Column():
+        gr.Markdown(value=i18n("## Model Selection"))
         with gr.Row():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
@@ -1196,6 +1197,8 @@ def inference_tab():
                 traceback.print_exc()
                 return "An error occurred during audio batch conversion. Please check the console logs for more details."
 
+        gr.Markdown(value=i18n("## Conversion"))
+
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
             info=i18n(
@@ -1815,6 +1818,8 @@ def inference_tab():
                         move_files_button_batch = gr.Button(
                             i18n("Move files to custom embedder folder")
                         )
+
+        gr.Markdown(value=i18n("## Conversion"))
 
         terms_checkbox_batch = gr.Checkbox(
             label=i18n("I agree to the terms of use"),

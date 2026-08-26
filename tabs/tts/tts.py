@@ -51,6 +51,7 @@ def process_input(file_path):
 def tts_tab():
     trigger = get_filter_trigger()
     with gr.Column():
+        gr.Markdown(value=i18n("## Model Selection"))
         with gr.Row():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
@@ -107,6 +108,7 @@ def tts_tab():
                 outputs=[index_file],
             )
 
+    gr.Markdown(value=i18n("## TTS Settings"))
     gr.Markdown(
         i18n(
             f"Applio is a Speech-to-Speech conversion software, utilizing EdgeTTS as middleware for running the Text-to-Speech (TTS) component. Read more about it [here!](https://docs.applio.org/applio/getting-started/tts)"
@@ -374,6 +376,8 @@ def tts_tab():
                 "An error occurred during TTS conversion. Please check the console logs for more details.",
                 None,
             )
+
+    gr.Markdown(value=i18n("## Conversion"))
 
     terms_checkbox = gr.Checkbox(
         label=i18n("I agree to the terms of use"),
