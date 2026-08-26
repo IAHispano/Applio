@@ -16,7 +16,7 @@ sys.path.append(os.path.join(now_dir))
 # Zluda hijack
 import rvc.lib.zluda
 from rvc.configs.config import Config
-from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE
+from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE, load_high_register_settings
 from rvc.lib.utils import load_audio_16k, load_embedding
 from rvc.train.extract.preparing_files import generate_config, generate_filelist
 
@@ -40,8 +40,17 @@ class FeatureInput:
                 device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
             )
         elif f0_method == "rmvpe":
+            # Training labels must be the TRUE pitch, never fold-mode values
+            # (fold is an inference-side trick for models trained on stock
+            # octave-folded labels). Only relevant when the corrector is
+            # enabled in assets/config.json.
+            high_register = load_high_register_settings()
+            high_register["mode"] = "true_pitch"
             self.model = RMVPE(
-                device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
+                device=self.device,
+                sample_rate=self.sample_rate,
+                hop_size=self.hop_size,
+                high_register=high_register,
             )
         elif f0_method == "fcpe":
             self.model = FCPE(
