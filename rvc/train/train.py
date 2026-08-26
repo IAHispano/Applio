@@ -119,6 +119,13 @@ config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
 
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = True
+# TF32 settings, should improve performance in some cases
+try:
+    torch.set_float32_matmul_precision("high")
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+except Exception as e:
+    print(f'Torch tf32: {e}')
 
 global_step = 0
 last_loss_gen_all = 0
