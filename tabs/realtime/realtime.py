@@ -1131,6 +1131,7 @@ def realtime_tab():
                     )
 
             with gr.TabItem(i18n("Model Settings")):
+                gr.Markdown(value=i18n("## Model Selection"))
                 with gr.Row():
                     model_choices = (
                         sorted(names, key=extract_model_and_epoch) if names else []
@@ -1161,6 +1162,7 @@ def realtime_tab():
                     unload_button = gr.Button(i18n("Unload Voice"))
                     refresh_button = gr.Button(i18n("Refresh models and indexes"))
                 with gr.Column():
+                    gr.Markdown(value=i18n("## Advanced Settings"))
                     autotune = gr.Checkbox(
                         label=i18n("Autotune"),
                         info=i18n(
