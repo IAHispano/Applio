@@ -14,14 +14,28 @@ plugins_core.check_new_folders()
 
 
 def plugins_tab():
+    def _plugin_install_with_toast(dropbox):
+        gr.Info(i18n("Installing plugin..."))
+        try:
+            return plugins_core.save_plugin_dropbox(dropbox)
+        except gr.Error:
+            raise  # gradio announces gr.Error natively
+        except Exception:
+            gr.Warning(
+                i18n(
+                    "An error occurred installing the plugin. Please check the console logs for more details."
+                )
+            )
+            raise
+
     with gr.TabItem(i18n("Plugin Installer")):
         dropbox = gr.File(
-            label=i18n("Drag your plugin.zip to install it"),
+            label=i18n("Drop a plugin.zip here or use the browse button to install it"),
             type="filepath",
         )
 
         dropbox.upload(
-            fn=plugins_core.save_plugin_dropbox,
+            fn=_plugin_install_with_toast,
             inputs=[dropbox],
             outputs=[dropbox],
         )

@@ -11,10 +11,30 @@ i18n = I18nAuto()
 
 
 def update_model_fusion(dropbox):
+    gr.Info(i18n("Model added. It is now selected in the model path field."))
     return dropbox, None
 
 
 def voice_blender_tab():
+    def _blend_with_toast(*args):
+        gr.Info(i18n("Blending models..."))
+        try:
+            result = run_model_blender_script(*args)
+        except Exception:
+            gr.Warning(
+                i18n(
+                    "An error occurred blending the models. Please check the console logs for more details."
+                )
+            )
+            raise
+        message = result[0] if isinstance(result, tuple) else result
+        if isinstance(message, str):
+            if "error" in message.lower() or "failed" in message.lower():
+                gr.Warning(message)
+            else:
+                gr.Info(message)
+        return result
+
     gr.Markdown(i18n("## Voice Blender"))
     gr.Markdown(
         i18n(
@@ -33,10 +53,11 @@ def voice_blender_tab():
         with gr.Row():
             with gr.Column():
                 model_fusion_a_dropbox = gr.File(
-                    label=i18n("Drag and drop your model here"), type="filepath"
+                    label=i18n("Drop your first model here or use the browse button"),
+                    type="filepath",
                 )
                 model_fusion_a = gr.Textbox(
-                    label=i18n("Path to Model"),
+                    label=i18n("Path to first model"),
                     value="",
                     interactive=True,
                     placeholder=i18n("Enter path to model"),
@@ -44,10 +65,11 @@ def voice_blender_tab():
                 )
             with gr.Column():
                 model_fusion_b_dropbox = gr.File(
-                    label=i18n("Drag and drop your model here"), type="filepath"
+                    label=i18n("Drop your second model here or use the browse button"),
+                    type="filepath",
                 )
                 model_fusion_b = gr.Textbox(
-                    label=i18n("Path to Model"),
+                    label=i18n("Path to second model"),
                     value="",
                     interactive=True,
                     placeholder=i18n("Enter path to model"),
@@ -66,7 +88,7 @@ def voice_blender_tab():
         model_fusion_button = gr.Button(i18n("Fusion"))
         with gr.Row():
             model_fusion_output_info = gr.Textbox(
-                label=i18n("Output Information"),
+                label=i18n("Blend output"),
                 info=i18n("The output information will be displayed here."),
                 value="",
             )
@@ -75,7 +97,7 @@ def voice_blender_tab():
             )
 
     model_fusion_button.click(
-        fn=run_model_blender_script,
+        fn=_blend_with_toast,
         inputs=[
             model_fusion_name,
             model_fusion_a,

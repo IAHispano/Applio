@@ -90,7 +90,7 @@ def tts_tab():
             )
         with gr.Row():
             unload_button = gr.Button(i18n("Unload Voice"))
-            refresh_button = gr.Button(i18n("Refresh"))
+            refresh_button = gr.Button(i18n("Refresh models and indexes"))
 
             unload_button.click(
                 fn=lambda: (
@@ -387,7 +387,7 @@ def tts_tab():
 
     with gr.Row():
         vc_output1 = gr.Textbox(
-            label=i18n("Output Information"),
+            label=i18n("TTS output"),
             info=i18n("The output information will be displayed here."),
         )
         vc_output2 = gr.Audio(label=i18n("Export Audio"))

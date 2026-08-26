@@ -14,7 +14,7 @@ def analyzer_tab():
     with gr.Column():
         audio_input = gr.Audio(type="filepath")
         output_info = gr.Textbox(
-            label=i18n("Output Information"),
+            label=i18n("Audio analysis output"),
             info=i18n("The output information will be displayed here."),
             value="",
             max_lines=8,
