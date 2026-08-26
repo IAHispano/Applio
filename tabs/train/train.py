@@ -433,7 +433,7 @@ def train_tab():
                     type="filepath",
                     interactive=True,
                 )
-        refresh = gr.Button(i18n("Refresh"))
+        refresh = gr.Button(i18n("Refresh models and datasets"))
 
         with gr.Accordion(i18n("Advanced Settings"), open=False):
             cut_preprocess = gr.Radio(
@@ -510,7 +510,7 @@ def train_tab():
                 interactive=True,
             )
         preprocess_output_info = gr.Textbox(
-            label=i18n("Output Information"),
+            label=i18n("Preprocess output"),
             info=i18n("The output information will be displayed here."),
             value="",
             max_lines=8,
@@ -607,7 +607,7 @@ def train_tab():
                 )
 
         extract_output_info = gr.Textbox(
-            label=i18n("Output Information"),
+            label=i18n("Feature extraction output"),
             info=i18n("The output information will be displayed here."),
             value="",
             max_lines=8,
@@ -789,7 +789,7 @@ def train_tab():
             interactive=True,
         )
         train_output_info = gr.Textbox(
-            label=i18n("Output Information"),
+            label=i18n("Training output"),
             info=i18n("The output information will be displayed here."),
             value="",
             max_lines=8,
@@ -854,7 +854,7 @@ def train_tab():
                 )
         with gr.Row():
             with gr.Column():
-                refresh_export = gr.Button(i18n("Refresh"))
+                refresh_export = gr.Button(i18n("Refresh trained models and indexes"))
                 if os.getenv("COLAB_RELEASE_TAG"):
                     upload_exported = gr.Button(i18n("Upload"))
                     upload_exported.click(

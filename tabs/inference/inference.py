@@ -538,7 +538,7 @@ def inference_tab():
         )
         with gr.Row():
             unload_button = gr.Button(i18n("Unload Voice"))
-            refresh_button = gr.Button(i18n("Refresh"))
+            refresh_button = gr.Button(i18n("Refresh models and indexes"))
 
             unload_button.click(
                 fn=lambda: (
@@ -697,7 +697,7 @@ def inference_tab():
                         interactive=True,
                     )
                     formant_refresh_button = gr.Button(
-                        value=i18n("Refresh"),
+                        value=i18n("Refresh formant presets"),
                         visible=False,
                     )
                 formant_qfrency = gr.Slider(
@@ -1209,7 +1209,7 @@ def inference_tab():
 
         with gr.Row():
             vc_output1 = gr.Textbox(
-                label=i18n("Output Information"),
+                label=i18n("Conversion output"),
                 info=i18n("The output information will be displayed here."),
             )
             vc_output2 = gr.Audio(label=i18n("Export Audio"))
@@ -1348,7 +1348,7 @@ def inference_tab():
                         interactive=True,
                     )
                     formant_refresh_button_batch = gr.Button(
-                        value=i18n("Refresh"),
+                        value=i18n("Refresh formant presets"),
                         visible=False,
                     )
                 formant_qfrency_batch = gr.Slider(
@@ -1830,7 +1830,7 @@ def inference_tab():
 
         with gr.Row():
             vc_output3 = gr.Textbox(
-                label=i18n("Output Information"),
+                label=i18n("Batch conversion output"),
                 info=i18n("The output information will be displayed here."),
             )
 

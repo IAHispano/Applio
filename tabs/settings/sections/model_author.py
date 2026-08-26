@@ -46,7 +46,7 @@ def model_author_tab():
         interactive=True,
     )
     model_author_output_info = gr.Textbox(
-        label=i18n("Output Information"),
+        label=i18n("Model author output"),
         info=i18n("The output information will be displayed here."),
         value="",
         max_lines=1,

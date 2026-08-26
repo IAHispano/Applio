@@ -30,7 +30,7 @@ def plugins_tab():
 
     with gr.TabItem(i18n("Plugin Installer")):
         dropbox = gr.File(
-            label=i18n("Drag your plugin.zip to install it"),
+            label=i18n("Drop a plugin.zip here or use the browse button to install it"),
             type="filepath",
         )
 

@@ -1159,7 +1159,7 @@ def realtime_tab():
 
                 with gr.Row():
                     unload_button = gr.Button(i18n("Unload Voice"))
-                    refresh_button = gr.Button(i18n("Refresh"))
+                    refresh_button = gr.Button(i18n("Refresh models and indexes"))
                 with gr.Column():
                     autotune = gr.Checkbox(
                         label=i18n("Autotune"),

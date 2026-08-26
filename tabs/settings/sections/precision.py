@@ -46,7 +46,7 @@ def precision_tab():
         interactive=True,
     )
     precision_info = gr.Textbox(
-        label=i18n("Output Information"),
+        label=i18n("Precision output"),
         info=i18n("The output information will be displayed here."),
         value="",
         max_lines=1,

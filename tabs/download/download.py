@@ -201,7 +201,7 @@ def download_tab():
             interactive=True,
         )
         model_download_output_info = gr.Textbox(
-            label=i18n("Output Information"),
+            label=i18n("Download output"),
             info=i18n("The output information will be displayed here."),
             value="",
             max_lines=8,
@@ -216,7 +216,7 @@ def download_tab():
         gr.Markdown(value=i18n("## Drop files"))
         dropbox = gr.File(
             label=i18n(
-                "Drag your .pth file and .index file into this space. Drag one and then the other."
+                "Drop your .pth and .index files here or use the browse button. Drop one and then the other."
             ),
             type="filepath",
         )

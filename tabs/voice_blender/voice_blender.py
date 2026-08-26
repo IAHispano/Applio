@@ -11,7 +11,7 @@ i18n = I18nAuto()
 
 
 def update_model_fusion(dropbox):
-    gr.Info(i18n("Model added. It is now selected in the 'Path to Model' field."))
+    gr.Info(i18n("Model added. It is now selected in the model path field."))
     return dropbox, None
 
 
@@ -53,10 +53,11 @@ def voice_blender_tab():
         with gr.Row():
             with gr.Column():
                 model_fusion_a_dropbox = gr.File(
-                    label=i18n("Drag and drop your model here"), type="filepath"
+                    label=i18n("Drop your first model here or use the browse button"),
+                    type="filepath",
                 )
                 model_fusion_a = gr.Textbox(
-                    label=i18n("Path to Model"),
+                    label=i18n("Path to first model"),
                     value="",
                     interactive=True,
                     placeholder=i18n("Enter path to model"),
@@ -64,10 +65,11 @@ def voice_blender_tab():
                 )
             with gr.Column():
                 model_fusion_b_dropbox = gr.File(
-                    label=i18n("Drag and drop your model here"), type="filepath"
+                    label=i18n("Drop your second model here or use the browse button"),
+                    type="filepath",
                 )
                 model_fusion_b = gr.Textbox(
-                    label=i18n("Path to Model"),
+                    label=i18n("Path to second model"),
                     value="",
                     interactive=True,
                     placeholder=i18n("Enter path to model"),
@@ -86,7 +88,7 @@ def voice_blender_tab():
         model_fusion_button = gr.Button(i18n("Fusion"))
         with gr.Row():
             model_fusion_output_info = gr.Textbox(
-                label=i18n("Output Information"),
+                label=i18n("Blend output"),
                 info=i18n("The output information will be displayed here."),
                 value="",
             )
