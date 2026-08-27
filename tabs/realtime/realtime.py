@@ -101,6 +101,30 @@ def get_files(type="model"):
     return [t[2] for t in sorted(best.values(), key=lambda x: x[1])]
 
 
+def display_name(path):
+    """Dropdown label for a path: the file or folder name, without extension."""
+    return os.path.splitext(os.path.basename(path))[0]
+
+
+def path_choices(paths):
+    """
+    Convert a list of paths into (label, value) dropdown choices so only the
+    file name is displayed and announced instead of the full relative path.
+    The order of `paths` is preserved, and duplicate names are disambiguated
+    by appending the parent folder name.
+    """
+    names = [display_name(path) for path in paths]
+    counts = {}
+    for name in names:
+        counts[name] = counts.get(name, 0) + 1
+    choices = []
+    for name, path in zip(names, paths):
+        if counts[name] > 1:
+            name = f"{name} ({os.path.basename(os.path.dirname(path))})"
+        choices.append((name, path))
+    return choices
+
+
 def folders_same(
     a: str, b: str
 ) -> bool:  # Used to "pair" index and model folders based on path names
@@ -1138,7 +1162,7 @@ def realtime_tab():
                     )
                     model_file = gr.Dropdown(
                         label=i18n("Voice Model"),
-                        choices=model_choices,
+                        choices=path_choices(model_choices),
                         interactive=True,
                         value=get_safe_dropdown_value(
                             saved_settings["model_file"], model_choices, default_weight
@@ -1148,7 +1172,7 @@ def realtime_tab():
                     index_choices = sorted(get_files("index"))
                     index_file = gr.Dropdown(
                         label=i18n("Index File"),
-                        choices=index_choices,
+                        choices=path_choices(index_choices),
                         value=get_safe_index_value(
                             saved_settings["index_file"],
                             index_choices,
@@ -1604,7 +1628,7 @@ def realtime_tab():
                             with gr.Row():
                                 embedder_model_custom = gr.Dropdown(
                                     label=i18n("Select Custom Embedder"),
-                                    choices=refresh_embedders_folders(),
+                                    choices=path_choices(refresh_embedders_folders()),
                                     interactive=True,
                                     allow_custom_value=True,
                                 )
@@ -1731,7 +1755,7 @@ def realtime_tab():
             )
 
             return gr.update(
-                choices=new_index_choices, value=safe_index_value
+                choices=path_choices(new_index_choices), value=safe_index_value
             ), gr.update(choices=new_sids, value=0 if new_sids else None)
 
         def refresh_devices():
@@ -1824,7 +1848,7 @@ def realtime_tab():
             outputs=[],
         )
         refresh_embedders_button.click(
-            fn=lambda: gr.update(choices=refresh_embedders_folders()),
+            fn=lambda: gr.update(choices=path_choices(refresh_embedders_folders())),
             inputs=[],
             outputs=[embedder_model_custom],
         )
@@ -2202,8 +2226,12 @@ def realtime_tab():
                 new_names = get_files("model")
                 new_indexes = sorted(get_files("index"))
                 return (
-                    gr.update(choices=sorted(new_names, key=extract_model_and_epoch)),
-                    gr.update(choices=new_indexes),
+                    gr.update(
+                        choices=path_choices(
+                            sorted(new_names, key=extract_model_and_epoch)
+                        )
+                    ),
+                    gr.update(choices=path_choices(new_indexes)),
                 )
 
             refresh_button.click(
@@ -2223,8 +2251,12 @@ def realtime_tab():
                     output_choices.keys()
                 )
                 return (
-                    gr.update(choices=sorted(new_names, key=extract_model_and_epoch)),
-                    gr.update(choices=new_indexes),
+                    gr.update(
+                        choices=path_choices(
+                            sorted(new_names, key=extract_model_and_epoch)
+                        )
+                    ),
+                    gr.update(choices=path_choices(new_indexes)),
                     gr.update(choices=input_choices),
                     gr.update(choices=output_choices),
                     gr.update(choices=output_choices),

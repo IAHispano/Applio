@@ -122,6 +122,30 @@ def get_files(type="model"):
     return [t[2] for t in sorted(best.values(), key=lambda x: x[1])]
 
 
+def display_name(path):
+    """Dropdown label for a path: the file or folder name, without extension."""
+    return os.path.splitext(os.path.basename(path))[0]
+
+
+def path_choices(paths):
+    """
+    Convert a list of paths into (label, value) dropdown choices so only the
+    file name is displayed and announced instead of the full relative path.
+    The order of `paths` is preserved, and duplicate names are disambiguated
+    by appending the parent folder name.
+    """
+    names = [display_name(path) for path in paths]
+    counts = {}
+    for name in names:
+        counts[name] = counts.get(name, 0) + 1
+    choices = []
+    for name, path in zip(names, paths):
+        if counts[name] > 1:
+            name = f"{name} ({os.path.basename(os.path.dirname(path))})"
+        choices.append((name, path))
+    return choices
+
+
 default_weight = next(iter(get_files("model")), None)
 
 audio_paths = [
@@ -242,9 +266,9 @@ def change_choices(model):
     ]
 
     return (
-        {"choices": models_list, "__type__": "update"},
-        {"choices": indexes_list, "__type__": "update"},
-        {"choices": sorted(audio_paths), "__type__": "update"},
+        {"choices": path_choices(models_list), "__type__": "update"},
+        {"choices": path_choices(indexes_list), "__type__": "update"},
+        {"choices": path_choices(sorted(audio_paths)), "__type__": "update"},
         {
             "choices": (
                 sorted(speakers)
@@ -484,7 +508,10 @@ def filter_dropdowns(filter_text):
     all_indexes = sorted(get_files("index"))
     filtered_models = [m for m in all_models if ft in m.lower()]
     filtered_indexes = [i for i in all_indexes if ft in i.lower()]
-    return (gr.update(choices=filtered_models), gr.update(choices=filtered_indexes))
+    return (
+        gr.update(choices=path_choices(filtered_models)),
+        gr.update(choices=path_choices(filtered_indexes)),
+    )
 
 
 def update_filter_visibility(_):
@@ -505,7 +532,9 @@ def inference_tab():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
                 info=i18n("Select the voice model to use for the conversion."),
-                choices=sorted(get_files("model"), key=extract_model_and_epoch),
+                choices=path_choices(
+                    sorted(get_files("model"), key=extract_model_and_epoch)
+                ),
                 value=default_weight,
                 interactive=True,
                 allow_custom_value=True,
@@ -521,7 +550,7 @@ def inference_tab():
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 info=i18n("Select the index file to use for the conversion."),
-                choices=sorted(get_files("index")),
+                choices=path_choices(sorted(get_files("index"))),
                 value=match_index(default_weight),
                 interactive=True,
                 allow_custom_value=True,
@@ -565,7 +594,7 @@ def inference_tab():
                 audio = gr.Dropdown(
                     label=i18n("Select Audio"),
                     info=i18n("Select the audio to convert."),
-                    choices=sorted(audio_paths),
+                    choices=path_choices(sorted(audio_paths)),
                     value=audio_paths[0] if audio_paths else "",
                     interactive=True,
                     allow_custom_value=True,
@@ -1139,7 +1168,7 @@ def inference_tab():
                         with gr.Row():
                             embedder_model_custom = gr.Dropdown(
                                 label=i18n("Select Custom Embedder"),
-                                choices=refresh_embedders_folders(),
+                                choices=path_choices(refresh_embedders_folders()),
                                 interactive=True,
                                 allow_custom_value=True,
                             )
@@ -1794,7 +1823,7 @@ def inference_tab():
                         with gr.Row():
                             embedder_model_custom_batch = gr.Dropdown(
                                 label=i18n("Select Custom Embedder"),
-                                choices=refresh_embedders_folders(),
+                                choices=path_choices(refresh_embedders_folders()),
                                 interactive=True,
                                 allow_custom_value=True,
                             )
@@ -2194,7 +2223,7 @@ def inference_tab():
         outputs=[],
     )
     refresh_embedders_button.click(
-        fn=lambda: gr.update(choices=refresh_embedders_folders()),
+        fn=lambda: gr.update(choices=path_choices(refresh_embedders_folders())),
         inputs=[],
         outputs=[embedder_model_custom],
     )
@@ -2208,7 +2237,7 @@ def inference_tab():
         outputs=[],
     )
     refresh_embedders_button_batch.click(
-        fn=lambda: gr.update(choices=refresh_embedders_folders()),
+        fn=lambda: gr.update(choices=path_choices(refresh_embedders_folders())),
         inputs=[],
         outputs=[embedder_model_custom_batch],
     )

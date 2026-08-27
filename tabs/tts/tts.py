@@ -20,6 +20,7 @@ from tabs.inference.inference import (
     get_files,
     get_speakers_id,
     match_index,
+    path_choices,
     refresh_embedders_folders,
     update_filter_visibility,
 )
@@ -56,7 +57,9 @@ def tts_tab():
             model_file = gr.Dropdown(
                 label=i18n("Voice Model"),
                 info=i18n("Select the voice model to use for the conversion."),
-                choices=sorted(get_files("model"), key=extract_model_and_epoch),
+                choices=path_choices(
+                    sorted(get_files("model"), key=extract_model_and_epoch)
+                ),
                 interactive=True,
                 value=default_weight,
                 allow_custom_value=True,
@@ -73,7 +76,7 @@ def tts_tab():
             index_file = gr.Dropdown(
                 label=i18n("Index File"),
                 info=i18n("Select the index file to use for the conversion."),
-                choices=sorted(get_files("index")),
+                choices=path_choices(sorted(get_files("index"))),
                 value=match_index(default_weight),
                 interactive=True,
                 allow_custom_value=True,
@@ -326,7 +329,7 @@ def tts_tab():
                     with gr.Row():
                         embedder_model_custom = gr.Dropdown(
                             label=i18n("Select Custom Embedder"),
-                            choices=refresh_embedders_folders(),
+                            choices=path_choices(refresh_embedders_folders()),
                             interactive=True,
                             allow_custom_value=True,
                         )
@@ -444,7 +447,7 @@ def tts_tab():
         outputs=[],
     )
     refresh_embedders_button.click(
-        fn=lambda: gr.update(choices=refresh_embedders_folders()),
+        fn=lambda: gr.update(choices=path_choices(refresh_embedders_folders())),
         inputs=[],
         outputs=[embedder_model_custom],
     )

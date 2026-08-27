@@ -70,8 +70,14 @@ pretraineds_list_g = get_pretrained_list("G")
 
 def refresh_custom_pretraineds():
     return (
-        {"choices": sorted(get_pretrained_list("G")), "__type__": "update"},
-        {"choices": sorted(get_pretrained_list("D")), "__type__": "update"},
+        {
+            "choices": path_choices(sorted(get_pretrained_list("G"))),
+            "__type__": "update",
+        },
+        {
+            "choices": path_choices(sorted(get_pretrained_list("D"))),
+            "__type__": "update",
+        },
     )
 
 
@@ -93,7 +99,7 @@ def get_datasets_list():
 
 
 def refresh_datasets():
-    return {"choices": sorted(get_datasets_list()), "__type__": "update"}
+    return {"choices": path_choices(sorted(get_datasets_list())), "__type__": "update"}
 
 
 # Model Names
@@ -117,8 +123,32 @@ def refresh_models():
 def refresh_models_and_datasets():
     return (
         {"choices": sorted(get_models_list()), "__type__": "update"},
-        {"choices": sorted(get_datasets_list()), "__type__": "update"},
+        {"choices": path_choices(sorted(get_datasets_list())), "__type__": "update"},
     )
+
+
+def display_name(path):
+    """Dropdown label for a path: the file or folder name, without extension."""
+    return os.path.splitext(os.path.basename(path))[0]
+
+
+def path_choices(paths):
+    """
+    Convert a list of paths into (label, value) dropdown choices so only the
+    file name is displayed and announced instead of the full relative path.
+    The order of `paths` is preserved, and duplicate names are disambiguated
+    by appending the parent folder name.
+    """
+    names = [display_name(path) for path in paths]
+    counts = {}
+    for name in names:
+        counts[name] = counts.get(name, 0) + 1
+    choices = []
+    for name, path in zip(names, paths):
+        if counts[name] > 1:
+            name = f"{name} ({os.path.basename(os.path.dirname(path))})"
+        choices.append((name, path))
+    return choices
 
 
 # Refresh Custom Embedders
@@ -242,8 +272,8 @@ def get_index_list():
 
 def refresh_pth_and_index_list():
     return (
-        {"choices": sorted(get_pth_list()), "__type__": "update"},
-        {"choices": sorted(get_index_list()), "__type__": "update"},
+        {"choices": path_choices(sorted(get_pth_list())), "__type__": "update"},
+        {"choices": path_choices(sorted(get_index_list())), "__type__": "update"},
     )
 
 
@@ -410,7 +440,7 @@ def train_tab():
             label=i18n("Dataset Path"),
             info=i18n("Path to the dataset folder."),
             # placeholder=i18n("Enter dataset path"),
-            choices=get_datasets_list(),
+            choices=path_choices(get_datasets_list()),
             allow_custom_value=True,
             interactive=True,
         )
@@ -587,7 +617,7 @@ def train_tab():
                 with gr.Row():
                     embedder_model_custom = gr.Dropdown(
                         label=i18n("Select Custom Embedder"),
-                        choices=refresh_embedders_folders(),
+                        choices=path_choices(refresh_embedders_folders()),
                         interactive=True,
                         allow_custom_value=True,
                     )
@@ -748,7 +778,7 @@ def train_tab():
                             info=i18n(
                                 "Select the custom pretrained model for the generator."
                             ),
-                            choices=sorted(pretraineds_list_g),
+                            choices=path_choices(sorted(pretraineds_list_g)),
                             interactive=True,
                             allow_custom_value=True,
                         )
@@ -757,7 +787,7 @@ def train_tab():
                             info=i18n(
                                 "Select the custom pretrained model for the discriminator."
                             ),
-                            choices=sorted(pretraineds_list_d),
+                            choices=path_choices(sorted(pretraineds_list_d)),
                             interactive=True,
                             allow_custom_value=True,
                         )
@@ -832,7 +862,7 @@ def train_tab():
                 pth_dropdown_export = gr.Dropdown(
                     label=i18n("Pth file"),
                     info=i18n("Select the pth file to be exported"),
-                    choices=get_pth_list(),
+                    choices=path_choices(get_pth_list()),
                     value=None,
                     interactive=True,
                     allow_custom_value=True,
@@ -847,7 +877,7 @@ def train_tab():
                 index_dropdown_export = gr.Dropdown(
                     label=i18n("Index File"),
                     info=i18n("Select the index file to be exported"),
-                    choices=get_index_list(),
+                    choices=path_choices(get_index_list()),
                     value=None,
                     interactive=True,
                     allow_custom_value=True,
@@ -977,7 +1007,9 @@ def train_tab():
                 outputs=[],
             )
             refresh_embedders_button.click(
-                fn=refresh_embedders_folders, inputs=[], outputs=[embedder_model_custom]
+                fn=lambda: gr.update(choices=path_choices(refresh_embedders_folders())),
+                inputs=[],
+                outputs=[embedder_model_custom],
             )
             pretrained.change(
                 fn=toggle_pretrained,
