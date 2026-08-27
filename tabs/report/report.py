@@ -59,16 +59,19 @@ def report_tab():
 
     def toggle_button_label(returned_string):
         if returned_string.startswith("Record"):
-            return gr.Button(value="Stop Recording"), None
+            # "Record" is the value the record_button.js callback returns to
+            # signal that recording started; it is a protocol token, not a
+            # translatable string.
+            return gr.Button(value=i18n("Stop Recording")), None
         else:
             try:
                 temp_filename = save_base64_video(returned_string)
             except Exception as error:
                 print(f"An error occurred converting video to mp4: {error}")
-                return gr.Button(value="Record Screen"), gr.Warning(
-                    f"Failed to convert video to mp4:\n{error}"
+                return gr.Button(value=i18n("Record Screen")), gr.Warning(
+                    i18n("Failed to convert video to mp4:\n{}").format(error)
                 )
-            return gr.Button(value="Record Screen"), gr.Video(
+            return gr.Button(value=i18n("Record Screen")), gr.Video(
                 value=temp_filename, interactive=False
             )
 

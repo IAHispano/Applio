@@ -40,10 +40,10 @@ def process_input(file_path):
     try:
         with open(file_path, "r", encoding="utf-8") as file:
             file.read()
-        gr.Info(f"The file has been loaded!")
+        gr.Info(i18n("The file has been loaded!"))
         return file_path, file_path
     except UnicodeDecodeError:
-        gr.Info(f"The file has to be in UTF-8 encoding.")
+        gr.Info(i18n("The file has to be in UTF-8 encoding."))
         return None, None
 
 
@@ -357,7 +357,7 @@ def tts_tab():
 
     def enforce_terms(terms_accepted, *args):
         if not terms_accepted:
-            message = "You must agree to the Terms of Use to proceed."
+            message = i18n("You must agree to the Terms of Use to proceed.")
             gr.Info(message)
             return message, None
         try:
@@ -373,7 +373,9 @@ def tts_tab():
                 )
             )
             return (
-                "An error occurred during TTS conversion. Please check the console logs for more details.",
+                i18n(
+                    "An error occurred during TTS conversion. Please check the console logs for more details."
+                ),
                 None,
             )
 

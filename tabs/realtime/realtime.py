@@ -504,28 +504,28 @@ def start_realtime(
 
     if not input_audio_device or not output_audio_device:
         yield (
-            "Please select valid input/output devices!",
+            i18n("Please select valid input/output devices!"),
             interactive_true,
             interactive_false,
         )
         return
     if use_monitor_device and not monitor_output_device:
         yield (
-            "Please select a valid monitor device!",
+            i18n("Please select a valid monitor device!"),
             interactive_true,
             interactive_false,
         )
         return
     if not pth_path:
         yield (
-            "Model path not provided. Aborting conversion.",
+            i18n("Model path not provided. Aborting conversion."),
             interactive_true,
             interactive_false,
         )
         return
 
     print(f"Starting Realtime...")
-    yield "Starting Realtime...", interactive_false, interactive_visible
+    yield i18n("Starting Realtime..."), interactive_false, interactive_visible
 
     sid = int(sid) if sid is not None else 0
 
@@ -542,7 +542,11 @@ def start_realtime(
         )
     except (ValueError, IndexError):
         print(f"Error: incorrectly formatted audio device.")
-        yield "Incorrectly formatted audio device. Stopping.", interactive_true, interactive_false
+        yield (
+            i18n("Incorrectly formatted audio device. Stopping."),
+            interactive_true,
+            interactive_false,
+        )
         return
 
     # Load ASIO and sample rate settings from config.
@@ -646,7 +650,7 @@ def start_realtime(
     except Exception as error:
         running = False
         print(f"Realtime error: {error}")
-        yield "Error: " + str(error), interactive_true, interactive_false
+        yield i18n("Error: {}").format(error), interactive_true, interactive_false
         return
 
     # print(f"Loading model...")
@@ -673,7 +677,7 @@ def start_realtime(
     #         print(f"Loading model... ({elapsed}s)")
 
     print(f"Realtime is starting!")
-    yield "Realtime is starting!", interactive_false, interactive_visible
+    yield i18n("Realtime is starting!"), interactive_false, interactive_visible
 
     warmup_total = 0
     while warmup_total == 0:
@@ -686,9 +690,19 @@ def start_realtime(
 
             if warmup_remaining > 0:
                 bar = progress_str(warmup_remaining, warmup_total)
-                yield f"Warming up... ({warmup_remaining} blocks) {bar}", interactive_false, interactive_true
+                yield (
+                    i18n("Warming up... ({} blocks) {}").format(warmup_remaining, bar),
+                    interactive_false,
+                    interactive_true,
+                )
             else:
-                yield f"Latency: {audio_manager.latency:.2f} ms | Volume: {audio_manager.volume:.2f} dB", interactive_false, interactive_true
+                yield (
+                    i18n("Latency: {:.2f} ms | Volume: {:.2f} dB").format(
+                        audio_manager.latency, audio_manager.volume
+                    ),
+                    interactive_false,
+                    interactive_true,
+                )
 
     return (
         i18n("Realtime stopped."),
@@ -793,12 +807,12 @@ def stop_realtime():
 
         print(f"Realtime stopped.")
         return (
-            "Realtime stopped.",
+            i18n("Realtime stopped."),
             interactive_true,
             interactive_false,
         )
     else:
-        return "Realtime pipeline not found!", interactive_true, interactive_false
+        return i18n("Realtime pipeline not found!"), interactive_true, interactive_false
 
 
 def get_audio_devices_formatted():
@@ -886,7 +900,7 @@ def soundfile_record_audio(
 
     if running and audio_manager is not None and callbacks is not None:
         if record_button == "Start":
-            gr.Info("Start recording...")
+            gr.Info(i18n("Start recording..."))
 
             if not record_audio_path:
                 record_audio_path = os.path.join(
@@ -903,13 +917,13 @@ def soundfile_record_audio(
 
             return "Stop", None
         else:
-            gr.Info("Stop recording!")
+            gr.Info(i18n("Stop recording!"))
 
             callbacks.vc.send_config({"record_stop": True})
 
             return "Start", record_audio_path
 
-    gr.Warning("Realtime pipeline not found!")
+    gr.Warning(i18n("Realtime pipeline not found!"))
     return "Start", None
 
 
@@ -1681,32 +1695,31 @@ def realtime_tab():
 
         def enforce_terms(terms_accepted, *args):
             if not terms_accepted:
-                message = "You must agree to the Terms of Use to proceed."
+                message = i18n("You must agree to the Terms of Use to proceed.")
                 gr.Info(message)
                 yield message, interactive_true, interactive_false
                 return
             yield from start_realtime(*args)
 
         def _realtime_with_toast(terms_accepted, *args):
-            if terms_accepted:
-                gr.Info(i18n("Starting real-time conversion..."))
+            if not terms_accepted:
+                # enforce_terms explains the rejection with its own toast.
+                yield from enforce_terms(terms_accepted, *args)
+                return
+            gr.Info(i18n("Starting real-time conversion..."))
             # start_realtime reports failures as yielded status strings
-            # ("Error: ...", "Please select valid input/output devices!",
-            # "Model path not provided. Aborting conversion.") instead of
-            # raising, so scan every yielded update for failure markers.
-            failures = (
-                "error",
-                "failed",
-                "stopping",
-                "aborting",
-                "please select",
-                "not provided",
-            )
+            # instead of raising, so warn about them for screen reader
+            # users. The status text is translated, so failures are
+            # detected structurally instead of by matching English words:
+            # every failure yield re-enables the start button, while
+            # progress updates keep it disabled.
             try:
                 for update in enforce_terms(terms_accepted, *args):
                     status = update[0] if isinstance(update, tuple) else update
-                    if isinstance(status, str) and any(
-                        marker in status.lower() for marker in failures
+                    if (
+                        isinstance(update, tuple)
+                        and len(update) > 1
+                        and update[1] is interactive_true
                     ):
                         gr.Warning(status)
                     yield update

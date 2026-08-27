@@ -40,7 +40,9 @@ def save_existing_folders(existing_folders):
 def save_plugin_dropbox(dropbox):
     if "zip" not in dropbox:
         raise gr.Error(
-            message="The file you dropped is not a valid plugin.zip. Please try again."
+            message=i18n(
+                "The file you dropped is not a valid plugin.zip. Please try again."
+            )
         )
     else:
         file_name = os.path.basename(dropbox)
@@ -90,7 +92,9 @@ def save_plugin_dropbox(dropbox):
             f"{folder_name} plugin installed in {plugins_path}! Restarting applio to apply the changes."
         )
         gr.Info(
-            f"{folder_name} plugin installed in {plugins_path}! Restarting applio to apply the changes."
+            i18n(
+                "{} plugin installed in {}! Restarting applio to apply the changes."
+            ).format(folder_name, plugins_path)
         )
         restart_applio()
     return None

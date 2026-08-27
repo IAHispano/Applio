@@ -298,7 +298,7 @@ def save_to_wav2(upload_audio):
 
 
 def delete_outputs():
-    gr.Info(f"Outputs cleared!")
+    gr.Info(i18n("Outputs cleared!"))
     for root, _, files in os.walk(audio_root_relative, topdown=False):
         for name in files:
             if name.endswith(tuple(sup_audioext)) and name.__contains__("_output"):
@@ -1166,7 +1166,7 @@ def inference_tab():
 
         def enforce_terms(terms_accepted, *args):
             if not terms_accepted:
-                message = "You must agree to the Terms of Use to proceed."
+                message = i18n("You must agree to the Terms of Use to proceed.")
                 gr.Info(message)
                 return message, None
             try:
@@ -1182,20 +1182,24 @@ def inference_tab():
                     )
                 )
                 return (
-                    "An error occurred during audio conversion. Please check the console logs for more details.",
+                    i18n(
+                        "An error occurred during audio conversion. Please check the console logs for more details."
+                    ),
                     None,
                 )
 
         def enforce_terms_batch(terms_accepted, *args):
             if not terms_accepted:
-                message = "You must agree to the Terms of Use to proceed."
+                message = i18n("You must agree to the Terms of Use to proceed.")
                 gr.Info(message)
                 return message
             try:
                 return run_batch_infer_script(*args)
             except Exception:
                 traceback.print_exc()
-                return "An error occurred during audio batch conversion. Please check the console logs for more details."
+                return i18n(
+                    "An error occurred during audio batch conversion. Please check the console logs for more details."
+                )
 
         gr.Markdown(value=i18n("## Conversion"))
 

@@ -25,7 +25,7 @@ def set_precision(precision: str):
         json.dump(config, f, indent=4, ensure_ascii=False)
 
     print(f"Precision set to {precision}.")
-    return f"Precision set to {precision}."
+    return i18n("Precision set to {}.").format(precision)
 
 
 def get_precision():
