@@ -29,7 +29,9 @@ if os.path.exists(gradio_temp_dir):
 def save_drop_model(dropbox):
     if "pth" not in dropbox and "index" not in dropbox:
         raise gr.Error(
-            message="The file you dropped is not a valid model file. Please try again."
+            message=i18n(
+                "The file you dropped is not a valid model file. Please try again."
+            )
         )
 
     file_name = format_title(os.path.basename(dropbox))
@@ -50,7 +52,7 @@ def save_drop_model(dropbox):
         os.remove(os.path.join(model_path, file_name))
     shutil.move(dropbox, os.path.join(model_path, file_name))
     print(f"{file_name} saved in {model_path}")
-    gr.Info(f"{file_name} saved in {model_path}")
+    gr.Info(i18n("{} saved in {}").format(file_name, model_path))
 
     return None
 

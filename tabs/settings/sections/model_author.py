@@ -25,7 +25,7 @@ def set_model_author(model_author: str):
         json.dump(config, f, indent=4, ensure_ascii=False)
 
     print(f"Model author set to {model_author}.")
-    return f"Model author set to {model_author}."
+    return i18n("Model author set to {}.").format(model_author)
 
 
 def get_model_author():
