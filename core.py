@@ -18,7 +18,7 @@ from rvc.lib.tools.analyzer import analyze_audio
 from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
 from rvc.lib.tools.model_download import model_download_pipeline
 from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
-from rvc.train.process.model_blender import model_blender
+from rvc.train.process.model_blender import model_blender as blender
 from rvc.train.process.model_information import model_information
 
 python = sys.executable
@@ -647,7 +647,7 @@ def run_model_information_script(pth_path: str):
 def run_model_blender_script(
     model_name: str, pth_path_1: str, pth_path_2: str, ratio: float
 ):
-    message, model_blended = model_blender(model_name, pth_path_1, pth_path_2, ratio)
+    message, model_blended = blender(model_name, pth_path_1, pth_path_2, ratio)
     return message, model_blended
 
 
