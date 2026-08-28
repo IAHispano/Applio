@@ -125,7 +125,7 @@ try:
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32 = True
 except Exception as e:
-    print(f'Torch tf32: {e}')
+    print(f"Torch tf32: {e}")
 
 global_step = 0
 last_loss_gen_all = 0
