@@ -1,74 +1,72 @@
 import ast
 import json
 from pathlib import Path
-from collections import OrderedDict
+
+ROOT = Path(__file__).resolve().parents[2]
+LANGUAGES_DIR = Path(__file__).parent / "languages"
+EXCLUDE = {".venv","env"}
 
 
 def extract_i18n_strings(node):
-    i18n_strings = []
-
-    if (
-        isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id == "i18n"
-    ):
+    strings = []
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "i18n":
         for arg in node.args:
-            if isinstance(arg, ast.Str):
-                i18n_strings.append(arg.s)
-
-    for child_node in ast.iter_child_nodes(node):
-        i18n_strings.extend(extract_i18n_strings(child_node))
-
-    return i18n_strings
+            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                strings.append(arg.value)
+    for child in ast.iter_child_nodes(node):
+        strings.extend(extract_i18n_strings(child))
+    return strings
 
 
-def process_file(file_path):
-    with open(file_path, "r", encoding="utf8", errors="ignore") as file:
-        code = file.read()
-        if "I18nAuto" in code:
-            tree = ast.parse(code)
-            i18n_strings = extract_i18n_strings(tree)
-            print(file_path, len(i18n_strings))
-            return i18n_strings
-    return []
+def process_file(path: Path):
+    try:
+        code = path.read_text(encoding="utf8", errors="ignore")
+    except Exception:
+        return []
+    if "i18n" not in code:
+        return []
+    try:
+        tree = ast.parse(code, filename=str(path))
+    except SyntaxError:
+        return []
+    found = extract_i18n_strings(tree)
+    if found:
+        print(path.relative_to(ROOT), len(found))
+    return found
 
 
-# Use pathlib for file handling
-py_files = Path(".").rglob("*.py")
-
-# Use a set to store unique strings
+py_files = ROOT.rglob("*.py")
 code_keys = set()
 
 for py_file in py_files:
-    if py_file.parts and py_file.parts[0] == "env":
+    if any(part in EXCLUDE for part in py_file.parts):
         continue
-    strings = process_file(py_file)
-    code_keys.update(strings)
+    code_keys.update(process_file(py_file))
 
 print()
 print("Total unique:", len(code_keys))
 
-standard_file = Path(__file__).parent / "languages" / "en_US.json"
+standard_file = LANGUAGES_DIR / "en_US.json"
 
-with open(standard_file, "r", encoding="utf-8") as file:
-    standard_data = json.load(file, object_pairs_hook=OrderedDict)
+with open(standard_file, "r", encoding="utf-8") as f:
+    standard_data = json.load(f)
+
 standard_keys = set(standard_data.keys())
-
-# Combine unused and missing keys sections
 unused_keys = standard_keys - code_keys
 missing_keys = code_keys - standard_keys
 
 print("Unused keys:", len(unused_keys))
-for unused_key in unused_keys:
-    print("\t", unused_key)
+for k in sorted(unused_keys):
+    print("\t", k)
 
 print("Missing keys:", len(missing_keys))
-for missing_key in missing_keys:
-    print("\t", missing_key)
+for k in sorted(missing_keys):
+    print("\t", k)
 
-code_keys_dict = OrderedDict((s, s) for s in code_keys)
-
-# Use context manager for writing back to the file
-with open(standard_file, "w", encoding="utf-8") as file:
-    json.dump(code_keys_dict, file, ensure_ascii=False, indent=4, sort_keys=True)
-    file.write("\n")
+if code_keys:
+    new_data = {k: k for k in sorted(code_keys)}
+    with open(standard_file, "w", encoding="utf-8") as f:
+        json.dump(new_data, f, ensure_ascii=False, indent=4, sort_keys=True)
+        f.write("\n")
+else:
+    print("No keys found, skipping write to avoid wiping en_US.json")
