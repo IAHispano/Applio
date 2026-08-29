@@ -3,13 +3,18 @@ import os
 import subprocess
 import sys
 
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+
+# Plataform config
+from rvc.lib.platform import platform_config
+
+platform_config()
+
 import click
 
 from functools import lru_cache
 from datetime import datetime, timedelta
-
-now_dir = os.getcwd()
-sys.path.append(now_dir)
 
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")

@@ -3,8 +3,12 @@ import sys
 import json
 import platform
 
+from rvc.lib.user_site import disable_user_site
+
 
 def platform_config():
+    disable_user_site()
+
     if sys.platform == "darwin" and platform.machine() == "arm64":
         os.environ["OMP_NUM_THREADS"] = "1"
         os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
