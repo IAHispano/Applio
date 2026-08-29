@@ -278,6 +278,11 @@ class IndexWrapper:
                 score, ix = self.index.search(npy, k)
 
                 return (
-                    torch.from_numpy(score).to(self.device).to(self.dtype),
+                    # Same clamp as the GPU branch above: an exact match scores
+                    # zero, and the caller weights by 1/distance.
+                    torch.from_numpy(score)
+                    .to(self.device)
+                    .to(self.dtype)
+                    .clamp(min=self.clamp),
                     torch.from_numpy(ix).to(self.device).long(),
                 )

@@ -21,6 +21,13 @@ logging.getLogger("faiss").setLevel(logging.WARNING)
 FILTER_ORDER = 5
 CUTOFF_FREQUENCY = 48  # Hz
 SAMPLE_RATE = 16000  # Hz
+# Minimum IVF cells a retrieval search visits. Indexes store their own nprobe,
+# and every index built before it was tuned stored 1, which searches a single
+# cell out of thousands. Matches the realtime pipeline's default.
+MIN_INDEX_NPROBE = 12
+# Distances below this are treated as this. An exact match scores zero, and the
+# 1/distance weighting below turns that into NaN for the whole frame.
+MIN_INDEX_DISTANCE = 1e-8
 bh, ah = signal.butter(
     N=FILTER_ORDER, Wn=CUTOFF_FREQUENCY, btype="high", fs=SAMPLE_RATE
 )
@@ -377,7 +384,7 @@ class Pipeline:
     def _retrieve_speaker_embeddings(self, feats, index, big_npy, index_rate):
         npy = feats[0].cpu().numpy()
         score, ix = index.search(npy, k=8)
-        weight = np.square(1 / score)
+        weight = np.square(1 / np.maximum(score, MIN_INDEX_DISTANCE))
         weight /= weight.sum(axis=1, keepdims=True)
         npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
         feats = (
@@ -429,6 +436,16 @@ class Pipeline:
         if file_index != "" and os.path.exists(file_index) and index_rate > 0:
             try:
                 index = faiss.read_index(file_index)
+                try:
+                    # Lift an index off the nprobe it was written with, without
+                    # lowering one that was tuned higher. Guarded separately so
+                    # an index with no IVF structure still loads and searches.
+                    index_ivf = faiss.extract_index_ivf(index)
+                    index_ivf.nprobe = max(
+                        index_ivf.nprobe, min(MIN_INDEX_NPROBE, index_ivf.nlist)
+                    )
+                except RuntimeError:
+                    pass
                 big_npy = index.reconstruct_n(0, index.ntotal)
             except Exception as error:
                 print(f"An error occurred reading the FAISS index: {error}")
