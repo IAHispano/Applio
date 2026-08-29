@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import soundfile as sf
 import torch
 import torch.utils.data
 
@@ -36,9 +37,29 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
         for audiopath, text, pitch, pitchf, dv in self.audiopaths_and_text:
             if self.min_text_len <= len(text) and len(text) <= self.max_text_len:
                 audiopaths_and_text_new.append([audiopath, text, pitch, pitchf, dv])
-                lengths.append(os.path.getsize(audiopath) // (3 * self.hop_length))
+                lengths.append(self._slice_length(audiopath))
         self.audiopaths_and_text = audiopaths_and_text_new
         self.lengths = lengths
+
+    def _slice_length(self, audiopath):
+        """
+        Approximates slice length in the units the bucket boundaries use.
+
+        A compressed format breaks the size-to-duration proportionality, so its
+        frame count is scaled by the four bytes per sample a wav would have
+        used. Both formats have to land on the same scale, since a slice outside
+        the boundaries is dropped from training entirely.
+
+        Args:
+            audiopath (str): Path to the sliced audio file.
+        """
+        if audiopath.lower().endswith(".wav"):
+            return os.path.getsize(audiopath) // (3 * self.hop_length)
+        try:
+            return (sf.info(audiopath).frames * 4) // (3 * self.hop_length)
+        except Exception as error:
+            print(f"Could not read the length of {audiopath}: {error}")
+            return os.path.getsize(audiopath) // (3 * self.hop_length)
 
     def get_sid(self, sid):
         """
@@ -104,7 +125,8 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
         pitch = pitch[:n_num]
         pitchf = pitchf[:n_num]
         phone = torch.FloatTensor(phone)
-        pitch = torch.LongTensor(pitch)
+        # coarse pitch may have been stored as uint8 by a compact extraction
+        pitch = torch.LongTensor(pitch.astype(np.int64, copy=False))
         pitchf = torch.FloatTensor(pitchf)
         return phone, pitch, pitchf
 
@@ -122,7 +144,7 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
             )
         audio_norm = audio
         audio_norm = audio_norm.unsqueeze(0)
-        spec_filename = filename.replace(".wav", ".spec.pt")
+        spec_filename = os.path.splitext(filename)[0] + ".spec.pt"
         if os.path.exists(spec_filename):
             try:
                 spec = torch.load(spec_filename, weights_only=True)

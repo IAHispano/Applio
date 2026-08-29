@@ -1,5 +1,6 @@
 @echo off
 setlocal enabledelayedexpansion
+set PYTHONNOUSERSITE=1
 title Applio Installer
 
 echo Welcome to the Applio Installer!

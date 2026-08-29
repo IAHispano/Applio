@@ -3,13 +3,18 @@ import os
 import subprocess
 import sys
 
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+
+# Before anything imports a third-party package
+from rvc.lib.user_site import disable_user_site
+
+disable_user_site()
+
 import click
 
 from functools import lru_cache
 from datetime import datetime, timedelta
-
-now_dir = os.getcwd()
-sys.path.append(now_dir)
 
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")
@@ -417,6 +422,7 @@ def run_preprocess_script(
     chunk_len: float,
     overlap_len: float,
     normalization_mode: str = "none",
+    dataset_format: str = "wav",
 ):
     preprocess_script_path = os.path.join("rvc", "train", "preprocess", "preprocess.py")
     command = [
@@ -436,6 +442,7 @@ def run_preprocess_script(
                 chunk_len,
                 overlap_len,
                 normalization_mode,
+                dataset_format,
             ],
         ),
     ]
@@ -456,6 +463,9 @@ def run_extract_script(
     embedder_model: str,
     embedder_model_custom: str = None,
     include_mutes: int = 2,
+    remove_16k_slices: bool = False,
+    compact_f0: bool = False,
+    fp16_embeddings: bool = False,
 ):
     model_path = os.path.join(logs_path, model_name)
     extract = os.path.join("rvc", "train", "extract", "extract.py")
@@ -474,6 +484,9 @@ def run_extract_script(
                 embedder_model,
                 embedder_model_custom,
                 include_mutes,
+                remove_16k_slices,
+                compact_f0,
+                fp16_embeddings,
             ],
         ),
     ]
@@ -1055,6 +1068,12 @@ def tts(**kwargs):
     default="none",
     help="Normalization mode.",
 )
+@click.option(
+    "--dataset-format",
+    type=click.Choice(["wav", "flac"]),
+    default="wav",
+    help="Format of the sliced dataset. FLAC is about half the size but is stored as 24-bit PCM.",
+)
 def preprocess(**kwargs):
     """Preprocess a dataset for training."""
     kwargs["sample_rate"] = int(kwargs["sample_rate"])
@@ -1074,6 +1093,7 @@ def preprocess(**kwargs):
         chunk_len=kwargs["chunk_len"],
         overlap_len=kwargs["overlap_len"],
         normalization_mode=kwargs["normalization_mode"],
+        dataset_format=kwargs["dataset_format"],
     )
     click.echo(result)
 
@@ -1124,6 +1144,24 @@ def preprocess(**kwargs):
     default=2,
     help="Number of silent files to include.",
 )
+@click.option(
+    "--remove-16k-slices",
+    is_flag=True,
+    default=False,
+    help="Delete sliced_audios_16k once the features are extracted. Re-extracting needs preprocessing again.",
+)
+@click.option(
+    "--compact-f0",
+    is_flag=True,
+    default=False,
+    help="Store coarse pitch as uint8 instead of int64 (an eighth of the disk, same values).",
+)
+@click.option(
+    "--fp16-embeddings",
+    is_flag=True,
+    default=False,
+    help="Run the embedder forward pass in float16 on CUDA. Features are still stored as float32.",
+)
 def extract(**kwargs):
     """Extract features from a preprocessed dataset."""
     kwargs["sample_rate"] = int(kwargs["sample_rate"])
@@ -1137,6 +1175,9 @@ def extract(**kwargs):
         embedder_model=kwargs["embedder_model"],
         embedder_model_custom=kwargs["embedder_model_custom"],
         include_mutes=kwargs["include_mutes"],
+        remove_16k_slices=kwargs["remove_16k_slices"],
+        compact_f0=kwargs["compact_f0"],
+        fp16_embeddings=kwargs["fp16_embeddings"],
     )
     click.echo(result)
 

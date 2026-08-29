@@ -7,6 +7,11 @@ import sys
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+# Before anything imports a third-party package
+from rvc.lib.user_site import disable_user_site
+
+disable_user_site()
+
 # TODO: This path is regenerated all over the place in Applio
 # should probably be in a static module for everything to reference
 CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")

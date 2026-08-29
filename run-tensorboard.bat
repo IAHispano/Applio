@@ -1,5 +1,6 @@
 @echo off
 setlocal
+set PYTHONNOUSERSITE=1
 title Tensorboard
 
 if not exist env (

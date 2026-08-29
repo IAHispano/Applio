@@ -207,6 +207,33 @@ def load_wav_to_torch(full_path):
     return torch.FloatTensor(data), sample_rate
 
 
+# root of the installation, derived from this file rather than os.getcwd()
+APPLICATION_ROOT = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+
+
+def resolve_dataset_path(path):
+    """
+    Resolves one filelist entry to a path that exists.
+
+    Filelists are now written relative to the application root, but older ones
+    hold absolute or working-directory-relative paths, so all three are
+    accepted. A path that resolves nowhere is returned untouched.
+
+    Args:
+        path (str): The path as written in the filelist.
+    """
+    if os.path.isabs(path):
+        return path
+    if os.path.exists(path):
+        return path
+    from_root = os.path.join(APPLICATION_ROOT, path)
+    if os.path.exists(from_root):
+        return from_root
+    return path
+
+
 def load_filepaths_and_text(filename, split="|"):
     """
     Load filepaths and associated text from a file.
@@ -216,7 +243,11 @@ def load_filepaths_and_text(filename, split="|"):
         split (str, optional): The delimiter used to split the lines.
     """
     with open(filename, encoding="utf-8") as f:
-        return [line.strip().split(split) for line in f]
+        rows = [line.strip().split(split) for line in f if line.strip()]
+    # every field but the trailing speaker id is a path
+    return [
+        [resolve_dataset_path(field) for field in row[:-1]] + row[-1:] for row in rows
+    ]
 
 
 class HParams:

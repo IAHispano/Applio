@@ -9,6 +9,7 @@ if /i "%cd%"=="C:\Windows\System32" (
 )
 
 setlocal
+set PYTHONNOUSERSITE=1
 for %%F in ("%~dp0.") do set "folder_name=%%~nF"
 
 title %folder_name%

@@ -493,6 +493,17 @@ def train_tab():
                     visible=True,
                 )
 
+                dataset_format = gr.Radio(
+                    label=i18n("Sliced dataset format"),
+                    info=i18n(
+                        "Format the sliced dataset is written in. 'wav' is 32-bit float and lossless. 'flac' is also lossless but roughly half the size, stored as 24-bit PCM, so the rare slice that peaks above full scale is scaled down to fit."
+                    ),
+                    choices=["wav", "flac"],
+                    value="wav",
+                    interactive=True,
+                    visible=True,
+                )
+
                 noise_reduction = gr.Checkbox(
                     label=i18n("Noise Reduction"),
                     info=i18n(
@@ -537,6 +548,7 @@ def train_tab():
                     chunk_len,
                     overlap_len,
                     normalization_mode,
+                    dataset_format,
                 ],
                 outputs=[preprocess_output_info],
             )
@@ -586,6 +598,31 @@ def train_tab():
             value=True,
             interactive=True,
         )
+        with gr.Accordion(i18n("Advanced Settings"), open=False):
+            fp16_embeddings = gr.Checkbox(
+                label=i18n("Half-precision embedder"),
+                info=i18n(
+                    "Run the embedder forward pass in float16 on CUDA. Faster, and the features are still stored as float32. Ignored on CPU."
+                ),
+                value=False,
+                interactive=True,
+            )
+            compact_f0 = gr.Checkbox(
+                label=i18n("Compact pitch storage"),
+                info=i18n(
+                    "Store coarse pitch as uint8 instead of int64. The values are identical, the 'f0' folder is an eighth of the size, and training reads either format."
+                ),
+                value=False,
+                interactive=True,
+            )
+            remove_16k_slices = gr.Checkbox(
+                label=i18n("Delete 16 kHz slices after extraction"),
+                info=i18n(
+                    "Frees the disk space used by 'sliced_audios_16k', which is only needed to extract features. Re-extracting with a different pitch method or embedder afterwards requires preprocessing the dataset again."
+                ),
+                value=False,
+                interactive=True,
+            )
         with gr.Row(visible=False) as embedder_custom:
             with gr.Accordion(i18n("Custom Embedder"), open=True):
                 with gr.Row():
@@ -629,6 +666,9 @@ def train_tab():
                 embedder_model,
                 embedder_model_custom,
                 include_mutes,
+                remove_16k_slices,
+                compact_f0,
+                fp16_embeddings,
             ],
             outputs=[extract_output_info],
         )
