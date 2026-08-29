@@ -40,7 +40,8 @@ else:
         )
         sys.exit(1)
 
-    big_npy = np.concatenate(npys, axis=0)
+    # features may be float16 on disk, but faiss requires float32
+    big_npy = np.concatenate(npys, axis=0).astype(np.float32)
 
     big_npy_idx = np.arange(big_npy.shape[0])
     np.random.shuffle(big_npy_idx)

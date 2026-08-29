@@ -417,6 +417,7 @@ def run_preprocess_script(
     chunk_len: float,
     overlap_len: float,
     normalization_mode: str = "none",
+    audio_format: str = "wav",
 ):
     preprocess_script_path = os.path.join("rvc", "train", "preprocess", "preprocess.py")
     command = [
@@ -436,6 +437,7 @@ def run_preprocess_script(
                 chunk_len,
                 overlap_len,
                 normalization_mode,
+                audio_format,
             ],
         ),
     ]
@@ -456,6 +458,8 @@ def run_extract_script(
     embedder_model: str,
     embedder_model_custom: str = None,
     include_mutes: int = 2,
+    extract_precision: str = "fp32",
+    remove_sliced_16k: bool = False,
 ):
     model_path = os.path.join(logs_path, model_name)
     extract = os.path.join("rvc", "train", "extract", "extract.py")
@@ -474,6 +478,8 @@ def run_extract_script(
                 embedder_model,
                 embedder_model_custom,
                 include_mutes,
+                extract_precision,
+                remove_sliced_16k,
             ],
         ),
     ]
@@ -1055,6 +1061,15 @@ def tts(**kwargs):
     default="none",
     help="Normalization mode.",
 )
+@click.option(
+    "--audio-format",
+    type=click.Choice(["wav", "flac"]),
+    default="wav",
+    help=(
+        "Format of the sliced audio files. 'flac' saves ~30% disk, but quantizes to 24-bit "
+        "and clips peaks above 0 dBFS - avoid it with --normalization-mode none."
+    ),
+)
 def preprocess(**kwargs):
     """Preprocess a dataset for training."""
     kwargs["sample_rate"] = int(kwargs["sample_rate"])
@@ -1074,6 +1089,7 @@ def preprocess(**kwargs):
         chunk_len=kwargs["chunk_len"],
         overlap_len=kwargs["overlap_len"],
         normalization_mode=kwargs["normalization_mode"],
+        audio_format=kwargs["audio_format"],
     )
     click.echo(result)
 
@@ -1124,6 +1140,24 @@ def preprocess(**kwargs):
     default=2,
     help="Number of silent files to include.",
 )
+@click.option(
+    "--extract-precision",
+    type=click.Choice(["fp32", "fp16"]),
+    default="fp32",
+    help=(
+        "Format of the extracted files. 'fp16' halves disk usage: coarse f0 as uint8 is "
+        "lossless, features as float16 lose precision - negligible, but irreversible."
+    ),
+)
+@click.option(
+    "--remove-sliced-16k",
+    is_flag=True,
+    default=False,
+    help=(
+        "Delete the sliced_audios_16k folder after extraction. Training does not read those "
+        "files, but re-extracting later will require preprocessing again."
+    ),
+)
 def extract(**kwargs):
     """Extract features from a preprocessed dataset."""
     kwargs["sample_rate"] = int(kwargs["sample_rate"])
@@ -1137,6 +1171,8 @@ def extract(**kwargs):
         embedder_model=kwargs["embedder_model"],
         embedder_model_custom=kwargs["embedder_model_custom"],
         include_mutes=kwargs["include_mutes"],
+        extract_precision=kwargs["extract_precision"],
+        remove_sliced_16k=kwargs["remove_sliced_16k"],
     )
     click.echo(result)
 

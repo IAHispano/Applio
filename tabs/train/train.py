@@ -326,6 +326,8 @@ def train_tab():
 
     def _extract_with_toast(*args):
         gr.Info(i18n("Extracting features..."))
+        args = list(args)
+        args[8] = "fp16" if args[8] == "fp16/uint8" else "fp32"
         result = run_extract_script(*args)
         if isinstance(result, str):
             if "error" in result.lower() or "failed" in result.lower():
@@ -471,6 +473,15 @@ def train_tab():
                     interactive=True,
                 )
 
+            audio_format = gr.Radio(
+                label=i18n("Sliced audio format"),
+                info=i18n(
+                    "Format of the sliced audio files. 'wav' keeps the exact 32-bit float samples. 'flac' saves around 30% disk space, but quantizes to 24-bit (inaudible noise) and clips peaks above 0 dBFS, so avoid it with the 'none' normalization mode."
+                ),
+                choices=["wav", "flac"],
+                value="wav",
+                interactive=True,
+            )
             with gr.Row():
                 process_effects = gr.Checkbox(
                     label=i18n("Noise filter"),
@@ -537,6 +548,7 @@ def train_tab():
                     chunk_len,
                     overlap_len,
                     normalization_mode,
+                    audio_format,
                 ],
                 outputs=[preprocess_output_info],
             )
@@ -586,6 +598,24 @@ def train_tab():
             value=True,
             interactive=True,
         )
+        with gr.Accordion(i18n("Advanced Settings"), open=False):
+            extract_precision = gr.Radio(
+                label=i18n("Feature storage precision"),
+                info=i18n(
+                    "Format of the extracted files. 'fp16/uint8' roughly halves disk usage: the coarse f0 in uint8 is lossless, while the features rounded to float16 lose precision. The quality impact is negligible, but irreversible without extracting again."
+                ),
+                choices=["fp32/int", "fp16/uint8"],
+                value="fp32/int",
+                interactive=True,
+            )
+            remove_sliced_16k = gr.Checkbox(
+                label=i18n("Remove 16kHz sliced audios after extraction"),
+                info=i18n(
+                    "Deletes the sliced_audios_16k folder after extraction. Training does not read those files, so quality is unaffected, but changing the pitch algorithm or embedder later will require preprocessing again."
+                ),
+                value=False,
+                interactive=True,
+            )
         with gr.Row(visible=False) as embedder_custom:
             with gr.Accordion(i18n("Custom Embedder"), open=True):
                 with gr.Row():
@@ -629,6 +659,8 @@ def train_tab():
                 embedder_model,
                 embedder_model_custom,
                 include_mutes,
+                extract_precision,
+                remove_sliced_16k,
             ],
             outputs=[extract_output_info],
         )

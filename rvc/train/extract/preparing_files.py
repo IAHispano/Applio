@@ -23,12 +23,33 @@ def generate_filelist(model_path: str, sample_rate: int, include_mutes: int = 2)
     f0_dir = os.path.join(model_path, "f0")
     f0nsf_dir = os.path.join(model_path, "f0_voiced")
 
-    gt_wavs_files = set(name.split(".")[0] for name in os.listdir(gt_wavs_dir))
-    feature_files = set(name.split(".")[0] for name in os.listdir(feature_dir))
-
-    f0_files = set(name.split(".")[0] for name in os.listdir(f0_dir))
-    f0nsf_files = set(name.split(".")[0] for name in os.listdir(f0nsf_dir))
-    names = gt_wavs_files & feature_files & f0_files & f0nsf_files
+    # slices may be .wav or .flac, and the f0 files inherit that extension
+    gt_wavs_files = {
+        name.split(".")[0]: name
+        for name in os.listdir(gt_wavs_dir)
+        if name.lower().endswith((".wav", ".flac"))
+    }
+    feature_files = {
+        name.split(".")[0]: name
+        for name in os.listdir(feature_dir)
+        if name.lower().endswith(".npy")
+    }
+    f0_files = {
+        name.split(".")[0]: name
+        for name in os.listdir(f0_dir)
+        if name.lower().endswith(".npy")
+    }
+    f0nsf_files = {
+        name.split(".")[0]: name
+        for name in os.listdir(f0nsf_dir)
+        if name.lower().endswith(".npy")
+    }
+    names = (
+        gt_wavs_files.keys()
+        & feature_files.keys()
+        & f0_files.keys()
+        & f0nsf_files.keys()
+    )
 
     try:
         model_info_path = os.path.join(model_path, "model_info.json")
@@ -53,10 +74,10 @@ def generate_filelist(model_path: str, sample_rate: int, include_mutes: int = 2)
             sids.append(sid)
 
         # Calculate relative pathing
-        rel_wav = os.path.relpath(f"{os.path.join(gt_wavs_dir, name)}.wav")
-        rel_feat = os.path.relpath(f"{os.path.join(feature_dir, name)}.npy")
-        rel_f0 = os.path.relpath(f"{os.path.join(f0_dir, name)}.wav.npy")
-        rel_f0nsf = os.path.relpath(f"{os.path.join(f0nsf_dir, name)}.wav.npy")
+        rel_wav = os.path.relpath(os.path.join(gt_wavs_dir, gt_wavs_files[name]))
+        rel_feat = os.path.relpath(os.path.join(feature_dir, feature_files[name]))
+        rel_f0 = os.path.relpath(os.path.join(f0_dir, f0_files[name]))
+        rel_f0nsf = os.path.relpath(os.path.join(f0nsf_dir, f0nsf_files[name]))
 
         options.append(
             f"{rel_wav}|{rel_feat}|{rel_f0}|{rel_f0nsf}|{sid}".replace("\\", "/")

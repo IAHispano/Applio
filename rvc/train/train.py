@@ -178,8 +178,9 @@ def main():
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = str(randint(20000, 55555))
     # Check sample rate
-    wavs = glob.glob(
-        os.path.join(os.path.join(experiment_dir, "sliced_audios"), "*.wav")
+    sliced_dir = os.path.join(experiment_dir, "sliced_audios")
+    wavs = glob.glob(os.path.join(sliced_dir, "*.wav")) + glob.glob(
+        os.path.join(sliced_dir, "*.flac")
     )
     if wavs:
         _, sr = load_wav_to_torch(wavs[0])
@@ -189,7 +190,7 @@ def main():
             )
             os._exit(1)
     else:
-        print("No wav file found.")
+        print("No sliced audio file found.")
 
     if torch.cuda.is_available():
         device = torch.device("cuda")

@@ -3,6 +3,7 @@ import glob
 import json
 import multiprocessing as mp
 import os
+import shutil
 import sys
 import time
 
@@ -26,7 +27,7 @@ mp.set_start_method("spawn", force=True)
 
 
 class FeatureInput:
-    def __init__(self, f0_method="rmvpe", device="cpu"):
+    def __init__(self, f0_method="rmvpe", device="cpu", quantize=False):
         self.hop_size = 160  # default
         self.sample_rate = 16000  # default
         self.f0_bin = 256
@@ -35,6 +36,7 @@ class FeatureInput:
         self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
         self.device = device
+        self.quantize = quantize
         if f0_method in ("crepe", "crepe-tiny"):
             self.model = CREPE(
                 device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
@@ -91,6 +93,9 @@ class FeatureInput:
             feature_pit = self.compute_f0(np_arr)
             np.save(opt_path_full, feature_pit, allow_pickle=False)
             coarse_pit = self.coarse_f0(feature_pit)
+            if self.quantize:
+                # coarse pitch fits in [1, 255], so uint8 is lossless
+                coarse_pit = coarse_pit.astype(np.uint8)
             np.save(opt_path_coarse, coarse_pit, allow_pickle=False)
         except Exception as error:
             print(
@@ -98,15 +103,15 @@ class FeatureInput:
             )
 
 
-def process_files(files, f0_method, device, threads):
-    fe = FeatureInput(f0_method=f0_method, device=device)
+def process_files(files, f0_method, device, threads, quantize=False):
+    fe = FeatureInput(f0_method=f0_method, device=device, quantize=quantize)
     with tqdm.tqdm(total=len(files), leave=True) as pbar:
         for file_info in files:
             fe.process_file(file_info)
             pbar.update(1)
 
 
-def run_pitch_extraction(files, devices, f0_method, threads):
+def run_pitch_extraction(files, devices, f0_method, threads, quantize=False):
     devices_str = ", ".join(devices)
     print(f"Starting pitch extraction on {devices_str} using {f0_method}...")
     start_time = time.time()
@@ -119,6 +124,7 @@ def run_pitch_extraction(files, devices, f0_method, threads):
                 f0_method,
                 devices[i],
                 threads // len(devices),
+                quantize,
             )
             for i in range(len(devices))
         ]
@@ -128,7 +134,13 @@ def run_pitch_extraction(files, devices, f0_method, threads):
 
 
 def process_file_embedding(
-    files, embedder_model, embedder_model_custom, device_num, device, n_threads
+    files,
+    embedder_model,
+    embedder_model_custom,
+    device_num,
+    device,
+    n_threads,
+    half_precision=False,
 ):
     model = load_embedding(embedder_model, embedder_model_custom).to(device).float()
     model.eval()
@@ -143,6 +155,8 @@ def process_file_embedding(
         with torch.no_grad():
             result = model(feats)["last_hidden_state"]
         feats_out = result.squeeze(0).float().cpu().numpy()
+        if half_precision:
+            feats_out = feats_out.astype(np.float16)
         if not np.isnan(feats_out).any():
             np.save(out_file_path, feats_out, allow_pickle=False)
         else:
@@ -156,7 +170,7 @@ def process_file_embedding(
 
 
 def run_embedding_extraction(
-    files, devices, embedder_model, embedder_model_custom, threads
+    files, devices, embedder_model, embedder_model_custom, threads, half_precision=False
 ):
     devices_str = ", ".join(devices)
     print(
@@ -173,6 +187,7 @@ def run_embedding_extraction(
                 i,
                 devices[i],
                 threads // len(devices),
+                half_precision,
             )
             for i in range(len(devices))
         ]
@@ -190,6 +205,14 @@ if __name__ == "__main__":
     embedder_model = sys.argv[6]
     embedder_model_custom = sys.argv[7] if len(sys.argv) > 7 else None
     include_mutes = int(sys.argv[8]) if len(sys.argv) > 8 else 2
+    # fp16: features as float16, coarse f0 as uint8
+    precision = sys.argv[9].lower() if len(sys.argv) > 9 else "fp32"
+    remove_sliced_16k = (
+        sys.argv[10].lower() in ("yes", "true", "t", "y", "1")
+        if len(sys.argv) > 10
+        else False
+    )
+    half_precision = precision == "fp16"
 
     wav_path = os.path.join(exp_dir, "sliced_audios_16k")
 
@@ -217,13 +240,17 @@ if __name__ == "__main__":
         json.dump(data, f, indent=4)
 
     files = []
-    for file in glob.glob(os.path.join(wav_path, "*.wav")):
+    audio_files = sorted(
+        glob.glob(os.path.join(wav_path, "*.wav"))
+        + glob.glob(os.path.join(wav_path, "*.flac"))
+    )
+    for file in audio_files:
         file_name = os.path.basename(file)
         file_info = [
             file,
             os.path.join(exp_dir, "f0", file_name + ".npy"),
             os.path.join(exp_dir, "f0_voiced", file_name + ".npy"),
-            os.path.join(exp_dir, "extracted", file_name.replace("wav", "npy")),
+            os.path.join(exp_dir, "extracted", os.path.splitext(file_name)[0] + ".npy"),
         ]
         files.append(file_info)
 
@@ -235,11 +262,23 @@ if __name__ == "__main__":
 
     devices = ["cpu"] if gpus == "-" else [f"cuda:{idx}" for idx in gpus.split("-")]
 
-    run_pitch_extraction(files, devices, f0_method, num_processes)
+    run_pitch_extraction(files, devices, f0_method, num_processes, half_precision)
 
     run_embedding_extraction(
-        files, devices, embedder_model, embedder_model_custom, num_processes
+        files,
+        devices,
+        embedder_model,
+        embedder_model_custom,
+        num_processes,
+        half_precision,
     )
 
     generate_config(sample_rate, exp_dir)
     generate_filelist(exp_dir, sample_rate, include_mutes)
+
+    if remove_sliced_16k:
+        try:
+            shutil.rmtree(wav_path)
+            print(f"Removed {wav_path} to save disk space.")
+        except OSError as error:
+            print(f"Could not remove {wav_path}: {error}")

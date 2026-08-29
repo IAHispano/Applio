@@ -95,17 +95,18 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
             pitch (str): Path to pitch label file.
             pitchf (str): Path to pitchf label file.
         """
-        phone = np.load(phone)
+        # features may be float16 and coarse pitch uint8 on disk
+        phone = np.load(phone).astype(np.float32)
         phone = np.repeat(phone, 2, axis=0)
-        pitch = np.load(pitch)
-        pitchf = np.load(pitchf)
+        pitch = np.load(pitch).astype(np.int64)
+        pitchf = np.load(pitchf).astype(np.float32)
         n_num = min(phone.shape[0], 900)
         phone = phone[:n_num, :]
         pitch = pitch[:n_num]
         pitchf = pitchf[:n_num]
-        phone = torch.FloatTensor(phone)
-        pitch = torch.LongTensor(pitch)
-        pitchf = torch.FloatTensor(pitchf)
+        phone = torch.from_numpy(phone)
+        pitch = torch.from_numpy(pitch)
+        pitchf = torch.from_numpy(pitchf)
         return phone, pitch, pitchf
 
     def get_audio(self, filename):
@@ -122,7 +123,7 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
             )
         audio_norm = audio
         audio_norm = audio_norm.unsqueeze(0)
-        spec_filename = filename.replace(".wav", ".spec.pt")
+        spec_filename = os.path.splitext(filename)[0] + ".spec.pt"
         if os.path.exists(spec_filename):
             try:
                 spec = torch.load(spec_filename, weights_only=True)

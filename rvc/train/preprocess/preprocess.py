@@ -14,6 +14,7 @@ def strtobool(val):
 import librosa
 import noisereduce as nr
 import numpy as np
+import soundfile as sf
 import soxr
 from scipy import signal
 from scipy.io import wavfile
@@ -41,7 +42,7 @@ RES_TYPE = "soxr_vhq"
 
 
 class PreProcess:
-    def __init__(self, sr: int, exp_dir: str):
+    def __init__(self, sr: int, exp_dir: str, audio_format: str = "wav"):
         self.slicer = Slicer(
             sr=sr,
             threshold=-42,
@@ -56,10 +57,19 @@ class PreProcess:
         )
         self.exp_dir = exp_dir
         self.device = "cpu"
+        self.audio_format = audio_format.lower()
         self.gt_wavs_dir = os.path.join(exp_dir, "sliced_audios")
         self.wavs16k_dir = os.path.join(exp_dir, "sliced_audios_16k")
         os.makedirs(self.gt_wavs_dir, exist_ok=True)
         os.makedirs(self.wavs16k_dir, exist_ok=True)
+
+    def _write_audio(self, directory: str, name: str, sr: int, audio: np.ndarray):
+        path = os.path.join(directory, f"{name}.{self.audio_format}")
+        if self.audio_format == "flac":
+            # FLAC is integer-only, so clip before the 24 bit quantization
+            sf.write(path, np.clip(audio, -1.0, 1.0), sr, format="FLAC", subtype="PCM_24")
+        else:
+            wavfile.write(path, sr, audio.astype(np.float32))
 
     def _normalize_audio(self, audio: np.ndarray):
         tmp_max = np.abs(audio).max()
@@ -80,10 +90,8 @@ class PreProcess:
             return
         if normalization_mode == "post":
             normalized_audio = self._normalize_audio(normalized_audio)
-        wavfile.write(
-            os.path.join(self.gt_wavs_dir, f"{sid}_{idx0}_{idx1}.wav"),
-            self.sr,
-            normalized_audio.astype(np.float32),
+        self._write_audio(
+            self.gt_wavs_dir, f"{sid}_{idx0}_{idx1}", self.sr, normalized_audio
         )
         audio_16k = librosa.resample(
             normalized_audio,
@@ -91,10 +99,8 @@ class PreProcess:
             target_sr=SAMPLE_RATE_16K,
             res_type=RES_TYPE,
         )
-        wavfile.write(
-            os.path.join(self.wavs16k_dir, f"{sid}_{idx0}_{idx1}.wav"),
-            SAMPLE_RATE_16K,
-            audio_16k.astype(np.float32),
+        self._write_audio(
+            self.wavs16k_dir, f"{sid}_{idx0}_{idx1}", SAMPLE_RATE_16K, audio_16k
         )
 
     def simple_cut(
@@ -114,26 +120,15 @@ class PreProcess:
             if normalization_mode == "post":
                 chunk = self._normalize_audio(chunk)
             if len(chunk) == chunk_length:
+                chunk_name = f"{sid}_{idx0}_{i // (chunk_length - overlap_length)}"
                 # full SR for training
-                wavfile.write(
-                    os.path.join(
-                        self.gt_wavs_dir,
-                        f"{sid}_{idx0}_{i // (chunk_length - overlap_length)}.wav",
-                    ),
-                    self.sr,
-                    chunk.astype(np.float32),
-                )
+                self._write_audio(self.gt_wavs_dir, chunk_name, self.sr, chunk)
                 # 16KHz for feature extraction
                 chunk_16k = librosa.resample(
                     chunk, orig_sr=self.sr, target_sr=SAMPLE_RATE_16K, res_type=RES_TYPE
                 )
-                wavfile.write(
-                    os.path.join(
-                        self.wavs16k_dir,
-                        f"{sid}_{idx0}_{i // (chunk_length - overlap_length)}.wav",
-                    ),
-                    SAMPLE_RATE_16K,
-                    chunk_16k.astype(np.float32),
+                self._write_audio(
+                    self.wavs16k_dir, chunk_name, SAMPLE_RATE_16K, chunk_16k
                 )
             i += chunk_length - overlap_length
 
@@ -286,6 +281,7 @@ def preprocess_training_set(
     chunk_len: float,
     overlap_len: float,
     normalization_mode: str,
+    audio_format: str = "wav",
 ):
     if not os.path.exists(input_root):
         print(f"The dataset path does not exist: '{input_root}'.")
@@ -295,7 +291,7 @@ def preprocess_training_set(
         print(f"The dataset path is not a directory: '{input_root}'.")
         sys.exit(1)
     start_time = time.time()
-    pp = PreProcess(sr, exp_dir)
+    pp = PreProcess(sr, exp_dir, audio_format)
     print(f"Starting preprocess with {num_processes} processes...")
 
     files = []
@@ -371,6 +367,7 @@ if __name__ == "__main__":
     chunk_len = float(sys.argv[9])
     overlap_len = float(sys.argv[10])
     normalization_mode = str(sys.argv[11])
+    audio_format = str(sys.argv[12]) if len(sys.argv) > 12 else "wav"
     preprocess_training_set(
         input_root,
         sample_rate,
@@ -383,4 +380,5 @@ if __name__ == "__main__":
         chunk_len,
         overlap_len,
         normalization_mode,
+        audio_format,
     )
