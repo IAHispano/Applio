@@ -8,6 +8,9 @@ if not exist env (
     exit /b 1
 )
 
+:: keep another project's per-user packages from shadowing this env
+set "PYTHONNOUSERSITE=1"
+
 env\python.exe core.py tensorboard
 echo.
 pause

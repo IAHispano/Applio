@@ -11,6 +11,10 @@ set "ENV_DIR=%INSTALL_DIR%\env"
 set "MINICONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-py312_25.11.1-1-Windows-x86_64.exe"
 set "CONDA_EXE=%MINICONDA_DIR%\Scripts\conda.exe"
 
+:: env is a conda prefix, not a venv, so Python would otherwise pick up the
+:: per-user site-packages ahead of it and let another project's packages win
+set "PYTHONNOUSERSITE=1"
+
 set "startTime=%TIME%"
 set "startHour=%TIME:~0,2%"
 set "startMin=%TIME:~3,2%"
@@ -86,6 +90,12 @@ if exist "%ENV_DIR%\python.exe" (
     if errorlevel 1 goto :error
     echo uv installation complete.
     echo.
+)
+
+if exist "%ENV_DIR%\Lib\site-packages" (
+    echo Isolating the environment from per-user site-packages...
+    copy /y "%INSTALL_DIR%\assets\sitecustomize.py" "%ENV_DIR%\Lib\site-packages\sitecustomize.py" >nul
+    if errorlevel 1 echo Warning: could not install sitecustomize.py; per-user packages may shadow Applio's.
 )
 exit /b 0
 
