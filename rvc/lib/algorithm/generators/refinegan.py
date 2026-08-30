@@ -256,7 +256,7 @@ class SineGenerator(nn.Module):
 
             uv = self._f02uv(f0)
 
-            noise_amp = uv * self.noise_std + (1 - uv) * self.sine_amp / 3
+            noise_amp = uv * self.noise_std
             noise = noise_amp * torch.randn_like(sine_waves)
 
             sine_waves = sine_waves * uv + noise
