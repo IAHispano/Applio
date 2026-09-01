@@ -4,12 +4,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 LANGUAGES_DIR = Path(__file__).parent / "languages"
-EXCLUDE = {".venv","env"}
+EXCLUDE = {".venv", "env"}
 
 
 def extract_i18n_strings(node):
     strings = []
-    if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "i18n":
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "i18n"
+    ):
         for arg in node.args:
             if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
                 strings.append(arg.value)
