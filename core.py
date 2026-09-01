@@ -19,7 +19,7 @@ from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
 from rvc.lib.tools.model_download import model_download_pipeline
 from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
 from rvc.train.process.model_blender import model_blender as blender
-from rvc.train.process.model_information import model_information
+from rvc.train.process.model_information import model_information as model_info
 
 python = sys.executable
 
@@ -639,8 +639,8 @@ def run_index_script(model_name: str, index_algorithm: str):
 
 # Model information
 def run_model_information_script(pth_path: str):
-    print(model_information(pth_path))
-    return model_information(pth_path)
+    print(model_info(pth_path))
+    return model_info(pth_path)
 
 
 # Model blender
