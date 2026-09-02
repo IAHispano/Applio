@@ -1,5 +1,7 @@
 import os
 import sys
+import subprocess
+import shutil
 import soxr
 import librosa
 import soundfile as sf
@@ -28,6 +30,71 @@ base_path = os.path.join(now_dir, "rvc", "models", "formant", "stftpitchshift")
 stft = base_path + ".exe" if sys.platform == "win32" else base_path
 
 
+def get_ffmpeg_path():
+    ffmpeg_name = "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg"
+    search_dirs = [now_dir]
+    search_dirs.append(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    for search_dir in search_dirs:
+        bundled_path = os.path.join(search_dir, ffmpeg_name)
+        if os.path.isfile(bundled_path):
+            return bundled_path
+    return shutil.which(ffmpeg_name)
+
+
+def load_audio_ffmpeg(file, sample_rate):
+    ffmpeg_path = get_ffmpeg_path()
+    if not ffmpeg_path:
+        raise RuntimeError(
+            "ffmpeg is required to load this audio format, but it could not be found. "
+            "Please install ffmpeg or make sure it is available in your PATH."
+        )
+    command = [
+        ffmpeg_path,
+        "-nostdin",
+        "-i",
+        file,
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        str(sample_rate),
+        "-f",
+        "f32le",
+        "pipe:1",
+    ]
+    result = subprocess.run(command, capture_output=True)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"An error occurred loading the audio with ffmpeg: "
+            f"{result.stderr.decode('utf-8', errors='ignore')}"
+        )
+    audio = np.frombuffer(result.stdout, dtype=np.float32).copy()
+    if len(audio) == 0:
+        raise RuntimeError(
+            f"An error occurred loading the audio: the file '{file}' appears to be empty."
+        )
+    return audio
+
+
+def _load_audio_ffmpeg_or_soundfile(file, sample_rate):
+    try:
+        return load_audio_ffmpeg(file, sample_rate)
+    except Exception:
+        try:
+            audio, sr = sf.read(file)
+        except Exception as error:
+            raise RuntimeError(f"An error occurred loading the audio: {error}")
+        if len(audio.shape) > 1:
+            audio = librosa.to_mono(audio.T)
+        if sr != sample_rate:
+            audio = librosa.resample(
+                audio, orig_sr=sr, target_sr=sample_rate, res_type="soxr_vhq"
+            )
+        return np.array(audio).flatten()
+
+
 class HubertModelWithFinalProj(HubertModel):
     def __init__(self, config):
         super().__init__(config)
@@ -39,25 +106,16 @@ def load_audio_16k(file):
     try:
         audio, sr = librosa.load(file, sr=16000)
     except Exception as error:
-        raise RuntimeError(f"An error occurred loading the audio: {error}")
+        if not get_ffmpeg_path():
+            raise RuntimeError(f"An error occurred loading the audio: {error}")
+        audio = load_audio_ffmpeg(file, 16000)
 
     return audio.flatten()
 
 
 def load_audio(file, sample_rate):
-    try:
-        file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        audio, sr = sf.read(file)
-        if len(audio.shape) > 1:
-            audio = librosa.to_mono(audio.T)
-        if sr != sample_rate:
-            audio = librosa.resample(
-                audio, orig_sr=sr, target_sr=sample_rate, res_type="soxr_vhq"
-            )
-    except Exception as error:
-        raise RuntimeError(f"An error occurred loading the audio: {error}")
-
-    return audio.flatten()
+    file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+    return _load_audio_ffmpeg_or_soundfile(file, sample_rate)
 
 
 def load_audio_infer(
@@ -66,32 +124,24 @@ def load_audio_infer(
     **kwargs,
 ):
     formant_shifting = kwargs.get("formant_shifting", False)
-    try:
-        file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        if not os.path.isfile(file):
-            raise FileNotFoundError(f"File not found: {file}")
-        audio, sr = sf.read(file)
-        if len(audio.shape) > 1:
-            audio = librosa.to_mono(audio.T)
-        if sr != sample_rate:
-            audio = librosa.resample(
-                audio, orig_sr=sr, target_sr=sample_rate, res_type="soxr_vhq"
-            )
-        if formant_shifting:
-            formant_qfrency = kwargs.get("formant_qfrency", 0.8)
-            formant_timbre = kwargs.get("formant_timbre", 0.8)
+    file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+    if not os.path.isfile(file):
+        raise FileNotFoundError(f"File not found: {file}")
+    audio = _load_audio_ffmpeg_or_soundfile(file, sample_rate)
 
-            from stftpitchshift import StftPitchShift
+    if formant_shifting:
+        formant_qfrency = kwargs.get("formant_qfrency", 0.8)
+        formant_timbre = kwargs.get("formant_timbre", 0.8)
 
-            pitchshifter = StftPitchShift(1024, 32, sample_rate)
-            audio = pitchshifter.shiftpitch(
-                audio,
-                factors=1,
-                quefrency=formant_qfrency * 1e-3,
-                distortion=formant_timbre,
-            )
-    except Exception as error:
-        raise RuntimeError(f"An error occurred loading the audio: {error}")
+        from stftpitchshift import StftPitchShift
+
+        pitchshifter = StftPitchShift(1024, 32, sample_rate)
+        audio = pitchshifter.shiftpitch(
+            audio,
+            factors=1,
+            quefrency=formant_qfrency * 1e-3,
+            distortion=formant_timbre,
+        )
     return np.array(audio).flatten()
 
 
