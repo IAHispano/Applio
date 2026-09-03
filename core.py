@@ -1145,7 +1145,7 @@ def extract(**kwargs):
 @click.option("--model-name", required=True, help="Name of the model to train.")
 @click.option(
     "--vocoder",
-    type=click.Choice(["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"]),
+    type=click.Choice(["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN", "RefineGAN2"]),
     default="HiFi-GAN",
     help="Vocoder to use.",
 )

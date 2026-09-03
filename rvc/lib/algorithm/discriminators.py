@@ -10,19 +10,19 @@ from rvc.lib.algorithm.residuals import LRELU_SLOPE
 from rvc.lib.algorithm.univhd import UnivHDDiscriminator
 
 
-#: The rate ``[2, 3, 5, 7, 11]`` was chosen at.  A period-``p`` branch folds
+#: The rate ``v3``'s periods were chosen at, and the basis for ``v4``'s.  A period-``p`` branch folds
 #: onto a grid at ``sr / p`` Hz and its receptive field spans ``647 * p / sr``
 #: seconds, so both meanings of a period hold only if ``p`` scales with the
 #: rate.  Carrying the set unchanged empties the *slow* end -- at 32 kHz the
 #: longest branch drops from 323 ms to 222, and pitch structure lives there.
 REFERENCE_SAMPLE_RATE = 22050
 
-#: ``v3``'s periods at the reference rate, before scaling.  This is upstream's
+#: ``v4``'s periods at the reference rate, before scaling.  This is ``v3``'s
 #: ``[2, 3, 5, 7, 11]`` without its longest: the spectrogram branches are the
 #: only part of this discriminator with resolution above 10 kHz, and a longer
 #: period folds at a lower rate, so it is the branch least able to say anything
 #: up there -- and it costs 8.2 M parameters, a fifth of the whole thing.
-V3_BASE_PERIODS = (2, 3, 5, 7)
+V4_BASE_PERIODS = (2, 3, 5, 7)
 
 
 def rate_scaled_periods(periods, sample_rate, reference_rate=REFERENCE_SAMPLE_RATE):
@@ -91,9 +91,15 @@ class MultiPeriodDiscriminator(torch.nn.Module):
             periods = [2, 3, 5, 7, 11, 17, 23, 37]
             resolutions = []
         elif version == "v3":
-            # Rate-scaled periods, plus the harmonic branch: 0.33 M
-            # parameters against this discriminator's 39 M, and 8% of the step.
-            periods = rate_scaled_periods(V3_BASE_PERIODS, sample_rate)
+            periods = [2, 3, 5, 7, 11]
+            resolutions = V3_RESOLUTIONS
+        elif version == "v4":
+            # RefineGAN2's discriminator: v3's periods scaled to the rate, its
+            # longest dropped, and the harmonic branch added.  UnivHD is 0.33 M
+            # parameters against this discriminator's 39 M and 8% of the step,
+            # and the paper reports it beating either branch family alone only
+            # when added to one rather than replacing it.
+            periods = rate_scaled_periods(V4_BASE_PERIODS, sample_rate)
             resolutions = V3_RESOLUTIONS
             univhd = True
         else:

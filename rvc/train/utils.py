@@ -59,21 +59,18 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
         model.module.state_dict() if hasattr(model, "module") else model.state_dict()
     )
 
-    # A legacy RefineGAN checkpoint is loadable for inference, not for
-    # training.  The merge below is ``.get(k, v)``, so without this the old
-    # weights would load into the fixed decoder, ``source_gain`` would stay at
-    # its init, and the run would train on from a signal path the weights were
-    # never fitted to.
+    # RefineGAN and RefineGAN2 share every tensor name and shape, and the
+    # merge below is ``.get(k, v)`` -- so a RefineGAN pretrained selected for a
+    # RefineGAN2 run would load, leave ``source_gain`` at its init, and train
+    # on from a signal path the weights were never fitted to.
     marker = "dec.source_gain.weight"
     if marker in model_state_dict and marker not in checkpoint_dict["model"]:
         raise ValueError(
-            f"'{checkpoint_path}' is a RefineGAN checkpoint from before the "
-            f"decoder fixes: it has no '{marker}'. Those weights were fitted "
-            f"to a different signal path (ascending stage rates, a linear "
-            f"interpolation upsampler, raw AdaIN activations) and cannot be "
-            f"resumed or fine-tuned here -- they still render in inference. "
-            f"Start a fresh run, or pick a pretrained model trained with the "
-            f"current decoder."
+            f"'{checkpoint_path}' is a RefineGAN checkpoint (no '{marker}') "
+            f"and this run builds RefineGAN2. The two have identical tensor "
+            f"names and shapes but different signal paths, so the weights "
+            f"would load and mean nothing. Pick a RefineGAN2 pretrained, or "
+            f"train the RefineGAN vocoder instead."
         )
     new_state_dict = {
         k: checkpoint_dict["model"].get(k, v) for k, v in model_state_dict.items()

@@ -3,29 +3,11 @@ from typing import Optional
 from rvc.lib.algorithm.generators.hifigan_mrf import HiFiGANMRFGenerator
 from rvc.lib.algorithm.generators.hifigan_nsf import HiFiGANNSFGenerator
 from rvc.lib.algorithm.generators.hifigan import HiFiGANGenerator
-from rvc.lib.algorithm.generators.refinegan import (
-    RefineGANGenerator,
+from rvc.lib.algorithm.generators.refinegan import RefineGANGenerator
+from rvc.lib.algorithm.generators.refinegan2 import (
+    RefineGAN2Generator,
     upsample_rates_for,
 )
-from rvc.lib.algorithm.generators.refinegan_legacy import LegacyRefineGANGenerator
-
-
-#: The state-dict key only the fixed RefineGAN owns.  The two decoders are
-#: otherwise shape-identical, which is why a sniff is needed instead of a
-#: strict load.
-REFINEGAN_FIXED_MARKER = "dec.source_gain.weight"
-
-
-def refinegan_checkpoint_is_legacy(weights) -> bool:
-    """Whether a checkpoint's RefineGAN decoder predates the fixes.
-
-    Legacy checkpoints render, and are loadable for **inference only**: the
-    differences -- ascending stage rates, a linear-interpolation upsampler, raw
-    AdaIN activations -- live entirely in code, so ``load_state_dict`` accepts
-    either into either without complaint.
-    """
-
-    return REFINEGAN_FIXED_MARKER not in weights
 from rvc.lib.algorithm.commons import slice_segments, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock
 from rvc.lib.algorithm.encoders import TextEncoder, PosteriorEncoder
@@ -84,7 +66,6 @@ class Synthesizer(torch.nn.Module):
         vocoder: str = "HiFi-GAN",
         randomized: bool = True,
         checkpointing: bool = False,
-        refinegan_legacy: bool = False,
         **kwargs,
     ):
         super().__init__()
@@ -119,31 +100,29 @@ class Synthesizer(torch.nn.Module):
                     checkpointing=checkpointing,
                 )
             elif vocoder == "RefineGAN":
-                if refinegan_legacy:
-                    # Inference on an old checkpoint; never training.
-                    self.dec = LegacyRefineGANGenerator(
-                        sample_rate=sr,
-                        downsample_rates=upsample_rates[::-1],
-                        upsample_rates=upsample_rates,
-                        start_channels=16,
-                        num_mels=inter_channels,
-                        checkpointing=checkpointing,
-                    )
-                else:
-                    # The hop is the product of the config's stage rates,
-                    # whatever their order; RefineGAN wants its own descending
-                    # factorisation of it.
-                    hop_length = 1
-                    for rate in upsample_rates:
-                        hop_length *= int(rate)
-                    self.dec = RefineGANGenerator(
-                        sample_rate=sr,
-                        upsample_rates=upsample_rates_for(sr, hop_length),
-                        num_mels=inter_channels,
-                        upsample_initial_channel=upsample_initial_channel,
-                        gin_channels=gin_channels,
-                        checkpointing=checkpointing,
-                    )
+                self.dec = RefineGANGenerator(
+                    sample_rate=sr,
+                    downsample_rates=upsample_rates[::-1],
+                    upsample_rates=upsample_rates,
+                    start_channels=16,
+                    num_mels=inter_channels,
+                    checkpointing=checkpointing,
+                )
+            elif vocoder == "RefineGAN2":
+                # The hop is the product of the config's stage rates, whatever
+                # their order; RefineGAN2 wants its own descending
+                # factorisation of it.
+                hop_length = 1
+                for rate in upsample_rates:
+                    hop_length *= int(rate)
+                self.dec = RefineGAN2Generator(
+                    sample_rate=sr,
+                    upsample_rates=upsample_rates_for(sr, hop_length),
+                    num_mels=inter_channels,
+                    upsample_initial_channel=upsample_initial_channel,
+                    gin_channels=gin_channels,
+                    checkpointing=checkpointing,
+                )
             else:
                 self.dec = HiFiGANNSFGenerator(
                     inter_channels,
@@ -160,8 +139,8 @@ class Synthesizer(torch.nn.Module):
             if vocoder == "MRF HiFi-GAN":
                 print("MRF HiFi-GAN does not support training without pitch guidance.")
                 self.dec = None
-            elif vocoder == "RefineGAN":
-                print("RefineGAN does not support training without pitch guidance.")
+            elif vocoder in ("RefineGAN", "RefineGAN2"):
+                print(f"{vocoder} does not support training without pitch guidance.")
                 self.dec = None
             else:
                 self.dec = HiFiGANGenerator(

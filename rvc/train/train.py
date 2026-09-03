@@ -76,6 +76,9 @@ disc_version = "v2"
 if vocoder == "RefineGAN":
     disc_version = "v3"
     multiscale_mel_loss = True
+elif vocoder == "RefineGAN2":
+    disc_version = "v4"
+    multiscale_mel_loss = True
 
 current_dir = os.getcwd()
 
