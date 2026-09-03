@@ -1,28 +1,128 @@
+from typing import Sequence
+
 import numpy as np
 import torch
 import torchaudio
 from torch import nn
 from torch.nn import functional as F
 from torch.nn.utils.parametrizations import weight_norm
-from torch.nn.utils import remove_weight_norm
+from torch.nn.utils.parametrize import remove_parametrizations
 from torch.utils.checkpoint import checkpoint
 
 from rvc.lib.algorithm.commons import init_weights, get_padding
+from rvc.lib.algorithm.resampling import (
+    AntiAliasedActivation,
+    AntiAliasedUpsample1d,
+    filter_schedule,
+)
+
+
+#: How much of a ``ParallelResBlock`` gets anti-aliased activations, ordered by
+#: coverage.  The flag reaches the ``AdaIN`` activations wrapped around each
+#: ``ResBlock`` as well as the block's own conv pairs:
+#:
+#:     "none"    nothing
+#:     "adain"   the 6 AdaIN per stage, and nothing else
+#:     "half"    those, plus the first activation of each of the 9 conv pairs
+#:     "full"    those, plus both activations of each pair (18)
+#:
+#: A/B renders put the inharmonic lines entirely in the ``AdaIN`` activations
+#: at 2 and 8 kHz: covering the loops and the conv pairs without them leaves
+#: the lines, and covering those six alone removes them.  Cost is per
+#: activation, so "adain" is also 6 sites a stage instead of 24.
+ANTIALIAS_MODES = ("none", "adain", "half", "full")
+
+
+#: Interpolation filter for the trunk's upsamplers, one entry per stage.
+#:
+#: Only the last stage gets a long filter.  What matters is the image a stage
+#: makes times the path from that stage to the output, and the last stage's
+#: image both is the loudest at the output and mirrors about 4 kHz.  Extending
+#: the earlier stages moves numbers that are already 30 dB down and costs edge:
+#: ``AntiAliasedUpsample1d`` replicate-pads, so a longer kernel on a short
+#: input reads more invented continuation than signal -- at a 0.4 s training
+#: segment stage 0 gets 40 samples.
+#: RefineGAN's stage rates, by sample rate.  Not the config's
+#: ``upsample_rates``: that key is HiFi-GAN's and ascending, while this decoder
+#: wants descending -- a stage's anti-image filter keeps ``rolloff`` of the
+#: rate it reads, so the last residual block synthesises everything above
+#: ``rolloff * rate[-2] / 2`` from scratch, and ``[10, 6, 2, 2]`` at 24 kHz
+#: puts that ceiling at 900 Hz against 3600 for ``[5, 4, 4, 3]``.
+#:
+#: The rates leave no trace in the state dict -- channel counts follow the
+#: stage index, not the rate -- so a decoder built with the wrong ones loads a
+#: checkpoint silently and renders a different signal.  Hence a table rather
+#: than a config key.
+#:
+#: 32 kHz is the trained one.  24 kHz is chosen to reproduce its internal
+#: ladder exactly -- both give loop rates 100/500/2000/8000, so the two
+#: anti-aliased stages land at 2 and 8 kHz either way -- and differ only in the
+#: final expansion.  40 and 48 kHz cannot match it and take the descending
+#: factorisation with the highest last-stage ceiling instead.
+REFINEGAN_UPSAMPLE_RATES = {
+    24000: (5, 4, 4, 3),
+    32000: (5, 4, 4, 4),
+    40000: (5, 5, 4, 4),
+    48000: (6, 5, 4, 4),
+}
+
+
+def upsample_rates_for(sample_rate: int, hop_length: int):
+    """The stage rates for a sample rate, checked against the hop."""
+
+    rates = REFINEGAN_UPSAMPLE_RATES.get(int(sample_rate))
+    if rates is None:
+        raise ValueError(
+            f"RefineGAN has no stage layout for {sample_rate} Hz; known rates "
+            f"are {sorted(REFINEGAN_UPSAMPLE_RATES)}."
+        )
+    product = 1
+    for rate in rates:
+        product *= rate
+    if product != int(hop_length):
+        raise ValueError(
+            f"RefineGAN's stages {rates} multiply to {product}, but the hop "
+            f"length at {sample_rate} Hz is {hop_length}."
+        )
+    return rates
+
+
+DEFAULT_UPSAMPLE_WIDTH = (12, 12, 12, 48)
+DEFAULT_UPSAMPLE_ROLLOFF = (0.90, 0.90, 0.90, 0.99)
+DEFAULT_UPSAMPLE_BETA = (6.0, 6.0, 6.0, 9.0)
+
+
+def loop_rates(sample_rate: int, upsample_rates: "Sequence[int]"):
+    """The rate each of the two loops' activations runs at, in Hz.
+
+    Every pointwise nonlinearity folds about the Nyquist of its own rate, so
+    the rate decides whether its aliasing lands in the audible band.
+    ``antialias_stages`` indexes the residual blocks and cannot reach the
+    ``downs[]`` activations at all; ``antialias_rates`` is what does.
+    """
+
+    total = 1
+    for rate in upsample_rates:
+        total *= int(rate)
+    frame_rate = int(sample_rate) // total
+
+    down, rate = [], int(sample_rate)
+    for factor in reversed([int(r) for r in upsample_rates]):
+        down.append(rate)
+        rate //= factor
+
+    up, rate = [], frame_rate
+    for factor in [int(r) for r in upsample_rates]:
+        up.append(rate)
+        rate *= factor
+
+    return tuple(down), tuple(up)
 
 
 class ResBlock(nn.Module):
-    """
-    Residual block with multiple dilated convolutions.
+    """Residual block of dilated convolutions at multiple dilation rates.
 
-    This block applies a sequence of dilated convolutional layers with Leaky ReLU activation.
-    It's designed to capture information at different scales due to the varying dilation rates.
-
-    Args:
-        in_channels (int): Number of input channels.
-        out_channels (int): Number of output channels.
-        kernel_size (int, optional): Kernel size for the convolutional layers. Defaults to 7.
-        dilation (tuple[int], optional): Tuple of dilation rates for the convolutional layers. Defaults to (1, 3, 5).
-        leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation. Defaults to 0.2.
+    ``antialias`` wraps the activations in :class:`AntiAliasedActivation`.
     """
 
     def __init__(
@@ -31,10 +131,16 @@ class ResBlock(nn.Module):
         kernel_size: int = 7,
         dilation: tuple[int] = (1, 3, 5),
         leaky_relu_slope: float = 0.2,
+        antialias: str = "none",
     ):
         super().__init__()
 
         self.leaky_relu_slope = leaky_relu_slope
+        if antialias not in ANTIALIAS_MODES:
+            raise ValueError(
+                f"antialias must be one of {ANTIALIAS_MODES}, not {antialias!r}."
+            )
+        self.antialias = antialias
 
         self.convs1 = nn.ModuleList(
             [
@@ -70,31 +176,53 @@ class ResBlock(nn.Module):
         )
         self.convs2.apply(init_weights)
 
+        # ``"adain"`` covers the activations wrapping this block, not the ones
+        # inside it, so here it counts as ``"none"``.
+        count = {
+            "none": 0,
+            "adain": 0,
+            "half": len(self.convs1),
+            "full": 2 * len(self.convs1),
+        }[antialias]
+        # One instance each rather than one shared: they are stateless, but
+        # each caches an expanded per-channel kernel.
+        self.activations = nn.ModuleList(
+            [
+                AntiAliasedActivation(leaky_relu_slope=leaky_relu_slope)
+                for _ in range(count)
+            ]
+        )
+
     def forward(self, x: torch.Tensor):
+        index = 0
+        # ``"adain"`` wraps the activations *around* this block, not the ones
+        # inside it, so here it is ``"none"``.
+        wraps_pairs = self.antialias in ("half", "full")
         for c1, c2 in zip(self.convs1, self.convs2):
-            xt = F.leaky_relu(x, self.leaky_relu_slope)
+            if not wraps_pairs:
+                xt = F.leaky_relu(x, self.leaky_relu_slope)
+            else:
+                xt = self.activations[index](x)
+                index += 1
             xt = c1(xt)
-            xt = F.leaky_relu(xt, self.leaky_relu_slope)
+            if self.antialias == "full":
+                xt = self.activations[index](xt)
+                index += 1
+            else:
+                xt = F.leaky_relu(xt, self.leaky_relu_slope)
             xt = c2(xt)
             x = xt + x
 
         return x
 
-    def remove_weight_norm(self):
-        for c1, c2 in zip(self.convs1, self.convs2):
-            remove_weight_norm(c1)
-            remove_weight_norm(c2)
-
 
 class AdaIN(nn.Module):
-    """
-    Adaptive Instance Normalization layer.
+    """Noise-regularised activation, two per ``ResBlock``.
 
-    This layer applies a scaling factor to the input based on a learnable weight.
-
-    Args:
-        channels (int): Number of input channels.
-        leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation applied after scaling. Defaults to 0.2.
+    ``antialias`` follows the ``ParallelResBlock`` mode rather than being its
+    own flag: these six per stage are where the inharmonic lines come from, and
+    a setting that covered the conv pairs while leaving these raw was the
+    configuration that shipped with the artefact.
     """
 
     def __init__(
@@ -102,30 +230,35 @@ class AdaIN(nn.Module):
         *,
         channels: int,
         leaky_relu_slope: float = 0.2,
+        antialias: bool = False,
     ):
         super().__init__()
 
         self.weight = nn.Parameter(torch.ones(channels) * 1e-4)
+        self.antialias = bool(antialias)
         # safe to use in-place as it is used on a new x+gaussian tensor
-        self.activation = nn.LeakyReLU(leaky_relu_slope)
+        self.activation = (
+            AntiAliasedActivation(leaky_relu_slope=leaky_relu_slope)
+            if self.antialias
+            else nn.LeakyReLU(leaky_relu_slope)
+        )
 
     def forward(self, x: torch.Tensor):
+        # The noise is a training-time regulariser and pure cost at
+        # inference: this runs six times per stage, and dropping it in eval
+        # took the generator from 418 ms to 313 on CPU at batch 4.  Inference
+        # stays stochastic anyway -- the source draws its own noise, and that
+        # one *is* the unvoiced content.
+        if not self.training:
+            return self.activation(x)
+
         gaussian = torch.randn_like(x) * self.weight[None, :, None]
 
         return self.activation(x + gaussian)
 
 
 class ParallelResBlock(nn.Module):
-    """
-    Parallel residual block that applies multiple residual blocks with different kernel sizes in parallel.
-
-    Args:
-        in_channels (int): Number of input channels.
-        out_channels (int): Number of output channels.
-        kernel_sizes (tuple[int], optional): Tuple of kernel sizes for the parallel residual blocks. Defaults to (3, 7, 11).
-        dilation (tuple[int], optional): Tuple of dilation rates for the convolutional layers within the residual blocks. Defaults to (1, 3, 5).
-        leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation. Defaults to 0.2.
-    """
+    """Runs several ResBlocks (different kernel sizes) in parallel and averages them."""
 
     def __init__(
         self,
@@ -135,11 +268,13 @@ class ParallelResBlock(nn.Module):
         kernel_sizes: tuple[int] = (3, 7, 11),
         dilation: tuple[int] = (1, 3, 5),
         leaky_relu_slope: float = 0.2,
+        antialias: str = "none",
     ):
         super().__init__()
 
         self.in_channels = in_channels
         self.out_channels = out_channels
+        self.antialias = antialias
 
         self.input_conv = nn.Conv1d(
             in_channels=in_channels,
@@ -154,14 +289,23 @@ class ParallelResBlock(nn.Module):
         self.blocks = nn.ModuleList(
             [
                 nn.Sequential(
-                    AdaIN(channels=out_channels),
+                    AdaIN(
+                        channels=out_channels,
+                        leaky_relu_slope=leaky_relu_slope,
+                        antialias=antialias != "none",
+                    ),
                     ResBlock(
                         out_channels,
                         kernel_size=kernel_size,
                         dilation=dilation,
                         leaky_relu_slope=leaky_relu_slope,
+                        antialias=antialias,
                     ),
-                    AdaIN(channels=out_channels),
+                    AdaIN(
+                        channels=out_channels,
+                        leaky_relu_slope=leaky_relu_slope,
+                        antialias=antialias != "none",
+                    ),
                 )
                 for kernel_size in kernel_sizes
             ]
@@ -171,25 +315,15 @@ class ParallelResBlock(nn.Module):
         x = self.input_conv(x)
         return torch.stack([block(x) for block in self.blocks], dim=0).mean(dim=0)
 
-    def remove_weight_norm(self):
-        remove_weight_norm(self.input_conv)
-        for block in self.blocks:
-            block[1].remove_weight_norm()
-
 
 class SineGenerator(nn.Module):
-    """
-    Definition of sine generator
+    """Sine + additive-noise harmonic excitation source.
 
-    Generates sine waveforms with optional harmonics and additive noise.
-    Can be used to create harmonic noise source for neural vocoders.
-
-    Args:
-        samp_rate (int): Sampling rate in Hz.
-        harmonic_num (int): Number of harmonic overtones (default 0).
-        sine_amp (float): Amplitude of sine-waveform (default 0.1).
-        noise_std (float): Standard deviation of Gaussian noise (default 0.003).
-        voiced_threshold (float): F0 threshold for voiced/unvoiced classification (default 0).
+    The only one left.  ``comb`` and ``bank`` were removed on 2026-09-03: the
+    inharmonic lines they were being traded against turned out to be the
+    ``AdaIN`` activations, and on a fixed trunk the bank had been *negative*
+    against the sine once ``source_gain`` was on (multi-scale mel 1.7357 ->
+    1.8057 for the bank, 1.9714 -> 1.7418 for the sine).
     """
 
     def __init__(
@@ -214,27 +348,22 @@ class SineGenerator(nn.Module):
         )
 
     def _f02uv(self, f0):
-        # generate uv signal
         uv = torch.ones_like(f0)
         uv = uv * (f0 > self.voiced_threshold)
         return uv
 
     def _f02sine(self, f0_values):
-        """f0_values: (batchsize, length, dim)
-        where dim indicates fundamental tone and overtones
-        """
-        # convert to F0 in rad. The integer part n can be ignored
-        # because 2 * np.pi * n doesn't affect phase
+        """f0_values: (batchsize, length, dim), dim = fundamental + overtones."""
+        # rad_values is F0 in rad mod 1 (the integer cycle count doesn't affect phase)
         rad_values = (f0_values / self.sampling_rate) % 1
 
-        # initial phase noise (no noise for fundamental component)
+        # random initial phase per harmonic, none for the fundamental
         rand_ini = torch.rand(
             f0_values.shape[0], f0_values.shape[2], device=f0_values.device
         )
         rand_ini[:, 0] = 0
         rad_values[:, 0, :] = rad_values[:, 0, :] + rand_ini
 
-        # instantanouse phase sine[t] = sin(2*pi \sum_i=1 ^{t} rad)
         tmp_over_one = torch.cumsum(rad_values, 1) % 1
         tmp_over_one_idx = (tmp_over_one[:, 1:, :] - tmp_over_one[:, :-1, :]) < 0
         cumsum_shift = torch.zeros_like(rad_values)
@@ -244,6 +373,11 @@ class SineGenerator(nn.Module):
 
         return sines
 
+    # Kept out of the compiled graph: ``_f02sine`` is a cumsum over the sample
+    # axis, which Inductor lowers to a ``SplitScan`` whose codegen raises.
+    # Everything up to ``merge`` runs under ``no_grad`` and is a pure function
+    # of f0, so excluding it costs no fusion.
+    @torch.compiler.disable
     def forward(self, f0):
         with torch.no_grad():
             f0_buf = torch.zeros(f0.shape[0], f0.shape[1], self.dim, device=f0.device)
@@ -267,63 +401,149 @@ class SineGenerator(nn.Module):
 
 class RefineGANGenerator(nn.Module):
     """
-    RefineGAN generator for audio synthesis.
-
-    This generator uses a combination of downsampling, residual blocks, and parallel residual blocks
-    to refine an input mel-spectrogram and fundamental frequency (F0) into an audio waveform.
-    It can also incorporate global conditioning.
+    RefineGAN generator: downsamples/upchannels the excitation source, fuses it
+    with the mel input, and upsamples through parallel residual blocks.
 
     Args:
-        sample_rate (int, optional): Sampling rate of the audio. Defaults to 44100.
-        downsample_rates (tuple[int], optional): Downsampling rates for the downsampling blocks. Defaults to (2, 2, 8, 8).
-        upsample_rates (tuple[int], optional): Upsampling rates for the upsampling blocks. Defaults to (8, 8, 2, 2).
-        leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation. Defaults to 0.2.
-        num_mels (int, optional): Number of mel-frequency bins in the input mel-spectrogram. Defaults to 128.
-        start_channels (int, optional): Number of channels in the initial convolutional layer. Defaults to 16.
-        gin_channels (int, optional): Number of channels for the global conditioning input. Defaults to 256.
-        checkpointing (bool, optional): Whether to use checkpointing for memory efficiency. Defaults to False.
+        source_gain (bool, optional): Scale the excitation by an intensity
+            envelope projected from the conditioning, as RefineGAN's paper
+            does with the mel. Defaults to False.
+        antialias_rates (Sequence[int], optional): Which of the two loops'
+            activation rates, in Hz, get anti-aliased activations -- see
+            ``loop_rates``. This is the knob that matters: it selects by the
+            rate a nonlinearity actually runs at, so it can reach the
+            ``downs[]`` activation at 8 kHz where the fold at ``8000 - k*f0``
+            is created. Protecting every rate the decoder has costs 12% of the
+            step against raw activations; the shipped config does that.
+            Defaults to none.
+        antialias_stages (Sequence[int], optional): Which upsampling stages get
+            anti-aliased activations in their residual blocks. Defaults to none,
+            and the shipped config leaves it there: it addresses the residual
+            blocks' *internal* activations, never the loops', it did nothing
+            measurable against the mirroring, and at ``"full"`` on one stage it
+            cost 47 ms and 795 MiB at batch 8 -- more than protecting all five
+            loop rates with a filter three times as long.
+        antialias (str, optional): ``"none"``, ``"half"`` or ``"full"`` -- how
+            many of each conv pair's two activations are anti-aliased in those
+            stages. Defaults to ``"half"``, and is forced to ``"none"`` when
+            ``antialias_stages`` is empty.
     """
 
     def __init__(
         self,
         *,
-        sample_rate: int = 44100,
-        downsample_rates: tuple[int] = (2, 2, 8, 8),  # unused
+        sample_rate: int = 32000,
         upsample_rates: tuple[int] = (8, 8, 2, 2),
         leaky_relu_slope: float = 0.2,
         num_mels: int = 128,
-        start_channels: int = 16,  # unused
+        start_channels: int = 16,
         gin_channels: int = 256,
         checkpointing: bool = False,
         upsample_initial_channel=512,
+        filter_width: "int | Sequence[int]" = DEFAULT_UPSAMPLE_WIDTH,
+        rolloff: "float | Sequence[float]" = DEFAULT_UPSAMPLE_ROLLOFF,
+        filter_beta: "float | Sequence[float]" = DEFAULT_UPSAMPLE_BETA,
+        antialias_stages: "Sequence[int] | None" = None,
+        antialias: str = "adain",
+        source_gain: bool = True,
+        antialias_rates: "Sequence[int] | None" = None,
     ):
         super().__init__()
+        # No config keys for any of this in Applio, so the defaults *are* the
+        # shipped configuration -- the one the A/B renders settled.  Absent
+        # stages means the two that run at 2 and 8 kHz, which for the four
+        # stages every supported rate uses is [1, 2].
+        if antialias_stages is None:
+            antialias_stages = [len(upsample_rates) - 3, len(upsample_rates) - 2]
         self.upsample_rates = upsample_rates
         self.leaky_relu_slope = leaky_relu_slope
         self.checkpointing = checkpointing
 
-        self.upp = np.prod(upsample_rates)
-        self.m_source = SineGenerator(sample_rate)
-
-        # expanded f0 sinegen -> match mel_conv
-        # (8, 1, 17280) -> (8, 16, 17280)
-        self.pre_conv = weight_norm(
-            nn.Conv1d(
-                1,
-                16,
-                7,
-                1,
-                padding=3,
+        # The down path doubles ``start_channels`` once per stage and the up
+        # path concatenates ``downs[]`` into ``channels + channels // 4``, so
+        # the two only meet at one value.  It was a config knob that produced a
+        # shape error deep in ``forward`` for every other value; this says so
+        # at construction instead.
+        required = upsample_initial_channel // (4 * 2 ** (len(upsample_rates) - 1))
+        if int(start_channels) != required:
+            raise ValueError(
+                f"start_channels must be {required} for "
+                f"upsample_initial_channel={upsample_initial_channel} over "
+                f"{len(upsample_rates)} stages, not {start_channels}: the down "
+                f"path doubles it per stage and the up path expects the skip to "
+                f"be a quarter of the trunk."
             )
+
+        # Scalar or one-per-stage, normalised in one place -- see
+        # ``DEFAULT_UPSAMPLE_WIDTH`` for why these are a schedule and not a
+        # single number.  ``filter_schedule`` is what refuses a list of the
+        # wrong length, which is the only way to get this silently wrong.
+        count = len(upsample_rates)
+        self.filter_width = filter_schedule(filter_width, count, "filter_width", 1)
+        self.rolloff = filter_schedule(rolloff, count, "rolloff", 0.0)
+        self.filter_beta = filter_schedule(filter_beta, count, "filter_beta", 0.0)
+        if any(value > 1.0 for value in self.rolloff):
+            raise ValueError(
+                f"rolloff is a fraction of the stage's Nyquist and cannot "
+                f"exceed 1.0, received {self.rolloff}."
+            )
+
+        stages = () if antialias_stages is None else tuple(int(s) for s in antialias_stages)
+        if any(s < 0 or s >= len(upsample_rates) for s in stages):
+            raise ValueError(
+                f"antialias_stages must index the {len(upsample_rates)} "
+                f"upsampling stages, received {stages}."
+            )
+        self.antialias_stages = tuple(sorted(set(stages)))
+        self.antialias = antialias if self.antialias_stages else "none"
+
+        # Anti-aliasing selected by rate rather than by block: this is the
+        # only thing that reaches the ``downs[]`` activations.
+        self.down_rates, self.up_rates = loop_rates(sample_rate, upsample_rates)
+        protected = {int(r) for r in (antialias_rates or ())}
+        unknown = protected - set(self.down_rates) - set(self.up_rates)
+        if unknown:
+            raise ValueError(
+                f"antialias_rates {sorted(unknown)} match no activation rate; "
+                f"this decoder runs its down loop at {self.down_rates} and its "
+                f"up loop at {self.up_rates} Hz."
+            )
+        self.antialias_rates = tuple(sorted(protected))
+        # ``Identity`` where a rate is not protected, so the forward stays a
+        # plain index and each site keeps its own kernel cache.
+        self.down_activations = nn.ModuleList(
+            [
+                AntiAliasedActivation(leaky_relu_slope=leaky_relu_slope)
+                if rate in protected
+                else nn.Identity()
+                for rate in self.down_rates
+            ]
+        )
+        self.up_activations = nn.ModuleList(
+            [
+                AntiAliasedActivation(leaky_relu_slope=leaky_relu_slope)
+                if rate in protected
+                else nn.Identity()
+                for rate in self.up_rates
+            ]
         )
 
-        # (8,  16, 17280) = 4th upscale
-        # (8,  32, 8640)  = 3rd upscale
-        # (8,  64, 4320)  = 2nd upscale
-        # (8, 128, 432)   = 1st upscale
-        # (8, 256, 36) merged to mel
+        # ``int``, not the ``np.int64`` ``np.prod`` returns: Dynamo wraps a
+        # numpy scalar as a CPU tensor, and one CPU node makes Inductor emit a
+        # C++ kernel, which needs a compiler that Windows may not have.
+        self.upp = int(np.prod(upsample_rates))
 
-        # f0 downsampling and upchanneling
+        # Sine is the only source; the state dict is what a cross-load would
+        # silently accept, so nothing else may be built here.
+        self.source_type = "sine"
+        self.m_source = SineGenerator(sample_rate)
+
+        # ``start_channels``, not a literal 16: the down path below is built
+        # from it, so a hardcoded width here is a mismatch waiting to happen.
+        self.pre_conv = weight_norm(
+            nn.Conv1d(1, start_channels, 7, 1, padding=3)
+        )
+
         channels = start_channels
         size = self.upp
         self.downsample_blocks = nn.ModuleList([])
@@ -341,7 +561,6 @@ class RefineGANGenerator(nn.Module):
             )
             channels = new_channels
 
-        # mel handling
         channels = upsample_initial_channel
 
         self.mel_conv = weight_norm(
@@ -359,13 +578,53 @@ class RefineGANGenerator(nn.Module):
         if gin_channels != 0:
             self.cond = nn.Conv1d(256, channels // 2, 1)
 
+        # The paper scales its template by intensity read off the mel; this
+        # decoder is handed ``z``, from which the log intensity is recoverable.
+        # Projecting the source's envelope from the conditioning also puts
+        # ``z`` back on the critical path for harmonic content: with a flat,
+        # f0-driven source the trunk gets its harmonics without consulting
+        # ``z`` at all.  193 parameters.
+        self.has_source_gain = bool(source_gain)
+        if self.has_source_gain:
+            self.source_gain = nn.Conv1d(num_mels, 1, 1)
+            # Identity at initialisation, so a run that switches this on
+            # starts from exactly the excitation it had before.
+            nn.init.zeros_(self.source_gain.weight)
+            nn.init.constant_(self.source_gain.bias, 0.5413248546129181)
+
+            # The gain multiplies the excitation, so a residual image in it
+            # stamps a sideband onto every harmonic -- hence a filtered
+            # upsample rather than ``F.interpolate``.
+            self.source_gain_ups = nn.ModuleList(
+                [
+                    AntiAliasedUpsample1d(
+                        rate,
+                        filter_width=self.filter_width[stage],
+                        rolloff=self.rolloff[stage],
+                        filter_beta=self.filter_beta[stage],
+                    )
+                    for stage, rate in enumerate(upsample_rates)
+                ]
+            )
+
         self.upsample_blocks = nn.ModuleList([])
         self.upsample_conv_blocks = nn.ModuleList([])
 
-        for rate in upsample_rates:
+        for stage, rate in enumerate(upsample_rates):
             new_channels = channels // 2
 
-            self.upsample_blocks.append(nn.Upsample(scale_factor=rate, mode="linear"))
+                # A windowed sinc, not ``nn.Upsample(mode="linear")``: a
+            # triangular kernel rejects the first image by 1.7-9.6 dB, which
+            # stamps the frame grid into the waveform as a mirrored partial
+            # either side of every harmonic.
+            self.upsample_blocks.append(
+                AntiAliasedUpsample1d(
+                    rate,
+                    filter_width=self.filter_width[stage],
+                    rolloff=self.rolloff[stage],
+                    filter_beta=self.filter_beta[stage],
+                )
+            )
 
             self.upsample_conv_blocks.append(
                 ParallelResBlock(
@@ -374,6 +633,11 @@ class RefineGANGenerator(nn.Module):
                     kernel_sizes=(3, 7, 11),
                     dilation=(1, 3, 5),
                     leaky_relu_slope=leaky_relu_slope,
+                    antialias=(
+                        self.antialias
+                        if stage in self.antialias_stages
+                        else "none"
+                    ),
                 )
             )
 
@@ -384,45 +648,81 @@ class RefineGANGenerator(nn.Module):
         )
         self.conv_post.apply(init_weights)
 
+    # Kept out of the compiled graph: ``torchaudio.functional.resample``
+    # builds its kernel from Python ints, which Inductor lowers to a CPU
+    # kernel needing a C++ compiler.  Not replaced with a ``FixedLowPass1d``,
+    # because torchaudio's filter is 385/953 taps against 73/169 and its
+    # stopband is 135-156 dB against 68-78.
+    @torch.compiler.disable
+    def _decimate(self, x: torch.Tensor, orig_freq: int, new_freq: int):
+        return torchaudio.functional.resample(
+            x.contiguous(),
+            orig_freq=orig_freq,
+            new_freq=new_freq,
+            lowpass_filter_width=64,
+            rolloff=0.9475937167399596,
+            resampling_method="sinc_interp_kaiser",
+            beta=14.769656459379492,
+        )
+
+    def _apply_source_gain(self, har_source: torch.Tensor, mel: torch.Tensor):
+        """Scale the excitation by an intensity envelope read off ``mel``.
+
+        ``mel`` is this decoder's conditioning -- ``z``, despite the name -- at
+        the frame rate; ``har_source`` is (batch, 1, frames * upp).
+        """
+
+        if not self.has_source_gain:
+            return har_source
+        gain = F.softplus(self.source_gain(mel))
+        for ups in self.source_gain_ups:
+            gain = ups(gain)
+        length = har_source.shape[-1]
+        if gain.shape[-1] > length:
+            gain = gain[..., :length]
+        elif gain.shape[-1] < length:
+            gain = F.pad(gain, (0, length - gain.shape[-1]), mode="replicate")
+        return har_source * gain
+
     def forward(self, mel: torch.Tensor, f0: torch.Tensor, g: torch.Tensor = None):
         f0_size = mel.shape[-1]
-        # change f0 helper to full size
         f0 = F.interpolate(f0.unsqueeze(1), size=f0_size * self.upp, mode="linear")
-        # get f0 turned into sines harmonics
         har_source = self.m_source(f0.transpose(1, 2)).transpose(1, 2)
-        # prepare for fusion to mel
+        har_source = self._apply_source_gain(har_source, mel)
         x = self.pre_conv(har_source)
-        # downsampled/upchanneled versions for each upscale
         downs = []
-        for block, (old_size, new_size) in zip(self.downsample_blocks, self.df0):
-            x = F.leaky_relu(x, self.leaky_relu_slope)
-            downs.append(x)
-            # attempt to cancel spectral aliasing
-            x = torchaudio.functional.resample(
-                x.contiguous(),
-                orig_freq=int(f0_size * old_size),
-                new_freq=int(f0_size * new_size),
-                lowpass_filter_width=64,
-                rolloff=0.9475937167399596,
-                resampling_method="sinc_interp_kaiser",
-                beta=14.769656459379492,
+        for index, (block, (old_size, new_size)) in enumerate(
+            zip(self.downsample_blocks, self.df0)
+        ):
+            activation = self.down_activations[index]
+            x = (
+                F.leaky_relu(x, self.leaky_relu_slope)
+                if isinstance(activation, nn.Identity)
+                else activation(x)
             )
+            downs.append(x)
+            x = self._decimate(x, int(f0_size * old_size), int(f0_size * new_size))
             x = block(x)
 
-        # expanding spectrogram from 192 to 256 channels
         mel = self.mel_conv(mel)
         if g is not None:
-            # adding expanded speaker embedding
             mel = mel + self.cond(g)
 
         x = torch.cat([mel, x], dim=1)
 
-        for ups, res, down in zip(
-            self.upsample_blocks,
-            self.upsample_conv_blocks,
-            reversed(downs),
+        for index, (ups, res, down) in enumerate(
+            zip(
+                self.upsample_blocks,
+                self.upsample_conv_blocks,
+                reversed(downs),
+            )
         ):
-            x = F.leaky_relu(x, self.leaky_relu_slope)
+            activation = self.up_activations[index]
+            x = (
+                F.leaky_relu(x, self.leaky_relu_slope)
+                if isinstance(activation, nn.Identity)
+                else activation(x)
+            )
 
             if self.training and self.checkpointing:
                 x = checkpoint(ups, x, use_reentrant=False)
@@ -439,13 +739,16 @@ class RefineGANGenerator(nn.Module):
 
         return x
 
-    def remove_weight_norm(self):
-        remove_weight_norm(self.pre_conv)
-        remove_weight_norm(self.mel_conv)
-        remove_weight_norm(self.conv_post)
+    def remove_weight_norm(self) -> None:
+        """Fold every weight norm back into its weight, by walking the modules.
 
-        for block in self.downsample_blocks:
-            block.remove_weight_norm()
+        Walking rather than listing layers by name: a hand-written list goes
+        stale the moment one is added, and nothing catches it because
+        ``Synthesizer`` walks the decoder itself and never calls this.
+        """
 
-        for block in self.upsample_conv_blocks:
-            block.remove_weight_norm()
+        for module in list(self.modules()):
+            if hasattr(module, "parametrizations") and hasattr(
+                module.parametrizations, "weight"
+            ):
+                remove_parametrizations(module, "weight", leave_parametrized=True)

@@ -58,6 +58,23 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
     model_state_dict = (
         model.module.state_dict() if hasattr(model, "module") else model.state_dict()
     )
+
+    # A legacy RefineGAN checkpoint is loadable for inference, not for
+    # training.  The merge below is ``.get(k, v)``, so without this the old
+    # weights would load into the fixed decoder, ``source_gain`` would stay at
+    # its init, and the run would train on from a signal path the weights were
+    # never fitted to.
+    marker = "dec.source_gain.weight"
+    if marker in model_state_dict and marker not in checkpoint_dict["model"]:
+        raise ValueError(
+            f"'{checkpoint_path}' is a RefineGAN checkpoint from before the "
+            f"decoder fixes: it has no '{marker}'. Those weights were fitted "
+            f"to a different signal path (ascending stage rates, a linear "
+            f"interpolation upsampler, raw AdaIN activations) and cannot be "
+            f"resumed or fine-tuned here -- they still render in inference. "
+            f"Start a fresh run, or pick a pretrained model trained with the "
+            f"current decoder."
+        )
     new_state_dict = {
         k: checkpoint_dict["model"].get(k, v) for k, v in model_state_dict.items()
     }

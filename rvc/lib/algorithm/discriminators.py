@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn.functional as F
 from torch.utils.checkpoint import checkpoint
@@ -5,6 +7,57 @@ from torch.nn.utils.parametrizations import spectral_norm, weight_norm
 
 from rvc.lib.algorithm.commons import get_padding
 from rvc.lib.algorithm.residuals import LRELU_SLOPE
+from rvc.lib.algorithm.univhd import UnivHDDiscriminator
+
+
+#: The rate ``[2, 3, 5, 7, 11]`` was chosen at.  A period-``p`` branch folds
+#: onto a grid at ``sr / p`` Hz and its receptive field spans ``647 * p / sr``
+#: seconds, so both meanings of a period hold only if ``p`` scales with the
+#: rate.  Carrying the set unchanged empties the *slow* end -- at 32 kHz the
+#: longest branch drops from 323 ms to 222, and pitch structure lives there.
+REFERENCE_SAMPLE_RATE = 22050
+
+#: ``v3``'s periods at the reference rate, before scaling.  This is upstream's
+#: ``[2, 3, 5, 7, 11]`` without its longest: the spectrogram branches are the
+#: only part of this discriminator with resolution above 10 kHz, and a longer
+#: period folds at a lower rate, so it is the branch least able to say anything
+#: up there -- and it costs 8.2 M parameters, a fifth of the whole thing.
+V3_BASE_PERIODS = (2, 3, 5, 7)
+
+
+def rate_scaled_periods(periods, sample_rate, reference_rate=REFERENCE_SAMPLE_RATE):
+    """The period set that keeps the branches' time scales at another rate.
+
+    Targets are rounded to the nearest unused prime in log space -- prime
+    because two periods sharing a factor fold onto overlapping samples and
+    become one branch at two branches' cost, log because the quantity preserved
+    is a ratio.  ``reference_rate`` returns the input unchanged, which makes
+    this a derivation rather than a new design.
+
+    A period leaves no trace in a parameter shape, so a checkpoint trained with
+    one set loads into another without a murmur.
+    """
+
+    def is_prime(value):
+        return value > 1 and all(value % f for f in range(2, int(value**0.5) + 1))
+
+    candidates = [value for value in range(2, 512) if is_prime(value)]
+    used, scaled = set(), []
+    for period in periods:
+        target = int(period) * float(sample_rate) / float(reference_rate)
+        best = min(
+            (value for value in candidates if value not in used),
+            key=lambda value: abs(math.log(value / target)),
+        )
+        used.add(best)
+        scaled.append(best)
+    return tuple(sorted(scaled))
+
+
+#: The three multi-resolution spectrogram branches.  The 512-point branch's
+#: 50-sample hop is what reads frame-rate modulation the other two average
+#: away.
+V3_RESOLUTIONS = [[1024, 120, 600], [2048, 240, 1200], [512, 50, 240]]
 
 
 class MultiPeriodDiscriminator(torch.nn.Module):
@@ -26,9 +79,11 @@ class MultiPeriodDiscriminator(torch.nn.Module):
         use_spectral_norm: bool = False,
         checkpointing: bool = False,
         version: str = "v2",
+        sample_rate: int = 32000,
     ):
         super().__init__()
 
+        univhd = False
         if version == "v1":
             periods = [2, 3, 5, 7, 11, 17]
             resolutions = []
@@ -36,9 +91,16 @@ class MultiPeriodDiscriminator(torch.nn.Module):
             periods = [2, 3, 5, 7, 11, 17, 23, 37]
             resolutions = []
         elif version == "v3":
-            periods = [2, 3, 5, 7, 11]
-            resolutions = [[1024, 120, 600], [2048, 240, 1200], [512, 50, 240]]
+            # Rate-scaled periods, plus the harmonic branch: 0.33 M
+            # parameters against this discriminator's 39 M, and 8% of the step.
+            periods = rate_scaled_periods(V3_BASE_PERIODS, sample_rate)
+            resolutions = V3_RESOLUTIONS
+            univhd = True
+        else:
+            raise ValueError(f"Unknown discriminator version {version!r}.")
 
+        self.version = version
+        self.periods = list(periods)
         self.checkpointing = checkpointing
         self.discriminators = torch.nn.ModuleList(
             [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
@@ -47,6 +109,16 @@ class MultiPeriodDiscriminator(torch.nn.Module):
                 DiscriminatorR(r, use_spectral_norm=use_spectral_norm)
                 for r in resolutions
             ]
+            + (
+                [
+                    UnivHDDiscriminator(
+                        sample_rate=sample_rate,
+                        use_spectral_norm=use_spectral_norm,
+                    )
+                ]
+                if univhd
+                else []
+            )
         )
 
     def forward(self, y, y_hat):

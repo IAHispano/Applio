@@ -28,7 +28,10 @@ sys.path.append(now_dir)
 from rvc.infer.pipeline import Pipeline as VC
 from rvc.lib.utils import load_audio_infer, load_embedding
 from rvc.lib.tools.split_audio import process_audio, merge_audio
-from rvc.lib.algorithm.synthesizers import Synthesizer
+from rvc.lib.algorithm.synthesizers import (
+    Synthesizer,
+    refinegan_checkpoint_is_legacy,
+)
 from rvc.configs.config import Config
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -505,11 +508,18 @@ class VoiceConverter:
             self.version = self.cpt.get("version", "v1")
             self.text_enc_hidden_dim = 768 if self.version == "v2" else 256
             self.vocoder = self.cpt.get("vocoder", "HiFi-GAN")
+            # ``strict=False`` below would take a legacy RefineGAN checkpoint
+            # into the fixed decoder and quietly render the wrong signal; the
+            # marker key is the only thing that separates them.
             self.net_g = Synthesizer(
                 *self.cpt["config"],
                 use_f0=self.use_f0,
                 text_enc_hidden_dim=self.text_enc_hidden_dim,
                 vocoder=self.vocoder,
+                refinegan_legacy=(
+                    self.vocoder == "RefineGAN"
+                    and refinegan_checkpoint_is_legacy(self.cpt["weight"])
+                ),
             )
             del self.net_g.enc_q
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)

@@ -14,7 +14,10 @@ sys.path.append(now_dir)
 from rvc.realtime.utils.torch import circular_write, AudioProcessorTorch, IndexWrapper
 from rvc.configs.config import Config
 from rvc.infer.pipeline import Autotune
-from rvc.lib.algorithm.synthesizers import Synthesizer
+from rvc.lib.algorithm.synthesizers import (
+    Synthesizer,
+    refinegan_checkpoint_is_legacy,
+)
 from rvc.lib.predictors.f0 import FCPE, RMVPE
 from rvc.lib.utils import load_embedding, HubertModelWithFinalProj
 
@@ -70,6 +73,10 @@ class RealtimeVoiceConverter:
                 use_f0=self.use_f0,
                 text_enc_hidden_dim=self.text_enc_hidden_dim,
                 vocoder=self.vocoder,
+                refinegan_legacy=(
+                    self.vocoder == "RefineGAN"
+                    and refinegan_checkpoint_is_legacy(self.cpt["weight"])
+                ),
             )
 
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)

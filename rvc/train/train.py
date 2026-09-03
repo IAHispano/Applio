@@ -401,6 +401,9 @@ def run(
         config.model.use_spectral_norm,
         checkpointing=checkpointing,
         version=disc_version,
+        # v3's periods are frequencies, so they are derived from the rate
+        # rather than reused from the 44.1 kHz set they were chosen at.
+        sample_rate=config.data.sample_rate,
     )
 
     if torch.cuda.is_available():
