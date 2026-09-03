@@ -466,11 +466,26 @@ class RefineGAN2Generator(nn.Module):
     ):
         super().__init__()
         # No config keys for any of this in Applio, so the defaults *are* the
-        # shipped configuration -- the one the A/B renders settled.  Absent
-        # stages means the two that run at 2 and 8 kHz, which for the four
-        # stages every supported rate uses is [1, 2].
+        # shipped configuration.  Absent stages means the two that run at 2 and
+        # 8 kHz at 32 kHz -- indices [1, 2] for the four stages every supported
+        # rate uses.
         if antialias_stages is None:
             antialias_stages = [len(upsample_rates) - 3, len(upsample_rates) - 2]
+        # Absent rates means the *output* rate of each protected stage, so the
+        # two loop activations either side of every anti-aliased AdaIN are
+        # covered too.  Those six AdaIN alone were enough to clear the lines
+        # from a decoder that had already converged without any anti-aliasing;
+        # they were not enough for a run trained with them from step zero,
+        # which fits a different signal path.  10 ms of the decoder step.
+        if antialias_rates is None:
+            frame_rate = int(sample_rate)
+            for rate in upsample_rates:
+                frame_rate //= int(rate)
+            stage_output, antialias_rates = frame_rate, []
+            for stage, rate in enumerate(upsample_rates):
+                stage_output *= int(rate)
+                if stage in antialias_stages:
+                    antialias_rates.append(stage_output)
         self.upsample_rates = upsample_rates
         self.leaky_relu_slope = leaky_relu_slope
         self.checkpointing = checkpointing

@@ -78,7 +78,9 @@ if vocoder == "RefineGAN":
     multiscale_mel_loss = True
 elif vocoder == "RefineGAN2":
     disc_version = "v4"
-    multiscale_mel_loss = True
+    # Single-scale, unlike RefineGAN: the multi-scale loss averages over
+    # resolutions, and this decoder's remaining defects are narrow-band.
+    multiscale_mel_loss = False
 
 current_dir = os.getcwd()
 
