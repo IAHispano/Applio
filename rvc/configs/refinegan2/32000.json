@@ -1,0 +1,7 @@
+{
+  "model": {
+    "refinegan2_antialias": "adain",
+    "refinegan2_antialias_stages": [0, 1, 2],
+    "refinegan2_antialias_rates": [100, 500, 2000, 8000, 32000]
+  }
+}

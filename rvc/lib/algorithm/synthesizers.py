@@ -11,6 +11,7 @@ from rvc.lib.algorithm.generators.refinegan2 import (
 from rvc.lib.algorithm.commons import slice_segments, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock
 from rvc.lib.algorithm.encoders import TextEncoder, PosteriorEncoder
+from rvc.configs.config import vocoder_config
 
 
 class Synthesizer(torch.nn.Module):
@@ -115,6 +116,12 @@ class Synthesizer(torch.nn.Module):
                 hop_length = 1
                 for rate in upsample_rates:
                     hop_length *= int(rate)
+                # The anti-aliasing ships per sample rate in
+                # ``rvc/configs/refinegan2/``: it selects sites by the rate they
+                # run at, so it cannot be one set of numbers for every rate, and
+                # it leaves no trace in the weights -- which is why inference
+                # reads it from the same place training does.
+                settings = vocoder_config(vocoder, sr)
                 self.dec = RefineGAN2Generator(
                     sample_rate=sr,
                     upsample_rates=upsample_rates_for(sr, hop_length),
@@ -122,6 +129,9 @@ class Synthesizer(torch.nn.Module):
                     upsample_initial_channel=upsample_initial_channel,
                     gin_channels=gin_channels,
                     checkpointing=checkpointing,
+                    antialias=settings["refinegan2_antialias"],
+                    antialias_stages=settings["refinegan2_antialias_stages"],
+                    antialias_rates=settings["refinegan2_antialias_rates"],
                 )
             else:
                 self.dec = HiFiGANNSFGenerator(

@@ -416,8 +416,10 @@ class RefineGAN2Generator(nn.Module):
       triangular kernel rejects the first image by only 1.7-9.6 dB.
     * The upsampler crops its own group delay, so the trunk is not delayed
       against the skip connections it is summed with.
-    * Anti-aliased ``AdaIN`` activations at the two stages running at 2 and
-      8 kHz, which is where the inharmonic lines came from.
+    * Anti-aliased ``AdaIN`` activations, which is where the inharmonic lines
+      came from, at every stage but the one running at the output rate.
+    * Anti-aliased loop activations at every rate the two loops run at, and at
+      the site before ``conv_post`` that neither option used to reach.
     * An excitation gain projected from the conditioning.
 
     Args:
@@ -429,20 +431,19 @@ class RefineGAN2Generator(nn.Module):
             ``loop_rates``. This is the knob that matters: it selects by the
             rate a nonlinearity actually runs at, so it can reach the
             ``downs[]`` activation at 8 kHz where the fold at ``8000 - k*f0``
-            is created. Protecting every rate the decoder has costs 12% of the
-            step against raw activations; the shipped config does that.
-            Defaults to none.
+            is created, and naming ``sample_rate`` also covers the activation
+            before ``conv_post``. Protecting every rate the decoder has costs
+            12% of the step against raw activations. Defaults to the output
+            rate of each stage in ``antialias_stages``.
         antialias_stages (Sequence[int], optional): Which upsampling stages get
-            anti-aliased activations in their residual blocks. Defaults to none,
-            and the shipped config leaves it there: it addresses the residual
-            blocks' *internal* activations, never the loops', it did nothing
-            measurable against the mirroring, and at ``"full"`` on one stage it
-            cost 47 ms and 795 MiB at batch 8 -- more than protecting all five
-            loop rates with a filter three times as long.
-        antialias (str, optional): ``"none"``, ``"half"`` or ``"full"`` -- how
-            many of each conv pair's two activations are anti-aliased in those
-            stages. Defaults to ``"half"``, and is forced to ``"none"`` when
-            ``antialias_stages`` is empty.
+            anti-aliased activations, in their ``AdaIN`` at ``"adain"`` and in
+            their residual blocks above it. Defaults to every stage but the
+            last, which is the one whose six ``AdaIN`` run at the output rate.
+        antialias (str, optional): ``"none"``, ``"adain"``, ``"half"`` or
+            ``"full"`` -- how much of each stage is covered, in that order.
+            Defaults to ``"adain"``: the conv pairs' 18 activations per stage
+            do nothing the 6 ``AdaIN`` are not already doing and cost 2.4x the
+            step. Forced to ``"none"`` when ``antialias_stages`` is empty.
     """
 
     def __init__(
@@ -465,27 +466,21 @@ class RefineGAN2Generator(nn.Module):
         antialias_rates: "Sequence[int] | None" = None,
     ):
         super().__init__()
-        # No config keys for any of this in Applio, so the defaults *are* the
-        # shipped configuration.  Absent stages means the two that run at 2 and
-        # 8 kHz at 32 kHz -- indices [1, 2] for the four stages every supported
-        # rate uses.
+        # The defaults are what ``rvc/configs/refinegan2/`` ships, so a decoder
+        # built by hand matches one built by ``Synthesizer``.  Every stage's
+        # AdaIN but the last: the last runs at the output rate, where its six
+        # sites are 4x the tensor of the 8 kHz stage's and cost more than the
+        # whole rest of the coverage put together (145.7 ms -> 215.5 against
+        # 162.9, batch 8 over 0.4 s).
         if antialias_stages is None:
-            antialias_stages = [len(upsample_rates) - 3, len(upsample_rates) - 2]
-        # Absent rates means the *output* rate of each protected stage, so the
-        # two loop activations either side of every anti-aliased AdaIN are
-        # covered too.  Those six AdaIN alone were enough to clear the lines
-        # from a decoder that had already converged without any anti-aliasing;
-        # they were not enough for a run trained with them from step zero,
-        # which fits a different signal path.  10 ms of the decoder step.
+            antialias_stages = list(range(len(upsample_rates) - 1))
+        # Every rate either loop runs at, ``sample_rate`` included -- which is
+        # also what covers the activation before ``conv_post``.  Protecting the
+        # two the AdaIN sit between was not enough for a run trained with them
+        # from step zero, and all five cost 10 ms more.
         if antialias_rates is None:
-            frame_rate = int(sample_rate)
-            for rate in upsample_rates:
-                frame_rate //= int(rate)
-            stage_output, antialias_rates = frame_rate, []
-            for stage, rate in enumerate(upsample_rates):
-                stage_output *= int(rate)
-                if stage in antialias_stages:
-                    antialias_rates.append(stage_output)
+            down_rates, up_rates = loop_rates(sample_rate, upsample_rates)
+            antialias_rates = sorted(set(down_rates) | set(up_rates))
         self.upsample_rates = upsample_rates
         self.leaky_relu_slope = leaky_relu_slope
         self.checkpointing = checkpointing
@@ -557,6 +552,17 @@ class RefineGAN2Generator(nn.Module):
                 else nn.Identity()
                 for rate in self.up_rates
             ]
+        )
+
+        # The last nonlinearity before ``conv_post``: it runs at the output
+        # rate and has one convolution left to the render, and it is in neither
+        # loop's list and in no residual block, so neither option reached it.
+        # It follows ``sample_rate in antialias_rates`` -- the rate
+        # ``downs[0]`` runs at -- rather than taking a flag of its own.
+        self.out_activation = (
+            AntiAliasedActivation(leaky_relu_slope=leaky_relu_slope)
+            if int(sample_rate) in protected
+            else nn.Identity()
         )
 
         # ``int``, not the ``np.int64`` ``np.prod`` returns: Dynamo wraps a
@@ -764,7 +770,11 @@ class RefineGAN2Generator(nn.Module):
                 x = torch.cat([x, down], dim=1)
                 x = res(x)
 
-        x = F.leaky_relu(x, self.leaky_relu_slope)
+        x = (
+            F.leaky_relu(x, self.leaky_relu_slope)
+            if isinstance(self.out_activation, nn.Identity)
+            else self.out_activation(x)
+        )
         x = self.conv_post(x)
         x = torch.tanh(x)
 
