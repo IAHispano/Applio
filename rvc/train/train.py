@@ -708,8 +708,11 @@ def train_and_evaluate(
             # skips the weight-gradient half of the discriminator backward
             # while the gradient that *is* wanted, the one flowing back into
             # ``y_hat``, is unchanged.  Paired with ``no_grad_real`` below.
-            discriminator_model = net_d.module if hasattr(net_d, "module") else net_d
-            for parameter in discriminator_model.parameters():
+            # ``net_d`` and not the unwrapped module: DDP holds the module as
+            # a submodule and adds no parameters of its own, so this is the
+            # same tensors either way.  The unwrap below is for the *call*,
+            # which is a different question.
+            for parameter in net_d.parameters():
                 parameter.requires_grad_(False)
             try:
                 with torch.amp.autocast(
@@ -722,10 +725,18 @@ def train_and_evaluate(
                     # it builds a graph nothing consumes.  See
                     # ``MultiPeriodDiscriminator.forward``.
                     #
-                    # The unwrapped module, not ``net_d``: under DDP the
-                    # wrapper's forward arms the reducer for a backward that
-                    # will never produce a discriminator gradient, and no
-                    # gradient sync is wanted here in the first place.
+                    # The unwrapped module, and here the unwrap is load
+                    # bearing: ``DistributedDataParallel._post_forward`` calls
+                    # ``reducer.prepare_for_backward`` whenever grad is
+                    # enabled, arming an allreduce that this backward can never
+                    # complete -- every parameter is frozen, so no gradient
+                    # hook fires.  The next iteration's discriminator forward
+                    # then raises "Expected to have finished reduction in the
+                    # prior iteration before starting a new one".  No gradient
+                    # sync is wanted here in the first place.
+                    discriminator_model = (
+                        net_d.module if hasattr(net_d, "module") else net_d
+                    )
                     _, y_d_hat_g, fmap_r, fmap_g = discriminator_model(
                         wave, y_hat, no_grad_real=True
                     )
@@ -788,7 +799,7 @@ def train_and_evaluate(
                 # a captured state would restore a constant.  A freeze added
                 # anywhere else -- a frozen-D stage, a partial pretrained load
                 # -- makes that false, and this is the line to change.
-                for parameter in discriminator_model.parameters():
+                for parameter in net_d.parameters():
                     parameter.requires_grad_(True)
 
             global_step += 1
