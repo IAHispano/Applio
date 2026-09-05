@@ -11,54 +11,15 @@ from torch.utils.checkpoint import checkpoint
 
 from rvc.lib.algorithm.commons import init_weights, get_padding
 from rvc.lib.algorithm.resampling import (
-    AntiAliasedActivation,
     AntiAliasedUpsample1d,
     filter_schedule,
 )
 
 
-#: How much of a ``ParallelResBlock`` gets anti-aliased activations, ordered by
-#: coverage.  The flag reaches the ``AdaIN`` activations wrapped around each
-#: ``ResBlock`` as well as the block's own conv pairs:
-#:
-#:     "none"    nothing
-#:     "adain"   the 6 AdaIN per stage, and nothing else
-#:     "half"    those, plus the first activation of each of the 9 conv pairs
-#:     "full"    those, plus both activations of each pair (18)
-#:
-#: A/B renders put the inharmonic lines entirely in the ``AdaIN`` activations
-#: at 2 and 8 kHz: covering the loops and the conv pairs without them leaves
-#: the lines, and covering those six alone removes them.  Cost is per
-#: activation, so "adain" is also 6 sites a stage instead of 24.
-ANTIALIAS_MODES = ("none", "adain", "half", "full")
-
-
-#: Interpolation filter for the trunk's upsamplers, one entry per stage.
-#:
-#: Only the last stage gets a long filter.  What matters is the image a stage
-#: makes times the path from that stage to the output, and the last stage's
-#: image both is the loudest at the output and mirrors about 4 kHz.  Extending
-#: the earlier stages moves numbers that are already 30 dB down and costs edge:
-#: ``AntiAliasedUpsample1d`` replicate-pads, so a longer kernel on a short
-#: input reads more invented continuation than signal -- at a 0.4 s training
-#: segment stage 0 gets 40 samples.
-#: RefineGAN's stage rates, by sample rate.  Not the config's
-#: ``upsample_rates``: that key is HiFi-GAN's and ascending, while this decoder
-#: wants descending -- a stage's anti-image filter keeps ``rolloff`` of the
-#: rate it reads, so the last residual block synthesises everything above
-#: ``rolloff * rate[-2] / 2`` from scratch, and ``[10, 6, 2, 2]`` at 24 kHz
-#: puts that ceiling at 900 Hz against 3600 for ``[5, 4, 4, 3]``.
-#:
-#: The rates leave no trace in the state dict -- channel counts follow the
-#: stage index, not the rate -- so a decoder built with the wrong ones loads a
-#: checkpoint silently and renders a different signal.  Hence a table rather
-#: than a config key.
-#:
-#: 32 kHz is the trained one.  24 kHz is chosen to reproduce its internal
-#: ladder exactly -- both give loop rates 100/500/2000/8000, so the two
-#: anti-aliased stages land at 2 and 8 kHz either way -- and differ only in the
-#: final expansion.  40 and 48 kHz cannot match it and take the descending
-#: factorisation with the highest last-stage ceiling instead.
+# Stage rates per sample rate. Not the config's ascending ``upsample_rates``:
+# this decoder wants them descending, so the last residual block has the least
+# left to synthesise from scratch. They leave no trace in the state dict, which
+# is why they are a table here and not a config key.
 REFINEGAN_UPSAMPLE_RATES = {
     24000: (5, 4, 4, 3),
     32000: (5, 4, 4, 4),
@@ -87,42 +48,34 @@ def upsample_rates_for(sample_rate: int, hop_length: int):
     return rates
 
 
-DEFAULT_UPSAMPLE_WIDTH = (12, 12, 12, 48)
-DEFAULT_UPSAMPLE_ROLLOFF = (0.90, 0.90, 0.90, 0.99)
+# Interpolation filter for the trunk's upsamplers, one entry per stage.
+# Zero-stuffing copies the input spectrum to every multiple of the input rate;
+# what the filter leaves of those copies is an image, and an image at
+# ``k*R_in - j*f0`` moves against f0 exactly like a fold does. Only the last
+# stage gets a long kernel: its image is the loudest at the output, and the
+# early stages are short enough that a long kernel reads more of the padding
+# than of the signal.
+DEFAULT_UPSAMPLE_WIDTH = (12, 24, 32, 48)
+DEFAULT_UPSAMPLE_ROLLOFF = (0.90, 0.95, 0.97, 0.99)
 DEFAULT_UPSAMPLE_BETA = (6.0, 6.0, 6.0, 9.0)
 
-
-def loop_rates(sample_rate: int, upsample_rates: "Sequence[int]"):
-    """The rate each of the two loops' activations runs at, in Hz.
-
-    Every pointwise nonlinearity folds about the Nyquist of its own rate, so
-    the rate decides whether its aliasing lands in the audible band.
-    ``antialias_stages`` indexes the residual blocks and cannot reach the
-    ``downs[]`` activations at all; ``antialias_rates`` is what does.
-    """
-
-    total = 1
-    for rate in upsample_rates:
-        total *= int(rate)
-    frame_rate = int(sample_rate) // total
-
-    down, rate = [], int(sample_rate)
-    for factor in reversed([int(r) for r in upsample_rates]):
-        down.append(rate)
-        rate //= factor
-
-    up, rate = [], frame_rate
-    for factor in [int(r) for r in upsample_rates]:
-        up.append(rate)
-        rate *= factor
-
-    return tuple(down), tuple(up)
+# The excitation gain is one channel, so its upsample chain is free whatever
+# the kernel length -- and it is the one path where an image is multiplied onto
+# every harmonic as a sideband. It gets the longest design at every stage.
+SOURCE_GAIN_WIDTH = 48
+SOURCE_GAIN_ROLLOFF = 0.99
+SOURCE_GAIN_BETA = 9.0
 
 
 class ResBlock(nn.Module):
-    """Residual block of dilated convolutions at multiple dilation rates.
+    """
+    Residual block with multiple dilated convolutions.
 
-    ``antialias`` wraps the activations in :class:`AntiAliasedActivation`.
+    Args:
+        channels (int): Number of channels.
+        kernel_size (int, optional): Kernel size for the convolutional layers. Defaults to 7.
+        dilation (tuple[int], optional): Dilation rates for the convolutional layers. Defaults to (1, 3, 5).
+        leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation. Defaults to 0.2.
     """
 
     def __init__(
@@ -131,16 +84,10 @@ class ResBlock(nn.Module):
         kernel_size: int = 7,
         dilation: tuple[int] = (1, 3, 5),
         leaky_relu_slope: float = 0.2,
-        antialias: str = "none",
     ):
         super().__init__()
 
         self.leaky_relu_slope = leaky_relu_slope
-        if antialias not in ANTIALIAS_MODES:
-            raise ValueError(
-                f"antialias must be one of {ANTIALIAS_MODES}, not {antialias!r}."
-            )
-        self.antialias = antialias
 
         self.convs1 = nn.ModuleList(
             [
@@ -176,40 +123,11 @@ class ResBlock(nn.Module):
         )
         self.convs2.apply(init_weights)
 
-        # ``"adain"`` covers the activations wrapping this block, not the ones
-        # inside it, so here it counts as ``"none"``.
-        count = {
-            "none": 0,
-            "adain": 0,
-            "half": len(self.convs1),
-            "full": 2 * len(self.convs1),
-        }[antialias]
-        # One instance each rather than one shared: they are stateless, but
-        # each caches an expanded per-channel kernel.
-        self.activations = nn.ModuleList(
-            [
-                AntiAliasedActivation(leaky_relu_slope=leaky_relu_slope)
-                for _ in range(count)
-            ]
-        )
-
     def forward(self, x: torch.Tensor):
-        index = 0
-        # ``"adain"`` wraps the activations *around* this block, not the ones
-        # inside it, so here it is ``"none"``.
-        wraps_pairs = self.antialias in ("half", "full")
         for c1, c2 in zip(self.convs1, self.convs2):
-            if not wraps_pairs:
-                xt = F.leaky_relu(x, self.leaky_relu_slope)
-            else:
-                xt = self.activations[index](x)
-                index += 1
+            xt = F.leaky_relu(x, self.leaky_relu_slope)
             xt = c1(xt)
-            if self.antialias == "full":
-                xt = self.activations[index](xt)
-                index += 1
-            else:
-                xt = F.leaky_relu(xt, self.leaky_relu_slope)
+            xt = F.leaky_relu(xt, self.leaky_relu_slope)
             xt = c2(xt)
             x = xt + x
 
@@ -217,12 +135,15 @@ class ResBlock(nn.Module):
 
 
 class AdaIN(nn.Module):
-    """Noise-regularised activation, two per ``ResBlock``.
+    """
+    Noise-regularised activation, wrapped either side of every ResBlock.
 
-    ``antialias`` follows the ``ParallelResBlock`` mode rather than being its
-    own flag: these six per stage are where the inharmonic lines come from, and
-    a setting that covered the conv pairs while leaving these raw was the
-    configuration that shipped with the artefact.
+    The noise is a training-time regulariser only; in eval this is a plain
+    Leaky ReLU.
+
+    Args:
+        channels (int): Number of channels.
+        leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation. Defaults to 0.2.
     """
 
     def __init__(
@@ -230,25 +151,15 @@ class AdaIN(nn.Module):
         *,
         channels: int,
         leaky_relu_slope: float = 0.2,
-        antialias: bool = False,
     ):
         super().__init__()
 
         self.weight = nn.Parameter(torch.ones(channels) * 1e-4)
-        self.antialias = bool(antialias)
         # safe to use in-place as it is used on a new x+gaussian tensor
-        self.activation = (
-            AntiAliasedActivation(leaky_relu_slope=leaky_relu_slope)
-            if self.antialias
-            else nn.LeakyReLU(leaky_relu_slope)
-        )
+        self.activation = nn.LeakyReLU(leaky_relu_slope)
 
     def forward(self, x: torch.Tensor):
-        # The noise is a training-time regulariser and pure cost at
-        # inference: this runs six times per stage, and dropping it in eval
-        # took the generator from 418 ms to 313 on CPU at batch 4.  Inference
-        # stays stochastic anyway -- the source draws its own noise, and that
-        # one *is* the unvoiced content.
+        # skipped in eval: it is a regulariser, and it is 25% of the forward
         if not self.training:
             return self.activation(x)
 
@@ -258,7 +169,16 @@ class AdaIN(nn.Module):
 
 
 class ParallelResBlock(nn.Module):
-    """Runs several ResBlocks (different kernel sizes) in parallel and averages them."""
+    """
+    Runs several ResBlocks with different kernel sizes in parallel and averages them.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        kernel_sizes (tuple[int], optional): Kernel size of each parallel block. Defaults to (3, 7, 11).
+        dilation (tuple[int], optional): Dilation rates inside each block. Defaults to (1, 3, 5).
+        leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation. Defaults to 0.2.
+    """
 
     def __init__(
         self,
@@ -268,13 +188,11 @@ class ParallelResBlock(nn.Module):
         kernel_sizes: tuple[int] = (3, 7, 11),
         dilation: tuple[int] = (1, 3, 5),
         leaky_relu_slope: float = 0.2,
-        antialias: str = "none",
     ):
         super().__init__()
 
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.antialias = antialias
 
         self.input_conv = nn.Conv1d(
             in_channels=in_channels,
@@ -292,19 +210,16 @@ class ParallelResBlock(nn.Module):
                     AdaIN(
                         channels=out_channels,
                         leaky_relu_slope=leaky_relu_slope,
-                        antialias=antialias != "none",
                     ),
                     ResBlock(
                         out_channels,
                         kernel_size=kernel_size,
                         dilation=dilation,
                         leaky_relu_slope=leaky_relu_slope,
-                        antialias=antialias,
                     ),
                     AdaIN(
                         channels=out_channels,
                         leaky_relu_slope=leaky_relu_slope,
-                        antialias=antialias != "none",
                     ),
                 )
                 for kernel_size in kernel_sizes
@@ -316,134 +231,156 @@ class ParallelResBlock(nn.Module):
         return torch.stack([block(x) for block in self.blocks], dim=0).mean(dim=0)
 
 
-class SineGenerator(nn.Module):
-    """Sine + additive-noise harmonic excitation source.
+class BlitGenerator(nn.Module):
+    """
+    Band-limited impulse train excitation, replacing the sine source.
 
-    The only one left.  ``comb`` and ``bank`` were removed on 2026-09-03: the
-    inharmonic lines they were being traded against turned out to be the
-    ``AdaIN`` activations, and on a fixed trunk the bank had been *negative*
-    against the sine once ``source_gain`` was on (multi-scale mel 1.7357 ->
-    1.8057 for the bank, 1.9714 -> 1.7418 for the sine).
+    A sine carries one partial, so the trunk has to manufacture every harmonic
+    above it out of activation products. A BLIT hands the trunk every harmonic
+    under Nyquist already, and it is band-limited by construction: it is the
+    Dirichlet kernel ``sin(pi*M*phi) / (M*sin(pi*phi))``, which is a sum of M
+    cosines and nothing else. The harmonic count follows f0 per sample and is
+    fractional, so a moving pitch does not step it discontinuously.
+
+    Args:
+        samp_rate (int): Output sample rate in Hz.
+        wave_amp (float, optional): Excitation level. Under ``normalize`` it is the
+            amplitude of the equivalent sine; otherwise it is the pulse's peak. Defaults to 0.1.
+        noise_std (float, optional): Gaussian noise std in voiced regions. Defaults to 0.003.
+        voiced_threshold (float, optional): f0 above which a frame counts as voiced. Defaults to 0.0.
+        bandwidth (float, optional): Fraction of Nyquist to fill, in (0, 1]. 1.0 is the
+            true BLIT and the only control this decoder has over activation fold;
+            lowering it delivers less detail but less intermodulation downstream. Defaults to 1.0.
+        learn_gain (bool, optional): A single learned scalar on the excitation level. Defaults to True.
+        normalize (bool, optional): Hold the excitation's energy constant across the
+            pitch range instead of its peak, which is worth 13-23 dB of level
+            depending on the note. Defaults to True.
     """
 
     def __init__(
         self,
-        samp_rate,
-        harmonic_num=0,
-        sine_amp=0.1,
-        noise_std=0.003,
-        voiced_threshold=0,
+        samp_rate: int,
+        wave_amp: float = 0.1,
+        noise_std: float = 0.003,
+        voiced_threshold: float = 0.0,
+        bandwidth: float = 1.0,
+        learn_gain: bool = True,
+        normalize: bool = True,
     ):
-        super(SineGenerator, self).__init__()
-        self.sine_amp = sine_amp
-        self.noise_std = noise_std
-        self.harmonic_num = harmonic_num
-        self.dim = self.harmonic_num + 1
-        self.sampling_rate = samp_rate
-        self.voiced_threshold = voiced_threshold
+        super().__init__()
 
-        self.merge = nn.Sequential(
-            nn.Linear(self.dim, 1, bias=False),
-            nn.Tanh(),
+        self.sampling_rate = int(samp_rate)
+        self.wave_amp = float(wave_amp)
+        self.noise_std = float(noise_std)
+        self.voiced_threshold = float(voiced_threshold)
+        self.bandwidth = float(bandwidth)
+        self.normalize = bool(normalize)
+
+        # One scalar, with grad, so the excitation level is learned while the
+        # waveform itself stays a pure function of f0.
+        self.gain = (
+            nn.Parameter(torch.ones(1)) if learn_gain else None
         )
 
-    def _f02uv(self, f0):
-        uv = torch.ones_like(f0)
-        uv = uv * (f0 > self.voiced_threshold)
-        return uv
-
-    def _f02sine(self, f0_values):
-        """f0_values: (batchsize, length, dim), dim = fundamental + overtones."""
-        # rad_values is F0 in rad mod 1 (the integer cycle count doesn't affect phase)
-        rad_values = (f0_values / self.sampling_rate) % 1
-
-        # random initial phase per harmonic, none for the fundamental
-        rand_ini = torch.rand(
-            f0_values.shape[0], f0_values.shape[2], device=f0_values.device
-        )
-        rand_ini[:, 0] = 0
-        rad_values[:, 0, :] = rad_values[:, 0, :] + rand_ini
-
-        tmp_over_one = torch.cumsum(rad_values, 1) % 1
-        tmp_over_one_idx = (tmp_over_one[:, 1:, :] - tmp_over_one[:, :-1, :]) < 0
-        cumsum_shift = torch.zeros_like(rad_values)
-        cumsum_shift[:, 1:, :] = tmp_over_one_idx * -1.0
-
-        sines = torch.sin(torch.cumsum(rad_values + cumsum_shift, dim=1) * 2 * np.pi)
-
-        return sines
-
-    # Kept out of the compiled graph: ``_f02sine`` is a cumsum over the sample
-    # axis, which Inductor lowers to a ``SplitScan`` whose codegen raises.
-    # Everything up to ``merge`` runs under ``no_grad`` and is a pure function
-    # of f0, so excluding it costs no fusion.
+    # Inductor cannot compile the phase cumsum; it is a pure function of f0
+    # under no_grad, so keeping it out of the graph costs no fusion.
     @torch.compiler.disable
-    def forward(self, f0):
+    def forward(self, f0: torch.Tensor) -> torch.Tensor:
+        """f0: (batch, 1, samples) at the output rate.  Returns the same shape."""
+
         with torch.no_grad():
-            f0_buf = torch.zeros(f0.shape[0], f0.shape[1], self.dim, device=f0.device)
-            # fundamental component
-            f0_buf[:, :, 0] = f0[:, :, 0]
-            for idx in np.arange(self.harmonic_num):
-                f0_buf[:, :, idx + 1] = f0_buf[:, :, 0] * (idx + 2)
+            uv = (f0 > self.voiced_threshold).to(f0.dtype)
+            f0_safe = f0.clamp_min(1.0)
 
-            sine_waves = self._f02sine(f0_buf) * self.sine_amp
+            # float64: in float32 the running sum reaches ~1e4 cycles within a
+            # second of audio, which is audible phase jitter on every harmonic
+            phase = torch.cumsum(f0_safe.double() / self.sampling_rate, dim=-1)
+            phase = phase - torch.floor(phase)
 
-            uv = self._f02uv(f0)
+            # Fractional harmonic count. An integer count evaluated per sample
+            # steps whenever f0 crosses ``limit / N``, and every step is a
+            # discontinuity whose rate tracks the pitch -- which reads as a
+            # fold in a spectrogram. Weighting the top conjugate pair by the
+            # fraction makes the count continuous in f0, for one extra cosine
+            # (5-cent vibrato: -67.1 -> -106.7 dB in the 20 Hz .. f0/2 band).
+            #
+            # The ``- f0_safe`` is a one-partial margin: whenever f0 divides
+            # sr/2 the top partial would land on Nyquist, where its conjugate
+            # image doubles it, 6 dB above every other partial.
+            limit = self.bandwidth * self.sampling_rate / 2.0 - f0_safe.double()
+            kmax = (limit / f0_safe.double()).clamp_min(1.0)
+            n_har = torch.floor(kmax)
+            w = kmax - n_har
+            m = 2.0 * n_har + 1.0
 
-            noise_amp = uv * self.noise_std + (1 - uv) * self.sine_amp / 3
-            noise = noise_amp * torch.randn_like(sine_waves)
+            denominator = torch.sin(np.pi * phase)
+            # phi -> 0 is the removable singularity where every cosine is in
+            # phase and the unnormalised kernel equals M.
+            singular = denominator.abs() < 1e-12
+            core = torch.where(
+                singular,
+                m,
+                torch.sin(np.pi * m * phase)
+                / torch.where(singular, torch.ones_like(denominator), denominator),
+            )
+            core = core + 2.0 * w * torch.cos(2.0 * np.pi * (n_har + 1.0) * phase)
+            # The value at phi = 0, so the kernel keeps its unit peak. The
+            # normalisation below divides by this one too, or the integer step
+            # would go straight back into the level.
+            weight = m + 2.0 * w
 
-            sine_waves = sine_waves * uv + noise
+            blit = core / weight
+            # The kernel is normalised to a unit *peak*, so each of its M
+            # harmonics carries 1/M and the excitation gets quieter the lower
+            # the note -- a 20 dB tilt across a singer's range that nothing
+            # downstream knows about, and it inverted the voiced/unvoiced
+            # balance too. ``sqrt(M/2)`` puts the RMS at ``wave_amp / sqrt(2)``
+            # at every pitch, which is exactly a sine of amplitude ``wave_amp``.
+            if self.normalize:
+                blit = blit * torch.sqrt(weight / 2.0)
+            blit = blit.to(f0.dtype) * self.wave_amp
 
-        # merge with grad
-        return self.merge(sine_waves)
+            # Unvoiced regions are noise; voiced ones get a small dither. Both
+            # sides are RMS since the normalisation above, so the voiced /
+            # unvoiced ratio is 2.12, as it was under the sine source.
+            noise_amp = uv * self.noise_std + (1.0 - uv) * self.wave_amp / 3.0
+            excitation = blit * uv + noise_amp * torch.randn_like(blit)
+
+        if self.gain is not None:
+            excitation = excitation * self.gain
+
+        return excitation
 
 
 class RefineGAN2Generator(nn.Module):
     """
-    RefineGAN2: the RefineGAN decoder with its signal-path defects fixed.
+    RefineGAN2 generator for audio synthesis.
 
-    Not interchangeable with :class:`RefineGANGenerator`.  Every tensor has the
-    same name and shape, so ``load_state_dict`` accepts either into either; the
-    differences live entirely in code, and ``source_gain`` is the only key that
-    tells a checkpoint of one from the other.
-
-    What changed:
-
-    * Descending stage rates from :data:`REFINEGAN_UPSAMPLE_RATES`, so the last
-      residual block is not left synthesising most of its band from scratch.
-    * A windowed-sinc interpolation filter instead of linear upsampling, whose
-      triangular kernel rejects the first image by only 1.7-9.6 dB.
-    * The upsampler crops its own group delay, so the trunk is not delayed
-      against the skip connections it is summed with.
-    * Anti-aliased ``AdaIN`` activations, which is where the inharmonic lines
-      came from, at every stage but the one running at the output rate.
-    * Anti-aliased loop activations at every rate the two loops run at, and at
-      the site before ``conv_post`` that neither option used to reach.
-    * An excitation gain projected from the conditioning.
+    Downsamples and upchannels an excitation, fuses it with the latent, and
+    upsamples through parallel residual blocks. Against the original: a
+    band-limited impulse train instead of the sine, descending stage rates, a
+    windowed-sinc interpolation filter that crops its own group delay, an
+    excitation gain projected from the conditioning, and f0 interpolated in log
+    with a hard voiced/unvoiced gate. Every pointwise nonlinearity is a plain
+    Leaky ReLU at its own rate.
 
     Args:
-        source_gain (bool, optional): Scale the excitation by an intensity
-            envelope projected from the conditioning, as RefineGAN's paper
-            does with the mel. Defaults to False.
-        antialias_rates (Sequence[int], optional): Which of the two loops'
-            activation rates, in Hz, get anti-aliased activations -- see
-            ``loop_rates``. This is the knob that matters: it selects by the
-            rate a nonlinearity actually runs at, so it can reach the
-            ``downs[]`` activation at 8 kHz where the fold at ``8000 - k*f0``
-            is created, and naming ``sample_rate`` also covers the activation
-            before ``conv_post``. Protecting every rate the decoder has costs
-            12% of the step against raw activations. Defaults to the output
-            rate of each stage in ``antialias_stages``.
-        antialias_stages (Sequence[int], optional): Which upsampling stages get
-            anti-aliased activations, in their ``AdaIN`` at ``"adain"`` and in
-            their residual blocks above it. Defaults to every stage but the
-            last, which is the one whose six ``AdaIN`` run at the output rate.
-        antialias (str, optional): ``"none"``, ``"adain"``, ``"half"`` or
-            ``"full"`` -- how much of each stage is covered, in that order.
-            Defaults to ``"adain"``: the conv pairs' 18 activations per stage
-            do nothing the 6 ``AdaIN`` are not already doing and cost 2.4x the
-            step. Forced to ``"none"`` when ``antialias_stages`` is empty.
+        sample_rate (int, optional): Sampling rate of the audio. Defaults to 32000.
+        upsample_rates (tuple[int], optional): Upsampling rate of each stage, descending. Defaults to (8, 8, 2, 2).
+        leaky_relu_slope (float, optional): Slope for the Leaky ReLU activation. Defaults to 0.2.
+        num_mels (int, optional): Number of channels in the conditioning. Defaults to 128.
+        start_channels (int, optional): Channels in the first downsampling block. Defaults to 16.
+        gin_channels (int, optional): Channels for the global conditioning input. Defaults to 256.
+        checkpointing (bool, optional): Whether to use checkpointing for memory efficiency. Defaults to False.
+        upsample_initial_channel (int, optional): Channels at the top of the trunk. Defaults to 512.
+        filter_width (int | Sequence[int], optional): Interpolation filter length, scalar or one per stage.
+        rolloff (float | Sequence[float], optional): Fraction of the stage's Nyquist the filter keeps.
+        filter_beta (float | Sequence[float], optional): Kaiser beta for the interpolation filter.
+        source_gain (bool, optional): Scale the excitation by an intensity envelope
+            projected from the conditioning, as RefineGAN's paper does with the mel. Defaults to False.
+        source_bandwidth (float, optional): Fraction of Nyquist the BLIT fills. Defaults to 1.0.
+        source_normalize (bool, optional): Hold the excitation's energy constant across
+            the pitch range instead of its peak. Defaults to True.
     """
 
     def __init__(
@@ -460,123 +397,46 @@ class RefineGAN2Generator(nn.Module):
         filter_width: "int | Sequence[int]" = DEFAULT_UPSAMPLE_WIDTH,
         rolloff: "float | Sequence[float]" = DEFAULT_UPSAMPLE_ROLLOFF,
         filter_beta: "float | Sequence[float]" = DEFAULT_UPSAMPLE_BETA,
-        antialias_stages: "Sequence[int] | None" = None,
-        antialias: str = "adain",
-        source_gain: bool = True,
-        antialias_rates: "Sequence[int] | None" = None,
+        source_gain: bool = False,
+        source_bandwidth: float = 1.0,
+        source_normalize: bool = True,
     ):
         super().__init__()
-        # The defaults are what ``rvc/configs/refinegan2/`` ships, so a decoder
-        # built by hand matches one built by ``Synthesizer``.  Every stage's
-        # AdaIN but the last: the last runs at the output rate, where its six
-        # sites are 4x the tensor of the 8 kHz stage's and cost more than the
-        # whole rest of the coverage put together (145.7 ms -> 215.5 against
-        # 162.9, batch 8 over 0.4 s).
-        if antialias_stages is None:
-            antialias_stages = list(range(len(upsample_rates) - 1))
-        # Every rate either loop runs at, ``sample_rate`` included -- which is
-        # also what covers the activation before ``conv_post``.  Protecting the
-        # two the AdaIN sit between was not enough for a run trained with them
-        # from step zero, and all five cost 10 ms more.
-        if antialias_rates is None:
-            down_rates, up_rates = loop_rates(sample_rate, upsample_rates)
-            antialias_rates = sorted(set(down_rates) | set(up_rates))
+        self.sample_rate = int(sample_rate)
         self.upsample_rates = upsample_rates
         self.leaky_relu_slope = leaky_relu_slope
         self.checkpointing = checkpointing
 
-        # The down path doubles ``start_channels`` once per stage and the up
-        # path concatenates ``downs[]`` into ``channels + channels // 4``, so
-        # the two only meet at one value.  It was a config knob that produced a
-        # shape error deep in ``forward`` for every other value; this says so
-        # at construction instead.
-        required = upsample_initial_channel // (4 * 2 ** (len(upsample_rates) - 1))
-        if int(start_channels) != required:
-            raise ValueError(
-                f"start_channels must be {required} for "
-                f"upsample_initial_channel={upsample_initial_channel} over "
-                f"{len(upsample_rates)} stages, not {start_channels}: the down "
-                f"path doubles it per stage and the up path expects the skip to "
-                f"be a quarter of the trunk."
-            )
-
-        # Scalar or one-per-stage, normalised in one place -- see
-        # ``DEFAULT_UPSAMPLE_WIDTH`` for why these are a schedule and not a
-        # single number.  ``filter_schedule`` is what refuses a list of the
-        # wrong length, which is the only way to get this silently wrong.
+        # Scalar or one per stage, normalised in one place. The down path
+        # doubles start_channels per stage and the up path expects the skip to
+        # be a quarter of the trunk, so the two only meet at one value.
         count = len(upsample_rates)
-        self.filter_width = filter_schedule(filter_width, count, "filter_width", 1)
-        self.rolloff = filter_schedule(rolloff, count, "rolloff", 0.0)
-        self.filter_beta = filter_schedule(filter_beta, count, "filter_beta", 0.0)
-        if any(value > 1.0 for value in self.rolloff):
-            raise ValueError(
-                f"rolloff is a fraction of the stage's Nyquist and cannot "
-                f"exceed 1.0, received {self.rolloff}."
-            )
+        self.filter_width = filter_schedule(filter_width, count)
+        self.rolloff = filter_schedule(rolloff, count)
+        self.filter_beta = filter_schedule(filter_beta, count)
 
-        stages = () if antialias_stages is None else tuple(int(s) for s in antialias_stages)
-        if any(s < 0 or s >= len(upsample_rates) for s in stages):
-            raise ValueError(
-                f"antialias_stages must index the {len(upsample_rates)} "
-                f"upsampling stages, received {stages}."
-            )
-        self.antialias_stages = tuple(sorted(set(stages)))
-        self.antialias = antialias if self.antialias_stages else "none"
-
-        # Anti-aliasing selected by rate rather than by block: this is the
-        # only thing that reaches the ``downs[]`` activations.
-        self.down_rates, self.up_rates = loop_rates(sample_rate, upsample_rates)
-        protected = {int(r) for r in (antialias_rates or ())}
-        unknown = protected - set(self.down_rates) - set(self.up_rates)
-        if unknown:
-            raise ValueError(
-                f"antialias_rates {sorted(unknown)} match no activation rate; "
-                f"this decoder runs its down loop at {self.down_rates} and its "
-                f"up loop at {self.up_rates} Hz."
-            )
-        self.antialias_rates = tuple(sorted(protected))
-        # ``Identity`` where a rate is not protected, so the forward stays a
-        # plain index and each site keeps its own kernel cache.
-        self.down_activations = nn.ModuleList(
-            [
-                AntiAliasedActivation(leaky_relu_slope=leaky_relu_slope)
-                if rate in protected
-                else nn.Identity()
-                for rate in self.down_rates
-            ]
-        )
-        self.up_activations = nn.ModuleList(
-            [
-                AntiAliasedActivation(leaky_relu_slope=leaky_relu_slope)
-                if rate in protected
-                else nn.Identity()
-                for rate in self.up_rates
-            ]
-        )
-
-        # The last nonlinearity before ``conv_post``: it runs at the output
-        # rate and has one convolution left to the render, and it is in neither
-        # loop's list and in no residual block, so neither option reached it.
-        # It follows ``sample_rate in antialias_rates`` -- the rate
-        # ``downs[0]`` runs at -- rather than taking a flag of its own.
-        self.out_activation = (
-            AntiAliasedActivation(leaky_relu_slope=leaky_relu_slope)
-            if int(sample_rate) in protected
-            else nn.Identity()
-        )
-
-        # ``int``, not the ``np.int64`` ``np.prod`` returns: Dynamo wraps a
-        # numpy scalar as a CPU tensor, and one CPU node makes Inductor emit a
-        # C++ kernel, which needs a compiler that Windows may not have.
+        # ``int``, not the np.int64 np.prod returns: Dynamo wraps a numpy
+        # scalar as a CPU tensor, and one CPU node makes Inductor emit a C++
+        # kernel, which on Windows needs cl.exe and fails the whole compile.
         self.upp = int(np.prod(upsample_rates))
 
-        # Sine is the only source; the state dict is what a cross-load would
-        # silently accept, so nothing else may be built here.
-        self.source_type = "sine"
-        self.m_source = SineGenerator(sample_rate)
+        # The excitation. Neither of these appears in the state dict --
+        # BlitGenerator owns one scalar parameter whatever they are -- so a
+        # checkpoint trained against one source loads into another silently.
+        self.source_type = "blit"
+        self.source_bandwidth = float(source_bandwidth)
+        self.source_normalize = bool(source_normalize)
+        self.m_source = BlitGenerator(
+            sample_rate,
+            bandwidth=source_bandwidth,
+            normalize=source_normalize,
+        )
 
-        # ``start_channels``, not a literal 16: the down path below is built
-        # from it, so a hardcoded width here is a mismatch waiting to happen.
+        # ``start_channels``, not a literal 16.  It was hardcoded here while
+        # the down path below was built from ``start_channels``, so any value
+        # but 16 produced a channel mismatch at ``downsample_blocks[0]`` -- a
+        # config knob that could only take one value, which is worse than no
+        # knob.
         self.pre_conv = weight_norm(
             nn.Conv1d(1, start_channels, 7, 1, padding=3)
         )
@@ -613,34 +473,35 @@ class RefineGAN2Generator(nn.Module):
         self.mel_conv.apply(init_weights)
 
         if gin_channels != 0:
-            self.cond = nn.Conv1d(256, channels // 2, 1)
+            self.cond = nn.Conv1d(gin_channels, channels // 2, 1)
 
-        # The paper scales its template by intensity read off the mel; this
-        # decoder is handed ``z``, from which the log intensity is recoverable.
-        # Projecting the source's envelope from the conditioning also puts
-        # ``z`` back on the critical path for harmonic content: with a flat,
-        # f0-driven source the trunk gets its harmonics without consulting
-        # ``z`` at all.  193 parameters.
+        # The paper scales its template by intensity values read off the mel;
+        # this decoder is handed z, from which a least-squares fit recovers the
+        # log intensity at r = 0.996. The BLIT carries no envelope of its own,
+        # so this is worth having: held-out multi-scale mel on a fixed trunk
+        # improves 1.97 -> 1.74, for 193 parameters.
         self.has_source_gain = bool(source_gain)
         if self.has_source_gain:
             self.source_gain = nn.Conv1d(num_mels, 1, 1)
-            # Identity at initialisation, so a run that switches this on
-            # starts from exactly the excitation it had before.
+            # Identity at initialisation (softplus(0.5413) = 1.0 with zero
+            # weights), so switching this on starts from exactly the excitation
+            # the run had before and the projection earns every departure.
             nn.init.zeros_(self.source_gain.weight)
             nn.init.constant_(self.source_gain.bias, 0.5413248546129181)
 
             # The gain multiplies the excitation, so a residual image in it
-            # stamps a sideband onto every harmonic -- hence a filtered
-            # upsample rather than ``F.interpolate``.
+            # stamps a sideband onto every harmonic. This chain runs on
+            # (B, 1, T), where taps are free, so every stage gets the longest
+            # design rather than the trunk's schedule.
             self.source_gain_ups = nn.ModuleList(
                 [
                     AntiAliasedUpsample1d(
                         rate,
-                        filter_width=self.filter_width[stage],
-                        rolloff=self.rolloff[stage],
-                        filter_beta=self.filter_beta[stage],
+                        filter_width=SOURCE_GAIN_WIDTH,
+                        rolloff=SOURCE_GAIN_ROLLOFF,
+                        filter_beta=SOURCE_GAIN_BETA,
                     )
-                    for stage, rate in enumerate(upsample_rates)
+                    for rate in upsample_rates
                 ]
             )
 
@@ -650,10 +511,9 @@ class RefineGAN2Generator(nn.Module):
         for stage, rate in enumerate(upsample_rates):
             new_channels = channels // 2
 
-                # A windowed sinc, not ``nn.Upsample(mode="linear")``: a
-            # triangular kernel rejects the first image by 1.7-9.6 dB, which
-            # stamps the frame grid into the waveform as a mirrored partial
-            # either side of every harmonic.
+            # Was nn.Upsample(mode="linear"), whose triangular kernel rejects
+            # the first image by only 1.7-9.6 dB, stamping the frame grid into
+            # the waveform as a mirrored partial either side of every harmonic.
             self.upsample_blocks.append(
                 AntiAliasedUpsample1d(
                     rate,
@@ -670,11 +530,6 @@ class RefineGAN2Generator(nn.Module):
                     kernel_sizes=(3, 7, 11),
                     dilation=(1, 3, 5),
                     leaky_relu_slope=leaky_relu_slope,
-                    antialias=(
-                        self.antialias
-                        if stage in self.antialias_stages
-                        else "none"
-                    ),
                 )
             )
 
@@ -685,11 +540,12 @@ class RefineGAN2Generator(nn.Module):
         )
         self.conv_post.apply(init_weights)
 
-    # Kept out of the compiled graph: ``torchaudio.functional.resample``
-    # builds its kernel from Python ints, which Inductor lowers to a CPU
-    # kernel needing a C++ compiler.  Not replaced with a ``FixedLowPass1d``,
-    # because torchaudio's filter is 385/953 taps against 73/169 and its
-    # stopband is 135-156 dB against 68-78.
+        self.out_tanh = nn.Tanh()
+
+    # torchaudio builds its sinc kernel from Python ints on every call, which
+    # Inductor compiles to a CPU kernel and fails on Windows without cl.exe.
+    # Kept out of the graph rather than replaced: this filter is what keeps
+    # each decimation from folding the harmonics it discards.
     @torch.compiler.disable
     def _decimate(self, x: torch.Tensor, orig_freq: int, new_freq: int):
         return torchaudio.functional.resample(
@@ -702,11 +558,29 @@ class RefineGAN2Generator(nn.Module):
             beta=14.769656459379492,
         )
 
-    def _apply_source_gain(self, har_source: torch.Tensor, mel: torch.Tensor):
-        """Scale the excitation by an intensity envelope read off ``mel``.
+    @staticmethod
+    def _expand_f0(f0: torch.Tensor, length: int) -> torch.Tensor:
+        """
+        f0 at the frame rate -> f0 at the output rate, (batch, 1, length).
 
-        ``mel`` is this decoder's conditioning -- ``z``, despite the name -- at
-        the frame rate; ``har_source`` is (batch, 1, frames * upp).
+        Interpolating in Hz makes the frame-rate ripple a constant absolute
+        wobble, whose sidebands grow with the harmonic number; in log it is
+        constant in cents instead. And interpolating across a voiced/unvoiced
+        boundary ramps f0 toward zero while the gate stays open, which chirps
+        every harmonic at once, so the gate is interpolated separately.
+        """
+
+        voiced = (f0 > 0).to(f0.dtype)
+        # Interpolate the *pitch*, in log Hz, and the gate separately.
+        log_f0 = torch.log(f0.clamp_min(1.0))
+        log_f0 = F.interpolate(log_f0, size=length, mode="linear", align_corners=False)
+        voiced = F.interpolate(voiced, size=length, mode="nearest")
+        return torch.exp(log_f0) * voiced
+
+    def _apply_source_gain(self, har_source: torch.Tensor, mel: torch.Tensor):
+        """
+        Scale the excitation by an intensity envelope read off the
+        conditioning, which arrives at the frame rate as ``mel``.
         """
 
         if not self.has_source_gain:
@@ -723,20 +597,15 @@ class RefineGAN2Generator(nn.Module):
 
     def forward(self, mel: torch.Tensor, f0: torch.Tensor, g: torch.Tensor = None):
         f0_size = mel.shape[-1]
-        f0 = F.interpolate(f0.unsqueeze(1), size=f0_size * self.upp, mode="linear")
-        har_source = self.m_source(f0.transpose(1, 2)).transpose(1, 2)
+        if f0.dim() == 2:
+            f0 = f0.unsqueeze(1)
+        f0 = self._expand_f0(f0, f0_size * self.upp)
+        har_source = self.m_source(f0)
         har_source = self._apply_source_gain(har_source, mel)
         x = self.pre_conv(har_source)
         downs = []
-        for index, (block, (old_size, new_size)) in enumerate(
-            zip(self.downsample_blocks, self.df0)
-        ):
-            activation = self.down_activations[index]
-            x = (
-                F.leaky_relu(x, self.leaky_relu_slope)
-                if isinstance(activation, nn.Identity)
-                else activation(x)
-            )
+        for block, (old_size, new_size) in zip(self.downsample_blocks, self.df0):
+            x = F.leaky_relu(x, self.leaky_relu_slope)
             downs.append(x)
             x = self._decimate(x, int(f0_size * old_size), int(f0_size * new_size))
             x = block(x)
@@ -747,19 +616,12 @@ class RefineGAN2Generator(nn.Module):
 
         x = torch.cat([mel, x], dim=1)
 
-        for index, (ups, res, down) in enumerate(
-            zip(
-                self.upsample_blocks,
-                self.upsample_conv_blocks,
-                reversed(downs),
-            )
+        for ups, res, down in zip(
+            self.upsample_blocks,
+            self.upsample_conv_blocks,
+            reversed(downs),
         ):
-            activation = self.up_activations[index]
-            x = (
-                F.leaky_relu(x, self.leaky_relu_slope)
-                if isinstance(activation, nn.Identity)
-                else activation(x)
-            )
+            x = F.leaky_relu(x, self.leaky_relu_slope)
 
             if self.training and self.checkpointing:
                 x = checkpoint(ups, x, use_reentrant=False)
@@ -770,22 +632,16 @@ class RefineGAN2Generator(nn.Module):
                 x = torch.cat([x, down], dim=1)
                 x = res(x)
 
-        x = (
-            F.leaky_relu(x, self.leaky_relu_slope)
-            if isinstance(self.out_activation, nn.Identity)
-            else self.out_activation(x)
-        )
+        x = F.leaky_relu(x, self.leaky_relu_slope)
         x = self.conv_post(x)
-        x = torch.tanh(x)
+        x = self.out_tanh(x)
 
         return x
 
     def remove_weight_norm(self) -> None:
-        """Fold every weight norm back into its weight, by walking the modules.
-
-        Walking rather than listing layers by name: a hand-written list goes
-        stale the moment one is added, and nothing catches it because
-        ``Synthesizer`` walks the decoder itself and never calls this.
+        """
+        Fold every weight norm back into its weight, by walking the modules
+        rather than listing them by name.
         """
 
         for module in list(self.modules()):

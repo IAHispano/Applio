@@ -116,11 +116,11 @@ class Synthesizer(torch.nn.Module):
                 hop_length = 1
                 for rate in upsample_rates:
                     hop_length *= int(rate)
-                # The anti-aliasing ships per sample rate in
-                # ``rvc/configs/refinegan2/``: it selects sites by the rate they
-                # run at, so it cannot be one set of numbers for every rate, and
-                # it leaves no trace in the weights -- which is why inference
-                # reads it from the same place training does.
+                # The decoder options ship per sample rate in
+                # ``rvc/configs/refinegan2/``.  None of them leaves a trace in
+                # the weights, which is why inference reads them from the same
+                # place training does -- and why ``decoder_layout`` writes the
+                # resulting arrangement into every checkpoint.
                 settings = vocoder_config(vocoder, sr)
                 self.dec = RefineGAN2Generator(
                     sample_rate=sr,
@@ -129,9 +129,27 @@ class Synthesizer(torch.nn.Module):
                     upsample_initial_channel=upsample_initial_channel,
                     gin_channels=gin_channels,
                     checkpointing=checkpointing,
-                    antialias=settings["refinegan2_antialias"],
-                    antialias_stages=settings["refinegan2_antialias_stages"],
-                    antialias_rates=settings["refinegan2_antialias_rates"],
+                    start_channels=int(
+                        settings.get("refinegan2_start_channels", 16)
+                    ),
+                    leaky_relu_slope=float(
+                        settings.get("refinegan2_leaky_relu_slope", 0.2)
+                    ),
+                    source_gain=bool(
+                        settings.get("refinegan2_source_gain", False)
+                    ),
+                    # Absent means 1.0 -- the full-band BLIT.  See
+                    # ``BlitGenerator.bandwidth`` for what lowering it buys.
+                    source_bandwidth=float(
+                        settings.get("refinegan2_source_bandwidth", 1.0)
+                    ),
+                    # Absent means *on* here and *off* in ``decoder_layout``:
+                    # a config naming nothing should get the sane excitation,
+                    # while a checkpoint naming nothing was trained before the
+                    # normalisation existed.
+                    source_normalize=bool(
+                        settings.get("refinegan2_source_normalize", True)
+                    ),
                 )
             else:
                 self.dec = HiFiGANNSFGenerator(

@@ -1,4 +1,7 @@
 import torch
+import torch.nn.functional as F
+
+from rvc.lib.algorithm.san import SAN_DIRECTION_WEIGHT
 
 
 def feature_loss(fmap_r, fmap_g):
@@ -20,6 +23,13 @@ def discriminator_loss(disc_real_outputs, disc_generated_outputs):
     """
     Compute the discriminator loss for real and generated outputs.
 
+    A ``v4`` branch run with ``san_training=True`` hands in a
+    ``(function, direction)`` pair instead of one logit -- see
+    ``rvc.lib.algorithm.san``.  Both halves take the same one-sided, bounded
+    surrogate: mirroring the function term keeps the fake-direction term
+    saturating, where the unbounded form lets the discriminator win by pushing
+    the direction output negative without discriminating at all.
+
     Args:
         disc_real_outputs (list of torch.Tensor): List of discriminator outputs for real samples.
         disc_generated_outputs (list of torch.Tensor): List of discriminator outputs for generated samples.
@@ -28,8 +38,18 @@ def discriminator_loss(disc_real_outputs, disc_generated_outputs):
     r_losses = []
     g_losses = []
     for dr, dg in zip(disc_real_outputs, disc_generated_outputs):
-        r_loss = torch.mean((1 - dr.float()) ** 2)
-        g_loss = torch.mean(dg.float() ** 2)
+        if isinstance(dr, (list, tuple)):
+            dr_fun, dr_dir = dr
+            dg_fun, dg_dir = dg
+            r_loss = torch.mean(
+                F.softplus(1 - dr_fun.float()) ** 2
+            ) + SAN_DIRECTION_WEIGHT * torch.mean(F.softplus(1 - dr_dir.float()) ** 2)
+            g_loss = torch.mean(
+                F.softplus(dg_fun.float()) ** 2
+            ) + SAN_DIRECTION_WEIGHT * torch.mean(F.softplus(dg_dir.float()) ** 2)
+        else:
+            r_loss = torch.mean((1 - dr.float()) ** 2)
+            g_loss = torch.mean(dg.float() ** 2)
 
         # r_losses.append(r_loss.item())
         # g_losses.append(g_loss.item())
@@ -38,17 +58,26 @@ def discriminator_loss(disc_real_outputs, disc_generated_outputs):
     return loss, r_losses, g_losses
 
 
-def generator_loss(disc_outputs):
+def generator_loss(disc_outputs, use_softplus: bool = False):
     """
     Compute the generator loss based on discriminator outputs.
 
+    ``use_softplus`` is SAN's generator objective.  The outputs here are always
+    plain logits -- the generator pass never asks for the direction, which is
+    the discriminator's business alone -- so this changes the surrogate, not the
+    shape.
+
     Args:
         disc_outputs (list of torch.Tensor): List of discriminator outputs for generated samples.
+        use_softplus (bool): Use the squared-softplus surrogate SAN pairs with.
     """
     loss = 0
     gen_losses = []
     for dg in disc_outputs:
-        l = torch.mean((1 - dg.float()) ** 2)
+        if use_softplus:
+            l = torch.mean(F.softplus(1.0 - dg.float()).square())
+        else:
+            l = torch.mean((1 - dg.float()) ** 2)
         # gen_losses.append(l.item())
         loss += l
 

@@ -1,7 +1,104 @@
 {
-  "model": {
-    "refinegan2_antialias": "adain",
-    "refinegan2_antialias_stages": [0, 1, 2],
-    "refinegan2_antialias_rates": [100, 500, 2000, 8000, 32000]
-  }
+    "train": {
+        "spectral_loss": "L1 Mel Loss",
+        "seed": 1234,
+        "learning_rate_g": 0.0001,
+        "learning_rate_d": 0.0001,
+        "betas": [
+            0.8,
+            0.99
+        ],
+        "eps": 1e-09,
+        "lr_decay": 0.999875,
+        "lr_final_ratio": 0.25,
+        "rolling_loss_steps": 50,
+        "validation_preview_dpi": 67,
+        "validation_preview_width": 24.0,
+        "validation_preview_height": 5.8,
+        "segment_size": 12800,
+        "c_mel": 45,
+        "c_kl": 1.0,
+        "holdout_fraction": 0.02,
+        "holdout_min_slices": 16,
+        "holdout_max_slices": 96,
+        "holdout_max_seconds": 120.0,
+        "holdout_crop_seconds": 3.0,
+        "holdout_batch_size": 4,
+        "holdout_latent_interval": 4,
+        "holdout_noise_scale": 0.0,
+        "holdout_train_probe": true,
+        "holdout_interval": 0,
+        "overtrain_patience": 8,
+        "overtrain_min_delta": 0.001,
+        "overtrain_smoothing": 3,
+        "overtrain_noise_window": 6,
+        "ema_decay": 0.999
+    },
+    "data": {
+        "max_wav_value": 32768.0,
+        "sample_rate": 32000,
+        "filter_length": 1024,
+        "hop_length": 320,
+        "win_length": 1024,
+        "n_mel_channels": 80,
+        "mel_fmin": 0.0,
+        "mel_fmax": null
+    },
+    "model": {
+        "inter_channels": 192,
+        "hidden_channels": 192,
+        "filter_channels": 768,
+        "text_enc_hidden_dim": 768,
+        "n_heads": 2,
+        "n_layers": 6,
+        "kernel_size": 3,
+        "p_dropout": 0,
+        "resblock": "1",
+        "resblock_kernel_sizes": [
+            3,
+            7,
+            11
+        ],
+        "resblock_dilation_sizes": [
+            [
+                1,
+                3,
+                5
+            ],
+            [
+                1,
+                3,
+                5
+            ],
+            [
+                1,
+                3,
+                5
+            ]
+        ],
+        "upsample_rates": [
+            5,
+            4,
+            4,
+            4
+        ],
+        "upsample_initial_channel": 512,
+        "upsample_kernel_sizes": [
+            10,
+            8,
+            8,
+            8
+        ],
+        "d_version": "v4",
+        "d_use_univhd": true,
+        "d_use_fast_mpd": false,
+        "d_use_san": true,
+        "use_spectral_norm": false,
+        "gin_channels": 256,
+        "spk_embed_dim": 109,
+        "refinegan2_start_channels": 16,
+        "refinegan2_leaky_relu_slope": 0.2,
+        "refinegan2_source_gain": true,
+        "architecture_id": "vits_gaussian_v1"
+    }
 }

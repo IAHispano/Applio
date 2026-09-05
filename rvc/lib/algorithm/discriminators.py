@@ -8,6 +8,7 @@ from torch.nn.utils.parametrizations import spectral_norm, weight_norm
 from rvc.lib.algorithm.commons import get_padding
 from rvc.lib.algorithm.residuals import LRELU_SLOPE
 from rvc.lib.algorithm.univhd import UnivHDDiscriminator
+from rvc.lib.algorithm.san import SANConv1d, SANConv2d, san_tail
 
 
 #: The rate ``v3``'s periods were chosen at, and the basis for ``v4``'s.  A period-``p`` branch folds
@@ -84,6 +85,7 @@ class MultiPeriodDiscriminator(torch.nn.Module):
         super().__init__()
 
         univhd = False
+        san = False
         if version == "v1":
             periods = [2, 3, 5, 7, 11, 17]
             resolutions = []
@@ -102,17 +104,29 @@ class MultiPeriodDiscriminator(torch.nn.Module):
             periods = rate_scaled_periods(V4_BASE_PERIODS, sample_rate)
             resolutions = V3_RESOLUTIONS
             univhd = True
+            # SAN (arXiv 2301.12811) is part of this layout, not a switch on it.
+            # It replaces every branch's last projection with a unit-norm
+            # direction plus a scale, which changes ``conv_post``'s state-dict
+            # keys -- so offering it on v2/v3 would only be a way to make an
+            # existing Applio discriminator unloadable.
+            san = True
         else:
             raise ValueError(f"Unknown discriminator version {version!r}.")
 
         self.version = version
         self.periods = list(periods)
         self.checkpointing = checkpointing
+        #: Read by ``train.py`` to pick the loss form.  An attribute rather than
+        #: a version comparison, so the two cannot disagree.
+        self.supports_san = san
         self.discriminators = torch.nn.ModuleList(
-            [DiscriminatorS(use_spectral_norm=use_spectral_norm)]
-            + [DiscriminatorP(p, use_spectral_norm=use_spectral_norm) for p in periods]
+            [DiscriminatorS(use_spectral_norm=use_spectral_norm, use_san=san)]
             + [
-                DiscriminatorR(r, use_spectral_norm=use_spectral_norm)
+                DiscriminatorP(p, use_spectral_norm=use_spectral_norm, use_san=san)
+                for p in periods
+            ]
+            + [
+                DiscriminatorR(r, use_spectral_norm=use_spectral_norm, use_san=san)
                 for r in resolutions
             ]
             + (
@@ -120,6 +134,7 @@ class MultiPeriodDiscriminator(torch.nn.Module):
                     UnivHDDiscriminator(
                         sample_rate=sample_rate,
                         use_spectral_norm=use_spectral_norm,
+                        use_san=san,
                     )
                 ]
                 if univhd
@@ -127,15 +142,21 @@ class MultiPeriodDiscriminator(torch.nn.Module):
             )
         )
 
-    def forward(self, y, y_hat):
+    def forward(self, y, y_hat, san_training: bool = False):
         y_d_rs, y_d_gs, fmap_rs, fmap_gs = [], [], [], []
+        # Only the discriminator update asks for the direction output: the
+        # generator may not move the direction, so requesting it there would
+        # build a graph nothing reads.
+        san = bool(san_training) and self.supports_san
         for d in self.discriminators:
             if self.training and self.checkpointing:
-                y_d_r, fmap_r = checkpoint(d, y, use_reentrant=False)
-                y_d_g, fmap_g = checkpoint(d, y_hat, use_reentrant=False)
+                y_d_r, fmap_r = checkpoint(d, y, san_training=san, use_reentrant=False)
+                y_d_g, fmap_g = checkpoint(
+                    d, y_hat, san_training=san, use_reentrant=False
+                )
             else:
-                y_d_r, fmap_r = d(y)
-                y_d_g, fmap_g = d(y_hat)
+                y_d_r, fmap_r = d(y, san_training=san)
+                y_d_g, fmap_g = d(y_hat, san_training=san)
             y_d_rs.append(y_d_r)
             y_d_gs.append(y_d_g)
             fmap_rs.append(fmap_r)
@@ -153,7 +174,7 @@ class DiscriminatorS(torch.nn.Module):
     convolutional layers that are applied to the input signal.
     """
 
-    def __init__(self, use_spectral_norm: bool = False):
+    def __init__(self, use_spectral_norm: bool = False, use_san: bool = False):
         super().__init__()
 
         norm_f = spectral_norm if use_spectral_norm else weight_norm
@@ -167,18 +188,22 @@ class DiscriminatorS(torch.nn.Module):
                 norm_f(torch.nn.Conv1d(1024, 1024, 5, 1, padding=2)),
             ]
         )
-        self.conv_post = norm_f(torch.nn.Conv1d(1024, 1, 3, 1, padding=1))
+        self.use_san = bool(use_san)
+        # No ``norm_f`` on a SAN head: it normalises its own weight, and the two
+        # reparametrisations would fight over the same tensor.
+        self.conv_post = (
+            SANConv1d(1024, 1, 3, 1, padding=1)
+            if self.use_san
+            else norm_f(torch.nn.Conv1d(1024, 1, 3, 1, padding=1))
+        )
         self.lrelu = torch.nn.LeakyReLU(LRELU_SLOPE)
 
-    def forward(self, x):
+    def forward(self, x, san_training: bool = False):
         fmap = []
         for conv in self.convs:
             x = self.lrelu(conv(x))
             fmap.append(x)
-        x = self.conv_post(x)
-        fmap.append(x)
-        x = torch.flatten(x, 1, -1)
-        return x, fmap
+        return san_tail(self, x, fmap, san_training)
 
 
 class DiscriminatorP(torch.nn.Module):
@@ -203,6 +228,7 @@ class DiscriminatorP(torch.nn.Module):
         kernel_size: int = 5,
         stride: int = 3,
         use_spectral_norm: bool = False,
+        use_san: bool = False,
     ):
         super().__init__()
         self.period = period
@@ -227,10 +253,15 @@ class DiscriminatorP(torch.nn.Module):
             ]
         )
 
-        self.conv_post = norm_f(torch.nn.Conv2d(1024, 1, (3, 1), 1, padding=(1, 0)))
+        self.use_san = bool(use_san)
+        self.conv_post = (
+            SANConv2d(1024, 1, (3, 1), 1, padding=(1, 0))
+            if self.use_san
+            else norm_f(torch.nn.Conv2d(1024, 1, (3, 1), 1, padding=(1, 0)))
+        )
         self.lrelu = torch.nn.LeakyReLU(LRELU_SLOPE)
 
-    def forward(self, x):
+    def forward(self, x, san_training: bool = False):
         fmap = []
         b, c, t = x.shape
         if t % self.period != 0:
@@ -241,14 +272,11 @@ class DiscriminatorP(torch.nn.Module):
         for conv in self.convs:
             x = self.lrelu(conv(x))
             fmap.append(x)
-        x = self.conv_post(x)
-        fmap.append(x)
-        x = torch.flatten(x, 1, -1)
-        return x, fmap
+        return san_tail(self, x, fmap, san_training)
 
 
 class DiscriminatorR(torch.nn.Module):
-    def __init__(self, resolution, use_spectral_norm=False):
+    def __init__(self, resolution, use_spectral_norm=False, use_san=False):
         super().__init__()
 
         self.resolution = resolution
@@ -302,9 +330,14 @@ class DiscriminatorR(torch.nn.Module):
                 ),
             ]
         )
-        self.conv_post = norm_f(torch.nn.Conv2d(32, 1, (3, 3), padding=(1, 1)))
+        self.use_san = bool(use_san)
+        self.conv_post = (
+            SANConv2d(32, 1, (3, 3), padding=(1, 1))
+            if self.use_san
+            else norm_f(torch.nn.Conv2d(32, 1, (3, 3), padding=(1, 1)))
+        )
 
-    def forward(self, x):
+    def forward(self, x, san_training: bool = False):
         fmap = []
 
         x = self.spectrogram(x).unsqueeze(1)
@@ -312,10 +345,7 @@ class DiscriminatorR(torch.nn.Module):
         for layer in self.convs:
             x = F.leaky_relu(layer(x), self.lrelu_slope)
             fmap.append(x)
-        x = self.conv_post(x)
-        fmap.append(x)
-
-        return torch.flatten(x, 1, -1), fmap
+        return san_tail(self, x, fmap, san_training)
 
     def spectrogram(self, x):
         n_fft, hop_length, win_length = self.resolution

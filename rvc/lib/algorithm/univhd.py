@@ -32,6 +32,8 @@ import torch
 import torch.nn.functional as F
 from torch.nn.utils.parametrizations import spectral_norm, weight_norm
 
+from rvc.lib.algorithm.san import SANConv2d, san_tail
+
 
 #: Glasberg & Moore's equivalent rectangular bandwidth, as the paper writes
 #: it: ``fbw ~= (0.1079 * fc + 24.7) / gamma``.  This is what makes the bank's
@@ -258,6 +260,7 @@ class UnivHDDiscriminator(torch.nn.Module):
         channels: int = CHANNELS,
         half_harmonic: bool = True,
         use_spectral_norm: bool = False,
+        use_san: bool = False,
     ):
         super().__init__()
         norm_f = spectral_norm if use_spectral_norm else weight_norm
@@ -304,7 +307,12 @@ class UnivHDDiscriminator(torch.nn.Module):
         # "Final convolution layer kernel size matches MDC output frequency
         # dimension": the score is a 1-D series over time, not a map, so the
         # frequency axis is folded in one kernel rather than pooled.
-        self.conv_post = norm_f(torch.nn.Conv2d(channels, 1, (rows, 1)))
+        self.use_san = bool(use_san)
+        self.conv_post = (
+            SANConv2d(channels, 1, (rows, 1))
+            if self.use_san
+            else norm_f(torch.nn.Conv2d(channels, 1, (rows, 1)))
+        )
         self.output_rows = rows
 
     def spectrogram(self, x):
@@ -321,7 +329,7 @@ class UnivHDDiscriminator(torch.nn.Module):
         )
         return torch.abs(spec)
 
-    def forward(self, x):
+    def forward(self, x, san_training: bool = False):
         fmap = []
         # ``torch.stft`` has no half precision path on every backend, and the
         # bank is a matmul over F where fp32 costs nothing measurable.
@@ -333,6 +341,4 @@ class UnivHDDiscriminator(torch.nn.Module):
             # The paper takes the feature-matching loss from each MDC output,
             # which is what these three entries are.
             fmap.append(x)
-        x = self.conv_post(x)
-        fmap.append(x)
-        return torch.flatten(x, 1, -1), fmap
+        return san_tail(self, x, fmap, san_training)

@@ -41,6 +41,7 @@ from rvc.train.utils import (
 # Zluda hijack
 import rvc.lib.zluda
 from rvc.lib.algorithm import commons
+from rvc.lib.algorithm.san import normalize_san_weights
 from rvc.train.process.extract_model import extract_model
 
 # Parse command line arguments
@@ -625,6 +626,12 @@ def train_and_evaluate(
 
     net_g, net_d = nets
     optim_g, optim_d = optims
+    # SAN is part of the v4 layout rather than a switch, so this is read off the
+    # discriminator that was actually built -- a version comparison here could
+    # disagree with it.
+    san_active = bool(
+        getattr(net_d.module if hasattr(net_d, "module") else net_d, "supports_san", False)
+    )
     train_loader = loaders[0] if loaders is not None else None
     if writers is not None:
         writer = writers[0]
@@ -694,7 +701,11 @@ def train_and_evaluate(
                 with torch.amp.autocast(
                     device_type="cuda", enabled=use_amp, dtype=train_dtype
                 ):
-                    y_d_hat_r, y_d_hat_g, _, _ = net_d(wave, y_hat.detach())
+                    # The only pass that asks for SAN's direction output: it is
+                    # the one whose gradient trains the discriminator.
+                    y_d_hat_r, y_d_hat_g, _, _ = net_d(
+                        wave, y_hat.detach(), san_training=san_active
+                    )
                 loss_disc, _, _ = discriminator_loss(y_d_hat_r, y_d_hat_g)
                 # Discriminator backward and update
                 optim_d.zero_grad()
@@ -707,6 +718,10 @@ def train_and_evaluate(
                     loss_disc.backward()
                     grad_norm_d = commons.grad_norm(net_d.parameters())
                     optim_d.step()
+                # The direction is on the unit sphere only because it is put
+                # back there; an Adam step moves it off and nothing raises.
+                if san_active:
+                    normalize_san_weights(net_d)
 
             with torch.amp.autocast(
                 device_type="cuda", enabled=use_amp, dtype=train_dtype
@@ -740,7 +755,7 @@ def train_and_evaluate(
                 loss_mel = fn_mel_loss(wave_mel, y_hat_mel) * config.train.c_mel
             loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
             loss_fm = feature_loss(fmap_r, fmap_g)
-            loss_gen, _ = generator_loss(y_d_hat_g)
+            loss_gen, _ = generator_loss(y_d_hat_g, use_softplus=san_active)
             loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
 
             if loss_gen_all < lowest_value["value"]:
