@@ -49,15 +49,40 @@ class MultiPeriodDiscriminator(torch.nn.Module):
             ]
         )
 
-    def forward(self, y, y_hat):
+    def forward(self, y, y_hat, no_grad_real: bool = False):
+        """``no_grad_real`` runs the real branch under ``no_grad``.
+
+        The generator update needs the real side only as a *target*: its logits
+        are thrown away and its feature maps are the constant the feature
+        matching loss measures against.  Left differentiable it still builds a
+        full activation graph, and the feature loss then backwards through it
+        into discriminator weights whose gradients are zeroed before they are
+        ever stepped -- the generator update runs after the discriminator's,
+        and ``optim_d.zero_grad`` brackets it on both sides.  So the whole real
+        backward is work with no consumer.
+
+        Off by default because the discriminator update *does* need it: that is
+        the pass whose gradient trains ``net_d``.
+        """
         y_d_rs, y_d_gs, fmap_rs, fmap_gs = [], [], [], []
+        checkpointing = self.training and self.checkpointing
         for d in self.discriminators:
-            if self.training and self.checkpointing:
+            # The other two arms add no context manager at all, and not
+            # ``enable_grad``: an outer ``no_grad`` (the validation path) must
+            # stay in force.
+            if no_grad_real:
+                with torch.no_grad():
+                    y_d_r, fmap_r = d(y)
+            elif checkpointing:
                 y_d_r, fmap_r = checkpoint(d, y, use_reentrant=False)
-                y_d_g, fmap_g = checkpoint(d, y_hat, use_reentrant=False)
             else:
                 y_d_r, fmap_r = d(y)
+
+            if checkpointing:
+                y_d_g, fmap_g = checkpoint(d, y_hat, use_reentrant=False)
+            else:
                 y_d_g, fmap_g = d(y_hat)
+
             y_d_rs.append(y_d_r)
             y_d_gs.append(y_d_g)
             fmap_rs.append(fmap_r)

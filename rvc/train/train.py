@@ -700,58 +700,97 @@ def train_and_evaluate(
                     grad_norm_d = commons.grad_norm(net_d.parameters())
                     optim_d.step()
 
-            with torch.amp.autocast(
-                device_type="cuda", enabled=use_amp, dtype=train_dtype
-            ):
-                # Generator backward and update
-                _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
+            # The generator update reads the discriminator; it never trains
+            # it.  Its backward still computes a weight gradient for every
+            # branch, and that gradient is thrown away -- ``optim_d.zero_grad``
+            # above and the next iteration's discriminator update bracket it,
+            # and no ``optim_d.step`` runs in between.  Freezing the parameters
+            # skips the weight-gradient half of the discriminator backward
+            # while the gradient that *is* wanted, the one flowing back into
+            # ``y_hat``, is unchanged.  Paired with ``no_grad_real`` below.
+            discriminator_model = net_d.module if hasattr(net_d, "module") else net_d
+            discriminator_parameter_states = [
+                parameter.requires_grad
+                for parameter in discriminator_model.parameters()
+            ]
+            for parameter in discriminator_model.parameters():
+                parameter.requires_grad_(False)
+            try:
+                with torch.amp.autocast(
+                    device_type="cuda", enabled=use_amp, dtype=train_dtype
+                ):
+                    # Generator backward and update.
+                    #
+                    # ``no_grad_real``: the real side is the feature matching
+                    # *target* and its logits are discarded, so differentiating
+                    # it builds a graph nothing consumes.  See
+                    # ``MultiPeriodDiscriminator.forward``.
+                    #
+                    # The unwrapped module, not ``net_d``: under DDP the
+                    # wrapper's forward arms the reducer for a backward that
+                    # will never produce a discriminator gradient, and no
+                    # gradient sync is wanted here in the first place.
+                    _, y_d_hat_g, fmap_r, fmap_g = discriminator_model(
+                        wave, y_hat, no_grad_real=True
+                    )
 
-            if multiscale_mel_loss:
-                loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
-            else:
-                wave_mel = mel_spectrogram_torch(
-                    wave.float().squeeze(1),
-                    config.data.filter_length,
-                    config.data.n_mel_channels,
-                    config.data.sample_rate,
-                    config.data.hop_length,
-                    config.data.win_length,
-                    config.data.mel_fmin,
-                    config.data.mel_fmax,
-                )
-                y_hat_mel = mel_spectrogram_torch(
-                    y_hat.float().squeeze(1),
-                    config.data.filter_length,
-                    config.data.n_mel_channels,
-                    config.data.sample_rate,
-                    config.data.hop_length,
-                    config.data.win_length,
-                    config.data.mel_fmin,
-                    config.data.mel_fmax,
-                )
-                loss_mel = fn_mel_loss(wave_mel, y_hat_mel) * config.train.c_mel
-            loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
-            loss_fm = feature_loss(fmap_r, fmap_g)
-            loss_gen, _ = generator_loss(y_d_hat_g)
-            loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
+                if multiscale_mel_loss:
+                    loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
+                else:
+                    wave_mel = mel_spectrogram_torch(
+                        wave.float().squeeze(1),
+                        config.data.filter_length,
+                        config.data.n_mel_channels,
+                        config.data.sample_rate,
+                        config.data.hop_length,
+                        config.data.win_length,
+                        config.data.mel_fmin,
+                        config.data.mel_fmax,
+                    )
+                    y_hat_mel = mel_spectrogram_torch(
+                        y_hat.float().squeeze(1),
+                        config.data.filter_length,
+                        config.data.n_mel_channels,
+                        config.data.sample_rate,
+                        config.data.hop_length,
+                        config.data.win_length,
+                        config.data.mel_fmin,
+                        config.data.mel_fmax,
+                    )
+                    loss_mel = fn_mel_loss(wave_mel, y_hat_mel) * config.train.c_mel
+                loss_kl = kl_loss(z_p, logs_q, m_p, logs_p, z_mask) * config.train.c_kl
+                loss_fm = feature_loss(fmap_r, fmap_g)
+                loss_gen, _ = generator_loss(y_d_hat_g)
+                loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
 
-            if loss_gen_all < lowest_value["value"]:
-                lowest_value = {
-                    "step": global_step,
-                    "value": loss_gen_all,
-                    "epoch": epoch,
-                }
-            optim_g.zero_grad()
-            if train_dtype == torch.float16:
-                scaler.scale(loss_gen_all).backward()
-                scaler.unscale_(optim_g)
-                grad_norm_g = commons.grad_norm(net_g.parameters())
-                scaler.step(optim_g)
-                scaler.update()
-            else:
-                loss_gen_all.backward()
-                grad_norm_g = commons.grad_norm(net_g.parameters())
-                optim_g.step()
+                if loss_gen_all < lowest_value["value"]:
+                    lowest_value = {
+                        "step": global_step,
+                        "value": loss_gen_all,
+                        "epoch": epoch,
+                    }
+                optim_g.zero_grad()
+                if train_dtype == torch.float16:
+                    scaler.scale(loss_gen_all).backward()
+                    scaler.unscale_(optim_g)
+                    grad_norm_g = commons.grad_norm(net_g.parameters())
+                    scaler.step(optim_g)
+                    scaler.update()
+                else:
+                    loss_gen_all.backward()
+                    grad_norm_g = commons.grad_norm(net_g.parameters())
+                    optim_g.step()
+            finally:
+                # ``finally`` and not a plain restore after the step: a raise
+                # anywhere above would otherwise leave every ``net_d``
+                # parameter frozen for the rest of the run, with ``loss_disc``
+                # still logged and ``optim_d.step`` still called -- a
+                # discriminator that has silently stopped learning.
+                for parameter, requires_grad in zip(
+                    discriminator_model.parameters(),
+                    discriminator_parameter_states,
+                ):
+                    parameter.requires_grad_(requires_grad)
 
             global_step += 1
 
