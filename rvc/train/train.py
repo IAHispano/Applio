@@ -700,11 +700,45 @@ def train_and_evaluate(
                     grad_norm_d = commons.grad_norm(net_d.parameters())
                     optim_d.step()
 
+            # The generator update reads the discriminator; it never trains
+            # it.  Its backward still computes a weight gradient for every
+            # branch, and that gradient is thrown away -- ``optim_d.zero_grad``
+            # above and the next iteration's discriminator update bracket it,
+            # and no ``optim_d.step`` runs in between.  Freezing the parameters
+            # skips the weight-gradient half of the discriminator backward
+            # while the gradient that *is* wanted, the one flowing back into
+            # ``y_hat``, is unchanged.  Paired with ``no_grad_real`` below.
+            # ``Module.requires_grad_`` *is* the loop over ``parameters()``,
+            # and on ``net_d`` and not the unwrapped module because DDP holds
+            # the module as a submodule and adds no parameters of its own --
+            # the same tensors either way.  The unwrap below is for the
+            # *call*, which is a different question.
+            net_d.requires_grad_(False)
             with torch.amp.autocast(
                 device_type="cuda", enabled=use_amp, dtype=train_dtype
             ):
-                # Generator backward and update
-                _, y_d_hat_g, fmap_r, fmap_g = net_d(wave, y_hat)
+                # Generator backward and update.
+                #
+                # ``no_grad_real``: the real side is the feature matching
+                # *target* and its logits are discarded, so differentiating
+                # it builds a graph nothing consumes.  See
+                # ``MultiPeriodDiscriminator.forward``.
+                #
+                # The unwrapped module, and here the unwrap is load
+                # bearing: ``DistributedDataParallel._post_forward`` calls
+                # ``reducer.prepare_for_backward`` whenever grad is
+                # enabled, arming an allreduce that this backward can never
+                # complete -- every parameter is frozen, so no gradient
+                # hook fires.  The next iteration's discriminator forward
+                # then raises "Expected to have finished reduction in the
+                # prior iteration before starting a new one".  No gradient
+                # sync is wanted here in the first place.
+                discriminator_model = (
+                    net_d.module if hasattr(net_d, "module") else net_d
+                )
+                _, y_d_hat_g, fmap_r, fmap_g = discriminator_model(
+                    wave, y_hat, no_grad_real=True
+                )
 
             if multiscale_mel_loss:
                 loss_mel = fn_mel_loss(wave, y_hat) * config.train.c_mel / 3.0
@@ -752,6 +786,18 @@ def train_and_evaluate(
                 loss_gen_all.backward()
                 grad_norm_g = commons.grad_norm(net_g.parameters())
                 optim_g.step()
+            # Unwind the freeze.  A plain restore and not a ``finally``: the
+            # batch loop catches nothing, ``run`` is the process target, so an
+            # exception anywhere above ends this process rather than reaching
+            # another step that a frozen discriminator could spoil.
+            #
+            # Unconditionally ``True`` and not a captured state list: these are
+            # the only ``requires_grad`` writes in the codebase, so every
+            # discriminator parameter is trainable at every step.  A freeze
+            # added anywhere else -- a frozen-D stage, a partial pretrained
+            # load -- makes both paragraphs false, and this is the block to
+            # change.
+            net_d.requires_grad_(True)
 
             global_step += 1
 
