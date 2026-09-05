@@ -58,6 +58,20 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
     model_state_dict = (
         model.module.state_dict() if hasattr(model, "module") else model.state_dict()
     )
+
+    # RefineGAN and RefineGAN2 share every tensor name and shape, and the
+    # merge below is ``.get(k, v)`` -- so a RefineGAN pretrained selected for a
+    # RefineGAN2 run would load, leave ``source_gain`` at its init, and train
+    # on from a signal path the weights were never fitted to.
+    marker = "dec.source_gain.weight"
+    if marker in model_state_dict and marker not in checkpoint_dict["model"]:
+        raise ValueError(
+            f"'{checkpoint_path}' is a RefineGAN checkpoint (no '{marker}') "
+            f"and this run builds RefineGAN2. The two have identical tensor "
+            f"names and shapes but different signal paths, so the weights "
+            f"would load and mean nothing. Pick a RefineGAN2 pretrained, or "
+            f"train the RefineGAN vocoder instead."
+        )
     new_state_dict = {
         k: checkpoint_dict["model"].get(k, v) for k, v in model_state_dict.items()
     }

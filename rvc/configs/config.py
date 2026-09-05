@@ -10,6 +10,40 @@ version_config_paths = [
 ]
 
 
+#: Vocoders that ship settings of their own, and the folder they live in
+#: beside the shared ``{sample_rate}.json``.
+VOCODER_CONFIG_DIRS = {"RefineGAN2": "refinegan2"}
+
+
+def vocoder_config(vocoder: str, sample_rate: int):
+    """The ``model`` keys a vocoder ships for a sample rate, or ``{}``.
+
+    Only the keys that vocoder owns; the shared ``{sample_rate}.json`` still
+    carries everything the rest of the model reads.  These are loaded where the
+    decoder is built rather than passed down from the training config, because
+    the exported checkpoint's ``config`` is a fixed positional list with no room
+    for them -- reading them in one place is what keeps training and inference
+    building the same decoder.
+    """
+
+    folder = VOCODER_CONFIG_DIRS.get(vocoder)
+    if folder is None:
+        return {}
+    config_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), folder, f"{int(sample_rate)}.json"
+    )
+    if not os.path.exists(config_path):
+        # Falling back to the generator's own defaults would render a trained
+        # model through a decoder it was not trained for, and nothing would say
+        # so: none of these settings appear in the weights.
+        raise ValueError(
+            f"{vocoder} has no settings for {sample_rate} Hz; expected "
+            f"{config_path}."
+        )
+    with open(config_path, "r", encoding="utf-8") as f:
+        return json.load(f).get("model", {})
+
+
 def singleton(cls):
     instances = {}
 

@@ -4,9 +4,14 @@ from rvc.lib.algorithm.generators.hifigan_mrf import HiFiGANMRFGenerator
 from rvc.lib.algorithm.generators.hifigan_nsf import HiFiGANNSFGenerator
 from rvc.lib.algorithm.generators.hifigan import HiFiGANGenerator
 from rvc.lib.algorithm.generators.refinegan import RefineGANGenerator
+from rvc.lib.algorithm.generators.refinegan2 import (
+    RefineGAN2Generator,
+    upsample_rates_for,
+)
 from rvc.lib.algorithm.commons import slice_segments, rand_slice_segments
 from rvc.lib.algorithm.residuals import ResidualCouplingBlock
 from rvc.lib.algorithm.encoders import TextEncoder, PosteriorEncoder
+from rvc.configs.config import vocoder_config
 
 
 class Synthesizer(torch.nn.Module):
@@ -104,6 +109,48 @@ class Synthesizer(torch.nn.Module):
                     num_mels=inter_channels,
                     checkpointing=checkpointing,
                 )
+            elif vocoder == "RefineGAN2":
+                # The hop is the product of the config's stage rates, whatever
+                # their order; RefineGAN2 wants its own descending
+                # factorisation of it.
+                hop_length = 1
+                for rate in upsample_rates:
+                    hop_length *= int(rate)
+                # The decoder options ship per sample rate in
+                # ``rvc/configs/refinegan2/``.  None of them leaves a trace in
+                # the weights, which is why inference reads them from the same
+                # place training does -- and why ``decoder_layout`` writes the
+                # resulting arrangement into every checkpoint.
+                settings = vocoder_config(vocoder, sr)
+                self.dec = RefineGAN2Generator(
+                    sample_rate=sr,
+                    upsample_rates=upsample_rates_for(sr, hop_length),
+                    num_mels=inter_channels,
+                    upsample_initial_channel=upsample_initial_channel,
+                    gin_channels=gin_channels,
+                    checkpointing=checkpointing,
+                    start_channels=int(
+                        settings.get("refinegan2_start_channels", 16)
+                    ),
+                    leaky_relu_slope=float(
+                        settings.get("refinegan2_leaky_relu_slope", 0.2)
+                    ),
+                    source_gain=bool(
+                        settings.get("refinegan2_source_gain", False)
+                    ),
+                    # Absent means 1.0 -- the full-band BLIT.  See
+                    # ``BlitGenerator.bandwidth`` for what lowering it buys.
+                    source_bandwidth=float(
+                        settings.get("refinegan2_source_bandwidth", 1.0)
+                    ),
+                    # Absent means *on* here and *off* in ``decoder_layout``:
+                    # a config naming nothing should get the sane excitation,
+                    # while a checkpoint naming nothing was trained before the
+                    # normalisation existed.
+                    source_normalize=bool(
+                        settings.get("refinegan2_source_normalize", True)
+                    ),
+                )
             else:
                 self.dec = HiFiGANNSFGenerator(
                     inter_channels,
@@ -120,8 +167,8 @@ class Synthesizer(torch.nn.Module):
             if vocoder == "MRF HiFi-GAN":
                 print("MRF HiFi-GAN does not support training without pitch guidance.")
                 self.dec = None
-            elif vocoder == "RefineGAN":
-                print("RefineGAN does not support training without pitch guidance.")
+            elif vocoder in ("RefineGAN", "RefineGAN2"):
+                print(f"{vocoder} does not support training without pitch guidance.")
                 self.dec = None
             else:
                 self.dec = HiFiGANGenerator(
