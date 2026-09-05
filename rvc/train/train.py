@@ -709,10 +709,6 @@ def train_and_evaluate(
             # while the gradient that *is* wanted, the one flowing back into
             # ``y_hat``, is unchanged.  Paired with ``no_grad_real`` below.
             discriminator_model = net_d.module if hasattr(net_d, "module") else net_d
-            discriminator_parameter_states = [
-                parameter.requires_grad
-                for parameter in discriminator_model.parameters()
-            ]
             for parameter in discriminator_model.parameters():
                 parameter.requires_grad_(False)
             try:
@@ -786,11 +782,14 @@ def train_and_evaluate(
                 # parameter frozen for the rest of the run, with ``loss_disc``
                 # still logged and ``optim_d.step`` still called -- a
                 # discriminator that has silently stopped learning.
-                for parameter, requires_grad in zip(
-                    discriminator_model.parameters(),
-                    discriminator_parameter_states,
-                ):
-                    parameter.requires_grad_(requires_grad)
+                # Unconditionally ``True`` and not a saved state list: these
+                # four lines are the only ``requires_grad`` in the codebase, so
+                # every discriminator parameter is trainable at every step and
+                # a captured state would restore a constant.  A freeze added
+                # anywhere else -- a frozen-D stage, a partial pretrained load
+                # -- makes that false, and this is the line to change.
+                for parameter in discriminator_model.parameters():
+                    parameter.requires_grad_(True)
 
             global_step += 1
 
