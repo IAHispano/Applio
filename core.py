@@ -560,6 +560,15 @@ def run_train_script(
 
         if custom_pretrained == False:
             pg, pd = pretrained_selector(str(vocoder), int(sample_rate))
+            if not pg or not pd:
+                # pretrained_selector returns ("", "") when the files are absent;
+                # without this check training silently starts from scratch.
+                raise FileNotFoundError(
+                    f"Pretrained {vocoder} models for {sample_rate} Hz were requested "
+                    f"but were not found in rvc/models/pretraineds/{str(vocoder).lower()}/. "
+                    "Run 'python core.py prerequisites' to download them, or pass "
+                    "--no-pretrained to train from scratch on purpose."
+                )
         else:
             if g_pretrained_path is None or d_pretrained_path is None:
                 raise ValueError(
