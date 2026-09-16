@@ -25,6 +25,7 @@ from pedalboard import (
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+import rvc.lib.zluda  # sets MIOPEN_FIND_MODE on AMD; must land before the first conv
 from rvc.infer.pipeline import Pipeline as VC
 from rvc.lib.utils import load_audio_infer, load_embedding
 from rvc.lib.tools.split_audio import process_audio, merge_audio
