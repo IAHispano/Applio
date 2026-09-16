@@ -36,7 +36,6 @@ PERCENTAGE = 3.0
 MAX_AMPLITUDE = 0.9
 ALPHA = 0.75
 HIGH_PASS_CUTOFF = 48
-SAMPLE_RATE_16K = 16000
 RES_TYPE = "soxr_vhq"
 
 
@@ -57,9 +56,7 @@ class PreProcess:
         self.exp_dir = exp_dir
         self.device = "cpu"
         self.gt_wavs_dir = os.path.join(exp_dir, "sliced_audios")
-        self.wavs16k_dir = os.path.join(exp_dir, "sliced_audios_16k")
         os.makedirs(self.gt_wavs_dir, exist_ok=True)
-        os.makedirs(self.wavs16k_dir, exist_ok=True)
 
     def _normalize_audio(self, audio: np.ndarray):
         tmp_max = np.abs(audio).max()
@@ -84,17 +81,6 @@ class PreProcess:
             os.path.join(self.gt_wavs_dir, f"{sid}_{idx0}_{idx1}.wav"),
             self.sr,
             normalized_audio.astype(np.float32),
-        )
-        audio_16k = librosa.resample(
-            normalized_audio,
-            orig_sr=self.sr,
-            target_sr=SAMPLE_RATE_16K,
-            res_type=RES_TYPE,
-        )
-        wavfile.write(
-            os.path.join(self.wavs16k_dir, f"{sid}_{idx0}_{idx1}.wav"),
-            SAMPLE_RATE_16K,
-            audio_16k.astype(np.float32),
         )
 
     def simple_cut(
@@ -122,18 +108,6 @@ class PreProcess:
                     ),
                     self.sr,
                     chunk.astype(np.float32),
-                )
-                # 16KHz for feature extraction
-                chunk_16k = librosa.resample(
-                    chunk, orig_sr=self.sr, target_sr=SAMPLE_RATE_16K, res_type=RES_TYPE
-                )
-                wavfile.write(
-                    os.path.join(
-                        self.wavs16k_dir,
-                        f"{sid}_{idx0}_{i // (chunk_length - overlap_length)}.wav",
-                    ),
-                    SAMPLE_RATE_16K,
-                    chunk_16k.astype(np.float32),
                 )
             i += chunk_length - overlap_length
 

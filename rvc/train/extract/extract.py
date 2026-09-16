@@ -17,13 +17,14 @@ sys.path.append(os.path.join(now_dir))
 import rvc.lib.zluda
 from rvc.configs.config import Config
 from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE, load_high_register_settings
-from rvc.lib.utils import load_audio_16k, load_embedding
+from rvc.lib.utils import load_audio, load_embedding
 from rvc.train.extract.preparing_files import generate_config, generate_filelist
 
 # Load config
 config = Config()
 mp.set_start_method("spawn", force=True)
 
+SAMPLE_RATE_16K = 16000
 
 class FeatureInput:
     def __init__(self, f0_method="rmvpe", device="cpu"):
@@ -87,7 +88,7 @@ class FeatureInput:
             return
 
         try:
-            np_arr = load_audio_16k(inp_path)
+            np_arr = load_audio(inp_path, SAMPLE_RATE_16K)
             feature_pit = self.compute_f0(np_arr)
             np.save(opt_path_full, feature_pit, allow_pickle=False)
             coarse_pit = self.coarse_f0(feature_pit)
@@ -138,7 +139,7 @@ def process_file_embedding(
         wav_file_path, _, _, out_file_path = file_info
         if os.path.exists(out_file_path):
             return
-        feats = torch.from_numpy(load_audio_16k(wav_file_path)).to(device).float()
+        feats = torch.from_numpy(load_audio(wav_file_path, SAMPLE_RATE_16K)).to(device).float()
         feats = feats.view(1, -1)
         with torch.no_grad():
             result = model(feats)["last_hidden_state"]
@@ -191,7 +192,7 @@ if __name__ == "__main__":
     embedder_model_custom = sys.argv[7] if len(sys.argv) > 7 else None
     include_mutes = int(sys.argv[8]) if len(sys.argv) > 8 else 2
 
-    wav_path = os.path.join(exp_dir, "sliced_audios_16k")
+    wav_path = os.path.join(exp_dir, "sliced_audios")
 
     if not os.path.exists(wav_path):
         print(

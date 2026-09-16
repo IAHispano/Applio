@@ -122,31 +122,14 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
             )
         audio_norm = audio
         audio_norm = audio_norm.unsqueeze(0)
-        spec_filename = filename.replace(".wav", ".spec.pt")
-        if os.path.exists(spec_filename):
-            try:
-                spec = torch.load(spec_filename, weights_only=True)
-            except Exception as error:
-                print(f"An error occurred getting spec from {spec_filename}: {error}")
-                spec = spectrogram_torch(
-                    audio_norm,
-                    self.filter_length,
-                    self.hop_length,
-                    self.win_length,
-                    center=False,
-                )
-                spec = torch.squeeze(spec, 0)
-                torch.save(spec, spec_filename, _use_new_zipfile_serialization=False)
-        else:
-            spec = spectrogram_torch(
-                audio_norm,
-                self.filter_length,
-                self.hop_length,
-                self.win_length,
-                center=False,
-            )
-            spec = torch.squeeze(spec, 0)
-            torch.save(spec, spec_filename, _use_new_zipfile_serialization=False)
+        spec = spectrogram_torch(
+            audio_norm,
+            self.filter_length,
+            self.hop_length,
+            self.win_length,
+            center=False,
+        )
+        spec = torch.squeeze(spec, 0)
         return spec, audio_norm
 
     def __getitem__(self, index):
