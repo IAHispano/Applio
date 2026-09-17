@@ -16,7 +16,7 @@ import pluginsRouter from "./routes/plugins";
 import presetsRouter from "./routes/presets";
 import realtimeRouter, { attachRealtimeProxy } from "./routes/realtime";
 import reportRouter from "./routes/report";
-import settingsRouter from "./routes/settings";
+import settingsRouter, { autoStartPresence } from "./routes/settings";
 import setupRouter from "./routes/setup";
 import tensorboardRouter from "./routes/tensorboard";
 import trainRouter from "./routes/train";
@@ -98,6 +98,8 @@ const server = app.listen(PORT, "127.0.0.1", () => {
   console.log(`[applio-api] listening on http://127.0.0.1:${PORT}`);
   // eslint-disable-next-line no-console
   console.log(`[applio-api] repoRoot=${getRepoRoot()} outputs=${outputsDir}`);
+  // Gradio app.py parity: start Discord presence at boot when enabled.
+  autoStartPresence();
 });
 
 // Realtime audio frames ride raw WebSockets (Next rewrites don't proxy upgrades),

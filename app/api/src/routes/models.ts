@@ -35,7 +35,23 @@ router.get("/", (_req: Request, res: Response) => {
     .filter((f) => !path.basename(f).includes("trained"))
     .map(toRepoRelative)
     .sort();
-  const audios = walk(audiosDir, [".wav", ".mp3", ".flac", ".ogg", ".m4a"]).map(toRepoRelative).sort();
+  const audios = walk(audiosDir, [
+    ".wav",
+    ".mp3",
+    ".flac",
+    ".ogg",
+    ".opus",
+    ".m4a",
+    ".mp4",
+    ".aac",
+    ".alac",
+    ".wma",
+    ".aiff",
+    ".webm",
+    ".ac3",
+  ])
+    .map(toRepoRelative)
+    .sort();
 
   res.json({ models, indexes, audios, root });
 });
@@ -181,6 +197,27 @@ router.delete("/:name", (req: Request, res: Response) => {
     return res.json({ ok: true, message: `Deleted ${name}` });
   } catch (err) {
     return res.status(500).json({ error: errMsg(err) });
+  }
+});
+
+// Speaker IDs for multi-speaker models (Gradio get_speakers_id parity:
+// torch.load(pth)["speakers_id"] -> range(n), else [0]).
+router.get("/speakers", async (req: Request, res: Response) => {
+  try {
+    const pthPath = String(req.query.pthPath || "");
+    if (!pthPath) return res.status(400).json({ error: "Provide 'pthPath'." });
+    const abs = resolveUserPath(pthPath);
+    if (!fs.existsSync(abs)) return res.status(404).json({ error: `Model not found: ${pthPath}` });
+    const code = [
+      "import json, torch",
+      `ckpt = torch.load(${JSON.stringify(abs)}, map_location='cpu')`,
+      "n = ckpt.get('speakers_id', 0) if isinstance(ckpt, dict) else 0",
+      "print('APPLIO_JSON:' + json.dumps({'speakers': list(range(n)) if n else [0]}))",
+    ].join("; ");
+    const out = await runPythonJson<{ speakers: number[] }>(code);
+    res.json(out);
+  } catch (err) {
+    res.status(500).json({ error: errMsg(err) || "Could not read speakers" });
   }
 });
 

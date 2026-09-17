@@ -3,52 +3,77 @@
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Minus, RefreshCcw, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useI18n } from "../../lib/i18n";
 
 interface WindowControls {
   minimize: () => void;
   toggleMaximize: () => void;
   close: () => void;
+  isMaximized: () => Promise<boolean>;
+  onMaximizeChanged: (cb: (maximized: boolean) => void) => () => void;
+}
+
+function getControls(): WindowControls | null {
+  if (typeof window === "undefined") return null;
+  const bridge = (window as unknown as { applio?: { controls?: WindowControls } }).applio;
+  return bridge?.controls ?? null;
 }
 
 export default function TitleBar() {
   const router = useRouter();
+  const { t } = useI18n();
   const [maximized, setMaximized] = useState(false);
-  const [_controls, setControls] = useState<WindowControls | null>(null);
+  // No shell bridge (plain browser) means no OS window to control: the
+  // minimize/close buttons would lie, so they are hidden there. Maximize
+  // stays as an honest fullscreen toggle with matching labels.
+  const [hasBridge, setHasBridge] = useState(false);
 
+  // Source of truth lives in the shell: read once on mount and follow its
+  // maximize-changed events (snap layouts, Win+Arrow and the OS menu bypass
+  // our toggle). No shell (plain browser) keeps the previous fullscreen stand-in.
   useEffect(() => {
-    const bridge = (window as unknown as { applio?: { controls?: WindowControls } }).applio;
-    if (bridge?.controls) {
-      setControls(bridge.controls);
-    }
+    const controls = getControls();
+    setHasBridge(controls !== null);
+    if (!controls) return;
+    let live = true;
+    controls
+      .isMaximized()
+      .then((v) => {
+        if (live) setMaximized(v);
+      })
+      .catch(() => {});
+    const unsubscribe = controls.onMaximizeChanged((v) => {
+      if (live) setMaximized(v);
+    });
+    return () => {
+      live = false;
+      unsubscribe();
+    };
   }, []);
 
   function handleMinimize() {
-    const bridge = (window as unknown as { applio?: { controls?: WindowControls } }).applio;
-    if (bridge?.controls) {
-      bridge.controls.minimize();
-    }
+    getControls()?.minimize();
   }
 
   function handleMaximize() {
-    const bridge = (window as unknown as { applio?: { controls?: WindowControls } }).applio;
-    if (bridge?.controls) {
-      bridge.controls.toggleMaximize();
-      setMaximized((v) => !v);
+    const controls = getControls();
+    if (controls) {
+      controls.toggleMaximize();
+      return;
+    }
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setMaximized(true);
     } else {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-        setMaximized(true);
-      } else {
-        document.exitFullscreen().catch(() => {});
-        setMaximized(false);
-      }
+      document.exitFullscreen().catch(() => {});
+      setMaximized(false);
     }
   }
 
   function handleClose() {
-    const bridge = (window as unknown as { applio?: { controls?: WindowControls } }).applio;
-    if (bridge?.controls) {
-      bridge.controls.close();
+    const controls = getControls();
+    if (controls) {
+      controls.close();
     } else {
       window.close();
     }
@@ -66,74 +91,96 @@ export default function TitleBar() {
     router.forward();
   }
 
+  // Desktop convention: double-click on the drag region toggles maximize.
+  // Clicks originating from buttons keep their own behavior.
+  function handleHeaderDoubleClick(e: React.MouseEvent) {
+    if ((e.target as HTMLElement).closest("button")) return;
+    handleMaximize();
+  }
+
   return (
-    <header className="h-9 w-full select-none bg-[#0c0c0c] border-b border-white/5 flex items-center justify-between px-3 shrink-0 [-webkit-app-region:drag] z-50">
+    <header
+      className="flex h-9 w-full shrink-0 select-none items-center justify-between border-b border-[var(--border)] bg-[var(--titlebar-bg)] px-3 z-50 [-webkit-app-region:drag]"
+      onDoubleClick={handleHeaderDoubleClick}
+    >
       {/* Left: Navigation actions */}
       <div className="flex items-center gap-1 shrink-0 [-webkit-app-region:no-drag]">
-        <button type="button" className="titlebar-btn" onClick={goBack} title="Back" aria-label="Back">
-          <ChevronLeft className="w-4 h-4 text-neutral-300" />
+        <button
+          type="button"
+          className="titlebar-btn"
+          onClick={goBack}
+          title={t("Back")}
+          aria-label={t("Back")}
+        >
+          <ChevronLeft className="w-4 h-4 text-[var(--muted)]" />
         </button>
         <button
           type="button"
           className="titlebar-btn"
           onClick={goForward}
-          title="Forward"
-          aria-label="Forward"
+          title={t("Forward")}
+          aria-label={t("Forward")}
         >
-          <ChevronRight className="w-4 h-4 text-neutral-300" />
+          <ChevronRight className="w-4 h-4 text-[var(--muted)]" />
         </button>
         <button
           type="button"
           className="titlebar-btn"
           onClick={() => window.location.reload()}
-          title="Reload"
-          aria-label="Reload"
+          title={t("Reload")}
+          aria-label={t("Reload")}
         >
-          <RefreshCcw className="w-3.5 h-3.5 text-neutral-300" />
+          <RefreshCcw className="w-3.5 h-3.5 text-[var(--muted)]" />
         </button>
       </div>
 
       {/* Center: Draggable App Title */}
-      <div className="flex-1 flex items-center justify-center pointer-events-none">
-        <span className="text-xs font-medium text-neutral-400 tracking-wider flex items-center gap-2">
-          <span className="text-neutral-300">Applio</span>
-          <span className="text-[10px] text-neutral-500 font-normal">v3.6</span>
+      <div className="flex min-w-0 flex-1 items-center justify-center overflow-hidden pointer-events-none">
+        <span className="flex min-w-0 items-center gap-2 text-xs font-medium text-[var(--muted)] tracking-wider">
+          <span className="truncate text-[var(--text)]">Applio</span>
+          <span className="hidden shrink-0 text-[10px] text-[var(--muted)] font-normal min-[420px]:inline">
+            v3.6
+          </span>
         </span>
       </div>
 
-      {/* Right: Window Controls (Always visible) */}
+      {/* Right: Window Controls (minimize/close need the desktop shell) */}
       <div className="flex items-center gap-1 shrink-0 [-webkit-app-region:no-drag] justify-end">
-        <button
-          type="button"
-          className="titlebar-btn"
-          onClick={handleMinimize}
-          title="Minimize"
-          aria-label="Minimize"
-        >
-          <Minus className="w-3.5 h-3.5 text-neutral-300" />
-        </button>
+        {hasBridge && (
+          <button
+            type="button"
+            className="titlebar-btn"
+            onClick={handleMinimize}
+            title={t("Minimize")}
+            aria-label={t("Minimize")}
+          >
+            <Minus className="w-3.5 h-3.5 text-[var(--muted)]" />
+          </button>
+        )}
         <button
           type="button"
           className="titlebar-btn"
           onClick={handleMaximize}
-          title={maximized ? "Restore" : "Maximize"}
-          aria-label={maximized ? "Restore" : "Maximize"}
+          title={hasBridge ? (maximized ? t("Restore") : t("Maximize")) : t("Toggle fullscreen")}
+          aria-label={hasBridge ? (maximized ? t("Restore") : t("Maximize")) : t("Toggle fullscreen")}
         >
           {maximized ? (
-            <Minimize2 className="w-3.5 h-3.5 text-neutral-300" />
+            <Minimize2 className="w-3.5 h-3.5 text-[var(--muted)]" />
           ) : (
-            <Maximize2 className="w-3.5 h-3.5 text-neutral-300" />
+            <Maximize2 className="w-3.5 h-3.5 text-[var(--muted)]" />
           )}
         </button>
-        <button
-          type="button"
-          className="titlebar-btn titlebar-btn-close"
-          onClick={handleClose}
-          title="Close"
-          aria-label="Close"
-        >
-          <X className="w-3.5 h-3.5 text-neutral-300" />
-        </button>
+        {hasBridge && (
+          <button
+            type="button"
+            className="titlebar-btn titlebar-btn-close"
+            onClick={handleClose}
+            title={t("Close")}
+            aria-label={t("Close")}
+          >
+            <X className="w-3.5 h-3.5 text-[var(--muted)]" />
+          </button>
+        )}
       </div>
     </header>
   );

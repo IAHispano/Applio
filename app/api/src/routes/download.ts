@@ -15,6 +15,16 @@ const upload = multer({
   limits: { fileSize: 1024 * 1024 * 1024 },
 });
 
+// Port of rvc/lib/utils.py format_title: NFC, drop box-drawing chars, keep
+// word chars/spaces/dots/dashes, spaces become underscores. \p{L}\p{N} (not
+// \w, which is ASCII-only in JS) matches Python re.UNICODE \w incl. CJK.
+function formatTitle(title: string): string {
+  let s = title.normalize("NFC").replace(/[─-╿]+/g, "");
+  s = s.replace(/[^\p{L}\p{N}_\s.-]/gu, "");
+  s = s.replace(/\s+/g, "_");
+  return s || "model";
+}
+
 router.post("/", (req: Request, res: Response) => {
   const parsed = z.object({ modelLink: z.string().url() }).safeParse(req.body);
   if (!parsed.success) {
@@ -33,13 +43,14 @@ router.post("/", (req: Request, res: Response) => {
 
 router.post("/drop", upload.single("file"), (req: Request, res: Response) => {
   try {
-    if (!req.file) return res.status(400).json({ error: "Upload a 'file' (.pth or .index)." });
+    if (!req.file) return res.status(400).json({ error: "Upload a 'file' (.pth, .onnx or .index)." });
     const original = req.file.originalname;
-    if (!original.includes("pth") && !original.includes("index")) {
+    if (!original.includes("pth") && !original.includes("index") && !original.includes("onnx")) {
       fs.rmSync(req.file.path, { force: true });
-      return res.status(400).json({ error: "Not a valid model file (need .pth or .index)." });
+      return res.status(400).json({ error: "Not a valid model file (need .pth, .onnx or .index)." });
     }
-    const fileName = path.basename(original).replace(/[^a-zA-Z0-9._()-]/g, "_");
+    // Same sanitizing as the Gradio backend (rvc/lib/utils.py format_title).
+    const fileName = formatTitle(path.basename(original));
     let modelName = fileName;
     if (modelName.includes(".pth")) modelName = modelName.split(".pth")[0];
     else if (modelName.includes(".index")) {

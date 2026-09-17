@@ -1,8 +1,20 @@
 "use client";
 
 import { Sliders, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { errMsg, fetchJob, fetchModels, type Job, pollJob, submitInference } from "../lib/api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  apiGet,
+  errMsg,
+  fetchJob,
+  fetchModels,
+  type Job,
+  pollJob,
+  stopJob,
+  submitInference,
+} from "../lib/api";
+import { useI18n } from "../lib/i18n";
+import { useSpeakers } from "../lib/useSpeakers";
+import { toast } from "../lib/toast";
 import AudioPlayer from "./AudioPlayer";
 
 const F0_METHODS = [
@@ -27,7 +39,33 @@ const EMBEDDERS = [
 ];
 const FORMATS = ["WAV", "MP3", "FLAC", "OGG", "M4A"];
 
+// Best-effort port of the Gradio match_index(): prefer an index in the same
+// folder whose name matches the model stem, else a name match, else the only
+// index sitting next to the model.
+function matchIndex(model: string, indexes: string[]): string {
+  if (!model || indexes.length === 0) return "";
+  const dir = model.includes("/") ? model.slice(0, model.lastIndexOf("/")) : "";
+  const stem = (model.split("/").pop() ?? "").replace(/\.(pth|onnx)$/i, "").toLowerCase();
+  const sameDir = indexes.filter((i) => (i.includes("/") ? i.slice(0, i.lastIndexOf("/")) : "") === dir);
+  const byStem = (list: string[]) =>
+    list.find((i) => (i.split("/").pop() ?? "").toLowerCase().startsWith(stem.slice(0, 8)));
+  return byStem(sameDir.length > 0 ? sameDir : indexes) || (sameDir.length === 1 ? sameDir[0] : "") || "";
+}
+
+function pickMime(): string {
+  if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) return "";
+  for (const m of ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"]) {
+    try {
+      if (MediaRecorder.isTypeSupported(m)) return m;
+    } catch {
+      /* try next */
+    }
+  }
+  return "";
+}
+
 export default function InferenceForm() {
+  const { t } = useI18n();
   const [models, setModels] = useState<string[]>([]);
   const [indexes, setIndexes] = useState<string[]>([]);
   const [audios, setAudios] = useState<string[]>([]);
@@ -40,16 +78,25 @@ export default function InferenceForm() {
   const [pitch, setPitch] = useState(0);
   const [indexRate, setIndexRate] = useState(0.75);
   const [volumeEnvelope, setVolumeEnvelope] = useState(1);
-  const [protect, setProtect] = useState(0.33);
+  const [protect, setProtect] = useState(0.5);
   const [f0Method, setF0Method] = useState("rmvpe");
   const [embedderModel, setEmbedderModel] = useState("contentvec");
+  const [embedderModelCustom, setEmbedderModelCustom] = useState("");
   const [exportFormat, setExportFormat] = useState("WAV");
   const [splitAudio, setSplitAudio] = useState(false);
   const [f0Autotune, setF0Autotune] = useState(false);
   const [f0AutotuneStrength, setF0AutotuneStrength] = useState(1);
+  const [proposedPitch, setProposedPitch] = useState(false);
+  const [proposedPitchThreshold, setProposedPitchThreshold] = useState(155);
   const [cleanAudio, setCleanAudio] = useState(false);
-  const [cleanStrength, setCleanStrength] = useState(0.7);
+  const [cleanStrength, setCleanStrength] = useState(0.5);
+  const [sid, setSid] = useState(0);
   const [terms, setTerms] = useState(false);
+  const [filterEnabled, setFilterEnabled] = useState(false);
+  const [filter, setFilter] = useState("");
+  const [recording, setRecording] = useState(false);
+  const [recUrl, setRecUrl] = useState<string | null>(null);
+  const recRef = useRef<{ rec: MediaRecorder; chunks: Blob[]; stream: MediaStream } | null>(null);
 
   // Formant Shifting
   const [formantShifting, setFormantShifting] = useState(false);
@@ -87,6 +134,27 @@ export default function InferenceForm() {
   const [job, setJob] = useState<Job | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  const speakers = useSpeakers(pthPath);
+
+  useEffect(() => {
+    if (!speakers.includes(sid)) setSid(0);
+  }, [speakers, sid]);
+
+  useEffect(() => {
+    apiGet<{ config: { model_index_filter?: boolean } }>("/api/settings")
+      .then((r) => setFilterEnabled(!!r.config?.model_index_filter))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (recUrl) URL.revokeObjectURL(recUrl);
+      recRef.current?.stream.getTracks().forEach((t) => {
+        t.stop();
+      });
+    };
+  }, [recUrl]);
 
   // Check URL query parameters for model pre-selection (e.g. from /models)
   useEffect(() => {
@@ -161,19 +229,78 @@ export default function InferenceForm() {
     return null;
   }, [audioFile, inputPath]);
 
+  function unload() {
+    setPthPath("");
+    setIndexPath("");
+    setSid(0);
+  }
+
+  function refresh() {
+    fetchModels()
+      .then((m) => {
+        setModels(m.models);
+        setIndexes(m.indexes);
+        setAudios(m.audios);
+        if (m.models.length > 0 && !pthPath) {
+          setPthPath(m.models[0]);
+          const match = matchIndex(m.models[0], m.indexes);
+          if (match) setIndexPath(match);
+        }
+        if (m.audios.length > 0 && !inputPath) setInputPath(m.audios[0]);
+        setLoadError("");
+      })
+      .catch((e) => setLoadError(errMsg(e)));
+  }
+
+  async function startMic() {
+    setSubmitError("");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = pickMime();
+      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      const chunks: Blob[] = [];
+      rec.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      rec.onstop = () => {
+        stream.getTracks().forEach((t) => {
+          t.stop();
+        });
+        setRecording(false);
+        const blob = new Blob(chunks, { type: mime || "audio/webm" });
+        const file = new File([blob], `mic-recording-${Date.now()}.webm`, {
+          type: blob.type,
+        });
+        setAudioFile(file);
+        setInputPath("");
+        if (recUrl) URL.revokeObjectURL(recUrl);
+        setRecUrl(URL.createObjectURL(blob));
+      };
+      recRef.current = { rec, chunks, stream };
+      rec.start();
+      setRecording(true);
+    } catch {
+      setSubmitError(t("Microphone unavailable — grant permission or upload a file instead."));
+    }
+  }
+
+  function stopMic() {
+    recRef.current?.rec.stop();
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError("");
     if (!terms) {
-      setSubmitError("You must agree to the Terms of Use to proceed.");
+      toast(t("You must agree to the Terms of Use to proceed."), "error");
       return;
     }
     if (!pthPath) {
-      setSubmitError("Select a voice model (.pth).");
+      setSubmitError(t("Select a voice model (.pth)."));
       return;
     }
     if (!audioFile && !inputPath) {
-      setSubmitError("Upload an audio file or pick one from assets/audios.");
+      setSubmitError(t("Upload an audio file or pick one from assets/audios."));
       return;
     }
     const fd = new FormData();
@@ -187,12 +314,18 @@ export default function InferenceForm() {
     fd.append("protect", String(protect));
     fd.append("f0Method", f0Method);
     fd.append("embedderModel", embedderModel);
+    if (embedderModel === "custom" && embedderModelCustom) {
+      fd.append("embedderModelCustom", embedderModelCustom);
+    }
     fd.append("exportFormat", exportFormat);
     fd.append("splitAudio", String(splitAudio));
     fd.append("f0Autotune", String(f0Autotune));
     if (f0Autotune) fd.append("f0AutotuneStrength", String(f0AutotuneStrength));
+    fd.append("proposedPitch", String(proposedPitch));
+    if (proposedPitch) fd.append("proposedPitchThreshold", String(proposedPitchThreshold));
     fd.append("cleanAudio", String(cleanAudio));
     if (cleanAudio) fd.append("cleanStrength", String(cleanStrength));
+    fd.append("sid", String(sid));
 
     // Formant shifting
     if (formantShifting) {
@@ -245,7 +378,7 @@ export default function InferenceForm() {
       const { job: fresh } = await fetchJob(jobId);
       setJob(fresh);
     } catch (err) {
-      setSubmitError(errMsg(err) || "Submit failed");
+      setSubmitError(errMsg(err) || t("Submit failed"));
     } finally {
       setSubmitting(false);
     }
@@ -257,9 +390,9 @@ export default function InferenceForm() {
     <form onSubmit={onSubmit}>
       {loadError && (
         <div className="card">
-          <strong>API offline.</strong>{" "}
+          <strong>{t("API offline.")}</strong>{" "}
           <span className="muted">
-            Start it with <code>npm run dev</code>. {loadError}
+            {t("Start it with")} <code>npm run dev</code>. {loadError}
           </span>
         </div>
       )}
@@ -268,25 +401,43 @@ export default function InferenceForm() {
         {/* Left Column: Model & Input Audio */}
         <div className="flex flex-col w-full lg:w-[320px] lg:min-w-[320px]">
           <div className="card">
-            <h2>Model Selection</h2>
+            <h2>{t("Model Selection")}</h2>
+            {filterEnabled && (
+              <div>
+                <label>{t("Filter")}</label>
+                <input
+                  type="text"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  placeholder={t("Type to filter...")}
+                />
+              </div>
+            )}
             <div className="space-y-3">
               <div>
-                <label>Voice Model (.pth)</label>
+                <label>{t("Voice Model (.pth)")}</label>
                 <input
                   type="text"
                   list="models"
                   value={pthPath}
-                  onChange={(e) => setPthPath(e.target.value)}
+                  onChange={(e) => {
+                    setPthPath(e.target.value);
+                    const match = matchIndex(e.target.value, indexes);
+                    if (match) setIndexPath(match);
+                  }}
                   placeholder="logs/my-model/model.pth"
                 />
                 <datalist id="models">
-                  {models.map((m) => (
+                  {(filter
+                    ? models.filter((m) => m.toLowerCase().includes(filter.toLowerCase()))
+                    : models
+                  ).map((m) => (
                     <option key={m} value={m} />
                   ))}
                 </datalist>
               </div>
               <div>
-                <label>Index File (.index, optional)</label>
+                <label>{t("Index File (.index, optional)")}</label>
                 <input
                   type="text"
                   list="indexes"
@@ -295,31 +446,76 @@ export default function InferenceForm() {
                   placeholder="logs/my-model/added.index"
                 />
                 <datalist id="indexes">
-                  {indexes.map((m) => (
+                  {(filter
+                    ? indexes.filter((i) => i.toLowerCase().includes(filter.toLowerCase()))
+                    : indexes
+                  ).map((m) => (
                     <option key={m} value={m} />
                   ))}
                 </datalist>
               </div>
+              <div>
+                <label>{t("Speaker ID")}</label>
+                <select value={sid} onChange={(e) => setSid(Number(e.target.value))}>
+                  {speakers.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="row" style={{ marginTop: 8 }}>
+              <button type="button" className="ghost" onClick={unload}>
+                {t("Unload voice")}
+              </button>
+              <button type="button" className="ghost" onClick={refresh}>
+                {t("Refresh models and indexes")}
+              </button>
             </div>
             <p className="muted text-xs mt-2">
-              Models are automatically discovered in <code>logs/</code>.
+              {t("Models are automatically discovered in")} <code>logs/</code>.
             </p>
           </div>
 
           <div className="card">
-            <h2>Audio Input</h2>
-            <label>Upload audio (wav/mp3/flac/ogg/m4a, max 200MB)</label>
+            <h2>{t("Audio Input")}</h2>
+            <label>{t("Upload audio (wav/mp3/flac/ogg/m4a, max 200MB)")}</label>
             <input
               type="file"
               accept=".wav,.mp3,.flac,.ogg,.opus,.m4a,.mp4,.aac,.aiff,.webm"
-              onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
+              onChange={(e) => {
+                setAudioFile(e.target.files?.[0] || null);
+                if (e.target.files?.[0]) setInputPath("");
+              }}
             />
-            <label>…or pick a file already in assets/audios</label>
+            <div className="row" style={{ marginTop: 8 }}>
+              {!recording ? (
+                <button type="button" className="ghost" onClick={startMic}>
+                  {t("Record with mic")}
+                </button>
+              ) : (
+                <button type="button" className="ghost" onClick={stopMic}>
+                  {t("Stop recording")}
+                </button>
+              )}
+              {audioFile && <span className="muted">{audioFile.name}</span>}
+            </div>
+            {recUrl && (
+              <div style={{ marginTop: 8 }}>
+                {/* biome-ignore lint/a11y/useMediaCaption: user recording preview has no caption track */}
+                <audio controls src={recUrl} />
+              </div>
+            )}
+            <label>{t("…or pick a file already in assets/audios")}</label>
             <input
               type="text"
               list="audios"
               value={inputPath}
-              onChange={(e) => setInputPath(e.target.value)}
+              onChange={(e) => {
+                setInputPath(e.target.value);
+                if (e.target.value) setAudioFile(null);
+              }}
               placeholder="assets/audios/input.wav"
             />
             <datalist id="audios">
@@ -333,7 +529,7 @@ export default function InferenceForm() {
         {/* Right Column: Settings, FX Rack, and Conversion */}
         <div className="flex-1 flex flex-col min-w-0 w-full">
           <div className="card">
-            <h2>Conversion Settings</h2>
+            <h2>{t("Conversion Settings")}</h2>
             <div className="grid2">
               <div>
                 <label>Pitch: {pitch} semitones (-24…24)</label>
@@ -380,7 +576,7 @@ export default function InferenceForm() {
                 />
               </div>
               <div>
-                <label>Pitch Extraction Algorithm</label>
+                <label>{t("Pitch extraction algorithm")}</label>
                 <select value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
                   {F0_METHODS.map((m) => (
                     <option key={m} value={m}>
@@ -390,7 +586,7 @@ export default function InferenceForm() {
                 </select>
               </div>
               <div>
-                <label>Embedder Model</label>
+                <label>{t("Embedder Model")}</label>
                 <select value={embedderModel} onChange={(e) => setEmbedderModel(e.target.value)}>
                   {EMBEDDERS.map((m) => (
                     <option key={m} value={m}>
@@ -399,8 +595,19 @@ export default function InferenceForm() {
                   ))}
                 </select>
               </div>
+              {embedderModel === "custom" && (
+                <div>
+                  <label>{t("Custom embedder path (rvc/models/embedders/embedders_custom/...)")}</label>
+                  <input
+                    type="text"
+                    value={embedderModelCustom}
+                    onChange={(e) => setEmbedderModelCustom(e.target.value)}
+                    placeholder="rvc/models/embedders/embedders_custom/my-embedder"
+                  />
+                </div>
+              )}
               <div>
-                <label>Export Format</label>
+                <label>{t("Export Format")}</label>
                 <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)}>
                   {FORMATS.map((m) => (
                     <option key={m} value={m}>
@@ -414,7 +621,7 @@ export default function InferenceForm() {
             {/* Advanced Tuning Details */}
             <details className="mt-4 border-t border-white/10 pt-3">
               <summary className="cursor-pointer text-sm font-semibold text-neutral-300 hover:text-white">
-                Advanced Tuning (Split / Autotune / Noise Clean)
+                {t("Advanced Settings")}
               </summary>
               <div className="space-y-3 mt-3">
                 <div className="row flex-wrap gap-4">
@@ -424,7 +631,7 @@ export default function InferenceForm() {
                       checked={splitAudio}
                       onChange={(e) => setSplitAudio(e.target.checked)}
                     />
-                    <span>Split Audio (Process in chunks)</span>
+                    <span>{t("Split Audio (Process in chunks)")}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer m-0">
                     <input
@@ -432,7 +639,15 @@ export default function InferenceForm() {
                       checked={f0Autotune}
                       onChange={(e) => setF0Autotune(e.target.checked)}
                     />
-                    <span>Pitch Autotune</span>
+                    <span>{t("Pitch Autotune")}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer m-0">
+                    <input
+                      type="checkbox"
+                      checked={proposedPitch}
+                      onChange={(e) => setProposedPitch(e.target.checked)}
+                    />
+                    <span>{t("Proposed Pitch")}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer m-0">
                     <input
@@ -440,7 +655,7 @@ export default function InferenceForm() {
                       checked={cleanAudio}
                       onChange={(e) => setCleanAudio(e.target.checked)}
                     />
-                    <span>Clean Audio Artifacts</span>
+                    <span>{t("Clean Audio Artifacts")}</span>
                   </label>
                 </div>
                 {f0Autotune && (
@@ -469,6 +684,19 @@ export default function InferenceForm() {
                     />
                   </div>
                 )}
+                {proposedPitch && (
+                  <div>
+                    <label>Proposed Pitch Threshold: {proposedPitchThreshold}</label>
+                    <input
+                      type="range"
+                      min={50}
+                      max={1200}
+                      step={1}
+                      value={proposedPitchThreshold}
+                      onChange={(e) => setProposedPitchThreshold(Number(e.target.value))}
+                    />
+                  </div>
+                )}
               </div>
             </details>
 
@@ -476,7 +704,7 @@ export default function InferenceForm() {
             <details className="mt-3 border-t border-white/10 pt-3">
               <summary className="cursor-pointer text-sm font-semibold text-neutral-300 hover:text-white flex items-center gap-2">
                 <Sparkles size={16} />
-                <span>Formant Shifting (Vocal Tract & Timbre)</span>
+                <span>{t("Formant Shifting")}</span>
               </summary>
               <div className="space-y-3 mt-3">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -485,7 +713,7 @@ export default function InferenceForm() {
                     checked={formantShifting}
                     onChange={(e) => setFormantShifting(e.target.checked)}
                   />
-                  <span>Enable Formant Shifting</span>
+                  <span>{t("Enable Formant Shifting")}</span>
                 </label>
                 {formantShifting && (
                   <div className="grid2">
@@ -520,7 +748,7 @@ export default function InferenceForm() {
             <details className="mt-3 border-t border-white/10 pt-3">
               <summary className="cursor-pointer text-sm font-semibold text-neutral-300 hover:text-white flex items-center gap-2">
                 <Sliders size={16} />
-                <span>Studio Audio FX Rack (Reverb, Delay, Compressor, Chorus)</span>
+                <span>{t("Studio Audio FX Rack (Reverb, Delay, Compressor, Chorus)")}</span>
               </summary>
               <div className="space-y-4 mt-3">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -529,7 +757,7 @@ export default function InferenceForm() {
                     checked={postProcess}
                     onChange={(e) => setPostProcess(e.target.checked)}
                   />
-                  <span>Enable Studio Post-Process FX Chain</span>
+                  <span>{t("Enable Studio Post-Process FX Chain")}</span>
                 </label>
 
                 {postProcess && (
@@ -542,7 +770,7 @@ export default function InferenceForm() {
                           checked={reverb}
                           onChange={(e) => setReverb(e.target.checked)}
                         />
-                        <span>Studio Reverb</span>
+                        <span>{t("Studio Reverb")}</span>
                       </label>
                       {reverb && (
                         <div className="grid2 mt-2">
@@ -587,7 +815,7 @@ export default function InferenceForm() {
                     <div>
                       <label className="flex items-center gap-2 cursor-pointer font-medium text-white">
                         <input type="checkbox" checked={delay} onChange={(e) => setDelay(e.target.checked)} />
-                        <span>Stereo Delay</span>
+                        <span>{t("Stereo Delay")}</span>
                       </label>
                       {delay && (
                         <div className="grid2 mt-2">
@@ -626,7 +854,7 @@ export default function InferenceForm() {
                             checked={compressor}
                             onChange={(e) => setCompressor(e.target.checked)}
                           />
-                          <span>Compressor</span>
+                          <span>{t("Compressor")}</span>
                         </label>
                         {compressor && (
                           <div className="space-y-2 mt-2">
@@ -659,7 +887,7 @@ export default function InferenceForm() {
                             checked={limiter}
                             onChange={(e) => setLimiter(e.target.checked)}
                           />
-                          <span>Peak Limiter</span>
+                          <span>{t("Peak Limiter")}</span>
                         </label>
                         {limiter && (
                           <div className="space-y-2 mt-2">
@@ -686,7 +914,7 @@ export default function InferenceForm() {
                             checked={chorus}
                             onChange={(e) => setChorus(e.target.checked)}
                           />
-                          <span>Chorus / Detune</span>
+                          <span>{t("Chorus / Detune")}</span>
                         </label>
                         {chorus && (
                           <div className="space-y-2 mt-2">
@@ -719,7 +947,7 @@ export default function InferenceForm() {
                             checked={distortion}
                             onChange={(e) => setDistortion(e.target.checked)}
                           />
-                          <span>Harmonic Distortion</span>
+                          <span>{t("Harmonic Distortion")}</span>
                         </label>
                         {distortion && (
                           <div className="space-y-2 mt-2">
@@ -739,7 +967,7 @@ export default function InferenceForm() {
                       <div>
                         <label className="flex items-center gap-2 cursor-pointer font-medium text-white">
                           <input type="checkbox" checked={gain} onChange={(e) => setGain(e.target.checked)} />
-                          <span>Output Gain Boost</span>
+                          <span>{t("Output Gain Boost")}</span>
                         </label>
                         {gain && (
                           <div className="space-y-2 mt-2">
@@ -764,18 +992,36 @@ export default function InferenceForm() {
 
           {/* Conversion Action & Audio Player Result */}
           <div className="card">
-            <h2>Conversion</h2>
-            <label className="terms flex items-center gap-2 cursor-pointer mb-3">
-              <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
-              <span>I agree to the Terms of Use (conversion is enabled once checked).</span>
-            </label>
+            <h2>{t("Conversion")}</h2>
+            <div
+              className="sticky bottom-0 z-10 -mx-5 -mb-5 mt-4 border-t border-[var(--border)] px-5 py-3 backdrop-blur"
+              style={{ background: "color-mix(in srgb, var(--bg) 88%, transparent)" }}
+            >
+              <label className="terms flex items-center gap-2 cursor-pointer mb-3">
+                <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
+                <span>{t("I agree to the terms of use")}</span>
+              </label>
 
-            <div className="row" style={{ marginTop: 12 }}>
-              <button type="submit" className="cta" disabled={submitting}>
-                {submitting ? "Submitting…" : "Convert Voice"}
-              </button>
-              {job && <span className={`badge ${job.status}`}>{job.status}</span>}
-              {job && <span className="muted text-xs">job {job.id}</span>}
+              <div className="row" style={{ marginTop: 12 }}>
+                <button
+                  type="submit"
+                  className="cta"
+                  disabled={submitting}
+                >
+                  {submitting ? t("Submitting…") : t("Convert")}
+                </button>
+                {job && job.status !== "done" && job.status !== "error" && (
+                  <button
+                    type="button"
+                    className="ghost"
+                    onClick={() => stopJob(job.id).catch((e) => setSubmitError(errMsg(e)))}
+                  >
+                    {t("Stop convert")}
+                  </button>
+                )}
+                {job && <span className={`badge ${job.status}`}>{job.status}</span>}
+                {job && <span className="muted text-xs">job {job.id}</span>}
+              </div>
             </div>
 
             {submitError && <p style={{ color: "var(--err)" }}>{submitError}</p>}
@@ -796,7 +1042,7 @@ export default function InferenceForm() {
 
             {job && job.logs.length > 0 && (
               <div className="mt-4">
-                <p className="muted text-xs mb-1">Engine logs (streaming from Python engine)</p>
+                <p className="muted text-xs mb-1">{t("Engine logs (streaming from Python engine)")}</p>
                 <div className="log">{job.logs.slice(-60).join("\n")}</div>
               </div>
             )}

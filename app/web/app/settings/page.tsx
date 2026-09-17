@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg } from "../../lib/api";
+import { useI18n } from "../../lib/i18n";
 
 interface AppConfig {
   model_index_filter?: boolean;
@@ -23,18 +24,39 @@ interface VersionCheck {
 }
 
 export default function SettingsPage() {
+  const { t } = useI18n();
   const [cfg, setCfg] = useState<AppConfig | null>(null);
-  const [langs, setLangs] = useState<string[]>([]);
+  const [langs, setLangs] = useState<Array<{ code: string; name: string }>>([]);
+  const [themes, setThemes] = useState<Array<{ id: string; name: string; description: string; example: boolean }>>([]);
   const [ver, setVer] = useState<VersionCheck | null>(null);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
+  const [presenceRunning, setPresenceRunning] = useState<boolean | null>(null);
+  const [restartMsg, setRestartMsg] = useState("");
 
   const load = useCallback(async () => {
     try {
       const c = await apiGet<{ config: AppConfig }>("/api/settings");
       setCfg(c.config);
-      const l = await apiGet<{ languages: string[] }>("/api/settings/languages");
-      setLangs(l.languages);
+      const l = await apiGet<{ languages: string[]; named?: Array<{ code: string; name: string }> }>(
+        "/api/settings/languages",
+      );
+      const named = l.named || l.languages.map((code) => ({ code, name: code }));
+      setLangs(named);
+      try {
+        const th = await apiGet<{
+          themes: Array<{ id: string; name: string; description: string; example: boolean }>;
+        }>("/api/settings/themes");
+        setThemes(th.themes);
+      } catch {
+        /* themes unavailable */
+      }
+      try {
+        const p = await apiGet<{ running: boolean }>("/api/settings/presence");
+        setPresenceRunning(p.running);
+      } catch {
+        /* presence unavailable (Discord closed?) */
+      }
     } catch (e) {
       setError(errMsg(e));
     }
@@ -50,7 +72,22 @@ export default function SettingsPage() {
     try {
       const r = await apiSend<{ config: AppConfig }>("/api/settings", "PUT", patch);
       setCfg(r.config);
-      setSaved("Saved ✓");
+      if (typeof (patch as Record<string, unknown>).lang !== "undefined") {
+        window.dispatchEvent(new Event("applio:language-changed"));
+      }
+      // Discord presence takes effect immediately (Gradio presence.py parity).
+      if (typeof (patch as Record<string, unknown>).discord_presence === "boolean") {
+        try {
+          const p = await apiSend<{ running: boolean }>("/api/settings/presence", "POST", {
+            enabled: (patch as Record<string, unknown>).discord_presence,
+          });
+          setPresenceRunning(p.running);
+        } catch (e) {
+          setError(errMsg(e));
+          return;
+        }
+      }
+      setSaved(t("Saved ✓"));
     } catch (e) {
       setError(errMsg(e));
     }
@@ -64,10 +101,21 @@ export default function SettingsPage() {
     }
   }
 
+  async function restartApi() {
+    setRestartMsg("");
+    setError("");
+    try {
+      const r = await apiSend<{ message: string }>("/api/settings/restart", "POST");
+      setRestartMsg(r.message);
+    } catch (e) {
+      setError(errMsg(e));
+    }
+  }
+
   if (!cfg)
     return (
       <div className="card">
-        <p className="muted">Loading settings…</p>
+        <p className="muted">{t("Loading settings…")}</p>
         {error && <p style={{ color: "var(--err)" }}>{error}</p>}
       </div>
     );
@@ -82,21 +130,21 @@ export default function SettingsPage() {
   return (
     <div>
       <PageHeader
-        title="Settings"
-        description="Configure application preferences, audio engine settings, precision, and language."
+        title={t("Settings")}
+        description={t("Configure application preferences, audio engine settings, precision, and language.")}
       />
       {error && <p style={{ color: "var(--err)" }}>{error}</p>}
       {saved && <p style={{ color: "var(--ok)" }}>{saved}</p>}
 
       <div className="card">
-        <h2>General</h2>
+        <h2>{t("General")}</h2>
         <label className="checkbox-label">
           <input
             type="checkbox"
             checked={!!cfg.model_index_filter}
             onChange={(e) => set(["model_index_filter"], e.target.checked)}
           />
-          <span>Model & index filter box</span>
+          <span>{t("Model & index filter box")}</span>
         </label>
         <label className="checkbox-label">
           <input
@@ -104,11 +152,16 @@ export default function SettingsPage() {
             checked={!!cfg.discord_presence}
             onChange={(e) => set(["discord_presence"], e.target.checked)}
           />
-          <span>Discord Rich Presence</span>
+          <span>{t("Discord Rich Presence")}</span>
+          {presenceRunning !== null && (
+            <span className="muted"> ({presenceRunning ? t("running") : t("stopped")})</span>
+          )}
         </label>
         <div className="grid2">
           <div>
-            <label>Language ({langs.length} available)</label>
+            <label>
+              {t("Language")} ({langs.length} {t("available")})
+            </label>
             <select
               value={cfg.lang?.override ? cfg.lang.selected_lang : ""}
               onChange={(e) => {
@@ -120,10 +173,10 @@ export default function SettingsPage() {
                 else setCfg({ ...cfg, lang: { override: true, selected_lang: e.target.value } });
               }}
             >
-              <option value="">Language automatically detected…</option>
+              <option value="">{t("Language automatically detected…")}</option>
               {langs.map((l) => (
-                <option key={l} value={l}>
-                  {l}
+                <option key={l.code} value={l.code}>
+                  {l.name} ({l.code})
                 </option>
               ))}
             </select>
@@ -141,16 +194,53 @@ export default function SettingsPage() {
               })
             }
           >
-            Save General
+            {t("Save General")}
           </button>
         </div>
       </div>
 
       <div className="card">
-        <h2>Training</h2>
+        <h2>{t("Appearance")}</h2>
+        <p className="muted">
+          {t("Pick a theme from assets/themes/. Copy custom.example.json to create your own — see docs/themes.md.")}
+        </p>
         <div className="grid2">
           <div>
-            <label>Model author</label>
+            <label>{t("Theme")}</label>
+            <select
+              value={(cfg.theme as { file?: string } | undefined)?.file || ""}
+              onChange={(e) => set(["theme", "file"], e.target.value)}
+            >
+              <option value="">{t("Default")}</option>
+              {themes.map((th) => (
+                <option key={th.id} value={th.id}>
+                  {th.name}
+                  {th.description ? ` — ${th.description.slice(0, 60)}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="row" style={{ marginTop: 8 }}>
+          <button
+            type="button"
+            className="ghost"
+            onClick={() =>
+              save({ theme: { file: (cfg.theme as { file?: string } | undefined)?.file || "" } }).then(
+                () => window.dispatchEvent(new Event("applio:theme-changed")),
+              )
+            }
+          >
+            {t("Save Appearance")}
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>{t("Training")}</h2>
+        <div className="grid2">
+          <div>
+            <label>{t("Model Author Name")}</label>
             <input
               type="text"
               value={cfg.model_author || ""}
@@ -158,7 +248,7 @@ export default function SettingsPage() {
             />
           </div>
           <div>
-            <label>Precision</label>
+            <label>{t("Precision")}</label>
             <select value={cfg.precision} onChange={(e) => set(["precision"], e.target.value)}>
               {["fp32", "fp16", "bf16"].map((p) => (
                 <option key={p} value={p}>
@@ -174,24 +264,24 @@ export default function SettingsPage() {
             className="cta"
             onClick={() => save({ model_author: cfg.model_author, precision: cfg.precision })}
           >
-            Save Training
+            {t("Save Training")}
           </button>
         </div>
       </div>
 
       <div className="card">
-        <h2>RMVPE High Register</h2>
+        <h2>{t("RMVPE High Register")}</h2>
         <label className="checkbox-label">
           <input
             type="checkbox"
             checked={!!cfg.rmvpe_high_register?.enabled}
             onChange={(e) => set(["rmvpe_high_register", "enabled"], e.target.checked)}
           />
-          <span>Enable High Register</span>
+          <span>{t("Enable High Register")}</span>
         </label>
         <div className="grid2">
           <div>
-            <label>Mode</label>
+            <label>{t("Mode")}</label>
             <select
               value={cfg.rmvpe_high_register?.mode}
               onChange={(e) => set(["rmvpe_high_register", "mode"], e.target.value)}
@@ -201,7 +291,9 @@ export default function SettingsPage() {
             </select>
           </div>
           <div>
-            <label>F0 ceiling: {cfg.rmvpe_high_register?.f0_ceil}</label>
+            <label>
+              {t("F0 ceiling")}: {cfg.rmvpe_high_register?.f0_ceil}
+            </label>
             <input
               type="range"
               min={1000}
@@ -218,19 +310,32 @@ export default function SettingsPage() {
             className="cta"
             onClick={() => save({ rmvpe_high_register: cfg.rmvpe_high_register })}
           >
-            Save RMVPE
+            {t("Save RMVPE")}
           </button>
         </div>
       </div>
 
       <div className="card">
-        <h2>Version</h2>
-        <p className="muted">Local: {cfg.version}</p>
+        <h2>{t("Version Checker")}</h2>
+        <p className="muted">
+          {t("Local")}: {cfg.version}
+        </p>
         <div className="row">
           <button type="button" className="ghost" onClick={checkVersion}>
-            Check for updates
+            {t("Check for updates")}
           </button>
           {ver && <span className="muted">{ver.error || `${ver.latest} — ${ver.status}`}</span>}
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>{t("Restart")}</h2>
+        <p className="muted">{t("Restarts the API process (the dev watcher respawns it automatically).")}</p>
+        <div className="row">
+          <button type="button" className="ghost" onClick={restartApi}>
+            {t("Restart API")}
+          </button>
+          {restartMsg && <span className="muted">{restartMsg}</span>}
         </div>
       </div>
     </div>

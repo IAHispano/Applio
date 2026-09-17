@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { apiGet, apiSend, errMsg } from "../lib/api";
+import { useI18n } from "../lib/i18n";
+import { toast } from "../lib/toast";
 
 interface Preset {
   name: string;
@@ -9,6 +11,7 @@ interface Preset {
 }
 
 export default function PresetsPanel() {
+  const { t } = useI18n();
   const [presets, setPresets] = useState<Preset[]>([]);
   const [formant, setFormant] = useState<string[]>([]);
   const [name, setName] = useState("");
@@ -29,19 +32,47 @@ export default function PresetsPanel() {
     refresh();
   }, [refresh]);
 
-  function apply(p: Preset) {
+  function apply(p: Preset, target: "single" | "batch" = "single") {
     if (!p.values) return;
-    window.dispatchEvent(new CustomEvent("applio:apply-preset", { detail: p.values }));
+    window.dispatchEvent(
+      new CustomEvent(target === "batch" ? "applio:apply-preset-batch" : "applio:apply-preset", {
+        detail: p.values,
+      }),
+    );
+  }
+
+  async function importFile(file: File | null) {
+    setError("");
+    if (!file) return;
+    try {
+      const raw = await file.text();
+      const values = JSON.parse(raw) as Preset["values"];
+      if (
+        !values ||
+        typeof values.pitch !== "number" ||
+        typeof values.index_rate !== "number" ||
+        typeof values.rms_mix_rate !== "number" ||
+        typeof values.protect !== "number"
+      ) {
+        throw new Error(t("Not a valid preset file (needs pitch, index_rate, rms_mix_rate, protect)."));
+      }
+      const name = file.name.replace(/\.json$/i, "") || t("Imported Preset");
+      await apiSend("/api/presets", "POST", { name, values });
+      refresh();
+    } catch (err) {
+      setError(errMsg(err));
+    }
   }
 
   async function saveCurrent() {
     setError("");
     const handler = (e: Event) => {
       const values = (e as CustomEvent).detail;
-      apiSend("/api/presets", "POST", { name: name || "My Preset", values })
+      apiSend("/api/presets", "POST", { name: name || t("My Preset"), values })
         .then(() => {
           setName("");
           refresh();
+          toast(t("Preset saved."));
         })
         .catch((err) => setError(errMsg(err)));
     };
@@ -52,9 +83,15 @@ export default function PresetsPanel() {
 
   return (
     <div className="card">
-      <h2>Presets</h2>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <h2 style={{ margin: 0 }}>{t("Presets")}</h2>
+        <button type="button" className="ghost" onClick={refresh}>
+          {t("Refresh Presets")}
+        </button>
+      </div>
       <p className="muted">
-        Stored in <code>assets/presets/*.json</code>: pitch, search-feature-ratio, volume-envelope, protect.
+        {t("Stored in")} <code>assets/presets/*.json</code>
+        {t(": pitch, search-feature-ratio, volume-envelope, protect.")}
       </p>
       {error && <p style={{ color: "var(--err)" }}>{error}</p>}
       {presets.map((p) => (
@@ -63,30 +100,47 @@ export default function PresetsPanel() {
           <span className="muted">
             {p.values
               ? `pitch ${p.values.pitch} · ratio ${p.values.index_rate} · envelope ${p.values.rms_mix_rate} · protect ${p.values.protect}`
-              : "unreadable"}
+              : t("unreadable")}
           </span>
           {p.values && (
-            <button type="button" className="ghost" onClick={() => apply(p)}>
-              Apply to Single
-            </button>
+            <>
+              <button type="button" className="ghost" onClick={() => apply(p, "single")}>
+                {t("Apply to Single")}
+              </button>
+              <button type="button" className="ghost" onClick={() => apply(p, "batch")}>
+                {t("Apply to Batch")}
+              </button>
+            </>
           )}
         </div>
       ))}
       <div className="row" style={{ marginTop: 12 }}>
         <input
           type="text"
-          placeholder="Preset name"
+          placeholder={t("Preset Name")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           style={{ maxWidth: 240 }}
         />
         <button type="button" className="ghost" onClick={saveCurrent}>
-          Save current Single settings
+          {t("Save current Single settings")}
         </button>
+        <label className="ghost" style={{ cursor: "pointer" }}>
+          {t("Import file")}
+          <input
+            type="file"
+            accept=".json"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              importFile(e.target.files?.[0] || null);
+              e.target.value = "";
+            }}
+          />
+        </label>
       </div>
       {formant.length > 0 && (
         <p className="muted" style={{ marginTop: 12 }}>
-          Formant presets in assets/formant_shift: {formant.join(", ")}
+          {t("Formant presets in assets/formant_shift:")} {formant.join(", ")}
         </p>
       )}
     </div>

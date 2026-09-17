@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiGet, apiSend, errMsg, fetchJob, type Job } from "../../lib/api";
+import { useI18n } from "../../lib/i18n";
 
 interface SetupCheck {
   id: string;
@@ -32,6 +33,7 @@ interface FirstRunSetupProps {
 }
 
 export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
+  const { t } = useI18n();
   const [jobId, setJobId] = useState<string | null>(null);
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState("");
@@ -203,12 +205,14 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
 
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white m-0">
-              {job?.status === "done" ? "Applio Studio is Ready" : "Preparing Applio for First Use"}
+              {job?.status === "done" ? t("Applio Studio is Ready") : t("Preparing Applio for First Use")}
             </h1>
             <p className="text-sm text-neutral-400 max-w-md mx-auto leading-relaxed m-0">
               {job?.status === "done"
-                ? "Your environment, voice conversion engine, and acoustic models are prepared."
-                : "Automatically setting up dependencies, neural models, and audio engines. This only happens on first launch."}
+                ? t("Your environment, voice conversion engine, and acoustic models are prepared.")
+                : t(
+                    "Automatically setting up dependencies, neural models, and audio engines. This only happens on first launch.",
+                  )}
             </p>
           </div>
         </div>
@@ -224,7 +228,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
               )}
               <span>
                 {job?.status === "done"
-                  ? "Installation Complete"
+                  ? t("Installation Complete")
                   : `Automated Setup in Progress (${progressPercent}%)`}
               </span>
             </span>
@@ -268,18 +272,18 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
                       )}
                     </div>
                     <div>
-                      <p className="text-xs font-semibold m-0">{step.title}</p>
-                      <p className="text-[11px] text-neutral-400 m-0">{step.desc}</p>
+                      <p className="text-xs font-semibold m-0">{t(step.title)}</p>
+                      <p className="text-[11px] text-neutral-400 m-0">{t(step.desc)}</p>
                     </div>
                   </div>
 
                   <span className="text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded">
                     {isDone ? (
-                      <span className="text-emerald-400">Ready</span>
+                      <span className="text-emerald-400">{t("Ready")}</span>
                     ) : isRunning ? (
-                      <span className="text-white animate-pulse">Installing…</span>
+                      <span className="text-white animate-pulse">{t("Installing…")}</span>
                     ) : (
-                      <span className="text-neutral-500">Queued</span>
+                      <span className="text-neutral-500">{t("Queued")}</span>
                     )}
                   </span>
                 </div>
@@ -293,7 +297,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
           <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
             <div className="space-y-2 flex-1">
-              <p className="text-xs font-semibold text-red-300 m-0">Setup Encountered an Issue</p>
+              <p className="text-xs font-semibold text-red-300 m-0">{t("Setup Encountered an Issue")}</p>
               <p className="text-xs text-red-200/80 m-0 leading-relaxed">{error}</p>
               <button
                 type="button"
@@ -301,7 +305,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
                 onClick={retry}
               >
                 <RefreshCw size={13} />
-                <span>Retry Automated Setup</span>
+                <span>{t("Retry Automated Setup")}</span>
               </button>
             </div>
           </div>
@@ -315,7 +319,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
             onClick={() => setShowLogs(!showLogs)}
           >
             <Terminal size={14} />
-            <span>{showLogs ? "Hide Console Output" : "View Live Console Output"}</span>
+            <span>{showLogs ? t("Hide Console Output") : t("View Live Console Output")}</span>
             {showLogs ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
 
@@ -325,7 +329,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
               className="cta px-6 py-2.5 text-sm flex items-center gap-2 shadow-lg"
               onClick={onComplete}
             >
-              <span>{countdown !== null ? `Entering Studio (${countdown}s)…` : "Launch Studio"}</span>
+              <span>{countdown !== null ? `Entering Studio (${countdown}s)…` : t("Launch Studio")}</span>
               <ArrowRight size={15} />
             </button>
           )}
@@ -343,7 +347,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
                 </p>
               ))
             ) : (
-              <p className="text-neutral-500 m-0 italic">Initializing setup stream…</p>
+              <p className="text-neutral-500 m-0 italic">{t("Initializing setup stream…")}</p>
             )}
             <div ref={logsEndRef} />
           </div>

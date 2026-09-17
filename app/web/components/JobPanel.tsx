@@ -11,10 +11,12 @@ import {
   pollJob,
   stopJob,
 } from "../lib/api";
+import { useI18n } from "../lib/i18n";
 import AudioPlayer from "./AudioPlayer";
 
 // Polls a job, shows status/logs, and renders its output file.
 export default function JobPanel({ jobId, compact }: { jobId: string | null; compact?: boolean }) {
+  const { t } = useI18n();
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState("");
 
@@ -36,7 +38,7 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
 
   if (!jobId) return null;
   if (error) return <p style={{ color: "var(--err)" }}>{error}</p>;
-  if (!job) return <p className="muted">Loading job…</p>;
+  if (!job) return <p className="muted">{t("Loading job…")}</p>;
 
   const out = job.outputFile;
   const sidecars: Array<{ label: string; file: string }> = [];
@@ -58,19 +60,22 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
   }
 
   const resultMsg = typeof job.result?.message === "string" ? job.result.message : null;
+  const resultInfo = typeof job.result?.info === "string" ? job.result.info : null;
 
   return (
     <div className="card">
       <div className="row">
         <span className={`badge ${job.status}`}>{job.status}</span>
-        <span className="muted">job {job.id}</span>
+        <span className="muted">
+          {t("job")} {job.id}
+        </span>
         {(job.status === "queued" || job.status === "running") && (
           <button
             type="button"
             className="ghost"
             onClick={() => stopJob(job.id).catch((e) => setError(errMsg(e)))}
           >
-            Stop
+            {t("Stop")}
           </button>
         )}
       </div>
@@ -81,14 +86,20 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
         </div>
       )}
       {resultMsg && <p>{resultMsg}</p>}
+      {resultInfo && (
+        <div>
+          <p className="muted">{t("Analysis result")}</p>
+          <div className="log">{resultInfo}</div>
+        </div>
+      )}
       {out && isAudioFile(out) && <AudioPlayer src={outputUrl(out)} filename={out.split("/").pop()} />}
       {out && isImageFile(out) && (
         <div>
           {/* biome-ignore lint/performance/noImgElement: user-generated plot, no optimizer benefit */}
-          <img src={outputUrl(out)} alt="output" style={{ maxWidth: "100%", borderRadius: 8 }} />
+          <img src={outputUrl(out)} alt={t("output")} style={{ maxWidth: "100%", borderRadius: 8 }} />
           <p>
             <a href={outputUrl(out)} download>
-              Download image
+              {t("Download image")}
             </a>{" "}
             <span className="muted">{out}</span>
           </p>
@@ -97,7 +108,7 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
       {out && !isAudioFile(out) && !isImageFile(out) && (
         <p>
           <a href={outputUrl(out)} download>
-            Download result
+            {t("Download result")}
           </a>{" "}
           <span className="muted">{out}</span>
         </p>
@@ -105,14 +116,14 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
       {sidecars.map((s) => (
         <p key={s.label}>
           <a href={outputUrl(s.file)} download>
-            Download {s.label}
+            {t("Download")} {s.label}
           </a>{" "}
           <span className="muted">{s.file}</span>
         </p>
       ))}
       {!compact && job.logs.length > 0 && (
         <div>
-          <p className="muted">Engine logs</p>
+          <p className="muted">{t("Engine logs")}</p>
           <div className="log">{job.logs.slice(-60).join("\n")}</div>
         </div>
       )}

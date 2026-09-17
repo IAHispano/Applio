@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useI18n } from "../../lib/i18n";
 import { NAV_SECTIONS } from "./nav";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { t } = useI18n();
 
   return (
     <aside className="flex flex-col w-64 shrink-0 bg-[#141414]/90 backdrop-blur-md border border-white/10 text-neutral-200 p-3 m-3 mr-0 my-3 rounded-2xl select-none min-h-0">
@@ -27,7 +29,7 @@ export default function Sidebar() {
           <div key={section.title || `sec-${sIdx}`} className="space-y-1">
             {section.title && (
               <div className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                {section.title}
+                {t(section.title)}
               </div>
             )}
             <ul className="space-y-0.5">
@@ -51,10 +53,10 @@ export default function Sidebar() {
                           active ? "text-white" : "text-neutral-400"
                         }`}
                       />
-                      <span className="truncate">{item.label}</span>
+                      <span className="truncate">{t(item.label)}</span>
                       {item.badge && (
                         <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-neutral-300">
-                          {item.badge}
+                          {t(item.badge)}
                         </span>
                       )}
                     </Link>

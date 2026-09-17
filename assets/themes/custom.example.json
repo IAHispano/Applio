@@ -1,0 +1,70 @@
+{
+  "name": "Custom",
+  "version": "1.0.0",
+  "description": "Example theme. Copy to <your-name>.json, edit, pick it in Settings → Appearance. Full guide: docs/themes.md.",
+  "mode": "dark",
+  "colors": {
+    "primary": "#ffffff",
+    "primarySoft": "rgba(255, 255, 255, 0.12)",
+    "background": "#0a0a0a",
+    "surface": "rgba(255, 255, 255, 0.05)",
+    "surfaceDim": "rgba(0, 0, 0, 0.4)",
+    "panel": "#1c1c1c",
+    "border": "rgba(255, 255, 255, 0.1)",
+    "text": "#e7e5e4",
+    "heading": "#f5f5f5",
+    "muted": "#a3a3a3",
+    "ctaBg": "#ffffff",
+    "ctaText": "#0a0a0a",
+    "buttonBg": "rgba(255, 255, 255, 0.08)",
+    "buttonBgHover": "rgba(255, 255, 255, 0.14)",
+    "buttonTextHover": "#ffffff",
+    "buttonGhostText": "#d4d4d4",
+    "buttonGhostBorder": "rgba(255, 255, 255, 0.14)",
+    "buttonGhostBorderHover": "rgba(255, 255, 255, 0.28)",
+    "sliderTrack": "rgba(255, 255, 255, 0.12)",
+    "sliderThumb": "#ffffff",
+    "checkboxBorder": "rgba(255, 255, 255, 0.25)",
+    "checkboxBorderHover": "rgba(255, 255, 255, 0.5)",
+    "fileButtonBg": "transparent",
+    "fileButtonBorder": "rgba(255, 255, 255, 0.14)",
+    "fileButtonText": "#d4d4d4",
+    "fileButtonBgHover": "rgba(255, 255, 255, 0.08)",
+    "checkboxChecked": "#ffffff",
+    "checkboxCheck": "#000000",
+    "focusBorder": "rgba(255, 255, 255, 0.25)",
+    "selectionBg": "#ffffff",
+    "selectionText": "#000000",
+    "logBg": "rgba(0, 0, 0, 0.5)",
+    "ok": "#4ade80",
+    "warn": "#fbbf24",
+    "err": "#f87171",
+    "dangerBg": "rgba(239, 68, 68, 0.12)",
+    "dangerBorder": "rgba(239, 68, 68, 0.3)",
+    "dangerText": "#fca5a5",
+    "dangerBgHover": "rgba(239, 68, 68, 0.22)",
+    "dangerBorderHover": "rgba(239, 68, 68, 0.5)",
+    "dangerTextHover": "#ffffff"
+  },
+  "fonts": {
+    "display": ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+    "body": ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
+    "mono": ["ui-monospace", "monospace"]
+  },
+  "radius": {
+    "card": "12px",
+    "input": "8px",
+    "button": "10px",
+    "pill": "999px"
+  },
+  "titlebar": {
+    "bg": "#0c0c0c",
+    "closeBg": "#e81123",
+    "closeText": "#ffffff"
+  },
+  "shadows": {
+    "card": "none",
+    "button": "0 1px 2px rgba(0, 0, 0, 0.25)"
+  },
+  "custom_css": ""
+}

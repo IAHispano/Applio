@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg } from "../../lib/api";
+import { useI18n } from "../../lib/i18n";
 
 export default function TensorboardPage() {
+  const { t } = useI18n();
   const [status, setStatus] = useState<{ running: boolean; url: string; startedAt: string | null } | null>(
     null,
   );
@@ -13,7 +15,8 @@ export default function TensorboardPage() {
 
   const refresh = useCallback(async () => {
     try {
-      setStatus(await apiGet("/api/tensorboard/status"));
+      // Status polls must bypass the apiGet cache or engine state freezes.
+      setStatus(await apiGet("/api/tensorboard/status", { ttlMs: 0 }));
     } catch (e) {
       setError(errMsg(e));
     }
@@ -46,13 +49,13 @@ export default function TensorboardPage() {
   return (
     <div>
       <PageHeader
-        title="TensorBoard"
-        description="Monitor loss curves, spectrograms, and training metrics live during model training."
+        title={t("TensorBoard")}
+        description={t("Monitor loss curves, spectrograms, and training metrics live during model training.")}
       />
       {error && <p style={{ color: "var(--err)" }}>{error}</p>}
       <div className="row mb-4">
         <button type="button" onClick={start} disabled={busy || status?.running}>
-          {busy ? "Starting…" : status?.running ? "Running ✓" : "Launch TensorBoard"}
+          {busy ? t("Starting…") : status?.running ? t("Running ✓") : t("Launch TensorBoard")}
         </button>
         {status?.running && (
           <button
@@ -60,17 +63,17 @@ export default function TensorboardPage() {
             className="ghost"
             onClick={() => apiSend("/api/tensorboard/stop", "POST").then(refresh)}
           >
-            Stop
+            {t("Stop")}
           </button>
         )}
         <span className="muted">
-          {status ? (status.running ? `live at ${iframeUrl}` : "stopped") : "checking…"}
+          {status ? (status.running ? `live at ${iframeUrl}` : t("stopped")) : t("checking…")}
         </span>
       </div>
       {status?.running && (
         <iframe
           src={iframeUrl}
-          title="TensorBoard"
+          title={t("TensorBoard")}
           width="100%"
           height={800}
           style={{ border: "1px solid var(--border)", borderRadius: 8, marginTop: 12 }}

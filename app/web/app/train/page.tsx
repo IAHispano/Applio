@@ -5,10 +5,13 @@ import { useEffect, useState } from "react";
 import JobPanel from "../../components/JobPanel";
 import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, errMsg, submitJob } from "../../lib/api";
+import { useI18n } from "../../lib/i18n";
+import { toast } from "../../lib/toast";
 
 type TrainMode = "pipeline" | "steps" | "uploads";
 
 export default function TrainPage() {
+  const { t } = useI18n();
   const [trainMode, setTrainMode] = useState<TrainMode>("pipeline");
   const [modelName, setModelName] = useState("my-project");
   const [datasets, setDatasets] = useState<string[]>([]);
@@ -19,26 +22,52 @@ export default function TrainPage() {
 
   const [datasetPath, setDatasetPath] = useState("");
   const [sampleRate, setSampleRate] = useState("40000");
+  const [cpuCores, setCpuCores] = useState("");
   const [cut, setCut] = useState("Automatic");
   const [chunk, setChunk] = useState(3.0);
   const [overlap, setOverlap] = useState(0.3);
   const [noiseReduction, setNoiseReduction] = useState(false);
+  const [cleanStrength, setCleanStrength] = useState(0.7);
+  const [processEffects, setProcessEffects] = useState(false);
+  const [normalizationMode, setNormalizationMode] = useState("none");
   const [f0Method, setF0Method] = useState("rmvpe");
   const [embedder, setEmbedder] = useState("contentvec");
+  const [embedderCustom, setEmbedderCustom] = useState("");
+  const [includeMutes, setIncludeMutes] = useState(2);
   const [vocoder, setVocoder] = useState("HiFi-GAN");
   const [totalEpoch, setTotalEpoch] = useState(200);
   const [batchSize, setBatchSize] = useState(4);
   const [saveEvery, setSaveEvery] = useState(10);
+  const [pretrained, setPretrained] = useState(true);
+  const [saveOnlyLatest, setSaveOnlyLatest] = useState(true);
+  const [saveEveryWeights, setSaveEveryWeights] = useState(true);
+  const [cleanup, setCleanup] = useState(false);
+  const [cacheGpu, setCacheGpu] = useState(false);
+  const [checkpointing, setCheckpointing] = useState(false);
   const [indexAlgo, setIndexAlgo] = useState("Auto");
   const [customPre, setCustomPre] = useState(false);
   const [gPath, setGPath] = useState("");
   const [dPath, setDPath] = useState("");
+  const [terms, setTerms] = useState(false);
+  const [expModels, setExpModels] = useState<string[]>([]);
+  const [expIndexes, setExpIndexes] = useState<string[]>([]);
+  const [expModel, setExpModel] = useState("");
+  const [expIndex, setExpIndex] = useState("");
+
+  const srOptions = vocoder === "RefineGAN" ? ["24000", "32000"] : ["32000", "40000", "48000"];
+
+  function pickVocoder(v: string) {
+    setVocoder(v);
+    if (v === "RefineGAN" && (sampleRate === "40000" || sampleRate === "48000")) setSampleRate("32000");
+    if (v !== "RefineGAN" && sampleRate === "24000") setSampleRate("40000");
+  }
 
   const [jobId, setJobId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [stopTarget, setStopTarget] = useState("");
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-time fetch only; t is a stable dictionary lookup
   useEffect(() => {
     apiGet<{ datasets: string[] }>("/api/train/datasets")
       .then((d) => {
@@ -57,7 +86,15 @@ export default function TrainPage() {
         setGpuInfo(g.info);
         setGpuCount(g.count > 0 ? "0" : "-");
       })
-      .catch(() => setGpuInfo("GPU query failed (CPU-only host)"));
+      .catch(() => setGpuInfo(t("GPU query failed (CPU-only host)")));
+    apiGet<{ models: string[]; indexes: string[] }>("/api/train/exports")
+      .then((e) => {
+        setExpModels(e.models || []);
+        setExpIndexes(e.indexes || []);
+        if (e.models?.[0]) setExpModel(e.models[0]);
+        if (e.indexes?.[0]) setExpIndex(e.indexes[0]);
+      })
+      .catch(() => {});
   }, []);
 
   async function run(path: string, body: unknown) {
@@ -75,11 +112,15 @@ export default function TrainPage() {
 
   async function runPipeline() {
     if (!modelName.trim()) {
-      setError("Please enter a model name.");
+      setError(t("Please enter a model name."));
       return;
     }
     if (!datasetPath) {
-      setError("Please select or upload a dataset.");
+      setError(t("Please select or upload a dataset."));
+      return;
+    }
+    if (!terms) {
+      toast(t("You must agree to the Terms of Use to proceed."), "error");
       return;
     }
     setError("");
@@ -107,6 +148,24 @@ export default function TrainPage() {
     }
   }
 
+  async function downloadExport(file: string) {
+    if (!file) return;
+    setError("");
+    try {
+      const r = await fetch(`/api/train/export-file?file=${encodeURIComponent(file)}`);
+      if (!r.ok) throw new Error((await r.json().catch(() => ({})))?.error || t("Download failed"));
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.split("/").pop() || "model";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (e) {
+      setError(errMsg(e));
+    }
+  }
+
   async function stop() {
     setError("");
     try {
@@ -120,8 +179,10 @@ export default function TrainPage() {
   return (
     <div>
       <PageHeader
-        title="Training Studio"
-        description="Train custom RVC voice models from audio datasets with automated 1-click pipeline or step-by-step control."
+        title={t("Training Studio")}
+        description={t(
+          "Train custom RVC voice models from audio datasets with automated 1-click pipeline or step-by-step control.",
+        )}
       >
         <div className="row">
           <button
@@ -132,7 +193,7 @@ export default function TrainPage() {
             onClick={() => setTrainMode("pipeline")}
           >
             <Zap size={14} />
-            <span>1-Click Pipeline</span>
+            <span>{t("1-Click Pipeline")}</span>
           </button>
           <button
             type="button"
@@ -142,7 +203,7 @@ export default function TrainPage() {
             onClick={() => setTrainMode("steps")}
           >
             <Layers size={14} />
-            <span>Step-by-Step</span>
+            <span>{t("Step-by-Step")}</span>
           </button>
           <button
             type="button"
@@ -152,7 +213,7 @@ export default function TrainPage() {
             onClick={() => setTrainMode("uploads")}
           >
             <FolderUp size={14} />
-            <span>Uploads</span>
+            <span>{t("Uploads")}</span>
           </button>
         </div>
       </PageHeader>
@@ -161,28 +222,39 @@ export default function TrainPage() {
       <div className="card mb-4">
         <div className="grid2">
           <div>
-            <label>Model Project Name</label>
+            <label>{t("Model Project Name")}</label>
             <input
               type="text"
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
-              placeholder="e.g. vocal-model"
+              placeholder={t("e.g. vocal-model")}
             />
           </div>
           <div>
-            <label>Compute Hardware (GPU)</label>
+            <label>{t("Compute Hardware (GPU)")}</label>
             <input
               type="text"
               value={gpuCount}
               onChange={(e) => setGpuCount(e.target.value)}
-              placeholder="0 (or - for CPU)"
+              placeholder={t("0 (or - for CPU)")}
+            />
+          </div>
+          <div>
+            <label>{t("CPU Cores")}</label>
+            <input
+              type="number"
+              min={1}
+              max={64}
+              value={cpuCores}
+              onChange={(e) => setCpuCores(e.target.value)}
+              placeholder={t("auto")}
             />
           </div>
         </div>
         <div className="flex items-center justify-between text-xs text-neutral-400 mt-2">
-          <span>{gpuInfo || "Detecting GPU acceleration…"}</span>
+          <span>{gpuInfo || t("Detecting GPU acceleration…")}</span>
           <span className="text-neutral-500">
-            Output saved to <code>logs/{modelName || "…"}/</code>
+            {t("Output saved to")} <code>logs/{modelName || "…"}/</code>
           </span>
         </div>
         {error && (
@@ -200,11 +272,12 @@ export default function TrainPage() {
               <div>
                 <h2 className="text-lg font-bold text-white m-0 flex items-center gap-2">
                   <Zap size={18} className="text-amber-400" />
-                  <span>1-Click Complete Pipeline</span>
+                  <span>{t("1-Click Complete Pipeline")}</span>
                 </h2>
                 <p className="text-xs text-neutral-400 m-0 mt-0.5">
-                  Runs Preprocess, Feature Extraction, Model Training, and Feature Indexing in a single
-                  automated flow.
+                  {t(
+                    "Runs Preprocess, Feature Extraction, Model Training, and Feature Indexing in a single automated flow.",
+                  )}
                 </p>
               </div>
             </div>
@@ -219,15 +292,15 @@ export default function TrainPage() {
               ].map((s) => (
                 <div key={s.step} className="bg-white/5 border border-white/5 rounded-lg p-3">
                   <span className="text-xs font-bold text-neutral-400 block">Step {s.step}</span>
-                  <span className="text-sm font-semibold text-white block">{s.name}</span>
-                  <span className="text-xs text-neutral-500 block">{s.desc}</span>
+                  <span className="text-sm font-semibold text-white block">{t(s.name)}</span>
+                  <span className="text-xs text-neutral-500 block">{t(s.desc)}</span>
                 </div>
               ))}
             </div>
 
             <div className="grid2">
               <div>
-                <label>Dataset Folder (in assets/datasets)</label>
+                <label>{t("Dataset Folder (in assets/datasets)")}</label>
                 <input
                   type="text"
                   list="datasets"
@@ -243,9 +316,9 @@ export default function TrainPage() {
               </div>
 
               <div>
-                <label>Target Sampling Rate</label>
+                <label>{t("Target Sampling Rate")}</label>
                 <select value={sampleRate} onChange={(e) => setSampleRate(e.target.value)}>
-                  {["32000", "40000", "48000"].map((s) => (
+                  {srOptions.map((s) => (
                     <option key={s} value={s}>
                       {s} Hz
                     </option>
@@ -278,7 +351,7 @@ export default function TrainPage() {
               </div>
 
               <div>
-                <label>Pitch Extraction (F0)</label>
+                <label>{t("Pitch Extraction (F0)")}</label>
                 <select value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
                   {["rmvpe", "crepe", "crepe-tiny"].map((s) => (
                     <option key={s} value={s}>
@@ -289,8 +362,8 @@ export default function TrainPage() {
               </div>
 
               <div>
-                <label>Vocoder Architecture</label>
-                <select value={vocoder} onChange={(e) => setVocoder(e.target.value)}>
+                <label>{t("Vocoder Architecture")}</label>
+                <select value={vocoder} onChange={(e) => pickVocoder(e.target.value)}>
                   {["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"].map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -307,7 +380,11 @@ export default function TrainPage() {
                   checked={noiseReduction}
                   onChange={(e) => setNoiseReduction(e.target.checked)}
                 />
-                <span>Enable Audio Noise Reduction</span>
+                <span>{t("Enable Audio Noise Reduction")}</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer m-0 terms">
+                <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
+                <span>{t("I agree to the terms of use")}</span>
               </label>
             </div>
 
@@ -319,7 +396,7 @@ export default function TrainPage() {
                 onClick={runPipeline}
               >
                 <Zap size={16} />
-                <span>{busy ? "Pipeline Running…" : "Start 1-Click Pipeline"}</span>
+                <span>{busy ? t("Pipeline Running…") : t("Start 1-Click Pipeline")}</span>
               </button>
 
               {busy && (
@@ -329,7 +406,7 @@ export default function TrainPage() {
                   onClick={stop}
                 >
                   <StopCircle size={16} />
-                  <span>Stop Pipeline</span>
+                  <span>{t("Stop Pipeline")}</span>
                 </button>
               )}
             </div>
@@ -342,10 +419,10 @@ export default function TrainPage() {
         <div className="space-y-4">
           {/* Step 1: Preprocess */}
           <div className="card">
-            <h2>1 · Preprocess Dataset</h2>
+            <h2>1 · {t("Preprocess Dataset")}</h2>
             <div className="grid2">
               <div>
-                <label>Dataset (assets/datasets)</label>
+                <label>{t("Dataset (assets/datasets)")}</label>
                 <input
                   type="text"
                   list="datasets"
@@ -359,9 +436,9 @@ export default function TrainPage() {
                 </datalist>
               </div>
               <div>
-                <label>Sample Rate</label>
+                <label>{t("Sample Rate")}</label>
                 <select value={sampleRate} onChange={(e) => setSampleRate(e.target.value)}>
-                  {["32000", "40000", "48000"].map((s) => (
+                  {srOptions.map((s) => (
                     <option key={s} value={s}>
                       {s} Hz
                     </option>
@@ -369,7 +446,7 @@ export default function TrainPage() {
                 </select>
               </div>
               <div>
-                <label>Cut Method</label>
+                <label>{t("Cut Method")}</label>
                 <select value={cut} onChange={(e) => setCut(e.target.value)}>
                   {["Skip", "Simple", "Automatic"].map((s) => (
                     <option key={s} value={s}>
@@ -408,8 +485,39 @@ export default function TrainPage() {
                 checked={noiseReduction}
                 onChange={(e) => setNoiseReduction(e.target.checked)}
               />
-              <span>Noise reduction</span>
+              <span>{t("Noise Reduction")}</span>
             </label>
+            {noiseReduction && (
+              <div>
+                <label>Clean strength: {cleanStrength}</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={cleanStrength}
+                  onChange={(e) => setCleanStrength(Number(e.target.value))}
+                />
+              </div>
+            )}
+            <label className="flex items-center gap-2 cursor-pointer mt-3">
+              <input
+                type="checkbox"
+                checked={processEffects}
+                onChange={(e) => setProcessEffects(e.target.checked)}
+              />
+              <span>{t("Process effects (disable filters during preprocessing)")}</span>
+            </label>
+            <div>
+              <label>{t("Normalization mode")}</label>
+              <select value={normalizationMode} onChange={(e) => setNormalizationMode(e.target.value)}>
+                {["none", "pre", "post"].map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="row mt-4">
               <button
                 type="button"
@@ -420,24 +528,28 @@ export default function TrainPage() {
                     modelName,
                     datasetPath,
                     sampleRate,
+                    ...(cpuCores ? { cpuCores: Number(cpuCores) } : {}),
                     cutPreprocess: cut,
                     chunkLen: chunk,
                     overlapLen: overlap,
                     noiseReduction,
+                    cleanStrength,
+                    processEffects,
+                    normalizationMode,
                   })
                 }
               >
-                Run Preprocess
+                {t("Run Preprocess")}
               </button>
             </div>
           </div>
 
           {/* Step 2: Feature Extraction */}
           <div className="card">
-            <h2>2 · Extract Features</h2>
+            <h2>2 · {t("Extract Features")}</h2>
             <div className="grid2">
               <div>
-                <label>Pitch Method (F0)</label>
+                <label>{t("Pitch Method (F0)")}</label>
                 <select value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
                   {["crepe", "crepe-tiny", "rmvpe"].map((s) => (
                     <option key={s} value={s}>
@@ -447,7 +559,7 @@ export default function TrainPage() {
                 </select>
               </div>
               <div>
-                <label>Embedder Model</label>
+                <label>{t("Embedder Model")}</label>
                 <select value={embedder} onChange={(e) => setEmbedder(e.target.value)}>
                   {["contentvec", "spin-v2", "custom"].map((s) => (
                     <option key={s} value={s}>
@@ -455,6 +567,28 @@ export default function TrainPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+              {embedder === "custom" && (
+                <div>
+                  <label>{t("Custom embedder path")}</label>
+                  <input
+                    type="text"
+                    value={embedderCustom}
+                    onChange={(e) => setEmbedderCustom(e.target.value)}
+                    placeholder="rvc/models/embedders/embedders_custom/my-embedder"
+                  />
+                </div>
+              )}
+              <div>
+                <label>Include mutes: {includeMutes} (0…10)</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={10}
+                  step={1}
+                  value={includeMutes}
+                  onChange={(e) => setIncludeMutes(Number(e.target.value))}
+                />
               </div>
             </div>
             <div className="row mt-4">
@@ -468,22 +602,27 @@ export default function TrainPage() {
                     f0Method,
                     gpu: gpuCount,
                     sampleRate,
+                    ...(cpuCores ? { cpuCores: Number(cpuCores) } : {}),
                     embedderModel: embedder,
+                    ...(embedder === "custom" && embedderCustom
+                      ? { embedderModelCustom: embedderCustom }
+                      : {}),
+                    includeMutes,
                   })
                 }
               >
-                Run Extract
+                {t("Run Extract")}
               </button>
             </div>
           </div>
 
           {/* Step 3: Train */}
           <div className="card">
-            <h2>3 · Model Training</h2>
+            <h2>{t("3 · Model Training")}</h2>
             <div className="grid2">
               <div>
-                <label>Vocoder</label>
-                <select value={vocoder} onChange={(e) => setVocoder(e.target.value)}>
+                <label>{t("Vocoder")}</label>
+                <select value={vocoder} onChange={(e) => pickVocoder(e.target.value)}>
                   {["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"].map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -492,11 +631,11 @@ export default function TrainPage() {
                 </select>
               </div>
               <div>
-                <label>Total Epochs: {totalEpoch}</label>
+                <label>Total Epochs: {totalEpoch} (1…10000)</label>
                 <input
                   type="range"
                   min={1}
-                  max={1000}
+                  max={10000}
                   step={1}
                   value={totalEpoch}
                   onChange={(e) => setTotalEpoch(Number(e.target.value))}
@@ -525,7 +664,7 @@ export default function TrainPage() {
                 />
               </div>
               <div>
-                <label>Index Algorithm</label>
+                <label>{t("Index Algorithm")}</label>
                 <select value={indexAlgo} onChange={(e) => setIndexAlgo(e.target.value)}>
                   {["Auto", "Faiss", "KMeans"].map((s) => (
                     <option key={s} value={s}>
@@ -537,13 +676,49 @@ export default function TrainPage() {
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer mt-3">
+              <input type="checkbox" checked={pretrained} onChange={(e) => setPretrained(e.target.checked)} />
+              <span>{t("Use pretrained model")}</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer mt-3">
+              <input
+                type="checkbox"
+                checked={saveOnlyLatest}
+                onChange={(e) => setSaveOnlyLatest(e.target.checked)}
+              />
+              <span>{t("Save only latest checkpoint")}</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer mt-3">
+              <input
+                type="checkbox"
+                checked={saveEveryWeights}
+                onChange={(e) => setSaveEveryWeights(e.target.checked)}
+              />
+              <span>{t("Save model weights every checkpoint")}</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer mt-3">
+              <input type="checkbox" checked={cleanup} onChange={(e) => setCleanup(e.target.checked)} />
+              <span>{t("Fresh start (clean up previous attempt)")}</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer mt-3">
+              <input type="checkbox" checked={cacheGpu} onChange={(e) => setCacheGpu(e.target.checked)} />
+              <span>{t("Cache Dataset in GPU")}</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer mt-3">
+              <input
+                type="checkbox"
+                checked={checkpointing}
+                onChange={(e) => setCheckpointing(e.target.checked)}
+              />
+              <span>{t("Memory-efficient checkpointing")}</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer mt-3">
               <input type="checkbox" checked={customPre} onChange={(e) => setCustomPre(e.target.checked)} />
-              <span>Custom pretrained G/D</span>
+              <span>{t("Custom pretrained G/D")}</span>
             </label>
             {customPre && (
               <div className="grid2 mt-2">
                 <div>
-                  <label>G path</label>
+                  <label>{t("G path")}</label>
                   <input type="text" list="preG" value={gPath} onChange={(e) => setGPath(e.target.value)} />
                   <datalist id="preG">
                     {pretG.map((p) => (
@@ -552,7 +727,7 @@ export default function TrainPage() {
                   </datalist>
                 </div>
                 <div>
-                  <label>D path</label>
+                  <label>{t("D path")}</label>
                   <input type="text" list="preD" value={dPath} onChange={(e) => setDPath(e.target.value)} />
                   <datalist id="preD">
                     {pretD.map((p) => (
@@ -563,12 +738,20 @@ export default function TrainPage() {
               </div>
             )}
 
+            <label className="flex items-center gap-2 cursor-pointer mt-3 terms">
+              <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
+              <span>{t("I agree to the terms of use")}</span>
+            </label>
             <div className="row mt-4">
               <button
                 type="button"
                 className="cta"
                 disabled={busy}
-                onClick={() =>
+                onClick={() => {
+                  if (!terms) {
+                    toast(t("You must agree to the Terms of Use to proceed."), "error");
+                    return;
+                  }
                   run("/api/train/train", {
                     modelName,
                     vocoder,
@@ -581,17 +764,23 @@ export default function TrainPage() {
                     customPretrained: customPre,
                     gPretrainedPath: gPath || undefined,
                     dPretrainedPath: dPath || undefined,
-                  })
-                }
+                    pretrained,
+                    saveOnlyLatest,
+                    saveEveryWeights,
+                    cleanup,
+                    cacheDataInGpu: cacheGpu,
+                    checkpointing,
+                  });
+                }}
               >
-                Start Training
+                {t("Start Training")}
               </button>
               <button
                 type="button"
                 className="ghost"
                 onClick={() => run("/api/train/index", { modelName, indexAlgorithm: indexAlgo })}
               >
-                Generate Index Only
+                {t("Generate Index Only")}
               </button>
             </div>
           </div>
@@ -601,43 +790,91 @@ export default function TrainPage() {
       {/* 3. UPLOADS VIEW */}
       {trainMode === "uploads" && (
         <div className="card space-y-4">
-          <h2>Dataset & Checkpoint Uploads</h2>
+          <h2>{t("Dataset & Checkpoint Uploads")}</h2>
           <UploadBox
             path="/api/train/upload-dataset"
-            fields={[{ name: "datasetName", label: "Dataset name (e.g. my_vocals)" }]}
+            fields={[{ name: "datasetName", label: t("Dataset name (e.g. my_vocals)") }]}
             files="files"
             multiple
-            label="Dataset Audio Files (WAV/MP3/FLAC) → assets/datasets/<name>/"
+            label={t("Dataset Audio Files (WAV/MP3/FLAC) → assets/datasets/<name>/")}
           />
           <UploadBox
             path="/api/train/upload-pretrained"
             fields={[]}
             files="file"
-            label="Custom Pretrained Weights (.pth) → rvc/models/pretraineds/custom/"
+            label={t("Custom Pretrained Weights (.pth) → rvc/models/pretraineds/custom/")}
           />
           <UploadBox
             path="/api/train/upload-embedder"
-            fields={[{ name: "folderName", label: "Folder name" }]}
+            fields={[{ name: "folderName", label: t("Folder Name") }]}
             files="bin"
             extra="config"
-            label="Custom Embedder (.bin + .json)"
+            label={t("Custom Embedder (.bin + .json)")}
           />
         </div>
       )}
 
+      {/* Export Model */}
+      <div className="card mt-4">
+        <h2>{t("Export Model")}</h2>
+        <p className="muted text-sm mb-3">{t("Download a trained .pth and its .index from logs/.")}</p>
+        <div className="grid2">
+          <div>
+            <label>{t("Model (.pth)")}</label>
+            <select value={expModel} onChange={(e) => setExpModel(e.target.value)}>
+              <option value="">—</option>
+              {expModels.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label>{t("Index (.index)")}</label>
+            <select value={expIndex} onChange={(e) => setExpIndex(e.target.value)}>
+              <option value="">—</option>
+              {expIndexes.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="row mt-4">
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => downloadExport(expModel)}
+            disabled={!expModel}
+          >
+            {t("Download .pth")}
+          </button>
+          <button
+            type="button"
+            className="ghost"
+            onClick={() => downloadExport(expIndex)}
+            disabled={!expIndex}
+          >
+            {t("Download .index")}
+          </button>
+        </div>
+      </div>
+
       {/* Stop Controller Card */}
       <div className="card mt-4">
-        <h2>Stop Training Process</h2>
+        <h2>{t("Stop Training Process")}</h2>
         <div className="row">
           <input
             type="text"
-            placeholder="model name (fallback)"
+            placeholder={t("model name (fallback)")}
             value={stopTarget}
             onChange={(e) => setStopTarget(e.target.value)}
             style={{ maxWidth: 240 }}
           />
           <button type="button" className="ghost text-red-400 hover:text-red-300" onClick={stop}>
-            Stop Running Job
+            {t("Stop Training")}
           </button>
         </div>
       </div>
@@ -662,6 +899,7 @@ function UploadBox({
   multiple?: boolean;
   label: string;
 }) {
+  const { t } = useI18n();
   const [vals, setVals] = useState<Record<string, string>>({});
   const [picked, setPicked] = useState<FileList | null>(null);
   const [picked2, setPicked2] = useState<FileList | null>(null);
@@ -675,8 +913,8 @@ function UploadBox({
     try {
       const r = await fetch(path, { method: "POST", body: fd });
       const b = await r.json();
-      if (!r.ok) throw new Error(b?.error || "Upload failed");
-      setMsg("Uploaded ✓");
+      if (!r.ok) throw new Error(b?.error || t("Upload failed."));
+      setMsg(t("Uploaded."));
     } catch (e) {
       setMsg(errMsg(e));
     }
@@ -698,7 +936,7 @@ function UploadBox({
         <input type="file" multiple={multiple} onChange={(e) => setPicked(e.target.files)} />
         {extra && <input type="file" onChange={(e) => setPicked2(e.target.files)} />}
         <button type="button" className="ghost text-xs" onClick={send}>
-          Upload
+          {t("Upload")}
         </button>
         <span className="text-xs text-emerald-400">{msg}</span>
       </div>

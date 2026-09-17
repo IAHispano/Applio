@@ -5,25 +5,26 @@ import BatchForm from "../../components/BatchForm";
 import InferenceForm from "../../components/InferenceForm";
 import PageHeader from "../../components/layout/PageHeader";
 import PresetsPanel from "../../components/PresetsPanel";
+import { useI18n } from "../../lib/i18n";
 
 export default function InferencePage() {
   const [mode, setMode] = useState<"single" | "batch">("single");
-
+  const { t } = useI18n();
   return (
     <div>
       <PageHeader
-        title="Inference"
-        description="Convert audio files using trained voice models with single and batch processing."
+        title={t("Inference")}
+        description={t("Convert audio files using trained voice models with single and batch processing.")}
       >
         <button
           type="button"
           className={mode === "single" ? "cta" : "ghost"}
           onClick={() => setMode("single")}
         >
-          Single
+          {t("Single")}
         </button>
         <button type="button" className={mode === "batch" ? "cta" : "ghost"} onClick={() => setMode("batch")}>
-          Batch
+          {t("Batch")}
         </button>
       </PageHeader>
       {mode === "single" ? <InferenceForm /> : <BatchForm />}

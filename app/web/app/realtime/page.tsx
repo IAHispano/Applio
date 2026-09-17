@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg, fetchModels } from "../../lib/api";
+import { useI18n } from "../../lib/i18n";
+import { useSpeakers } from "../../lib/useSpeakers";
 
 const API_HTTP = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 function apiWs(path: string): string {
@@ -52,6 +54,7 @@ interface RtStatus {
 }
 
 export default function RealtimePage() {
+  const { t } = useI18n();
   const [engine, setEngine] = useState<RtStatus | null>(null);
   const [models, setModels] = useState<string[]>([]);
   const [indexes, setIndexes] = useState<string[]>([]);
@@ -63,8 +66,18 @@ export default function RealtimePage() {
   const [outDev, setOutDev] = useState("");
   const [pitch, setPitch] = useState(0);
   const [indexRate, setIndexRate] = useState(0);
+  const [protect, setProtect] = useState(0.5);
+  const [volumeEnvelope, setVolumeEnvelope] = useState(1);
+  const [sid, setSid] = useState(0);
   const [f0Method, setF0Method] = useState("fcpe");
   const [embedder, setEmbedder] = useState("contentvec");
+  const [embedderCustom, setEmbedderCustom] = useState("");
+  const [autotune, setAutotune] = useState(false);
+  const [autotuneStrength, setAutotuneStrength] = useState(1);
+  const [proposedPitch, setProposedPitch] = useState(false);
+  const [proposedPitchThreshold, setProposedPitchThreshold] = useState(155);
+  const [cleanAudio, setCleanAudio] = useState(false);
+  const [cleanStrength, setCleanStrength] = useState(0.5);
   const [chunkMs, setChunkMs] = useState(250);
   const [crossfade, setCrossfade] = useState(0.05);
   const [extraSize, setExtraSize] = useState(2.5);
@@ -77,6 +90,15 @@ export default function RealtimePage() {
   const [latency, setLatency] = useState(0);
   const [volume, setVolume] = useState(-90);
   const [msg, setMsg] = useState("");
+  const [recOn, setRecOn] = useState(false);
+  const [recPath, setRecPath] = useState("assets/audios/record_audio.wav");
+  const [recFormat, setRecFormat] = useState("WAV");
+
+  const speakers = useSpeakers(model);
+
+  useEffect(() => {
+    if (!speakers.includes(sid)) setSid(0);
+  }, [speakers, sid]);
 
   const sessRef = useRef<{
     ws: WebSocket;
@@ -88,7 +110,8 @@ export default function RealtimePage() {
 
   const refreshEngine = useCallback(async () => {
     try {
-      setEngine(await apiGet<RtStatus>("/api/realtime/status"));
+      // Status polls must bypass the apiGet cache or engine state freezes.
+      setEngine(await apiGet<RtStatus>("/api/realtime/status", { ttlMs: 0 }));
     } catch (e) {
       setMsg(errMsg(e));
     }
@@ -108,10 +131,10 @@ export default function RealtimePage() {
   }, [refreshEngine]);
 
   async function startEngine() {
-    setMsg("Starting realtime engine (uvicorn + rvc/realtime/client.py)…");
+    setMsg(t("Starting realtime engine (uvicorn + rvc/realtime/client.py)…"));
     try {
       await apiSend("/api/realtime/start", "POST");
-      setMsg("Engine running ✓");
+      setMsg(t("Engine running ✓"));
       refreshEngine();
     } catch (e) {
       setMsg(errMsg(e));
@@ -138,22 +161,22 @@ export default function RealtimePage() {
           .map((d, i) => ({ id: d.deviceId, label: d.label || `Output ${i + 1}` })),
       );
     } catch {
-      setMsg("Microphone permission denied — device list unavailable.");
+      setMsg(t("Microphone permission denied — device list unavailable."));
     }
   }
 
   async function startStream() {
     setMsg("");
     if (!terms) {
-      setMsg("You must agree to the Terms of Use to proceed.");
+      setMsg(t("You must agree to the Terms of Use to proceed."));
       return;
     }
     if (!engine?.running) {
-      setMsg("Start the engine first.");
+      setMsg(t("Start the engine first."));
       return;
     }
     if (!model) {
-      setMsg("Select a voice model.");
+      setMsg(t("Select a voice model."));
       return;
     }
     try {
@@ -208,27 +231,27 @@ export default function RealtimePage() {
             index_path: index || "",
             f0_method: f0Method,
             embedder_model: embedder,
-            embedder_model_custom: "",
+            embedder_model_custom: embedder === "custom" ? embedderCustom : "",
             silent_threshold: silent,
             vad_enabled: vad,
-            sid: 0,
+            sid,
             input_audio_gain: inGain,
             f0_up_key: pitch,
             index_rate: indexRate,
-            protect: 0.33,
-            volume_envelope: 1,
-            autotune: false,
-            autotune_strength: 1.0,
-            proposed_pitch: false,
-            proposed_pitch_threshold: 155.0,
-            clean_audio: false,
-            clean_strength: 0.5,
+            protect,
+            volume_envelope: volumeEnvelope,
+            autotune,
+            autotune_strength: autotuneStrength,
+            proposed_pitch: proposedPitch,
+            proposed_pitch_threshold: proposedPitchThreshold,
+            clean_audio: cleanAudio,
+            clean_strength: cleanStrength,
             post_process: false,
             kwargs: {},
           }),
         );
         setStreaming(true);
-        setMsg("Streaming ✓ speak into your microphone.");
+        setMsg(t("Streaming ✓ speak into your microphone."));
         apiSend("/api/realtime/config", "PUT", { model_file: model, index_file: index }).catch(() => {});
       };
       inNode.port.onmessage = (e) => {
@@ -251,7 +274,7 @@ export default function RealtimePage() {
       ws.onclose = () => {
         if (sessRef.current) stopStream(true);
       };
-      ws.onerror = () => setMsg("WebSocket error — is the engine running?");
+      ws.onerror = () => setMsg(t("WebSocket error — is the engine running?"));
     } catch (e) {
       setMsg(errMsg(e));
       stopStream(true);
@@ -293,7 +316,7 @@ export default function RealtimePage() {
       /* noop */
     }
     setStreaming(false);
-    if (!silentStop) setMsg("Stopped.");
+    if (!silentStop) setMsg(t("Stopped."));
   }
 
   async function changeConfig(key: string, value: number | string | boolean, ifKwargs = false) {
@@ -313,26 +336,51 @@ export default function RealtimePage() {
     }
   }
 
+  async function toggleRecord() {
+    setMsg("");
+    if (!engine?.running) {
+      setMsg(t("Start the engine first."));
+      return;
+    }
+    try {
+      const r = await apiSend<{ type: string; value: string; button: string; path: string | null }>(
+        "/api/realtime/record",
+        "POST",
+        {
+          record_button: recOn ? "Stop" : "Start",
+          record_audio_path: recPath || undefined,
+          export_format: recFormat,
+        },
+      );
+      setRecOn(r.button === "Stop");
+      setMsg(r.value + (r.path ? ` → ${r.path}` : ""));
+    } catch (e) {
+      setMsg(errMsg(e));
+    }
+  }
+
   return (
     <div>
       <PageHeader
-        title="Realtime"
-        description="Stream low-latency live microphone audio through voice conversion models in real time."
+        title={t("Realtime")}
+        description={t(
+          "Stream low-latency live microphone audio through voice conversion models in real time.",
+        )}
       >
         <span className={`badge ${engine?.running ? "done" : "queued"}`}>
-          {engine?.running ? "engine running" : "engine stopped"}
+          {engine?.running ? t("engine running") : t("engine stopped")}
         </span>
         {!engine?.running ? (
           <button type="button" className="cta" onClick={startEngine}>
-            Start Engine
+            {t("Start Engine")}
           </button>
         ) : (
           <button type="button" className="ghost" onClick={stopEngine}>
-            Stop Engine
+            {t("Stop Engine")}
           </button>
         )}
         <button type="button" className="ghost" onClick={enumDevices}>
-          List Audio Devices
+          {t("List Audio Devices")}
         </button>
       </PageHeader>
       <div className="mb-4">
@@ -345,10 +393,10 @@ export default function RealtimePage() {
       </div>
 
       <div className="card">
-        <h2>Model + Audio</h2>
+        <h2>{t("Model + Audio")}</h2>
         <div className="grid2">
           <div>
-            <label>Voice Model</label>
+            <label>{t("Voice Model")}</label>
             <input type="text" list="rtmodels" value={model} onChange={(e) => setModel(e.target.value)} />
             <datalist id="rtmodels">
               {models.map((m) => (
@@ -357,7 +405,7 @@ export default function RealtimePage() {
             </datalist>
           </div>
           <div>
-            <label>Index (optional)</label>
+            <label>{t("Index (optional)")}</label>
             <input type="text" list="rtidx" value={index} onChange={(e) => setIndex(e.target.value)} />
             <datalist id="rtidx">
               {indexes.map((m) => (
@@ -366,9 +414,9 @@ export default function RealtimePage() {
             </datalist>
           </div>
           <div>
-            <label>Input device</label>
+            <label>{t("Input Device")}</label>
             <select value={inDev} onChange={(e) => setInDev(e.target.value)}>
-              <option value="">Default</option>
+              <option value="">{t("Default")}</option>
               {inputs.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.label}
@@ -377,9 +425,9 @@ export default function RealtimePage() {
             </select>
           </div>
           <div>
-            <label>Output device</label>
+            <label>{t("Output Device")}</label>
             <select value={outDev} onChange={(e) => setOutDev(e.target.value)}>
-              <option value="">Default</option>
+              <option value="">{t("Default")}</option>
               {outputs.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.label}
@@ -388,7 +436,9 @@ export default function RealtimePage() {
             </select>
           </div>
           <div>
-            <label>Pitch: {pitch}</label>
+            <label>
+              {t("Pitch")}: {pitch}
+            </label>
             <input
               type="range"
               min={-24}
@@ -402,7 +452,9 @@ export default function RealtimePage() {
             />
           </div>
           <div>
-            <label>Index rate: {indexRate}</label>
+            <label>
+              {t("Index rate")}: {indexRate}
+            </label>
             <input
               type="range"
               min={0}
@@ -416,7 +468,55 @@ export default function RealtimePage() {
             />
           </div>
           <div>
-            <label>Pitch extraction</label>
+            <label>
+              {t("Protect Voiceless Consonants")}: {protect} {t("(default 0.5)")}
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={0.5}
+              step={0.01}
+              value={protect}
+              onChange={(e) => {
+                setProtect(Number(e.target.value));
+                if (streaming) changeConfig("protect", Number(e.target.value));
+              }}
+            />
+          </div>
+          <div>
+            <label>
+              {t("Volume Envelope")}: {volumeEnvelope} {t("(default 1)")}
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={volumeEnvelope}
+              onChange={(e) => {
+                setVolumeEnvelope(Number(e.target.value));
+                if (streaming) changeConfig("volume_envelope", Number(e.target.value));
+              }}
+            />
+          </div>
+          <div>
+            <label>{t("Speaker ID")}</label>
+            <select
+              value={sid}
+              onChange={(e) => {
+                setSid(Number(e.target.value));
+                if (streaming) changeConfig("sid", Number(e.target.value));
+              }}
+            >
+              {speakers.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label>{t("Pitch extraction")}</label>
             <select value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
               {["rmvpe", "fcpe", "crepe", "crepe-tiny"].map((m) => (
                 <option key={m} value={m}>
@@ -426,7 +526,7 @@ export default function RealtimePage() {
             </select>
           </div>
           <div>
-            <label>Embedder</label>
+            <label>{t("Embedder")}</label>
             <select value={embedder} onChange={(e) => setEmbedder(e.target.value)}>
               {[
                 "contentvec",
@@ -443,12 +543,113 @@ export default function RealtimePage() {
               ))}
             </select>
           </div>
+          {embedder === "custom" && (
+            <div>
+              <label>{t("Custom embedder path (reconnect to apply)")}</label>
+              <input
+                type="text"
+                value={embedderCustom}
+                onChange={(e) => setEmbedderCustom(e.target.value)}
+                placeholder="rvc/models/embedders/embedders_custom/my-embedder"
+              />
+            </div>
+          )}
         </div>
         <details>
-          <summary>Latency / VAD / gains</summary>
+          <summary>{t("Voice cleanup (autotune / proposed pitch / clean)")}</summary>
+          <div className="row">
+            <label>
+              <input
+                type="checkbox"
+                checked={autotune}
+                onChange={(e) => {
+                  setAutotune(e.target.checked);
+                  if (streaming) changeConfig("autotune", e.target.checked);
+                }}
+              />{" "}
+              {t("Autotune")}
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={proposedPitch}
+                onChange={(e) => {
+                  setProposedPitch(e.target.checked);
+                  if (streaming) changeConfig("proposed_pitch", e.target.checked);
+                }}
+              />{" "}
+              {t("Proposed Pitch")}
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={cleanAudio}
+                onChange={(e) => {
+                  setCleanAudio(e.target.checked);
+                  if (streaming) changeConfig("clean_audio", e.target.checked);
+                }}
+              />{" "}
+              {t("Clean Audio")}
+            </label>
+          </div>
+          <div className="grid2" style={{ marginTop: 8 }}>
+            <div>
+              <label>
+                {t("Autotune Strength")}: {autotuneStrength}
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={autotuneStrength}
+                onChange={(e) => {
+                  setAutotuneStrength(Number(e.target.value));
+                  if (streaming) changeConfig("autotune_strength", Number(e.target.value));
+                }}
+              />
+            </div>
+            <div>
+              <label>
+                {t("Proposed Pitch Threshold")}: {proposedPitchThreshold}
+              </label>
+              <input
+                type="range"
+                min={50}
+                max={1200}
+                step={1}
+                value={proposedPitchThreshold}
+                onChange={(e) => {
+                  setProposedPitchThreshold(Number(e.target.value));
+                  if (streaming) changeConfig("proposed_pitch_threshold", Number(e.target.value));
+                }}
+              />
+            </div>
+            <div>
+              <label>
+                {t("Clean Strength")}: {cleanStrength}
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={cleanStrength}
+                onChange={(e) => {
+                  setCleanStrength(Number(e.target.value));
+                  if (streaming) changeConfig("clean_strength", Number(e.target.value));
+                }}
+              />
+            </div>
+          </div>
+        </details>
+        <details>
+          <summary>{t("Latency / VAD / gains")}</summary>
           <div className="grid2">
             <div>
-              <label>Chunk: {chunkMs}ms (reconnect to apply)</label>
+              <label>
+                {t("Chunk")}: {chunkMs}ms {t("(reconnect to apply)")}
+              </label>
               <input
                 type="range"
                 min={50}
@@ -459,7 +660,9 @@ export default function RealtimePage() {
               />
             </div>
             <div>
-              <label>Crossfade: {crossfade}s</label>
+              <label>
+                {t("Crossfade")}: {crossfade}s
+              </label>
               <input
                 type="range"
                 min={0.05}
@@ -473,7 +676,9 @@ export default function RealtimePage() {
               />
             </div>
             <div>
-              <label>Extra convert: {extraSize}s</label>
+              <label>
+                {t("Extra convert")}: {extraSize}s
+              </label>
               <input
                 type="range"
                 min={0.1}
@@ -487,7 +692,9 @@ export default function RealtimePage() {
               />
             </div>
             <div>
-              <label>Silence threshold: {silent}dB</label>
+              <label>
+                {t("Silence threshold")}: {silent}dB
+              </label>
               <input
                 type="range"
                 min={-90}
@@ -501,7 +708,9 @@ export default function RealtimePage() {
               />
             </div>
             <div>
-              <label>Input gain: {inGain}%</label>
+              <label>
+                {t("Input gain")}: {inGain}%
+              </label>
               <input
                 type="range"
                 min={0}
@@ -512,7 +721,9 @@ export default function RealtimePage() {
               />
             </div>
             <div>
-              <label>Output gain: {outGain}% (local)</label>
+              <label>
+                {t("Output gain")}: {outGain}% {t("(local)")}
+              </label>
               <input
                 type="range"
                 min={0}
@@ -532,21 +743,21 @@ export default function RealtimePage() {
                 if (streaming) changeConfig("vad_enabled", e.target.checked);
               }}
             />
-            <span>Voice Activity Detection (VAD) enabled</span>
+            <span>{t("Enable VAD")}</span>
           </label>
         </details>
         <label className="terms">
           <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
-          <span>I agree to the terms of use.</span>
+          <span>{t("I agree to the terms of use")}</span>
         </label>
         <div className="row" style={{ marginTop: 12 }}>
           {!streaming ? (
             <button type="button" className="cta" onClick={startStream}>
-              Start Streaming
+              {t("Start Streaming")}
             </button>
           ) : (
             <button type="button" className="ghost" onClick={() => stopStream()}>
-              Stop Streaming
+              {t("Stop Streaming")}
             </button>
           )}
           {streaming && (
@@ -554,6 +765,32 @@ export default function RealtimePage() {
               latency {latency.toFixed(0)}ms · volume {volume.toFixed(0)}dB
             </span>
           )}
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>{t("Record Output")}</h2>
+        <p className="muted">{t("Records the converted stream server-side via the engine.")}</p>
+        <div className="grid2">
+          <div>
+            <label>{t("Recording path (server)")}</label>
+            <input type="text" value={recPath} onChange={(e) => setRecPath(e.target.value)} />
+          </div>
+          <div>
+            <label>{t("Export Format")}</label>
+            <select value={recFormat} onChange={(e) => setRecFormat(e.target.value)}>
+              {["WAV", "MP3", "FLAC", "OGG", "M4A"].map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="row" style={{ marginTop: 8 }}>
+          <button type="button" className={recOn ? "ghost" : "cta"} onClick={toggleRecord}>
+            {recOn ? t("Stop") : t("Start")}
+          </button>
         </div>
       </div>
     </div>

@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import JobPanel from "../../components/JobPanel";
 import PageHeader from "../../components/layout/PageHeader";
 import { errMsg, fetchModels, postForm } from "../../lib/api";
+import { useI18n } from "../../lib/i18n";
 
 export default function VoiceBlenderPage() {
+  const { t } = useI18n();
   const [models, setModels] = useState<string[]>([]);
   const [name, setName] = useState("");
   const [p1, setP1] = useState("");
@@ -31,7 +33,7 @@ export default function VoiceBlenderPage() {
     e.preventDefault();
     setError("");
     if (!name || (!p1 && !f1) || (!p2 && !f2)) {
-      setError("Name + two models are required (path or upload).");
+      setError(t("Name + two models are required (path or upload)."));
       return;
     }
     setBusy(true);
@@ -46,7 +48,7 @@ export default function VoiceBlenderPage() {
       const { jobId: id } = await postForm<{ jobId: string }>("/api/voice-blender", fd);
       setJobId(id);
     } catch (err) {
-      setError(errMsg(err) || "Submit failed");
+      setError(errMsg(err) || t("Submit failed"));
     } finally {
       setBusy(false);
     }
@@ -55,20 +57,20 @@ export default function VoiceBlenderPage() {
   return (
     <div>
       <PageHeader
-        title="Voice Blender"
-        description="Fuse and interpolate two trained voice models into a unique hybrid checkpoint."
+        title={t("Voice Blender")}
+        description={t("Fuse and interpolate two trained voice models into a unique hybrid checkpoint.")}
       />
       {error && <p style={{ color: "var(--err)" }}>{error}</p>}
       <form onSubmit={onSubmit}>
         <div className="card">
           <div className="grid2">
             <div>
-              <label>New model name</label>
+              <label>{t("New model name")}</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="my-fusion"
+                placeholder={t("my-fusion")}
               />
             </div>
             <div>
@@ -83,12 +85,12 @@ export default function VoiceBlenderPage() {
               />
             </div>
             <div>
-              <label>Model 1 path</label>
+              <label>{t("Model 1 path")}</label>
               <input type="text" list="vmodels" value={p1} onChange={(e) => setP1(e.target.value)} />
               <input type="file" accept=".pth,.onnx" onChange={(e) => setF1(e.target.files?.[0] || null)} />
             </div>
             <div>
-              <label>Model 2 path</label>
+              <label>{t("Model 2 path")}</label>
               <input type="text" list="vmodels" value={p2} onChange={(e) => setP2(e.target.value)} />
               <input type="file" accept=".pth,.onnx" onChange={(e) => setF2(e.target.files?.[0] || null)} />
             </div>
@@ -100,7 +102,7 @@ export default function VoiceBlenderPage() {
           </datalist>
           <div className="row" style={{ marginTop: 12 }}>
             <button type="submit" className="cta" disabled={busy}>
-              {busy ? "Blending…" : "Fuse Models"}
+              {busy ? t("Blending…") : t("Fuse Models")}
             </button>
           </div>
         </div>

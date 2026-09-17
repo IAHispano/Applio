@@ -99,6 +99,24 @@ router.get("/exports", (_req: Request, res: Response) => {
   });
 });
 
+// Download a trained artifact from logs/ (Export Model parity).
+// Confined to logs/ + .pth/.index so it cannot serve arbitrary files.
+router.get("/export-file", (req: Request, res: Response) => {
+  try {
+    const rel = String(req.query.file || "");
+    if (!rel) return res.status(400).json({ error: "Provide 'file'." });
+    const abs = path.resolve(getRepoRoot(), rel);
+    const logs = path.resolve(getRepoRoot(), "logs");
+    if (!abs.startsWith(logs + path.sep)) return res.status(403).json({ error: "Only logs/ files." });
+    const ext = path.extname(abs).toLowerCase();
+    if (ext !== ".pth" && ext !== ".index") return res.status(403).json({ error: "Only .pth/.index." });
+    if (!fs.existsSync(abs)) return res.status(404).json({ error: "File not found." });
+    res.download(abs, path.basename(abs));
+  } catch (err) {
+    res.status(500).json({ error: errMsg(err) });
+  }
+});
+
 const upload = multer({ dest: getUploadsDir(), limits: { fileSize: 2 * 1024 * 1024 * 1024 } });
 const clean = (n: string) => path.basename(n).replace(/[^a-zA-Z0-9._() -]/g, "_");
 

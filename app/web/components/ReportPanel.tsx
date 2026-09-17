@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { apiGet, apiSend, errMsg } from "../lib/api";
+import { useI18n } from "../lib/i18n";
 
 interface SystemInfo {
   version: string;
@@ -14,6 +15,7 @@ interface SystemInfo {
 }
 
 export default function ReportPanel() {
+  const { t } = useI18n();
   const [info, setInfo] = useState<SystemInfo | null>(null);
   const [recording, setRecording] = useState(false);
   const [clip, setClip] = useState("");
@@ -67,7 +69,7 @@ export default function ReportPanel() {
       rec.start();
       setRecording(true);
     } catch {
-      setMsg("Screen capture cancelled or unsupported in this browser.");
+      setMsg(t("Screen capture cancelled or unsupported in this browser."));
     }
   }
 
@@ -82,11 +84,11 @@ export default function ReportPanel() {
           {`Applio ${info.version}\n${info.platform}\nNode ${info.node}\n${info.python}\nCPUs: ${info.cpus} · RAM: ${info.totalMemGB}GB`}
         </div>
       ) : (
-        <p className="muted">Collecting system info…</p>
+        <p className="muted">{t("Collecting system info…")}</p>
       )}
       <div className="row" style={{ marginTop: 12 }}>
         <button type="button" className="ghost" onClick={toggleRecord}>
-          {recording ? "Stop Recording" : "Record Screen"}
+          {recording ? t("Stop Recording") : t("Record Screen")}
         </button>
         {info && (
           <button
@@ -94,14 +96,14 @@ export default function ReportPanel() {
             className="cta"
             onClick={() => window.open(`${info.issueUrl}?body=${issueBody}`, "_blank")}
           >
-            Open GitHub Issue
+            {t("Open GitHub Issue")}
           </button>
         )}
       </div>
       {clip && (
         <p>
           <a href={`/outputs/${clip.split("/").pop()}`} download>
-            Download clip
+            {t("Download clip")}
           </a>{" "}
           <span className="muted">{clip}</span>
         </p>

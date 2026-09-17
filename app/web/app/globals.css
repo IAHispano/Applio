@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: dark;
   --bg: #0a0a0a;
   --panel: #1c1c1c;
   --border: rgba(255, 255, 255, 0.1);
@@ -11,6 +12,51 @@
   --ok: #4ade80;
   --warn: #fbbf24;
   --err: #f87171;
+
+  /* Themeable surface tokens (overridden by assets/themes/*.json) */
+  --surface: rgba(255, 255, 255, 0.05);
+  --input-bg: rgba(0, 0, 0, 0.4);
+  --heading: #f5f5f5;
+  --cta-bg: #ffffff;
+  --cta-text: #0a0a0a;
+  --button-bg: rgba(255, 255, 255, 0.08);
+  --button-bg-hover: rgba(255, 255, 255, 0.14);
+  --button-text-hover: #ffffff;
+  --button-ghost-text: #d4d4d4;
+  --button-ghost-border: rgba(255, 255, 255, 0.14);
+  --button-ghost-border-hover: rgba(255, 255, 255, 0.28);
+  --slider-track: rgba(255, 255, 255, 0.12);
+  --slider-thumb: #ffffff;
+  --checkbox-border: rgba(255, 255, 255, 0.25);
+  --checkbox-border-hover: rgba(255, 255, 255, 0.5);
+  --file-button-bg: transparent;
+  --file-button-border: rgba(255, 255, 255, 0.14);
+  --file-button-text: #d4d4d4;
+  --file-button-bg-hover: rgba(255, 255, 255, 0.08);
+  --checkbox-border-hover: rgba(255, 255, 255, 0.5);
+  --checkbox-checked: #ffffff;
+  --checkbox-check: #000000;
+  --focus-border: rgba(255, 255, 255, 0.25);
+  --selection-bg: #ffffff;
+  --selection-text: #000000;
+  --log-bg: rgba(0, 0, 0, 0.5);
+  --danger-bg: rgba(239, 68, 68, 0.12);
+  --danger-border: rgba(239, 68, 68, 0.3);
+  --danger-text: #fca5a5;
+  --danger-bg-hover: rgba(239, 68, 68, 0.22);
+  --danger-border-hover: rgba(239, 68, 68, 0.5);
+  --danger-text-hover: #ffffff;
+  --font-display: var(--font-sans);
+  --font-mono: ui-monospace, monospace;
+  --radius-card: 12px;
+  --radius-input: 8px;
+  --radius-button: 10px;
+  --radius-pill: 999px;
+  --shadow-card: none;
+  --shadow-button: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --titlebar-bg: #0c0c0c;
+  --titlebar-close-bg: #e81123;
+  --titlebar-close-text: #ffffff;
 }
 
 * {
@@ -30,12 +76,12 @@ body {
 }
 
 ::selection {
-  background: #fff;
-  color: #000;
+  background: var(--selection-bg);
+  color: var(--selection-text);
 }
 
 .title {
-  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-family: var(--font-display), ui-sans-serif, system-ui, -apple-system, sans-serif;
   letter-spacing: -0.025em;
   font-weight: 600;
 }
@@ -139,7 +185,7 @@ body {
   right: 100%;
   bottom: 0;
   left: 0;
-  background: #fff;
+  background: var(--accent);
   width: 0;
   animation: borealisBar 2s linear infinite;
 }
@@ -160,19 +206,20 @@ a:active {
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-card);
   padding: 20px;
   margin-bottom: 16px;
   transition: background-color 0.2s ease;
+  box-shadow: var(--shadow-card);
 }
 .card h2 {
   margin-top: 0;
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
   font-weight: 600;
   font-size: 1.05rem;
-  color: #f5f5f5;
+  color: var(--heading);
   letter-spacing: -0.01em;
 }
 
@@ -188,9 +235,9 @@ input[type="number"],
 select {
   width: 100%;
   padding: 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-input);
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--input-bg);
   color: var(--text);
 }
 select {
@@ -203,27 +250,88 @@ select {
   background-position: right 10px center;
 }
 select option {
-  background: #1c1c1c;
-  color: #e7e5e4;
+  background: var(--panel);
+  color: var(--text);
 }
 input[type="text"]:focus,
 input[type="number"]:focus,
 select:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.25);
+  border-color: var(--focus-border);
 }
 input[type="file"] {
   margin-top: 6px;
   font-size: 13px;
   color: var(--muted);
 }
+input[type="file"]::file-selector-button,
+input[type="file"]::-webkit-file-upload-button {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  margin-right: 12px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--file-button-border);
+  background: var(--file-button-bg);
+  color: var(--file-button-text);
+  cursor: pointer;
+  transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+input[type="file"]:hover::file-selector-button,
+input[type="file"]:hover::-webkit-file-upload-button {
+  background: var(--file-button-bg-hover);
+  border-color: var(--focus-border);
+  color: var(--button-text-hover);
+}
+input[type="file"]:focus-visible {
+  outline: 2px solid var(--focus-border);
+  outline-offset: 2px;
+  border-radius: var(--radius-input);
+}
+input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  border: 1px solid var(--checkbox-border);
+  border-radius: var(--radius-pill);
+  background: var(--input-bg);
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  transition: all 0.15s ease;
+}
+input[type="radio"]:hover {
+  border-color: var(--checkbox-border-hover);
+}
+input[type="radio"]:focus-visible {
+  outline: 2px solid var(--focus-border);
+  outline-offset: 1px;
+}
+input[type="radio"]:checked {
+  border-color: var(--checkbox-checked);
+}
+input[type="radio"]:checked::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--checkbox-checked);
+}
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
   height: 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-pill);
+  background: var(--slider-track);
   outline: none;
   cursor: pointer;
 }
@@ -232,8 +340,8 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 16px;
   height: 16px;
-  border-radius: 999px;
-  background: #fff;
+  border-radius: var(--radius-pill);
+  background: var(--slider-thumb);
   border: none;
   transition: transform 0.15s ease;
 }
@@ -243,19 +351,19 @@ input[type="range"]::-webkit-slider-thumb:hover {
 input[type="range"]::-moz-range-thumb {
   width: 16px;
   height: 16px;
-  border-radius: 999px;
-  background: #fff;
+  border-radius: var(--radius-pill);
+  background: var(--slider-thumb);
   border: none;
 }
 input[type="range"]::-moz-range-track {
   height: 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-pill);
+  background: var(--slider-track);
 }
 .checkbox-label,
 .terms,
 label:has(input[type="checkbox"]) {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
   margin: 6px 0;
@@ -281,9 +389,9 @@ input[type="checkbox"] {
   height: 16px;
   margin: 0;
   flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--checkbox-border);
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--input-bg);
   cursor: pointer;
   position: relative;
   display: inline-flex;
@@ -294,18 +402,18 @@ input[type="checkbox"] {
 }
 
 input[type="checkbox"]:hover {
-  border-color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--checkbox-border-hover);
+  background: var(--button-bg);
 }
 
 input[type="checkbox"]:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.4);
+  outline: 2px solid var(--focus-border);
   outline-offset: 1px;
 }
 
 input[type="checkbox"]:checked {
-  background: #ffffff;
-  border-color: #ffffff;
+  background: var(--checkbox-checked);
+  border-color: var(--checkbox-checked);
 }
 
 input[type="checkbox"]:checked::after {
@@ -315,7 +423,7 @@ input[type="checkbox"]:checked::after {
   top: 1.5px;
   width: 4.5px;
   height: 8.5px;
-  border: solid #000000;
+  border: solid var(--checkbox-check);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
@@ -352,13 +460,13 @@ button {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--button-bg);
   border: 1px solid var(--border);
   color: var(--text);
   font-size: 13px;
   font-weight: 500;
   padding: 8px 16px;
-  border-radius: 10px;
+  border-radius: var(--radius-button);
   cursor: pointer;
   transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
   outline: none;
@@ -366,9 +474,9 @@ button {
   white-space: nowrap;
 }
 button:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
+  background: var(--button-bg-hover);
+  border-color: var(--focus-border);
+  color: var(--button-text-hover);
 }
 button:active {
   transform: translateY(1px);
@@ -381,35 +489,36 @@ button:disabled {
 }
 button.ghost {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #d4d4d4;
+  border: 1px solid var(--button-ghost-border);
+  color: var(--button-ghost-text);
 }
 button.ghost:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.28);
-  color: #ffffff;
+  background: var(--button-bg);
+  border-color: var(--button-ghost-border-hover);
+  color: var(--button-text-hover);
 }
 button.cta {
-  background: #ffffff;
-  border-color: #ffffff;
-  color: #0a0a0a;
+  background: var(--cta-bg);
+  border-color: var(--cta-bg);
+  color: var(--cta-text);
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-button);
 }
 button.cta:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(255, 255, 255, 0.9);
-  color: #000000;
+  background: var(--cta-bg);
+  border-color: var(--cta-bg);
+  color: var(--cta-text);
+  filter: brightness(0.9);
 }
 button.danger {
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-text);
 }
 button.danger:hover {
-  background: rgba(239, 68, 68, 0.22);
-  border-color: rgba(239, 68, 68, 0.5);
-  color: #ffffff;
+  background: var(--danger-bg-hover);
+  border-color: var(--danger-border-hover);
+  color: var(--danger-text-hover);
 }
 
 .muted {
@@ -417,11 +526,11 @@ button.danger:hover {
   font-size: 13px;
 }
 .log {
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--log-bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-input);
   padding: 12px;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 12px;
   white-space: pre-wrap;
   max-height: 260px;
@@ -434,7 +543,7 @@ button.danger:hover {
 .badge {
   display: inline-block;
   padding: 2px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 12px;
   border: 1px solid var(--border);
 }
@@ -454,7 +563,7 @@ button.danger:hover {
 details {
   margin-top: 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-input);
   padding: 8px 12px;
 }
 summary {
@@ -474,12 +583,13 @@ button.titlebar-btn {
   margin: 0;
   width: 30px;
   height: 26px;
-  min-width: 30px;
+  min-width: 44px;
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  color: #a3a3a3;
+  color: var(--muted);
   transition:
     background-color 0.15s ease,
     color 0.15s ease;
@@ -488,8 +598,13 @@ button.titlebar-btn {
 }
 
 button.titlebar-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--button-bg-hover);
+  color: var(--button-text-hover);
+}
+
+button.titlebar-btn:focus-visible {
+  outline: 2px solid var(--focus-border);
+  outline-offset: -2px;
 }
 
 button.titlebar-btn:active {
@@ -497,6 +612,6 @@ button.titlebar-btn:active {
 }
 
 button.titlebar-btn-close:hover {
-  background: #e81123;
-  color: #ffffff;
+  background: var(--titlebar-close-bg);
+  color: var(--titlebar-close-text);
 }

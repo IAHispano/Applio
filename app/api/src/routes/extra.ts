@@ -10,7 +10,21 @@ import { getOutputsDir, getRepoRoot, getUploadsDir, resolveUserPath } from "../p
 
 const router = Router();
 
-const AUDIO_EXTS = [".wav", ".mp3", ".flac", ".ogg", ".opus", ".m4a", ".mp4", ".aac", ".aiff", ".webm"];
+const AUDIO_EXTS = [
+  ".wav",
+  ".mp3",
+  ".flac",
+  ".ogg",
+  ".opus",
+  ".m4a",
+  ".mp4",
+  ".aac",
+  ".alac",
+  ".wma",
+  ".aiff",
+  ".webm",
+  ".ac3",
+];
 const upload = multer({
   dest: getUploadsDir(),
   limits: { fileSize: 200 * 1024 * 1024 },

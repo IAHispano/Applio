@@ -1,7 +1,6 @@
 {
   "theme": {
-    "file": "Applio.py",
-    "class": "Applio"
+    "file": ""
   },
   "plugins": [],
   "discord_presence": true,

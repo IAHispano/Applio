@@ -22,6 +22,7 @@ import PageHeader from "../../components/layout/PageHeader";
 import BlenderPanel from "../../components/models/BlenderPanel";
 import DownloadPanel from "../../components/models/DownloadPanel";
 import { apiGet, apiSend, errMsg, submitJob } from "../../lib/api";
+import { useI18n } from "../../lib/i18n";
 
 interface ModelItem {
   id: string;
@@ -59,6 +60,7 @@ function formatBytes(bytes: number): string {
 
 export default function ModelsPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [section, setSection] = useState<Section>("library");
 
   // Library state
@@ -157,8 +159,10 @@ export default function ModelsPage() {
   return (
     <div>
       <PageHeader
-        title="Voice Models"
-        description="Manage your voice model collection, inspect checkpoint metadata, and blend or download weights."
+        title={t("Voice Models")}
+        description={t(
+          "Manage your voice model collection, inspect checkpoint metadata, and blend or download weights.",
+        )}
       >
         <div className="row">
           {(
@@ -175,7 +179,7 @@ export default function ModelsPage() {
               className={section === id ? "cta" : "ghost"}
               onClick={() => setSection(id)}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
@@ -192,7 +196,7 @@ export default function ModelsPage() {
               <Search size={16} className="text-neutral-400" />
               <input
                 type="text"
-                placeholder="Search models by name or folder…"
+                placeholder={t("Search models by name or folder…")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="bg-transparent border-0 p-0 text-sm text-white focus:outline-none w-full"
@@ -216,7 +220,7 @@ export default function ModelsPage() {
                 disabled={loading}
               >
                 <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-                <span>Refresh</span>
+                <span>{t("Refresh models and indexes")}</span>
               </button>
 
               <button
@@ -225,7 +229,7 @@ export default function ModelsPage() {
                 onClick={() => setSection("download")}
               >
                 <Download size={14} />
-                <span>Get Models</span>
+                <span>{t("Get Models")}</span>
               </button>
             </div>
           </div>
@@ -235,11 +239,13 @@ export default function ModelsPage() {
             <div className="card text-center py-12 space-y-4">
               <Database size={40} className="mx-auto text-neutral-500" />
               <div>
-                <h3 className="text-lg font-semibold text-white m-0">No voice models found</h3>
+                <h3 className="text-lg font-semibold text-white m-0">{t("No voice models found")}</h3>
                 <p className="text-sm text-neutral-400 m-0 max-w-md mx-auto mt-1">
                   {search
-                    ? `No models matching "${search}".`
-                    : "Your models directory (logs/) is currently empty. Download community weights or train your own voice model to get started."}
+                    ? t("No models match your search.")
+                    : t(
+                        "Your models directory (logs/) is currently empty. Download community weights or train your own voice model to get started.",
+                      )}
                 </p>
               </div>
               <div className="flex justify-center gap-3 pt-2">
@@ -249,11 +255,11 @@ export default function ModelsPage() {
                   onClick={() => setSection("download")}
                 >
                   <Download size={16} />
-                  <span>Download a Model</span>
+                  <span>{t("Download a Model")}</span>
                 </button>
                 <Link href="/train" className="inline-flex">
                   <button type="button" className="ghost">
-                    Train New Model
+                    {t("Train New Model")}
                   </button>
                 </Link>
               </div>
@@ -280,11 +286,11 @@ export default function ModelsPage() {
                     {/* Stats & Index status */}
                     <div className="space-y-1.5 text-xs text-neutral-400 my-3">
                       <div className="flex justify-between">
-                        <span>Weights (.pth):</span>
+                        <span>{t("Weights (.pth):")}</span>
                         <span className="text-neutral-200 tabular-nums">{formatBytes(m.pthSize)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span>Feature Index:</span>
+                        <span>{t("Feature Index:")}</span>
                         {m.indexPath ? (
                           <span className="text-emerald-400 flex items-center gap-1">
                             <FileCheck size={12} />
@@ -293,12 +299,12 @@ export default function ModelsPage() {
                         ) : (
                           <span className="text-neutral-500 flex items-center gap-1">
                             <FileX size={12} />
-                            <span>None</span>
+                            <span>{t("None")}</span>
                           </span>
                         )}
                       </div>
                       <div className="flex justify-between text-neutral-500 pt-1 border-t border-white/5">
-                        <span>Modified:</span>
+                        <span>{t("Modified:")}</span>
                         <span>{new Date(m.modifiedAt).toLocaleDateString()}</span>
                       </div>
                     </div>
@@ -312,7 +318,7 @@ export default function ModelsPage() {
                       className="cta text-xs px-3 py-1.5 flex items-center gap-1.5"
                     >
                       <Sparkles size={13} />
-                      <span>Use</span>
+                      <span>{t("Use")}</span>
                     </button>
 
                     <div className="flex items-center gap-1">
@@ -320,16 +326,16 @@ export default function ModelsPage() {
                         type="button"
                         onClick={() => openInspect(m)}
                         className="ghost text-xs px-2.5 py-1.5 flex items-center gap-1"
-                        title="View checkpoint metadata"
+                        title={t("View checkpoint metadata")}
                       >
                         <Info size={13} />
-                        <span>Inspect</span>
+                        <span>{t("Inspect")}</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setDeleteTarget(m)}
                         className="danger text-xs px-2.5 py-1.5"
-                        title="Delete model files"
+                        title={t("Delete model files")}
                       >
                         <Trash2 size={13} />
                       </button>
@@ -352,10 +358,11 @@ export default function ModelsPage() {
       {section === "inspect" && (
         <div className="space-y-4">
           <div className="card">
-            <h2>Inspect Model File</h2>
+            <h2>{t("Inspect Model File")}</h2>
             <p className="muted text-sm mb-3">
-              Enter any repository-relative or absolute path to a .pth checkpoint to read its architecture and
-              training parameters.
+              {t(
+                "Enter any repository-relative or absolute path to a .pth checkpoint to read its architecture and training parameters.",
+              )}
             </p>
             <div className="row">
               <input
@@ -366,7 +373,7 @@ export default function ModelsPage() {
                 style={{ flex: 1 }}
               />
               <button type="button" className="cta" onClick={inspectCustom}>
-                Inspect File
+                {t("Inspect File")}
               </button>
             </div>
           </div>
@@ -392,55 +399,55 @@ export default function ModelsPage() {
               </button>
             </div>
 
-            {inspectLoading && <p className="muted text-sm">Reading model checkpoint…</p>}
+            {inspectLoading && <p className="muted text-sm">{t("Reading model checkpoint…")}</p>}
             {inspectError && <p style={{ color: "var(--err)" }}>{inspectError}</p>}
 
             {inspectMeta && (
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">Model Name</span>
-                  <span className="font-medium text-white">{inspectMeta.model_name || "None"}</span>
+                  <span className="text-neutral-400 text-xs block">{t("Model Name")}</span>
+                  <span className="font-medium text-white">{inspectMeta.model_name || t("None")}</span>
                 </div>
                 <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">Author</span>
-                  <span className="font-medium text-white">{inspectMeta.author || "Anonymous"}</span>
+                  <span className="text-neutral-400 text-xs block">{t("Author")}</span>
+                  <span className="font-medium text-white">{inspectMeta.author || t("Anonymous")}</span>
                 </div>
                 <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">Epochs</span>
-                  <span className="font-medium text-white">{inspectMeta.epochs || "None"}</span>
+                  <span className="text-neutral-400 text-xs block">{t("Epochs")}</span>
+                  <span className="font-medium text-white">{inspectMeta.epochs || t("None")}</span>
                 </div>
                 <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">Training Steps</span>
-                  <span className="font-medium text-white">{inspectMeta.step || "None"}</span>
+                  <span className="text-neutral-400 text-xs block">{t("Training Steps")}</span>
+                  <span className="font-medium text-white">{inspectMeta.step || t("None")}</span>
                 </div>
                 <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">Sampling Rate</span>
-                  <span className="font-medium text-white">{inspectMeta.sr || "None"}</span>
+                  <span className="text-neutral-400 text-xs block">{t("Sampling Rate")}</span>
+                  <span className="font-medium text-white">{inspectMeta.sr || t("None")}</span>
                 </div>
                 <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">Pitch Guidance (F0)</span>
+                  <span className="text-neutral-400 text-xs block">{t("Pitch Guidance (F0)")}</span>
                   <span className="font-medium text-white">
-                    {inspectMeta.f0 === "1" ? "Yes" : inspectMeta.f0 || "None"}
+                    {inspectMeta.f0 === "1" ? t("Yes") : inspectMeta.f0 || t("None")}
                   </span>
                 </div>
                 <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">Vocoder</span>
+                  <span className="text-neutral-400 text-xs block">{t("Vocoder")}</span>
                   <span className="font-medium text-white">{inspectMeta.vocoder || "HiFi-GAN"}</span>
                 </div>
                 <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">Embedder Model</span>
+                  <span className="text-neutral-400 text-xs block">{t("Embedder Model")}</span>
                   <span className="font-medium text-white">{inspectMeta.embedder_model || "contentvec"}</span>
                 </div>
                 <div className="col-span-2 bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">Creation Date</span>
-                  <span className="font-medium text-white">{inspectMeta.creation_date || "Unknown"}</span>
+                  <span className="text-neutral-400 text-xs block">{t("Creation Date")}</span>
+                  <span className="font-medium text-white">{inspectMeta.creation_date || t("Unknown")}</span>
                 </div>
               </div>
             )}
 
             <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
               <button type="button" className="ghost" onClick={() => setInspectModal(null)}>
-                Close
+                {t("Close")}
               </button>
               <button
                 type="button"
@@ -451,7 +458,7 @@ export default function ModelsPage() {
                   openInInference(m);
                 }}
               >
-                <span>Use in Inference</span>
+                <span>{t("Use in Inference")}</span>
                 <ArrowRight size={14} />
               </button>
             </div>
@@ -464,10 +471,10 @@ export default function ModelsPage() {
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-neutral-900 border border-red-500/30 rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
             <div>
-              <h3 className="text-lg font-bold text-white m-0">Delete Model?</h3>
+              <h3 className="text-lg font-bold text-white m-0">{t("Delete Model?")}</h3>
               <p className="text-sm text-neutral-300 mt-2">
-                Are you sure you want to permanently delete <strong>{deleteTarget.name}</strong> from disk?
-                This will remove its .pth and .index files.
+                {t("Are you sure you want to permanently delete")} <strong>{deleteTarget.name}</strong>{" "}
+                {t("from disk? This will remove its .pth and .index files.")}
               </p>
             </div>
             <div className="flex justify-end gap-2 pt-2">
@@ -477,10 +484,10 @@ export default function ModelsPage() {
                 onClick={() => setDeleteTarget(null)}
                 disabled={deleting}
               >
-                Cancel
+                {t("Cancel")}
               </button>
               <button type="button" className="danger" onClick={confirmDelete} disabled={deleting}>
-                {deleting ? "Deleting…" : "Delete Model"}
+                {deleting ? t("Deleting…") : t("Delete Model")}
               </button>
             </div>
           </div>

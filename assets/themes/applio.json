@@ -1,0 +1,70 @@
+{
+  "name": "Applio",
+  "version": "1.0.0",
+  "description": "Port of the original Gradio theme (assets/themes/Applio.py): warm near-black background, neutral grays, blue focus accents, Syne typeface.",
+  "mode": "dark",
+  "colors": {
+    "primary": "#9e9e9e",
+    "primarySoft": "#404040",
+    "background": "#110f0f",
+    "surface": "#262626",
+    "surfaceDim": "#171717",
+    "panel": "#110f0f",
+    "border": "#262626",
+    "text": "#ffffff",
+    "heading": "#ffffff",
+    "muted": "#a3a3a3",
+    "ctaBg": "#525252",
+    "ctaText": "#ffffff",
+    "buttonBg": "rgba(255, 255, 255, 0)",
+    "buttonBgHover": "#262626",
+    "buttonTextHover": "#ffffff",
+    "buttonGhostText": "#ffffff",
+    "buttonGhostBorder": "#404040",
+    "buttonGhostBorderHover": "#525252",
+    "sliderTrack": "#404040",
+    "sliderThumb": "#9e9e9e",
+    "checkboxBorder": "#404040",
+    "checkboxBorderHover": "#525252",
+    "fileButtonBg": "rgba(255, 255, 255, 0)",
+    "fileButtonBorder": "#404040",
+    "fileButtonText": "#ffffff",
+    "fileButtonBgHover": "#262626",
+    "checkboxChecked": "#2563eb",
+    "checkboxCheck": "#ffffff",
+    "focusBorder": "#2563eb",
+    "selectionBg": "#2563eb",
+    "selectionText": "#ffffff",
+    "logBg": "#0a0a0a",
+    "ok": "#4ade80",
+    "warn": "#fbbf24",
+    "err": "#f87171",
+    "dangerBg": "rgba(239, 68, 68, 0.12)",
+    "dangerBorder": "rgba(239, 68, 68, 0.3)",
+    "dangerText": "#fca5a5",
+    "dangerBgHover": "rgba(239, 68, 68, 0.22)",
+    "dangerBorderHover": "rgba(239, 68, 68, 0.5)",
+    "dangerTextHover": "#ffffff"
+  },
+  "fonts": {
+    "display": ["google:Syne", "ui-sans-serif", "system-ui", "sans-serif"],
+    "body": ["google:Syne", "ui-sans-serif", "system-ui", "sans-serif"],
+    "mono": ["ui-monospace", "google:Nunito Sans", "monospace"]
+  },
+  "radius": {
+    "card": "8px",
+    "input": "12px",
+    "button": "12px",
+    "pill": "999px"
+  },
+  "titlebar": {
+    "bg": "#0c0c0c",
+    "closeBg": "#e81123",
+    "closeText": "#ffffff"
+  },
+  "shadows": {
+    "card": "none",
+    "button": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)"
+  },
+  "custom_css": ""
+}

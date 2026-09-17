@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import JobPanel from "../../components/JobPanel";
 import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg, postForm } from "../../lib/api";
+import { useI18n } from "../../lib/i18n";
+import { toast } from "../../lib/toast";
 
 export default function DownloadPage() {
+  const { t } = useI18n();
   const [link, setLink] = useState("");
   const [linkJob, setLinkJob] = useState<string | null>(null);
   const [dropFile, setDropFile] = useState<File | null>(null);
@@ -49,6 +52,7 @@ export default function DownloadPage() {
     try {
       const r = await postForm<{ file: string; modelDir: string }>("/api/download/drop", fd);
       setDropMsg(`Saved ${r.file} → ${r.modelDir} ✓`);
+      toast(`Model added: ${r.file}. It is now selectable as a voice model.`);
     } catch (e) {
       setDropMsg(errMsg(e));
     }
@@ -68,8 +72,10 @@ export default function DownloadPage() {
   return (
     <div>
       <PageHeader
-        title="Download"
-        description="Download community voice models and pretrained checkpoints or import local model files."
+        title={t("Download")}
+        description={t(
+          "Download community voice models and pretrained checkpoints or import local model files.",
+        )}
       />
       <div className="mb-4">
         <div className="row">
@@ -77,11 +83,11 @@ export default function DownloadPage() {
             type="text"
             value={link}
             onChange={(e) => setLink(e.target.value)}
-            placeholder="Model link (Drive, HuggingFace, direct zip)…"
+            placeholder={t("Model link (Drive, HuggingFace, direct zip)…")}
             style={{ flex: 1 }}
           />
           <button type="button" className="cta" onClick={downloadLink}>
-            Download Model
+            {t("Download Model")}
           </button>
         </div>
         {error && <p style={{ color: "var(--err)" }}>{error}</p>}
@@ -89,9 +95,9 @@ export default function DownloadPage() {
       <JobPanel jobId={linkJob} compact />
 
       <div className="card">
-        <h2>Drop Files</h2>
+        <h2>{t("Drop Files")}</h2>
         <p className="muted">
-          Drop .pth / .index here — stored under <code>logs/&lt;model&gt;/</code>.
+          {t("Drop .pth / .onnx / .index here — stored under")} <code>logs/&lt;model&gt;/</code>.
         </p>
         <div className="row">
           <input
@@ -100,18 +106,18 @@ export default function DownloadPage() {
             onChange={(e) => setDropFile(e.target.files?.[0] || null)}
           />
           <button type="button" className="cta" onClick={drop}>
-            Save File
+            {t("Save File")}
           </button>
           <span className="muted">{dropMsg}</span>
         </div>
       </div>
 
       <div className="card">
-        <h2>Download Pretrained Models</h2>
+        <h2>{t("Download Pretrained Models")}</h2>
         {!custom ? (
           <div className="grid2">
             <div>
-              <label>Pretrained</label>
+              <label>{t("Pretrained")}</label>
               <select
                 value={model}
                 onChange={(e) => {
@@ -128,7 +134,7 @@ export default function DownloadPage() {
               </select>
             </div>
             <div>
-              <label>Sampling Rate</label>
+              <label>{t("Sampling Rate")}</label>
               <select value={sr} onChange={(e) => setSr(e.target.value)}>
                 {(pretrained.find((p) => p.name === model)?.sampleRates || [sr]).map((s) => (
                   <option key={s} value={s}>
@@ -141,22 +147,22 @@ export default function DownloadPage() {
         ) : (
           <div className="grid2">
             <div>
-              <label>Pretrained G URL</label>
+              <label>{t("Pretrained G URL")}</label>
               <input type="text" value={urlG} onChange={(e) => setUrlG(e.target.value)} />
             </div>
             <div>
-              <label>Pretrained D URL</label>
+              <label>{t("Pretrained D URL")}</label>
               <input type="text" value={urlD} onChange={(e) => setUrlD(e.target.value)} />
             </div>
           </div>
         )}
         <label className="checkbox-label">
           <input type="checkbox" checked={custom} onChange={(e) => setCustom(e.target.checked)} />
-          <span>Custom Pretrained Model</span>
+          <span>{t("Custom Pretrained Model")}</span>
         </label>
         <div className="row" style={{ marginTop: 8 }}>
           <button type="button" className="cta" onClick={downloadPretrained}>
-            Download Pretrained
+            {t("Download Pretrained")}
           </button>
         </div>
       </div>

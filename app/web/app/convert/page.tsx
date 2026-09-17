@@ -6,6 +6,7 @@ import TtsForm from "../../components/convert/TtsForm";
 import InferenceForm from "../../components/InferenceForm";
 import PageHeader from "../../components/layout/PageHeader";
 import PresetsPanel from "../../components/PresetsPanel";
+import { useI18n } from "../../lib/i18n";
 
 type Mode = "single" | "batch" | "tts";
 
@@ -17,11 +18,12 @@ const MODES: Array<{ id: Mode; label: string }> = [
 
 export default function ConvertPage() {
   const [mode, setMode] = useState<Mode>("single");
+  const { t } = useI18n();
   return (
     <div>
       <PageHeader
-        title="Convert"
-        description="Turn any voice into another — single file, batch folder, or text-to-speech."
+        title={t("Convert")}
+        description={t("Turn any voice into another — single file, batch folder, or text-to-speech.")}
       >
         <div className="row">
           {MODES.map((m) => (
@@ -31,7 +33,7 @@ export default function ConvertPage() {
               className={mode === m.id ? "cta" : "ghost"}
               onClick={() => setMode(m.id)}
             >
-              {m.label}
+              {t(m.label)}
             </button>
           ))}
         </div>

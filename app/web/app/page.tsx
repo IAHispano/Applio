@@ -24,6 +24,7 @@ import { useCallback, useEffect, useState } from "react";
 import JobPanel from "../components/JobPanel";
 import FirstRunSetup from "../components/setup/FirstRunSetup";
 import { apiGet, apiSend, errMsg } from "../lib/api";
+import { useI18n } from "../lib/i18n";
 
 interface SetupCheck {
   id: string;
@@ -40,6 +41,7 @@ interface SetupStatus {
 
 export default function Home() {
   const router = useRouter();
+  const { t } = useI18n();
   const [status, setStatus] = useState<SetupStatus | null>(null);
   const [error, setError] = useState("");
   const [jobId, setJobId] = useState<string | null>(null);
@@ -151,21 +153,22 @@ export default function Home() {
       <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.07] via-white/[0.02] to-transparent p-6 sm:p-8">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide uppercase bg-white/10 text-neutral-300 border border-white/10">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-neutral-300">
                 <span
-                  className={`w-1.5 h-1.5 rounded-full ${
+                  className={`h-2 w-2 shrink-0 rounded-full ${
                     ready ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
                   }`}
                 />
-                {ready ? "Studio Ready" : "Setup Required"}
+                {ready ? t("Studio Ready") : t("Setup Required")}
               </span>
-              <span className="text-xs text-neutral-400">Applio v3.6</span>
+              <span className="shrink-0 text-xs text-neutral-400">Applio v3.6</span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white m-0">Applio</h1>
             <p className="text-neutral-300 text-sm sm:text-base leading-relaxed m-0">
-              High-performance AI voice cloning, real-time audio morphing, and neural model training right on
-              your local machine.
+              {t(
+                "High-performance AI voice cloning, real-time audio morphing, and neural model training right on your local machine.",
+              )}
             </p>
           </div>
 
@@ -178,7 +181,7 @@ export default function Home() {
                   onClick={() => router.push("/inference")}
                 >
                   <Sparkles className="w-4 h-4" />
-                  <span>Start Converting</span>
+                  <span>{t("Start Converting")}</span>
                 </button>
                 <button
                   type="button"
@@ -186,7 +189,7 @@ export default function Home() {
                   onClick={() => router.push("/realtime")}
                 >
                   <Radio className="w-4 h-4" />
-                  <span>Live Studio</span>
+                  <span>{t("Live Studio")}</span>
                 </button>
               </>
             ) : (
@@ -197,7 +200,7 @@ export default function Home() {
                 disabled={busy}
               >
                 <Wrench className="w-4 h-4" />
-                <span>{busy ? "Setting up engine…" : "Install / Repair"}</span>
+                <span>{busy ? t("Setting up engine…") : t("Install / Repair")}</span>
               </button>
             )}
           </div>
@@ -205,20 +208,22 @@ export default function Home() {
       </div>
 
       {/* Primary Workflows Grid (Clean 4-card layout) */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="title text-lg font-bold text-neutral-200 tracking-tight m-0">Primary Workflows</h2>
-          <span className="text-xs text-neutral-400">Select a studio tool to get started</span>
+      <section className="min-w-0 space-y-3">
+        <div className="flex min-w-0 flex-col gap-1 px-1 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="title text-lg font-bold text-neutral-200 tracking-tight m-0">
+            {t("Primary Workflows")}
+          </h2>
+          <span className="text-xs text-neutral-400">{t("Select a studio tool to get started")}</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4">
           {FEATURED_WORKFLOWS.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="group relative flex flex-col justify-between p-5 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200"
+                className="group relative flex min-w-0 flex-col justify-between p-5 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200"
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
@@ -226,17 +231,17 @@ export default function Home() {
                       <Icon className="w-5 h-5" />
                     </div>
                     <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded bg-white/5 text-neutral-400 border border-white/5">
-                      {item.tag}
+                      {t(item.tag)}
                     </span>
                   </div>
                   <h3 className="title text-base font-bold text-neutral-100 group-hover:text-white transition-colors mb-1.5">
-                    {item.title}
+                    {t(item.title)}
                   </h3>
-                  <p className="text-xs text-neutral-400 leading-relaxed m-0">{item.description}</p>
+                  <p className="text-xs text-neutral-400 leading-relaxed m-0">{t(item.description)}</p>
                 </div>
 
                 <div className="flex items-center gap-1 text-xs font-semibold text-neutral-300 group-hover:text-white pt-4 mt-2 border-t border-white/5">
-                  <span>{item.actionText}</span>
+                  <span>{t(item.actionText)}</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </div>
               </Link>
@@ -246,8 +251,8 @@ export default function Home() {
       </section>
 
       {/* Secondary Quick Access Bar */}
-      <div className="flex items-center gap-2 p-2 rounded-xl border border-white/10 bg-white/[0.02] flex-wrap">
-        <span className="text-xs font-medium text-neutral-400 px-2 py-1">Quick Access:</span>
+      <div className="flex w-full min-w-0 items-center gap-2 p-2 rounded-xl border border-white/10 bg-white/[0.02] flex-wrap">
+        <span className="text-xs font-medium text-neutral-400 px-2 py-1">{t("Quick Access:")}</span>
         {SECONDARY_TOOLS.map((tool) => {
           const Icon = tool.icon;
           return (
@@ -257,7 +262,7 @@ export default function Home() {
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-300 hover:text-white hover:bg-white/10 transition-colors"
             >
               <Icon className="w-3.5 h-3.5 text-neutral-400" />
-              <span>{tool.label}</span>
+              <span>{t(tool.label)}</span>
             </Link>
           );
         })}
@@ -268,15 +273,15 @@ export default function Home() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="title text-base font-bold text-neutral-100 m-0">System Diagnostics</h2>
+              <h2 className="title text-base font-bold text-neutral-100 m-0">{t("System Diagnostics")}</h2>
               {status && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/5 font-mono">
-                  {passedChecks}/{totalChecks} checks passed
+                  {passedChecks}/{totalChecks} {t("checks passed")}
                 </span>
               )}
             </div>
             <p className="text-xs text-neutral-400 mt-1 mb-0">
-              Hardware acceleration, Python dependencies, and pretrained base checkpoints.
+              {t("Hardware acceleration, Python dependencies, and pretrained base checkpoints.")}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -286,7 +291,7 @@ export default function Home() {
               onClick={() => refresh(true)}
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>Re-check</span>
+              <span>{t("Re-check")}</span>
             </button>
             <button
               type="button"
@@ -294,7 +299,7 @@ export default function Home() {
               onClick={prerequisites}
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Engine models</span>
+              <span>{t("Engine models")}</span>
             </button>
           </div>
         </div>
@@ -306,7 +311,7 @@ export default function Home() {
           </div>
         )}
 
-        {!status && !error && <p className="muted text-xs py-2">Contacting the Applio engine API…</p>}
+        {!status && !error && <p className="muted text-xs py-2">{t("Contacting the Applio engine API…")}</p>}
 
         {status && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

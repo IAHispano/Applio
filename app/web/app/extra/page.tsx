@@ -6,8 +6,10 @@ import AudioPlayer from "../../components/AudioPlayer";
 import JobPanel from "../../components/JobPanel";
 import PageHeader from "../../components/layout/PageHeader";
 import { errMsg, fetchModels, postForm, submitJob } from "../../lib/api";
+import { useI18n } from "../../lib/i18n";
 
 export default function ExtraPage() {
+  const { t } = useI18n();
   const [audio, setAudio] = useState<File | null>(null);
   const [audios, setAudios] = useState<string[]>([]);
   const [inputPath, setInputPath] = useState("");
@@ -33,7 +35,7 @@ export default function ExtraPage() {
 
   function checkAudio(): boolean {
     if (!audio && !inputPath) {
-      setError("Please select or upload an audio file first.");
+      setError(t("Please select or upload an audio file first."));
       return false;
     }
     return true;
@@ -90,8 +92,10 @@ export default function ExtraPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Audio Studio Tools"
-        description="Inspect acoustic waveforms, plot frequency spectrograms, extract pitch contours, and examine model checkpoints."
+        title={t("Audio Studio Tools")}
+        description={t(
+          "Inspect acoustic waveforms, plot frequency spectrograms, extract pitch contours, and examine model checkpoints.",
+        )}
       />
 
       {error && <p style={{ color: "var(--err)" }}>{error}</p>}
@@ -100,18 +104,18 @@ export default function ExtraPage() {
       <div className="card">
         <div className="flex items-center gap-2 mb-2">
           <FileAudio size={18} className="text-white" />
-          <h2 className="text-base font-bold text-white m-0">Input Audio Source</h2>
+          <h2 className="text-base font-bold text-white m-0">{t("Input Audio Source")}</h2>
         </div>
         <p className="text-xs text-neutral-400 m-0 mb-3">
-          This audio file will be analyzed by both the Audio Analyzer and the F0 Curve Extractor.
+          {t("This audio file will be analyzed by both the Audio Analyzer and the F0 Curve Extractor.")}
         </p>
 
         <div className="grid2">
           <div>
-            <label>Upload local audio file</label>
+            <label>{t("Upload local audio file")}</label>
             <input
               type="file"
-              accept=".wav,.mp3,.flac,.ogg,.m4a,.mp4,.aac,.aiff,.webm"
+              accept=".wav,.mp3,.flac,.ogg,.opus,.m4a,.mp4,.aac,.alac,.wma,.aiff,.webm,.ac3"
               onChange={(e) => {
                 setAudio(e.target.files?.[0] || null);
                 if (e.target.files?.[0]) setInputPath("");
@@ -119,7 +123,7 @@ export default function ExtraPage() {
             />
           </div>
           <div>
-            <label>…or pick from assets/audios</label>
+            <label>{t("…or pick from assets/audios")}</label>
             <input
               type="text"
               list="ext-audios"
@@ -141,7 +145,9 @@ export default function ExtraPage() {
         {/* Audio Preview Player */}
         {previewUrl && (
           <div className="mt-4 pt-3 border-t border-white/10">
-            <span className="text-xs text-neutral-400 block mb-1 font-medium">Source Audio Preview:</span>
+            <span className="text-xs text-neutral-400 block mb-1 font-medium">
+              {t("Source Audio Preview:")}
+            </span>
             <AudioPlayer src={previewUrl} title={audio?.name || inputPath} showAnalyzerLink={false} />
           </div>
         )}
@@ -154,17 +160,18 @@ export default function ExtraPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Activity size={18} className="text-emerald-400" />
-              <h2 className="text-base font-bold text-white m-0">Audio Analyzer</h2>
+              <h2 className="text-base font-bold text-white m-0">{t("Audio Analyzer")}</h2>
             </div>
             <p className="text-xs text-neutral-400 m-0 mb-4">
-              Generates a full 3-panel acoustic plot containing: Spectrogram (frequency vs time), Waveform
-              amplitude envelope, and Spectral Centroid/Bandwidth/Rolloff features.
+              {t(
+                "Generates a full 3-panel acoustic plot containing: Spectrogram (frequency vs time), Waveform amplitude envelope, and Spectral Centroid/Bandwidth/Rolloff features.",
+              )}
             </p>
           </div>
 
           <div className="pt-3 border-t border-white/10">
             <button type="button" className="cta w-full" onClick={analyze} disabled={busy}>
-              {busy ? "Generating Spectrogram…" : "Generate Spectrogram & Analysis"}
+              {busy ? t("Generating Spectrogram…") : t("Generate Spectrogram & Analysis")}
             </button>
           </div>
         </div>
@@ -174,15 +181,16 @@ export default function ExtraPage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <LineChart size={18} className="text-amber-400" />
-              <h2 className="text-base font-bold text-white m-0">F0 Pitch Curve Extractor</h2>
+              <h2 className="text-base font-bold text-white m-0">{t("F0 Pitch Curve Extractor")}</h2>
             </div>
             <p className="text-xs text-neutral-400 m-0 mb-3">
-              Extracts frame-by-frame fundamental pitch frequencies (Hz) across time and exports both a
-              high-resolution plot and a CSV data curve.
+              {t(
+                "Extracts frame-by-frame fundamental pitch frequencies (Hz) across time and exports both a high-resolution plot and a CSV data curve.",
+              )}
             </p>
 
             <div className="mb-4">
-              <label>Extraction Method</label>
+              <label>{t("Extraction Method")}</label>
               <select value={method} onChange={(e) => setMethod(e.target.value)}>
                 {["rmvpe", "fcpe", "crepe"].map((m) => (
                   <option key={m} value={m}>
@@ -195,7 +203,7 @@ export default function ExtraPage() {
 
           <div className="pt-3 border-t border-white/10">
             <button type="button" className="cta w-full" onClick={f0}>
-              Extract F0 Curve
+              {t("Extract F0 Curve")}
             </button>
           </div>
         </div>
@@ -208,12 +216,13 @@ export default function ExtraPage() {
       <div className="card">
         <div className="flex items-center gap-2 mb-2">
           <Info size={18} className="text-blue-400" />
-          <h2 className="text-base font-bold text-white m-0">Model Checkpoint Inspector</h2>
+          <h2 className="text-base font-bold text-white m-0">{t("Model Checkpoint Inspector")}</h2>
         </div>
         <p className="text-xs text-neutral-400 m-0 mb-3">
-          Inspect any .pth file directly to display training epochs, author, vocoder, sampling rate, and hash.
+          {t(
+            "Inspect any .pth file directly to display training epochs, author, vocoder, sampling rate, and hash.",
+          )}
         </p>
-
         <div className="row">
           <input
             type="text"
@@ -229,11 +238,11 @@ export default function ExtraPage() {
             ))}
           </datalist>
           <button type="button" className="cta" onClick={modelInfo}>
-            Inspect Checkpoint
+            {t("Inspect Checkpoint")}
           </button>
         </div>
       </div>
-      <JobPanel jobId={infoJob} compact />
+      <JobPanel jobId={infoJob} />
     </div>
   );
 }

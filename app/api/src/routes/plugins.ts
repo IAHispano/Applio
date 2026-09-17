@@ -23,6 +23,16 @@ function installedDir(): string {
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
+// The Gradio app installed plugins under tabs/plugins/installed; installs
+// made there keep working (read-only legacy fallback).
+function legacyDir(): string {
+  return path.join(getRepoRoot(), "tabs", "plugins", "installed");
+}
+function allPluginDirs(): string[] {
+  const dirs = [installedDir()];
+  if (fs.existsSync(legacyDir())) dirs.push(legacyDir());
+  return dirs;
+}
 function configPath(): string {
   return path.join(getRepoRoot(), "assets", "config.json");
 }
@@ -41,16 +51,24 @@ function saveEnabled(list: string[]) {
 }
 
 router.get("/", (_req: Request, res: Response) => {
-  const dir = installedDir();
-  const folders = fs.readdirSync(dir).filter((e) => fs.statSync(path.join(dir, e)).isDirectory());
+  const seen = new Map<
+    string,
+    { name: string; enabled: boolean; hasEntrypoint: boolean; legacy?: boolean }
+  >();
   const enabled = new Set(enabledPlugins());
-  res.json({
-    plugins: folders.map((f) => ({
-      name: f,
-      enabled: enabled.has(f),
-      hasEntrypoint: fs.existsSync(path.join(dir, f, "plugin.py")),
-    })),
-  });
+  for (const dir of allPluginDirs()) {
+    const legacy = dir !== installedDir();
+    for (const e of fs.readdirSync(dir)) {
+      if (!fs.statSync(path.join(dir, e)).isDirectory() || seen.has(e)) continue;
+      seen.set(e, {
+        name: e,
+        enabled: enabled.has(e),
+        hasEntrypoint: fs.existsSync(path.join(dir, e, "plugin.py")),
+        ...(legacy ? { legacy: true as const } : {}),
+      });
+    }
+  }
+  res.json({ plugins: [...seen.values()] });
 });
 
 router.post("/install", upload.single("file"), (req: Request, res: Response) => {

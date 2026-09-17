@@ -3,6 +3,7 @@
 import { Download, ExternalLink, Pause, Play, Repeat, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "../lib/i18n";
 
 interface AudioPlayerProps {
   src: string;
@@ -26,6 +27,7 @@ export default function AudioPlayer({
   filename,
   showAnalyzerLink = true,
 }: AudioPlayerProps) {
+  const { t } = useI18n();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // When A/B compare is available, activeTrack can be 'converted' or 'original'
@@ -149,7 +151,7 @@ export default function AudioPlayer({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-white truncate m-0">{title || displayName}</p>
           <p className="text-xs text-neutral-400 truncate m-0">
-            {activeTrack === "original" ? "Original Audio" : "Converted Voice Model"}
+            {activeTrack === "original" ? t("Original Audio") : t("Converted Voice Model")}
           </p>
         </div>
 
@@ -165,7 +167,7 @@ export default function AudioPlayer({
                   : "text-neutral-400 hover:text-white"
               }`}
             >
-              Original (A)
+              {t("Original (A)")}
             </button>
             <button
               type="button"
@@ -176,7 +178,7 @@ export default function AudioPlayer({
                   : "text-neutral-400 hover:text-white"
               }`}
             >
-              Converted (B)
+              {t("Converted (B)")}
             </button>
           </div>
         )}
@@ -213,7 +215,7 @@ export default function AudioPlayer({
             type="button"
             onClick={togglePlay}
             className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:bg-neutral-200 transition-transform active:scale-95 shadow-md"
-            title={isPlaying ? "Pause (Space)" : "Play (Space)"}
+            title={isPlaying ? t("Pause (Space)") : t("Play (Space)")}
           >
             {isPlaying ? (
               <Pause size={18} fill="currentColor" />
@@ -229,7 +231,7 @@ export default function AudioPlayer({
               if (audioRef.current) audioRef.current.currentTime = 0;
             }}
             className="p-2 text-neutral-400 hover:text-white transition-colors"
-            title="Restart"
+            title={t("Restart")}
           >
             <RotateCcw size={16} />
           </button>
@@ -241,7 +243,7 @@ export default function AudioPlayer({
             className={`p-2 rounded-md transition-colors ${
               isLooping ? "text-white bg-white/10" : "text-neutral-400 hover:text-white"
             }`}
-            title={isLooping ? "Looping Enabled" : "Enable Loop"}
+            title={isLooping ? t("Looping Enabled") : t("Enable Loop")}
           >
             <Repeat size={16} />
           </button>
@@ -251,7 +253,7 @@ export default function AudioPlayer({
             type="button"
             onClick={cycleRate}
             className="px-2 py-1 text-xs font-medium rounded-md bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10 transition-colors"
-            title="Playback Speed"
+            title={t("Playback Speed")}
           >
             {playbackRate}x
           </button>
@@ -264,7 +266,7 @@ export default function AudioPlayer({
               type="button"
               onClick={toggleMute}
               className="p-1 text-neutral-400 hover:text-white transition-colors"
-              title={isMuted ? "Unmute" : "Mute"}
+              title={isMuted ? t("Unmute") : t("Mute")}
             >
               {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
             </button>
@@ -285,14 +287,14 @@ export default function AudioPlayer({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors"
           >
             <Download size={14} />
-            <span>Download</span>
+            <span>{t("Download")}</span>
           </a>
 
           {showAnalyzerLink && (
             <Link
               href="/extra"
               className="p-1.5 text-neutral-400 hover:text-white transition-colors"
-              title="Inspect in Audio Tools"
+              title={t("Inspect in Audio Tools")}
             >
               <ExternalLink size={14} />
             </Link>

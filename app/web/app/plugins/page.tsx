@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import JobPanel from "../../components/JobPanel";
 import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg, postForm } from "../../lib/api";
+import { useI18n } from "../../lib/i18n";
 
 interface Plugin {
   name: string;
@@ -12,6 +13,7 @@ interface Plugin {
 }
 
 export default function PluginsPage() {
+  const { t } = useI18n();
   const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export default function PluginsPage() {
     try {
       const { jobId: id } = await postForm<{ jobId: string }>("/api/plugins/install", fd);
       setJobId(id);
-      setMsg("Installing… restart the app when done.");
+      setMsg(t("Installing… restart the app when done."));
     } catch (e) {
       setMsg(errMsg(e));
     }
@@ -56,31 +58,31 @@ export default function PluginsPage() {
   return (
     <div>
       <PageHeader
-        title="Plugins"
-        description="Manage installed plugins and extend Applio with custom functionality."
+        title={t("Plugins")}
+        description={t("Manage installed plugins and extend Applio with custom functionality.")}
       />
       <div className="mb-4">
         {msg && <p className="muted">{msg}</p>}
-        {plugins.length === 0 && <p className="muted">No plugins installed yet.</p>}
+        {plugins.length === 0 && <p className="muted">{t("No plugins installed yet.")}</p>}
         {plugins.map((p) => (
           <div className="row" key={p.name} style={{ marginBottom: 8 }}>
             <strong>{p.name}</strong>
             <span className={`badge ${p.enabled ? "done" : "queued"}`}>
-              {p.enabled ? "enabled" : "disabled"}
+              {p.enabled ? t("enabled") : t("disabled")}
             </span>
-            {!p.hasEntrypoint && <span className="muted">no plugin.py entrypoint</span>}
+            {!p.hasEntrypoint && <span className="muted">{t("no plugin.py entrypoint")}</span>}
             <button type="button" className="ghost" onClick={() => toggle(p)}>
-              {p.enabled ? "Disable" : "Enable"}
+              {p.enabled ? t("Disable") : t("Enable")}
             </button>
           </div>
         ))}
       </div>
       <div className="card">
-        <h2>Install Plugin (.zip)</h2>
+        <h2>{t("Install Plugin (.zip)")}</h2>
         <div className="row">
           <input type="file" accept=".zip" onChange={(e) => setFile(e.target.files?.[0] || null)} />
           <button type="button" className="cta" onClick={install}>
-            Install
+            {t("Install")}
           </button>
         </div>
       </div>
