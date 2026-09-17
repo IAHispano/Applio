@@ -1,6 +1,7 @@
 import os
 import sys
 import soxr
+import ffmpeg
 import librosa
 import soundfile as sf
 import numpy as np
@@ -58,6 +59,20 @@ def load_audio(file, sample_rate):
         raise RuntimeError(f"An error occurred loading the audio: {error}")
 
     return audio.flatten()
+
+
+def load_audio_ffmpeg(file, sample_rate):
+    try:
+        file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+        out, _ = (
+            ffmpeg.input(file, threads=0)
+            .output("-", format="f32le", acodec="pcm_f32le", ac=1, ar=sample_rate)
+            .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
+        )
+    except Exception as error:
+        raise RuntimeError(f"An error occurred loading the audio: {error}")
+
+    return np.frombuffer(out, np.float32).flatten()
 
 
 def load_audio_infer(
