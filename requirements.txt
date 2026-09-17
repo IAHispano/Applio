@@ -30,3 +30,5 @@ beautifulsoup4==4.15.0
 sounddevice==0.5.5
 webrtcvad-wheels==2.0.14
 psutil==7.2.2
+
+ffmpeg-python==0.2.0
