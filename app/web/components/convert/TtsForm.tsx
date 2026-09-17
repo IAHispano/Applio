@@ -6,6 +6,7 @@ import { useI18n } from "../../lib/i18n";
 import { useSpeakers } from "../../lib/useSpeakers";
 import JobPanel from "../JobPanel";
 import RadioRow from "../RadioRow";
+import SliderField from "../ui/SliderField";
 
 interface Voice {
   shortName: string;
@@ -41,7 +42,6 @@ export default function TtsForm() {
   const [cleanAudio, setCleanAudio] = useState(false);
   const [cleanStrength, setCleanStrength] = useState(0.5);
   const [sid, setSid] = useState(0);
-  const [terms, setTerms] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -77,10 +77,6 @@ export default function TtsForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!terms) {
-      setError(t("You must agree to the Terms of Use to proceed."));
-      return;
-    }
     if (!text && !file) {
       setError(t("Enter text or upload a .txt file."));
       return;
@@ -123,23 +119,38 @@ export default function TtsForm() {
 
   return (
     <div>
-      {error && <p style={{ color: "var(--err)" }}>{error}</p>}
+      {error && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mb-4 p-3 rounded-lg border border-[var(--err)] text-[var(--err)] bg-[color-mix(in_srgb,var(--err)_10%,transparent)]"
+        >
+          {error}
+        </div>
+      )}
       <form onSubmit={onSubmit}>
         <div className="card">
           <h2>{t("Text")}</h2>
-          <label>{t("Text to Synthesize")}</label>
+          <label htmlFor="tts-text-input">{t("Text to Synthesize")}</label>
           <input
+            id="tts-text-input"
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={t("Hello, this is Applio.")}
           />
-          <label>{t("Upload a .txt file")}</label>
-          <input type="file" accept=".txt" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+          <label htmlFor="tts-file-input">{t("Upload a .txt file")}</label>
+          <input
+            id="tts-file-input"
+            type="file"
+            accept=".txt"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+          />
           <div className="grid2">
             <div>
-              <label>{t("Voice filter")}</label>
+              <label htmlFor="tts-voice-filter">{t("Voice filter")}</label>
               <input
+                id="tts-voice-filter"
                 type="text"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
@@ -147,10 +158,10 @@ export default function TtsForm() {
               />
             </div>
             <div>
-              <label>
-                Voice ({shown.length} of {voices.length})
+              <label htmlFor="tts-voice-select">
+                {t("Voice")} ({shown.length} of {voices.length})
               </label>
-              <select value={voice} onChange={(e) => setVoice(e.target.value)}>
+              <select id="tts-voice-select" value={voice} onChange={(e) => setVoice(e.target.value)}>
                 {shown.slice(0, 400).map((v) => (
                   <option key={v.shortName} value={v.shortName}>
                     {v.friendlyName} ({v.gender})
@@ -159,14 +170,15 @@ export default function TtsForm() {
               </select>
             </div>
             <div>
-              <label>Speaking rate: {rate} (−100…100)</label>
-              <input
-                type="range"
+              <SliderField
+                id="tts-speaking-rate"
+                label={t("Speaking rate")}
+                value={rate}
                 min={-100}
                 max={100}
                 step={1}
-                value={rate}
-                onChange={(e) => setRate(Number(e.target.value))}
+                unit="%"
+                onChange={setRate}
               />
             </div>
           </div>
@@ -175,8 +187,9 @@ export default function TtsForm() {
           <h2>{t("Voice Model")}</h2>
           <div className="grid2">
             <div>
-              <label>{t("Voice Model")}</label>
+              <label htmlFor="tts-model-input">{t("Voice Model")}</label>
               <input
+                id="tts-model-input"
                 type="text"
                 list="tmodels"
                 value={pthPath}
@@ -189,51 +202,57 @@ export default function TtsForm() {
               </datalist>
             </div>
             <div>
-              <label>{t("Index (optional)")}</label>
-              <input type="text" value={indexPath} onChange={(e) => setIndexPath(e.target.value)} />
+              <label htmlFor="tts-index-input">{t("Index (optional)")}</label>
+              <input
+                id="tts-index-input"
+                type="text"
+                value={indexPath}
+                onChange={(e) => setIndexPath(e.target.value)}
+              />
             </div>
             <div>
-              <label>Pitch: {pitch}</label>
-              <input
-                type="range"
+              <SliderField
+                id="tts-pitch"
+                label={t("Pitch")}
+                value={pitch}
                 min={-24}
                 max={24}
                 step={1}
-                value={pitch}
-                onChange={(e) => setPitch(Number(e.target.value))}
+                unit="st"
+                onChange={setPitch}
               />
             </div>
             <div>
-              <label>Search Feature Ratio: {indexRate}</label>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
+              <SliderField
+                id="tts-index-rate"
+                label={t("Search Feature Ratio")}
                 value={indexRate}
-                onChange={(e) => setIndexRate(Number(e.target.value))}
-              />
-            </div>
-            <div>
-              <label>Volume Envelope: {volumeEnvelope} (default 1)</label>
-              <input
-                type="range"
                 min={0}
                 max={1}
                 step={0.05}
-                value={volumeEnvelope}
-                onChange={(e) => setVolumeEnvelope(Number(e.target.value))}
+                onChange={setIndexRate}
               />
             </div>
             <div>
-              <label>Protect Voiceless Consonants: {protect} (default 0.5)</label>
-              <input
-                type="range"
+              <SliderField
+                id="tts-volume-envelope"
+                label={t("Volume Envelope")}
+                value={volumeEnvelope}
+                min={0}
+                max={1}
+                step={0.05}
+                onChange={setVolumeEnvelope}
+              />
+            </div>
+            <div>
+              <SliderField
+                id="tts-protect"
+                label={t("Protect Voiceless Consonants")}
+                value={protect}
                 min={0}
                 max={0.5}
                 step={0.01}
-                value={protect}
-                onChange={(e) => setProtect(Number(e.target.value))}
+                onChange={setProtect}
               />
             </div>
             <RadioRow
@@ -268,8 +287,9 @@ export default function TtsForm() {
             />
             {embedderModel === "custom" && (
               <div>
-                <label>{t("Custom embedder path")}</label>
+                <label htmlFor="tts-custom-embedder">{t("Custom embedder path")}</label>
                 <input
+                  id="tts-custom-embedder"
                   type="text"
                   value={embedderModelCustom}
                   onChange={(e) => setEmbedderModelCustom(e.target.value)}
@@ -278,8 +298,8 @@ export default function TtsForm() {
               </div>
             )}
             <div>
-              <label>{t("Speaker ID")}</label>
-              <select value={sid} onChange={(e) => setSid(Number(e.target.value))}>
+              <label htmlFor="tts-speaker-id">{t("Speaker ID")}</label>
+              <select id="tts-speaker-id" value={sid} onChange={(e) => setSid(Number(e.target.value))}>
                 {speakers.map((s) => (
                   <option key={s} value={s}>
                     {s}
@@ -288,8 +308,12 @@ export default function TtsForm() {
               </select>
             </div>
             <div>
-              <label>{t("Export Format")}</label>
-              <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)}>
+              <label htmlFor="tts-export-format">{t("Export Format")}</label>
+              <select
+                id="tts-export-format"
+                value={exportFormat}
+                onChange={(e) => setExportFormat(e.target.value)}
+              >
                 {["WAV", "MP3", "FLAC", "OGG", "M4A"].map((m) => (
                   <option key={m} value={m}>
                     {m}
@@ -301,32 +325,36 @@ export default function TtsForm() {
           <details>
             <summary>{t("Advanced Settings")}</summary>
             <div className="row">
-              <label>
+              <label htmlFor="tts-split-audio" className="flex items-center gap-2 cursor-pointer">
                 <input
+                  id="tts-split-audio"
                   type="checkbox"
                   checked={splitAudio}
                   onChange={(e) => setSplitAudio(e.target.checked)}
                 />{" "}
                 {t("Split Audio")}
               </label>
-              <label>
+              <label htmlFor="tts-f0-autotune" className="flex items-center gap-2 cursor-pointer">
                 <input
+                  id="tts-f0-autotune"
                   type="checkbox"
                   checked={f0Autotune}
                   onChange={(e) => setF0Autotune(e.target.checked)}
                 />{" "}
                 {t("Autotune")}
               </label>
-              <label>
+              <label htmlFor="tts-proposed-pitch" className="flex items-center gap-2 cursor-pointer">
                 <input
+                  id="tts-proposed-pitch"
                   type="checkbox"
                   checked={proposedPitch}
                   onChange={(e) => setProposedPitch(e.target.checked)}
                 />{" "}
                 {t("Proposed Pitch")}
               </label>
-              <label>
+              <label htmlFor="tts-clean-audio" className="flex items-center gap-2 cursor-pointer">
                 <input
+                  id="tts-clean-audio"
                   type="checkbox"
                   checked={cleanAudio}
                   onChange={(e) => setCleanAudio(e.target.checked)}
@@ -336,44 +364,41 @@ export default function TtsForm() {
             </div>
             <div className="grid2" style={{ marginTop: 8 }}>
               <div>
-                <label>Autotune Strength: {f0AutotuneStrength} (default 1)</label>
-                <input
-                  type="range"
+                <SliderField
+                  id="tts-autotune-strength"
+                  label={t("Autotune Strength")}
+                  value={f0AutotuneStrength}
                   min={0}
                   max={1}
                   step={0.05}
-                  value={f0AutotuneStrength}
-                  onChange={(e) => setF0AutotuneStrength(Number(e.target.value))}
+                  onChange={setF0AutotuneStrength}
                 />
               </div>
               <div>
-                <label>Proposed Pitch Threshold: {proposedPitchThreshold} (default 155)</label>
-                <input
-                  type="range"
+                <SliderField
+                  id="tts-proposed-threshold"
+                  label={t("Proposed Pitch Threshold")}
+                  value={proposedPitchThreshold}
                   min={50}
                   max={1200}
                   step={1}
-                  value={proposedPitchThreshold}
-                  onChange={(e) => setProposedPitchThreshold(Number(e.target.value))}
+                  unit="Hz"
+                  onChange={setProposedPitchThreshold}
                 />
               </div>
               <div>
-                <label>Clean Strength: {cleanStrength} (default 0.5)</label>
-                <input
-                  type="range"
+                <SliderField
+                  id="tts-clean-strength"
+                  label={t("Clean Strength")}
+                  value={cleanStrength}
                   min={0}
                   max={1}
                   step={0.05}
-                  value={cleanStrength}
-                  onChange={(e) => setCleanStrength(Number(e.target.value))}
+                  onChange={setCleanStrength}
                 />
               </div>
             </div>
           </details>
-          <label className="terms">
-            <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
-            <span>{t("I agree to the terms of use")}</span>
-          </label>
           <div className="row" style={{ marginTop: 12 }}>
             <button type="submit" className="cta" disabled={busy}>
               {busy ? t("Submitting…") : t("Convert")}

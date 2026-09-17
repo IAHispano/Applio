@@ -24,8 +24,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       apiGet<{ code: string; dict: Record<string, string> }>("/api/settings/language", { force: true })
         .then((r) => {
           if (!live) return;
-          setCode(r.code || "en_US");
+          const langCode = r.code || "en_US";
+          setCode(langCode);
           setDict(r.dict || {});
+          if (typeof document !== "undefined") {
+            const shortCode = langCode.split("_")[0] || "en";
+            document.documentElement.lang = shortCode;
+          }
         })
         .catch(() => {});
     };

@@ -10,10 +10,18 @@ export default function Sidebar() {
   const { t } = useI18n();
 
   return (
-    <aside className="flex flex-col w-64 shrink-0 bg-[#141414]/90 backdrop-blur-md border border-white/10 text-neutral-200 p-3 m-3 mr-0 my-3 rounded-2xl select-none min-h-0">
+    <aside
+      className="flex flex-col w-64 shrink-0 bg-[#141414]/90 backdrop-blur-md border border-white/10 text-neutral-200 p-3 m-3 mr-0 my-3 rounded-2xl select-none min-h-0"
+      aria-label="Sidebar Navigation"
+    >
       {/* Brand Header */}
       <div className="px-3 pt-2 pb-3 mb-1 border-b border-white/5 flex items-center justify-between shrink-0">
-        <Link href="/" prefetch={true} className="flex items-center gap-2.5 group">
+        <Link
+          href="/"
+          prefetch={true}
+          className="flex items-center gap-2.5 group rounded-lg focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2"
+          aria-label="Applio - Home"
+        >
           <span className="text-lg font-semibold tracking-tight text-white group-hover:text-neutral-200 transition-colors">
             Applio
           </span>
@@ -24,15 +32,18 @@ export default function Sidebar() {
       </div>
 
       {/* Grouped Navigation */}
-      <nav className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 scrollbar-thin">
+      <nav
+        className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 scrollbar-thin"
+        aria-label="Main Navigation"
+      >
         {NAV_SECTIONS.map((section, sIdx) => (
           <div key={section.title || `sec-${sIdx}`} className="space-y-1">
             {section.title && (
-              <div className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+              <h2 className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400 select-none m-0">
                 {t(section.title)}
-              </div>
+              </h2>
             )}
-            <ul className="space-y-0.5">
+            <ul className="space-y-0.5 list-none m-0 p-0">
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.to;
@@ -41,21 +52,28 @@ export default function Sidebar() {
                     <Link
                       href={item.to}
                       prefetch={true}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-150 relative ${
+                      aria-current={active ? "page" : undefined}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-150 relative focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2 ${
                         active
                           ? "bg-white/15 text-white font-medium shadow-xs"
                           : "text-neutral-400 hover:text-white hover:bg-white/5"
                       }`}
                     >
-                      {active && <span className="absolute left-1 w-1 h-3.5 bg-white rounded-full" />}
+                      {active && (
+                        <span
+                          className="absolute left-1 w-1 h-3.5 bg-white rounded-full"
+                          aria-hidden="true"
+                        />
+                      )}
                       <Icon
+                        aria-hidden="true"
                         className={`w-4 h-4 shrink-0 transition-colors ${
                           active ? "text-white" : "text-neutral-400"
                         }`}
                       />
                       <span className="truncate">{t(item.label)}</span>
                       {item.badge && (
-                        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-neutral-300">
+                        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-neutral-300 font-medium">
                           {t(item.badge)}
                         </span>
                       )}

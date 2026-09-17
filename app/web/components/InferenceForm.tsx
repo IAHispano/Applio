@@ -1,21 +1,25 @@
 "use client";
 
-import { Sliders, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  apiGet,
-  errMsg,
-  fetchJob,
-  fetchModels,
-  type Job,
-  pollJob,
-  stopJob,
-  submitInference,
-} from "../lib/api";
+  Activity,
+  AudioWaveform,
+  ChevronDown,
+  Layers,
+  Music,
+  Sliders,
+  Sparkles,
+  Volume2,
+  Wand2,
+} from "lucide-react";
+import type React from "react";
+import { useEffect, useMemo, useState } from "react";
+import { errMsg, fetchJob, fetchModels, type Job, pollJob, stopJob, submitInference } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { useSpeakers } from "../lib/useSpeakers";
-import { toast } from "../lib/toast";
-import AudioPlayer from "./AudioPlayer";
+import AudioWavePlayer from "./AudioWavePlayer";
+import AudioDropzone from "./ui/AudioDropzone";
+import ModelDropdown from "./ui/ModelDropdown";
+import SliderField from "./ui/SliderField";
 
 const F0_METHODS = [
   "rmvpe",
@@ -37,11 +41,9 @@ const EMBEDDERS = [
   "korean-hubert-base",
   "custom",
 ];
+
 const FORMATS = ["WAV", "MP3", "FLAC", "OGG", "M4A"];
 
-// Best-effort port of the Gradio match_index(): prefer an index in the same
-// folder whose name matches the model stem, else a name match, else the only
-// index sitting next to the model.
 function matchIndex(model: string, indexes: string[]): string {
   if (!model || indexes.length === 0) return "";
   const dir = model.includes("/") ? model.slice(0, model.lastIndexOf("/")) : "";
@@ -52,58 +54,51 @@ function matchIndex(model: string, indexes: string[]): string {
   return byStem(sameDir.length > 0 ? sameDir : indexes) || (sameDir.length === 1 ? sameDir[0] : "") || "";
 }
 
-function pickMime(): string {
-  if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) return "";
-  for (const m of ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"]) {
-    try {
-      if (MediaRecorder.isTypeSupported(m)) return m;
-    } catch {
-      /* try next */
-    }
-  }
-  return "";
-}
-
 export default function InferenceForm() {
   const { t } = useI18n();
+
+  // Model & Asset states
   const [models, setModels] = useState<string[]>([]);
   const [indexes, setIndexes] = useState<string[]>([]);
-  const [audios, setAudios] = useState<string[]>([]);
+  const [sampleAudios, setSampleAudios] = useState<string[]>([]);
   const [loadError, setLoadError] = useState("");
 
-  const [audioFile, setAudioFile] = useState<File | null>(null);
   const [pthPath, setPthPath] = useState("");
   const [indexPath, setIndexPath] = useState("");
+  const [customIndexOpen, setCustomIndexOpen] = useState(false);
+  const [sid, setSid] = useState(0);
+
+  // Audio input states
+  const [audioFile, setAudioFile] = useState<File | null>(null);
   const [inputPath, setInputPath] = useState("");
+
+  // Core conversion settings
   const [pitch, setPitch] = useState(0);
   const [indexRate, setIndexRate] = useState(0.75);
-  const [volumeEnvelope, setVolumeEnvelope] = useState(1);
+  const [volumeEnvelope, setVolumeEnvelope] = useState(1.0);
   const [protect, setProtect] = useState(0.5);
+
+  // Algorithm & Export
   const [f0Method, setF0Method] = useState("rmvpe");
   const [embedderModel, setEmbedderModel] = useState("contentvec");
   const [embedderModelCustom, setEmbedderModelCustom] = useState("");
   const [exportFormat, setExportFormat] = useState("WAV");
+
+  // Advanced settings
   const [splitAudio, setSplitAudio] = useState(false);
   const [f0Autotune, setF0Autotune] = useState(false);
-  const [f0AutotuneStrength, setF0AutotuneStrength] = useState(1);
+  const [f0AutotuneStrength, setF0AutotuneStrength] = useState(1.0);
   const [proposedPitch, setProposedPitch] = useState(false);
   const [proposedPitchThreshold, setProposedPitchThreshold] = useState(155);
   const [cleanAudio, setCleanAudio] = useState(false);
   const [cleanStrength, setCleanStrength] = useState(0.5);
-  const [sid, setSid] = useState(0);
-  const [terms, setTerms] = useState(false);
-  const [filterEnabled, setFilterEnabled] = useState(false);
-  const [filter, setFilter] = useState("");
-  const [recording, setRecording] = useState(false);
-  const [recUrl, setRecUrl] = useState<string | null>(null);
-  const recRef = useRef<{ rec: MediaRecorder; chunks: Blob[]; stream: MediaStream } | null>(null);
 
   // Formant Shifting
   const [formantShifting, setFormantShifting] = useState(false);
   const [formantQfrency, setFormantQfrency] = useState(1.0);
   const [formantTimbre, setFormantTimbre] = useState(1.0);
 
-  // Studio Post-Process FX Rack
+  // FX Rack
   const [postProcess, setPostProcess] = useState(false);
   const [reverb, setReverb] = useState(false);
   const [reverbRoomSize, setReverbRoomSize] = useState(0.5);
@@ -131,6 +126,7 @@ export default function InferenceForm() {
   const [gain, setGain] = useState(false);
   const [gainDb, setGainDb] = useState(0);
 
+  // Job submission & status
   const [job, setJob] = useState<Job | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -141,22 +137,27 @@ export default function InferenceForm() {
     if (!speakers.includes(sid)) setSid(0);
   }, [speakers, sid]);
 
+  // Load models, indexes and sample audios
+  const loadAvailableModels = () => {
+    fetchModels()
+      .then((m) => {
+        setModels(m.models);
+        setIndexes(m.indexes);
+        setSampleAudios(m.audios);
+        if (m.models.length > 0 && !pthPath) {
+          handleModelSelect(m.models[0], m.indexes);
+        }
+        setLoadError("");
+      })
+      .catch((e) => setLoadError(errMsg(e)));
+  };
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: initial model fetch
   useEffect(() => {
-    apiGet<{ config: { model_index_filter?: boolean } }>("/api/settings")
-      .then((r) => setFilterEnabled(!!r.config?.model_index_filter))
-      .catch(() => {});
+    loadAvailableModels();
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (recUrl) URL.revokeObjectURL(recUrl);
-      recRef.current?.stream.getTracks().forEach((t) => {
-        t.stop();
-      });
-    };
-  }, [recUrl]);
-
-  // Check URL query parameters for model pre-selection (e.g. from /models)
+  // Pre-select model from URL params if available (e.g. from Models library)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
@@ -169,140 +170,48 @@ export default function InferenceForm() {
     }
   }, []);
 
-  // Preset apply/save bridge (PresetsPanel dispatches / requests these events)
-  useEffect(() => {
-    const onApply = (e: Event) => {
-      const v = (e as CustomEvent).detail as {
-        pitch: number;
-        index_rate: number;
-        rms_mix_rate: number;
-        protect: number;
-      };
-      if (typeof v.pitch === "number") setPitch(Math.max(-24, Math.min(24, v.pitch)));
-      if (typeof v.index_rate === "number") setIndexRate(v.index_rate);
-      if (typeof v.rms_mix_rate === "number") setVolumeEnvelope(v.rms_mix_rate);
-      if (typeof v.protect === "number") setProtect(v.protect);
-    };
-    const onRequest = () => {
-      window.dispatchEvent(
-        new CustomEvent("applio:read-preset", {
-          detail: { pitch, index_rate: indexRate, rms_mix_rate: volumeEnvelope, protect },
-        }),
-      );
-    };
-    window.addEventListener("applio:apply-preset", onApply);
-    window.addEventListener("applio:request-preset", onRequest);
-    return () => {
-      window.removeEventListener("applio:apply-preset", onApply);
-      window.removeEventListener("applio:request-preset", onRequest);
-    };
-  }, [indexRate, pitch, protect, volumeEnvelope]);
-
-  useEffect(() => {
-    fetchModels()
-      .then((m) => {
-        setModels(m.models);
-        setIndexes(m.indexes);
-        setAudios(m.audios);
-        if (m.models.length > 0 && !pthPath) {
-          setPthPath(m.models[0]);
-          const stem = (m.models[0].split("/").pop() ?? "").replace(/\.(pth|onnx)$/, "");
-          const match = m.indexes.find((i) => i.toLowerCase().includes(stem.toLowerCase().slice(0, 8)));
-          if (match) setIndexPath(match);
-        }
-        if (m.audios.length > 0) setInputPath(m.audios[0]);
-      })
-      .catch((e) => setLoadError(errMsg(e)));
-  }, [pthPath]);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: polling is keyed by job id on purpose
+  // Poll running jobs
+  // biome-ignore lint/correctness/useExhaustiveDependencies: poll active job until completion
   useEffect(() => {
     if (!job || job.status === "done" || job.status === "error") return;
     const stop = pollJob(job.id, setJob);
     return stop;
   }, [job?.id]);
 
-  // Create temporary URL for uploaded original audio for A/B comparison
+  const handleModelSelect = (selected: string, idxList = indexes) => {
+    setPthPath(selected);
+    const matched = matchIndex(selected, idxList);
+    setIndexPath(matched);
+    setSid(0);
+  };
+
+  const handleUnloadModel = () => {
+    setPthPath("");
+    setIndexPath("");
+    setSid(0);
+  };
+
+  // Temporary original audio URL for A/B comparison waveplayer
   const originalAudioUrl = useMemo(() => {
     if (audioFile) return URL.createObjectURL(audioFile);
     if (inputPath) return `/${inputPath}`;
     return null;
   }, [audioFile, inputPath]);
 
-  function unload() {
-    setPthPath("");
-    setIndexPath("");
-    setSid(0);
-  }
-
-  function refresh() {
-    fetchModels()
-      .then((m) => {
-        setModels(m.models);
-        setIndexes(m.indexes);
-        setAudios(m.audios);
-        if (m.models.length > 0 && !pthPath) {
-          setPthPath(m.models[0]);
-          const match = matchIndex(m.models[0], m.indexes);
-          if (match) setIndexPath(match);
-        }
-        if (m.audios.length > 0 && !inputPath) setInputPath(m.audios[0]);
-        setLoadError("");
-      })
-      .catch((e) => setLoadError(errMsg(e)));
-  }
-
-  async function startMic() {
-    setSubmitError("");
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mime = pickMime();
-      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-      const chunks: Blob[] = [];
-      rec.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-      rec.onstop = () => {
-        stream.getTracks().forEach((t) => {
-          t.stop();
-        });
-        setRecording(false);
-        const blob = new Blob(chunks, { type: mime || "audio/webm" });
-        const file = new File([blob], `mic-recording-${Date.now()}.webm`, {
-          type: blob.type,
-        });
-        setAudioFile(file);
-        setInputPath("");
-        if (recUrl) URL.revokeObjectURL(recUrl);
-        setRecUrl(URL.createObjectURL(blob));
-      };
-      recRef.current = { rec, chunks, stream };
-      rec.start();
-      setRecording(true);
-    } catch {
-      setSubmitError(t("Microphone unavailable — grant permission or upload a file instead."));
-    }
-  }
-
-  function stopMic() {
-    recRef.current?.rec.stop();
-  }
+  const directAudioUrl = job?.outputFile ? `/outputs/${job.outputFile.split("/").pop()}` : null;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitError("");
-    if (!terms) {
-      toast(t("You must agree to the Terms of Use to proceed."), "error");
-      return;
-    }
     if (!pthPath) {
-      setSubmitError(t("Select a voice model (.pth)."));
+      setSubmitError(t("Please select a voice model."));
       return;
     }
     if (!audioFile && !inputPath) {
-      setSubmitError(t("Upload an audio file or pick one from assets/audios."));
+      setSubmitError(t("Please provide an audio file or sample."));
       return;
     }
+
     const fd = new FormData();
     if (audioFile) fd.append("audio", audioFile);
     if (inputPath) fd.append("inputPath", inputPath);
@@ -327,14 +236,12 @@ export default function InferenceForm() {
     if (cleanAudio) fd.append("cleanStrength", String(cleanStrength));
     fd.append("sid", String(sid));
 
-    // Formant shifting
     if (formantShifting) {
       fd.append("formantShifting", "true");
       fd.append("formantQfrency", String(formantQfrency));
       fd.append("formantTimbre", String(formantTimbre));
     }
 
-    // Studio Post-Processing
     if (postProcess) {
       fd.append("postProcess", "true");
       if (reverb) {
@@ -384,670 +291,816 @@ export default function InferenceForm() {
     }
   }
 
-  const directAudioUrl = job?.outputFile ? `/outputs/${job.outputFile.split("/").pop()}` : null;
+  const isConverting = Boolean(submitting || (job && job.status !== "done" && job.status !== "error"));
 
   return (
-    <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit} className="space-y-4 max-w-5xl mx-auto">
       {loadError && (
         <div className="card">
-          <strong>{t("API offline.")}</strong>{" "}
+          <strong className="text-white">{t("API offline.")}</strong>{" "}
           <span className="muted">
             {t("Start it with")} <code>npm run dev</code>. {loadError}
           </span>
         </div>
       )}
 
-      <div className="flex gap-4 items-start flex-col lg:flex-row">
-        {/* Left Column: Model & Input Audio */}
-        <div className="flex flex-col w-full lg:w-[320px] lg:min-w-[320px]">
-          <div className="card">
-            <h2>{t("Model Selection")}</h2>
-            {filterEnabled && (
-              <div>
-                <label>{t("Filter")}</label>
-                <input
-                  type="text"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  placeholder={t("Type to filter...")}
-                />
+      {/* Top Grid: Model & Audio Input */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* Voice Model Selector (5 cols) */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="card space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Music size={16} className="text-neutral-300" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-300 m-0">
+                  {t("Voice Model")}
+                </h2>
               </div>
-            )}
-            <div className="space-y-3">
-              <div>
-                <label>{t("Voice Model (.pth)")}</label>
-                <input
-                  type="text"
-                  list="models"
-                  value={pthPath}
-                  onChange={(e) => {
-                    setPthPath(e.target.value);
-                    const match = matchIndex(e.target.value, indexes);
-                    if (match) setIndexPath(match);
-                  }}
-                  placeholder="logs/my-model/model.pth"
-                />
-                <datalist id="models">
-                  {(filter
-                    ? models.filter((m) => m.toLowerCase().includes(filter.toLowerCase()))
-                    : models
-                  ).map((m) => (
-                    <option key={m} value={m} />
-                  ))}
-                </datalist>
-              </div>
-              <div>
-                <label>{t("Index File (.index, optional)")}</label>
-                <input
-                  type="text"
-                  list="indexes"
-                  value={indexPath}
-                  onChange={(e) => setIndexPath(e.target.value)}
-                  placeholder="logs/my-model/added.index"
-                />
-                <datalist id="indexes">
-                  {(filter
-                    ? indexes.filter((i) => i.toLowerCase().includes(filter.toLowerCase()))
-                    : indexes
-                  ).map((m) => (
-                    <option key={m} value={m} />
-                  ))}
-                </datalist>
-              </div>
-              <div>
-                <label>{t("Speaker ID")}</label>
-                <select value={sid} onChange={(e) => setSid(Number(e.target.value))}>
-                  {speakers.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="row" style={{ marginTop: 8 }}>
-              <button type="button" className="ghost" onClick={unload}>
-                {t("Unload voice")}
-              </button>
-              <button type="button" className="ghost" onClick={refresh}>
-                {t("Refresh models and indexes")}
-              </button>
-            </div>
-            <p className="muted text-xs mt-2">
-              {t("Models are automatically discovered in")} <code>logs/</code>.
-            </p>
-          </div>
-
-          <div className="card">
-            <h2>{t("Audio Input")}</h2>
-            <label>{t("Upload audio (wav/mp3/flac/ogg/m4a, max 200MB)")}</label>
-            <input
-              type="file"
-              accept=".wav,.mp3,.flac,.ogg,.opus,.m4a,.mp4,.aac,.aiff,.webm"
-              onChange={(e) => {
-                setAudioFile(e.target.files?.[0] || null);
-                if (e.target.files?.[0]) setInputPath("");
-              }}
-            />
-            <div className="row" style={{ marginTop: 8 }}>
-              {!recording ? (
-                <button type="button" className="ghost" onClick={startMic}>
-                  {t("Record with mic")}
-                </button>
-              ) : (
-                <button type="button" className="ghost" onClick={stopMic}>
-                  {t("Stop recording")}
-                </button>
+              {pthPath && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  {t("Ready")}
+                </span>
               )}
-              {audioFile && <span className="muted">{audioFile.name}</span>}
             </div>
-            {recUrl && (
-              <div style={{ marginTop: 8 }}>
-                {/* biome-ignore lint/a11y/useMediaCaption: user recording preview has no caption track */}
-                <audio controls src={recUrl} />
-              </div>
-            )}
-            <label>{t("…or pick a file already in assets/audios")}</label>
-            <input
-              type="text"
-              list="audios"
-              value={inputPath}
-              onChange={(e) => {
-                setInputPath(e.target.value);
-                if (e.target.value) setAudioFile(null);
-              }}
-              placeholder="assets/audios/input.wav"
+
+            {/* Custom Model Dropdown */}
+            <ModelDropdown
+              models={models}
+              selectedModel={pthPath}
+              indexes={indexes}
+              onSelect={handleModelSelect}
+              onUnload={handleUnloadModel}
+              onRefresh={loadAvailableModels}
             />
-            <datalist id="audios">
-              {audios.map((m) => (
-                <option key={m} value={m} />
-              ))}
-            </datalist>
-          </div>
-        </div>
 
-        {/* Right Column: Settings, FX Rack, and Conversion */}
-        <div className="flex-1 flex flex-col min-w-0 w-full">
-          <div className="card">
-            <h2>{t("Conversion Settings")}</h2>
-            <div className="grid2">
-              <div>
-                <label>Pitch: {pitch} semitones (-24…24)</label>
-                <input
-                  type="range"
-                  min={-24}
-                  max={24}
-                  step={1}
-                  value={pitch}
-                  onChange={(e) => setPitch(Number(e.target.value))}
-                />
-              </div>
-              <div>
-                <label>Search Feature Ratio: {indexRate}</label>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={indexRate}
-                  onChange={(e) => setIndexRate(Number(e.target.value))}
-                />
-              </div>
-              <div>
-                <label>Volume Envelope: {volumeEnvelope}</label>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  value={volumeEnvelope}
-                  onChange={(e) => setVolumeEnvelope(Number(e.target.value))}
-                />
-              </div>
-              <div>
-                <label>Protect Voiceless Consonants: {protect}</label>
-                <input
-                  type="range"
-                  min={0}
-                  max={0.5}
-                  step={0.01}
-                  value={protect}
-                  onChange={(e) => setProtect(Number(e.target.value))}
-                />
-              </div>
-              <div>
-                <label>{t("Pitch extraction algorithm")}</label>
-                <select value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
-                  {F0_METHODS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label>{t("Embedder Model")}</label>
-                <select value={embedderModel} onChange={(e) => setEmbedderModel(e.target.value)}>
-                  {EMBEDDERS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {embedderModel === "custom" && (
-                <div>
-                  <label>{t("Custom embedder path (rvc/models/embedders/embedders_custom/...)")}</label>
-                  <input
-                    type="text"
-                    value={embedderModelCustom}
-                    onChange={(e) => setEmbedderModelCustom(e.target.value)}
-                    placeholder="rvc/models/embedders/embedders_custom/my-embedder"
-                  />
-                </div>
-              )}
-              <div>
-                <label>{t("Export Format")}</label>
-                <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)}>
-                  {FORMATS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Advanced Tuning Details */}
-            <details className="mt-4 border-t border-white/10 pt-3">
-              <summary className="cursor-pointer text-sm font-semibold text-neutral-300 hover:text-white">
-                {t("Advanced Settings")}
-              </summary>
-              <div className="space-y-3 mt-3">
-                <div className="row flex-wrap gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer m-0">
-                    <input
-                      type="checkbox"
-                      checked={splitAudio}
-                      onChange={(e) => setSplitAudio(e.target.checked)}
-                    />
-                    <span>{t("Split Audio (Process in chunks)")}</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer m-0">
-                    <input
-                      type="checkbox"
-                      checked={f0Autotune}
-                      onChange={(e) => setF0Autotune(e.target.checked)}
-                    />
-                    <span>{t("Pitch Autotune")}</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer m-0">
-                    <input
-                      type="checkbox"
-                      checked={proposedPitch}
-                      onChange={(e) => setProposedPitch(e.target.checked)}
-                    />
-                    <span>{t("Proposed Pitch")}</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer m-0">
-                    <input
-                      type="checkbox"
-                      checked={cleanAudio}
-                      onChange={(e) => setCleanAudio(e.target.checked)}
-                    />
-                    <span>{t("Clean Audio Artifacts")}</span>
-                  </label>
-                </div>
-                {f0Autotune && (
-                  <div>
-                    <label>Autotune Strength: {f0AutotuneStrength}</label>
-                    <input
-                      type="range"
-                      min={0.1}
-                      max={1}
-                      step={0.05}
-                      value={f0AutotuneStrength}
-                      onChange={(e) => setF0AutotuneStrength(Number(e.target.value))}
-                    />
-                  </div>
-                )}
-                {cleanAudio && (
-                  <div>
-                    <label>Clean Strength: {cleanStrength}</label>
-                    <input
-                      type="range"
-                      min={0.1}
-                      max={1}
-                      step={0.05}
-                      value={cleanStrength}
-                      onChange={(e) => setCleanStrength(Number(e.target.value))}
-                    />
-                  </div>
-                )}
-                {proposedPitch && (
-                  <div>
-                    <label>Proposed Pitch Threshold: {proposedPitchThreshold}</label>
-                    <input
-                      type="range"
-                      min={50}
-                      max={1200}
-                      step={1}
-                      value={proposedPitchThreshold}
-                      onChange={(e) => setProposedPitchThreshold(Number(e.target.value))}
-                    />
-                  </div>
-                )}
-              </div>
-            </details>
-
-            {/* Formant Shifting Section */}
-            <details className="mt-3 border-t border-white/10 pt-3">
-              <summary className="cursor-pointer text-sm font-semibold text-neutral-300 hover:text-white flex items-center gap-2">
-                <Sparkles size={16} />
-                <span>{t("Formant Shifting")}</span>
-              </summary>
-              <div className="space-y-3 mt-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formantShifting}
-                    onChange={(e) => setFormantShifting(e.target.checked)}
-                  />
-                  <span>{t("Enable Formant Shifting")}</span>
-                </label>
-                {formantShifting && (
-                  <div className="grid2">
-                    <div>
-                      <label>Formant Q-Frequency: {formantQfrency}</label>
-                      <input
-                        type="range"
-                        min={0.5}
-                        max={2.0}
-                        step={0.05}
-                        value={formantQfrency}
-                        onChange={(e) => setFormantQfrency(Number(e.target.value))}
-                      />
-                    </div>
-                    <div>
-                      <label>Formant Timbre: {formantTimbre}</label>
-                      <input
-                        type="range"
-                        min={0.5}
-                        max={2.0}
-                        step={0.05}
-                        value={formantTimbre}
-                        onChange={(e) => setFormantTimbre(Number(e.target.value))}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </details>
-
-            {/* Studio FX Rack Section */}
-            <details className="mt-3 border-t border-white/10 pt-3">
-              <summary className="cursor-pointer text-sm font-semibold text-neutral-300 hover:text-white flex items-center gap-2">
-                <Sliders size={16} />
-                <span>{t("Studio Audio FX Rack (Reverb, Delay, Compressor, Chorus)")}</span>
-              </summary>
-              <div className="space-y-4 mt-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={postProcess}
-                    onChange={(e) => setPostProcess(e.target.checked)}
-                  />
-                  <span>{t("Enable Studio Post-Process FX Chain")}</span>
-                </label>
-
-                {postProcess && (
-                  <div className="space-y-4 border border-white/5 rounded-xl p-4 bg-black/30">
-                    {/* Reverb */}
-                    <div>
-                      <label className="flex items-center gap-2 cursor-pointer font-medium text-white">
-                        <input
-                          type="checkbox"
-                          checked={reverb}
-                          onChange={(e) => setReverb(e.target.checked)}
-                        />
-                        <span>{t("Studio Reverb")}</span>
-                      </label>
-                      {reverb && (
-                        <div className="grid2 mt-2">
-                          <div>
-                            <label>Room Size: {reverbRoomSize}</label>
-                            <input
-                              type="range"
-                              min={0.1}
-                              max={1}
-                              step={0.05}
-                              value={reverbRoomSize}
-                              onChange={(e) => setReverbRoomSize(Number(e.target.value))}
-                            />
-                          </div>
-                          <div>
-                            <label>Wet Gain: {reverbWetGain}</label>
-                            <input
-                              type="range"
-                              min={0}
-                              max={1}
-                              step={0.05}
-                              value={reverbWetGain}
-                              onChange={(e) => setReverbWetGain(Number(e.target.value))}
-                            />
-                          </div>
-                          <div>
-                            <label>Dry Gain: {reverbDryGain}</label>
-                            <input
-                              type="range"
-                              min={0}
-                              max={1}
-                              step={0.05}
-                              value={reverbDryGain}
-                              onChange={(e) => setReverbDryGain(Number(e.target.value))}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Delay */}
-                    <div>
-                      <label className="flex items-center gap-2 cursor-pointer font-medium text-white">
-                        <input type="checkbox" checked={delay} onChange={(e) => setDelay(e.target.checked)} />
-                        <span>{t("Stereo Delay")}</span>
-                      </label>
-                      {delay && (
-                        <div className="grid2 mt-2">
-                          <div>
-                            <label>Delay Time: {delaySeconds}s</label>
-                            <input
-                              type="range"
-                              min={0.05}
-                              max={1.0}
-                              step={0.05}
-                              value={delaySeconds}
-                              onChange={(e) => setDelaySeconds(Number(e.target.value))}
-                            />
-                          </div>
-                          <div>
-                            <label>Delay Mix: {delayMix}</label>
-                            <input
-                              type="range"
-                              min={0}
-                              max={1}
-                              step={0.05}
-                              value={delayMix}
-                              onChange={(e) => setDelayMix(Number(e.target.value))}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Compressor & Limiter */}
-                    <div className="grid2">
-                      <div>
-                        <label className="flex items-center gap-2 cursor-pointer font-medium text-white">
-                          <input
-                            type="checkbox"
-                            checked={compressor}
-                            onChange={(e) => setCompressor(e.target.checked)}
-                          />
-                          <span>{t("Compressor")}</span>
-                        </label>
-                        {compressor && (
-                          <div className="space-y-2 mt-2">
-                            <label>Threshold: {compressorThreshold} dB</label>
-                            <input
-                              type="range"
-                              min={-40}
-                              max={0}
-                              step={1}
-                              value={compressorThreshold}
-                              onChange={(e) => setCompressorThreshold(Number(e.target.value))}
-                            />
-                            <label>Ratio: {compressorRatio}:1</label>
-                            <input
-                              type="range"
-                              min={1}
-                              max={20}
-                              step={0.5}
-                              value={compressorRatio}
-                              onChange={(e) => setCompressorRatio(Number(e.target.value))}
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="flex items-center gap-2 cursor-pointer font-medium text-white">
-                          <input
-                            type="checkbox"
-                            checked={limiter}
-                            onChange={(e) => setLimiter(e.target.checked)}
-                          />
-                          <span>{t("Peak Limiter")}</span>
-                        </label>
-                        {limiter && (
-                          <div className="space-y-2 mt-2">
-                            <label>Ceiling: {limiterThreshold} dB</label>
-                            <input
-                              type="range"
-                              min={-12}
-                              max={0}
-                              step={0.5}
-                              value={limiterThreshold}
-                              onChange={(e) => setLimiterThreshold(Number(e.target.value))}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Chorus, Distortion & Gain */}
-                    <div className="grid2">
-                      <div>
-                        <label className="flex items-center gap-2 cursor-pointer font-medium text-white">
-                          <input
-                            type="checkbox"
-                            checked={chorus}
-                            onChange={(e) => setChorus(e.target.checked)}
-                          />
-                          <span>{t("Chorus / Detune")}</span>
-                        </label>
-                        {chorus && (
-                          <div className="space-y-2 mt-2">
-                            <label>Rate: {chorusRate} Hz</label>
-                            <input
-                              type="range"
-                              min={0.1}
-                              max={5}
-                              step={0.1}
-                              value={chorusRate}
-                              onChange={(e) => setChorusRate(Number(e.target.value))}
-                            />
-                            <label>Depth: {chorusDepth}</label>
-                            <input
-                              type="range"
-                              min={0.05}
-                              max={1}
-                              step={0.05}
-                              value={chorusDepth}
-                              onChange={(e) => setChorusDepth(Number(e.target.value))}
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="flex items-center gap-2 cursor-pointer font-medium text-white">
-                          <input
-                            type="checkbox"
-                            checked={distortion}
-                            onChange={(e) => setDistortion(e.target.checked)}
-                          />
-                          <span>{t("Harmonic Distortion")}</span>
-                        </label>
-                        {distortion && (
-                          <div className="space-y-2 mt-2">
-                            <label>Drive Gain: {distortionGain} dB</label>
-                            <input
-                              type="range"
-                              min={0}
-                              max={40}
-                              step={1}
-                              value={distortionGain}
-                              onChange={(e) => setDistortionGain(Number(e.target.value))}
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="flex items-center gap-2 cursor-pointer font-medium text-white">
-                          <input type="checkbox" checked={gain} onChange={(e) => setGain(e.target.checked)} />
-                          <span>{t("Output Gain Boost")}</span>
-                        </label>
-                        {gain && (
-                          <div className="space-y-2 mt-2">
-                            <label>Gain: {gainDb} dB</label>
-                            <input
-                              type="range"
-                              min={-12}
-                              max={12}
-                              step={0.5}
-                              value={gainDb}
-                              onChange={(e) => setGainDb(Number(e.target.value))}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </details>
-          </div>
-
-          {/* Conversion Action & Audio Player Result */}
-          <div className="card">
-            <h2>{t("Conversion")}</h2>
-            <div
-              className="sticky bottom-0 z-10 -mx-5 -mb-5 mt-4 border-t border-[var(--border)] px-5 py-3 backdrop-blur"
-              style={{ background: "color-mix(in srgb, var(--bg) 88%, transparent)" }}
-            >
-              <label className="terms flex items-center gap-2 cursor-pointer mb-3">
-                <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
-                <span>{t("I agree to the terms of use")}</span>
-              </label>
-
-              <div className="row" style={{ marginTop: 12 }}>
-                <button
-                  type="submit"
-                  className="cta"
-                  disabled={submitting}
-                >
-                  {submitting ? t("Submitting…") : t("Convert")}
-                </button>
-                {job && job.status !== "done" && job.status !== "error" && (
+            {/* Linked Index Status & Override */}
+            {pthPath && (
+              <div className="p-3 bg-white/[0.03] border border-white/10 rounded-xl space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-neutral-400">{t("Index File:")}</span>
                   <button
                     type="button"
-                    className="ghost"
-                    onClick={() => stopJob(job.id).catch((e) => setSubmitError(errMsg(e)))}
+                    onClick={() => setCustomIndexOpen(!customIndexOpen)}
+                    className="text-[11px] text-neutral-300 hover:text-white underline"
                   >
-                    {t("Stop convert")}
+                    {customIndexOpen ? t("Hide index picker") : t("Change index")}
                   </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/70 shrink-0" />
+                  <span className="text-xs font-mono text-neutral-200 truncate flex-1">
+                    {indexPath
+                      ? indexPath.split("/").pop()
+                      : t("No index paired (using model features only)")}
+                  </span>
+                </div>
+
+                {customIndexOpen && (
+                  <div className="pt-2 border-t border-white/5">
+                    <select
+                      value={indexPath}
+                      onChange={(e) => setIndexPath(e.target.value)}
+                      className="w-full text-xs"
+                    >
+                      <option value="">{t("None (0.0 index rate)")}</option>
+                      {indexes.map((idx) => (
+                        <option key={idx} value={idx}>
+                          {idx.split("/").pop()} ({idx})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 )}
-                {job && <span className={`badge ${job.status}`}>{job.status}</span>}
-                {job && <span className="muted text-xs">job {job.id}</span>}
-              </div>
-            </div>
-
-            {submitError && <p style={{ color: "var(--err)" }}>{submitError}</p>}
-
-            {/* Custom Studio Audio Player with A/B compare */}
-            {job && directAudioUrl && job.status === "done" && (
-              <div className="mt-4">
-                <AudioPlayer
-                  src={directAudioUrl}
-                  originalSrc={originalAudioUrl}
-                  title={`Converted output · ${pthPath.split("/").pop()}`}
-                  filename={job.outputFile?.split("/").pop()}
-                />
               </div>
             )}
 
-            {job && job.status === "error" && <p style={{ color: "var(--err)" }}>{job.error}</p>}
-
-            {job && job.logs.length > 0 && (
-              <div className="mt-4">
-                <p className="muted text-xs mb-1">{t("Engine logs (streaming from Python engine)")}</p>
-                <div className="log">{job.logs.slice(-60).join("\n")}</div>
+            {/* Multi-speaker ID selector */}
+            {speakers.length > 1 && (
+              <div>
+                <label htmlFor="speaker-id-select" className="text-xs font-medium text-neutral-300">
+                  {t("Speaker ID (Multi-Speaker Model)")}
+                </label>
+                <select
+                  id="speaker-id-select"
+                  value={sid}
+                  onChange={(e) => setSid(Number(e.target.value))}
+                  className="w-full mt-1"
+                >
+                  {speakers.map((s) => (
+                    <option key={s} value={s}>
+                      {t("Speaker")} {s}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
         </div>
+
+        {/* Audio Input & Drag & Drop Zone (7 cols) */}
+        <div className="lg:col-span-7 space-y-4">
+          <div className="card space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AudioWaveform size={16} className="text-neutral-300" />
+                <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-300 m-0">
+                  {t("Audio Source")}
+                </h2>
+              </div>
+              {(audioFile || inputPath) && (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/10">
+                  {audioFile ? t("Uploaded File") : t("Library Sample")}
+                </span>
+              )}
+            </div>
+
+            {/* Interactive Drag & Drop + WavePlayer Component */}
+            <AudioDropzone
+              audioFile={audioFile}
+              inputPath={inputPath}
+              sampleAudios={sampleAudios}
+              onFileSelect={setAudioFile}
+              onPathSelect={setInputPath}
+              disabled={isConverting}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Conversion Settings Card */}
+      <div className="card space-y-5">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <Sliders size={18} className="text-white" />
+            <h2 className="text-base font-bold text-white m-0">{t("Conversion Parameters")}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setPitch(0);
+                setIndexRate(0.75);
+                setVolumeEnvelope(1.0);
+                setProtect(0.5);
+              }}
+              className="text-xs text-neutral-400 hover:text-white transition-colors"
+            >
+              {t("Reset defaults")}
+            </button>
+          </div>
+        </div>
+
+        {/* 4 Core Voice Sliders (2x2 Grid) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Pitch Shift with Quick Octave Buttons */}
+          <div className="space-y-2">
+            <SliderField
+              id="infer-pitch"
+              label={t("Pitch Shift (Semitones)")}
+              value={pitch}
+              min={-24}
+              max={24}
+              step={1}
+              unit="st"
+              formatValue={(v) => `${v > 0 ? `+${v}` : v} semitones`}
+              onChange={setPitch}
+              description={t("-24 to 24 semitones (±12 = 1 full octave)")}
+            />
+            {/* Octave Quick Buttons */}
+            <div className="flex items-center gap-1.5 pt-1">
+              <span className="text-[10px] text-neutral-500 mr-1">{t("Quick:")}</span>
+              <button
+                type="button"
+                onClick={() => setPitch(-12)}
+                className="px-2 py-0.5 text-[10px] font-mono rounded bg-white/5 hover:bg-white/15 text-neutral-300 border border-white/10 transition-colors"
+              >
+                -12 (Male)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPitch(0)}
+                className="px-2 py-0.5 text-[10px] font-mono rounded bg-white/5 hover:bg-white/15 text-neutral-300 border border-white/10 transition-colors"
+              >
+                0 (Default)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPitch(12)}
+                className="px-2 py-0.5 text-[10px] font-mono rounded bg-white/5 hover:bg-white/15 text-neutral-300 border border-white/10 transition-colors"
+              >
+                +12 (Female)
+              </button>
+            </div>
+          </div>
+
+          {/* Search Feature Ratio */}
+          <div>
+            <SliderField
+              id="infer-index-rate"
+              label={t("Search Feature Ratio (Index Accent)")}
+              value={indexRate}
+              min={0}
+              max={1}
+              step={0.05}
+              formatValue={(v) => `${v}`}
+              onChange={setIndexRate}
+              description={t("Weight of the index feature retrieval (0 = model only, 1 = max accent)")}
+            />
+          </div>
+
+          {/* Volume Envelope */}
+          <div>
+            <SliderField
+              id="infer-volume-envelope"
+              label={t("Volume Envelope (Dynamic Loudness)")}
+              value={volumeEnvelope}
+              min={0}
+              max={1}
+              step={0.05}
+              formatValue={(v) => `${v}`}
+              onChange={setVolumeEnvelope}
+              description={t("Match input audio loudness dynamics (1.0 = full dynamic match)")}
+            />
+          </div>
+
+          {/* Consonant Protection */}
+          <div>
+            <SliderField
+              id="infer-protect"
+              label={t("Protect Voiceless Consonants")}
+              value={protect}
+              min={0}
+              max={0.5}
+              step={0.01}
+              formatValue={(v) => `${v}`}
+              onChange={setProtect}
+              description={t("Shields voiceless consonants and breath sounds from artifacts (0.5 = neutral)")}
+            />
+          </div>
+        </div>
+
+        {/* Algorithm, Embedder & Export Format Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-white/10">
+          <div>
+            <label htmlFor="f0-method-select" className="text-xs font-medium text-neutral-300">
+              {t("Pitch Extraction Algorithm")}
+            </label>
+            <select
+              id="f0-method-select"
+              value={f0Method}
+              onChange={(e) => setF0Method(e.target.value)}
+              className="w-full mt-1"
+            >
+              {F0_METHODS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="embedder-model-select" className="text-xs font-medium text-neutral-300">
+              {t("Speech Embedder Model")}
+            </label>
+            <select
+              id="embedder-model-select"
+              value={embedderModel}
+              onChange={(e) => setEmbedderModel(e.target.value)}
+              className="w-full mt-1"
+            >
+              {EMBEDDERS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="export-format-select" className="text-xs font-medium text-neutral-300">
+              {t("Output Audio Format")}
+            </label>
+            <select
+              id="export-format-select"
+              value={exportFormat}
+              onChange={(e) => setExportFormat(e.target.value)}
+              className="w-full mt-1"
+            >
+              {FORMATS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {embedderModel === "custom" && (
+          <div className="p-3 bg-white/[0.03] border border-white/10 rounded-xl">
+            <label htmlFor="embedder-custom-input" className="text-xs font-medium text-neutral-300">
+              {t("Custom Embedder Path (rvc/models/embedders/embedders_custom/...)")}
+            </label>
+            <input
+              id="embedder-custom-input"
+              type="text"
+              value={embedderModelCustom}
+              onChange={(e) => setEmbedderModelCustom(e.target.value)}
+              placeholder="rvc/models/embedders/embedders_custom/my-embedder"
+              className="w-full mt-1"
+            />
+          </div>
+        )}
+
+        {/* Collapsible Accordions: Advanced Tuning, Formant, Audio FX */}
+        <div className="space-y-3 pt-2">
+          {/* Advanced Pitch & Tuning Accordion */}
+          <details className="group border border-white/10 rounded-xl overflow-hidden bg-white/[0.02]">
+            <summary className="px-4 py-3 cursor-pointer text-xs font-semibold text-neutral-300 hover:text-white flex items-center justify-between select-none">
+              <span className="flex items-center gap-2">
+                <Activity size={15} />
+                <span>{t("Advanced Pitch & Audio Cleanup")}</span>
+              </span>
+              <ChevronDown
+                size={16}
+                className="transition-transform duration-200 group-open:rotate-180 text-neutral-400"
+              />
+            </summary>
+            <div className="p-4 border-t border-white/10 space-y-4 bg-black/20">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/[0.05]">
+                  <input
+                    type="checkbox"
+                    checked={splitAudio}
+                    onChange={(e) => setSplitAudio(e.target.checked)}
+                  />
+                  <span className="text-xs">{t("Split in Chunks")}</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/[0.05]">
+                  <input
+                    type="checkbox"
+                    checked={f0Autotune}
+                    onChange={(e) => setF0Autotune(e.target.checked)}
+                  />
+                  <span className="text-xs">{t("Autotune")}</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/[0.05]">
+                  <input
+                    type="checkbox"
+                    checked={cleanAudio}
+                    onChange={(e) => setCleanAudio(e.target.checked)}
+                  />
+                  <span className="text-xs">{t("Clean Artifacts")}</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border border-white/5 bg-white/[0.02] hover:bg-white/[0.05]">
+                  <input
+                    type="checkbox"
+                    checked={proposedPitch}
+                    onChange={(e) => setProposedPitch(e.target.checked)}
+                  />
+                  <span className="text-xs">{t("Proposed Pitch")}</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                {f0Autotune && (
+                  <SliderField
+                    id="infer-autotune-strength"
+                    label={t("Autotune Strength")}
+                    value={f0AutotuneStrength}
+                    min={0.1}
+                    max={1}
+                    step={0.05}
+                    onChange={setF0AutotuneStrength}
+                  />
+                )}
+                {cleanAudio && (
+                  <SliderField
+                    id="infer-clean-strength"
+                    label={t("Clean Strength")}
+                    value={cleanStrength}
+                    min={0.1}
+                    max={1}
+                    step={0.05}
+                    onChange={setCleanStrength}
+                  />
+                )}
+                {proposedPitch && (
+                  <SliderField
+                    id="infer-pitch-thresh"
+                    label={t("Pitch Threshold")}
+                    value={proposedPitchThreshold}
+                    min={50}
+                    max={1200}
+                    step={1}
+                    unit="Hz"
+                    onChange={setProposedPitchThreshold}
+                  />
+                )}
+              </div>
+            </div>
+          </details>
+
+          {/* Formant Shifting Accordion */}
+          <details className="group border border-white/10 rounded-xl overflow-hidden bg-white/[0.02]">
+            <summary className="px-4 py-3 cursor-pointer text-xs font-semibold text-neutral-300 hover:text-white flex items-center justify-between select-none">
+              <span className="flex items-center gap-2">
+                <Sparkles size={15} />
+                <span>{t("Formant Shifting (Vocal Tract Modification)")}</span>
+              </span>
+              <ChevronDown
+                size={16}
+                className="transition-transform duration-200 group-open:rotate-180 text-neutral-400"
+              />
+            </summary>
+            <div className="p-4 border-t border-white/10 space-y-4 bg-black/20">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formantShifting}
+                  onChange={(e) => setFormantShifting(e.target.checked)}
+                />
+                <span className="text-xs font-medium text-white">{t("Enable Formant Shifting")}</span>
+              </label>
+
+              {formantShifting && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  <SliderField
+                    id="infer-formant-qfrency"
+                    label={t("Formant Q-Frequency")}
+                    value={formantQfrency}
+                    min={0.5}
+                    max={2.0}
+                    step={0.05}
+                    onChange={setFormantQfrency}
+                    description={t("Modifies formants width and spectral envelope")}
+                  />
+                  <SliderField
+                    id="infer-formant-timbre"
+                    label={t("Formant Timbre")}
+                    value={formantTimbre}
+                    min={0.5}
+                    max={2.0}
+                    step={0.05}
+                    onChange={setFormantTimbre}
+                    description={t("Adjusts vocal tract length / timbre brightness")}
+                  />
+                </div>
+              )}
+            </div>
+          </details>
+
+          {/* Audio FX Rack Accordion */}
+          <details className="group border border-white/10 rounded-xl overflow-hidden bg-white/[0.02]">
+            <summary className="px-4 py-3 cursor-pointer text-xs font-semibold text-neutral-300 hover:text-white flex items-center justify-between select-none">
+              <span className="flex items-center gap-2">
+                <Layers size={15} />
+                <span>{t("Post-Processing Audio FX Chain")}</span>
+              </span>
+              <ChevronDown
+                size={16}
+                className="transition-transform duration-200 group-open:rotate-180 text-neutral-400"
+              />
+            </summary>
+            <div className="p-4 border-t border-white/10 space-y-4 bg-black/20">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={postProcess}
+                  onChange={(e) => setPostProcess(e.target.checked)}
+                />
+                <span className="text-xs font-medium text-white">{t("Enable Master FX Rack")}</span>
+              </label>
+
+              {postProcess && (
+                <div className="space-y-4 pt-2">
+                  {/* Reverb */}
+                  <div className="p-3.5 rounded-xl border border-white/10 bg-white/[0.02] space-y-3">
+                    <label className="flex items-center gap-2 cursor-pointer font-medium text-white text-xs">
+                      <input type="checkbox" checked={reverb} onChange={(e) => setReverb(e.target.checked)} />
+                      <span>{t("Reverb")}</span>
+                    </label>
+                    {reverb && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <SliderField
+                          id="fx-reverb-room"
+                          label={t("Room Size")}
+                          value={reverbRoomSize}
+                          min={0.1}
+                          max={1}
+                          step={0.05}
+                          onChange={setReverbRoomSize}
+                        />
+                        <SliderField
+                          id="fx-reverb-wet"
+                          label={t("Wet Mix")}
+                          value={reverbWetGain}
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          onChange={setReverbWetGain}
+                        />
+                        <SliderField
+                          id="fx-reverb-dry"
+                          label={t("Dry Mix")}
+                          value={reverbDryGain}
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          onChange={setReverbDryGain}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Delay */}
+                  <div className="p-3.5 rounded-xl border border-white/10 bg-white/[0.02] space-y-3">
+                    <label className="flex items-center gap-2 cursor-pointer font-medium text-white text-xs">
+                      <input type="checkbox" checked={delay} onChange={(e) => setDelay(e.target.checked)} />
+                      <span>{t("Stereo Delay")}</span>
+                    </label>
+                    {delay && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <SliderField
+                          id="fx-delay-time"
+                          label={t("Delay Time")}
+                          value={delaySeconds}
+                          min={0.05}
+                          max={1.0}
+                          step={0.05}
+                          unit="s"
+                          onChange={setDelaySeconds}
+                        />
+                        <SliderField
+                          id="fx-delay-mix"
+                          label={t("Delay Mix")}
+                          value={delayMix}
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          onChange={setDelayMix}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Compressor & Limiter */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3.5 rounded-xl border border-white/10 bg-white/[0.02] space-y-3">
+                      <label className="flex items-center gap-2 cursor-pointer font-medium text-white text-xs">
+                        <input
+                          type="checkbox"
+                          checked={compressor}
+                          onChange={(e) => setCompressor(e.target.checked)}
+                        />
+                        <span>{t("Compressor")}</span>
+                      </label>
+                      {compressor && (
+                        <div className="space-y-2">
+                          <SliderField
+                            id="fx-comp-thresh"
+                            label={t("Threshold")}
+                            value={compressorThreshold}
+                            min={-40}
+                            max={0}
+                            step={1}
+                            unit="dB"
+                            onChange={setCompressorThreshold}
+                          />
+                          <SliderField
+                            id="fx-comp-ratio"
+                            label={t("Ratio")}
+                            value={compressorRatio}
+                            min={1}
+                            max={20}
+                            step={0.5}
+                            formatValue={(v) => `${v}:1`}
+                            onChange={setCompressorRatio}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-3.5 rounded-xl border border-white/10 bg-white/[0.02] space-y-3">
+                      <label className="flex items-center gap-2 cursor-pointer font-medium text-white text-xs">
+                        <input
+                          type="checkbox"
+                          checked={limiter}
+                          onChange={(e) => setLimiter(e.target.checked)}
+                        />
+                        <span>{t("Peak Limiter")}</span>
+                      </label>
+                      {limiter && (
+                        <SliderField
+                          id="fx-limiter-ceil"
+                          label={t("Ceiling")}
+                          value={limiterThreshold}
+                          min={-12}
+                          max={0}
+                          step={0.5}
+                          unit="dB"
+                          onChange={setLimiterThreshold}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Chorus, Distortion & Gain */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="p-3.5 rounded-xl border border-white/10 bg-white/[0.02] space-y-3">
+                      <label className="flex items-center gap-2 cursor-pointer font-medium text-white text-xs">
+                        <input
+                          type="checkbox"
+                          checked={chorus}
+                          onChange={(e) => setChorus(e.target.checked)}
+                        />
+                        <span>{t("Chorus / Detune")}</span>
+                      </label>
+                      {chorus && (
+                        <div className="space-y-2">
+                          <SliderField
+                            id="fx-chorus-rate"
+                            label={t("Rate")}
+                            value={chorusRate}
+                            min={0.1}
+                            max={5}
+                            step={0.1}
+                            unit="Hz"
+                            onChange={setChorusRate}
+                          />
+                          <SliderField
+                            id="fx-chorus-depth"
+                            label={t("Depth")}
+                            value={chorusDepth}
+                            min={0.05}
+                            max={1}
+                            step={0.05}
+                            onChange={setChorusDepth}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-3.5 rounded-xl border border-white/10 bg-white/[0.02] space-y-3">
+                      <label className="flex items-center gap-2 cursor-pointer font-medium text-white text-xs">
+                        <input
+                          type="checkbox"
+                          checked={distortion}
+                          onChange={(e) => setDistortion(e.target.checked)}
+                        />
+                        <span>{t("Distortion")}</span>
+                      </label>
+                      {distortion && (
+                        <SliderField
+                          id="fx-dist-gain"
+                          label={t("Drive Gain")}
+                          value={distortionGain}
+                          min={0}
+                          max={40}
+                          step={1}
+                          unit="dB"
+                          onChange={setDistortionGain}
+                        />
+                      )}
+                    </div>
+
+                    <div className="p-3.5 rounded-xl border border-white/10 bg-white/[0.02] space-y-3">
+                      <label className="flex items-center gap-2 cursor-pointer font-medium text-white text-xs">
+                        <input type="checkbox" checked={gain} onChange={(e) => setGain(e.target.checked)} />
+                        <span>{t("Output Gain")}</span>
+                      </label>
+                      {gain && (
+                        <SliderField
+                          id="fx-gain-db"
+                          label={t("Boost")}
+                          value={gainDb}
+                          min={-12}
+                          max={12}
+                          step={0.5}
+                          unit="dB"
+                          onChange={setGainDb}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </details>
+        </div>
+      </div>
+
+      {/* Convert Action, Live Progress & WavePlayer Result Card */}
+      <div className="card space-y-4">
+        {/* Action Header: Convert button & Status */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={isConverting || !pthPath || (!audioFile && !inputPath)}
+              className="cta text-sm px-6 py-2.5 flex items-center gap-2 shadow-xl"
+            >
+              <Wand2 size={16} />
+              <span>{isConverting ? t("Converting Audio…") : t("Convert Audio")}</span>
+            </button>
+
+            {job && isConverting && (
+              <button
+                type="button"
+                className="ghost text-xs"
+                onClick={() => stopJob(job.id).catch((e) => setSubmitError(errMsg(e)))}
+              >
+                {t("Stop Conversion")}
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {job && (
+              <span className={`badge ${job.status}`} role="status">
+                {job.status}
+              </span>
+            )}
+            {job && <span className="text-xs font-mono text-neutral-400">ID: {job.id}</span>}
+          </div>
+        </div>
+
+        {/* Live Conversion Progress Bar (strictly progress bar, no spinners!) */}
+        {isConverting && (
+          <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl space-y-2">
+            <div className="flex items-center justify-between text-xs text-neutral-300">
+              <span className="font-medium">
+                {submitting
+                  ? t("Submitting audio to AI voice model…")
+                  : job?.status === "queued"
+                    ? t("Queued in processing pipeline…")
+                    : t("Processing inference with voice model…")}
+              </span>
+              <span className="font-mono text-neutral-400 capitalize">
+                {submitting ? t("Uploading…") : job?.status || t("Working…")}
+              </span>
+            </div>
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-white rounded-full transition-all duration-300 animate-pulse"
+                style={{
+                  width: submitting ? "30%" : job?.status === "queued" ? "50%" : "85%",
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Submit or Runtime Error */}
+        {submitError && (
+          <div
+            role="alert"
+            className="p-3.5 rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 text-xs"
+          >
+            {submitError}
+          </div>
+        )}
+
+        {job && job.status === "error" && (
+          <div
+            role="alert"
+            className="p-3.5 rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 text-xs"
+          >
+            {job.error || t("Inference job failed.")}
+          </div>
+        )}
+
+        {/* Converted Audio WavePlayer Result with A/B Track Switching */}
+        {job && directAudioUrl && job.status === "done" && (
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between text-xs text-neutral-400 px-1">
+              <span className="font-semibold text-white">{t("Conversion Output Waveform")}</span>
+              <span>{t("Use A/B toggle to compare with original")}</span>
+            </div>
+
+            <AudioWavePlayer
+              src={directAudioUrl}
+              originalSrc={originalAudioUrl}
+              title={`${t("Output:")} ${pthPath
+                .split("/")
+                .pop()
+                ?.replace(/\.(pth|onnx)$/i, "")}`}
+              filename={job.outputFile?.split("/").pop()}
+            />
+          </div>
+        )}
+
+        {/* Collapsible Python Engine Logs */}
+        {job && job.logs.length > 0 && (
+          <details className="group border-t border-white/10 pt-3">
+            <summary className="cursor-pointer text-xs font-semibold text-neutral-400 hover:text-white flex items-center justify-between select-none">
+              <span>{t("Python Engine Execution Logs")}</span>
+              <ChevronDown size={14} className="transition-transform duration-200 group-open:rotate-180" />
+            </summary>
+            <pre className="log mt-2 max-h-48 text-[11px]">{job.logs.slice(-80).join("\n")}</pre>
+          </details>
+        )}
       </div>
     </form>
   );

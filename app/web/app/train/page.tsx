@@ -4,6 +4,7 @@ import { FolderUp, Layers, StopCircle, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import JobPanel from "../../components/JobPanel";
 import PageHeader from "../../components/layout/PageHeader";
+import SliderField from "../../components/ui/SliderField";
 import { apiGet, errMsg, submitJob } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 import { toast } from "../../lib/toast";
@@ -48,7 +49,6 @@ export default function TrainPage() {
   const [customPre, setCustomPre] = useState(false);
   const [gPath, setGPath] = useState("");
   const [dPath, setDPath] = useState("");
-  const [terms, setTerms] = useState(false);
   const [expModels, setExpModels] = useState<string[]>([]);
   const [expIndexes, setExpIndexes] = useState<string[]>([]);
   const [expModel, setExpModel] = useState("");
@@ -119,10 +119,6 @@ export default function TrainPage() {
       setError(t("Please select or upload a dataset."));
       return;
     }
-    if (!terms) {
-      toast(t("You must agree to the Terms of Use to proceed."), "error");
-      return;
-    }
     setError("");
     setBusy(true);
     try {
@@ -158,19 +154,22 @@ export default function TrainPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = file.split("/").pop() || "model";
+      a.download = file.split("/").pop() || "export";
       a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      URL.revokeObjectURL(url);
     } catch (e) {
       setError(errMsg(e));
     }
   }
 
   async function stop() {
-    setError("");
     try {
-      await submitJob("/api/train/stop", jobId ? { jobId } : { modelName: stopTarget || modelName });
-      setError("");
+      await fetch("/api/train/stop", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ modelName: stopTarget || modelName }),
+      });
+      toast(t("Stop signal sent. Check logs or process state."));
     } catch (e) {
       setError(errMsg(e));
     }
@@ -179,14 +178,18 @@ export default function TrainPage() {
   return (
     <div>
       <PageHeader
-        title={t("Training Studio")}
+        title={t("Training")}
         description={t(
           "Train custom RVC voice models from audio datasets with automated 1-click pipeline or step-by-step control.",
         )}
       >
-        <div className="row">
+        <div className="row" role="tablist" aria-label={t("Training mode")}>
           <button
+            id="tab-pipeline"
             type="button"
+            role="tab"
+            aria-selected={trainMode === "pipeline"}
+            aria-controls="panel-pipeline"
             className={
               trainMode === "pipeline" ? "cta flex items-center gap-1.5" : "ghost flex items-center gap-1.5"
             }
@@ -196,7 +199,11 @@ export default function TrainPage() {
             <span>{t("1-Click Pipeline")}</span>
           </button>
           <button
+            id="tab-steps"
             type="button"
+            role="tab"
+            aria-selected={trainMode === "steps"}
+            aria-controls="panel-steps"
             className={
               trainMode === "steps" ? "cta flex items-center gap-1.5" : "ghost flex items-center gap-1.5"
             }
@@ -206,7 +213,11 @@ export default function TrainPage() {
             <span>{t("Step-by-Step")}</span>
           </button>
           <button
+            id="tab-uploads"
             type="button"
+            role="tab"
+            aria-selected={trainMode === "uploads"}
+            aria-controls="panel-uploads"
             className={
               trainMode === "uploads" ? "cta flex items-center gap-1.5" : "ghost flex items-center gap-1.5"
             }
@@ -222,8 +233,9 @@ export default function TrainPage() {
       <div className="card mb-4">
         <div className="grid2">
           <div>
-            <label>{t("Model Project Name")}</label>
+            <label htmlFor="train-model-name">{t("Model Project Name")}</label>
             <input
+              id="train-model-name"
               type="text"
               value={modelName}
               onChange={(e) => setModelName(e.target.value)}
@@ -231,8 +243,9 @@ export default function TrainPage() {
             />
           </div>
           <div>
-            <label>{t("Compute Hardware (GPU)")}</label>
+            <label htmlFor="train-gpu-count">{t("Compute Hardware (GPU)")}</label>
             <input
+              id="train-gpu-count"
               type="text"
               value={gpuCount}
               onChange={(e) => setGpuCount(e.target.value)}
@@ -240,8 +253,9 @@ export default function TrainPage() {
             />
           </div>
           <div>
-            <label>{t("CPU Cores")}</label>
+            <label htmlFor="train-cpu-cores">{t("CPU Cores")}</label>
             <input
+              id="train-cpu-cores"
               type="number"
               min={1}
               max={64}
@@ -258,15 +272,19 @@ export default function TrainPage() {
           </span>
         </div>
         {error && (
-          <p className="mt-2" style={{ color: "var(--err)" }}>
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mt-2 p-3 rounded-lg border border-[var(--err)] text-[var(--err)] bg-[color-mix(in_srgb,var(--err)_10%,transparent)]"
+          >
             {error}
-          </p>
+          </div>
         )}
       </div>
 
       {/* 1. AUTOMATED 1-CLICK PIPELINE VIEW */}
       {trainMode === "pipeline" && (
-        <div className="space-y-4">
+        <div id="panel-pipeline" role="tabpanel" aria-labelledby="tab-pipeline" className="space-y-4">
           <div className="card border border-white/20">
             <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3 mb-4">
               <div>
@@ -300,8 +318,9 @@ export default function TrainPage() {
 
             <div className="grid2">
               <div>
-                <label>{t("Dataset Folder (in assets/datasets)")}</label>
+                <label htmlFor="pipeline-dataset-path">{t("Dataset Folder (in assets/datasets)")}</label>
                 <input
+                  id="pipeline-dataset-path"
                   type="text"
                   list="datasets"
                   value={datasetPath}
@@ -316,8 +335,12 @@ export default function TrainPage() {
               </div>
 
               <div>
-                <label>{t("Target Sampling Rate")}</label>
-                <select value={sampleRate} onChange={(e) => setSampleRate(e.target.value)}>
+                <label htmlFor="pipeline-sample-rate">{t("Target Sampling Rate")}</label>
+                <select
+                  id="pipeline-sample-rate"
+                  value={sampleRate}
+                  onChange={(e) => setSampleRate(e.target.value)}
+                >
                   {srOptions.map((s) => (
                     <option key={s} value={s}>
                       {s} Hz
@@ -327,32 +350,36 @@ export default function TrainPage() {
               </div>
 
               <div>
-                <label>Total Epochs: {totalEpoch}</label>
-                <input
-                  type="range"
+                <SliderField
+                  id="pipeline-total-epoch"
+                  label={t("Total Epochs")}
+                  value={totalEpoch}
                   min={10}
                   max={1000}
                   step={10}
-                  value={totalEpoch}
-                  onChange={(e) => setTotalEpoch(Number(e.target.value))}
+                  onChange={setTotalEpoch}
                 />
               </div>
 
               <div>
-                <label>Batch Size: {batchSize}</label>
-                <input
-                  type="range"
+                <SliderField
+                  id="pipeline-batch-size"
+                  label={t("Batch Size")}
+                  value={batchSize}
                   min={1}
                   max={32}
                   step={1}
-                  value={batchSize}
-                  onChange={(e) => setBatchSize(Number(e.target.value))}
+                  onChange={setBatchSize}
                 />
               </div>
 
               <div>
-                <label>{t("Pitch Extraction (F0)")}</label>
-                <select value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
+                <label htmlFor="pipeline-f0-method">{t("Pitch Extraction (F0)")}</label>
+                <select
+                  id="pipeline-f0-method"
+                  value={f0Method}
+                  onChange={(e) => setF0Method(e.target.value)}
+                >
                   {["rmvpe", "crepe", "crepe-tiny"].map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -362,8 +389,8 @@ export default function TrainPage() {
               </div>
 
               <div>
-                <label>{t("Vocoder Architecture")}</label>
-                <select value={vocoder} onChange={(e) => pickVocoder(e.target.value)}>
+                <label htmlFor="pipeline-vocoder">{t("Vocoder Architecture")}</label>
+                <select id="pipeline-vocoder" value={vocoder} onChange={(e) => pickVocoder(e.target.value)}>
                   {["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"].map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -381,10 +408,6 @@ export default function TrainPage() {
                   onChange={(e) => setNoiseReduction(e.target.checked)}
                 />
                 <span>{t("Enable Audio Noise Reduction")}</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer m-0 terms">
-                <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
-                <span>{t("I agree to the terms of use")}</span>
               </label>
             </div>
 
@@ -416,14 +439,15 @@ export default function TrainPage() {
 
       {/* 2. STEP-BY-STEP TRAINING VIEW */}
       {trainMode === "steps" && (
-        <div className="space-y-4">
+        <div id="panel-steps" role="tabpanel" aria-labelledby="tab-steps" className="space-y-4">
           {/* Step 1: Preprocess */}
           <div className="card">
             <h2>1 · {t("Preprocess Dataset")}</h2>
             <div className="grid2">
               <div>
-                <label>{t("Dataset (assets/datasets)")}</label>
+                <label htmlFor="prep-dataset-path">{t("Dataset (assets/datasets)")}</label>
                 <input
+                  id="prep-dataset-path"
                   type="text"
                   list="datasets"
                   value={datasetPath}
@@ -436,8 +460,12 @@ export default function TrainPage() {
                 </datalist>
               </div>
               <div>
-                <label>{t("Sample Rate")}</label>
-                <select value={sampleRate} onChange={(e) => setSampleRate(e.target.value)}>
+                <label htmlFor="prep-sample-rate">{t("Sample Rate")}</label>
+                <select
+                  id="prep-sample-rate"
+                  value={sampleRate}
+                  onChange={(e) => setSampleRate(e.target.value)}
+                >
                   {srOptions.map((s) => (
                     <option key={s} value={s}>
                       {s} Hz
@@ -446,8 +474,8 @@ export default function TrainPage() {
                 </select>
               </div>
               <div>
-                <label>{t("Cut Method")}</label>
-                <select value={cut} onChange={(e) => setCut(e.target.value)}>
+                <label htmlFor="prep-cut-method">{t("Cut Method")}</label>
+                <select id="prep-cut-method" value={cut} onChange={(e) => setCut(e.target.value)}>
                   {["Skip", "Simple", "Automatic"].map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -456,31 +484,33 @@ export default function TrainPage() {
                 </select>
               </div>
               <div>
-                <label>
-                  Chunk {chunk}s · Overlap {overlap}s
-                </label>
-                <div className="row">
-                  <input
-                    type="range"
-                    min={0.5}
-                    max={5}
-                    step={0.1}
-                    value={chunk}
-                    onChange={(e) => setChunk(Number(e.target.value))}
-                  />
-                  <input
-                    type="range"
-                    min={0}
-                    max={0.4}
-                    step={0.1}
-                    value={overlap}
-                    onChange={(e) => setOverlap(Number(e.target.value))}
-                  />
-                </div>
+                <SliderField
+                  id="prep-chunk"
+                  label={t("Chunk length")}
+                  value={chunk}
+                  min={0.5}
+                  max={5}
+                  step={0.1}
+                  unit="s"
+                  onChange={setChunk}
+                />
+              </div>
+              <div>
+                <SliderField
+                  id="prep-overlap"
+                  label={t("Overlap length")}
+                  value={overlap}
+                  min={0}
+                  max={0.4}
+                  step={0.1}
+                  unit="s"
+                  onChange={setOverlap}
+                />
               </div>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer mt-3">
+            <label htmlFor="prep-noise-reduction" className="flex items-center gap-2 cursor-pointer mt-3">
               <input
+                id="prep-noise-reduction"
                 type="checkbox"
                 checked={noiseReduction}
                 onChange={(e) => setNoiseReduction(e.target.checked)}
@@ -488,29 +518,34 @@ export default function TrainPage() {
               <span>{t("Noise Reduction")}</span>
             </label>
             {noiseReduction && (
-              <div>
-                <label>Clean strength: {cleanStrength}</label>
-                <input
-                  type="range"
+              <div className="mt-2">
+                <SliderField
+                  id="prep-clean-strength"
+                  label={t("Clean strength")}
+                  value={cleanStrength}
                   min={0}
                   max={1}
                   step={0.05}
-                  value={cleanStrength}
-                  onChange={(e) => setCleanStrength(Number(e.target.value))}
+                  onChange={setCleanStrength}
                 />
               </div>
             )}
-            <label className="flex items-center gap-2 cursor-pointer mt-3">
+            <label htmlFor="prep-process-effects" className="flex items-center gap-2 cursor-pointer mt-3">
               <input
+                id="prep-process-effects"
                 type="checkbox"
                 checked={processEffects}
                 onChange={(e) => setProcessEffects(e.target.checked)}
               />
               <span>{t("Process effects (disable filters during preprocessing)")}</span>
             </label>
-            <div>
-              <label>{t("Normalization mode")}</label>
-              <select value={normalizationMode} onChange={(e) => setNormalizationMode(e.target.value)}>
+            <div className="mt-2">
+              <label htmlFor="prep-norm-mode">{t("Normalization mode")}</label>
+              <select
+                id="prep-norm-mode"
+                value={normalizationMode}
+                onChange={(e) => setNormalizationMode(e.target.value)}
+              >
                 {["none", "pre", "post"].map((s) => (
                   <option key={s} value={s}>
                     {s}
@@ -549,8 +584,8 @@ export default function TrainPage() {
             <h2>2 · {t("Extract Features")}</h2>
             <div className="grid2">
               <div>
-                <label>{t("Pitch Method (F0)")}</label>
-                <select value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
+                <label htmlFor="ext-pitch-method">{t("Pitch Method (F0)")}</label>
+                <select id="ext-pitch-method" value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
                   {["crepe", "crepe-tiny", "rmvpe"].map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -559,8 +594,12 @@ export default function TrainPage() {
                 </select>
               </div>
               <div>
-                <label>{t("Embedder Model")}</label>
-                <select value={embedder} onChange={(e) => setEmbedder(e.target.value)}>
+                <label htmlFor="ext-embedder-model">{t("Embedder Model")}</label>
+                <select
+                  id="ext-embedder-model"
+                  value={embedder}
+                  onChange={(e) => setEmbedder(e.target.value)}
+                >
                   {["contentvec", "spin-v2", "custom"].map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -570,8 +609,9 @@ export default function TrainPage() {
               </div>
               {embedder === "custom" && (
                 <div>
-                  <label>{t("Custom embedder path")}</label>
+                  <label htmlFor="ext-custom-embedder">{t("Custom embedder path")}</label>
                   <input
+                    id="ext-custom-embedder"
                     type="text"
                     value={embedderCustom}
                     onChange={(e) => setEmbedderCustom(e.target.value)}
@@ -580,14 +620,14 @@ export default function TrainPage() {
                 </div>
               )}
               <div>
-                <label>Include mutes: {includeMutes} (0…10)</label>
-                <input
-                  type="range"
+                <SliderField
+                  id="ext-include-mutes"
+                  label={t("Include mutes")}
+                  value={includeMutes}
                   min={0}
                   max={10}
                   step={1}
-                  value={includeMutes}
-                  onChange={(e) => setIncludeMutes(Number(e.target.value))}
+                  onChange={setIncludeMutes}
                 />
               </div>
             </div>
@@ -621,8 +661,8 @@ export default function TrainPage() {
             <h2>{t("3 · Model Training")}</h2>
             <div className="grid2">
               <div>
-                <label>{t("Vocoder")}</label>
-                <select value={vocoder} onChange={(e) => pickVocoder(e.target.value)}>
+                <label htmlFor="train-step-vocoder">{t("Vocoder")}</label>
+                <select id="train-step-vocoder" value={vocoder} onChange={(e) => pickVocoder(e.target.value)}>
                   {["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"].map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -631,41 +671,45 @@ export default function TrainPage() {
                 </select>
               </div>
               <div>
-                <label>Total Epochs: {totalEpoch} (1…10000)</label>
-                <input
-                  type="range"
+                <SliderField
+                  id="train-step-total-epoch"
+                  label={t("Total Epochs")}
+                  value={totalEpoch}
                   min={1}
                   max={10000}
                   step={1}
-                  value={totalEpoch}
-                  onChange={(e) => setTotalEpoch(Number(e.target.value))}
+                  onChange={setTotalEpoch}
                 />
               </div>
               <div>
-                <label>Batch Size: {batchSize}</label>
-                <input
-                  type="range"
+                <SliderField
+                  id="train-step-batch-size"
+                  label={t("Batch Size")}
+                  value={batchSize}
                   min={1}
                   max={64}
                   step={1}
-                  value={batchSize}
-                  onChange={(e) => setBatchSize(Number(e.target.value))}
+                  onChange={setBatchSize}
                 />
               </div>
               <div>
-                <label>Save Every N Epochs: {saveEvery}</label>
-                <input
-                  type="range"
+                <SliderField
+                  id="train-step-save-every"
+                  label={t("Save Every N Epochs")}
+                  value={saveEvery}
                   min={1}
                   max={100}
                   step={1}
-                  value={saveEvery}
-                  onChange={(e) => setSaveEvery(Number(e.target.value))}
+                  onChange={setSaveEvery}
                 />
               </div>
               <div>
-                <label>{t("Index Algorithm")}</label>
-                <select value={indexAlgo} onChange={(e) => setIndexAlgo(e.target.value)}>
+                <label htmlFor="train-step-index-algo">{t("Index Algorithm")}</label>
+                <select
+                  id="train-step-index-algo"
+                  value={indexAlgo}
+                  onChange={(e) => setIndexAlgo(e.target.value)}
+                >
                   {["Auto", "Faiss", "KMeans"].map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -675,51 +719,80 @@ export default function TrainPage() {
               </div>
             </div>
 
-            <label className="flex items-center gap-2 cursor-pointer mt-3">
-              <input type="checkbox" checked={pretrained} onChange={(e) => setPretrained(e.target.checked)} />
+            <label htmlFor="train-step-pretrained" className="flex items-center gap-2 cursor-pointer mt-3">
+              <input
+                id="train-step-pretrained"
+                type="checkbox"
+                checked={pretrained}
+                onChange={(e) => setPretrained(e.target.checked)}
+              />
               <span>{t("Use pretrained model")}</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer mt-3">
+            <label htmlFor="train-step-save-latest" className="flex items-center gap-2 cursor-pointer mt-3">
               <input
+                id="train-step-save-latest"
                 type="checkbox"
                 checked={saveOnlyLatest}
                 onChange={(e) => setSaveOnlyLatest(e.target.checked)}
               />
               <span>{t("Save only latest checkpoint")}</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer mt-3">
+            <label htmlFor="train-step-save-weights" className="flex items-center gap-2 cursor-pointer mt-3">
               <input
+                id="train-step-save-weights"
                 type="checkbox"
                 checked={saveEveryWeights}
                 onChange={(e) => setSaveEveryWeights(e.target.checked)}
               />
               <span>{t("Save model weights every checkpoint")}</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer mt-3">
-              <input type="checkbox" checked={cleanup} onChange={(e) => setCleanup(e.target.checked)} />
+            <label htmlFor="train-step-cleanup" className="flex items-center gap-2 cursor-pointer mt-3">
+              <input
+                id="train-step-cleanup"
+                type="checkbox"
+                checked={cleanup}
+                onChange={(e) => setCleanup(e.target.checked)}
+              />
               <span>{t("Fresh start (clean up previous attempt)")}</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer mt-3">
-              <input type="checkbox" checked={cacheGpu} onChange={(e) => setCacheGpu(e.target.checked)} />
+            <label htmlFor="train-step-cache-gpu" className="flex items-center gap-2 cursor-pointer mt-3">
+              <input
+                id="train-step-cache-gpu"
+                type="checkbox"
+                checked={cacheGpu}
+                onChange={(e) => setCacheGpu(e.target.checked)}
+              />
               <span>{t("Cache Dataset in GPU")}</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer mt-3">
+            <label htmlFor="train-step-checkpointing" className="flex items-center gap-2 cursor-pointer mt-3">
               <input
+                id="train-step-checkpointing"
                 type="checkbox"
                 checked={checkpointing}
                 onChange={(e) => setCheckpointing(e.target.checked)}
               />
               <span>{t("Memory-efficient checkpointing")}</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer mt-3">
-              <input type="checkbox" checked={customPre} onChange={(e) => setCustomPre(e.target.checked)} />
+            <label htmlFor="train-step-custom-pre" className="flex items-center gap-2 cursor-pointer mt-3">
+              <input
+                id="train-step-custom-pre"
+                type="checkbox"
+                checked={customPre}
+                onChange={(e) => setCustomPre(e.target.checked)}
+              />
               <span>{t("Custom pretrained G/D")}</span>
             </label>
             {customPre && (
               <div className="grid2 mt-2">
                 <div>
-                  <label>{t("G path")}</label>
-                  <input type="text" list="preG" value={gPath} onChange={(e) => setGPath(e.target.value)} />
+                  <label htmlFor="train-step-gpath">{t("G path")}</label>
+                  <input
+                    id="train-step-gpath"
+                    type="text"
+                    list="preG"
+                    value={gPath}
+                    onChange={(e) => setGPath(e.target.value)}
+                  />
                   <datalist id="preG">
                     {pretG.map((p) => (
                       <option key={p} value={p} />
@@ -727,8 +800,14 @@ export default function TrainPage() {
                   </datalist>
                 </div>
                 <div>
-                  <label>{t("D path")}</label>
-                  <input type="text" list="preD" value={dPath} onChange={(e) => setDPath(e.target.value)} />
+                  <label htmlFor="train-step-dpath">{t("D path")}</label>
+                  <input
+                    id="train-step-dpath"
+                    type="text"
+                    list="preD"
+                    value={dPath}
+                    onChange={(e) => setDPath(e.target.value)}
+                  />
                   <datalist id="preD">
                     {pretD.map((p) => (
                       <option key={p} value={p} />
@@ -738,20 +817,12 @@ export default function TrainPage() {
               </div>
             )}
 
-            <label className="flex items-center gap-2 cursor-pointer mt-3 terms">
-              <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
-              <span>{t("I agree to the terms of use")}</span>
-            </label>
             <div className="row mt-4">
               <button
                 type="button"
                 className="cta"
                 disabled={busy}
                 onClick={() => {
-                  if (!terms) {
-                    toast(t("You must agree to the Terms of Use to proceed."), "error");
-                    return;
-                  }
                   run("/api/train/train", {
                     modelName,
                     vocoder,
@@ -789,7 +860,7 @@ export default function TrainPage() {
 
       {/* 3. UPLOADS VIEW */}
       {trainMode === "uploads" && (
-        <div className="card space-y-4">
+        <div id="panel-uploads" role="tabpanel" aria-labelledby="tab-uploads" className="card space-y-4">
           <h2>{t("Dataset & Checkpoint Uploads")}</h2>
           <UploadBox
             path="/api/train/upload-dataset"
@@ -820,8 +891,8 @@ export default function TrainPage() {
         <p className="muted text-sm mb-3">{t("Download a trained .pth and its .index from logs/.")}</p>
         <div className="grid2">
           <div>
-            <label>{t("Model (.pth)")}</label>
-            <select value={expModel} onChange={(e) => setExpModel(e.target.value)}>
+            <label htmlFor="train-exp-model">{t("Model (.pth)")}</label>
+            <select id="train-exp-model" value={expModel} onChange={(e) => setExpModel(e.target.value)}>
               <option value="">—</option>
               {expModels.map((m) => (
                 <option key={m} value={m}>
@@ -831,8 +902,8 @@ export default function TrainPage() {
             </select>
           </div>
           <div>
-            <label>{t("Index (.index)")}</label>
-            <select value={expIndex} onChange={(e) => setExpIndex(e.target.value)}>
+            <label htmlFor="train-exp-index">{t("Index (.index)")}</label>
+            <select id="train-exp-index" value={expIndex} onChange={(e) => setExpIndex(e.target.value)}>
               <option value="">—</option>
               {expIndexes.map((m) => (
                 <option key={m} value={m}>
@@ -869,6 +940,7 @@ export default function TrainPage() {
           <input
             type="text"
             placeholder={t("model name (fallback)")}
+            aria-label={t("Model name (fallback)")}
             value={stopTarget}
             onChange={(e) => setStopTarget(e.target.value)}
             style={{ maxWidth: 240 }}
@@ -928,13 +1000,25 @@ function UploadBox({
             key={f.name}
             type="text"
             placeholder={f.label}
+            aria-label={f.label}
             value={vals[f.name] || ""}
             onChange={(e) => setVals({ ...vals, [f.name]: e.target.value })}
             style={{ maxWidth: 200 }}
           />
         ))}
-        <input type="file" multiple={multiple} onChange={(e) => setPicked(e.target.files)} />
-        {extra && <input type="file" onChange={(e) => setPicked2(e.target.files)} />}
+        <input
+          type="file"
+          aria-label={label}
+          multiple={multiple}
+          onChange={(e) => setPicked(e.target.files)}
+        />
+        {extra && (
+          <input
+            type="file"
+            aria-label={`${label} (${t("extra config")})`}
+            onChange={(e) => setPicked2(e.target.files)}
+          />
+        )}
         <button type="button" className="ghost text-xs" onClick={send}>
           {t("Upload")}
         </button>

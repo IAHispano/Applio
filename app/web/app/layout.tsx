@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import PageTransition from "../components/layout/PageTransition";
 import Sidebar from "../components/layout/Sidebar";
-import TitleBar from "../components/layout/TitleBar";
+import TermsModal from "../components/setup/TermsModal";
 import { I18nProvider } from "../lib/i18n";
 import { ThemeProvider } from "../lib/theme";
 import Toaster from "../lib/toast";
@@ -27,13 +27,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <I18nProvider>
           <ThemeProvider>
-            <TitleBar />
+            {/* Accessibility: Skip to Main Content Link for keyboard and screen reader navigation */}
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:bg-white focus:text-black focus:font-semibold focus:rounded-lg focus:shadow-xl focus:outline-2 focus:outline-white"
+            >
+              Skip to main content
+            </a>
             <div className="flex flex-1 min-h-0 overflow-hidden">
               <Sidebar />
-              <main className="flex-1 min-h-0 min-w-0 overflow-y-auto p-4">
+              <main
+                id="main-content"
+                tabIndex={-1}
+                className="flex-1 min-h-0 min-w-0 overflow-y-auto p-4 outline-none"
+              >
                 <PageTransition>{children}</PageTransition>
               </main>
             </div>
+            <TermsModal />
             <Toaster />
           </ThemeProvider>
         </I18nProvider>

@@ -5,7 +5,6 @@ import BatchForm from "../../components/BatchForm";
 import TtsForm from "../../components/convert/TtsForm";
 import InferenceForm from "../../components/InferenceForm";
 import PageHeader from "../../components/layout/PageHeader";
-import PresetsPanel from "../../components/PresetsPanel";
 import { useI18n } from "../../lib/i18n";
 
 type Mode = "single" | "batch" | "tts";
@@ -25,11 +24,15 @@ export default function ConvertPage() {
         title={t("Convert")}
         description={t("Turn any voice into another — single file, batch folder, or text-to-speech.")}
       >
-        <div className="row">
+        <div className="row" role="tablist" aria-label={t("Conversion mode")}>
           {MODES.map((m) => (
             <button
               key={m.id}
+              id={`tab-${m.id}`}
               type="button"
+              role="tab"
+              aria-selected={mode === m.id}
+              aria-controls={`panel-${m.id}`}
               className={mode === m.id ? "cta" : "ghost"}
               onClick={() => setMode(m.id)}
             >
@@ -38,10 +41,11 @@ export default function ConvertPage() {
           ))}
         </div>
       </PageHeader>
-      {mode === "single" && <InferenceForm />}
-      {mode === "batch" && <BatchForm />}
-      {mode === "tts" && <TtsForm />}
-      {mode === "single" && <PresetsPanel />}
+      <div id={`panel-${mode}`} role="tabpanel" aria-labelledby={`tab-${mode}`}>
+        {mode === "single" && <InferenceForm />}
+        {mode === "batch" && <BatchForm />}
+        {mode === "tts" && <TtsForm />}
+      </div>
     </div>
   );
 }

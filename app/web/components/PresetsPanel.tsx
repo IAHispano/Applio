@@ -93,7 +93,15 @@ export default function PresetsPanel() {
         {t("Stored in")} <code>assets/presets/*.json</code>
         {t(": pitch, search-feature-ratio, volume-envelope, protect.")}
       </p>
-      {error && <p style={{ color: "var(--err)" }}>{error}</p>}
+      {error && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mb-3 p-3 rounded-lg border border-[var(--err)] text-[var(--err)] bg-[color-mix(in_srgb,var(--err)_10%,transparent)]"
+        >
+          {error}
+        </div>
+      )}
       {presets.map((p) => (
         <div className="row" key={p.name} style={{ marginBottom: 8 }}>
           <strong>{p.name}</strong>
@@ -118,6 +126,7 @@ export default function PresetsPanel() {
         <input
           type="text"
           placeholder={t("Preset Name")}
+          aria-label={t("Preset Name")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           style={{ maxWidth: 240 }}
@@ -125,12 +134,13 @@ export default function PresetsPanel() {
         <button type="button" className="ghost" onClick={saveCurrent}>
           {t("Save current Single settings")}
         </button>
-        <label className="ghost" style={{ cursor: "pointer" }}>
-          {t("Import file")}
+        <label className="ghost flex items-center cursor-pointer">
+          <span>{t("Import file")}</span>
           <input
             type="file"
             accept=".json"
-            style={{ display: "none" }}
+            aria-label={t("Import preset JSON file")}
+            className="sr-only"
             onChange={(e) => {
               importFile(e.target.files?.[0] || null);
               e.target.value = "";

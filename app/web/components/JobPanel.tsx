@@ -63,70 +63,119 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
   const resultInfo = typeof job.result?.info === "string" ? job.result.info : null;
 
   return (
-    <div className="card">
-      <div className="row">
-        <span className={`badge ${job.status}`}>{job.status}</span>
-        <span className="muted">
-          {t("job")} {job.id}
-        </span>
+    <section className="card space-y-3" aria-label={`Job ${job.id} panel`}>
+      <div className="row justify-between">
+        <div className="flex items-center gap-2">
+          <span className={`badge ${job.status}`} role="status" aria-label={`Job status: ${job.status}`}>
+            {job.status}
+          </span>
+          <span className="muted font-mono text-xs">
+            {t("job")} {job.id}
+          </span>
+        </div>
         {(job.status === "queued" || job.status === "running") && (
           <button
             type="button"
-            className="ghost"
+            className="ghost text-xs px-2.5 py-1 text-red-400 hover:text-red-300 border-red-500/30"
             onClick={() => stopJob(job.id).catch((e) => setError(errMsg(e)))}
+            aria-label={t("Stop job")}
           >
             {t("Stop")}
           </button>
         )}
       </div>
-      {job.status === "error" && <p style={{ color: "var(--err)" }}>{job.error}</p>}
+
+      {job.status === "error" && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono"
+        >
+          {job.error}
+        </div>
+      )}
+
       {(job.status === "queued" || job.status === "running") && (
-        <div className="loader" style={{ marginTop: 12 }}>
+        <div
+          className="loader"
+          role="progressbar"
+          aria-label="Job execution in progress"
+          aria-valuetext={job.status}
+          style={{ marginTop: 8 }}
+        >
           <div className="loaderBar" />
         </div>
       )}
-      {resultMsg && <p>{resultMsg}</p>}
+
+      {resultMsg && <p className="text-sm font-medium text-white">{resultMsg}</p>}
+
       {resultInfo && (
         <div>
-          <p className="muted">{t("Analysis result")}</p>
-          <div className="log">{resultInfo}</div>
+          <p className="muted text-xs mb-1 font-semibold">{t("Analysis result")}</p>
+          <pre className="log">{resultInfo}</pre>
         </div>
       )}
+
       {out && isAudioFile(out) && <AudioPlayer src={outputUrl(out)} filename={out.split("/").pop()} />}
+
       {out && isImageFile(out) && (
-        <div>
+        <div className="space-y-2">
           {/* biome-ignore lint/performance/noImgElement: user-generated plot, no optimizer benefit */}
-          <img src={outputUrl(out)} alt={t("output")} style={{ maxWidth: "100%", borderRadius: 8 }} />
-          <p>
-            <a href={outputUrl(out)} download>
+          <img
+            src={outputUrl(out)}
+            alt={`Analysis plot result for job ${job.id}`}
+            style={{ maxWidth: "100%", borderRadius: 8 }}
+          />
+          <p className="m-0">
+            <a
+              href={outputUrl(out)}
+              download
+              aria-label={`${t("Download image")}: ${out.split("/").pop()}`}
+              className="text-xs font-semibold hover:underline"
+            >
               {t("Download image")}
             </a>{" "}
-            <span className="muted">{out}</span>
+            <span className="muted text-xs font-mono">({out.split("/").pop()})</span>
           </p>
         </div>
       )}
+
       {out && !isAudioFile(out) && !isImageFile(out) && (
-        <p>
-          <a href={outputUrl(out)} download>
+        <p className="m-0">
+          <a
+            href={outputUrl(out)}
+            download
+            aria-label={`${t("Download result")}: ${out.split("/").pop()}`}
+            className="text-xs font-semibold hover:underline"
+          >
             {t("Download result")}
           </a>{" "}
-          <span className="muted">{out}</span>
+          <span className="muted text-xs font-mono">({out.split("/").pop()})</span>
         </p>
       )}
+
       {sidecars.map((s) => (
-        <p key={s.label}>
-          <a href={outputUrl(s.file)} download>
+        <p key={s.label} className="m-0">
+          <a
+            href={outputUrl(s.file)}
+            download
+            aria-label={`${t("Download")} ${s.label}: ${s.file.split("/").pop()}`}
+            className="text-xs font-semibold hover:underline"
+          >
             {t("Download")} {s.label}
           </a>{" "}
-          <span className="muted">{s.file}</span>
+          <span className="muted text-xs font-mono">({s.file.split("/").pop()})</span>
         </p>
       ))}
+
       {!compact && job.logs.length > 0 && (
-        <div>
-          <p className="muted">{t("Engine logs")}</p>
-          <div className="log">{job.logs.slice(-60).join("\n")}</div>
+        <div className="pt-2">
+          <p className="muted text-xs mb-1 font-semibold">{t("Engine logs")}</p>
+          <pre className="log" role="log" aria-live="polite">
+            {job.logs.slice(-60).join("\n")}
+          </pre>
         </div>
       )}
-    </div>
+    </section>
   );
 }

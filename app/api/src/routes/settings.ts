@@ -354,7 +354,10 @@ router.get("/themes", (_req: Request, res: Response) => {
           return { id: f, name: f, description: "Invalid JSON — fix or remove this file.", example: false };
         }
       });
-    res.json({ themes: entries, selected: (loadConfig().theme as { file?: string } | undefined)?.file || "" });
+    res.json({
+      themes: entries,
+      selected: (loadConfig().theme as { file?: string } | undefined)?.file || "",
+    });
   } catch (err) {
     res.status(500).json({ error: errMsg(err) });
   }
@@ -366,7 +369,7 @@ router.get("/theme", (req: Request, res: Response) => {
   try {
     const file = String(req.query.file || (loadConfig().theme as { file?: string } | undefined)?.file || "");
     // Legacy Gradio values (e.g. "Applio.py") and "" both mean the built-in default.
-    if (!file || !file.endsWith(".json")) return res.json({ id: "", theme: BUILTIN_THEME_FALLBACK });
+    if (!file?.endsWith(".json")) return res.json({ id: "", theme: BUILTIN_THEME_FALLBACK });
     // Confine to the themes dir (no traversal).
     const abs = path.resolve(themesDir(), path.basename(file));
     if (!abs.startsWith(themesDir() + path.sep) || !abs.endsWith(".json")) {

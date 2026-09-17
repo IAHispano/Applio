@@ -107,7 +107,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
     }
   }, [job?.logs.length, showLogs]);
 
-  // Countdown to enter studio
+  // Countdown to launch Applio
   useEffect(() => {
     if (countdown === null) return;
     if (countdown <= 0) {
@@ -170,8 +170,8 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
       },
       {
         id: "ready",
-        title: "Finalizing Applio Studio",
-        desc: "Configuring workspaces and studio pipelines",
+        title: "Finalizing Applio",
+        desc: "Configuring workspaces and pipelines",
         status: isDone ? "done" : hasVerified ? "running" : "pending",
       },
     ];
@@ -205,7 +205,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
 
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white m-0">
-              {job?.status === "done" ? t("Applio Studio is Ready") : t("Preparing Applio for First Use")}
+              {job?.status === "done" ? t("Applio is Ready") : t("Preparing Applio for First Use")}
             </h1>
             <p className="text-sm text-neutral-400 max-w-md mx-auto leading-relaxed m-0">
               {job?.status === "done"
@@ -224,7 +224,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
               {job?.status === "done" ? (
                 <CheckCircle2 size={16} className="text-emerald-400" />
               ) : (
-                <Loader2 size={16} className="animate-spin text-white" />
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
               )}
               <span>
                 {job?.status === "done"
@@ -237,7 +237,14 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
             </span>
           </div>
 
-          <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden relative">
+          <div
+            role="progressbar"
+            aria-valuenow={progressPercent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuetext={`${progressPercent}% - ${steps.filter((s) => s.status === "done").length} of ${steps.length} steps completed`}
+            className="w-full h-2 rounded-full bg-white/10 overflow-hidden relative"
+          >
             <div
               className="h-full bg-white transition-all duration-500 rounded-full"
               style={{ width: `${progressPercent}%` }}
@@ -266,7 +273,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
                       {isDone ? (
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                       ) : isRunning ? (
-                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
                       ) : (
                         <div className="w-4 h-4 rounded-full border border-neutral-600" />
                       )}
@@ -294,7 +301,11 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
 
         {/* Error Alert */}
         {error && (
-          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3">
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3"
+          >
             <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
             <div className="space-y-2 flex-1">
               <p className="text-xs font-semibold text-red-300 m-0">{t("Setup Encountered an Issue")}</p>
@@ -317,6 +328,8 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
             type="button"
             className="ghost text-xs px-3 py-1.5 flex items-center gap-1.5 text-neutral-400 hover:text-white"
             onClick={() => setShowLogs(!showLogs)}
+            aria-expanded={showLogs}
+            aria-controls="setup-console-logs"
           >
             <Terminal size={14} />
             <span>{showLogs ? t("Hide Console Output") : t("View Live Console Output")}</span>
@@ -329,7 +342,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
               className="cta px-6 py-2.5 text-sm flex items-center gap-2 shadow-lg"
               onClick={onComplete}
             >
-              <span>{countdown !== null ? `Entering Studio (${countdown}s)…` : t("Launch Studio")}</span>
+              <span>{countdown !== null ? `Entering Applio (${countdown}s)…` : t("Launch Applio")}</span>
               <ArrowRight size={15} />
             </button>
           )}
@@ -337,7 +350,13 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
 
         {/* Live Terminal Log Drawer */}
         {showLogs && (
-          <div className="rounded-xl border border-white/10 bg-black/70 p-4 font-mono text-xs text-neutral-300 max-h-64 overflow-y-auto space-y-1 shadow-inner">
+          <div
+            id="setup-console-logs"
+            role="log"
+            aria-live="polite"
+            aria-label={t("Live console output")}
+            className="rounded-xl border border-white/10 bg-black/70 p-4 font-mono text-xs text-neutral-300 max-h-64 overflow-y-auto space-y-1 shadow-inner"
+          >
             {job?.logs.length ? (
               job.logs.map((log, i) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: append-only terminal logs

@@ -16,10 +16,15 @@
     "test": "npm run build --workspace=@applio/api && node tests/smoke.ts",
     "format": "biome check --write app tests",
     "format:check": "biome check app tests",
-    "desktop:dev": "npm run dev --workspace=@applio/desktop",
-    "dist:win": "npm run dist:win --workspace=@applio/desktop",
-    "dist:mac": "npm run dist:mac --workspace=@applio/desktop",
-    "dist:linux": "npm run dist:linux --workspace=@applio/desktop"
+    "desktop:dev": "concurrently -k -s first \"npm run dev:api\" \"npm run dev:web\" \"npm run dev --workspace=@applio/desktop\"",
+    "desktop:shell": "npm run dev --workspace=@applio/desktop",
+    "build:all": "npm run build --workspace=@applio/api && npm run build --workspace=@applio/web && npm run build --workspace=@applio/desktop",
+    "build:win": "npm run build:all && npm run dist:win --workspace=@applio/desktop",
+    "build:mac": "npm run build:all && npm run dist:mac --workspace=@applio/desktop",
+    "build:linux": "npm run build:all && npm run dist:linux --workspace=@applio/desktop",
+    "dist:win": "npm run build:all && npm run dist:win --workspace=@applio/desktop",
+    "dist:mac": "npm run build:all && npm run dist:mac --workspace=@applio/desktop",
+    "dist:linux": "npm run build:all && npm run dist:linux --workspace=@applio/desktop"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",

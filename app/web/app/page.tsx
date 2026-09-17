@@ -1,21 +1,17 @@
 "use client";
 
 import {
-  Activity,
   AlertCircle,
   ArrowRight,
   CheckCircle2,
-  Cpu,
+  ChevronDown,
+  ChevronUp,
   Database,
   Download,
-  Layers,
-  Loader2,
-  Mic,
+  FileAudio,
   Radio,
   RefreshCw,
-  SlidersHorizontal,
   Sparkles,
-  Wrench,
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
@@ -39,17 +35,29 @@ interface SetupStatus {
   checkedAt: string;
 }
 
+interface ModelsSummary {
+  models: string[];
+  indexes: string[];
+  audios: string[];
+}
+
 export default function Home() {
   const router = useRouter();
   const { t } = useI18n();
   const [status, setStatus] = useState<SetupStatus | null>(null);
+  const [modelsData, setModelsData] = useState<ModelsSummary | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const [error, setError] = useState("");
   const [jobId, setJobId] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   const refresh = useCallback(async (force = false) => {
     try {
-      setStatus(await apiGet<SetupStatus>(`/api/setup/status${force ? "?refresh=1" : ""}`));
+      const [setupRes, modelsRes] = await Promise.all([
+        apiGet<SetupStatus>(`/api/setup/status${force ? "?refresh=1" : ""}`),
+        apiGet<ModelsSummary>("/api/models").catch(() => null),
+      ]);
+      setStatus(setupRes);
+      if (modelsRes) setModelsData(modelsRes);
       setError("");
     } catch (e) {
       setError(errMsg(e));
@@ -59,19 +67,6 @@ export default function Home() {
   useEffect(() => {
     refresh();
   }, [refresh]);
-
-  async function install() {
-    setError("");
-    setBusy(true);
-    try {
-      const { jobId: id } = await apiSend<{ jobId: string }>("/api/setup/install", "POST");
-      setJobId(id);
-    } catch (e) {
-      setError(errMsg(e));
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function prerequisites() {
     setError("");
@@ -83,61 +78,27 @@ export default function Home() {
     }
   }
 
-  const ready = status?.ready ?? false;
   const passedChecks = status?.checks.filter((c) => c.status === "ok").length ?? 0;
   const totalChecks = status?.checks.length ?? 0;
-
-  // 4 Primary Studio Workflows
-  const FEATURED_WORKFLOWS = [
-    {
-      title: "Inference",
-      tag: "Core Studio",
-      description: "Transform voice in recorded audio or songs with single and batch file conversion.",
-      icon: Sparkles,
-      href: "/inference",
-      actionText: "Open Inference",
-    },
-    {
-      title: "Realtime",
-      tag: "Live Audio",
-      description: "Low-latency real-time voice conversion from microphone to virtual audio cables.",
-      icon: Radio,
-      href: "/realtime",
-      actionText: "Launch Realtime",
-    },
-    {
-      title: "Training",
-      tag: "Model Lab",
-      description: "Slice audio datasets, extract pitch contours, and train your own custom voice models.",
-      icon: Cpu,
-      href: "/train",
-      actionText: "Start Training",
-    },
-    {
-      title: "TTS",
-      tag: "Speech Synthesis",
-      description: "Generate realistic speech in dozens of languages and instantly clone target voices.",
-      icon: Mic,
-      href: "/tts",
-      actionText: "Synthesize Voice",
-    },
-  ];
-
-  // Secondary Tools
-  const SECONDARY_TOOLS = [
-    { label: "Model Library", href: "/models", icon: Database },
-    { label: "Voice Blender", href: "/voice-blender", icon: Layers },
-    { label: "Download Models", href: "/download", icon: Download },
-    { label: "Audio Tools & F0", href: "/extra", icon: SlidersHorizontal },
-    { label: "TensorBoard", href: "/tensorboard", icon: Activity },
-  ];
+  const modelCount = modelsData?.models.length ?? 0;
+  const audioCount = modelsData?.audios.length ?? 0;
 
   if (!status) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-neutral-400">
-          <Loader2 className="w-6 h-6 animate-spin text-white" />
-          <span className="text-xs font-medium">Connecting to engine…</span>
+      <div className="h-full flex items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-4 text-neutral-400 w-full max-w-xs text-center">
+          <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden relative">
+            <div className="h-full bg-white rounded-full animate-pulse w-3/4" />
+          </div>
+          <span className="text-xs font-medium text-neutral-300">{t("Connecting to engine…")}</span>
+          {error && (
+            <div className="text-center mt-2">
+              <p className="text-xs text-red-400 mb-2">{error}</p>
+              <button type="button" className="ghost text-xs py-1 px-3" onClick={() => refresh(true)}>
+                {t("Retry Connection")}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -148,195 +109,221 @@ export default function Home() {
   }
 
   return (
-    <div className="h-full flex flex-col gap-6 overflow-y-auto pb-8 pr-1">
-      {/* Hero Showcase Card */}
-      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.07] via-white/[0.02] to-transparent p-6 sm:p-8">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-              <span className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-neutral-300">
-                <span
-                  className={`h-2 w-2 shrink-0 rounded-full ${
-                    ready ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
-                  }`}
-                />
-                {ready ? t("Studio Ready") : t("Setup Required")}
+    <div className="max-w-5xl mx-auto flex flex-col gap-6 pb-8">
+      {/* Applio Header Card */}
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-7">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-neutral-300">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                {t("Ready")}
               </span>
-              <span className="shrink-0 text-xs text-neutral-400">Applio v3.6</span>
+              <span className="text-xs text-neutral-500 font-mono">v3.6</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white m-0">Applio</h1>
-            <p className="text-neutral-300 text-sm sm:text-base leading-relaxed m-0">
-              {t(
-                "High-performance AI voice cloning, real-time audio morphing, and neural model training right on your local machine.",
-              )}
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white m-0">Applio</h1>
+            <p className="text-neutral-400 text-xs sm:text-sm leading-relaxed m-0">
+              {t("High-performance AI voice cloning, real-time conversion, and model training.")}
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-            {ready ? (
-              <>
-                <button
-                  type="button"
-                  className="cta flex items-center justify-center gap-2"
-                  onClick={() => router.push("/inference")}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>{t("Start Converting")}</span>
-                </button>
-                <button
-                  type="button"
-                  className="ghost flex items-center justify-center gap-2"
-                  onClick={() => router.push("/realtime")}
-                >
-                  <Radio className="w-4 h-4" />
-                  <span>{t("Live Studio")}</span>
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                className="cta flex items-center justify-center gap-2"
-                onClick={install}
-                disabled={busy}
-              >
-                <Wrench className="w-4 h-4" />
-                <span>{busy ? t("Setting up engine…") : t("Install / Repair")}</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Primary Workflows Grid (Clean 4-card layout) */}
-      <section className="min-w-0 space-y-3">
-        <div className="flex min-w-0 flex-col gap-1 px-1 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="title text-lg font-bold text-neutral-200 tracking-tight m-0">
-            {t("Primary Workflows")}
-          </h2>
-          <span className="text-xs text-neutral-400">{t("Select a studio tool to get started")}</span>
-        </div>
-
-        <div className="grid min-w-0 grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4">
-          {FEATURED_WORKFLOWS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="group relative flex min-w-0 flex-col justify-between p-5 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 transition-all duration-200"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white group-hover:scale-105 transition-transform duration-200">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded bg-white/5 text-neutral-400 border border-white/5">
-                      {t(item.tag)}
-                    </span>
-                  </div>
-                  <h3 className="title text-base font-bold text-neutral-100 group-hover:text-white transition-colors mb-1.5">
-                    {t(item.title)}
-                  </h3>
-                  <p className="text-xs text-neutral-400 leading-relaxed m-0">{t(item.description)}</p>
-                </div>
-
-                <div className="flex items-center gap-1 text-xs font-semibold text-neutral-300 group-hover:text-white pt-4 mt-2 border-t border-white/5">
-                  <span>{t(item.actionText)}</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Secondary Quick Access Bar */}
-      <div className="flex w-full min-w-0 items-center gap-2 p-2 rounded-xl border border-white/10 bg-white/[0.02] flex-wrap">
-        <span className="text-xs font-medium text-neutral-400 px-2 py-1">{t("Quick Access:")}</span>
-        {SECONDARY_TOOLS.map((tool) => {
-          const Icon = tool.icon;
-          return (
-            <Link
-              key={tool.href}
-              href={tool.href}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-300 hover:text-white hover:bg-white/10 transition-colors"
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              className="cta flex items-center gap-2 text-xs sm:text-sm py-2 px-4"
+              onClick={() => router.push("/inference")}
             >
-              <Icon className="w-3.5 h-3.5 text-neutral-400" />
-              <span>{t(tool.label)}</span>
-            </Link>
-          );
-        })}
+              <Sparkles className="w-4 h-4" />
+              <span>{t("Open Inference")}</span>
+            </button>
+            <button
+              type="button"
+              className="ghost flex items-center gap-2 text-xs sm:text-sm py-2 px-3.5"
+              onClick={() => router.push("/realtime")}
+            >
+              <Radio className="w-4 h-4" />
+              <span>{t("Realtime")}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* System Status & Environment Diagnostics */}
-      <section className="card !mb-0 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="title text-base font-bold text-neutral-100 m-0">{t("System Diagnostics")}</h2>
-              {status && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/5 font-mono">
-                  {passedChecks}/{totalChecks} {t("checks passed")}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-neutral-400 mt-1 mb-0">
-              {t("Hardware acceleration, Python dependencies, and pretrained base checkpoints.")}
+      {/* Glanceable Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Link
+          href="/models"
+          className="p-4 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/20 transition-all flex items-center justify-between group"
+        >
+          <div className="space-y-1">
+            <span className="text-xs text-neutral-400 font-medium">{t("Installed Models")}</span>
+            <p className="text-xl font-bold text-white m-0 tracking-tight">
+              {modelCount} {modelCount === 1 ? t("Model") : t("Models")}
             </p>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center text-neutral-400 group-hover:text-white transition-colors">
+            <Database className="w-4 h-4" />
+          </div>
+        </Link>
+
+        <Link
+          href="/inference"
+          className="p-4 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/20 transition-all flex items-center justify-between group"
+        >
+          <div className="space-y-1">
+            <span className="text-xs text-neutral-400 font-medium">{t("Audio Outputs")}</span>
+            <p className="text-xl font-bold text-white m-0 tracking-tight">
+              {audioCount} {audioCount === 1 ? t("File") : t("Files")}
+            </p>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center text-neutral-400 group-hover:text-white transition-colors">
+            <FileAudio className="w-4 h-4" />
+          </div>
+        </Link>
+
+        <div className="p-4 rounded-xl border border-white/10 bg-white/[0.02] flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs text-neutral-400 font-medium">{t("Engine Status")}</span>
+            <p className="text-xl font-bold text-white m-0 tracking-tight">
+              {passedChecks}/{totalChecks} {t("Checks OK")}
+            </p>
+          </div>
+          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+        </div>
+      </div>
+
+      {/* Focused Workflows (Clean 2-card layout) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Link
+          href="/inference"
+          className="group p-5 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/20 transition-all flex flex-col justify-between"
+        >
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+                {t("Audio Conversion")}
+              </span>
+            </div>
+            <h2 className="text-base font-bold text-neutral-100 group-hover:text-white transition-colors m-0">
+              {t("Voice Inference")}
+            </h2>
+            <p className="text-xs text-neutral-400 leading-relaxed m-0">
+              {t(
+                "Transform audio files or batches with your custom voice models, pitch, and timbre controls.",
+              )}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-300 group-hover:text-white pt-4 mt-3 border-t border-white/5">
+            <span>{t("Start Converting")}</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
+
+        <Link
+          href="/realtime"
+          className="group p-5 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/20 transition-all flex flex-col justify-between"
+        >
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                <Radio className="w-4 h-4" />
+              </div>
+              <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+                {t("Live Audio")}
+              </span>
+            </div>
+            <h2 className="text-base font-bold text-neutral-100 group-hover:text-white transition-colors m-0">
+              {t("Realtime")}
+            </h2>
+            <p className="text-xs text-neutral-400 leading-relaxed m-0">
+              {t("Low-latency microphone voice conversion for live streams, voice calls, and monitoring.")}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-300 group-hover:text-white pt-4 mt-3 border-t border-white/5">
+            <span>{t("Launch Live Audio")}</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Clean Collapsible Diagnostics Section */}
+      <section className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-semibold text-neutral-200 m-0">{t("System Diagnostics")}</h3>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/5">
+              {passedChecks}/{totalChecks} {t("passed")}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="ghost text-xs py-1.5 px-3 flex items-center gap-1.5"
-              onClick={() => refresh(true)}
+              className="ghost text-xs py-1 px-2.5 flex items-center gap-1.5"
+              onClick={prerequisites}
+              title={t("Download base models & checkpoints")}
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <Download className="w-3 h-3" />
+              <span>{t("Prerequisites")}</span>
+            </button>
+            <button
+              type="button"
+              className="ghost text-xs py-1 px-2.5 flex items-center gap-1.5"
+              onClick={() => refresh(true)}
+              title={t("Re-run diagnostic checks")}
+            >
+              <RefreshCw className="w-3 h-3" />
               <span>{t("Re-check")}</span>
             </button>
             <button
               type="button"
-              className="ghost text-xs py-1.5 px-3 flex items-center gap-1.5"
-              onClick={prerequisites}
+              className="ghost text-xs py-1 px-2.5 flex items-center gap-1"
+              onClick={() => setShowDetails(!showDetails)}
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>{t("Engine models")}</span>
+              <span>{showDetails ? t("Hide Details") : t("Show Details")}</span>
+              {showDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
           </div>
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mx-4 mb-4 flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs"
+          >
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        {!status && !error && <p className="muted text-xs py-2">{t("Contacting the Applio engine API…")}</p>}
-
-        {status && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {showDetails && (
+          <div className="border-t border-white/5 p-4 bg-black/20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
             {status.checks.map((c) => {
               const isOk = c.status === "ok";
               const isWarn = c.status === "warn";
               return (
                 <div
                   key={c.id}
-                  className="flex items-start gap-2.5 p-3 rounded-xl border border-white/5 bg-black/20"
+                  className="flex items-start gap-2 p-2.5 rounded-lg border border-white/5 bg-white/[0.01]"
                 >
                   <div className="mt-0.5 shrink-0">
                     {isOk ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                     ) : isWarn ? (
-                      <AlertCircle className="w-4 h-4 text-amber-400" />
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
                     ) : (
-                      <XCircle className="w-4 h-4 text-red-400" />
+                      <XCircle className="w-3.5 h-3.5 text-red-400" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-semibold text-neutral-200 truncate">{c.label}</span>
+                      <span className="text-xs font-medium text-neutral-200 truncate">{c.label}</span>
                       <span
-                        className={`text-[10px] font-mono px-1.5 py-0.2 rounded uppercase ${
+                        className={`text-[9px] font-mono px-1 py-0.2 rounded uppercase ${
                           isOk
                             ? "text-emerald-400 bg-emerald-400/10"
                             : isWarn
@@ -347,7 +334,7 @@ export default function Home() {
                         {c.status}
                       </span>
                     </div>
-                    <p className="text-[11px] text-neutral-400 mt-0.5 truncate m-0">{c.detail}</p>
+                    <p className="text-[10px] text-neutral-500 mt-0.5 truncate m-0">{c.detail}</p>
                   </div>
                 </div>
               );

@@ -105,9 +105,11 @@ export default function ReportPage() {
         </p>
       </div>
       {info ? (
-        <div className="log">
-          {`Applio ${info.version}\n${info.platform}\nNode ${info.node}\n${info.python}\nCPUs: ${info.cpus} · RAM: ${info.totalMemGB}GB`}
-        </div>
+        <section aria-label={t("System diagnostics")}>
+          <pre className="log">
+            {`Applio ${info.version}\n${info.platform}\nNode ${info.node}\n${info.python}\nCPUs: ${info.cpus} · RAM: ${info.totalMemGB}GB`}
+          </pre>
+        </section>
       ) : (
         <p className="muted">{t("Collecting system info…")}</p>
       )}
@@ -116,8 +118,13 @@ export default function ReportPage() {
           {recording ? t("Stop Recording") : t("Record Screen")}
         </button>
         {info && (
-          <a href={`${info.issueUrl}?body=${issueBody}`} target="_blank" rel="noreferrer">
-            <button type="button">{t("Open GitHub Issue")}</button>
+          <a
+            href={`${info.issueUrl}?body=${issueBody}`}
+            target="_blank"
+            rel="noreferrer"
+            className="cta inline-flex items-center justify-center text-sm font-medium"
+          >
+            {t("Open GitHub Issue")}
           </a>
         )}
       </div>
@@ -137,7 +144,11 @@ export default function ReportPage() {
           </p>
         </div>
       )}
-      {msg && <p className="muted">{msg}</p>}
+      {msg && (
+        <p className="muted" role="status" aria-live="polite">
+          {msg}
+        </p>
+      )}
     </div>
   );
 }

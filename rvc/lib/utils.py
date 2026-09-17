@@ -1,7 +1,10 @@
 import os
 import sys
 import soxr
-import ffmpeg
+try:
+    import ffmpeg
+except ImportError:
+    ffmpeg = None
 import librosa
 import soundfile as sf
 import numpy as np
@@ -62,17 +65,50 @@ def load_audio(file, sample_rate):
 
 
 def load_audio_ffmpeg(file, sample_rate):
-    try:
-        file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-        out, _ = (
-            ffmpeg.input(file, threads=0)
-            .output("-", format="f32le", acodec="pcm_f32le", ac=1, ar=sample_rate)
-            .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
-        )
-    except Exception as error:
-        raise RuntimeError(f"An error occurred loading the audio: {error}")
+    file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+    if ffmpeg is not None:
+        try:
+            out, _ = (
+                ffmpeg.input(file, threads=0)
+                .output("-", format="f32le", acodec="pcm_f32le", ac=1, ar=sample_rate)
+                .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
+            )
+            return np.frombuffer(out, np.float32).flatten()
+        except Exception:
+            pass
 
-    return np.frombuffer(out, np.float32).flatten()
+    local_ffmpeg = os.path.join(now_dir, "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg")
+    ffmpeg_bin = local_ffmpeg if os.path.isfile(local_ffmpeg) else "ffmpeg"
+
+    try:
+        import subprocess
+
+        cmd = [
+            ffmpeg_bin,
+            "-nostdin",
+            "-i",
+            file,
+            "-threads",
+            "0",
+            "-f",
+            "f32le",
+            "-acodec",
+            "pcm_f32le",
+            "-ac",
+            "1",
+            "-ar",
+            str(sample_rate),
+            "-",
+        ]
+        res = subprocess.run(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
+        )
+        return np.frombuffer(res.stdout, np.float32).flatten()
+    except Exception as error:
+        try:
+            return load_audio(file, sample_rate)
+        except Exception:
+            raise RuntimeError(f"An error occurred loading the audio: {error}")
 
 
 def load_audio_infer(

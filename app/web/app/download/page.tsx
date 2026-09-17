@@ -1,172 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import JobPanel from "../../components/JobPanel";
 import PageHeader from "../../components/layout/PageHeader";
-import { apiGet, apiSend, errMsg, postForm } from "../../lib/api";
+import DownloadPanel from "../../components/models/DownloadPanel";
 import { useI18n } from "../../lib/i18n";
-import { toast } from "../../lib/toast";
 
 export default function DownloadPage() {
   const { t } = useI18n();
-  const [link, setLink] = useState("");
-  const [linkJob, setLinkJob] = useState<string | null>(null);
-  const [dropFile, setDropFile] = useState<File | null>(null);
-  const [dropMsg, setDropMsg] = useState("");
-  const [pretrained, setPretrained] = useState<Array<{ name: string; sampleRates: string[] }>>([]);
-  const [model, setModel] = useState("Titan");
-  const [sr, setSr] = useState("40k");
-  const [custom, setCustom] = useState(false);
-  const [urlG, setUrlG] = useState("");
-  const [urlD, setUrlD] = useState("");
-  const [preJob, setPreJob] = useState<string | null>(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    apiGet<{ models: Array<{ name: string; sampleRates: string[] }> }>("/api/download/pretraineds")
-      .then((p) => {
-        setPretrained(p.models);
-        if (p.models[0]) {
-          setModel(p.models[0].name);
-          if (p.models[0].sampleRates[0]) setSr(p.models[0].sampleRates[0]);
-        }
-      })
-      .catch((e) => setError(errMsg(e)));
-  }, []);
-
-  async function downloadLink() {
-    setError("");
-    try {
-      const { jobId } = await apiSend<{ jobId: string }>("/api/download", "POST", { modelLink: link });
-      setLinkJob(jobId);
-    } catch (e) {
-      setError(errMsg(e));
-    }
-  }
-
-  async function drop() {
-    setDropMsg("");
-    if (!dropFile) return;
-    const fd = new FormData();
-    fd.append("file", dropFile);
-    try {
-      const r = await postForm<{ file: string; modelDir: string }>("/api/download/drop", fd);
-      setDropMsg(`Saved ${r.file} → ${r.modelDir} ✓`);
-      toast(`Model added: ${r.file}. It is now selectable as a voice model.`);
-    } catch (e) {
-      setDropMsg(errMsg(e));
-    }
-  }
-
-  async function downloadPretrained() {
-    setError("");
-    try {
-      const body = custom ? { urlG, urlD } : { model, sampleRate: sr };
-      const { jobId } = await apiSend<{ jobId: string }>("/api/download/pretraineds", "POST", body);
-      setPreJob(jobId);
-    } catch (e) {
-      setError(errMsg(e));
-    }
-  }
-
   return (
     <div>
       <PageHeader
-        title={t("Download")}
-        description={t(
-          "Download community voice models and pretrained checkpoints or import local model files.",
-        )}
+        title={t("Download Models")}
+        description={t("Download models from direct links or upload local checkpoint and index files.")}
       />
-      <div className="mb-4">
-        <div className="row">
-          <input
-            type="text"
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            placeholder={t("Model link (Drive, HuggingFace, direct zip)…")}
-            style={{ flex: 1 }}
-          />
-          <button type="button" className="cta" onClick={downloadLink}>
-            {t("Download Model")}
-          </button>
-        </div>
-        {error && <p style={{ color: "var(--err)" }}>{error}</p>}
-      </div>
-      <JobPanel jobId={linkJob} compact />
-
-      <div className="card">
-        <h2>{t("Drop Files")}</h2>
-        <p className="muted">
-          {t("Drop .pth / .onnx / .index here — stored under")} <code>logs/&lt;model&gt;/</code>.
-        </p>
-        <div className="row">
-          <input
-            type="file"
-            accept=".pth,.index,.onnx"
-            onChange={(e) => setDropFile(e.target.files?.[0] || null)}
-          />
-          <button type="button" className="cta" onClick={drop}>
-            {t("Save File")}
-          </button>
-          <span className="muted">{dropMsg}</span>
-        </div>
-      </div>
-
-      <div className="card">
-        <h2>{t("Download Pretrained Models")}</h2>
-        {!custom ? (
-          <div className="grid2">
-            <div>
-              <label>{t("Pretrained")}</label>
-              <select
-                value={model}
-                onChange={(e) => {
-                  setModel(e.target.value);
-                  const m = pretrained.find((p) => p.name === e.target.value);
-                  if (m?.sampleRates[0]) setSr(m.sampleRates[0]);
-                }}
-              >
-                {pretrained.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label>{t("Sampling Rate")}</label>
-              <select value={sr} onChange={(e) => setSr(e.target.value)}>
-                {(pretrained.find((p) => p.name === model)?.sampleRates || [sr]).map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        ) : (
-          <div className="grid2">
-            <div>
-              <label>{t("Pretrained G URL")}</label>
-              <input type="text" value={urlG} onChange={(e) => setUrlG(e.target.value)} />
-            </div>
-            <div>
-              <label>{t("Pretrained D URL")}</label>
-              <input type="text" value={urlD} onChange={(e) => setUrlD(e.target.value)} />
-            </div>
-          </div>
-        )}
-        <label className="checkbox-label">
-          <input type="checkbox" checked={custom} onChange={(e) => setCustom(e.target.checked)} />
-          <span>{t("Custom Pretrained Model")}</span>
-        </label>
-        <div className="row" style={{ marginTop: 8 }}>
-          <button type="button" className="cta" onClick={downloadPretrained}>
-            {t("Download Pretrained")}
-          </button>
-        </div>
-      </div>
-      <JobPanel jobId={preJob} />
+      <DownloadPanel />
     </div>
   );
 }

@@ -1,22 +1,35 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { ExternalLink, RefreshCw, RotateCcw } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 
 export default function TensorboardPage() {
   const { t } = useI18n();
-  const [status, setStatus] = useState<{ running: boolean; url: string; startedAt: string | null } | null>(
-    null,
-  );
+  const [status, setStatus] = useState<{
+    running: boolean;
+    starting?: boolean;
+    url: string;
+    startedAt: string | null;
+  } | null>(null);
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+  const [iframeKey, setIframeKey] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const refresh = useCallback(async () => {
     try {
       // Status polls must bypass the apiGet cache or engine state freezes.
-      setStatus(await apiGet("/api/tensorboard/status", { ttlMs: 0 }));
+      const res = await apiGet<{
+        running: boolean;
+        starting?: boolean;
+        url: string;
+        startedAt: string | null;
+      }>("/api/tensorboard/status", { ttlMs: 0 });
+      setStatus(res);
+      setError("");
     } catch (e) {
       setError(errMsg(e));
     }
@@ -24,21 +37,28 @@ export default function TensorboardPage() {
 
   useEffect(() => {
     refresh();
-    const t = setInterval(refresh, 5000);
+    // Poll more frequently if starting up, then ease into 5s interval
+    const t = setInterval(refresh, status?.running ? 5000 : 2000);
     return () => clearInterval(t);
-  }, [refresh]);
+  }, [refresh, status?.running]);
 
-  async function start() {
+  async function handleRestart() {
+    setRestarting(true);
     setError("");
-    setBusy(true);
     try {
-      const r = await apiSend<{ url: string }>("/api/tensorboard/start", "POST");
-      setStatus({ running: true, url: r.url, startedAt: new Date().toISOString() });
+      await apiSend("/api/tensorboard/stop", "POST");
+      await apiSend("/api/tensorboard/start", "POST");
+      await refresh();
+      setIframeKey((k) => k + 1);
     } catch (e) {
       setError(errMsg(e));
     } finally {
-      setBusy(false);
+      setRestarting(false);
     }
+  }
+
+  function handleReloadIframe() {
+    setIframeKey((k) => k + 1);
   }
 
   // The iframe points at the API host directly; on Colab/Kaggle expose TB_PORT like :3000.
@@ -46,39 +66,93 @@ export default function TensorboardPage() {
   const tbPort = status?.url?.match(/:(\d+)$/)?.[1] || "6007";
   const iframeUrl = `http://${tbHost}:${tbPort}/`;
 
+  const isRunning = status?.running ?? false;
+
   return (
-    <div>
-      <PageHeader
-        title={t("TensorBoard")}
-        description={t("Monitor loss curves, spectrograms, and training metrics live during model training.")}
-      />
-      {error && <p style={{ color: "var(--err)" }}>{error}</p>}
-      <div className="row mb-4">
-        <button type="button" onClick={start} disabled={busy || status?.running}>
-          {busy ? t("Starting…") : status?.running ? t("Running ✓") : t("Launch TensorBoard")}
-        </button>
-        {status?.running && (
+    <div className="h-full flex flex-col min-h-0 space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
+        <PageHeader
+          title={t("TensorBoard")}
+          description={t(
+            "Monitor loss curves, spectrograms, and training metrics live during model training.",
+          )}
+        />
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {isRunning && (
+            <>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>{`:${tbPort}`}</span>
+              </span>
+              <button
+                type="button"
+                className="ghost text-xs py-1.5 px-2.5 flex items-center gap-1.5"
+                onClick={handleReloadIframe}
+                title={t("Reload TensorBoard view")}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">{t("Reload")}</span>
+              </button>
+              <a
+                href={iframeUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="ghost text-xs py-1.5 px-2.5 flex items-center gap-1.5"
+                title={t("Open in browser tab")}
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">{t("Open Tab")}</span>
+              </a>
+            </>
+          )}
           <button
             type="button"
-            className="ghost"
-            onClick={() => apiSend("/api/tensorboard/stop", "POST").then(refresh)}
+            className="ghost text-xs py-1.5 px-2.5 flex items-center gap-1.5 text-neutral-400 hover:text-white"
+            onClick={handleRestart}
+            disabled={restarting}
+            title={t("Restart TensorBoard backend service")}
           >
-            {t("Stop")}
+            <RotateCcw className={`w-3.5 h-3.5 ${restarting ? "animate-spin" : ""}`} />
+            <span className="hidden md:inline">{restarting ? t("Restarting…") : t("Restart")}</span>
           </button>
-        )}
-        <span className="muted">
-          {status ? (status.running ? `live at ${iframeUrl}` : t("stopped")) : t("checking…")}
-        </span>
+        </div>
       </div>
-      {status?.running && (
-        <iframe
-          src={iframeUrl}
-          title={t("TensorBoard")}
-          width="100%"
-          height={800}
-          style={{ border: "1px solid var(--border)", borderRadius: 8, marginTop: 12 }}
-        />
+
+      {error && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="p-3 rounded-lg border border-red-500/20 text-red-400 bg-red-500/10 text-xs shrink-0"
+        >
+          {error}
+        </div>
       )}
+
+      <div className="flex-1 min-h-[500px] relative rounded-xl border border-white/10 overflow-hidden bg-black/40">
+        {isRunning ? (
+          <iframe
+            key={iframeKey}
+            ref={iframeRef}
+            src={iframeUrl}
+            title={t("TensorBoard")}
+            className="w-full h-full border-0 absolute inset-0"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-neutral-400 p-8">
+            <div className="w-56 h-1.5 rounded-full bg-white/10 overflow-hidden relative">
+              <div className="h-full bg-white rounded-full animate-pulse w-3/4" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-sm font-medium text-neutral-200">
+                {restarting ? t("Restarting TensorBoard…") : t("Starting TensorBoard…")}
+              </p>
+              <p className="text-xs text-neutral-500">
+                {t("The service is initializing in the backend and will display automatically.")}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

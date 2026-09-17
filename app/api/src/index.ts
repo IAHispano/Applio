@@ -18,7 +18,7 @@ import realtimeRouter, { attachRealtimeProxy } from "./routes/realtime";
 import reportRouter from "./routes/report";
 import settingsRouter, { autoStartPresence } from "./routes/settings";
 import setupRouter from "./routes/setup";
-import tensorboardRouter from "./routes/tensorboard";
+import tensorboardRouter, { autoStartTensorboard, stopTensorboard } from "./routes/tensorboard";
 import trainRouter from "./routes/train";
 import ttsRouter from "./routes/tts";
 
@@ -100,11 +100,22 @@ const server = app.listen(PORT, "127.0.0.1", () => {
   console.log(`[applio-api] repoRoot=${getRepoRoot()} outputs=${outputsDir}`);
   // Gradio app.py parity: start Discord presence at boot when enabled.
   autoStartPresence();
+  // Start TensorBoard in background so it is ready immediately when user opens tab.
+  autoStartTensorboard();
 });
 
 // Realtime audio frames ride raw WebSockets (Next rewrites don't proxy upgrades),
 // so the WS proxy attaches directly to our HTTP server.
 attachRealtimeProxy(server);
+
+process.on("SIGINT", () => {
+  stopTensorboard();
+  process.exit(0);
+});
+process.on("SIGTERM", () => {
+  stopTensorboard();
+  process.exit(0);
+});
 
 process.on("uncaughtException", (err) => {
   // eslint-disable-next-line no-console

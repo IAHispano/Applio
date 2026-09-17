@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { errMsg, fetchModels, postForm } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 import JobPanel from "../JobPanel";
+import SliderField from "../ui/SliderField";
 
 export default function BlenderPanel() {
   const { t } = useI18n();
@@ -55,13 +56,22 @@ export default function BlenderPanel() {
 
   return (
     <div>
-      {error && <p style={{ color: "var(--err)" }}>{error}</p>}
+      {error && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mb-4 p-3 rounded-lg border border-[var(--err)] text-[var(--err)] bg-[color-mix(in_srgb,var(--err)_10%,transparent)]"
+        >
+          {error}
+        </div>
+      )}
       <form onSubmit={onSubmit}>
         <div className="card">
           <div className="grid2">
             <div>
-              <label>{t("New model name")}</label>
+              <label htmlFor="blend-model-name">{t("New model name")}</label>
               <input
+                id="blend-model-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -69,25 +79,55 @@ export default function BlenderPanel() {
               />
             </div>
             <div>
-              <label>Blend ratio: {ratio} (0 = model 1, 1 = model 2)</label>
-              <input
-                type="range"
+              <SliderField
+                id="blend-ratio"
+                label={`${t("Blend ratio")} (0 = ${t("Model 1")}, 1 = ${t("Model 2")})`}
+                value={ratio}
                 min={0}
                 max={1}
                 step={0.05}
-                value={ratio}
-                onChange={(e) => setRatio(Number(e.target.value))}
+                onChange={setRatio}
               />
             </div>
             <div>
-              <label>{t("Model 1 path")}</label>
-              <input type="text" list="vmodels" value={p1} onChange={(e) => setP1(e.target.value)} />
-              <input type="file" accept=".pth,.onnx" onChange={(e) => setF1(e.target.files?.[0] || null)} />
+              <label htmlFor="blend-model1-path">{t("Model 1 path")}</label>
+              <input
+                id="blend-model1-path"
+                type="text"
+                list="vmodels"
+                value={p1}
+                onChange={(e) => setP1(e.target.value)}
+              />
+              <label htmlFor="blend-model1-file" className="sr-only">
+                {t("Upload Model 1 file")}
+              </label>
+              <input
+                id="blend-model1-file"
+                type="file"
+                accept=".pth,.onnx"
+                onChange={(e) => setF1(e.target.files?.[0] || null)}
+                className="mt-2"
+              />
             </div>
             <div>
-              <label>{t("Model 2 path")}</label>
-              <input type="text" list="vmodels" value={p2} onChange={(e) => setP2(e.target.value)} />
-              <input type="file" accept=".pth,.onnx" onChange={(e) => setF2(e.target.files?.[0] || null)} />
+              <label htmlFor="blend-model2-path">{t("Model 2 path")}</label>
+              <input
+                id="blend-model2-path"
+                type="text"
+                list="vmodels"
+                value={p2}
+                onChange={(e) => setP2(e.target.value)}
+              />
+              <label htmlFor="blend-model2-file" className="sr-only">
+                {t("Upload Model 2 file")}
+              </label>
+              <input
+                id="blend-model2-file"
+                type="file"
+                accept=".pth,.onnx"
+                onChange={(e) => setF2(e.target.files?.[0] || null)}
+                className="mt-2"
+              />
             </div>
           </div>
           <datalist id="vmodels">

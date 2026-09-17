@@ -21,6 +21,7 @@ import JobPanel from "../../components/JobPanel";
 import PageHeader from "../../components/layout/PageHeader";
 import BlenderPanel from "../../components/models/BlenderPanel";
 import DownloadPanel from "../../components/models/DownloadPanel";
+import Modal from "../../components/ui/Modal";
 import { apiGet, apiSend, errMsg, submitJob } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 
@@ -164,7 +165,7 @@ export default function ModelsPage() {
           "Manage your voice model collection, inspect checkpoint metadata, and blend or download weights.",
         )}
       >
-        <div className="row">
+        <div className="row" role="tablist" aria-label={t("Model sections")}>
           {(
             [
               ["library", "Model Library"],
@@ -175,7 +176,11 @@ export default function ModelsPage() {
           ).map(([id, label]) => (
             <button
               key={id}
+              id={`tab-${id}`}
               type="button"
+              role="tab"
+              aria-selected={section === id}
+              aria-controls={`panel-${id}`}
               className={section === id ? "cta" : "ghost"}
               onClick={() => setSection(id)}
             >
@@ -185,18 +190,27 @@ export default function ModelsPage() {
         </div>
       </PageHeader>
 
-      {error && <p style={{ color: "var(--err)" }}>{error}</p>}
+      {error && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mb-4 p-3 rounded-lg border border-[var(--err)] text-[var(--err)] bg-[color-mix(in_srgb,var(--err)_10%,transparent)]"
+        >
+          {error}
+        </div>
+      )}
 
       {/* 1. MODEL LIBRARY VIEW */}
       {section === "library" && (
-        <div className="space-y-4">
+        <div id="panel-library" role="tabpanel" aria-labelledby="tab-library" className="space-y-4">
           {/* Controls bar: Search, Refresh, Download CTA */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 flex-1 min-w-[240px] max-w-md bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-              <Search size={16} className="text-neutral-400" />
+              <Search size={16} className="text-neutral-400" aria-hidden="true" />
               <input
                 type="text"
                 placeholder={t("Search models by name or folder…")}
+                aria-label={t("Search models by name or folder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="bg-transparent border-0 p-0 text-sm text-white focus:outline-none w-full"
@@ -205,9 +219,10 @@ export default function ModelsPage() {
                 <button
                   type="button"
                   onClick={() => setSearch("")}
+                  aria-label={t("Clear search")}
                   className="text-neutral-400 hover:text-white"
                 >
-                  <X size={14} />
+                  <X size={14} aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -327,8 +342,9 @@ export default function ModelsPage() {
                         onClick={() => openInspect(m)}
                         className="ghost text-xs px-2.5 py-1.5 flex items-center gap-1"
                         title={t("View checkpoint metadata")}
+                        aria-label={`${t("Inspect model metadata for")} ${m.name}`}
                       >
-                        <Info size={13} />
+                        <Info size={13} aria-hidden="true" />
                         <span>{t("Inspect")}</span>
                       </button>
                       <button
@@ -336,8 +352,9 @@ export default function ModelsPage() {
                         onClick={() => setDeleteTarget(m)}
                         className="danger text-xs px-2.5 py-1.5"
                         title={t("Delete model files")}
+                        aria-label={`${t("Delete model")} ${m.name}`}
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={13} aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -349,14 +366,22 @@ export default function ModelsPage() {
       )}
 
       {/* 2. DOWNLOAD PANEL */}
-      {section === "download" && <DownloadPanel />}
+      {section === "download" && (
+        <div id="panel-download" role="tabpanel" aria-labelledby="tab-download">
+          <DownloadPanel />
+        </div>
+      )}
 
       {/* 3. VOICE BLENDER PANEL */}
-      {section === "blend" && <BlenderPanel />}
+      {section === "blend" && (
+        <div id="panel-blend" role="tabpanel" aria-labelledby="tab-blend">
+          <BlenderPanel />
+        </div>
+      )}
 
       {/* 4. INSPECT CUSTOM PATH */}
       {section === "inspect" && (
-        <div className="space-y-4">
+        <div id="panel-inspect" role="tabpanel" aria-labelledby="tab-inspect" className="space-y-4">
           <div className="card">
             <h2>{t("Inspect Model File")}</h2>
             <p className="muted text-sm mb-3">
@@ -365,7 +390,11 @@ export default function ModelsPage() {
               )}
             </p>
             <div className="row">
+              <label htmlFor="custom-pth-input" className="sr-only">
+                {t("Path to .pth checkpoint")}
+              </label>
               <input
+                id="custom-pth-input"
                 type="text"
                 value={customPth}
                 onChange={(e) => setCustomPth(e.target.value)}
@@ -382,117 +411,106 @@ export default function ModelsPage() {
       )}
 
       {/* INSPECT METADATA MODAL */}
-      {inspectModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-white/10 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2">
-                <Info size={18} className="text-white" />
-                <h3 className="font-semibold text-white m-0">{inspectModal.name}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setInspectModal(null)}
-                className="text-neutral-400 hover:text-white"
-              >
-                <X size={18} />
-              </button>
+      <Modal
+        isOpen={!!inspectModal}
+        onClose={() => setInspectModal(null)}
+        title={inspectModal?.name || t("Model Metadata")}
+        icon={<Info size={18} className="text-white" />}
+      >
+        {inspectLoading && <p className="muted text-sm">{t("Reading model checkpoint…")}</p>}
+        {inspectError && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="p-3 rounded-lg border border-[var(--err)] text-[var(--err)] bg-[color-mix(in_srgb,var(--err)_10%,transparent)]"
+          >
+            {inspectError}
+          </div>
+        )}
+
+        {inspectMeta && (
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+              <span className="text-neutral-400 text-xs block">{t("Model Name")}</span>
+              <span className="font-medium text-white">{inspectMeta.model_name || t("None")}</span>
             </div>
-
-            {inspectLoading && <p className="muted text-sm">{t("Reading model checkpoint…")}</p>}
-            {inspectError && <p style={{ color: "var(--err)" }}>{inspectError}</p>}
-
-            {inspectMeta && (
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">{t("Model Name")}</span>
-                  <span className="font-medium text-white">{inspectMeta.model_name || t("None")}</span>
-                </div>
-                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">{t("Author")}</span>
-                  <span className="font-medium text-white">{inspectMeta.author || t("Anonymous")}</span>
-                </div>
-                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">{t("Epochs")}</span>
-                  <span className="font-medium text-white">{inspectMeta.epochs || t("None")}</span>
-                </div>
-                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">{t("Training Steps")}</span>
-                  <span className="font-medium text-white">{inspectMeta.step || t("None")}</span>
-                </div>
-                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">{t("Sampling Rate")}</span>
-                  <span className="font-medium text-white">{inspectMeta.sr || t("None")}</span>
-                </div>
-                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">{t("Pitch Guidance (F0)")}</span>
-                  <span className="font-medium text-white">
-                    {inspectMeta.f0 === "1" ? t("Yes") : inspectMeta.f0 || t("None")}
-                  </span>
-                </div>
-                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">{t("Vocoder")}</span>
-                  <span className="font-medium text-white">{inspectMeta.vocoder || "HiFi-GAN"}</span>
-                </div>
-                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">{t("Embedder Model")}</span>
-                  <span className="font-medium text-white">{inspectMeta.embedder_model || "contentvec"}</span>
-                </div>
-                <div className="col-span-2 bg-black/30 p-2.5 rounded-lg border border-white/5">
-                  <span className="text-neutral-400 text-xs block">{t("Creation Date")}</span>
-                  <span className="font-medium text-white">{inspectMeta.creation_date || t("Unknown")}</span>
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
-              <button type="button" className="ghost" onClick={() => setInspectModal(null)}>
-                {t("Close")}
-              </button>
-              <button
-                type="button"
-                className="cta flex items-center gap-1.5"
-                onClick={() => {
-                  const m = inspectModal;
-                  setInspectModal(null);
-                  openInInference(m);
-                }}
-              >
-                <span>{t("Use in Inference")}</span>
-                <ArrowRight size={14} />
-              </button>
+            <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+              <span className="text-neutral-400 text-xs block">{t("Author")}</span>
+              <span className="font-medium text-white">{inspectMeta.author || t("Anonymous")}</span>
+            </div>
+            <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+              <span className="text-neutral-400 text-xs block">{t("Epochs")}</span>
+              <span className="font-medium text-white">{inspectMeta.epochs || t("None")}</span>
+            </div>
+            <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+              <span className="text-neutral-400 text-xs block">{t("Training Steps")}</span>
+              <span className="font-medium text-white">{inspectMeta.step || t("None")}</span>
+            </div>
+            <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+              <span className="text-neutral-400 text-xs block">{t("Sampling Rate")}</span>
+              <span className="font-medium text-white">{inspectMeta.sr || t("None")}</span>
+            </div>
+            <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+              <span className="text-neutral-400 text-xs block">{t("Pitch Guidance (F0)")}</span>
+              <span className="font-medium text-white">
+                {inspectMeta.f0 === "1" ? t("Yes") : inspectMeta.f0 || t("None")}
+              </span>
+            </div>
+            <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+              <span className="text-neutral-400 text-xs block">{t("Vocoder")}</span>
+              <span className="font-medium text-white">{inspectMeta.vocoder || "HiFi-GAN"}</span>
+            </div>
+            <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+              <span className="text-neutral-400 text-xs block">{t("Embedder Model")}</span>
+              <span className="font-medium text-white">{inspectMeta.embedder_model || "contentvec"}</span>
+            </div>
+            <div className="col-span-2 bg-black/30 p-2.5 rounded-lg border border-white/5">
+              <span className="text-neutral-400 text-xs block">{t("Creation Date")}</span>
+              <span className="font-medium text-white">{inspectMeta.creation_date || t("Unknown")}</span>
             </div>
           </div>
+        )}
+
+        <div className="flex justify-end gap-2 pt-2 border-t border-white/10 mt-4">
+          <button type="button" className="ghost" onClick={() => setInspectModal(null)}>
+            {t("Close")}
+          </button>
+          <button
+            type="button"
+            className="cta flex items-center gap-1.5"
+            onClick={() => {
+              const m = inspectModal;
+              setInspectModal(null);
+              if (m) openInInference(m);
+            }}
+          >
+            <span>{t("Use in Inference")}</span>
+            <ArrowRight size={14} />
+          </button>
         </div>
-      )}
+      </Modal>
 
       {/* DELETE CONFIRMATION MODAL */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-neutral-900 border border-red-500/30 rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
-            <div>
-              <h3 className="text-lg font-bold text-white m-0">{t("Delete Model?")}</h3>
-              <p className="text-sm text-neutral-300 mt-2">
-                {t("Are you sure you want to permanently delete")} <strong>{deleteTarget.name}</strong>{" "}
-                {t("from disk? This will remove its .pth and .index files.")}
-              </p>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => setDeleteTarget(null)}
-                disabled={deleting}
-              >
-                {t("Cancel")}
-              </button>
-              <button type="button" className="danger" onClick={confirmDelete} disabled={deleting}>
-                {deleting ? t("Deleting…") : t("Delete Model")}
-              </button>
-            </div>
-          </div>
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title={t("Delete Model?")}
+        size="sm"
+        danger
+      >
+        <p className="text-sm text-neutral-300">
+          {t("Are you sure you want to permanently delete")} <strong>{deleteTarget?.name}</strong>{" "}
+          {t("from disk? This will remove its .pth and .index files.")}
+        </p>
+        <div className="flex justify-end gap-2 pt-4 border-t border-white/10 mt-4">
+          <button type="button" className="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>
+            {t("Cancel")}
+          </button>
+          <button type="button" className="danger" onClick={confirmDelete} disabled={deleting}>
+            {deleting ? t("Deleting…") : t("Delete Model")}
+          </button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

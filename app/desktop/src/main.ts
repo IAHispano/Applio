@@ -3,7 +3,8 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, shell } from "electron";
+import { autoUpdater, type UpdateInfo } from "electron-updater";
 
 const isDev: boolean = !app.isPackaged;
 const API_PORT: string = process.env.API_PORT || "8000";
@@ -15,6 +16,24 @@ let webProc: ChildProcess | null = null;
 let mainWindow: BrowserWindow | null = null;
 let splash: BrowserWindow | null = null;
 
+export type UpdateState =
+  | { status: "idle" }
+  | { status: "checking" }
+  | { status: "available"; version: string; releaseDate?: string }
+  | { status: "not-available"; version: string }
+  | {
+      status: "downloading";
+      percent: number;
+      bytesPerSecond: number;
+      total: number;
+      transferred: number;
+    }
+  | { status: "downloaded"; version: string; releaseNotes?: string }
+  | { status: "error"; message: string }
+  | { status: "dev-mode"; message: string };
+
+let currentUpdateState: UpdateState = { status: "idle" };
+
 function repoRoot(): string {
   if (process.env.APPLIO_ROOT && fs.existsSync(process.env.APPLIO_ROOT)) {
     return path.resolve(process.env.APPLIO_ROOT);
@@ -23,28 +42,64 @@ function repoRoot(): string {
   return path.resolve(__dirname, "..");
 }
 
+function appIconPath(): string | undefined {
+  const root = repoRoot();
+  const candidates =
+    process.platform === "win32"
+      ? [path.join(root, "assets", "ICON.ico"), path.join(root, "assets", "icon.png")]
+      : process.platform === "darwin"
+        ? [path.join(root, "assets", "icon.icns"), path.join(root, "assets", "icon.png")]
+        : [path.join(root, "assets", "icon.png"), path.join(root, "assets", "ICON.ico")];
+
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return undefined;
+}
+
+function appNativeIcon(): Electron.NativeImage | undefined {
+  const p = appIconPath();
+  if (!p) return undefined;
+  try {
+    return nativeImage.createFromPath(p);
+  } catch {
+    return undefined;
+  }
+}
+
 function startProdBackends(): void {
   const root = repoRoot();
   const serverEntry = path.join(root, "app", "api", "dist", "index.js");
   const nextStandalone = path.join(root, "app", "web", ".next", "standalone", "server.js");
   const env: NodeJS.ProcessEnv = {
     ...process.env,
+    ELECTRON_RUN_AS_NODE: "1",
     API_PORT,
     APPLIO_ROOT: root,
     PORT: WEB_PORT,
     HOSTNAME: "127.0.0.1",
   };
   if (fs.existsSync(serverEntry)) {
-    apiProc = spawn(process.execPath, [serverEntry], { env, windowsHide: true });
+    apiProc = spawn(process.execPath, [serverEntry], {
+      cwd: root,
+      env,
+      windowsHide: true,
+    });
     pipeProcOutput(apiProc, "api");
   } else {
     console.warn("[electron] api bundle missing:", serverEntry);
+    logToTailAndFile(`[electron] api bundle missing: ${serverEntry}`, "launcher.log");
   }
   if (fs.existsSync(nextStandalone)) {
-    webProc = spawn(process.execPath, [nextStandalone], { env, windowsHide: true });
+    webProc = spawn(process.execPath, [nextStandalone], {
+      cwd: path.dirname(nextStandalone),
+      env,
+      windowsHide: true,
+    });
     pipeProcOutput(webProc, "web");
   } else {
     console.warn("[electron] web standalone missing:", nextStandalone);
+    logToTailAndFile(`[electron] web standalone missing: ${nextStandalone}`, "launcher.log");
   }
 }
 
@@ -78,17 +133,20 @@ function launcherLogDir(): string {
   }
 }
 
+function logToTailAndFile(entry: string, filename = "engine.log"): void {
+  bootLogTails.push(entry);
+  if (bootLogTails.length > 200) bootLogTails.splice(0, bootLogTails.length - 200);
+  try {
+    const file = path.join(launcherLogDir(), filename);
+    fs.appendFileSync(file, `${new Date().toISOString()} ${entry}\n`);
+  } catch {
+    /* disk full / locked: console still has it */
+  }
+}
+
 function pipeProcOutput(proc: ChildProcess, tag: "api" | "web"): void {
-  const file = path.join(launcherLogDir(), `${tag}.log`);
   const push = (line: string) => {
-    const entry = `[${tag}] ${line}`;
-    bootLogTails.push(entry);
-    if (bootLogTails.length > 200) bootLogTails.splice(0, bootLogTails.length - 200);
-    try {
-      fs.appendFileSync(file, `${new Date().toISOString()} ${line}\n`);
-    } catch {
-      /* disk full / locked: console still has it */
-    }
+    logToTailAndFile(`[${tag}] ${line}`, `${tag}.log`);
   };
   proc.stdout?.on("data", (d: Buffer) => {
     const text = d.toString();
@@ -100,41 +158,68 @@ function pipeProcOutput(proc: ChildProcess, tag: "api" | "web"): void {
     console.error(`[${tag}]`, text);
     for (const line of text.split("\n")) if (line.trim()) push(`STDERR ${line.trim().slice(0, 1000)}`);
   });
+  proc.on("error", (err: Error) => {
+    console.error(`[${tag}] spawn error:`, err);
+    push(`SPAWN ERROR: ${err.message}`);
+  });
+  proc.on("exit", (code: number | null, signal: string | null) => {
+    console.log(`[${tag}] exited with code=${code} signal=${signal}`);
+    push(`EXITED code=${code} signal=${signal}`);
+  });
 }
 
-function venvPython(): string {
+function findPythonBin(): { path: string; source: string; exists: boolean } {
   const root = repoRoot();
-  const win = path.join(root, ".venv", "Scripts", "python.exe");
-  const nix = path.join(root, ".venv", "bin", "python");
-  if (process.platform === "win32") return win;
-  return nix;
+  const candidates: Array<{ path: string; source: string }> = [];
+  if (process.env.PYTHON_BIN) {
+    candidates.push({ path: process.env.PYTHON_BIN, source: "PYTHON_BIN env" });
+  }
+  if (process.platform === "win32") {
+    candidates.push(
+      { path: path.join(root, ".venv", "Scripts", "python.exe"), source: "bundled .venv" },
+      { path: path.join(root, "env", "python.exe"), source: "bundled env" },
+    );
+  } else {
+    candidates.push(
+      { path: path.join(root, ".venv", "bin", "python"), source: "bundled .venv" },
+      { path: path.join(root, "env", "bin", "python"), source: "bundled env" },
+    );
+  }
+  for (const c of candidates) {
+    if (fs.existsSync(c.path)) return { path: c.path, source: c.source, exists: true };
+  }
+  const defaultPy = process.platform === "win32" ? "python" : "python3";
+  return { path: defaultPy, source: "system PATH", exists: false };
 }
 
 function diagnosticsReport(): string {
-  const venv = venvPython();
+  const py = findPythonBin();
   return [
     `Applio ${app.getVersion()} · ${process.platform} ${process.arch}`,
     `Electron ${process.versions.electron} · Node ${process.versions.node}`,
-    `Python env: ${venv} (${fs.existsSync(venv) ? "found" : "MISSING"})`,
+    `Python: ${py.path} (${py.exists ? "found: " + py.source : "system PATH fallback"})`,
     `Ports: API=${API_PORT} WEB=${WEB_PORT}`,
     `Logs: ${launcherLogDir()}`,
     `--- backend tail ---`,
-    ...bootLogTails.slice(-15),
+    ...(bootLogTails.length > 0 ? bootLogTails.slice(-15) : ["(no backend output captured)"]),
   ].join("\n");
 }
 
 async function reportBootFailure(): Promise<"retry" | "quit"> {
-  const venv = venvPython();
+  const py = findPythonBin();
+  const nativeIcon = appNativeIcon();
   const detail = [
-    "The bundled engine did not come up within 60s, so there is nothing to show yet.",
+    "The Applio backend server did not respond within 60s.",
     "",
     "Checklist:",
-    `• Python env: ${venv} (${fs.existsSync(venv) ? "found" : "MISSING — run setup first"})`,
-    `• Ports ${API_PORT}/${WEB_PORT} free (no other Applio running?)`,
+    `• Ports ${API_PORT}/${WEB_PORT} free (make sure no other Applio or dev server is running)`,
+    `• Python: ${py.path} (${py.exists ? py.source : "in-app setup will configure packages on first run"})`,
     `• Logs: ${launcherLogDir()}`,
     "",
     "Recent backend output:",
-    ...bootLogTails.slice(-8).map((l) => `• ${l}`),
+    ...(bootLogTails.length > 0
+      ? bootLogTails.slice(-8).map((l) => `• ${l}`)
+      : ["• No backend logs captured yet"]),
   ].join("\n");
   for (;;) {
     const { response } = await dialog.showMessageBox({
@@ -146,6 +231,7 @@ async function reportBootFailure(): Promise<"retry" | "quit"> {
       defaultId: 0,
       cancelId: 3,
       noLink: true,
+      ...(nativeIcon ? { icon: nativeIcon } : {}),
     });
     if (response === 0) return "retry";
     if (response === 1) {
@@ -176,21 +262,21 @@ async function waitFor(url: string, tries = 60, onTick?: (n: number) => void): P
 
 const SPLASH_HTML = `data:text/html,${encodeURIComponent(`<!doctype html>
 <html><head><meta charset="utf-8"><style>
-html,body{margin:0;height:100%;background:#0a0a0a;color:#e7e5e4;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center}
-.wrap{text-align:center}
-.brand{font-size:28px;font-weight:800;letter-spacing:-0.02em}
-.brand small{font-size:11px;color:#a3a3a3;font-weight:500;margin-left:8px;letter-spacing:0.08em}
-.spin{width:28px;height:28px;margin:22px auto 14px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:#fff;animation:sp 0.9s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
-#st{font-size:13px;color:#a3a3a3;min-height:20px}
+html,body{margin:0;height:100%;background:#0a0a0a;color:#e7e5e4;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;user-select:none}
+.wrap{text-align:center;width:280px;padding:20px}
+.brand{font-size:28px;font-weight:700;letter-spacing:-0.02em;margin-bottom:24px;color:#ffffff}
+.track{width:100%;height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-bottom:14px;position:relative}
+.bar{height:100%;width:15%;background:#ffffff;border-radius:999px;transition:width 0.4s cubic-bezier(0.4, 0, 0.2, 1)}
+#st{font-size:12px;color:#a3a3a3;min-height:18px;letter-spacing:0.01em}
 </style></head><body><div class="wrap">
-<div class="brand">Applio<small>STUDIO</small></div>
-<div class="spin"></div>
+<div class="brand">Applio</div>
+<div class="track"><div id="pb" class="bar"></div></div>
 <div id="st">Starting…</div>
 </div></body></html>`)}`;
 
 function showSplash(): void {
   if (splash && !splash.isDestroyed()) return;
+  const icon = appIconPath();
   splash = new BrowserWindow({
     width: 420,
     height: 320,
@@ -201,6 +287,7 @@ function showSplash(): void {
     center: true,
     show: true,
     backgroundColor: "#0a0a0a",
+    ...(icon ? { icon } : {}),
     webPreferences: { contextIsolation: true, nodeIntegration: false },
   });
   void splash.loadURL(SPLASH_HTML);
@@ -209,11 +296,17 @@ function showSplash(): void {
   });
 }
 
-function setSplashStatus(text: string): void {
+function setSplashStatus(text: string, percent?: number): void {
   if (!splash || splash.isDestroyed()) return;
   const esc = text.replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/\n/g, " ");
+  const progJs =
+    typeof percent === "number"
+      ? `var p=document.getElementById('pb');if(p)p.style.width='${Math.max(0, Math.min(100, percent))}%';`
+      : "";
   void splash.webContents
-    .executeJavaScript(`(function(){var el=document.getElementById('st');if(el)el.textContent='${esc}';})()`)
+    .executeJavaScript(
+      `(function(){var el=document.getElementById('st');if(el)el.textContent='${esc}';${progJs}})()`,
+    )
     .catch(() => {});
 }
 
@@ -273,19 +366,192 @@ function saveWindowState(): void {
   }
 }
 
+function notifyUpdateState(): void {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("updater:status", currentUpdateState);
+  }
+}
+
+function initAutoUpdater(): void {
+  autoUpdater.logger = {
+    info: (msg: unknown) => {
+      console.log("[updater]", msg);
+      logToTailAndFile(`[updater] ${String(msg)}`, "updater.log");
+    },
+    warn: (msg: unknown) => {
+      console.warn("[updater]", msg);
+      logToTailAndFile(`[updater WARN] ${String(msg)}`, "updater.log");
+    },
+    error: (msg: unknown) => {
+      console.error("[updater]", msg);
+      logToTailAndFile(`[updater ERR] ${String(msg)}`, "updater.log");
+    },
+    debug: (msg: unknown) => console.debug("[updater]", msg),
+  };
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.allowPrerelease = false;
+
+  autoUpdater.on("checking-for-update", () => {
+    console.log("[updater] Checking for update…");
+    currentUpdateState = { status: "checking" };
+    notifyUpdateState();
+  });
+
+  autoUpdater.on("update-available", (info: UpdateInfo) => {
+    console.log(`[updater] Update available: v${info.version}`);
+    currentUpdateState = {
+      status: "available",
+      version: info.version,
+      releaseDate: info.releaseDate,
+    };
+    notifyUpdateState();
+  });
+
+  autoUpdater.on("update-not-available", (info: UpdateInfo) => {
+    console.log(`[updater] App is up to date: v${info.version}`);
+    currentUpdateState = { status: "not-available", version: info.version };
+    notifyUpdateState();
+  });
+
+  autoUpdater.on("download-progress", (progress) => {
+    currentUpdateState = {
+      status: "downloading",
+      percent: Math.round(progress.percent),
+      bytesPerSecond: Math.round(progress.bytesPerSecond),
+      total: progress.total,
+      transferred: progress.transferred,
+    };
+    notifyUpdateState();
+  });
+
+  autoUpdater.on("update-downloaded", async (info: UpdateInfo) => {
+    console.log(`[updater] Update downloaded: v${info.version}`);
+    currentUpdateState = {
+      status: "downloaded",
+      version: info.version,
+      releaseNotes: typeof info.releaseNotes === "string" ? info.releaseNotes : undefined,
+    };
+    notifyUpdateState();
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      const nativeIcon = appNativeIcon();
+      const { response } = await dialog.showMessageBox(mainWindow, {
+        type: "info",
+        title: "Applio Update Ready",
+        message: `Applio v${info.version} is ready to install`,
+        detail:
+          "The new version of Applio has been downloaded. Restart now to apply the update, or install it automatically when you next exit Applio.",
+        buttons: ["Restart and Update", "Later"],
+        defaultId: 0,
+        cancelId: 1,
+        noLink: true,
+        ...(nativeIcon ? { icon: nativeIcon } : {}),
+      });
+
+      if (response === 0) {
+        stopBackends();
+        autoUpdater.quitAndInstall(false, true);
+      }
+    }
+  });
+
+  autoUpdater.on("error", (err: Error) => {
+    console.error("[updater] Error:", err.message);
+    currentUpdateState = { status: "error", message: err.message || "Update check failed" };
+    notifyUpdateState();
+  });
+
+  // IPC Handlers
+  ipcMain.handle("updater:get-status", () => currentUpdateState);
+
+  ipcMain.handle("updater:check", async () => {
+    if (isDev) {
+      currentUpdateState = { status: "dev-mode", message: "Auto-updater is disabled in development mode." };
+      return currentUpdateState;
+    }
+    try {
+      const result = await autoUpdater.checkForUpdates();
+      return {
+        status: "ok",
+        version: result?.updateInfo?.version,
+        updateInfo: result?.updateInfo,
+      };
+    } catch (err) {
+      const message = (err as Error).message || String(err);
+      currentUpdateState = { status: "error", message };
+      return { status: "error", message };
+    }
+  });
+
+  ipcMain.on("updater:quit-and-install", () => {
+    stopBackends();
+    autoUpdater.quitAndInstall(false, true);
+  });
+}
+
 async function createWindow(): Promise<void> {
-  if (!isDev) {
-    showSplash();
+  showSplash();
+
+  if (isDev) {
+    setSplashStatus("Starting dev server…", 15);
+    const ok = await waitFor(WEB_URL, 60, (n) =>
+      setSplashStatus(`Starting dev server… (${n}/60)`, 15 + Math.min(30, Math.round((n / 60) * 30))),
+    );
+    if (!ok) {
+      closeSplash();
+      console.error(`[electron] dev server at ${WEB_URL} did not respond within 60s`);
+      const nativeIcon = appNativeIcon();
+      await dialog.showMessageBox({
+        type: "error",
+        title: "Dev Server Unreachable",
+        message: `Could not connect to Next.js dev server at ${WEB_URL}`,
+        detail: `Make sure 'npm run dev' or 'npm run desktop:dev' is running.\n\nChecked: ${WEB_URL}`,
+        ...(nativeIcon ? { icon: nativeIcon } : {}),
+      });
+      app.quit();
+      return;
+    }
+
+    // Wait for the backend API engine so the user never has to wait after the app window opens
+    setSplashStatus("Starting engine…", 50);
+    const apiHealthUrl = `http://127.0.0.1:${API_PORT}/api/health`;
+    await waitFor(apiHealthUrl, 60, (n) =>
+      setSplashStatus(`Starting engine… (${n}/60)`, 50 + Math.min(30, Math.round((n / 60) * 30))),
+    );
+
+    // Preload & prime engine data
+    setSplashStatus("Loading Applio…", 85);
+    await Promise.all([
+      fetch(`http://127.0.0.1:${API_PORT}/api/setup/status`).catch(() => {}),
+      fetch(`http://127.0.0.1:${API_PORT}/api/models`).catch(() => {}),
+    ]);
+  } else {
     let attempt = 0;
     for (;;) {
       attempt += 1;
       stopBackends();
-      setSplashStatus(attempt > 1 ? `Retrying… (attempt ${attempt})` : "Starting engine…");
+      setSplashStatus(attempt > 1 ? `Retrying… (attempt ${attempt})` : "Starting engine…", 20);
       startProdBackends();
-      const ok = await waitFor(`http://127.0.0.1:${WEB_PORT}/`, 60, (n) =>
-        setSplashStatus(`Waiting for studio… (${n}/60)`),
-      );
-      if (ok) break;
+      const apiHealthUrl = `http://127.0.0.1:${API_PORT}/api/health`;
+      const webHealthUrl = `http://127.0.0.1:${WEB_PORT}/`;
+
+      const [webOk] = await Promise.all([
+        waitFor(webHealthUrl, 60, (n) =>
+          setSplashStatus(`Starting Applio… (${n}/60)`, 20 + Math.min(45, Math.round((n / 60) * 45))),
+        ),
+        waitFor(apiHealthUrl, 60),
+      ]);
+
+      if (webOk) {
+        setSplashStatus("Loading Applio…", 85);
+        await Promise.all([
+          fetch(`http://127.0.0.1:${API_PORT}/api/setup/status`).catch(() => {}),
+          fetch(`http://127.0.0.1:${API_PORT}/api/models`).catch(() => {}),
+        ]);
+        break;
+      }
       const action = await reportBootFailure();
       if (action === "retry") continue;
       closeSplash();
@@ -293,10 +559,11 @@ async function createWindow(): Promise<void> {
       app.quit();
       return;
     }
-    closeSplash();
   }
 
-  const iconPath = path.join(repoRoot(), "assets", "ICON.ico");
+  setSplashStatus("Ready!", 95);
+
+  const icon = appIconPath();
   const saved = loadWindowState();
   mainWindow = new BrowserWindow({
     width: saved?.width ?? 1280,
@@ -306,12 +573,15 @@ async function createWindow(): Promise<void> {
     minWidth: 960,
     minHeight: 640,
     title: "Applio",
-    frame: false,
+    frame: true,
+    resizable: true,
+    fullscreenable: true,
+    titleBarStyle: "default",
     show: false,
     center: saved === null,
     backgroundColor: "#0a0a0a",
     autoHideMenuBar: true,
-    ...(fs.existsSync(iconPath) ? { icon: iconPath } : {}),
+    ...(icon ? { icon } : {}),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -319,15 +589,57 @@ async function createWindow(): Promise<void> {
     },
   });
 
-  // Paint only when the first frame is ready instead of grabbing focus.
-  mainWindow.once("ready-to-show", () => {
-    mainWindow?.show();
-    mainWindow?.focus();
-  });
+  // Set macOS dock icon if supported
+  if (process.platform === "darwin" && app.dock && icon) {
+    try {
+      app.dock.setIcon(icon);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Paint only when the first frame is ready, and ONLY then close the splash screen!
+  let windowShown = false;
+  const showMainWindow = () => {
+    if (windowShown || !mainWindow || mainWindow.isDestroyed()) return;
+    windowShown = true;
+    setSplashStatus("Ready!", 100);
+    setTimeout(() => {
+      closeSplash();
+      mainWindow?.show();
+      mainWindow?.focus();
+    }, 120);
+  };
+  mainWindow.once("ready-to-show", showMainWindow);
+  setTimeout(showMainWindow, 5000);
 
   const target = isDev ? WEB_URL : `http://127.0.0.1:${WEB_PORT}/`;
   console.log("[electron] loading target:", target);
-  void mainWindow.loadURL(target);
+
+  mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
+    console.warn(`[electron] failed to load ${validatedURL}: ${errorDescription} (${errorCode})`);
+    if (isDev) {
+      setTimeout(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          console.log("[electron] retrying load target:", target);
+          mainWindow.loadURL(target).catch(() => {});
+        }
+      }, 1500);
+    }
+  });
+
+  if (isDev) {
+    mainWindow.webContents.on("before-input-event", (event, input) => {
+      if (input.key === "F12" || (input.control && input.shift && input.key.toLowerCase() === "i")) {
+        mainWindow?.webContents.toggleDevTools();
+        event.preventDefault();
+      }
+    });
+  }
+
+  void mainWindow.loadURL(target).catch((err) => {
+    console.error("[electron] loadURL error:", err);
+  });
 
   // Notify the renderer of maximize state so its chrome never drifts
   // (Win+Arrow, snap layouts and the OS window menu bypass our IPC toggle).
@@ -344,6 +656,24 @@ async function createWindow(): Promise<void> {
   mainWindow.on("close", () => {
     saveWindowState();
   });
+
+  // Check for updates in production
+  if (!isDev) {
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch((err) => {
+        console.warn("[updater] Background check error:", err.message);
+      });
+    }, 15_000);
+
+    setInterval(
+      () => {
+        autoUpdater.checkForUpdates().catch((err) => {
+          console.warn("[updater] Periodic check error:", err.message);
+        });
+      },
+      4 * 60 * 60 * 1000,
+    );
+  }
 }
 
 // Window control handlers
@@ -372,7 +702,7 @@ ipcMain.handle("window:is-maximized", (event) => {
   return win?.isMaximized() ?? false;
 });
 
-// One studio at a time: a second launch focuses the running window instead
+// One instance at a time: a second launch focuses the running window instead
 // of fighting over ports with a duplicate backend stack.
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -390,7 +720,10 @@ if (!gotLock) {
   } catch {
     /* launcherLogDir falls back to userData */
   }
-  app.whenReady().then(createWindow);
+  app.whenReady().then(() => {
+    initAutoUpdater();
+    return createWindow();
+  });
 }
 
 app.on("window-all-closed", () => {

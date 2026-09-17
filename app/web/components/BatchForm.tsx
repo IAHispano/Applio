@@ -5,6 +5,8 @@ import { apiGet, errMsg, fetchModels, submitJob } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { useSpeakers } from "../lib/useSpeakers";
 import JobPanel from "./JobPanel";
+import ModelDropdown from "./ui/ModelDropdown";
+import SliderField from "./ui/SliderField";
 
 const F0 = ["crepe", "crepe-tiny", "rmvpe", "fcpe"];
 const FORMATS = ["WAV", "MP3", "FLAC", "OGG", "M4A"];
@@ -27,7 +29,6 @@ export default function BatchForm() {
   const [f0Autotune, setF0Autotune] = useState(false);
   const [cleanAudio, setCleanAudio] = useState(false);
   const [sid, setSid] = useState(0);
-  const [terms, setTerms] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -69,10 +70,6 @@ export default function BatchForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!terms) {
-      setError(t("You must agree to the Terms of Use to proceed."));
-      return;
-    }
     if (!pthPath) {
       setError(t("Select a voice model."));
       return;
@@ -113,51 +110,67 @@ export default function BatchForm() {
         </p>
         <div className="grid2">
           <div>
-            <label>{t("Input Folder (server path)")}</label>
-            <input type="text" value={inputFolder} onChange={(e) => setInputFolder(e.target.value)} />
+            <label htmlFor="batch-input-folder">{t("Input Folder (server path)")}</label>
+            <input
+              id="batch-input-folder"
+              type="text"
+              value={inputFolder}
+              onChange={(e) => setInputFolder(e.target.value)}
+            />
           </div>
           <div>
-            <label>{t("Output Folder (server path)")}</label>
-            <input type="text" value={outputFolder} onChange={(e) => setOutputFolder(e.target.value)} />
+            <label htmlFor="batch-output-folder">{t("Output Folder (server path)")}</label>
+            <input
+              id="batch-output-folder"
+              type="text"
+              value={outputFolder}
+              onChange={(e) => setOutputFolder(e.target.value)}
+            />
           </div>
           <div>
             <label>{t("Voice Model")}</label>
-            <input type="text" list="bmodels" value={pthPath} onChange={(e) => setPthPath(e.target.value)} />
-            <datalist id="bmodels">
-              {models.map((m) => (
-                <option key={m} value={m} />
-              ))}
-            </datalist>
+            <ModelDropdown
+              models={models}
+              selectedModel={pthPath}
+              onSelect={setPthPath}
+              onUnload={() => setPthPath("")}
+            />
           </div>
           <div>
-            <label>{t("Index File (optional)")}</label>
-            <input type="text" value={indexPath} onChange={(e) => setIndexPath(e.target.value)} />
-          </div>
-          <div>
-            <label>Pitch: {pitch}</label>
+            <label htmlFor="batch-index-path">{t("Index File (optional)")}</label>
             <input
-              type="range"
+              id="batch-index-path"
+              type="text"
+              value={indexPath}
+              onChange={(e) => setIndexPath(e.target.value)}
+            />
+          </div>
+          <div>
+            <SliderField
+              id="batch-pitch"
+              label={t("Pitch")}
+              value={pitch}
               min={-24}
               max={24}
               step={1}
-              value={pitch}
-              onChange={(e) => setPitch(Number(e.target.value))}
+              unit="st"
+              onChange={setPitch}
             />
           </div>
           <div>
-            <label>Search Feature Ratio: {indexRate}</label>
-            <input
-              type="range"
+            <SliderField
+              id="batch-index-rate"
+              label={t("Search Feature Ratio")}
+              value={indexRate}
               min={0}
               max={1}
               step={0.05}
-              value={indexRate}
-              onChange={(e) => setIndexRate(Number(e.target.value))}
+              onChange={setIndexRate}
             />
           </div>
           <div>
-            <label>{t("Pitch extraction")}</label>
-            <select value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
+            <label htmlFor="batch-f0-method">{t("Pitch extraction")}</label>
+            <select id="batch-f0-method" value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
               {F0.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -166,30 +179,34 @@ export default function BatchForm() {
             </select>
           </div>
           <div>
-            <label>Volume Envelope: {volumeEnvelope} (default 1)</label>
-            <input
-              type="range"
+            <SliderField
+              id="batch-volume-envelope"
+              label={t("Volume Envelope")}
+              value={volumeEnvelope}
               min={0}
               max={1}
               step={0.05}
-              value={volumeEnvelope}
-              onChange={(e) => setVolumeEnvelope(Number(e.target.value))}
+              onChange={setVolumeEnvelope}
             />
           </div>
           <div>
-            <label>Protect Voiceless Consonants: {protect} (default 0.5)</label>
-            <input
-              type="range"
+            <SliderField
+              id="batch-protect"
+              label={t("Protect Voiceless Consonants")}
+              value={protect}
               min={0}
               max={0.5}
               step={0.01}
-              value={protect}
-              onChange={(e) => setProtect(Number(e.target.value))}
+              onChange={setProtect}
             />
           </div>
           <div>
-            <label>{t("Embedder Model")}</label>
-            <select value={embedderModel} onChange={(e) => setEmbedderModel(e.target.value)}>
+            <label htmlFor="batch-embedder-model">{t("Embedder Model")}</label>
+            <select
+              id="batch-embedder-model"
+              value={embedderModel}
+              onChange={(e) => setEmbedderModel(e.target.value)}
+            >
               {[
                 "contentvec",
                 "spin",
@@ -206,8 +223,8 @@ export default function BatchForm() {
             </select>
           </div>
           <div>
-            <label>{t("Speaker ID")}</label>
-            <select value={sid} onChange={(e) => setSid(Number(e.target.value))}>
+            <label htmlFor="batch-speaker-id">{t("Speaker ID")}</label>
+            <select id="batch-speaker-id" value={sid} onChange={(e) => setSid(Number(e.target.value))}>
               {speakers.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -216,8 +233,12 @@ export default function BatchForm() {
             </select>
           </div>
           <div>
-            <label>{t("Export Format")}</label>
-            <select value={exportFormat} onChange={(e) => setExportFormat(e.target.value)}>
+            <label htmlFor="batch-export-format">{t("Export Format")}</label>
+            <select
+              id="batch-export-format"
+              value={exportFormat}
+              onChange={(e) => setExportFormat(e.target.value)}
+            >
               {FORMATS.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -227,29 +248,48 @@ export default function BatchForm() {
           </div>
         </div>
         <div className="row" style={{ marginTop: 12 }}>
-          <label className="terms">
-            <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
-            <span>{t("I agree to the terms of use")}</span>
-          </label>
           <button type="submit" className="cta" disabled={busy}>
             {busy ? t("Submitting…") : t("Convert Folder")}
           </button>
         </div>
         <div className="row" style={{ marginTop: 8 }}>
-          <label>
-            <input type="checkbox" checked={splitAudio} onChange={(e) => setSplitAudio(e.target.checked)} />{" "}
+          <label htmlFor="batch-split-audio" className="flex items-center gap-2 cursor-pointer">
+            <input
+              id="batch-split-audio"
+              type="checkbox"
+              checked={splitAudio}
+              onChange={(e) => setSplitAudio(e.target.checked)}
+            />{" "}
             {t("Split Audio")}
           </label>
-          <label>
-            <input type="checkbox" checked={f0Autotune} onChange={(e) => setF0Autotune(e.target.checked)} />{" "}
+          <label htmlFor="batch-f0-autotune" className="flex items-center gap-2 cursor-pointer">
+            <input
+              id="batch-f0-autotune"
+              type="checkbox"
+              checked={f0Autotune}
+              onChange={(e) => setF0Autotune(e.target.checked)}
+            />{" "}
             {t("Autotune")}
           </label>
-          <label>
-            <input type="checkbox" checked={cleanAudio} onChange={(e) => setCleanAudio(e.target.checked)} />{" "}
+          <label htmlFor="batch-clean-audio" className="flex items-center gap-2 cursor-pointer">
+            <input
+              id="batch-clean-audio"
+              type="checkbox"
+              checked={cleanAudio}
+              onChange={(e) => setCleanAudio(e.target.checked)}
+            />{" "}
             {t("Clean Audio")}
           </label>
         </div>
-        {error && <p style={{ color: "var(--err)" }}>{error}</p>}
+        {error && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mt-3 p-3 rounded-lg border border-[var(--err)] text-[var(--err)] bg-[color-mix(in_srgb,var(--err)_10%,transparent)]"
+          >
+            {error}
+          </div>
+        )}
       </div>
       <JobPanel jobId={jobId} />
     </form>

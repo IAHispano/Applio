@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import PageHeader from "../../components/layout/PageHeader";
+import SliderField from "../../components/ui/SliderField";
 import { apiGet, apiSend, errMsg, fetchModels } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 import { useSpeakers } from "../../lib/useSpeakers";
@@ -85,7 +86,6 @@ export default function RealtimePage() {
   const [vad, setVad] = useState(true);
   const [inGain, setInGain] = useState(100);
   const [outGain, setOutGain] = useState(100);
-  const [terms, setTerms] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [latency, setLatency] = useState(0);
   const [volume, setVolume] = useState(-90);
@@ -167,10 +167,6 @@ export default function RealtimePage() {
 
   async function startStream() {
     setMsg("");
-    if (!terms) {
-      setMsg(t("You must agree to the Terms of Use to proceed."));
-      return;
-    }
     if (!engine?.running) {
       setMsg(t("Start the engine first."));
       return;
@@ -384,11 +380,15 @@ export default function RealtimePage() {
         </button>
       </PageHeader>
       <div className="mb-4">
-        {msg && <p className="muted">{msg}</p>}
+        {msg && (
+          <p className="muted" role="status" aria-live="polite">
+            {msg}
+          </p>
+        )}
         {engine && engine.logs.length > 0 && (
-          <div className="log" style={{ marginTop: 8 }}>
+          <pre className="log" role="log" aria-live="polite" style={{ marginTop: 8 }}>
             {engine.logs.slice(-10).join("\n")}
-          </div>
+          </pre>
         )}
       </div>
 
@@ -396,8 +396,14 @@ export default function RealtimePage() {
         <h2>{t("Model + Audio")}</h2>
         <div className="grid2">
           <div>
-            <label>{t("Voice Model")}</label>
-            <input type="text" list="rtmodels" value={model} onChange={(e) => setModel(e.target.value)} />
+            <label htmlFor="rt-model">{t("Voice Model")}</label>
+            <input
+              id="rt-model"
+              type="text"
+              list="rtmodels"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+            />
             <datalist id="rtmodels">
               {models.map((m) => (
                 <option key={m} value={m} />
@@ -405,8 +411,14 @@ export default function RealtimePage() {
             </datalist>
           </div>
           <div>
-            <label>{t("Index (optional)")}</label>
-            <input type="text" list="rtidx" value={index} onChange={(e) => setIndex(e.target.value)} />
+            <label htmlFor="rt-index">{t("Index (optional)")}</label>
+            <input
+              id="rt-index"
+              type="text"
+              list="rtidx"
+              value={index}
+              onChange={(e) => setIndex(e.target.value)}
+            />
             <datalist id="rtidx">
               {indexes.map((m) => (
                 <option key={m} value={m} />
@@ -414,8 +426,8 @@ export default function RealtimePage() {
             </datalist>
           </div>
           <div>
-            <label>{t("Input Device")}</label>
-            <select value={inDev} onChange={(e) => setInDev(e.target.value)}>
+            <label htmlFor="rt-in-dev">{t("Input Device")}</label>
+            <select id="rt-in-dev" value={inDev} onChange={(e) => setInDev(e.target.value)}>
               <option value="">{t("Default")}</option>
               {inputs.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -425,8 +437,8 @@ export default function RealtimePage() {
             </select>
           </div>
           <div>
-            <label>{t("Output Device")}</label>
-            <select value={outDev} onChange={(e) => setOutDev(e.target.value)}>
+            <label htmlFor="rt-out-dev">{t("Output Device")}</label>
+            <select id="rt-out-dev" value={outDev} onChange={(e) => setOutDev(e.target.value)}>
               <option value="">{t("Default")}</option>
               {outputs.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -436,72 +448,66 @@ export default function RealtimePage() {
             </select>
           </div>
           <div>
-            <label>
-              {t("Pitch")}: {pitch}
-            </label>
-            <input
-              type="range"
+            <SliderField
+              id="rt-pitch"
+              label={t("Pitch")}
+              value={pitch}
               min={-24}
               max={24}
               step={1}
-              value={pitch}
-              onChange={(e) => {
-                setPitch(Number(e.target.value));
-                if (streaming) changeConfig("f0_up_key", Number(e.target.value));
+              unit="st"
+              onChange={(v) => {
+                setPitch(v);
+                if (streaming) changeConfig("f0_up_key", v);
               }}
             />
           </div>
           <div>
-            <label>
-              {t("Index rate")}: {indexRate}
-            </label>
-            <input
-              type="range"
+            <SliderField
+              id="rt-index-rate"
+              label={t("Index rate")}
+              value={indexRate}
               min={0}
               max={1}
               step={0.05}
-              value={indexRate}
-              onChange={(e) => {
-                setIndexRate(Number(e.target.value));
-                if (streaming) changeConfig("index_rate", Number(e.target.value));
+              onChange={(v) => {
+                setIndexRate(v);
+                if (streaming) changeConfig("index_rate", v);
               }}
             />
           </div>
           <div>
-            <label>
-              {t("Protect Voiceless Consonants")}: {protect} {t("(default 0.5)")}
-            </label>
-            <input
-              type="range"
+            <SliderField
+              id="rt-protect"
+              label={t("Protect Voiceless Consonants")}
+              value={protect}
               min={0}
               max={0.5}
               step={0.01}
-              value={protect}
-              onChange={(e) => {
-                setProtect(Number(e.target.value));
-                if (streaming) changeConfig("protect", Number(e.target.value));
+              onChange={(v) => {
+                setProtect(v);
+                if (streaming) changeConfig("protect", v);
               }}
             />
           </div>
           <div>
-            <label>
-              {t("Volume Envelope")}: {volumeEnvelope} {t("(default 1)")}
-            </label>
-            <input
-              type="range"
+            <SliderField
+              id="rt-volume-envelope"
+              label={t("Volume Envelope")}
+              value={volumeEnvelope}
               min={0}
               max={1}
               step={0.05}
-              value={volumeEnvelope}
-              onChange={(e) => {
-                setVolumeEnvelope(Number(e.target.value));
-                if (streaming) changeConfig("volume_envelope", Number(e.target.value));
+              onChange={(v) => {
+                setVolumeEnvelope(v);
+                if (streaming) changeConfig("volume_envelope", v);
               }}
             />
           </div>
           <div>
-            <label>{t("Speaker ID")}</label>
+            <label htmlFor="rt-speaker-id">{t("Speaker ID")}</label>
             <select
+              id="rt-speaker-id"
               value={sid}
               onChange={(e) => {
                 setSid(Number(e.target.value));
@@ -516,8 +522,8 @@ export default function RealtimePage() {
             </select>
           </div>
           <div>
-            <label>{t("Pitch extraction")}</label>
-            <select value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
+            <label htmlFor="rt-f0-method">{t("Pitch extraction")}</label>
+            <select id="rt-f0-method" value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
               {["rmvpe", "fcpe", "crepe", "crepe-tiny"].map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -526,8 +532,8 @@ export default function RealtimePage() {
             </select>
           </div>
           <div>
-            <label>{t("Embedder")}</label>
-            <select value={embedder} onChange={(e) => setEmbedder(e.target.value)}>
+            <label htmlFor="rt-embedder">{t("Embedder")}</label>
+            <select id="rt-embedder" value={embedder} onChange={(e) => setEmbedder(e.target.value)}>
               {[
                 "contentvec",
                 "spin",
@@ -545,8 +551,9 @@ export default function RealtimePage() {
           </div>
           {embedder === "custom" && (
             <div>
-              <label>{t("Custom embedder path (reconnect to apply)")}</label>
+              <label htmlFor="rt-custom-embedder">{t("Custom embedder path (reconnect to apply)")}</label>
               <input
+                id="rt-custom-embedder"
                 type="text"
                 value={embedderCustom}
                 onChange={(e) => setEmbedderCustom(e.target.value)}
@@ -558,8 +565,9 @@ export default function RealtimePage() {
         <details>
           <summary>{t("Voice cleanup (autotune / proposed pitch / clean)")}</summary>
           <div className="row">
-            <label>
+            <label htmlFor="rt-autotune" className="flex items-center gap-2 cursor-pointer">
               <input
+                id="rt-autotune"
                 type="checkbox"
                 checked={autotune}
                 onChange={(e) => {
@@ -569,8 +577,9 @@ export default function RealtimePage() {
               />{" "}
               {t("Autotune")}
             </label>
-            <label>
+            <label htmlFor="rt-proposed-pitch" className="flex items-center gap-2 cursor-pointer">
               <input
+                id="rt-proposed-pitch"
                 type="checkbox"
                 checked={proposedPitch}
                 onChange={(e) => {
@@ -580,8 +589,9 @@ export default function RealtimePage() {
               />{" "}
               {t("Proposed Pitch")}
             </label>
-            <label>
+            <label htmlFor="rt-clean-audio" className="flex items-center gap-2 cursor-pointer">
               <input
+                id="rt-clean-audio"
                 type="checkbox"
                 checked={cleanAudio}
                 onChange={(e) => {
@@ -594,50 +604,45 @@ export default function RealtimePage() {
           </div>
           <div className="grid2" style={{ marginTop: 8 }}>
             <div>
-              <label>
-                {t("Autotune Strength")}: {autotuneStrength}
-              </label>
-              <input
-                type="range"
+              <SliderField
+                id="rt-autotune-strength"
+                label={t("Autotune Strength")}
+                value={autotuneStrength}
                 min={0}
                 max={1}
                 step={0.05}
-                value={autotuneStrength}
-                onChange={(e) => {
-                  setAutotuneStrength(Number(e.target.value));
-                  if (streaming) changeConfig("autotune_strength", Number(e.target.value));
+                onChange={(v) => {
+                  setAutotuneStrength(v);
+                  if (streaming) changeConfig("autotune_strength", v);
                 }}
               />
             </div>
             <div>
-              <label>
-                {t("Proposed Pitch Threshold")}: {proposedPitchThreshold}
-              </label>
-              <input
-                type="range"
+              <SliderField
+                id="rt-proposed-threshold"
+                label={t("Proposed Pitch Threshold")}
+                value={proposedPitchThreshold}
                 min={50}
                 max={1200}
                 step={1}
-                value={proposedPitchThreshold}
-                onChange={(e) => {
-                  setProposedPitchThreshold(Number(e.target.value));
-                  if (streaming) changeConfig("proposed_pitch_threshold", Number(e.target.value));
+                unit="Hz"
+                onChange={(v) => {
+                  setProposedPitchThreshold(v);
+                  if (streaming) changeConfig("proposed_pitch_threshold", v);
                 }}
               />
             </div>
             <div>
-              <label>
-                {t("Clean Strength")}: {cleanStrength}
-              </label>
-              <input
-                type="range"
+              <SliderField
+                id="rt-clean-strength"
+                label={t("Clean Strength")}
+                value={cleanStrength}
                 min={0}
                 max={1}
                 step={0.05}
-                value={cleanStrength}
-                onChange={(e) => {
-                  setCleanStrength(Number(e.target.value));
-                  if (streaming) changeConfig("clean_strength", Number(e.target.value));
+                onChange={(v) => {
+                  setCleanStrength(v);
+                  if (streaming) changeConfig("clean_strength", v);
                 }}
               />
             </div>
@@ -647,95 +652,93 @@ export default function RealtimePage() {
           <summary>{t("Latency / VAD / gains")}</summary>
           <div className="grid2">
             <div>
-              <label>
-                {t("Chunk")}: {chunkMs}ms {t("(reconnect to apply)")}
-              </label>
-              <input
-                type="range"
+              <SliderField
+                id="rt-chunk-ms"
+                label={`${t("Chunk")} ${t("(reconnect to apply)")}`}
+                value={chunkMs}
                 min={50}
                 max={1000}
                 step={10}
-                value={chunkMs}
-                onChange={(e) => setChunkMs(Number(e.target.value))}
+                unit="ms"
+                onChange={setChunkMs}
               />
             </div>
             <div>
-              <label>
-                {t("Crossfade")}: {crossfade}s
-              </label>
-              <input
-                type="range"
+              <SliderField
+                id="rt-crossfade"
+                label={t("Crossfade")}
+                value={crossfade}
                 min={0.05}
                 max={0.2}
                 step={0.01}
-                value={crossfade}
-                onChange={(e) => {
-                  setCrossfade(Number(e.target.value));
-                  if (streaming) changeConfig("cross_fade_overlap_size", Number(e.target.value));
+                unit="s"
+                onChange={(v) => {
+                  setCrossfade(v);
+                  if (streaming) changeConfig("cross_fade_overlap_size", v);
                 }}
               />
             </div>
             <div>
-              <label>
-                {t("Extra convert")}: {extraSize}s
-              </label>
-              <input
-                type="range"
+              <SliderField
+                id="rt-extra-size"
+                label={t("Extra convert")}
+                value={extraSize}
                 min={0.1}
                 max={5}
                 step={0.1}
-                value={extraSize}
-                onChange={(e) => {
-                  setExtraSize(Number(e.target.value));
-                  if (streaming) changeConfig("extra_convert_size", Number(e.target.value));
+                unit="s"
+                onChange={(v) => {
+                  setExtraSize(v);
+                  if (streaming) changeConfig("extra_convert_size", v);
                 }}
               />
             </div>
             <div>
-              <label>
-                {t("Silence threshold")}: {silent}dB
-              </label>
-              <input
-                type="range"
+              <SliderField
+                id="rt-silent-threshold"
+                label={t("Silence threshold")}
+                value={silent}
                 min={-90}
                 max={-60}
                 step={1}
-                value={silent}
-                onChange={(e) => {
-                  setSilent(Number(e.target.value));
-                  if (streaming) changeConfig("silent_threshold", Number(e.target.value));
+                unit="dB"
+                onChange={(v) => {
+                  setSilent(v);
+                  if (streaming) changeConfig("silent_threshold", v);
                 }}
               />
             </div>
             <div>
-              <label>
-                {t("Input gain")}: {inGain}%
-              </label>
-              <input
-                type="range"
+              <SliderField
+                id="rt-in-gain"
+                label={t("Input gain")}
+                value={inGain}
                 min={0}
                 max={200}
                 step={1}
-                value={inGain}
-                onChange={(e) => setInGain(Number(e.target.value))}
+                unit="%"
+                onChange={setInGain}
               />
             </div>
             <div>
-              <label>
-                {t("Output gain")}: {outGain}% {t("(local)")}
-              </label>
-              <input
-                type="range"
+              <SliderField
+                id="rt-out-gain"
+                label={`${t("Output gain")} ${t("(local)")}`}
+                value={outGain}
                 min={0}
                 max={200}
                 step={1}
-                value={outGain}
-                onChange={(e) => setOutGain(Number(e.target.value))}
+                unit="%"
+                onChange={setOutGain}
               />
             </div>
           </div>
-          <label className="checkbox-label">
+          <label
+            htmlFor="rt-vad-enabled"
+            className="checkbox-label flex items-center gap-2 cursor-pointer mt-3"
+          >
             <input
+              id="rt-vad-enabled"
               type="checkbox"
               checked={vad}
               onChange={(e) => {
@@ -746,10 +749,6 @@ export default function RealtimePage() {
             <span>{t("Enable VAD")}</span>
           </label>
         </details>
-        <label className="terms">
-          <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
-          <span>{t("I agree to the terms of use")}</span>
-        </label>
         <div className="row" style={{ marginTop: 12 }}>
           {!streaming ? (
             <button type="button" className="cta" onClick={startStream}>
@@ -761,7 +760,7 @@ export default function RealtimePage() {
             </button>
           )}
           {streaming && (
-            <span className="muted">
+            <span className="muted" role="status" aria-live="polite">
               latency {latency.toFixed(0)}ms · volume {volume.toFixed(0)}dB
             </span>
           )}
@@ -773,12 +772,17 @@ export default function RealtimePage() {
         <p className="muted">{t("Records the converted stream server-side via the engine.")}</p>
         <div className="grid2">
           <div>
-            <label>{t("Recording path (server)")}</label>
-            <input type="text" value={recPath} onChange={(e) => setRecPath(e.target.value)} />
+            <label htmlFor="rt-rec-path">{t("Recording path (server)")}</label>
+            <input
+              id="rt-rec-path"
+              type="text"
+              value={recPath}
+              onChange={(e) => setRecPath(e.target.value)}
+            />
           </div>
           <div>
-            <label>{t("Export Format")}</label>
-            <select value={recFormat} onChange={(e) => setRecFormat(e.target.value)}>
+            <label htmlFor="rt-rec-format">{t("Export Format")}</label>
+            <select id="rt-rec-format" value={recFormat} onChange={(e) => setRecFormat(e.target.value)}>
               {["WAV", "MP3", "FLAC", "OGG", "M4A"].map((m) => (
                 <option key={m} value={m}>
                   {m}

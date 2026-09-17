@@ -7,7 +7,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

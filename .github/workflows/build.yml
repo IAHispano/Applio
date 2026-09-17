@@ -1,0 +1,171 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 3.6.4)'
+        required: false
+        type: string
+  push:
+    tags:
+      - 'v*'
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            node-version: 20.x
+            build-command: npm run build:win
+            cache-key: win
+            id: win
+          - os: macos-latest
+            node-version: 20.x
+            build-command: npm run build:mac
+            cache-key: mac
+            id: mac
+          - os: ubuntu-latest
+            node-version: 20.x
+            build-command: npm run build:linux
+            cache-key: linux
+            id: linux
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y libopenjp2-tools libarchive-tools
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund --silent --ignore-scripts || npm install --workspaces --include-workspace-root
+
+      - name: Build and package app
+        run: ${{ matrix.build-command }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Compress artifacts
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            7z a -tzip build-artifacts.zip app/desktop/dist-installers/*.exe app/desktop/dist-installers/*.blockmap app/desktop/dist-installers/*.yml 2>/dev/null || true
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            zip -r build-artifacts.zip app/desktop/dist-installers/*.dmg app/desktop/dist-installers/*.zip app/desktop/dist-installers/*.yml 2>/dev/null || true
+          else
+            zip -r build-artifacts.zip app/desktop/dist-installers/*.AppImage app/desktop/dist-installers/*.deb app/desktop/dist-installers/*.yml 2>/dev/null || true
+          fi
+        shell: bash
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.cache-key }}
+          path: build-artifacts.zip
+          retention-days: 1
+          compression-level: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release version
+        id: meta
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref }}" =~ refs/tags/v?([0-9]+\.[0-9]+\.[0-9]+.*) ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          REPO_URL="https://github.com/${{ github.repository }}"
+          LAST_TAG=$(git describe --tags --abbrev=0 "${{ github.ref }}^" 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "Last tag: $LAST_TAG"
+
+          if [ -z "$LAST_TAG" ]; then
+            LOG_RANGE="HEAD"
+          else
+            LOG_RANGE="$LAST_TAG..HEAD"
+          fi
+
+          COMMITS=$(git log $LOG_RANGE -n 50 --pretty=format:"- [\`%h\`]($REPO_URL/commit/%H) %s (%an)")
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Extract and organize artifacts
+        run: |
+          mkdir -p release-files
+          cd artifacts
+          for dir in */; do
+            if [ -f "$dir/build-artifacts.zip" ]; then
+              unzip -q -o "$dir/build-artifacts.zip" -d "../release-files/"
+            fi
+          done
+          cd ..
+          ls -la release-files/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: Applio v${{ steps.meta.outputs.version }}
+          files: release-files/**
+          body: |
+            ## What's Changed
+            ${{ steps.changelog.outputs.changelog }}
+
+            ### Downloads
+            - **Windows**: `Applio-${{ steps.meta.outputs.version }}-Windows-Setup.exe` (Installer)
+            - **macOS**: `Applio-${{ steps.meta.outputs.version }}-macOS.dmg`
+            - **Linux**: `Applio-${{ steps.meta.outputs.version }}-Linux.AppImage` or `.deb`
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

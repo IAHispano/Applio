@@ -92,18 +92,26 @@ export default function ExtraPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title={t("Audio Studio Tools")}
+        title={t("Extra Tools")}
         description={t(
           "Inspect acoustic waveforms, plot frequency spectrograms, extract pitch contours, and examine model checkpoints.",
         )}
       />
 
-      {error && <p style={{ color: "var(--err)" }}>{error}</p>}
+      {error && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="p-3 rounded-lg border border-[var(--err)] text-[var(--err)] bg-[color-mix(in_srgb,var(--err)_10%,transparent)]"
+        >
+          {error}
+        </div>
+      )}
 
       {/* Shared Audio Input Card */}
       <div className="card">
         <div className="flex items-center gap-2 mb-2">
-          <FileAudio size={18} className="text-white" />
+          <FileAudio size={18} className="text-white" aria-hidden="true" />
           <h2 className="text-base font-bold text-white m-0">{t("Input Audio Source")}</h2>
         </div>
         <p className="text-xs text-neutral-400 m-0 mb-3">
@@ -112,8 +120,9 @@ export default function ExtraPage() {
 
         <div className="grid2">
           <div>
-            <label>{t("Upload local audio file")}</label>
+            <label htmlFor="extra-audio-file">{t("Upload local audio file")}</label>
             <input
+              id="extra-audio-file"
               type="file"
               accept=".wav,.mp3,.flac,.ogg,.opus,.m4a,.mp4,.aac,.alac,.wma,.aiff,.webm,.ac3"
               onChange={(e) => {
@@ -123,8 +132,9 @@ export default function ExtraPage() {
             />
           </div>
           <div>
-            <label>{t("…or pick from assets/audios")}</label>
+            <label htmlFor="extra-audio-path">{t("…or pick from assets/audios")}</label>
             <input
+              id="extra-audio-path"
               type="text"
               list="ext-audios"
               value={inputPath}
@@ -159,7 +169,7 @@ export default function ExtraPage() {
         <div className="card flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Activity size={18} className="text-emerald-400" />
+              <Activity size={18} className="text-emerald-400" aria-hidden="true" />
               <h2 className="text-base font-bold text-white m-0">{t("Audio Analyzer")}</h2>
             </div>
             <p className="text-xs text-neutral-400 m-0 mb-4">
@@ -180,7 +190,7 @@ export default function ExtraPage() {
         <div className="card flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <LineChart size={18} className="text-amber-400" />
+              <LineChart size={18} className="text-amber-400" aria-hidden="true" />
               <h2 className="text-base font-bold text-white m-0">{t("F0 Pitch Curve Extractor")}</h2>
             </div>
             <p className="text-xs text-neutral-400 m-0 mb-3">
@@ -190,8 +200,8 @@ export default function ExtraPage() {
             </p>
 
             <div className="mb-4">
-              <label>{t("Extraction Method")}</label>
-              <select value={method} onChange={(e) => setMethod(e.target.value)}>
+              <label htmlFor="extra-f0-method">{t("Extraction Method")}</label>
+              <select id="extra-f0-method" value={method} onChange={(e) => setMethod(e.target.value)}>
                 {["rmvpe", "fcpe", "crepe"].map((m) => (
                   <option key={m} value={m}>
                     {m.toUpperCase()}
@@ -215,7 +225,7 @@ export default function ExtraPage() {
       {/* Tool 3: Model Checkpoint Inspector */}
       <div className="card">
         <div className="flex items-center gap-2 mb-2">
-          <Info size={18} className="text-blue-400" />
+          <Info size={18} className="text-blue-400" aria-hidden="true" />
           <h2 className="text-base font-bold text-white m-0">{t("Model Checkpoint Inspector")}</h2>
         </div>
         <p className="text-xs text-neutral-400 m-0 mb-3">
@@ -224,7 +234,11 @@ export default function ExtraPage() {
           )}
         </p>
         <div className="row">
+          <label htmlFor="extra-model-path" className="sr-only">
+            {t("Path to .pth checkpoint")}
+          </label>
           <input
+            id="extra-model-path"
             type="text"
             list="ext-models"
             value={pth}

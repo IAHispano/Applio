@@ -33,7 +33,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [{ icon: House, label: "Home", to: "/", blurb: "Overview, quick actions and system status" }],
   },
   {
-    title: "Voice Studio",
+    title: "Voice",
     items: [
       { icon: Sparkles, label: "Inference", to: "/inference", blurb: "Convert audio files single or batch" },
       { icon: Radio, label: "Realtime", to: "/realtime", blurb: "Live microphone voice conversion" },

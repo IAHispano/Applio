@@ -62,16 +62,29 @@ export default function PluginsPage() {
         description={t("Manage installed plugins and extend Applio with custom functionality.")}
       />
       <div className="mb-4">
-        {msg && <p className="muted">{msg}</p>}
+        {msg && (
+          <p role="status" aria-live="polite" className="muted">
+            {msg}
+          </p>
+        )}
         {plugins.length === 0 && <p className="muted">{t("No plugins installed yet.")}</p>}
         {plugins.map((p) => (
           <div className="row" key={p.name} style={{ marginBottom: 8 }}>
             <strong>{p.name}</strong>
-            <span className={`badge ${p.enabled ? "done" : "queued"}`}>
+            <span
+              className={`badge ${p.enabled ? "done" : "queued"}`}
+              role="status"
+              aria-label={`Plugin ${p.name} status: ${p.enabled ? t("enabled") : t("disabled")}`}
+            >
               {p.enabled ? t("enabled") : t("disabled")}
             </span>
             {!p.hasEntrypoint && <span className="muted">{t("no plugin.py entrypoint")}</span>}
-            <button type="button" className="ghost" onClick={() => toggle(p)}>
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => toggle(p)}
+              aria-label={`${p.enabled ? t("Disable") : t("Enable")} ${p.name}`}
+            >
               {p.enabled ? t("Disable") : t("Enable")}
             </button>
           </div>
@@ -80,8 +93,20 @@ export default function PluginsPage() {
       <div className="card">
         <h2>{t("Install Plugin (.zip)")}</h2>
         <div className="row">
-          <input type="file" accept=".zip" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-          <button type="button" className="cta" onClick={install}>
+          <input
+            id="plugin-file-input"
+            type="file"
+            accept=".zip"
+            aria-label={t("Select plugin zip file")}
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+          />
+          <button
+            type="button"
+            className="cta"
+            onClick={install}
+            disabled={!file}
+            aria-label={t("Install selected plugin")}
+          >
             {t("Install")}
           </button>
         </div>

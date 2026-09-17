@@ -68,11 +68,23 @@ export default function DownloadPanel() {
 
   return (
     <div>
-      {error && <p style={{ color: "var(--err)" }}>{error}</p>}
+      {error && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mb-4 p-3 rounded-lg border border-[var(--err)] text-[var(--err)] bg-[color-mix(in_srgb,var(--err)_10%,transparent)]"
+        >
+          {error}
+        </div>
+      )}
       <div className="card">
         <h2>{t("From link")}</h2>
         <div className="row">
+          <label htmlFor="dl-link-input" className="sr-only">
+            {t("Model link")}
+          </label>
           <input
+            id="dl-link-input"
             type="text"
             value={link}
             onChange={(e) => setLink(e.target.value)}
@@ -89,7 +101,11 @@ export default function DownloadPanel() {
       <div className="card">
         <h2>{t("Drop files")}</h2>
         <div className="row">
+          <label htmlFor="dl-file-input" className="sr-only">
+            {t("Upload model file")}
+          </label>
           <input
+            id="dl-file-input"
             type="file"
             accept=".pth,.index,.onnx"
             onChange={(e) => setDropFile(e.target.files?.[0] || null)}
@@ -97,7 +113,11 @@ export default function DownloadPanel() {
           <button type="button" className="ghost" onClick={drop}>
             {t("Save File")}
           </button>
-          <span className="muted">{dropMsg}</span>
+          {dropMsg && (
+            <span className="muted" role="status" aria-live="polite">
+              {dropMsg}
+            </span>
+          )}
         </div>
       </div>
 
@@ -106,8 +126,9 @@ export default function DownloadPanel() {
         {!custom ? (
           <div className="grid2">
             <div>
-              <label>{t("Pretrained")}</label>
+              <label htmlFor="dl-pretrained-select">{t("Pretrained")}</label>
               <select
+                id="dl-pretrained-select"
                 value={model}
                 onChange={(e) => {
                   setModel(e.target.value);
@@ -123,8 +144,8 @@ export default function DownloadPanel() {
               </select>
             </div>
             <div>
-              <label>{t("Sampling Rate")}</label>
-              <select value={sr} onChange={(e) => setSr(e.target.value)}>
+              <label htmlFor="dl-sr-select">{t("Sampling Rate")}</label>
+              <select id="dl-sr-select" value={sr} onChange={(e) => setSr(e.target.value)}>
                 {(pretrained.find((p) => p.name === model)?.sampleRates || [sr]).map((s) => (
                   <option key={s} value={s}>
                     {s}
@@ -136,17 +157,25 @@ export default function DownloadPanel() {
         ) : (
           <div className="grid2">
             <div>
-              <label>{t("Pretrained G URL")}</label>
-              <input type="text" value={urlG} onChange={(e) => setUrlG(e.target.value)} />
+              <label htmlFor="dl-url-g">{t("Pretrained G URL")}</label>
+              <input id="dl-url-g" type="text" value={urlG} onChange={(e) => setUrlG(e.target.value)} />
             </div>
             <div>
-              <label>{t("Pretrained D URL")}</label>
-              <input type="text" value={urlD} onChange={(e) => setUrlD(e.target.value)} />
+              <label htmlFor="dl-url-d">{t("Pretrained D URL")}</label>
+              <input id="dl-url-d" type="text" value={urlD} onChange={(e) => setUrlD(e.target.value)} />
             </div>
           </div>
         )}
-        <label className="checkbox-label">
-          <input type="checkbox" checked={custom} onChange={(e) => setCustom(e.target.checked)} />
+        <label
+          htmlFor="dl-custom-checkbox"
+          className="checkbox-label flex items-center gap-2 cursor-pointer mt-3"
+        >
+          <input
+            id="dl-custom-checkbox"
+            type="checkbox"
+            checked={custom}
+            onChange={(e) => setCustom(e.target.checked)}
+          />
           <span>{t("Custom Pretrained")}</span>
         </label>
         <div className="row" style={{ marginTop: 8 }}>

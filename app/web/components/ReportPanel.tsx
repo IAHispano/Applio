@@ -80,14 +80,21 @@ export default function ReportPanel() {
   return (
     <div>
       {info ? (
-        <div className="log">
-          {`Applio ${info.version}\n${info.platform}\nNode ${info.node}\n${info.python}\nCPUs: ${info.cpus} · RAM: ${info.totalMemGB}GB`}
-        </div>
+        <section aria-label={t("System diagnostics")}>
+          <pre className="log">
+            {`Applio ${info.version}\n${info.platform}\nNode ${info.node}\n${info.python}\nCPUs: ${info.cpus} · RAM: ${info.totalMemGB}GB`}
+          </pre>
+        </section>
       ) : (
         <p className="muted">{t("Collecting system info…")}</p>
       )}
       <div className="row" style={{ marginTop: 12 }}>
-        <button type="button" className="ghost" onClick={toggleRecord}>
+        <button
+          type="button"
+          className={recording ? "cta" : "ghost"}
+          onClick={toggleRecord}
+          aria-pressed={recording}
+        >
           {recording ? t("Stop Recording") : t("Record Screen")}
         </button>
         {info && (
@@ -102,13 +109,21 @@ export default function ReportPanel() {
       </div>
       {clip && (
         <p>
-          <a href={`/outputs/${clip.split("/").pop()}`} download>
+          <a
+            href={`/outputs/${clip.split("/").pop()}`}
+            download
+            aria-label={`${t("Download clip")}: ${clip.split("/").pop()}`}
+          >
             {t("Download clip")}
           </a>{" "}
           <span className="muted">{clip}</span>
         </p>
       )}
-      {msg && <p className="muted">{msg}</p>}
+      {msg && (
+        <p role="status" aria-live="polite" className="muted">
+          {msg}
+        </p>
+      )}
     </div>
   );
 }

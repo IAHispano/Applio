@@ -12,6 +12,7 @@ noisereduce==3.0.3
 pedalboard==0.9.24
 stftpitchshift==2.0
 soxr==1.1.0
+ffmpeg-python>=0.2.0
 
 torch==2.11.0
 torchaudio==2.11.0
