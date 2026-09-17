@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import PageTransition from "../components/layout/PageTransition";
+import RoutePrewarm from "../components/layout/RoutePrewarm";
 import Sidebar from "../components/layout/Sidebar";
 import TermsModal from "../components/setup/TermsModal";
 import { I18nProvider } from "../lib/i18n";
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
             <TermsModal />
             <Toaster />
+            <RoutePrewarm />
           </ThemeProvider>
         </I18nProvider>
       </body>

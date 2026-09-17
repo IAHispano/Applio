@@ -154,6 +154,23 @@ async function checkFfmpeg(): Promise<{ ok: boolean; detail: string }> {
   return { ok: false, detail: "ffmpeg not on PATH" };
 }
 
+const WEB_PORT = process.env.WEB_PORT || "3000";
+
+// A running `next dev` owns app/web/.next (it keeps .next/trace open), so a
+// concurrent `next build` dies with EPERM on Windows. Probe the port instead
+// of failing the whole install over a build dev mode does not need.
+async function webDevServerRunning(): Promise<boolean> {
+  try {
+    const res = await fetch(`http://127.0.0.1:${WEB_PORT}/`, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(1500),
+    });
+    return res.status < 500;
+  } catch {
+    return false;
+  }
+}
+
 function checkWebBuild(): { ok: boolean; detail: string } {
   const root = getRepoRoot();
   if (exists(path.join(root, "app", "web", ".next", "standalone", "server.js"))) {
@@ -366,6 +383,9 @@ export function startInstall(): Job {
           venvPy,
           "torch",
           ...torchIndex,
+          // The torch wheel index also mirrors a few PyPI packages at older
+          // versions; without this uv pins them to that index and resolution fails.
+          ...(torchIndex.length > 0 ? ["--index-strategy", "unsafe-best-match"] : []),
           "-r",
           reqFile,
         ]);
@@ -390,8 +410,20 @@ export function startInstall(): Job {
           shell: npmShell,
         });
         if (!exists(path.join(root, "app", "web", ".next", "standalone", "server.js"))) {
-          appendLog(job, "Building web interface…");
-          await streamRun(job, npmCmd, ["run", "build"], { shell: npmShell });
+          if (await webDevServerRunning()) {
+            appendLog(
+              job,
+              `! Skipping web build — a dev server is already serving port ${WEB_PORT}. ` +
+                "Dev mode does not need the production bundle; to build it, stop `npm run dev` and run `npm run build`.",
+            );
+          } else {
+            appendLog(job, "Building web interface…");
+            try {
+              await streamRun(job, npmCmd, ["run", "build"], { shell: npmShell });
+            } catch (e) {
+              appendLog(job, `! Web build failed (${e}) — everything else installed; run \`npm run build\` manually.`);
+            }
+          }
         }
       } else {
         appendLog(job, "Packaged app — web bundles already included ✓");

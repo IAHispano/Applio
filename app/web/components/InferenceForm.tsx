@@ -1,9 +1,11 @@
 "use client";
 
 import { Activity, AudioWaveform, ChevronDown, Layers, Music, Sliders, Sparkles, Wand2 } from "lucide-react";
+import Link from "next/link";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
+  apiGet,
   errMsg,
   fetchJob,
   fetchModels,
@@ -59,6 +61,20 @@ function matchIndex(model: string, indexes: string[]): string {
   if (!matchedNorm) return "";
   const matchedIdx = normIndexes.indexOf(matchedNorm);
   return matchedIdx >= 0 ? indexes[matchedIdx] : matchedNorm;
+}
+
+interface ModelDetail {
+  pthPath: string;
+  pthSize: number;
+  indexSize: number | null;
+  modifiedAt: string;
+  folder: string;
+}
+
+function humanSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function InferenceForm() {
@@ -139,6 +155,20 @@ export default function InferenceForm() {
   const [submitError, setSubmitError] = useState("");
 
   const speakers = useSpeakers(pthPath);
+  const [library, setLibrary] = useState<ModelDetail[]>([]);
+
+  // Cheap filesystem metadata (no Python): fills the model card once a model
+  // is picked, where the empty-state hint used to be.
+  useEffect(() => {
+    apiGet<{ models: ModelDetail[] }>("/api/models/library")
+      .then((r) => setLibrary(r.models || []))
+      .catch(() => setLibrary([]));
+  }, []);
+
+  const selectedMeta = useMemo(
+    () => library.find((m) => m.pthPath === pthPath) ?? null,
+    [library, pthPath],
+  );
 
   useEffect(() => {
     if (!speakers.includes(sid)) setSid(0);
@@ -301,7 +331,7 @@ export default function InferenceForm() {
   const isConverting = Boolean(submitting || (job && job.status !== "done" && job.status !== "error"));
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 max-w-5xl mx-auto">
+    <form onSubmit={onSubmit} className="space-y-4 max-w-7xl mx-auto">
       {loadError && (
         <div className="card">
           <strong className="text-white">{t("API offline.")}</strong>{" "}
@@ -312,10 +342,10 @@ export default function InferenceForm() {
       )}
 
       {/* Top Grid: Model & Audio Input */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         {/* Voice Model Selector (5 cols) */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="card space-y-3">
+        <div className="lg:col-span-5 space-y-4 h-full">
+          <div className="card space-y-3 h-full flex flex-col">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Music size={16} className="text-neutral-300" />
@@ -382,6 +412,53 @@ export default function InferenceForm() {
               </div>
             )}
 
+            {/* With a model picked, the card would otherwise end well above the
+                audio card next to it — show what is actually loaded instead. */}
+            {pthPath && selectedMeta && (
+              <dl className="model-meta">
+                <div>
+                  <dt>{t("Checkpoint")}</dt>
+                  <dd>{humanSize(selectedMeta.pthSize)}</dd>
+                </div>
+                <div>
+                  <dt>{t("Index")}</dt>
+                  <dd>{selectedMeta.indexSize ? humanSize(selectedMeta.indexSize) : "—"}</dd>
+                </div>
+                <div>
+                  <dt>{t("Speakers")}</dt>
+                  <dd>{speakers.length}</dd>
+                </div>
+                <div>
+                  <dt>{t("Folder")}</dt>
+                  <dd className="truncate" title={selectedMeta.folder}>
+                    {selectedMeta.folder}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t("Modified")}</dt>
+                  <dd>{new Date(selectedMeta.modifiedAt).toLocaleDateString()}</dd>
+                </div>
+              </dl>
+            )}
+
+            {/* Empty state: the card is as tall as the audio one, so use the
+                room to say where models come from instead of leaving a void. */}
+            {!pthPath && (
+              <div className="flex flex-col items-center justify-center text-center gap-3 flex-1 py-6">
+                <Music size={26} className="text-neutral-600" />
+                <p className="text-xs text-neutral-400 m-0 max-w-[240px] leading-relaxed">
+                  {models.length === 0
+                    ? t("No models found in logs/. Download one or train your own to get started.")
+                    : t("Pick a voice model above — its index file is paired automatically.")}
+                </p>
+                {models.length === 0 && (
+                  <Link href="/download" className="ghost-link">
+                    {t("Go to Download")}
+                  </Link>
+                )}
+              </div>
+            )}
+
             {/* Multi-speaker ID selector */}
             {speakers.length > 1 && (
               <div>
@@ -406,8 +483,8 @@ export default function InferenceForm() {
         </div>
 
         {/* Audio Input & Drag & Drop Zone (7 cols) */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="card space-y-3">
+        <div className="lg:col-span-7 space-y-4 h-full">
+          <div className="card space-y-3 h-full">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <AudioWaveform size={16} className="text-neutral-300" />
@@ -439,8 +516,10 @@ export default function InferenceForm() {
       <div className="card space-y-5">
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
-            <Sliders size={18} className="text-white" />
-            <h2 className="text-base font-bold text-white m-0">{t("Conversion Parameters")}</h2>
+            <Sliders size={16} className="text-neutral-300" />
+            <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-300 m-0">
+              {t("Conversion Parameters")}
+            </h2>
           </div>
           <div className="flex items-center gap-2">
             <button
