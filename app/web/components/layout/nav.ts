@@ -3,6 +3,7 @@ import {
   Blocks,
   Bug,
   Cpu,
+  Database,
   Download,
   House,
   Layers,
@@ -42,6 +43,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Models & Training",
     items: [
+      { icon: Database, label: "Models", to: "/models", blurb: "Manage installed voice models and weights" },
       { icon: Cpu, label: "Training", to: "/train", blurb: "Preprocess, extract, train, and index" },
       { icon: Layers, label: "Voice Blender", to: "/voice-blender", blurb: "Fuse two models into a hybrid" },
       { icon: Download, label: "Download", to: "/download", blurb: "Download models and pretrained weights" },

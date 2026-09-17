@@ -15,7 +15,7 @@ export default function PageHeader({ title, description, children, className = "
       className={`flex items-start justify-between gap-4 mb-6 pb-4 border-b border-white/10 flex-wrap ${className}`}
     >
       <div className="space-y-1">
-        <h1 className="title text-2xl font-bold tracking-tight text-white m-0">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-white m-0">{title}</h1>
         {description && (
           <p className="text-sm text-neutral-400 m-0 max-w-2xl leading-relaxed">{description}</p>
         )}

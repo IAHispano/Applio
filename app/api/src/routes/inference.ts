@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { type Request, type Response, Router } from "express";
 import multer from "multer";
+import { trackPid } from "../cli";
 import { errMsg } from "../errors";
 import { appendLog, createJob, getJob, setDone, setError, setRunning } from "../jobs";
 import { getOutputsDir, getRepoRoot, getUploadsDir, resolveUserPath, runPythonModule } from "../python";
@@ -198,7 +199,9 @@ async function runInferenceJob(jobId: string, params: InferenceParams, inputAbs:
     appendLog(job, `$ python ${args.join(" ")}`);
     const result = await runPythonModule(args, {
       onData: (chunk, stream) => appendLog(job, `[${stream}] ${chunk.trim().slice(0, 1000)}`),
+      onSpawn: (pid) => trackPid(job.id, pid),
     });
+    trackPid(job.id, undefined);
     if (result.code !== 0) {
       throw new Error(result.stderr.slice(-3000) || `Python exited with code ${result.code}`);
     }
@@ -209,6 +212,7 @@ async function runInferenceJob(jobId: string, params: InferenceParams, inputAbs:
     appendLog(job, `Done -> ${rel}`);
     setDone(job, { stdout: result.stdout.slice(-2000) }, rel);
   } catch (err) {
+    trackPid(job.id, undefined);
     appendLog(job, `ERROR: ${errMsg(err)}`);
     setError(job, errMsg(err) || "Inference failed");
   }

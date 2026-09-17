@@ -79,7 +79,7 @@ export default function PluginsPage() {
         <h2>Install Plugin (.zip)</h2>
         <div className="row">
           <input type="file" accept=".zip" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-          <button type="button" className="ghost" onClick={install}>
+          <button type="button" className="cta" onClick={install}>
             Install
           </button>
         </div>

@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Syne } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import PageTransition from "../components/layout/PageTransition";
 import Sidebar from "../components/layout/Sidebar";
 import TitleBar from "../components/layout/TitleBar";
 
-const syne = Syne({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-display",
-  weight: ["400", "600", "700", "800"],
+  variable: "--font-sans",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={syne.variable}>
+      <body className={inter.variable}>
         <TitleBar />
         <div className="flex w-screen h-screen gap-0 overflow-hidden pt-12">
           <Sidebar />

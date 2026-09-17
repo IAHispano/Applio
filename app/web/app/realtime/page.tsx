@@ -523,7 +523,7 @@ export default function RealtimePage() {
               />
             </div>
           </div>
-          <label>
+          <label className="checkbox-label">
             <input
               type="checkbox"
               checked={vad}
@@ -531,8 +531,8 @@ export default function RealtimePage() {
                 setVad(e.target.checked);
                 if (streaming) changeConfig("vad_enabled", e.target.checked);
               }}
-            />{" "}
-            VAD enabled
+            />
+            <span>Voice Activity Detection (VAD) enabled</span>
           </label>
         </details>
         <label className="terms">

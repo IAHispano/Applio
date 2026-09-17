@@ -5,9 +5,10 @@ import path from "node:path";
 import { type Request, type Response, Router } from "express";
 import multer from "multer";
 import { z } from "zod";
-import { killJobTree, runPythonJson, startCliJob } from "../cli";
+import { killJobTree, runPythonJson, startCliJob, trackPid } from "../cli";
 import { errMsg } from "../errors";
-import { getRepoRoot, getUploadsDir } from "../python";
+import { appendLog, createJob, getJob, setDone, setError, setRunning } from "../jobs";
+import { getRepoRoot, getUploadsDir, resolveUserPath, runPythonModule } from "../python";
 
 const router = Router();
 const AUDIO_EXTS = [
@@ -351,6 +352,186 @@ router.post("/index", (req: Request, res: Response) => {
     "--index-algorithm",
     parsed.data.indexAlgorithm,
   ]);
+  return res.status(202).json({ jobId: job.id });
+});
+
+router.post("/pipeline", (req: Request, res: Response) => {
+  const parsed = z
+    .object({
+      modelName,
+      datasetPath: z.string().min(1, "datasetPath is required"),
+      sampleRate: z.enum(["32000", "40000", "44100", "48000"]).default("40000"),
+      f0Method: z.enum(["crepe", "crepe-tiny", "rmvpe"]).default("rmvpe"),
+      embedderModel: z
+        .enum([
+          "contentvec",
+          "spin",
+          "spin-v2",
+          "chinese-hubert-base",
+          "japanese-hubert-base",
+          "korean-hubert-base",
+          "custom",
+        ])
+        .default("contentvec"),
+      vocoder: z.enum(["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"]).default("HiFi-GAN"),
+      totalEpoch: z.coerce.number().int().min(1).max(10000).default(200),
+      batchSize: z.coerce.number().int().min(1).max(64).default(4),
+      saveEveryEpoch: z.coerce.number().int().min(1).max(100).default(10),
+      gpu: z.string().default("0"),
+      indexAlgorithm: z.enum(["Auto", "Faiss", "KMeans"]).default("Auto"),
+      noiseReduction: z.coerce.boolean().default(false),
+    })
+    .safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid params", details: parsed.error.flatten() });
+  }
+
+  const p = parsed.data;
+  let ds: string;
+  try {
+    ds = resolveUserPath(p.datasetPath);
+  } catch (err) {
+    return res.status(400).json({ error: errMsg(err) });
+  }
+  if (!fs.existsSync(ds)) {
+    return res.status(400).json({ error: `Dataset directory not found: ${p.datasetPath}` });
+  }
+
+  const job = createJob("train", { pipeline: true, ...p });
+  void (async () => {
+    setRunning(job);
+    try {
+      appendLog(job, `=== Starting 1-Click Training Pipeline for model '${p.modelName}' ===`);
+
+      // Step 1: Preprocess
+      appendLog(job, "\n>>> [1/4] Preprocessing Dataset...");
+      const prepArgs = [
+        "core.py",
+        "preprocess",
+        "--model-name",
+        p.modelName,
+        "--dataset-path",
+        ds,
+        "--sample-rate",
+        p.sampleRate,
+        "--cpu-cores",
+        String(maxCores),
+        "--cut-preprocess",
+        "Automatic",
+        ...(p.noiseReduction ? ["--noise-reduction"] : []),
+        "--noise-reduction-strength",
+        "0.7",
+        "--chunk-len",
+        "3.0",
+        "--overlap-len",
+        "0.3",
+        "--normalization-mode",
+        "None",
+      ];
+      appendLog(job, `$ python ${prepArgs.join(" ")}`);
+      let r = await runPythonModule(prepArgs, {
+        onData: (chunk, stream) => appendLog(job, `[${stream}] ${chunk.trim().slice(0, 1000)}`),
+        onSpawn: (pid) => trackPid(job.id, pid),
+      });
+      trackPid(job.id, undefined);
+      if (r.code !== 0) throw new Error(`Preprocess failed (code ${r.code}): ${r.stderr.slice(-1000)}`);
+
+      // Step 2: Extract
+      appendLog(job, "\n>>> [2/4] Extracting Features...");
+      const extractArgs = [
+        "core.py",
+        "extract",
+        "--model-name",
+        p.modelName,
+        "--f0-method",
+        p.f0Method,
+        "--cpu-cores",
+        String(maxCores),
+        "--gpu",
+        p.gpu,
+        "--sample-rate",
+        p.sampleRate,
+        "--embedder-model",
+        p.embedderModel,
+        "--include-mutes",
+        "2",
+      ];
+      appendLog(job, `$ python ${extractArgs.join(" ")}`);
+      r = await runPythonModule(extractArgs, {
+        onData: (chunk, stream) => appendLog(job, `[${stream}] ${chunk.trim().slice(0, 1000)}`),
+        onSpawn: (pid) => trackPid(job.id, pid),
+      });
+      trackPid(job.id, undefined);
+      if (r.code !== 0) throw new Error(`Extract failed (code ${r.code}): ${r.stderr.slice(-1000)}`);
+
+      // Step 3: Train
+      appendLog(job, `\n>>> [3/4] Training Model (${p.totalEpoch} epochs, batch size ${p.batchSize})...`);
+      const trainArgs = [
+        "core.py",
+        "train",
+        "--model-name",
+        p.modelName,
+        "--vocoder",
+        p.vocoder,
+        "--save-every-epoch",
+        String(p.saveEveryEpoch),
+        "--save-only-latest",
+        "--save-every-weights",
+        "--total-epoch",
+        String(p.totalEpoch),
+        "--sample-rate",
+        p.sampleRate,
+        "--batch-size",
+        String(p.batchSize),
+        "--gpu",
+        p.gpu,
+        "--pretrained",
+        "--index-algorithm",
+        p.indexAlgorithm,
+      ];
+      appendLog(job, `$ python ${trainArgs.join(" ")}`);
+      r = await runPythonModule(trainArgs, {
+        onData: (chunk, stream) => appendLog(job, `[${stream}] ${chunk.trim().slice(0, 1000)}`),
+        onSpawn: (pid) => trackPid(job.id, pid),
+      });
+      trackPid(job.id, undefined);
+      if (r.code !== 0) throw new Error(`Training failed (code ${r.code}): ${r.stderr.slice(-1000)}`);
+
+      // Step 4: Index
+      const logsDir = path.join(getRepoRoot(), "logs", p.modelName);
+      const hasIndex =
+        fs.existsSync(logsDir) &&
+        fs.readdirSync(logsDir).some((f) => f.endsWith(".index") && !f.includes("trained"));
+      if (!hasIndex) {
+        appendLog(job, "\n>>> [4/4] Generating Feature Index...");
+        const idxArgs = [
+          "core.py",
+          "index",
+          "--model-name",
+          p.modelName,
+          "--index-algorithm",
+          p.indexAlgorithm,
+        ];
+        r = await runPythonModule(idxArgs, {
+          onData: (chunk, stream) => appendLog(job, `[${stream}] ${chunk.trim().slice(0, 1000)}`),
+          onSpawn: (pid) => trackPid(job.id, pid),
+        });
+        trackPid(job.id, undefined);
+      } else {
+        appendLog(job, "\n>>> [4/4] Feature Index was automatically generated during training.");
+      }
+
+      const pthRel = `logs/${p.modelName}/${p.modelName}.pth`;
+      appendLog(job, `\n=== Pipeline Complete! Model saved at ${pthRel} ===`);
+      setDone(job, { message: `Model ${p.modelName} trained successfully!` }, pthRel);
+    } catch (err) {
+      trackPid(job.id, undefined);
+      appendLog(job, `ERROR: ${errMsg(err)}`);
+      const j = getJob(job.id);
+      if (j && j.status === "running") setError(j, errMsg(err) || "Pipeline failed");
+    }
+  })();
   return res.status(202).json({ jobId: job.id });
 });
 

@@ -15,16 +15,22 @@ function tbUrl(): string {
 
 function portOpen(port: number): Promise<boolean> {
   return new Promise((resolve) => {
-    const s = net.connect(port, "127.0.0.1");
-    s.on("connect", () => {
-      s.end();
-      resolve(true);
-    });
-    s.on("error", () => resolve(false));
-    setTimeout(() => {
-      s.destroy();
-      resolve(false);
-    }, 1500).unref?.();
+    let settled = false;
+    const finish = (result: boolean) => {
+      if (settled) return;
+      settled = true;
+      try {
+        s.destroy();
+      } catch {
+        /* noop */
+      }
+      resolve(result);
+    };
+    const s = net.connect({ port, host: "127.0.0.1" });
+    s.once("connect", () => finish(true));
+    s.on("error", () => finish(false));
+    const timer = setTimeout(() => finish(false), 1500);
+    timer.unref?.();
   });
 }
 

@@ -90,21 +90,21 @@ export default function SettingsPage() {
 
       <div className="card">
         <h2>General</h2>
-        <label>
+        <label className="checkbox-label">
           <input
             type="checkbox"
             checked={!!cfg.model_index_filter}
             onChange={(e) => set(["model_index_filter"], e.target.checked)}
-          />{" "}
-          Model/index filter box
+          />
+          <span>Model & index filter box</span>
         </label>
-        <label>
+        <label className="checkbox-label">
           <input
             type="checkbox"
             checked={!!cfg.discord_presence}
             onChange={(e) => set(["discord_presence"], e.target.checked)}
-          />{" "}
-          Discord presence
+          />
+          <span>Discord Rich Presence</span>
         </label>
         <div className="grid2">
           <div>
@@ -132,7 +132,7 @@ export default function SettingsPage() {
         <div className="row" style={{ marginTop: 8 }}>
           <button
             type="button"
-            className="ghost"
+            className="cta"
             onClick={() =>
               save({
                 model_index_filter: cfg.model_index_filter,
@@ -171,7 +171,7 @@ export default function SettingsPage() {
         <div className="row" style={{ marginTop: 8 }}>
           <button
             type="button"
-            className="ghost"
+            className="cta"
             onClick={() => save({ model_author: cfg.model_author, precision: cfg.precision })}
           >
             Save Training
@@ -181,13 +181,13 @@ export default function SettingsPage() {
 
       <div className="card">
         <h2>RMVPE High Register</h2>
-        <label>
+        <label className="checkbox-label">
           <input
             type="checkbox"
             checked={!!cfg.rmvpe_high_register?.enabled}
             onChange={(e) => set(["rmvpe_high_register", "enabled"], e.target.checked)}
-          />{" "}
-          Enabled
+          />
+          <span>Enable High Register</span>
         </label>
         <div className="grid2">
           <div>
@@ -215,7 +215,7 @@ export default function SettingsPage() {
         <div className="row" style={{ marginTop: 8 }}>
           <button
             type="button"
-            className="ghost"
+            className="cta"
             onClick={() => save({ rmvpe_high_register: cfg.rmvpe_high_register })}
           >
             Save RMVPE

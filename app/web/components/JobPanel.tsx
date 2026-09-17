@@ -11,6 +11,7 @@ import {
   pollJob,
   stopJob,
 } from "../lib/api";
+import AudioPlayer from "./AudioPlayer";
 
 // Polls a job, shows status/logs, and renders its output file.
 export default function JobPanel({ jobId, compact }: { jobId: string | null; compact?: boolean }) {
@@ -80,18 +81,7 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
         </div>
       )}
       {resultMsg && <p>{resultMsg}</p>}
-      {out && isAudioFile(out) && (
-        <div>
-          {/* biome-ignore lint/a11y/useMediaCaption: converted audio has no caption track */}
-          <audio controls src={outputUrl(out)} />
-          <p>
-            <a href={outputUrl(out)} download>
-              Download output
-            </a>{" "}
-            <span className="muted">{out}</span>
-          </p>
-        </div>
-      )}
+      {out && isAudioFile(out) && <AudioPlayer src={outputUrl(out)} filename={out.split("/").pop()} />}
       {out && isImageFile(out) && (
         <div>
           {/* biome-ignore lint/performance/noImgElement: user-generated plot, no optimizer benefit */}

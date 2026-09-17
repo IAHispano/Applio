@@ -11,11 +11,11 @@ export default function Sidebar() {
     <aside className="flex flex-col w-64 shrink-0 bg-[#141414]/90 backdrop-blur-md border border-white/10 text-neutral-200 p-3 m-4 mr-0 rounded-2xl select-none">
       {/* Brand Header */}
       <div className="px-3 pt-2 pb-3 mb-1 border-b border-white/5 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <span className="title text-xl font-extrabold tracking-tight text-white group-hover:text-neutral-300 transition-colors">
+        <Link href="/" prefetch={true} className="flex items-center gap-2.5 group">
+          <span className="text-lg font-semibold tracking-tight text-white group-hover:text-neutral-200 transition-colors">
             Applio
           </span>
-          <span className="text-[10px] uppercase font-semibold tracking-wide px-1.5 py-0.5 rounded bg-white/10 text-neutral-400 border border-white/5">
+          <span className="text-[10px] uppercase font-medium tracking-wider px-1.5 py-0.5 rounded bg-white/10 text-neutral-400 border border-white/5">
             v3.6
           </span>
         </Link>
@@ -38,6 +38,7 @@ export default function Sidebar() {
                   <li key={item.to}>
                     <Link
                       href={item.to}
+                      prefetch={true}
                       className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-150 relative ${
                         active
                           ? "bg-white/15 text-white font-medium shadow-xs"

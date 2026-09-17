@@ -143,9 +143,9 @@ export default function DownloadPanel() {
             </div>
           </div>
         )}
-        <label>
-          <input type="checkbox" checked={custom} onChange={(e) => setCustom(e.target.checked)} /> Custom
-          Pretrained
+        <label className="checkbox-label">
+          <input type="checkbox" checked={custom} onChange={(e) => setCustom(e.target.checked)} />
+          <span>Custom Pretrained Model</span>
         </label>
         <div className="row" style={{ marginTop: 8 }}>
           <button type="button" className="ghost" onClick={downloadPretrained}>

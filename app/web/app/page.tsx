@@ -6,6 +6,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Cpu,
+  Database,
   Download,
   Layers,
   Mic,
@@ -120,6 +121,7 @@ export default function Home() {
 
   // Secondary Tools
   const SECONDARY_TOOLS = [
+    { label: "Model Library", href: "/models", icon: Database },
     { label: "Voice Blender", href: "/voice-blender", icon: Layers },
     { label: "Download Models", href: "/download", icon: Download },
     { label: "Audio Tools & F0", href: "/extra", icon: SlidersHorizontal },
@@ -143,9 +145,7 @@ export default function Home() {
               </span>
               <span className="text-xs text-neutral-400">Applio v3.6</span>
             </div>
-            <h1 className="title text-3xl sm:text-4xl font-extrabold tracking-tight text-white m-0">
-              Applio
-            </h1>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white m-0">Applio</h1>
             <p className="text-neutral-300 text-sm sm:text-base leading-relaxed m-0">
               High-performance AI voice cloning, real-time audio morphing, and neural model training right on
               your local machine.

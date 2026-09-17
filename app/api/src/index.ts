@@ -4,7 +4,7 @@ import express from "express";
 import { killJobTree } from "./cli";
 import { errMsg } from "./errors";
 import { getJob, setError } from "./jobs";
-import { getOutputsDir, getRepoRoot, runPythonModule } from "./python";
+import { getOutputsDir, getPythonBin, getRepoRoot, runPythonModule } from "./python";
 import batchRouter from "./routes/batch";
 import blenderRouter from "./routes/blender";
 import downloadRouter from "./routes/download";
@@ -37,7 +37,7 @@ app.get("/api/health", (_req, res) => {
     ok: true,
     service: "applio-api",
     repoRoot: getRepoRoot(),
-    python: process.env.PYTHON_BIN || (process.platform === "win32" ? "python" : "python3"),
+    python: getPythonBin(),
     time: new Date().toISOString(),
   });
 });
@@ -103,3 +103,12 @@ const server = app.listen(PORT, "127.0.0.1", () => {
 // Realtime audio frames ride raw WebSockets (Next rewrites don't proxy upgrades),
 // so the WS proxy attaches directly to our HTTP server.
 attachRealtimeProxy(server);
+
+process.on("uncaughtException", (err) => {
+  // eslint-disable-next-line no-console
+  console.error("[applio-api] Uncaught exception:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  // eslint-disable-next-line no-console
+  console.error("[applio-api] Unhandled rejection:", reason);
+});

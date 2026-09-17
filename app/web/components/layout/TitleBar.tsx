@@ -62,7 +62,9 @@ export default function TitleBar() {
             <ChevronRight className="text-neutral-300 slow duration-200 hover:text-white w-5 h-5" />
           </button>
         </div>
-        <p className="text-sm text-neutral-300 title font-medium flex mx-auto w-full">Applio App</p>
+        <p className="text-xs text-neutral-400 font-medium flex items-center justify-center mx-auto w-full tracking-wide">
+          Applio
+        </p>
         {controls && (
           <div className="justify-end flex gap-3 [-webkit-app-region:no-drag]">
             <button

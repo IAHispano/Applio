@@ -1,30 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { Activity, FileAudio, Info, LineChart } from "lucide-react";
+import { useEffect, useState } from "react";
+import AudioPlayer from "../../components/AudioPlayer";
 import JobPanel from "../../components/JobPanel";
 import PageHeader from "../../components/layout/PageHeader";
-import { errMsg, postForm, submitJob } from "../../lib/api";
+import { errMsg, fetchModels, postForm, submitJob } from "../../lib/api";
 
 export default function ExtraPage() {
   const [audio, setAudio] = useState<File | null>(null);
+  const [audios, setAudios] = useState<string[]>([]);
+  const [inputPath, setInputPath] = useState("");
   const [method, setMethod] = useState("rmvpe");
   const [pth, setPth] = useState("");
+  const [models, setModels] = useState<string[]>([]);
   const [jobId, setJobId] = useState<string | null>(null);
   const [infoJob, setInfoJob] = useState<string | null>(null);
   const [f0Job, setF0Job] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    fetchModels()
+      .then((m) => {
+        setAudios(m.audios);
+        setModels(m.models);
+        if (m.audios.length > 0) setInputPath(m.audios[0]);
+        if (m.models.length > 0) setPth(m.models[0]);
+      })
+      .catch(() => {});
+  }, []);
+
+  function checkAudio(): boolean {
+    if (!audio && !inputPath) {
+      setError("Please select or upload an audio file first.");
+      return false;
+    }
+    return true;
+  }
+
   async function analyze() {
     setError("");
-    if (!audio) {
-      setError("Upload an audio file first.");
-      return;
-    }
+    if (!checkAudio()) return;
     setBusy(true);
     try {
       const fd = new FormData();
-      fd.append("audio", audio);
+      if (audio) fd.append("audio", audio);
+      if (inputPath) fd.append("inputPath", inputPath);
       const { jobId: id } = await postForm<{ jobId: string }>("/api/extra/analyze", fd);
       setJobId(id);
     } catch (e) {
@@ -36,6 +58,10 @@ export default function ExtraPage() {
 
   async function modelInfo() {
     setError("");
+    if (!pth.trim()) {
+      setError("Please specify a .pth model path.");
+      return;
+    }
     try {
       const { jobId: id } = await submitJob("/api/extra/model-info", { pthPath: pth });
       setInfoJob(id);
@@ -46,13 +72,11 @@ export default function ExtraPage() {
 
   async function f0() {
     setError("");
-    if (!audio) {
-      setError("Upload an audio file first.");
-      return;
-    }
+    if (!checkAudio()) return;
     try {
       const fd = new FormData();
-      fd.append("audio", audio);
+      if (audio) fd.append("audio", audio);
+      if (inputPath) fd.append("inputPath", inputPath);
       fd.append("method", method);
       const { jobId: id } = await postForm<{ jobId: string }>("/api/extra/f0", fd);
       setF0Job(id);
@@ -61,59 +85,151 @@ export default function ExtraPage() {
     }
   }
 
+  const previewUrl = audio ? URL.createObjectURL(audio) : inputPath ? `/${inputPath}` : null;
+
   return (
-    <div>
+    <div className="space-y-4">
       <PageHeader
-        title="Extra"
-        description="Analyze audio properties, extract pitch contours, and inspect model checkpoints."
+        title="Audio Studio Tools"
+        description="Inspect acoustic waveforms, plot frequency spectrograms, extract pitch contours, and examine model checkpoints."
       />
-      <div className="mb-4">
-        {error && <p style={{ color: "var(--err)" }}>{error}</p>}
-        <label>Audio file (shared by analyzer + F0)</label>
-        <input
-          type="file"
-          accept=".wav,.mp3,.flac,.ogg,.m4a,.mp4,.aac,.aiff,.webm"
-          onChange={(e) => setAudio(e.target.files?.[0] || null)}
-        />
+
+      {error && <p style={{ color: "var(--err)" }}>{error}</p>}
+
+      {/* Shared Audio Input Card */}
+      <div className="card">
+        <div className="flex items-center gap-2 mb-2">
+          <FileAudio size={18} className="text-white" />
+          <h2 className="text-base font-bold text-white m-0">Input Audio Source</h2>
+        </div>
+        <p className="text-xs text-neutral-400 m-0 mb-3">
+          This audio file will be analyzed by both the Audio Analyzer and the F0 Curve Extractor.
+        </p>
+
+        <div className="grid2">
+          <div>
+            <label>Upload local audio file</label>
+            <input
+              type="file"
+              accept=".wav,.mp3,.flac,.ogg,.m4a,.mp4,.aac,.aiff,.webm"
+              onChange={(e) => {
+                setAudio(e.target.files?.[0] || null);
+                if (e.target.files?.[0]) setInputPath("");
+              }}
+            />
+          </div>
+          <div>
+            <label>…or pick from assets/audios</label>
+            <input
+              type="text"
+              list="ext-audios"
+              value={inputPath}
+              onChange={(e) => {
+                setInputPath(e.target.value);
+                if (e.target.value) setAudio(null);
+              }}
+              placeholder="assets/audios/input.wav"
+            />
+            <datalist id="ext-audios">
+              {audios.map((a) => (
+                <option key={a} value={a} />
+              ))}
+            </datalist>
+          </div>
+        </div>
+
+        {/* Audio Preview Player */}
+        {previewUrl && (
+          <div className="mt-4 pt-3 border-t border-white/10">
+            <span className="text-xs text-neutral-400 block mb-1 font-medium">Source Audio Preview:</span>
+            <AudioPlayer src={previewUrl} title={audio?.name || inputPath} showAnalyzerLink={false} />
+          </div>
+        )}
       </div>
 
-      <div className="card">
-        <h2>Audio Analyzer</h2>
-        <button type="button" onClick={analyze} disabled={busy}>
-          {busy ? "Analyzing…" : "Analyze Audio"}
-        </button>
-      </div>
-      <JobPanel jobId={jobId} />
+      {/* Grid: Analyzer & F0 Curve */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Tool 1: Audio Analyzer */}
+        <div className="card flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Activity size={18} className="text-emerald-400" />
+              <h2 className="text-base font-bold text-white m-0">Audio Analyzer</h2>
+            </div>
+            <p className="text-xs text-neutral-400 m-0 mb-4">
+              Generates a full 3-panel acoustic plot containing: Spectrogram (frequency vs time), Waveform
+              amplitude envelope, and Spectral Centroid/Bandwidth/Rolloff features.
+            </p>
+          </div>
 
-      <div className="card">
-        <h2>F0 Curve Extractor</h2>
-        <div className="row">
-          <select value={method} onChange={(e) => setMethod(e.target.value)}>
-            {["crepe", "fcpe", "rmvpe"].map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-          <button type="button" className="ghost" onClick={f0}>
-            Extract F0 Curve
-          </button>
+          <div className="pt-3 border-t border-white/10">
+            <button type="button" className="cta w-full" onClick={analyze} disabled={busy}>
+              {busy ? "Generating Spectrogram…" : "Generate Spectrogram & Analysis"}
+            </button>
+          </div>
+        </div>
+
+        {/* Tool 2: F0 Curve Extractor */}
+        <div className="card flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <LineChart size={18} className="text-amber-400" />
+              <h2 className="text-base font-bold text-white m-0">F0 Pitch Curve Extractor</h2>
+            </div>
+            <p className="text-xs text-neutral-400 m-0 mb-3">
+              Extracts frame-by-frame fundamental pitch frequencies (Hz) across time and exports both a
+              high-resolution plot and a CSV data curve.
+            </p>
+
+            <div className="mb-4">
+              <label>Extraction Method</label>
+              <select value={method} onChange={(e) => setMethod(e.target.value)}>
+                {["rmvpe", "fcpe", "crepe"].map((m) => (
+                  <option key={m} value={m}>
+                    {m.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-white/10">
+            <button type="button" className="cta w-full" onClick={f0}>
+              Extract F0 Curve
+            </button>
+          </div>
         </div>
       </div>
+
+      <JobPanel jobId={jobId} />
       <JobPanel jobId={f0Job} />
 
+      {/* Tool 3: Model Checkpoint Inspector */}
       <div className="card">
-        <h2>Model Information</h2>
+        <div className="flex items-center gap-2 mb-2">
+          <Info size={18} className="text-blue-400" />
+          <h2 className="text-base font-bold text-white m-0">Model Checkpoint Inspector</h2>
+        </div>
+        <p className="text-xs text-neutral-400 m-0 mb-3">
+          Inspect any .pth file directly to display training epochs, author, vocoder, sampling rate, and hash.
+        </p>
+
         <div className="row">
           <input
             type="text"
+            list="ext-models"
             value={pth}
             onChange={(e) => setPth(e.target.value)}
-            placeholder="logs/my-model/model.pth"
+            placeholder="logs/my-model/my-model.pth"
             style={{ flex: 1 }}
           />
-          <button type="button" className="ghost" onClick={modelInfo}>
-            Inspect
+          <datalist id="ext-models">
+            {models.map((m) => (
+              <option key={m} value={m} />
+            ))}
+          </datalist>
+          <button type="button" className="cta" onClick={modelInfo}>
+            Inspect Checkpoint
           </button>
         </div>
       </div>

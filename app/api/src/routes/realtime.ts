@@ -6,7 +6,7 @@ import path from "node:path";
 import { type Request, type Response, Router } from "express";
 import { type RawData, WebSocket, WebSocketServer } from "ws";
 import { errMsg } from "../errors";
-import { getRepoRoot } from "../python";
+import { getPythonBin, getRepoRoot } from "../python";
 
 const router = Router();
 export const RT_PORT = Number(process.env.RT_PORT || 8001);
@@ -21,16 +21,22 @@ function backend(pathname: string): string {
 
 function portOpen(port: number): Promise<boolean> {
   return new Promise((resolve) => {
-    const s = net.connect(port, "127.0.0.1");
-    s.on("connect", () => {
-      s.end();
-      resolve(true);
-    });
-    s.on("error", () => resolve(false));
-    setTimeout(() => {
-      s.destroy();
-      resolve(false);
-    }, 1500).unref?.();
+    let settled = false;
+    const finish = (result: boolean) => {
+      if (settled) return;
+      settled = true;
+      try {
+        s.destroy();
+      } catch {
+        /* noop */
+      }
+      resolve(result);
+    };
+    const s = net.connect({ port, host: "127.0.0.1" });
+    s.once("connect", () => finish(true));
+    s.on("error", () => finish(false));
+    const timer = setTimeout(() => finish(false), 1500);
+    timer.unref?.();
   });
 }
 
@@ -54,7 +60,7 @@ router.post("/start", async (_req: Request, res: Response) => {
     rtProc?.kill();
     rtLogs = [];
     rtProc = spawn(
-      "python",
+      getPythonBin(),
       ["-m", "uvicorn", "rvc.realtime.client:app", "--host", "127.0.0.1", "--port", String(RT_PORT)],
       {
         cwd: getRepoRoot(),

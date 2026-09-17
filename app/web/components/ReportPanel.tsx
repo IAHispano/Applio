@@ -89,9 +89,13 @@ export default function ReportPanel() {
           {recording ? "Stop Recording" : "Record Screen"}
         </button>
         {info && (
-          <a href={`${info.issueUrl}?body=${issueBody}`} target="_blank" rel="noreferrer">
-            <button type="button">Open GitHub Issue</button>
-          </a>
+          <button
+            type="button"
+            className="cta"
+            onClick={() => window.open(`${info.issueUrl}?body=${issueBody}`, "_blank")}
+          >
+            Open GitHub Issue
+          </button>
         )}
       </div>
       {clip && (

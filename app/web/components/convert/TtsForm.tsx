@@ -179,7 +179,15 @@ export default function TtsForm() {
             <div>
               <label>Pitch extraction</label>
               <select value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
-                {["crepe", "crepe-tiny", "rmvpe", "fcpe"].map((m) => (
+                {[
+                  "rmvpe",
+                  "fcpe",
+                  "crepe",
+                  "crepe-tiny",
+                  "hybrid[crepe+rmvpe]",
+                  "hybrid[crepe+fcpe]",
+                  "hybrid[rmvpe+fcpe]",
+                ].map((m) => (
                   <option key={m} value={m}>
                     {m}
                   </option>

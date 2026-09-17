@@ -29,14 +29,58 @@ interface ApiErrorBody {
   error?: string;
 }
 
-export async function apiGet<T>(path: string): Promise<T> {
+interface CacheEntry {
+  data: unknown;
+  timestamp: number;
+}
+const apiCache = new Map<string, CacheEntry>();
+
+export function clearApiCache(pathPrefix?: string) {
+  if (!pathPrefix) {
+    apiCache.clear();
+    return;
+  }
+  for (const key of apiCache.keys()) {
+    if (key.startsWith(pathPrefix)) apiCache.delete(key);
+  }
+}
+
+function invalidateFor(path: string) {
+  if (path.includes("/models")) clearApiCache("/api/models");
+  if (path.includes("/presets")) clearApiCache("/api/presets");
+  if (path.includes("/train")) clearApiCache("/api/train");
+  if (path.includes("/settings")) clearApiCache("/api/settings");
+  if (path.includes("/plugins")) clearApiCache("/api/plugins");
+  if (path.includes("/download")) {
+    clearApiCache("/api/models");
+    clearApiCache("/api/train");
+  }
+}
+
+export async function apiGet<T>(path: string, options?: { ttlMs?: number; force?: boolean }): Promise<T> {
+  const isJob = path.includes("/jobs");
+  const ttl = options?.ttlMs ?? (isJob ? 0 : 30000);
+  const now = Date.now();
+
+  if (!options?.force && ttl > 0 && apiCache.has(path)) {
+    const entry = apiCache.get(path);
+    if (entry && now - entry.timestamp < ttl) {
+      return entry.data as T;
+    }
+  }
+
   const r = await fetch(path, { cache: "no-store" });
   const body = (await r.json().catch(() => ({}))) as ApiErrorBody;
   if (!r.ok) throw new Error(body.error || `GET ${path} failed (${r.status})`);
+
+  if (ttl > 0) {
+    apiCache.set(path, { data: body, timestamp: now });
+  }
   return body as T;
 }
 
 export async function apiSend<T>(path: string, method: string, body?: unknown): Promise<T> {
+  invalidateFor(path);
   const r = await fetch(path, {
     method,
     headers: { "content-type": "application/json" },
@@ -48,14 +92,15 @@ export async function apiSend<T>(path: string, method: string, body?: unknown): 
 }
 
 export async function postForm<T>(path: string, fd: FormData): Promise<T> {
+  invalidateFor(path);
   const r = await fetch(path, { method: "POST", body: fd });
   const data = (await r.json().catch(() => ({}))) as ApiErrorBody;
   if (!r.ok) throw new Error(data.error || `POST ${path} failed (${r.status})`);
   return data as T;
 }
 
-export async function fetchModels(): Promise<ModelLists> {
-  return apiGet<ModelLists>("/api/models");
+export async function fetchModels(force = false): Promise<ModelLists> {
+  return apiGet<ModelLists>("/api/models", { force });
 }
 
 export async function submitJob(path: string, body: unknown): Promise<{ jobId: string }> {

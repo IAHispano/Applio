@@ -27,10 +27,31 @@ async function req(method: string, p: string, body?: unknown): Promise<ApiRespon
   return { status: r.status, json };
 }
 
+function findPython(): string {
+  if (process.env.PYTHON_BIN) return process.env.PYTHON_BIN;
+  const candidates =
+    process.platform === "win32"
+      ? [
+          path.join(ROOT, ".venv", "Scripts", "python.exe"),
+          path.join(ROOT, "venv", "Scripts", "python.exe"),
+          path.join(ROOT, "env", "Scripts", "python.exe"),
+        ]
+      : [
+          path.join(ROOT, ".venv", "bin", "python"),
+          path.join(ROOT, "venv", "bin", "python"),
+          path.join(ROOT, "env", "bin", "python"),
+        ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return process.platform === "win32" ? "python" : "python3";
+}
+
 before(async () => {
+  const pythonBin = findPython();
   api = spawn(process.execPath, ["app/api/dist/index.js"], {
     cwd: ROOT,
-    env: { ...process.env, API_PORT: String(PORT), APPLIO_ROOT: ROOT },
+    env: { ...process.env, API_PORT: String(PORT), APPLIO_ROOT: ROOT, PYTHON_BIN: pythonBin },
     windowsHide: true,
   });
   const deadline = Date.now() + 30000;
@@ -67,6 +88,23 @@ test("models endpoint returns lists", async () => {
   const { status, json } = await req("GET", "/api/models");
   assert.equal(status, 200);
   assert.ok(Array.isArray(json.models) && Array.isArray(json.indexes) && Array.isArray(json.audios));
+});
+
+test("models library and inspection endpoints", async () => {
+  const { status, json } = await req("GET", "/api/models/library");
+  assert.equal(status, 200);
+  assert.ok(Array.isArray(json.models));
+
+  const del = await req("DELETE", "/api/models/nonexistent-model-xyz");
+  assert.equal(del.status, 404);
+
+  const insp = await req("POST", "/api/models/inspect", {});
+  assert.equal(insp.status, 400);
+});
+
+test("train pipeline endpoint validation", async () => {
+  const r = await req("POST", "/api/train/pipeline", { modelName: "" });
+  assert.equal(r.status, 400);
 });
 
 test("presets CRUD round-trip", async () => {
@@ -160,7 +198,7 @@ test("requirements + notebooks have no gradio runtime", async () => {
 });
 
 test("core.py exposes the f0-curve command", async () => {
-  const python = process.env.PYTHON_BIN || "python";
+  const python = findPython();
   const out = await new Promise<string>((resolve, reject) => {
     execFile(python, ["core.py", "--help"], { cwd: ROOT }, (err, stdout, stderr) =>
       err ? reject(new Error(stderr || String(err))) : resolve(stdout),

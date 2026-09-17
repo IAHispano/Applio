@@ -45,7 +45,7 @@ export default function TensorboardPanel() {
     <div>
       {error && <p style={{ color: "var(--err)" }}>{error}</p>}
       <div className="row">
-        <button type="button" onClick={start} disabled={busy || status?.running}>
+        <button type="button" className="cta" onClick={start} disabled={busy || status?.running}>
           {busy ? "Starting…" : status?.running ? "Running ✓" : "Launch TensorBoard"}
         </button>
         {status?.running && (

@@ -29,3 +29,6 @@ beautifulsoup4==4.15.0
 sounddevice==0.5.5
 webrtcvad-wheels==2.0.14
 psutil==7.2.2
+uvicorn>=0.30.0
+fastapi>=0.110.0
+websockets>=13.0

@@ -99,7 +99,7 @@ export default function DownloadPage() {
             accept=".pth,.index,.onnx"
             onChange={(e) => setDropFile(e.target.files?.[0] || null)}
           />
-          <button type="button" className="ghost" onClick={drop}>
+          <button type="button" className="cta" onClick={drop}>
             Save File
           </button>
           <span className="muted">{dropMsg}</span>
@@ -150,13 +150,13 @@ export default function DownloadPage() {
             </div>
           </div>
         )}
-        <label>
-          <input type="checkbox" checked={custom} onChange={(e) => setCustom(e.target.checked)} /> Custom
-          Pretrained
+        <label className="checkbox-label">
+          <input type="checkbox" checked={custom} onChange={(e) => setCustom(e.target.checked)} />
+          <span>Custom Pretrained Model</span>
         </label>
         <div className="row" style={{ marginTop: 8 }}>
-          <button type="button" className="ghost" onClick={downloadPretrained}>
-            Download
+          <button type="button" className="cta" onClick={downloadPretrained}>
+            Download Pretrained
           </button>
         </div>
       </div>

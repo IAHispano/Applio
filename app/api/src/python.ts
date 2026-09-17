@@ -11,7 +11,24 @@ export function getRepoRoot(): string {
 }
 
 export function getPythonBin(): string {
-  return process.env.PYTHON_BIN || (process.platform === "win32" ? "python" : "python3");
+  if (process.env.PYTHON_BIN) return process.env.PYTHON_BIN;
+  const root = getRepoRoot();
+  const venvCandidates =
+    process.platform === "win32"
+      ? [
+          path.join(root, ".venv", "Scripts", "python.exe"),
+          path.join(root, "venv", "Scripts", "python.exe"),
+          path.join(root, "env", "Scripts", "python.exe"),
+        ]
+      : [
+          path.join(root, ".venv", "bin", "python"),
+          path.join(root, "venv", "bin", "python"),
+          path.join(root, "env", "bin", "python"),
+        ];
+  for (const candidate of venvCandidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return process.platform === "win32" ? "python" : "python3";
 }
 
 export function getUploadsDir(): string {

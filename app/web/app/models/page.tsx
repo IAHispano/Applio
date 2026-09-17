@@ -1,42 +1,172 @@
 "use client";
 
-import { useState } from "react";
+import {
+  ArrowRight,
+  Database,
+  Download,
+  FileCheck,
+  FileX,
+  Folder,
+  Info,
+  RefreshCw,
+  Search,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import JobPanel from "../../components/JobPanel";
 import PageHeader from "../../components/layout/PageHeader";
 import BlenderPanel from "../../components/models/BlenderPanel";
 import DownloadPanel from "../../components/models/DownloadPanel";
-import { errMsg, submitJob } from "../../lib/api";
+import { apiGet, apiSend, errMsg, submitJob } from "../../lib/api";
 
-type Section = "download" | "blend" | "inspect";
+interface ModelItem {
+  id: string;
+  name: string;
+  pthPath: string;
+  pthSize: number;
+  indexPath: string | null;
+  indexSize: number | null;
+  modifiedAt: string;
+  folder: string;
+}
+
+interface ModelMetadata {
+  model_name?: string;
+  author?: string;
+  epochs?: string;
+  step?: string;
+  sr?: string;
+  f0?: string;
+  vocoder?: string;
+  embedder_model?: string;
+  creation_date?: string;
+  model_hash?: string;
+}
+
+type Section = "library" | "download" | "blend" | "inspect";
+
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / k ** i).toFixed(1)} ${sizes[i]}`;
+}
 
 export default function ModelsPage() {
-  const [section, setSection] = useState<Section>("download");
-  const [pth, setPth] = useState("");
-  const [infoJob, setInfoJob] = useState<string | null>(null);
-  const [error, setError] = useState("");
+  const router = useRouter();
+  const [section, setSection] = useState<Section>("library");
 
-  async function inspect() {
+  // Library state
+  const [models, setModels] = useState<ModelItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<ModelItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Inspect modal state
+  const [inspectModal, setInspectModal] = useState<ModelItem | null>(null);
+  const [inspectMeta, setInspectMeta] = useState<ModelMetadata | null>(null);
+  const [inspectLoading, setInspectLoading] = useState(false);
+  const [inspectError, setInspectError] = useState("");
+
+  // Custom path inspect (subtab)
+  const [customPth, setCustomPth] = useState("");
+  const [customJobId, setCustomJobId] = useState<string | null>(null);
+
+  const loadLibrary = useCallback(async () => {
+    setLoading(true);
     setError("");
     try {
-      const { jobId: id } = await submitJob("/api/extra/model-info", { pthPath: pth });
-      setInfoJob(id);
+      const res = await apiGet<{ models: ModelItem[] }>("/api/models/library");
+      setModels(res.models || []);
+    } catch (e) {
+      setError(errMsg(e));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (section === "library") {
+      loadLibrary();
+    }
+  }, [section, loadLibrary]);
+
+  async function openInspect(item: ModelItem) {
+    setInspectModal(item);
+    setInspectMeta(null);
+    setInspectError("");
+    setInspectLoading(true);
+    try {
+      const res = await apiSend<{ ok: boolean; metadata: ModelMetadata }>("/api/models/inspect", "POST", {
+        pthPath: item.pthPath,
+      });
+      setInspectMeta(res.metadata);
+    } catch (e) {
+      setInspectError(errMsg(e));
+    } finally {
+      setInspectLoading(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const nameToDelete = deleteTarget.folder !== "root" ? deleteTarget.folder : deleteTarget.name;
+      await apiSend(`/api/models/${encodeURIComponent(nameToDelete)}`, "DELETE");
+      setDeleteTarget(null);
+      await loadLibrary();
+    } catch (e) {
+      setError(errMsg(e));
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  function openInInference(item: ModelItem) {
+    const url = `/inference?model=${encodeURIComponent(item.pthPath)}${
+      item.indexPath ? `&index=${encodeURIComponent(item.indexPath)}` : ""
+    }`;
+    router.push(url);
+  }
+
+  async function inspectCustom() {
+    setError("");
+    try {
+      const { jobId: id } = await submitJob("/api/extra/model-info", { pthPath: customPth });
+      setCustomJobId(id);
     } catch (e) {
       setError(errMsg(e));
     }
   }
 
+  const filteredModels = models.filter(
+    (m) =>
+      m.name.toLowerCase().includes(search.toLowerCase()) ||
+      m.folder.toLowerCase().includes(search.toLowerCase()) ||
+      m.pthPath.toLowerCase().includes(search.toLowerCase()),
+  );
+
   return (
     <div>
       <PageHeader
-        title="Models"
-        description="Download, blend, and inspect voice model weights and checkpoints."
+        title="Voice Models"
+        description="Manage your voice model collection, inspect checkpoint metadata, and blend or download weights."
       >
         <div className="row">
           {(
             [
-              ["download", "Download"],
-              ["blend", "Blend"],
-              ["inspect", "Inspect"],
+              ["library", "Model Library"],
+              ["download", "Download Models"],
+              ["blend", "Voice Blender"],
+              ["inspect", "Inspect Path"],
             ] as Array<[Section, string]>
           ).map(([id, label]) => (
             <button
@@ -51,26 +181,309 @@ export default function ModelsPage() {
         </div>
       </PageHeader>
 
+      {error && <p style={{ color: "var(--err)" }}>{error}</p>}
+
+      {/* 1. MODEL LIBRARY VIEW */}
+      {section === "library" && (
+        <div className="space-y-4">
+          {/* Controls bar: Search, Refresh, Download CTA */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-1 min-w-[240px] max-w-md bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+              <Search size={16} className="text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search models by name or folder…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="bg-transparent border-0 p-0 text-sm text-white focus:outline-none w-full"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="text-neutral-400 hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="ghost flex items-center gap-1.5"
+                onClick={loadLibrary}
+                disabled={loading}
+              >
+                <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+                <span>Refresh</span>
+              </button>
+
+              <button
+                type="button"
+                className="cta flex items-center gap-1.5"
+                onClick={() => setSection("download")}
+              >
+                <Download size={14} />
+                <span>Get Models</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Model Cards Grid */}
+          {filteredModels.length === 0 ? (
+            <div className="card text-center py-12 space-y-4">
+              <Database size={40} className="mx-auto text-neutral-500" />
+              <div>
+                <h3 className="text-lg font-semibold text-white m-0">No voice models found</h3>
+                <p className="text-sm text-neutral-400 m-0 max-w-md mx-auto mt-1">
+                  {search
+                    ? `No models matching "${search}".`
+                    : "Your models directory (logs/) is currently empty. Download community weights or train your own voice model to get started."}
+                </p>
+              </div>
+              <div className="flex justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  className="cta flex items-center gap-2"
+                  onClick={() => setSection("download")}
+                >
+                  <Download size={16} />
+                  <span>Download a Model</span>
+                </button>
+                <Link href="/train" className="inline-flex">
+                  <button type="button" className="ghost">
+                    Train New Model
+                  </button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredModels.map((m) => (
+                <div
+                  key={m.id}
+                  className="card m-0 hover:border-white/20 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    {/* Header: Title & Folder */}
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-semibold text-white text-base truncate m-0 flex-1" title={m.name}>
+                        {m.name}
+                      </h3>
+                      <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-neutral-300 flex items-center gap-1 shrink-0">
+                        <Folder size={12} />
+                        <span>{m.folder}</span>
+                      </span>
+                    </div>
+
+                    {/* Stats & Index status */}
+                    <div className="space-y-1.5 text-xs text-neutral-400 my-3">
+                      <div className="flex justify-between">
+                        <span>Weights (.pth):</span>
+                        <span className="text-neutral-200 tabular-nums">{formatBytes(m.pthSize)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Feature Index:</span>
+                        {m.indexPath ? (
+                          <span className="text-emerald-400 flex items-center gap-1">
+                            <FileCheck size={12} />
+                            <span>{formatBytes(m.indexSize || 0)}</span>
+                          </span>
+                        ) : (
+                          <span className="text-neutral-500 flex items-center gap-1">
+                            <FileX size={12} />
+                            <span>None</span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex justify-between text-neutral-500 pt-1 border-t border-white/5">
+                        <span>Modified:</span>
+                        <span>{new Date(m.modifiedAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Footer */}
+                  <div className="flex items-center justify-between gap-2 pt-3 border-t border-white/10 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => openInInference(m)}
+                      className="cta text-xs px-3 py-1.5 flex items-center gap-1.5"
+                    >
+                      <Sparkles size={13} />
+                      <span>Use</span>
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => openInspect(m)}
+                        className="ghost text-xs px-2.5 py-1.5 flex items-center gap-1"
+                        title="View checkpoint metadata"
+                      >
+                        <Info size={13} />
+                        <span>Inspect</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(m)}
+                        className="danger text-xs px-2.5 py-1.5"
+                        title="Delete model files"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 2. DOWNLOAD PANEL */}
       {section === "download" && <DownloadPanel />}
+
+      {/* 3. VOICE BLENDER PANEL */}
       {section === "blend" && <BlenderPanel />}
+
+      {/* 4. INSPECT CUSTOM PATH */}
       {section === "inspect" && (
-        <div>
+        <div className="space-y-4">
           <div className="card">
+            <h2>Inspect Model File</h2>
+            <p className="muted text-sm mb-3">
+              Enter any repository-relative or absolute path to a .pth checkpoint to read its architecture and
+              training parameters.
+            </p>
             <div className="row">
               <input
                 type="text"
-                value={pth}
-                onChange={(e) => setPth(e.target.value)}
-                placeholder="logs/my-model/model.pth"
+                value={customPth}
+                onChange={(e) => setCustomPth(e.target.value)}
+                placeholder="logs/my-model/my-model.pth"
                 style={{ flex: 1 }}
               />
-              <button type="button" className="cta" onClick={inspect}>
-                Inspect
+              <button type="button" className="cta" onClick={inspectCustom}>
+                Inspect File
               </button>
             </div>
-            {error && <p style={{ color: "var(--err)" }}>{error}</p>}
           </div>
-          <JobPanel jobId={infoJob} compact />
+          <JobPanel jobId={customJobId} compact />
+        </div>
+      )}
+
+      {/* INSPECT METADATA MODAL */}
+      {inspectModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-neutral-900 border border-white/10 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Info size={18} className="text-white" />
+                <h3 className="font-semibold text-white m-0">{inspectModal.name}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectModal(null)}
+                className="text-neutral-400 hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {inspectLoading && <p className="muted text-sm">Reading model checkpoint…</p>}
+            {inspectError && <p style={{ color: "var(--err)" }}>{inspectError}</p>}
+
+            {inspectMeta && (
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+                  <span className="text-neutral-400 text-xs block">Model Name</span>
+                  <span className="font-medium text-white">{inspectMeta.model_name || "None"}</span>
+                </div>
+                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+                  <span className="text-neutral-400 text-xs block">Author</span>
+                  <span className="font-medium text-white">{inspectMeta.author || "Anonymous"}</span>
+                </div>
+                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+                  <span className="text-neutral-400 text-xs block">Epochs</span>
+                  <span className="font-medium text-white">{inspectMeta.epochs || "None"}</span>
+                </div>
+                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+                  <span className="text-neutral-400 text-xs block">Training Steps</span>
+                  <span className="font-medium text-white">{inspectMeta.step || "None"}</span>
+                </div>
+                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+                  <span className="text-neutral-400 text-xs block">Sampling Rate</span>
+                  <span className="font-medium text-white">{inspectMeta.sr || "None"}</span>
+                </div>
+                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+                  <span className="text-neutral-400 text-xs block">Pitch Guidance (F0)</span>
+                  <span className="font-medium text-white">
+                    {inspectMeta.f0 === "1" ? "Yes" : inspectMeta.f0 || "None"}
+                  </span>
+                </div>
+                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+                  <span className="text-neutral-400 text-xs block">Vocoder</span>
+                  <span className="font-medium text-white">{inspectMeta.vocoder || "HiFi-GAN"}</span>
+                </div>
+                <div className="bg-black/30 p-2.5 rounded-lg border border-white/5">
+                  <span className="text-neutral-400 text-xs block">Embedder Model</span>
+                  <span className="font-medium text-white">{inspectMeta.embedder_model || "contentvec"}</span>
+                </div>
+                <div className="col-span-2 bg-black/30 p-2.5 rounded-lg border border-white/5">
+                  <span className="text-neutral-400 text-xs block">Creation Date</span>
+                  <span className="font-medium text-white">{inspectMeta.creation_date || "Unknown"}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+              <button type="button" className="ghost" onClick={() => setInspectModal(null)}>
+                Close
+              </button>
+              <button
+                type="button"
+                className="cta flex items-center gap-1.5"
+                onClick={() => {
+                  const m = inspectModal;
+                  setInspectModal(null);
+                  openInInference(m);
+                }}
+              >
+                <span>Use in Inference</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-neutral-900 border border-red-500/30 rounded-xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+            <div>
+              <h3 className="text-lg font-bold text-white m-0">Delete Model?</h3>
+              <p className="text-sm text-neutral-300 mt-2">
+                Are you sure you want to permanently delete <strong>{deleteTarget.name}</strong> from disk?
+                This will remove its .pth and .index files.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button type="button" className="danger" onClick={confirmDelete} disabled={deleting}>
+                {deleting ? "Deleting…" : "Delete Model"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

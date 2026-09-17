@@ -14,7 +14,10 @@ let apiProc: ChildProcess | null = null;
 let webProc: ChildProcess | null = null;
 
 function repoRoot(): string {
-  if (isDev) return path.resolve(__dirname, "..", "..");
+  if (process.env.APPLIO_ROOT && fs.existsSync(process.env.APPLIO_ROOT)) {
+    return path.resolve(process.env.APPLIO_ROOT);
+  }
+  if (isDev) return path.resolve(__dirname, "..", "..", "..");
   return path.resolve(__dirname, "..");
 }
 
