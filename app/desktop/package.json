@@ -1,0 +1,21 @@
+{
+  "name": "@applio/desktop",
+  "version": "3.6.4",
+  "private": true,
+  "description": "Applio desktop shell (Electron): hosts Next.js + Express API + Python engine sidecar",
+  "author": "Applio contributors",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "npm run build && electron .",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:linux": "npm run build && electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.7.2"
+  }
+}

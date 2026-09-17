@@ -1,0 +1,7 @@
+# Local/unprivileged Windows builds.
+# winCodeSign needs symlink privileges (admin/Developer Mode) that plain user
+# accounts don't have, so signing + exe metadata stamping is skipped here and
+# done afterwards by app/desktop/stamp.py (uses the cached rcedit directly).
+extends: ./electron-builder.yml
+win:
+  signAndEditExecutable: false

@@ -39,14 +39,8 @@ logging.getLogger("faiss.loader").setLevel(logging.WARNING)
 
 
 def _toast(message, warning=False):
-    """Shows a toast notification in the Gradio UI, falling back to stdout
-    when Gradio is unavailable (e.g. when the engine runs headless)."""
-    try:
-        import gradio as gr
-
-        (gr.Warning if warning else gr.Info)(message)
-    except Exception:
-        print(message)
+    """Status message helper (prints to stdout; the web UI streams engine logs)."""
+    print(message)
 
 
 class VoiceConverter:

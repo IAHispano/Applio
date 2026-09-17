@@ -1,0 +1,51 @@
+appId: org.applio.app
+productName: Applio
+copyright: Copyright © Applio contributors
+directories:
+  output: dist-installers
+files:
+  - dist/**/*
+  - package.json
+  # Python engine + runtime assets (provisioned/used from APPLIO_ROOT at first run)
+  - ../../core.py
+  - ../../requirements.txt
+  - ../../rvc/**/*
+  - ../../assets/**/*
+  - ../../plugins/README.md
+  - ../../LICENSE
+mac:
+  category: public.app-category.music
+  target:
+    - dmg
+    - zip
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  icon: ../../assets/ICON.ico
+nsis:
+  artifactName: Applio-Setup-${version}.${ext}
+  # Per-user install: no admin rights needed, APPLIO_ROOT stays user-writable
+  # so first-run setup (Python env, models) just works.
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Applio
+  uninstallDisplayName: Applio
+  installerIcon: ../../assets/ICON.ico
+  uninstallerIcon: ../../assets/ICON.ico
+  deleteAppDataOnUninstall: false
+portable:
+  artifactName: Applio-Portable-${version}.${ext}
+linux:
+  category: AudioVideo
+  target:
+    - AppImage
+    - deb

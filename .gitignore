@@ -25,3 +25,13 @@ env
 venv
 .venv
 
+# Node workspaces
+node_modules
+app/api/dist
+app/api/.env
+app/web/.next
+app/web/out
+app/web/.env.local
+app/desktop/dist-installers
+app/desktop/dist
+

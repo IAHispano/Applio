@@ -14,13 +14,6 @@ sys.path.append(now_dir)
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")
 
-from rvc.lib.tools.analyzer import analyze_audio
-from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
-from rvc.lib.tools.model_download import model_download_pipeline
-from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
-from rvc.train.process.model_blender import model_blender as blender
-from rvc.train.process.model_information import model_information as model_info
-
 python = sys.executable
 
 
@@ -639,6 +632,8 @@ def run_index_script(model_name: str, index_algorithm: str):
 
 # Model information
 def run_model_information_script(pth_path: str):
+    from rvc.train.process.model_information import model_information as model_info
+
     print(model_info(pth_path))
     return model_info(pth_path)
 
@@ -647,17 +642,23 @@ def run_model_information_script(pth_path: str):
 def run_model_blender_script(
     model_name: str, pth_path_1: str, pth_path_2: str, ratio: float
 ):
+    from rvc.train.process.model_blender import model_blender as blender
+
     message, model_blended = blender(model_name, pth_path_1, pth_path_2, ratio)
     return message, model_blended
 
 
 # Tensorboard
 def run_tensorboard_script():
+    from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
+
     launch_tensorboard_pipeline()
 
 
 # Download
 def run_download_script(model_link: str):
+    from rvc.lib.tools.model_download import model_download_pipeline
+
     result = model_download_pipeline(model_link)
     if result == "Error" or result is None:
         return "An error occurred downloading the model. Please check the console logs for more details."
@@ -670,6 +671,8 @@ def run_prerequisites_script(
     models: bool,
     exe: bool,
 ):
+    from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
+
     prequisites_download_pipeline(
         pretraineds_hifigan,
         models,
@@ -682,6 +685,8 @@ def run_prerequisites_script(
 def run_audio_analyzer_script(
     input_path: str, save_plot_path: str = "logs/audio_analysis.png"
 ):
+    from rvc.lib.tools.analyzer import analyze_audio
+
     audio_info, plot_path = analyze_audio(input_path, save_plot_path)
     print(
         f"Audio info of {input_path}: {audio_info}",
@@ -1326,6 +1331,29 @@ def prerequisites(**kwargs):
 def audio_analyzer(**kwargs):
     """Analyze an audio file and display information."""
     run_audio_analyzer_script(kwargs["input_path"])
+
+
+@cli.command()
+@click.option("--input-path", required=True, help="Path to the input audio file.")
+@click.option(
+    "--method",
+    type=click.Choice(["crepe", "fcpe", "rmvpe"]),
+    default="rmvpe",
+    help="Pitch extraction method.",
+)
+@click.option("--output-image", required=True, help="Path to save the F0 plot PNG.")
+@click.option("--output-txt", required=True, help="Path to save the F0 curve CSV.")
+def f0_curve(**kwargs):
+    """Extract the F0 curve of an audio file."""
+    from rvc.lib.tools.f0_curve import extract_f0_curve
+
+    image_path, txt_path = extract_f0_curve(
+        kwargs["input_path"],
+        kwargs["method"],
+        kwargs["output_image"],
+        kwargs["output_txt"],
+    )
+    click.echo(f"{image_path} {txt_path}")
 
 
 def main():

@@ -127,12 +127,12 @@ jobs:
             Please review these essential instructions to ensure a smooth installation:
             - **File Location**: Place the Applio files in a dedicated folder on your C drive.
             - **Access Control**: Avoid placing Applio in folders that require elevated privileges.
-            - **Administrator Rights**: Do not run the \`run-install.bat\` script with administrator privileges.
+            - **Administrator Rights**: The installer works per-user — no administrator privileges needed.
             - **Path Requirements**: Ensure the installation path is free of spaces or special characters.
             - **Security Settings**: Temporarily disable your antivirus and firewall to prevent any issues with missing dependencies during installation.
             ### Installation Steps
-            - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/resolve/main/Compiled/Windows/ApplioV${{ steps.check-version.outputs.tag }}.zip).
-            - **Run Applio**: Extract the \`.zip\` file, then open the \`run-applio.bat\` file.
+            - **Recommended**: Download \`Applio-Setup-${{ steps.check-version.outputs.tag }}.exe\` from this release, run it, then launch Applio from the Start Menu. Missing components install automatically on first launch.
+            - **Portable alternative**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/resolve/main/Compiled/Windows/ApplioV${{ steps.check-version.outputs.tag }}.zip), extract it, run \`npm install\`, then \`npm start\`.
           ## What's New in This Release
             ${changelog}
 

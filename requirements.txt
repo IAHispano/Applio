@@ -22,7 +22,6 @@ transformers==5.13.1
 
 matplotlib==3.11.0
 tensorboard==2.21.0
-gradio==6.20.0
 
 edge-tts==7.2.8
 pypresence==4.6.2

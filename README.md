@@ -57,30 +57,30 @@ By using the official version of Applio, you accept full responsibility for comp
 
 ## Getting Started
 
-### 1. Installation
+### Recommended: Windows installer
 
-Run the installation script based on your operating system:
+1. Download `Applio-Setup-<version>.exe` from the [releases page](https://github.com/IAHispano/Applio/releases) and run it (per-user install, no admin rights needed).
+2. Launch **Applio** from the Start Menu. On first launch the setup screen checks every dependency (Python env, engine packages, ffmpeg, web build) and installs whatever is missing — just press **Install / Repair** and wait.
+3. Every later launch re-runs the checks, so a broken environment is caught before you hit Convert.
 
-- **Windows:** Double-click `run-install.bat`.
-- **Linux/macOS:** Execute `run-install.sh`.
+### Developers (any OS)
 
-### 2. Running Applio
+Prerequisites: Python 3.10–3.12, Node.js 20+, ffmpeg.
 
-Start Applio using:
+```bash
+npm install
+npm run dev    # API :8000 + web :3000 with hot reload
+# open http://localhost:3000/  (setup screen)
+```
 
-- **Windows:** Double-click `run-applio.bat`.
-- **Linux/macOS:** Run `run-applio.sh`.
+First run: open the app, press **Install / Repair** on the setup screen (creates `.venv`, installs torch + requirements, builds the UI). Useful scripts: `npm test` (smoke suite), `npm run format` (Biome), `npm run build`.
 
-This launches the Gradio interface in your default browser.
+### Other ways to run
 
-### 3. Optional: TensorBoard Monitoring
-
-To monitor training or visualize data:
-
-- **Windows:** Run `run-tensorboard.bat`.
-- **Linux/macOS:** Run `run-tensorboard.sh`.
-
-For more detailed instructions, visit the [documentation](https://docs.applio.org).
+- **TensorBoard:** built into the UI — open the TensorBoard tab and press Launch.
+- **Docker:** `docker compose -f docker/docker-compose.yml up --build`.
+- **Colab/Kaggle:** see `assets/Applio.ipynb` / `assets/Applio_Kaggle.ipynb` (CLI-only: `assets/Applio_NoUI.ipynb`).
+- **Package the installer yourself:** `npm run build && npm run dist:win` (`.exe` lands in `app/desktop/dist-installers/`).
 
 ## References
 

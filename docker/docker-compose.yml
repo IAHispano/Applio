@@ -1,0 +1,30 @@
+# Web runtime: Express API + Next.js UI + Python engine.
+# Run from the repo root:
+#   docker compose -f docker/docker-compose.yml up --build
+#   # web http://localhost:3000  api http://localhost:8000
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../logs:/app/logs
+      - ../assets:/app/assets
+    environment:
+      API_PORT: 8000
+      APPLIO_ROOT: /app
+      PYTHON_BIN: python
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - api
