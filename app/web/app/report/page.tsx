@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg } from "../../lib/api";
 
 interface SystemInfo {
@@ -78,7 +79,10 @@ export default function ReportPage() {
 
   return (
     <div>
-      <h2 className="title mb-4">Report a Bug</h2>
+      <PageHeader
+        title="Report a Bug"
+        description="Collect system diagnostics, record screen logs, and submit issue reports to GitHub."
+      />
       {info ? (
         <div className="log">
           {`Applio ${info.version}\n${info.platform}\nNode ${info.node}\n${info.python}\nCPUs: ${info.cpus} · RAM: ${info.totalMemGB}GB`}

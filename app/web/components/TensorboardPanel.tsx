@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { apiGet, apiSend, errMsg } from "../api";
+import { apiGet, apiSend, errMsg } from "../lib/api";
 
 export default function TensorboardPanel() {
   const [status, setStatus] = useState<{ running: boolean; url: string; startedAt: string | null } | null>(

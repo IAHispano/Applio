@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiGet, apiSend, errMsg, postForm } from "../../lib/api";
 import JobPanel from "../JobPanel";
-import { apiGet, apiSend, errMsg, postForm } from "../api";
 
 export default function DownloadPanel() {
   const [link, setLink] = useState("");

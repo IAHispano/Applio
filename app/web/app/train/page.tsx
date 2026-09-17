@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import JobPanel from "../../components/JobPanel";
+import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, errMsg, submitJob } from "../../lib/api";
 
 export default function TrainPage() {
@@ -80,7 +81,10 @@ export default function TrainPage() {
 
   return (
     <div>
-      <h2 className="title mb-4">Training</h2>
+      <PageHeader
+        title="Training"
+        description="Preprocess datasets, extract acoustic features, and train custom voice conversion models."
+      />
       <div className="mb-4">
         <div className="grid2">
           <div>

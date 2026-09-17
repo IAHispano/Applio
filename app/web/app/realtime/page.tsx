@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg, fetchModels } from "../../lib/api";
 
 const API_HTTP = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -314,26 +315,28 @@ export default function RealtimePage() {
 
   return (
     <div>
-      <h2 className="title mb-4">Realtime Voice Conversion</h2>
+      <PageHeader
+        title="Realtime"
+        description="Stream low-latency live microphone audio through voice conversion models in real time."
+      >
+        <span className={`badge ${engine?.running ? "done" : "queued"}`}>
+          {engine?.running ? "engine running" : "engine stopped"}
+        </span>
+        {!engine?.running ? (
+          <button type="button" className="cta" onClick={startEngine}>
+            Start Engine
+          </button>
+        ) : (
+          <button type="button" className="ghost" onClick={stopEngine}>
+            Stop Engine
+          </button>
+        )}
+        <button type="button" className="ghost" onClick={enumDevices}>
+          List Audio Devices
+        </button>
+      </PageHeader>
       <div className="mb-4">
         {msg && <p className="muted">{msg}</p>}
-        <div className="row">
-          <span className={`badge ${engine?.running ? "done" : "queued"}`}>
-            {engine?.running ? "engine running" : "engine stopped"}
-          </span>
-          {!engine?.running ? (
-            <button type="button" className="cta" onClick={startEngine}>
-              Start Engine
-            </button>
-          ) : (
-            <button type="button" className="ghost" onClick={stopEngine}>
-              Stop Engine
-            </button>
-          )}
-          <button type="button" className="ghost" onClick={enumDevices}>
-            List Audio Devices
-          </button>
-        </div>
         {engine && engine.logs.length > 0 && (
           <div className="log" style={{ marginTop: 8 }}>
             {engine.logs.slice(-10).join("\n")}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiGet, errMsg, fetchModels, postForm } from "../api";
+import { apiGet, errMsg, fetchModels, postForm } from "../../lib/api";
 import JobPanel from "../JobPanel";
 
 interface Voice {

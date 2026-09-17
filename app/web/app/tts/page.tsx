@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import JobPanel from "../../components/JobPanel";
+import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, errMsg, fetchModels, postForm } from "../../lib/api";
 
 interface Voice {
@@ -85,7 +86,10 @@ export default function TtsPage() {
 
   return (
     <div>
-      <h2 className="title mb-4">Text-to-Speech → Voice Conversion</h2>
+      <PageHeader
+        title="TTS"
+        description="Synthesize speech from text and convert it to your selected target voice."
+      />
       {error && <p style={{ color: "var(--err)" }}>{error}</p>}
       <form onSubmit={onSubmit}>
         <div className="card">

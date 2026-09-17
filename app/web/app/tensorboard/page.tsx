@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg } from "../../lib/api";
 
 export default function TensorboardPage() {
@@ -44,7 +45,10 @@ export default function TensorboardPage() {
 
   return (
     <div>
-      <h2 className="title mb-4">TensorBoard</h2>
+      <PageHeader
+        title="TensorBoard"
+        description="Monitor loss curves, spectrograms, and training metrics live during model training."
+      />
       {error && <p style={{ color: "var(--err)" }}>{error}</p>}
       <div className="row mb-4">
         <button type="button" onClick={start} disabled={busy || status?.running}>

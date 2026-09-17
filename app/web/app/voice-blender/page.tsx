@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import JobPanel from "../../components/JobPanel";
+import PageHeader from "../../components/layout/PageHeader";
 import { errMsg, fetchModels, postForm } from "../../lib/api";
 
 export default function VoiceBlenderPage() {
@@ -53,7 +54,10 @@ export default function VoiceBlenderPage() {
 
   return (
     <div>
-      <h2 className="title mb-4">Voice Blender</h2>
+      <PageHeader
+        title="Voice Blender"
+        description="Fuse and interpolate two trained voice models into a unique hybrid checkpoint."
+      />
       {error && <p style={{ color: "var(--err)" }}>{error}</p>}
       <form onSubmit={onSubmit}>
         <div className="card">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import JobPanel from "../../components/JobPanel";
+import PageHeader from "../../components/layout/PageHeader";
 import { errMsg, postForm, submitJob } from "../../lib/api";
 
 export default function ExtraPage() {
@@ -62,7 +63,10 @@ export default function ExtraPage() {
 
   return (
     <div>
-      <h2 className="title mb-4">Extra</h2>
+      <PageHeader
+        title="Extra"
+        description="Analyze audio properties, extract pitch contours, and inspect model checkpoints."
+      />
       <div className="mb-4">
         {error && <p style={{ color: "var(--err)" }}>{error}</p>}
         <label>Audio file (shared by analyzer + F0)</label>

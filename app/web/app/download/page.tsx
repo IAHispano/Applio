@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import JobPanel from "../../components/JobPanel";
+import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg, postForm } from "../../lib/api";
 
 export default function DownloadPage() {
@@ -66,7 +67,10 @@ export default function DownloadPage() {
 
   return (
     <div>
-      <h2 className="title mb-4">Download</h2>
+      <PageHeader
+        title="Download"
+        description="Download community voice models and pretrained checkpoints or import local model files."
+      />
       <div className="mb-4">
         <div className="row">
           <input

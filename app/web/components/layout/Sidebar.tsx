@@ -2,37 +2,68 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MENU } from "./nav";
+import { NAV_SECTIONS } from "./nav";
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex flex-col w-64 bg-[#1c1c1c]/10 border border-white/10 text-gray-100 p-4 m-4 mr-0 rounded-xl">
-      <Link href="/" className="px-2.5 pb-4">
-        <span className="title text-2xl font-bold tracking-tight">Applio</span>
-      </Link>
-      <nav className="flex-1 overflow-auto">
-        <ul className="space-y-2">
-          {MENU.filter((item) => item.to !== "/").map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.to;
-            return (
-              <li key={item.to}>
-                <Link
-                  href={item.to}
-                  className={`flex items-center justify-start space-x-3 p-2.5 rounded-lg ${
-                    active ? "bg-white/10" : ""
-                  } hover:bg-white/10 transition-colors duration-200 opacity-70`}
-                >
-                  <Icon className="w-5 h-5 shrink-0" />
-                  <span>{item.label}</span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+    <aside className="flex flex-col w-64 shrink-0 bg-[#141414]/90 backdrop-blur-md border border-white/10 text-neutral-200 p-3 m-4 mr-0 rounded-2xl select-none">
+      {/* Brand Header */}
+      <div className="px-3 pt-2 pb-3 mb-1 border-b border-white/5 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 group">
+          <span className="title text-xl font-extrabold tracking-tight text-white group-hover:text-neutral-300 transition-colors">
+            Applio
+          </span>
+          <span className="text-[10px] uppercase font-semibold tracking-wide px-1.5 py-0.5 rounded bg-white/10 text-neutral-400 border border-white/5">
+            v3.6
+          </span>
+        </Link>
+      </div>
+
+      {/* Grouped Navigation */}
+      <nav className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin">
+        {NAV_SECTIONS.map((section, sIdx) => (
+          <div key={section.title || `sec-${sIdx}`} className="space-y-1">
+            {section.title && (
+              <div className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                {section.title}
+              </div>
+            )}
+            <ul className="space-y-0.5">
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                const active = pathname === item.to;
+                return (
+                  <li key={item.to}>
+                    <Link
+                      href={item.to}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-all duration-150 relative ${
+                        active
+                          ? "bg-white/15 text-white font-medium shadow-xs"
+                          : "text-neutral-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      {active && <span className="absolute left-1 w-1 h-3.5 bg-white rounded-full" />}
+                      <Icon
+                        className={`w-4 h-4 shrink-0 transition-colors ${
+                          active ? "text-white" : "text-neutral-400"
+                        }`}
+                      />
+                      <span className="truncate">{item.label}</span>
+                      {item.badge && (
+                        <span className="ml-auto text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-neutral-300">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
       </nav>
-    </div>
+    </aside>
   );
 }

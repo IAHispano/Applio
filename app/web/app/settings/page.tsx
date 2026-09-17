@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg } from "../../lib/api";
 
 interface AppConfig {
@@ -80,7 +81,10 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h2 className="title mb-4">Settings</h2>
+      <PageHeader
+        title="Settings"
+        description="Configure application preferences, audio engine settings, precision, and language."
+      />
       {error && <p style={{ color: "var(--err)" }}>{error}</p>}
       {saved && <p style={{ color: "var(--ok)" }}>{saved}</p>}
 

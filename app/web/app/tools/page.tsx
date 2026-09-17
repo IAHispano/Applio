@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import JobPanel from "../../components/JobPanel";
+import PageHeader from "../../components/layout/PageHeader";
 import { errMsg, postForm } from "../../lib/api";
 
 export default function ToolsPage() {
@@ -52,14 +53,10 @@ export default function ToolsPage() {
 
   return (
     <div>
-      <div className="mb-4">
-        <h2 className="title" style={{ margin: 0 }}>
-          Tools
-        </h2>
-        <p className="muted" style={{ margin: "4px 0 0" }}>
-          Understand your audio and your pitch curves.
-        </p>
-      </div>
+      <PageHeader
+        title="Tools"
+        description="Inspect acoustic waveforms, analyze frequencies, and extract pitch curves."
+      />
       {error && <p style={{ color: "var(--err)" }}>{error}</p>}
       <div className="card">
         <label>Audio file (shared by both tools)</label>
@@ -84,11 +81,7 @@ export default function ToolsPage() {
       <div className="card">
         <h2>F0 Curve Extractor</h2>
         <div className="row">
-          <select
-            value={method}
-            onChange={(e) => setMethod(e.target.value)}
-            style={{ maxWidth: 200 }}
-          >
+          <select value={method} onChange={(e) => setMethod(e.target.value)} style={{ maxWidth: 200 }}>
             {["crepe", "fcpe", "rmvpe"].map((m) => (
               <option key={m} value={m}>
                 {m}

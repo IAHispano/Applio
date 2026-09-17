@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import JobPanel from "../../components/JobPanel";
+import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg, postForm } from "../../lib/api";
 
 interface Plugin {
@@ -54,7 +55,10 @@ export default function PluginsPage() {
 
   return (
     <div>
-      <h2 className="title mb-4">Plugins</h2>
+      <PageHeader
+        title="Plugins"
+        description="Manage installed plugins and extend Applio with custom functionality."
+      />
       <div className="mb-4">
         {msg && <p className="muted">{msg}</p>}
         {plugins.length === 0 && <p className="muted">No plugins installed yet.</p>}

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { errMsg, fetchModels, postForm } from "../../lib/api";
 import JobPanel from "../JobPanel";
-import { errMsg, fetchModels, postForm } from "../api";
 
 export default function BlenderPanel() {
   const [models, setModels] = useState<string[]>([]);
@@ -67,9 +67,7 @@ export default function BlenderPanel() {
               />
             </div>
             <div>
-              <label>
-                Blend ratio: {ratio} (0 = model 1, 1 = model 2)
-              </label>
+              <label>Blend ratio: {ratio} (0 = model 1, 1 = model 2)</label>
               <input
                 type="range"
                 min={0}
@@ -82,20 +80,12 @@ export default function BlenderPanel() {
             <div>
               <label>Model 1 path</label>
               <input type="text" list="vmodels" value={p1} onChange={(e) => setP1(e.target.value)} />
-              <input
-                type="file"
-                accept=".pth,.onnx"
-                onChange={(e) => setF1(e.target.files?.[0] || null)}
-              />
+              <input type="file" accept=".pth,.onnx" onChange={(e) => setF1(e.target.files?.[0] || null)} />
             </div>
             <div>
               <label>Model 2 path</label>
               <input type="text" list="vmodels" value={p2} onChange={(e) => setP2(e.target.value)} />
-              <input
-                type="file"
-                accept=".pth,.onnx"
-                onChange={(e) => setF2(e.target.files?.[0] || null)}
-              />
+              <input type="file" accept=".pth,.onnx" onChange={(e) => setF2(e.target.files?.[0] || null)} />
             </div>
           </div>
           <datalist id="vmodels">

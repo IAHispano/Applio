@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import JobPanel from "../../components/JobPanel";
+import PageHeader from "../../components/layout/PageHeader";
 import BlenderPanel from "../../components/models/BlenderPanel";
 import DownloadPanel from "../../components/models/DownloadPanel";
 import { errMsg, submitJob } from "../../lib/api";
@@ -26,15 +27,10 @@ export default function ModelsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h2 className="title" style={{ margin: 0 }}>
-            Models
-          </h2>
-          <p className="muted" style={{ margin: "4px 0 0" }}>
-            Download, blend, and inspect voice models.
-          </p>
-        </div>
+      <PageHeader
+        title="Models"
+        description="Download, blend, and inspect voice model weights and checkpoints."
+      >
         <div className="row">
           {(
             [
@@ -46,14 +42,15 @@ export default function ModelsPage() {
             <button
               key={id}
               type="button"
-              className={section === id ? "" : "ghost"}
+              className={section === id ? "cta" : "ghost"}
               onClick={() => setSection(id)}
             >
               {label}
             </button>
           ))}
         </div>
-      </div>
+      </PageHeader>
+
       {section === "download" && <DownloadPanel />}
       {section === "blend" && <BlenderPanel />}
       {section === "inspect" && (

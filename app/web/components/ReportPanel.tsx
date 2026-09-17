@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { apiGet, apiSend, errMsg } from "../api";
+import { apiGet, apiSend, errMsg } from "../lib/api";
 
 interface SystemInfo {
   version: string;
