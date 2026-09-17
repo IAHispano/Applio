@@ -19,11 +19,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.variable}>
+      <body
+        className={`${inter.variable} bg-[#0a0a0a] text-neutral-200 overflow-hidden h-screen w-screen flex flex-col m-0 p-0`}
+      >
         <TitleBar />
-        <div className="flex w-screen h-screen gap-0 overflow-hidden pt-12">
+        <div className="flex flex-1 min-h-0 overflow-hidden">
           <Sidebar />
-          <main className="flex-1 overflow-auto p-4">
+          <main className="flex-1 min-h-0 overflow-y-auto p-4">
             <PageTransition>{children}</PageTransition>
           </main>
         </div>

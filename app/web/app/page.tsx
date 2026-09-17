@@ -9,6 +9,7 @@ import {
   Database,
   Download,
   Layers,
+  Loader2,
   Mic,
   Radio,
   RefreshCw,
@@ -21,6 +22,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import JobPanel from "../components/JobPanel";
+import FirstRunSetup from "../components/setup/FirstRunSetup";
 import { apiGet, apiSend, errMsg } from "../lib/api";
 
 interface SetupCheck {
@@ -127,6 +129,21 @@ export default function Home() {
     { label: "Audio Tools & F0", href: "/extra", icon: SlidersHorizontal },
     { label: "TensorBoard", href: "/tensorboard", icon: Activity },
   ];
+
+  if (!status) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-neutral-400">
+          <Loader2 className="w-6 h-6 animate-spin text-white" />
+          <span className="text-xs font-medium">Connecting to engine…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!status.ready) {
+    return <FirstRunSetup onComplete={() => refresh(true)} />;
+  }
 
   return (
     <div className="h-full flex flex-col gap-6 overflow-y-auto pb-8 pr-1">

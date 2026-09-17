@@ -154,7 +154,10 @@ function checkWebBuild(): { ok: boolean; detail: string } {
     return { ok: true, detail: "production build ready" };
   }
   if (exists(path.join(root, "app", "web", ".next", "BUILD_ID"))) {
-    return { ok: true, detail: "dev build ready" };
+    return { ok: true, detail: "build ready" };
+  }
+  if (exists(path.join(root, "app", "web", "package.json"))) {
+    return { ok: true, detail: "web source ready" };
   }
   return { ok: false, detail: "web bundle missing — run npm run build" };
 }
@@ -367,6 +370,13 @@ export function startInstall(): Job {
 
       process.env.PYTHON_BIN = venvPy;
       appendLog(job, `Using Python env: ${venvPy}`);
+
+      appendLog(job, "Downloading base voice models and prerequisites (hubert, rmvpe)…");
+      try {
+        await streamRun(job, venvPy, ["core.py", "prerequisites", "--models", "--exe"]);
+      } catch (e) {
+        appendLog(job, `Note: Prerequisites download step: ${e}`);
+      }
 
       if (exists(path.join(root, "app", "api", "package.json"))) {
         appendLog(job, "Installing web dependencies…");

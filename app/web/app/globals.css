@@ -465,3 +465,38 @@ audio {
   width: 100%;
   margin-top: 12px;
 }
+
+button.titlebar-btn {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  width: 30px;
+  height: 26px;
+  min-width: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #a3a3a3;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+}
+
+button.titlebar-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+button.titlebar-btn:active {
+  transform: scale(0.95);
+}
+
+button.titlebar-btn-close:hover {
+  background: #e81123;
+  color: #ffffff;
+}

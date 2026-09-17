@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: import.meta.dirname,
   reactStrictMode: true,
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${API_URL}/api/:path*` }];
   },

@@ -8,9 +8,9 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex flex-col w-64 shrink-0 bg-[#141414]/90 backdrop-blur-md border border-white/10 text-neutral-200 p-3 m-4 mr-0 rounded-2xl select-none">
+    <aside className="flex flex-col w-64 shrink-0 bg-[#141414]/90 backdrop-blur-md border border-white/10 text-neutral-200 p-3 m-3 mr-0 my-3 rounded-2xl select-none min-h-0">
       {/* Brand Header */}
-      <div className="px-3 pt-2 pb-3 mb-1 border-b border-white/5 flex items-center justify-between">
+      <div className="px-3 pt-2 pb-3 mb-1 border-b border-white/5 flex items-center justify-between shrink-0">
         <Link href="/" prefetch={true} className="flex items-center gap-2.5 group">
           <span className="text-lg font-semibold tracking-tight text-white group-hover:text-neutral-200 transition-colors">
             Applio
@@ -22,7 +22,7 @@ export default function Sidebar() {
       </div>
 
       {/* Grouped Navigation */}
-      <nav className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin">
+      <nav className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 scrollbar-thin">
         {NAV_SECTIONS.map((section, sIdx) => (
           <div key={section.title || `sec-${sIdx}`} className="space-y-1">
             {section.title && (
@@ -53,7 +53,7 @@ export default function Sidebar() {
                       />
                       <span className="truncate">{item.label}</span>
                       {item.badge && (
-                        <span className="ml-auto text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-neutral-300">
+                        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-neutral-300">
                           {item.badge}
                         </span>
                       )}
