@@ -26,7 +26,7 @@ export default function Sidebar() {
             Applio
           </span>
           <span className="text-[10px] uppercase font-medium tracking-wider px-1.5 py-0.5 rounded bg-white/10 text-neutral-400 border border-white/5">
-            v3.6
+            v3.6.4
           </span>
         </Link>
       </div>

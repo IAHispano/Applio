@@ -22,6 +22,10 @@ files:
       - core.py
       - requirements.txt
       - LICENSE
+      - ffmpeg.exe
+      - ffprobe.exe
+      - ffmpeg
+      - ffprobe
   - from: ../../rvc
     to: rvc
     filter:

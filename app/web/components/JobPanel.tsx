@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   errMsg,
   fetchJob,
+  fileBasename,
   isAudioFile,
   isImageFile,
   type Job,
@@ -116,7 +117,7 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
         </div>
       )}
 
-      {out && isAudioFile(out) && <AudioPlayer src={outputUrl(out)} filename={out.split("/").pop()} />}
+      {out && isAudioFile(out) && <AudioPlayer src={outputUrl(out)} filename={fileBasename(out)} />}
 
       {out && isImageFile(out) && (
         <div className="space-y-2">
@@ -130,12 +131,12 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
             <a
               href={outputUrl(out)}
               download
-              aria-label={`${t("Download image")}: ${out.split("/").pop()}`}
+              aria-label={`${t("Download image")}: ${fileBasename(out)}`}
               className="text-xs font-semibold hover:underline"
             >
               {t("Download image")}
             </a>{" "}
-            <span className="muted text-xs font-mono">({out.split("/").pop()})</span>
+            <span className="muted text-xs font-mono">({fileBasename(out)})</span>
           </p>
         </div>
       )}
@@ -145,12 +146,12 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
           <a
             href={outputUrl(out)}
             download
-            aria-label={`${t("Download result")}: ${out.split("/").pop()}`}
+            aria-label={`${t("Download result")}: ${fileBasename(out)}`}
             className="text-xs font-semibold hover:underline"
           >
             {t("Download result")}
           </a>{" "}
-          <span className="muted text-xs font-mono">({out.split("/").pop()})</span>
+          <span className="muted text-xs font-mono">({fileBasename(out)})</span>
         </p>
       )}
 
@@ -159,12 +160,12 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
           <a
             href={outputUrl(s.file)}
             download
-            aria-label={`${t("Download")} ${s.label}: ${s.file.split("/").pop()}`}
+            aria-label={`${t("Download")} ${s.label}: ${fileBasename(s.file)}`}
             className="text-xs font-semibold hover:underline"
           >
             {t("Download")} {s.label}
           </a>{" "}
-          <span className="muted text-xs font-mono">({s.file.split("/").pop()})</span>
+          <span className="muted text-xs font-mono">({fileBasename(s.file)})</span>
         </p>
       ))}
 

@@ -59,9 +59,10 @@ export function runPythonModule(
 ): Promise<SpawnResult> {
   const cwd = opts.cwd || getRepoRoot();
   return new Promise((resolve, reject) => {
+    const pathEnv = `${cwd}${path.delimiter}${process.env.PATH || ""}`;
     const child: ChildProcess = spawn(getPythonBin(), args, {
       cwd,
-      env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+      env: { ...process.env, PATH: pathEnv, PYTHONIOENCODING: "utf-8" },
       windowsHide: true,
     });
     opts.onSpawn?.(child.pid);

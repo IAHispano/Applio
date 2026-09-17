@@ -197,7 +197,7 @@ function diagnosticsReport(): string {
   return [
     `Applio ${app.getVersion()} · ${process.platform} ${process.arch}`,
     `Electron ${process.versions.electron} · Node ${process.versions.node}`,
-    `Python: ${py.path} (${py.exists ? "found: " + py.source : "system PATH fallback"})`,
+    `Python: ${py.path} (${py.exists ? `found: ${py.source}` : "system PATH fallback"})`,
     `Ports: API=${API_PORT} WEB=${WEB_PORT}`,
     `Logs: ${launcherLogDir()}`,
     `--- backend tail ---`,

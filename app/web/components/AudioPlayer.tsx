@@ -146,7 +146,7 @@ export default function AudioPlayer({
   };
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const displayName = filename || (src.split("/").pop() ?? "audio.wav");
+  const displayName = filename || (src.split(/[\\/]/).pop() ?? "audio.wav");
 
   return (
     <section

@@ -355,7 +355,7 @@ export default function AudioWavePlayer({
     }, 50);
   };
 
-  const displayName = filename || (src.split("/").pop() ?? "audio.wav");
+  const displayName = filename || (src.split(/[\\/]/).pop() ?? "audio.wav");
 
   return (
     <section

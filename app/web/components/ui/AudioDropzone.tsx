@@ -228,7 +228,7 @@ export default function AudioDropzone({
           <AudioWavePlayer
             src={previewSrc}
             file={audioFile}
-            title={audioFile ? audioFile.name : inputPath.split("/").pop()}
+            title={audioFile ? audioFile.name : inputPath.split(/[\\/]/).pop() || inputPath}
             showAnalyzerLink={false}
             onRemove={clearAudio}
           />
@@ -302,7 +302,7 @@ export default function AudioDropzone({
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
                   {sampleAudios.map((s) => {
-                    const name = s.split("/").pop() || s;
+                    const name = s.split(/[\\/]/).pop() || s;
                     return (
                       <button
                         key={s}

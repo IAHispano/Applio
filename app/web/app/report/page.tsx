@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import PageHeader from "../../components/layout/PageHeader";
-import { apiGet, apiSend, errMsg } from "../../lib/api";
+import { apiGet, apiSend, errMsg, outputUrl } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 
 interface SystemInfo {
@@ -131,13 +131,9 @@ export default function ReportPage() {
       {clip && (
         <div style={{ marginTop: 12 }}>
           {/* biome-ignore lint/a11y/useMediaCaption: user-recorded screen capture has no caption track */}
-          <video
-            controls
-            src={`/outputs/${clip.split("/").pop()}`}
-            style={{ maxWidth: "100%", borderRadius: 8 }}
-          />
+          <video controls src={outputUrl(clip)} style={{ maxWidth: "100%", borderRadius: 8 }} />
           <p>
-            <a href={`/outputs/${clip.split("/").pop()}`} download>
+            <a href={outputUrl(clip)} download>
               {t("Download clip")}
             </a>{" "}
             <span className="muted">{clip}</span>

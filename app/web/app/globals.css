@@ -561,52 +561,52 @@ button:disabled {
   transform: none;
 }
 button.slider-step-btn {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  min-height: 28px !important;
-  max-width: 28px !important;
-  max-height: 28px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  color: #f5f5f5 !important;
-  cursor: pointer !important;
-  transform: none !important;
-  flex-shrink: 0 !important;
-  line-height: 1 !important;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  max-width: 28px;
+  max-height: 28px;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f5f5f5;
+  cursor: pointer;
+  transform: none;
+  flex-shrink: 0;
+  line-height: 1;
 }
 button.slider-step-btn:hover {
-  background: rgba(255, 255, 255, 0.18) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
-  color: #ffffff !important;
-  transform: none !important;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  transform: none;
 }
 button.slider-step-btn:active {
-  transform: none !important;
-  background: rgba(255, 255, 255, 0.22) !important;
+  transform: none;
+  background: rgba(255, 255, 255, 0.22);
 }
 button.slider-step-btn:disabled {
-  opacity: 0.35 !important;
-  cursor: not-allowed !important;
-  pointer-events: none !important;
-  transform: none !important;
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none;
 }
 button.slider-step-btn svg {
-  width: 14px !important;
-  height: 14px !important;
-  min-width: 14px !important;
-  min-height: 14px !important;
-  max-width: 14px !important;
-  max-height: 14px !important;
-  display: block !important;
-  stroke: #ffffff !important;
-  stroke-width: 2.5px !important;
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  min-height: 14px;
+  max-width: 14px;
+  max-height: 14px;
+  display: block;
+  stroke: #ffffff;
+  stroke-width: 2.5px;
 }
 button.ghost {
   background: transparent;

@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Loader2,
   RefreshCw,
   Sparkles,
   Terminal,

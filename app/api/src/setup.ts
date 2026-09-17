@@ -56,11 +56,13 @@ function runCmd(
 ): Promise<RunResult> {
   return new Promise((resolve) => {
     let done = false;
+    const cwd = opts.cwd || getRepoRoot();
+    const pathEnv = `${cwd}${path.delimiter}${process.env.PATH || ""}`;
     const child = spawn(cmd, args, {
-      cwd: opts.cwd || getRepoRoot(),
+      cwd,
       windowsHide: true,
       shell: opts.shell || false,
-      env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+      env: { ...process.env, PATH: pathEnv, PYTHONIOENCODING: "utf-8" },
     });
     let stdout = "";
     let stderr = "";
@@ -140,10 +142,14 @@ async function checkEngineDeps(py: string[]): Promise<{ ok: boolean; detail: str
 }
 
 async function checkFfmpeg(): Promise<{ ok: boolean; detail: string }> {
-  const exe = process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg";
+  const root = getRepoRoot();
+  const exeName = process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg";
+  const localExe = path.join(root, exeName);
+  const exe = exists(localExe) ? localExe : exeName;
   const r = await runCmd(exe, ["-version"], { timeoutMs: 15000 });
   if (r.code === 0) {
-    return { ok: true, detail: (r.stdout + r.stderr).split("\n")[0].trim().slice(0, 120) };
+    const detail = (r.stdout + r.stderr).split("\n")[0].trim().slice(0, 120);
+    return { ok: true, detail: exists(localExe) ? `${detail} (bundled)` : detail };
   }
   return { ok: false, detail: "ffmpeg not on PATH" };
 }

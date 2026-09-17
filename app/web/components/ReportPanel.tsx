@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { apiGet, apiSend, errMsg } from "../lib/api";
+import { apiGet, apiSend, errMsg, fileBasename, outputUrl } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 
 interface SystemInfo {
@@ -109,11 +109,7 @@ export default function ReportPanel() {
       </div>
       {clip && (
         <p>
-          <a
-            href={`/outputs/${clip.split("/").pop()}`}
-            download
-            aria-label={`${t("Download clip")}: ${clip.split("/").pop()}`}
-          >
+          <a href={outputUrl(clip)} download aria-label={`${t("Download clip")}: ${fileBasename(clip)}`}>
             {t("Download clip")}
           </a>{" "}
           <span className="muted">{clip}</span>

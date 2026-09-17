@@ -119,7 +119,6 @@ export default function Home() {
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                 {t("Ready")}
               </span>
-              <span className="text-xs text-neutral-500 font-mono">v3.6</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white m-0">Applio</h1>
             <p className="text-neutral-400 text-xs sm:text-sm leading-relaxed m-0">

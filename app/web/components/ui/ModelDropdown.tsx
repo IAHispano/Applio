@@ -16,13 +16,13 @@ export interface ModelDropdownProps {
 
 function modelDisplayName(path: string): string {
   if (!path) return "";
-  const filename = path.split("/").pop() || path;
+  const filename = path.split(/[\\/]/).pop() || path;
   return filename.replace(/\.(pth|onnx)$/i, "");
 }
 
 function modelFolder(path: string): string {
   if (!path) return "";
-  const parts = path.split("/");
+  const parts = path.split(/[\\/]/);
   if (parts.length > 1) {
     return parts.slice(0, -1).join("/");
   }

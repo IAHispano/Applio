@@ -152,8 +152,15 @@ export function pollJob(id: string, onUpdate: (job: Job) => void): () => void {
   };
 }
 
+export function fileBasename(p: string): string {
+  if (!p) return "";
+  return p.split(/[\\/]/).pop() || p;
+}
+
 export function outputUrl(rel: string): string {
-  return `/outputs/${rel.split("/").pop()}`;
+  if (!rel) return "";
+  const name = fileBasename(rel);
+  return `/outputs/${encodeURIComponent(name)}`;
 }
 
 export function isAudioFile(rel: string): boolean {

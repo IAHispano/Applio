@@ -1,5 +1,5 @@
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 exports.default = async (context) => {
   if (context.electronPlatformName !== "win32") return;

@@ -154,7 +154,7 @@ export default function TrainPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = file.split("/").pop() || "export";
+      a.download = file.split(/[\\/]/).pop() || "export";
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {

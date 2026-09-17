@@ -1,19 +1,19 @@
 "use client";
 
-import {
-  Activity,
-  AudioWaveform,
-  ChevronDown,
-  Layers,
-  Music,
-  Sliders,
-  Sparkles,
-  Volume2,
-  Wand2,
-} from "lucide-react";
+import { Activity, AudioWaveform, ChevronDown, Layers, Music, Sliders, Sparkles, Wand2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { errMsg, fetchJob, fetchModels, type Job, pollJob, stopJob, submitInference } from "../lib/api";
+import {
+  errMsg,
+  fetchJob,
+  fetchModels,
+  fileBasename,
+  type Job,
+  outputUrl,
+  pollJob,
+  stopJob,
+  submitInference,
+} from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { useSpeakers } from "../lib/useSpeakers";
 import AudioWavePlayer from "./AudioWavePlayer";
@@ -46,12 +46,19 @@ const FORMATS = ["WAV", "MP3", "FLAC", "OGG", "M4A"];
 
 function matchIndex(model: string, indexes: string[]): string {
   if (!model || indexes.length === 0) return "";
-  const dir = model.includes("/") ? model.slice(0, model.lastIndexOf("/")) : "";
-  const stem = (model.split("/").pop() ?? "").replace(/\.(pth|onnx)$/i, "").toLowerCase();
-  const sameDir = indexes.filter((i) => (i.includes("/") ? i.slice(0, i.lastIndexOf("/")) : "") === dir);
+  const normModel = model.replace(/\\/g, "/");
+  const dir = normModel.includes("/") ? normModel.slice(0, normModel.lastIndexOf("/")) : "";
+  const filename = normModel.split("/").pop() ?? "";
+  const stem = filename.replace(/\.(pth|onnx)$/i, "").toLowerCase();
+  const normIndexes = indexes.map((i) => i.replace(/\\/g, "/"));
+  const sameDir = normIndexes.filter((i) => (i.includes("/") ? i.slice(0, i.lastIndexOf("/")) : "") === dir);
   const byStem = (list: string[]) =>
     list.find((i) => (i.split("/").pop() ?? "").toLowerCase().startsWith(stem.slice(0, 8)));
-  return byStem(sameDir.length > 0 ? sameDir : indexes) || (sameDir.length === 1 ? sameDir[0] : "") || "";
+  const matchedNorm =
+    byStem(sameDir.length > 0 ? sameDir : normIndexes) || (sameDir.length === 1 ? sameDir[0] : "") || "";
+  if (!matchedNorm) return "";
+  const matchedIdx = normIndexes.indexOf(matchedNorm);
+  return matchedIdx >= 0 ? indexes[matchedIdx] : matchedNorm;
 }
 
 export default function InferenceForm() {
@@ -198,7 +205,7 @@ export default function InferenceForm() {
     return null;
   }, [audioFile, inputPath]);
 
-  const directAudioUrl = job?.outputFile ? `/outputs/${job.outputFile.split("/").pop()}` : null;
+  const directAudioUrl = job?.outputFile ? outputUrl(job.outputFile) : null;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -366,7 +373,7 @@ export default function InferenceForm() {
                       <option value="">{t("None (0.0 index rate)")}</option>
                       {indexes.map((idx) => (
                         <option key={idx} value={idx}>
-                          {idx.split("/").pop()} ({idx})
+                          {fileBasename(idx)} ({idx})
                         </option>
                       ))}
                     </select>
@@ -1082,11 +1089,8 @@ export default function InferenceForm() {
             <AudioWavePlayer
               src={directAudioUrl}
               originalSrc={originalAudioUrl}
-              title={`${t("Output:")} ${pthPath
-                .split("/")
-                .pop()
-                ?.replace(/\.(pth|onnx)$/i, "")}`}
-              filename={job.outputFile?.split("/").pop()}
+              title={`${t("Output:")} ${fileBasename(pthPath).replace(/\.(pth|onnx)$/i, "")}`}
+              filename={job.outputFile ? fileBasename(job.outputFile) : undefined}
             />
           </div>
         )}
