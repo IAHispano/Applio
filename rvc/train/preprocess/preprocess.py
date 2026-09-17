@@ -24,7 +24,7 @@ sys.path.append(now_directory)
 
 import logging
 
-from rvc.lib.utils import load_audio_ffmpeg
+from rvc.lib.utils import load_audio_ta
 from rvc.train.preprocess.slicer import Slicer
 
 logging.getLogger("numba.core.byteflow").setLevel(logging.WARNING)
@@ -126,7 +126,7 @@ class PreProcess:
     ):
         audio_length = 0
         try:
-            audio = load_audio_ffmpeg(path, self.sr)
+            audio = load_audio_ta(path, self.sr)
             audio_length = librosa.get_duration(y=audio, sr=self.sr)
 
             if process_effects:
