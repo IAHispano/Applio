@@ -71,15 +71,15 @@ def load_audio_ta(file, sample_rate):
             audio = librosa.to_mono(audio.T)
         if sr != sample_rate:
             transform = torchaudio.transforms.Resample(
-                orig_freq = sr,
-                new_freq = sample_rate,
+                orig_freq=sr,
+                new_freq=sample_rate,
                 lowpass_filter_width=128,
             )
             audio = torch.from_numpy(audio).unsqueeze(0)
             audio = transform(audio).squeeze(0).contiguous().numpy()
-    
+
     except Exception as error:
-        raise RuntimeError(f"An error occurred loading the audio: {error}")    
+        raise RuntimeError(f"An error occurred loading the audio: {error}")
 
     return audio
 
