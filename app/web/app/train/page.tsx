@@ -1,9 +1,10 @@
 "use client";
 
-import { FolderUp, Layers, StopCircle, Zap } from "lucide-react";
+import { Activity, Cpu, Download, Flame, FolderUp, Layers, Sliders, StopCircle, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import JobPanel from "../../components/JobPanel";
 import PageHeader from "../../components/layout/PageHeader";
+import SegmentedControl from "../../components/ui/SegmentedControl";
 import SliderField from "../../components/ui/SliderField";
 import { apiGet, errMsg, submitJob } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
@@ -169,68 +170,48 @@ export default function TrainPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ modelName: stopTarget || modelName }),
       });
-      toast(t("Stop signal sent. Check logs or process state."));
+      toast(t("Training stopped."));
     } catch (e) {
       setError(errMsg(e));
     }
   }
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto space-y-6">
       <PageHeader
         title={t("Training")}
         description={t(
           "Train custom RVC voice models from audio datasets with automated 1-click pipeline or step-by-step control.",
         )}
       >
-        <div className="row" role="tablist" aria-label={t("Training mode")}>
-          <button
-            id="tab-pipeline"
-            type="button"
-            role="tab"
-            aria-selected={trainMode === "pipeline"}
-            aria-controls="panel-pipeline"
-            className={
-              trainMode === "pipeline" ? "cta flex items-center gap-1.5" : "ghost flex items-center gap-1.5"
-            }
-            onClick={() => setTrainMode("pipeline")}
-          >
-            <Zap size={14} />
-            <span>{t("1-Click Pipeline")}</span>
-          </button>
-          <button
-            id="tab-steps"
-            type="button"
-            role="tab"
-            aria-selected={trainMode === "steps"}
-            aria-controls="panel-steps"
-            className={
-              trainMode === "steps" ? "cta flex items-center gap-1.5" : "ghost flex items-center gap-1.5"
-            }
-            onClick={() => setTrainMode("steps")}
-          >
-            <Layers size={14} />
-            <span>{t("Step-by-Step")}</span>
-          </button>
-          <button
-            id="tab-uploads"
-            type="button"
-            role="tab"
-            aria-selected={trainMode === "uploads"}
-            aria-controls="panel-uploads"
-            className={
-              trainMode === "uploads" ? "cta flex items-center gap-1.5" : "ghost flex items-center gap-1.5"
-            }
-            onClick={() => setTrainMode("uploads")}
-          >
-            <FolderUp size={14} />
-            <span>{t("Uploads")}</span>
-          </button>
-        </div>
+        <SegmentedControl
+          value={trainMode}
+          onChange={setTrainMode}
+          ariaLabel={t("Training mode")}
+          tabPanels
+          options={[
+            { value: "pipeline", label: t("1-Click Pipeline"), icon: Zap },
+            { value: "steps", label: t("Step-by-Step"), icon: Layers },
+            { value: "uploads", label: t("Uploads"), icon: FolderUp },
+          ]}
+        />
       </PageHeader>
 
       {/* Global Model Name & Hardware Config Bar */}
-      <div className="card mb-4">
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cpu size={18} className="text-white" />
+              <h2 className="text-base font-bold text-white m-0">
+                {t("Model & Compute Hardware")}
+              </h2>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Define project identity and target compute device configuration.")}
+          </p>
+        </div>
         <div className="grid2">
           <div>
             <label htmlFor="train-model-name">{t("Model Project Name")}</label>
@@ -286,18 +267,20 @@ export default function TrainPage() {
       {trainMode === "pipeline" && (
         <div id="panel-pipeline" role="tabpanel" aria-labelledby="tab-pipeline" className="space-y-4">
           <div className="card border border-white/20">
-            <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3 mb-4">
-              <div>
-                <h2 className="text-lg font-bold text-white m-0 flex items-center gap-2">
-                  <Zap size={18} className="text-amber-400" />
-                  <span>{t("1-Click Complete Pipeline")}</span>
-                </h2>
-                <p className="text-xs text-neutral-400 m-0 mt-0.5">
-                  {t(
-                    "Runs Preprocess, Feature Extraction, Model Training, and Feature Indexing in a single automated flow.",
-                  )}
-                </p>
+            <div className="border-b border-white/10 pb-3.5 space-y-1 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Zap size={18} className="text-white" />
+                  <h2 className="text-base font-bold text-white m-0">
+                    {t("1-Click Complete Pipeline")}
+                  </h2>
+                </div>
               </div>
+              <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+                {t(
+                  "Runs Preprocess, Feature Extraction, Model Training, and Feature Indexing in a single automated flow.",
+                )}
+              </p>
             </div>
 
             {/* Stepper overview */}
@@ -414,21 +397,21 @@ export default function TrainPage() {
             <div className="row mt-5 pt-3 border-t border-white/10">
               <button
                 type="button"
-                className="cta flex items-center gap-2 px-6 py-2.5 text-base"
+                className="cta h-10 px-5 flex items-center gap-2 text-sm font-medium rounded-xl"
                 disabled={busy}
                 onClick={runPipeline}
               >
-                <Zap size={16} />
+                <Zap size={16} className="shrink-0" />
                 <span>{busy ? t("Pipeline Running…") : t("Start 1-Click Pipeline")}</span>
               </button>
 
               {busy && (
                 <button
                   type="button"
-                  className="ghost text-red-400 hover:text-red-300 flex items-center gap-1.5"
+                  className="ghost h-10 px-4 text-red-400 hover:text-red-300 border-red-500/30 flex items-center gap-2 text-sm font-medium rounded-xl"
                   onClick={stop}
                 >
-                  <StopCircle size={16} />
+                  <StopCircle size={16} className="shrink-0" />
                   <span>{t("Stop Pipeline")}</span>
                 </button>
               )}
@@ -441,8 +424,23 @@ export default function TrainPage() {
       {trainMode === "steps" && (
         <div id="panel-steps" role="tabpanel" aria-labelledby="tab-steps" className="space-y-4">
           {/* Step 1: Preprocess */}
-          <div className="card">
-            <h2>1 · {t("Preprocess Dataset")}</h2>
+          <div className="card space-y-4">
+            <div className="border-b border-white/10 pb-3.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-white/10 text-xs font-bold text-white flex items-center justify-center">
+                    1
+                  </span>
+                  <Sliders size={18} className="text-white" />
+                  <h2 className="text-base font-bold text-white m-0">
+                    {t("Preprocess Dataset")}
+                  </h2>
+                </div>
+              </div>
+              <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+                {t("Slice, clean, and normalize raw dataset audio samples for model ingestion.")}
+              </p>
+            </div>
             <div className="grid2">
               <div>
                 <label htmlFor="prep-dataset-path">{t("Dataset (assets/datasets)")}</label>
@@ -580,8 +578,23 @@ export default function TrainPage() {
           </div>
 
           {/* Step 2: Feature Extraction */}
-          <div className="card">
-            <h2>2 · {t("Extract Features")}</h2>
+          <div className="card space-y-4">
+            <div className="border-b border-white/10 pb-3.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-white/10 text-xs font-bold text-white flex items-center justify-center">
+                    2
+                  </span>
+                  <Activity size={18} className="text-white" />
+                  <h2 className="text-base font-bold text-white m-0">
+                    {t("Extract Features")}
+                  </h2>
+                </div>
+              </div>
+              <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+                {t("Extract pitch contours and speech representations with your chosen embedder.")}
+              </p>
+            </div>
             <div className="grid2">
               <div>
                 <label htmlFor="ext-pitch-method">{t("Pitch Method (F0)")}</label>
@@ -657,8 +670,23 @@ export default function TrainPage() {
           </div>
 
           {/* Step 3: Train */}
-          <div className="card">
-            <h2>{t("3 · Model Training")}</h2>
+          <div className="card space-y-4">
+            <div className="border-b border-white/10 pb-3.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-white/10 text-xs font-bold text-white flex items-center justify-center">
+                    3
+                  </span>
+                  <Flame size={18} className="text-white" />
+                  <h2 className="text-base font-bold text-white m-0">
+                    {t("Model Training")}
+                  </h2>
+                </div>
+              </div>
+              <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+                {t("Train generator and discriminator weights and compile the feature index.")}
+              </p>
+            </div>
             <div className="grid2">
               <div>
                 <label htmlFor="train-step-vocoder">{t("Vocoder")}</label>
@@ -861,7 +889,19 @@ export default function TrainPage() {
       {/* 3. UPLOADS VIEW */}
       {trainMode === "uploads" && (
         <div id="panel-uploads" role="tabpanel" aria-labelledby="tab-uploads" className="card space-y-4">
-          <h2>{t("Dataset & Checkpoint Uploads")}</h2>
+          <div className="border-b border-white/10 pb-3.5 space-y-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FolderUp size={18} className="text-white" />
+                <h2 className="text-base font-bold text-white m-0">
+                  {t("Dataset & Checkpoint Uploads")}
+                </h2>
+              </div>
+            </div>
+            <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+              {t("Upload local dataset files or pretrained generator checkpoints directly.")}
+            </p>
+          </div>
           <UploadBox
             path="/api/train/upload-dataset"
             fields={[{ name: "datasetName", label: t("Dataset name (e.g. my_vocals)") }]}
@@ -886,9 +926,16 @@ export default function TrainPage() {
       )}
 
       {/* Export Model */}
-      <div className="card mt-4">
-        <h2>{t("Export Model")}</h2>
-        <p className="muted text-sm mb-3">{t("Download a trained .pth and its .index from logs/.")}</p>
+      <div className="card space-y-4 mt-4">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <Download size={18} className="text-white" />
+            <h2 className="text-base font-bold text-white m-0">
+              {t("Export Model")}
+            </h2>
+          </div>
+        </div>
+        <p className="muted text-sm m-0">{t("Download a trained .pth and its .index from logs/.")}</p>
         <div className="grid2">
           <div>
             <label htmlFor="train-exp-model">{t("Model (.pth)")}</label>
@@ -934,8 +981,15 @@ export default function TrainPage() {
       </div>
 
       {/* Stop Controller Card */}
-      <div className="card mt-4">
-        <h2>{t("Stop Training Process")}</h2>
+      <div className="card space-y-4 mt-4">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <StopCircle size={18} className="text-white" />
+            <h2 className="text-base font-bold text-white m-0">
+              {t("Stop Training Process")}
+            </h2>
+          </div>
+        </div>
         <div className="row">
           <input
             type="text"
@@ -945,7 +999,7 @@ export default function TrainPage() {
             onChange={(e) => setStopTarget(e.target.value)}
             style={{ maxWidth: 240 }}
           />
-          <button type="button" className="ghost text-red-400 hover:text-red-300" onClick={stop}>
+          <button type="button" className="ghost" onClick={stop}>
             {t("Stop Training")}
           </button>
         </div>
@@ -1022,7 +1076,7 @@ function UploadBox({
         <button type="button" className="ghost text-xs" onClick={send}>
           {t("Upload")}
         </button>
-        <span className="text-xs text-emerald-400">{msg}</span>
+        <span className="text-xs text-neutral-300">{msg}</span>
       </div>
     </div>
   );

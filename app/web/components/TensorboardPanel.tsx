@@ -53,8 +53,8 @@ export default function TensorboardPanel() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {isRunning ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/10 text-white border border-white/10">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               <span>{`:${tbPort}`}</span>
             </span>
           ) : (

@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   errMsg,
@@ -64,24 +65,30 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
   const resultInfo = typeof job.result?.info === "string" ? job.result.info : null;
 
   return (
-    <section className="card space-y-3" aria-label={`Job ${job.id} panel`}>
+    <section className="card space-y-3" aria-label={t("Task Activity")}>
       <div className="row justify-between">
         <div className="flex items-center gap-2">
           <span className={`badge ${job.status}`} role="status" aria-label={`Job status: ${job.status}`}>
-            {job.status}
+            {job.status === "done"
+              ? t("Completed")
+              : job.status === "running"
+                ? t("In Progress")
+                : job.status === "error"
+                  ? t("Failed")
+                  : t("Queued")}
           </span>
-          <span className="muted text-xs">
-            {t("job")} {job.id}
+          <span className="text-neutral-400 text-xs font-medium">
+            {t("Activity")}
           </span>
         </div>
         {(job.status === "queued" || job.status === "running") && (
           <button
             type="button"
-            className="ghost text-xs px-2.5 py-1 text-red-400 hover:text-red-300 border-red-500/30"
+            className="ghost text-xs h-7 px-2.5 text-red-400 hover:text-red-300 border-red-500/30 rounded-lg flex items-center gap-1"
             onClick={() => stopJob(job.id).catch((e) => setError(errMsg(e)))}
-            aria-label={t("Stop job")}
+            aria-label={t("Cancel")}
           >
-            {t("Stop")}
+            {t("Cancel")}
           </button>
         )}
       </div>
@@ -170,12 +177,15 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
       ))}
 
       {!compact && job.logs.length > 0 && (
-        <div className="pt-2">
-          <p className="muted text-xs mb-1 font-semibold">{t("Engine logs")}</p>
-          <pre className="log" role="log" aria-live="polite">
+        <details className="pt-2 text-xs text-neutral-400 group border-t border-white/5">
+          <summary className="cursor-pointer hover:text-white transition-colors py-1 flex items-center gap-1.5 select-none font-medium">
+            <ChevronDown size={14} className="transition-transform group-open:rotate-180 shrink-0" />
+            <span>{t("Activity Details")}</span>
+          </summary>
+          <pre className="log mt-2 max-h-48 overflow-y-auto text-[11px] p-2.5 rounded-lg bg-black/40 border border-white/5 font-sans" role="log" aria-live="polite">
             {job.logs.slice(-60).join("\n")}
           </pre>
-        </div>
+        </details>
       )}
     </section>
   );

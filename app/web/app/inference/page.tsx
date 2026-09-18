@@ -13,7 +13,7 @@ export default function InferencePage() {
   const { t } = useI18n();
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto space-y-6">
       <PageHeader
         title={t("Inference")}
         description={t("Convert audio files using trained voice models with single and batch processing.")}

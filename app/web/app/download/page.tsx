@@ -7,7 +7,7 @@ import { useI18n } from "../../lib/i18n";
 export default function DownloadPage() {
   const { t } = useI18n();
   return (
-    <div>
+    <div className="max-w-7xl mx-auto space-y-6">
       <PageHeader
         title={t("Download Models")}
         description={t("Download models from direct links or upload local checkpoint and index files.")}

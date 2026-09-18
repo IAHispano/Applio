@@ -276,6 +276,9 @@ a:focus-visible {
     box-shadow 0.2s ease;
   box-shadow: var(--shadow-card);
 }
+.card:last-child {
+  margin-bottom: 0;
+}
 .card h2 {
   margin-top: 0;
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
@@ -332,9 +335,9 @@ select:focus-visible {
   outline-offset: 1px;
 }
 input[type="file"] {
-  margin-top: 6px;
   font-size: 13px;
   color: var(--muted);
+  width: 100%;
 }
 input[type="file"]::file-selector-button,
 input[type="file"]::-webkit-file-upload-button {
@@ -636,18 +639,28 @@ button.ghost:hover {
   border-color: var(--button-ghost-border-hover);
   color: var(--button-text-hover);
 }
-button.cta {
+button.cta,
+.cta {
   background: var(--cta-bg);
   border-color: var(--cta-bg);
-  color: var(--cta-text);
+  color: var(--cta-text) !important;
   font-weight: 600;
   box-shadow: var(--shadow-button);
 }
-button.cta:hover {
+button.cta:hover,
+.cta:hover {
   background: var(--cta-bg);
   border-color: var(--cta-bg);
-  color: var(--cta-text);
+  color: var(--cta-text) !important;
   filter: brightness(0.9);
+}
+button.cta svg,
+.cta svg,
+button.cta svg *,
+.cta svg * {
+  color: var(--cta-text) !important;
+  stroke: var(--cta-text) !important;
+  flex-shrink: 0;
 }
 button.danger {
   background: var(--danger-bg);

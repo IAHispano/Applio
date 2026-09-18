@@ -25,7 +25,7 @@ export default function Sidebar() {
           <span className="text-lg font-semibold tracking-tight text-white group-hover:text-neutral-200 transition-colors">
             Applio
           </span>
-          <span className="text-[10px] uppercase font-medium tracking-wider px-1.5 py-0.5 rounded bg-white/10 text-neutral-400 border border-white/5">
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-white/10 text-neutral-400 border border-white/5">
             v3.6.4
           </span>
         </Link>
@@ -39,7 +39,7 @@ export default function Sidebar() {
         {NAV_SECTIONS.map((section, sIdx) => (
           <div key={section.title || `sec-${sIdx}`} className="space-y-1">
             {section.title && (
-              <h2 className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400 select-none m-0">
+              <h2 className="px-3 pt-1 pb-1 text-xs font-semibold text-neutral-400 select-none m-0">
                 {t(section.title)}
               </h2>
             )}

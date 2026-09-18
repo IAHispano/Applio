@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <main
                 id="main-content"
                 tabIndex={-1}
-                className="flex-1 min-h-0 min-w-0 overflow-y-auto p-4 outline-none"
+                className="flex-1 min-h-0 min-w-0 overflow-y-auto px-3 sm:px-4 pt-3 pb-3 outline-none"
               >
                 <PageTransition>{children}</PageTransition>
               </main>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Bug, Video, ExternalLink, Cpu, Download } from "lucide-react";
 import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg, outputUrl } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
@@ -80,71 +81,114 @@ export default function ReportPage() {
     : "";
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto space-y-6">
       <PageHeader
         title={t("Report a Bug")}
         description={t("Collect system diagnostics, record screen logs, and submit issue reports to GitHub.")}
       />
-      <div className="card">
-        <h2>{t("How to Report an Issue on GitHub")}</h2>
-        <p className="muted">
-          {t(
-            "1. Click on the 'Record Screen' button below to start recording the issue you are experiencing.",
-          )}
-        </p>
-        <p className="muted">
-          {t(
-            "2. Once you have finished recording the issue, click on the 'Stop Recording' button (the same button, but the label changes depending on whether you are actively recording or not).",
-          )}
-        </p>
-        <p className="muted">{t("3. Go to GitHub Issues and click on the 'New Issue' button.")}</p>
-        <p className="muted">
-          {t(
-            "4. Complete the provided issue template, ensuring to include details as needed, and utilize the assets section to upload the recorded file from the previous step.",
-          )}
-        </p>
-      </div>
-      {info ? (
-        <section aria-label={t("System diagnostics")}>
-          <pre className="log">
-            {`Applio ${info.version}\n${info.platform}\nNode ${info.node}\n${info.python}\nCPUs: ${info.cpus} · RAM: ${info.totalMemGB}GB`}
-          </pre>
-        </section>
-      ) : (
-        <p className="muted">{t("Collecting system info…")}</p>
-      )}
-      <div className="row" style={{ marginTop: 12 }}>
-        <button type="button" className="ghost" onClick={toggleRecord}>
-          {recording ? t("Stop Recording") : t("Record Screen")}
-        </button>
-        {info && (
-          <a
-            href={`${info.issueUrl}?body=${issueBody}`}
-            target="_blank"
-            rel="noreferrer"
-            className="cta inline-flex items-center justify-center text-sm font-medium"
-          >
-            {t("Open GitHub Issue")}
-          </a>
-        )}
-      </div>
-      {clip && (
-        <div style={{ marginTop: 12 }}>
-          {/* biome-ignore lint/a11y/useMediaCaption: user-recorded screen capture has no caption track */}
-          <video controls src={outputUrl(clip)} style={{ maxWidth: "100%", borderRadius: 8 }} />
-          <p>
-            <a href={outputUrl(clip)} download>
-              {t("Download clip")}
-            </a>{" "}
-            <span className="muted">{clip}</span>
-          </p>
+
+      {msg && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="p-3.5 rounded-xl border border-white/10 text-neutral-300 bg-white/5 text-sm"
+        >
+          {msg}
         </div>
       )}
-      {msg && (
-        <p className="muted" role="status" aria-live="polite">
-          {msg}
-        </p>
+
+      {/* Guide Card */}
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bug size={18} className="text-white" />
+              <h2 className="text-base font-bold text-white m-0">{t("How to Report an Issue on GitHub")}</h2>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Follow these steps to record a reproduction clip and submit a detailed bug report.")}
+          </p>
+        </div>
+        <ol className="space-y-2 text-xs text-neutral-300 m-0 pl-4 leading-relaxed">
+          <li>{t("Click on 'Record Screen' to start recording the issue you are experiencing.")}</li>
+          <li>{t("Once you have finished reproducing the issue, click 'Stop Recording'.")}</li>
+          <li>{t("Go to GitHub Issues and click on 'New Issue'.")}</li>
+          <li>
+            {t(
+              "Complete the provided issue template, paste the diagnostic information below, and attach the recorded screen clip.",
+            )}
+          </li>
+        </ol>
+
+        <div className="flex items-center gap-3 pt-3.5 border-t border-white/5">
+          <button
+            type="button"
+            className={
+              recording
+                ? "ghost h-10 px-4 flex items-center gap-2 text-sm font-medium rounded-xl text-neutral-200 hover:text-white"
+                : "cta h-10 px-4 flex items-center gap-2 text-sm font-medium rounded-xl"
+            }
+            onClick={toggleRecord}
+          >
+            <Video size={16} className={recording ? "animate-pulse shrink-0" : "shrink-0"} />
+            <span>{recording ? t("Stop Recording") : t("Record Screen")}</span>
+          </button>
+          {info && (
+            <a
+              href={`${info.issueUrl}?body=${issueBody}`}
+              target="_blank"
+              rel="noreferrer"
+              className="ghost h-10 px-4 flex items-center gap-2 text-sm font-medium rounded-xl text-neutral-200 hover:text-white"
+            >
+              <ExternalLink size={16} className="text-white shrink-0" />
+              <span>{t("Open GitHub Issue")}</span>
+            </a>
+          )}
+        </div>
+      </div>
+
+      {clip && (
+        <div className="card space-y-3">
+          {/* biome-ignore lint/performance/noImgElement: user-recorded screen capture has no caption track */}
+          <video controls src={outputUrl(clip)} className="max-w-full rounded-xl border border-white/10" />
+          <div className="flex items-center justify-between">
+            <a
+              href={outputUrl(clip)}
+              download
+              className="cta h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium"
+            >
+              <Download size={16} className="shrink-0" />
+              <span>{t("Download Video")}</span>
+            </a>
+            <span className="text-xs text-neutral-400">{clip}</span>
+          </div>
+        </div>
       )}
+
+      {/* Diagnostics Card */}
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cpu size={18} className="text-white shrink-0" />
+              <h2 className="text-base font-bold text-white m-0">{t("System Diagnostics")}</h2>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Environment details and system specifications to include in your issue report.")}
+          </p>
+        </div>
+        {info ? (
+          <section aria-label={t("System diagnostics")}>
+            <pre className="log m-0">
+              {`Applio ${info.version}\n${info.platform}\nNode ${info.node}\n${info.python}\nCPUs: ${info.cpus} · RAM: ${info.totalMemGB}GB`}
+            </pre>
+          </section>
+        ) : (
+          <p className="text-xs text-neutral-400 m-0">{t("Collecting system info…")}</p>
+        )}
+      </div>
     </div>
   );
 }

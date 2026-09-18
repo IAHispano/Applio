@@ -345,19 +345,24 @@ export default function InferenceForm() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         {/* Voice Model Selector (5 cols) */}
         <div className="lg:col-span-5 space-y-4 h-full">
-          <div className="card space-y-3 h-full flex flex-col">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Music size={18} className="text-white" />
-                <h2 className="text-base font-bold text-white m-0">
-                  {t("Voice Model")}
-                </h2>
+          <div className="card space-y-4 h-full flex flex-col">
+            <div className="border-b border-white/10 pb-3.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Music size={18} className="text-white" />
+                  <h2 className="text-base font-bold text-white m-0">
+                    {t("Voice Model")}
+                  </h2>
+                </div>
+                {pthPath && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/10">
+                    {t("Ready")}
+                  </span>
+                )}
               </div>
-              {pthPath && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  {t("Ready")}
-                </span>
-              )}
+              <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+                {t("Select the target voice checkpoint and paired feature index.")}
+              </p>
             </div>
 
             {/* Custom Model Dropdown */}
@@ -484,19 +489,24 @@ export default function InferenceForm() {
 
         {/* Audio Input & Drag & Drop Zone (7 cols) */}
         <div className="lg:col-span-7 space-y-4 h-full">
-          <div className="card space-y-3 h-full">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AudioWaveform size={18} className="text-white" />
-                <h2 className="text-base font-bold text-white m-0">
-                  {t("Audio Source")}
-                </h2>
+          <div className="card space-y-4 h-full">
+            <div className="border-b border-white/10 pb-3.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AudioWaveform size={18} className="text-white" />
+                  <h2 className="text-base font-bold text-white m-0">
+                    {t("Audio Source")}
+                  </h2>
+                </div>
+                {(audioFile || inputPath) && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/10">
+                    {audioFile ? t("Uploaded File") : t("Library Sample")}
+                  </span>
+                )}
               </div>
-              {(audioFile || inputPath) && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/10">
-                  {audioFile ? t("Uploaded File") : t("Library Sample")}
-                </span>
-              )}
+              <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+                {t("Upload an audio file or select a sample from your library.")}
+              </p>
             </div>
 
             {/* Interactive Drag & Drop + WavePlayer Component */}
@@ -514,14 +524,14 @@ export default function InferenceForm() {
 
       {/* Main Conversion Settings Card */}
       <div className="card space-y-5">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
-          <div className="flex items-center gap-2">
-            <Sliders size={18} className="text-white" />
-            <h2 className="text-base font-bold text-white m-0">
-              {t("Conversion Parameters")}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sliders size={18} className="text-white" />
+              <h2 className="text-base font-bold text-white m-0">
+                {t("Conversion Parameters")}
+              </h2>
+            </div>
             <button
               type="button"
               onClick={() => {
@@ -530,11 +540,14 @@ export default function InferenceForm() {
                 setVolumeEnvelope(1.0);
                 setProtect(0.5);
               }}
-              className="text-xs text-neutral-400 hover:text-white transition-colors"
+              className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer"
             >
               {t("Reset defaults")}
             </button>
           </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Fine-tune pitch shifting, index feature retrieval, and audio envelope response.")}
+          </p>
         </div>
 
         {/* 4 Core Voice Sliders (2x2 Grid) */}
@@ -1085,16 +1098,16 @@ export default function InferenceForm() {
             <button
               type="submit"
               disabled={isConverting || !pthPath || (!audioFile && !inputPath)}
-              className="cta text-sm px-6 py-2.5 flex items-center gap-2 shadow-xl"
+              className="cta h-10 px-5 flex items-center gap-2 text-sm font-medium rounded-xl"
             >
-              <Wand2 size={16} />
+              <Wand2 size={16} className="shrink-0" />
               <span>{isConverting ? t("Converting Audio…") : t("Convert Audio")}</span>
             </button>
 
             {job && isConverting && (
               <button
                 type="button"
-                className="ghost text-xs"
+                className="ghost h-10 px-4 flex items-center gap-1.5 text-xs font-medium rounded-xl text-red-400 hover:text-red-300 border-red-500/30"
                 onClick={() => stopJob(job.id).catch((e) => setSubmitError(errMsg(e)))}
               >
                 {t("Stop Conversion")}
@@ -1105,10 +1118,9 @@ export default function InferenceForm() {
           <div className="flex items-center gap-2">
             {job && (
               <span className={`badge ${job.status}`} role="status">
-                {job.status}
+                {job.status === "done" ? t("Completed") : job.status === "running" ? t("In Progress") : job.status}
               </span>
             )}
-            {job && <span className="text-xs text-neutral-400">ID: {job.id}</span>}
           </div>
         </div>
 
@@ -1174,14 +1186,14 @@ export default function InferenceForm() {
           </div>
         )}
 
-        {/* Collapsible Python Engine Logs */}
+        {/* Collapsible Activity Details */}
         {job && job.logs.length > 0 && (
           <details className="group border-t border-white/10 pt-3">
             <summary className="cursor-pointer text-xs font-semibold text-neutral-400 hover:text-white flex items-center justify-between select-none">
-              <span>{t("Python Engine Execution Logs")}</span>
+              <span>{t("Activity Details")}</span>
               <ChevronDown size={14} className="transition-transform duration-200 group-open:rotate-180" />
             </summary>
-            <pre className="log mt-2 max-h-48 text-[11px]">{job.logs.slice(-80).join("\n")}</pre>
+            <pre className="log mt-2 max-h-48 text-[11px] font-sans">{job.logs.slice(-80).join("\n")}</pre>
           </details>
         )}
       </div>

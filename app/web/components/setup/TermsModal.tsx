@@ -106,7 +106,7 @@ export default function TermsModal() {
                 <h2 id="terms-modal-title" className="text-lg font-bold text-white tracking-tight m-0">
                   {t("Terms of Use")}
                 </h2>
-                <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-neutral-300">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-neutral-300">
                   Applio
                 </span>
               </div>
@@ -120,8 +120,8 @@ export default function TermsModal() {
           <div className="hidden sm:flex flex-col items-end gap-1 shrink-0 select-none">
             <span className="text-[11px] text-neutral-400">
               {scrolledToBottom ? (
-                <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                <span className="text-white font-semibold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                   {t("Document Read")}
                 </span>
               ) : (
@@ -160,13 +160,13 @@ export default function TermsModal() {
             className="flex-1 overflow-y-auto p-5 sm:p-7 space-y-6 text-xs sm:text-sm text-neutral-300 leading-relaxed font-sans focus:outline-none scrollbar-thin"
           >
             {/* Top Important Banner */}
-            <div className="p-4 rounded-xl border border-amber-500/25 bg-amber-500/[0.08] text-amber-200 flex items-start gap-3.5 shadow-sm">
-              <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-amber-400" />
+            <div className="p-4 rounded-xl border border-white/15 bg-white/[0.04] text-neutral-200 flex items-start gap-3.5 shadow-sm">
+              <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-white" />
               <div className="space-y-0.5">
-                <h3 className="text-xs font-semibold text-amber-300 uppercase tracking-wider m-0">
+                <h3 className="text-xs font-semibold text-white m-0">
                   {t("Important Notice")}
                 </h3>
-                <p className="text-xs text-amber-200/90 m-0 leading-normal">
+                <p className="text-xs text-neutral-300 m-0 leading-normal">
                   {t(
                     "Applio is an open-source audio research and voice transformation tool. Responsible, ethical, and legal use is strictly required.",
                   )}
@@ -286,9 +286,9 @@ export default function TermsModal() {
             </div>
 
             {/* Section 3: Permitted Use Cases */}
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.02] p-4 sm:p-5 space-y-3.5 hover:border-emerald-500/30 transition-colors">
-              <div className="flex items-center gap-2 text-emerald-300">
-                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5 space-y-3.5 hover:border-white/20 transition-colors">
+              <div className="flex items-center gap-2 text-neutral-200">
+                <div className="w-6 h-6 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center text-white shrink-0">
                   <Sparkles className="w-3.5 h-3.5" />
                 </div>
                 <h3 className="text-sm font-bold text-white tracking-tight m-0">
@@ -299,7 +299,7 @@ export default function TermsModal() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                 <div className="p-3 rounded-lg bg-black/40 border border-white/5 space-y-1">
-                  <strong className="text-xs font-semibold text-emerald-300 block">
+                  <strong className="text-xs font-semibold text-neutral-200 block">
                     {t("Personal Projects")}
                   </strong>
                   <p className="text-[11px] text-neutral-400 m-0 leading-normal">
@@ -307,7 +307,7 @@ export default function TermsModal() {
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-black/40 border border-white/5 space-y-1">
-                  <strong className="text-xs font-semibold text-emerald-300 block">
+                  <strong className="text-xs font-semibold text-neutral-200 block">
                     {t("Academic Research")}
                   </strong>
                   <p className="text-[11px] text-neutral-400 m-0 leading-normal">
@@ -315,7 +315,7 @@ export default function TermsModal() {
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-black/40 border border-white/5 space-y-1">
-                  <strong className="text-xs font-semibold text-emerald-300 block">
+                  <strong className="text-xs font-semibold text-neutral-200 block">
                     {t("Investigative Purposes")}
                   </strong>
                   <p className="text-[11px] text-neutral-400 m-0 leading-normal">
@@ -323,7 +323,7 @@ export default function TermsModal() {
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-black/40 border border-white/5 space-y-1">
-                  <strong className="text-xs font-semibold text-emerald-300 block">
+                  <strong className="text-xs font-semibold text-neutral-200 block">
                     {t("Commercial Use")}
                   </strong>
                   <p className="text-[11px] text-neutral-400 m-0 leading-normal">
@@ -336,9 +336,9 @@ export default function TermsModal() {
             </div>
 
             {/* Section 4: Prohibited Activities */}
-            <div className="rounded-xl border border-red-500/25 bg-red-500/[0.03] p-4 sm:p-5 space-y-3.5 hover:border-red-500/40 transition-colors">
-              <div className="flex items-center gap-2 text-red-300">
-                <div className="w-6 h-6 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0">
+            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5 space-y-3.5 hover:border-white/20 transition-colors">
+              <div className="flex items-center gap-2 text-neutral-200">
+                <div className="w-6 h-6 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center text-white shrink-0">
                   <Ban className="w-3.5 h-3.5" />
                 </div>
                 <h3 className="text-sm font-bold text-white tracking-tight m-0">
@@ -459,13 +459,13 @@ export default function TermsModal() {
             </label>
 
             {!scrolledToBottom ? (
-              <span className="text-[11px] font-medium text-amber-400/90 flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3 shrink-0" />
+              <span className="text-[11px] font-medium text-neutral-400 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3 shrink-0 text-neutral-400" />
                 {t("Scroll to the bottom to unlock")}
               </span>
             ) : (
-              <span className="text-[11px] font-medium text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 shrink-0" />
+              <span className="text-[11px] font-medium text-white flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 shrink-0 text-white" />
                 {t("Unlocked")}
               </span>
             )}

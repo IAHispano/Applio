@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Sliders, Palette, Cpu, Activity, RefreshCw, Power, Save } from "lucide-react";
 import PageHeader from "../../components/layout/PageHeader";
 import SliderField from "../../components/ui/SliderField";
 import { apiGet, apiSend, errMsg } from "../../lib/api";
@@ -119,7 +120,6 @@ export default function SettingsPage() {
       if (typeof (patch as Record<string, unknown>).lang !== "undefined") {
         window.dispatchEvent(new Event("applio:language-changed"));
       }
-      // Discord presence takes effect immediately (Gradio presence.py parity).
       if (typeof (patch as Record<string, unknown>).discord_presence === "boolean") {
         try {
           const p = await apiSend<{ running: boolean }>("/api/settings/presence", "POST", {
@@ -131,7 +131,7 @@ export default function SettingsPage() {
           return;
         }
       }
-      setSaved(t("Saved ✓"));
+      setSaved(t("Settings saved successfully."));
     } catch (e) {
       setError(errMsg(e));
     }
@@ -185,11 +185,14 @@ export default function SettingsPage() {
 
   if (!cfg)
     return (
-      <div className="card">
-        <p className="muted">{t("Loading settings…")}</p>
-        {error && <p style={{ color: "var(--err)" }}>{error}</p>}
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="card">
+          <p className="text-neutral-400">{t("Loading settings…")}</p>
+          {error && <p className="text-neutral-300">{error}</p>}
+        </div>
       </div>
     );
+
   const set = (path: string[], value: unknown) => {
     const next = structuredClone(cfg);
     let o: Record<string, unknown> = next;
@@ -199,16 +202,17 @@ export default function SettingsPage() {
   };
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto space-y-6">
       <PageHeader
         title={t("Settings")}
         description={t("Configure application preferences, audio engine settings, precision, and language.")}
       />
+
       {error && (
         <div
           role="alert"
           aria-live="assertive"
-          className="mb-4 p-3 rounded-lg border border-[var(--err)] text-[var(--err)] bg-[color-mix(in_srgb,var(--err)_10%,transparent)]"
+          className="p-3.5 rounded-xl border border-white/10 text-neutral-200 bg-white/5 text-sm"
         >
           {error}
         </div>
@@ -217,48 +221,61 @@ export default function SettingsPage() {
         <div
           role="status"
           aria-live="polite"
-          className="mb-4 p-3 rounded-lg border border-[var(--ok)] text-[var(--ok)] bg-[color-mix(in_srgb,var(--ok)_10%,transparent)]"
+          className="p-3.5 rounded-xl border border-white/10 text-white bg-white/10 text-sm"
         >
           {saved}
         </div>
       )}
 
-      <div className="card">
-        <h2>{t("General")}</h2>
-        <label
-          htmlFor="settings-filter-checkbox"
-          className="checkbox-label flex items-center gap-2 cursor-pointer"
-        >
-          <input
-            id="settings-filter-checkbox"
-            type="checkbox"
-            checked={!!cfg.model_index_filter}
-            onChange={(e) => set(["model_index_filter"], e.target.checked)}
-          />
-          <span>{t("Model & index filter box")}</span>
-        </label>
-        <label
-          htmlFor="settings-discord-checkbox"
-          className="checkbox-label flex items-center gap-2 cursor-pointer mt-2"
-        >
-          <input
-            id="settings-discord-checkbox"
-            type="checkbox"
-            checked={!!cfg.discord_presence}
-            onChange={(e) => set(["discord_presence"], e.target.checked)}
-          />
-          <span>{t("Discord Rich Presence")}</span>
-          {presenceRunning !== null && (
-            <span className="muted" role="status">
-              {" "}
-              ({presenceRunning ? t("running") : t("stopped")})
-            </span>
-          )}
-        </label>
-        <div className="grid2 mt-3">
-          <div>
-            <label htmlFor="settings-lang">
-              {t("Language")} ({langs.length} {t("available")})
+      {/* 1. General Preferences */}
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sliders size={18} className="text-white" />
+              <h2 className="text-base font-bold text-white m-0">{t("General Preferences")}</h2>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Configure search filter visibility, Discord Rich Presence, and UI locale.")}
+          </p>
+        </div>
+
+        <div className="space-y-3.5">
+          <label
+            htmlFor="settings-filter-checkbox"
+            className="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-neutral-200"
+          >
+            <input
+              id="settings-filter-checkbox"
+              type="checkbox"
+              checked={!!cfg.model_index_filter}
+              onChange={(e) => set(["model_index_filter"], e.target.checked)}
+            />
+            <span>{t("Model & index filter box")}</span>
+          </label>
+
+          <label
+            htmlFor="settings-discord-checkbox"
+            className="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-neutral-200"
+          >
+            <input
+              id="settings-discord-checkbox"
+              type="checkbox"
+              checked={!!cfg.discord_presence}
+              onChange={(e) => set(["discord_presence"], e.target.checked)}
+            />
+            <span>{t("Discord Rich Presence")}</span>
+            {presenceRunning !== null && (
+              <span className="text-xs text-neutral-400" role="status">
+                ({presenceRunning ? t("running") : t("stopped")})
+              </span>
+            )}
+          </label>
+
+          <div className="max-w-md pt-1">
+            <label htmlFor="settings-lang" className="block text-xs font-medium text-neutral-300 mb-1.5">
+              {t("Interface Language")} ({langs.length} {t("available")})
             </label>
             <select
               id="settings-lang"
@@ -281,10 +298,11 @@ export default function SettingsPage() {
             </select>
           </div>
         </div>
-        <div className="row" style={{ marginTop: 8 }}>
+
+        <div className="pt-3.5 border-t border-white/5 flex items-center justify-end">
           <button
             type="button"
-            className="cta"
+            className="cta h-9 px-4 rounded-xl text-xs font-medium flex items-center gap-2"
             onClick={() =>
               save({
                 model_index_filter: cfg.model_index_filter,
@@ -293,65 +311,92 @@ export default function SettingsPage() {
               })
             }
           >
-            {t("Save General")}
+            <Save size={14} className="shrink-0" />
+            <span>{t("Save General")}</span>
           </button>
         </div>
       </div>
 
-      <div className="card">
-        <h2>{t("Appearance")}</h2>
-        <p className="muted">
-          {t(
-            "Pick a theme from assets/themes/. Copy custom.example.json to create your own — see docs/themes.md.",
-          )}
-        </p>
-        <div className="grid2">
-          <div>
-            <label htmlFor="settings-theme">{t("Theme")}</label>
-            <select
-              id="settings-theme"
-              value={(cfg.theme as { file?: string } | undefined)?.file || ""}
-              onChange={(e) => set(["theme", "file"], e.target.value)}
-            >
-              <option value="">{t("Default")}</option>
-              {themes.map((th) => (
-                <option key={th.id} value={th.id}>
-                  {th.name}
-                  {th.description ? ` — ${th.description.slice(0, 60)}` : ""}
-                </option>
-              ))}
-            </select>
+      {/* 2. Appearance & Themes */}
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Palette size={18} className="text-white shrink-0" />
+              <h2 className="text-base font-bold text-white m-0">{t("Appearance & Themes")}</h2>
+            </div>
           </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Customize visual theme styling from assets/themes/ or load custom theme palettes.")}
+          </p>
         </div>
-        <div className="row" style={{ marginTop: 8 }}>
+
+        <div className="max-w-md">
+          <label htmlFor="settings-theme" className="block text-xs font-medium text-neutral-300 mb-1.5">
+            {t("Theme")}
+          </label>
+          <select
+            id="settings-theme"
+            value={(cfg.theme as { file?: string } | undefined)?.file || ""}
+            onChange={(e) => set(["theme", "file"], e.target.value)}
+          >
+            <option value="">{t("Default")}</option>
+            {themes.map((th) => (
+              <option key={th.id} value={th.id}>
+                {th.name}
+                {th.description ? ` — ${th.description.slice(0, 60)}` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="pt-3.5 border-t border-white/5 flex items-center justify-end">
           <button
             type="button"
-            className="ghost"
+            className="cta h-9 px-4 rounded-xl text-xs font-medium flex items-center gap-2"
             onClick={() =>
               save({ theme: { file: (cfg.theme as { file?: string } | undefined)?.file || "" } }).then(() =>
                 window.dispatchEvent(new Event("applio:theme-changed")),
               )
             }
           >
-            {t("Save Appearance")}
+            <Save size={14} className="shrink-0" />
+            <span>{t("Save Appearance")}</span>
           </button>
         </div>
       </div>
 
-      <div className="card">
-        <h2>{t("Training")}</h2>
-        <div className="grid2">
+      {/* 3. Training Engine */}
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cpu size={18} className="text-white" />
+              <h2 className="text-base font-bold text-white m-0">{t("Training Engine")}</h2>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Set default model author metadata and floating-point computation precision for training.")}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
           <div>
-            <label htmlFor="settings-model-author">{t("Model Author Name")}</label>
+            <label htmlFor="settings-model-author" className="block text-xs font-medium text-neutral-300 mb-1.5">
+              {t("Model Author Name")}
+            </label>
             <input
               id="settings-model-author"
               type="text"
               value={cfg.model_author || ""}
               onChange={(e) => set(["model_author"], e.target.value || null)}
+              placeholder="Applio"
             />
           </div>
           <div>
-            <label htmlFor="settings-precision">{t("Precision")}</label>
+            <label htmlFor="settings-precision" className="block text-xs font-medium text-neutral-300 mb-1.5">
+              {t("Precision")}
+            </label>
             <select
               id="settings-precision"
               value={cfg.precision}
@@ -365,179 +410,215 @@ export default function SettingsPage() {
             </select>
           </div>
         </div>
-        <div className="row" style={{ marginTop: 8 }}>
+
+        <div className="pt-3.5 border-t border-white/5 flex items-center justify-end">
           <button
             type="button"
-            className="cta"
+            className="cta h-9 px-4 rounded-xl text-xs font-medium flex items-center gap-2"
             onClick={() => save({ model_author: cfg.model_author, precision: cfg.precision })}
           >
-            {t("Save Training")}
+            <Save size={14} className="shrink-0" />
+            <span>{t("Save Training")}</span>
           </button>
         </div>
       </div>
 
-      <div className="card">
-        <h2>{t("RMVPE High Register")}</h2>
-        <label
-          htmlFor="settings-rmvpe-enabled"
-          className="checkbox-label flex items-center gap-2 cursor-pointer"
-        >
-          <input
-            id="settings-rmvpe-enabled"
-            type="checkbox"
-            checked={!!cfg.rmvpe_high_register?.enabled}
-            onChange={(e) => set(["rmvpe_high_register", "enabled"], e.target.checked)}
-          />
-          <span>{t("Enable High Register")}</span>
-        </label>
-        <div className="grid2 mt-3">
-          <div>
-            <label htmlFor="settings-rmvpe-mode">{t("Mode")}</label>
-            <select
-              id="settings-rmvpe-mode"
-              value={cfg.rmvpe_high_register?.mode}
-              onChange={(e) => set(["rmvpe_high_register", "mode"], e.target.value)}
-            >
-              <option value="true_pitch">true_pitch</option>
-              <option value="fold">fold</option>
-            </select>
+      {/* 4. RMVPE High Register */}
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity size={18} className="text-white shrink-0" />
+              <h2 className="text-base font-bold text-white m-0">{t("RMVPE High Register")}</h2>
+            </div>
           </div>
-          <div>
-            <SliderField
-              id="settings-rmvpe-ceil"
-              label={t("F0 ceiling")}
-              value={cfg.rmvpe_high_register?.f0_ceil || 1250}
-              min={1000}
-              max={2000}
-              step={10}
-              unit="Hz"
-              onChange={(v) => set(["rmvpe_high_register", "f0_ceil"], v)}
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Adjust pitch detection algorithm behavior and frequency ceiling for higher vocal registers.")}
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <label
+            htmlFor="settings-rmvpe-enabled"
+            className="flex items-center gap-2.5 cursor-pointer text-xs font-medium text-neutral-200"
+          >
+            <input
+              id="settings-rmvpe-enabled"
+              type="checkbox"
+              checked={!!cfg.rmvpe_high_register?.enabled}
+              onChange={(e) => set(["rmvpe_high_register", "enabled"], e.target.checked)}
             />
+            <span>{t("Enable High Register")}</span>
+          </label>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+            <div>
+              <label htmlFor="settings-rmvpe-mode" className="block text-xs font-medium text-neutral-300 mb-1.5">
+                {t("Mode")}
+              </label>
+              <select
+                id="settings-rmvpe-mode"
+                value={cfg.rmvpe_high_register?.mode}
+                onChange={(e) => set(["rmvpe_high_register", "mode"], e.target.value)}
+              >
+                <option value="true_pitch">true_pitch</option>
+                <option value="fold">fold</option>
+              </select>
+            </div>
+            <div>
+              <SliderField
+                id="settings-rmvpe-ceil"
+                label={t("F0 ceiling")}
+                value={cfg.rmvpe_high_register?.f0_ceil || 1250}
+                min={1000}
+                max={2000}
+                step={10}
+                unit="Hz"
+                onChange={(v) => set(["rmvpe_high_register", "f0_ceil"], v)}
+              />
+            </div>
           </div>
         </div>
-        <div className="row" style={{ marginTop: 8 }}>
+
+        <div className="pt-3.5 border-t border-white/5 flex items-center justify-end">
           <button
             type="button"
-            className="cta"
+            className="cta h-9 px-4 rounded-xl text-xs font-medium flex items-center gap-2"
             onClick={() => save({ rmvpe_high_register: cfg.rmvpe_high_register })}
           >
-            {t("Save RMVPE")}
+            <Save size={14} className="shrink-0" />
+            <span>{t("Save RMVPE")}</span>
           </button>
         </div>
       </div>
 
-      <div className="card">
-        <h2>{t("Version Checker")}</h2>
-        <p className="muted">
-          {t("Local")}: {cfg.version}
-        </p>
-        <div className="row" style={{ alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-          <button
-            type="button"
-            className="ghost"
-            onClick={checkVersion}
-            disabled={updaterState?.status === "checking" || updaterState?.status === "downloading"}
-          >
-            {updaterState?.status === "checking" ? t("Checking…") : t("Check for updates")}
-          </button>
-          {updaterState && updaterState.status !== "idle" && updaterState.status !== "dev-mode" && (
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: "240px" }}>
-              {updaterState.status === "downloading" && (
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      fontSize: "12px",
-                      color: "var(--text-muted)",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    <span>{t("Downloading update…")}</span>
-                    <span>{updaterState.percent ?? 0}%</span>
-                  </div>
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "6px",
-                      background: "rgba(255,255,255,0.1)",
-                      borderRadius: "999px",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: "100%",
-                        width: `${updaterState.percent ?? 0}%`,
-                        background: "#ffffff",
-                        borderRadius: "999px",
-                        transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-              {updaterState.status === "downloaded" && (
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                  <span className="muted" role="status" aria-live="polite">
-                    {t("Update downloaded (v")}
-                    {updaterState.version}
-                    {")"}
-                  </span>
-                  <button
-                    type="button"
-                    className="cta"
-                    onClick={() => {
-                      (
-                        window as unknown as { applio?: { updater?: { quitAndInstall: () => void } } }
-                      ).applio?.updater?.quitAndInstall();
-                    }}
-                  >
-                    {t("Restart and Update")}
-                  </button>
-                </div>
-              )}
-              {updaterState.status === "available" && (
-                <span className="muted" role="status" aria-live="polite">
-                  {t("Update available (v")}
-                  {updaterState.version}
-                  {t("). Downloading…")}
-                </span>
-              )}
-              {updaterState.status === "not-available" && (
-                <span className="muted" role="status" aria-live="polite">
-                  {t("Applio is up to date (v")}
-                  {updaterState.version || cfg.version}
-                  {")"}
-                </span>
-              )}
-              {updaterState.status === "error" && (
-                <span className="muted" style={{ color: "var(--err)" }} role="status" aria-live="polite">
-                  {updaterState.message}
-                </span>
-              )}
+      {/* 5. Version & Updates */}
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <RefreshCw size={18} className="text-white shrink-0" />
+              <h2 className="text-base font-bold text-white m-0">{t("Version & Updates")}</h2>
+            </div>
+            <span className="text-xs text-neutral-400 tabular-nums px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+              v{cfg.version}
+            </span>
+          </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Check for official Applio updates and apply package releases.")}
+          </p>
+        </div>
+
+        {/* Status display section */}
+        <div className="space-y-3">
+          {updaterState && updaterState.status === "downloading" && (
+            <div className="max-w-md space-y-1.5">
+              <div className="flex justify-between text-xs text-neutral-400 tabular-nums">
+                <span>{t("Downloading update…")}</span>
+                <span>{updaterState.percent ?? 0}%</span>
+              </div>
+              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-white rounded-full transition-all duration-300"
+                  style={{ width: `${updaterState.percent ?? 0}%` }}
+                />
+              </div>
             </div>
           )}
-          {ver && (!updaterState || updaterState.status === "dev-mode") && (
-            <span className="muted" role="status" aria-live="polite">
-              {ver.error || `${ver.latest} — ${ver.status}`}
-            </span>
+
+          {updaterState?.status === "available" && (
+            <p className="text-xs text-neutral-300 m-0" role="status" aria-live="polite">
+              {t("Update available: v")}{updaterState.version}{t(". Ready to download.")}
+            </p>
           )}
+
+          {updaterState?.status === "not-available" && (
+            <p className="text-xs text-neutral-400 m-0" role="status" aria-live="polite">
+              {t("Applio is up to date (v")}{updaterState.version || cfg.version}{")"}
+            </p>
+          )}
+
+          {updaterState?.status === "error" && (
+            <p className="text-xs text-neutral-300 m-0" role="status" aria-live="polite">
+              {updaterState.message}
+            </p>
+          )}
+
+          {ver && (!updaterState || updaterState.status === "dev-mode") && (
+            <p className="text-xs text-neutral-400 m-0" role="status" aria-live="polite">
+              {ver.error || `${ver.latest} — ${ver.status}`}
+            </p>
+          )}
+        </div>
+
+        {/* Action row with clean breathing room */}
+        <div className="pt-3.5 border-t border-white/5 flex items-center justify-between gap-4 flex-wrap">
+          <div className="text-xs text-neutral-400">
+            {updaterState?.status === "downloaded" && (
+              <span>{t("Update downloaded (v")}{updaterState.version}{")"}</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            {updaterState?.status === "downloaded" && (
+              <button
+                type="button"
+                className="cta h-9 px-4 rounded-xl text-xs font-medium flex items-center gap-2"
+                onClick={() => {
+                  (
+                    window as unknown as { applio?: { updater?: { quitAndInstall: () => void } } }
+                  ).applio?.updater?.quitAndInstall();
+                }}
+              >
+                <RefreshCw size={14} className="shrink-0" />
+                <span>{t("Restart and Update")}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="ghost h-9 px-4 rounded-xl text-xs font-medium flex items-center gap-2 text-neutral-200 hover:text-white"
+              onClick={checkVersion}
+              disabled={updaterState?.status === "checking" || updaterState?.status === "downloading"}
+            >
+              <RefreshCw size={14} className={`text-white shrink-0 ${updaterState?.status === "checking" ? "animate-spin" : ""}`} />
+              <span>{updaterState?.status === "checking" ? t("Checking…") : t("Check for Updates")}</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="card">
-        <h2>{t("Restart")}</h2>
-        <p className="muted">{t("Restarts the API process (the dev watcher respawns it automatically).")}</p>
-        <div className="row">
-          <button type="button" className="ghost" onClick={restartApi}>
-            {t("Restart API")}
+      {/* 6. Restart API */}
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Power size={18} className="text-white shrink-0" />
+              <h2 className="text-base font-bold text-white m-0">{t("Restart API")}</h2>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Restarts the backend API service to apply system changes.")}
+          </p>
+        </div>
+
+        <div className="pt-1 flex items-center justify-between gap-4">
+          <div>
+            {restartMsg && (
+              <span className="text-xs text-neutral-300" role="status" aria-live="polite">
+                {restartMsg}
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="ghost h-9 px-4 rounded-xl text-xs font-medium flex items-center gap-2 text-neutral-200 hover:text-white"
+            onClick={restartApi}
+          >
+            <Power size={14} className="text-white shrink-0" />
+            <span>{t("Restart API")}</span>
           </button>
-          {restartMsg && (
-            <span className="muted" role="status" aria-live="polite">
-              {restartMsg}
-            </span>
-          )}
         </div>
       </div>
     </div>

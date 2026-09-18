@@ -59,9 +59,9 @@ export default function Toaster() {
           >
             <span className="shrink-0 mt-0.5" aria-hidden="true">
               {isError ? (
-                <AlertCircle size={15} className="text-red-400" />
+                <AlertCircle size={15} className="text-white" />
               ) : (
-                <CheckCircle2 size={15} className="text-emerald-400" />
+                <CheckCircle2 size={15} className="text-white" />
               )}
             </span>
             <span className="flex-1 font-medium leading-relaxed">{t.text}</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Activity,
   AlertCircle,
   ArrowRight,
   CheckCircle2,
@@ -8,7 +9,6 @@ import {
   ChevronUp,
   RefreshCw,
   Sparkles,
-  Terminal,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiGet, apiSend, errMsg, fetchJob, type Job } from "../../lib/api";
@@ -145,20 +145,20 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
     return [
       {
         id: "env",
-        title: "Python Virtual Environment",
-        desc: "Isolated Python runtime (.venv)",
+        title: "AI Runtime Environment",
+        desc: "Isolated core processing runtime",
         status: hasPy ? (hasTorch ? "done" : "running") : "running",
       },
       {
         id: "torch",
-        title: "PyTorch & GPU Acceleration",
-        desc: "CUDA, MPS, or high-performance CPU backend",
+        title: "Hardware Acceleration",
+        desc: "CUDA, MPS, or high-performance compute backend",
         status: hasTorch ? (hasDeps ? "done" : "running") : "pending",
       },
       {
         id: "engine",
-        title: "RVC Engine Packages",
-        desc: "Faiss indexer, FCPE, Crepe, and audio processors",
+        title: "Audio Processing Engine",
+        desc: "Faiss indexer, FCPE, Crepe, and acoustic models",
         status: hasDeps ? (hasModels ? "done" : "running") : "pending",
       },
       {
@@ -221,7 +221,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
           <div className="flex items-center justify-between text-xs text-neutral-300">
             <span className="font-medium flex items-center gap-2">
               {job?.status === "done" ? (
-                <CheckCircle2 size={16} className="text-emerald-400" />
+                <CheckCircle2 size={16} className="text-white" />
               ) : (
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
               )}
@@ -270,7 +270,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
                   <div className="flex items-center gap-3">
                     <div className="shrink-0">
                       {isDone ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <CheckCircle2 className="w-4 h-4 text-white" />
                       ) : isRunning ? (
                         <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
                       ) : (
@@ -283,9 +283,9 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
                     </div>
                   </div>
 
-                  <span className="text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded">
                     {isDone ? (
-                      <span className="text-emerald-400">{t("Ready")}</span>
+                      <span className="text-neutral-200">{t("Ready")}</span>
                     ) : isRunning ? (
                       <span className="text-white animate-pulse">{t("Installing…")}</span>
                     ) : (
@@ -303,9 +303,9 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
           <div
             role="alert"
             aria-live="assertive"
-            className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-start gap-3"
+            className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-start gap-3"
           >
-            <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-white shrink-0 mt-0.5" />
             <div className="space-y-2 flex-1">
               <p className="text-xs font-semibold text-red-300 m-0">{t("Setup Encountered an Issue")}</p>
               <p className="text-xs text-red-200/80 m-0 leading-relaxed">{error}</p>
@@ -325,24 +325,24 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
           <button
             type="button"
-            className="ghost text-xs px-3 py-1.5 flex items-center gap-1.5 text-neutral-400 hover:text-white"
+            className="ghost text-xs px-3 py-1.5 flex items-center gap-1.5 text-neutral-400 hover:text-white rounded-lg"
             onClick={() => setShowLogs(!showLogs)}
             aria-expanded={showLogs}
             aria-controls="setup-console-logs"
           >
-            <Terminal size={14} />
-            <span>{showLogs ? t("Hide Console Output") : t("View Live Console Output")}</span>
-            {showLogs ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            <Activity size={14} className="text-white shrink-0" />
+            <span>{showLogs ? t("Hide Activity Details") : t("View Activity Details")}</span>
+            {showLogs ? <ChevronUp size={14} className="shrink-0" /> : <ChevronDown size={14} className="shrink-0" />}
           </button>
 
           {job?.status === "done" && (
             <button
               type="button"
-              className="cta px-6 py-2.5 text-sm flex items-center gap-2 shadow-lg"
+              className="cta h-10 px-5 text-sm font-medium flex items-center gap-2 rounded-xl shadow-lg"
               onClick={onComplete}
             >
               <span>{countdown !== null ? `Entering Applio (${countdown}s)…` : t("Launch Applio")}</span>
-              <ArrowRight size={15} />
+              <ArrowRight size={16} className="shrink-0" />
             </button>
           )}
         </div>

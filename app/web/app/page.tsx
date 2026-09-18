@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Activity,
   AlertCircle,
   ArrowRight,
   CheckCircle2,
@@ -109,14 +110,14 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto flex flex-col gap-6 pb-8">
+    <div className="max-w-5xl mx-auto flex flex-col gap-6">
       {/* Applio Header Card */}
       <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-7">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs font-medium text-neutral-300">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
                 {t("Ready")}
               </span>
             </div>
@@ -186,7 +187,7 @@ export default function Home() {
               {passedChecks}/{totalChecks} {t("Checks OK")}
             </p>
           </div>
-          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+          <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white">
             <CheckCircle2 className="w-4 h-4" />
           </div>
         </div>
@@ -203,7 +204,7 @@ export default function Home() {
               <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white">
                 <Sparkles className="w-4 h-4" />
               </div>
-              <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+              <span className="text-[11px] font-semibold text-neutral-400">
                 {t("Audio Conversion")}
               </span>
             </div>
@@ -231,7 +232,7 @@ export default function Home() {
               <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-white">
                 <Radio className="w-4 h-4" />
               </div>
-              <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+              <span className="text-[11px] font-semibold text-neutral-400">
                 {t("Live Audio")}
               </span>
             </div>
@@ -252,7 +253,8 @@ export default function Home() {
       {/* Clean Collapsible Diagnostics Section */}
       <section className="rounded-xl border border-white/10 bg-white/[0.02] overflow-hidden">
         <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <Activity size={16} className="text-white" />
             <h3 className="text-sm font-semibold text-neutral-200 m-0">{t("System Diagnostics")}</h3>
             <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/5">
               {passedChecks}/{totalChecks} {t("passed")}
@@ -311,23 +313,23 @@ export default function Home() {
                 >
                   <div className="mt-0.5 shrink-0">
                     {isOk ? (
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                     ) : isWarn ? (
-                      <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                      <AlertCircle className="w-3.5 h-3.5 text-neutral-300" />
                     ) : (
-                      <XCircle className="w-3.5 h-3.5 text-red-400" />
+                      <XCircle className="w-3.5 h-3.5 text-neutral-400" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-xs font-medium text-neutral-200 truncate">{c.label}</span>
                       <span
-                        className={`text-[9px] px-1 py-0.2 rounded uppercase ${
+                        className={`text-[9px] px-1.5 py-0.5 rounded ${
                           isOk
-                            ? "text-emerald-400 bg-emerald-400/10"
+                            ? "text-white bg-white/10"
                             : isWarn
-                              ? "text-amber-400 bg-amber-400/10"
-                              : "text-red-400 bg-red-400/10"
+                              ? "text-neutral-300 bg-white/10"
+                              : "text-neutral-400 bg-white/5"
                         }`}
                       >
                         {c.status}

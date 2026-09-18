@@ -1,5 +1,6 @@
 "use client";
 
+import { FolderArchive, Layers, Music, RotateCcw, Sliders, Wand2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiGet, errMsg, fetchModels, submitJob } from "../lib/api";
 import { useI18n } from "../lib/i18n";
@@ -102,75 +103,171 @@ export default function BatchForm() {
   }
 
   return (
-    <form onSubmit={onSubmit}>
-      <div className="card">
-        <h2>{t("Batch Conversion")}</h2>
-        <p className="muted">
-          {t("Converts every supported audio file in the input folder (server-side paths) →")}{" "}
-        </p>
-        <div className="grid2">
+    <form onSubmit={onSubmit} className="space-y-4">
+      {/* 1. Folders & Voice Model Card */}
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Layers size={18} className="text-white" />
+              <h2 className="text-base font-bold text-white m-0">
+                {t("Batch Source & Voice Model")}
+              </h2>
+            </div>
+            {pthPath && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/10 font-medium">
+                {t("Ready")}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Converts every supported audio file in the input folder (server-side paths).")}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="batch-input-folder">{t("Input Folder (server path)")}</label>
+            <label htmlFor="batch-input-folder" className="text-xs font-medium text-neutral-300">
+              {t("Input Folder (server path)")}
+            </label>
             <input
               id="batch-input-folder"
               type="text"
               value={inputFolder}
               onChange={(e) => setInputFolder(e.target.value)}
+              className="w-full mt-1 text-xs"
             />
           </div>
           <div>
-            <label htmlFor="batch-output-folder">{t("Output Folder (server path)")}</label>
+            <label htmlFor="batch-output-folder" className="text-xs font-medium text-neutral-300">
+              {t("Output Folder (server path)")}
+            </label>
             <input
               id="batch-output-folder"
               type="text"
               value={outputFolder}
               onChange={(e) => setOutputFolder(e.target.value)}
+              className="w-full mt-1 text-xs"
             />
           </div>
           <div>
-            <label>{t("Voice Model")}</label>
-            <ModelDropdown
-              models={models}
-              selectedModel={pthPath}
-              onSelect={setPthPath}
-              onUnload={() => setPthPath("")}
-            />
+            <label className="text-xs font-medium text-neutral-300">{t("Voice Model")}</label>
+            <div className="mt-1">
+              <ModelDropdown
+                models={models}
+                selectedModel={pthPath}
+                onSelect={setPthPath}
+                onUnload={() => setPthPath("")}
+              />
+            </div>
           </div>
           <div>
-            <label htmlFor="batch-index-path">{t("Index File (optional)")}</label>
+            <label htmlFor="batch-index-path" className="text-xs font-medium text-neutral-300">
+              {t("Index File (optional)")}
+            </label>
             <input
               id="batch-index-path"
               type="text"
               value={indexPath}
               onChange={(e) => setIndexPath(e.target.value)}
+              placeholder="logs/model/added.index"
+              className="w-full mt-1 text-xs"
             />
           </div>
-          <div>
-            <SliderField
-              id="batch-pitch"
-              label={t("Pitch")}
-              value={pitch}
-              min={-24}
-              max={24}
-              step={1}
-              unit="st"
-              onChange={setPitch}
-            />
+        </div>
+      </div>
+
+      {/* 2. Conversion Parameters Card */}
+      <div className="card space-y-5">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sliders size={18} className="text-white" />
+              <h2 className="text-base font-bold text-white m-0">
+                {t("Conversion Parameters")}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setPitch(0);
+                  setIndexRate(0.75);
+                  setVolumeEnvelope(1);
+                  setProtect(0.5);
+                  setF0Method("rmvpe");
+                  setEmbedderModel("contentvec");
+                  setExportFormat("WAV");
+                  setSplitAudio(false);
+                  setF0Autotune(false);
+                  setCleanAudio(false);
+                }}
+                className="text-xs text-neutral-400 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <RotateCcw size={12} className="text-white" />
+                <span>{t("Reset Defaults")}</span>
+              </button>
+            </div>
           </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Fine-tune pitch, timbre retrieval, voiceless consonant protection, and synthesis algorithms.")}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <SliderField
+            id="batch-pitch"
+            label={t("Pitch Shift (Semitones)")}
+            value={pitch}
+            min={-24}
+            max={24}
+            step={1}
+            unit="st"
+            formatValue={(v) => `${v > 0 ? `+${v}` : v} semitones`}
+            onChange={setPitch}
+          />
+          <SliderField
+            id="batch-index-rate"
+            label={t("Search Feature Ratio (Index Accent)")}
+            value={indexRate}
+            min={0}
+            max={1}
+            step={0.05}
+            formatValue={(v) => `${v}`}
+            onChange={setIndexRate}
+          />
+          <SliderField
+            id="batch-volume-envelope"
+            label={t("Volume Envelope (Dynamic Loudness)")}
+            value={volumeEnvelope}
+            min={0}
+            max={1}
+            step={0.05}
+            formatValue={(v) => `${v}`}
+            onChange={setVolumeEnvelope}
+          />
+          <SliderField
+            id="batch-protect"
+            label={t("Protect Voiceless Consonants")}
+            value={protect}
+            min={0}
+            max={0.5}
+            step={0.01}
+            formatValue={(v) => `${v}`}
+            onChange={setProtect}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-4 border-t border-white/10">
           <div>
-            <SliderField
-              id="batch-index-rate"
-              label={t("Search Feature Ratio")}
-              value={indexRate}
-              min={0}
-              max={1}
-              step={0.05}
-              onChange={setIndexRate}
-            />
-          </div>
-          <div>
-            <label htmlFor="batch-f0-method">{t("Pitch extraction")}</label>
-            <select id="batch-f0-method" value={f0Method} onChange={(e) => setF0Method(e.target.value)}>
+            <label htmlFor="batch-f0-method" className="text-xs font-medium text-neutral-300">
+              {t("Pitch Extraction Algorithm")}
+            </label>
+            <select
+              id="batch-f0-method"
+              value={f0Method}
+              onChange={(e) => setF0Method(e.target.value)}
+              className="w-full mt-1 text-xs"
+            >
               {F0.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -179,33 +276,14 @@ export default function BatchForm() {
             </select>
           </div>
           <div>
-            <SliderField
-              id="batch-volume-envelope"
-              label={t("Volume Envelope")}
-              value={volumeEnvelope}
-              min={0}
-              max={1}
-              step={0.05}
-              onChange={setVolumeEnvelope}
-            />
-          </div>
-          <div>
-            <SliderField
-              id="batch-protect"
-              label={t("Protect Voiceless Consonants")}
-              value={protect}
-              min={0}
-              max={0.5}
-              step={0.01}
-              onChange={setProtect}
-            />
-          </div>
-          <div>
-            <label htmlFor="batch-embedder-model">{t("Embedder Model")}</label>
+            <label htmlFor="batch-embedder-model" className="text-xs font-medium text-neutral-300">
+              {t("Speech Embedder Model")}
+            </label>
             <select
               id="batch-embedder-model"
               value={embedderModel}
               onChange={(e) => setEmbedderModel(e.target.value)}
+              className="w-full mt-1 text-xs"
             >
               {[
                 "contentvec",
@@ -222,22 +300,34 @@ export default function BatchForm() {
               ))}
             </select>
           </div>
+          {speakers.length > 1 && (
+            <div>
+              <label htmlFor="batch-speaker-id" className="text-xs font-medium text-neutral-300">
+                {t("Speaker ID")}
+              </label>
+              <select
+                id="batch-speaker-id"
+                value={sid}
+                onChange={(e) => setSid(Number(e.target.value))}
+                className="w-full mt-1 text-xs"
+              >
+                {speakers.map((s) => (
+                  <option key={s} value={s}>
+                    {t("Speaker")} {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
-            <label htmlFor="batch-speaker-id">{t("Speaker ID")}</label>
-            <select id="batch-speaker-id" value={sid} onChange={(e) => setSid(Number(e.target.value))}>
-              {speakers.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="batch-export-format">{t("Export Format")}</label>
+            <label htmlFor="batch-export-format" className="text-xs font-medium text-neutral-300">
+              {t("Output Audio Format")}
+            </label>
             <select
               id="batch-export-format"
               value={exportFormat}
               onChange={(e) => setExportFormat(e.target.value)}
+              className="w-full mt-1 text-xs"
             >
               {FORMATS.map((m) => (
                 <option key={m} value={m}>
@@ -247,50 +337,63 @@ export default function BatchForm() {
             </select>
           </div>
         </div>
-        <div className="row" style={{ marginTop: 12 }}>
-          <button type="submit" className="cta" disabled={busy}>
-            {busy ? t("Submitting…") : t("Convert Folder")}
-          </button>
-        </div>
-        <div className="row" style={{ marginTop: 8 }}>
-          <label htmlFor="batch-split-audio" className="flex items-center gap-2 cursor-pointer">
+
+        <div className="flex items-center gap-4 pt-3 border-t border-white/5 flex-wrap">
+          <label htmlFor="batch-split-audio" className="flex items-center gap-2 cursor-pointer text-xs text-neutral-300">
             <input
               id="batch-split-audio"
               type="checkbox"
               checked={splitAudio}
               onChange={(e) => setSplitAudio(e.target.checked)}
-            />{" "}
-            {t("Split Audio")}
+            />
+            <span>{t("Split in Chunks")}</span>
           </label>
-          <label htmlFor="batch-f0-autotune" className="flex items-center gap-2 cursor-pointer">
+          <label htmlFor="batch-f0-autotune" className="flex items-center gap-2 cursor-pointer text-xs text-neutral-300">
             <input
               id="batch-f0-autotune"
               type="checkbox"
               checked={f0Autotune}
               onChange={(e) => setF0Autotune(e.target.checked)}
-            />{" "}
-            {t("Autotune")}
+            />
+            <span>{t("Autotune")}</span>
           </label>
-          <label htmlFor="batch-clean-audio" className="flex items-center gap-2 cursor-pointer">
+          <label htmlFor="batch-clean-audio" className="flex items-center gap-2 cursor-pointer text-xs text-neutral-300">
             <input
               id="batch-clean-audio"
               type="checkbox"
               checked={cleanAudio}
               onChange={(e) => setCleanAudio(e.target.checked)}
-            />{" "}
-            {t("Clean Audio")}
+            />
+            <span>{t("Clean Artifacts")}</span>
           </label>
         </div>
+      </div>
+
+      {/* 3. Action Card */}
+      <div className="card space-y-4">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={busy || !pthPath || !inputFolder}
+              className="cta h-10 px-5 flex items-center gap-2 text-sm font-medium rounded-xl"
+            >
+              <Wand2 size={16} className="shrink-0" />
+              <span>{busy ? t("Converting Batch…") : t("Convert Batch")}</span>
+            </button>
+          </div>
+        </div>
+
         {error && (
           <div
             role="alert"
-            aria-live="assertive"
-            className="mt-3 p-3 rounded-lg border border-[var(--err)] text-[var(--err)] bg-[color-mix(in_srgb,var(--err)_10%,transparent)]"
+            className="p-3.5 rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 text-xs"
           >
             {error}
           </div>
         )}
       </div>
+
       <JobPanel jobId={jobId} />
     </form>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Radio, Disc, Play, Square, ListMusic, ChevronDown } from "lucide-react";
 import PageHeader from "../../components/layout/PageHeader";
 import SliderField from "../../components/ui/SliderField";
 import { apiGet, apiSend, errMsg, fetchModels } from "../../lib/api";
@@ -37,11 +38,14 @@ class PlaybackProcessor extends AudioWorkletProcessor {
     this.port.onmessage = (e) => { const c = new Float32Array(e.data.chunk);
       for (let i = 0; i < c.length; i++) { this.ring[this.wp] = c[i]; this.wp = (this.wp + 1) % this.ring.length; } }; }
   process(inputs, outputs) {
-    const out = outputs[0];
-    for (let n = 0; n < out[0].length; n++) {
-      let v = 0;
-      if (this.rp !== this.wp) { v = this.ring[this.rp]; this.rp = (this.rp + 1) % this.ring.length; }
-      for (let c = 0; c < out.length; c++) out[c][n] = v;
+    const outL = outputs[0] && outputs[0][0];
+    const outR = outputs[0] && outputs[0][1];
+    if (!outL) return true;
+    const len = outL.length;
+    for (let i = 0; i < len; i++) {
+      let s = 0;
+      if (this.rp !== this.wp) { s = this.ring[this.rp]; this.rp = (this.rp + 1) % this.ring.length; }
+      outL[i] = s; if (outR) outR[i] = s;
     }
     return true;
   }
@@ -131,10 +135,10 @@ export default function RealtimePage() {
   }, [refreshEngine]);
 
   async function startEngine() {
-    setMsg(t("Starting realtime engine (uvicorn + rvc/realtime/client.py)…"));
+    setMsg(t("Starting real-time audio service…"));
     try {
       await apiSend("/api/realtime/start", "POST");
-      setMsg(t("Engine running ✓"));
+      setMsg(t("Real-time audio service running"));
       refreshEngine();
     } catch (e) {
       setMsg(errMsg(e));
@@ -356,7 +360,7 @@ export default function RealtimePage() {
   }
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto space-y-6">
       <PageHeader
         title={t("Realtime")}
         description={t(
@@ -364,36 +368,55 @@ export default function RealtimePage() {
         )}
       >
         <span className={`badge ${engine?.running ? "done" : "queued"}`}>
-          {engine?.running ? t("engine running") : t("engine stopped")}
+          {engine?.running ? t("active") : t("stopped")}
         </span>
         {!engine?.running ? (
-          <button type="button" className="cta" onClick={startEngine}>
-            {t("Start Engine")}
+          <button type="button" className="cta h-8 px-3 text-xs flex items-center gap-1.5 rounded-lg" onClick={startEngine}>
+            <Play size={14} className="shrink-0" />
+            <span>{t("Start Service")}</span>
           </button>
         ) : (
-          <button type="button" className="ghost" onClick={stopEngine}>
-            {t("Stop Engine")}
+          <button type="button" className="ghost h-8 px-3 text-xs flex items-center gap-1.5 rounded-lg" onClick={stopEngine}>
+            <Square size={14} className="text-white shrink-0" />
+            <span>{t("Stop Service")}</span>
           </button>
         )}
-        <button type="button" className="ghost" onClick={enumDevices}>
-          {t("List Audio Devices")}
+        <button type="button" className="ghost h-8 px-3 text-xs flex items-center gap-1.5 rounded-lg" onClick={enumDevices}>
+          <ListMusic size={14} className="text-white shrink-0" />
+          <span>{t("List Audio Devices")}</span>
         </button>
       </PageHeader>
-      <div className="mb-4">
+      <div>
         {msg && (
-          <p className="muted" role="status" aria-live="polite">
+          <p className="text-xs text-neutral-400 m-0" role="status" aria-live="polite">
             {msg}
           </p>
         )}
         {engine && engine.logs.length > 0 && (
-          <pre className="log" role="log" aria-live="polite" style={{ marginTop: 8 }}>
-            {engine.logs.slice(-10).join("\n")}
-          </pre>
+          <details className="mt-2 text-xs text-neutral-400 group">
+            <summary className="cursor-pointer hover:text-white transition-colors py-1 flex items-center gap-1 select-none">
+              <ChevronDown size={14} className="transition-transform group-open:rotate-180 shrink-0" />
+              <span>{t("Activity Details")}</span>
+            </summary>
+            <pre className="log mt-1 max-h-40 overflow-y-auto text-[11px] p-2 rounded-lg bg-black/40 border border-white/5 font-sans" role="log" aria-live="polite">
+              {engine.logs.slice(-10).join("\n")}
+            </pre>
+          </details>
         )}
       </div>
 
-      <div className="card">
-        <h2>{t("Model + Audio")}</h2>
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Radio size={18} className="text-white" />
+              <h2 className="text-base font-bold text-white m-0">{t("Model & Audio Devices")}</h2>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Configure real-time low-latency inference inputs, target voice model, and DSP pitch parameters.")}
+          </p>
+        </div>
         <div className="grid2">
           <div>
             <label htmlFor="rt-model">{t("Voice Model")}</label>
@@ -749,28 +772,49 @@ export default function RealtimePage() {
             <span>{t("Enable VAD")}</span>
           </label>
         </details>
-        <div className="row" style={{ marginTop: 12 }}>
-          {!streaming ? (
-            <button type="button" className="cta" onClick={startStream}>
-              {t("Start Streaming")}
-            </button>
-          ) : (
-            <button type="button" className="ghost" onClick={() => stopStream()}>
-              {t("Stop Streaming")}
-            </button>
-          )}
+        <div className="flex items-center justify-between gap-4 pt-2 border-t border-white/5">
+          <div className="flex items-center gap-3">
+            {!streaming ? (
+              <button
+                type="button"
+                className="cta h-10 px-5 flex items-center gap-2 text-sm font-medium rounded-xl"
+                onClick={startStream}
+              >
+                <Play size={16} className="shrink-0" />
+                <span>{t("Start Streaming")}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="ghost h-10 px-5 flex items-center gap-2 text-sm font-medium rounded-xl text-neutral-200 hover:text-white"
+                onClick={() => stopStream()}
+              >
+                <Square size={16} className="text-white shrink-0" />
+                <span>{t("Stop Streaming")}</span>
+              </button>
+            )}
+          </div>
           {streaming && (
-            <span className="muted" role="status" aria-live="polite">
+            <span className="text-xs text-neutral-400 tabular-nums" role="status" aria-live="polite">
               latency {latency.toFixed(0)}ms · volume {volume.toFixed(0)}dB
             </span>
           )}
         </div>
       </div>
 
-      <div className="card">
-        <h2>{t("Record Output")}</h2>
-        <p className="muted">{t("Records the converted stream server-side via the engine.")}</p>
-        <div className="grid2">
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Disc size={18} className="text-white" />
+              <h2 className="text-base font-bold text-white m-0">{t("Record Output")}</h2>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("Records the converted stream server-side via the engine.")}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
           <div>
             <label htmlFor="rt-rec-path">{t("Recording path (server)")}</label>
             <input
@@ -791,9 +835,18 @@ export default function RealtimePage() {
             </select>
           </div>
         </div>
-        <div className="row" style={{ marginTop: 8 }}>
-          <button type="button" className={recOn ? "ghost" : "cta"} onClick={toggleRecord}>
-            {recOn ? t("Stop") : t("Start")}
+        <div className="pt-3.5 border-t border-white/5 flex justify-end">
+          <button
+            type="button"
+            className={
+              recOn
+                ? "ghost h-10 px-4 flex items-center gap-2 text-sm font-medium rounded-xl text-neutral-200 hover:text-white"
+                : "cta h-10 px-4 flex items-center gap-2 text-sm font-medium rounded-xl"
+            }
+            onClick={toggleRecord}
+          >
+            <Disc size={16} className={recOn ? "animate-pulse text-white shrink-0" : "shrink-0"} />
+            <span>{recOn ? t("Stop Recording") : t("Start Recording")}</span>
           </button>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, FileAudio, Info, LineChart } from "lucide-react";
+import { Activity, AudioWaveform, Info, LineChart } from "lucide-react";
 import { useEffect, useState } from "react";
 import AudioPlayer from "../../components/AudioPlayer";
 import JobPanel from "../../components/JobPanel";
@@ -90,7 +90,7 @@ export default function ExtraPage() {
   const previewUrl = audio ? URL.createObjectURL(audio) : inputPath ? `/${inputPath}` : null;
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-7xl mx-auto space-y-6">
       <PageHeader
         title={t("Extra Tools")}
         description={t(
@@ -102,21 +102,25 @@ export default function ExtraPage() {
         <div
           role="alert"
           aria-live="assertive"
-          className="p-3 rounded-lg border border-[var(--err)] text-[var(--err)] bg-[color-mix(in_srgb,var(--err)_10%,transparent)]"
+          className="p-3.5 rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 text-sm"
         >
           {error}
         </div>
       )}
 
       {/* Shared Audio Input Card */}
-      <div className="card">
-        <div className="flex items-center gap-2 mb-2">
-          <FileAudio size={18} className="text-white" aria-hidden="true" />
-          <h2 className="text-base font-bold text-white m-0">{t("Input Audio Source")}</h2>
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AudioWaveform size={18} className="text-white shrink-0" />
+              <h2 className="text-base font-bold text-white m-0">{t("Input Audio Source")}</h2>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t("This audio file will be analyzed by both the Audio Analyzer and the F0 Curve Extractor.")}
+          </p>
         </div>
-        <p className="text-xs text-neutral-400 m-0 mb-3">
-          {t("This audio file will be analyzed by both the Audio Analyzer and the F0 Curve Extractor.")}
-        </p>
 
         <div className="grid2">
           <div>
@@ -166,40 +170,54 @@ export default function ExtraPage() {
       {/* Grid: Analyzer & F0 Curve */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Tool 1: Audio Analyzer */}
-        <div className="card flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Activity size={18} className="text-emerald-400" aria-hidden="true" />
-              <h2 className="text-base font-bold text-white m-0">{t("Audio Analyzer")}</h2>
+        <div className="card space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="border-b border-white/10 pb-3.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity size={18} className="text-white" />
+                  <h2 className="text-base font-bold text-white m-0">{t("Audio Analyzer")}</h2>
+                </div>
+              </div>
+              <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+                {t(
+                  "Generates a full 3-panel acoustic plot containing: Spectrogram (frequency vs time), Waveform amplitude envelope, and Spectral Centroid/Bandwidth/Rolloff features.",
+                )}
+              </p>
             </div>
-            <p className="text-xs text-neutral-400 m-0 mb-4">
-              {t(
-                "Generates a full 3-panel acoustic plot containing: Spectrogram (frequency vs time), Waveform amplitude envelope, and Spectral Centroid/Bandwidth/Rolloff features.",
-              )}
-            </p>
           </div>
 
-          <div className="pt-3 border-t border-white/10">
-            <button type="button" className="cta w-full" onClick={analyze} disabled={busy}>
-              {busy ? t("Generating Spectrogram…") : t("Generate Spectrogram & Analysis")}
+          <div className="pt-3 border-t border-white/5">
+            <button
+              type="button"
+              className="cta w-full h-10 px-4 flex items-center justify-center gap-2 text-sm font-medium rounded-xl"
+              onClick={analyze}
+              disabled={busy}
+            >
+              <Activity size={16} className="shrink-0" />
+              <span>{busy ? t("Generating Spectrogram…") : t("Generate Spectrogram & Analysis")}</span>
             </button>
           </div>
         </div>
 
         {/* Tool 2: F0 Curve Extractor */}
-        <div className="card flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <LineChart size={18} className="text-amber-400" aria-hidden="true" />
-              <h2 className="text-base font-bold text-white m-0">{t("F0 Pitch Curve Extractor")}</h2>
+        <div className="card space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="border-b border-white/10 pb-3.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <LineChart size={18} className="text-white shrink-0" />
+                  <h2 className="text-base font-bold text-white m-0">{t("F0 Pitch Curve Extractor")}</h2>
+                </div>
+              </div>
+              <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+                {t(
+                  "Extracts frame-by-frame fundamental pitch frequencies (Hz) across time and exports both a high-resolution plot and a CSV data curve.",
+                )}
+              </p>
             </div>
-            <p className="text-xs text-neutral-400 m-0 mb-3">
-              {t(
-                "Extracts frame-by-frame fundamental pitch frequencies (Hz) across time and exports both a high-resolution plot and a CSV data curve.",
-              )}
-            </p>
 
-            <div className="mb-4">
+            <div className="max-w-md">
               <label htmlFor="extra-f0-method">{t("Extraction Method")}</label>
               <select id="extra-f0-method" value={method} onChange={(e) => setMethod(e.target.value)}>
                 {["rmvpe", "fcpe", "crepe"].map((m) => (
@@ -211,9 +229,14 @@ export default function ExtraPage() {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-white/10">
-            <button type="button" className="cta w-full" onClick={f0}>
-              {t("Extract F0 Curve")}
+          <div className="pt-3 border-t border-white/5">
+            <button
+              type="button"
+              className="cta w-full h-10 px-4 flex items-center justify-center gap-2 text-sm font-medium rounded-xl"
+              onClick={f0}
+            >
+              <LineChart size={16} className="shrink-0" />
+              <span>{t("Extract F0 Curve")}</span>
             </button>
           </div>
         </div>
@@ -223,17 +246,22 @@ export default function ExtraPage() {
       <JobPanel jobId={f0Job} />
 
       {/* Tool 3: Model Checkpoint Inspector */}
-      <div className="card">
-        <div className="flex items-center gap-2 mb-2">
-          <Info size={18} className="text-blue-400" aria-hidden="true" />
-          <h2 className="text-base font-bold text-white m-0">{t("Model Checkpoint Inspector")}</h2>
+      <div className="card space-y-4">
+        <div className="border-b border-white/10 pb-3.5 space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Info size={18} className="text-white shrink-0" />
+              <h2 className="text-base font-bold text-white m-0">{t("Model Checkpoint Inspector")}</h2>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+            {t(
+              "Inspect any .pth file directly to display training epochs, author, vocoder, sampling rate, and hash.",
+            )}
+          </p>
         </div>
-        <p className="text-xs text-neutral-400 m-0 mb-3">
-          {t(
-            "Inspect any .pth file directly to display training epochs, author, vocoder, sampling rate, and hash.",
-          )}
-        </p>
-        <div className="row">
+
+        <div className="flex flex-col sm:flex-row gap-3 max-w-xl">
           <label htmlFor="extra-model-path" className="sr-only">
             {t("Path to .pth checkpoint")}
           </label>
@@ -244,15 +272,20 @@ export default function ExtraPage() {
             value={pth}
             onChange={(e) => setPth(e.target.value)}
             placeholder="logs/my-model/my-model.pth"
-            style={{ flex: 1 }}
+            className="flex-1 h-10 px-3 text-sm rounded-xl bg-white/5 border border-white/10"
           />
           <datalist id="ext-models">
             {models.map((m) => (
               <option key={m} value={m} />
             ))}
           </datalist>
-          <button type="button" className="cta" onClick={modelInfo}>
-            {t("Inspect Checkpoint")}
+          <button
+            type="button"
+            className="cta h-10 px-4 flex items-center justify-center gap-2 text-sm font-medium rounded-xl shrink-0"
+            onClick={modelInfo}
+          >
+            <Info size={16} className="shrink-0" />
+            <span>{t("Inspect Checkpoint")}</span>
           </button>
         </div>
       </div>

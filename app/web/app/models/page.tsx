@@ -8,6 +8,7 @@ import {
   FileX,
   Folder,
   Info,
+  Layers,
   RefreshCw,
   Search,
   Sparkles,
@@ -22,6 +23,7 @@ import PageHeader from "../../components/layout/PageHeader";
 import BlenderPanel from "../../components/models/BlenderPanel";
 import DownloadPanel from "../../components/models/DownloadPanel";
 import Modal from "../../components/ui/Modal";
+import SegmentedControl from "../../components/ui/SegmentedControl";
 import { apiGet, apiSend, errMsg, submitJob } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 
@@ -158,36 +160,25 @@ export default function ModelsPage() {
   );
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto space-y-6">
       <PageHeader
         title={t("Voice Models")}
         description={t(
           "Manage your voice model collection, inspect checkpoint metadata, and blend or download weights.",
         )}
       >
-        <div className="row" role="tablist" aria-label={t("Model sections")}>
-          {(
-            [
-              ["library", "Model Library"],
-              ["download", "Download Models"],
-              ["blend", "Voice Blender"],
-              ["inspect", "Inspect Path"],
-            ] as Array<[Section, string]>
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              id={`tab-${id}`}
-              type="button"
-              role="tab"
-              aria-selected={section === id}
-              aria-controls={`panel-${id}`}
-              className={section === id ? "cta" : "ghost"}
-              onClick={() => setSection(id)}
-            >
-              {t(label)}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          value={section}
+          onChange={setSection}
+          ariaLabel={t("Model sections")}
+          tabPanels
+          options={[
+            { value: "library", label: t("Model Library"), icon: Database },
+            { value: "download", label: t("Download Models"), icon: Download },
+            { value: "blend", label: t("Voice Blender"), icon: Layers },
+            { value: "inspect", label: t("Inspect Path"), icon: Info },
+          ]}
+        />
       </PageHeader>
 
       {error && (
@@ -307,7 +298,7 @@ export default function ModelsPage() {
                       <div className="flex justify-between items-center">
                         <span>{t("Feature Index:")}</span>
                         {m.indexPath ? (
-                          <span className="text-emerald-400 flex items-center gap-1">
+                          <span className="text-neutral-200 flex items-center gap-1">
                             <FileCheck size={12} />
                             <span>{formatBytes(m.indexSize || 0)}</span>
                           </span>
@@ -382,14 +373,23 @@ export default function ModelsPage() {
       {/* 4. INSPECT CUSTOM PATH */}
       {section === "inspect" && (
         <div id="panel-inspect" role="tabpanel" aria-labelledby="tab-inspect" className="space-y-4">
-          <div className="card">
-            <h2>{t("Inspect Model File")}</h2>
-            <p className="muted text-sm mb-3">
-              {t(
-                "Enter any repository-relative or absolute path to a .pth checkpoint to read its architecture and training parameters.",
-              )}
-            </p>
-            <div className="row">
+          <div className="card space-y-4">
+            <div className="border-b border-white/10 pb-3.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Info size={18} className="text-white" />
+                  <h2 className="text-base font-bold text-white m-0">
+                    {t("Inspect Model File")}
+                  </h2>
+                </div>
+              </div>
+              <p className="text-xs text-neutral-400 m-0 leading-relaxed">
+                {t(
+                  "Enter any repository-relative or absolute path to a .pth checkpoint to read its architecture and training parameters.",
+                )}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 max-w-xl">
               <label htmlFor="custom-pth-input" className="sr-only">
                 {t("Path to .pth checkpoint")}
               </label>
@@ -399,10 +399,15 @@ export default function ModelsPage() {
                 value={customPth}
                 onChange={(e) => setCustomPth(e.target.value)}
                 placeholder="logs/my-model/my-model.pth"
-                style={{ flex: 1 }}
+                className="flex-1 h-10 px-3 text-sm rounded-xl bg-white/5 border border-white/10"
               />
-              <button type="button" className="cta" onClick={inspectCustom}>
-                {t("Inspect File")}
+              <button
+                type="button"
+                className="cta h-10 px-4 flex items-center justify-center gap-2 text-sm font-medium rounded-xl shrink-0"
+                onClick={inspectCustom}
+              >
+                <Info size={16} className="shrink-0" />
+                <span>{t("Inspect File")}</span>
               </button>
             </div>
           </div>
