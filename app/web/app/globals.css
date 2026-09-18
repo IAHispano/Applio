@@ -171,6 +171,24 @@ body {
 
 .page-transition {
   height: 100%;
+  animation: pageEnter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition {
+    animation: none;
+  }
 }
 
 @keyframes borealisBar {
@@ -640,6 +658,158 @@ button.danger:hover {
   background: var(--danger-bg-hover);
   border-color: var(--danger-border-hover);
   color: var(--danger-text-hover);
+}
+
+/* Segmented control (Single / Batch) */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+}
+button.segmented-item {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  color: var(--muted);
+  box-shadow: none;
+}
+button.segmented-item:hover {
+  background: var(--button-bg);
+  border-color: transparent;
+  color: var(--text);
+}
+button.segmented-item.is-active {
+  background: var(--cta-bg);
+  border-color: var(--cta-bg);
+  color: var(--cta-text);
+  font-weight: 600;
+}
+button.segmented-item.is-active:hover {
+  background: var(--cta-bg);
+  color: var(--cta-text);
+}
+
+/* Anchor styled as a ghost button */
+.ghost-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--button-ghost-text);
+  border: 1px solid var(--button-ghost-border);
+  border-radius: var(--radius-button);
+  transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ghost-link:hover {
+  background: var(--button-bg);
+  border-color: var(--button-ghost-border-hover);
+  color: var(--button-text-hover);
+}
+
+/* Loaded-model summary in the voice model card */
+.model-meta {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.model-meta > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--border);
+}
+.model-meta > div:last-child {
+  border-bottom: none;
+}
+.model-meta dt {
+  font-size: 11px;
+  color: var(--muted);
+}
+.model-meta dd {
+  margin: 0;
+  min-width: 0;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* Preset tiles */
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
+  gap: 10px;
+}
+.preset-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  transition: border-color 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.preset-tile:hover {
+  border-color: var(--focus-border);
+}
+.preset-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+}
+.preset-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.preset-stat b {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--text);
+}
+button.preset-apply {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+/* A <label> that has to look like a ghost button (hidden file input inside).
+   Tailwind utilities sit in a layer, so the bare `label` rule would win. */
+label.file-import {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--button-ghost-text);
+  background: transparent;
+  border: 1px solid var(--button-ghost-border);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+label.file-import:hover {
+  background: var(--button-bg);
+  border-color: var(--button-ghost-border-hover);
+  color: var(--button-text-hover);
 }
 
 .muted {

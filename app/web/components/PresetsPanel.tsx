@@ -1,5 +1,6 @@
 "use client";
 
+import { Bookmark, Download, RefreshCw, Save } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { apiGet, apiSend, errMsg } from "../lib/api";
 import { useI18n } from "../lib/i18n";
@@ -82,14 +83,18 @@ export default function PresetsPanel() {
   }
 
   return (
-    <div className="card">
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <h2 style={{ margin: 0 }}>{t("Presets")}</h2>
+    <div className="card space-y-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Bookmark size={16} className="text-neutral-300" />
+          <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-300 m-0">{t("Presets")}</h2>
+        </div>
         <button type="button" className="ghost" onClick={refresh}>
+          <RefreshCw size={14} />
           {t("Refresh Presets")}
         </button>
       </div>
-      <p className="muted">
+      <p className="muted text-xs m-0">
         {t("Stored in")} <code>assets/presets/*.json</code>
         {t(": pitch, search-feature-ratio, volume-envelope, protect.")}
       </p>
@@ -102,39 +107,62 @@ export default function PresetsPanel() {
           {error}
         </div>
       )}
-      {presets.map((p) => (
-        <div className="row" key={p.name} style={{ marginBottom: 8 }}>
-          <strong>{p.name}</strong>
-          <span className="muted">
-            {p.values
-              ? `pitch ${p.values.pitch} · ratio ${p.values.index_rate} · envelope ${p.values.rms_mix_rate} · protect ${p.values.protect}`
-              : t("unreadable")}
-          </span>
-          {p.values && (
-            <>
-              <button type="button" className="ghost" onClick={() => apply(p, "single")}>
-                {t("Apply to Single")}
-              </button>
-              <button type="button" className="ghost" onClick={() => apply(p, "batch")}>
-                {t("Apply to Batch")}
-              </button>
-            </>
-          )}
+      {presets.length === 0 ? (
+        <p className="muted text-[13px] m-0">{t("No presets saved yet.")}</p>
+      ) : (
+        <div className="preset-grid">
+          {presets.map((p) => (
+            <div className="preset-tile" key={p.name}>
+              <strong className="text-[13px] truncate" title={p.name}>
+                {p.name}
+              </strong>
+              {p.values ? (
+                <>
+                  <div className="preset-stats">
+                    <span className="preset-stat">
+                      {t("Pitch")} <b>{p.values.pitch}</b>
+                    </span>
+                    <span className="preset-stat">
+                      {t("Ratio")} <b>{p.values.index_rate}</b>
+                    </span>
+                    <span className="preset-stat">
+                      {t("Envelope")} <b>{p.values.rms_mix_rate}</b>
+                    </span>
+                    <span className="preset-stat">
+                      {t("Protect")} <b>{p.values.protect}</b>
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" className="ghost preset-apply" onClick={() => apply(p, "single")}>
+                      {t("Single")}
+                    </button>
+                    <button type="button" className="ghost preset-apply" onClick={() => apply(p, "batch")}>
+                      {t("Batch")}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <span className="muted text-xs">{t("unreadable")}</span>
+              )}
+            </div>
+          ))}
         </div>
-      ))}
-      <div className="row" style={{ marginTop: 12 }}>
+      )}
+      <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-white/10">
         <input
           type="text"
           placeholder={t("Preset Name")}
           aria-label={t("Preset Name")}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          style={{ maxWidth: 240 }}
+          className="max-w-[240px]"
         />
         <button type="button" className="ghost" onClick={saveCurrent}>
+          <Save size={14} />
           {t("Save current Single settings")}
         </button>
-        <label className="ghost flex items-center cursor-pointer">
+        <label className="file-import">
+          <Download size={14} />
           <span>{t("Import file")}</span>
           <input
             type="file"
@@ -149,7 +177,7 @@ export default function PresetsPanel() {
         </label>
       </div>
       {formant.length > 0 && (
-        <p className="muted" style={{ marginTop: 12 }}>
+        <p className="muted text-xs m-0">
           {t("Formant presets in assets/formant_shift:")} {formant.join(", ")}
         </p>
       )}

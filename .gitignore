@@ -35,4 +35,5 @@ app/web/out
 app/web/.env.local
 app/desktop/dist-installers
 app/desktop/dist
+*.tsbuildinfo
 
