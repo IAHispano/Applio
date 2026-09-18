@@ -1,10 +1,8 @@
 import os
 import sys
 import soxr
-try:
-    import ffmpeg
-except ImportError:
-    ffmpeg = None
+import torch
+import torchaudio
 import librosa
 import soundfile as sf
 import numpy as np
@@ -64,51 +62,26 @@ def load_audio(file, sample_rate):
     return audio.flatten()
 
 
-def load_audio_ffmpeg(file, sample_rate):
-    file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
-    if ffmpeg is not None:
-        try:
-            out, _ = (
-                ffmpeg.input(file, threads=0)
-                .output("-", format="f32le", acodec="pcm_f32le", ac=1, ar=sample_rate)
-                .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
-            )
-            return np.frombuffer(out, np.float32).flatten()
-        except Exception:
-            pass
-
-    local_ffmpeg = os.path.join(now_dir, "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg")
-    ffmpeg_bin = local_ffmpeg if os.path.isfile(local_ffmpeg) else "ffmpeg"
-
+def load_audio_ta(file, sample_rate):
     try:
-        import subprocess
-
-        cmd = [
-            ffmpeg_bin,
-            "-nostdin",
-            "-i",
-            file,
-            "-threads",
-            "0",
-            "-f",
-            "f32le",
-            "-acodec",
-            "pcm_f32le",
-            "-ac",
-            "1",
-            "-ar",
-            str(sample_rate),
-            "-",
-        ]
-        res = subprocess.run(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
-        )
-        return np.frombuffer(res.stdout, np.float32).flatten()
+        file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
+        audio, sr = sf.read(file)
+        audio = np.asarray(audio, dtype=np.float32)
+        if len(audio.shape) > 1:
+            audio = librosa.to_mono(audio.T)
+        if sr != sample_rate:
+            transform = torchaudio.transforms.Resample(
+                orig_freq = sr,
+                new_freq = sample_rate,
+                lowpass_filter_width=128,
+            )
+            audio = torch.from_numpy(audio).unsqueeze(0)
+            audio = transform(audio).squeeze(0).contiguous().numpy()
+    
     except Exception as error:
-        try:
-            return load_audio(file, sample_rate)
-        except Exception:
-            raise RuntimeError(f"An error occurred loading the audio: {error}")
+        raise RuntimeError(f"An error occurred loading the audio: {error}")    
+
+    return audio
 
 
 def load_audio_infer(
