@@ -1,7 +1,7 @@
 appId: org.applio.app
 productName: Applio
 copyright: Copyright © Applio contributors
-compression: maximum
+compression: normal
 asar: false
 afterPack: ./afterPack.js
 
@@ -101,6 +101,7 @@ dmg:
 linux:
   category: AudioVideo
   icon: ../../assets/icon.png
+  maintainer: Applio contributors
   target:
     - target: AppImage
       arch:

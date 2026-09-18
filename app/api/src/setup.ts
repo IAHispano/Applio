@@ -172,7 +172,12 @@ async function webDevServerRunning(): Promise<boolean> {
 }
 
 function checkWebBuild(): { ok: boolean; detail: string } {
-  const root = getRepoRoot();
+  // In the packaged app APPLIO_ROOT points at the writable data dir
+  // (~/.config/Applio/data), but the web bundle ships in the read-only code
+  // dir (resources/app). main.ts exports it as APPLIO_CODE_ROOT; dev mode
+  // has no such var and falls back to the repo root.
+  const codeRoot = process.env.APPLIO_CODE_ROOT;
+  const root = codeRoot && exists(codeRoot) ? path.resolve(codeRoot) : getRepoRoot();
   if (exists(path.join(root, "app", "web", ".next", "standalone", "server.js"))) {
     return { ok: true, detail: "production build ready" };
   }

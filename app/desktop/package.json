@@ -4,6 +4,7 @@
   "private": true,
   "description": "Applio desktop shell (Electron): hosts Next.js + Express API + Python engine sidecar",
   "author": "Applio contributors",
+  "homepage": "https://github.com/IAHispano/Applio",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
