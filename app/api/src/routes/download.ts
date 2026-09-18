@@ -45,18 +45,22 @@ router.post("/drop", upload.single("file"), (req: Request, res: Response) => {
   try {
     if (!req.file) return res.status(400).json({ error: "Upload a 'file' (.pth, .onnx or .index)." });
     const original = req.file.originalname;
-    if (!original.includes("pth") && !original.includes("index") && !original.includes("onnx")) {
+    const lower = original.toLowerCase();
+    if (!lower.endsWith(".pth") && !lower.endsWith(".index") && !lower.endsWith(".onnx")) {
       fs.rmSync(req.file.path, { force: true });
       return res.status(400).json({ error: "Not a valid model file (need .pth, .onnx or .index)." });
     }
     // Same sanitizing as the Gradio backend (rvc/lib/utils.py format_title).
     const fileName = formatTitle(path.basename(original));
+    const lowerName = fileName.toLowerCase();
     let modelName = fileName;
-    if (modelName.includes(".pth")) modelName = modelName.split(".pth")[0];
-    else if (modelName.includes(".index")) {
+    if (lowerName.includes(".pth")) modelName = fileName.slice(0, lowerName.indexOf(".pth"));
+    else if (lowerName.includes(".onnx")) modelName = fileName.slice(0, lowerName.indexOf(".onnx"));
+    else if (lowerName.includes(".index")) {
       for (const rep of ["nprobe_1_", "_v1", "_v2", "added_"]) modelName = modelName.replace(rep, "");
-      modelName = modelName.split(".index")[0];
+      modelName = modelName.slice(0, modelName.toLowerCase().indexOf(".index"));
     }
+    if (!modelName) modelName = "model";
     const modelDir = path.join(getRepoRoot(), "logs", modelName);
     fs.mkdirSync(modelDir, { recursive: true });
     const dest = path.join(modelDir, fileName);

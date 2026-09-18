@@ -11,7 +11,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="flex flex-col w-64 shrink-0 bg-[#141414]/90 backdrop-blur-md border border-white/10 text-neutral-200 p-3 m-3 mr-0 my-3 rounded-2xl select-none min-h-0"
+      className="flex flex-col w-64 shrink-0 bg-[#141414]/90 backdrop-blur-md border border-white/10 text-neutral-200 p-3 ml-3 mr-0 my-4 rounded-2xl select-none min-h-0"
       aria-label="Sidebar Navigation"
     >
       {/* Brand Header */}

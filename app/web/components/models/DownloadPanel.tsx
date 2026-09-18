@@ -12,6 +12,7 @@ export default function DownloadPanel() {
   const [linkJob, setLinkJob] = useState<string | null>(null);
   const [dropFile, setDropFile] = useState<File | null>(null);
   const [dropMsg, setDropMsg] = useState("");
+  const [dropping, setDropping] = useState(false);
   const [pretrained, setPretrained] = useState<Array<{ name: string; sampleRates: string[] }>>([]);
   const [model, setModel] = useState("Titan");
   const [sr, setSr] = useState("40k");
@@ -45,14 +46,18 @@ export default function DownloadPanel() {
 
   async function drop() {
     setDropMsg("");
-    if (!dropFile) return;
+    if (!dropFile || dropping) return;
     const fd = new FormData();
     fd.append("file", dropFile);
+    setDropping(true);
     try {
       const r = await postForm<{ file: string; modelDir: string }>("/api/download/drop", fd);
       setDropMsg(`Saved ${r.file} → ${r.modelDir} ✓`);
+      setDropFile(null);
     } catch (e) {
       setDropMsg(errMsg(e));
+    } finally {
+      setDropping(false);
     }
   }
 
@@ -146,9 +151,10 @@ export default function DownloadPanel() {
             type="button"
             className="ghost h-10 px-4 flex items-center justify-center gap-2 text-sm font-medium rounded-xl shrink-0"
             onClick={drop}
+            disabled={!dropFile || dropping}
           >
             <Upload size={16} className="text-white shrink-0" />
-            <span>{t("Save File")}</span>
+            <span>{dropping ? t("Uploading…") : t("Save File")}</span>
           </button>
         </div>
         {dropMsg && (

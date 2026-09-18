@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: import.meta.dirname,
   reactStrictMode: true,
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  experimental: {
+    // /api/* is proxied to the Express gateway via rewrites below. Next
+    // buffers proxied request bodies (default 10MB) — model/audio uploads
+    // (.pth, datasets, samples) are hundreds of MB, so raise the limit to
+    // match the API's 1GB multer cap. Without this, uploads are silently
+    // truncated to the first 10MB and imports fail.
+    middlewareClientMaxBodySize: "1024mb",
+  },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${API_URL}/api/:path*` }];
   },

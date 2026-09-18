@@ -1,12 +1,11 @@
 "use client";
 
-import { Activity, AudioWaveform, Info, LineChart } from "lucide-react";
+import { Activity, AudioWaveform, LineChart } from "lucide-react";
 import { useEffect, useState } from "react";
 import AudioPlayer from "../../components/AudioPlayer";
 import AnalysisResultCard from "../../components/extra/AnalysisResultCard";
 import PageHeader from "../../components/layout/PageHeader";
-import ModelInfoCard, { type ModelMetadata } from "../../components/models/ModelInfoCard";
-import { apiSend, errMsg, fetchModels, postForm } from "../../lib/api";
+import { errMsg, fetchModels, postForm } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 
 export default function ExtraPage() {
@@ -15,14 +14,8 @@ export default function ExtraPage() {
   const [audios, setAudios] = useState<string[]>([]);
   const [inputPath, setInputPath] = useState("");
   const [method, setMethod] = useState("rmvpe");
-  const [pth, setPth] = useState("");
-  const [models, setModels] = useState<string[]>([]);
   const [jobId, setJobId] = useState<string | null>(null);
   const [f0Job, setF0Job] = useState<string | null>(null);
-  const [inspectData, setInspectData] = useState<ModelMetadata | null>(null);
-  const [inspectLoading, setInspectLoading] = useState(false);
-  const [inspectError, setInspectError] = useState("");
-  const [inspectedPth, setInspectedPth] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -30,9 +23,7 @@ export default function ExtraPage() {
     fetchModels()
       .then((m) => {
         setAudios(m.audios);
-        setModels(m.models);
         if (m.audios.length > 0) setInputPath(m.audios[0]);
-        if (m.models.length > 0) setPth(m.models[0]);
       })
       .catch(() => {});
   }, []);
@@ -62,28 +53,6 @@ export default function ExtraPage() {
     }
   }
 
-  async function modelInfo() {
-    setError("");
-    setInspectError("");
-    if (!pth.trim()) {
-      setInspectError(t("Please enter or select a .pth model path."));
-      return;
-    }
-    setInspectLoading(true);
-    setInspectData(null);
-    setInspectedPth(pth.trim());
-    try {
-      const res = await apiSend<{ ok: boolean; metadata: ModelMetadata }>("/api/models/inspect", "POST", {
-        pthPath: pth.trim(),
-      });
-      setInspectData(res.metadata);
-    } catch (e) {
-      setInspectError(errMsg(e));
-    } finally {
-      setInspectLoading(false);
-    }
-  }
-
   async function f0() {
     setError("");
     if (!checkAudio()) return;
@@ -106,7 +75,7 @@ export default function ExtraPage() {
       <PageHeader
         title={t("Extra Tools")}
         description={t(
-          "Inspect acoustic waveforms, plot frequency spectrograms, extract pitch contours, and examine model checkpoints.",
+          "Inspect acoustic waveforms, plot frequency spectrograms, and extract pitch contours.",
         )}
       />
 
@@ -256,58 +225,6 @@ export default function ExtraPage() {
 
       <AnalysisResultCard jobId={jobId} title={t("Acoustic Spectrogram Analysis")} type="analyzer" />
       <AnalysisResultCard jobId={f0Job} title={t("Fundamental Pitch Contour (F0)")} type="f0" />
-
-      {/* Tool 3: Model Checkpoint Inspector */}
-      <div className="card space-y-4">
-        <div className="border-b border-white/10 pb-3.5 space-y-1">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Info size={18} className="text-white shrink-0" />
-              <h2 className="text-base font-bold text-white m-0">{t("Model Checkpoint Inspector")}</h2>
-            </div>
-          </div>
-          <p className="text-xs text-neutral-400 m-0 leading-relaxed">
-            {t(
-              "Inspect any .pth file directly to display training epochs, author, vocoder, sampling rate, and hash.",
-            )}
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 max-w-xl">
-          <label htmlFor="extra-model-path" className="sr-only">
-            {t("Path to .pth checkpoint")}
-          </label>
-          <input
-            id="extra-model-path"
-            type="text"
-            list="ext-models"
-            value={pth}
-            onChange={(e) => setPth(e.target.value)}
-            placeholder="logs/my-model/my-model.pth"
-            className="flex-1 h-10 px-3 text-sm rounded-xl bg-white/5 border border-white/10"
-          />
-          <datalist id="ext-models">
-            {models.map((m) => (
-              <option key={m} value={m} />
-            ))}
-          </datalist>
-          <button
-            type="button"
-            className="cta h-10 px-4 flex items-center justify-center gap-2 text-sm font-medium rounded-xl shrink-0"
-            onClick={modelInfo}
-          >
-            <Info size={16} className="shrink-0" />
-            <span>{t("Inspect Checkpoint")}</span>
-          </button>
-        </div>
-      </div>
-
-      <ModelInfoCard
-        metadata={inspectData}
-        loading={inspectLoading}
-        error={inspectError}
-        pthPath={inspectedPth}
-      />
     </div>
   );
 }

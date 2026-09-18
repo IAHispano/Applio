@@ -136,30 +136,93 @@ router.post("/inspect", async (req: Request, res: Response) => {
       return res.status(404).json({ error: `File not found: ${parsed.data.pthPath}` });
     }
 
+    // Robust checkpoint reader: community .pth files vary widely (legacy
+    // pickles, bare state_dicts, missing metadata keys). Try the safe loader
+    // first, then unrestricted load for trusted local files, then a tolerant
+    // load that substitutes inert placeholders for classes that no longer
+    // exist in this environment (so metadata stays readable).
     const pyCode = [
-      "import json, torch",
-      `data = torch.load(${JSON.stringify(abs)}, map_location='cpu', weights_only=True)`,
+      "import io as _io",
+      "import json",
+      "import pickle as _pickle",
+      "import torch",
+      `path = ${JSON.stringify(abs)}`,
+      "class _TolerantUnpickler(_pickle.Unpickler):",
+      "    def find_class(self, module, name):",
+      "        try:",
+      "            return super().find_class(module, name)",
+      "        except Exception:",
+      "            return type(name, (), {})",
+      "class _TolerantPickle:",
+      "    Unpickler = _TolerantUnpickler",
+      "    load = staticmethod(lambda f, **kw: _TolerantUnpickler(f, **kw).load())",
+      "    loads = staticmethod(lambda s, **kw: _TolerantUnpickler(_io.BytesIO(s), **kw).load())",
+      "data = None",
+      "load_error = None",
+      "try:",
+      "    try:",
+      "        data = torch.load(path, map_location='cpu', weights_only=True)",
+      "    except TypeError:",
+      "        data = torch.load(path, map_location='cpu')",
+      "    except Exception:",
+      "        data = torch.load(path, map_location='cpu', weights_only=False)",
+      "except Exception:",
+      "    try:",
+      "        data = torch.load(path, map_location='cpu', weights_only=False, pickle_module=_TolerantPickle)",
+      "    except TypeError:",
+      "        try:",
+      "            data = torch.load(path, map_location='cpu')",
+      "        except Exception as e:",
+      "            load_error = str(e)[:1000]",
+      "            data = None",
+      "    except Exception as e:",
+      "        load_error = str(e)[:1000]",
+      "        data = None",
+      "if data is None:",
+      "    raise SystemExit('LOAD_FAILED:' + (load_error or 'unknown error'))",
+      "d = data if isinstance(data, dict) else {}",
+      "def _g(k, default='None'):",
+      "    try:",
+      "        v = d.get(k, default)",
+      "    except Exception:",
+      "        return default",
+      "    if v is None:",
+      "        return default",
+      "    try:",
+      "        s = str(v)",
+      "        return s if s else default",
+      "    except Exception:",
+      "        return default",
       "meta = {",
-      "  'model_name': str(data.get('model_name', 'None')),",
-      "  'author': str(data.get('author', 'None')),",
-      "  'epochs': str(data.get('epoch', 'None')),",
-      "  'step': str(data.get('step', 'None')),",
-      "  'sr': str(data.get('sr', 'None')),",
-      "  'f0': str(data.get('f0', 'None')),",
-      "  'vocoder': str(data.get('vocoder', 'None')),",
-      "  'embedder_model': str(data.get('embedder_model', 'None')),",
-      "  'creation_date': str(data.get('creation_date', 'None')),",
-      "  'model_hash': str(data.get('model_hash', 'None')),",
-      "  'dataset_length': str(data.get('dataset_length', 'None')),",
-      "  'speakers_id': str(data.get('speakers_id', '0')),",
+      "  'model_name': _g('model_name'),",
+      "  'author': _g('author'),",
+      "  'epochs': _g('epoch'),",
+      "  'step': _g('step'),",
+      "  'sr': _g('sr'),",
+      "  'f0': _g('f0'),",
+      "  'version': _g('version'),",
+      "  'vocoder': _g('vocoder'),",
+      "  'embedder_model': _g('embedder_model'),",
+      "  'creation_date': _g('creation_date'),",
+      "  'model_hash': _g('model_hash'),",
+      "  'dataset_length': _g('dataset_length'),",
+      "  'speakers_id': _g('speakers_id', '0'),",
       "}",
       "print('APPLIO_JSON:' + json.dumps(meta))",
-    ].join("; ");
+    ].join("\n");
 
     const meta = await runPythonJson<Record<string, string>>(pyCode);
     return res.json({ ok: true, metadata: meta });
   } catch (err) {
-    return res.status(500).json({ error: errMsg(err) || "Inspection failed" });
+    const msg = errMsg(err) || "Inspection failed";
+    // Surface a helpful hint when torch itself cannot unpickle the file.
+    if (msg.includes("LOAD_FAILED:")) {
+      const detail = msg.split("LOAD_FAILED:")[1]?.trim() || "could not be parsed";
+      return res.status(422).json({
+        error: `Could not read checkpoint (file may be corrupted or not an RVC checkpoint): ${detail.slice(0, 500)}`,
+      });
+    }
+    return res.status(500).json({ error: msg });
   }
 });
 
@@ -211,15 +274,50 @@ router.get("/speakers", async (req: Request, res: Response) => {
     const abs = resolveUserPath(pthPath);
     if (!fs.existsSync(abs)) return res.status(404).json({ error: `Model not found: ${pthPath}` });
     const code = [
-      "import json, torch",
-      `ckpt = torch.load(${JSON.stringify(abs)}, map_location='cpu')`,
-      "n = ckpt.get('speakers_id', 0) if isinstance(ckpt, dict) else 0",
+      "import io as _io",
+      "import json",
+      "import pickle as _pickle",
+      "import torch",
+      `path = ${JSON.stringify(abs)}`,
+      "class _TolerantUnpickler(_pickle.Unpickler):",
+      "    def find_class(self, module, name):",
+      "        try:",
+      "            return super().find_class(module, name)",
+      "        except Exception:",
+      "            return type(name, (), {})",
+      "class _TolerantPickle:",
+      "    Unpickler = _TolerantUnpickler",
+      "    load = staticmethod(lambda f, **kw: _TolerantUnpickler(f, **kw).load())",
+      "    loads = staticmethod(lambda s, **kw: _TolerantUnpickler(_io.BytesIO(s), **kw).load())",
+      "try:",
+      "    try:",
+      "        ckpt = torch.load(path, map_location='cpu', weights_only=True)",
+      "    except TypeError:",
+      "        ckpt = torch.load(path, map_location='cpu')",
+      "    except Exception:",
+      "        ckpt = torch.load(path, map_location='cpu', weights_only=False)",
+      "except Exception:",
+      "    try:",
+      "        ckpt = torch.load(path, map_location='cpu', weights_only=False, pickle_module=_TolerantPickle)",
+      "    except Exception as e:",
+      "        raise SystemExit('LOAD_FAILED:' + str(e)[:500])",
+      "try:",
+      "    n = ckpt.get('speakers_id', 0) if isinstance(ckpt, dict) else 0",
+      "    n = int(n)",
+      "except Exception:",
+      "    n = 0",
       "print('APPLIO_JSON:' + json.dumps({'speakers': list(range(n)) if n else [0]}))",
-    ].join("; ");
+    ].join("\n");
     const out = await runPythonJson<{ speakers: number[] }>(code);
     res.json(out);
   } catch (err) {
-    res.status(500).json({ error: errMsg(err) || "Could not read speakers" });
+    const msg = errMsg(err) || "Could not read speakers";
+    if (msg.includes("LOAD_FAILED:")) {
+      return res
+        .status(422)
+        .json({ error: `Could not read checkpoint: ${msg.split("LOAD_FAILED:")[1]?.trim()?.slice(0, 300)}` });
+    }
+    res.status(500).json({ error: msg });
   }
 });
 

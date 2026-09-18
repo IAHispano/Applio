@@ -376,6 +376,12 @@ export function startInstall(): Job {
       appendLog(job, "Installing engine packages (torch + requirements — this takes a while)…");
       await streamRun(job, venvPy, ["-m", "pip", "install", "-U", "pip"]);
       const hasUv = (await runCmd("uv", ["--version"], { timeoutMs: 15000 })).code === 0;
+      // NVIDIA GPU wheels live on the PyTorch index, not PyPI. Install the
+      // whole requirements file against that index so torch/torchaudio resolve
+      // to CUDA builds, e.g.:
+      //   uv pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
+      // unsafe-best-match is required because the torch index also mirrors a
+      // few PyPI packages at older versions.
       const torchIndex =
         process.platform === "darwin" ? [] : ["--extra-index-url", "https://download.pytorch.org/whl/cu128"];
       const reqFile = path.join(root, "requirements.txt");
@@ -386,17 +392,16 @@ export function startInstall(): Job {
           "install",
           "--python",
           venvPy,
-          "torch",
-          ...torchIndex,
-          // The torch wheel index also mirrors a few PyPI packages at older
-          // versions; without this uv pins them to that index and resolution fails.
-          ...(torchIndex.length > 0 ? ["--index-strategy", "unsafe-best-match"] : []),
           "-r",
           reqFile,
+          ...torchIndex,
+          ...(torchIndex.length > 0 ? ["--index-strategy", "unsafe-best-match"] : []),
         ]);
       } else {
-        await streamRun(job, venvPy, ["-m", "pip", "install", "torch", ...torchIndex]);
-        await streamRun(job, venvPy, ["-m", "pip", "install", "-r", reqFile]);
+        // Single requirements install so the GPU index applies to torch AND
+        // torchaudio (a separate `pip install torch` first would be
+        // overwritten by the CPU wheel from PyPI on the second call).
+        await streamRun(job, venvPy, ["-m", "pip", "install", "-r", reqFile, ...torchIndex]);
       }
 
       process.env.PYTHON_BIN = venvPy;
