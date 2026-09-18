@@ -118,7 +118,9 @@ except FileNotFoundError:
 config.data.training_files = os.path.join(experiment_dir, "filelist.txt")
 
 torch.backends.cudnn.deterministic = False
-torch.backends.cudnn.benchmark = True
+if os.name == "nt":  # Windows
+    torch.backends.cudnn.benchmark = True
+
 # TF32 settings, should improve performance in some cases
 try:
     torch.set_float32_matmul_precision("high")
