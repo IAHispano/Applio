@@ -106,7 +106,7 @@ export default function TermsModal() {
                 <h2 id="terms-modal-title" className="text-lg font-bold text-white tracking-tight m-0">
                   {t("Terms of Use")}
                 </h2>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-neutral-300">
+                <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-neutral-300">
                   Applio
                 </span>
               </div>
@@ -118,7 +118,7 @@ export default function TermsModal() {
 
           {/* Reading progress indicator in header */}
           <div className="hidden sm:flex flex-col items-end gap-1 shrink-0 select-none">
-            <span className="text-[11px] font-mono text-neutral-400">
+            <span className="text-[11px] text-neutral-400">
               {scrolledToBottom ? (
                 <span className="text-emerald-400 font-semibold flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />

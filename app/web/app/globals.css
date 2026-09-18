@@ -737,7 +737,6 @@ button.segmented-item.is-active:hover {
 .model-meta dd {
   margin: 0;
   min-width: 0;
-  font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   color: var(--text);
@@ -776,7 +775,6 @@ button.segmented-item.is-active:hover {
   color: var(--muted);
 }
 .preset-stat b {
-  font-family: var(--font-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
   font-weight: 500;
   color: var(--text);

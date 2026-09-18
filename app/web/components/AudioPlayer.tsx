@@ -240,7 +240,7 @@ export default function AudioPlayer({
             className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
           />
         </div>
-        <div className="flex justify-between text-xs text-neutral-400 tabular-nums font-mono">
+        <div className="flex justify-between text-xs text-neutral-400 tabular-nums">
           <span>{formatTime(currentTime)}</span>
           <span>{formatTime(duration)}</span>
         </div>
@@ -296,7 +296,7 @@ export default function AudioPlayer({
             type="button"
             onClick={cycleRate}
             aria-label={`${t("Playback speed")}: ${playbackRate}x`}
-            className="px-2.5 py-1 text-xs font-mono font-medium rounded-lg bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10 transition-colors focus-visible:outline-2 focus-visible:outline-white"
+            className="px-2.5 py-1 text-xs font-medium rounded-lg bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10 transition-colors focus-visible:outline-2 focus-visible:outline-white"
             title={t("Playback Speed")}
           >
             {playbackRate}x

@@ -231,7 +231,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
                   : `Automated Setup in Progress (${progressPercent}%)`}
               </span>
             </span>
-            <span className="font-mono text-neutral-400">
+            <span className="text-neutral-400">
               {steps.filter((s) => s.status === "done").length} / {steps.length} Steps
             </span>
           </div>
@@ -354,7 +354,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
             role="log"
             aria-live="polite"
             aria-label={t("Live console output")}
-            className="rounded-xl border border-white/10 bg-black/70 p-4 font-mono text-xs text-neutral-300 max-h-64 overflow-y-auto space-y-1 shadow-inner"
+            className="rounded-xl border border-white/10 bg-black/70 p-4 text-xs text-neutral-300 max-h-64 overflow-y-auto space-y-1 shadow-inner"
           >
             {job?.logs.length ? (
               job.logs.map((log, i) => (

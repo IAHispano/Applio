@@ -112,7 +112,7 @@ export default function ModelDropdown({
                 {currentDisplayName}
               </span>
               {selectedModel && (
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/10 text-neutral-300 shrink-0">
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-neutral-300 shrink-0">
                   {selectedModel.endsWith(".onnx") ? "ONNX" : "PTH"}
                 </span>
               )}
@@ -193,7 +193,7 @@ export default function ModelDropdown({
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold truncate">{modelDisplayName(m)}</span>
                         <span
-                          className={`text-[9px] font-mono px-1 py-0.2 rounded ${
+                          className={`text-[9px] px-1 py-0.2 rounded ${
                             isSelected ? "bg-black/20 text-black" : "bg-white/10 text-neutral-400"
                           }`}
                         >

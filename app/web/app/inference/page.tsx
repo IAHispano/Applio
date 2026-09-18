@@ -5,7 +5,6 @@ import { useState } from "react";
 import BatchForm from "../../components/BatchForm";
 import InferenceForm from "../../components/InferenceForm";
 import PageHeader from "../../components/layout/PageHeader";
-import PresetsPanel from "../../components/PresetsPanel";
 import SegmentedControl from "../../components/ui/SegmentedControl";
 import { useI18n } from "../../lib/i18n";
 
@@ -32,9 +31,6 @@ export default function InferencePage() {
       </PageHeader>
       <div id={`panel-${mode}`} role="tabpanel" aria-labelledby={`tab-${mode}`}>
         {mode === "single" ? <InferenceForm /> : <BatchForm />}
-      </div>
-      <div className="max-w-7xl mx-auto mt-4">
-        <PresetsPanel />
       </div>
     </div>
   );

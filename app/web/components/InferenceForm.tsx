@@ -348,13 +348,13 @@ export default function InferenceForm() {
           <div className="card space-y-3 h-full flex flex-col">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Music size={16} className="text-neutral-300" />
-                <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-300 m-0">
+                <Music size={18} className="text-white" />
+                <h2 className="text-base font-bold text-white m-0">
                   {t("Voice Model")}
                 </h2>
               </div>
               {pthPath && (
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   {t("Ready")}
                 </span>
               )}
@@ -386,7 +386,7 @@ export default function InferenceForm() {
 
                 <div className="flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-white/70 shrink-0" />
-                  <span className="text-xs font-mono text-neutral-200 truncate flex-1">
+                  <span className="text-xs text-neutral-200 truncate flex-1">
                     {indexPath
                       ? indexPath.split("/").pop()
                       : t("No index paired (using model features only)")}
@@ -487,13 +487,13 @@ export default function InferenceForm() {
           <div className="card space-y-3 h-full">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <AudioWaveform size={16} className="text-neutral-300" />
-                <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-300 m-0">
+                <AudioWaveform size={18} className="text-white" />
+                <h2 className="text-base font-bold text-white m-0">
                   {t("Audio Source")}
                 </h2>
               </div>
               {(audioFile || inputPath) && (
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/10">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white border border-white/10">
                   {audioFile ? t("Uploaded File") : t("Library Sample")}
                 </span>
               )}
@@ -516,8 +516,8 @@ export default function InferenceForm() {
       <div className="card space-y-5">
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
-            <Sliders size={16} className="text-neutral-300" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-300 m-0">
+            <Sliders size={18} className="text-white" />
+            <h2 className="text-base font-bold text-white m-0">
               {t("Conversion Parameters")}
             </h2>
           </div>
@@ -559,21 +559,21 @@ export default function InferenceForm() {
               <button
                 type="button"
                 onClick={() => setPitch(-12)}
-                className="px-2 py-0.5 text-[10px] font-mono rounded bg-white/5 hover:bg-white/15 text-neutral-300 border border-white/10 transition-colors"
+                className="px-2 py-0.5 text-[10px] rounded bg-white/5 hover:bg-white/15 text-neutral-300 border border-white/10 transition-colors"
               >
                 -12 (Male)
               </button>
               <button
                 type="button"
                 onClick={() => setPitch(0)}
-                className="px-2 py-0.5 text-[10px] font-mono rounded bg-white/5 hover:bg-white/15 text-neutral-300 border border-white/10 transition-colors"
+                className="px-2 py-0.5 text-[10px] rounded bg-white/5 hover:bg-white/15 text-neutral-300 border border-white/10 transition-colors"
               >
                 0 (Default)
               </button>
               <button
                 type="button"
                 onClick={() => setPitch(12)}
-                className="px-2 py-0.5 text-[10px] font-mono rounded bg-white/5 hover:bg-white/15 text-neutral-300 border border-white/10 transition-colors"
+                className="px-2 py-0.5 text-[10px] rounded bg-white/5 hover:bg-white/15 text-neutral-300 border border-white/10 transition-colors"
               >
                 +12 (Female)
               </button>
@@ -1108,7 +1108,7 @@ export default function InferenceForm() {
                 {job.status}
               </span>
             )}
-            {job && <span className="text-xs font-mono text-neutral-400">ID: {job.id}</span>}
+            {job && <span className="text-xs text-neutral-400">ID: {job.id}</span>}
           </div>
         </div>
 
@@ -1123,7 +1123,7 @@ export default function InferenceForm() {
                     ? t("Queued in processing pipeline…")
                     : t("Processing inference with voice model…")}
               </span>
-              <span className="font-mono text-neutral-400 capitalize">
+              <span className="text-neutral-400 capitalize">
                 {submitting ? t("Uploading…") : job?.status || t("Working…")}
               </span>
             </div>

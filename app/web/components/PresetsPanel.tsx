@@ -86,8 +86,8 @@ export default function PresetsPanel() {
     <div className="card space-y-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <Bookmark size={16} className="text-neutral-300" />
-          <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-300 m-0">{t("Presets")}</h2>
+          <Bookmark size={18} className="text-white" />
+          <h2 className="text-base font-bold text-white m-0">{t("Presets")}</h2>
         </div>
         <button type="button" className="ghost" onClick={refresh}>
           <RefreshCw size={14} />

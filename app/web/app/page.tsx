@@ -322,7 +322,7 @@ export default function Home() {
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-xs font-medium text-neutral-200 truncate">{c.label}</span>
                       <span
-                        className={`text-[9px] font-mono px-1 py-0.2 rounded uppercase ${
+                        className={`text-[9px] px-1 py-0.2 rounded uppercase ${
                           isOk
                             ? "text-emerald-400 bg-emerald-400/10"
                             : isWarn

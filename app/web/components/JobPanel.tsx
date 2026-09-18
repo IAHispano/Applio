@@ -70,7 +70,7 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
           <span className={`badge ${job.status}`} role="status" aria-label={`Job status: ${job.status}`}>
             {job.status}
           </span>
-          <span className="muted font-mono text-xs">
+          <span className="muted text-xs">
             {t("job")} {job.id}
           </span>
         </div>
@@ -90,7 +90,7 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
         <div
           role="alert"
           aria-live="assertive"
-          className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-mono"
+          className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs"
         >
           {job.error}
         </div>
@@ -136,7 +136,7 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
             >
               {t("Download image")}
             </a>{" "}
-            <span className="muted text-xs font-mono">({fileBasename(out)})</span>
+            <span className="muted text-xs">({fileBasename(out)})</span>
           </p>
         </div>
       )}
@@ -151,7 +151,7 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
           >
             {t("Download result")}
           </a>{" "}
-          <span className="muted text-xs font-mono">({fileBasename(out)})</span>
+          <span className="muted text-xs">({fileBasename(out)})</span>
         </p>
       )}
 
@@ -165,7 +165,7 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
           >
             {t("Download")} {s.label}
           </a>{" "}
-          <span className="muted text-xs font-mono">({fileBasename(s.file)})</span>
+          <span className="muted text-xs">({fileBasename(s.file)})</span>
         </p>
       ))}
 

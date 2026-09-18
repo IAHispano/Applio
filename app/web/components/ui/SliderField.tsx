@@ -134,7 +134,7 @@ export default function SliderField({
               onChange={handleInputChange}
               onBlur={handleInputBlur}
               onKeyDown={handleInputKeyDown}
-              className="w-16 px-1.5 py-0.5 text-xs font-semibold font-mono text-center rounded-md bg-white/10 text-neutral-100 border border-white/15 hover:border-white/30 focus:border-white focus:bg-white/20 focus:outline-none transition-all tabular-nums disabled:opacity-40"
+              className="w-16 px-1.5 py-0.5 text-xs font-semibold text-center rounded-md bg-white/10 text-neutral-100 border border-white/15 hover:border-white/30 focus:border-white focus:bg-white/20 focus:outline-none transition-all tabular-nums disabled:opacity-40"
             />
           </div>
           {unit && <span className="text-[11px] text-neutral-400 select-none font-medium">{unit}</span>}

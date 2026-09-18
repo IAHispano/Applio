@@ -281,7 +281,7 @@ export default function AudioDropzone({
                 {["WAV", "MP3", "FLAC", "OGG", "M4A"].map((fmt) => (
                   <span
                     key={fmt}
-                    className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/5"
+                    className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/10 text-neutral-300 border border-white/5"
                   >
                     {fmt}
                   </span>
@@ -341,7 +341,7 @@ export default function AudioDropzone({
                 <p className="text-sm font-semibold text-white m-0">
                   {recording ? t("Recording in progress…") : t("Record directly with microphone")}
                 </p>
-                <p className="text-xs font-mono text-neutral-400 m-0 mt-1">
+                <p className="text-xs text-neutral-400 m-0 mt-1">
                   {recording
                     ? `${Math.floor(recDuration / 60)}:${recDuration % 60 < 10 ? "0" : ""}${recDuration % 60}`
                     : t("High quality voice capture")}

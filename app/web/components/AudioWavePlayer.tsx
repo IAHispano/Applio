@@ -453,7 +453,7 @@ export default function AudioWavePlayer({
         {/* Hover Time Tooltip */}
         {hoverTime !== null && hoverX !== null && (
           <div
-            className="absolute top-1.5 px-2 py-0.5 rounded bg-black/90 text-[10px] font-mono font-medium text-white pointer-events-none transform -translate-x-1/2 shadow-md border border-white/20 z-10"
+            className="absolute top-1.5 px-2 py-0.5 rounded bg-black/90 text-[10px] font-medium text-white pointer-events-none transform -translate-x-1/2 shadow-md border border-white/20 z-10"
             style={{ left: hoverX }}
           >
             {formatTime(hoverTime)}
@@ -507,12 +507,12 @@ export default function AudioWavePlayer({
             type="button"
             onClick={cycleRate}
             title={t("Playback Speed")}
-            className="px-2 py-1 text-xs font-mono font-medium rounded-lg bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10 transition-colors"
+            className="px-2 py-1 text-xs font-medium rounded-lg bg-white/5 text-neutral-300 hover:text-white hover:bg-white/10 transition-colors"
           >
             {playbackRate}x
           </button>
 
-          <div className="text-xs text-neutral-400 tabular-nums font-mono ml-1">
+          <div className="text-xs text-neutral-400 tabular-nums ml-1">
             <span className="text-white font-medium">{formatTime(currentTime)}</span>
             <span className="mx-1">/</span>
             <span>{formatTime(duration)}</span>
