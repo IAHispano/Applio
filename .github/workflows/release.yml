@@ -1,159 +1,173 @@
-name: Release
+name: Build and Release
 
+# Manual release: builds the Electron installers on all three platforms and
+# publishes them as a GitHub release. Run from Actions > Build and Release.
 on:
-  push:
-    branches:
-      - main
-      - master
-    paths:
-      - 'assets/config_template.json'
-      - '.github/workflows/release.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 3.7.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark the GitHub release as a pre-release?'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  release:
-    name: Release
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            id: win
+            build-command: pnpm build:win
+          - os: macos-latest
+            id: mac
+            build-command: pnpm build:mac
+          - os: ubuntu-latest
+            id: linux
+            build-command: pnpm build:linux
+
     steps:
-      - name: Check out the repository
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 1
 
-      - name: Detect and tag new version
-        id: check-version
-        uses: salsify/action-detect-and-tag-new-version@v2.0.3
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          tag-template: "{VERSION}"
-          version-command: |
-            bash -o pipefail -c "cat ./assets/config_template.json | jq -r '.version'"
+          version: 11
+          run_install: false
 
-      - name: Get commit history and summarize
-        id: generate-changelog
-        if: steps.check-version.outputs.tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PREV_TAG: ${{ steps.check-version.outputs.previous-version }}
-          NEW_TAG: ${{ steps.check-version.outputs.tag }}
-        run: |
-          compare_url="https://api.github.com/repos/IAHispano/Applio/compare/${PREV_TAG}...${NEW_TAG}"
-          compare_data=$(curl -s "$compare_url" \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github+json")
-
-          files_str=$(echo "$compare_data" | jq -r \
-            '.files[]? | "[\(.status | ascii_upcase)] \(.filename | split("/") | last) (+\(.additions) -\(.deletions) lines)"')
-
-          commits_str=$(echo "$compare_data" | jq -r \
-            '.commits[]?.commit.message | split("\n")[0] | select(test("merge|chore|format|run black"; "i") | not) | "- \(.)"')
-
-          {
-            echo "GLOBAL MODIFIED FILES IN THIS RELEASE:"
-            echo "$files_str"
-            echo ""
-            echo "COMMIT HISTORY:"
-            echo "$commits_str"
-          } > commits.txt
-
-          SYSTEM_INSTRUCTION="You are an expert release notes generator. You will receive a list of commit messages and a detailed global list of files modified in this release (including their status: ADDED, REMOVED, MODIFIED, and line counts).\nYour task is to extract, group, and present the most relevant changes as a concise bulleted list (maximum 5-7 items).\n\n### CORE RULES:\n1. **Internal File Context:** Use the detailed file list ONLY internally to understand which modules or areas were impacted. If multiple commits seem to touch the same area based on the file names, commit logic, or shared modified files, YOU MUST merge them into a single, cohesive bullet point. Focus on the overall problem solved rather than the individual steps taken.\n2. **Overarching Impact over Micro-Commits:** Do not list every single fix. If a developer made multiple commits addressing the same general area or feature, summarize the final result. Ignore intermediate debugging steps (e.g., if a feature was added and then fixed in a later commit, only list the feature as functional).\n3. **Filter Noise:** Ignore commits related to CI/CD workflows, generic formatting, linter configurations, merges, and generic 'update file' messages without functional context. Explicitly ignore and exclude any mentions or references to 'volume envelope' as they are not relevant.\n4. **Action-Oriented & Brief:** Each item must start with an uppercase verb (Added, Fixed, Improved, Updated, Removed, Optimized). Keep descriptions brief and focused on the feature or user impact.\n5. **Smart Deduplication:** If a commit reverts a previous commit, ignore both. If a commit is just a follow-up fix (e.g., adding a missing import after a main feature commit), combine them into the main feature entry.\n6. **NO FILE NAMES & BANNED WORDS:** NEVER include file names, file paths, or file extensions in the final output. The output must be purely functional and user-facing. NEVER mention, use, or reference the phrase 'volume envelope' in the final output under any circumstances.\n\n### OUTPUT FORMAT:\nReturn ONLY the bulleted list. No introductions, no conclusions, no markdown code blocks, just the raw text list starting with '- '."
-
-          COMMIT_HISTORY=$(cat commits.txt)
-
-          json_payload=$(jq -n \
-            --arg input "$COMMIT_HISTORY" \
-            --arg sys_inst "$SYSTEM_INSTRUCTION" \
-            '{
-              model: "gemini-3.6-flash",
-              input: $input,
-              system_instruction: $sys_inst,
-              generation_config: {
-                max_output_tokens: 8192,
-                thinking_level: "low"
-              }
-            }')
-
-          gemini_response=$(curl -s "https://generativelanguage.googleapis.com/v1beta/interactions" \
-            -X POST \
-            -H "Content-Type: application/json" \
-            -H "x-goog-api-key: $GEMINI_API_KEY" \
-            -d "$json_payload")
-
-          summary=$(echo "$gemini_response" | jq -r \
-            '.steps[]? | select(.type == "model_output") | .content[]? | select(.type == "text") | .text')
-
-          if [ -z "$summary" ] || [ "$summary" == "null" ]; then
-            echo "::warning::Gemini API call failed or returned empty. Proceeding with empty changelog."
-            echo "$gemini_response"
-            echo "" > summarized_changelog.txt
-          else
-            echo "$summary" > summarized_changelog.txt
-          fi
-
-      - name: Set up Node.js
-        if: steps.check-version.outputs.tag
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
+          cache: 'pnpm'
 
-      - name: Install gh-release
-        if: steps.check-version.outputs.tag
-        run: |
-          npm install https://github.com/IAHispano/gh-release.git
-
-      - name: Create package.json
-        if: steps.check-version.outputs.tag
-        run: |
-          cd /home/runner/work/Applio/Applio
-          echo '{}' > package.json
-          jq \
-            --arg version "${{ steps.check-version.outputs.tag }}" \
-            --arg url "git+https://github.com/IAHispano/Applio.git" \
-            '. + {version: $version, repository: {url: $url}}' \
-            package.json > tmp.$$.json && mv tmp.$$.json package.json
-
-      - name: Publish release
-        if: steps.check-version.outputs.tag
-        run: |
-          cd /home/runner/work/Applio/Applio && \
-          tag_name="${{ steps.check-version.outputs.tag }}"
-          changelog=$(cat summarized_changelog.txt)
-          GH_RELEASE_GITHUB_API_TOKEN=${{ secrets.GITHUB_TOKEN }} npx gh-release \
-            -t "${tag_name}" \
-            -n "Applio ${tag_name}" \
-            -c "main" \
-            -b "## Important Installation Guidelines
-
-            ### Before You Install Applio
-            Please review these essential instructions to ensure a smooth installation:
-            - **File Location**: Place the Applio files in a dedicated folder on your C drive.
-            - **Access Control**: Avoid placing Applio in folders that require elevated privileges.
-            - **Administrator Rights**: The installer works per-user — no administrator privileges needed.
-            - **Path Requirements**: Ensure the installation path is free of spaces or special characters.
-            - **Security Settings**: Temporarily disable your antivirus and firewall to prevent any issues with missing dependencies during installation.
-            ### Installation Steps
-            - **Recommended**: Download \`Applio-Setup-${{ steps.check-version.outputs.tag }}.exe\` from this release, run it, then launch Applio from the Start Menu. Missing components install automatically on first launch.
-            - **Portable alternative**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/resolve/main/Compiled/Windows/ApplioV${{ steps.check-version.outputs.tag }}.zip), extract it, run \`npm install\`, then \`npm start\`.
-          ## What's New in This Release
-            ${changelog}
-
-          **Full Changelog**: https://github.com/IAHispano/Applio/compare/${{ steps.check-version.outputs.previous-version }}...${{ steps.check-version.outputs.tag }}  " \
-            -o "IAHispano" \
-            -r "Applio" \
-            -w /home/runner/work/Applio/Applio \
-            -y
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-
-      - name: Trigger Pre-Compiled
-        if: steps.check-version.outputs.tag
-        uses: actions/github-script@v6
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
         with:
-          script: |
-            await github.rest.actions.createWorkflowDispatch({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            workflow_id: 'pre_compiled.yml',
-            ref: context.ref,
-            });
+          path: |
+            ~/.cache/electron
+            ~/Library/Caches/electron
+            ~\AppData\Local\electron\Cache
+          key: ${{ runner.os }}-electron-33.2.1
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
+      - name: Install Linux packaging dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y rpm
+          # fpm (Ruby) is required by electron-builder for the .deb target.
+          command -v fpm >/dev/null || sudo gem install fpm --no-document || echo "fpm install failed, continuing"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Sync version to release input
+        # Installer filenames embed the package.json version, so it must
+        # match the release tag (leading "v" is stripped if given).
+        run: node -e "const fs=require('node:fs');const v=(process.env.RELEASE_VERSION||'').replace(/^v/,'');if(!v)throw new Error('empty version');for(const f of ['package.json','app/api/package.json','app/web/package.json','app/desktop/package.json']){const p=JSON.parse(fs.readFileSync(f,'utf8'));p.version=v;fs.writeFileSync(f,JSON.stringify(p,null,2)+'\n');}const c='assets/config_template.json';const cfg=JSON.parse(fs.readFileSync(c,'utf8'));cfg.version=v;fs.writeFileSync(c,JSON.stringify(cfg,null,2)+'\n');console.log('version set to '+v);"
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.version }}
+
+      - name: Build app
+        run: ${{ matrix.build-command }}
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          # Unsigned CI builds (no Apple Developer certificate on runners).
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Compress artifacts
+        working-directory: app/desktop/dist-installers
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            7z a -tzip build-artifacts.zip Applio-*-Windows-Setup.exe *.blockmap latest.yml 2>/dev/null || true
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            zip -r build-artifacts.zip Applio-*-macOS*.dmg Applio-*-macOS*.zip latest-mac.yml 2>/dev/null || true
+          else
+            zip -r build-artifacts.zip Applio-*-Linux*.AppImage Applio-*-Linux*.deb latest-linux.yml 2>/dev/null || true
+          fi
+        shell: bash
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.id }}
+          path: app/desktop/dist-installers/build-artifacts.zip
+          retention-days: 1
+          compression-level: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get commit messages since last tag
+        id: changelog
+        run: |
+          REPO_URL="https://github.com/${{ github.repository }}"
+          LAST_TAG=$(git describe --tags --abbrev=0 || echo "")
+          echo "Last tag: $LAST_TAG"
+
+          if [ -z "$LAST_TAG" ]; then
+            LOG_RANGE="HEAD"
+          else
+            LOG_RANGE="$LAST_TAG..HEAD"
+          fi
+
+          COMMITS=$(git log $LOG_RANGE -n 50 --pretty=format:"- [\`%h\`]($REPO_URL/commit/%H) %s (%an)")
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Extract and organize artifacts
+        run: |
+          mkdir -p release-files
+          cd artifacts
+          for dir in */; do
+            if [ -f "$dir/build-artifacts.zip" ]; then
+              unzip -q "$dir/build-artifacts.zip" -d "../release-files/"
+            fi
+          done
+          cd ..
+          ls -la release-files/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: Applio v${{ github.event.inputs.version }}
+          files: release-files/**
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease }}
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

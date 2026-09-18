@@ -96,7 +96,7 @@ mac:
 
 dmg:
   icon: ../../assets/icon.icns
-  artifactName: Applio-${version}-macOS.${ext}
+  artifactName: Applio-${version}-macOS-${arch}.${ext}
 
 linux:
   category: AudioVideo
