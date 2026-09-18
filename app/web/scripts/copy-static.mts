@@ -34,9 +34,11 @@ const essentialDeps = ["react", "react-is"];
 
 for (const dep of essentialDeps) {
   const target = path.join(standaloneModules, dep);
-  const src = path.join(rootModules, dep);
+  const localSrc = path.join(webDir, "node_modules", dep);
+  const rootSrc = path.join(rootModules, dep);
+  const src = fs.existsSync(localSrc) ? localSrc : rootSrc;
   if (!fs.existsSync(target) && fs.existsSync(src)) {
-    console.log(`[copy-static] copying hoisted ${dep} to standalone/node_modules/${dep}`);
+    console.log(`[copy-static] copying ${dep} to standalone/node_modules/${dep}`);
     copyDir(src, target);
   }
 }

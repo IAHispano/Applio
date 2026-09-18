@@ -1,0 +1,6 @@
+packages:
+  - "app/*"
+allowBuilds:
+  electron: true
+  esbuild: true
+  "@biomejs/biome": true

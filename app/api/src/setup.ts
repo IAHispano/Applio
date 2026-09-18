@@ -182,7 +182,7 @@ function checkWebBuild(): { ok: boolean; detail: string } {
   if (exists(path.join(root, "app", "web", "package.json"))) {
     return { ok: true, detail: "web source ready" };
   }
-  return { ok: false, detail: "web bundle missing — run npm run build" };
+  return { ok: false, detail: "web bundle missing — run pnpm build" };
 }
 
 export async function getStatus(force = false): Promise<SetupStatus> {
@@ -351,8 +351,8 @@ export function startInstall(): Job {
     setRunning(job);
     try {
       const root = getRepoRoot();
-      const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
-      const npmShell = process.platform === "win32";
+      const pnpmCmd = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+      const pnpmShell = process.platform === "win32";
 
       const found = await findPython();
       const sysPy: string[] = found ? found.cmd : await bootstrapSystemPython(job);
@@ -406,22 +406,22 @@ export function startInstall(): Job {
 
       if (exists(path.join(root, "app", "api", "package.json"))) {
         appendLog(job, "Installing web dependencies…");
-        await streamRun(job, npmCmd, ["install", "--workspaces", "--include-workspace-root"], {
-          shell: npmShell,
+        await streamRun(job, pnpmCmd, ["install"], {
+          shell: pnpmShell,
         });
         if (!exists(path.join(root, "app", "web", ".next", "standalone", "server.js"))) {
           if (await webDevServerRunning()) {
             appendLog(
               job,
               `! Skipping web build — a dev server is already serving port ${WEB_PORT}. ` +
-                "Dev mode does not need the production bundle; to build it, stop `npm run dev` and run `npm run build`.",
+                "Dev mode does not need the production bundle; to build it, stop `pnpm dev` and run `pnpm build`.",
             );
           } else {
             appendLog(job, "Building web interface…");
             try {
-              await streamRun(job, npmCmd, ["run", "build"], { shell: npmShell });
+              await streamRun(job, pnpmCmd, ["run", "build"], { shell: pnpmShell });
             } catch (e) {
-              appendLog(job, `! Web build failed (${e}) — everything else installed; run \`npm run build\` manually.`);
+              appendLog(job, `! Web build failed (${e}) — everything else installed; run \`pnpm build\` manually.`);
             }
           }
         }
