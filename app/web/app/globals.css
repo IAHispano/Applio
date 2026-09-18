@@ -170,7 +170,7 @@ body {
 }
 
 .page-transition {
-  height: 100%;
+  min-height: 100%;
   animation: pageEnter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -277,6 +277,15 @@ a:focus-visible {
   box-shadow: var(--shadow-card);
 }
 .card:last-child {
+  margin-bottom: 0;
+}
+
+/* Page-end flush: nothing on a page's trailing spine may add margin below
+   itself. Main has pb-4 (16px) and the sidebar has my-4 (16px), so at max
+   scroll the final card edge lands exactly on the sidebar's bottom edge.
+   (space-y-* gaps use margin-top and are unaffected.) */
+#main-content .page-transition > div > :last-child,
+#main-content .page-transition > div > :last-child :last-child {
   margin-bottom: 0;
 }
 .card h2 {
