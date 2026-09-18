@@ -282,6 +282,12 @@ export function autoStartPresence(): void {
 router.get("/presence", (_req: Request, res: Response) => {
   res.json({ running: presenceAlive() });
 });
+router.post("/presence/stop", (_req: Request, res: Response) => {
+  // Transient stop for app shutdown: kills the detached interpreter without
+  // touching the saved discord_presence setting (it restarts on next boot).
+  stopPresence();
+  res.json({ ok: true });
+});
 router.post("/presence", (req: Request, res: Response) => {
   const parsed = z.object({ enabled: z.boolean() }).safeParse(req.body);
   if (!parsed.success)

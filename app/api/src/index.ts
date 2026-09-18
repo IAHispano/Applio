@@ -16,7 +16,7 @@ import pluginsRouter from "./routes/plugins";
 import presetsRouter from "./routes/presets";
 import realtimeRouter, { attachRealtimeProxy } from "./routes/realtime";
 import reportRouter from "./routes/report";
-import settingsRouter, { autoStartPresence } from "./routes/settings";
+import settingsRouter, { autoStartPresence, stopPresence } from "./routes/settings";
 import setupRouter from "./routes/setup";
 import tensorboardRouter, { autoStartTensorboard, stopTensorboard } from "./routes/tensorboard";
 import trainRouter from "./routes/train";
@@ -109,10 +109,12 @@ const server = app.listen(PORT, "127.0.0.1", () => {
 attachRealtimeProxy(server);
 
 process.on("SIGINT", () => {
+  stopPresence();
   stopTensorboard();
   process.exit(0);
 });
 process.on("SIGTERM", () => {
+  stopPresence();
   stopTensorboard();
   process.exit(0);
 });

@@ -340,9 +340,32 @@ async function bootstrapSystemPython(job: Job): Promise<string[]> {
     if (!retry) throw new Error("brew install finished but no Python was found.");
     return retry.cmd;
   }
-  throw new Error(
-    "Install Python 3.10–3.12 (e.g. sudo apt install python3-venv python3-pip), then press Install again.",
-  );
+  const manual =
+    "Install Python 3.10–3.12 (e.g. sudo apt install python3-venv python3-pip), then press Install again.";
+  let uvBin: string | null = null;
+  for (const c of ["uv", path.join(process.env.HOME || "", ".local", "bin", "uv")]) {
+    if ((await runCmd(c, ["--version"], { timeoutMs: 15000 })).code === 0) {
+      uvBin = c;
+      break;
+    }
+  }
+  if (!uvBin) {
+    appendLog(job, "Installing uv…");
+    await streamRun(job, "curl -LsSf https://astral.sh/uv/install.sh | sh", [], { shell: true });
+    const localUv = path.join(process.env.HOME || "", ".local", "bin", "uv");
+    if (process.env.HOME && exists(localUv)) {
+      uvBin = localUv;
+      process.env.PATH = `${path.join(process.env.HOME, ".local", "bin")}${path.delimiter}${process.env.PATH || ""}`;
+    }
+  }
+  if (uvBin) {
+    const venvDir = path.join(getRepoRoot(), ".venv");
+    appendLog(job, "Creating app virtualenv with uv…");
+    await streamRun(job, uvBin, ["venv", venvDir, "--python", "3.12", "--seed"]);
+    const venvPy = path.join(venvDir, "bin", "python");
+    if (exists(venvPy)) return [venvPy];
+  }
+  throw new Error(manual);
 }
 
 export function startInstall(): Job {

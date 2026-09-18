@@ -6,6 +6,10 @@ import path from "node:path";
 import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, shell } from "electron";
 import { autoUpdater, type UpdateInfo } from "electron-updater";
 
+// User data, logs and caches live under a clean app-scoped dir
+// (~/.config/Applio on Linux) instead of the npm package name.
+app.setName("Applio");
+
 const isDev: boolean = !app.isPackaged;
 const API_PORT: string = process.env.API_PORT || "8000";
 const WEB_PORT: string = process.env.WEB_PORT || "3000";
@@ -42,6 +46,74 @@ function repoRoot(): string {
   return path.resolve(__dirname, "..");
 }
 
+// Writable per-user data dir for the packaged app. The AppImage mount
+// (resources/) is read-only, so the .venv, downloaded models (logs/),
+// uploads and outputs cannot live next to the code — they live here.
+function dataRoot(): string {
+  if (isDev) return repoRoot();
+  try {
+    const dir = path.join(app.getPath("userData"), "data");
+    fs.mkdirSync(dir, { recursive: true });
+    return dir;
+  } catch {
+    return repoRoot();
+  }
+}
+
+// Seed the data dir from the read-only package on first run (and re-seed
+// code files on version change). User-generated trees (assets/, logs/)
+// are only created when missing, never overwritten.
+function seedDataRoot(code: string, data: string): void {
+  const marker = path.join(data, ".seed-version");
+  const version = app.getVersion();
+  let current = "";
+  try {
+    current = fs.readFileSync(marker, "utf-8").trim();
+  } catch {
+    /* first run */
+  }
+  const codeEntries = ["core.py", "requirements.txt", "LICENSE", "rvc", "plugins"];
+  const dataEntries = ["assets"];
+  const needsSeed = current !== version || !fs.existsSync(path.join(data, "core.py"));
+  if (!needsSeed) {
+    for (const entry of dataEntries) {
+      if (!fs.existsSync(path.join(data, entry)) && fs.existsSync(path.join(code, entry))) {
+        try {
+          fs.cpSync(path.join(code, entry), path.join(data, entry), { recursive: true });
+        } catch {
+          /* non-fatal: the API surfaces a proper error later */
+        }
+      }
+    }
+    return;
+  }
+  for (const entry of codeEntries) {
+    const src = path.join(code, entry);
+    if (!fs.existsSync(src)) continue;
+    try {
+      fs.cpSync(src, path.join(data, entry), { recursive: true, force: true });
+    } catch {
+      /* non-fatal */
+    }
+  }
+  for (const entry of dataEntries) {
+    const dest = path.join(data, entry);
+    if (fs.existsSync(dest)) continue;
+    if (!fs.existsSync(path.join(code, entry))) continue;
+    try {
+      fs.cpSync(path.join(code, entry), dest, { recursive: true });
+    } catch {
+      /* non-fatal */
+    }
+  }
+  try {
+    fs.mkdirSync(path.join(data, "logs"), { recursive: true });
+    fs.writeFileSync(marker, `${version}\n`);
+  } catch {
+    /* non-fatal */
+  }
+}
+
 function appIconPath(): string | undefined {
   const root = repoRoot();
   const candidates =
@@ -68,20 +140,24 @@ function appNativeIcon(): Electron.NativeImage | undefined {
 }
 
 function startProdBackends(): void {
-  const root = repoRoot();
-  const serverEntry = path.join(root, "app", "api", "dist", "index.js");
-  const nextStandalone = path.join(root, "app", "web", ".next", "standalone", "server.js");
+  const code = repoRoot();
+  const data = isDev ? code : dataRoot();
+  if (!isDev) seedDataRoot(code, data);
+  const serverEntry = path.join(code, "app", "api", "dist", "index.js");
+  const nextStandalone = path.join(code, "app", "web", ".next", "standalone", "server.js");
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     ELECTRON_RUN_AS_NODE: "1",
     API_PORT,
-    APPLIO_ROOT: root,
+    APPLIO_ROOT: data,
+    APPLIO_CODE_ROOT: code,
+    ...(isDev ? {} : { PACKAGED: "1" }),
     PORT: WEB_PORT,
     HOSTNAME: "127.0.0.1",
   };
   if (fs.existsSync(serverEntry)) {
     apiProc = spawn(process.execPath, [serverEntry], {
-      cwd: root,
+      cwd: data,
       env,
       windowsHide: true,
     });
@@ -170,6 +246,11 @@ function pipeProcOutput(proc: ChildProcess, tag: "api" | "web"): void {
 
 function findPythonBin(): { path: string; source: string; exists: boolean } {
   const root = repoRoot();
+  const roots: Array<{ dir: string; label: string }> = [{ dir: root, label: "bundled .venv" }];
+  if (!isDev) {
+    const data = dataRoot();
+    if (data !== root) roots.push({ dir: data, label: "app data .venv" });
+  }
   const candidates: Array<{ path: string; source: string }> = [];
   if (process.env.PYTHON_BIN) {
     candidates.push({ path: process.env.PYTHON_BIN, source: "PYTHON_BIN env" });
@@ -497,7 +578,7 @@ async function createWindow(): Promise<void> {
   if (isDev) {
     setSplashStatus("Starting dev server…", 15);
     const ok = await waitFor(WEB_URL, 60, (n) =>
-      setSplashStatus(`Starting dev server… (${n}/60)`, 15 + Math.min(30, Math.round((n / 60) * 30))),
+      setSplashStatus(`Starting dev server…`, 15 + Math.min(30, Math.round((n / 60) * 30))),
     );
     if (!ok) {
       closeSplash();
@@ -518,7 +599,7 @@ async function createWindow(): Promise<void> {
     setSplashStatus("Starting engine…", 50);
     const apiHealthUrl = `http://127.0.0.1:${API_PORT}/api/health`;
     await waitFor(apiHealthUrl, 60, (n) =>
-      setSplashStatus(`Starting engine… (${n}/60)`, 50 + Math.min(30, Math.round((n / 60) * 30))),
+      setSplashStatus(`Starting engine…`, 50 + Math.min(30, Math.round((n / 60) * 30))),
     );
 
     // Preload & prime engine data
@@ -539,7 +620,7 @@ async function createWindow(): Promise<void> {
 
       const [webOk] = await Promise.all([
         waitFor(webHealthUrl, 60, (n) =>
-          setSplashStatus(`Starting Applio… (${n}/60)`, 20 + Math.min(45, Math.round((n / 60) * 45))),
+          setSplashStatus(`Starting Applio…`, 20 + Math.min(45, Math.round((n / 60) * 45))),
         ),
         waitFor(apiHealthUrl, 60),
       ]);

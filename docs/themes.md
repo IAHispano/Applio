@@ -53,8 +53,8 @@ no rebuild.
 | `buttonBg` / `buttonBgHover` / `buttonTextHover` | Default buttons + hover | `rgba(255,255,255,.08/.14)`, `#ffffff` |
 | `buttonGhostText` / `buttonGhostBorder` / `buttonGhostBorderHover` | Ghost buttons | `#d4d4d4`, `.14`, `.28` white |
 | `sliderTrack` / `sliderThumb` | Range inputs | `.12` white / `#ffffff` |
-| `checkboxBorder` / `checkboxBorderHover` / `checkboxChecked` / `checkboxCheck` | Checkboxes (radios reuse the checkbox tokens) |
-| `fileButtonBg` / `fileButtonBorder` / `fileButtonText` / `fileButtonBgHover` | File-picker button (`::file-selector-button`) | `.25` / `.5` white, `#fff`, `#000` |
+| `checkboxBorder` / `checkboxBorderHover` / `checkboxChecked` / `checkboxCheck` | Checkboxes (radios reuse these tokens) | `.25` / `.5` white, `#fff`, `#000` |
+| `fileButtonBg` / `fileButtonBorder` / `fileButtonText` / `fileButtonBgHover` | File-picker button (`::file-selector-button`) | transparent, `.14` white, `#d4d4d4`, `.08` white |
 | `focusBorder` | Focus rings | `rgba(255,255,255,.25)` |
 | `selectionBg` / `selectionText` | Text selection | `#fff` / `#000` |
 | `logBg` | Log/terminal blocks | `rgba(0,0,0,.5)` |

@@ -98,19 +98,35 @@ const essentialDeps = ["react", "react-dom", "react-is", "next"];
 // Next's own runtime deps (require-hook.js resolves styled-jsx at load,
 // constants.js needs @swc/helpers). Under pnpm these live isolated in
 // app/web/node_modules, not nested inside next/, so copy them explicitly.
-// Read live from next/package.json so upgrades stay covered.
-function nextRuntimeDeps(): string[] {
-  for (const base of [webModules, rootModules]) {
-    try {
-      const pkgPath = path.join(base, "next", "package.json");
-      if (!fs.existsSync(pkgPath)) continue;
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8")) as { dependencies?: Record<string, string> };
-      return Object.keys(pkg.dependencies ?? {});
-    } catch {
-      // ignore and try next base
+// Deps-of-deps (e.g. styled-jsx -> client-only, react-dom -> scheduler) are
+// isolated too, so walk the closure to a fixpoint. Read live from
+// package.json files so upgrades stay covered.
+function runtimeClosure(): string[] {
+  const seen = new Set<string>(["react", "react-dom", "react-is", "next"]);
+  const queue = [...seen];
+  while (queue.length > 0) {
+    const dep = queue.pop() as string;
+    for (const base of [webModules, rootModules]) {
+      let pkg: { dependencies?: Record<string, string> };
+      try {
+        const pkgPath = path.join(base, dep, "package.json");
+        if (!fs.existsSync(pkgPath)) continue;
+        pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8")) as {
+          dependencies?: Record<string, string>;
+        };
+      } catch {
+        continue;
+      }
+      for (const sub of Object.keys(pkg.dependencies ?? {})) {
+        if (!seen.has(sub)) {
+          seen.add(sub);
+          queue.push(sub);
+        }
+      }
+      break;
     }
   }
-  return ["@next/env", "@swc/helpers", "styled-jsx"];
+  return [...seen];
 }
 
 function findDepSrc(dep: string): string | null {
@@ -151,6 +167,7 @@ for (const entry of fs.readdirSync(standaloneModules, { withFileTypes: true })) 
 }
 
 // 2b. Ensure essentials + Next runtime closure as real dirs (npm flat + pnpm).
-for (const dep of new Set([...essentialDeps, ...nextRuntimeDeps()])) ensureRealDep(dep);
+// 2b. Ensure essentials + full runtime closure as real dirs (npm flat + pnpm).
+for (const dep of runtimeClosure()) ensureRealDep(dep);
 
 console.log("[copy-static] static assets and standalone dependencies ready");

@@ -122,6 +122,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
     setError("");
     setJob(null);
     setCountdown(null);
+    latched.current = {};
     try {
       const { jobId: id } = await apiSend<{ jobId: string }>("/api/setup/install", "POST");
       setJobId(id);
@@ -130,8 +131,12 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
     }
   }
 
-  // Derive step progress and active phase from logs
+  // Derive step progress and active phase from logs.
+  // Logs are capped server-side (last 500 lines), so markers from early
+  // phases scroll out during long downloads and raw substring matches would
+  // flap backwards. Latch every step's best state: done/running never regress.
   const logsText = useMemo(() => job?.logs.join("\n") || "", [job?.logs]);
+  const latched = useRef<Record<string, "running" | "done">>({});
 
   const steps = useMemo(() => {
     const isDone = job?.status === "done";
@@ -142,7 +147,7 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
       logsText.includes("Downloading base voice models") || logsText.includes("prerequisites");
     const hasVerified = isDone || logsText.includes("Setup complete") || logsText.includes("checks passed");
 
-    return [
+    const rawSteps = [
       {
         id: "env",
         title: "AI Runtime Environment",
@@ -174,6 +179,18 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
         status: isDone ? "done" : hasVerified ? "running" : "pending",
       },
     ];
+
+    return rawSteps.map((s) => {
+      const prev = latched.current[s.id];
+      const status =
+        s.status === "done" || prev === "done"
+          ? "done"
+          : s.status === "running" || prev === "running"
+            ? "running"
+            : "pending";
+      if (status !== "pending") latched.current[s.id] = status;
+      return { ...s, status };
+    });
   }, [job?.status, logsText]);
 
   // Estimated progress percentage
