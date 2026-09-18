@@ -150,6 +150,8 @@ router.post("/inspect", async (req: Request, res: Response) => {
       "  'embedder_model': str(data.get('embedder_model', 'None')),",
       "  'creation_date': str(data.get('creation_date', 'None')),",
       "  'model_hash': str(data.get('model_hash', 'None')),",
+      "  'dataset_length': str(data.get('dataset_length', 'None')),",
+      "  'speakers_id': str(data.get('speakers_id', '0')),",
       "}",
       "print('APPLIO_JSON:' + json.dumps(meta))",
     ].join("; ");

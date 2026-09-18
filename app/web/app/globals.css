@@ -832,7 +832,7 @@ label.file-import:hover {
   border: 1px solid var(--border);
   border-radius: var(--radius-input);
   padding: 12px;
-  font-family: var(--font-mono), ui-monospace, monospace;
+  font-family: inherit;
   font-size: 12px;
   white-space: pre-wrap;
   max-height: 260px;

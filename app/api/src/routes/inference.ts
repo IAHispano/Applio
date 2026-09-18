@@ -196,14 +196,16 @@ async function runInferenceJob(jobId: string, params: InferenceParams, inputAbs:
     // core.py expects a .wav output path then renames by export format; give .wav stem
     const outWav = outAbs.replace(/\.[a-z0-9]+$/i, ".wav");
     const args = toCliArgs(params, inputAbs, outWav);
-    appendLog(job, `$ python ${args.join(" ")}`);
     const result = await runPythonModule(args, {
-      onData: (chunk, stream) => appendLog(job, `[${stream}] ${chunk.trim().slice(0, 1000)}`),
+      onData: (chunk) => {
+        const trimmed = chunk.trim().slice(0, 1000);
+        if (trimmed) appendLog(job, trimmed);
+      },
       onSpawn: (pid) => trackPid(job.id, pid),
     });
     trackPid(job.id, undefined);
     if (result.code !== 0) {
-      throw new Error(result.stderr.slice(-3000) || `Python exited with code ${result.code}`);
+      throw new Error(result.stderr.slice(-3000) || `Inference failed with code ${result.code}`);
     }
     const finalAbs = outWav.replace(/\.wav$/i, `.${ext}`);
     const served = fs.existsSync(finalAbs) ? finalAbs : outWav;

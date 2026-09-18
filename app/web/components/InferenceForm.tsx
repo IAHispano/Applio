@@ -1185,17 +1185,6 @@ export default function InferenceForm() {
             />
           </div>
         )}
-
-        {/* Collapsible Activity Details */}
-        {job && job.logs.length > 0 && (
-          <details className="group border-t border-white/10 pt-3">
-            <summary className="cursor-pointer text-xs font-semibold text-neutral-400 hover:text-white flex items-center justify-between select-none">
-              <span>{t("Activity Details")}</span>
-              <ChevronDown size={14} className="transition-transform duration-200 group-open:rotate-180" />
-            </summary>
-            <pre className="log mt-2 max-h-48 text-[11px] font-sans">{job.logs.slice(-80).join("\n")}</pre>
-          </details>
-        )}
       </div>
     </form>
   );

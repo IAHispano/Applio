@@ -80,10 +80,23 @@ export default function ReportPanel() {
   return (
     <div>
       {info ? (
-        <section aria-label={t("System diagnostics")}>
-          <pre className="log">
-            {`Applio ${info.version}\n${info.platform}\nNode ${info.node}\n${info.python}\nCPUs: ${info.cpus} · RAM: ${info.totalMemGB}GB`}
-          </pre>
+        <section aria-label={t("System diagnostics")} className="grid grid-cols-2 gap-2 text-xs">
+          <div className="p-2.5 rounded-lg bg-black/30 border border-white/5">
+            <span className="text-neutral-400 block">{t("Version")}</span>
+            <span className="font-medium text-white">{info.version}</span>
+          </div>
+          <div className="p-2.5 rounded-lg bg-black/30 border border-white/5">
+            <span className="text-neutral-400 block">{t("Platform")}</span>
+            <span className="font-medium text-white truncate block">{info.platform}</span>
+          </div>
+          <div className="p-2.5 rounded-lg bg-black/30 border border-white/5">
+            <span className="text-neutral-400 block">{t("Node / Python")}</span>
+            <span className="font-medium text-white truncate block">Node {info.node} · {info.python}</span>
+          </div>
+          <div className="p-2.5 rounded-lg bg-black/30 border border-white/5">
+            <span className="text-neutral-400 block">{t("Hardware")}</span>
+            <span className="font-medium text-white">{info.cpus} CPUs · {info.totalMemGB}GB RAM</span>
+          </div>
         </section>
       ) : (
         <p className="muted">{t("Collecting system info…")}</p>

@@ -1,11 +1,23 @@
 "use client";
 
-import { FolderArchive, Layers, Music, RotateCcw, Sliders, Wand2 } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Folder,
+  FolderArchive,
+  Layers,
+  Music,
+  RotateCcw,
+  Sliders,
+  StopCircle,
+  Wand2,
+} from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { apiGet, errMsg, fetchModels, submitJob } from "../lib/api";
+import { apiGet, errMsg, fetchJob, fetchModels, type Job, pollJob, stopJob, submitJob } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import { useSpeakers } from "../lib/useSpeakers";
-import JobPanel from "./JobPanel";
 import ModelDropdown from "./ui/ModelDropdown";
 import SliderField from "./ui/SliderField";
 
@@ -31,8 +43,26 @@ export default function BatchForm() {
   const [cleanAudio, setCleanAudio] = useState(false);
   const [sid, setSid] = useState(0);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!jobId) {
+      setJob(null);
+      return;
+    }
+    let stop = () => {};
+    fetchJob(jobId)
+      .then(({ job: j }) => {
+        setJob(j);
+        if (j.status !== "done" && j.status !== "error") {
+          stop = pollJob(jobId, setJob);
+        }
+      })
+      .catch((e) => setError(errMsg(e)));
+    return () => stop();
+  }, [jobId]);
 
   const speakers = useSpeakers(pthPath);
 
@@ -394,7 +424,70 @@ export default function BatchForm() {
         )}
       </div>
 
-      <JobPanel jobId={jobId} />
+      {/* Running State */}
+      {job && (job.status === "running" || job.status === "queued") && (
+        <div className="card space-y-3 animate-in fade-in duration-200" role="status">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-white">{t("Batch Conversion in Progress…")}</span>
+            <button
+              type="button"
+              className="ghost h-7 px-2.5 text-xs text-red-400 hover:text-red-300 border-red-500/30 rounded-lg flex items-center gap-1"
+              onClick={() => stopJob(job.id).catch((e) => setError(errMsg(e)))}
+            >
+              <StopCircle size={13} />
+              <span>{t("Cancel")}</span>
+            </button>
+          </div>
+          <div className="loader" role="progressbar" aria-label={t("Batch conversion in progress…")}>
+            <div className="loaderBar" />
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-neutral-400 pt-1">
+            <span>{t("Input:")} {inputFolder}</span>
+            <span>{t("Output:")} {outputFolder}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Error state */}
+      {job && job.status === "error" && (
+        <div role="alert" className="p-3.5 rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 text-xs">
+          {job.error || t("Batch conversion failed.")}
+        </div>
+      )}
+
+      {/* Completed State */}
+      {job && job.status === "done" && (
+        <div className="card space-y-4 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+            <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+              <CheckCircle2 size={18} className="text-white" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white m-0">{t("Batch Conversion Complete")}</h3>
+              <p className="text-xs text-neutral-400 m-0 mt-0.5">
+                {t("All audio files in the folder have been converted with the selected voice timbre.")}
+              </p>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
+            <span className="text-xs text-neutral-400 block">{t("Saved Output Directory")}</span>
+            <span className="text-xs text-neutral-200 font-medium select-all block break-all">
+              {outputFolder}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-1">
+            <Link
+              href={`/inference?model=${encodeURIComponent(pthPath)}`}
+              className="cta h-9 px-4 rounded-xl text-xs font-medium flex items-center gap-1.5"
+            >
+              <span>{t("Test in Single Inference")}</span>
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

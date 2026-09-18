@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bug, Video, ExternalLink, Cpu, Download } from "lucide-react";
+import { Bug, Check, Copy, Cpu, Download, ExternalLink, Video } from "lucide-react";
 import PageHeader from "../../components/layout/PageHeader";
 import { apiGet, apiSend, errMsg, outputUrl } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
+import { toast } from "../../lib/toast";
 
 interface SystemInfo {
   version: string;
@@ -174,17 +175,47 @@ export default function ReportPage() {
               <Cpu size={18} className="text-white shrink-0" />
               <h2 className="text-base font-bold text-white m-0">{t("System Diagnostics")}</h2>
             </div>
+            {info && (
+              <button
+                type="button"
+                className="ghost h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 text-neutral-300 hover:text-white"
+                onClick={() => {
+                  const text = `Applio ${info.version}\n${info.platform}\nNode ${info.node}\n${info.python}\nCPUs: ${info.cpus} · RAM: ${info.totalMemGB}GB`;
+                  navigator.clipboard.writeText(text);
+                  toast(t("Diagnostics copied to clipboard"));
+                }}
+              >
+                <Copy size={13} />
+                <span>{t("Copy Diagnostics")}</span>
+              </button>
+            )}
           </div>
           <p className="text-xs text-neutral-400 m-0 leading-relaxed">
             {t("Environment details and system specifications to include in your issue report.")}
           </p>
         </div>
+
         {info ? (
-          <section aria-label={t("System diagnostics")}>
-            <pre className="log m-0">
-              {`Applio ${info.version}\n${info.platform}\nNode ${info.node}\n${info.python}\nCPUs: ${info.cpus} · RAM: ${info.totalMemGB}GB`}
-            </pre>
-          </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="p-3 rounded-xl bg-black/30 border border-white/5 space-y-1">
+              <span className="text-xs text-neutral-400 block">{t("Applio Version")}</span>
+              <span className="text-sm font-semibold text-white block">{info.version}</span>
+            </div>
+            <div className="p-3 rounded-xl bg-black/30 border border-white/5 space-y-1">
+              <span className="text-xs text-neutral-400 block">{t("Platform")}</span>
+              <span className="text-sm font-semibold text-white block truncate">{info.platform}</span>
+            </div>
+            <div className="p-3 rounded-xl bg-black/30 border border-white/5 space-y-1">
+              <span className="text-xs text-neutral-400 block">{t("Engine Runtimes")}</span>
+              <span className="text-sm font-semibold text-white block truncate">Node {info.node}</span>
+              <span className="text-[10px] text-neutral-400 block truncate">{info.python}</span>
+            </div>
+            <div className="p-3 rounded-xl bg-black/30 border border-white/5 space-y-1">
+              <span className="text-xs text-neutral-400 block">{t("Compute Resources")}</span>
+              <span className="text-sm font-semibold text-white block">{info.cpus} CPU cores</span>
+              <span className="text-[10px] text-neutral-400 block">{info.totalMemGB} GB RAM</span>
+            </div>
+          </div>
         ) : (
           <p className="text-xs text-neutral-400 m-0">{t("Collecting system info…")}</p>
         )}

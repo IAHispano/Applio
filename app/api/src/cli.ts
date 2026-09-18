@@ -50,17 +50,18 @@ export function startCliJob(
   void (async () => {
     setRunning(job);
     try {
-      appendLog(job, `$ python ${args.join(" ")}`);
       const r = await runPythonModule(args, {
-        onData: (chunk, stream) => appendLog(job, `[${stream}] ${chunk.trim().slice(0, 1000)}`),
+        onData: (chunk) => {
+          const trimmed = chunk.trim().slice(0, 1000);
+          if (trimmed) appendLog(job, trimmed);
+        },
         onSpawn: (pid) => trackPid(job.id, pid),
       });
       trackPid(job.id, undefined);
       if (r.code !== 0) {
-        throw new Error(r.stderr.slice(-3000) || `Python exited with code ${r.code}`);
+        throw new Error(r.stderr.slice(-3000) || `Process exited with code ${r.code}`);
       }
       const parsed = opts.parse?.(r.stdout, r.stderr);
-      appendLog(job, r.stdout.slice(-1500));
       setDone(job, parsed?.result ?? { message: r.stdout.trim().split("\n").pop() }, parsed?.outputFile);
     } catch (err) {
       trackPid(job.id, undefined);

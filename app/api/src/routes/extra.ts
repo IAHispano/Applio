@@ -80,7 +80,24 @@ router.post("/model-info", (req: Request, res: Response) => {
   try {
     const abs = resolveUserPath(parsed.data.pthPath);
     if (!fs.existsSync(abs)) return res.status(400).json({ error: `File not found: ${parsed.data.pthPath}` });
-    const job = startCliJob("other", parsed.data, ["core.py", "model-information", "--pth-path", abs]);
+    const job = startCliJob("other", parsed.data, ["core.py", "model-information", "--pth-path", abs], {
+      parse: (stdout) => {
+        const meta: Record<string, string> = {};
+        for (const line of stdout.split(/\r?\n/)) {
+          const m = line.match(/^([^:]+):\s*(.*)$/);
+          if (m) {
+            const key = m[1].trim().toLowerCase().replace(/\s+/g, "_");
+            meta[key] = m[2].trim();
+          }
+        }
+        return {
+          result: {
+            metadata: meta,
+            message: meta.model_name ? `Checkpoint "${meta.model_name}" analyzed successfully.` : "Model checkpoint analyzed.",
+          },
+        };
+      },
+    });
     return res.status(202).json({ jobId: job.id });
   } catch (err) {
     return res.status(400).json({ error: errMsg(err) });

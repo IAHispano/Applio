@@ -357,13 +357,16 @@ export default function FirstRunSetup({ onComplete }: FirstRunSetupProps) {
             className="rounded-xl border border-white/10 bg-black/70 p-4 text-xs text-neutral-300 max-h-64 overflow-y-auto space-y-1 shadow-inner"
           >
             {job?.logs.length ? (
-              job.logs.map((log, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: append-only terminal logs
-                <p key={`log-${i}`} className="m-0 leading-relaxed text-[11px] break-all">
-                  <span className="text-neutral-500 mr-2">&gt;</span>
-                  {log}
-                </p>
-              ))
+              job.logs
+                .map((log) => log.replace(/^\$ python.*$/i, "").replace(/^\[(stdout|stderr)\]\s*/i, "").trim())
+                .filter((log) => log.length > 0)
+                .map((log, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: append-only activity logs
+                  <p key={`log-${i}`} className="m-0 leading-relaxed text-[11px] break-all">
+                    <span className="text-neutral-500 mr-2">•</span>
+                    {log}
+                  </p>
+                ))
             ) : (
               <p className="text-neutral-500 m-0 italic">{t("Initializing setup stream…")}</p>
             )}

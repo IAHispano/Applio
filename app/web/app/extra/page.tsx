@@ -3,9 +3,10 @@
 import { Activity, AudioWaveform, Info, LineChart } from "lucide-react";
 import { useEffect, useState } from "react";
 import AudioPlayer from "../../components/AudioPlayer";
-import JobPanel from "../../components/JobPanel";
+import AnalysisResultCard from "../../components/extra/AnalysisResultCard";
 import PageHeader from "../../components/layout/PageHeader";
-import { errMsg, fetchModels, postForm, submitJob } from "../../lib/api";
+import ModelInfoCard, { type ModelMetadata } from "../../components/models/ModelInfoCard";
+import { apiSend, errMsg, fetchModels, postForm } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 
 export default function ExtraPage() {
@@ -17,8 +18,11 @@ export default function ExtraPage() {
   const [pth, setPth] = useState("");
   const [models, setModels] = useState<string[]>([]);
   const [jobId, setJobId] = useState<string | null>(null);
-  const [infoJob, setInfoJob] = useState<string | null>(null);
   const [f0Job, setF0Job] = useState<string | null>(null);
+  const [inspectData, setInspectData] = useState<ModelMetadata | null>(null);
+  const [inspectLoading, setInspectLoading] = useState(false);
+  const [inspectError, setInspectError] = useState("");
+  const [inspectedPth, setInspectedPth] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -60,15 +64,23 @@ export default function ExtraPage() {
 
   async function modelInfo() {
     setError("");
+    setInspectError("");
     if (!pth.trim()) {
-      setError("Please specify a .pth model path.");
+      setInspectError(t("Please enter or select a .pth model path."));
       return;
     }
+    setInspectLoading(true);
+    setInspectData(null);
+    setInspectedPth(pth.trim());
     try {
-      const { jobId: id } = await submitJob("/api/extra/model-info", { pthPath: pth });
-      setInfoJob(id);
+      const res = await apiSend<{ ok: boolean; metadata: ModelMetadata }>("/api/models/inspect", "POST", {
+        pthPath: pth.trim(),
+      });
+      setInspectData(res.metadata);
     } catch (e) {
-      setError(errMsg(e));
+      setInspectError(errMsg(e));
+    } finally {
+      setInspectLoading(false);
     }
   }
 
@@ -242,8 +254,8 @@ export default function ExtraPage() {
         </div>
       </div>
 
-      <JobPanel jobId={jobId} />
-      <JobPanel jobId={f0Job} />
+      <AnalysisResultCard jobId={jobId} title={t("Acoustic Spectrogram Analysis")} type="analyzer" />
+      <AnalysisResultCard jobId={f0Job} title={t("Fundamental Pitch Contour (F0)")} type="f0" />
 
       {/* Tool 3: Model Checkpoint Inspector */}
       <div className="card space-y-4">
@@ -289,7 +301,13 @@ export default function ExtraPage() {
           </button>
         </div>
       </div>
-      <JobPanel jobId={infoJob} />
+
+      <ModelInfoCard
+        metadata={inspectData}
+        loading={inspectLoading}
+        error={inspectError}
+        pthPath={inspectedPth}
+      />
     </div>
   );
 }

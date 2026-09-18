@@ -2,8 +2,8 @@
 
 import { Activity, Cpu, Download, Flame, FolderUp, Layers, Sliders, StopCircle, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
-import JobPanel from "../../components/JobPanel";
 import PageHeader from "../../components/layout/PageHeader";
+import TrainingConsole from "../../components/train/TrainingConsole";
 import SegmentedControl from "../../components/ui/SegmentedControl";
 import SliderField from "../../components/ui/SliderField";
 import { apiGet, errMsg, submitJob } from "../../lib/api";
@@ -1005,7 +1005,12 @@ export default function TrainPage() {
         </div>
       </div>
 
-      <JobPanel jobId={jobId} />
+      <TrainingConsole
+        jobId={jobId}
+        modelName={modelName}
+        totalEpochs={totalEpoch}
+        onStop={stop}
+      />
     </div>
   );
 }

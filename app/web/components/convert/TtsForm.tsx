@@ -2,10 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { FileText, Music, Sliders, Wand2, RotateCcw, Volume2 } from "lucide-react";
-import { apiGet, errMsg, fetchModels, postForm } from "../../lib/api";
+import {
+  apiGet,
+  errMsg,
+  fetchJob,
+  fetchModels,
+  fileBasename,
+  type Job,
+  outputUrl,
+  pollJob,
+  postForm,
+  stopJob,
+} from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 import { useSpeakers } from "../../lib/useSpeakers";
-import JobPanel from "../JobPanel";
+import AudioWavePlayer from "../AudioWavePlayer";
 import RadioRow from "../RadioRow";
 import ModelDropdown from "../ui/ModelDropdown";
 import SliderField from "../ui/SliderField";
@@ -45,8 +56,26 @@ export default function TtsForm() {
   const [cleanStrength, setCleanStrength] = useState(0.5);
   const [sid, setSid] = useState(0);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!jobId) {
+      setJob(null);
+      return;
+    }
+    let stop = () => {};
+    fetchJob(jobId)
+      .then(({ job: j }) => {
+        setJob(j);
+        if (j.status !== "done" && j.status !== "error") {
+          stop = pollJob(jobId, setJob);
+        }
+      })
+      .catch((e) => setError(errMsg(e)));
+    return () => stop();
+  }, [jobId]);
 
   const speakers = useSpeakers(pthPath);
 
@@ -501,7 +530,49 @@ export default function TtsForm() {
         </div>
       </form>
 
-      <JobPanel jobId={jobId} />
+      {/* Conversion In Progress */}
+      {job && (job.status === "running" || job.status === "queued") && (
+        <div className="card space-y-3" role="status">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-white">{t("Synthesizing Speech…")}</span>
+            <button
+              type="button"
+              className="ghost h-7 px-2.5 text-xs text-red-400 hover:text-red-300 border-red-500/30 rounded-lg flex items-center gap-1"
+              onClick={() => stopJob(job.id).catch((e) => setError(errMsg(e)))}
+            >
+              {t("Cancel")}
+            </button>
+          </div>
+          <div className="loader" role="progressbar" aria-label={t("Synthesizing speech…")}>
+            <div className="loaderBar" />
+          </div>
+        </div>
+      )}
+
+      {/* Error state */}
+      {job && job.status === "error" && (
+        <div
+          role="alert"
+          className="p-3.5 rounded-xl border border-red-500/30 text-red-400 bg-red-500/10 text-xs"
+        >
+          {job.error || t("Speech conversion failed.")}
+        </div>
+      )}
+
+      {/* Synthesized Output Waveform Player */}
+      {job && job.outputFile && job.status === "done" && (
+        <div className="card space-y-3 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between text-xs text-neutral-400">
+            <span className="font-semibold text-white">{t("Synthesized Speech Output")}</span>
+            <span className="badge done text-[10px]">{t("Ready")}</span>
+          </div>
+          <AudioWavePlayer
+            src={outputUrl(job.outputFile)}
+            title={`${t("TTS Output:")} ${fileBasename(pthPath || "speech").replace(/\.(pth|onnx)$/i, "")}`}
+            filename={fileBasename(job.outputFile)}
+          />
+        </div>
+      )}
     </div>
   );
 }

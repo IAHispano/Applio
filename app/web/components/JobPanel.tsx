@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronDown, Download, FileAudio, FileCheck, Image as ImageIcon, StopCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import {
   errMsg,
   fetchJob,
@@ -16,8 +16,14 @@ import {
 import { useI18n } from "../lib/i18n";
 import AudioPlayer from "./AudioPlayer";
 
-// Polls a job, shows status/logs, and renders its output file.
-export default function JobPanel({ jobId, compact }: { jobId: string | null; compact?: boolean }) {
+export interface JobPanelProps {
+  jobId: string | null;
+  compact?: boolean;
+  showLogs?: boolean;
+}
+
+// Polls a job, shows status, and renders its output file cleanly without CLI clutter.
+export default function JobPanel({ jobId, compact, showLogs = false }: JobPanelProps) {
   const { t } = useI18n();
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState("");
@@ -34,13 +40,25 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
         setJob(j);
         if (j.status !== "done" && j.status !== "error") stop = pollJob(jobId, setJob);
       })
-      .catch((e) => setError(String(e?.message || e)));
+      .catch((e) => setError(errMsg(e)));
     return () => stop();
   }, [jobId]);
 
+  const cleanedLogs = useMemo(() => {
+    if (!job?.logs) return [];
+    return job.logs
+      .map((l) =>
+        l
+          .replace(/^\$ python.*$/i, "")
+          .replace(/^\[(stdout|stderr)\]\s*/i, "")
+          .trim(),
+      )
+      .filter((l) => l.length > 0);
+  }, [job?.logs]);
+
   if (!jobId) return null;
   if (error) return <p style={{ color: "var(--err)" }}>{error}</p>;
-  if (!job) return <p className="muted">{t("Loading job…")}</p>;
+  if (!job) return <p className="muted text-xs">{t("Loading activity…")}</p>;
 
   const out = job.outputFile;
   const sidecars: Array<{ label: string; file: string }> = [];
@@ -65,10 +83,10 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
   const resultInfo = typeof job.result?.info === "string" ? job.result.info : null;
 
   return (
-    <section className="card space-y-3" aria-label={t("Task Activity")}>
-      <div className="row justify-between">
+    <section className="card space-y-3 animate-in fade-in duration-200" aria-label={t("Task Activity")}>
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className={`badge ${job.status}`} role="status" aria-label={`Job status: ${job.status}`}>
+          <span className={`badge ${job.status}`} role="status" aria-label={`Status: ${job.status}`}>
             {job.status === "done"
               ? t("Completed")
               : job.status === "running"
@@ -88,7 +106,8 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
             onClick={() => stopJob(job.id).catch((e) => setError(errMsg(e)))}
             aria-label={t("Cancel")}
           >
-            {t("Cancel")}
+            <StopCircle size={13} />
+            <span>{t("Cancel")}</span>
           </button>
         )}
       </div>
@@ -97,9 +116,9 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
         <div
           role="alert"
           aria-live="assertive"
-          className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs"
+          className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs"
         >
-          {job.error}
+          {job.error || t("Operation failed.")}
         </div>
       )}
 
@@ -107,7 +126,7 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
         <div
           className="loader"
           role="progressbar"
-          aria-label="Job execution in progress"
+          aria-label="Execution in progress"
           aria-valuetext={job.status}
           style={{ marginTop: 8 }}
         >
@@ -115,12 +134,12 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
         </div>
       )}
 
-      {resultMsg && <p className="text-sm font-medium text-white">{resultMsg}</p>}
+      {resultMsg && <p className="text-xs font-medium text-white m-0">{resultMsg}</p>}
 
       {resultInfo && (
-        <div>
-          <p className="muted text-xs mb-1 font-semibold">{t("Analysis result")}</p>
-          <pre className="log">{resultInfo}</pre>
+        <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1">
+          <p className="text-neutral-400 text-xs font-medium m-0">{t("Analysis details")}</p>
+          <p className="text-xs text-neutral-200 leading-relaxed m-0 whitespace-pre-wrap">{resultInfo}</p>
         </div>
       )}
 
@@ -128,63 +147,65 @@ export default function JobPanel({ jobId, compact }: { jobId: string | null; com
 
       {out && isImageFile(out) && (
         <div className="space-y-2">
-          {/* biome-ignore lint/performance/noImgElement: user-generated plot, no optimizer benefit */}
+          {/* biome-ignore lint/performance/noImgElement: user-generated plot */}
           <img
             src={outputUrl(out)}
             alt={`Analysis plot result for job ${job.id}`}
-            style={{ maxWidth: "100%", borderRadius: 8 }}
+            className="w-full h-auto rounded-xl border border-white/10"
           />
-          <p className="m-0">
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs text-neutral-400">({fileBasename(out)})</span>
             <a
               href={outputUrl(out)}
               download
-              aria-label={`${t("Download image")}: ${fileBasename(out)}`}
-              className="text-xs font-semibold hover:underline"
+              className="cta h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5"
             >
-              {t("Download image")}
-            </a>{" "}
-            <span className="muted text-xs">({fileBasename(out)})</span>
-          </p>
+              <Download size={13} />
+              <span>{t("Download image")}</span>
+            </a>
+          </div>
         </div>
       )}
 
       {out && !isAudioFile(out) && !isImageFile(out) && (
-        <p className="m-0">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-black/30 border border-white/5">
+          <span className="text-xs text-neutral-300 font-medium truncate">{fileBasename(out)}</span>
           <a
             href={outputUrl(out)}
             download
-            aria-label={`${t("Download result")}: ${fileBasename(out)}`}
-            className="text-xs font-semibold hover:underline"
+            className="cta h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 shrink-0"
           >
-            {t("Download result")}
-          </a>{" "}
-          <span className="muted text-xs">({fileBasename(out)})</span>
-        </p>
+            <Download size={13} />
+            <span>{t("Download")}</span>
+          </a>
+        </div>
       )}
 
       {sidecars.map((s) => (
-        <p key={s.label} className="m-0">
+        <div key={s.label} className="flex items-center justify-between p-2.5 rounded-xl bg-black/30 border border-white/5">
+          <span className="text-xs text-neutral-300">{s.label}: {fileBasename(s.file)}</span>
           <a
             href={outputUrl(s.file)}
             download
-            aria-label={`${t("Download")} ${s.label}: ${fileBasename(s.file)}`}
-            className="text-xs font-semibold hover:underline"
+            className="ghost h-7 px-2.5 rounded-lg text-xs font-medium flex items-center gap-1 text-neutral-300 hover:text-white shrink-0"
           >
-            {t("Download")} {s.label}
-          </a>{" "}
-          <span className="muted text-xs">({fileBasename(s.file)})</span>
-        </p>
+            <Download size={12} />
+            <span>{t("Download")}</span>
+          </a>
+        </div>
       ))}
 
-      {!compact && job.logs.length > 0 && (
+      {showLogs && !compact && cleanedLogs.length > 0 && (
         <details className="pt-2 text-xs text-neutral-400 group border-t border-white/5">
           <summary className="cursor-pointer hover:text-white transition-colors py-1 flex items-center gap-1.5 select-none font-medium">
             <ChevronDown size={14} className="transition-transform group-open:rotate-180 shrink-0" />
             <span>{t("Activity Details")}</span>
           </summary>
-          <pre className="log mt-2 max-h-48 overflow-y-auto text-[11px] p-2.5 rounded-lg bg-black/40 border border-white/5 font-sans" role="log" aria-live="polite">
-            {job.logs.slice(-60).join("\n")}
-          </pre>
+          <div className="mt-2 max-h-48 overflow-y-auto text-xs p-3 rounded-xl bg-black/50 border border-white/10 space-y-0.5" role="log">
+            {cleanedLogs.slice(-60).map((l, idx) => (
+              <p key={idx} className="m-0 leading-relaxed text-neutral-300">{l}</p>
+            ))}
+          </div>
         </details>
       )}
     </section>

@@ -18,13 +18,13 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import JobPanel from "../../components/JobPanel";
+import ModelInfoCard, { type ModelMetadata } from "../../components/models/ModelInfoCard";
 import PageHeader from "../../components/layout/PageHeader";
 import BlenderPanel from "../../components/models/BlenderPanel";
 import DownloadPanel from "../../components/models/DownloadPanel";
 import Modal from "../../components/ui/Modal";
 import SegmentedControl from "../../components/ui/SegmentedControl";
-import { apiGet, apiSend, errMsg, submitJob } from "../../lib/api";
+import { apiGet, apiSend, errMsg } from "../../lib/api";
 import { useI18n } from "../../lib/i18n";
 
 interface ModelItem {
@@ -36,19 +36,6 @@ interface ModelItem {
   indexSize: number | null;
   modifiedAt: string;
   folder: string;
-}
-
-interface ModelMetadata {
-  model_name?: string;
-  author?: string;
-  epochs?: string;
-  step?: string;
-  sr?: string;
-  f0?: string;
-  vocoder?: string;
-  embedder_model?: string;
-  creation_date?: string;
-  model_hash?: string;
 }
 
 type Section = "library" | "download" | "blend" | "inspect";
@@ -82,7 +69,9 @@ export default function ModelsPage() {
 
   // Custom path inspect (subtab)
   const [customPth, setCustomPth] = useState("");
-  const [customJobId, setCustomJobId] = useState<string | null>(null);
+  const [customMeta, setCustomMeta] = useState<ModelMetadata | null>(null);
+  const [customLoading, setCustomLoading] = useState(false);
+  const [customError, setCustomError] = useState("");
 
   const loadLibrary = useCallback(async () => {
     setLoading(true);
@@ -143,12 +132,22 @@ export default function ModelsPage() {
   }
 
   async function inspectCustom() {
-    setError("");
+    if (!customPth.trim()) {
+      setCustomError(t("Please enter or select a .pth model path."));
+      return;
+    }
+    setCustomError("");
+    setCustomLoading(true);
+    setCustomMeta(null);
     try {
-      const { jobId: id } = await submitJob("/api/extra/model-info", { pthPath: customPth });
-      setCustomJobId(id);
+      const res = await apiSend<{ ok: boolean; metadata: ModelMetadata }>("/api/models/inspect", "POST", {
+        pthPath: customPth.trim(),
+      });
+      setCustomMeta(res.metadata);
     } catch (e) {
-      setError(errMsg(e));
+      setCustomError(errMsg(e));
+    } finally {
+      setCustomLoading(false);
     }
   }
 
@@ -411,7 +410,12 @@ export default function ModelsPage() {
               </button>
             </div>
           </div>
-          <JobPanel jobId={customJobId} compact />
+          <ModelInfoCard
+            metadata={customMeta}
+            loading={customLoading}
+            error={customError}
+            pthPath={customPth}
+          />
         </div>
       )}
 
