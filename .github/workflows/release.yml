@@ -102,7 +102,7 @@ jobs:
           elif [ "$RUNNER_OS" == "macOS" ]; then
             zip -r build-artifacts.zip Applio-*-macOS*.dmg Applio-*-macOS*.zip latest-mac.yml 2>/dev/null || true
           else
-            zip -r build-artifacts.zip Applio-*-Linux*.AppImage Applio-*-Linux*.deb latest-linux.yml 2>/dev/null || true
+            zip -r build-artifacts.zip Applio-*-Linux*.AppImage Applio-*-Linux*.deb *.blockmap latest-linux.yml 2>/dev/null || true
           fi
         shell: bash
 

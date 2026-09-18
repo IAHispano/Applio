@@ -544,6 +544,18 @@ export default function SettingsPage() {
             </p>
           )}
 
+          {updaterState?.status === "downloaded" && updaterState.releaseNotes && (
+            <div className="max-w-xl p-3 rounded-xl bg-black/30 border border-white/5 space-y-1">
+              <p className="text-xs text-neutral-400 font-medium m-0">
+                {t("What's new in v")}
+                {updaterState.version}
+              </p>
+              <p className="text-xs text-neutral-300 leading-relaxed m-0 whitespace-pre-wrap">
+                {updaterState.releaseNotes}
+              </p>
+            </div>
+          )}
+
           {ver && (!updaterState || updaterState.status === "dev-mode") && (
             <p className="text-xs text-neutral-400 m-0" role="status" aria-live="polite">
               {ver.error || `${ver.latest} — ${ver.status}`}

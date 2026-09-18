@@ -3,7 +3,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, shell } from "electron";
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, Notification, shell } from "electron";
 import { autoUpdater, type UpdateInfo } from "electron-updater";
 
 // User data, logs and caches live under a clean app-scoped dir
@@ -509,15 +509,17 @@ function initAutoUpdater(): void {
 
   autoUpdater.on("update-downloaded", async (info: UpdateInfo) => {
     console.log(`[updater] Update downloaded: v${info.version}`);
+    const notes = info.releaseNotes;
     currentUpdateState = {
       status: "downloaded",
       version: info.version,
-      releaseNotes: typeof info.releaseNotes === "string" ? info.releaseNotes : undefined,
+      releaseNotes:
+        typeof notes === "string" ? notes : Array.isArray(notes) ? notes.map((n) => n.note).join("\n") : undefined,
     };
     notifyUpdateState();
 
+    const nativeIcon = appNativeIcon();
     if (mainWindow && !mainWindow.isDestroyed()) {
-      const nativeIcon = appNativeIcon();
       const { response } = await dialog.showMessageBox(mainWindow, {
         type: "info",
         title: "Applio Update Ready",
@@ -535,6 +537,19 @@ function initAutoUpdater(): void {
         stopBackends();
         autoUpdater.quitAndInstall(false, true);
       }
+    } else if (Notification.isSupported()) {
+      // No window to show the dialog in (e.g. macOS with all windows
+      // closed but the app still running): fall back to a system
+      // notification so the downloaded release is never missed.
+      const notif = new Notification({
+        title: "Applio Update Ready",
+        body: `Applio v${info.version} has been downloaded and will install automatically when you exit.`,
+        ...(nativeIcon ? { icon: nativeIcon } : {}),
+      });
+      notif.on("click", () => {
+        app.focus({ steal: true });
+      });
+      notif.show();
     }
   });
 
