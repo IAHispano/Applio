@@ -26,6 +26,7 @@ mp.set_start_method("spawn", force=True)
 
 SAMPLE_RATE_16K = 16000
 
+
 class FeatureInput:
     def __init__(self, f0_method="rmvpe", device="cpu"):
         self.hop_size = 160  # default
@@ -139,7 +140,11 @@ def process_file_embedding(
         wav_file_path, _, _, out_file_path = file_info
         if os.path.exists(out_file_path):
             return
-        feats = torch.from_numpy(load_audio(wav_file_path, SAMPLE_RATE_16K)).to(device).float()
+        feats = (
+            torch.from_numpy(load_audio(wav_file_path, SAMPLE_RATE_16K))
+            .to(device)
+            .float()
+        )
         feats = feats.view(1, -1)
         with torch.no_grad():
             result = model(feats)["last_hidden_state"]
