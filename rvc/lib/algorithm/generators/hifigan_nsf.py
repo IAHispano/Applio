@@ -197,13 +197,10 @@ class HiFiGANNSFGenerator(torch.nn.Module):
             else:
                 x = ups(x)
                 x = x + noise_convs(har_source)
-                xs = sum(
-                    [
-                        resblock(x)
-                        for j, resblock in enumerate(self.resblocks)
-                        if j in range(i * self.num_kernels, (i + 1) * self.num_kernels)
-                    ]
-                )
+                start_j = i * self.num_kernels
+                xs = self.resblocks[start_j](x)
+                for resblock in self.resblocks[start_j + 1 : start_j + self.num_kernels]:
+                    xs = xs + resblock(x)
             x = xs / self.num_kernels
 
         x = torch.nn.functional.leaky_relu(x)

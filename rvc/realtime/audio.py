@@ -167,8 +167,15 @@ class Audio:
         return serverAudioDevice[0] if len(serverAudioDevice) > 0 else None
 
     def process_data(self, indata: np.ndarray):
-        indata = indata * self.input_audio_gain
-        unpacked_data = librosa.to_mono(indata.T)
+        if indata.ndim == 1:
+            unpacked_data = indata
+        elif indata.shape[1] == 1:
+            unpacked_data = indata[:, 0]
+        else:
+            unpacked_data = indata.mean(axis=1)
+
+        if self.input_audio_gain != 1.0:
+            unpacked_data = unpacked_data * self.input_audio_gain
 
         return self.callbacks.change_voice(
             unpacked_data,
@@ -211,10 +218,10 @@ class Audio:
             if self.use_monitor:
                 self.mon_queue.put(out_wav)
 
-            outdata[:] = (
-                np.repeat(out_wav, output_channels).reshape(-1, output_channels)
-                * self.output_audio_gain
-            )
+            if output_channels == 1:
+                outdata[:, 0] = out_wav * self.output_audio_gain
+            else:
+                outdata[:] = out_wav[:, None] * self.output_audio_gain
         except Exception as error:
             print(f"An error occurred while running the audio stream: {error}")
             print(traceback.format_exc())
@@ -224,12 +231,13 @@ class Audio:
             mon_wav = self.mon_queue.get()
 
             while self.mon_queue.qsize() > 0:
-                self.mon_queue.get()
+                mon_wav = self.mon_queue.get()
 
             output_channels = outdata.shape[1]
-            outdata[:] = (
-                np.repeat(mon_wav, output_channels).reshape(-1, output_channels) * gain
-            )
+            if output_channels == 1:
+                outdata[:, 0] = mon_wav * gain
+            else:
+                outdata[:] = mon_wav[:, None] * gain
         except Exception as error:
             print(f"An error occurred while running the audio queue: {error}")
             print(traceback.format_exc())

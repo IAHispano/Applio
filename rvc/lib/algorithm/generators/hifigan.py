@@ -142,6 +142,9 @@ class SineGenerator(torch.nn.Module):
         self.noise_stddev = noise_stddev
         self.voiced_threshold = voiced_threshold
         self.waveform_dim = self.num_harmonics + 1  # fundamental + harmonics
+        self._cached_upsampling_factor = None
+        self._cached_grid = None
+        self._cached_harmonic_scale = None
 
     def _compute_voiced_unvoiced(self, f0: torch.Tensor):
         """
@@ -163,13 +166,22 @@ class SineGenerator(torch.nn.Module):
         """
         batch_size, length, _ = f0.shape
 
-        # Create an upsampling grid
-        upsampling_grid = torch.arange(
-            1, upsampling_factor + 1, dtype=f0.dtype, device=f0.device
-        )
+        if (
+            self._cached_upsampling_factor != upsampling_factor
+            or self._cached_grid is None
+            or self._cached_grid.device != f0.device
+            or self._cached_grid.dtype != f0.dtype
+        ):
+            self._cached_upsampling_factor = upsampling_factor
+            self._cached_grid = torch.arange(
+                1, upsampling_factor + 1, dtype=f0.dtype, device=f0.device
+            )
+            self._cached_harmonic_scale = torch.arange(
+                1, self.waveform_dim + 1, dtype=f0.dtype, device=f0.device
+            ).reshape(1, 1, -1)
 
         # Calculate phase increments
-        phase_increments = (f0 / self.sampling_rate) * upsampling_grid
+        phase_increments = (f0 / self.sampling_rate) * self._cached_grid
         phase_remainder = torch.fmod(phase_increments[:, :-1, -1:] + 0.5, 1.0) - 0.5
         cumulative_phase = phase_remainder.cumsum(dim=1).fmod(1.0).to(f0.dtype)
         phase_increments += torch.nn.functional.pad(
@@ -180,10 +192,7 @@ class SineGenerator(torch.nn.Module):
         phase_increments = phase_increments.reshape(batch_size, -1, 1)
 
         # Scale for harmonics
-        harmonic_scale = torch.arange(
-            1, self.waveform_dim + 1, dtype=f0.dtype, device=f0.device
-        ).reshape(1, 1, -1)
-        phase_increments *= harmonic_scale
+        phase_increments *= self._cached_harmonic_scale
 
         # Add random phase offset (except for the fundamental)
         random_phase = torch.rand(1, 1, self.waveform_dim, device=f0.device)
@@ -195,7 +204,7 @@ class SineGenerator(torch.nn.Module):
         return sine_waves
 
     def forward(self, f0: torch.Tensor, upsampling_factor: int):
-        with torch.no_grad():
+        with torch.inference_mode():
             # Expand `f0` to include waveform dimensions
             f0 = f0.unsqueeze(-1)
 
@@ -208,11 +217,7 @@ class SineGenerator(torch.nn.Module):
             voiced_mask = self._compute_voiced_unvoiced(f0)
 
             # Upsample voiced/unvoiced mask
-            voiced_mask = torch.nn.functional.interpolate(
-                voiced_mask.transpose(2, 1),
-                scale_factor=float(upsampling_factor),
-                mode="nearest",
-            ).transpose(2, 1)
+            voiced_mask = voiced_mask.repeat_interleave(upsampling_factor, dim=1)
 
             # Compute noise amplitude
             noise_amplitude = voiced_mask * self.noise_stddev + (1 - voiced_mask) * (

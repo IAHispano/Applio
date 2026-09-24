@@ -405,7 +405,7 @@ class MelSpectrogram(torch.nn.Module):
             return_complex=True,
         )
 
-        magnitude = torch.sqrt(fft.real.pow(2) + fft.imag.pow(2))
+        magnitude = fft.abs()
         if keyshift != 0:
             size = self.n_fft // 2 + 1
             resize = magnitude.size(1)
@@ -449,7 +449,7 @@ class RMVPE0Predictor:
         Args:
             mel (torch.Tensor): Mel-spectrogram features.
         """
-        with torch.no_grad():
+        with torch.inference_mode():
             n_frames = mel.shape[-1]
             # print('n_frames', n_frames)
             # print('mel shape before padding', mel.shape)

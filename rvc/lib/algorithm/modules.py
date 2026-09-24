@@ -76,7 +76,7 @@ class WaveNet(torch.nn.Module):
             )
 
     def forward(self, x, x_mask, g=None):
-        output = x.clone().zero_()
+        output = torch.zeros_like(x)
 
         # Apply conditional layer if global conditioning is provided
         g = self.cond_layer(g) if g is not None else None

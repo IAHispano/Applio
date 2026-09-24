@@ -93,6 +93,19 @@ class MultiHeadAttention(torch.nn.Module):
         key = key.view(b, self.n_heads, self.k_channels, t_s).transpose(2, 3)
         value = value.view(b, self.n_heads, self.k_channels, t_s).transpose(2, 3)
 
+        # Fast path: use fused scaled_dot_product_attention when no relative PE
+        if not self.window_size and not self.proximal_bias and not self.block_length:
+            attn_mask = None
+            if mask is not None:
+                # mask: [B, 1, t_s, t_s] or [B, 1, 1, t_s] — convert to additive float mask
+                bool_mask = (mask == 0).expand(b, 1, t_t, t_s)
+                attn_mask = torch.zeros(b, 1, t_t, t_s, dtype=query.dtype, device=query.device)
+                attn_mask.masked_fill_(bool_mask, float('-inf'))
+            output = torch.nn.functional.scaled_dot_product_attention(
+                query, key, value, attn_mask=attn_mask, dropout_p=0.0
+            )
+            return output.transpose(2, 3).contiguous().view(b, d, t_t), None
+
         scores = torch.matmul(query / math.sqrt(self.k_channels), key.transpose(-2, -1))
 
         if self.window_size:

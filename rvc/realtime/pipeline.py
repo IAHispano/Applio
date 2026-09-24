@@ -76,6 +76,10 @@ class RealtimeVoiceConverter:
             strip_parametrizations(self.net_g)
             self.net_g = self.net_g.to(self.config.device).to(self.dtype)
             self.net_g.eval()
+            if self.config.device.startswith("cuda") and torch.cuda.is_available():
+                torch.backends.cudnn.benchmark = True
+                torch.backends.cuda.matmul.allow_tf32 = True
+                torch.backends.cudnn.allow_tf32 = True
             # self.net_g.remove_weight_norm()
 
     def inference(
@@ -119,6 +123,7 @@ class Realtime_Pipeline:
         self.torch_sid = torch.tensor([sid], device=self.device, dtype=torch.int64)
         self.autotune = Autotune()
         self.resamplers = {}
+        self.f0_mel_scale = 254.0 / (self.f0_max - self.f0_min)
         self.f0_model = self.setup_f0(self.f0_method)
         self.dtype = vc.dtype
         # Reuse scalar tensors to avoid per-block allocations.
@@ -147,17 +152,13 @@ class Realtime_Pipeline:
                 center = torch.argmax(salience, dim=1)
                 salience = torch.nn.functional.pad(salience, (4, 4))
                 center += 4
-                offsets = torch.arange(-4, 5, device=salience.device)
-                idx = center[:, None] + offsets[None, :]
-                local_salience = salience[
-                    torch.arange(salience.shape[0], device=salience.device)[:, None],
-                    idx,
-                ]
+                idx = center.unsqueeze(1) + self._offsets
+                local_salience = salience.gather(1, idx)
                 product_sum = (local_salience * self.cents_mapping[idx]).sum(dim=1)
                 weight_sum = local_salience.sum(dim=1)
                 devided = product_sum / weight_sum
                 maxx = salience.max(dim=1).values
-                devided = torch.where(maxx <= thred, torch.zeros_like(devided), devided)
+                devided[maxx <= thred] = 0.0
                 return devided
 
             f0_model = RMVPE(
@@ -173,6 +174,7 @@ class Realtime_Pipeline:
             f0_model.model.cents_mapping = torch.from_numpy(
                 f0_model.model.cents_mapping
             ).to(self.device)
+            f0_model.model._offsets = torch.arange(-4, 5, device=self.device)
             f0_model.model.infer_from_audio = types.MethodType(
                 _infer_from_audio, f0_model.model
             )
@@ -265,16 +267,13 @@ class Realtime_Pipeline:
                 "calculated pitch offset:", up_key
             )  # Might need to hide so terminal output doesn't become a mess
             f0 *= 2 ** ((f0_up_key + up_key) / 12)
-        else:
+        elif f0_up_key != 0:
             f0 *= 2 ** (f0_up_key / 12)
 
-        # Convert to Tensor for computational use
-        # f0 = torch.from_numpy(f0).to(self.device).float()
-
         # quantizing f0 to 255 buckets to make coarse f0
-        f0_mel = 1127.0 * torch.log(1.0 + f0 / 700.0)
+        f0_mel = 1127.0 * torch.log1p(f0 * (1.0 / 700.0))
         f0_mel = torch.clip(
-            (f0_mel - self.f0_min) * 254 / (self.f0_max - self.f0_min) + 1,
+            (f0_mel - self.f0_min) * self.f0_mel_scale + 1,
             1,
             255,
             out=f0_mel,
@@ -317,7 +316,7 @@ class Realtime_Pipeline:
         """
         Performs realtime voice conversion on a given audio segment.
         """
-        with torch.no_grad():
+        with torch.inference_mode():
             assert audio.dim() == 1, audio.dim()
             feats = audio.view(1, -1).to(self.device)
 
@@ -371,8 +370,13 @@ class Realtime_Pipeline:
             )
 
             feats = torch.cat((feats, feats[:, -1:, :]), 1)
-            # make a copy for pitch guidance and protection
-            feats0 = feats.detach().clone() if self.use_f0 else None
+            # make a copy for pitch guidance and protection only when needed
+            need_feats0 = (
+                self.use_f0
+                and protect < 0.5
+                and bool(self.index and index_rate > 0)
+            )
+            feats0 = feats.clone() if need_feats0 else None
 
             try:
                 if (
@@ -386,27 +390,17 @@ class Realtime_Pipeline:
                 self.index = self.big_tsr = None
 
             # feature upsampling
-            feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(
-                0, 2, 1
-            )[:, :p_len, :]
+            feats = feats.repeat_interleave(2, dim=1)[:, :p_len, :]
 
             if self.use_f0:
-                feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
-                    0, 2, 1
-                )[:, :p_len, :]
                 pitch_p = pitch[-p_len:].unsqueeze(0)
-                pitchf_p = pitchf[-p_len:].unsqueeze(0) * (
-                    formant_length / return_length
-                )
+                pitchf_p = pitchf[-p_len:].unsqueeze(0)
 
                 # Pitch protection blending
-                if protect < 0.5:
-                    pitchff = pitchf_p.detach().clone()
-                    pitchff[pitchf_p > 0] = 1
-                    pitchff[pitchf_p < 1] = protect
-                    feats = feats * pitchff.unsqueeze(-1) + feats0 * (
-                        1 - pitchff.unsqueeze(-1)
-                    )
+                if need_feats0:
+                    feats0 = feats0.repeat_interleave(2, dim=1)[:, :p_len, :]
+                    pitchff = torch.where(pitchf_p > 0, 1.0, protect)
+                    feats = feats.lerp(feats0, (1.0 - pitchff).unsqueeze(-1))
                     feats = feats.to(feats0.dtype)
             else:
                 pitch_p, pitchf_p = None, None
@@ -454,31 +448,14 @@ class Realtime_Pipeline:
         big_tsr: torch.Tensor,
         index_rate: float,
     ):
-        # skip_offset = skip_head // 2
-        # npy = feats[0][skip_offset:].cpu().numpy()
-        # if self.dtype == torch.float16:
-        #     npy = npy.astype(np.float32)
-        # score, ix = index.search(npy, k=8)
-        # weight = np.square(1 / score)
-        # weight /= weight.sum(axis=1, keepdims=True)
-        # npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
-        # if self.dtype == torch.float16:
-        #     npy = npy.astype(np.float16)
-        # feats[0][skip_offset:] = (
-        #     torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
-        #     + (1 - index_rate) * feats[0][skip_offset:]
-        # )
         skip_offset = skip_head // 2
         tsr = feats[0][skip_offset:]
         score, ix = index.search(tsr, k=8)
-        weight = (1 / score).square()
+        weight = torch.reciprocal(score).square_()
         weight /= weight.sum(dim=1, keepdim=True)
-        query = (big_tsr[ix] * weight.unsqueeze(2)).sum(dim=1)
+        query = torch.bmm(weight.unsqueeze(1), big_tsr[ix]).squeeze(1)
 
-        feats[0][skip_offset:] = (
-            query.unsqueeze(0) * index_rate
-            + (1.0 - index_rate) * feats[0][skip_offset:]
-        )
+        feats[0, skip_offset:].lerp_(query, index_rate)
         return feats
 
 

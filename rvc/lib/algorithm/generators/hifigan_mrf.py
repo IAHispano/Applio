@@ -113,6 +113,11 @@ class SineGenerator(torch.nn.Module):
         self.dim = self.harmonic_num + 1
         self.sampling_rate = samp_rate
         self.voiced_threshold = voiced_threshold
+        # Precompute harmonic multipliers: [1, 2, 3, ..., dim]
+        self.register_buffer(
+            "_harmonic_mul",
+            torch.arange(1, self.dim + 1, dtype=torch.float32).view(1, 1, -1),
+        )
 
     def _f02uv(self, f0: torch.Tensor):
         """
@@ -122,8 +127,7 @@ class SineGenerator(torch.nn.Module):
             f0 (torch.Tensor): Fundamental frequency tensor of shape (batch_size, length, 1).
         """
         # generate uv signal
-        uv = torch.ones_like(f0)
-        uv = uv * (f0 > self.voiced_threshold)
+        uv = (f0 > self.voiced_threshold).float()
         return uv
 
     def _f02sine(self, f0_values: torch.Tensor):
@@ -157,12 +161,9 @@ class SineGenerator(torch.nn.Module):
         return sines
 
     def forward(self, f0: torch.Tensor):
-        with torch.no_grad():
-            f0_buf = torch.zeros(f0.shape[0], f0.shape[1], self.dim, device=f0.device)
-            # fundamental component
-            f0_buf[:, :, 0] = f0[:, :, 0]
-            for idx in np.arange(self.harmonic_num):
-                f0_buf[:, :, idx + 1] = f0_buf[:, :, 0] * (idx + 2)
+        with torch.inference_mode():
+            # Vectorized harmonic expansion: [B, T, dim]
+            f0_buf = f0 * self._harmonic_mul.to(f0.device)
 
             sine_waves = self._f02sine(f0_buf) * self.sine_amp
 
@@ -357,7 +358,10 @@ class HiFiGANMRFGenerator(torch.nn.Module):
             else:
                 x = ups(x)
                 x = x + noise_conv(har_source)
-                xs = sum([layer(x) for layer in mrf])
+                # Direct accumulation without list comprehension overhead
+                xs = mrf[0](x)
+                for layer in mrf[1:]:
+                    xs = xs + layer(x)
             x = xs / self.num_kernels
 
         x = torch.nn.functional.leaky_relu(x)

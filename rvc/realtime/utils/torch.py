@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 def circular_write(new_data: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     offset = new_data.shape[0]
-    target[:-offset] = target[offset:].detach().clone()
+    target.copy_(torch.roll(target, -offset, 0))
     target[-offset:] = new_data
     return target
 
@@ -142,12 +142,11 @@ class AudioProcessorTorch:
             size=target_audio.shape[0],
             mode="linear",
         ).squeeze()
-        rms2 = torch.maximum(rms2, torch.zeros_like(rms2) + 1e-6)
+        rms1 = rms1.clamp(min=1e-6)
+        rms2 = rms2.clamp(min=1e-6)
 
         # Adjust target audio RMS based on the source audio RMS
-        adjusted_audio = target_audio * (
-            torch.pow(rms1, 1 - rate) * torch.pow(rms2, rate - 1)
-        )
+        adjusted_audio = target_audio * torch.pow(rms1 / rms2, 1.0 - rate)
         return adjusted_audio
 
 
@@ -223,6 +222,7 @@ class IndexWrapper:
 
         if self.index is None or self.big_npy is None:
             self.big_tensor = None
+            self.big_tensor_t = None
             self.b_norms = None
         else:
             self.big_tensor = (
@@ -230,6 +230,7 @@ class IndexWrapper:
                 .to(device=self.device, dtype=self.dtype)
                 .contiguous()
             )
+            self.big_tensor_t = self.big_tensor.T.contiguous()
             # Precompute ||b||² for distance calculation
             self.b_norms = (self.big_tensor**2).sum(dim=-1, keepdim=True).T.contiguous()
 
@@ -252,17 +253,17 @@ class IndexWrapper:
                     # Compute squared L2 distances
                     distances = (
                         torch.addmm(
-                            self.b_norms, query, self.big_tensor.T, alpha=-2.0, beta=1.0
+                            self.b_norms, query, self.big_tensor_t, alpha=-2.0, beta=1.0
                         )
                         + q_norm
                     )
                     # Prevent negative values caused by floating-point precision
                     distances = distances.clamp(min=self.clamp)
 
-                    # Retrieve smallest distances
-                    scores, indices = torch.topk(-distances, k=k, dim=-1)
+                    # Retrieve smallest distances directly without negation
+                    scores, indices = torch.topk(distances, k=k, dim=-1, largest=False)
 
-                    return -scores, indices
+                    return scores, indices
                 except (torch.OutOfMemoryError, RuntimeError):
                     print(
                         "[Warning]: An error occurred when using Faiss with the GPU. Fallback to the CPU."

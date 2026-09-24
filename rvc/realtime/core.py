@@ -31,7 +31,26 @@ SAMPLE_RATE = 16000
 AUDIO_SAMPLE_RATE = 48000
 
 
-def phase_vocoder(a, b, fade_out, fade_in):
+if torch.cuda.is_available():
+    torch.backends.cudnn.benchmark = True
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+
+
+def phase_vocoder(
+    a,
+    b,
+    fade_out,
+    fade_in,
+    fade_out_sq=None,
+    fade_in_sq=None,
+    window=None,
+    window_over_n=None,
+    k_grid=None,
+    t_over_n=None,
+    inv_2pi=None,
+    two_pi=None,
+):
     """
     Performs a phase vocoder crossfade between two audio segments.
 
@@ -49,14 +68,22 @@ def phase_vocoder(a, b, fade_out, fade_in):
         torch.Tensor: The crossfaded audio segment.
     """
 
-    # Compute the analysis window as the geometric mean of fade curves
-    window = (fade_out * fade_in).sqrt()
+    n = a.shape[0]
+    if window is None:
+        window = (fade_out * fade_in).sqrt()
+        window_over_n = window / n
+        fade_out_sq = fade_out**2
+        fade_in_sq = fade_in**2
+        k_grid = 2 * torch.pi * torch.arange(n // 2 + 1, device=a.device, dtype=a.dtype)
+        t_over_n = torch.arange(n, device=a.device, dtype=a.dtype) / n
+        inv_2pi = 1.0 / (2 * torch.pi)
+        two_pi = 2 * torch.pi
+
     # Transform both windowed segments to the frequency domain (Real FFT)
     fa = torch.fft.rfft(a * window)
     fb = torch.fft.rfft(b * window)
     # Calculate the combined magnitude spectrum
     absab = fa.abs() + fb.abs()
-    n = a.shape[0]
 
     # Compensate for the energy of negative frequencies (except DC and Nyquist components)
     if n % 2 == 0:
@@ -67,31 +94,17 @@ def phase_vocoder(a, b, fade_out, fade_in):
     # Extract initial phase and calculate the raw phase difference
     phia = fa.angle()
     deltaphase = fb.angle() - phia
+    delta_unwrapped = deltaphase - two_pi * torch.floor(deltaphase * inv_2pi + 0.5)
 
     # Reconstruct the signal using a combination of time-domain crossfade
     # and phase-aligned sinusoidal synthesis (Phase Vocoder)
+    phase = torch.outer(t_over_n, k_grid + delta_unwrapped) + phia
+    synthesized = torch.mv(phase.cos(), absab)
+
     return (
-        a * (fade_out**2)
-        + b * (fade_in**2)
-        + (
-            absab
-            * (
-                (
-                    # Base frequency grid for each bin
-                    2 * torch.pi * torch.arange(n // 2 + 1).to(a)
-                    +
-                    # Phase unwrapping (wrapping delta phase to the [-pi, pi] range)
-                    (
-                        deltaphase
-                        - 2 * torch.pi * (deltaphase / 2 / torch.pi + 0.5).floor()
-                    )
-                )
-                * (torch.arange(n).unsqueeze(-1).to(a) / n)
-                + phia  # Continuous phase evolution over time
-            ).cos()
-        ).sum(-1)
-        * window
-        / n  # Sum the sinusoidal components (IFFT equivalent) and normalize
+        a * fade_out_sq
+        + b * fade_in_sq
+        + synthesized * window_over_n
     )
 
 
@@ -303,11 +316,11 @@ class Realtime:
 
         # Input audio is always float32
         audio_input_16k = self.resample_in(
-            torch.as_tensor(audio_input, dtype=torch.float32, device=self.device)
+            torch.from_numpy(audio_input).to(self.device, non_blocking=True)
         ).to(self.dtype)
         circular_write(audio_input_16k, self.audio_buffer)
 
-        vol_t = torch.sqrt(torch.square(self.audio_buffer).mean())
+        vol_t = self.audio_buffer.norm() * (1.0 / self.audio_buffer.numel() ** 0.5)
         vol = max(vol_t.item(), 0)
 
         board = self.board
@@ -515,6 +528,18 @@ class VoiceChanger:
         )
 
         self.fade_out_window: torch.Tensor = 1 - self.fade_in_window
+        self.fade_in_sq = self.fade_in_window**2
+        self.fade_out_sq = self.fade_out_window**2
+        self.pv_window = (self.fade_out_window * self.fade_in_window).sqrt()
+        n = self.crossfade_frame
+        self.pv_window_over_n = self.pv_window / n
+        self.pv_t_over_n = torch.arange(n, device=self.device, dtype=torch.float32) / n
+        self.pv_k_grid = (
+            2 * torch.pi * torch.arange(n // 2 + 1, device=self.device, dtype=torch.float32)
+        )
+        self.pv_inv_2pi = 1.0 / (2 * torch.pi)
+        self.pv_two_pi = 2 * torch.pi
+
         self.sola_denominator_kernel = torch.ones(
             1, 1, self.crossfade_frame, device=self.device, dtype=torch.float32
         )
@@ -593,6 +618,14 @@ class VoiceChanger:
                 audio[: self.crossfade_frame],
                 self.fade_out_window,
                 self.fade_in_window,
+                self.fade_out_sq,
+                self.fade_in_sq,
+                self.pv_window,
+                self.pv_window_over_n,
+                self.pv_k_grid,
+                self.pv_t_over_n,
+                self.pv_inv_2pi,
+                self.pv_two_pi,
             )
         else:
             if is_onset:
@@ -641,7 +674,7 @@ class VoiceChanger:
 
         return audio_output, vol
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def on_request(
         self,
         audio_input: np.ndarray,

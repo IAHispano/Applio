@@ -225,13 +225,18 @@ class Synthesizer(torch.nn.Module):
         """
         g = self.emb_g(sid).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
-        z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
 
         if rate is not None:
-            head = int(z_p.shape[2] * (1.0 - rate.item()))
-            z_p, x_mask = z_p[:, :, head:], x_mask[:, :, head:]
+            head = int(m_p.shape[2] * (1.0 - rate.item()))
+            m_p, logs_p, x_mask = (
+                m_p[:, :, head:],
+                logs_p[:, :, head:],
+                x_mask[:, :, head:],
+            )
             if self.use_f0 and nsff0 is not None:
                 nsff0 = nsff0[:, head:]
+
+        z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
 
         z = self.flow(z_p, x_mask, g=g, reverse=True)
         o = (
