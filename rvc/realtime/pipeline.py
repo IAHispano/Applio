@@ -15,7 +15,7 @@ from rvc.realtime.utils.torch import circular_write, AudioProcessorTorch, IndexW
 from rvc.configs.config import Config
 from rvc.infer.pipeline import Autotune
 from rvc.lib.algorithm.synthesizers import Synthesizer
-from rvc.lib.predictors.f0 import FCPE, RMVPE
+from rvc.lib.predictors.f0 import FCPE, RMVPE, Swift
 from rvc.lib.utils import load_embedding, HubertModelWithFinalProj
 
 
@@ -185,6 +185,12 @@ class Realtime_Pipeline:
                 sample_rate=self.sample_rate,
                 hop_size=self.window,
             )
+        elif f0_method == "swift":
+            f0_model = Swift(
+                device=self.device,
+                sample_rate=self.sample_rate,
+                hop_size=self.window,
+            )
         elif self.f0_method in ("crepe", "crepe-tiny"):
             f0_model = None
 
@@ -214,6 +220,10 @@ class Realtime_Pipeline:
                 decoder_mode="local_argmax",
                 threshold=0.006,
             ).squeeze()
+        elif self.f0_method == "swift":
+            f0 = torch.from_numpy(
+                self.f0_model.get_f0(x, f0_min=self.f0_min, f0_max=self.f0_max)
+            ).to(self.device).float()
         elif self.f0_method in ("crepe", "crepe-tiny"):
             f0, pd = torchcrepe.predict(
                 x.float().to(self.device).unsqueeze(dim=0),

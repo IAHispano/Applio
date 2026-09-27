@@ -12,7 +12,7 @@ from torch import Tensor
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE
+from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE, Swift
 
 import logging
 
@@ -242,6 +242,12 @@ class Pipeline:
                 device=self.device, sample_rate=self.sample_rate, hop_size=self.window
             )
             f0 = model.get_f0(x, p_len, filter_radius=0.006)
+            del model
+        elif f0_method == "swift":
+            model = Swift(
+                device=self.device, sample_rate=self.sample_rate, hop_size=self.window
+            )
+            f0 = model.get_f0(x, p_len, self.f0_min, self.f0_max)
             del model
 
         # f0 adjustments

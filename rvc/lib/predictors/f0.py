@@ -3,6 +3,7 @@ import json
 import torch
 
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor
+from swift_f0 import FRAME_PERIOD, SwiftF0
 from torchfcpe import spawn_infer_model_from_pt
 import torchcrepe
 import numpy as np
@@ -182,3 +183,33 @@ class FCPE:
         )
 
         return f0
+
+
+class Swift:
+    def __init__(self, device=None, sample_rate=16000, hop_size=160):
+        self.device = device
+        self.sample_rate = sample_rate
+        self.hop_size = hop_size
+        self.model = SwiftF0()
+
+    def get_f0(self, x, p_len=None, f0_min=50.0, f0_max=1100.0, threshold=0.5):
+        if torch.is_tensor(x):
+            x = x.detach().cpu().numpy()
+        if p_len is None:
+            p_len = np.asarray(x).shape[0] // self.hop_size
+        if p_len <= 0:
+            return np.zeros(0, dtype=np.float64)
+
+        result = self.model.detect(x, 16000, fmin=f0_min, fmax=f0_max)
+
+        t_src = np.arange(result.pitch_hz.shape[0]) * FRAME_PERIOD
+        t_tgt = np.arange(p_len) * (self.hop_size / self.sample_rate)
+        conf_tgt = np.interp(t_tgt, t_src, result.confidence)
+        voiced = result.confidence >= threshold
+        if int(np.count_nonzero(voiced)) == 0:
+            return np.zeros(p_len, dtype=np.float64)
+        f0_tgt = np.power(
+            2.0, np.interp(t_tgt, t_src[voiced], np.log2(result.pitch_hz[voiced]))
+        )
+        f0_tgt[conf_tgt < threshold] = 0.0
+        return f0_tgt
