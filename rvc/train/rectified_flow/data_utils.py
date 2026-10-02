@@ -1,15 +1,18 @@
 import os
 import random
+from typing import NamedTuple
 
 import numpy as np
 import torch
 import torch.utils.data
 
+from rvc.lib.algorithm.rectified_flow import Conditioning
 from rvc.lib.algorithm.rectified_flow_features import (
     FEATURE_RATE,
     TENSION_SMOOTH_SECONDS,
     LogMel,
     aperiodicity,
+    curve_to_mel_rate,
     f0_to_mel_rate,
     frame_energy,
     mel_frames,
@@ -39,6 +42,33 @@ def split_holdout(entries, count, seed=1234):
     )
     train = [entry for i, entry in enumerate(entries) if i not in held]
     return train, [entries[i] for i in sorted(held)]
+
+
+class FlowItem(NamedTuple):
+    """
+    One training crop, without the batch dimension.
+
+    Args:
+        mel (torch.Tensor): Mel spectrogram, shape (n_mels, frames).
+        content (torch.Tensor): Content features, shape (frames, channels).
+        f0 (torch.Tensor): Pitch in Hz, shape (frames,).
+        energy (torch.Tensor): Loudness curve, shape (frames,).
+        breathiness (torch.Tensor): Aperiodicity curve, shape (frames,).
+        tension (torch.Tensor): Tension curve, shape (frames,).
+        key_shift (float): Shift of pitch and formants in semitones.
+        speed (float): Time stretch.
+        sid (int): Speaker id.
+    """
+
+    mel: torch.Tensor
+    content: torch.Tensor
+    f0: torch.Tensor
+    energy: torch.Tensor
+    breathiness: torch.Tensor
+    tension: torch.Tensor
+    key_shift: float
+    speed: float
+    sid: int
 
 
 class FlowAudioLoader(torch.utils.data.Dataset):
@@ -103,7 +133,7 @@ class FlowAudioLoader(torch.utils.data.Dataset):
                 )
             )
         curves = [
-            to_mel_rate(curve.unsqueeze(-1), frames, self.sample_rate, hop)[0, :, 0]
+            curve_to_mel_rate(curve, frames, self.sample_rate, hop)[0]
             for curve in curves
         ]
         if not self.use_tension:
@@ -141,16 +171,16 @@ class FlowAudioLoader(torch.utils.data.Dataset):
         length = min(frames, self.segment_frames)
         start = random.randint(0, frames - length) if self.augment else 0
         stop = start + length
-        return (
-            mel[:, start:stop],
-            content[start:stop],
-            f0[start:stop],
-            energy[start:stop],
-            breathiness[start:stop],
-            key_shift,
-            speed,
-            int(sid),
-            strain[start:stop],
+        return FlowItem(
+            mel=mel[:, start:stop],
+            content=content[start:stop],
+            f0=f0[start:stop],
+            energy=energy[start:stop],
+            breathiness=breathiness[start:stop],
+            tension=strain[start:stop],
+            key_shift=key_shift,
+            speed=speed,
+            sid=int(sid),
         )
 
     def __len__(self):
@@ -158,9 +188,9 @@ class FlowAudioLoader(torch.utils.data.Dataset):
 
     def get_reference(self, embedder_name, max_seconds=10.0):
         """
-        Get the clip the validation audio is generated from: the reference set
-        of the embedder as speaker 0, else the first dataset clip of at least
-        two seconds.
+        Get the mel and the flow inputs of the clip the validation audio is
+        generated from: the reference set of the embedder as speaker 0, else
+        the first dataset clip of at least two seconds.
 
         Args:
             embedder_name (str): Name of the embedder the dataset was extracted with.
@@ -216,21 +246,22 @@ class FlowAudioLoader(torch.utils.data.Dataset):
         energy, breathiness, strain = self.get_curves(
             audio, pitchf, frames, self.hop_length
         )
-        return (
-            mel,
-            content.unsqueeze(0),
-            f0.unsqueeze(0),
-            energy.unsqueeze(0),
-            breathiness.unsqueeze(0),
-            torch.LongTensor([sid]),
-            strain.unsqueeze(0),
+        inputs = Conditioning(
+            content=content.unsqueeze(0),
+            f0=f0.unsqueeze(0),
+            energy=energy.unsqueeze(0),
+            speaker=torch.LongTensor([sid]),
+            mask=torch.ones(1, 1, frames),
+            breathiness=breathiness.unsqueeze(0),
+            tension=strain.unsqueeze(0),
         )
+        return mel, inputs
 
 
 class FlowAudioCollate:
     """
     Collate function that pads every item to `frames` mel frames and returns
-    the frame mask.
+    the mel and the flow inputs of the batch.
 
     Args:
         frames (int): Number of mel frames of the batch.
@@ -241,37 +272,26 @@ class FlowAudioCollate:
 
     def __call__(self, batch):
         size, frames = len(batch), self.frames
-        mel = torch.zeros(size, batch[0][0].shape[0], frames)
-        content = torch.zeros(size, frames, batch[0][1].shape[-1])
-        f0 = torch.zeros(size, frames)
-        energy = torch.full((size, frames), -1.0)
-        breathiness = torch.ones(size, frames)
-        key_shift = torch.zeros(size)
-        speed = torch.ones(size)
-        sid = torch.zeros(size, dtype=torch.long)
-        mask = torch.zeros(size, 1, frames)
-        tension = torch.zeros(size, frames)
-        for i, row in enumerate(batch):
-            length = row[0].shape[-1]
-            mel[i, :, :length] = row[0]
-            content[i, :length] = row[1]
-            f0[i, :length] = row[2]
-            energy[i, :length] = row[3]
-            breathiness[i, :length] = row[4]
-            key_shift[i] = row[5]
-            speed[i] = row[6]
-            sid[i] = row[7]
-            mask[i, :, :length] = 1.0
-            tension[i, :length] = row[8]
-        return (
-            mel,
-            content,
-            f0,
-            energy,
-            breathiness,
-            key_shift,
-            speed,
-            sid,
-            mask,
-            tension,
+        mel = torch.zeros(size, batch[0].mel.shape[0], frames)
+        # Padding reads as silence: no pitch, lowest energy, fully aperiodic
+        inputs = Conditioning(
+            content=torch.zeros(size, frames, batch[0].content.shape[-1]),
+            f0=torch.zeros(size, frames),
+            energy=torch.full((size, frames), -1.0),
+            speaker=torch.LongTensor([item.sid for item in batch]),
+            mask=torch.zeros(size, 1, frames),
+            breathiness=torch.ones(size, frames),
+            key_shift=torch.FloatTensor([item.key_shift for item in batch]),
+            speed=torch.FloatTensor([item.speed for item in batch]),
+            tension=torch.zeros(size, frames),
         )
+        for i, item in enumerate(batch):
+            length = item.mel.shape[-1]
+            mel[i, :, :length] = item.mel
+            inputs.content[i, :length] = item.content
+            inputs.f0[i, :length] = item.f0
+            inputs.energy[i, :length] = item.energy
+            inputs.breathiness[i, :length] = item.breathiness
+            inputs.tension[i, :length] = item.tension
+            inputs.mask[i, :, :length] = 1.0
+        return mel, inputs

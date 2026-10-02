@@ -175,6 +175,19 @@ def to_mel_rate(features, frames, sample_rate, hop):
     return features[..., left, :] * (1 - weight) + features[..., right, :] * weight
 
 
+def curve_to_mel_rate(curve, frames, sample_rate, hop):
+    """
+    Interpolate a curve at FEATURE_RATE to the mel frames, linearly.
+
+    Args:
+        curve (torch.Tensor): Curve, shape (batch, time).
+        frames (int): Number of mel frames.
+        sample_rate (int): Sampling rate of the audio.
+        hop (int): Hop size of the mel.
+    """
+    return to_mel_rate(curve.unsqueeze(-1), frames, sample_rate, hop)[..., 0]
+
+
 def f0_to_mel_rate(f0, frames, sample_rate, hop):
     """
     Interpolate the pitch at FEATURE_RATE to the mel frames. Only between two

@@ -9,10 +9,11 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from rvc.infer.pipeline import AudioProcessor, Pipeline
-from rvc.lib.algorithm.rectified_flow import build_flow
+from rvc.lib.algorithm.rectified_flow import Conditioning, build_flow
 from rvc.lib.algorithm.rectified_flow_features import (
     TENSION_SMOOTH_SECONDS,
     aperiodicity,
+    curve_to_mel_rate,
     f0_to_mel_rate,
     frame_energy,
     mel_frames,
@@ -144,41 +145,131 @@ class FlowPipeline(Pipeline):
             f0 = source_f0 * pow(2, (pitch + up_key) / 12)
         return source_f0, np.asarray(f0, dtype=np.float32)
 
-    def sample_mel(self, flow, feats, pitchf, energy, breathiness, strain, sid):
+    def get_inputs(
+        self,
+        model,
+        net_g,
+        audio,
+        sid,
+        pitch,
+        f0_method,
+        index,
+        big_npy,
+        index_rate,
+        protect,
+        f0_autotune,
+        f0_autotune_strength,
+        proposed_pitch,
+        proposed_pitch_threshold,
+    ):
+        """
+        Extracts the inputs of the flow from the audio, at the mel frame rate.
+
+        Args:
+            model: The feature extractor model.
+            net_g: The flow model and its vocoder.
+            audio: The input audio signal as a NumPy array.
+            sid: Speaker ID for the target voice.
+            pitch: Key to adjust the pitch of the F0 contour.
+            f0_method: Method to use for F0 estimation.
+            index: The FAISS index for speaker embedding retrieval, None for no retrieval.
+            big_npy: The vectors of the FAISS index.
+            index_rate: Blending rate for speaker embedding retrieval.
+            protect: Protection level for the unvoiced frames against the index.
+            f0_autotune: Whether to apply autotune to the F0 contour.
+            f0_autotune_strength: Strength of the autotune.
+            proposed_pitch: whether to apply proposed pitch adjustment
+            proposed_pitch_threshold: target frequency, 155.0 for male, 255.0 for female
+        """
+        data = net_g.data
+        sample_rate, hop_length = data["sample_rate"], data["hop_length"]
+        source = torch.from_numpy(audio).view(1, -1).to(self.device)
+
+        # extract features
+        feats = self.get_content(model, source)
+        feats0 = feats
+        if index:
+            feats = self._retrieve_speaker_embeddings(
+                feats, index, big_npy, index_rate
+            ).float()
+        # feature upsampling
+        feats = upsample_content(feats[0], data["content_interpolation"])
+        feats0 = upsample_content(feats0[0], data["content_interpolation"])
+        p_len = min(audio.shape[0] // self.window, feats.shape[0])
+        feats, feats0 = feats[None, :p_len], feats0[None, :p_len]
+
+        source_pitchf, pitchf = self.get_pitch(
+            audio,
+            p_len,
+            f0_method,
+            pitch,
+            f0_autotune,
+            f0_autotune_strength,
+            proposed_pitch,
+            proposed_pitch_threshold,
+        )
+        source_pitchf = torch.from_numpy(source_pitchf).view(1, -1).to(self.device)
+        pitchf = torch.from_numpy(pitchf).view(1, -1).to(self.device)
+
+        energy = smooth_curve(frame_energy(source, self.sample_rate, p_len))
+        breathiness = smooth_curve(
+            aperiodicity(source, self.sample_rate, source_pitchf, p_len)
+        )
+        strain = None
+        if net_g.flow.encoder.tension is not None:
+            strain = smooth_curve(
+                tension(source, self.sample_rate, source_pitchf, p_len),
+                TENSION_SMOOTH_SECONDS,
+            )
+
+        # everything above is at 100 frames per second, the mel has its own rate
+        frames = mel_frames(p_len, sample_rate, hop_length)
+        feats = to_mel_rate(feats, frames, sample_rate, hop_length)
+        feats0 = to_mel_rate(feats0, frames, sample_rate, hop_length)
+        pitchf = f0_to_mel_rate(pitchf, frames, sample_rate, hop_length)
+        energy = curve_to_mel_rate(energy, frames, sample_rate, hop_length)
+        breathiness = curve_to_mel_rate(breathiness, frames, sample_rate, hop_length)
+        if strain is not None:
+            strain = curve_to_mel_rate(strain, frames, sample_rate, hop_length)
+
+        # Pitch protection blending
+        if index and protect < 0.5:
+            pitchff = torch.where(pitchf > 0, 1.0, float(protect)).unsqueeze(-1)
+            feats = feats * pitchff + feats0 * (1 - pitchff)
+
+        return Conditioning(
+            content=feats,
+            f0=pitchf,
+            energy=energy,
+            speaker=torch.tensor([sid], device=self.device).long(),
+            mask=torch.ones(1, 1, frames, device=self.device),
+            breathiness=breathiness,
+            tension=strain,
+        )
+
+    def sample_mel(self, flow, inputs):
         """
         Samples the normalised mel spectrogram in overlapping passes, crossfaded.
 
         Args:
             flow: The flow model.
-            feats: Content features at the mel frame rate.
-            pitchf: F0 contour at the mel frame rate.
-            energy: Loudness curve at the mel frame rate.
-            breathiness: Aperiodicity curve at the mel frame rate.
-            strain: Tension curve at the mel frame rate, None for a model without it.
-            sid: Speaker ID for the target voice.
+            inputs: The inputs of the flow, at the mel frame rate.
         """
-        frames = feats.shape[1]
+        frames = inputs.content.shape[1]
         noise = torch.randn(1, flow.n_mels, frames, device=self.device)
         mel = torch.zeros_like(noise)
         weight = torch.zeros(1, 1, frames, device=self.device)
         start = 0
         while start < frames:
             stop = min(frames, start + FLOW_CHUNK)
-            mask = torch.ones(1, 1, stop - start, device=self.device)
             part = flow.sample(
-                feats[:, start:stop],
-                pitchf[:, start:stop],
-                energy[:, start:stop],
-                sid,
-                mask,
+                inputs.crop(start, stop),
                 steps=FLOW_STEPS,
                 method=FLOW_SAMPLER,
                 cfg_scale=CFG_SCALE,
                 content_guidance=CONTENT_GUIDANCE,
                 guidance_rescale=GUIDANCE_RESCALE,
                 noise=noise[..., start:stop],
-                breathiness=breathiness[:, start:stop],
-                tension=None if strain is None else strain[:, start:stop],
             )
             ramp = torch.ones(stop - start, device=self.device)
             fade = min(FLOW_OVERLAP, stop - start)
@@ -294,73 +385,27 @@ class FlowPipeline(Pipeline):
             )
 
         with torch.no_grad():
-            source = torch.from_numpy(audio).view(1, -1).to(self.device)
-            # extract features
-            feats = self.get_content(model, source)
-            feats0 = feats
-            if index:
-                feats = self._retrieve_speaker_embeddings(
-                    feats, index, big_npy, index_rate
-                ).float()
-            # feature upsampling
-            feats = upsample_content(feats[0], data["content_interpolation"])
-            feats0 = upsample_content(feats0[0], data["content_interpolation"])
-            p_len = min(audio.shape[0] // self.window, feats.shape[0])
-            feats, feats0 = feats[None, :p_len], feats0[None, :p_len]
-
-            source_pitchf, pitchf = self.get_pitch(
+            inputs = self.get_inputs(
+                model,
+                net_g,
                 audio,
-                p_len,
-                f0_method,
+                sid,
                 pitch,
+                f0_method,
+                index,
+                big_npy,
+                index_rate,
+                protect,
                 f0_autotune,
                 f0_autotune_strength,
                 proposed_pitch,
                 proposed_pitch_threshold,
             )
-            source_pitchf = torch.from_numpy(source_pitchf).view(1, -1).to(self.device)
-            pitchf = torch.from_numpy(pitchf).view(1, -1).to(self.device)
-
-            energy = smooth_curve(frame_energy(source, self.sample_rate, p_len))
-            breathiness = smooth_curve(
-                aperiodicity(source, self.sample_rate, source_pitchf, p_len)
-            )
-            strain = None
-            if net_g.flow.encoder.tension is not None:
-                strain = smooth_curve(
-                    tension(source, self.sample_rate, source_pitchf, p_len),
-                    TENSION_SMOOTH_SECONDS,
-                )
-
-            # everything above is at 100 frames per second, the mel has its own rate
-            frames = mel_frames(p_len, sample_rate, hop_length)
-            feats = to_mel_rate(feats, frames, sample_rate, hop_length)
-            feats0 = to_mel_rate(feats0, frames, sample_rate, hop_length)
-            pitchf = f0_to_mel_rate(pitchf, frames, sample_rate, hop_length)
-            energy = to_mel_rate(
-                energy.unsqueeze(-1), frames, sample_rate, hop_length
-            )[..., 0]
-            breathiness = to_mel_rate(
-                breathiness.unsqueeze(-1), frames, sample_rate, hop_length
-            )[..., 0]
-            if strain is not None:
-                strain = to_mel_rate(
-                    strain.unsqueeze(-1), frames, sample_rate, hop_length
-                )[..., 0]
-
-            # Pitch protection blending
-            if index and protect < 0.5:
-                pitchff = torch.where(pitchf > 0, 1.0, float(protect)).unsqueeze(-1)
-                feats = feats * pitchff + feats0 * (1 - pitchff)
-
-            sid = torch.tensor([sid], device=self.device).long()
-            mel = self.sample_mel(
-                net_g.flow, feats, pitchf, energy, breathiness, strain, sid
-            )
-            audio_opt = self.render(net_g.vocoder, mel, pitchf, hop_length) * restore
+            mel = self.sample_mel(net_g.flow, inputs)
+            audio_opt = self.render(net_g.vocoder, mel, inputs.f0, hop_length) * restore
 
             # clean up
-            del feats, feats0, mel, source
+            del inputs, mel
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 

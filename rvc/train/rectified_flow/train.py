@@ -189,6 +189,79 @@ def freeze_voice(net_flow):
         module.requires_grad_(False)
 
 
+def load_pretrain(pretrain, embedder_name):
+    """
+    Loads the weights of a pretrained flow model and the time scale it was
+    trained with, which is None when the file does not record its config.
+
+    Args:
+        pretrain (str): Path to the pre-trained flow model.
+        embedder_name (str): Name of the embedder the dataset was extracted with.
+    """
+    try:
+        pretrain_ckpt = torch.load(pretrain, map_location="cpu", weights_only=True)
+        pretrain_weights = (
+            pretrain_ckpt["ema"]["shadow"]
+            if pretrain_ckpt.get("ema")
+            else pretrain_ckpt["model"]
+        )
+    except Exception as e:
+        print(f"The pretrain model could not be loaded: {e}")
+        sys.exit(1)
+
+    pretrain_embedder = pretrain_ckpt.get("embedder_model")
+    if pretrain_embedder and pretrain_embedder.replace(
+        "-", "_"
+    ) != embedder_name.replace("-", "_"):
+        print(
+            f"The pretrain model was trained on {pretrain_embedder} features and this dataset was extracted with {embedder_name}."
+        )
+        sys.exit(1)
+
+    time_scale = None
+    pretrain_model = pretrain_ckpt.get("config", {}).get("flow", {}).get("model")
+    if pretrain_model is not None:
+        time_scale = float(
+            (pretrain_model.get("backbone_args") or {}).get("time_scale", 1000.0)
+        )
+    return pretrain_weights, time_scale
+
+
+def optimizer_step(loss, net_flow, optim, scaler, grad_clip):
+    """
+    Runs the backward pass, clips the gradient and steps the optimizer.
+    Returns the norm of the gradient.
+
+    Args:
+        loss (torch.Tensor): The loss to optimise.
+        net_flow (RectifiedFlow): The flow model.
+        optim (torch.optim.Optimizer): The optimizer of the flow model.
+        scaler (torch.amp.GradScaler): The gradient scaler for FP16 training.
+        grad_clip (float): Maximum norm of the gradient.
+    """
+    global skipped_steps
+
+    optim.zero_grad()
+    if train_dtype != torch.float16:
+        loss.backward()
+        grad_norm = torch.nn.utils.clip_grad_norm_(net_flow.parameters(), grad_clip)
+        optim.step()
+        return grad_norm
+
+    scaler.scale(loss).backward()
+    scaler.unscale_(optim)
+    grad_norm = torch.nn.utils.clip_grad_norm_(net_flow.parameters(), grad_clip)
+    scaler.step(optim)
+    scale = scaler.get_scale()
+    scaler.update()
+    if scaler.get_scale() < scale:
+        # non-finite gradients, the optimizer step was skipped
+        skipped_steps += 1
+    elif scaler.get_scale() > max_grad_scale:
+        scaler.update(max_grad_scale)
+    return grad_norm
+
+
 def main():
     """
     Main function to start the training process.
@@ -416,37 +489,14 @@ def run(
     backbone_args = model_config.setdefault("backbone_args", {})
 
     finetune = pretrain not in ("", "None")
-    pretrain_ckpt = None
+    pretrain_weights = None
     if finetune:
         if rank == 0:
             print(f"Loaded pretrained (Flow) '{pretrain}'")
-        try:
-            pretrain_ckpt = torch.load(pretrain, map_location="cpu", weights_only=True)
-            pretrain_weights = (
-                pretrain_ckpt["ema"]["shadow"]
-                if pretrain_ckpt.get("ema")
-                else pretrain_ckpt["model"]
-            )
-        except Exception as e:
-            print(f"The pretrain model could not be loaded: {e}")
-            sys.exit(1)
-
-        pretrain_embedder = pretrain_ckpt.get("embedder_model")
-        if pretrain_embedder and pretrain_embedder.replace(
-            "-", "_"
-        ) != embedder_name.replace("-", "_"):
-            print(
-                f"The pretrain model was trained on {pretrain_embedder} features and this dataset was extracted with {embedder_name}."
-            )
-            sys.exit(1)
-
+        pretrain_weights, time_scale = load_pretrain(pretrain, embedder_name)
         # The time scale is not in the weights, the model has to be built with it
-        pretrain_model = pretrain_ckpt.get("config", {}).get("flow", {}).get("model")
-        if pretrain_model is not None:
-            backbone_args["time_scale"] = float(
-                (pretrain_model.get("backbone_args") or {}).get("time_scale", 1000.0)
-            )
-        del pretrain_ckpt
+        if time_scale is not None:
+            backbone_args["time_scale"] = time_scale
 
     if rank == 0 and use_mean_flow and backbone_args.get("time_scale", 1000.0) > 10:
         print(
@@ -559,7 +609,8 @@ def run(
             print("No vocoder loaded, validation will only show the mel spectrogram.")
         reference = train_dataset.get_reference(embedder_name)
         if reference is not None:
-            reference = [tensor.to(device) for tensor in reference]
+            ref_mel, ref_inputs = reference
+            reference = (ref_mel.to(device), ref_inputs.to(device))
 
     hps = {
         "config": config,
@@ -617,39 +668,16 @@ def evaluate(hps, net_flow, ema, eval_loader, writer, device, use_amp):
     items = 0
     with ema.applied(net_flow):
         net_flow.eval()
-        for batch_idx, info in enumerate(eval_loader):
-            info = [tensor.to(device) for tensor in info]
-            (
-                mel,
-                content,
-                pitchf,
-                energy,
-                breathiness,
-                key_shift,
-                speed,
-                sid,
-                mask,
-                tension,
-            ) = info
-            mel = normalize_mel(mel, data_config) * mask
+        for batch_idx, (mel, inputs) in enumerate(eval_loader):
+            inputs = inputs.to(device)
+            mel = normalize_mel(mel.to(device), data_config) * inputs.mask
             generator = torch.Generator(device=device).manual_seed(batch_idx)
             noise = torch.randn(mel.shape, device=device, generator=generator)
             with torch.amp.autocast(
                 device_type="cuda", enabled=use_amp, dtype=train_dtype
             ):
                 losses, loss_aux = net_flow.validation_losses(
-                    mel,
-                    content,
-                    pitchf,
-                    energy,
-                    sid,
-                    mask,
-                    breathiness,
-                    key_shift,
-                    speed,
-                    noise,
-                    eval_fractions,
-                    tension,
+                    mel, inputs, noise, eval_fractions
                 )
             totals += losses.float() * mel.shape[0]
             if loss_aux is not None:
@@ -664,6 +692,80 @@ def evaluate(hps, net_flow, ema, eval_loader, writer, device, use_amp):
     if net_flow.aux is not None:
         scalar_dict["loss/val/aux_mel"] = aux_total / max(1, items)
     summarize(writer=writer, global_step=global_step, scalars=scalar_dict)
+
+
+def generate_validation(hps, net_flow, ema, reference, vocoder, writer, device):
+    """
+    Logs the mel and the audio of the reference clip sampled through the
+    averaged weights, and the one step audio of a Mean Flow model.
+
+    Args:
+        hps (dict): Hyperparameters.
+        net_flow (RectifiedFlow): The flow model.
+        ema (WeightEMA): Average of the flow weights.
+        reference (tuple): Mel and flow inputs of the reference clip.
+        vocoder (torch.nn.Module): The vocoder that renders the validation audio.
+        writer (SummaryWriter): The TensorBoard writer.
+        device (torch.device): The device of the model.
+    """
+    data_config = hps["config"]["data"]
+    ref_mel, inputs = reference
+    one_step_mel = None
+    with ema.applied(net_flow):
+        net_flow.eval()
+        gen_mel = net_flow.sample(inputs, steps=preview_steps)
+        if hps["mean_ratio"] > 0:
+            one_step_mel = net_flow.sample(inputs, steps=1, method="mean")
+        net_flow.train()
+
+    image_dict = {
+        "slice/mel_org": plot_spectrogram_to_numpy(ref_mel[0].data.cpu().numpy()),
+        "slice/mel_gen": plot_spectrogram_to_numpy(
+            denormalize_mel(gen_mel, data_config)[0].float().data.cpu().numpy()
+        ),
+    }
+    audio_dict = {}
+    if vocoder is not None:
+        with torch.no_grad():
+            o = vocoder(gen_mel.float(), inputs.f0)
+            audio_dict[f"gen/audio_{global_step:07d}"] = o[0, :, :]
+            if one_step_mel is not None:
+                o = vocoder(one_step_mel.float(), inputs.f0)
+                audio_dict[f"gen/audio_1_step_{global_step:07d}"] = o[0, :, :]
+    summarize(
+        writer=writer,
+        global_step=global_step,
+        images=image_dict,
+        audios=audio_dict,
+        audio_sample_rate=data_config["sample_rate"],
+    )
+
+
+def save_model(path, hps, ema, epoch):
+    """
+    Saves the averaged weights as a model for inference.
+
+    Args:
+        path (str): Path of the model file.
+        hps (dict): Hyperparameters.
+        ema (WeightEMA): Average of the flow weights.
+        epoch (int): Current epoch number.
+    """
+    torch.save(
+        {
+            "kind": "rectified_flow",
+            "config": hps["config"],
+            "model": ema.cpu_state_dict(),
+            "speaker_count": hps["n_speakers"],
+            "speakers_id": hps["n_speakers"],
+            "embedder_model": hps["embedder_name"],
+            "vocoder": hps["vocoder_path"],
+            "epoch": epoch,
+            "step": global_step,
+        },
+        path,
+    )
+    print(f"Saved model '{path}' (epoch {epoch} and step {global_step})")
 
 
 def train_and_evaluate(
@@ -695,7 +797,7 @@ def train_and_evaluate(
         custom_save_every_weights (bool): Whether to save the model weights at every saved epoch.
         custom_total_epoch (int): The total number of epochs for training.
         device (torch.device): The device to use for training.
-        reference (list): The clip the validation audio is generated from.
+        reference (tuple): Mel and flow inputs of the clip the validation audio is generated from.
         vocoder (torch.nn.Module): The vocoder that renders the validation audio.
         scaler (torch.amp.GradScaler): The gradient scaler for FP16 training.
     """
@@ -716,21 +818,10 @@ def train_and_evaluate(
 
     epoch_recorder = EpochRecorder()
     with tqdm(total=len(train_loader), leave=False) as pbar:
-        for batch_idx, info in enumerate(train_loader):
-            info = [tensor.to(device, non_blocking=True) for tensor in info]
-            (
-                mel,
-                content,
-                pitchf,
-                energy,
-                breathiness,
-                key_shift,
-                speed,
-                sid,
-                mask,
-                tension,
-            ) = info
-            mel = normalize_mel(mel, data_config) * mask
+        for batch_idx, (mel, inputs) in enumerate(train_loader):
+            inputs = inputs.to(device, non_blocking=True)
+            mel = mel.to(device, non_blocking=True)
+            mel = normalize_mel(mel, data_config) * inputs.mask
 
             lr = learning_rate(
                 hps["base_lr"],
@@ -753,16 +844,8 @@ def train_and_evaluate(
                 # Forward pass
                 loss_flow, loss_aux, loss_mean = net_flow_ddp(
                     mel,
-                    content,
-                    pitchf,
-                    energy,
-                    sid,
-                    mask,
+                    inputs,
                     speaker_dropout=hps["speaker_dropout"],
-                    breathiness=breathiness,
-                    key_shift=key_shift,
-                    speed=speed,
-                    tension=tension,
                     mean_ratio=hps["mean_ratio"],
                     tension_dropout=hps["tension_dropout"],
                     mean_bootstrap=mean_bootstrap,
@@ -771,34 +854,16 @@ def train_and_evaluate(
                 if loss_mean is not None:
                     loss_all = (1.0 - hps["mean_ratio"]) * loss_flow + hps[
                         "mean_ratio"
-                    ] * loss_mean[0]
+                    ] * loss_mean.objective
                     # the flow loss without the Mean Flow weighting
-                    loss_flow = loss_mean[1]
+                    loss_flow = loss_mean.flow
                 if loss_aux is not None:
                     loss_all = loss_all + hps["aux_weight"] * loss_aux
 
             # Backward and update
-            optim.zero_grad()
-            if train_dtype == torch.float16:
-                scaler.scale(loss_all).backward()
-                scaler.unscale_(optim)
-                grad_norm = torch.nn.utils.clip_grad_norm_(
-                    net_flow.parameters(), hps["grad_clip"]
-                )
-                scaler.step(optim)
-                scale = scaler.get_scale()
-                scaler.update()
-                if scaler.get_scale() < scale:
-                    # non-finite gradients, the optimizer step was skipped
-                    skipped_steps += 1
-                elif scaler.get_scale() > max_grad_scale:
-                    scaler.update(max_grad_scale)
-            else:
-                loss_all.backward()
-                grad_norm = torch.nn.utils.clip_grad_norm_(
-                    net_flow.parameters(), hps["grad_clip"]
-                )
-                optim.step()
+            grad_norm = optimizer_step(
+                loss_all, net_flow, optim, scaler, hps["grad_clip"]
+            )
             ema.update()
 
             global_step += 1
@@ -816,9 +881,9 @@ def train_and_evaluate(
                 if loss_aux is not None:
                     scalar_dict["loss/aux_mel"] = loss_aux
                 if loss_mean is not None:
-                    scalar_dict["loss/mean_flow"] = loss_mean[2]
+                    scalar_dict["loss/mean_flow"] = loss_mean.mean
                     # over 1 the Mean Flow target is feeding on itself
-                    scalar_dict["loss/mean_flow_bootstrap"] = loss_mean[3]
+                    scalar_dict["loss/mean_flow_bootstrap"] = loss_mean.bootstrap_ratio
                 summarize(
                     writer=writer,
                     global_step=global_step,
@@ -852,62 +917,8 @@ def train_and_evaluate(
         if epoch % save_every_epoch == 0:
             # Validation samples through the averaged weights
             if reference is not None:
-                ref_mel, content, pitchf, energy, breathiness, sid, tension = reference
-                mask = torch.ones(1, 1, pitchf.shape[1], device=device)
-                one_step_mel = None
-                with ema.applied(net_flow):
-                    net_flow.eval()
-                    gen_mel = net_flow.sample(
-                        content,
-                        pitchf,
-                        energy,
-                        sid,
-                        mask,
-                        steps=preview_steps,
-                        breathiness=breathiness,
-                        tension=tension,
-                    )
-                    if hps["mean_ratio"] > 0:
-                        one_step_mel = net_flow.sample(
-                            content,
-                            pitchf,
-                            energy,
-                            sid,
-                            mask,
-                            steps=1,
-                            method="mean",
-                            breathiness=breathiness,
-                            tension=tension,
-                        )
-                    net_flow.train()
-
-                image_dict = {
-                    "slice/mel_org": plot_spectrogram_to_numpy(
-                        ref_mel[0].data.cpu().numpy()
-                    ),
-                    "slice/mel_gen": plot_spectrogram_to_numpy(
-                        denormalize_mel(gen_mel, data_config)[0]
-                        .float()
-                        .data.cpu()
-                        .numpy()
-                    ),
-                }
-                audio_dict = {}
-                if vocoder is not None:
-                    with torch.no_grad():
-                        o = vocoder(gen_mel.float(), pitchf)
-                        audio_dict[f"gen/audio_{global_step:07d}"] = o[0, :, :]
-                        if one_step_mel is not None:
-                            o = vocoder(one_step_mel.float(), pitchf)
-                            audio_dict[f"gen/audio_1_step_{global_step:07d}"] = o[
-                                0, :, :
-                            ]
-                summarize(
-                    writer=writer,
-                    global_step=global_step,
-                    images=image_dict,
-                    audios=audio_dict,
-                    audio_sample_rate=data_config["sample_rate"],
+                generate_validation(
+                    hps, net_flow, ema, reference, vocoder, writer, device
                 )
 
             # Save checkpoint
@@ -946,21 +957,7 @@ def train_and_evaluate(
 
         for m in model_add:
             if not os.path.exists(m):
-                torch.save(
-                    {
-                        "kind": "rectified_flow",
-                        "config": hps["config"],
-                        "model": ema.cpu_state_dict(),
-                        "speaker_count": hps["n_speakers"],
-                        "speakers_id": hps["n_speakers"],
-                        "embedder_model": hps["embedder_name"],
-                        "vocoder": hps["vocoder_path"],
-                        "epoch": epoch,
-                        "step": global_step,
-                    },
-                    m,
-                )
-                print(f"Saved model '{m}' (epoch {epoch} and step {global_step})")
+                save_model(m, hps, ema, epoch)
 
         if done:
             # Clean-up process IDs from config.json
