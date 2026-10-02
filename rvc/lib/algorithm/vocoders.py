@@ -1,14 +1,7 @@
 import os
 
 import torch
-from torch import nn
 
-from rvc.lib.algorithm.generators.openvpi import (
-    ARCHITECTURE,
-    NSFHiFiGAN,
-    generator_state,
-    openvpi_spec,
-)
 from rvc.lib.algorithm.generators.pcph_bigvgan import PCPHBigVGANGenerator
 from rvc.lib.tools.pretrained_selector import rectified_flow_selector
 
@@ -46,25 +39,6 @@ PCPH_BIGVGAN_KEYS = (
 )
 
 
-class RawMelVocoder(nn.Module):
-    """
-    A vocoder trained on the raw log mel, fed the flow's normalised one.
-
-    Args:
-        generator (torch.nn.Module): The vocoder's generator.
-        data (dict): The `data` section of the rectified flow config.
-    """
-
-    def __init__(self, generator, data):
-        super().__init__()
-        self.generator = generator
-        self.mel_mean = float(data["mel_mean"])
-        self.mel_std = float(data["mel_std"])
-
-    def forward(self, mel, f0):
-        return self.generator(mel * self.mel_std + self.mel_mean, f0)
-
-
 def find_vocoder(reference):
     """
     Find the vocoder a flow model was trained with. A model trained on another
@@ -87,44 +61,32 @@ def find_vocoder(reference):
 
 def load_vocoder(path, data):
     """
-    Load a PCPH-BigVGAN export, an OpenVPI NSF-HiFiGAN checkpoint or an export
-    holding one, as a module that takes the flow's normalised mel and f0.
+    Load a PCPH-BigVGAN export as a module that takes the flow's normalised
+    mel and f0.
 
     Args:
         path (str): Path to the vocoder.
         data (dict): The `data` section of the rectified flow config.
     """
     checkpoint = torch.load(path, map_location="cpu", weights_only=True)
-    is_export = checkpoint.get("kind") == "rectified_vocoder"
-    if is_export and checkpoint.get("architecture") != ARCHITECTURE:
-        vocoder_data = checkpoint["config"]["data"]
-        model_config = checkpoint["config"]["vocoder"]["model"]
-        if model_config.get("source_type", "sine") != "pcph":
-            raise ValueError(f"{path} does not have a PCPH source.")
-        model = PCPHBigVGANGenerator(
-            sample_rate=vocoder_data["sample_rate"],
-            num_mels=vocoder_data["n_mels"],
-            **{k: model_config[k] for k in PCPH_BIGVGAN_KEYS if k in model_config},
-        )
-        model.load_state_dict(checkpoint["model"])
-        model.remove_weight_norm()
-    else:
-        if is_export:
-            hparams = checkpoint["config"]["vocoder"]["model"]
-            vocoder_data = checkpoint["config"]["data"]
-            weights = checkpoint["model"]
-        else:
-            state = generator_state(checkpoint)
-            if state is None:
-                raise ValueError(f"{path} is not a Rectified Flow vocoder.")
-            hparams, vocoder_data, weights = openvpi_spec(path, state)
-        generator = NSFHiFiGAN(**hparams)
-        generator.load_state_dict(weights)
-        model = RawMelVocoder(generator, data)
+    if checkpoint.get("kind") != "rectified_vocoder" or checkpoint.get("architecture"):
+        raise ValueError(f"{path} is not a PCPH-BigVGAN vocoder.")
+    vocoder_data = checkpoint["config"]["data"]
+    model_config = checkpoint["config"]["vocoder"]["model"]
+    if model_config.get("source_type", "sine") != "pcph":
+        raise ValueError(f"{path} does not have a PCPH source.")
 
     for key in MEL_KEYS:
         if key in vocoder_data and float(vocoder_data[key]) != float(data[key]):
             raise ValueError(
                 f"{path} renders another mel than the flow's: {key} ({vocoder_data[key]} vs {data[key]})."
             )
+
+    model = PCPHBigVGANGenerator(
+        sample_rate=vocoder_data["sample_rate"],
+        num_mels=vocoder_data["n_mels"],
+        **{k: model_config[k] for k in PCPH_BIGVGAN_KEYS if k in model_config},
+    )
+    model.load_state_dict(checkpoint["model"])
+    model.remove_weight_norm()
     return model.eval()
