@@ -554,45 +554,62 @@ def run_train_script(
     vocoder: str = "HiFi-GAN",
     checkpointing: bool = False,
     shutdown_check: bool = False,
+    mean_flow: bool = False,
 ):
-    if pretrained == True:
-        from rvc.lib.tools.pretrained_selector import pretrained_selector
-
-        if custom_pretrained == False:
-            pg, pd = pretrained_selector(str(vocoder), int(sample_rate))
-        else:
-            if g_pretrained_path is None or d_pretrained_path is None:
-                raise ValueError(
-                    "Please provide the path to the pretrained G and D models."
-                )
-            pg, pd = g_pretrained_path, d_pretrained_path
+    if vocoder == "Rectified Flow":
+        command = rectified_flow_train_command(
+            model_name,
+            save_every_epoch,
+            save_only_latest,
+            save_every_weights,
+            total_epoch,
+            batch_size,
+            gpu,
+            pretrained,
+            cleanup,
+            custom_pretrained,
+            g_pretrained_path,
+            mean_flow,
+        )
     else:
-        pg, pd = "", ""
+        if pretrained == True:
+            from rvc.lib.tools.pretrained_selector import pretrained_selector
 
-    train_script_path = os.path.join("rvc", "train", "train.py")
-    command = [
-        python,
-        train_script_path,
-        *map(
-            str,
-            [
-                model_name,
-                save_every_epoch,
-                total_epoch,
-                pg,
-                pd,
-                gpu,
-                batch_size,
-                sample_rate,
-                save_only_latest,
-                save_every_weights,
-                cache_data_in_gpu,
-                cleanup,
-                vocoder,
-                checkpointing,
-            ],
-        ),
-    ]
+            if custom_pretrained == False:
+                pg, pd = pretrained_selector(str(vocoder), int(sample_rate))
+            else:
+                if g_pretrained_path is None or d_pretrained_path is None:
+                    raise ValueError(
+                        "Please provide the path to the pretrained G and D models."
+                    )
+                pg, pd = g_pretrained_path, d_pretrained_path
+        else:
+            pg, pd = "", ""
+
+        train_script_path = os.path.join("rvc", "train", "train.py")
+        command = [
+            python,
+            train_script_path,
+            *map(
+                str,
+                [
+                    model_name,
+                    save_every_epoch,
+                    total_epoch,
+                    pg,
+                    pd,
+                    gpu,
+                    batch_size,
+                    sample_rate,
+                    save_only_latest,
+                    save_every_weights,
+                    cache_data_in_gpu,
+                    cleanup,
+                    vocoder,
+                    checkpointing,
+                ],
+            ),
+        ]
     result = subprocess.run(command)
     if result.returncode != 0:
         return f"Training failed for model {model_name}. Please check the console logs for more details."
@@ -618,6 +635,66 @@ def run_train_script(
         return f"Model {model_name} trained successfully. Shutdown scheduled at {shutdown_datetime}"
 
     return f"Model {model_name} trained successfully."
+
+
+def rectified_flow_train_command(
+    model_name: str,
+    save_every_epoch: int,
+    save_only_latest: bool,
+    save_every_weights: bool,
+    total_epoch: int,
+    batch_size: int,
+    gpu: int,
+    pretrained: bool,
+    cleanup: bool,
+    custom_pretrained: bool = False,
+    flow_pretrained_path: str = None,
+    mean_flow: bool = False,
+):
+    from rvc.lib.tools.pretrained_selector import rectified_flow_selector
+
+    try:
+        with open(
+            os.path.join(logs_path, model_name, "model_info.json"),
+            "r",
+            encoding="utf-8",
+        ) as f:
+            embedder_model = json.load(f)["embedder_model"]
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        embedder_model = "contentvec"
+
+    pf, vocoder_path = rectified_flow_selector(embedder_model)
+    if pretrained == True:
+        if custom_pretrained == True:
+            if not flow_pretrained_path:
+                raise ValueError(
+                    "Please provide the path to the pretrained flow model."
+                )
+            pf = flow_pretrained_path
+    else:
+        pf = ""
+
+    train_script_path = os.path.join("rvc", "train", "rectified_flow", "train.py")
+    return [
+        python,
+        train_script_path,
+        *map(
+            str,
+            [
+                model_name,
+                save_every_epoch,
+                total_epoch,
+                pf,
+                vocoder_path,
+                gpu,
+                batch_size,
+                save_only_latest,
+                save_every_weights,
+                cleanup,
+                mean_flow,
+            ],
+        ),
+    ]
 
 
 # Index
@@ -1004,7 +1081,7 @@ def tts(**kwargs):
 @click.option(
     "--sample-rate",
     required=True,
-    type=click.Choice(["32000", "40000", "48000"]),
+    type=click.Choice(["32000", "40000", "44100", "48000"]),
     help="Target sampling rate.",
 )
 @click.option(
@@ -1145,9 +1222,15 @@ def extract(**kwargs):
 @click.option("--model-name", required=True, help="Name of the model to train.")
 @click.option(
     "--vocoder",
-    type=click.Choice(["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"]),
+    type=click.Choice(["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN", "Rectified Flow"]),
     default="HiFi-GAN",
     help="Vocoder to use.",
+)
+@click.option(
+    "--mean-flow",
+    is_flag=True,
+    default=False,
+    help="Train the Rectified Flow with Mean Flow for few-step sampling.",
 )
 @click.option(
     "--checkpointing",
@@ -1182,7 +1265,7 @@ def extract(**kwargs):
 @click.option(
     "--sample-rate",
     required=True,
-    type=click.Choice(["32000", "40000", "48000"]),
+    type=click.Choice(["32000", "40000", "44100", "48000"]),
     help="Training sampling rate.",
 )
 @click.option(
@@ -1244,6 +1327,7 @@ def train(**kwargs):
         d_pretrained_path=kwargs.get("d_pretrained_path"),
         vocoder=kwargs["vocoder"],
         checkpointing=kwargs["checkpointing"],
+        mean_flow=kwargs["mean_flow"],
     )
     click.echo(result)
 
