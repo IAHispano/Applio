@@ -154,30 +154,6 @@ def timestep_embedding(t: torch.Tensor, channels: int, scale: float = 1000.0):
     return torch.cat((angles.sin(), angles.cos()), dim=-1)
 
 
-class ContentBottleneck(nn.Module):
-    """
-    Low-rank bottleneck on the content features, which drops the timbre they carry.
-
-    Args:
-        channels (int): Number of content channels.
-        width (int): Width of the bottleneck.
-        noise (float, optional): Noise added to the code in training. Defaults to 0.0.
-    """
-
-    def __init__(self, channels: int, width: int, noise: float = 0.0):
-        super().__init__()
-        self.down = nn.Linear(channels, width)
-        self.norm = nn.LayerNorm(width)
-        self.up = nn.Linear(width, channels)
-        self.noise = float(noise)
-
-    def forward(self, features: torch.Tensor):
-        code = self.norm(self.down(features))
-        if self.training and self.noise > 0:
-            code = code + torch.randn_like(code) * self.noise
-        return self.up(code)
-
-
 class HarmonicPrior(nn.Module):
     """
     Where the harmonics of f0 fall in the mel, 0 where unvoiced.
@@ -281,12 +257,10 @@ class ConditionEncoder(nn.Module):
         speaker_count (int): Number of speakers.
         speaker_channels (int): Size of the speaker embedding.
         layers (int): Number of ConvNeXt blocks.
-        content_bottleneck (int, optional): Width of the content bottleneck, 0 for none. Defaults to 0.
         pitch_fourier (int, optional): Sine/cosine pairs of the pitch. Defaults to 0.
         harmonic_prior (HarmonicPrior, optional): Harmonic prior of the pitch. Defaults to None.
         breathiness (bool, optional): Whether to take the breathiness curve. Defaults to False.
         key_shift (bool, optional): Whether to take the formant shift. Defaults to False.
-        content_bottleneck_noise (float, optional): Noise of the content bottleneck. Defaults to 0.0.
         speed (bool, optional): Whether to take the time stretch. Defaults to False.
         tension (bool, optional): Whether to take the tension curve. Defaults to False.
     """
@@ -298,24 +272,15 @@ class ConditionEncoder(nn.Module):
         speaker_count: int,
         speaker_channels: int,
         layers: int,
-        content_bottleneck: int = 0,
         pitch_fourier: int = 0,
         harmonic_prior: Optional[HarmonicPrior] = None,
         breathiness: bool = False,
         key_shift: bool = False,
-        content_bottleneck_noise: float = 0.0,
         speed: bool = False,
         tension: bool = False,
     ):
         super().__init__()
         self.speaker_count = int(speaker_count)
-        self.bottleneck = (
-            ContentBottleneck(
-                content_channels, content_bottleneck, content_bottleneck_noise
-            )
-            if content_bottleneck > 0
-            else None
-        )
         self.content = nn.Linear(content_channels, hidden_channels)
         self.pitch_fourier = int(pitch_fourier)
         self.pitch = nn.Conv1d(
@@ -364,8 +329,6 @@ class ConditionEncoder(nn.Module):
             speed,
             tension,
         ) = inputs
-        if self.bottleneck is not None:
-            content = self.bottleneck(content)
         x = self.content(content).transpose(1, 2)
         x = x + self.pitch(pitch_features(f0, self.pitch_fourier))
         if self.harmonic_prior is not None:
@@ -688,8 +651,6 @@ class RectifiedFlow(nn.Module):
         content_channels (int, optional): Number of content channels. Defaults to 768.
         hidden_channels (int, optional): Number of conditioning channels. Defaults to 384.
         encoder_layers (int, optional): Number of blocks of the condition encoder. Defaults to 4.
-        content_bottleneck (int, optional): Width of the content bottleneck, 0 for none. Defaults to 0.
-        content_bottleneck_noise (float, optional): Noise of the content bottleneck. Defaults to 0.0.
         speaker_channels (int, optional): Size of the speaker embedding. Defaults to 256.
         pitch_fourier (int, optional): Sine/cosine pairs of the pitch. Defaults to 0.
         harmonic_prior (dict, optional): `sample_rate`, `n_fft`, `fmin` and `fmax` of the mel, None for no prior.
@@ -713,8 +674,6 @@ class RectifiedFlow(nn.Module):
         content_channels: int = 768,
         hidden_channels: int = 384,
         encoder_layers: int = 4,
-        content_bottleneck: int = 0,
-        content_bottleneck_noise: float = 0.0,
         speaker_channels: int = 256,
         pitch_fourier: int = 0,
         harmonic_prior: Optional[dict] = None,
@@ -748,12 +707,10 @@ class RectifiedFlow(nn.Module):
             speaker_count,
             speaker_channels,
             encoder_layers,
-            content_bottleneck,
             pitch_fourier,
             HarmonicPrior(n_mels=n_mels, **harmonic_prior) if harmonic_prior else None,
             breathiness,
             key_shift,
-            content_bottleneck_noise,
             speed,
             tension,
         )

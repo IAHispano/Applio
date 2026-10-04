@@ -39,8 +39,6 @@
       "content_channels": 768,
       "hidden_channels": 384,
       "encoder_layers": 4,
-      "content_bottleneck": 0,
-      "content_bottleneck_noise": 0.0,
       "speaker_channels": 256,
       "pitch_fourier": 6,
       "harmonic_prior": true,
