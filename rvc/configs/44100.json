@@ -41,8 +41,8 @@
       "content_channels": 768,
       "hidden_channels": 384,
       "encoder_layers": 4,
-      "content_bottleneck": 64,
-      "content_bottleneck_noise": 0.1,
+      "content_bottleneck": 0,
+      "content_bottleneck_noise": 0.0,
       "speaker_channels": 256,
       "pitch_fourier": 6,
       "harmonic_prior": true,
@@ -51,9 +51,10 @@
       "speed": true,
       "tension": true,
       "dual_timestep": true,
+      "time_sampling": "uniform",
       "backbone": "lynxnet2",
       "backbone_args": {"channels": 1024, "layers": 6, "expansion": 1, "kernel_size": 31, "adaln": true},
-      "aux_decoder": {"channels": 512, "layers": 6, "dropout": 0.1},
+      "aux_decoder": {"channels": 512, "layers": 6, "dropout": 0.1, "speaker": true},
       "t_start": 0.4,
       "aux_grad": 0.1
     }

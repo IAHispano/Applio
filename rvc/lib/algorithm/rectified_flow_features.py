@@ -27,7 +27,8 @@ APERIODICITY_FLOOR_DB = -30.0
 
 class LogMel(nn.Module):
     """
-    Log mel spectrogram at one frame per hop.
+    Log mel spectrogram at one frame per hop, the same mel as OpenVPI's
+    vocoders take.
 
     Args:
         sample_rate (int): Sampling rate of the audio.

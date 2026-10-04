@@ -62,11 +62,15 @@ mean_flow = _strtobool(sys.argv[11])
 
 # Sampling steps of the validation audio
 preview_steps = 16
+# Held out clips of different speakers rendered beside the reference clip
+preview_clips = 3
 # Where in the trained time range the validation loss is taken
 eval_fractions = (0.1, 0.3, 0.5, 0.7, 0.9)
 # FP16: the weight gradients overflow with the scale around 2^20, so the
 # GradScaler is not left to grow until a step is skipped
 max_grad_scale = 2.0**16
+# Steps skipped in a row over a non-finite gradient before the training stops
+max_skipped_in_a_row = 10
 
 current_dir = os.getcwd()
 
@@ -126,6 +130,8 @@ except Exception as e:
 
 global_step = 0
 skipped_steps = 0
+skipped_in_a_row = 0
+logged_real_mel = False
 
 import logging
 
@@ -179,12 +185,7 @@ def freeze_voice(net_flow):
     Args:
         net_flow (RectifiedFlow): The flow model.
     """
-    modules = [
-        net_flow.backbone.time_mlp,
-        net_flow.encoder.speaker_proj,
-        net_flow.backbone.voice,
-    ]
-    modules += [layer.modulation for layer in net_flow.backbone.layers]
+    modules = [net_flow.backbone.time_mlp, *net_flow.speaker_layers()]
     for module in filter(None, modules):
         module.requires_grad_(False)
 
@@ -230,7 +231,8 @@ def load_pretrain(pretrain, embedder_name):
 def optimizer_step(loss, net_flow, optim, scaler, grad_clip):
     """
     Runs the backward pass, clips the gradient and steps the optimizer.
-    Returns the norm of the gradient.
+    Returns the norm of the gradient and whether the step was skipped over a
+    non-finite gradient.
 
     Args:
         loss (torch.Tensor): The loss to optimise.
@@ -239,14 +241,15 @@ def optimizer_step(loss, net_flow, optim, scaler, grad_clip):
         scaler (torch.amp.GradScaler): The gradient scaler for FP16 training.
         grad_clip (float): Maximum norm of the gradient.
     """
-    global skipped_steps
-
     optim.zero_grad()
     if train_dtype != torch.float16:
         loss.backward()
         grad_norm = torch.nn.utils.clip_grad_norm_(net_flow.parameters(), grad_clip)
+        # a non-finite gradient would reach every weight
+        if not torch.isfinite(grad_norm):
+            return grad_norm, True
         optim.step()
-        return grad_norm
+        return grad_norm, False
 
     scaler.scale(loss).backward()
     scaler.unscale_(optim)
@@ -254,12 +257,29 @@ def optimizer_step(loss, net_flow, optim, scaler, grad_clip):
     scaler.step(optim)
     scale = scaler.get_scale()
     scaler.update()
-    if scaler.get_scale() < scale:
-        # non-finite gradients, the optimizer step was skipped
-        skipped_steps += 1
-    elif scaler.get_scale() > max_grad_scale:
+    skipped = scaler.get_scale() < scale
+    if not skipped and scaler.get_scale() > max_grad_scale:
         scaler.update(max_grad_scale)
-    return grad_norm
+    return grad_norm, skipped
+
+
+def nonfinite_names(mel, inputs, net_flow):
+    """
+    Names what holds a non-finite value among a batch and the model weights.
+
+    Args:
+        mel (torch.Tensor): Mel of the batch.
+        inputs (Conditioning): The inputs of the flow.
+        net_flow (RectifiedFlow): The flow model.
+    """
+    names = [
+        name
+        for name, value in (("mel", mel), *zip(inputs._fields, inputs))
+        if value is not None and not torch.isfinite(value).all()
+    ]
+    if any(not torch.isfinite(param).all() for param in net_flow.parameters()):
+        names.append("model weights")
+    return ", ".join(names) or "none, the loss or a gradient overflowed"
 
 
 def main():
@@ -595,9 +615,9 @@ def run(
     if n_gpus > 1 and device.type == "cuda":
         net_flow_ddp = DDP(net_flow, device_ids=[device_id])
 
-    # collect the vocoder and the reference audio for tensorboard evaluation
+    # collect the vocoder and the validation clips for tensorboard evaluation
     vocoder = None
-    reference = None
+    references = []
     if rank == 0:
         if os.path.isfile(vocoder_path):
             try:
@@ -607,10 +627,18 @@ def run(
                 print(f"Could not load the vocoder: {e}")
         if vocoder is None:
             print("No vocoder loaded, validation will only show the mel spectrogram.")
+        # name, mel, flow inputs and whether the clip was held out
         reference = train_dataset.get_reference(embedder_name)
         if reference is not None:
-            ref_mel, ref_inputs = reference
-            reference = (ref_mel.to(device), ref_inputs.to(device))
+            references.append(("", *reference, False))
+        if eval_loader is not None:
+            holdout_clips = eval_loader.dataset.get_speaker_clips(preview_clips)
+            for index, clip in enumerate(holdout_clips):
+                references.append((f"holdout_{index}_", *clip, True))
+        references = [
+            (name, ref_mel.to(device), ref_inputs.to(device), held_out)
+            for name, ref_mel, ref_inputs, held_out in references
+        ]
 
     hps = {
         "config": config,
@@ -642,7 +670,7 @@ def run(
             custom_save_every_weights,
             custom_total_epoch,
             device,
-            reference,
+            references,
             vocoder,
             scaler,
         )
@@ -694,44 +722,60 @@ def evaluate(hps, net_flow, ema, eval_loader, writer, device, use_amp):
     summarize(writer=writer, global_step=global_step, scalars=scalar_dict)
 
 
-def generate_validation(hps, net_flow, ema, reference, vocoder, writer, device):
+def generate_validation(hps, net_flow, ema, references, vocoder, writer, device):
     """
-    Logs the mel and the audio of the reference clip sampled through the
-    averaged weights, and the one step audio of a Mean Flow model.
+    Logs the mel and the audio of the validation clips sampled through the
+    averaged weights. Each clip is also rendered from the mel of the aux
+    decoder alone and, when it was held out, from the flow started at its real
+    mel on the same noise, which tells the error of the aux decoder from the
+    error of the flow. The real mel through the vocoder is logged once.
 
     Args:
         hps (dict): Hyperparameters.
         net_flow (RectifiedFlow): The flow model.
         ema (WeightEMA): Average of the flow weights.
-        reference (tuple): Mel and flow inputs of the reference clip.
+        references (list): Name, mel, flow inputs and whether it was held out, for each validation clip.
         vocoder (torch.nn.Module): The vocoder that renders the validation audio.
         writer (SummaryWriter): The TensorBoard writer.
         device (torch.device): The device of the model.
     """
-    data_config = hps["config"]["data"]
-    ref_mel, inputs = reference
-    one_step_mel = None
-    with ema.applied(net_flow):
-        net_flow.eval()
-        gen_mel = net_flow.sample(inputs, steps=preview_steps)
-        if hps["mean_ratio"] > 0:
-            one_step_mel = net_flow.sample(inputs, steps=1, method="mean")
-        net_flow.train()
+    global logged_real_mel
 
-    image_dict = {
-        "slice/mel_org": plot_spectrogram_to_numpy(ref_mel[0].data.cpu().numpy()),
-        "slice/mel_gen": plot_spectrogram_to_numpy(
-            denormalize_mel(gen_mel, data_config)[0].float().data.cpu().numpy()
-        ),
-    }
+    data_config = hps["config"]["data"]
+    image_dict = {}
     audio_dict = {}
-    if vocoder is not None:
-        with torch.no_grad():
-            o = vocoder(gen_mel.float(), inputs.f0)
-            audio_dict[f"gen/audio_{global_step:07d}"] = o[0, :, :]
-            if one_step_mel is not None:
-                o = vocoder(one_step_mel.float(), inputs.f0)
-                audio_dict[f"gen/audio_1_step_{global_step:07d}"] = o[0, :, :]
+    with ema.applied(net_flow), torch.no_grad():
+        net_flow.eval()
+        for name, ref_mel, inputs, held_out in references:
+            real_mel = normalize_mel(ref_mel, data_config)
+            noise = torch.randn_like(real_mel)
+            mels = {"": net_flow.sample(inputs, steps=preview_steps, noise=noise)}
+            if net_flow.aux is not None:
+                mels["_aux"] = net_flow.aux_mel(inputs)
+            if net_flow.t_start > 0 and held_out:
+                mels["_from_real_mel"] = net_flow.sample(
+                    inputs, steps=preview_steps, noise=noise, start_mel=real_mel
+                )
+            if hps["mean_ratio"] > 0:
+                mels["_1_step"] = net_flow.sample(
+                    inputs, steps=1, method="mean", noise=noise
+                )
+            if not logged_real_mel:
+                mels["_real_mel"] = real_mel
+
+            image_dict[f"slice/{name}mel_org"] = plot_spectrogram_to_numpy(
+                ref_mel[0].data.cpu().numpy()
+            )
+            image_dict[f"slice/{name}mel_gen"] = plot_spectrogram_to_numpy(
+                denormalize_mel(mels[""], data_config)[0].float().data.cpu().numpy()
+            )
+            if vocoder is not None:
+                for kind, mel in mels.items():
+                    o = vocoder(mel.float(), inputs.f0)
+                    audio_dict[f"gen/{name}audio{kind}_{global_step:07d}"] = o[0, :, :]
+        net_flow.train()
+    logged_real_mel = True
+
     summarize(
         writer=writer,
         global_step=global_step,
@@ -779,7 +823,7 @@ def train_and_evaluate(
     custom_save_every_weights,
     custom_total_epoch,
     device,
-    reference,
+    references,
     vocoder,
     scaler,
 ):
@@ -797,11 +841,11 @@ def train_and_evaluate(
         custom_save_every_weights (bool): Whether to save the model weights at every saved epoch.
         custom_total_epoch (int): The total number of epochs for training.
         device (torch.device): The device to use for training.
-        reference (tuple): Mel and flow inputs of the clip the validation audio is generated from.
+        references (list): Name, mel, flow inputs and whether it was held out, for each clip the validation audio is generated from.
         vocoder (torch.nn.Module): The vocoder that renders the validation audio.
         scaler (torch.amp.GradScaler): The gradient scaler for FP16 training.
     """
-    global global_step, skipped_steps
+    global global_step, skipped_steps, skipped_in_a_row
 
     net_flow, net_flow_ddp, ema = nets
     train_loader, eval_loader = loaders
@@ -861,10 +905,24 @@ def train_and_evaluate(
                     loss_all = loss_all + hps["aux_weight"] * loss_aux
 
             # Backward and update
-            grad_norm = optimizer_step(
+            grad_norm, skipped = optimizer_step(
                 loss_all, net_flow, optim, scaler, hps["grad_clip"]
             )
-            ema.update()
+            if skipped:
+                skipped_steps += 1
+                skipped_in_a_row += 1
+                if rank == 0:
+                    print(
+                        f"Step {global_step + 1} skipped over a non-finite gradient. Non-finite values: {nonfinite_names(mel, inputs, net_flow)}."
+                    )
+                if skipped_in_a_row >= max_skipped_in_a_row:
+                    print(
+                        f"{skipped_in_a_row} steps in a row had a non-finite gradient, stopping the training."
+                    )
+                    os._exit(1)
+            else:
+                skipped_in_a_row = 0
+                ema.update()
 
             global_step += 1
 
@@ -874,10 +932,10 @@ def train_and_evaluate(
                     "loss/total": loss_all,
                     "learning_rate": lr,
                     "grad/norm": grad_norm,
+                    "grad/skipped_steps": skipped_steps,
                 }
                 if train_dtype == torch.float16:
                     scalar_dict["amp/scale"] = scaler.get_scale()
-                    scalar_dict["amp/skipped_steps"] = skipped_steps
                 if loss_aux is not None:
                     scalar_dict["loss/aux_mel"] = loss_aux
                 if loss_mean is not None:
@@ -914,11 +972,19 @@ def train_and_evaluate(
         done = epoch >= custom_total_epoch
         model_add = []
 
+        if (epoch % save_every_epoch == 0 or done) and any(
+            not torch.isfinite(param).all() for param in net_flow.parameters()
+        ):
+            print(
+                "The model has non-finite weights. Nothing was saved, so the last checkpoint stands."
+            )
+            os._exit(1)
+
         if epoch % save_every_epoch == 0:
             # Validation samples through the averaged weights
-            if reference is not None:
+            if references:
                 generate_validation(
-                    hps, net_flow, ema, reference, vocoder, writer, device
+                    hps, net_flow, ema, references, vocoder, writer, device
                 )
 
             # Save checkpoint

@@ -24,23 +24,67 @@ from rvc.lib.algorithm.rectified_flow_features import (
 from rvc.train.utils import load_wav_to_torch
 
 
+def slice_number(path):
+    """
+    Get the recording and the slice number of a preprocessed slice, named
+    `{sid}_{idx0}_{idx1}`, or None for any other name.
+
+    Args:
+        path (str): Path of the audio file.
+    """
+    parts = os.path.splitext(os.path.basename(path))[0].split("_")
+    if len(parts) != 3 or not parts[2].isdigit():
+        return None
+    return "_".join(parts[:2]), int(parts[2])
+
+
 def split_holdout(entries, count, seed=1234):
     """
     Split the filelist into the training clips and the clips held out for the
-    validation loss, which are never silent files.
+    validation loss, which are never silent files. The clips are drawn from
+    the speakers in turn, and the slices that overlap a held out one are left
+    out of both lists.
 
     Args:
         entries (list): Rows of the filelist.
-        count (int): Number of clips to hold out, at most a tenth of the dataset.
+        count (int): Number of clips to hold out: at least one per speaker, at most a tenth of the dataset.
         seed (int, optional): Seed of the draw. Defaults to 1234.
     """
     candidates = [
         i for i, entry in enumerate(entries) if "mute" not in os.path.basename(entry[0])
     ]
-    held = set(
-        random.Random(seed).sample(candidates, min(count, len(candidates) // 10))
-    )
-    train = [entry for i, entry in enumerate(entries) if i not in held]
+    by_speaker = {}
+    for index in sorted(candidates, key=lambda i: entries[i][0]):
+        by_speaker.setdefault(entries[index][4], []).append(index)
+    rng = random.Random(seed)
+    pools = [by_speaker[sid] for sid in sorted(by_speaker)]
+    for pool in pools:
+        rng.shuffle(pool)
+    rng.shuffle(pools)
+
+    target = 0
+    if count > 0:
+        target = min(max(count, len(pools)), len(candidates) // 10)
+    held = set()
+    while len(held) < target:
+        for pool in pools:
+            if pool and len(held) < target:
+                held.add(pool.pop())
+
+    # Preprocess cuts a recording into slices that overlap the next one
+    slices = {slice_number(entry[0]): i for i, entry in enumerate(entries)}
+    overlapping = set()
+    for index in held:
+        key = slice_number(entries[index][0])
+        if key is not None:
+            recording, number = key
+            for step in (-1, 1):
+                overlapping.add(slices.get((recording, number + step), index))
+    train = [
+        entry
+        for i, entry in enumerate(entries)
+        if i not in held and i not in overlapping
+    ]
     return train, [entries[i] for i in sorted(held)]
 
 
@@ -215,19 +259,59 @@ class FlowAudioLoader(torch.utils.data.Dataset):
             )
 
         print("No custom reference found, using a default audio sample for validation")
-        for audiopath, content_path, _, pitchf_path, sid in sorted(self.entries):
-            if "mute" in os.path.basename(audiopath):
-                continue
-            audio = self.get_audio(audiopath)
-            if audio.shape[0] < 2 * self.sample_rate:
-                continue
-            return self.get_reference_item(
-                audio[: int(max_seconds * self.sample_rate)],
-                self.get_content(content_path),
-                torch.FloatTensor(np.load(pitchf_path, allow_pickle=False)),
-                int(sid),
-            )
+        for index in sorted(range(len(self.entries)), key=lambda i: self.entries[i]):
+            clip = self.get_clip(index, max_seconds)
+            if clip is not None:
+                return clip
         return None
+
+    def get_clip(self, index, max_seconds=10.0):
+        """
+        Get the mel and the flow inputs of a dataset clip, or None for a silent
+        file or a clip under two seconds.
+
+        Args:
+            index (int): Index of the clip.
+            max_seconds (float, optional): Length the clip is cut to. Defaults to 10.0.
+        """
+        audiopath, content_path, _, pitchf_path, sid = self.entries[index]
+        if "mute" in os.path.basename(audiopath):
+            return None
+        audio = self.get_audio(audiopath)
+        if audio.shape[0] < 2 * self.sample_rate:
+            return None
+        return self.get_reference_item(
+            audio[: int(max_seconds * self.sample_rate)],
+            self.get_content(content_path),
+            torch.FloatTensor(np.load(pitchf_path, allow_pickle=False)),
+            int(sid),
+        )
+
+    def get_speaker_clips(self, count, max_seconds=10.0):
+        """
+        Get the mel and the flow inputs of up to `count` clips, of speakers
+        spread over the dataset. A speaker gives a second clip only once every
+        one of them has given one.
+
+        Args:
+            count (int): Number of clips.
+            max_seconds (float, optional): Length a clip is cut to. Defaults to 10.0.
+        """
+        by_speaker = {}
+        for index in sorted(range(len(self.entries)), key=lambda i: self.entries[i]):
+            by_speaker.setdefault(int(self.entries[index][4]), []).append(index)
+        speakers = sorted(by_speaker)
+        speakers = speakers[:: max(1, len(speakers) // max(1, count))]
+        clips = []
+        for turn in range(max(map(len, by_speaker.values()), default=0)):
+            for speaker in speakers:
+                if len(clips) == count:
+                    return clips
+                if turn < len(by_speaker[speaker]):
+                    clip = self.get_clip(by_speaker[speaker][turn], max_seconds)
+                    if clip is not None:
+                        clips.append(clip)
+        return clips
 
     def get_reference_item(self, audio, content, pitchf, sid):
         frames = min(
