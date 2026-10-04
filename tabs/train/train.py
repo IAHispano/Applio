@@ -762,15 +762,6 @@ def train_tab():
                         value=False,
                         interactive=True,
                     )
-                    mean_flow = gr.Checkbox(
-                        label=i18n("Mean Flow"),
-                        info=i18n(
-                            "Also trains the Rectified Flow model to predict the mean velocity of a step, which allows sampling in one or two steps. It cannot be changed once the training has started."
-                        ),
-                        value=False,
-                        interactive=True,
-                        visible=False,
-                    )
             with gr.Row():
                 custom_pretrained = gr.Checkbox(
                     label=i18n("Custom Pretrained"),
@@ -989,7 +980,6 @@ def train_tab():
                 # Rectified Flow takes a single pretrained, the flow model
                 return (
                     sampling_rate_update,
-                    gr.update(visible=rectified_flow),
                     gr.update(
                         label=(
                             i18n("Custom Pretrained Flow")
@@ -1024,7 +1014,6 @@ def train_tab():
                 inputs=[vocoder],
                 outputs=[
                     sampling_rate,
-                    mean_flow,
                     g_pretrained_path,
                     d_pretrained_path,
                 ],
@@ -1110,7 +1099,6 @@ def train_tab():
                     vocoder,
                     checkpointing,
                     shutdown_check,
-                    mean_flow,
                 ],
                 outputs=[train_output_info],
             )

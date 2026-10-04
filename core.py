@@ -554,7 +554,6 @@ def run_train_script(
     vocoder: str = "HiFi-GAN",
     checkpointing: bool = False,
     shutdown_check: bool = False,
-    mean_flow: bool = False,
 ):
     if vocoder == "Rectified Flow":
         command = rectified_flow_train_command(
@@ -569,7 +568,6 @@ def run_train_script(
             cleanup,
             custom_pretrained,
             g_pretrained_path,
-            mean_flow,
         )
     else:
         if pretrained == True:
@@ -649,7 +647,6 @@ def rectified_flow_train_command(
     cleanup: bool,
     custom_pretrained: bool = False,
     flow_pretrained_path: str = None,
-    mean_flow: bool = False,
 ):
     from rvc.lib.tools.pretrained_selector import rectified_flow_selector
 
@@ -691,7 +688,6 @@ def rectified_flow_train_command(
                 save_only_latest,
                 save_every_weights,
                 cleanup,
-                mean_flow,
             ],
         ),
     ]
@@ -1227,12 +1223,6 @@ def extract(**kwargs):
     help="Vocoder to use.",
 )
 @click.option(
-    "--mean-flow",
-    is_flag=True,
-    default=False,
-    help="Train the Rectified Flow with Mean Flow for few-step sampling.",
-)
-@click.option(
     "--checkpointing",
     is_flag=True,
     default=False,
@@ -1327,7 +1317,6 @@ def train(**kwargs):
         d_pretrained_path=kwargs.get("d_pretrained_path"),
         vocoder=kwargs["vocoder"],
         checkpointing=kwargs["checkpointing"],
-        mean_flow=kwargs["mean_flow"],
     )
     click.echo(result)
 

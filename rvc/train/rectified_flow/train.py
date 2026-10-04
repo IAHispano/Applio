@@ -58,7 +58,6 @@ def _strtobool(val):
 save_only_latest = _strtobool(sys.argv[8])
 save_every_weights = _strtobool(sys.argv[9])
 cleanup = _strtobool(sys.argv[10])
-mean_flow = _strtobool(sys.argv[11])
 
 # Sampling steps of the validation audio
 preview_steps = 16
@@ -495,17 +494,6 @@ def run(
     if checkpoint_path:
         checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
 
-    # A resumed training keeps the mean flow choice it was started with
-    use_mean_flow = mean_flow
-    if checkpoint is not None:
-        use_mean_flow = any(
-            key.startswith("backbone.span_mlp.") for key in checkpoint["model"]
-        )
-        if use_mean_flow != mean_flow and rank == 0:
-            print(
-                f"This model was started {'with' if use_mean_flow else 'without'} Mean Flow and resumes that way. Enable Fresh Training to change it."
-            )
-    model_config["mean_flow"] = use_mean_flow
     backbone_args = model_config.setdefault("backbone_args", {})
 
     finetune = pretrain not in ("", "None")
@@ -517,11 +505,6 @@ def run(
         # The time scale is not in the weights, the model has to be built with it
         if time_scale is not None:
             backbone_args["time_scale"] = time_scale
-
-    if rank == 0 and use_mean_flow and backbone_args.get("time_scale", 1000.0) > 10:
-        print(
-            "Mean Flow with a time scale over 10 has diverged. Set flow.model.backbone_args.time_scale to 1 in the config.json of the model for a training from scratch."
-        )
 
     # Initialize model and optimizer
     net_flow = build_flow(config, n_speakers).to(device)
@@ -540,12 +523,10 @@ def run(
         base_lr = flow_config["finetune_learning_rate"]
         ema_decay = flow_config["finetune_ema_decay"]
         warmup = 0
-        mean_warmup = 0
     else:
         base_lr = flow_config["learning_rate"]
         ema_decay = flow_config["ema_decay"]
         warmup = flow_config["warmup_steps"]
-        mean_warmup = flow_config["mean_flow_warmup_steps"]
 
     if flow_config["optimizer"] == "muon":
         if rank == 0:
@@ -650,8 +631,6 @@ def run(
         "speaker_dropout": speaker_dropout,
         "tension_dropout": tension_dropout,
         "aux_weight": flow_config["aux_mel_weight"],
-        "mean_ratio": flow_config["mean_flow_ratio"] if use_mean_flow else 0.0,
-        "mean_warmup": mean_warmup,
         "eval_interval": flow_config["eval_interval"],
         "n_speakers": n_speakers,
         "embedder_name": embedder_name,
@@ -755,10 +734,6 @@ def generate_validation(hps, net_flow, ema, references, vocoder, writer, device)
             if net_flow.t_start > 0 and held_out:
                 mels["_from_real_mel"] = net_flow.sample(
                     inputs, steps=preview_steps, noise=noise, start_mel=real_mel
-                )
-            if hps["mean_ratio"] > 0:
-                mels["_1_step"] = net_flow.sample(
-                    inputs, steps=1, method="mean", noise=noise
                 )
             if not logged_real_mel:
                 mels["_real_mel"] = real_mel
@@ -877,30 +852,17 @@ def train_and_evaluate(
             for param_group in optim.param_groups:
                 param_group["lr"] = lr
 
-            # The bootstrapped target comes in once there is a field to differentiate
-            mean_bootstrap = 1.0
-            if hps["mean_warmup"]:
-                mean_bootstrap = min(1.0, global_step / hps["mean_warmup"])
-
             with torch.amp.autocast(
                 device_type="cuda", enabled=use_amp, dtype=train_dtype
             ):
                 # Forward pass
-                loss_flow, loss_aux, loss_mean = net_flow_ddp(
+                loss_flow, loss_aux = net_flow_ddp(
                     mel,
                     inputs,
                     speaker_dropout=hps["speaker_dropout"],
-                    mean_ratio=hps["mean_ratio"],
                     tension_dropout=hps["tension_dropout"],
-                    mean_bootstrap=mean_bootstrap,
                 )
                 loss_all = loss_flow
-                if loss_mean is not None:
-                    loss_all = (1.0 - hps["mean_ratio"]) * loss_flow + hps[
-                        "mean_ratio"
-                    ] * loss_mean.objective
-                    # the flow loss without the Mean Flow weighting
-                    loss_flow = loss_mean.flow
                 if loss_aux is not None:
                     loss_all = loss_all + hps["aux_weight"] * loss_aux
 
@@ -938,10 +900,6 @@ def train_and_evaluate(
                     scalar_dict["amp/scale"] = scaler.get_scale()
                 if loss_aux is not None:
                     scalar_dict["loss/aux_mel"] = loss_aux
-                if loss_mean is not None:
-                    scalar_dict["loss/mean_flow"] = loss_mean.mean
-                    # over 1 the Mean Flow target is feeding on itself
-                    scalar_dict["loss/mean_flow_bootstrap"] = loss_mean.bootstrap_ratio
                 summarize(
                     writer=writer,
                     global_step=global_step,

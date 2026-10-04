@@ -9,7 +9,7 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from rvc.infer.pipeline import AudioProcessor, Pipeline
-from rvc.lib.algorithm.rectified_flow import Conditioning, build_flow
+from rvc.lib.algorithm.rectified_flow import Conditioning, build_flow, match_inputs
 from rvc.lib.algorithm.rectified_flow_features import (
     TENSION_SMOOTH_SECONDS,
     aperiodicity,
@@ -59,7 +59,7 @@ class FlowSynthesizer(torch.nn.Module):
         super().__init__()
         self.data = cpt["config"]["data"]
         self.flow = build_flow(cpt["config"], cpt["speaker_count"])
-        self.flow.load_state_dict(cpt["model"])
+        self.flow.load_state_dict(match_inputs(cpt["model"], self.flow))
 
         vocoder_path = find_vocoder(cpt.get("vocoder", ""))
         if not vocoder_path:

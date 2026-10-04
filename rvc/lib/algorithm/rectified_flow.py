@@ -1,5 +1,4 @@
 import math
-from contextlib import nullcontext
 from dataclasses import dataclass
 from typing import Callable, NamedTuple, Optional
 
@@ -11,8 +10,7 @@ from torch.nn import functional as F
 # Centre and spread of log f0, so the normalised pitch sits roughly in [-2, 2].
 LOG_F0_CENTER = math.log(200.0)
 LOG_F0_SCALE = 0.7
-# "mean" needs a model trained with mean flow.
-SAMPLERS = ("euler", "heun", "mean")
+SAMPLERS = ("euler", "heun")
 SCHEDULES = ("uniform", "sway", "logit-normal")
 RESCALE_MODES = ("global", "frame")
 # How training draws its times: logit-normal hardly trains the ends of the
@@ -21,7 +19,7 @@ TIME_SAMPLINGS = ("uniform", "logit-normal")
 # Share of the frames that get the second time under dual timestep.
 DUAL_TIMESTEP_SHARE = 0.25
 # Inputs that start at zero, so a checkpoint from before them loads unchanged.
-ZERO_INPUTS = ("encoder.tension.", "backbone.span_mlp.")
+ZERO_INPUTS = ("encoder.tension.",)
 
 
 class Conditioning(NamedTuple):
@@ -92,34 +90,6 @@ class Conditioning(NamedTuple):
             breathiness=cut(self.breathiness),
             tension=cut(self.tension),
         )
-
-
-class MeanFlowLosses(NamedTuple):
-    """
-    Losses of the share of a batch that trains the mean velocity. Only
-    `objective` is optimised, the others are detached.
-
-    Args:
-        objective (torch.Tensor): Mean flow loss with the adaptive weight.
-        flow (torch.Tensor): Flow loss of the rest of the batch, without the weight.
-        mean (torch.Tensor): Mean flow loss without the weight.
-        bootstrap_ratio (torch.Tensor): Size of the bootstrapped part of the target against the velocity.
-    """
-
-    objective: torch.Tensor
-    flow: torch.Tensor
-    mean: torch.Tensor
-    bootstrap_ratio: torch.Tensor
-
-
-def adaptive_weight(error: torch.Tensor):
-    """
-    MeanFlow's per-item loss weight, 1 / (error + c).
-
-    Args:
-        error (torch.Tensor): Loss per item, shape (batch,).
-    """
-    return (error.detach() + 1e-3).reciprocal()
 
 
 def time_grid(schedule: str, steps: int, start: float, device):
@@ -439,16 +409,15 @@ class _ATanGLU(torch.autograd.Function):
         return grad * atan_gate, grad * decay_out
 
 
-def atan_glu(x: torch.Tensor, fused: bool = True):
+def atan_glu(x: torch.Tensor):
     """
     ATanGLU activation.
 
     Args:
         x (torch.Tensor): Input, split in two along the last dimension.
-        fused (bool, optional): Use the memory-saving function, which has no forward-mode derivative. Defaults to True.
     """
     out, gate = x.chunk(2, dim=-1)
-    if fused and torch.is_grad_enabled():
+    if torch.is_grad_enabled():
         return _ATanGLU.apply(out, gate)
     return out * torch.atan(gate)
 
@@ -484,7 +453,7 @@ class LYNXNet2Block(nn.Module):
             nn.init.zeros_(self.modulation.weight)
             nn.init.zeros_(self.modulation.bias)
 
-    def forward(self, x, mask, embedding=None, fused=True):
+    def forward(self, x, mask, embedding=None):
         y = self.norm(x)
         gate = None
         if self.modulation is not None:
@@ -492,7 +461,7 @@ class LYNXNet2Block(nn.Module):
             # Not `1 + scale`: BF16 rounds small modulations to nothing.
             y = y + y * scale + shift
         y = self.depthwise((y * mask).transpose(1, 2)).transpose(1, 2)
-        y = self.down(atan_glu(self.mid(atan_glu(self.up(y), fused)), fused))
+        y = self.down(atan_glu(self.mid(atan_glu(self.up(y)))))
         if gate is not None:
             y = y + gate * y
         return (x + y) * mask
@@ -511,7 +480,6 @@ class LYNXNet2Backbone(nn.Module):
         expansion (float, optional): Expansion of the blocks. Defaults to 1.
         kernel_size (int, optional): Kernel size of the blocks. Defaults to 31.
         adaln (bool, optional): Modulate every block by time and speaker. Defaults to False.
-        span (bool, optional): Add MeanFlow's second time input. Defaults to False.
         time_scale (float, optional): Multiplier of the flow time before its sinusoids. Defaults to 1000.0.
     """
 
@@ -524,7 +492,6 @@ class LYNXNet2Backbone(nn.Module):
         expansion=1,
         kernel_size=31,
         adaln=False,
-        span=False,
         time_scale=1000.0,
     ):
         super().__init__()
@@ -537,15 +504,6 @@ class LYNXNet2Backbone(nn.Module):
             nn.GELU(),
             nn.Linear(channels * 4, channels),
         )
-        self.span_mlp = None
-        if span:
-            # No biases, so a zero span adds exactly nothing.
-            self.span_mlp = nn.Sequential(
-                nn.Linear(channels, channels * 4, bias=False),
-                nn.GELU(),
-                nn.Linear(channels * 4, channels, bias=False),
-            )
-            nn.init.zeros_(self.span_mlp[-1].weight)
         self.layers = nn.ModuleList(
             [
                 LYNXNet2Block(channels, expansion, kernel_size, adaln)
@@ -561,7 +519,7 @@ class LYNXNet2Backbone(nn.Module):
         nn.init.zeros_(self.output.weight)
         nn.init.zeros_(self.output.bias)
 
-    def forward(self, x, t, cond, mask, voice=None, span=None):
+    def forward(self, x, t, cond, mask, voice=None):
         """
         Args:
             x (torch.Tensor): Noisy mel, shape (batch, n_mels, frames).
@@ -569,23 +527,11 @@ class LYNXNet2Backbone(nn.Module):
             cond (torch.Tensor): Conditioning, shape (batch, cond_channels, frames).
             mask (torch.Tensor): Frame mask, shape (batch, 1, frames).
             voice (torch.Tensor, optional): Speaker embedding, shape (batch, cond_channels).
-            span (torch.Tensor, optional): Length of the step whose mean velocity is wanted, shape (batch,).
         """
         time = self.time_mlp(
             timestep_embedding(t.reshape(-1), self.channels, self.time_scale)
         )
         time = time.view(t.shape[0], -1, self.channels)
-        if span is not None:
-            features = timestep_embedding(
-                span.reshape(-1), self.channels, self.time_scale
-            )
-            half = self.channels // 2
-            features = torch.cat(
-                (features[:, :half], 1.0 - features[:, half:]), dim=-1
-            )
-            time = time + self.span_mlp(features).view(
-                span.shape[0], -1, self.channels
-            )
         frame_mask = mask.transpose(1, 2)
         # Full precision in: at late t the leftover noise is under BF16's step.
         with torch.autocast(x.device.type, enabled=False):
@@ -596,7 +542,7 @@ class LYNXNet2Backbone(nn.Module):
         if self.voice is not None:
             embedding = time + self.voice(voice)[:, None, :]
         for layer in self.layers:
-            h = layer(h, frame_mask, embedding, fused=span is None)
+            h = layer(h, frame_mask, embedding)
         h = self.norm(h)
         return (self.output(h) * frame_mask).transpose(1, 2)
 
@@ -757,7 +703,6 @@ class RectifiedFlow(nn.Module):
         aux_grad (float, optional): Scale of the aux decoder's gradient into the encoder and the speaker table. Defaults to 0.1.
         tension (bool, optional): Whether to take the tension curve. Defaults to False.
         dual_timestep (bool, optional): Train a share of the frames at a second time. Defaults to False.
-        mean_flow (bool, optional): Also learn the mean velocity over a step (MeanFlow). Defaults to False.
         time_sampling (str, optional): One of TIME_SAMPLINGS. Defaults to "logit-normal".
     """
 
@@ -783,7 +728,6 @@ class RectifiedFlow(nn.Module):
         aux_grad: float = 0.1,
         tension: bool = False,
         dual_timestep: bool = False,
-        mean_flow: bool = False,
         time_sampling: str = "logit-normal",
     ):
         super().__init__()
@@ -814,17 +758,13 @@ class RectifiedFlow(nn.Module):
             tension,
         )
         self.backbone = LYNXNet2Backbone(
-            n_mels, hidden_channels, span=bool(mean_flow), **(backbone_args or {})
+            n_mels, hidden_channels, **(backbone_args or {})
         )
         self.aux = (
             AuxDecoder(hidden_channels, n_mels, **aux_decoder) if aux_decoder else None
         )
         # Time and speaker paths stay on AdamW, where gradient clipping bounds the step.
-        conditioning = [
-            self.backbone.time_mlp,
-            self.backbone.span_mlp,
-            *self.speaker_layers(),
-        ]
+        conditioning = [self.backbone.time_mlp, *self.speaker_layers()]
         for module in filter(None, conditioning):
             for child in module.modules():
                 child.use_adamw = True
@@ -881,50 +821,6 @@ class RectifiedFlow(nn.Module):
         error = (self.aux(cond, mask, voice).float() - mel.float()).abs() * mask
         return error.sum() / (mask.sum() * self.n_mels).clamp_min(1.0)
 
-    def mean_velocity(self, x, t, span, velocity, cond, mask, voice):
-        """
-        The mean velocity over `span` from `t`, and its derivative along the
-        path `velocity` with the end of the step held.
-        """
-
-        device_type = x.device.type
-        # The time derivative goes past FP16's range, so it is taken in FP32.
-        fp16 = (
-            torch.is_autocast_enabled(device_type)
-            and torch.get_autocast_dtype(device_type) == torch.float16
-        )
-        if fp16:
-            cond, voice = cond.float(), voice.float()
-
-        def field(x, t, span):
-            return self.backbone(x, t, cond, mask, voice, span)
-
-        tangents = (velocity, torch.ones_like(t), -torch.ones_like(span))
-        with torch.autocast(device_type, enabled=False) if fp16 else nullcontext():
-            mean, derivative = torch.func.jvp(field, (x, t, span), tangents)
-        return mean, derivative.detach()
-
-    def _mean_error(self, mel, cond, voice, mask, noise, bootstrap=1.0):
-        first, second = (self._times(mel.shape[0], mel.device) for _ in range(2))
-        t, span = torch.minimum(first, second), (first - second).abs()
-        x_t = (1.0 - t[:, None, None]) * noise + t[:, None, None] * mel
-        velocity = mel - noise
-        mean, derivative = self.mean_velocity(
-            x_t, t, span, velocity, cond, mask, voice
-        )
-        # The mean over [t, t + span] is the velocity at t plus span times its
-        # own derivative in t, which the network's derivative stands in for.
-        correction = span[:, None, None] * derivative.float() * mask
-        count = (mask.sum((1, 2)) * self.n_mels).clamp_min(1.0)
-        size = (correction.square().sum((1, 2)) / count).sqrt()
-        velocity_size = ((velocity.square() * mask).sum((1, 2)) / count).sqrt()
-        ratio = size / velocity_size.clamp_min(1e-8)
-        # Past the velocity's size the target is feeding on itself, and is held.
-        correction = correction * (1.0 / ratio.clamp_min(1.0))[:, None, None]
-        target = velocity + bootstrap * correction
-        error = (mean.float() - target).square() * mask
-        return error.sum((1, 2)) / count, ratio
-
     def _train_times(self, batch, frames, device):
         # A time per item; under dual timestep a share of the frames of each
         # item gets a second one.
@@ -935,32 +831,21 @@ class RectifiedFlow(nn.Module):
         swap = torch.rand(batch, frames, device=device) < DUAL_TIMESTEP_SHARE
         return torch.where(swap, other[:, None], t[:, None])
 
-    @staticmethod
-    def _pooled(error, frames, weighted=False):
-        # Loss per item averaged over the frames of the batch.
-        weight = adaptive_weight(error) if weighted else 1.0
-        return (weight * error * frames).sum() / frames.sum().clamp_min(1.0)
-
     def forward(
         self,
         mel,
         inputs: Conditioning,
         speaker_dropout=0.0,
-        mean_ratio=0.0,
         tension_dropout=0.0,
-        mean_bootstrap=1.0,
     ):
         """
-        Returns the flow-matching loss, the aux decoder's L1 (None without one)
-        and the MeanFlowLosses (None when off).
+        Returns the flow-matching loss and the aux decoder's L1 (None without one).
 
         Args:
             mel (torch.Tensor): Normalised mel, shape (batch, n_mels, frames).
             inputs (Conditioning): The inputs of the flow.
             speaker_dropout (float, optional): Share of the items trained on the null speaker.
-            mean_ratio (float, optional): Share of the batch that trains the mean velocity.
             tension_dropout (float, optional): Share of the items trained with a flat tension.
-            mean_bootstrap (float, optional): Scale of the bootstrapped part of the mean flow target.
         """
         speaker = self._drop_speakers(inputs.speaker, speaker_dropout)
         tension = inputs.tension
@@ -975,38 +860,11 @@ class RectifiedFlow(nn.Module):
         voice = self.encoder.voice(speaker)
         noise = torch.randn_like(mel)
 
-        # The head of the batch trains the mean velocity, the rest the flow.
-        batch = mel.shape[0]
-        mean_items = 0
-        if self.backbone.span_mlp is not None:
-            mean_items = min(batch - 1, int(round(mean_ratio * batch)))
-        head, rest = slice(0, mean_items), slice(mean_items, None)
-
-        t = self._train_times(batch - mean_items, mel.shape[-1], mel.device)
-        error = self._flow_error(
-            mel[rest], cond[rest], voice[rest], mask[rest], t, noise[rest]
-        )
-        frames = mask[rest].sum((1, 2))
-        flow = self._pooled(error, frames)
-        mean = None
-        if mean_items:
-            mean_error, bootstrap_ratio = self._mean_error(
-                mel[head],
-                cond[head],
-                voice[head],
-                mask[head],
-                noise[head],
-                mean_bootstrap,
-            )
-            mean_frames = mask[head].sum((1, 2))
-            mean = MeanFlowLosses(
-                objective=self._pooled(mean_error, mean_frames, True),
-                flow=flow.detach(),
-                mean=self._pooled(mean_error, mean_frames).detach(),
-                bootstrap_ratio=bootstrap_ratio.mean(),
-            )
-            flow = self._pooled(error, frames, True)
-        return flow, self._aux_loss(mel, cond, voice, mask), mean
+        t = self._train_times(mel.shape[0], mel.shape[-1], mel.device)
+        error = self._flow_error(mel, cond, voice, mask, t, noise)
+        frames = mask.sum((1, 2))
+        flow = (error * frames).sum() / frames.sum().clamp_min(1.0)
+        return flow, self._aux_loss(mel, cond, voice, mask)
 
     @torch.no_grad()
     def validation_losses(self, mel, inputs: Conditioning, noise, fractions):
@@ -1106,8 +964,6 @@ class RectifiedFlow(nn.Module):
         """
         if method not in SAMPLERS:
             raise ValueError(f"method must be one of {SAMPLERS}, not {method!r}.")
-        if method == "mean" and self.backbone.span_mlp is None:
-            raise ValueError("The mean sampler needs a model trained with mean flow.")
         if rescale_mode not in RESCALE_MODES:
             raise ValueError(
                 f"rescale_mode must be one of {RESCALE_MODES}, not {rescale_mode!r}."
@@ -1138,12 +994,10 @@ class RectifiedFlow(nn.Module):
         cond = self.encoder(stacked)
         voice = self.encoder.voice(stacked.speaker)
 
-        def velocity(x, t, span=None):
+        def velocity(x, t):
             if count == 1 or not guidance.active(float(t[0])):
-                return self.backbone(x, t, cond[:batch], mask, voice[:batch], span)
-            passes = self.backbone(
-                repeat(x), repeat(t), cond, stacked.mask, voice, repeat(span)
-            )
+                return self.backbone(x, t, cond[:batch], mask, voice[:batch])
+            passes = self.backbone(repeat(x), repeat(t), cond, stacked.mask, voice)
             return guidance.combine(passes.chunk(count), mask)
 
         if noise is None:
@@ -1169,7 +1023,7 @@ class RectifiedFlow(nn.Module):
                 now = back
             t = torch.full((batch,), now, device=x.device, dtype=times.dtype)
             dt = times[index + 1] - now
-            v = velocity(x, t, dt.expand(batch) if method == "mean" else None)
+            v = velocity(x, t)
             if method == "heun":
                 v_next = velocity(x + dt * v, times[index + 1].expand(batch))
                 v = 0.5 * (v + v_next)
@@ -1202,8 +1056,8 @@ def resize_speakers(state_dict: dict, speaker_count: int):
 def match_inputs(state_dict: dict, model: RectifiedFlow):
     """
     Fit a pretrain's weights to the optional inputs of `model`: the ones it
-    lacks keep the model's zero start, and a span input the model does not
-    have is dropped.
+    lacks keep the model's zero start, and the span input of a model trained
+    with Mean Flow is dropped, which leaves its plain flow.
 
     Args:
         state_dict (dict): Weights of a flow model.
@@ -1213,7 +1067,7 @@ def match_inputs(state_dict: dict, model: RectifiedFlow):
     state_dict = {
         key: value
         for key, value in state_dict.items()
-        if key in own or not key.startswith("backbone.span_mlp.")
+        if not key.startswith("backbone.span_mlp.")
     }
     for key, value in own.items():
         if key not in state_dict and key.startswith(ZERO_INPUTS):
@@ -1230,6 +1084,8 @@ def build_flow(config: dict, speaker_count: int):
         speaker_count (int): Number of speakers.
     """
     model = dict(config["flow"]["model"])
+    # named by the config of a model trained with Mean Flow
+    model.pop("mean_flow", None)
     data = config["data"]
     if model.pop("harmonic_prior", False):
         model["harmonic_prior"] = dict(

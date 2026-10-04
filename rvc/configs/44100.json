@@ -32,8 +32,6 @@
     "time_stretch_range": [0.5, 2.0],
     "time_stretch_prob": 0.43,
     "aux_mel_weight": 0.2,
-    "mean_flow_ratio": 0.25,
-    "mean_flow_warmup_steps": 10000,
     "eval_interval": 1000,
     "holdout_clips": 32,
     "num_workers": 8,
