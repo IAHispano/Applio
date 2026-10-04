@@ -161,6 +161,7 @@ class FlowPipeline(Pipeline):
         f0_autotune_strength,
         proposed_pitch,
         proposed_pitch_threshold,
+        audio_full=None,
     ):
         """
         Extracts the inputs of the flow from the audio, at the mel frame rate.
@@ -180,6 +181,7 @@ class FlowPipeline(Pipeline):
             f0_autotune_strength: Strength of the autotune.
             proposed_pitch: whether to apply proposed pitch adjustment
             proposed_pitch_threshold: target frequency, 155.0 for male, 255.0 for female
+            audio_full: The input audio at the sampling rate of the model, which its loudness, breathiness and tension are measured from.
         """
         data = net_g.data
         sample_rate, hop_length = data["sample_rate"], data["hop_length"]
@@ -211,14 +213,21 @@ class FlowPipeline(Pipeline):
         source_pitchf = torch.from_numpy(source_pitchf).view(1, -1).to(self.device)
         pitchf = torch.from_numpy(pitchf).view(1, -1).to(self.device)
 
-        energy = smooth_curve(frame_energy(source, self.sample_rate, p_len))
+        # The curves are measured as in training, which reads them from the
+        # audio at the sampling rate of the model: at 16 kHz the loudness of a
+        # sibilant has lost what it carries above 8 kHz
+        curves, curves_sr = source, self.sample_rate
+        if audio_full is not None:
+            curves = torch.from_numpy(audio_full).view(1, -1).to(self.device)
+            curves_sr = sample_rate
+        energy = smooth_curve(frame_energy(curves, curves_sr, p_len))
         breathiness = smooth_curve(
-            aperiodicity(source, self.sample_rate, source_pitchf, p_len)
+            aperiodicity(curves, curves_sr, source_pitchf, p_len)
         )
         strain = None
         if net_g.flow.encoder.tension is not None:
             strain = smooth_curve(
-                tension(source, self.sample_rate, source_pitchf, p_len),
+                tension(curves, curves_sr, source_pitchf, p_len),
                 TENSION_SMOOTH_SECONDS,
             )
 
@@ -337,6 +346,7 @@ class FlowPipeline(Pipeline):
         f0_autotune_strength,
         proposed_pitch,
         proposed_pitch_threshold,
+        audio_full=None,
     ):
         """
         The main pipeline function for performing voice conversion.
@@ -358,6 +368,7 @@ class FlowPipeline(Pipeline):
             f0_autotune_strength: Strength of the autotune.
             proposed_pitch: whether to apply proposed pitch adjustment
             proposed_pitch_threshold: target frequency, 155.0 for male, 255.0 for female
+            audio_full: The input audio at the sampling rate of the model, None to measure its curves at 16 kHz.
         """
         if file_index != "" and os.path.exists(file_index) and index_rate > 0:
             try:
@@ -378,6 +389,8 @@ class FlowPipeline(Pipeline):
         gain = 0.95 / peak if peak > 0 else 1.0
         restore = 1.0 / max(gain, 1.0)
         audio = (audio * gain).astype(np.float32)
+        if audio_full is not None:
+            audio_full = (audio_full * gain).astype(np.float32)
 
         if audio.shape[0] < EMBEDDER_FIELD + self.window:
             return np.zeros(
@@ -400,6 +413,7 @@ class FlowPipeline(Pipeline):
                 f0_autotune_strength,
                 proposed_pitch,
                 proposed_pitch_threshold,
+                audio_full,
             )
             mel = self.sample_mel(net_g.flow, inputs)
             audio_opt = self.render(net_g.vocoder, mel, inputs.f0, hop_length) * restore

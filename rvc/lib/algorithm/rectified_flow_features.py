@@ -17,7 +17,7 @@ ENERGY_FLOOR_DB = -70.0
 
 # Three periods of an 80 Hz note, so its harmonics are resolved.
 HARMONIC_WINDOW_SECONDS = 0.04
-# The band a 16 kHz inference input has.
+# The measured band, what a 16 kHz input has.
 HARMONIC_MIN_HZ = 50.0
 HARMONIC_MAX_HZ = 8000.0
 # Spread of the band around each harmonic counted as periodic.
