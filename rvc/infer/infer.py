@@ -268,7 +268,14 @@ class VoiceConverter:
         # of the input at its own sampling rate, as its training does: the audio
         # is loaded at that rate and the 16 kHz copy is resampled from it
         audio_full = None
+        flow_options = {}
         if isinstance(self.vc, FlowPipeline):
+            self.net_g.set_vocoder(kwargs.get("flow_vocoder", ""))
+            flow_options = {
+                name: kwargs[f"flow_{name}"]
+                for name in ("steps", "cfg_scale", "content_guidance")
+                if f"flow_{name}" in kwargs
+            }
             flow_sr = self.net_g.data["sample_rate"]
             audio_full = load_audio_infer(audio_input_path, flow_sr, **kwargs)
             audio = librosa.resample(
@@ -322,7 +329,7 @@ class VoiceConverter:
 
         converted_chunks = []
         for i, c in enumerate(chunks):
-            flow_kwargs = {}
+            flow_kwargs = dict(flow_options)
             if chunks_full is not None:
                 flow_kwargs["audio_full"] = chunks_full[i]
             audio_opt = self.vc.pipeline(

@@ -61,12 +61,26 @@ class FlowSynthesizer(torch.nn.Module):
         self.flow = build_flow(cpt["config"], cpt["speaker_count"])
         self.flow.load_state_dict(match_inputs(cpt["model"], self.flow))
 
-        vocoder_path = find_vocoder(cpt.get("vocoder", ""))
-        if not vocoder_path:
+        self.default_vocoder = find_vocoder(cpt.get("vocoder", ""))
+        if not self.default_vocoder:
             raise FileNotFoundError(
                 "No vocoder found for the Rectified Flow model. Place one in rvc/models/pretraineds/rectified-flow."
             )
-        self.vocoder = load_vocoder(vocoder_path, self.data)
+        self.vocoder_path = self.default_vocoder
+        self.vocoder = load_vocoder(self.vocoder_path, self.data)
+
+    def set_vocoder(self, path=""):
+        """
+        Switches the vocoder that renders the mel spectrogram.
+
+        Args:
+            path (str): Path to the vocoder, empty for the one the model was trained with.
+        """
+        path = path or self.default_vocoder
+        if path != self.vocoder_path:
+            device = next(self.flow.parameters()).device
+            self.vocoder = load_vocoder(path, self.data).to(device).float()
+            self.vocoder_path = path
 
 
 class FlowPipeline(Pipeline):
@@ -256,13 +270,16 @@ class FlowPipeline(Pipeline):
             tension=strain,
         )
 
-    def sample_mel(self, flow, inputs):
+    def sample_mel(self, flow, inputs, steps, cfg_scale, content_guidance):
         """
         Samples the normalised mel spectrogram in overlapping passes, crossfaded.
 
         Args:
             flow: The flow model.
             inputs: The inputs of the flow, at the mel frame rate.
+            steps: Number of sampling steps.
+            cfg_scale: Guidance scale towards the speaker.
+            content_guidance: Guidance scale towards the content.
         """
         frames = inputs.content.shape[1]
         noise = torch.randn(1, flow.n_mels, frames, device=self.device)
@@ -273,10 +290,10 @@ class FlowPipeline(Pipeline):
             stop = min(frames, start + FLOW_CHUNK)
             part = flow.sample(
                 inputs.crop(start, stop),
-                steps=FLOW_STEPS,
+                steps=steps,
                 method=FLOW_SAMPLER,
-                cfg_scale=CFG_SCALE,
-                content_guidance=CONTENT_GUIDANCE,
+                cfg_scale=cfg_scale,
+                content_guidance=content_guidance,
                 guidance_rescale=GUIDANCE_RESCALE,
                 noise=noise[..., start:stop],
             )
@@ -347,6 +364,9 @@ class FlowPipeline(Pipeline):
         proposed_pitch,
         proposed_pitch_threshold,
         audio_full=None,
+        steps=FLOW_STEPS,
+        cfg_scale=CFG_SCALE,
+        content_guidance=CONTENT_GUIDANCE,
     ):
         """
         The main pipeline function for performing voice conversion.
@@ -369,6 +389,9 @@ class FlowPipeline(Pipeline):
             proposed_pitch: whether to apply proposed pitch adjustment
             proposed_pitch_threshold: target frequency, 155.0 for male, 255.0 for female
             audio_full: The input audio at the sampling rate of the model, None to measure its curves at 16 kHz.
+            steps: Number of sampling steps.
+            cfg_scale: Guidance scale towards the speaker.
+            content_guidance: Guidance scale towards the content.
         """
         if file_index != "" and os.path.exists(file_index) and index_rate > 0:
             try:
@@ -415,7 +438,9 @@ class FlowPipeline(Pipeline):
                 proposed_pitch_threshold,
                 audio_full,
             )
-            mel = self.sample_mel(net_g.flow, inputs)
+            mel = self.sample_mel(
+                net_g.flow, inputs, int(steps), cfg_scale, content_guidance
+            )
             audio_opt = self.render(net_g.vocoder, mel, inputs.f0, hop_length) * restore
 
             # clean up

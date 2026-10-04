@@ -33,6 +33,7 @@ os.makedirs(custom_embedder_root, exist_ok=True)
 
 custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
 model_root_relative = os.path.relpath(model_root, now_dir)
+flow_vocoder_root = os.path.join("rvc", "models", "pretraineds", "rectified-flow")
 audio_root_relative = os.path.relpath(audio_root, now_dir)
 
 sup_audioext = {
@@ -524,6 +525,58 @@ def update_filter_visibility(_):
 
 
 # Inference tab
+def rectified_flow_settings():
+    """Vocoder and sampling settings of the Rectified Flow models, in the order the infer scripts take them."""
+    vocoders = (
+        sorted(
+            os.path.join(flow_vocoder_root, name)
+            for name in os.listdir(flow_vocoder_root)
+            if name.endswith(".ckpt") or "_vocoder" in name
+        )
+        if os.path.isdir(flow_vocoder_root)
+        else []
+    )
+    with gr.Accordion(i18n("Rectified Flow"), open=False):
+        vocoder = gr.Dropdown(
+            label=i18n("Vocoder"),
+            info=i18n(
+                "Vocoder that renders the audio of a Rectified Flow model."
+            ),
+            choices=[(os.path.basename(path), path) for path in vocoders],
+            value=vocoders[0] if vocoders else None,
+            interactive=True,
+        )
+        with gr.Row():
+            steps = gr.Slider(
+                minimum=1,
+                maximum=64,
+                step=1,
+                label=i18n("Steps"),
+                info=i18n("Sampling steps. More is slower and more detailed."),
+                value=16,
+                interactive=True,
+            )
+            cfg_scale = gr.Slider(
+                minimum=1.0,
+                maximum=4.0,
+                step=0.1,
+                label=i18n("Speaker Guidance"),
+                info=i18n("How strongly the output follows the voice model."),
+                value=2.0,
+                interactive=True,
+            )
+            content_guidance = gr.Slider(
+                minimum=0.0,
+                maximum=1.0,
+                step=0.05,
+                label=i18n("Content Guidance"),
+                info=i18n("How strongly the output follows the input articulation."),
+                value=0.1,
+                interactive=True,
+            )
+    return [vocoder, steps, cfg_scale, content_guidance]
+
+
 def inference_tab():
     trigger = get_filter_trigger()
     with gr.Column():
@@ -1193,6 +1246,7 @@ def inference_tab():
                         move_files_button = gr.Button(
                             i18n("Move files to custom embedder folder")
                         )
+                flow_settings = rectified_flow_settings()
 
         def enforce_terms(terms_accepted, *args):
             if not terms_accepted:
@@ -1853,6 +1907,7 @@ def inference_tab():
                         move_files_button_batch = gr.Button(
                             i18n("Move files to custom embedder folder")
                         )
+                flow_settings_batch = rectified_flow_settings()
 
         gr.Markdown(value=i18n("## Conversion"))
 
@@ -2310,6 +2365,7 @@ def inference_tab():
             delay_feedback,
             delay_mix,
             sid,
+            *flow_settings,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -2380,6 +2436,7 @@ def inference_tab():
             delay_feedback_batch,
             delay_mix_batch,
             sid_batch,
+            *flow_settings_batch,
         ],
         outputs=[vc_output3],
     ).then(

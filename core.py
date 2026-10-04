@@ -112,6 +112,10 @@ def run_infer_script(
     delay_feedback: float = 0.0,
     delay_mix: float = 0.5,
     sid: int = 0,
+    flow_vocoder: str = "",
+    flow_steps: int = 16,
+    flow_cfg_scale: float = 2.0,
+    flow_content_guidance: float = 0.1,
 ):
     kwargs = {
         "audio_input_path": input_path,
@@ -173,6 +177,10 @@ def run_infer_script(
         "delay_feedback": delay_feedback,
         "delay_mix": delay_mix,
         "sid": sid,
+        "flow_vocoder": flow_vocoder,
+        "flow_steps": flow_steps,
+        "flow_cfg_scale": flow_cfg_scale,
+        "flow_content_guidance": flow_content_guidance,
     }
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(**kwargs)
@@ -242,6 +250,10 @@ def run_batch_infer_script(
     delay_feedback: float = 0.0,
     delay_mix: float = 0.5,
     sid: int = 0,
+    flow_vocoder: str = "",
+    flow_steps: int = 16,
+    flow_cfg_scale: float = 2.0,
+    flow_content_guidance: float = 0.1,
 ):
     kwargs = {
         "audio_input_paths": input_folder,
@@ -303,6 +315,10 @@ def run_batch_infer_script(
         "delay_feedback": delay_feedback,
         "delay_mix": delay_mix,
         "sid": sid,
+        "flow_vocoder": flow_vocoder,
+        "flow_steps": flow_steps,
+        "flow_cfg_scale": flow_cfg_scale,
+        "flow_content_guidance": flow_content_guidance,
     }
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio_batch(**kwargs)
