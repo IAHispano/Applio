@@ -275,6 +275,23 @@ Held-out evaluation renders references, ground-truth-mel vocoder ceiling, and ea
 
 For the reproducible learning campaign used locally, prepare a fresh model name and run `core.py test-vctk --model-name NAME`. It creates initial one-update baselines, performs all four stages, exports packages, evaluates held-out budgets and renders same/cross-speaker conversions with the real frontend. Existing stage checkpoints are rejected to preserve their contents.
 
+#### Full-corpus acoustic campaign
+
+`train-full-vctk.bat` is a local one-click launcher for all speakers and recordings under `assets/datasets/vctk`. It calls the shared `core.py train-corpus` command, which runs **Preprocess → Extract → Predictor → Flow → Shortcut**, exports each acoustic stage and renders held-out listening samples. The pretrained BigVGAN remains frozen; no vocoder training is scheduled. The launcher references the earlier local acoustic export for architecture and frontend compatibility only: full-corpus acoustic weights start from scratch with the new speaker vocabulary. Replace its model paths when using a different installation.
+
+The recipe uses 60,000 predictor updates, 15,000 flow updates and 15,000 shortcut updates, batch size 2, automatic precision and checkpoints every 1,000 updates. These are experiment budgets, not a quality guarantee or convergence criterion. Edit the variables at the top of the batch file before the first run; increase batch size if memory permits. There are no GPU-specific recipes. Expresso remains a separate expressive-speech study rather than changing this full-VCTK comparison.
+
+Whole recordings are split before segmentation. Prior validation recordings are reserved when the architecture reference's project contains a dataset manifest. Only derived audio exceeding full scale after resampling is scaled; source recordings stay unchanged. A saved campaign plan binds dataset inventory, architecture, frontend settings, frozen-vocoder hash and training settings. A changed plan requires a new model name; another running worker cannot claim the same campaign.
+
+The terminal shows progress and mirrors output to `logs/<model>/console.log`; `campaign_status.json` records the latest phase. Every training stage writes TensorBoard curves automatically, and stage evaluations add listening audio. Use the existing training monitor or `run-tensorboard.bat` to open the run's dashboard. Archived experiments under `logs/_archive` are omitted from model and TensorBoard selectors.
+
+V3 CLI and campaign output follow the classic console style: one updating progress bar per operation, short completion messages and training summaries at validation checkpoints. Training bars count optimizer updates rather than epochs. Terminal bars show speed and ETA without saving carriage-return frames into the campaign console log. Detailed optimizer metrics remain in `metrics.jsonl` and TensorBoard. Add `--json-logs` to the standalone `preprocess`, `extract` or `train` command when consuming machine-readable progress.
+
+Press Ctrl+C once or create `logs/<model>/STOP` to request a graceful stop. Run the same launcher with unchanged settings to verify/reuse prepared caches and resume the last checkpoint towards each stage's **total** update target. Completed stage budgets are not added again. During initialization or evaluation, stopping waits for the current operation. Windows sleep is inhibited only while the worker is running and restored when it exits. Preflight checks include inputs, device, mel compatibility and a conservative disk-space estimate. To validate a setup without preprocessing or training, run `train-full-vctk.bat --check-only`.
+
+Acoustic training loads cached features without decoding or transferring waveform audio. Vocoder training and listening evaluations still load waveforms, and both paths verify cache hashes. Content alignment shares interpolation indices across encoder channels while retaining the float32 feature convention. Preparation reuses each computed file hash within an operation; speaker splitting groups recordings once while preserving its deterministic order and seed. Console progress and TensorBoard receive every update, while the campaign status snapshot refreshes at most twice per second between checkpoint and completion events. These optimizations preserve model dimensions, split identities and checkpoint settings; overall throughput still depends on encoder inference, storage and GPU compute.
+
+
 The existing Gradio **Realtime → Model Settings** tab detects V3 voice models and exposes the matching vocoder and microphone controls inside **Advanced Settings**. Select the target speaker and pitch, accept the terms, and record the microphone to hear converted audio through the browser. Stop recording before changing settings. Each recording owns its resampler and model stream; stopping flushes its tail and releases the session. Browser capture/playback adds buffering and is not a measured low-latency device route. `serve-v3` exposes the WebSocket transport API without a separate UI; `realtime-v3` uses selected native audio devices. Both CLI commands take model/vocoder/encoder paths. Physical microphone operation is a separate hardware test. `verify-architecture` runs a synthetic engineering fixture; its results must be distinguished from real VCTK learning measurements.
 
 <a id="workflow-installation-and-runtime-checks"></a>
@@ -409,6 +426,22 @@ Raw evidence is preserved in [V3_HARDWARE_VERIFICATION.json](#hardware-record) a
 Train substantial universal models, select budgets using rendered held-out audio, then evaluate unfamiliar source voices, singing extremes and target adaptation. Official BigVGAN/full-Wavehax and classic Applio quality baselines, blinded listening, identity/intelligibility/pitch metrics, predicted-mel vocoder training, pitch-consistency augmentation, retrieval and lower-latency tuning remain experimental follow-ups. Larger and single-stream research architectures need their own profiling. CUDA multiple-GPU throughput and physical browser/native device routing also need hardware/application validation.
 
 The current software is ready for those training/evaluation runs. It is not yet a production-quality voice model or evidence of the proposed speed-to-quality gains.
+
+#### Training-only pitch counterexamples
+
+The optional preparation helper in `rvc/train/v3/augmentation.py` creates synthetic training views with F0 shifts of -12, -6, +6 and +12 semitones. WORLD estimates the source spectral envelope and aperiodicity, then resynthesizes with the changed F0. Content features stay from the original recording while the F0 controls and target mel change. This creates counterexamples to recovering source pitch from content instead of following the explicit control.
+
+The helper writes a separate augmented manifest alongside the original cache, retains original recordings and features, and leaves recording-disjoint natural validation unchanged. Original and synthetic training populations have equal sampling weight. Transformation, synthesis version, seed and content hashes are recorded. WORLD is used only during this preparation; inference and adaptation use the selected universal vocoder, including frozen BigVGAN. Model architecture and existing package loading are unchanged. [PyWORLD documentation](https://github.com/JeremyCCHsu/Python-Wrapper-for-World-Vocoder) describes its analysis and synthesis components.
+
+This remains a research intervention until held-out conversion demonstrates a useful pitch/identity tradeoff. Synthetic supervision can introduce synthesis artifacts, so compare it with ordinary continuation using the same optimizer budget and frozen vocoder. A tested linear content-subspace filter was rejected because it reduced unseen-source target retrieval without resolving downward octave shifts; it is not part of the supported architecture.
+
+Prepare a separate research manifest with the shared CLI, then pass that manifest to the existing V3 predictor-training command:
+
+```bash
+python core.py prepare-pitch-views --manifest logs/example/data/manifest.json --output-manifest logs/example/data/pitch_views.json
+```
+
+This adds no required stage to ordinary voice fine-tuning and introduces no inference dependency on WORLD.
 
 
 <a id="classic"></a>

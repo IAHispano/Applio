@@ -1736,9 +1736,15 @@ def tts(**kwargs):
 )
 @_architecture_options
 @_v3_prepare_options
+@click.option(
+    "--json-logs",
+    is_flag=True,
+    help="Emit V3 machine-readable progress instead of terminal bars.",
+)
 def preprocess(**kwargs):
     """Preprocess a dataset for training."""
     architecture = kwargs.pop("architecture")
+    json_logs = kwargs.pop("json_logs")
     names = (
         "validation_fraction",
         "segment_seconds",
@@ -1759,14 +1765,18 @@ def preprocess(**kwargs):
         ):
             raise click.ClickException("Applio v3 uses the fixed 44100 Hz mel contract")
         try:
-            click.echo(
-                run_v3_preprocess_script(
+            from rvc.train.process.v3_console import ConsoleProgress
+
+            with ConsoleProgress(kwargs["model_name"]) as console:
+                result = run_v3_preprocess_script(
                     kwargs["model_name"],
                     kwargs["dataset_path"],
-                    progress=lambda update: click.echo(json.dumps(update)),
+                    progress=(lambda update: click.echo(json.dumps(update)))
+                    if json_logs
+                    else console.preparation,
                     **options,
                 )
-            )
+            click.echo(result)
         except (ValueError, OSError) as error:
             raise click.ClickException(str(error)) from error
         return
@@ -1844,9 +1854,15 @@ def preprocess(**kwargs):
 )
 @_architecture_options
 @_v3_extract_options
+@click.option(
+    "--json-logs",
+    is_flag=True,
+    help="Emit V3 machine-readable progress instead of terminal bars.",
+)
 def extract(**kwargs):
     """Extract features from a preprocessed dataset."""
     architecture = kwargs.pop("architecture")
+    json_logs = kwargs.pop("json_logs")
     names = ("encoder_path", "pitch_extractor", "pitch_path", "profile", "device")
     options = {name: kwargs.pop(name) for name in names}
     if architecture == "v3":
@@ -1860,13 +1876,19 @@ def extract(**kwargs):
         ):
             raise click.ClickException("Applio v3 uses 44100 Hz")
         try:
-            click.echo(
-                run_v3_extract_script(
+            from rvc.train.process.v3_console import ConsoleProgress
+
+            with ConsoleProgress(kwargs["model_name"]) as console:
+                if not json_logs:
+                    click.echo("Loading content encoder and pitch model...")
+                result = run_v3_extract_script(
                     kwargs["model_name"],
-                    progress=lambda update: click.echo(json.dumps(update)),
+                    progress=(lambda update: click.echo(json.dumps(update)))
+                    if json_logs
+                    else console.preparation,
                     **options,
                 )
-            )
+            click.echo(result)
         except (ValueError, OSError) as error:
             raise click.ClickException(str(error)) from error
         return
@@ -2003,9 +2025,15 @@ def extract(**kwargs):
 @click.option("--adapter-rank", type=click.IntRange(min=1), default=8)
 @click.option("--adaptation", type=click.Choice(["lora", "full"]), default="lora")
 @click.option("--accumulation-steps", type=click.IntRange(min=1), default=1)
+@click.option(
+    "--json-logs",
+    is_flag=True,
+    help="Emit V3 machine-readable progress instead of terminal bars.",
+)
 def train(**kwargs):
     """Train classic RVC or a selected Applio v3 stage."""
     architecture = kwargs.pop("architecture")
+    json_logs = kwargs.pop("json_logs")
     names = (
         "stage",
         "manifest",
@@ -2045,10 +2073,18 @@ def train(**kwargs):
             trainer = run_v3_train_all_script if pipeline else run_v3_train_script
             if pipeline:
                 options["refine"] = options.pop("stage") == "all_refiners"
-            for update in trainer(
-                kwargs["model_name"], batch_size=kwargs["batch_size"], **options
-            ):
-                click.echo(json.dumps(update), color=False)
+            from rvc.train.process.v3_console import ConsoleProgress
+
+            with ConsoleProgress(kwargs["model_name"]) as console:
+                for update in trainer(
+                    kwargs["model_name"], batch_size=kwargs["batch_size"], **options
+                ):
+                    if json_logs:
+                        click.echo(json.dumps(update), color=False)
+                    else:
+                        console.training(
+                            update, options["steps"], additional=not pipeline
+                        )
         except (ValueError, OSError) as error:
             raise click.ClickException(str(error)) from error
         return
@@ -2155,6 +2191,78 @@ def prerequisites(**kwargs):
 def audio_analyzer(**kwargs):
     """Analyze an audio file and display information."""
     run_audio_analyzer_script(kwargs["input_path"])
+
+
+@cli.command("train-corpus")
+@click.option("--model-name", required=True)
+@click.option(
+    "--dataset-path", required=True, type=click.Path(exists=True, file_okay=False)
+)
+@click.option(
+    "--vocoder-path", required=True, type=click.Path(exists=True, dir_okay=False)
+)
+@click.option(
+    "--architecture-from",
+    type=click.Path(exists=True, dir_okay=False),
+    help="Reuse architecture/frontend semantics only; initialize new acoustic weights from scratch.",
+)
+@click.option(
+    "--encoder-path",
+    default="rvc/models/embedders/contentvec",
+    type=click.Path(exists=True, file_okay=False),
+)
+@click.option("--batch-size", default=DEFAULT_BATCH_SIZE, type=click.IntRange(min=1))
+@click.option("--accumulation-steps", default=1, type=click.IntRange(min=1))
+@click.option("--predictor-steps", default=60000, type=click.IntRange(min=1))
+@click.option("--flow-steps", default=15000, type=click.IntRange(min=0))
+@click.option("--shortcut-steps", default=15000, type=click.IntRange(min=0))
+@click.option("--device", default="auto")
+@click.option(
+    "--precision", default="auto", type=click.Choice(["auto", "bf16", "fp16", "fp32"])
+)
+@click.option("--checkpoint-every", default=1000, type=click.IntRange(min=1))
+@click.option("--seed", default=1234, type=int)
+@click.option(
+    "--check-only",
+    is_flag=True,
+    help="Check inputs, disk space and resume compatibility without training.",
+)
+def train_corpus(**kwargs):
+    """Preprocess, extract and train every corpus speaker using frozen BigVGAN."""
+    from rvc.train.v3.campaign import run_corpus
+
+    try:
+        run_corpus(**kwargs)
+    except (ValueError, OSError) as error:
+        raise click.ClickException(str(error)) from error
+
+
+@cli.command("prepare-pitch-views")
+@click.option("--manifest", required=True, type=click.Path(exists=True, dir_okay=False))
+@click.option("--output-manifest", required=True, type=click.Path(dir_okay=False))
+@click.option(
+    "--per-speaker", default=16, type=click.IntRange(min=4), show_default=True
+)
+@click.option("--seed", default=5678, type=int, show_default=True)
+def prepare_pitch_views(manifest, output_manifest, per_speaker, seed):
+    """Prepare optional V3 training pitch counterexamples; keep natural validation."""
+    from rvc.train.v3.augmentation import prepare_pitch_views as prepare
+
+    try:
+        result = prepare(
+            manifest,
+            output_manifest,
+            per_speaker,
+            seed,
+            progress=lambda item: (
+                click.echo(f"Speaker {item['speaker']}: {item['views']} views prepared")
+                if item["views"] % 16 == 0
+                else None
+            ),
+        )
+        click.echo(result)
+    except (ValueError, ImportError, OSError) as error:
+        raise click.ClickException(str(error)) from error
 
 
 @cli.command("export-model")

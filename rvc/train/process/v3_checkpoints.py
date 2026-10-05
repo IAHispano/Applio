@@ -89,7 +89,7 @@ def construct(payload, device="cpu", use_ema=True):
 
 
 def header(model, kind, manifest, adapters=None):
-    return {
+    payload = {
         "backend": BACKEND,
         "format_version": FORMAT_VERSION,
         "kind": kind,
@@ -101,6 +101,9 @@ def header(model, kind, manifest, adapters=None):
         "dataset_id": manifest["dataset_id"],
         "adapters": adapters,
     }
+    if kind == "acoustic" and manifest.get("augmentation"):
+        payload["training_augmentation"] = manifest["augmentation"]
+    return payload
 
 
 def export_checkpoint(source, destination):

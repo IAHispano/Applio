@@ -310,9 +310,14 @@ def train(
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
-    training = AcousticDataset(manifest, "train", crop_frames)
-    validation = AcousticDataset(manifest, "validation", crop_frames)
-    whole_training = AcousticDataset(manifest, "train", 0)
+    load_waveform = kind == "vocoder"
+    training = AcousticDataset(
+        manifest, "train", crop_frames, load_waveform=load_waveform
+    )
+    validation = AcousticDataset(
+        manifest, "validation", crop_frames, load_waveform=load_waveform
+    )
+    whole_training = AcousticDataset(manifest, "train", 0, load_waveform=load_waveform)
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     initialization = (

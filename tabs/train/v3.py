@@ -187,11 +187,22 @@ def extraction_options():
 
 
 def _progress_callback(progress):
-    return (
-        (lambda item: progress((item["recording"], item["total"]), desc=item["source"]))
-        if progress
-        else None
-    )
+    if not progress:
+        return None
+
+    def update(item):
+        labels = {
+            "scan": "Finding recordings",
+            "hash": "Checking recordings",
+            "reserve_validation": "Reserving validation",
+            "preprocess": "Preprocessing audio",
+            "extract": "Extracting features",
+        }
+        label = labels.get(item.get("operation"))
+        description = f"{label}: {item['source']}" if label else item["source"]
+        progress((item["recording"], item["total"]), desc=description)
+
+    return update
 
 
 def prepare_dataset(mode, legacy_args, options, progress=None):
@@ -556,11 +567,13 @@ def monitored_runs():
     root = Path(core.logs_path)
     runs = []
     for project in root.iterdir():
-        if not project.is_dir():
+        if not project.is_dir() or project.name == "_archive":
             continue
         files = list((project / "checkpoints").glob("*/metrics.jsonl"))
         if (project / "train.log").exists():
             files.append(project / "train.log")
+        if (project / "campaign_status.json").exists():
+            files.append(project / "campaign_status.json")
         if files:
             runs.append((max(path.stat().st_mtime for path in files), project.name))
     return [name for _, name in sorted(runs, reverse=True)]
@@ -576,6 +589,16 @@ def training_progress(name, stage="auto"):
         files = [path for path in files if path.parent.name == stage]
     if not files:
         classic = _log_tail(project / "train.log")
+        campaign_path = project / "campaign_status.json"
+        if campaign_path.exists():
+            campaign = json.loads(campaign_path.read_text(encoding="utf-8"))
+            phase = campaign.get("phase", "preparation")
+            summary = f"**{name}** — **{phase}**"
+            if campaign.get("total"):
+                summary += f" · {campaign['recording']:,} / {campaign['total']:,}"
+            return summary, _log_tail(
+                project / "console.log"
+            ) or "Preparing the dataset…"
         return (
             f"**{name}** — waiting for training logs.",
             classic or "No updates have been logged yet.",
@@ -608,12 +631,23 @@ def training_progress(name, stage="auto"):
             live = False
         state = "Running" if live else "Process stopped"
         active_phase = campaign.get("phase")
+        if active_phase in {"complete", "stopped", "failed"}:
+            state = {"complete": "Completed", "stopped": "Stopped", "failed": "Failed"}[
+                active_phase
+            ]
+        if stage == "auto" and active_phase in {"preprocess", "extract", "evaluation"}:
+            summary = f"**{name} — {state}**\n\nStage: **{active_phase}**"
+            if campaign.get("total"):
+                summary += f" · {campaign['recording']:,} / {campaign['total']:,}"
+            return summary, _log_tail(project / "console.log") or raw
         if (
             stage == "auto"
             and active_phase in {"predictor", "vocoder", "flow", "shortcut", "adapt"}
             and phase != active_phase
         ):
             consoles = list(Path(core.logs_path).glob(f"{name}*console.log"))
+            if (project / "console.log").exists():
+                consoles.append(project / "console.log")
             console = (
                 _log_tail(max(consoles, key=lambda value: value.stat().st_mtime))
                 if consoles

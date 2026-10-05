@@ -15,7 +15,7 @@ def available_runs():
     root = Path(log_path)
     runs = []
     for project in root.iterdir() if root.exists() else []:
-        if project.is_dir():
+        if project.is_dir() and project.name != "_archive":
             events = list(project.rglob("events.out.tfevents.*"))
             if events:
                 progress = list(project.glob("checkpoints/*/metrics.jsonl"))
@@ -35,7 +35,7 @@ def available_runs():
 def project_path(run):
     root = Path(log_path).resolve()
     project = (root / run).resolve()
-    if project.parent != root or not project.is_dir():
+    if project.parent != root or not project.is_dir() or project.name == "_archive":
         raise ValueError("Select an existing training run inside logs.")
     return project
 

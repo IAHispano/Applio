@@ -95,7 +95,8 @@ def get_files(type="model"):
     best = {}
     order = 0
 
-    for root, _, files in os.walk(model_root_relative, followlinks=True):
+    for root, folders, files in os.walk(model_root_relative, followlinks=True):
+        folders[:] = [name for name in folders if name != "_archive"]
         for file in files:
             if not file.endswith(exts):
                 continue
@@ -652,7 +653,7 @@ def inference_tab():
                 value=0,
                 interactive=True,
             )
-            v3_single_settings, v3_single_options = inference_options()
+            v3_single_settings, v3_single_options = inference_options(model_file)
             with gr.Column() as classic_single_settings:
                 clear_outputs_infer = gr.Button(
                     i18n("Clear Outputs (Deletes all audios in assets/audios)")
@@ -1317,7 +1318,7 @@ def inference_tab():
                 value=0,
                 interactive=True,
             )
-            v3_batch_settings, v3_batch_options = inference_options()
+            v3_batch_settings, v3_batch_options = inference_options(model_file)
             with gr.Column() as classic_batch_settings:
                 clear_outputs_batch = gr.Button(
                     i18n("Clear Outputs (Deletes all audios in assets/audios)")

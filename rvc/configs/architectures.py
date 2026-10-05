@@ -7,6 +7,7 @@ include file modification time and size to avoid stale metadata after replacemen
 """
 
 from functools import lru_cache
+import os
 from pathlib import Path
 from pickle import UnpicklingError
 
@@ -80,7 +81,11 @@ def resolve_architecture(architecture, model=None):
 
 def discover_models(root="logs", architecture="v3", kind="acoustic"):
     models = []
-    for file in sorted(Path(root).rglob("*")):
+    files = []
+    for directory, folders, names in os.walk(root):
+        folders[:] = [name for name in folders if name != "_archive"]
+        files.extend(Path(directory) / name for name in names)
+    for file in sorted(files):
         if file.suffix.lower() not in {".pth", ".pt", ".onnx"} or file.name.startswith(
             ("G_", "D_")
         ):

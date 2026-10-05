@@ -57,9 +57,23 @@ def dataset_identity(manifest):
 
 
 def _select_recordings(
-    root, validation_fraction, seed, speaker_names, recordings_per_speaker
+    root,
+    validation_fraction,
+    seed,
+    speaker_names,
+    recordings_per_speaker,
+    progress=None,
 ):
     """Share deterministic speaker selection, deduplication and recording splits."""
+    if progress:
+        progress(
+            dict(
+                recording=0,
+                total=1,
+                source="Finding audio recordings",
+                operation="scan",
+            )
+        )
     files = sorted(
         p
         for p in root.rglob("*")
@@ -88,8 +102,17 @@ def _select_recordings(
     speakers = sorted({str(p.relative_to(root).parent) for p in files})
     speaker_map = {name: i for i, name in enumerate(speakers)}
     records, seen = [], {}
-    for path in files:
+    for index, path in enumerate(files):
         digest = file_hash(path)
+        if progress:
+            progress(
+                dict(
+                    recording=index + 1,
+                    total=len(files),
+                    source=str(path.relative_to(root)),
+                    operation="hash",
+                )
+            )
         if digest in seen:
             if seen[digest] != speaker_map[str(path.relative_to(root).parent)]:
                 raise ValueError("Identical recording assigned to different speakers")
@@ -102,9 +125,13 @@ def _select_recordings(
                 "speaker": speaker_map[str(path.relative_to(root).parent)],
             }
         )
+    # Group once without changing record order or RNG calls: the split remains
+    # identical while selection scales linearly with the recording count.
+    split_groups = {speaker: [] for speaker in speaker_map.values()}
+    for record in records:
+        split_groups[record["speaker"]].append(record)
     rng = random.Random(seed)
-    for speaker in speaker_map.values():
-        group = [r for r in records if r["speaker"] == speaker]
+    for group in split_groups.values():
         rng.shuffle(group)
         n_val = (
             min(len(group) - 1, max(1, round(len(group) * validation_fraction)))
@@ -147,7 +174,7 @@ def prepare(
     if not 0 < validation_fraction < 1 or segment_seconds <= 0:
         raise ValueError("Invalid split or segment duration")
     speakers, records, input_recordings = _select_recordings(
-        root, validation_fraction, seed, speaker_names, recordings_per_speaker
+        root, validation_fraction, seed, speaker_names, recordings_per_speaker, progress
     )
     contract = {
         "mel": asdict(extractor.mel_config),
@@ -258,6 +285,8 @@ def preprocess_audio(
     recordings_per_speaker=0,
     mel_config=None,
     progress=None,
+    normalize_overflow=False,
+    validation_sources=(),
 ):
     """Save resampled audio and a recording-disjoint split without loading models.
 
@@ -274,8 +303,34 @@ def preprocess_audio(
         raise ValueError("Invalid split or segment duration")
     mel = mel_config or MelConfig()
     speakers, records, input_recordings = _select_recordings(
-        root, validation_fraction, seed, speaker_names, recordings_per_speaker
+        root, validation_fraction, seed, speaker_names, recordings_per_speaker, progress
     )
+    reserved = set(validation_sources)
+    reserved_hashes = set()
+    for index, name in enumerate(sorted(reserved)):
+        path = (root / name).resolve()
+        if not path.is_relative_to(root) or not path.is_file():
+            raise ValueError("Reserved validation source must exist inside the dataset")
+        reserved_hashes.add(file_hash(path))
+        if progress:
+            progress(
+                dict(
+                    recording=index + 1,
+                    total=len(reserved),
+                    source=name,
+                    operation="reserve_validation",
+                )
+            )
+    for record in records:
+        if record["source_hash"] in reserved_hashes:
+            record["split"] = "validation"
+    if any(
+        not any(r["speaker"] == i and r["split"] == "train" for r in records)
+        for i in range(len(speakers))
+    ):
+        raise ValueError(
+            "Reserved validation leaves a speaker without training recordings"
+        )
     audio_cache = output / "audio" / fingerprint(asdict(mel))
     audio_cache.mkdir(parents=True, exist_ok=True)
     segment_samples = max(mel.hop_length, int(segment_seconds * mel.sample_rate))
@@ -283,10 +338,15 @@ def preprocess_audio(
     entries = []
     for index, record in enumerate(records):
         audio = read_audio(root / record["source"], mel.sample_rate)
-        if np.max(np.abs(audio)) > 1.01:
-            raise ValueError(
-                f"Recording exceeds full scale: {record['source']}; normalize explicitly before preprocessing"
-            )
+        peak = float(np.max(np.abs(audio)))
+        if peak > 1.01:
+            if not normalize_overflow:
+                raise ValueError(
+                    f"Recording exceeds full scale: {record['source']}; normalize explicitly before preprocessing"
+                )
+            # Scale only derived segments; source hashes still identify original recordings.
+            record["normalization_gain"] = 0.98 / peak
+            audio = audio * record["normalization_gain"]
         for start in range(0, len(audio), segment_samples):
             segment = audio[start : start + segment_samples]
             key = fingerprint(
@@ -300,27 +360,34 @@ def preprocess_audio(
             waveform = audio_cache / (key + ".wav")
             metadata = waveform.with_suffix(".json")
             valid = waveform.exists() and metadata.exists()
+            waveform_hash = file_hash(waveform) if valid else None
             if valid:
-                valid = json.loads(metadata.read_text())[
-                    "waveform_sha256"
-                ] == file_hash(waveform)
+                valid = (
+                    json.loads(metadata.read_text())["waveform_sha256"] == waveform_hash
+                )
             if not valid:
                 temporary = waveform.with_suffix(".tmp.wav")
                 sf.write(str(temporary), segment, mel.sample_rate, subtype="FLOAT")
                 temporary.replace(waveform)
-                atomic_json(metadata, {"waveform_sha256": file_hash(waveform)})
+                waveform_hash = file_hash(waveform)
+                atomic_json(metadata, {"waveform_sha256": waveform_hash})
             entries.append(
                 {
                     **record,
                     "start_sample": start,
                     "samples": len(segment),
                     "waveform": str(waveform.relative_to(output)),
-                    "waveform_sha256": file_hash(waveform),
+                    "waveform_sha256": waveform_hash,
                 }
             )
         if progress:
             progress(
-                dict(recording=index + 1, total=len(records), source=record["source"])
+                dict(
+                    recording=index + 1,
+                    total=len(records),
+                    source=record["source"],
+                    operation="preprocess",
+                )
             )
     manifest = dict(
         schema=1,
@@ -331,6 +398,8 @@ def preprocess_audio(
             speaker_names=list(speaker_names or []),
             recordings_per_speaker=recordings_per_speaker,
             input_recordings=input_recordings,
+            normalize_overflow=normalize_overflow,
+            reserved_validation_sources=sorted(reserved),
         ),
         speakers=speakers,
         recordings=records,
@@ -385,10 +454,11 @@ def extract_preprocessed(audio_manifest, extractor, progress=None):
         feature_file = cache / (key + ".npz")
         metadata = feature_file.with_suffix(".json")
         valid = feature_file.exists() and metadata.exists()
+        feature_hash = file_hash(feature_file) if valid else None
         if valid:
             hashes = json.loads(metadata.read_text())
             valid = (
-                hashes.get("features_sha256") == file_hash(feature_file)
+                hashes.get("features_sha256") == feature_hash
                 and hashes.get("waveform_sha256") == entry["waveform_sha256"]
             )
         if not valid:
@@ -405,10 +475,11 @@ def extract_preprocessed(audio_manifest, extractor, progress=None):
             temporary = feature_file.with_suffix(".tmp.npz")
             np.savez_compressed(temporary, **extractor.extract(segment))
             temporary.replace(feature_file)
+            feature_hash = file_hash(feature_file)
             atomic_json(
                 metadata,
                 dict(
-                    features_sha256=file_hash(feature_file),
+                    features_sha256=feature_hash,
                     waveform_sha256=entry["waveform_sha256"],
                 ),
             )
@@ -416,7 +487,7 @@ def extract_preprocessed(audio_manifest, extractor, progress=None):
             {
                 **entry,
                 "features": str(feature_file.relative_to(output)),
-                "features_sha256": file_hash(feature_file),
+                "features_sha256": feature_hash,
             }
         )
         if progress:
@@ -425,6 +496,7 @@ def extract_preprocessed(audio_manifest, extractor, progress=None):
                     recording=index + 1,
                     total=len(audio["segments"]),
                     source=entry["source"],
+                    operation="extract",
                 )
             )
     manifest = {
@@ -452,7 +524,7 @@ def extract_preprocessed(audio_manifest, extractor, progress=None):
 class AcousticDataset(Dataset):
     """Serve verified cached segments or frame crops for acoustic and vocoder stages."""
 
-    def __init__(self, manifest, split="train", crop_frames=128):
+    def __init__(self, manifest, split="train", crop_frames=128, *, load_waveform=True):
         self.path = Path(manifest)
         self.manifest = json.loads(self.path.read_text(encoding="utf-8"))
         if self.manifest.get("schema") != 1:
@@ -472,12 +544,13 @@ class AcousticDataset(Dataset):
             raise ValueError("Manifest contract fingerprint is invalid")
         if self.manifest.get("dataset_id") != dataset_identity(self.manifest):
             raise ValueError("Manifest recording/split identity is invalid")
+        dataset_root = self.path.parent.resolve()
         for entry in self.manifest["segments"]:
             for key in ("features", "waveform"):
                 if (
                     not (self.path.parent / entry[key])
                     .resolve()
-                    .is_relative_to(self.path.parent.resolve())
+                    .is_relative_to(dataset_root)
                 ):
                     raise ValueError(
                         "Cache paths must remain within the dataset directory"
@@ -494,6 +567,9 @@ class AcousticDataset(Dataset):
         }
         if train_hashes & val_hashes:
             raise ValueError("Recording leakage across train/validation splits")
+        # Acoustic objectives use features only; keep waveform integrity checks
+        # but avoid decoding/transferring audio unless a vocoder needs it.
+        self.load_waveform = load_waveform
         self.crop_frames = crop_frames
         self.split = split
         self.verified_entries = set()
@@ -556,6 +632,8 @@ class AcousticDataset(Dataset):
         }
         result["speaker"] = torch.tensor(entry["speaker"], dtype=torch.long)
         result["length"] = end - start
+        if not self.load_waveform:
+            return result
         waveform = read_audio(
             self.path.parent / entry["waveform"], self.config.sample_rate
         )
@@ -574,7 +652,7 @@ class AcousticDataset(Dataset):
 def collate(examples):
     frames, samples = (
         max(e["length"] for e in examples),
-        max(len(e["waveform"]) for e in examples),
+        max((len(e.get("waveform", ())) for e in examples), default=0),
     )
     result = {}
     for key in examples[0]:
@@ -594,9 +672,10 @@ def collate(examples):
         :, None
     ]
     result["mel"] = result["mel"].transpose(1, 2)
-    result["waveform_mask"] = (
-        torch.arange(samples)[None] < result["waveform_length"][:, None]
-    ).float()
+    if "waveform" in result:
+        result["waveform_mask"] = (
+            torch.arange(samples)[None] < result["waveform_length"][:, None]
+        ).float()
     return result
 
 

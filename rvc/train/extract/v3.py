@@ -162,10 +162,22 @@ class FeatureExtractor:
 
     def _align(self, observations, timestamps):
         ct, content, pt, pitch, confidence = observations
-        aligned = np.stack(
-            [np.interp(timestamps, ct, content[:, i]) for i in range(content.shape[1])],
-            axis=-1,
+        # All content channels share timestamps. Compute interpolation indices
+        # once instead of running 768 separate searches. Float64 arithmetic and
+        # endpoint clamping preserve the cached np.interp feature convention.
+        right = np.searchsorted(ct, timestamps, side="right").clip(0, len(ct) - 1)
+        left = (right - 1).clip(0)
+        span = ct[right] - ct[left]
+        values = content.astype(np.float64, copy=False)
+        slope = np.divide(
+            values[right] - values[left],
+            span[:, None],
+            out=np.zeros((len(timestamps), content.shape[1]), dtype=np.float64),
+            where=span[:, None] != 0,
         )
+        aligned = values[left] + (timestamps - ct[left])[:, None] * slope
+        aligned[timestamps <= ct[0]] = values[0]
+        aligned[timestamps >= ct[-1]] = values[-1]
         # Nearest raw observations keep voicing decisions distinct from interpolation.
         positions = np.searchsorted(pt, timestamps).clip(0, len(pt) - 1)
         left = (positions - 1).clip(0)

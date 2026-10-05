@@ -17,7 +17,7 @@ _single_signature = inspect.signature(core.run_infer_script)
 _batch_signature = inspect.signature(core.run_batch_infer_script)
 
 
-def inference_options():
+def inference_options(model_file=None):
     with gr.Column(visible=False) as settings:
         vocoder = gr.Dropdown(
             discover_models(kind="vocoder"),
@@ -46,6 +46,15 @@ def inference_options():
         )
         seed = gr.Number(value=0, minimum=0, precision=0, label="Sampling seed")
         ordinary = gr.Checkbox(value=False, label="Ordinary flow reference sampler")
+    if model_file is not None:
+        # Loading a predictor-only voice clears unsupported settings left over
+        # from another model without changing the shared interface's layout.
+        for trigger in (model_file.change, ordinary.change):
+            trigger(
+                refinement_settings,
+                inputs=[model_file, ordinary, budget],
+                outputs=budget,
+            )
     return settings, [vocoder, encoder, pitch_path, budget, seed, device, ordinary]
 
 
@@ -69,6 +78,20 @@ def model_settings(path):
         gr.update(choices=speakers, value=0),
         gr.update(choices=speakers, value=0),
     )
+
+
+def refinement_settings(path, ordinary=False, current=0):
+    """Offer only budgets supported by an exported acoustic model's capabilities."""
+    choices = [0, 1, 2, 4, 8, 16, 32]
+    if path and model_architecture(path) == "v3":
+        capabilities = inspect_model(path).get("capabilities")
+        if isinstance(capabilities, dict):
+            if not capabilities.get("ordinary_flow"):
+                choices = [0]
+            elif not capabilities.get("shortcuts") and not ordinary:
+                choices = [0, 8, 16, 32]
+    value = int(current or 0)
+    return gr.update(choices=choices, value=value if value in choices else 0)
 
 
 def route_conversion(legacy_args, options, batch=False):
