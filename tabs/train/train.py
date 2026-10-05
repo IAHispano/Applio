@@ -10,13 +10,10 @@ from assets.i18n.i18n import I18nAuto
 from core import (
     run_extract_script,
     run_index_script,
-    run_preprocess_script,
     run_prerequisites_script,
-    run_train_script,
 )
 from rvc.configs.config import get_gpu_info, get_number_of_gpus, max_vram_gpu
 from rvc.lib.utils import format_title
-from tabs.settings.sections.restart import stop_train
 
 i18n = I18nAuto()
 now_dir = os.getcwd()
@@ -344,9 +341,19 @@ def auto_enable_checkpointing():
 
 # Train Tab
 def train_tab():
-    def _preprocess_with_toast(*args):
+    from tabs.train.v3 import (
+        export_options,
+        preparation_options,
+        prepare_dataset,
+        stop_training,
+        train_model,
+        training_options,
+    )
+
+    def _preprocess_with_toast(*args, progress=gr.Progress()):
         gr.Info(i18n("Preprocessing dataset..."))
-        result = run_preprocess_script(*args)
+        mode, legacy, extra = args[0], args[1:-9], args[-9:]
+        result = prepare_dataset(mode, legacy, extra, progress)
         if isinstance(result, str):
             if "error" in result.lower() or "failed" in result.lower():
                 gr.Warning(result)
@@ -378,13 +385,13 @@ def train_tab():
                 )
                 architecture = gr.Radio(
                     label=i18n("Architecture"),
-                    info=i18n(
-                        "Choose the model architecture:\n- **RVC (V2)**: Default option, compatible with all clients.\n- **Applio**: Advanced quality with improved vocoders and higher sample rates, Applio-only."
-                    ),
-                    choices=["RVC", "Applio"],
-                    value="RVC",
+                    info="Classic RVC or the experimental acoustic model with a separate universal vocoder.",
+                    choices=[
+                        ("RVC (v2)", "classic"),
+                        ("Applio v3 (experimental)", "v3"),
+                    ],
+                    value="classic",
                     interactive=True,
-                    visible=False,
                 )
             with gr.Column():
                 sampling_rate = gr.Radio(
@@ -428,7 +435,7 @@ def train_tab():
                         info=i18n(
                             "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-)."
                         ),
-                        placeholder=i18n("0 to ∞ separated by -"),
+                        placeholder=i18n("0 to âˆž separated by -"),
                         value=str(get_number_of_gpus()),
                         interactive=True,
                     )
@@ -469,7 +476,8 @@ def train_tab():
                 )
         refresh = gr.Button(i18n("Refresh models and datasets"))
 
-        with gr.Accordion(i18n("Advanced Settings"), open=False):
+        v3_preparation, v3_prepare_options = preparation_options()
+        with gr.Accordion(i18n("Advanced Settings"), open=False) as classic_preparation:
             cut_preprocess = gr.Radio(
                 label=i18n("Audio cutting"),
                 info=i18n(
@@ -556,6 +564,7 @@ def train_tab():
             preprocess_button.click(
                 fn=_preprocess_with_toast,
                 inputs=[
+                    architecture,
                     model_name,
                     dataset_path,
                     sampling_rate,
@@ -567,12 +576,13 @@ def train_tab():
                     chunk_len,
                     overlap_len,
                     normalization_mode,
+                    *v3_prepare_options,
                 ],
                 outputs=[preprocess_output_info],
             )
 
     # Extract section
-    with gr.Accordion(i18n("Extract")):
+    with gr.Accordion(i18n("Extract")) as extraction_section:
         with gr.Row():
             f0_method = gr.Radio(
                 label=i18n("Pitch extraction algorithm"),
@@ -697,7 +707,8 @@ def train_tab():
                 ),
                 interactive=True,
             )
-        with gr.Accordion(i18n("Advanced Settings"), open=False):
+        v3_training, v3_train_options = training_options()
+        with gr.Accordion(i18n("Advanced Settings"), open=False) as classic_training:
             with gr.Row():
                 with gr.Column():
                     save_only_latest = gr.Checkbox(
@@ -806,13 +817,17 @@ def train_tab():
                 interactive=True,
             )
 
-        def enforce_terms(terms_accepted, *args):
+        def enforce_terms(terms_accepted, mode, *args, request: gr.Request):
             if not terms_accepted:
-                message = i18n("You must agree to the Terms of Use to proceed.")
-                gr.Info(message)
-                return message
-            gr.Info(i18n("Training started..."))
-            return run_train_script(*args)
+                yield i18n("You must agree to the Terms of Use to proceed.")
+                return
+            try:
+                yield from train_model(
+                    mode, args[:-12], args[-12:], request.session_hash
+                )
+            except (ValueError, OSError, RuntimeError) as error:
+                gr.Warning(str(error))
+                yield f"Training could not complete: {error}"
 
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
@@ -835,9 +850,10 @@ def train_tab():
 
             stop_train_button = gr.Button(i18n("Stop Training"), visible=False)
             stop_train_button.click(
-                fn=stop_train,
-                inputs=[model_name],
+                fn=stop_training,
+                inputs=[architecture, model_name],
                 outputs=[],
+                queue=False,
             )
 
             index_button = gr.Button(i18n("Generate Index"))
@@ -849,243 +865,319 @@ def train_tab():
 
     # Export Model section
     with gr.Accordion(i18n("Export Model"), open=False):
-        if os.getenv("COLAB_RELEASE_TAG"):
-            gr.Markdown(
-                i18n(
-                    "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive."
-                )
-            )
-        with gr.Row():
-            with gr.Column():
-                pth_file_export = gr.File(
-                    label=i18n("Exported Pth file"),
-                    type="filepath",
-                    value=None,
-                    interactive=False,
-                )
-                pth_dropdown_export = gr.Dropdown(
-                    label=i18n("Pth file"),
-                    info=i18n("Select the pth file to be exported"),
-                    choices=path_choices(get_pth_list()),
-                    value=None,
-                    interactive=True,
-                    allow_custom_value=True,
-                )
-            with gr.Column():
-                index_file_export = gr.File(
-                    label=i18n("Exported Index File"),
-                    type="filepath",
-                    value=None,
-                    interactive=False,
-                )
-                index_dropdown_export = gr.Dropdown(
-                    label=i18n("Index File"),
-                    info=i18n("Select the index file to be exported"),
-                    choices=path_choices(get_index_list()),
-                    value=None,
-                    interactive=True,
-                    allow_custom_value=True,
-                )
-        with gr.Row():
-            with gr.Column():
-                refresh_export = gr.Button(i18n("Refresh trained models and indexes"))
-                if os.getenv("COLAB_RELEASE_TAG"):
-                    upload_exported = gr.Button(i18n("Upload"))
-                    upload_exported.click(
-                        fn=upload_to_google_drive,
-                        inputs=[pth_dropdown_export, index_dropdown_export, model_name],
-                        outputs=[],
-                    )
-
-            def toggle_visible(checkbox):
-                return gr.update(visible=checkbox)
-
-            def toggle_pretrained(pretrained, custom_pretrained):
-                if not custom_pretrained:
-                    return gr.update(visible=pretrained), gr.update(visible=False)
-                else:
-                    return gr.update(visible=pretrained), gr.update(visible=pretrained)
-
-            def enable_stop_train_button(terms_accepted):
-                if not terms_accepted:
-                    return gr.update(visible=True), gr.update(visible=False)
-                return gr.update(visible=False), gr.update(visible=True)
-
-            def disable_stop_train_button():
-                return gr.update(visible=True), gr.update(visible=False)
-
-            def download_prerequisites():
-                gr.Info(
+        v3_export = export_options(model_name)
+        with gr.Column() as classic_export:
+            if os.getenv("COLAB_RELEASE_TAG"):
+                gr.Markdown(
                     i18n(
-                        "Checking for prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
+                        "The 'Upload' button packages the model into a .zip file and saves it to the ApplioExported folder in your Google Drive."
                     )
                 )
-                run_prerequisites_script(
-                    pretraineds_hifigan=True,
-                    models=False,
-                    exe=False,
-                )
-                gr.Info(
-                    i18n(
-                        "Prerequisites check complete. Missing files were downloaded, and you may now start preprocessing."
+            with gr.Row():
+                with gr.Column():
+                    pth_file_export = gr.File(
+                        label=i18n("Exported Pth file"),
+                        type="filepath",
+                        value=None,
+                        interactive=False,
                     )
+                    pth_dropdown_export = gr.Dropdown(
+                        label=i18n("Pth file"),
+                        info=i18n("Select the pth file to be exported"),
+                        choices=path_choices(get_pth_list()),
+                        value=None,
+                        interactive=True,
+                        allow_custom_value=True,
+                    )
+                with gr.Column():
+                    index_file_export = gr.File(
+                        label=i18n("Exported Index File"),
+                        type="filepath",
+                        value=None,
+                        interactive=False,
+                    )
+                    index_dropdown_export = gr.Dropdown(
+                        label=i18n("Index File"),
+                        info=i18n("Select the index file to be exported"),
+                        choices=path_choices(get_index_list()),
+                        value=None,
+                        interactive=True,
+                        allow_custom_value=True,
+                    )
+            with gr.Row():
+                with gr.Column():
+                    refresh_export = gr.Button(
+                        i18n("Refresh trained models and indexes")
+                    )
+                    if os.getenv("COLAB_RELEASE_TAG"):
+                        upload_exported = gr.Button(i18n("Upload"))
+                        upload_exported.click(
+                            fn=upload_to_google_drive,
+                            inputs=[
+                                pth_dropdown_export,
+                                index_dropdown_export,
+                                model_name,
+                            ],
+                            outputs=[],
+                        )
+
+                def toggle_visible(checkbox):
+                    return gr.update(visible=checkbox)
+
+                def toggle_pretrained(pretrained, custom_pretrained):
+                    if not custom_pretrained:
+                        return gr.update(visible=pretrained), gr.update(visible=False)
+                    else:
+                        return gr.update(visible=pretrained), gr.update(
+                            visible=pretrained
+                        )
+
+                def enable_stop_train_button(terms_accepted):
+                    if not terms_accepted:
+                        return (
+                            gr.update(visible=True),
+                            gr.update(visible=False),
+                            gr.skip(),
+                            gr.skip(),
+                        )
+                    return (
+                        gr.update(visible=False),
+                        gr.update(visible=True),
+                        gr.update(interactive=False),
+                        gr.update(interactive=False),
+                    )
+
+                def disable_stop_train_button():
+                    return (
+                        gr.update(visible=True),
+                        gr.update(visible=False),
+                        gr.update(interactive=True),
+                        gr.update(interactive=True),
+                    )
+
+                def download_prerequisites():
+                    gr.Info(
+                        i18n(
+                            "Checking for prerequisites with pitch guidance... Missing files will be downloaded. If you already have them, this step will be skipped."
+                        )
+                    )
+                    run_prerequisites_script(
+                        pretraineds_hifigan=True,
+                        models=False,
+                        exe=False,
+                    )
+                    gr.Info(
+                        i18n(
+                            "Prerequisites check complete. Missing files were downloaded, and you may now start preprocessing."
+                        )
+                    )
+
+                def toggle_visible_embedder_custom(embedder_model):
+                    if embedder_model == "custom":
+                        return {"visible": True, "__type__": "update"}
+                    return {"visible": False, "__type__": "update"}
+
+                def toggle_vocoder(vocoder, mode):
+                    if mode == "v3":
+                        return gr.skip()
+                    if vocoder == "HiFi-GAN":
+                        return {
+                            "choices": ["32000", "40000", "48000"],
+                            "__type__": "update",
+                            "value": "40000",
+                        }
+                    else:
+                        return {
+                            "choices": ["24000", "32000"],
+                            "__type__": "update",
+                            "value": "32000",
+                        }
+
+                def update_slider_visibility(noise_reduction):
+                    return gr.update(visible=noise_reduction)
+
+                noise_reduction.change(
+                    fn=update_slider_visibility,
+                    inputs=noise_reduction,
+                    outputs=clean_strength,
+                )
+                vocoder.change(
+                    fn=toggle_vocoder,
+                    inputs=[vocoder, architecture],
+                    outputs=[sampling_rate],
+                )
+                refresh.click(
+                    fn=refresh_models_and_datasets,
+                    inputs=[],
+                    outputs=[model_name, dataset_path],
+                )
+                dataset_creator.change(
+                    fn=toggle_visible,
+                    inputs=[dataset_creator],
+                    outputs=[dataset_creator_settings],
+                )
+                upload_audio_dataset.upload(
+                    fn=save_drop_dataset_audio,
+                    inputs=[upload_audio_dataset, dataset_name],
+                    outputs=[upload_audio_dataset, dataset_path],
+                )
+                embedder_model.change(
+                    fn=toggle_visible_embedder_custom,
+                    inputs=[embedder_model],
+                    outputs=[embedder_custom],
+                )
+                embedder_model.change(
+                    fn=toggle_visible_embedder_custom,
+                    inputs=[embedder_model],
+                    outputs=[embedder_custom],
+                )
+                move_files_button.click(
+                    fn=create_folder_and_move_files,
+                    inputs=[folder_name_input, bin_file_upload, config_file_upload],
+                    outputs=[],
+                )
+                refresh_embedders_button.click(
+                    fn=lambda: gr.update(
+                        choices=path_choices(refresh_embedders_folders())
+                    ),
+                    inputs=[],
+                    outputs=[embedder_model_custom],
+                )
+                pretrained.change(
+                    fn=toggle_pretrained,
+                    inputs=[pretrained, custom_pretrained],
+                    outputs=[custom_pretrained, pretrained_custom_settings],
+                )
+                custom_pretrained.change(
+                    fn=toggle_visible,
+                    inputs=[custom_pretrained],
+                    outputs=[pretrained_custom_settings],
+                )
+                refresh_custom_pretaineds_button.click(
+                    fn=refresh_custom_pretraineds,
+                    inputs=[],
+                    outputs=[g_pretrained_path, d_pretrained_path],
+                )
+                upload_pretrained.upload(
+                    fn=save_drop_model,
+                    inputs=[upload_pretrained],
+                    outputs=[upload_pretrained],
+                )
+                train_button.click(
+                    fn=enable_stop_train_button,
+                    inputs=[terms_checkbox],
+                    outputs=[train_button, stop_train_button, architecture, model_name],
+                ).then(
+                    fn=enforce_terms,
+                    inputs=[
+                        terms_checkbox,
+                        architecture,
+                        model_name,
+                        save_every_epoch,
+                        save_only_latest,
+                        save_every_weights,
+                        total_epoch,
+                        sampling_rate,
+                        batch_size,
+                        gpu,
+                        pretrained,
+                        cleanup,
+                        index_algorithm,
+                        cache_dataset_in_gpu,
+                        custom_pretrained,
+                        g_pretrained_path,
+                        d_pretrained_path,
+                        vocoder,
+                        checkpointing,
+                        shutdown_check,
+                        *v3_train_options,
+                    ],
+                    outputs=[train_output_info],
+                    concurrency_id="model_gpu",
+                    concurrency_limit=1,
+                ).then(
+                    disable_stop_train_button,
+                    outputs=[train_button, stop_train_button, architecture, model_name],
                 )
 
-            def toggle_visible_embedder_custom(embedder_model):
-                if embedder_model == "custom":
-                    return {"visible": True, "__type__": "update"}
-                return {"visible": False, "__type__": "update"}
+                pth_dropdown_export.change(
+                    fn=export_pth,
+                    inputs=[pth_dropdown_export],
+                    outputs=[pth_file_export],
+                )
+                index_dropdown_export.change(
+                    fn=export_index,
+                    inputs=[index_dropdown_export],
+                    outputs=[index_file_export],
+                )
+                refresh_export.click(
+                    fn=refresh_pth_and_index_list,
+                    inputs=[],
+                    outputs=[pth_dropdown_export, index_dropdown_export],
+                )
 
-            def toggle_architecture(architecture):
-                if architecture == "Applio":
-                    return {
-                        "choices": ["32000", "40000", "48000"],
-                        "__type__": "update",
-                    }, {
-                        "interactive": True,
-                        "__type__": "update",
-                    }
-                else:
-                    return {
-                        "choices": ["32000", "40000", "48000"],
-                        "__type__": "update",
-                        "value": "40000",
-                    }, {"interactive": False, "__type__": "update", "value": "HiFi-GAN"}
+    def select_architecture(mode):
+        modern = mode == "v3"
+        visibility = [
+            gr.update(visible=not modern),
+            gr.update(visible=modern),
+            gr.update(visible=not modern),
+            gr.update(visible=not modern),
+            gr.update(visible=modern),
+            gr.update(visible=not modern),
+            gr.update(visible=modern),
+            gr.update(visible=not modern),
+            gr.update(visible=not modern),
+            gr.update(visible=not modern),
+            gr.update(visible=not modern),
+        ]
+        return (
+            *visibility,
+            gr.update(
+                choices=["44100"] if modern else ["32000", "40000", "48000"],
+                value="44100" if modern else "40000",
+                interactive=not modern,
+            ),
+            gr.update(value=2 if modern else 4),
+            gr.update(
+                label="Training steps" if modern else i18n("Total Epoch"),
+                maximum=1000000 if modern else 10000,
+                info="Additional optimizer updates."
+                if modern
+                else "Total training epochs.",
+                value=10000 if modern else 200,
+            ),
+            gr.update(
+                label="Checkpoint interval" if modern else i18n("Save Every Epoch"),
+                maximum=10000 if modern else 100,
+                value=100 if modern else 10,
+            ),
+            gr.update(
+                value="Prepare audio and features"
+                if modern
+                else i18n("Preprocess Dataset")
+            ),
+        )
 
-            def toggle_vocoder(vocoder):
-                if vocoder == "HiFi-GAN":
-                    return {
-                        "choices": ["32000", "40000", "48000"],
-                        "__type__": "update",
-                        "value": "40000",
-                    }
-                else:
-                    return {
-                        "choices": ["24000", "32000"],
-                        "__type__": "update",
-                        "value": "32000",
-                    }
-
-            def update_slider_visibility(noise_reduction):
-                return gr.update(visible=noise_reduction)
-
-            noise_reduction.change(
-                fn=update_slider_visibility,
-                inputs=noise_reduction,
-                outputs=clean_strength,
-            )
-            architecture.change(
-                fn=toggle_architecture,
-                inputs=[architecture],
-                outputs=[sampling_rate, vocoder],
-            )
-            vocoder.change(
-                fn=toggle_vocoder,
-                inputs=[vocoder],
-                outputs=[sampling_rate],
-            )
-            refresh.click(
-                fn=refresh_models_and_datasets,
-                inputs=[],
-                outputs=[model_name, dataset_path],
-            )
-            dataset_creator.change(
-                fn=toggle_visible,
-                inputs=[dataset_creator],
-                outputs=[dataset_creator_settings],
-            )
-            upload_audio_dataset.upload(
-                fn=save_drop_dataset_audio,
-                inputs=[upload_audio_dataset, dataset_name],
-                outputs=[upload_audio_dataset, dataset_path],
-            )
-            embedder_model.change(
-                fn=toggle_visible_embedder_custom,
-                inputs=[embedder_model],
-                outputs=[embedder_custom],
-            )
-            embedder_model.change(
-                fn=toggle_visible_embedder_custom,
-                inputs=[embedder_model],
-                outputs=[embedder_custom],
-            )
-            move_files_button.click(
-                fn=create_folder_and_move_files,
-                inputs=[folder_name_input, bin_file_upload, config_file_upload],
-                outputs=[],
-            )
-            refresh_embedders_button.click(
-                fn=lambda: gr.update(choices=path_choices(refresh_embedders_folders())),
-                inputs=[],
-                outputs=[embedder_model_custom],
-            )
-            pretrained.change(
-                fn=toggle_pretrained,
-                inputs=[pretrained, custom_pretrained],
-                outputs=[custom_pretrained, pretrained_custom_settings],
-            )
-            custom_pretrained.change(
-                fn=toggle_visible,
-                inputs=[custom_pretrained],
-                outputs=[pretrained_custom_settings],
-            )
-            refresh_custom_pretaineds_button.click(
-                fn=refresh_custom_pretraineds,
-                inputs=[],
-                outputs=[g_pretrained_path, d_pretrained_path],
-            )
-            upload_pretrained.upload(
-                fn=save_drop_model,
-                inputs=[upload_pretrained],
-                outputs=[upload_pretrained],
-            )
-            train_button.click(
-                fn=enable_stop_train_button,
-                inputs=[terms_checkbox],
-                outputs=[train_button, stop_train_button],
-            ).then(
-                fn=enforce_terms,
-                inputs=[
-                    terms_checkbox,
-                    model_name,
-                    save_every_epoch,
-                    save_only_latest,
-                    save_every_weights,
-                    total_epoch,
-                    sampling_rate,
-                    batch_size,
-                    gpu,
-                    pretrained,
-                    cleanup,
-                    index_algorithm,
-                    cache_dataset_in_gpu,
-                    custom_pretrained,
-                    g_pretrained_path,
-                    d_pretrained_path,
-                    vocoder,
-                    checkpointing,
-                    shutdown_check,
-                ],
-                outputs=[train_output_info],
-            )
-
-            train_output_info.change(
-                fn=disable_stop_train_button,
-                inputs=[],
-                outputs=[train_button, stop_train_button],
-            )
-            pth_dropdown_export.change(
-                fn=export_pth,
-                inputs=[pth_dropdown_export],
-                outputs=[pth_file_export],
-            )
-            index_dropdown_export.change(
-                fn=export_index,
-                inputs=[index_dropdown_export],
-                outputs=[index_file_export],
-            )
-            refresh_export.click(
-                fn=refresh_pth_and_index_list,
-                inputs=[],
-                outputs=[pth_dropdown_export, index_dropdown_export],
-            )
+    architecture.change(
+        select_architecture,
+        architecture,
+        [
+            classic_preparation,
+            v3_preparation,
+            extraction_section,
+            classic_training,
+            v3_training,
+            classic_export,
+            v3_export,
+            vocoder,
+            index_button,
+            cpu_cores,
+            gpu,
+            sampling_rate,
+            batch_size,
+            total_epoch,
+            save_every_epoch,
+            preprocess_button,
+        ],
+    )

@@ -35,6 +35,10 @@
 > [!NOTE]  
 > Applio will no longer receive frequent updates. Going forward, development will focus mainly on security patches, dependency updates, and occasional feature improvements. This is because the project is already stable and mature with limited room for further improvements.
 
+## Experimental v3 architecture
+
+The experimental acoustic model and separate universal vocoder are integrated into the existing Training and Inference tabs. Classic RVC remains supported. Please see the [architecture, training and inference guide](docs/README.md) for setup, training stages, model compatibility, reference results, research and current limitations. Compatible v3 base weights must be trained separately; the small reference experiment is not a production model release.
+
 ## Introduction
 
 Applio is a powerful voice conversion tool focused on simplicity, quality, and performance. Whether you're an artist, developer, or researcher, Applio offers a straightforward platform for high-quality voice transformations. Its flexible design allows for customization through plugins and configurations, catering to a wide range of projects.

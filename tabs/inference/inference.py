@@ -4,13 +4,13 @@ import os
 import shutil
 import sys
 import traceback
+from pickle import UnpicklingError
 
 import gradio as gr
 import regex as re
 import torch
 
 from assets.i18n.i18n import I18nAuto
-from core import run_batch_infer_script, run_infer_script
 from rvc.lib.utils import format_title
 from tabs.settings.sections.filter import get_filter_trigger, load_config_filter
 from tabs.settings.sections.restart import stop_infer
@@ -88,7 +88,7 @@ def alias_score(path: str, want_model: bool) -> int:
 def get_files(type="model"):
     assert type in ("model", "index"), "Invalid type for get_files (models or index)"
     is_model = type == "model"
-    exts = (".pth", ".onnx") if is_model else (".index",)
+    exts = (".pth", ".pt", ".onnx") if is_model else (".index",)
     exclude_prefixes = ("G_", "D_") if is_model else ()
     exclude_substr = None if is_model else "trained"
 
@@ -105,6 +105,17 @@ def get_files(type="model"):
                 continue
 
             full = os.path.join(root, file)
+            if is_model:
+                from rvc.configs.architectures import model_architecture
+
+                try:
+                    if model_architecture(full) == "v3":
+                        from rvc.configs.architectures import inspect_model
+
+                        if inspect_model(full).get("kind") != "acoustic":
+                            continue
+                except (ValueError, RuntimeError, OSError, EOFError, UnpicklingError):
+                    continue
             real = os.path.realpath(full)
             score = alias_score(full, is_model)
 
@@ -146,7 +157,7 @@ def path_choices(paths):
     return choices
 
 
-default_weight = next(iter(get_files("model")), None)
+default_weight = None
 
 audio_paths = [
     os.path.join(root, name)
@@ -368,6 +379,11 @@ def folders_same(
 
 
 def match_index(model_file_value):
+    from rvc.configs.architectures import model_architecture
+
+    if model_file_value and model_architecture(model_file_value) == "v3":
+        return ""
+
     if not model_file_value:
         return ""
 
@@ -491,6 +507,8 @@ def get_speakers_id(model):
             model_data = torch.load(
                 os.path.join(now_dir, model), map_location="cpu", weights_only=True
             )
+            if model_data.get("backend") == "applio-v3":
+                return list(range(len(model_data["speakers"])))
             speakers_id = model_data.get("speakers_id")
             if speakers_id:
                 return list(range(speakers_id))
@@ -525,6 +543,8 @@ def update_filter_visibility(_):
 
 # Inference tab
 def inference_tab():
+    from tabs.inference.v3 import inference_options, model_settings, route_conversion
+
     trigger = get_filter_trigger()
     with gr.Column():
         gr.Markdown(value=i18n("## Model Selection"))
@@ -601,35 +621,47 @@ def inference_tab():
                 )
 
         with gr.Accordion(i18n("Advanced Settings"), open=False):
-            with gr.Column():
+            output_path = gr.Textbox(
+                label=i18n("Output Path"),
+                placeholder=i18n("Enter output path"),
+                info=i18n(
+                    "The path where the output audio will be saved, by default in assets/audios/output.wav"
+                ),
+                value=(
+                    output_path_fn(audio_paths[0])
+                    if audio_paths
+                    else os.path.join(now_dir, "assets", "audios", "output.wav")
+                ),
+                interactive=True,
+            )
+            sid = gr.Dropdown(
+                label=i18n("Speaker ID"),
+                info=i18n("Select the speaker ID to use for the conversion."),
+                choices=get_speakers_id(model_file.value),
+                value=0,
+                interactive=True,
+            )
+            pitch = gr.Slider(
+                minimum=-24,
+                maximum=24,
+                step=1,
+                label=i18n("Pitch"),
+                info=i18n(
+                    "Set the pitch of the audio, the higher the value, the higher the pitch."
+                ),
+                value=0,
+                interactive=True,
+            )
+            v3_single_settings, v3_single_options = inference_options()
+            with gr.Column() as classic_single_settings:
                 clear_outputs_infer = gr.Button(
                     i18n("Clear Outputs (Deletes all audios in assets/audios)")
-                )
-                output_path = gr.Textbox(
-                    label=i18n("Output Path"),
-                    placeholder=i18n("Enter output path"),
-                    info=i18n(
-                        "The path where the output audio will be saved, by default in assets/audios/output.wav"
-                    ),
-                    value=(
-                        output_path_fn(audio_paths[0])
-                        if audio_paths
-                        else os.path.join(now_dir, "assets", "audios", "output.wav")
-                    ),
-                    interactive=True,
                 )
                 export_format = gr.Radio(
                     label=i18n("Export Format"),
                     info=i18n("Select the format to export the audio."),
                     choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
                     value="WAV",
-                    interactive=True,
-                )
-                sid = gr.Dropdown(
-                    label=i18n("Speaker ID"),
-                    info=i18n("Select the speaker ID to use for the conversion."),
-                    choices=get_speakers_id(model_file.value),
-                    value=0,
                     interactive=True,
                 )
                 split_audio = gr.Checkbox(
@@ -1073,17 +1105,6 @@ def inference_tab():
                             placeholder=i18n("Enter preset name"),
                         )
                         export_button = gr.Button(i18n("Export Preset"))
-                pitch = gr.Slider(
-                    minimum=-24,
-                    maximum=24,
-                    step=1,
-                    label=i18n("Pitch"),
-                    info=i18n(
-                        "Set the pitch of the audio, the higher the value, the higher the pitch."
-                    ),
-                    value=0,
-                    interactive=True,
-                )
                 index_rate = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -1201,9 +1222,12 @@ def inference_tab():
                 return message, None
             try:
                 gr.Info(i18n("Converting audio..."))
-                result = run_infer_script(*args)
+                result = route_conversion(args[:-7], args[-7:])
                 gr.Info(result[0])
                 return result
+            except (ValueError, OSError) as error:
+                gr.Warning(str(error))
+                return str(error), None
             except Exception:
                 traceback.print_exc()
                 gr.Warning(
@@ -1224,7 +1248,10 @@ def inference_tab():
                 gr.Info(message)
                 return message
             try:
-                return run_batch_infer_script(*args)
+                return route_conversion(args[:-7], args[-7:], batch=True)
+            except (ValueError, OSError) as error:
+                gr.Warning(str(error))
+                return str(error)
             except Exception:
                 traceback.print_exc()
                 return i18n(
@@ -1272,7 +1299,26 @@ def inference_tab():
                     interactive=True,
                 )
         with gr.Accordion(i18n("Advanced Settings"), open=False):
-            with gr.Column():
+            sid_batch = gr.Dropdown(
+                label=i18n("Speaker ID"),
+                info=i18n("Select the speaker ID to use for the conversion."),
+                choices=get_speakers_id(model_file.value),
+                value=0,
+                interactive=True,
+            )
+            pitch_batch = gr.Slider(
+                minimum=-24,
+                maximum=24,
+                step=1,
+                label=i18n("Pitch"),
+                info=i18n(
+                    "Set the pitch of the audio, the higher the value, the higher the pitch."
+                ),
+                value=0,
+                interactive=True,
+            )
+            v3_batch_settings, v3_batch_options = inference_options()
+            with gr.Column() as classic_batch_settings:
                 clear_outputs_batch = gr.Button(
                     i18n("Clear Outputs (Deletes all audios in assets/audios)")
                 )
@@ -1281,13 +1327,6 @@ def inference_tab():
                     info=i18n("Select the format to export the audio."),
                     choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
                     value="WAV",
-                    interactive=True,
-                )
-                sid_batch = gr.Dropdown(
-                    label=i18n("Speaker ID"),
-                    info=i18n("Select the speaker ID to use for the conversion."),
-                    choices=get_speakers_id(model_file.value),
-                    value=0,
                     interactive=True,
                 )
                 split_audio_batch = gr.Checkbox(
@@ -1732,17 +1771,6 @@ def inference_tab():
                             placeholder=i18n("Enter preset name"),
                         )
                         export_button = gr.Button(i18n("Export Preset"))
-                pitch_batch = gr.Slider(
-                    minimum=-24,
-                    maximum=24,
-                    step=1,
-                    label=i18n("Pitch"),
-                    info=i18n(
-                        "Set the pitch of the audio, the higher the value, the higher the pitch."
-                    ),
-                    value=0,
-                    interactive=True,
-                )
                 index_rate_batch = gr.Slider(
                     minimum=0,
                     maximum=1,
@@ -2187,6 +2215,18 @@ def inference_tab():
         fn=filter_dropdowns,
         inputs=[filter_box_inf],
         outputs=[model_file, index_file],
+    ).then(
+        fn=model_settings,
+        inputs=[model_file],
+        outputs=[
+            classic_single_settings,
+            v3_single_settings,
+            classic_batch_settings,
+            v3_batch_settings,
+            index_file,
+            sid,
+            sid_batch,
+        ],
     )
     audio.change(
         fn=output_path_fn,
@@ -2310,8 +2350,11 @@ def inference_tab():
             delay_feedback,
             delay_mix,
             sid,
+            *v3_single_options,
         ],
         outputs=[vc_output1, vc_output2],
+        concurrency_id="model_gpu",
+        concurrency_limit=1,
     )
     convert_button_batch.click(
         fn=enable_stop_convert_button,
@@ -2380,8 +2423,11 @@ def inference_tab():
             delay_feedback_batch,
             delay_mix_batch,
             sid_batch,
+            *v3_batch_options,
         ],
         outputs=[vc_output3],
+        concurrency_id="model_gpu",
+        concurrency_limit=1,
     ).then(
         fn=disable_stop_convert_button,
         inputs=[],
@@ -2391,4 +2437,30 @@ def inference_tab():
         fn=disable_stop_convert_button,
         inputs=[],
         outputs=[convert_button_batch, stop_button],
+    )
+
+    model_file.change(
+        fn=model_settings,
+        inputs=[model_file],
+        outputs=[
+            classic_single_settings,
+            v3_single_settings,
+            classic_batch_settings,
+            v3_batch_settings,
+            index_file,
+            sid,
+            sid_batch,
+        ],
+    )
+    unload_button.click(
+        lambda: model_settings(None),
+        outputs=[
+            classic_single_settings,
+            v3_single_settings,
+            classic_batch_settings,
+            v3_batch_settings,
+            index_file,
+            sid,
+            sid_batch,
+        ],
     )

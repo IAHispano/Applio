@@ -493,6 +493,8 @@ class VoiceConverter:
             if os.path.isfile(weight_root)
             else None
         )
+        from rvc.configs.architectures import require_classic_payload
+        require_classic_payload(self.cpt)
 
     def setup_network(self):
         """

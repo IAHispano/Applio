@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Applio v3 live</title>
+<style>body{font:17px system-ui;background:#151820;color:#f0f1f7;max-width:720px;margin:60px auto;padding:24px}button,input,select{font:inherit;padding:10px;margin:8px;background:#252b38;color:inherit;border:1px solid #555;border-radius:6px}label{display:block}pre{white-space:pre-wrap}</style>
+<h1>Applio v3 live</h1><p>Use headphones. Select the target voice and refinement budget, then start microphone conversion.</p>
+<label>Target speaker ID <input id="speaker" type="number" min="0" value="0"></label>
+<label>Pitch shift <input id="pitch" type="number" min="-48" max="48" value="0"></label>
+<label>Refiner evaluations <select id="steps"><option>0</option><option>1</option><option>2</option><option selected>4</option><option>8</option><option>16</option><option>32</option></select></label>
+<button id="start">Start microphone</button><button id="stop" disabled>Stop and flush</button><pre id="status">Ready</pre>
+<script>
+let socket,context,microphone,node,nextTime=0,active=false,flushCapture=()=>{};
+const status=document.getElementById('status');
+async function cleanup(){active=false;if(microphone)microphone.getTracks().forEach(t=>t.stop());if(node)node.disconnect();document.getElementById('start').disabled=false;document.getElementById('stop').disabled=true;}
+document.getElementById('start').onclick=async()=>{
+ try{
+ if(context)await context.close();context=new AudioContext(); await context.resume(); nextTime=0;
+ socket=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/stream');socket.binaryType='arraybuffer';
+ await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject;});
+ socket.send(JSON.stringify({sample_rate:context.sampleRate,speaker:+document.getElementById('speaker').value,semitones:+document.getElementById('pitch').value,steps:+document.getElementById('steps').value}));
+ let outputRate=44100;
+ socket.onmessage=e=>{if(typeof e.data==='string'){const message=JSON.parse(e.data);status.textContent=JSON.stringify(message,null,2);if(message.sample_rate)outputRate=message.sample_rate;if(message.error||message.flushed)cleanup();return;}
+ const samples=new Float32Array(e.data);if(!samples.length)return;
+ const buffer=context.createBuffer(1,samples.length,outputRate);buffer.copyToChannel(samples,0);const source=context.createBufferSource();source.buffer=buffer;source.connect(context.destination);
+ nextTime=Math.max(nextTime,context.currentTime+.03);source.start(nextTime);nextTime+=buffer.duration;};
+ socket.onclose=()=>{cleanup();};
+ const worklet=`class Capture extends AudioWorkletProcessor{process(inputs){const input=inputs[0]?.[0];if(input)this.port.postMessage(input.slice());return true;}}registerProcessor('capture',Capture);`;
+ const url=URL.createObjectURL(new Blob([worklet],{type:'application/javascript'}));await context.audioWorklet.addModule(url);URL.revokeObjectURL(url);
+ microphone=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+ node=new AudioWorkletNode(context,'capture');active=true;let chunks=[],count=0;
+ flushCapture=()=>{if(!count||socket.readyState!==WebSocket.OPEN)return;const audio=new Float32Array(count);let offset=0;chunks.forEach(c=>{audio.set(c,offset);offset+=c.length;});chunks=[];count=0;socket.send(audio.buffer);};
+ node.port.onmessage=e=>{if(!active)return;chunks.push(e.data);count+=e.data.length;if(count>=2048){if(socket.bufferedAmount>context.sampleRate*8){status.textContent='Audio processing is falling behind';cleanup();socket.close();return;}flushCapture();}};
+ context.createMediaStreamSource(microphone).connect(node);node.connect(context.destination);
+ document.getElementById('start').disabled=true;document.getElementById('stop').disabled=false;
+ }catch(error){status.textContent=String(error);cleanup();if(socket)socket.close();}
+};
+document.getElementById('stop').onclick=()=>{flushCapture();cleanup();if(socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify({command:'flush'}));};
+</script></html>

@@ -1,0 +1,6 @@
+{
+  "sample_rate": 44100, "hop_length": 512, "mel_dim": 128,
+  "streams": 1, "n_fft": 2048, "channels": 64, "depth": 8,
+  "kernel_size": 7, "filter_taps": 63,
+  "causal": true, "checkpoint_blocks": true
+}

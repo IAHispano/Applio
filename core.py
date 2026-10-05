@@ -2,24 +2,16 @@ import json
 import os
 import subprocess
 import sys
+from datetime import datetime, timedelta
+from functools import lru_cache
 
 import click
-
-from functools import lru_cache
-from datetime import datetime, timedelta
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 logs_path = os.path.join(current_script_directory, "logs")
-
-from rvc.lib.tools.analyzer import analyze_audio
-from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
-from rvc.lib.tools.model_download import model_download_pipeline
-from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
-from rvc.train.process.model_blender import model_blender as blender
-from rvc.train.process.model_information import model_information as model_info
 
 python = sys.executable
 
@@ -639,25 +631,40 @@ def run_index_script(model_name: str, index_algorithm: str):
 
 # Model information
 def run_model_information_script(pth_path: str):
-    print(model_info(pth_path))
-    return model_info(pth_path)
+    from rvc.configs.architectures import inspect_model
+
+    metadata = inspect_model(pth_path)
+    if metadata["backend"] == "applio-v3":
+        result = json.dumps(metadata, indent=2)
+    else:
+        from rvc.train.process.model_information import model_information as model_info
+
+        result = model_info(pth_path)
+    print(result)
+    return result
 
 
 # Model blender
 def run_model_blender_script(
     model_name: str, pth_path_1: str, pth_path_2: str, ratio: float
 ):
+    from rvc.train.process.model_blender import model_blender as blender
+
     message, model_blended = blender(model_name, pth_path_1, pth_path_2, ratio)
     return message, model_blended
 
 
 # Tensorboard
 def run_tensorboard_script():
+    from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
+
     launch_tensorboard_pipeline()
 
 
 # Download
 def run_download_script(model_link: str):
+    from rvc.lib.tools.model_download import model_download_pipeline
+
     result = model_download_pipeline(model_link)
     if result == "Error" or result is None:
         return "An error occurred downloading the model. Please check the console logs for more details."
@@ -670,6 +677,8 @@ def run_prerequisites_script(
     models: bool,
     exe: bool,
 ):
+    from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
+
     prequisites_download_pipeline(
         pretraineds_hifigan,
         models,
@@ -682,12 +691,321 @@ def run_prerequisites_script(
 def run_audio_analyzer_script(
     input_path: str, save_plot_path: str = "logs/audio_analysis.png"
 ):
+    from rvc.lib.tools.analyzer import analyze_audio
+
     audio_info, plot_path = analyze_audio(input_path, save_plot_path)
     print(
         f"Audio info of {input_path}: {audio_info}",
         f"Audio file {input_path} analyzed successfully. Plot saved at: {plot_path}",
     )
     return audio_info, plot_path
+
+
+def v3_project(model_name):
+    """Keep training artifacts inside the existing logs/<model> structure."""
+    from pathlib import Path
+
+    if (
+        not model_name
+        or Path(model_name).name != model_name
+        or model_name in {".", ".."}
+    ):
+        raise ValueError("Model name must be one directory name")
+    return Path(current_script_directory) / "logs" / model_name
+
+
+def run_v3_prepare_script(
+    model_name,
+    dataset_path,
+    encoder_path="rvc/models/embedders/contentvec",
+    pitch_extractor="swift",
+    pitch_path=None,
+    profile="bounded",
+    device="auto",
+    validation_fraction=0.1,
+    segment_seconds=4,
+    seed=1234,
+    speakers=(),
+    recordings_per_speaker=0,
+    progress=None,
+):
+    from rvc.train.extract.v3 import FeatureExtractor
+    from rvc.train.v3.data import atomic_json, prepare
+    from rvc.train.v3.trainer import resolve_device
+
+    project = v3_project(model_name)
+    extractor = FeatureExtractor(
+        encoder_path,
+        device=resolve_device(device),
+        pitch=pitch_extractor,
+        pitch_path=pitch_path or None,
+        profile=profile,
+    )
+    result = prepare(
+        dataset_path,
+        project / "data",
+        extractor,
+        validation_fraction,
+        segment_seconds,
+        seed,
+        speaker_names=speakers,
+        recordings_per_speaker=int(recordings_per_speaker),
+        progress=progress,
+    )
+    atomic_json(
+        project / "preparation.json",
+        dict(
+            model_name=model_name,
+            dataset_path=dataset_path,
+            encoder_path=encoder_path,
+            pitch_extractor=pitch_extractor,
+            pitch_path=pitch_path,
+            profile=profile,
+            device=device,
+            validation_fraction=validation_fraction,
+            segment_seconds=segment_seconds,
+            seed=seed,
+            speakers=list(speakers),
+            recordings_per_speaker=int(recordings_per_speaker),
+        ),
+    )
+    return str(result)
+
+
+def run_v3_train_script(
+    model_name,
+    stage="predictor",
+    manifest=None,
+    output_dir=None,
+    base_model=None,
+    config=None,
+    **kwargs,
+):
+    from pathlib import Path
+
+    from rvc.configs.v3 import AcousticConfig, VocoderConfig
+    from rvc.train.v3.trainer import train
+
+    project = v3_project(model_name)
+    kind = "vocoder" if stage == "vocoder" else "acoustic"
+    if config:
+        constructor = VocoderConfig if kind == "vocoder" else AcousticConfig
+        config = constructor(**json.loads(Path(config).read_text(encoding="utf-8")))
+    yield from train(
+        manifest or project / "data/manifest.json",
+        output_dir or project / "checkpoints" / stage,
+        kind=kind,
+        phase="predictor" if kind == "vocoder" else stage,
+        pretrained=base_model or None,
+        config=config,
+        **kwargs,
+    )
+
+
+def run_v3_infer_script(
+    input_path,
+    output_path,
+    pth_path,
+    vocoder_path,
+    encoder_path="rvc/models/embedders/contentvec",
+    pitch_path=None,
+    sid=0,
+    pitch=0,
+    refinement_steps=4,
+    seed=0,
+    device="auto",
+    ordinary_flow=False,
+    batch=False,
+):
+    from pathlib import Path
+
+    from rvc.infer.v3 import Converter
+
+    if not vocoder_path:
+        raise ValueError("Applio v3 requires a separate --vocoder-path")
+    converter = Converter(
+        pth_path, vocoder_path, encoder_path, pitch_path or None, device
+    )
+    options = dict(
+        speaker=int(sid),
+        semitones=float(pitch),
+        steps=int(refinement_steps),
+        seed=int(seed),
+        ordinary=ordinary_flow,
+    )
+    if not batch:
+        return converter.convert_file(input_path, output_path, **options)
+    source, destination = Path(input_path).resolve(), Path(output_path).resolve()
+    if not source.is_dir() or destination.is_relative_to(source):
+        raise ValueError(
+            "Batch input must be a directory and output must be outside its tree"
+        )
+    files = sorted(
+        p
+        for p in source.rglob("*")
+        if p.suffix.lower() in {".wav", ".flac", ".ogg", ".aiff", ".aif"}
+    )
+    if not files:
+        raise ValueError("No supported batch inputs")
+    return [
+        converter.convert_file(
+            file, destination / file.relative_to(source).with_suffix(".wav"), **options
+        )
+        for file in files
+    ]
+
+
+def run_v3_export_script(checkpoint, output_path):
+    from rvc.train.process.v3_checkpoints import export_checkpoint
+
+    return str(export_checkpoint(checkpoint, output_path))
+
+
+def run_v3_evaluate_script(manifest, pth_path, vocoder_path, output_dir, **kwargs):
+    from rvc.train.process.v3_evaluation import evaluate
+
+    return evaluate(manifest, pth_path, vocoder_path, output_dir, **kwargs)
+
+
+def _architecture_options(func):
+    return click.option(
+        "--architecture",
+        type=click.Choice(["classic", "v3"]),
+        default="classic",
+        show_default=True,
+    )(func)
+
+
+def _v3_prepare_options(func):
+    for option in reversed(
+        [
+            click.option(
+                "--encoder-path",
+                default="rvc/models/embedders/contentvec",
+                type=click.Path(file_okay=False),
+            ),
+            click.option(
+                "--pitch-extractor",
+                type=click.Choice(["swift", "rmvpe"]),
+                default="swift",
+            ),
+            click.option("--pitch-path", type=click.Path(exists=True)),
+            click.option(
+                "--profile",
+                type=click.Choice(["bounded", "offline"]),
+                default="bounded",
+            ),
+            click.option("--device", default="auto"),
+            click.option(
+                "--validation-fraction",
+                type=click.FloatRange(0.001, 0.999),
+                default=0.1,
+            ),
+            click.option(
+                "--segment-seconds", type=click.FloatRange(min=0.05), default=4.0
+            ),
+            click.option("--seed", type=int, default=1234),
+            click.option("--speaker", "speakers", multiple=True),
+            click.option(
+                "--recordings-per-speaker", type=click.IntRange(min=0), default=0
+            ),
+        ]
+    ):
+        func = option(func)
+    return func
+
+
+def _v3_inference_options(func):
+    for option in reversed(
+        [
+            click.option(
+                "--architecture",
+                type=click.Choice(["auto", "classic", "v3"]),
+                default="auto",
+                show_default=True,
+            ),
+            click.option("--vocoder-path", type=click.Path(exists=True)),
+            click.option("--encoder-path", default="rvc/models/embedders/contentvec"),
+            click.option("--pitch-path", type=click.Path(exists=True)),
+            click.option(
+                "--refinement-steps",
+                type=click.Choice(["0", "1", "2", "4", "8", "16", "32"]),
+                default="4",
+            ),
+            click.option("--seed", type=int, default=0),
+            click.option("--device", default="auto"),
+            click.option("--ordinary-flow", is_flag=True),
+        ]
+    ):
+        func = option(func)
+    return func
+
+
+def _dispatch_inference(kwargs, batch=False):
+    from rvc.configs.architectures import resolve_architecture
+
+    try:
+        architecture = resolve_architecture(
+            kwargs.pop("architecture"), kwargs["pth_path"]
+        )
+        names = (
+            "vocoder_path",
+            "encoder_path",
+            "pitch_path",
+            "refinement_steps",
+            "seed",
+            "device",
+            "ordinary_flow",
+        )
+        options = {name: kwargs.pop(name) for name in names}
+        if architecture == "v3":
+            supported = set(names) | {
+                "architecture",
+                "input_path",
+                "output_path",
+                "input_folder",
+                "output_folder",
+                "pth_path",
+                "sid",
+                "pitch",
+                "index_path",
+            }
+            _reject_explicit_options(
+                set(click.get_current_context().params) - supported, "v3 inference"
+            )
+            if kwargs.get("index_path"):
+                raise ValueError(
+                    "Retrieval indexes belong to classic models; leave --index-path empty for v3"
+                )
+            return run_v3_infer_script(
+                kwargs["input_folder" if batch else "input_path"],
+                kwargs["output_folder" if batch else "output_path"],
+                kwargs["pth_path"],
+                sid=kwargs.get("sid", 0),
+                pitch=kwargs["pitch"],
+                batch=batch,
+                **options,
+            )
+        _reject_explicit_options(names, "classic inference")
+        kwargs["index_path"] = kwargs.get("index_path") or ""
+        return (
+            run_batch_infer_script(**kwargs) if batch else run_infer_script(**kwargs)[0]
+        )
+    except (ValueError, OSError) as error:
+        raise click.ClickException(str(error)) from error
+
+
+def _reject_explicit_options(names, operation):
+    context = click.get_current_context()
+    unsupported = sorted(
+        "--" + name.replace("_", "-")
+        for name in names
+        if context.get_parameter_source(name) == click.core.ParameterSource.COMMANDLINE
+    )
+    if unsupported:
+        raise click.ClickException(
+            f"Options unavailable for {operation}: {', '.join(unsupported)}"
+        )
 
 
 def _get_version():
@@ -930,17 +1248,18 @@ def cli(ctx):
     "--output-path", required=True, help="Full path to the output audio file."
 )
 @click.option(
-    "--pth-path", required=True, help="Full path to the RVC model file (.pth)."
+    "--pth-path",
+    "--model-path",
+    required=True,
+    help="Full path to the RVC model file (.pth).",
 )
-@click.option(
-    "--index-path", required=True, help="Full path to the index file (.index)."
-)
+@click.option("--index-path", default="", help="Full path to the index file (.index).")
+@_v3_inference_options
 @_infer_opts
 @_post_process_opts
 def infer(**kwargs):
     """Run voice conversion on a single audio file."""
-    result = run_infer_script(**kwargs)
-    click.echo(result[0])
+    click.echo(_dispatch_inference(kwargs))
 
 
 @cli.command()
@@ -951,17 +1270,18 @@ def infer(**kwargs):
     "--output-folder", required=True, help="Folder for saving output audio files."
 )
 @click.option(
-    "--pth-path", required=True, help="Full path to the RVC model file (.pth)."
+    "--pth-path",
+    "--model-path",
+    required=True,
+    help="Full path to the RVC model file (.pth).",
 )
-@click.option(
-    "--index-path", required=True, help="Full path to the index file (.index)."
-)
+@click.option("--index-path", default="", help="Full path to the index file (.index).")
+@_v3_inference_options
 @_infer_opts
 @_post_process_opts
 def batch_infer(**kwargs):
     """Run voice conversion on multiple audio files in a folder."""
-    result = run_batch_infer_script(**kwargs)
-    click.echo(result)
+    click.echo(_dispatch_inference(kwargs, batch=True))
 
 
 @cli.command()
@@ -1003,8 +1323,8 @@ def tts(**kwargs):
 @click.option("--dataset-path", required=True, help="Path to the dataset directory.")
 @click.option(
     "--sample-rate",
-    required=True,
-    type=click.Choice(["32000", "40000", "48000"]),
+    default="40000",
+    type=click.Choice(["32000", "40000", "44100", "48000"]),
     help="Target sampling rate.",
 )
 @click.option(
@@ -1055,8 +1375,52 @@ def tts(**kwargs):
     default="none",
     help="Normalization mode.",
 )
+@_architecture_options
+@_v3_prepare_options
 def preprocess(**kwargs):
     """Preprocess a dataset for training."""
+    architecture = kwargs.pop("architecture")
+    names = (
+        "encoder_path",
+        "pitch_extractor",
+        "pitch_path",
+        "profile",
+        "device",
+        "validation_fraction",
+        "segment_seconds",
+        "seed",
+        "speakers",
+        "recordings_per_speaker",
+    )
+    options = {name: kwargs.pop(name) for name in names}
+    if architecture == "v3":
+        _reject_explicit_options(
+            set(kwargs) - {"model_name", "dataset_path", "sample_rate"},
+            "v3 preparation",
+        )
+        if (
+            click.get_current_context().get_parameter_source("sample_rate")
+            == click.core.ParameterSource.COMMANDLINE
+            and kwargs["sample_rate"] != "44100"
+        ):
+            raise click.ClickException("Applio v3 uses the fixed 44100 Hz mel contract")
+        try:
+            click.echo(
+                run_v3_prepare_script(
+                    kwargs["model_name"],
+                    kwargs["dataset_path"],
+                    progress=lambda update: click.echo(json.dumps(update)),
+                    **options,
+                )
+            )
+        except (ValueError, OSError) as error:
+            raise click.ClickException(str(error)) from error
+        return
+    _reject_explicit_options(names, "classic preparation")
+    if kwargs["sample_rate"] == "44100":
+        raise click.ClickException(
+            "Classic preprocessing supports 32000, 40000 or 48000 Hz"
+        )
     kwargs["sample_rate"] = int(kwargs["sample_rate"])
     kwargs["noise_reduction_strength"] = float(kwargs["noise_reduction_strength"])
     kwargs["chunk_len"] = float(kwargs["chunk_len"])
@@ -1092,7 +1456,7 @@ def preprocess(**kwargs):
 @click.option("--gpu", type=str, default="-", help="GPU device to use (e.g. '0').")
 @click.option(
     "--sample-rate",
-    required=True,
+    default="40000",
     type=click.Choice(["32000", "40000", "44100", "48000"]),
     help="Target sampling rate.",
 )
@@ -1124,8 +1488,19 @@ def preprocess(**kwargs):
     default=2,
     help="Number of silent files to include.",
 )
+@_architecture_options
 def extract(**kwargs):
     """Extract features from a preprocessed dataset."""
+    if kwargs.pop("architecture") == "v3":
+        recipe = v3_project(kwargs["model_name"]) / "preparation.json"
+        if not recipe.exists():
+            raise click.ClickException(
+                "Run preprocess --architecture v3 first; it prepares audio and features together"
+            )
+        click.echo(
+            run_v3_prepare_script(**json.loads(recipe.read_text(encoding="utf-8")))
+        )
+        return
     kwargs["sample_rate"] = int(kwargs["sample_rate"])
     kwargs["cpu_cores"] = kwargs.get("cpu_cores") or 1
     result = run_extract_script(
@@ -1157,7 +1532,7 @@ def extract(**kwargs):
 )
 @click.option(
     "--save-every-epoch",
-    required=True,
+    default=10,
     type=click.IntRange(1, 100),
     help="Save checkpoint every N epochs.",
 )
@@ -1181,8 +1556,8 @@ def extract(**kwargs):
 )
 @click.option(
     "--sample-rate",
-    required=True,
-    type=click.Choice(["32000", "40000", "48000"]),
+    default="40000",
+    type=click.Choice(["32000", "40000", "44100", "48000"]),
     help="Training sampling rate.",
 )
 @click.option(
@@ -1224,8 +1599,79 @@ def extract(**kwargs):
     default="Auto",
     help="Index file generation algorithm.",
 )
+@_architecture_options
+@click.option(
+    "--stage",
+    type=click.Choice(["predictor", "flow", "shortcut", "adapt", "vocoder"]),
+    default="predictor",
+)
+@click.option("--manifest", type=click.Path(exists=True))
+@click.option("--output-dir", type=click.Path())
+@click.option("--base-model", type=click.Path(exists=True))
+@click.option("--resume", type=click.Path(exists=True))
+@click.option("--config", type=click.Path(exists=True))
+@click.option("--steps", type=click.IntRange(min=1), default=10000)
+@click.option("--crop-frames", type=click.IntRange(min=1), default=128)
+@click.option(
+    "--learning-rate", type=click.FloatRange(min=0, min_open=True), default=2e-4
+)
+@click.option(
+    "--precision", type=click.Choice(["bf16", "fp16", "fp32"]), default="bf16"
+)
+@click.option("--device", default="auto")
+@click.option("--seed", type=int, default=1234)
+@click.option("--checkpoint-every", type=click.IntRange(min=1), default=100)
+@click.option("--adapter-rank", type=click.IntRange(min=1), default=8)
+@click.option("--adaptation", type=click.Choice(["lora", "full"]), default="lora")
+@click.option("--accumulation-steps", type=click.IntRange(min=1), default=1)
 def train(**kwargs):
-    """Train an RVC model."""
+    """Train classic RVC or a selected Applio v3 stage."""
+    architecture = kwargs.pop("architecture")
+    names = (
+        "stage",
+        "manifest",
+        "output_dir",
+        "base_model",
+        "resume",
+        "config",
+        "steps",
+        "crop_frames",
+        "learning_rate",
+        "precision",
+        "device",
+        "seed",
+        "checkpoint_every",
+        "adapter_rank",
+        "adaptation",
+        "accumulation_steps",
+    )
+    options = {name: kwargs.pop(name) for name in names}
+    if architecture == "v3":
+        _reject_explicit_options(
+            set(kwargs) - {"model_name", "sample_rate", "batch_size"}, "v3 training"
+        )
+        if (
+            click.get_current_context().get_parameter_source("sample_rate")
+            == click.core.ParameterSource.COMMANDLINE
+            and kwargs["sample_rate"] != "44100"
+        ):
+            raise click.ClickException("Applio v3 uses 44100 Hz")
+        if (
+            click.get_current_context().get_parameter_source("batch_size")
+            == click.core.ParameterSource.DEFAULT
+        ):
+            kwargs["batch_size"] = 2
+        try:
+            for update in run_v3_train_script(
+                kwargs["model_name"], batch_size=kwargs["batch_size"], **options
+            ):
+                click.echo(json.dumps(update), color=False)
+        except (ValueError, OSError) as error:
+            raise click.ClickException(str(error)) from error
+        return
+    _reject_explicit_options(names, "classic training")
+    if kwargs["sample_rate"] == "44100":
+        raise click.ClickException("Classic training supports 32000, 40000 or 48000 Hz")
     result = run_train_script(
         model_name=kwargs["model_name"],
         save_every_epoch=kwargs["save_every_epoch"],
@@ -1326,6 +1772,174 @@ def prerequisites(**kwargs):
 def audio_analyzer(**kwargs):
     """Analyze an audio file and display information."""
     run_audio_analyzer_script(kwargs["input_path"])
+
+
+@cli.command("export-model")
+@click.option("--checkpoint", required=True, type=click.Path(exists=True))
+@click.option("--output-path", required=True, type=click.Path())
+def export_model(checkpoint, output_path):
+    """Export v3 EMA weights, merging adaptation adapters for inference."""
+    click.echo(run_v3_export_script(checkpoint, output_path))
+
+
+@cli.command()
+@click.option("--manifest", required=True, type=click.Path(exists=True))
+@click.option("--pth-path", "--model-path", required=True, type=click.Path(exists=True))
+@click.option("--vocoder-path", required=True, type=click.Path(exists=True))
+@click.option("--output-dir", required=True, type=click.Path())
+@click.option(
+    "--budget",
+    "budgets",
+    multiple=True,
+    type=click.Choice(["0", "1", "2", "4", "8", "16", "32"]),
+    default=["0", "2", "4", "8", "16"],
+)
+@click.option("--device", default="auto")
+@click.option("--seed", type=int, default=1234)
+@click.option("--limit", type=click.IntRange(min=0), default=0)
+def evaluate(budgets, **kwargs):
+    """Render recording-disjoint validation audio, budget curves and vocoder ceiling."""
+    result = run_v3_evaluate_script(budgets=[int(b) for b in budgets], **kwargs)
+    click.echo(json.dumps({k: v for k, v in result.items() if k != "rows"}, indent=2))
+
+
+@cli.command("download-encoder")
+@click.option(
+    "--output-dir", default="rvc/models/embedders/contentvec", type=click.Path()
+)
+@click.option("--repo", default="IAHispano/Applio")
+@click.option("--revision", default="70ed563897504c756ec94067c12c902c4fd42025")
+@click.option("--prefix", default="Resources/embedders/contentvec")
+def download_encoder(output_dir, repo, revision, prefix):
+    """Download pinned content encoder weights without remote Python code."""
+    import re
+    import shutil
+    from pathlib import Path
+
+    from huggingface_hub import hf_hub_download
+
+    if not re.fullmatch(r"[0-9a-f]{40}", revision):
+        raise click.ClickException("Pin --revision to a full 40-character commit SHA")
+    destination = Path(output_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    for name in ("config.json", "pytorch_model.bin"):
+        source = hf_hub_download(repo, f"{prefix}/{name}", revision=revision)
+        shutil.copy2(source, destination / name)
+    click.echo(str(destination))
+
+
+@cli.command("verify-architecture")
+@click.option(
+    "--encoder-path",
+    default="rvc/models/embedders/contentvec",
+    type=click.Path(exists=True),
+)
+@click.option("--output-dir", default="logs/v3-verification")
+@click.option("--device", default="auto")
+@click.option("--small", is_flag=True)
+def verify_architecture(encoder_path, output_dir, device, small):
+    """Measure graph, streaming and GPU memory on a synthetic engineering fixture."""
+    from rvc.lib.tools.v3_verify import verify
+
+    click.echo(
+        json.dumps(
+            verify(encoder_path, output_dir, device, full_size=not small), indent=2
+        )
+    )
+
+
+def _v3_runtime_options(func):
+    for option in reversed(
+        [
+            click.option(
+                "--pth-path",
+                "--model-path",
+                required=True,
+                type=click.Path(exists=True),
+            ),
+            click.option("--vocoder-path", required=True, type=click.Path(exists=True)),
+            click.option(
+                "--encoder-path",
+                default="rvc/models/embedders/contentvec",
+                type=click.Path(exists=True),
+            ),
+            click.option("--pitch-path", type=click.Path(exists=True)),
+            click.option("--device", default="auto"),
+        ]
+    ):
+        func = option(func)
+    return func
+
+
+@cli.command("serve-v3")
+@_v3_runtime_options
+@click.option("--host", default="127.0.0.1")
+@click.option("--port", type=click.IntRange(1, 65535), default=7862)
+def serve_v3(pth_path, vocoder_path, encoder_path, pitch_path, device, host, port):
+    """Serve the browser microphone interface using the bounded v3 frontend."""
+    import uvicorn
+
+    from rvc.infer.v3 import Converter
+    from rvc.realtime.v3_transport import create_app
+
+    converter = Converter(pth_path, vocoder_path, encoder_path, pitch_path, device)
+    uvicorn.run(create_app(converter), host=host, port=port)
+
+
+@cli.command("realtime-v3")
+@_v3_runtime_options
+@click.option("--input-device", type=int)
+@click.option("--output-device", type=int)
+@click.option("--sample-rate", type=click.IntRange(min=8000), default=48000)
+@click.option("--block-size", type=click.IntRange(min=1), default=1024)
+@click.option("--sid", type=click.IntRange(min=0), default=0)
+@click.option("--pitch", type=click.FloatRange(-24, 24), default=0)
+@click.option(
+    "--refinement-steps",
+    type=click.Choice(["0", "1", "2", "4", "8", "16", "32"]),
+    default="4",
+)
+@click.option("--seed", type=click.IntRange(min=0), default=0)
+def realtime_v3(
+    pth_path,
+    vocoder_path,
+    encoder_path,
+    pitch_path,
+    device,
+    sid,
+    pitch,
+    refinement_steps,
+    seed,
+    **kwargs,
+):
+    """Run v3 conversion on explicitly selected native audio devices."""
+    from rvc.infer.v3 import Converter
+    from rvc.realtime.v3_transport import NativeSession
+
+    converter = Converter(pth_path, vocoder_path, encoder_path, pitch_path, device)
+    NativeSession(
+        converter,
+        speaker=sid,
+        semitones=pitch,
+        steps=int(refinement_steps),
+        seed=seed,
+        **kwargs,
+    ).run()
+
+
+@cli.command("test-vctk")
+@click.option("--model-name", required=True)
+@click.option("--predictor-steps", type=click.IntRange(min=2), default=1000)
+@click.option("--vocoder-steps", type=click.IntRange(min=2), default=2000)
+@click.option("--flow-steps", type=click.IntRange(min=1), default=500)
+@click.option("--shortcut-steps", type=click.IntRange(min=1), default=500)
+@click.option("--limit", type=click.IntRange(min=1), default=8)
+@click.option("--device", default="cuda")
+def test_vctk(**kwargs):
+    """Run staged learning and held-out audio tests on an already prepared VCTK subset."""
+    from rvc.lib.tools.v3_vctk import run_experiment
+
+    run_experiment(**kwargs)
 
 
 def main():
