@@ -142,6 +142,35 @@ Relevant primary sources include [ContentVec](https://arxiv.org/abs/2204.09224),
 
 Current limitations include short reference training, limited speaker coverage, no matched classic-model comparison, no blinded listening or calibrated identity/intelligibility acceptance, and no universal singing-quality claim. Larger configurations, direct-mel and single-stream ablations, unfamiliar speakers, expressive singing, long-duration audio, microphone operation and multi-GPU throughput require their own evaluation.
 
+### Pretrained vocoder feasibility
+
+A local benchmark evaluated NVIDIA's [BigVGAN v2 44.1 kHz / 128-band / 512-hop checkpoint](https://huggingface.co/nvidia/bigvgan_v2_44khz_128band_512x), using model revision `95a9d1dcb12906c03edd938d77b9333d6ded7dfb` and [official implementation](https://github.com/NVIDIA/BigVGAN) commit `7d2b454564a6c7d014227f635b7423881f14bdac`. The model card declares MIT licensing; retain the upstream notices when integrating it. This candidate matches V3's FFT, Hann window, Slaney magnitude-mel, natural-log floor, sample rate and hop settings. On four matched held-out recordings, the upstream and native mel extractors produced identical tensors after the native frame padding was applied.
+
+Both vocoders rendered the same reference mels and predictor outputs. The native baseline was saved at vocoder update 22,500; the acoustic model was the same trained predictor. Saved baseline audio reproduced the original error measurements before comparison. BigVGAN received no additional training.
+
+| Input to vocoder | Native waveform mel L1 | Pretrained BigVGAN waveform mel L1 |
+| --- | ---: | ---: |
+| Reference mel | 0.19905 | 0.11759 |
+| Predictor mel | 0.46638 | 0.43599 |
+
+This small diagnostic suggests that a pretrained backend could remove the universal-vocoder training stage while retaining the current acoustic model. Lower spectral error does not establish perceptual preference, speaker similarity or singing quality. The native vocoder was still training, so this is an interim comparison rather than a convergence comparison.
+
+The tested BigVGAN generator has 122,152,752 parameters. On CPU with two threads, synthesis took approximately 3.9 seconds per second of audio; timings exclude model loading, feature extraction and acoustic prediction. GPU throughput, memory and streaming latency were not measured. Upstream convolutions use future context, and the generator consumes mel without a separate F0 input. Pitch-conditioned acoustics remain in V3, but pitch-shift and singing behavior need dedicated evaluation. The current streaming implementation depends on the native vocoder's state and halo semantics, so an external backend requires its own buffering contract.
+
+BigVGAN is available as an optional frozen file-inference backend. The package loader uses explicit `vocoder_backend` metadata; older native checkpoints retain their original behavior. The portable Torch graph reproduces the pinned upstream output exactly in a verified short-frame comparison. No custom CUDA compilation or additional dependency file is required. Upstream component notices are retained in `rvc/lib/algorithm/v3/bigvgan.LICENSE`.
+
+```powershell
+# Download and package the pinned official pretrained release.
+python core.py import-vocoder --output-path logs/pretrained_bigvgan/bigvgan_vocoder.pth
+
+# Alternatively, import an already downloaded official generator and config.
+python core.py import-vocoder --checkpoint PATH_TO_GENERATOR.pt --config PATH_TO_CONFIG.json --output-path logs/pretrained_bigvgan/bigvgan_vocoder.pth
+```
+
+Select the imported package in the existing V3 vocoder dropdown for file inference or voice fine-tuning. Its mel contract must match the acoustic package. Fine-tuning reuses these frozen weights; imported BigVGAN packages cannot initialize native spectral-vocoder training. Live conversion rejects this noncausal backend explicitly. GPU memory, latency across hardware, unfamiliar voices, pitch changes and singing need broader evaluation before changing defaults. The [official Wavehax repository](https://github.com/chomeyama/wavehax) currently describes pretrained releases as planned. The official [Vocos 24 kHz configuration](https://huggingface.co/charactr/vocos-mel-24khz/blob/main/config.yaml) uses a different audio contract and is less direct for the existing 44.1 kHz acoustic model.
+
+The larger local experiment now retains its 30,000-update predictor and 25,000-update native vocoder checkpoint, uses frozen BigVGAN for rendering, and trains only the remaining acoustic flow and shortcut stages. The initial GPU evaluation covered eight diverse and four matched held-out segments. Predictor plus BigVGAN achieved a mean synthesis RTF around 0.09, excluding feature extraction and file I/O; this is throughput rather than streaming latency. Original recordings and cached features were reused unchanged.
+
 
 <a id="workflow"></a>
 
@@ -310,15 +339,15 @@ Continue using the commands in [workflow.md](#workflow). Increase training cover
 
 ## 6. Larger VCTK campaign
 
-Status: running. This document describes the protocol; it does not contain completed quality claims.
+Status: running with frozen pretrained BigVGAN. The native vocoder campaign was stopped at its saved 25,000-update checkpoint. This document describes the protocol; it does not contain completed quality claims.
 
-The next campaign expands from four speakers and 192 recordings to 32 speakers and 6,144 deterministically selected recordings, up to 192 per speaker. It retains the 44.1 kHz mel and bounded frontend contracts. All validation recordings from the small baseline are reserved from training so that both models can be compared on identical audio.
+The campaign expands from four speakers and 192 recordings to 32 speakers and 6,144 deterministically selected recordings, up to 192 per speaker. It retains the 44.1 kHz mel and bounded frontend contracts. All validation recordings from the small baseline are reserved from training so that both models can be compared on identical audio.
 
 Preparation produced 8,120 segments containing 6.17 hours of audio. The recording split contains 5,519 training and 625 validation recordings, including all 20 original baseline holdouts. Dataset identity: `170e6c84c6a0f57691f0a702f74d5b0b014d61c3cc48c661841c962455ef6ce1`. Reserved feature/waveform cache hashes are verified against the baseline artifacts before training.
 
 The acoustic model uses condition/predictor widths of 384, refiner width 512, eight predictor blocks and twelve refiner blocks: approximately 30.9 million parameters. The vocoder uses 128 channels and twelve blocks, approximately 1.0 million parameters. The previous models had approximately 12.0 million and 0.29 million parameters. A two-update CUDA check exercised both larger configurations with finite losses and optimizer updates; the vocoder peaked at approximately 2.91 GiB of Torch allocations. These are memory/function checks, not training-quality results.
 
-Planned optimizer updates are 30,000 predictor, 60,000 vocoder, 15,000 ordinary flow and 15,000 shortcut. Training uses BF16, 128-frame crops, AdamW at 0.0002, and checkpoint/validation intervals of 2,500 updates. Acoustic batches contain eight examples. Vocoder microbatches contain two, with two-step gradient accumulation. Saved checkpoints support exact continuation; the small experiment remains unchanged.
+The original plan allocated 30,000 predictor, 60,000 native vocoder, 15,000 ordinary flow and 15,000 shortcut updates. The predictor completed; native vocoder training stopped at 25,000. The revised plan reuses the predictor and frozen BigVGAN and trains the two remaining acoustic stages. Training uses BF16, 128-frame crops, AdamW at 0.0002, and checkpoint/validation intervals of 2,500 updates. Acoustic batches contain eight examples. The stopped native vocoder used microbatches of two with two-step gradient accumulation. Saved checkpoints support exact continuation; the small experiment remains unchanged.
 
 Eight recordings overshot full scale after rational resampling, despite their original samples being in range. A derived corpus scales those recordings only to a maximum original/resampled peak of 0.98. Other recordings are read through hard links. Original hashes are checked, and gain factors are recorded in `normalization_report.json`. The source dataset is preserved.
 

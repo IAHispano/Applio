@@ -41,14 +41,23 @@ def sync_evaluation_audio(project):
     pending = []
     for report in reports:
         match = re.fullmatch(r"vocoder_step_(\d+)", report.parent.name)
-        if not match:
-            continue
         key = str(report.relative_to(project))
         stamp = report.stat().st_mtime_ns
         if known.get(key) == stamp:
             continue
-        json.loads(report.read_text(encoding="utf-8"))
-        pending.append((int(match[1]), report.parent, key, stamp))
+        details = json.loads(report.read_text(encoding="utf-8"))
+        if match:
+            step, prefix = int(match[1]), "listening"
+        elif (
+            details.get("vocoder_backend") == "bigvgan-v2"
+            and report.parent.name == "matched"
+        ):
+            # Keep matched recordings and stage labels stable across evaluations.
+            step = int(details["acoustic_step"])
+            prefix = f"listening/bigvgan/{details['acoustic_phase']}"
+        else:
+            continue
+        pending.append((step, report.parent, key, stamp, prefix))
     if not pending:
         return
     from torch.utils.tensorboard import SummaryWriter
@@ -63,7 +72,7 @@ def sync_evaluation_audio(project):
             "the same example across updates; this is self-reconstruction, not voice conversion.",
             0,
         )
-        for step, directory, key, stamp in sorted(pending):
+        for step, directory, key, stamp, prefix in sorted(pending):
             for example in range(2):
                 clips = {}
                 for label, suffix in (
@@ -79,7 +88,7 @@ def sync_evaluation_audio(project):
                         clips[label] = (wave[: rate * 8], rate)
                 if clips:
                     write_listening(
-                        writer, clips, step, f"listening/example_{example + 1}"
+                        writer, clips, step, f"{prefix}/example_{example + 1}"
                     )
             known[key] = stamp
     # The launcher serializes imports; replace keeps restart metadata complete.

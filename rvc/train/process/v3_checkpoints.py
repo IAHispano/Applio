@@ -70,7 +70,15 @@ def construct(payload, device="cpu", use_ema=True):
         if payload.get("adapters"):
             install_adapters(model, **payload["adapters"])
     else:
-        model = SpectralVocoder(VocoderConfig(**payload["model_config"]))
+        backend = payload.get("vocoder_backend", "spectral")
+        if backend == "bigvgan-v2":
+            from rvc.lib.algorithm.v3.bigvgan import BigVGANVocoder
+
+            model = BigVGANVocoder(payload["model_config"])
+        elif backend == "spectral":
+            model = SpectralVocoder(VocoderConfig(**payload["model_config"]))
+        else:
+            raise ValueError(f"Unsupported V3 vocoder backend: {backend}")
     weights = (
         payload.get("ema")
         if use_ema and payload.get("ema") is not None

@@ -158,6 +158,10 @@ class LiveConverter:
     def __init__(
         self, converter, speaker=0, semitones=0, steps=4, seed=0, ordinary=False
     ):
+        if not converter.vocoder.config.causal:
+            raise ValueError(
+                "This vocoder supports file conversion only; live conversion requires a streaming-compatible vocoder"
+            )
         if not 0 <= speaker < len(converter.acoustic_package["speakers"]):
             raise ValueError("Unknown target speaker")
         if not np.isfinite(semitones) or not -48 <= semitones <= 48 or seed < 0:

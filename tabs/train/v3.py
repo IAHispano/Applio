@@ -607,6 +607,22 @@ def training_progress(name, stage="auto"):
         except (psutil.Error, KeyError):
             live = False
         state = "Running" if live else "Process stopped"
+        active_phase = campaign.get("phase")
+        if (
+            stage == "auto"
+            and active_phase in {"predictor", "vocoder", "flow", "shortcut", "adapt"}
+            and phase != active_phase
+        ):
+            consoles = list(Path(core.logs_path).glob(f"{name}*console.log"))
+            console = (
+                _log_tail(max(consoles, key=lambda value: value.stat().st_mtime))
+                if consoles
+                else ""
+            )
+            return (
+                f"**{name} — {state}**\n\nStage: **{active_phase}** · Preparing training; optimizer updates have not been logged yet.",
+                console or "Preparing dataset and stage statistics…",
+            )
     step = latest["step"]
     target = None
     plan = project / "campaign_plan.json"

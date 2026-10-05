@@ -39,6 +39,7 @@ def _inspect(path, modified, size):
                 "phase",
                 "capabilities",
                 "inference_only",
+                "vocoder_backend",
             )
             if k in payload
         }

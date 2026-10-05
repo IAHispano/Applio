@@ -320,6 +320,13 @@ def train(
     )
     adapters = initialization.get("adapters") if initialization else None
     if initialization:
+        if (
+            kind == "vocoder"
+            and initialization.get("vocoder_backend", "spectral") != "spectral"
+        ):
+            raise ValueError(
+                "Imported pretrained vocoders are frozen inference backends; select them for acoustic fine-tuning rather than native vocoder training"
+            )
         if initialization["kind"] != kind:
             raise ValueError("Checkpoint kind does not match trainer")
         require_contract(

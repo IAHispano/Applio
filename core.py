@@ -2165,6 +2165,24 @@ def export_model(checkpoint, output_path):
     click.echo(run_v3_export_script(checkpoint, output_path))
 
 
+@cli.command("import-vocoder")
+@click.option("--output-path", required=True, type=click.Path())
+@click.option("--checkpoint", type=click.Path(exists=True), default=None)
+@click.option("--config", "configuration", type=click.Path(exists=True), default=None)
+def import_vocoder(output_path, checkpoint, configuration):
+    """Package frozen BigVGAN weights for V3 file inference and voice fine-tuning.
+
+    Without local checkpoint/config paths, download the pinned official
+    44.1-kHz model. This backend does not support live inference.
+    """
+    from rvc.train.process.v3_pretrained import import_bigvgan
+
+    try:
+        click.echo(import_bigvgan(output_path, checkpoint, configuration))
+    except (ValueError, OSError, RuntimeError) as error:
+        raise click.ClickException(str(error)) from error
+
+
 @cli.command()
 @click.option("--manifest", required=True, type=click.Path(exists=True))
 @click.option("--pth-path", "--model-path", required=True, type=click.Path(exists=True))

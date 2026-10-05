@@ -156,6 +156,9 @@ def evaluate(
         writer.writeheader()
         writer.writerows(rows)
     report = {
+        "vocoder_backend": v.get("vocoder_backend", "spectral"),
+        "acoustic_step": a.get("step", 0),
+        "acoustic_phase": a.get("phase", "acoustic"),
         "task": "held-out self-reconstruction",
         "scope": "Not a cross-speaker identity or blinded quality evaluation",
         "dataset_id": data.manifest["dataset_id"],
