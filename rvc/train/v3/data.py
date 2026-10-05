@@ -8,7 +8,10 @@ frame controls [T]; collate adds batch axes and masks for padded frames/samples.
 """
 
 import json
+import os
 import random
+import tempfile
+import time
 from dataclasses import asdict
 from pathlib import Path
 
@@ -21,14 +24,32 @@ from rvc.train.extract.v3 import file_hash, read_audio
 
 
 def atomic_json(path, value):
+    """Publish complete JSON, tolerating short Windows reader/scanner locks.
+
+    Windows readers may briefly prevent replacing the destination. Keep the old
+    valid snapshot while retrying; never fall back to truncating a file in place.
+    A private temporary file also prevents concurrent writers sharing one .tmp.
+    """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(
-        json.dumps(value, indent=2, ensure_ascii=False, allow_nan=False) + "\n",
-        encoding="utf-8",
+    payload = json.dumps(value, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
+    descriptor, name = tempfile.mkstemp(
+        dir=path.parent, prefix=path.name + ".", suffix=".tmp"
     )
-    temporary.replace(path)
+    temporary = Path(name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as destination:
+            destination.write(payload)
+        for attempt in range(8):
+            try:
+                temporary.replace(path)
+                break
+            except PermissionError as error:
+                if getattr(error, "winerror", None) not in {5, 32, 33} or attempt == 7:
+                    raise
+                time.sleep(min(0.025 * 2**attempt, 0.2))
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def dataset_identity(manifest):
