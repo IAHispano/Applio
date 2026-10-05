@@ -1885,7 +1885,7 @@ def _v3_runtime_options(func):
 @click.option("--host", default="127.0.0.1")
 @click.option("--port", type=click.IntRange(1, 65535), default=7862)
 def serve_v3(pth_path, vocoder_path, encoder_path, pitch_path, device, host, port):
-    """Serve the browser microphone interface using the bounded v3 frontend."""
+    """Serve the V3 WebSocket API; the microphone UI lives in Applio's Realtime tab."""
     import uvicorn
 
     from rvc.infer.v3 import Converter

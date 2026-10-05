@@ -132,7 +132,7 @@ Budget 0 uses the predictor. Ordinary-flow weights support 8/16/32 refiner evalu
 
 The bounded frontend uses 250 ms packets, 200 ms feature lookahead and retained past context. Live conversion keeps per-block/per-integration-step acoustic caches, absolute-index noise, oscillator phase and overlap-add state. The vocoder retains a bounded history and five future mel frames, approximately 58 ms at the default hop. These buffers impose latency before compute, device and browser scheduling. Fast synthesis throughput should not be described as low end-to-end latency.
 
-Offline and bounded feature profiles are different contracts. Offline packages are rejected by live inference. File, batch and live conversion share the same model/feature checks. WebSocket/AudioWorklet and native audio-device transports are included; physical microphone routing requires separate hardware validation.
+Offline and bounded feature profiles are different contracts. Offline packages are rejected by live inference. File, batch and live conversion share the same model/feature checks. Gradio microphone streaming, a WebSocket API and native audio-device transports are included; physical microphone routing requires separate hardware validation.
 
 <a id="v3-architecture-research-context-and-remaining-work"></a>
 
@@ -169,7 +169,7 @@ The Click interface is `python core.py`. Its existing `preprocess`, `extract`, `
 | File/batch inference and live conversion | `rvc/infer/v3.py` |
 | Streaming and audio transports | `rvc/realtime/v3_streaming.py`, `v3_transport.py` |
 | Gradio controls | `tabs/train/v3.py`, `tabs/inference/v3.py` |
-| Browser microphone interface | `tabs/realtime/v3.html` |
+| Gradio microphone controls and session routing | `tabs/realtime/realtime.py` |
 | Learning experiment and engineering verification | `rvc/lib/tools/v3_vctk.py`, `v3_verify.py` |
 
 Artifacts use the existing `logs/<model-name>` convention: `data/manifest.json`, `checkpoints/<stage>/last.pt`, `best.pt`, `metrics.jsonl`, exported acoustic/vocoder `.pth` packages, and `evaluation/` WAV/CSV/JSON results. Binary weights, audio and datasets remain ignored by Git.
@@ -237,7 +237,7 @@ Held-out evaluation renders references, ground-truth-mel vocoder ceiling, and ea
 
 For the reproducible learning campaign used locally, prepare a fresh model name and run `core.py test-vctk --model-name NAME`. It creates initial one-update baselines, performs all four stages, exports packages, evaluates held-out budgets and renders same/cross-speaker conversions with the real frontend. Existing stage checkpoints are rejected to preserve their contents.
 
-`serve-v3` serves the bounded browser microphone interface; `realtime-v3` uses selected native audio devices. Both take model/vocoder/encoder paths. Physical microphone operation is a separate hardware test. `verify-architecture` runs a synthetic engineering fixture; its results must be distinguished from real VCTK learning measurements.
+The existing Gradio **Realtime → Model Settings** tab detects V3 voice models and exposes the matching vocoder and microphone controls inside **Advanced Settings**. Select the target speaker and pitch, accept the terms, and record the microphone to hear converted audio through the browser. Stop recording before changing settings. Each recording owns its resampler and model stream; stopping flushes its tail and releases the session. Browser capture/playback adds buffering and is not a measured low-latency device route. `serve-v3` exposes the WebSocket transport API without a separate UI; `realtime-v3` uses selected native audio devices. Both CLI commands take model/vocoder/encoder paths. Physical microphone operation is a separate hardware test. `verify-architecture` runs a synthetic engineering fixture; its results must be distinguished from real VCTK learning measurements.
 
 <a id="workflow-installation-and-runtime-checks"></a>
 

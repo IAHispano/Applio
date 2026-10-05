@@ -1,6 +1,6 @@
 """Audio transports around LiveConverter, not another synthesis architecture.
 
-The browser WebSocket/AudioWorklet and native device session feed bounded PCM
+The Gradio microphone, WebSocket API and native device session feed bounded PCM
 packets into the same converter. Rational resampling preserves filter history
 across packets; transport buffers/device scheduling add latency beyond model
 lookahead. Each session owns its stream and reset/flush lifetime.
@@ -10,7 +10,6 @@ import asyncio
 import json
 import math
 import threading
-from pathlib import Path
 from queue import Empty, Full, Queue
 
 import numpy as np
@@ -67,20 +66,63 @@ class StreamingResampler:
         return output
 
 
+class BrowserSession:
+    """One Gradio recording owns a converter stream and input resampling history.
+
+    Gradio supplies (sample_rate, PCM) chunks. Integer PCM is normalized before
+    stereo is mixed to mono; output is float32 PCM at the model's sample rate.
+    Keep this object in session-local gr.State and discard it after flushing.
+    """
+
+    def __init__(self, converter, sample_rate, speaker=0, semitones=0, steps=0, seed=0):
+        self.sample_rate = int(sample_rate)
+        if not 8000 <= self.sample_rate <= 192000:
+            raise ValueError("Unsupported input sample rate")
+        self.output_rate = converter.mel_config.sample_rate
+        self.live = LiveConverter(converter, speaker, semitones, steps, seed)
+        self.resampler = StreamingResampler(self.sample_rate, self.output_rate)
+
+    def push(self, chunk):
+        sample_rate, audio = chunk
+        if int(sample_rate) != self.sample_rate:
+            raise ValueError("Microphone sample rate changed; start a new recording")
+        audio = np.asarray(audio)
+        if audio.ndim not in {1, 2} or len(audio) > self.sample_rate * 2:
+            raise ValueError(
+                "Send mono or stereo microphone chunks of at most two seconds"
+            )
+        if np.issubdtype(audio.dtype, np.integer):
+            limits = np.iinfo(audio.dtype)
+            midpoint = (limits.max + limits.min + 1) / 2
+            audio = (audio.astype(np.float32) - midpoint) / (
+                (limits.max - limits.min + 1) / 2
+            )
+        else:
+            audio = audio.astype(np.float32)
+        if audio.ndim == 2:
+            audio = audio.mean(axis=1)
+        output = self.live.push(self.resampler.push(audio))
+        return (self.output_rate, output) if len(output) else None
+
+    def flush(self):
+        tail = self.live.push(self.resampler.push(np.empty(0, np.float32), final=True))
+        output = np.concatenate([tail, self.live.flush()])
+        return (self.output_rate, output) if len(output) else None
+
+
 def create_app(converter):
     from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-    from fastapi.responses import HTMLResponse
 
     app = FastAPI(title="Applio v3 live")
     gpu_lock = asyncio.Lock()
 
     @app.get("/")
-    async def page():
-        return HTMLResponse(
-            (Path(__file__).resolve().parents[2] / "tabs/realtime/v3.html").read_text(
-                encoding="utf-8"
-            )
-        )
+    async def info():
+        return {
+            "backend": "applio-v3",
+            "stream": "/stream",
+            "interface": "Applio Gradio Realtime tab",
+        }
 
     @app.websocket("/stream")
     async def stream(ws: WebSocket):

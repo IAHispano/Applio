@@ -14,6 +14,7 @@ sys.path.append(now_dir)
 from rvc.realtime.callbacks import AudioCallbacks
 from rvc.realtime.audio import list_audio_device, resolve_sample_rate
 from rvc.realtime.core import AUDIO_SAMPLE_RATE
+from rvc.configs.architectures import inspect_model, model_architecture
 
 from assets.i18n.i18n import I18nAuto
 
@@ -255,6 +256,8 @@ def get_speakers_id(model):
             model_data = torch.load(
                 os.path.join(now_dir, model), map_location="cpu", weights_only=True
             )
+            if "speakers" in model_data and model_data.get("kind") == "acoustic":
+                return [(name, index) for index, name in enumerate(model_data["speakers"])]
             speakers_id = model_data.get("speakers_id")
             if speakers_id:
                 return list(range(speakers_id))
@@ -951,6 +954,58 @@ def soundfile_record_audio(
     return "Start", None
 
 
+def v3_microphone(
+    chunk, session, terms, model, vocoder, encoder, pitch_path,
+    steps, seed, device, speaker, pitch,
+):
+    """Route Gradio PCM chunks through a session-local V3 stream."""
+    if not terms:
+        raise gr.Error(i18n("You must agree to the Terms of Use to proceed."))
+    if chunk is None:
+        return None, session
+    if session is None:
+        if not model or model_architecture(model) != "v3" or not vocoder:
+            raise gr.Error("Choose a V3 voice model and matching universal vocoder.")
+        from rvc.infer.v3 import Converter
+        from rvc.realtime.v3_transport import BrowserSession
+
+        try:
+            converter = Converter(model, vocoder, encoder, pitch_path or None, device)
+            session = BrowserSession(
+                converter, chunk[0], int(speaker or 0),
+                float(pitch), int(steps), int(seed),
+            )
+        except (ValueError, OSError) as error:
+            raise gr.Error(str(error)) from error
+    try:
+        return session.push(chunk), session
+    except (ValueError, FloatingPointError) as error:
+        raise gr.Error(str(error)) from error
+
+
+def finish_v3_microphone(session):
+    """Flush the recording's resampler/model tail, then release session state."""
+    if session is None:
+        return None, None
+    return session.flush(), None
+
+
+def realtime_model_settings(path):
+    """Expose only the selected architecture's realtime controls."""
+    modern = bool(path) and model_architecture(path) == "v3"
+    if modern and inspect_model(path).get("kind") != "acoustic":
+        raise gr.Error("Choose an acoustic voice model; select the vocoder in Advanced Settings.")
+    return (
+        gr.update(visible=modern),
+        gr.update(visible=not modern),
+        gr.update(visible=not modern),
+        gr.update(visible=False),
+        gr.update(visible=not modern),
+        None,
+        gr.update(choices=get_speakers_id(path), value=0),
+    )
+
+
 def realtime_tab():
     input_devices, output_devices = [], []
     saved_settings = load_realtime_settings()
@@ -1199,7 +1254,54 @@ def realtime_tab():
                 with gr.Row():
                     unload_button = gr.Button(i18n("Unload Voice"))
                     refresh_button = gr.Button(i18n("Refresh models and indexes"))
-                with gr.Column():
+                with gr.Row():
+                    sid = gr.Dropdown(
+                        label=i18n("Speaker ID"),
+                        choices=(
+                            get_speakers_id(default_weight) if default_weight else [0]
+                        ),
+                        value=0,
+                        interactive=True,
+                    )
+                    pitch = gr.Slider(
+                        minimum=-24,
+                        maximum=24,
+                        step=1,
+                        label=i18n("Pitch"),
+                        info=i18n(
+                            "Set the pitch of the audio, the higher the value, the higher the pitch."
+                        ),
+                        value=0,
+                        interactive=True,
+                    )
+                with gr.Accordion(
+                    i18n("Advanced Settings"), open=False, visible=False
+                ) as v3_advanced:
+                    from tabs.inference.v3 import inference_options
+
+                    v3_settings, v3_controls = inference_options()
+                    (
+                        v3_vocoder, v3_encoder, v3_pitch_path,
+                        v3_steps, v3_seed, v3_device, v3_ordinary,
+                    ) = v3_controls
+                    v3_settings.visible = True
+                    v3_ordinary.visible = False
+                    with v3_settings:
+                        gr.Markdown(
+                            "Record your microphone here for V3 conversion. Use headphones. "
+                            "Stop recording before changing model settings. "
+                            "Output plays through your browser."
+                        )
+                        v3_input = gr.Audio(
+                            sources=["microphone"], type="numpy", streaming=True,
+                            label="Microphone",
+                        )
+                        v3_output = gr.Audio(
+                            streaming=True, autoplay=True, format="wav",
+                            label="Converted microphone", interactive=False,
+                        )
+                        v3_session = gr.State(None)
+                with gr.Column() as classic_settings:
                     gr.Markdown(value=i18n("## Advanced Settings"))
                     autotune = gr.Checkbox(
                         label=i18n("Autotune"),
@@ -1564,25 +1666,6 @@ def realtime_tab():
                         interactive=True,
                         visible=False,
                     )
-                    sid = gr.Dropdown(
-                        label=i18n("Speaker ID"),
-                        choices=(
-                            get_speakers_id(default_weight) if default_weight else [0]
-                        ),
-                        value=0,
-                        interactive=True,
-                    )
-                    pitch = gr.Slider(
-                        minimum=-24,
-                        maximum=24,
-                        step=1,
-                        label=i18n("Pitch"),
-                        info=i18n(
-                            "Set the pitch of the audio, the higher the value, the higher the pitch."
-                        ),
-                        value=0,
-                        interactive=True,
-                    )
                     index_rate = gr.Slider(
                         minimum=0,
                         maximum=1,
@@ -1712,6 +1795,35 @@ def realtime_tab():
                     ),
                     interactive=True,
                 )
+
+        v3_input.stream(
+            v3_microphone,
+            inputs=[
+                v3_input, v3_session, terms_checkbox, model_file, v3_vocoder,
+                v3_encoder, v3_pitch_path, v3_steps, v3_seed, v3_device, sid, pitch,
+            ],
+            outputs=[v3_output, v3_session],
+            stream_every=0.5,
+            time_limit=300,
+            concurrency_limit=1,
+            concurrency_id="v3-microphone",
+        )
+        v3_input.stop_recording(
+            finish_v3_microphone,
+            inputs=[v3_session],
+            outputs=[v3_output, v3_session],
+            concurrency_limit=1,
+            concurrency_id="v3-microphone",
+        )
+        architecture_outputs = [
+            v3_advanced, classic_settings, start_button, stop_button,
+            index_file, v3_session, sid,
+        ]
+        model_file.change(
+            realtime_model_settings, inputs=[model_file], outputs=architecture_outputs,
+            concurrency_id="v3-microphone", concurrency_limit=1,
+        )
+        ui.load(realtime_model_settings, inputs=[model_file], outputs=architecture_outputs)
 
         json_audio_hidden = gr.JSON(visible=False)
         json_button_hidden = gr.JSON(visible=False)
