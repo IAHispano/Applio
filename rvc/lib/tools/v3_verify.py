@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from rvc.configs.v3 import AcousticConfig, VocoderConfig
+from rvc.configs.v3 import DEFAULT_BATCH_SIZE, AcousticConfig, VocoderConfig
 from rvc.infer.v3 import Converter, LiveConverter
 from rvc.realtime.v3_streaming import FeatureStream
 from rvc.train.extract.v3 import FeatureExtractor
@@ -91,10 +91,10 @@ def verify(encoder, output="logs/v3-verification", device="auto", full_size=True
                 kind=kind,
                 phase=phase,
                 steps=1,
-                batch_size=2,
+                batch_size=DEFAULT_BATCH_SIZE,
                 crop_frames=128,
                 device=str(device),
-                precision="bf16" if device.type == "cuda" else "fp32",
+                precision="auto",
                 checkpoint_every=1,
                 pretrained=pretrained,
                 config=config,

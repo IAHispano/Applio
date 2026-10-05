@@ -1,7 +1,0 @@
-{
-  "content_dim": 768, "mel_dim": 128, "speakers": 1,
-  "condition_width": 256, "predictor_width": 256, "refiner_width": 384,
-  "predictor_depth": 6, "refiner_depth": 8, "kernel_size": 7,
-  "expansion": 2, "causal": true, "checkpoint_blocks": false,
-  "prediction_centered": true
-}

@@ -7,6 +7,8 @@ from functools import lru_cache
 
 import click
 
+from rvc.configs.v3 import DEFAULT_BATCH_SIZE
+
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
@@ -1561,7 +1563,10 @@ def extract(**kwargs):
     help="Training sampling rate.",
 )
 @click.option(
-    "--batch-size", type=click.IntRange(1, 50), default=8, help="Training batch size."
+    "--batch-size",
+    type=click.IntRange(1, 64),
+    default=8,
+    help="Training batch size; increase when memory permits. V3 defaults to 2.",
 )
 @click.option("--gpu", type=str, default="0", help="GPU device to use.")
 @click.option(
@@ -1609,14 +1614,18 @@ def extract(**kwargs):
 @click.option("--output-dir", type=click.Path())
 @click.option("--base-model", type=click.Path(exists=True))
 @click.option("--resume", type=click.Path(exists=True))
-@click.option("--config", type=click.Path(exists=True))
+@click.option(
+    "--config",
+    type=click.Path(exists=True),
+    help="Research-only override of the default V3 architecture for scratch training.",
+)
 @click.option("--steps", type=click.IntRange(min=1), default=10000)
 @click.option("--crop-frames", type=click.IntRange(min=1), default=128)
 @click.option(
     "--learning-rate", type=click.FloatRange(min=0, min_open=True), default=2e-4
 )
 @click.option(
-    "--precision", type=click.Choice(["bf16", "fp16", "fp32"]), default="bf16"
+    "--precision", type=click.Choice(["auto", "bf16", "fp16", "fp32"]), default="auto"
 )
 @click.option("--device", default="auto")
 @click.option("--seed", type=int, default=1234)
@@ -1660,7 +1669,7 @@ def train(**kwargs):
             click.get_current_context().get_parameter_source("batch_size")
             == click.core.ParameterSource.DEFAULT
         ):
-            kwargs["batch_size"] = 2
+            kwargs["batch_size"] = DEFAULT_BATCH_SIZE
         try:
             for update in run_v3_train_script(
                 kwargs["model_name"], batch_size=kwargs["batch_size"], **options

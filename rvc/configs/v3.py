@@ -11,6 +11,8 @@ import json
 import math
 from dataclasses import asdict, dataclass
 
+DEFAULT_BATCH_SIZE = 2
+
 
 def fingerprint(value) -> str:
     if hasattr(value, "__dataclass_fields__"):

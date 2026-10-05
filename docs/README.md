@@ -160,7 +160,7 @@ The Click interface is `python core.py`. Its existing `preprocess`, `extract`, `
 | Responsibility | Location |
 |---|---|
 | Architecture inspection/routing and model discovery | `rvc/configs/architectures.py` |
-| Typed contracts and model presets | `rvc/configs/v3.py`, `rvc/configs/v3_presets/` |
+| Typed contracts and shared default architecture | `rvc/configs/v3.py` |
 | Acoustic predictor, residual flow, shortcuts, adapters | `rvc/lib/algorithm/v3/` |
 | Spectral vocoder, transforms and losses | `rvc/lib/algorithm/v3/` |
 | Content/F0/energy extraction | `rvc/train/extract/v3.py` |
@@ -211,7 +211,11 @@ python core.py export-model --checkpoint logs/vctk_v3/checkpoints/shortcut/best.
 python core.py export-model --checkpoint logs/vctk_v3/checkpoints/vocoder/best.pt --output-path logs/vctk_v3/vctk_v3_vocoder.pth
 ```
 
-V3 defaults are batch 2, crop 128, BF16, AdamW at 0.0002, EMA 0.999, checkpoint interval 100, and seed 1234. Classic CLI batch remains 8. Accumulation increases effective batch without retaining every activation graph; FP16/FP32 are available. `--config rvc/configs/v3_presets/acoustic-8gb.json` or `vocoder-8gb.json` changes scratch initialization. There is no learning-rate scheduler.
+V3 uses one default architecture across hardware: the acoustic model has conditioning/predictor/refiner widths 256/256/384 and predictor/refiner depths 6/8; the vocoder uses 64 channels, 8 blocks and 4 streams. These defaults are defined in `rvc/configs/v3.py`. Existing checkpoints supply their saved architecture when loading base weights or resuming.
+
+Training defaults are batch 2, crop 128, automatic precision, AdamW at 0.0002, EMA 0.999, checkpoint interval 100, and seed 1234. Automatic precision uses BF16 on supported CUDA GPUs, FP16 with gradient scaling on other CUDA GPUs, and FP32 on CPU. Explicit BF16/FP16/FP32 remain available in advanced settings. Classic CLI batch remains 8. There is no learning-rate scheduler.
+
+Increase batch size when memory permits; reduce it if training runs out of memory. Gradient accumulation increases effective batch without retaining every activation graph: effective batch is batch size × accumulation steps × training ranks. This controls training memory without selecting a different network for each GPU. Changing batch or accumulation starts a new training recipe and is incompatible with exact resume. Advanced CLI users can pass `--config PATH` for architecture research when training from scratch; the regular GUI uses the shared defaults.
 
 Use `--resume PATH` for exact continuation with unchanged dataset/phase/batch/crop/precision/learning rate/seed. `--steps N` means N **additional** updates. Resume restores optimizer, critics, scaler, EMA and per-rank RNG. `--base-model PATH` starts a new stage or adaptation from EMA weights; it differs from exact resume. Choose one of these options. GUI Stop saves `last.pt` after the current complete update. Export merges adapters and writes inference-only EMA packages; these cannot exactly resume training.
 
@@ -239,7 +243,7 @@ For the reproducible learning campaign used locally, prepare a fresh model name 
 
 ### Installation and runtime checks
 
-Use Python 3.12 and follow the standard Applio installation instructions first. In the same environment, install `python -m pip install -r requirements-v3.in` for the optional experimental transports. This file includes the main application requirements and preserves their versions, including Gradio 6.20.0; a separate Gradio installation is unnecessary. Choose the Torch 2.11.0 build for your device before installing the requirements. The reference GPU checks used CUDA 12.8; CPU mode is also supported. Backend/control tests additionally used Gradio 6.29.1, but that version is not the release installation target. The compact default configurations were exercised on an 8 GB GPU; larger presets require separate profiling.
+Use Python 3.12 and follow the standard Applio installation instructions first. In the same environment, install `python -m pip install -r requirements-v3.in` for the optional experimental transports. This file includes the main application requirements and preserves their versions, including Gradio 6.20.0; a separate Gradio installation is unnecessary. Choose the Torch 2.11.0 build for your device before installing the requirements. The reference GPU checks used CUDA 12.8; CPU mode is also supported. Backend/control tests additionally used Gradio 6.29.1, but that version is not the release installation target. The shared default architecture was exercised on an 8 GB GPU. Memory usage depends on batch, crop length and training stage; custom research architectures require separate profiling.
 
 To inspect available runtime commands, use `python core.py --help`. Preparation, evaluation and hardware-verification tools remain available through the CLI. Physical microphone operation and perceptual acceptance need separate device and listening checks.
 
@@ -364,7 +368,7 @@ Raw evidence is preserved in [V3_HARDWARE_VERIFICATION.json](#hardware-record) a
 
 ### Remaining research and product acceptance
 
-Train substantial universal models, select budgets using rendered held-out audio, then evaluate unfamiliar source voices, singing extremes and target adaptation. Official BigVGAN/full-Wavehax and classic Applio quality baselines, blinded listening, identity/intelligibility/pitch metrics, predicted-mel vocoder training, pitch-consistency augmentation, retrieval and lower-latency tuning remain experimental follow-ups. Larger and single-stream presets need their own profiling. CUDA multiple-GPU throughput and physical browser/native device routing also need hardware/application validation.
+Train substantial universal models, select budgets using rendered held-out audio, then evaluate unfamiliar source voices, singing extremes and target adaptation. Official BigVGAN/full-Wavehax and classic Applio quality baselines, blinded listening, identity/intelligibility/pitch metrics, predicted-mel vocoder training, pitch-consistency augmentation, retrieval and lower-latency tuning remain experimental follow-ups. Larger and single-stream research architectures need their own profiling. CUDA multiple-GPU throughput and physical browser/native device routing also need hardware/application validation.
 
 The current software is ready for those training/evaluation runs. It is not yet a production-quality voice model or evidence of the proposed speed-to-quality gains.
 

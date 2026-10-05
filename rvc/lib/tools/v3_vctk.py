@@ -7,6 +7,8 @@ from pathlib import Path
 
 import torch
 
+from rvc.configs.v3 import DEFAULT_BATCH_SIZE
+
 
 def run_experiment(
     model_name,
@@ -31,9 +33,9 @@ def run_experiment(
     manifest = project / "data/manifest.json"
     data = json.loads(manifest.read_text(encoding="utf-8"))
     settings = dict(
-        batch_size=2,
+        batch_size=DEFAULT_BATCH_SIZE,
         crop_frames=128,
-        precision="bf16",
+        precision="auto",
         device=device,
         seed=1234,
         checkpoint_every=100,

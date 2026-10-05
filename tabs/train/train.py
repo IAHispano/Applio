@@ -13,6 +13,7 @@ from core import (
     run_prerequisites_script,
 )
 from rvc.configs.config import get_gpu_info, get_number_of_gpus, max_vram_gpu
+from rvc.configs.v3 import DEFAULT_BATCH_SIZE
 from rvc.lib.utils import format_title
 
 i18n = I18nAuto()
@@ -683,7 +684,7 @@ def train_tab():
                 step=1,
                 label=i18n("Batch Size"),
                 info=i18n(
-                    "It's advisable to align it with the available VRAM of your GPU. A setting of 4 offers improved accuracy but slower processing, while 8 provides faster and standard results."
+                    "Increase batch size when GPU memory permits. Reduce it if training runs out of memory."
                 ),
                 interactive=True,
             )
@@ -1138,7 +1139,7 @@ def train_tab():
                 value="44100" if modern else "40000",
                 interactive=not modern,
             ),
-            gr.update(value=2 if modern else 4),
+            gr.update(value=DEFAULT_BATCH_SIZE if modern else 4),
             gr.update(
                 label="Training steps" if modern else i18n("Total Epoch"),
                 maximum=1000000 if modern else 10000,

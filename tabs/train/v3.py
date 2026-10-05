@@ -121,16 +121,15 @@ def training_options():
                 lr = gr.Number(value=0.0002, label="Learning rate")
             with gr.Row():
                 precision = gr.Dropdown(
-                    ["bf16", "fp16", "fp32"], value="bf16", label="Precision"
+                    ["auto", "bf16", "fp16", "fp32"],
+                    value="auto",
+                    label="Precision",
+                    info="Auto uses BF16 on supported CUDA GPUs, FP16 on other CUDA GPUs, and FP32 on CPU.",
                 )
                 device = gr.Dropdown(
                     ["auto", "cuda", "cpu"], value="auto", label="Device"
                 )
                 seed = gr.Number(value=1234, precision=0, label="Training seed")
-            config = gr.Textbox(
-                label="Model configuration JSON",
-                info="Optional configuration for training from scratch.",
-            )
             adaptation = gr.Dropdown(
                 ["lora", "full"], value="lora", label="Adaptation method"
             )
@@ -145,7 +144,6 @@ def training_options():
         precision,
         device,
         seed,
-        config,
         adaptation,
         rank,
     ]
@@ -166,7 +164,6 @@ def train_model(mode, legacy_args, options, session_hash):
         precision,
         device,
         seed,
-        config,
         adaptation,
         rank,
     ) = options
@@ -179,7 +176,6 @@ def train_model(mode, legacy_args, options, session_hash):
             stage,
             base_model=base or None,
             resume=resume or None,
-            config=config or None,
             steps=int(values["total_epoch"]),
             batch_size=int(values["batch_size"]),
             checkpoint_every=int(values["save_every_epoch"]),

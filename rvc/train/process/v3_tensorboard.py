@@ -38,9 +38,7 @@ class TrainingSummary:
             if not math.isfinite(value):
                 continue
             tag = (
-                "validation/mel_l1"
-                if name == "validation_mel_l1"
-                else "train/" + name
+                "validation/mel_l1" if name == "validation_mel_l1" else "train/" + name
             )
             self.writer.add_scalar(tag, float(value), progress["step"])
         if "validation_mel_l1" in progress or progress.get("stopped"):
@@ -74,7 +72,11 @@ def log_training(function):
                         for name, value in bound.arguments.items()
                         if name not in {"stop_requested", "output"}
                     }
-                    configuration.update(kind=progress["kind"], phase=progress["phase"])
+                    configuration.update(
+                        kind=progress["kind"],
+                        phase=progress["phase"],
+                        precision=progress["precision"],
+                    )
                     summary = TrainingSummary(
                         bound.arguments["output"], progress["step"], configuration
                     )

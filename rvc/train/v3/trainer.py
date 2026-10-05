@@ -21,7 +21,12 @@ import numpy as np
 import torch
 from torch import nn
 
-from rvc.configs.v3 import AcousticConfig, VocoderConfig, require_contract
+from rvc.configs.v3 import (
+    DEFAULT_BATCH_SIZE,
+    AcousticConfig,
+    VocoderConfig,
+    require_contract,
+)
 from rvc.lib.algorithm.v3.acoustic import EMA, AcousticModel, masked_mean
 from rvc.lib.algorithm.v3.adapters import install_adapters
 from rvc.lib.algorithm.v3.spectral import MelExtractor, spectral_loss
@@ -110,6 +115,19 @@ def resolve_device(device):
     if result.type == "cuda" and result.index is None:
         result = torch.device("cuda", torch.cuda.current_device())
     return result
+
+
+def resolve_precision(device, precision):
+    """Choose arithmetic for the device without changing the model architecture.
+
+    Resolve before recording settings so exact resume compares the actual dtype.
+    Explicit precision choices remain available for reproducible experiments.
+    """
+    if precision != "auto":
+        return precision
+    if device.type == "cuda":
+        return "bf16" if torch.cuda.is_bf16_supported() else "fp16"
+    return "fp32"
 
 
 def amp_settings(device, precision):
@@ -208,11 +226,11 @@ def train(
     kind="acoustic",
     phase="predictor",
     steps=10000,
-    batch_size=2,
+    batch_size=DEFAULT_BATCH_SIZE,
     crop_frames=128,
     learning_rate=2e-4,
     device="auto",
-    precision="bf16",
+    precision="auto",
     seed=1234,
     checkpoint_every=100,
     pretrained=None,
@@ -268,6 +286,7 @@ def train(
     if device.type == "cuda":
         torch.cuda.set_device(device)
     group = TrainingGroup(device)
+    precision = resolve_precision(device, precision)
     dtype, scaler = amp_settings(device, precision)
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -555,6 +574,7 @@ def train(
             "step": step + 1,
             "kind": kind,
             "phase": phase,
+            "precision": precision,
             "loss": group.mean(sum(losses) / len(losses)),
             "gradient_norm": norm,
             "optimizer_updated": norm is not None,
