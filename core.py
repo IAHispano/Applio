@@ -570,6 +570,7 @@ def run_train_script(
     vocoder: str = "HiFi-GAN",
     checkpointing: bool = False,
     shutdown_check: bool = False,
+    flow_feature_cache: bool = True,
 ):
     if vocoder == "Rectified Flow":
         command = rectified_flow_train_command(
@@ -584,6 +585,7 @@ def run_train_script(
             cleanup,
             custom_pretrained,
             g_pretrained_path,
+            flow_feature_cache,
         )
     else:
         if pretrained == True:
@@ -663,6 +665,7 @@ def rectified_flow_train_command(
     cleanup: bool,
     custom_pretrained: bool = False,
     flow_pretrained_path: str = None,
+    feature_cache: bool = True,
 ):
     from rvc.lib.tools.pretrained_selector import rectified_flow_selector
 
@@ -704,6 +707,7 @@ def rectified_flow_train_command(
                 save_only_latest,
                 save_every_weights,
                 cleanup,
+                feature_cache,
             ],
         ),
     ]
@@ -1313,6 +1317,11 @@ def extract(**kwargs):
     default="Auto",
     help="Index file generation algorithm.",
 )
+@click.option(
+    "--flow-feature-cache/--no-flow-feature-cache",
+    default=True,
+    help="Rectified Flow: write the features and the augmented copies of the dataset to disk once and train from them.",
+)
 def train(**kwargs):
     """Train an RVC model."""
     result = run_train_script(
@@ -1333,6 +1342,7 @@ def train(**kwargs):
         d_pretrained_path=kwargs.get("d_pretrained_path"),
         vocoder=kwargs["vocoder"],
         checkpointing=kwargs["checkpointing"],
+        flow_feature_cache=kwargs["flow_feature_cache"],
     )
     click.echo(result)
 

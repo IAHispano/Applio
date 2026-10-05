@@ -184,21 +184,33 @@ class FlowAudioLoader(torch.utils.data.Dataset):
             curves.append(torch.zeros(frames))
         return curves
 
-    def __getitem__(self, index):
+    def get_source(self, index):
+        """
+        Get what `get_features` takes of a clip: its audio, its pitch and
+        content at FEATURE_RATE, and its speaker id.
+
+        Args:
+            index (int): Index of the clip.
+        """
         audiopath, content_path, _, pitchf_path, sid = self.entries[index]
         audio = self.get_audio(audiopath)
-        content = self.get_content(content_path)
         pitchf = torch.FloatTensor(np.load(pitchf_path, allow_pickle=False))
+        return audio, pitchf, self.get_content(content_path), int(sid)
 
-        # A shift moves pitch and formants; a longer hop reads the clip faster.
-        key_shift, hop = 0.0, self.hop_length
-        if self.augment and random.random() < self.key_shift_prob:
-            key_shift = random.uniform(-self.key_shift_range, self.key_shift_range)
-        if self.augment and random.random() < self.stretch_prob:
-            low, high = self.stretch_range
-            hop = int(round(self.hop_length * low * (high / low) ** random.random()))
-        speed = hop / self.hop_length
+    def get_features(self, audio, pitchf, content, sid, key_shift=0.0, hop=None):
+        """
+        Get the whole clip as a FlowItem. A shift moves pitch and formants; a
+        longer hop reads the clip faster.
 
+        Args:
+            audio (torch.Tensor): Audio, shape (samples,).
+            pitchf (torch.Tensor): Pitch of the audio at FEATURE_RATE, shape (time,).
+            content (torch.Tensor): Content features at FEATURE_RATE, shape (time, channels).
+            sid (int): Speaker id.
+            key_shift (float, optional): Shift of pitch and formants in semitones. Defaults to 0.0.
+            hop (int, optional): Hop size the clip is read with, the one of the mel when None.
+        """
+        hop = hop or self.hop_length
         frames = min(
             audio.shape[0] // hop,
             mel_frames(pitchf.shape[0], self.sample_rate, hop),
@@ -211,20 +223,38 @@ class FlowAudioLoader(torch.utils.data.Dataset):
         with torch.no_grad():
             mel = self.mel(audio.unsqueeze(0), key_shift, hop)[0, :, :frames]
         energy, breathiness, strain = self.get_curves(audio, pitchf, frames, hop)
+        return FlowItem(
+            mel=mel,
+            content=content,
+            f0=f0,
+            energy=energy,
+            breathiness=breathiness,
+            tension=strain,
+            key_shift=key_shift,
+            speed=hop / self.hop_length,
+            sid=sid,
+        )
 
+    def __getitem__(self, index):
+        key_shift, hop = 0.0, self.hop_length
+        if self.augment and random.random() < self.key_shift_prob:
+            key_shift = random.uniform(-self.key_shift_range, self.key_shift_range)
+        if self.augment and random.random() < self.stretch_prob:
+            low, high = self.stretch_range
+            hop = int(round(self.hop_length * low * (high / low) ** random.random()))
+        item = self.get_features(*self.get_source(index), key_shift, hop)
+
+        frames = item.mel.shape[-1]
         length = min(frames, self.segment_frames)
         start = random.randint(0, frames - length) if self.augment else 0
         stop = start + length
-        return FlowItem(
-            mel=mel[:, start:stop],
-            content=content[start:stop],
-            f0=f0[start:stop],
-            energy=energy[start:stop],
-            breathiness=breathiness[start:stop],
-            tension=strain[start:stop],
-            key_shift=key_shift,
-            speed=speed,
-            sid=int(sid),
+        return item._replace(
+            mel=item.mel[:, start:stop],
+            content=item.content[start:stop],
+            f0=item.f0[start:stop],
+            energy=item.energy[start:stop],
+            breathiness=item.breathiness[start:stop],
+            tension=item.tension[start:stop],
         )
 
     def __len__(self):
@@ -348,14 +378,15 @@ class FlowAudioCollate:
     the mel and the flow inputs of the batch.
 
     Args:
-        frames (int): Number of mel frames of the batch.
+        frames (int, optional): Number of mel frames of the batch, the longest item when None.
     """
 
-    def __init__(self, frames):
+    def __init__(self, frames=None):
         self.frames = frames
 
     def __call__(self, batch):
-        size, frames = len(batch), self.frames
+        size = len(batch)
+        frames = self.frames or max(item.mel.shape[-1] for item in batch)
         mel = torch.zeros(size, batch[0].mel.shape[0], frames)
         # Padding reads as silence: no pitch, lowest energy, fully aperiodic
         inputs = Conditioning(

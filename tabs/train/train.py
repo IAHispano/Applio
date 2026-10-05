@@ -746,6 +746,15 @@ def train_tab():
                         value=False,
                         interactive=True,
                     )
+                    flow_feature_cache = gr.Checkbox(
+                        label=i18n("Feature Cache"),
+                        info=i18n(
+                            "Write the features and the augmented copies of the dataset to disk once and train from them, in batches of whole clips. Disabled, the dataset is augmented as it is read, in fixed segments, and nothing is written."
+                        ),
+                        value=True,
+                        interactive=True,
+                        visible=False,
+                    )
                     checkpointing = gr.Checkbox(
                         label=i18n("Checkpointing"),
                         info=i18n(
@@ -994,6 +1003,7 @@ def train_tab():
                         value=None,
                     ),
                     gr.update(visible=not rectified_flow),
+                    gr.update(visible=rectified_flow),
                 )
 
             def update_slider_visibility(noise_reduction):
@@ -1016,6 +1026,7 @@ def train_tab():
                     sampling_rate,
                     g_pretrained_path,
                     d_pretrained_path,
+                    flow_feature_cache,
                 ],
             )
             refresh.click(
@@ -1099,6 +1110,7 @@ def train_tab():
                     vocoder,
                     checkpointing,
                     shutdown_check,
+                    flow_feature_cache,
                 ],
                 outputs=[train_output_info],
             )

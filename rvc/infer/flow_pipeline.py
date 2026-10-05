@@ -406,15 +406,6 @@ class FlowPipeline(Pipeline):
         data = net_g.data
         sample_rate, hop_length = data["sample_rate"], data["hop_length"]
 
-        # The loudness input is absolute, so the input is brought to the peak
-        # the training data has and the output scaled back
-        peak = float(np.abs(audio).max())
-        gain = 0.95 / peak if peak > 0 else 1.0
-        restore = 1.0 / max(gain, 1.0)
-        audio = (audio * gain).astype(np.float32)
-        if audio_full is not None:
-            audio_full = (audio_full * gain).astype(np.float32)
-
         if audio.shape[0] < EMBEDDER_FIELD + self.window:
             return np.zeros(
                 round(audio.shape[0] * sample_rate / self.sample_rate), dtype=np.float32
@@ -441,7 +432,7 @@ class FlowPipeline(Pipeline):
             mel = self.sample_mel(
                 net_g.flow, inputs, int(steps), cfg_scale, content_guidance
             )
-            audio_opt = self.render(net_g.vocoder, mel, inputs.f0, hop_length) * restore
+            audio_opt = self.render(net_g.vocoder, mel, inputs.f0, hop_length)
 
             # clean up
             del inputs, mel
@@ -450,7 +441,7 @@ class FlowPipeline(Pipeline):
 
         if volume_envelope != 1:
             audio_opt = AudioProcessor.change_rms(
-                audio * restore,
+                audio,
                 self.sample_rate,
                 audio_opt,
                 self.tgt_sr,

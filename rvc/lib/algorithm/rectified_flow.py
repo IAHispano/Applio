@@ -7,6 +7,8 @@ from librosa.filters import mel as librosa_mel_fn
 from torch import nn
 from torch.nn import functional as F
 
+from rvc.lib.algorithm.rectified_flow_features import degrade_mel
+
 # Centre and spread of log f0, so the normalised pitch sits roughly in [-2, 2].
 LOG_F0_CENTER = math.log(200.0)
 LOG_F0_SCALE = 0.7
@@ -20,6 +22,10 @@ TIME_SAMPLINGS = ("uniform", "logit-normal")
 DUAL_TIMESTEP_SHARE = 0.25
 # Inputs that start at zero, so a checkpoint from before them loads unchanged.
 ZERO_INPUTS = ("encoder.tension.",)
+# The per-bin mel statistics: a checkpoint from before them keeps the identity.
+MEL_STATS = ("mel_shift", "mel_scale")
+# Floor of the spread of a bin, so one that hardly moves is not blown up into noise.
+MIN_MEL_SCALE = 0.1
 
 
 class Conditioning(NamedTuple):
@@ -550,6 +556,21 @@ class AuxDecoder(nn.Module):
         return self.output(x) * mask
 
 
+def blur_content(content: torch.Tensor):
+    """
+    Returns the content blurred to a quarter of its frame rate: what the
+    content guidance pushes away from.
+
+    Args:
+        content (torch.Tensor): Content features, shape (batch, frames, channels).
+    """
+    frames = content.shape[1]
+    blurred = F.interpolate(
+        content.transpose(1, 2), size=max(1, frames // 4), mode="linear"
+    )
+    return F.interpolate(blurred, size=frames, mode="linear").transpose(1, 2)
+
+
 @dataclass(frozen=True)
 class _Guidance:
     """
@@ -583,14 +604,7 @@ class _Guidance:
             null = torch.full_like(inputs.speaker, null_speaker)
             variants.append((inputs.content, null))
         if self.content_guidance > 0:
-            frames = inputs.content.shape[1]
-            blurred = F.interpolate(
-                inputs.content.transpose(1, 2), size=max(1, frames // 4), mode="linear"
-            )
-            blurred = F.interpolate(blurred, size=frames, mode="linear").transpose(
-                1, 2
-            )
-            variants.append((blurred, inputs.speaker))
+            variants.append((blur_content(inputs.content), inputs.speaker))
         return variants
 
     def active(self, now: float):
@@ -643,7 +657,8 @@ class _Guidance:
 class RectifiedFlow(nn.Module):
     """
     Velocity field from Gaussian noise (t = 0) to the normalised log mel
-    (t = 1), conditioned per frame.
+    (t = 1), conditioned per frame. Inside, each mel bin is normalised again
+    by the statistics of `set_mel_stats`.
 
     Args:
         n_mels (int): Number of mel bins.
@@ -665,6 +680,8 @@ class RectifiedFlow(nn.Module):
         tension (bool, optional): Whether to take the tension curve. Defaults to False.
         dual_timestep (bool, optional): Train a share of the frames at a second time. Defaults to False.
         time_sampling (str, optional): One of TIME_SAMPLINGS. Defaults to "logit-normal".
+        prior_noise (float, optional): Noise added to the aux decoder's mel to make the source of the flow at t = 0, in place of `t_start`. Defaults to 0.0.
+        prior_degrade (float, optional): Strength of the degradation training puts that mel through. Defaults to 0.0.
     """
 
     def __init__(
@@ -688,6 +705,8 @@ class RectifiedFlow(nn.Module):
         tension: bool = False,
         dual_timestep: bool = False,
         time_sampling: str = "logit-normal",
+        prior_noise: float = 0.0,
+        prior_degrade: float = 0.0,
     ):
         super().__init__()
         if backbone != "lynxnet2":
@@ -725,13 +744,43 @@ class RectifiedFlow(nn.Module):
         for module in filter(None, conditioning):
             for child in module.modules():
                 child.use_adamw = True
-        self.t_start = float(t_start) if self.aux is not None else 0.0
+        self.prior_noise = float(prior_noise) if self.aux is not None else 0.0
+        self.prior_degrade = float(prior_degrade)
+        self.t_start = 0.0
+        if self.aux is not None and self.prior_noise <= 0:
+            self.t_start = float(t_start)
         self.aux_grad = float(aux_grad)
         self.dual_timestep = bool(dual_timestep)
+        self.register_buffer("mel_shift", torch.zeros(self.n_mels, 1))
+        self.register_buffer("mel_scale", torch.ones(self.n_mels, 1))
 
     @property
     def speaker_count(self):
         return self.encoder.speaker_count
+
+    @property
+    def starts_from_aux(self):
+        # Whether sampling starts from the mel of the aux decoder.
+        return self.t_start > 0 or self.prior_noise > 0
+
+    @torch.no_grad()
+    def set_mel_stats(self, mean: torch.Tensor, std: torch.Tensor):
+        """
+        Normalise each mel bin inside the model by its mean and spread over the
+        training set.
+
+        Args:
+            mean (torch.Tensor): Mean of each bin of the normalised mel, shape (n_mels,).
+            std (torch.Tensor): Spread of each bin of the normalised mel, shape (n_mels,).
+        """
+        self.mel_shift.copy_(mean.view(-1, 1))
+        self.mel_scale.copy_(std.view(-1, 1).clamp_min(MIN_MEL_SCALE))
+
+    def _encode(self, mel):
+        return (mel - self.mel_shift) / self.mel_scale
+
+    def _decode(self, mel):
+        return mel * self.mel_scale + self.mel_shift
 
     def speaker_layers(self):
         """
@@ -763,12 +812,32 @@ class RectifiedFlow(nn.Module):
             u = torch.sigmoid(math.sqrt(2.0) * torch.erfinv(2.0 * u - 1.0))
         return self.t_start + (1.0 - self.t_start) * u
 
-    def _flow_error(self, mel, cond, voice, mask, t, noise):
+    def _flow_error(self, mel, source, cond, voice, mask, t):
+        # Flow loss per item on the path from `source` to `mel`.
         mix = t[:, None, None] if t.dim() == 1 else t[:, None, :]
-        x_t = (1.0 - mix) * noise + mix * mel
+        x_t = (1.0 - mix) * source + mix * mel
         prediction = self.backbone(x_t, t, cond, mask, voice)
-        error = (prediction.float() - (mel - noise).float()).square() * mask
+        error = (prediction.float() - (mel - source).float()).square() * mask
         return error.sum((1, 2)) / (mask.sum((1, 2)) * self.n_mels).clamp_min(1.0)
+
+    @torch.no_grad()
+    def _prior(self, cond, voice, mask):
+        # The mel of the aux decoder as sampling has it: without dropout.
+        training = self.aux.training
+        self.aux.eval()
+        mel = self.aux(cond, mask, voice)
+        self.aux.train(training)
+        return mel
+
+    def _source(self, noise, cond, voice, mask):
+        # Where the flow is at t = 0: noise, or under prior noise the mel of
+        # the aux decoder plus that much of it.
+        if self.prior_noise <= 0:
+            return noise
+        prior = self._prior(cond, voice, mask).float()
+        if self.training and self.prior_degrade > 0:
+            prior = degrade_mel(prior, self.prior_degrade)
+        return prior + self.prior_noise * noise
 
     def _aux_loss(self, mel, cond, voice, mask):
         if self.aux is None:
@@ -794,15 +863,18 @@ class RectifiedFlow(nn.Module):
         inputs: Conditioning,
         speaker_dropout=0.0,
         tension_dropout=0.0,
+        content_blur=0.0,
     ):
         """
-        Returns the flow-matching loss and the aux decoder's L1 (None without one).
+        Returns the flow-matching loss and the aux decoder's L1 (None without
+        one), both on the per-bin normalised mel.
 
         Args:
             mel (torch.Tensor): Normalised mel, shape (batch, n_mels, frames).
             inputs (Conditioning): The inputs of the flow.
             speaker_dropout (float, optional): Share of the items trained on the null speaker.
             tension_dropout (float, optional): Share of the items trained with a flat tension.
+            content_blur (float, optional): Share of the items trained on the blurred content the content guidance reads.
         """
         speaker = self._drop_speakers(inputs.speaker, speaker_dropout)
         tension = inputs.tension
@@ -812,13 +884,22 @@ class RectifiedFlow(nn.Module):
                 >= tension_dropout
             )
             tension = tension * kept
+        content = inputs.content
+        if content_blur > 0:
+            blurred = (
+                torch.rand(content.shape[0], 1, 1, device=content.device) < content_blur
+            )
+            content = torch.where(blurred, blur_content(content), content)
         mask = inputs.mask
-        cond = self.encoder(inputs._replace(speaker=speaker, tension=tension))
+        mel = self._encode(mel) * mask
+        cond = self.encoder(
+            inputs._replace(content=content, speaker=speaker, tension=tension)
+        )
         voice = self.encoder.voice(speaker)
-        noise = torch.randn_like(mel)
+        source = self._source(torch.randn_like(mel), cond, voice, mask)
 
         t = self._train_times(mel.shape[0], mel.shape[-1], mel.device)
-        error = self._flow_error(mel, cond, voice, mask, t, noise)
+        error = self._flow_error(mel, source, cond, voice, mask, t)
         frames = mask.sum((1, 2))
         flow = (error * frames).sum() / frames.sum().clamp_min(1.0)
         return flow, self._aux_loss(mel, cond, voice, mask)
@@ -836,8 +917,10 @@ class RectifiedFlow(nn.Module):
             fractions (tuple): Where in the trained time range the loss is taken.
         """
         mask = inputs.mask
+        mel = self._encode(mel) * mask
         cond = self.encoder(inputs)
         voice = self.encoder.voice(inputs.speaker)
+        source = self._source(noise, cond, voice, mask)
         frames = mask.sum((1, 2))
         losses = []
         for fraction in fractions:
@@ -846,24 +929,28 @@ class RectifiedFlow(nn.Module):
                 self.t_start + (1.0 - self.t_start) * fraction,
                 device=mel.device,
             )
-            error = self._flow_error(mel, cond, voice, mask, t, noise)
+            error = self._flow_error(mel, source, cond, voice, mask, t)
             losses.append((error * frames).sum() / frames.sum().clamp_min(1.0))
         return torch.stack(losses), self._aux_loss(mel, cond, voice, mask)
 
     @torch.no_grad()
     def aux_mel(self, inputs: Conditioning):
         """
-        The normalised mel of the aux decoder, where the sampling of a shallow
-        flow starts, shape (batch, n_mels, frames).
+        The normalised mel of the aux decoder, where sampling starts under
+        `t_start` or `prior_noise`, shape (batch, n_mels, frames).
 
         Args:
             inputs (Conditioning): The inputs of the flow.
         """
         voice = self.encoder.voice(inputs.speaker)
-        return self.aux(self.encoder(inputs), inputs.mask, voice)
+        mel = self.aux(self.encoder(inputs), inputs.mask, voice)
+        return self._decode(mel) * inputs.mask
 
     def _start(self, noise, mel, mask, start):
         # Where sampling begins: the state and its flow time.
+        if self.prior_noise > 0:
+            t0 = 0.0 if start is None else min(max(0.0, float(start)), 0.99)
+            return (mel + (1.0 - t0) * self.prior_noise * noise) * mask, t0
         if self.t_start <= 0:
             return noise * mask, 0.0
         t0 = self.t_start
@@ -872,11 +959,13 @@ class RectifiedFlow(nn.Module):
         return ((1.0 - t0) * noise + t0 * mel) * mask, t0
 
     @staticmethod
-    def _renoise(x, now, back, fresh, temperature):
-        # Takes x from `now` back to `back`, on the path (1 - t) noise + t mel.
+    def _renoise(x, now, back, fresh, prior=None):
+        # Takes x from `now` back to `back`, on the path (1 - t) source + t mel;
+        # `prior` is the mel of the source, if it has one.
         scale = back / now
         top_up = math.sqrt(max((1.0 - back) ** 2 - (scale * (1.0 - now)) ** 2, 0.0))
-        return scale * x + temperature * top_up * fresh
+        x = scale * x + top_up * fresh
+        return x if prior is None else x + (1.0 - scale) * prior
 
     @torch.no_grad()
     def sample(
@@ -911,13 +1000,13 @@ class RectifiedFlow(nn.Module):
             content_guidance (float, optional): Guidance away from the blurred content, 0 is off. Defaults to 0.0.
             guidance_rescale (float, optional): Pull of the guided velocity's spread back to the unguided one's. Defaults to 0.0.
             temperature (float, optional): Scale of the starting noise. Defaults to 1.0.
-            start (float, optional): Time sampling begins at with an aux decoder, `t_start` when None.
+            start (float, optional): Time sampling begins at with an aux decoder, the start of the model when None.
             guidance_interval (tuple, optional): Flow time the guidances apply in. Defaults to (0.0, 1.0).
             rescale_mode (str, optional): One of RESCALE_MODES. Defaults to "global".
             schedule (str, optional): One of SCHEDULES. Defaults to "uniform".
             churn (float, optional): Share of each step re-noised before it, 0 is the plain ODE. Defaults to 0.0.
             churn_noise (Callable, optional): Gives the fresh noise of a step, drawn when None.
-            start_mel (torch.Tensor, optional): Mel a shallow flow starts from, the aux decoder's when None.
+            start_mel (torch.Tensor, optional): Mel sampling starts from, the aux decoder's when None.
         """
         if method not in SAMPLERS:
             raise ValueError(f"method must be one of {SAMPLERS}, not {method!r}.")
@@ -961,9 +1050,13 @@ class RectifiedFlow(nn.Module):
             shape = (batch, self.n_mels, frames)
             noise = torch.randn(shape, device=inputs.content.device)
         noise = noise * float(temperature)
-        if start_mel is None and self.t_start > 0:
+        if start_mel is not None:
+            start_mel = self._encode(start_mel)
+        elif self.starts_from_aux:
             start_mel = self.aux(cond[:batch], mask, voice[:batch])
         x, t0 = self._start(noise, start_mel, mask, start)
+        prior = start_mel if self.prior_noise > 0 else None
+        noise_level = float(temperature) * (self.prior_noise or 1.0)
         times = time_grid(schedule, max(1, int(steps)), t0, x.device)
         for index in range(times.shape[0] - 1):
             now = float(times[index])
@@ -976,7 +1069,7 @@ class RectifiedFlow(nn.Module):
                     fresh = torch.randn_like(x)
                 else:
                     fresh = churn_noise(index)
-                x = self._renoise(x, now, back, fresh, float(temperature)) * mask
+                x = self._renoise(x, now, back, noise_level * fresh, prior) * mask
                 now = back
             t = torch.full((batch,), now, device=x.device, dtype=times.dtype)
             dt = times[index + 1] - now
@@ -987,7 +1080,7 @@ class RectifiedFlow(nn.Module):
             x = x + dt * v
             if callback is not None:
                 callback()
-        return x * mask
+        return self._decode(x) * mask
 
 
 def resize_speakers(state_dict: dict, speaker_count: int):
@@ -1012,9 +1105,9 @@ def resize_speakers(state_dict: dict, speaker_count: int):
 
 def match_inputs(state_dict: dict, model: RectifiedFlow):
     """
-    Fit a pretrain's weights to the optional inputs of `model`: the ones it
-    lacks keep the model's zero start, and the span input of a model trained
-    with Mean Flow is dropped, which leaves its plain flow.
+    Fit older weights to `model`: the optional inputs and the mel statistics
+    they lack keep the model's own, and the span input of a model trained with
+    Mean Flow is dropped, which leaves its plain flow.
 
     Args:
         state_dict (dict): Weights of a flow model.
@@ -1027,7 +1120,7 @@ def match_inputs(state_dict: dict, model: RectifiedFlow):
         if not key.startswith("backbone.span_mlp.")
     }
     for key, value in own.items():
-        if key not in state_dict and key.startswith(ZERO_INPUTS):
+        if key not in state_dict and key.startswith(ZERO_INPUTS + MEL_STATS):
             state_dict[key] = value
     return state_dict
 

@@ -32,6 +32,12 @@ from rvc.train.rectified_flow.data_utils import (
     split_holdout,
 )
 from rvc.train.rectified_flow.ema import WeightEMA
+from rvc.train.rectified_flow.feature_cache import (
+    BucketBatchSampler,
+    CachedFlowLoader,
+    build_cache,
+    load_cache,
+)
 from rvc.train.rectified_flow.muon import MuonAdamW
 from rvc.train.utils import (
     latest_checkpoint_path,
@@ -58,6 +64,7 @@ def _strtobool(val):
 save_only_latest = _strtobool(sys.argv[8])
 save_every_weights = _strtobool(sys.argv[9])
 cleanup = _strtobool(sys.argv[10])
+feature_cache = _strtobool(sys.argv[11])
 
 # Sampling steps of the validation audio
 preview_steps = 16
@@ -70,6 +77,8 @@ eval_fractions = (0.1, 0.3, 0.5, 0.7, 0.9)
 max_grad_scale = 2.0**16
 # Steps skipped in a row over a non-finite gradient before the training stops
 max_skipped_in_a_row = 10
+# Batches the statistics of the mel bins are measured over
+mel_stats_batches = 200
 
 current_dir = os.getcwd()
 
@@ -115,6 +124,10 @@ if "flow" not in config:
     )
     sys.exit(1)
 
+# Without the feature cache the dataset is augmented as it is read
+if not feature_cache:
+    config["flow"]["feature_cache"] = False
+
 torch.backends.cudnn.deterministic = False
 if os.name == "nt":  # Windows
     torch.backends.cudnn.benchmark = True
@@ -158,7 +171,7 @@ class EpochRecorder:
         return f"time={current_time} | training_speed={elapsed_time_str}"
 
 
-def learning_rate(base, step, warmup, total, final_ratio):
+def learning_rate(base, step, warmup, total, final_ratio, anchor=(0, 0.0)):
     """
     Linear warmup, then cosine decay to `final_ratio` of the base learning rate.
 
@@ -168,12 +181,60 @@ def learning_rate(base, step, warmup, total, final_ratio):
         warmup (int): Number of warmup steps.
         total (int): Number of steps of the whole training.
         final_ratio (float): Share of the base learning rate reached at the end.
+        anchor (tuple, optional): Step and progress along the cosine a resumed training continues from, so a changed total stretches what is left of it.
     """
     if warmup and step < warmup:
         return base * (step + 1) / warmup
-    progress = min(1.0, max(0.0, (step - warmup) / max(1, total - warmup)))
+    start, done = max(anchor[0], warmup), anchor[1]
+    left = min(1.0, max(0.0, (step - start) / max(1, total - start)))
+    progress = done + (1.0 - done) * left
     cosine = 0.5 * (1.0 + math.cos(math.pi * progress))
     return base * (final_ratio + (1.0 - final_ratio) * cosine)
+
+
+def cosine_progress(scale, final_ratio):
+    """
+    Returns how far along the cosine decay a learning rate is, from 0 to 1.
+
+    Args:
+        scale (float): The learning rate as a share of the base learning rate.
+        final_ratio (float): Share of the base learning rate reached at the end.
+    """
+    if final_ratio >= 1.0:
+        return 0.0
+    height = (scale - final_ratio) / (1.0 - final_ratio)
+    return math.acos(min(1.0, max(-1.0, 2.0 * height - 1.0))) / math.pi
+
+
+@torch.no_grad()
+def get_mel_stats(train_loader, data_config, device, n_gpus):
+    """
+    Returns the mean and the spread of each bin of the normalised mel over the
+    first batches of every rank.
+
+    Args:
+        train_loader (DataLoader): Dataloader of the training set.
+        data_config (dict): The `data` section of the config.
+        device (torch.device): The device of the model.
+        n_gpus (int): The total number of GPUs available for training.
+    """
+    total = torch.zeros(data_config["n_mels"], device=device, dtype=torch.float64)
+    squares = torch.zeros_like(total)
+    frames = torch.zeros((), device=device, dtype=torch.float64)
+    for batch_idx, (mel, inputs) in enumerate(train_loader):
+        if batch_idx >= mel_stats_batches:
+            break
+        mask = inputs.mask.to(device).double()
+        mel = normalize_mel(mel.to(device), data_config).double() * mask
+        total += mel.sum((0, 2))
+        squares += mel.square().sum((0, 2))
+        frames += mask.sum()
+    if n_gpus > 1:
+        for value in (total, squares, frames):
+            dist.all_reduce(value)
+    mean = total / frames
+    std = (squares / frames - mean.square()).clamp_min(0.0).sqrt()
+    return mean.float(), std.float()
 
 
 def freeze_voice(net_flow):
@@ -378,6 +439,19 @@ def main():
 
         print("Cleanup done!")
 
+    # The features are written once, before the training processes start
+    if config["flow"].get("feature_cache", False):
+        entries = [
+            row for row in load_filepaths_and_text(training_files) if len(row) >= 5
+        ]
+        entries, _ = split_holdout(entries, config["flow"]["holdout_clips"])
+        build_cache(
+            experiment_dir,
+            config,
+            entries,
+            min(config["flow"]["num_workers"], os.cpu_count() or 1),
+        )
+
     start()
 
 
@@ -439,27 +513,69 @@ def run(
     entries, holdout_entries = split_holdout(entries, flow_config["holdout_clips"])
 
     train_dataset = FlowAudioLoader(entries, config)
-    collate_fn = FlowAudioCollate(flow_config["segment_frames"])
-    if n_gpus > 1:
-        train_sampler = DistributedSampler(
-            train_dataset, num_replicas=n_gpus, rank=rank, shuffle=True, drop_last=True
-        )
-    else:
-        train_sampler = None
+    segment_frames = flow_config["segment_frames"]
+    collate_fn = FlowAudioCollate(segment_frames)
     num_workers = min(flow_config["num_workers"], os.cpu_count() or 1)
 
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        num_workers=num_workers,
-        shuffle=train_sampler is None,
-        sampler=train_sampler,
-        pin_memory=True,
-        collate_fn=collate_fn,
-        drop_last=True,
-        persistent_workers=True,
-        prefetch_factor=4,
-    )
+    # With the feature cache the training reads the cached items, and with
+    # bucket batches too, in batches of whole clips of similar length
+    use_cache = flow_config.get("feature_cache", False)
+    use_buckets = use_cache and flow_config.get("bucket_batches", False)
+    train_items = train_dataset
+    if use_cache:
+        max_frames = segment_frames
+        if use_buckets:
+            max_frames = flow_config.get("bucket_max_frames", segment_frames)
+        train_items = CachedFlowLoader(
+            train_dataset, *load_cache(experiment_dir, config, entries), max_frames
+        )
+
+    # Batches of whole clips change shape, which the benchmark would search anew
+    if use_buckets:
+        torch.backends.cudnn.benchmark = False
+    elif flow_config.get("cudnn_benchmark", False):
+        torch.backends.cudnn.benchmark = True
+
+    if use_buckets:
+        train_loader = DataLoader(
+            train_items,
+            batch_sampler=BucketBatchSampler(
+                train_items.get_lengths(),
+                batch_size * segment_frames,
+                flow_config.get("bucket_max_items", 64),
+                flow_config["seed"],
+                rank,
+                n_gpus,
+            ),
+            num_workers=num_workers,
+            pin_memory=True,
+            collate_fn=FlowAudioCollate(),
+            persistent_workers=True,
+            prefetch_factor=4,
+        )
+    else:
+        if n_gpus > 1:
+            train_sampler = DistributedSampler(
+                train_items,
+                num_replicas=n_gpus,
+                rank=rank,
+                shuffle=True,
+                drop_last=True,
+            )
+        else:
+            train_sampler = None
+        train_loader = DataLoader(
+            train_items,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            shuffle=train_sampler is None,
+            sampler=train_sampler,
+            pin_memory=True,
+            collate_fn=collate_fn,
+            drop_last=True,
+            persistent_workers=True,
+            prefetch_factor=4,
+        )
 
     eval_loader = None
     if rank == 0 and holdout_entries:
@@ -561,9 +677,10 @@ def run(
     # Load checkpoint if available
     epoch_str = 1
     global_step = 0
+    resumed = checkpoint is not None
     if checkpoint is not None:
         print("Starting training...")
-        net_flow.load_state_dict(checkpoint["model"])
+        net_flow.load_state_dict(match_inputs(checkpoint["model"], net_flow))
         optim.load_state_dict(checkpoint["optimizer"])
         ema.load_state_dict(checkpoint.get("ema"), net_flow)
         if len(checkpoint.get("scaler", {})) > 0:
@@ -590,6 +707,24 @@ def run(
             print(e)
             sys.exit(1)
     pretrain_weights = None
+
+    # A resumed training and a fine-tune keep the mel statistics of their weights
+    if flow_config.get("mel_bin_norm", False) and not resumed and not finetune:
+        if rank == 0:
+            print("Measuring the statistics of the mel bins...")
+        net_flow.set_mel_stats(
+            *get_mel_stats(train_loader, config["data"], device, n_gpus)
+        )
+        ema.reseed(net_flow)
+
+    # A resumed training continues the cosine from where its learning rate was
+    lr_anchor = (0, 0.0)
+    if resumed and global_step >= warmup:
+        scale = optim.param_groups[0]["lr"] / base_lr
+        lr_anchor = (
+            global_step,
+            cosine_progress(scale, flow_config["lr_final_ratio"]),
+        )
 
     # Wrap model with DDP for multi-gpu processing
     net_flow_ddp = net_flow
@@ -627,9 +762,11 @@ def run(
         "warmup": warmup,
         "total_steps": custom_total_epoch * len(train_loader),
         "final_ratio": flow_config["lr_final_ratio"],
+        "lr_anchor": lr_anchor,
         "grad_clip": flow_config["grad_clip"],
         "speaker_dropout": speaker_dropout,
         "tension_dropout": tension_dropout,
+        "content_blur": flow_config.get("content_blur_prob", 0.0),
         "aux_weight": flow_config["aux_mel_weight"],
         "eval_interval": flow_config["eval_interval"],
         "n_speakers": n_speakers,
@@ -731,7 +868,7 @@ def generate_validation(hps, net_flow, ema, references, vocoder, writer, device)
             mels = {"": net_flow.sample(inputs, steps=preview_steps, noise=noise)}
             if net_flow.aux is not None:
                 mels["_aux"] = net_flow.aux_mel(inputs)
-            if net_flow.t_start > 0 and held_out:
+            if net_flow.starts_from_aux and held_out:
                 mels["_from_real_mel"] = net_flow.sample(
                     inputs, steps=preview_steps, noise=noise, start_mel=real_mel
                 )
@@ -826,7 +963,9 @@ def train_and_evaluate(
     train_loader, eval_loader = loaders
     data_config = hps["config"]["data"]
 
-    if isinstance(train_loader.sampler, DistributedSampler):
+    if isinstance(train_loader.batch_sampler, BucketBatchSampler):
+        train_loader.batch_sampler.set_epoch(epoch)
+    elif isinstance(train_loader.sampler, DistributedSampler):
         train_loader.sampler.set_epoch(epoch)
 
     net_flow.train()
@@ -848,6 +987,7 @@ def train_and_evaluate(
                 hps["warmup"],
                 hps["total_steps"],
                 hps["final_ratio"],
+                hps["lr_anchor"],
             )
             for param_group in optim.param_groups:
                 param_group["lr"] = lr
@@ -861,6 +1001,7 @@ def train_and_evaluate(
                     inputs,
                     speaker_dropout=hps["speaker_dropout"],
                     tension_dropout=hps["tension_dropout"],
+                    content_blur=hps["content_blur"],
                 )
                 loss_all = loss_flow
                 if loss_aux is not None:

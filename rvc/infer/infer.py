@@ -289,7 +289,10 @@ class VoiceConverter:
             )
         audio_max = np.abs(audio).max() / 0.95
 
-        if audio_max > 1:
+        # The loudness input of a Rectified Flow model is absolute, so a quiet
+        # input is brought up to the peak the training data has as well. The
+        # output stays at the level of the model, as that of an RVC model does
+        if audio_max > 1 or (audio_full is not None and audio_max > 0):
             audio /= audio_max
             if audio_full is not None:
                 audio_full /= audio_max
