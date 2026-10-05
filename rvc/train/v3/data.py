@@ -56,32 +56,10 @@ def dataset_identity(manifest):
     )
 
 
-def prepare(
-    input_dir,
-    output_dir,
-    extractor,
-    validation_fraction=0.1,
-    segment_seconds=4,
-    seed=1234,
-    speaker_names=None,
-    recordings_per_speaker=0,
-    progress=None,
+def _select_recordings(
+    root, validation_fraction, seed, speaker_names, recordings_per_speaker
 ):
-    """Extract and cache a deterministic whole-recording split outside the source tree.
-
-    Recordings are resampled/read without modifying originals. Segment offsets are
-    retained in the manifest so held-out renders can be matched to source audio.
-    The cache ID binds extraction semantics; dataset ID additionally binds the
-    selected recordings, split, speaker vocabulary and concrete cache hashes.
-    """
-
-    import soundfile as sf
-
-    root, output = Path(input_dir).resolve(), Path(output_dir).resolve()
-    if not root.is_dir() or root == output or output.is_relative_to(root):
-        raise ValueError("Dataset input must exist and output must be outside its tree")
-    if not 0 < validation_fraction < 1 or segment_seconds <= 0:
-        raise ValueError("Invalid split or segment duration")
+    """Share deterministic speaker selection, deduplication and recording splits."""
     files = sorted(
         p
         for p in root.rglob("*")
@@ -139,6 +117,38 @@ def prepare(
         raise ValueError(
             "Need at least two distinct recordings for one speaker to create recording-disjoint validation"
         )
+    return speakers, records, input_recordings
+
+
+def prepare(
+    input_dir,
+    output_dir,
+    extractor,
+    validation_fraction=0.1,
+    segment_seconds=4,
+    seed=1234,
+    speaker_names=None,
+    recordings_per_speaker=0,
+    progress=None,
+):
+    """Extract and cache a deterministic whole-recording split outside the source tree.
+
+    Recordings are resampled/read without modifying originals. Segment offsets are
+    retained in the manifest so held-out renders can be matched to source audio.
+    The cache ID binds extraction semantics; dataset ID additionally binds the
+    selected recordings, split, speaker vocabulary and concrete cache hashes.
+    """
+
+    import soundfile as sf
+
+    root, output = Path(input_dir).resolve(), Path(output_dir).resolve()
+    if not root.is_dir() or root == output or output.is_relative_to(root):
+        raise ValueError("Dataset input must exist and output must be outside its tree")
+    if not 0 < validation_fraction < 1 or segment_seconds <= 0:
+        raise ValueError("Invalid split or segment duration")
+    speakers, records, input_recordings = _select_recordings(
+        root, validation_fraction, seed, speaker_names, recordings_per_speaker
+    )
     contract = {
         "mel": asdict(extractor.mel_config),
         "features": asdict(extractor.config),
@@ -238,6 +248,207 @@ def prepare(
     return output / "manifest.json"
 
 
+def preprocess_audio(
+    input_dir,
+    output_dir,
+    validation_fraction=0.1,
+    segment_seconds=4,
+    seed=1234,
+    speaker_names=None,
+    recordings_per_speaker=0,
+    mel_config=None,
+    progress=None,
+):
+    """Save resampled audio and a recording-disjoint split without loading models.
+
+    The audio manifest binds selection, offsets and waveform hashes. Extraction
+    reads these immutable segments later; changing frontend settings never needs
+    to resample the originals again. Sources remain untouched.
+    """
+    import soundfile as sf
+
+    root, output = Path(input_dir).resolve(), Path(output_dir).resolve()
+    if not root.is_dir() or root == output or output.is_relative_to(root):
+        raise ValueError("Dataset input must exist and output must be outside its tree")
+    if not 0 < validation_fraction < 1 or segment_seconds <= 0:
+        raise ValueError("Invalid split or segment duration")
+    mel = mel_config or MelConfig()
+    speakers, records, input_recordings = _select_recordings(
+        root, validation_fraction, seed, speaker_names, recordings_per_speaker
+    )
+    audio_cache = output / "audio" / fingerprint(asdict(mel))
+    audio_cache.mkdir(parents=True, exist_ok=True)
+    segment_samples = max(mel.hop_length, int(segment_seconds * mel.sample_rate))
+    segment_samples -= segment_samples % mel.hop_length
+    entries = []
+    for index, record in enumerate(records):
+        audio = read_audio(root / record["source"], mel.sample_rate)
+        if np.max(np.abs(audio)) > 1.01:
+            raise ValueError(
+                f"Recording exceeds full scale: {record['source']}; normalize explicitly before preprocessing"
+            )
+        for start in range(0, len(audio), segment_samples):
+            segment = audio[start : start + segment_samples]
+            key = fingerprint(
+                dict(
+                    record=record["source_hash"],
+                    start=start,
+                    samples=len(segment),
+                    mel=asdict(mel),
+                )
+            )
+            waveform = audio_cache / (key + ".wav")
+            metadata = waveform.with_suffix(".json")
+            valid = waveform.exists() and metadata.exists()
+            if valid:
+                valid = json.loads(metadata.read_text())[
+                    "waveform_sha256"
+                ] == file_hash(waveform)
+            if not valid:
+                temporary = waveform.with_suffix(".tmp.wav")
+                sf.write(str(temporary), segment, mel.sample_rate, subtype="FLOAT")
+                temporary.replace(waveform)
+                atomic_json(metadata, {"waveform_sha256": file_hash(waveform)})
+            entries.append(
+                {
+                    **record,
+                    "start_sample": start,
+                    "samples": len(segment),
+                    "waveform": str(waveform.relative_to(output)),
+                    "waveform_sha256": file_hash(waveform),
+                }
+            )
+        if progress:
+            progress(
+                dict(recording=index + 1, total=len(records), source=record["source"])
+            )
+    manifest = dict(
+        schema=1,
+        mel=asdict(mel),
+        source_root=str(root),
+        seed=seed,
+        selection=dict(
+            speaker_names=list(speaker_names or []),
+            recordings_per_speaker=recordings_per_speaker,
+            input_recordings=input_recordings,
+        ),
+        speakers=speakers,
+        recordings=records,
+        segments=entries,
+    )
+    manifest["audio_id"] = fingerprint(manifest)
+    atomic_json(output / "audio_manifest.json", manifest)
+    return output / "audio_manifest.json"
+
+
+def extract_preprocessed(audio_manifest, extractor, progress=None):
+    """Cache frontend features from verified audio; publish a train-ready manifest.
+
+    Audio paths/hashes, segment lengths and split identity are checked before
+    use. Feature hashes bind cache reuse to the exact frontend contract. Legacy
+    combined manifests remain readable by the dataset and training code.
+    """
+    import soundfile as sf
+    from rvc.configs.v3 import require_contract
+
+    path = Path(audio_manifest)
+    audio = json.loads(path.read_text(encoding="utf-8"))
+    identity = {key: value for key, value in audio.items() if key != "audio_id"}
+    if audio.get("schema") != 1 or fingerprint(identity) != audio.get("audio_id"):
+        raise ValueError("Preprocessed audio manifest is invalid; run Preprocess again")
+    require_contract(asdict(extractor.mel_config), audio["mel"], "preprocessed mel")
+    output = path.parent.resolve()
+    contract = dict(
+        mel=audio["mel"], features=asdict(extractor.config), implementation=1
+    )
+    cache_id = fingerprint(contract)
+    cache = output / "cache" / cache_id
+    cache.mkdir(parents=True, exist_ok=True)
+    entries = []
+    for index, entry in enumerate(audio["segments"]):
+        waveform = (output / entry["waveform"]).resolve()
+        if (
+            not waveform.is_relative_to(output)
+            or file_hash(waveform) != entry["waveform_sha256"]
+        ):
+            raise ValueError(
+                f"Preprocessed audio changed: {entry['source']}; run Preprocess again"
+            )
+        key = fingerprint(
+            dict(
+                record=entry["source_hash"],
+                start=entry["start_sample"],
+                samples=entry["samples"],
+                contract=cache_id,
+            )
+        )
+        feature_file = cache / (key + ".npz")
+        metadata = feature_file.with_suffix(".json")
+        valid = feature_file.exists() and metadata.exists()
+        if valid:
+            hashes = json.loads(metadata.read_text())
+            valid = (
+                hashes.get("features_sha256") == file_hash(feature_file)
+                and hashes.get("waveform_sha256") == entry["waveform_sha256"]
+            )
+        if not valid:
+            segment, rate = sf.read(str(waveform), dtype="float32")
+            if (
+                rate != extractor.mel_config.sample_rate
+                or segment.ndim != 1
+                or len(segment) != entry["samples"]
+                or not np.isfinite(segment).all()
+            ):
+                raise ValueError(
+                    "Preprocessed audio dimensions or sample rate are invalid"
+                )
+            temporary = feature_file.with_suffix(".tmp.npz")
+            np.savez_compressed(temporary, **extractor.extract(segment))
+            temporary.replace(feature_file)
+            atomic_json(
+                metadata,
+                dict(
+                    features_sha256=file_hash(feature_file),
+                    waveform_sha256=entry["waveform_sha256"],
+                ),
+            )
+        entries.append(
+            {
+                **entry,
+                "features": str(feature_file.relative_to(output)),
+                "features_sha256": file_hash(feature_file),
+            }
+        )
+        if progress:
+            progress(
+                dict(
+                    recording=index + 1,
+                    total=len(audio["segments"]),
+                    source=entry["source"],
+                )
+            )
+    manifest = {
+        key: audio[key]
+        for key in (
+            "schema",
+            "source_root",
+            "seed",
+            "selection",
+            "speakers",
+            "recordings",
+        )
+    }
+    manifest.update(
+        contract=contract,
+        cache_id=cache_id,
+        segments=entries,
+        preprocessing_id=audio["audio_id"],
+    )
+    manifest["dataset_id"] = dataset_identity(manifest)
+    atomic_json(output / "manifest.json", manifest)
+    return output / "manifest.json"
+
+
 class AcousticDataset(Dataset):
     """Serve verified cached segments or frame crops for acoustic and vocoder stages."""
 
@@ -246,6 +457,13 @@ class AcousticDataset(Dataset):
         self.manifest = json.loads(self.path.read_text(encoding="utf-8"))
         if self.manifest.get("schema") != 1:
             raise ValueError("Unsupported dataset schema")
+        audio_path = self.path.parent / "audio_manifest.json"
+        if audio_path.exists():
+            prepared = json.loads(audio_path.read_text(encoding="utf-8"))
+            if self.manifest.get("preprocessing_id") != prepared.get("audio_id"):
+                raise ValueError(
+                    "Audio preprocessing changed; run Extract Features before training"
+                )
         self.config = MelConfig(**self.manifest["contract"]["mel"])
         self.entries = [e for e in self.manifest["segments"] if e["split"] == split]
         if not self.entries:

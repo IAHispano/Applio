@@ -1,14 +1,15 @@
 """Architecture-dependent controls inside the existing Training workflow.
 
 Keep widget/service routing here; learning objectives belong in the trainer.
-Classic preparation/extraction remain separate, while V3 preparation caches
-both PCM and features. Session-local stop events avoid one browser cancelling
+Both architectures use separate audio preprocessing and feature extraction. Session-local stop events avoid one browser cancelling
 another session. The existing output and buttons serve both architectures.
 """
 
 import inspect
 import json
 import threading
+import time
+from pathlib import Path
 
 import gradio as gr
 
@@ -18,122 +19,346 @@ _training_events = {}
 _training_signature = inspect.signature(core.run_train_script)
 
 
+def pretrained_choices(kind):
+    from rvc.configs.architectures import discover_models, inspect_model
+
+    return [
+        (Path(path).stem, path)
+        for _, path in discover_models(kind=kind)
+        if inspect_model(path).get("inference_only")
+    ]
+
+
+def workflow_options():
+    """Beginner choices live in Model Settings, before dataset preparation."""
+    with gr.Column(visible=False) as settings:
+        workflow = gr.Radio(
+            [
+                ("Fine-tune a pretrained model (LoRA)", "finetune"),
+                ("Train from scratch", "scratch"),
+                ("Advanced stage training", "advanced"),
+            ],
+            value="finetune",
+            label="How would you like to train?",
+            info="Fine-tuning teaches an existing model your voice and reuses its universal vocoder.",
+        )
+        with gr.Row() as pretrained:
+            base = gr.Dropdown(
+                pretrained_choices("acoustic"),
+                value=None,
+                label="Pretrained voice model",
+                allow_custom_value=True,
+                info="Choose exported V3 pretrained weights.",
+            )
+            vocoder = gr.Dropdown(
+                pretrained_choices("vocoder"),
+                value=None,
+                label="Universal vocoder",
+                allow_custom_value=True,
+                info="Reused for inference; it will not be trained.",
+            )
+        refresh = gr.Button("Refresh pretrained models")
+        status = gr.Markdown(
+            "Select a pretrained voice model and vocoder to fine-tune. If you do not have pretrained weights, choose Train from scratch."
+        )
+        workflow.change(
+            lambda mode: (
+                gr.update(visible=mode == "finetune"),
+                gr.update(visible=mode == "finetune"),
+                "Fine-tuning trains only LoRA adapters and the new speaker embedding."
+                if mode == "finetune"
+                else "",
+            ),
+            workflow,
+            [pretrained, refresh, status],
+        )
+        refresh.click(
+            lambda: (
+                gr.update(choices=pretrained_choices("acoustic")),
+                gr.update(choices=pretrained_choices("vocoder")),
+            ),
+            outputs=[base, vocoder],
+        )
+
+        def compatible_vocoders(path):
+            from rvc.configs.architectures import inspect_model
+
+            if not path:
+                return gr.update(choices=pretrained_choices("vocoder"), value=None)
+            try:
+                voice = inspect_model(path)
+                if voice.get("kind") != "acoustic":
+                    raise ValueError("Choose a V3 acoustic voice model")
+                choices = [
+                    (label, value)
+                    for label, value in pretrained_choices("vocoder")
+                    if inspect_model(value)["mel"] == voice["mel"]
+                ]
+                sibling = next(
+                    (
+                        value
+                        for _, value in choices
+                        if Path(value).parent == Path(path).parent
+                    ),
+                    None,
+                )
+                return gr.update(choices=choices, value=sibling)
+            except (ValueError, OSError) as error:
+                gr.Warning(str(error))
+                return gr.update(choices=[], value=None)
+
+        base.change(compatible_vocoders, base, vocoder)
+    return settings, [workflow, base, vocoder]
+
+
 def preparation_options():
     with gr.Column(visible=False) as settings:
-        with gr.Accordion("Advanced Settings", open=False):
-            encoder = gr.Textbox(
-                value="rvc/models/embedders/contentvec",
-                label="Content encoder directory",
-            )
-            with gr.Row():
-                pitch = gr.Dropdown(
-                    ["swift", "rmvpe"],
-                    value="swift",
-                    label="Pitch extraction algorithm",
-                )
-                profile = gr.Dropdown(
-                    ["bounded", "offline"], value="bounded", label="Frontend profile"
-                )
-                device = gr.Dropdown(
-                    ["auto", "cuda", "cpu"], value="auto", label="Device"
-                )
-            pitch_path = gr.Textbox(label="RMVPE checkpoint (when selected)")
+        with gr.Accordion("Dataset selection and audio settings", open=False):
             speakers = gr.Textbox(
                 label="Speaker folders",
-                info="Optional comma-separated folders. Leave empty to use all speakers.",
+                info="Optional comma-separated subfolders, one voice per folder. Leave empty to include every speaker.",
             )
             cap = gr.Number(
                 value=0,
                 minimum=0,
                 precision=0,
                 label="Recordings per speaker",
-                info="0 uses all recordings.",
+                info="0 includes all recordings. Set a limit for a smaller initial experiment.",
             )
-            fraction = gr.Number(
-                value=0.1, minimum=0.001, maximum=0.999, label="Validation fraction"
+            with gr.Row():
+                fraction = gr.Number(
+                    value=0.1,
+                    minimum=0.001,
+                    maximum=0.999,
+                    label="Validation fraction",
+                    info="0.1 reserves 10% of recordings for evaluation. A recording never appears in both splits.",
+                )
+                segment = gr.Number(
+                    value=4,
+                    minimum=0.05,
+                    label="Segment duration (seconds)",
+                    info="Maximum saved audio segment length. Longer recordings are split after the validation split is assigned.",
+                )
+                seed = gr.Number(
+                    value=1234,
+                    precision=0,
+                    label="Dataset selection seed",
+                    info="Controls speaker sampling and recording splits. Keep it fixed to reproduce the same dataset.",
+                )
+    return settings, [speakers, cap, fraction, segment, seed]
+
+
+def extraction_options():
+    with gr.Column(visible=False) as settings:
+        with gr.Row():
+            pitch = gr.Dropdown(
+                ["swift", "rmvpe"],
+                value="swift",
+                label="Pitch extraction algorithm",
+                info="SwiftF0 is the default. RMVPE requires its checkpoint below.",
             )
-            segment = gr.Number(
-                value=4, minimum=0.05, label="Segment duration (seconds)"
+            device = gr.Dropdown(
+                ["auto", "cuda", "cpu"],
+                value="auto",
+                label="Extraction device",
+                info="Auto uses CUDA when available, otherwise CPU. Extraction models are frozen.",
             )
-        gr.Markdown(
-            "Preparation extracts audio and features together, keeping validation recordings separate before segmentation."
+        with gr.Accordion("Feature extraction settings", open=False):
+            encoder = gr.Textbox(
+                value="rvc/models/embedders/contentvec",
+                label="Content encoder directory",
+                info="Folder containing the encoder weights and configuration. Use the same encoder for inference.",
+            )
+            profile = gr.Dropdown(
+                [("Realtime-compatible", "bounded"), ("Offline", "offline")],
+                value="bounded",
+                label="Feature profile",
+                info="Realtime-compatible uses bounded context and supports file and live conversion. Offline uses full context and supports file conversion only.",
+            )
+            pitch_path = gr.Textbox(
+                label="RMVPE checkpoint",
+                visible=False,
+                info="Path to RMVPE weights. Required only when RMVPE is selected.",
+            )
+        pitch.change(
+            lambda method: gr.update(visible=method == "rmvpe"), pitch, pitch_path
         )
-    return settings, [
-        encoder,
-        pitch,
-        pitch_path,
-        profile,
-        device,
-        speakers,
-        cap,
-        fraction,
-        segment,
-    ]
+    return settings, [encoder, pitch, pitch_path, profile, device]
+
+
+def _progress_callback(progress):
+    return (
+        (lambda item: progress((item["recording"], item["total"]), desc=item["source"]))
+        if progress
+        else None
+    )
 
 
 def prepare_dataset(mode, legacy_args, options, progress=None):
     if mode == "classic":
         return core.run_preprocess_script(*legacy_args)
-    encoder, pitch, pitch_path, profile, device, speakers, cap, fraction, segment = (
-        options
-    )
-    return core.run_v3_prepare_script(
+    speakers, cap, fraction, segment, seed = options[:5]
+    workflow, base = options[5:] if len(options) > 5 else ("scratch", None)
+    if workflow == "finetune" and not base:
+        raise ValueError(
+            "Choose a pretrained voice model in Model Settings before preprocessing"
+        )
+    path = core.run_v3_preprocess_script(
         legacy_args[0],
         legacy_args[1],
+        validation_fraction=float(fraction),
+        segment_seconds=float(segment),
+        seed=int(seed),
+        speakers=[s.strip() for s in (speakers or "").split(",") if s.strip()],
+        recordings_per_speaker=int(cap),
+        progress=_progress_callback(progress),
+        base_model=base if workflow == "finetune" else None,
+    )
+    return f"Audio preprocessing complete. Next, run Extract Features. Saved audio manifest: {path}"
+
+
+def extract_dataset(mode, legacy_args, options, progress=None):
+    if mode == "classic":
+        return core.run_extract_script(*legacy_args)
+    encoder, pitch, pitch_path, profile, device = options[:5]
+    workflow, base = options[5:] if len(options) > 5 else ("scratch", None)
+    if workflow == "finetune" and not base:
+        raise ValueError(
+            "Choose a pretrained voice model in Model Settings before extracting features"
+        )
+    path = core.run_v3_extract_script(
+        legacy_args[0],
         encoder,
         pitch,
         pitch_path or None,
         profile,
         device,
-        fraction,
-        segment,
-        speakers=[s.strip() for s in speakers.split(",") if s.strip()],
-        recordings_per_speaker=int(cap),
-        progress=(
-            lambda item: progress(
-                (item["recording"], item["total"]), desc=item["source"]
-            )
-        )
-        if progress
-        else None,
+        progress=_progress_callback(progress),
+        base_model=base if workflow == "finetune" else None,
     )
+    return f"Feature extraction complete. Your dataset is ready for training. Manifest: {path}"
 
 
-def training_options():
+_STAGE_HELP = {
+    "all": "Trains the two required parts and exports a voice model and vocoder. Saved progress is resumed automatically. Flow and shortcut are optional and are skipped.",
+    "all_refiners": "Trains the predictor, vocoder, flow and shortcut in order, then exports both models. Refinement is experimental; compare the resulting audio before using it.",
+    "predictor": "**1. Acoustic predictor** learns how content, pitch and the selected speaker become a mel spectrogram. Start here for a new voice model. A matching vocoder is also needed to listen to results.",
+    "vocoder": "**2. Universal vocoder** learns to turn reference mel spectrograms into audio. Train it independently or use a compatible trained vocoder. It can be shared by voice models with the same mel settings.",
+    "flow": "**3. Flow refiner (optional)** learns corrections to the predictor's mel spectrogram. Start from a trained predictor checkpoint. Evaluate held-out audio before choosing a refinement budget.",
+    "shortcut": "**4. Shortcut refiner (optional)** learns to use fewer refinement evaluations. Start from a trained flow checkpoint. This stage does not replace predictor or vocoder training.",
+    "adapt": "**Voice adaptation** fits a compatible acoustic model to your dataset's speakers. Supply an acoustic base checkpoint. LoRA trains small adapters; full adaptation updates the complete model.",
+}
+
+
+def stage_options():
     with gr.Column(visible=False) as settings:
         stage = gr.Dropdown(
-            ["predictor", "vocoder", "flow", "shortcut", "adapt"],
-            value="predictor",
-            label="Training stage",
-            info="Train predictor and vocoder, then flow and shortcut. Adaptation requires compatible base weights.",
+            [
+                ("Complete scratch model", "all"),
+                ("Complete model with experimental refinement", "all_refiners"),
+                ("1. Acoustic predictor", "predictor"),
+                ("2. Universal vocoder", "vocoder"),
+                ("3. Flow refiner (optional)", "flow"),
+                ("4. Shortcut refiner (optional)", "shortcut"),
+                ("Adapt an existing voice model", "adapt"),
+            ],
+            value="all",
+            label="Stage or scratch recipe",
+            info="Choose an individual stage or a complete pretraining recipe.",
         )
-        with gr.Accordion("Advanced Settings", open=False):
-            base = gr.Textbox(label="Base or previous-stage checkpoint")
+        guide = gr.Markdown(_STAGE_HELP["all"])
+    stage.change(lambda value: _STAGE_HELP[value], stage, guide)
+    return settings, stage
+
+
+def training_options(stage=None, workflow=None):
+    with gr.Column(visible=False) as settings:
+        if stage is None:
+            stage_settings, stage = stage_options()
+            stage_settings.visible = True
+        with gr.Accordion(
+            "Starting weights and resume", open=False, visible=False
+        ) as weights:
+            base = gr.Textbox(
+                label="Base or previous-stage checkpoint",
+                info="Optional for predictor/vocoder scratch training. Required for flow, shortcut and adaptation. Initializes a new run from trained weights.",
+            )
             resume = gr.Textbox(
                 label="Resume checkpoint",
-                info="Choose either exact resume or a base checkpoint.",
+                info="Continue an interrupted run from last.pt, restoring optimizer and random states. Keep the dataset, stage, batch, crop and optimizer settings unchanged. Choose either base or resume.",
             )
+        with gr.Row(visible=False) as adaptation_settings:
+            adaptation = gr.Dropdown(
+                [("LoRA adapters", "lora"), ("Full model", "full")],
+                value="lora",
+                label="Adaptation method",
+                info="LoRA uses fewer trainable parameters. Full adaptation updates all acoustic weights.",
+            )
+            rank = gr.Number(
+                value=8,
+                minimum=1,
+                precision=0,
+                label="Adapter rank",
+                info="LoRA capacity. Higher ranks add trainable parameters and memory use; ignored for full adaptation.",
+            )
+        with gr.Accordion("Memory and performance", open=False):
             with gr.Row():
-                crop = gr.Number(value=128, minimum=1, precision=0, label="Crop frames")
-                accumulation = gr.Number(
-                    value=1, minimum=1, precision=0, label="Gradient accumulation"
+                crop = gr.Number(
+                    value=128,
+                    minimum=1,
+                    precision=0,
+                    label="Training crop (frames)",
+                    info="Audio context per example; 128 frames is about 1.49 seconds. Shorter crops use less memory but provide less context.",
                 )
-                lr = gr.Number(value=0.0002, label="Learning rate")
+                accumulation = gr.Number(
+                    value=1,
+                    minimum=1,
+                    precision=0,
+                    label="Gradient accumulation",
+                    info="Combine this many microbatches per update. Effective batch = batch size × accumulation per GPU.",
+                )
             with gr.Row():
                 precision = gr.Dropdown(
                     ["auto", "bf16", "fp16", "fp32"],
                     value="auto",
                     label="Precision",
-                    info="Auto uses BF16 on supported CUDA GPUs, FP16 on other CUDA GPUs, and FP32 on CPU.",
+                    info="Auto chooses supported BF16 or FP16 on CUDA, and FP32 on CPU. Keep Auto for normal training.",
                 )
                 device = gr.Dropdown(
-                    ["auto", "cuda", "cpu"], value="auto", label="Device"
+                    ["auto", "cuda", "cpu"],
+                    value="auto",
+                    label="Training device",
+                    info="Auto chooses CUDA when available. CPU training is supported but slower.",
                 )
-                seed = gr.Number(value=1234, precision=0, label="Training seed")
-            adaptation = gr.Dropdown(
-                ["lora", "full"], value="lora", label="Adaptation method"
+        with gr.Accordion("Optimizer and reproducibility", open=False):
+            lr = gr.Number(
+                value=0.0002,
+                minimum=0.00000001,
+                label="Learning rate",
+                info="Optimizer update size. The shared default is 0.0002; change only when evaluating a training recipe.",
             )
-            rank = gr.Number(value=8, minimum=1, precision=0, label="Adapter rank")
+            seed = gr.Number(
+                value=1234,
+                precision=0,
+                label="Training seed",
+                info="Controls initialization, crop sampling and training randomness. Keep fixed for comparisons and exact resume.",
+            )
+
+        def manual_settings(value, mode="advanced"):
+            return (
+                gr.update(visible=mode == "advanced" and value == "adapt"),
+                gr.update(
+                    visible=mode == "advanced" and value not in {"all", "all_refiners"}
+                ),
+            )
+
+        inputs = [stage, workflow] if workflow is not None else stage
+        stage.change(manual_settings, inputs, [adaptation_settings, weights])
+        if workflow is not None:
+            workflow.change(manual_settings, inputs, [adaptation_settings, weights])
+        adaptation.change(
+            lambda method: gr.update(visible=method == "lora"), adaptation, rank
+        )
     return settings, [
         stage,
         base,
@@ -149,8 +374,12 @@ def training_options():
     ]
 
 
-def train_model(mode, legacy_args, options, session_hash):
+def train_model(mode, legacy_args, options, session_hash, progress=None):
     if mode == "classic":
+        if progress is not None:
+            progress(
+                (0, None), desc="Training classic model — see live logs for details"
+            )
         yield core.run_train_script(*legacy_args)
         return
     values = _training_signature.bind(*legacy_args).arguments
@@ -166,16 +395,48 @@ def train_model(mode, legacy_args, options, session_hash):
         seed,
         adaptation,
         rank,
-    ) = options
+    ) = options[:11]
+    workflow, pretrained, vocoder = (
+        options[11:] if len(options) > 11 else ("advanced", None, None)
+    )
+    if workflow == "scratch":
+        stage = "all"
+    elif workflow == "finetune":
+        stage = "finetune"
     event = threading.Event()
     key = (session_hash, values["model_name"])
     _training_events[key] = event
     try:
-        for update in core.run_v3_train_script(
+        if progress is not None:
+            progress(
+                0,
+                desc="Preparing fine-tuning"
+                if stage == "finetune"
+                else "Preparing training",
+            )
+        final_step = None
+        pipeline = stage in {"all", "all_refiners"}
+        parts = (4 if stage == "all_refiners" else 2) if pipeline else 1
+        stopped = False
+        trainer = (
+            core.run_v3_finetune_script
+            if stage == "finetune"
+            else (
+                core.run_v3_train_all_script if pipeline else core.run_v3_train_script
+            )
+        )
+        arguments = (
+            dict(
+                refine=stage == "all_refiners",
+            )
+            if pipeline
+            else dict(stage=stage, base_model=base or None, resume=resume or None)
+        )
+        if stage == "finetune":
+            arguments = dict(base_model=pretrained, vocoder_path=vocoder)
+        for update in trainer(
             values["model_name"],
-            stage,
-            base_model=base or None,
-            resume=resume or None,
+            **arguments,
             steps=int(values["total_epoch"]),
             batch_size=int(values["batch_size"]),
             checkpoint_every=int(values["save_every_epoch"]),
@@ -189,7 +450,69 @@ def train_model(mode, legacy_args, options, session_hash):
             adapter_rank=int(rank),
             stop_requested=event.is_set,
         ):
-            yield json.dumps(update, indent=2)
+            if update.get("status") == "exported":
+                if progress is not None:
+                    progress(1, desc="Training complete — models exported")
+                yield f"Training complete.\nVoice model: {update['acoustic']}\nVocoder: {update['vocoder']}"
+                continue
+            if update.get("status") == "skipped":
+                if progress is not None:
+                    progress(
+                        0.98 * update["part"] / parts,
+                        desc=f"Part {update['part']}/{parts}: {update['phase']} already trained",
+                    )
+                yield f"{update['phase'].capitalize()} already reached the selected duration. Continuing…"
+                continue
+            if final_step is None:
+                final_step = update["step"] + int(values["total_epoch"]) - 1
+            target = (
+                int(values["total_epoch"])
+                if pipeline or stage == "finetune"
+                else final_step
+            )
+            phase = (
+                "Fine-tuning"
+                if stage == "finetune"
+                else (update["phase"] if pipeline else stage)
+            )
+            heading = f"Part {update['part']}/{update['parts']} — " if pipeline else ""
+            if progress is not None:
+                fraction = min(1, update["step"] / target)
+                overall = (
+                    ((update["part"] - 1) + fraction) / parts if pipeline else fraction
+                )
+                # Reserve the final 2% for exporting complete scratch/LoRA models.
+                exporting = pipeline or stage == "finetune"
+                description = f"{heading}{phase.capitalize()} — {update['step']:,}/{target:,} updates"
+                if update.get("stopped"):
+                    description = "Stopped — progress saved"
+                elif (
+                    fraction == 1
+                    and exporting
+                    and (not pipeline or update["part"] == parts)
+                ):
+                    description = "Exporting trained model"
+                progress((0.98 if exporting else 1) * overall, desc=description)
+            text = f"{heading}{phase.capitalize()} | Update: {update['step']}/{target} | Loss: {update['loss']:.4f}"
+            if "validation_mel_l1" in update:
+                text += f"\nValidation mel error: {update['validation_mel_l1']:.4f} (lower is better)."
+            if not update.get("optimizer_updated", True):
+                text += "\nOptimizer update skipped because gradients were nonfinite."
+            if update.get("stopped"):
+                stopped = True
+                text += (
+                    "\nStopped safely. Click Start Training again to continue from saved progress."
+                    if pipeline or stage == "finetune"
+                    else "\nStopped safely. Resume from this stage's last.pt checkpoint."
+                )
+            yield text
+        if (
+            progress is not None
+            and not stopped
+            and not event.is_set()
+            and not (pipeline or stage == "finetune")
+        ):
+            progress(1, desc="Training complete")
     finally:
         _training_events.pop(key, None)
 
@@ -216,12 +539,163 @@ def stop_training(mode, model_name, request: gr.Request):
         gr.Info("There is no active training job for this model in this session.")
 
 
+def _log_tail(path, lines=40, maximum_bytes=32768):
+    """Bound monitor reads even when a long training job produces large logs."""
+    try:
+        with Path(path).open("rb") as stream:
+            stream.seek(0, 2)
+            size = stream.tell()
+            stream.seek(max(0, size - maximum_bytes))
+            data = stream.read().decode("utf-8", errors="replace")
+        return "\n".join(data.splitlines()[-lines:])
+    except FileNotFoundError:
+        return ""
+
+
+def monitored_runs():
+    root = Path(core.logs_path)
+    runs = []
+    for project in root.iterdir():
+        if not project.is_dir():
+            continue
+        files = list((project / "checkpoints").glob("*/metrics.jsonl"))
+        if (project / "train.log").exists():
+            files.append(project / "train.log")
+        if files:
+            runs.append((max(path.stat().st_mtime for path in files), project.name))
+    return [name for _, name in sorted(runs, reverse=True)]
+
+
+def training_progress(name, stage="auto"):
+    """Read existing job artifacts; watching never starts or interrupts training."""
+    if not name:
+        return "Select a training run to monitor.", ""
+    project = core.v3_project(name)
+    files = list((project / "checkpoints").glob("*/metrics.jsonl"))
+    if stage != "auto":
+        files = [path for path in files if path.parent.name == stage]
+    if not files:
+        classic = _log_tail(project / "train.log")
+        return (
+            f"**{name}** — waiting for training logs.",
+            classic or "No updates have been logged yet.",
+        )
+    path = max(files, key=lambda value: value.stat().st_mtime)
+    raw = _log_tail(path)
+    records = []
+    for line in raw.splitlines():
+        try:
+            records.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    if not records:
+        return f"**{name}** — waiting for a complete log entry.", raw
+    latest = records[-1]
+    phase = path.parent.name
+    age = max(0, int(time.time() - path.stat().st_mtime))
+    state = "Receiving updates" if age < 30 else "No recent updates"
+    campaign_path = project / "campaign_status.json"
+    if campaign_path.exists():
+        import psutil
+
+        campaign = json.loads(campaign_path.read_text(encoding="utf-8"))
+        try:
+            process = psutil.Process(campaign["pid"])
+            live = (
+                process.is_running() and process.create_time() <= campaign["updated_at"]
+            )
+        except (psutil.Error, KeyError):
+            live = False
+        state = "Running" if live else "Process stopped"
+    step = latest["step"]
+    target = None
+    plan = project / "campaign_plan.json"
+    if plan.exists():
+        target = (
+            json.loads(plan.read_text(encoding="utf-8")).get("stages", {}).get(phase)
+        )
+    progress = (
+        f"{step:,} / {target:,} updates ({100 * step / target:.1f}%)"
+        if target
+        else f"{step:,} updates"
+    )
+    summary = f"**{name} — {state}**\n\nStage: **{phase}** · {progress} · Last log update: **{age}s ago**"
+    loss = latest.get("loss")
+    if loss is not None:
+        summary += f"\n\nTraining loss: **{loss:.4f}**"
+    best_path = path.parent / "best.json"
+    if best_path.exists():
+        best = json.loads(best_path.read_text(encoding="utf-8"))
+        if "validation_mel_l1" in best:
+            summary += f" · Best validation mel error: **{best['validation_mel_l1']:.4f}** at update {best['step']:,}"
+    errors = sorted(
+        Path(core.logs_path).glob(f"{name}*error.log"),
+        key=lambda value: value.stat().st_mtime,
+        reverse=True,
+    )
+    if errors:
+        error = _log_tail(errors[0], lines=10, maximum_bytes=4096)
+        if error:
+            raw += "\n\nLatest console error output:\n" + error
+    return summary, raw
+
+
+def monitor_options():
+    """Follow CLI/background and GUI runs in the shared Gradio Training tab."""
+    with gr.Accordion("Live training progress", open=True):
+        gr.Markdown(
+            "Watch training even when it was started in the background or from the CLI. This panel refreshes every 2 seconds. Use the TensorBoard tab for curves; watching a run does not start another training job."
+        )
+        runs = monitored_runs()
+        with gr.Row():
+            run = gr.Dropdown(
+                runs,
+                value=runs[0] if runs else None,
+                label="Training run to monitor",
+                info="Most recently updated run is selected by default.",
+            )
+            stage = gr.Dropdown(
+                ["auto", "predictor", "vocoder", "flow", "shortcut", "adapt"],
+                value="auto",
+                label="Stage to monitor",
+                info="Auto follows the stage whose log is updating most recently.",
+            )
+        with gr.Row():
+            follow = gr.Checkbox(value=True, label="Refresh automatically")
+            refresh = gr.Button("Refresh runs")
+        summary = gr.Markdown("Waiting for the first refresh…")
+        log = gr.Textbox(
+            label="Realtime training logs",
+            lines=10,
+            max_lines=14,
+            interactive=False,
+            info="Recent raw log entries, newest at the bottom. Full logs remain saved in the run's directory.",
+        )
+        timer = gr.Timer(2, active=True)
+        timer.tick(training_progress, [run, stage], [summary, log], queue=False)
+        follow.change(
+            lambda enabled: gr.update(active=enabled), follow, timer, queue=False
+        )
+        run.change(training_progress, [run, stage], [summary, log], queue=False)
+        stage.change(training_progress, [run, stage], [summary, log], queue=False)
+        refresh.click(
+            lambda: gr.update(choices=monitored_runs()), outputs=run, queue=False
+        ).then(training_progress, [run, stage], [summary, log], queue=False)
+    return summary, log
+
+
 def export_options(model_name):
     with gr.Column(visible=False) as settings:
-        checkpoint = gr.Textbox(label="Training checkpoint")
+        gr.Markdown(
+            "Export trained weights for inference. Export the acoustic voice model and matching vocoder separately; inference needs both packages. Keep last.pt if you want to resume training later."
+        )
+        checkpoint = gr.Textbox(
+            label="Training checkpoint",
+            info="Select this stage's best.pt for the lowest validation error, or last.pt for the latest saved update.",
+        )
         destination = gr.Textbox(
             label="Output package",
-            info="Optional .pth path; the default is in this model's logs directory.",
+            info="Optional .pth path; the default is in this model's logs directory. Export uses EMA weights and merges any LoRA adapters.",
         )
         export = gr.Button("Export Model")
         result = gr.File(label="Exported model", interactive=False)

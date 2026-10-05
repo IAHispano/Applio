@@ -716,6 +716,125 @@ def v3_project(model_name):
     return Path(current_script_directory) / "logs" / model_name
 
 
+def run_v3_preprocess_script(
+    model_name,
+    dataset_path,
+    validation_fraction=0.1,
+    segment_seconds=4,
+    seed=1234,
+    speakers=(),
+    recordings_per_speaker=0,
+    progress=None,
+    base_model=None,
+):
+    """Preprocess V3 audio on CPU; feature models are loaded only by Extract."""
+    from rvc.train.v3.data import atomic_json, preprocess_audio
+
+    project = v3_project(model_name)
+    mel = None
+    if base_model:
+        from rvc.configs.architectures import inspect_model
+        from rvc.configs.v3 import MelConfig
+
+        metadata = inspect_model(base_model)
+        if metadata.get("kind") != "acoustic":
+            raise ValueError("Choose a V3 pretrained voice model before preprocessing")
+        mel = MelConfig(**metadata["mel"])
+    result = preprocess_audio(
+        dataset_path,
+        project / "data",
+        validation_fraction,
+        segment_seconds,
+        seed,
+        speaker_names=speakers,
+        recordings_per_speaker=int(recordings_per_speaker),
+        mel_config=mel,
+        progress=progress,
+    )
+    atomic_json(
+        project / "preparation.json",
+        dict(
+            model_name=model_name,
+            dataset_path=dataset_path,
+            validation_fraction=validation_fraction,
+            segment_seconds=segment_seconds,
+            seed=seed,
+            speakers=list(speakers),
+            recordings_per_speaker=int(recordings_per_speaker),
+        ),
+    )
+    return str(result)
+
+
+def run_v3_extract_script(
+    model_name,
+    encoder_path="rvc/models/embedders/contentvec",
+    pitch_extractor="swift",
+    pitch_path=None,
+    profile="bounded",
+    device="auto",
+    progress=None,
+    base_model=None,
+):
+    """Extract cached content, pitch, energy and mel from preprocessed V3 audio."""
+    from rvc.train.extract.v3 import FeatureExtractor
+    from rvc.train.v3.data import atomic_json, extract_preprocessed
+    from rvc.train.v3.trainer import resolve_device
+
+    project = v3_project(model_name)
+    audio = project / "data/audio_manifest.json"
+    if not audio.exists():
+        raise ValueError(
+            "Run Preprocess Dataset for this V3 model before Extract Features"
+        )
+    feature_options = dict(pitch=pitch_extractor, profile=profile)
+    if base_model:
+        from rvc.configs.architectures import inspect_model
+        from rvc.configs.v3 import MelConfig, require_contract
+        from dataclasses import asdict
+
+        metadata = inspect_model(base_model)
+        if metadata.get("kind") != "acoustic":
+            raise ValueError(
+                "Choose a V3 pretrained voice model before extracting features"
+            )
+        features = metadata["features"]
+        feature_options = dict(
+            mel=MelConfig(**metadata["mel"]),
+            layer=features["layer"],
+            pitch=features["pitch_method"],
+            threshold=features["pitch_threshold"],
+            profile=features["profile"],
+            context_seconds=features["context_seconds"],
+            lookahead_seconds=features["lookahead_seconds"],
+            packet_seconds=features["packet_seconds"],
+        )
+    extractor = FeatureExtractor(
+        encoder_path,
+        device=resolve_device(device),
+        pitch_path=pitch_path or None,
+        **feature_options,
+    )
+    if base_model:
+        require_contract(
+            asdict(extractor.config), features, "pretrained feature extraction"
+        )
+    result = extract_preprocessed(audio, extractor, progress=progress)
+    atomic_json(
+        project / "extraction.json",
+        dict(
+            model_name=model_name,
+            encoder_path=encoder_path,
+            pitch_extractor=extractor.config.pitch_method,
+            pitch_path=pitch_path,
+            profile=extractor.config.profile,
+            device=device,
+            base_model=base_model,
+        ),
+    )
+    return str(result)
+
+
 def run_v3_prepare_script(
     model_name,
     dataset_path,
@@ -793,8 +912,11 @@ def run_v3_train_script(
     if config:
         constructor = VocoderConfig if kind == "vocoder" else AcousticConfig
         config = constructor(**json.loads(Path(config).read_text(encoding="utf-8")))
+    dataset = Path(manifest) if manifest else project / "data/manifest.json"
+    if not dataset.exists():
+        raise ValueError("Run Preprocess Dataset and Extract Features before training")
     yield from train(
-        manifest or project / "data/manifest.json",
+        dataset,
         output_dir or project / "checkpoints" / stage,
         kind=kind,
         phase="predictor" if kind == "vocoder" else stage,
@@ -802,6 +924,232 @@ def run_v3_train_script(
         config=config,
         **kwargs,
     )
+
+
+def run_v3_train_all_script(
+    model_name,
+    refine=False,
+    steps=10000,
+    manifest=None,
+    output_dir=None,
+    base_model=None,
+    resume=None,
+    config=None,
+    **kwargs,
+):
+    """Train and export a usable voice in one action with the shared recipe.
+
+    Predictor and vocoder are required. Flow and shortcut are optional and run
+    in dependency order. Unlike individual-stage training's additional budget,
+    steps here is the target per part: restarting the pipeline resumes last.pt
+    and skips completed parts. Stop never starts the next part or exports an
+    unfinished pipeline. Stage checkpoints remain available for advanced use.
+    """
+    import os
+    from pathlib import Path
+
+    import psutil
+
+    from rvc.train.process.v3_checkpoints import load_payload
+
+    if base_model or resume or config:
+        raise ValueError(
+            "Use an individual-stage mode for custom base weights, resume paths or architecture overrides. Complete model resumes its own saved checkpoints automatically."
+        )
+    if int(steps) < 1:
+        raise ValueError("Training duration must be positive")
+    project = v3_project(model_name)
+    dataset = Path(manifest) if manifest else project / "data/manifest.json"
+    if not dataset.exists():
+        raise ValueError("Run Preprocess Dataset and Extract Features before training")
+    dataset_id = json.loads(dataset.read_text(encoding="utf-8"))["dataset_id"]
+    campaign_path = project / "campaign_status.json"
+    if campaign_path.exists():
+        campaign = json.loads(campaign_path.read_text(encoding="utf-8"))
+        try:
+            process = psutil.Process(campaign["pid"])
+            live = (
+                process.is_running() and process.create_time() <= campaign["updated_at"]
+            )
+        except (psutil.Error, KeyError):
+            live = False
+        if live and process.pid != os.getpid():
+            raise ValueError(
+                "This model already has a background training job. Follow it in Live training progress or use a different model name."
+            )
+    root = Path(output_dir) if output_dir else project / "checkpoints"
+    stages = ["predictor", "vocoder"] + (["flow", "shortcut"] if refine else [])
+    kwargs.setdefault("checkpoint_every", 1000)
+    stop = kwargs.get("stop_requested")
+    acoustic_stage = "predictor"
+    for part, stage in enumerate(stages, 1):
+        if stop and stop():
+            return
+        checkpoint = root / stage / "last.pt"
+        initial = 0
+        if checkpoint.exists():
+            payload = load_payload(checkpoint)
+            if payload.get("dataset_id") != dataset_id or payload.get("phase") != stage:
+                raise ValueError(
+                    f"Saved {stage} progress belongs to another dataset or stage. Use a new model name."
+                )
+            initial = int(payload["step"])
+            del payload
+        base = None
+        if stage in {"flow", "shortcut"}:
+            base = root / acoustic_stage / "best.pt"
+        if initial >= int(steps):
+            yield {
+                "status": "skipped",
+                "phase": stage,
+                "step": initial,
+                "part": part,
+                "parts": len(stages),
+            }
+        else:
+            for update in run_v3_train_script(
+                model_name,
+                stage,
+                manifest=str(dataset),
+                output_dir=str(root / stage),
+                base_model=str(base) if base and not checkpoint.exists() else None,
+                resume=str(checkpoint) if checkpoint.exists() else None,
+                steps=int(steps) - initial,
+                **kwargs,
+            ):
+                yield dict(update, phase=stage, part=part, parts=len(stages))
+                if update.get("stopped"):
+                    return
+        if stage != "vocoder":
+            acoustic_stage = stage
+    if stop and stop():
+        return
+    if int(os.environ.get("RANK", "0")) != 0:
+        return
+    acoustic = project / f"{model_name}_acoustic.pth"
+    vocoder = project / f"{model_name}_vocoder.pth"
+    run_v3_export_script(str(root / acoustic_stage / "best.pt"), str(acoustic))
+    run_v3_export_script(str(root / "vocoder" / "best.pt"), str(vocoder))
+    yield {"status": "exported", "acoustic": str(acoustic), "vocoder": str(vocoder)}
+
+
+def run_v3_finetune_script(model_name, base_model, vocoder_path, steps=10000, **kwargs):
+    """Adapt only the voice model, retaining the frozen shared vocoder.
+
+    Resume uses this project's adapter checkpoint; export merges the adapters
+    into a standalone acoustic package. The selected vocoder is referenced,
+    never copied, optimized or overwritten by voice fine-tuning.
+    """
+    from pathlib import Path
+    from rvc.train.process.v3_checkpoints import load_payload
+    from rvc.configs.v3 import require_contract
+    from rvc.train.v3.data import atomic_json
+
+    if not base_model or not vocoder_path:
+        raise ValueError(
+            "Choose a pretrained voice model and universal vocoder in Model Settings first"
+        )
+    if int(steps) < 1:
+        raise ValueError("Training duration must be positive")
+    base, vocoder = load_payload(base_model), load_payload(vocoder_path)
+    if base["kind"] != "acoustic" or vocoder["kind"] != "vocoder":
+        raise ValueError("Choose a V3 voice model and its universal vocoder")
+    if base.get("adapters"):
+        raise ValueError(
+            "Select an exported voice model with merged adapters as the pretrained base"
+        )
+    require_contract(base["mel"], vocoder["mel"], "pretrained voice/vocoder")
+    project = v3_project(model_name)
+    destination = project / f"{model_name}_acoustic.pth"
+    if (
+        Path(base_model).resolve() == destination.resolve()
+        or Path(vocoder_path).resolve() == destination.resolve()
+    ):
+        raise ValueError(
+            "Use a different model name to preserve the pretrained weights"
+        )
+    manifest = project / "data/manifest.json"
+    campaign = project / "campaign_status.json"
+    if campaign.exists():
+        import psutil
+
+        state = json.loads(campaign.read_text(encoding="utf-8"))
+        try:
+            process = psutil.Process(state["pid"])
+            running = (
+                process.is_running() and process.create_time() <= state["updated_at"]
+            )
+        except (psutil.Error, KeyError):
+            running = False
+        if running:
+            raise ValueError(
+                "This project has an active background training job. Use a new model name for fine-tuning"
+            )
+    if not manifest.exists():
+        raise ValueError(
+            "Run Preprocess Dataset and Extract Features before fine-tuning"
+        )
+    from rvc.train.v3.data import AcousticDataset
+
+    dataset = AcousticDataset(manifest)
+    require_contract(
+        base["features"],
+        dataset.manifest["contract"]["features"],
+        "pretrained features; extract again using the selected pretrained model",
+    )
+    require_contract(base["mel"], dataset.manifest["contract"]["mel"], "pretrained mel")
+    checkpoint = project / "checkpoints/adapt/last.pt"
+    from rvc.train.extract.v3 import file_hash
+
+    recipe = dict(
+        base_model=str(Path(base_model).resolve()),
+        vocoder=str(Path(vocoder_path).resolve()),
+        dataset_id=dataset.manifest["dataset_id"],
+        base_hash=file_hash(Path(base_model)),
+        vocoder_hash=file_hash(Path(vocoder_path)),
+    )
+    settings = project / "finetuning.json"
+    if checkpoint.exists():
+        previous = (
+            json.loads(settings.read_text(encoding="utf-8"))
+            if settings.exists()
+            else {}
+        )
+        # The vocoder is independent of adaptation. Another compatible vocoder
+        # may be selected without invalidating the acoustic optimizer state.
+        if any(previous.get(key) != recipe[key] for key in ("base_hash", "dataset_id")):
+            raise ValueError(
+                "Saved fine-tuning uses another pretrained model or dataset. Use a new model name"
+            )
+        initial = int(load_payload(checkpoint)["step"])
+    else:
+        initial = 0
+    # Do not overwrite a selected pretrained checkpoint through a reused name.
+    if Path(base_model).resolve().is_relative_to(
+        (project / "checkpoints").resolve()
+    ) or Path(vocoder_path).resolve().is_relative_to(
+        (project / "checkpoints/adapt").resolve()
+    ):
+        raise ValueError("Use a new model name for the voice you want to fine-tune")
+    atomic_json(settings, recipe)
+    del base, vocoder, dataset
+    kwargs["adaptation"] = "lora"
+    if initial < int(steps):
+        for update in run_v3_train_script(
+            model_name,
+            "adapt",
+            base_model=None if checkpoint.exists() else base_model,
+            resume=str(checkpoint) if checkpoint.exists() else None,
+            steps=int(steps) - initial,
+            **kwargs,
+        ):
+            yield update
+            if update.get("stopped"):
+                return
+    if kwargs.get("stop_requested") and kwargs["stop_requested"]():
+        return
+    run_v3_export_script(str(project / "checkpoints/adapt/best.pt"), str(destination))
+    yield dict(status="exported", acoustic=str(destination), vocoder=str(vocoder_path))
 
 
 def run_v3_infer_script(
@@ -813,7 +1161,7 @@ def run_v3_infer_script(
     pitch_path=None,
     sid=0,
     pitch=0,
-    refinement_steps=4,
+    refinement_steps=0,
     seed=0,
     device="auto",
     ordinary_flow=False,
@@ -878,7 +1226,7 @@ def _architecture_options(func):
     )(func)
 
 
-def _v3_prepare_options(func):
+def _v3_extract_options(func):
     for option in reversed(
         [
             click.option(
@@ -898,6 +1246,15 @@ def _v3_prepare_options(func):
                 default="bounded",
             ),
             click.option("--device", default="auto"),
+        ]
+    ):
+        func = option(func)
+    return func
+
+
+def _v3_prepare_options(func):
+    for option in reversed(
+        [
             click.option(
                 "--validation-fraction",
                 type=click.FloatRange(0.001, 0.999),
@@ -932,7 +1289,7 @@ def _v3_inference_options(func):
             click.option(
                 "--refinement-steps",
                 type=click.Choice(["0", "1", "2", "4", "8", "16", "32"]),
-                default="4",
+                default="0",
             ),
             click.option("--seed", type=int, default=0),
             click.option("--device", default="auto"),
@@ -1383,11 +1740,6 @@ def preprocess(**kwargs):
     """Preprocess a dataset for training."""
     architecture = kwargs.pop("architecture")
     names = (
-        "encoder_path",
-        "pitch_extractor",
-        "pitch_path",
-        "profile",
-        "device",
         "validation_fraction",
         "segment_seconds",
         "seed",
@@ -1408,7 +1760,7 @@ def preprocess(**kwargs):
             raise click.ClickException("Applio v3 uses the fixed 44100 Hz mel contract")
         try:
             click.echo(
-                run_v3_prepare_script(
+                run_v3_preprocess_script(
                     kwargs["model_name"],
                     kwargs["dataset_path"],
                     progress=lambda update: click.echo(json.dumps(update)),
@@ -1491,18 +1843,34 @@ def preprocess(**kwargs):
     help="Number of silent files to include.",
 )
 @_architecture_options
+@_v3_extract_options
 def extract(**kwargs):
     """Extract features from a preprocessed dataset."""
-    if kwargs.pop("architecture") == "v3":
-        recipe = v3_project(kwargs["model_name"]) / "preparation.json"
-        if not recipe.exists():
-            raise click.ClickException(
-                "Run preprocess --architecture v3 first; it prepares audio and features together"
-            )
-        click.echo(
-            run_v3_prepare_script(**json.loads(recipe.read_text(encoding="utf-8")))
+    architecture = kwargs.pop("architecture")
+    names = ("encoder_path", "pitch_extractor", "pitch_path", "profile", "device")
+    options = {name: kwargs.pop(name) for name in names}
+    if architecture == "v3":
+        _reject_explicit_options(
+            set(kwargs) - {"model_name", "sample_rate"}, "v3 extraction"
         )
+        if (
+            click.get_current_context().get_parameter_source("sample_rate")
+            == click.core.ParameterSource.COMMANDLINE
+            and kwargs["sample_rate"] != "44100"
+        ):
+            raise click.ClickException("Applio v3 uses 44100 Hz")
+        try:
+            click.echo(
+                run_v3_extract_script(
+                    kwargs["model_name"],
+                    progress=lambda update: click.echo(json.dumps(update)),
+                    **options,
+                )
+            )
+        except (ValueError, OSError) as error:
+            raise click.ClickException(str(error)) from error
         return
+    _reject_explicit_options(names, "classic extraction")
     kwargs["sample_rate"] = int(kwargs["sample_rate"])
     kwargs["cpu_cores"] = kwargs.get("cpu_cores") or 1
     result = run_extract_script(
@@ -1607,8 +1975,10 @@ def extract(**kwargs):
 @_architecture_options
 @click.option(
     "--stage",
-    type=click.Choice(["predictor", "flow", "shortcut", "adapt", "vocoder"]),
-    default="predictor",
+    type=click.Choice(
+        ["all", "all_refiners", "predictor", "flow", "shortcut", "adapt", "vocoder"]
+    ),
+    default="all",
 )
 @click.option("--manifest", type=click.Path(exists=True))
 @click.option("--output-dir", type=click.Path())
@@ -1629,7 +1999,7 @@ def extract(**kwargs):
 )
 @click.option("--device", default="auto")
 @click.option("--seed", type=int, default=1234)
-@click.option("--checkpoint-every", type=click.IntRange(min=1), default=100)
+@click.option("--checkpoint-every", type=click.IntRange(min=1), default=1000)
 @click.option("--adapter-rank", type=click.IntRange(min=1), default=8)
 @click.option("--adaptation", type=click.Choice(["lora", "full"]), default="lora")
 @click.option("--accumulation-steps", type=click.IntRange(min=1), default=1)
@@ -1671,7 +2041,11 @@ def train(**kwargs):
         ):
             kwargs["batch_size"] = DEFAULT_BATCH_SIZE
         try:
-            for update in run_v3_train_script(
+            pipeline = options["stage"] in {"all", "all_refiners"}
+            trainer = run_v3_train_all_script if pipeline else run_v3_train_script
+            if pipeline:
+                options["refine"] = options.pop("stage") == "all_refiners"
+            for update in trainer(
                 kwargs["model_name"], batch_size=kwargs["batch_size"], **options
             ):
                 click.echo(json.dumps(update), color=False)
@@ -1906,7 +2280,7 @@ def serve_v3(pth_path, vocoder_path, encoder_path, pitch_path, device, host, por
 @click.option(
     "--refinement-steps",
     type=click.Choice(["0", "1", "2", "4", "8", "16", "32"]),
-    default="4",
+    default="0",
 )
 @click.option("--seed", type=click.IntRange(min=0), default=0)
 def realtime_v3(

@@ -8,7 +8,6 @@ import gradio as gr
 
 from assets.i18n.i18n import I18nAuto
 from core import (
-    run_extract_script,
     run_index_script,
     run_prerequisites_script,
 )
@@ -344,16 +343,22 @@ def auto_enable_checkpointing():
 def train_tab():
     from tabs.train.v3 import (
         export_options,
+        extract_dataset,
+        extraction_options,
+        monitor_options,
         preparation_options,
         prepare_dataset,
+        stage_options,
         stop_training,
         train_model,
         training_options,
+        workflow_options,
     )
 
-    def _preprocess_with_toast(*args, progress=gr.Progress()):
+    def _preprocess_with_toast(progress=gr.Progress(), *args):
         gr.Info(i18n("Preprocessing dataset..."))
-        mode, legacy, extra = args[0], args[1:-9], args[-9:]
+        count = len(v3_prepare_options)
+        mode, legacy, extra = args[0], args[1:-count], args[-count:]
         result = prepare_dataset(mode, legacy, extra, progress)
         if isinstance(result, str):
             if "error" in result.lower() or "failed" in result.lower():
@@ -362,9 +367,11 @@ def train_tab():
                 gr.Info(result)
         return result
 
-    def _extract_with_toast(*args):
+    def _extract_with_toast(progress=gr.Progress(), *args):
         gr.Info(i18n("Extracting features..."))
-        result = run_extract_script(*args)
+        count = len(v3_extract_options)
+        mode, legacy, extra = args[0], args[1:-count], args[-count:]
+        result = extract_dataset(mode, legacy, extra, progress)
         if isinstance(result, str):
             if "error" in result.lower() or "failed" in result.lower():
                 gr.Warning(result)
@@ -412,6 +419,7 @@ def train_tab():
                     interactive=True,
                     visible=True,
                 )
+        v3_workflow, v3_workflow_options = workflow_options()
         with gr.Accordion(
             i18n("Advanced Settings"),
             open=False,
@@ -478,6 +486,7 @@ def train_tab():
         refresh = gr.Button(i18n("Refresh models and datasets"))
 
         v3_preparation, v3_prepare_options = preparation_options()
+        v3_prepare_options.extend(v3_workflow_options[:2])
         with gr.Accordion(i18n("Advanced Settings"), open=False) as classic_preparation:
             cut_preprocess = gr.Radio(
                 label=i18n("Audio cutting"),
@@ -580,76 +589,102 @@ def train_tab():
                     *v3_prepare_options,
                 ],
                 outputs=[preprocess_output_info],
+                concurrency_id="model_gpu",
+                concurrency_limit=1,
             )
 
     # Extract section
-    with gr.Accordion(i18n("Extract")) as extraction_section:
-        with gr.Row():
-            f0_method = gr.Radio(
-                label=i18n("Pitch extraction algorithm"),
-                info=i18n(
-                    "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
-                ),
-                choices=[
-                    "crepe",
-                    "crepe-tiny",
-                    "rmvpe",
-                    # "fcpe"
-                ],
-                value="rmvpe",
-                interactive=True,
-            )
+    with gr.Accordion(i18n("Extract")):
+        v3_extraction, v3_extract_options = extraction_options()
+        v3_extract_options.extend(v3_workflow_options[:2])
 
-            embedder_model = gr.Radio(
-                label=i18n("Embedder Model"),
-                info=i18n("Model used for learning speaker embedding."),
-                choices=[
-                    "contentvec",
-                    # "spin",
-                    "spin-v2",
-                    # "chinese-hubert-base",
-                    # "japanese-hubert-base",
-                    # "korean-hubert-base",
-                    "custom",
-                ],
-                value="contentvec",
+        def pretrained_frontend(path):
+            from rvc.configs.architectures import inspect_model
+
+            if not path:
+                return gr.update(), gr.update()
+            try:
+                features = inspect_model(path)["features"]
+                return gr.update(value=features["pitch_method"]), gr.update(
+                    value=features["profile"]
+                )
+            except (KeyError, ValueError, OSError):
+                return gr.update(), gr.update()
+
+        v3_workflow_options[1].change(
+            pretrained_frontend,
+            v3_workflow_options[1],
+            [v3_extract_options[1], v3_extract_options[3]],
+        )
+        with gr.Column() as classic_extraction:
+            with gr.Row():
+                f0_method = gr.Radio(
+                    label=i18n("Pitch extraction algorithm"),
+                    info=i18n(
+                        "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
+                    ),
+                    choices=[
+                        "crepe",
+                        "crepe-tiny",
+                        "rmvpe",
+                        # "fcpe"
+                    ],
+                    value="rmvpe",
+                    interactive=True,
+                )
+
+                embedder_model = gr.Radio(
+                    label=i18n("Embedder Model"),
+                    info=i18n("Model used for learning speaker embedding."),
+                    choices=[
+                        "contentvec",
+                        # "spin",
+                        "spin-v2",
+                        # "chinese-hubert-base",
+                        # "japanese-hubert-base",
+                        # "korean-hubert-base",
+                        "custom",
+                    ],
+                    value="contentvec",
+                    interactive=True,
+                )
+            include_mutes = gr.Slider(
+                0,
+                10,
+                2,
+                step=1,
+                label=i18n("Silent training files"),
+                info=i18n(
+                    "Adding several silent files to the training set enables the model to handle pure silence in inferred audio files. Select 0 if your dataset is clean and already contains segments of pure silence."
+                ),
+                value=True,
                 interactive=True,
             )
-        include_mutes = gr.Slider(
-            0,
-            10,
-            2,
-            step=1,
-            label=i18n("Silent training files"),
-            info=i18n(
-                "Adding several silent files to the training set enables the model to handle pure silence in inferred audio files. Select 0 if your dataset is clean and already contains segments of pure silence."
-            ),
-            value=True,
-            interactive=True,
-        )
-        with gr.Row(visible=False) as embedder_custom:
-            with gr.Accordion(i18n("Custom Embedder"), open=True):
-                with gr.Row():
-                    embedder_model_custom = gr.Dropdown(
-                        label=i18n("Select Custom Embedder"),
-                        choices=path_choices(refresh_embedders_folders()),
-                        interactive=True,
-                        allow_custom_value=True,
+            with gr.Row(visible=False) as embedder_custom:
+                with gr.Accordion(i18n("Custom Embedder"), open=True):
+                    with gr.Row():
+                        embedder_model_custom = gr.Dropdown(
+                            label=i18n("Select Custom Embedder"),
+                            choices=path_choices(refresh_embedders_folders()),
+                            interactive=True,
+                            allow_custom_value=True,
+                        )
+                        refresh_embedders_button = gr.Button(i18n("Refresh embedders"))
+                    folder_name_input = gr.Textbox(
+                        label=i18n("Folder Name"), interactive=True
                     )
-                    refresh_embedders_button = gr.Button(i18n("Refresh embedders"))
-                folder_name_input = gr.Textbox(
-                    label=i18n("Folder Name"), interactive=True
-                )
-                with gr.Row():
-                    bin_file_upload = gr.File(
-                        label=i18n("Upload .bin"), type="filepath", interactive=True
+                    with gr.Row():
+                        bin_file_upload = gr.File(
+                            label=i18n("Upload .bin"), type="filepath", interactive=True
+                        )
+                        config_file_upload = gr.File(
+                            label=i18n("Upload .json"),
+                            type="filepath",
+                            interactive=True,
+                        )
+                    move_files_button = gr.Button(
+                        i18n("Move files to custom embedder folder")
                     )
-                    config_file_upload = gr.File(
-                        label=i18n("Upload .json"), type="filepath", interactive=True
-                    )
-                move_files_button = gr.Button(
-                    i18n("Move files to custom embedder folder")
-                )
 
         extract_output_info = gr.Textbox(
             label=i18n("Feature extraction output"),
@@ -662,6 +697,7 @@ def train_tab():
         extract_button.click(
             fn=_extract_with_toast,
             inputs=[
+                architecture,
                 model_name,
                 f0_method,
                 cpu_cores,
@@ -670,12 +706,16 @@ def train_tab():
                 embedder_model,
                 embedder_model_custom,
                 include_mutes,
+                *v3_extract_options,
             ],
             outputs=[extract_output_info],
+            concurrency_id="model_gpu",
+            concurrency_limit=1,
         )
 
     # Training section
     with gr.Accordion(i18n("Training")):
+        training_guide = gr.Markdown("", visible=False)
         with gr.Row():
             batch_size = gr.Slider(
                 1,
@@ -686,15 +726,6 @@ def train_tab():
                 info=i18n(
                     "Increase batch size when GPU memory permits. Reduce it if training runs out of memory."
                 ),
-                interactive=True,
-            )
-            save_every_epoch = gr.Slider(
-                1,
-                100,
-                10,
-                step=1,
-                label=i18n("Save Every Epoch"),
-                info=i18n("Determine at how many epochs the model will saved at."),
                 interactive=True,
             )
             total_epoch = gr.Slider(
@@ -708,7 +739,32 @@ def train_tab():
                 ),
                 interactive=True,
             )
-        v3_training, v3_train_options = training_options()
+            save_every_epoch = gr.Slider(
+                1,
+                100,
+                10,
+                step=1,
+                label=i18n("Save Every Epoch"),
+                info=i18n("Determine at how many epochs the model will saved at."),
+                interactive=True,
+            )
+        with gr.Accordion(
+            i18n("Advanced Settings"), open=False, visible=False
+        ) as v3_stage:
+            stage_controls, selected_stage = stage_options()
+            stage_controls.visible = False
+            v3_training, v3_train_options = training_options(
+                selected_stage, v3_workflow_options[0]
+            )
+        v3_train_options.extend(v3_workflow_options)
+        v3_workflow_options[0].change(
+            lambda value: gr.update(visible=value == "advanced"),
+            v3_workflow_options[0],
+            stage_controls,
+        )
+        architecture.change(
+            lambda value: gr.update(visible=value == "v3"), architecture, v3_workflow
+        )
         with gr.Accordion(i18n("Advanced Settings"), open=False) as classic_training:
             with gr.Row():
                 with gr.Column():
@@ -818,13 +874,23 @@ def train_tab():
                 interactive=True,
             )
 
-        def enforce_terms(terms_accepted, mode, *args, request: gr.Request):
+        def enforce_terms(
+            terms_accepted,
+            mode,
+            progress=gr.Progress(),
+            request: gr.Request = None,
+            *args,
+        ):
             if not terms_accepted:
                 yield i18n("You must agree to the Terms of Use to proceed.")
                 return
             try:
                 yield from train_model(
-                    mode, args[:-12], args[-12:], request.session_hash
+                    mode,
+                    args[: -len(v3_train_options)],
+                    args[-len(v3_train_options) :],
+                    request.session_hash,
+                    progress=progress,
                 )
             except (ValueError, OSError, RuntimeError) as error:
                 gr.Warning(str(error))
@@ -863,6 +929,8 @@ def train_tab():
                 inputs=[model_name, index_algorithm],
                 outputs=[train_output_info],
             )
+
+        monitor_options()
 
     # Export Model section
     with gr.Accordion(i18n("Export Model"), open=False):
@@ -1141,9 +1209,9 @@ def train_tab():
             ),
             gr.update(value=DEFAULT_BATCH_SIZE if modern else 4),
             gr.update(
-                label="Training steps" if modern else i18n("Total Epoch"),
+                label="Training duration" if modern else i18n("Total Epoch"),
                 maximum=1000000 if modern else 10000,
-                info="Additional optimizer updates."
+                info="Start with 10,000 updates. Fine-tuning continues your saved voice training; scratch training applies this duration to each required part. Increase it to train longer."
                 if modern
                 else "Total training epochs.",
                 value=10000 if modern else 200,
@@ -1151,13 +1219,15 @@ def train_tab():
             gr.update(
                 label="Checkpoint interval" if modern else i18n("Save Every Epoch"),
                 maximum=10000 if modern else 100,
-                value=100 if modern else 10,
-            ),
-            gr.update(
-                value="Prepare audio and features"
+                value=1000 if modern else 10,
+                info="Validate and save last.pt every N updates; best.pt tracks the lowest validation error."
                 if modern
-                else i18n("Preprocess Dataset")
+                else i18n("Determine at how many epochs the model will saved at."),
             ),
+            gr.update(value=i18n("Preprocess Dataset")),
+            gr.update(visible=modern),
+            gr.update(value="", visible=False),
+            gr.update(visible=modern),
         )
 
     architecture.change(
@@ -1166,7 +1236,7 @@ def train_tab():
         [
             classic_preparation,
             v3_preparation,
-            extraction_section,
+            classic_extraction,
             classic_training,
             v3_training,
             classic_export,
@@ -1180,5 +1250,8 @@ def train_tab():
             total_epoch,
             save_every_epoch,
             preprocess_button,
+            v3_extraction,
+            training_guide,
+            v3_stage,
         ],
     )

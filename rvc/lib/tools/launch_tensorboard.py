@@ -1,60 +1,128 @@
-import logging
+"""Run-scoped TensorBoard servers; unrelated experiments never enter the view."""
+
 import threading
+from pathlib import Path
+
 from tensorboard import program
 
 log_path = "logs"
 _tb_url = None
-_tb_thread = None
-_tb_ready = threading.Event()
+_servers = {}
+_lock = threading.Lock()
+
+
+def available_runs():
+    root = Path(log_path)
+    runs = []
+    for project in root.iterdir() if root.exists() else []:
+        if project.is_dir():
+            events = list(project.rglob("events.out.tfevents.*"))
+            if events:
+                progress = list(project.glob("checkpoints/*/metrics.jsonl"))
+                if (project / "train.log").exists():
+                    progress.append(project / "train.log")
+                # Dashboard-only audio imports must not change the default run.
+                runs.append(
+                    (
+                        bool(progress),
+                        max(p.stat().st_mtime for p in progress or events),
+                        project.name,
+                    )
+                )
+    return [name for _, _, name in sorted(runs, reverse=True)]
+
+
+def project_path(run):
+    root = Path(log_path).resolve()
+    project = (root / run).resolve()
+    if project.parent != root or not project.is_dir():
+        raise ValueError("Select an existing training run inside logs.")
+    return project
+
+
+def dashboard_sources(project):
+    """Readable stage labels, including earlier externally bridged history."""
+    sources = {}
+    staged = (project / "checkpoints").is_dir()
+    for stage in ("predictor", "vocoder", "flow", "shortcut", "adapt"):
+        native = project / "checkpoints" / stage / "tensorboard"
+        history = project / "tensorboard" / stage
+        if staged or native.exists():
+            sources[stage.capitalize()] = native
+        if history.exists():
+            label = stage.capitalize() + (
+                " (earlier updates)" if staged or native.exists() else ""
+            )
+            sources[label] = history
+    listening = project / "tensorboard" / "listening"
+    if staged or any(listening.glob("events.out.tfevents.*")):
+        sources["Listening comparisons"] = listening
+    return sources
 
 
 def get_tb_url():
     return _tb_url
 
 
+def _follow_audio(project):
+    from rvc.train.process.v3_tensorboard import sync_evaluation_audio
+
+    while True:
+        # A partially written evaluation is retried after its report is complete.
+        try:
+            sync_evaluation_audio(project)
+        except (OSError, ValueError):
+            pass
+        threading.Event().wait(15)
+
+
+def launch_tensorboard(run=None):
+    global _tb_url
+    with _lock:
+        try:
+            runs = available_runs() if run is None else [run]
+            if not runs:
+                return "Error: No training events yet."
+            project = project_path(runs[0])
+            if project not in _servers:
+                from rvc.train.process.v3_tensorboard import sync_evaluation_audio
+
+                sync_evaluation_audio(project)
+                tb = program.TensorBoard()
+                sources = dashboard_sources(project)
+                arguments = (
+                    [
+                        "--logdir_spec",
+                        ",".join(f"{label}:{path}" for label, path in sources.items()),
+                    ]
+                    if sources
+                    else ["--logdir", str(project)]
+                )
+                tb.configure(
+                    argv=[
+                        None,
+                        *arguments,
+                        "--host",
+                        "127.0.0.1",
+                        "--port",
+                        "0",
+                        "--path_prefix",
+                        "/tensorboard",
+                        "--reload_interval",
+                        "5",
+                    ]
+                )
+                _servers[project] = (tb, tb.launch())
+                threading.Thread(
+                    target=_follow_audio, args=(project,), daemon=True
+                ).start()
+            _tb_url = _servers[project][1]
+            return _tb_url
+        except (OSError, ValueError, RuntimeError) as error:
+            return f"Error: {error}"
+
+
 def launch_tensorboard_pipeline():
-    logging.getLogger("root").setLevel(logging.WARNING)
-    logging.getLogger("tensorboard").setLevel(logging.WARNING)
-
-    tb = program.TensorBoard()
-    tb.configure(argv=[None, "--logdir", log_path, "--path_prefix", "/tensorboard"])
-    url = tb.launch()
+    url = launch_tensorboard()
     print(f"TensorBoard running at: {url}#scalars")
-
-    while True:
-        import time
-
-        time.sleep(600)
-
-
-def launch_tensorboard():
-    global _tb_url, _tb_thread, _tb_ready
-    if _tb_thread is not None and _tb_thread.is_alive():
-        _tb_ready.wait(timeout=10)
-        return _tb_url
-    _tb_ready.clear()
-    _tb_thread = threading.Thread(target=_start_tb, daemon=True)
-    _tb_thread.start()
-    _tb_ready.wait(timeout=15)
-    return _tb_url
-
-
-def _start_tb():
-    global _tb_url, _tb_ready
-    logging.getLogger("root").setLevel(logging.WARNING)
-    logging.getLogger("tensorboard").setLevel(logging.WARNING)
-    tb = program.TensorBoard()
-    tb.configure(argv=[None, "--logdir", log_path, "--path_prefix", "/tensorboard"])
-    try:
-        _tb_url = tb.launch()
-    except Exception as e:
-        _tb_url = f"Error: {e}"
-    finally:
-        _tb_ready.set()
-    if not _tb_url or _tb_url.startswith("Error"):
-        return
-    print(f"TensorBoard running at: {_tb_url}#scalars")
-    while True:
-        import time
-
-        time.sleep(600)
+    threading.Event().wait()

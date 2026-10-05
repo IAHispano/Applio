@@ -196,7 +196,7 @@ def validate_acoustic(model, dataset, device, shortcut):
 
 
 @torch.no_grad()
-def validate_vocoder(model, dataset, extractor, device):
+def validate_vocoder(model, dataset, extractor, device, listening_output=None):
     previous_mode = model.training
     model.eval()
     losses = []
@@ -215,6 +215,25 @@ def validate_vocoder(model, dataset, extractor, device):
         losses.append(
             float(masked_mean((extractor(output) - batch["mel"]).abs(), batch["mask"]))
         )
+        if i == 0 and listening_output is not None:
+            # Reuse the deterministic held-out forward pass. No extra GPU work.
+            # The summary wrapper logs this fixed pair at each saved update.
+            import soundfile as sf
+
+            directory = Path(listening_output)
+            directory.mkdir(parents=True, exist_ok=True)
+            rate = dataset.config.sample_rate
+            count = min(int(batch["waveform_length"][0]), rate * 8)
+            for name, wave in (
+                ("reference", batch["waveform"]),
+                ("reconstruction", output),
+            ):
+                sf.write(
+                    directory / f"{name}.wav",
+                    wave[0, :count].float().cpu().numpy(),
+                    rate,
+                    subtype="FLOAT",
+                )
     model.train(previous_mode)
     return sum(losses) / len(losses)
 
@@ -378,10 +397,10 @@ def train(
             )
         if phase == "flow" and not bool(model.predictor_trained):
             raise ValueError("Warm up the predictor before ordinary-flow training")
-        if phase in {"shortcut", "adapt"} and not bool(model.flow_trained):
-            raise ValueError(
-                "Shortcut/adaptation requires an ordinary-flow trained base"
-            )
+        if phase == "shortcut" and not bool(model.flow_trained):
+            raise ValueError("Shortcut requires an ordinary-flow trained base")
+        if phase == "adapt" and not bool(model.predictor_trained):
+            raise ValueError("Fine-tuning requires a trained acoustic predictor")
         if not resume and phase == "predictor":
             model.flow_trained.fill_(False)
             model.shortcut_trained.fill_(False)
@@ -504,7 +523,9 @@ def train(
                             condition = condition_batch(model, batch)
                     else:
                         condition = condition_batch(model, batch)
-                    if phase == "predictor":
+                    if phase == "predictor" or (
+                        phase == "adapt" and not bool(model.flow_trained)
+                    ):
                         loss = model.predictor_loss(
                             condition, batch["mel"], batch["mask"]
                         )
@@ -597,7 +618,7 @@ def train(
                     )
                 else:
                     progress["validation_mel_l1"] = validate_vocoder(
-                        ema.model, validation, extractor, device
+                        ema.model, validation, extractor, device, output / "listening"
                     )
                 payload = header(model, kind, training.manifest, adapters)
                 payload.update(

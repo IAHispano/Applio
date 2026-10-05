@@ -147,7 +147,7 @@ Current limitations include short reference training, limited speaker coverage, 
 
 ## 4. Installation, shared interface and CLI workflow
 
-Start Applio with `python app.py`. In **Training → Model Settings**, select **RVC (v2)** or **Applio v3 (experimental)**. The same preprocessing, training and export sections remain available; their options and update units follow the selected architecture. V3 preparation extracts audio and features together, so the separate Extract step is hidden.
+Start Applio with `python app.py`. In **Training → Model Settings**, select **RVC (v2)** or **Applio v3 (experimental)**. Both use the familiar **Preprocess → Extract → Training → Export** workflow. The sections stay visible; their settings and training units follow the selected architecture. V3 Preprocess saves audio only, without loading feature models. Extract builds the content/pitch/mel caches from that audio.
 
 In **Inference**, select your model in the existing **Voice Model** dropdown. Applio detects its architecture from checkpoint metadata and displays the appropriate controls inside **Advanced Settings**. V3 exposes a separate universal vocoder, matching encoder, refinement budget and sampling settings. Classic inference retains v1/v2 support, retrieval indexes and existing effects. Audio selection, pitch, target speaker, conversion buttons and output remain shared.
 
@@ -178,7 +178,7 @@ Artifacts use the existing `logs/<model-name>` convention: `data/manifest.json`,
 
 Every training run writes TensorBoard events automatically. Classic training uses `logs/<model-name>/eval/`. V3 predictor, vocoder, flow, shortcut and adaptation stages use `logs/<model-name>/checkpoints/<stage>/tensorboard/`, alongside their checkpoints and JSONL metrics. CLI, Gradio and direct trainer calls share the same V3 logging path; no separate metrics-conversion process is needed for new runs.
 
-Launch the shared viewer with `python core.py tensorboard`, the existing TensorBoard button, or the platform's TensorBoard launch script. Its recursive `logs/` view discovers both architectures. Select a model/stage run and inspect `train/loss` and `validation/mel_l1` for V3, or the existing `loss/g/*` and `loss/d/*` summaries for classic training. V3 also logs learning rate, AMP scale, gradient norms before clipping and optimizer-update flags; vocoder runs include discriminator loss and critic-update information. Training losses differ between stages and should not be compared as the same objective.
+Launch the shared viewer with `python core.py tensorboard`, the existing TensorBoard button, or the platform's TensorBoard launch script. Select a single training run in the Gradio TensorBoard tab. The focused curve view shows the main loss and validation charts; All diagnostics exposes the remaining metrics. Inspect `train/loss` and `validation/mel_l1` for V3, or the existing `loss/g/*` and `loss/d/*` summaries for classic training. V3 also logs learning rate, AMP scale, gradient norms before clipping and optimizer-update flags; vocoder runs include discriminator loss and critic-update information. Training losses differ between stages and should not be compared as the same objective.
 
 Only rank zero writes summaries. V3 flushes at validation/checkpoint updates and graceful stopping, and closes the writer on completion, failure or generator cancellation. Exact resume retains checkpoint step numbering and purges abandoned future events after the restored step. Classic training flushes epoch summaries and closes the writer before its final process exit. Launching TensorBoard is separate from generating its event logs.
 
@@ -189,10 +189,11 @@ Only rank zero writes summaries. V3 flushes at validation/checkpoint updates and
 For the reference learning experiment, the provided VCTK directory contained 44,242 supported WAV recordings at 48 kHz. VCTK is not bundled with this repository; please obtain a permitted copy separately. Preparation reads the sources without modifying them, resamples to the fixed 44.1 kHz v3 contract, chooses recording-disjoint validation before segmentation, and hashes feature/audio caches. The one `.raw` file is excluded.
 
 ```powershell
-python core.py preprocess --architecture v3 --model-name vctk_v3 --dataset-path DATASET_DIRECTORY --speaker p225 --speaker p226 --speaker p227 --speaker p228 --recordings-per-speaker 48 --device cuda
+python core.py preprocess --architecture v3 --model-name vctk_v3 --dataset-path DATASET_DIRECTORY --speaker p225 --speaker p226 --speaker p227 --speaker p228 --recordings-per-speaker 48
+python core.py extract --architecture v3 --model-name vctk_v3 --device cuda
 ```
 
-Omit speaker/cap options to prepare all supported recordings. Selection is deterministic under `--seed`; `--validation-fraction` defaults to 0.1 and `--segment-seconds` to 4. V3 preprocessing extracts features together with audio; `extract --architecture v3 --model-name NAME` replays the stored recipe with hash-checked cache reuse. Preparation output must stay outside the original dataset tree.
+Omit speaker/cap options to prepare all supported recordings. Selection is deterministic under `--seed`; `--validation-fraction` defaults to 0.1 and `--segment-seconds` to 4. Preprocess runs on CPU and writes `data/audio_manifest.json` and resampled audio. Extract reads those saved segments, verifies their hashes and writes the train-ready `data/manifest.json`. Frontend settings such as `--encoder-path`, `--pitch-extractor`, `--profile` and `--device` belong to Extract. Matching feature caches are reused; changing the frontend does not require resampling again. Preparation output must stay outside the original dataset tree. Existing combined-preparation datasets and checkpoints remain supported; the internal `run_v3_prepare_script` service is retained for older experiment scripts.
 
 The content encoder is local, pinned to official Applio resource revision `70ed563897504c756ec94067c12c902c4fd42025`. Default directory: `rvc/models/embedders/contentvec`. `core.py download-encoder` downloads the pinned configuration/weights without executing remote Python. Swift F0 is the default; RMVPE requires `--pitch-extractor rmvpe --pitch-path PATH`. `--profile bounded` matches the live frontend; `offline` is a separate contract and cannot be used for live streaming.
 
@@ -200,9 +201,13 @@ The content encoder is local, pinned to official Applio resource revision `70ed5
 
 ### Train, resume and export
 
-V3 needs newly trained compatible acoustic and universal-vocoder weights. Classic RVC generators cannot initialize it. Train predictor and vocoder, then ordinary flow, then shortcut stages. The following budgets are short learning tests, not convergence recipes:
+V3 needs compatible acoustic and universal-vocoder weights. Classic RVC generators cannot initialize it. For scratch training, predictor and vocoder are required; ordinary flow and shortcut are optional refinement stages. The following budgets are short learning tests, not convergence recipes:
 
 ```powershell
+# One action trains the required parts and exports both packages.
+python core.py train --architecture v3 --model-name vctk_v3 --device cuda
+
+# Advanced: individual stages and optional refinement.
 python core.py train --architecture v3 --model-name vctk_v3 --stage predictor --steps 1000 --device cuda
 python core.py train --architecture v3 --model-name vctk_v3 --stage vocoder --steps 2000 --device cuda
 python core.py train --architecture v3 --model-name vctk_v3 --stage flow --base-model logs/vctk_v3/checkpoints/predictor/best.pt --steps 500 --device cuda
@@ -211,9 +216,13 @@ python core.py export-model --checkpoint logs/vctk_v3/checkpoints/shortcut/best.
 python core.py export-model --checkpoint logs/vctk_v3/checkpoints/vocoder/best.pt --output-path logs/vctk_v3/vctk_v3_vocoder.pth
 ```
 
+In **Model Settings**, choose **Fine-tune a pretrained model (LoRA)** for a new voice. Select an exported pretrained acoustic model and compatible universal vocoder, then preprocess your recordings, extract features and click **Start Training**. Preprocessing adopts the base model's mel settings; extraction adopts its full frontend contract and checks the encoder identity. Fine-tuning trains LoRA adapters and the new speaker embedding, reuses the frozen universal vocoder, resumes its own saved progress and exports a standalone acoustic package with merged adapters. Predictor-only bases are supported; flow/shortcut adapters are trained only when those capabilities exist in the base. The vocoder is referenced rather than copied or overwritten. No pretrained package is selected automatically: wait for a usable pretrained export or supply compatible weights.
+
+Choose **Train from scratch** to train the predictor and vocoder automatically and export both packages. **Advanced stage training** exposes optional refiners and individual stages. The shared starting recipe uses 10,000 updates, batch size 2, checkpoint interval 1,000, automatic device/precision and LoRA rank 8. These are starting values, not established quality optima. Increase the duration for longer runs, or batch size when memory permits. Fine-tuning and complete scratch training use the duration as a target and resume saved progress. Use a new model name for each voice/dataset. **Live training progress** follows GUI, CLI and background jobs without starting another job.
+
 V3 uses one default architecture across hardware: the acoustic model has conditioning/predictor/refiner widths 256/256/384 and predictor/refiner depths 6/8; the vocoder uses 64 channels, 8 blocks and 4 streams. These defaults are defined in `rvc/configs/v3.py`. Existing checkpoints supply their saved architecture when loading base weights or resuming.
 
-Training defaults are batch 2, crop 128, automatic precision, AdamW at 0.0002, EMA 0.999, checkpoint interval 100, and seed 1234. Automatic precision uses BF16 on supported CUDA GPUs, FP16 with gradient scaling on other CUDA GPUs, and FP32 on CPU. Explicit BF16/FP16/FP32 remain available in advanced settings. Classic CLI batch remains 8. There is no learning-rate scheduler.
+GUI and CLI training defaults are batch 2, crop 128, automatic precision, AdamW at 0.0002, EMA 0.999, checkpoint interval 1,000, and seed 1234. Automatic precision uses BF16 on supported CUDA GPUs, FP16 with gradient scaling on other CUDA GPUs, and FP32 on CPU. Explicit BF16/FP16/FP32 remain available in advanced settings. Classic CLI batch remains 8. There is no learning-rate scheduler.
 
 Increase batch size when memory permits; reduce it if training runs out of memory. Gradient accumulation increases effective batch without retaining every activation graph: effective batch is batch size × accumulation steps × training ranks. This controls training memory without selecting a different network for each GPU. Changing batch or accumulation starts a new training recipe and is incompatible with exact resume. Advanced CLI users can pass `--config PATH` for architecture research when training from scratch; the regular GUI uses the shared defaults.
 
@@ -2219,3 +2228,16 @@ These sizing estimates preceded construction. The measured report above takes pr
 ```
 
 </details>
+
+
+### Training dashboard and audio comparisons
+
+Open the **TensorBoard** tab, select a **Training run**, and choose **Learning curves**, **Listening samples**, or **All diagnostics**. Learning curves opens the main loss and validation charts; optimizer details remain available under All diagnostics. The dashboard loads only that run. V3 stages use readable labels; earlier externally logged updates are marked as history. Classic runs remain supported. Refresh the run list if a newly started training has not appeared yet.
+
+Compare training loss and held-out validation mel error within the same stage. Lower validation mel error indicates closer spectral reconstruction, but listening is still needed to assess artifacts, intelligibility and speaker identity. Gradient norms, learning rate and optimizer status are diagnostics rather than audio quality scores.
+
+V3 vocoder training logs a fixed held-out reference/reconstruction pair at each validation checkpoint, using the existing validation pass. These previews are limited to eight seconds and use a shared peak gain so relative loudness is preserved. Acoustic stages produce mel features; audio from these stages requires a matching vocoder and an evaluation. Completed interim vocoder evaluations also appear as listening comparisons: reference, full acoustic reconstruction, and vocoder output from reference mel features. Two fixed examples make it possible to compare saved updates. These evaluations measure held-out self-reconstruction; they do not establish cross-speaker conversion quality. Listening imports run on CPU without interrupting an active training job.
+
+Use **Training → Live training progress** for current update counts, process status and raw logs. TensorBoard displays logged events and saved audio; a lack of new audio between validation checkpoints is expected.
+
+Training started from Gradio also displays a native progress bar. V3 fine-tuning shows its update count; scratch training shows overall progress across the selected stages and finishes after model export. Resuming includes already completed updates, and stopping saves a checkpoint. Preprocessing and extraction show recording progress. Classic training displays an activity indicator; use live logs for its detailed progress. The native bar belongs to the active browser request; background and CLI jobs remain visible through Live training progress.
