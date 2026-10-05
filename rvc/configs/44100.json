@@ -13,7 +13,6 @@
   },
   "flow": {
     "seed": 1234,
-    "optimizer": "muon",
     "learning_rate": 3e-4,
     "finetune_learning_rate": 1e-4,
     "lr_final_ratio": 0.1,
@@ -37,7 +36,6 @@
     "bucket_batches": true,
     "bucket_max_frames": 800,
     "bucket_max_items": 64,
-    "content_blur_prob": 0,
     "aux_mel_weight": 0.2,
     "mel_bin_norm": true,
     "eval_interval": 1000,
@@ -56,13 +54,10 @@
       "speed": true,
       "tension": true,
       "dual_timestep": true,
-      "time_sampling": "uniform",
       "backbone": "lynxnet2",
       "backbone_args": {"channels": 1024, "layers": 6, "expansion": 1, "kernel_size": 31, "adaln": true},
       "aux_decoder": {"channels": 512, "layers": 6, "dropout": 0.1, "speaker": true},
       "t_start": 0.4,
-      "prior_noise": 0,
-      "prior_degrade": 0,
       "aux_grad": 0.1
     }
   }

@@ -21,7 +21,7 @@ def rectified_flow_selector(embedder_model):
     if not os.path.exists(path_flow):
         path_flow = ""
 
-    # PCPH-BigVGAN or OpenVPI NSF-HiFiGAN, renders the mel of the flow
+    # OpenVPI NSF-HiFiGAN, renders the mel of the flow
     path_vocoder = ""
     if os.path.isdir(base_path):
         for name in sorted(os.listdir(base_path)):

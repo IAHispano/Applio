@@ -644,24 +644,12 @@ def run(
         ema_decay = flow_config["ema_decay"]
         warmup = flow_config["warmup_steps"]
 
-    if flow_config["optimizer"] == "muon":
-        if rank == 0:
-            print("Using Muon + AdamW optimizer")
-        optim = MuonAdamW(
-            net_flow,
-            base_lr,
-            muon_weight_decay=flow_config["weight_decay"],
-            betas=flow_config["betas"],
-        )
-    else:
-        if rank == 0:
-            print("Using AdamW optimizer")
-        optim = torch.optim.AdamW(
-            net_flow.parameters(),
-            base_lr,
-            betas=flow_config["betas"],
-            weight_decay=flow_config["weight_decay"],
-        )
+    optim = MuonAdamW(
+        net_flow,
+        base_lr,
+        muon_weight_decay=flow_config["weight_decay"],
+        betas=flow_config["betas"],
+    )
 
     use_scaler = device.type == "cuda" and train_dtype == torch.float16
     scaler = torch.amp.GradScaler(
@@ -766,7 +754,6 @@ def run(
         "grad_clip": flow_config["grad_clip"],
         "speaker_dropout": speaker_dropout,
         "tension_dropout": tension_dropout,
-        "content_blur": flow_config.get("content_blur_prob", 0.0),
         "aux_weight": flow_config["aux_mel_weight"],
         "eval_interval": flow_config["eval_interval"],
         "n_speakers": n_speakers,
@@ -1001,7 +988,6 @@ def train_and_evaluate(
                     inputs,
                     speaker_dropout=hps["speaker_dropout"],
                     tension_dropout=hps["tension_dropout"],
-                    content_blur=hps["content_blur"],
                 )
                 loss_all = loss_flow
                 if loss_aux is not None:

@@ -23,10 +23,6 @@ HARMONIC_MAX_HZ = 8000.0
 # Spread of the band around each harmonic counted as periodic.
 HARMONIC_SIGMA_HZ = 25.0
 APERIODICITY_FLOOR_DB = -30.0
-# At full strength: how far the top band drops and the spread of the noise of
-# a degraded mel, in normalised mel units.
-DEGRADE_HIGH_BAND = 0.5
-DEGRADE_NOISE = 0.3
 
 
 class LogMel(nn.Module):
@@ -111,35 +107,6 @@ def normalize_mel(mel, data):
 
 def denormalize_mel(mel, data):
     return mel * data["mel_std"] + data["mel_mean"]
-
-
-def degrade_mel(mel, strength):
-    """
-    Returns a normalised mel with the kinds of error a generated one carries:
-    blur along time and along frequency, a duller top band and noise. Each is
-    drawn per item up to `strength` of its full amount; half the items stay clean.
-
-    Args:
-        mel (torch.Tensor): Normalised mel, shape (batch, n_mels, frames).
-        strength (float): Strength of the degradation, from 0 to 1.
-    """
-    batch, bands = mel.shape[0], mel.shape[1]
-
-    def amount():
-        return torch.rand(batch, 1, 1, device=mel.device) * strength
-
-    along = F.avg_pool1d(F.pad(mel, (1, 1), mode="replicate"), 3, 1)
-    out = torch.lerp(mel, along, amount())
-    across = F.avg_pool1d(F.pad(out.transpose(1, 2), (1, 1), mode="replicate"), 3, 1)
-    out = torch.lerp(out, across.transpose(1, 2), amount())
-    # A ramp down from a band drawn in the upper two thirds to the top.
-    start = 0.3 + 0.6 * torch.rand(batch, 1, 1, device=mel.device)
-    position = torch.linspace(0.0, 1.0, bands, device=mel.device).view(1, -1, 1)
-    ramp = ((position - start) / (1.0 - start)).clamp(0.0, 1.0)
-    out = out - DEGRADE_HIGH_BAND * amount() * ramp
-    out = out + DEGRADE_NOISE * amount() * torch.randn_like(out)
-    clean = torch.rand(batch, 1, 1, device=mel.device) < 0.5
-    return torch.where(clean, mel, out)
 
 
 def upsample_content(features, mode="linear"):
