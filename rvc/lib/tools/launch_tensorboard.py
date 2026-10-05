@@ -19,8 +19,7 @@ def launch_tensorboard_pipeline():
     tb = program.TensorBoard()
     tb.configure(argv=[None, "--logdir", log_path, "--path_prefix", "/tensorboard"])
     url = tb.launch()
-    pinned = "?pinnedCards=%5B%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fd%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fkl%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fmel%22%7D%5D"
-    print(f"TensorBoard running at: {url}{pinned}")
+    print(f"TensorBoard running at: {url}#scalars")
 
     while True:
         import time
@@ -54,8 +53,7 @@ def _start_tb():
         _tb_ready.set()
     if not _tb_url or _tb_url.startswith("Error"):
         return
-    pinned = "?pinnedCards=%5B%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fd%2Ftotal%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fkl%22%7D%2C%7B%22plugin%22%3A%22scalars%22%2C%22tag%22%3A%22loss%2Fg%2Fmel%22%7D%5D"
-    print(f"TensorBoard running at: {_tb_url}{pinned}")
+    print(f"TensorBoard running at: {_tb_url}#scalars")
     while True:
         import time
 

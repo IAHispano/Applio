@@ -39,6 +39,7 @@ from rvc.train.process.v3_checkpoints import (
     restore_rng,
     rng_state,
 )
+from rvc.train.process.v3_tensorboard import log_training
 from rvc.train.v3.data import AcousticDataset, collate, condition_batch
 from rvc.train.v3.distributed import TrainingGroup
 
@@ -200,6 +201,7 @@ def validate_vocoder(model, dataset, extractor, device):
     return sum(losses) / len(losses)
 
 
+@log_training
 def train(
     manifest,
     output,
@@ -229,6 +231,8 @@ def train(
     Vocoder alternates detached-fake critic updates and generator updates using
     the same excitation noise. A stop request is handled after a complete update,
     then validation/checkpoint saving finishes before the generator returns.
+    Rank zero also writes TensorBoard scalars in output/tensorboard for every
+    stage; CLI, GUI and direct callers share this automatic logging path.
     """
 
     if (
@@ -554,9 +558,13 @@ def train(
             "loss": group.mean(sum(losses) / len(losses)),
             "gradient_norm": norm,
             "optimizer_updated": norm is not None,
+            "learning_rate": optimizer.param_groups[0]["lr"],
+            "amp_scale": scaler.get_scale(),
         }
         if critics:
             progress["critic_optimizer_updated"] = critic_norm is not None
+            progress["critic_gradient_norm"] = critic_norm
+            progress["discriminator_loss"] = group.mean(sum(d_losses) / len(d_losses))
         stopping = group.any(bool(stop_requested and stop_requested()))
         if stopping:
             progress["stopped"] = True
@@ -571,7 +579,6 @@ def train(
                     progress["validation_mel_l1"] = validate_vocoder(
                         ema.model, validation, extractor, device
                     )
-                    progress["discriminator_loss"] = sum(d_losses) / len(d_losses)
                 payload = header(model, kind, training.manifest, adapters)
                 payload.update(
                     weights=model.state_dict(),

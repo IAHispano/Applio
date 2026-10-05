@@ -620,8 +620,7 @@ def train_and_evaluate(
     net_g, net_d = nets
     optim_g, optim_d = optims
     train_loader = loaders[0] if loaders is not None else None
-    if writers is not None:
-        writer = writers[0]
+    writer = writers[0] if writers is not None else None
 
     train_loader.batch_sampler.set_epoch(epoch)
 
@@ -888,6 +887,10 @@ def train_and_evaluate(
                 scalars=scalar_dict,
             )
 
+    # Make epoch summaries visible promptly, including before the final hard exit.
+    if writer is not None:
+        writer.flush()
+
     # Save checkpoint
     model_add = []
     model_del = []
@@ -978,6 +981,8 @@ def train_and_evaluate(
             with open(pid_file_path, "w") as pid_file:
                 pid_data.pop("process_pids", None)
                 json.dump(pid_data, pid_file, indent=4)
+            if writer is not None:
+                writer.close()
             os._exit(2333333)
 
         with torch.no_grad():

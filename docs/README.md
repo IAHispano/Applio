@@ -174,6 +174,14 @@ The Click interface is `python core.py`. Its existing `preprocess`, `extract`, `
 
 Artifacts use the existing `logs/<model-name>` convention: `data/manifest.json`, `checkpoints/<stage>/last.pt`, `best.pt`, `metrics.jsonl`, exported acoustic/vocoder `.pth` packages, and `evaluation/` WAV/CSV/JSON results. Binary weights, audio and datasets remain ignored by Git.
 
+### TensorBoard monitoring
+
+Every training run writes TensorBoard events automatically. Classic training uses `logs/<model-name>/eval/`. V3 predictor, vocoder, flow, shortcut and adaptation stages use `logs/<model-name>/checkpoints/<stage>/tensorboard/`, alongside their checkpoints and JSONL metrics. CLI, Gradio and direct trainer calls share the same V3 logging path; no separate metrics-conversion process is needed for new runs.
+
+Launch the shared viewer with `python core.py tensorboard`, the existing TensorBoard button, or the platform's TensorBoard launch script. Its recursive `logs/` view discovers both architectures. Select a model/stage run and inspect `train/loss` and `validation/mel_l1` for V3, or the existing `loss/g/*` and `loss/d/*` summaries for classic training. V3 also logs learning rate, AMP scale, gradient norms before clipping and optimizer-update flags; vocoder runs include discriminator loss and critic-update information. Training losses differ between stages and should not be compared as the same objective.
+
+Only rank zero writes summaries. V3 flushes at validation/checkpoint updates and graceful stopping, and closes the writer on completion, failure or generator cancellation. Exact resume retains checkpoint step numbering and purges abandoned future events after the restored step. Classic training flushes epoch summaries and closes the writer before its final process exit. Launching TensorBoard is separate from generating its event logs.
+
 <a id="workflow-prepare-vctk"></a>
 
 ### Prepare VCTK
