@@ -7,7 +7,7 @@ from functools import lru_cache
 
 import click
 
-from rvc.configs.v3 import DEFAULT_BATCH_SIZE
+from rvc.configs.neural import DEFAULT_BATCH_SIZE
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -703,7 +703,7 @@ def run_audio_analyzer_script(
     return audio_info, plot_path
 
 
-def v3_project(model_name):
+def acoustic_project(model_name):
     """Keep training artifacts inside the existing logs/<model> structure."""
     from pathlib import Path
 
@@ -716,7 +716,7 @@ def v3_project(model_name):
     return Path(current_script_directory) / "logs" / model_name
 
 
-def run_v3_preprocess_script(
+def run_acoustic_preprocess_script(
     model_name,
     dataset_path,
     validation_fraction=0.1,
@@ -728,13 +728,13 @@ def run_v3_preprocess_script(
     base_model=None,
 ):
     """Preprocess V3 audio on CPU; feature models are loaded only by Extract."""
-    from rvc.train.v3.data import atomic_json, preprocess_audio
+    from rvc.train.acoustic.data import atomic_json, preprocess_audio
 
-    project = v3_project(model_name)
+    project = acoustic_project(model_name)
     mel = None
     if base_model:
         from rvc.configs.architectures import inspect_model
-        from rvc.configs.v3 import MelConfig
+        from rvc.configs.neural import MelConfig
 
         metadata = inspect_model(base_model)
         if metadata.get("kind") != "acoustic":
@@ -766,7 +766,7 @@ def run_v3_preprocess_script(
     return str(result)
 
 
-def run_v3_extract_script(
+def run_acoustic_extract_script(
     model_name,
     encoder_path="rvc/models/embedders/contentvec",
     pitch_extractor="swift",
@@ -777,11 +777,11 @@ def run_v3_extract_script(
     base_model=None,
 ):
     """Extract cached content, pitch, energy and mel from preprocessed V3 audio."""
-    from rvc.train.extract.v3 import FeatureExtractor
-    from rvc.train.v3.data import atomic_json, extract_preprocessed
-    from rvc.train.v3.trainer import resolve_device
+    from rvc.train.extract.features import FeatureExtractor
+    from rvc.train.acoustic.data import atomic_json, extract_preprocessed
+    from rvc.train.acoustic.trainer import resolve_device
 
-    project = v3_project(model_name)
+    project = acoustic_project(model_name)
     audio = project / "data/audio_manifest.json"
     if not audio.exists():
         raise ValueError(
@@ -790,7 +790,7 @@ def run_v3_extract_script(
     feature_options = dict(pitch=pitch_extractor, profile=profile)
     if base_model:
         from rvc.configs.architectures import inspect_model
-        from rvc.configs.v3 import MelConfig, require_contract
+        from rvc.configs.neural import MelConfig, require_contract
         from dataclasses import asdict
 
         metadata = inspect_model(base_model)
@@ -835,7 +835,7 @@ def run_v3_extract_script(
     return str(result)
 
 
-def run_v3_prepare_script(
+def run_acoustic_prepare_script(
     model_name,
     dataset_path,
     encoder_path="rvc/models/embedders/contentvec",
@@ -850,11 +850,11 @@ def run_v3_prepare_script(
     recordings_per_speaker=0,
     progress=None,
 ):
-    from rvc.train.extract.v3 import FeatureExtractor
-    from rvc.train.v3.data import atomic_json, prepare
-    from rvc.train.v3.trainer import resolve_device
+    from rvc.train.extract.features import FeatureExtractor
+    from rvc.train.acoustic.data import atomic_json, prepare
+    from rvc.train.acoustic.trainer import resolve_device
 
-    project = v3_project(model_name)
+    project = acoustic_project(model_name)
     extractor = FeatureExtractor(
         encoder_path,
         device=resolve_device(device),
@@ -893,7 +893,7 @@ def run_v3_prepare_script(
     return str(result)
 
 
-def run_v3_train_script(
+def run_acoustic_train_script(
     model_name,
     stage="predictor",
     manifest=None,
@@ -904,10 +904,10 @@ def run_v3_train_script(
 ):
     from pathlib import Path
 
-    from rvc.configs.v3 import AcousticConfig, VocoderConfig
-    from rvc.train.v3.trainer import train
+    from rvc.configs.neural import AcousticConfig, VocoderConfig
+    from rvc.train.acoustic.trainer import train
 
-    project = v3_project(model_name)
+    project = acoustic_project(model_name)
     kind = "vocoder" if stage == "vocoder" else "acoustic"
     if config:
         constructor = VocoderConfig if kind == "vocoder" else AcousticConfig
@@ -926,7 +926,7 @@ def run_v3_train_script(
     )
 
 
-def run_v3_train_all_script(
+def run_acoustic_train_all_script(
     model_name,
     refine=False,
     steps=10000,
@@ -950,7 +950,7 @@ def run_v3_train_all_script(
 
     import psutil
 
-    from rvc.train.process.v3_checkpoints import load_payload
+    from rvc.train.process.checkpoints import load_payload
 
     if base_model or resume or config:
         raise ValueError(
@@ -958,7 +958,7 @@ def run_v3_train_all_script(
         )
     if int(steps) < 1:
         raise ValueError("Training duration must be positive")
-    project = v3_project(model_name)
+    project = acoustic_project(model_name)
     dataset = Path(manifest) if manifest else project / "data/manifest.json"
     if not dataset.exists():
         raise ValueError("Run Preprocess Dataset and Extract Features before training")
@@ -1007,7 +1007,7 @@ def run_v3_train_all_script(
                 "parts": len(stages),
             }
         else:
-            for update in run_v3_train_script(
+            for update in run_acoustic_train_script(
                 model_name,
                 stage,
                 manifest=str(dataset),
@@ -1028,12 +1028,12 @@ def run_v3_train_all_script(
         return
     acoustic = project / f"{model_name}_acoustic.pth"
     vocoder = project / f"{model_name}_vocoder.pth"
-    run_v3_export_script(str(root / acoustic_stage / "best.pt"), str(acoustic))
-    run_v3_export_script(str(root / "vocoder" / "best.pt"), str(vocoder))
+    run_acoustic_export_script(str(root / acoustic_stage / "best.pt"), str(acoustic))
+    run_acoustic_export_script(str(root / "vocoder" / "best.pt"), str(vocoder))
     yield {"status": "exported", "acoustic": str(acoustic), "vocoder": str(vocoder)}
 
 
-def run_v3_finetune_script(model_name, base_model, vocoder_path, steps=10000, **kwargs):
+def run_acoustic_finetune_script(model_name, base_model, vocoder_path, steps=10000, **kwargs):
     """Adapt only the voice model, retaining the frozen shared vocoder.
 
     Resume uses this project's adapter checkpoint; export merges the adapters
@@ -1041,9 +1041,9 @@ def run_v3_finetune_script(model_name, base_model, vocoder_path, steps=10000, **
     never copied, optimized or overwritten by voice fine-tuning.
     """
     from pathlib import Path
-    from rvc.train.process.v3_checkpoints import load_payload
-    from rvc.configs.v3 import require_contract
-    from rvc.train.v3.data import atomic_json
+    from rvc.train.process.checkpoints import load_payload
+    from rvc.configs.neural import require_contract
+    from rvc.train.acoustic.data import atomic_json
 
     if not base_model or not vocoder_path:
         raise ValueError(
@@ -1059,7 +1059,7 @@ def run_v3_finetune_script(model_name, base_model, vocoder_path, steps=10000, **
             "Select an exported voice model with merged adapters as the pretrained base"
         )
     require_contract(base["mel"], vocoder["mel"], "pretrained voice/vocoder")
-    project = v3_project(model_name)
+    project = acoustic_project(model_name)
     destination = project / f"{model_name}_acoustic.pth"
     if (
         Path(base_model).resolve() == destination.resolve()
@@ -1089,7 +1089,7 @@ def run_v3_finetune_script(model_name, base_model, vocoder_path, steps=10000, **
         raise ValueError(
             "Run Preprocess Dataset and Extract Features before fine-tuning"
         )
-    from rvc.train.v3.data import AcousticDataset
+    from rvc.train.acoustic.data import AcousticDataset
 
     dataset = AcousticDataset(manifest)
     require_contract(
@@ -1099,7 +1099,7 @@ def run_v3_finetune_script(model_name, base_model, vocoder_path, steps=10000, **
     )
     require_contract(base["mel"], dataset.manifest["contract"]["mel"], "pretrained mel")
     checkpoint = project / "checkpoints/adapt/last.pt"
-    from rvc.train.extract.v3 import file_hash
+    from rvc.train.extract.features import file_hash
 
     recipe = dict(
         base_model=str(Path(base_model).resolve()),
@@ -1135,7 +1135,7 @@ def run_v3_finetune_script(model_name, base_model, vocoder_path, steps=10000, **
     del base, vocoder, dataset
     kwargs["adaptation"] = "lora"
     if initial < int(steps):
-        for update in run_v3_train_script(
+        for update in run_acoustic_train_script(
             model_name,
             "adapt",
             base_model=None if checkpoint.exists() else base_model,
@@ -1148,11 +1148,11 @@ def run_v3_finetune_script(model_name, base_model, vocoder_path, steps=10000, **
                 return
     if kwargs.get("stop_requested") and kwargs["stop_requested"]():
         return
-    run_v3_export_script(str(project / "checkpoints/adapt/best.pt"), str(destination))
+    run_acoustic_export_script(str(project / "checkpoints/adapt/best.pt"), str(destination))
     yield dict(status="exported", acoustic=str(destination), vocoder=str(vocoder_path))
 
 
-def run_v3_infer_script(
+def run_acoustic_infer_script(
     input_path,
     output_path,
     pth_path,
@@ -1167,9 +1167,7 @@ def run_v3_infer_script(
     ordinary_flow=False,
     batch=False,
 ):
-    from pathlib import Path
-
-    from rvc.infer.v3 import Converter
+    from rvc.infer.acoustic import Converter
 
     if not vocoder_path:
         raise ValueError("Applio v3 requires a separate --vocoder-path")
@@ -1185,34 +1183,17 @@ def run_v3_infer_script(
     )
     if not batch:
         return converter.convert_file(input_path, output_path, **options)
-    source, destination = Path(input_path).resolve(), Path(output_path).resolve()
-    if not source.is_dir() or destination.is_relative_to(source):
-        raise ValueError(
-            "Batch input must be a directory and output must be outside its tree"
-        )
-    files = sorted(
-        p
-        for p in source.rglob("*")
-        if p.suffix.lower() in {".wav", ".flac", ".ogg", ".aiff", ".aif"}
-    )
-    if not files:
-        raise ValueError("No supported batch inputs")
-    return [
-        converter.convert_file(
-            file, destination / file.relative_to(source).with_suffix(".wav"), **options
-        )
-        for file in files
-    ]
+    return converter.convert_directory(input_path, output_path, **options)
 
 
-def run_v3_export_script(checkpoint, output_path):
-    from rvc.train.process.v3_checkpoints import export_checkpoint
+def run_acoustic_export_script(checkpoint, output_path):
+    from rvc.train.process.checkpoints import export_checkpoint
 
     return str(export_checkpoint(checkpoint, output_path))
 
 
-def run_v3_evaluate_script(manifest, pth_path, vocoder_path, output_dir, **kwargs):
-    from rvc.train.process.v3_evaluation import evaluate
+def run_acoustic_evaluate_script(manifest, pth_path, vocoder_path, output_dir, **kwargs):
+    from rvc.train.process.evaluation import evaluate
 
     return evaluate(manifest, pth_path, vocoder_path, output_dir, **kwargs)
 
@@ -1226,7 +1207,7 @@ def _architecture_options(func):
     )(func)
 
 
-def _v3_extract_options(func):
+def _acoustic_extract_options(func):
     for option in reversed(
         [
             click.option(
@@ -1252,7 +1233,7 @@ def _v3_extract_options(func):
     return func
 
 
-def _v3_prepare_options(func):
+def _acoustic_prepare_options(func):
     for option in reversed(
         [
             click.option(
@@ -1274,7 +1255,7 @@ def _v3_prepare_options(func):
     return func
 
 
-def _v3_inference_options(func):
+def _acoustic_inference_options(func):
     for option in reversed(
         [
             click.option(
@@ -1336,7 +1317,7 @@ def _dispatch_inference(kwargs, batch=False):
                 raise ValueError(
                     "Retrieval indexes belong to classic models; leave --index-path empty for v3"
                 )
-            return run_v3_infer_script(
+            return run_acoustic_infer_script(
                 kwargs["input_folder" if batch else "input_path"],
                 kwargs["output_folder" if batch else "output_path"],
                 kwargs["pth_path"],
@@ -1613,7 +1594,7 @@ def cli(ctx):
     help="Full path to the RVC model file (.pth).",
 )
 @click.option("--index-path", default="", help="Full path to the index file (.index).")
-@_v3_inference_options
+@_acoustic_inference_options
 @_infer_opts
 @_post_process_opts
 def infer(**kwargs):
@@ -1635,7 +1616,7 @@ def infer(**kwargs):
     help="Full path to the RVC model file (.pth).",
 )
 @click.option("--index-path", default="", help="Full path to the index file (.index).")
-@_v3_inference_options
+@_acoustic_inference_options
 @_infer_opts
 @_post_process_opts
 def batch_infer(**kwargs):
@@ -1735,7 +1716,7 @@ def tts(**kwargs):
     help="Normalization mode.",
 )
 @_architecture_options
-@_v3_prepare_options
+@_acoustic_prepare_options
 @click.option(
     "--json-logs",
     is_flag=True,
@@ -1765,10 +1746,10 @@ def preprocess(**kwargs):
         ):
             raise click.ClickException("Applio v3 uses the fixed 44100 Hz mel contract")
         try:
-            from rvc.train.process.v3_console import ConsoleProgress
+            from rvc.train.process.console import ConsoleProgress
 
             with ConsoleProgress(kwargs["model_name"]) as console:
-                result = run_v3_preprocess_script(
+                result = run_acoustic_preprocess_script(
                     kwargs["model_name"],
                     kwargs["dataset_path"],
                     progress=(lambda update: click.echo(json.dumps(update)))
@@ -1853,7 +1834,7 @@ def preprocess(**kwargs):
     help="Number of silent files to include.",
 )
 @_architecture_options
-@_v3_extract_options
+@_acoustic_extract_options
 @click.option(
     "--json-logs",
     is_flag=True,
@@ -1876,12 +1857,12 @@ def extract(**kwargs):
         ):
             raise click.ClickException("Applio v3 uses 44100 Hz")
         try:
-            from rvc.train.process.v3_console import ConsoleProgress
+            from rvc.train.process.console import ConsoleProgress
 
             with ConsoleProgress(kwargs["model_name"]) as console:
                 if not json_logs:
                     click.echo("Loading content encoder and pitch model...")
-                result = run_v3_extract_script(
+                result = run_acoustic_extract_script(
                     kwargs["model_name"],
                     progress=(lambda update: click.echo(json.dumps(update)))
                     if json_logs
@@ -2070,10 +2051,10 @@ def train(**kwargs):
             kwargs["batch_size"] = DEFAULT_BATCH_SIZE
         try:
             pipeline = options["stage"] in {"all", "all_refiners"}
-            trainer = run_v3_train_all_script if pipeline else run_v3_train_script
+            trainer = run_acoustic_train_all_script if pipeline else run_acoustic_train_script
             if pipeline:
                 options["refine"] = options.pop("stage") == "all_refiners"
-            from rvc.train.process.v3_console import ConsoleProgress
+            from rvc.train.process.console import ConsoleProgress
 
             with ConsoleProgress(kwargs["model_name"]) as console:
                 for update in trainer(
@@ -2229,7 +2210,7 @@ def audio_analyzer(**kwargs):
 )
 def train_corpus(**kwargs):
     """Preprocess, extract and train every corpus speaker using frozen BigVGAN."""
-    from rvc.train.v3.campaign import run_corpus
+    from rvc.train.acoustic.campaign import run_corpus
 
     try:
         run_corpus(**kwargs)
@@ -2246,7 +2227,7 @@ def train_corpus(**kwargs):
 @click.option("--seed", default=5678, type=int, show_default=True)
 def prepare_pitch_views(manifest, output_manifest, per_speaker, seed):
     """Prepare optional V3 training pitch counterexamples; keep natural validation."""
-    from rvc.train.v3.augmentation import prepare_pitch_views as prepare
+    from rvc.train.acoustic.augmentation import prepare_pitch_views as prepare
 
     try:
         result = prepare(
@@ -2270,7 +2251,7 @@ def prepare_pitch_views(manifest, output_manifest, per_speaker, seed):
 @click.option("--output-path", required=True, type=click.Path())
 def export_model(checkpoint, output_path):
     """Export v3 EMA weights, merging adaptation adapters for inference."""
-    click.echo(run_v3_export_script(checkpoint, output_path))
+    click.echo(run_acoustic_export_script(checkpoint, output_path))
 
 
 @cli.command("import-vocoder")
@@ -2283,7 +2264,7 @@ def import_vocoder(output_path, checkpoint, configuration):
     Without local checkpoint/config paths, download the pinned official
     44.1-kHz model. This backend does not support live inference.
     """
-    from rvc.train.process.v3_pretrained import import_bigvgan
+    from rvc.train.process.pretrained import import_bigvgan
 
     try:
         click.echo(import_bigvgan(output_path, checkpoint, configuration))
@@ -2308,8 +2289,41 @@ def import_vocoder(output_path, checkpoint, configuration):
 @click.option("--limit", type=click.IntRange(min=0), default=0)
 def evaluate(budgets, **kwargs):
     """Render recording-disjoint validation audio, budget curves and vocoder ceiling."""
-    result = run_v3_evaluate_script(budgets=[int(b) for b in budgets], **kwargs)
+    result = run_acoustic_evaluate_script(budgets=[int(b) for b in budgets], **kwargs)
     click.echo(json.dumps({k: v for k, v in result.items() if k != "rows"}, indent=2))
+
+
+@cli.command("prepare-evaluation")
+@click.option("--audio-manifest", required=True, type=click.Path(exists=True))
+@click.option("--output-path", required=True, type=click.Path())
+@click.option("--segments-per-speaker", type=click.IntRange(min=1), default=2)
+def prepare_evaluation(audio_manifest, output_path, segments_per_speaker):
+    """Save a fixed held-out listening and conversion protocol without loading models."""
+    from rvc.train.process.reports import prepare_plan
+
+    try:
+        plan = prepare_plan(audio_manifest, output_path, segments_per_speaker)
+        click.echo(
+            f"Prepared {len(plan['held_out'])} segments across {plan['speakers']} speakers. Use evaluate --limit {plan['evaluator_limit']} --seed {plan['seed']} after training."
+        )
+    except (ValueError, OSError, KeyError) as error:
+        raise click.ClickException(str(error)) from error
+
+
+@cli.command("summarize-evaluation")
+@click.option("--report-path", required=True, type=click.Path(exists=True))
+@click.option("--output-path", required=True, type=click.Path())
+def summarize_evaluation(report_path, output_path):
+    """Compare refinement budgets on identical cases with speaker-level uncertainty."""
+    from rvc.train.process.reports import summarize_report
+
+    try:
+        result = summarize_report(report_path, output_path)
+        click.echo(
+            f"Saved paired summary. Lowest waveform mel error: budget {result['lowest_waveform_mel_error_budget']}. Listening and identity checks are still required."
+        )
+    except (ValueError, OSError, KeyError) as error:
+        raise click.ClickException(str(error)) from error
 
 
 @cli.command("download-encoder")
@@ -2348,7 +2362,7 @@ def download_encoder(output_dir, repo, revision, prefix):
 @click.option("--small", is_flag=True)
 def verify_architecture(encoder_path, output_dir, device, small):
     """Measure graph, streaming and GPU memory on a synthetic engineering fixture."""
-    from rvc.lib.tools.v3_verify import verify
+    from rvc.lib.tools.verify_architecture import verify
 
     click.echo(
         json.dumps(
@@ -2357,7 +2371,7 @@ def verify_architecture(encoder_path, output_dir, device, small):
     )
 
 
-def _v3_runtime_options(func):
+def _acoustic_runtime_options(func):
     for option in reversed(
         [
             click.option(
@@ -2381,22 +2395,22 @@ def _v3_runtime_options(func):
 
 
 @cli.command("serve-v3")
-@_v3_runtime_options
+@_acoustic_runtime_options
 @click.option("--host", default="127.0.0.1")
 @click.option("--port", type=click.IntRange(1, 65535), default=7862)
-def serve_v3(pth_path, vocoder_path, encoder_path, pitch_path, device, host, port):
+def serve_acoustic(pth_path, vocoder_path, encoder_path, pitch_path, device, host, port):
     """Serve the V3 WebSocket API; the microphone UI lives in Applio's Realtime tab."""
     import uvicorn
 
-    from rvc.infer.v3 import Converter
-    from rvc.realtime.v3_transport import create_app
+    from rvc.infer.acoustic import Converter
+    from rvc.realtime.transport import create_app
 
     converter = Converter(pth_path, vocoder_path, encoder_path, pitch_path, device)
     uvicorn.run(create_app(converter), host=host, port=port)
 
 
 @cli.command("realtime-v3")
-@_v3_runtime_options
+@_acoustic_runtime_options
 @click.option("--input-device", type=int)
 @click.option("--output-device", type=int)
 @click.option("--sample-rate", type=click.IntRange(min=8000), default=48000)
@@ -2409,7 +2423,7 @@ def serve_v3(pth_path, vocoder_path, encoder_path, pitch_path, device, host, por
     default="0",
 )
 @click.option("--seed", type=click.IntRange(min=0), default=0)
-def realtime_v3(
+def realtime_acoustic(
     pth_path,
     vocoder_path,
     encoder_path,
@@ -2422,8 +2436,8 @@ def realtime_v3(
     **kwargs,
 ):
     """Run v3 conversion on explicitly selected native audio devices."""
-    from rvc.infer.v3 import Converter
-    from rvc.realtime.v3_transport import NativeSession
+    from rvc.infer.acoustic import Converter
+    from rvc.realtime.transport import NativeSession
 
     converter = Converter(pth_path, vocoder_path, encoder_path, pitch_path, device)
     NativeSession(
@@ -2446,7 +2460,7 @@ def realtime_v3(
 @click.option("--device", default="cuda")
 def test_vctk(**kwargs):
     """Run staged learning and held-out audio tests on an already prepared VCTK subset."""
-    from rvc.lib.tools.v3_vctk import run_experiment
+    from rvc.lib.tools.corpus_experiment import run_experiment
 
     run_experiment(**kwargs)
 

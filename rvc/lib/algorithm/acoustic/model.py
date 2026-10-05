@@ -19,7 +19,7 @@ import torch.nn.functional as F
 from torch import nn
 from torch.utils.checkpoint import checkpoint
 
-from rvc.configs.v3 import AcousticConfig
+from rvc.configs.neural import AcousticConfig
 
 
 def masked_mean(value, mask):

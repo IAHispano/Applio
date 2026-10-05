@@ -7,7 +7,7 @@ from pathlib import Path
 
 import torch
 
-from rvc.configs.v3 import DEFAULT_BATCH_SIZE
+from rvc.configs.neural import DEFAULT_BATCH_SIZE
 
 
 def run_experiment(
@@ -20,16 +20,16 @@ def run_experiment(
     device="cuda",
 ):
     from core import (
-        run_v3_evaluate_script,
-        run_v3_export_script,
-        run_v3_infer_script,
-        run_v3_train_script,
-        v3_project,
+        run_acoustic_evaluate_script,
+        run_acoustic_export_script,
+        run_acoustic_infer_script,
+        run_acoustic_train_script,
+        acoustic_project,
     )
-    from rvc.train.v3.data import atomic_json
+    from rvc.train.acoustic.data import atomic_json
 
     torch.set_num_threads(4)
-    project = v3_project(model_name)
+    project = acoustic_project(model_name)
     manifest = project / "data/manifest.json"
     data = json.loads(manifest.read_text(encoding="utf-8"))
     settings = dict(
@@ -45,7 +45,7 @@ def run_experiment(
 
     def train_stage(stage, steps, base=None, resume=None):
         start = time.perf_counter()
-        for update in run_v3_train_script(
+        for update in run_acoustic_train_script(
             model_name, stage, steps=steps, base_model=base, resume=resume, **settings
         ):
             if (
@@ -72,7 +72,7 @@ def run_experiment(
     shutil.copy2(initial_predictor, baseline / "predictor.pt")
     initial_vocoder = train_stage("vocoder", 1)
     shutil.copy2(initial_vocoder, baseline / "vocoder.pt")
-    initial_report = run_v3_evaluate_script(
+    initial_report = run_acoustic_evaluate_script(
         str(manifest),
         str(initial_predictor),
         str(initial_vocoder),
@@ -85,7 +85,7 @@ def run_experiment(
         "predictor", predictor_steps - 1, resume=str(initial_predictor)
     )
     vocoder = train_stage("vocoder", vocoder_steps - 1, resume=str(initial_vocoder))
-    predictor_report = run_v3_evaluate_script(
+    predictor_report = run_acoustic_evaluate_script(
         str(manifest),
         str(predictor),
         str(vocoder),
@@ -96,7 +96,7 @@ def run_experiment(
     )
     flow = train_stage("flow", flow_steps, base=str(predictor))
     shortcut = train_stage("shortcut", shortcut_steps, base=str(flow))
-    final_report = run_v3_evaluate_script(
+    final_report = run_acoustic_evaluate_script(
         str(manifest),
         str(shortcut),
         str(vocoder),
@@ -105,10 +105,10 @@ def run_experiment(
         limit=limit,
         device=device,
     )
-    acoustic_export = run_v3_export_script(
+    acoustic_export = run_acoustic_export_script(
         str(shortcut), str(project / (model_name + "_acoustic.pth"))
     )
-    vocoder_export = run_v3_export_script(
+    vocoder_export = run_acoustic_export_script(
         str(vocoder), str(project / (model_name + "_vocoder.pth"))
     )
     heldout = next(r for r in data["recordings"] if r["split"] == "validation")
@@ -122,7 +122,7 @@ def run_experiment(
             project / "evaluation" / f"conversion_to_{data['speakers'][speaker]}.wav"
         )
         conversions.append(
-            run_v3_infer_script(
+            run_acoustic_infer_script(
                 str(source),
                 str(output),
                 acoustic_export,

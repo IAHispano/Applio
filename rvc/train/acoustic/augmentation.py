@@ -15,9 +15,9 @@ import numpy as np
 import soundfile as sf
 import torch
 
-from rvc.lib.algorithm.v3.spectral import MelExtractor
-from rvc.train.extract.v3 import file_hash, read_audio
-from rvc.train.v3.data import AcousticDataset, atomic_json, dataset_identity
+from rvc.lib.algorithm.acoustic.spectral import MelExtractor
+from rvc.train.extract.features import file_hash, read_audio
+from rvc.train.acoustic.data import AcousticDataset, atomic_json, dataset_identity
 
 
 def prepare_pitch_views(

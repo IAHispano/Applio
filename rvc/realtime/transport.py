@@ -14,7 +14,7 @@ from queue import Empty, Full, Queue
 
 import numpy as np
 
-from rvc.infer.v3 import LiveConverter
+from rvc.infer.acoustic import LiveConverter
 
 
 class StreamingResampler:

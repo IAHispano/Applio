@@ -13,13 +13,13 @@ from pathlib import Path
 
 import torch
 
-from rvc.configs.v3 import require_contract
-from rvc.lib.algorithm.v3.acoustic import masked_mean
-from rvc.lib.algorithm.v3.spectral import MelExtractor, spectral_loss
-from rvc.realtime.v3_streaming import coordinate_noise
-from rvc.train.process.v3_checkpoints import construct, load_payload
-from rvc.train.v3.data import AcousticDataset, atomic_json, collate, condition_batch
-from rvc.train.v3.trainer import resolve_device, to_device
+from rvc.configs.neural import require_contract
+from rvc.lib.algorithm.acoustic.model import masked_mean
+from rvc.lib.algorithm.acoustic.spectral import MelExtractor, spectral_loss
+from rvc.realtime.streaming import coordinate_noise
+from rvc.train.process.checkpoints import construct, load_payload
+from rvc.train.acoustic.data import AcousticDataset, atomic_json, collate, condition_batch
+from rvc.train.acoustic.trainer import resolve_device, to_device
 
 
 @torch.inference_mode()

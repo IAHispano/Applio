@@ -15,10 +15,10 @@ import numpy as np
 import torch
 
 from rvc.configs.architectures import BACKEND, FORMAT_VERSION
-from rvc.configs.v3 import AcousticConfig, FeatureConfig, MelConfig, VocoderConfig
-from rvc.lib.algorithm.v3.acoustic import AcousticModel
-from rvc.lib.algorithm.v3.adapters import install_adapters, merge_adapters
-from rvc.lib.algorithm.v3.vocoder import SpectralVocoder
+from rvc.configs.neural import AcousticConfig, FeatureConfig, MelConfig, VocoderConfig
+from rvc.lib.algorithm.acoustic.model import AcousticModel
+from rvc.lib.algorithm.acoustic.adapters import install_adapters, merge_adapters
+from rvc.lib.algorithm.acoustic.vocoder import SpectralVocoder
 
 
 def atomic_save(path, payload):
@@ -72,7 +72,7 @@ def construct(payload, device="cpu", use_ema=True):
     else:
         backend = payload.get("vocoder_backend", "spectral")
         if backend == "bigvgan-v2":
-            from rvc.lib.algorithm.v3.bigvgan import BigVGANVocoder
+            from rvc.lib.algorithm.acoustic.bigvgan import BigVGANVocoder
 
             model = BigVGANVocoder(payload["model_config"])
         elif backend == "spectral":

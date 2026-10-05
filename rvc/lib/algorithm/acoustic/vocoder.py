@@ -17,8 +17,8 @@ import torch.nn.functional as F
 from torch import nn
 from torch.utils.checkpoint import checkpoint
 
-from rvc.configs.v3 import VocoderConfig
-from rvc.lib.algorithm.v3.spectral import SameSTFT
+from rvc.configs.neural import VocoderConfig
+from rvc.lib.algorithm.acoustic.spectral import SameSTFT
 
 
 def harmonic_prior(f0, voiced, hop, sample_rate, phase=None, noise=None):

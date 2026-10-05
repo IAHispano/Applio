@@ -544,7 +544,7 @@ def update_filter_visibility(_):
 
 # Inference tab
 def inference_tab():
-    from tabs.inference.v3 import inference_options, model_settings, route_conversion
+    from tabs.inference.architecture import inference_options, model_settings, route_conversion
 
     trigger = get_filter_trigger()
     with gr.Column():
@@ -653,7 +653,7 @@ def inference_tab():
                 value=0,
                 interactive=True,
             )
-            v3_single_settings, v3_single_options = inference_options(model_file)
+            acoustic_single_settings, acoustic_single_options = inference_options(model_file)
             with gr.Column() as classic_single_settings:
                 clear_outputs_infer = gr.Button(
                     i18n("Clear Outputs (Deletes all audios in assets/audios)")
@@ -1318,7 +1318,7 @@ def inference_tab():
                 value=0,
                 interactive=True,
             )
-            v3_batch_settings, v3_batch_options = inference_options(model_file)
+            acoustic_batch_settings, acoustic_batch_options = inference_options(model_file)
             with gr.Column() as classic_batch_settings:
                 clear_outputs_batch = gr.Button(
                     i18n("Clear Outputs (Deletes all audios in assets/audios)")
@@ -2221,9 +2221,9 @@ def inference_tab():
         inputs=[model_file],
         outputs=[
             classic_single_settings,
-            v3_single_settings,
+            acoustic_single_settings,
             classic_batch_settings,
-            v3_batch_settings,
+            acoustic_batch_settings,
             index_file,
             sid,
             sid_batch,
@@ -2351,7 +2351,7 @@ def inference_tab():
             delay_feedback,
             delay_mix,
             sid,
-            *v3_single_options,
+            *acoustic_single_options,
         ],
         outputs=[vc_output1, vc_output2],
         concurrency_id="model_gpu",
@@ -2424,7 +2424,7 @@ def inference_tab():
             delay_feedback_batch,
             delay_mix_batch,
             sid_batch,
-            *v3_batch_options,
+            *acoustic_batch_options,
         ],
         outputs=[vc_output3],
         concurrency_id="model_gpu",
@@ -2445,9 +2445,9 @@ def inference_tab():
         inputs=[model_file],
         outputs=[
             classic_single_settings,
-            v3_single_settings,
+            acoustic_single_settings,
             classic_batch_settings,
-            v3_batch_settings,
+            acoustic_batch_settings,
             index_file,
             sid,
             sid_batch,
@@ -2457,9 +2457,9 @@ def inference_tab():
         lambda: model_settings(None),
         outputs=[
             classic_single_settings,
-            v3_single_settings,
+            acoustic_single_settings,
             classic_batch_settings,
-            v3_batch_settings,
+            acoustic_batch_settings,
             index_file,
             sid,
             sid_batch,

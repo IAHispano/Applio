@@ -7,21 +7,24 @@ are a separate contract. This module does not route classic v1/v2 generators.
 """
 
 from dataclasses import asdict
+from numbers import Integral
 from pathlib import Path
+import os
+import tempfile
 
 import numpy as np
 import torch
 
-from rvc.configs.v3 import MelConfig, require_contract
-from rvc.realtime.v3_streaming import (
+from rvc.configs.neural import MelConfig, require_contract
+from rvc.realtime.streaming import (
     AcousticStream,
     FeatureStream,
     VocoderStream,
     coordinate_noise,
 )
-from rvc.train.extract.v3 import FeatureExtractor, read_audio
-from rvc.train.process.v3_checkpoints import construct, load_payload
-from rvc.train.v3.trainer import resolve_device
+from rvc.train.extract.features import FeatureExtractor, read_audio
+from rvc.train.process.checkpoints import construct, load_payload
+from rvc.train.acoustic.trainer import resolve_device
 
 
 class Converter:
@@ -72,6 +75,46 @@ class Converter:
             f["content_dim"],
         ):
             raise ValueError("Acoustic dimensions disagree with its feature contract")
+        # The modules own their loaded tensors. Retain package metadata for the
+        # UI/transport, not a second CPU copy of weights or resume-only state.
+        training_state = {
+            "weights",
+            "ema",
+            "optimizer",
+            "critic_optimizer",
+            "critics",
+            "scaler",
+            "rng",
+            "rank_rng",
+            "loss_history",
+        }
+        self.acoustic_package = {
+            k: value for k, value in a.items() if k not in training_state
+        }
+        self.vocoder_package = {
+            k: value for k, value in v.items() if k not in training_state
+        }
+
+    def validate_options(self, speaker=0, semitones=0, steps=0, seed=0, ordinary=False):
+        """Reject unsupported controls before expensive frontend/model work."""
+        if not isinstance(speaker, Integral) or not 0 <= speaker < len(
+            self.acoustic_package["speakers"]
+        ):
+            raise ValueError("Unknown target speaker; choose an integer speaker ID")
+        if not np.isfinite(semitones) or not -48 <= semitones <= 48:
+            raise ValueError("Pitch shift must be finite and within four octaves")
+        if not isinstance(seed, Integral) or not 0 <= seed < 2**64:
+            raise ValueError("Sampling seed must be an integer between 0 and 2^64 - 1")
+        if not isinstance(steps, Integral) or steps not in {0, 1, 2, 4, 8, 16, 32}:
+            raise ValueError("Unsupported refinement budget")
+        if steps and not bool(self.acoustic.flow_trained):
+            raise ValueError(
+                "This model supports predictor conversion only; choose 0 steps"
+            )
+        if 0 < steps < 8 and not ordinary and not bool(self.acoustic.shortcut_trained):
+            raise ValueError(
+                "This model requires 8 or more flow steps; shortcuts were not trained"
+            )
 
     def controls(self, features, speaker=0, semitones=0):
         """Move aligned features to device, select target voice and shift F0 in semitones."""
@@ -91,7 +134,14 @@ class Converter:
 
     @torch.inference_mode()
     def convert(self, audio, speaker=0, semitones=0, steps=4, seed=0, ordinary=False):
+        self.validate_options(speaker, semitones, steps, seed, ordinary)
         audio = np.asarray(audio, dtype=np.float32)
+        if audio.ndim != 1 or not len(audio) or not np.isfinite(audio).all():
+            raise ValueError("Conversion requires nonempty, finite mono audio")
+        # Exact digital silence contains no voice to convert. Avoid hallucinated
+        # speech and retain duration without changing quiet or mixed recordings.
+        if not np.any(audio):
+            return np.zeros_like(audio)
         if (
             self.extractor.config.profile == "bounded"
             and self.acoustic.config.causal
@@ -148,8 +198,44 @@ class Converter:
         audio = read_audio(source, self.mel_config.sample_rate)
         result = self.convert(audio, **options)
         destination.parent.mkdir(parents=True, exist_ok=True)
-        sf.write(str(destination), result, self.mel_config.sample_rate, subtype="FLOAT")
+        # An interrupted conversion must not leave a partial output recording.
+        descriptor, name = tempfile.mkstemp(dir=destination.parent, suffix=".wav")
+        os.close(descriptor)
+        temporary = Path(name)
+        try:
+            sf.write(
+                str(temporary), result, self.mel_config.sample_rate, subtype="FLOAT"
+            )
+            temporary.replace(destination)
+        finally:
+            temporary.unlink(missing_ok=True)
         return str(destination)
+
+    def convert_directory(self, source, destination, **options):
+        """Preflight all batch destinations before writing any output."""
+        source, destination = Path(source).resolve(), Path(destination).resolve()
+        if not source.is_dir() or destination.is_relative_to(source):
+            raise ValueError(
+                "Batch input must be a directory and output must be outside its tree"
+            )
+        files = sorted(
+            p
+            for p in source.rglob("*")
+            if p.is_file()
+            and p.suffix.lower() in {".wav", ".flac", ".ogg", ".aiff", ".aif"}
+        )
+        if not files:
+            raise ValueError("No supported batch inputs")
+        outputs = [
+            destination / p.relative_to(source).with_suffix(".wav") for p in files
+        ]
+        keys = [os.path.normcase(str(p)) for p in outputs]
+        if len(set(keys)) != len(keys):
+            raise ValueError(
+                "Batch inputs share an output name (for example voice.wav and voice.flac); rename them first"
+            )
+        self.validate_options(**options)
+        return [self.convert_file(p, out, **options) for p, out in zip(files, outputs)]
 
 
 class LiveConverter:
@@ -162,10 +248,7 @@ class LiveConverter:
             raise ValueError(
                 "This vocoder supports file conversion only; live conversion requires a streaming-compatible vocoder"
             )
-        if not 0 <= speaker < len(converter.acoustic_package["speakers"]):
-            raise ValueError("Unknown target speaker")
-        if not np.isfinite(semitones) or not -48 <= semitones <= 48 or seed < 0:
-            raise ValueError("Invalid live pitch shift or noise seed")
+        converter.validate_options(speaker, semitones, steps, seed, ordinary)
         self.converter, self.speaker, self.semitones = converter, speaker, semitones
         self.frontend = FeatureStream(converter.extractor)
         self.acoustic = AcousticStream(converter.acoustic, steps, seed, ordinary)
@@ -183,6 +266,9 @@ class LiveConverter:
     def push(self, audio, final=False):
         if self.closed:
             raise ValueError("Session is closed; reset before another recording")
+        audio = np.asarray(audio, dtype=np.float32)
+        if audio.ndim != 1 or not np.isfinite(audio).all():
+            raise ValueError("Live conversion requires finite mono audio packets")
         self.input_samples += len(audio)
         packets = self.frontend.push(audio, final)
         pieces = []

@@ -17,11 +17,11 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from threading import Event
 
-from rvc.configs.v3 import AcousticConfig, MelConfig, fingerprint, require_contract
-from rvc.train.extract.v3 import file_hash
-from rvc.train.process.v3_checkpoints import load_payload
-from rvc.train.process.v3_console import ConsoleProgress
-from rvc.train.v3.data import atomic_json, preprocess_audio
+from rvc.configs.neural import AcousticConfig, MelConfig, fingerprint, require_contract
+from rvc.train.extract.features import file_hash
+from rvc.train.process.checkpoints import load_payload
+from rvc.train.process.console import ConsoleProgress
+from rvc.train.acoustic.data import atomic_json, preprocess_audio
 
 
 class CampaignStopped(Exception):
@@ -116,9 +116,9 @@ def run_corpus(
     import torch
     import soundfile as sf
     import core
-    from rvc.train.v3.trainer import resolve_device, resolve_precision
+    from rvc.train.acoustic.trainer import resolve_device, resolve_precision
 
-    project = core.v3_project(model_name)
+    project = core.acoustic_project(model_name)
     root = Path(dataset_path).resolve()
     vocoder_path = Path(vocoder_path).resolve()
     if not root.is_dir() or project.resolve().is_relative_to(root):
@@ -354,7 +354,7 @@ def run_corpus(
                     "Extracting features: loading the content encoder and pitch model…",
                     flush=True,
                 )
-                core.run_v3_extract_script(
+                core.run_acoustic_extract_script(
                     model_name,
                     encoder_path=encoder_path,
                     device=str(target_device),
@@ -384,7 +384,7 @@ def run_corpus(
                             flush=True,
                         )
                         last_training_status = 0.0
-                        for item in core.run_v3_train_script(
+                        for item in core.run_acoustic_train_script(
                             model_name,
                             stage,
                             steps=budget - initial,
@@ -420,10 +420,10 @@ def run_corpus(
                     console.close()
                     base = directory / "best.pt"
                     export = project / f"{model_name}_{stage}.pth"
-                    core.run_v3_export_script(str(base), str(export))
+                    core.run_acoustic_export_script(str(base), str(export))
                     exports.append(str(export))
                     status("evaluation", stage=stage)
-                    core.run_v3_evaluate_script(
+                    core.run_acoustic_evaluate_script(
                         str(project / "data/manifest.json"),
                         str(export),
                         str(vocoder_path),
@@ -437,7 +437,7 @@ def run_corpus(
                         device=str(target_device),
                         seed=seed,
                     )
-                    from rvc.train.process.v3_tensorboard import sync_evaluation_audio
+                    from rvc.train.process.tensorboard import sync_evaluation_audio
 
                     sync_evaluation_audio(project)
                     gc.collect()

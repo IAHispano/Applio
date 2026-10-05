@@ -10,7 +10,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from rvc.configs.v3 import MelConfig
+from rvc.configs.neural import MelConfig
 
 
 class MelExtractor(nn.Module):

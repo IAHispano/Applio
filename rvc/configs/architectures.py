@@ -66,6 +66,32 @@ def model_architecture(path):
     return "v3" if inspect_model(path)["backend"] == BACKEND else "classic"
 
 
+def compatible_vocoders(voice, choices):
+    """Filter UI candidates by the complete mel contract, not file names."""
+    metadata = inspect_model(voice)
+    if metadata.get("backend") != BACKEND or metadata.get("kind") != "acoustic":
+        raise ValueError("Choose an Applio V3 acoustic voice model")
+    matches = []
+    for label, path in choices:
+        candidate = inspect_model(path)
+        if (
+            candidate.get("kind") == "vocoder"
+            and candidate.get("mel") == metadata["mel"]
+        ):
+            matches.append((label, path))
+    return matches
+
+
+def preferred_vocoder(voice, choices, current=None):
+    """Keep a compatible selection; auto-select only an unambiguous candidate."""
+    paths = [path for _, path in choices]
+    if current in paths:
+        return current
+    siblings = [path for path in paths if Path(path).parent == Path(voice).parent]
+    candidates = siblings or paths
+    return candidates[0] if len(candidates) == 1 else None
+
+
 def resolve_architecture(architecture, model=None):
     if architecture not in {"auto", "classic", "v3"}:
         raise ValueError("Architecture must be auto, classic or v3")
@@ -83,9 +109,15 @@ def discover_models(root="logs", architecture="v3", kind="acoustic"):
     models = []
     files = []
     for directory, folders, names in os.walk(root):
-        folders[:] = [name for name in folders if name != "_archive"]
+        # UI discovery must not open a worker's mutable best/last checkpoints
+        # while it is saving them. Advanced resume accepts explicit paths.
+        folders[:] = [
+            name for name in folders if name not in {"_archive", "checkpoints"}
+        ]
         files.extend(Path(directory) / name for name in names)
     for file in sorted(files):
+        if file.name in {"last.pt", "best.pt"}:
+            continue
         if file.suffix.lower() not in {".pth", ".pt", ".onnx"} or file.name.startswith(
             ("G_", "D_")
         ):

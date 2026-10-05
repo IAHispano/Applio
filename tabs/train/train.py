@@ -12,7 +12,7 @@ from core import (
     run_prerequisites_script,
 )
 from rvc.configs.config import get_gpu_info, get_number_of_gpus, max_vram_gpu
-from rvc.configs.v3 import DEFAULT_BATCH_SIZE
+from rvc.configs.neural import DEFAULT_BATCH_SIZE
 from rvc.lib.utils import format_title
 
 i18n = I18nAuto()
@@ -341,7 +341,7 @@ def auto_enable_checkpointing():
 
 # Train Tab
 def train_tab():
-    from tabs.train.v3 import (
+    from tabs.train.architecture import (
         export_options,
         extract_dataset,
         extraction_options,
@@ -357,7 +357,7 @@ def train_tab():
 
     def _preprocess_with_toast(progress=gr.Progress(), *args):
         gr.Info(i18n("Preprocessing dataset..."))
-        count = len(v3_prepare_options)
+        count = len(acoustic_prepare_options)
         mode, legacy, extra = args[0], args[1:-count], args[-count:]
         result = prepare_dataset(mode, legacy, extra, progress)
         if isinstance(result, str):
@@ -369,7 +369,7 @@ def train_tab():
 
     def _extract_with_toast(progress=gr.Progress(), *args):
         gr.Info(i18n("Extracting features..."))
-        count = len(v3_extract_options)
+        count = len(acoustic_extract_options)
         mode, legacy, extra = args[0], args[1:-count], args[-count:]
         result = extract_dataset(mode, legacy, extra, progress)
         if isinstance(result, str):
@@ -419,7 +419,7 @@ def train_tab():
                     interactive=True,
                     visible=True,
                 )
-        v3_workflow, v3_workflow_options = workflow_options()
+        acoustic_workflow, acoustic_workflow_options = workflow_options()
         with gr.Accordion(
             i18n("Advanced Settings"),
             open=False,
@@ -485,8 +485,8 @@ def train_tab():
                 )
         refresh = gr.Button(i18n("Refresh models and datasets"))
 
-        v3_preparation, v3_prepare_options = preparation_options()
-        v3_prepare_options.extend(v3_workflow_options[:2])
+        acoustic_preparation, acoustic_prepare_options = preparation_options()
+        acoustic_prepare_options.extend(acoustic_workflow_options[:2])
         with gr.Accordion(i18n("Advanced Settings"), open=False) as classic_preparation:
             cut_preprocess = gr.Radio(
                 label=i18n("Audio cutting"),
@@ -586,7 +586,7 @@ def train_tab():
                     chunk_len,
                     overlap_len,
                     normalization_mode,
-                    *v3_prepare_options,
+                    *acoustic_prepare_options,
                 ],
                 outputs=[preprocess_output_info],
                 concurrency_id="model_gpu",
@@ -595,8 +595,8 @@ def train_tab():
 
     # Extract section
     with gr.Accordion(i18n("Extract")):
-        v3_extraction, v3_extract_options = extraction_options()
-        v3_extract_options.extend(v3_workflow_options[:2])
+        acoustic_extraction, acoustic_extract_options = extraction_options()
+        acoustic_extract_options.extend(acoustic_workflow_options[:2])
 
         def pretrained_frontend(path):
             from rvc.configs.architectures import inspect_model
@@ -611,10 +611,10 @@ def train_tab():
             except (KeyError, ValueError, OSError):
                 return gr.update(), gr.update()
 
-        v3_workflow_options[1].change(
+        acoustic_workflow_options[1].change(
             pretrained_frontend,
-            v3_workflow_options[1],
-            [v3_extract_options[1], v3_extract_options[3]],
+            acoustic_workflow_options[1],
+            [acoustic_extract_options[1], acoustic_extract_options[3]],
         )
         with gr.Column() as classic_extraction:
             with gr.Row():
@@ -706,7 +706,7 @@ def train_tab():
                 embedder_model,
                 embedder_model_custom,
                 include_mutes,
-                *v3_extract_options,
+                *acoustic_extract_options,
             ],
             outputs=[extract_output_info],
             concurrency_id="model_gpu",
@@ -750,20 +750,20 @@ def train_tab():
             )
         with gr.Accordion(
             i18n("Advanced Settings"), open=False, visible=False
-        ) as v3_stage:
+        ) as acoustic_stage:
             stage_controls, selected_stage = stage_options()
             stage_controls.visible = False
-            v3_training, v3_train_options = training_options(
-                selected_stage, v3_workflow_options[0]
+            acoustic_training, acoustic_train_options = training_options(
+                selected_stage, acoustic_workflow_options[0]
             )
-        v3_train_options.extend(v3_workflow_options)
-        v3_workflow_options[0].change(
+        acoustic_train_options.extend(acoustic_workflow_options)
+        acoustic_workflow_options[0].change(
             lambda value: gr.update(visible=value == "advanced"),
-            v3_workflow_options[0],
+            acoustic_workflow_options[0],
             stage_controls,
         )
         architecture.change(
-            lambda value: gr.update(visible=value == "v3"), architecture, v3_workflow
+            lambda value: gr.update(visible=value == "v3"), architecture, acoustic_workflow
         )
         with gr.Accordion(i18n("Advanced Settings"), open=False) as classic_training:
             with gr.Row():
@@ -887,8 +887,8 @@ def train_tab():
             try:
                 yield from train_model(
                     mode,
-                    args[: -len(v3_train_options)],
-                    args[-len(v3_train_options) :],
+                    args[: -len(acoustic_train_options)],
+                    args[-len(acoustic_train_options) :],
                     request.session_hash,
                     progress=progress,
                 )
@@ -934,7 +934,7 @@ def train_tab():
 
     # Export Model section
     with gr.Accordion(i18n("Export Model"), open=False):
-        v3_export = export_options(model_name)
+        acoustic_export = export_options(model_name)
         with gr.Column() as classic_export:
             if os.getenv("COLAB_RELEASE_TAG"):
                 gr.Markdown(
@@ -1159,7 +1159,7 @@ def train_tab():
                         vocoder,
                         checkpointing,
                         shutdown_check,
-                        *v3_train_options,
+                        *acoustic_train_options,
                     ],
                     outputs=[train_output_info],
                     concurrency_id="model_gpu",
@@ -1235,12 +1235,12 @@ def train_tab():
         architecture,
         [
             classic_preparation,
-            v3_preparation,
+            acoustic_preparation,
             classic_extraction,
             classic_training,
-            v3_training,
+            acoustic_training,
             classic_export,
-            v3_export,
+            acoustic_export,
             vocoder,
             index_button,
             cpu_cores,
@@ -1250,8 +1250,8 @@ def train_tab():
             total_epoch,
             save_every_epoch,
             preprocess_button,
-            v3_extraction,
+            acoustic_extraction,
             training_guide,
-            v3_stage,
+            acoustic_stage,
         ],
     )

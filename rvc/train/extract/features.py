@@ -16,8 +16,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from rvc.configs.v3 import FeatureConfig, MelConfig
-from rvc.lib.algorithm.v3.spectral import MelExtractor
+from rvc.configs.neural import FeatureConfig, MelConfig
+from rvc.lib.algorithm.acoustic.spectral import MelExtractor
 
 
 def file_hash(path):

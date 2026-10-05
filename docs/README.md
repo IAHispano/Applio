@@ -43,22 +43,24 @@ V3 splits the problem at a measurable acoustic boundary: source content and pitc
 
 ## 2. Code map and implementation reading order
 
+Source modules are organized by responsibility rather than versioned filenames. Neural contracts live in `rvc/configs/neural.py`, algorithms in `rvc/lib/algorithm/acoustic`, training in `rvc/train/acoustic`, and shared preparation/export/evaluation utilities in their existing folders. Gradio adapters use `architecture.py`. Architecture IDs and checkpoint headers retain V3 compatibility.
+
 Start with the contracts, then follow one recording through preparation, staged learning and conversion. The core files contain shape, objective and state-lifetime docstrings beside their implementations.
 
 | Read in order | File | What to follow |
 |---|---|---|
-| 1 | [`rvc/configs/v3.py`](../rvc/configs/v3.py) | Physical mel semantics, frontend identity, network configuration and compatibility |
-| 2 | [`rvc/train/extract/v3.py`](../rvc/train/extract/v3.py) | Frozen content/pitch extraction and physical observation alignment |
-| 3 | [`rvc/train/v3/data.py`](../rvc/train/v3/data.py) | Recording split, immutable cache, frame crops and masks |
-| 4 | [`rvc/lib/algorithm/v3/acoustic.py`](../rvc/lib/algorithm/v3/acoustic.py) | `condition_input`, `predict`, `flow_loss`, `sample` and EMA |
-| 5 | [`rvc/lib/algorithm/v3/vocoder.py`](../rvc/lib/algorithm/v3/vocoder.py) | Harmonic prior, learned substreams, complex spectra and training critics |
-| 6 | [`rvc/lib/algorithm/v3/spectral.py`](../rvc/lib/algorithm/v3/spectral.py) | Acoustic mel transform versus invertible vocoder substream transform |
-| 7 | [`rvc/train/v3/trainer.py`](../rvc/train/v3/trainer.py) | Stage ownership, statistics, optimizer updates, validation and stopping |
-| 8 | [`rvc/train/process/v3_checkpoints.py`](../rvc/train/process/v3_checkpoints.py) | Exact resume versus EMA export and adapter merge |
-| 9 | [`rvc/infer/v3.py`](../rvc/infer/v3.py) | Package checks, source controls and file/live conversion |
-| 10 | [`rvc/realtime/v3_streaming.py`](../rvc/realtime/v3_streaming.py) | Per-step history, oscillator phase, absolute noise and synthesis halos |
+| 1 | [`rvc/configs/neural.py`](../rvc/configs/neural.py) | Physical mel semantics, frontend identity, network configuration and compatibility |
+| 2 | [`rvc/train/extract/features.py`](../rvc/train/extract/features.py) | Frozen content/pitch extraction and physical observation alignment |
+| 3 | [`rvc/train/acoustic/data.py`](../rvc/train/acoustic/data.py) | Recording split, immutable cache, frame crops and masks |
+| 4 | [`rvc/lib/algorithm/acoustic/model.py`](../rvc/lib/algorithm/acoustic/model.py) | `condition_input`, `predict`, `flow_loss`, `sample` and EMA |
+| 5 | [`rvc/lib/algorithm/acoustic/vocoder.py`](../rvc/lib/algorithm/acoustic/vocoder.py) | Harmonic prior, learned substreams, complex spectra and training critics |
+| 6 | [`rvc/lib/algorithm/acoustic/spectral.py`](../rvc/lib/algorithm/acoustic/spectral.py) | Acoustic mel transform versus invertible vocoder substream transform |
+| 7 | [`rvc/train/acoustic/trainer.py`](../rvc/train/acoustic/trainer.py) | Stage ownership, statistics, optimizer updates, validation and stopping |
+| 8 | [`rvc/train/process/checkpoints.py`](../rvc/train/process/checkpoints.py) | Exact resume versus EMA export and adapter merge |
+| 9 | [`rvc/infer/acoustic.py`](../rvc/infer/acoustic.py) | Package checks, source controls and file/live conversion |
+| 10 | [`rvc/realtime/streaming.py`](../rvc/realtime/streaming.py) | Per-step history, oscillator phase, absolute noise and synthesis halos |
 | 11 | [`rvc/configs/architectures.py`](../rvc/configs/architectures.py) | Metadata discovery and classic/V3 routing |
-| 12 | [`core.py`](../core.py), [`tabs/train/v3.py`](../tabs/train/v3.py), [`tabs/inference/v3.py`](../tabs/inference/v3.py) | CLI services and architecture-specific controls inside the existing UI |
+| 12 | [`core.py`](../core.py), [`tabs/train/architecture.py`](../tabs/train/architecture.py), [`tabs/inference/architecture.py`](../tabs/inference/architecture.py) | CLI services and architecture-specific controls inside the existing UI |
 
 ### Tensor and objective conventions
 
@@ -157,7 +159,7 @@ This small diagnostic suggests that a pretrained backend could remove the univer
 
 The tested BigVGAN generator has 122,152,752 parameters. On CPU with two threads, synthesis took approximately 3.9 seconds per second of audio; timings exclude model loading, feature extraction and acoustic prediction. GPU throughput, memory and streaming latency were not measured. Upstream convolutions use future context, and the generator consumes mel without a separate F0 input. Pitch-conditioned acoustics remain in V3, but pitch-shift and singing behavior need dedicated evaluation. The current streaming implementation depends on the native vocoder's state and halo semantics, so an external backend requires its own buffering contract.
 
-BigVGAN is available as an optional frozen file-inference backend. The package loader uses explicit `vocoder_backend` metadata; older native checkpoints retain their original behavior. The portable Torch graph reproduces the pinned upstream output exactly in a verified short-frame comparison. No custom CUDA compilation or additional dependency file is required. Upstream component notices are retained in `rvc/lib/algorithm/v3/bigvgan.LICENSE`.
+BigVGAN is available as an optional frozen file-inference backend. The package loader uses explicit `vocoder_backend` metadata; older native checkpoints retain their original behavior. The portable Torch graph reproduces the pinned upstream output exactly in a verified short-frame comparison. No custom CUDA compilation or additional dependency file is required. Upstream component notices are retained in `rvc/lib/algorithm/acoustic/bigvgan.LICENSE`.
 
 ```powershell
 # Download and package the pinned official pretrained release.
@@ -189,17 +191,17 @@ The Click interface is `python core.py`. Its existing `preprocess`, `extract`, `
 | Responsibility | Location |
 |---|---|
 | Architecture inspection/routing and model discovery | `rvc/configs/architectures.py` |
-| Typed contracts and shared default architecture | `rvc/configs/v3.py` |
+| Typed contracts and shared default architecture | `rvc/configs/neural.py` |
 | Acoustic predictor, residual flow, shortcuts, adapters | `rvc/lib/algorithm/v3/` |
 | Spectral vocoder, transforms and losses | `rvc/lib/algorithm/v3/` |
-| Content/F0/energy extraction | `rvc/train/extract/v3.py` |
+| Content/F0/energy extraction | `rvc/train/extract/features.py` |
 | Recording-disjoint datasets and staged training | `rvc/train/v3/` |
-| Checkpoints, EMA export and held-out evaluation | `rvc/train/process/v3_checkpoints.py`, `v3_evaluation.py` |
-| File/batch inference and live conversion | `rvc/infer/v3.py` |
-| Streaming and audio transports | `rvc/realtime/v3_streaming.py`, `v3_transport.py` |
-| Gradio controls | `tabs/train/v3.py`, `tabs/inference/v3.py` |
+| Checkpoints, EMA export and held-out evaluation | `rvc/train/process/checkpoints.py`, `evaluation.py` |
+| File/batch inference and live conversion | `rvc/infer/acoustic.py` |
+| Streaming and audio transports | `rvc/realtime/streaming.py`, `transport.py` |
+| Gradio controls | `tabs/train/architecture.py`, `tabs/inference/architecture.py` |
 | Gradio microphone controls and session routing | `tabs/realtime/realtime.py` |
-| Learning experiment and engineering verification | `rvc/lib/tools/v3_vctk.py`, `v3_verify.py` |
+| Learning experiment and engineering verification | `rvc/lib/tools/corpus_experiment.py`, `verify_architecture.py` |
 
 Artifacts use the existing `logs/<model-name>` convention: `data/manifest.json`, `checkpoints/<stage>/last.pt`, `best.pt`, `metrics.jsonl`, exported acoustic/vocoder `.pth` packages, and `evaluation/` WAV/CSV/JSON results. Binary weights, audio and datasets remain ignored by Git.
 
@@ -222,7 +224,7 @@ python core.py preprocess --architecture v3 --model-name vctk_v3 --dataset-path 
 python core.py extract --architecture v3 --model-name vctk_v3 --device cuda
 ```
 
-Omit speaker/cap options to prepare all supported recordings. Selection is deterministic under `--seed`; `--validation-fraction` defaults to 0.1 and `--segment-seconds` to 4. Preprocess runs on CPU and writes `data/audio_manifest.json` and resampled audio. Extract reads those saved segments, verifies their hashes and writes the train-ready `data/manifest.json`. Frontend settings such as `--encoder-path`, `--pitch-extractor`, `--profile` and `--device` belong to Extract. Matching feature caches are reused; changing the frontend does not require resampling again. Preparation output must stay outside the original dataset tree. Existing combined-preparation datasets and checkpoints remain supported; the internal `run_v3_prepare_script` service is retained for older experiment scripts.
+Omit speaker/cap options to prepare all supported recordings. Selection is deterministic under `--seed`; `--validation-fraction` defaults to 0.1 and `--segment-seconds` to 4. Preprocess runs on CPU and writes `data/audio_manifest.json` and resampled audio. Extract reads those saved segments, verifies their hashes and writes the train-ready `data/manifest.json`. Frontend settings such as `--encoder-path`, `--pitch-extractor`, `--profile` and `--device` belong to Extract. Matching feature caches are reused; changing the frontend does not require resampling again. Preparation output must stay outside the original dataset tree. Existing combined-preparation datasets and checkpoints remain supported; the internal `run_acoustic_prepare_script` service supports combined preparation when needed.
 
 The content encoder is local, pinned to official Applio resource revision `70ed563897504c756ec94067c12c902c4fd42025`. Default directory: `rvc/models/embedders/contentvec`. `core.py download-encoder` downloads the pinned configuration/weights without executing remote Python. Swift F0 is the default; RMVPE requires `--pitch-extractor rmvpe --pitch-path PATH`. `--profile bounded` matches the live frontend; `offline` is a separate contract and cannot be used for live streaming.
 
@@ -249,7 +251,7 @@ In **Model Settings**, choose **Fine-tune a pretrained model (LoRA)** for a new 
 
 Choose **Train from scratch** to train the predictor and vocoder automatically and export both packages. **Advanced stage training** exposes optional refiners and individual stages. The shared starting recipe uses 10,000 updates, batch size 2, checkpoint interval 1,000, automatic device/precision and LoRA rank 8. These are starting values, not established quality optima. Increase the duration for longer runs, or batch size when memory permits. Fine-tuning and complete scratch training use the duration as a target and resume saved progress. Use a new model name for each voice/dataset. **Live training progress** follows GUI, CLI and background jobs without starting another job.
 
-V3 uses one default architecture across hardware: the acoustic model has conditioning/predictor/refiner widths 256/256/384 and predictor/refiner depths 6/8; the vocoder uses 64 channels, 8 blocks and 4 streams. These defaults are defined in `rvc/configs/v3.py`. Existing checkpoints supply their saved architecture when loading base weights or resuming.
+V3 uses one default architecture across hardware: the acoustic model has conditioning/predictor/refiner widths 256/256/384 and predictor/refiner depths 6/8; the vocoder uses 64 channels, 8 blocks and 4 streams. These defaults are defined in `rvc/configs/neural.py`. Existing checkpoints supply their saved architecture when loading base weights or resuming.
 
 GUI and CLI training defaults are batch 2, crop 128, automatic precision, AdamW at 0.0002, EMA 0.999, checkpoint interval 1,000, and seed 1234. Automatic precision uses BF16 on supported CUDA GPUs, FP16 with gradient scaling on other CUDA GPUs, and FP32 on CPU. Explicit BF16/FP16/FP32 remain available in advanced settings. Classic CLI batch remains 8. There is no learning-rate scheduler.
 
@@ -429,7 +431,7 @@ The current software is ready for those training/evaluation runs. It is not yet 
 
 #### Training-only pitch counterexamples
 
-The optional preparation helper in `rvc/train/v3/augmentation.py` creates synthetic training views with F0 shifts of -12, -6, +6 and +12 semitones. WORLD estimates the source spectral envelope and aperiodicity, then resynthesizes with the changed F0. Content features stay from the original recording while the F0 controls and target mel change. This creates counterexamples to recovering source pitch from content instead of following the explicit control.
+The optional preparation helper in `rvc/train/acoustic/augmentation.py` creates synthetic training views with F0 shifts of -12, -6, +6 and +12 semitones. WORLD estimates the source spectral envelope and aperiodicity, then resynthesizes with the changed F0. Content features stay from the original recording while the F0 controls and target mel change. This creates counterexamples to recovering source pitch from content instead of following the explicit control.
 
 The helper writes a separate augmented manifest alongside the original cache, retains original recordings and features, and leaves recording-disjoint natural validation unchanged. Original and synthetic training populations have equal sampling weight. Transformation, synthesis version, seed and content hashes are recorded. WORLD is used only during this preparation; inference and adaptation use the selected universal vocoder, including frozen BigVGAN. Model architecture and existing package loading are unchanged. [PyWORLD documentation](https://github.com/JeremyCCHsu/Python-Wrapper-for-World-Vocoder) describes its analysis and synthesis components.
 
@@ -1109,7 +1111,7 @@ Implement a clean v3 backend boundary for data preparation, feature extraction, 
 
 Expose practical training presets, target adaptation, inference quality modes, correct progress/errors, evaluation samples and model-resource identities. CLI and UI call the same backend. Reject incompatible vocoders/features early with a useful error. Existing retrieval remains an optional, contract-checked experiment; the new base model is trained to work without an index, and arbitrary old indices are not reused.
 
-The implementation follows the existing repository structure: contracts and presets in `rvc/configs`, neural components in `rvc/lib/algorithm/v3`, extraction in `rvc/train/extract/v3.py`, staged training in `rvc/train/v3`, checkpoint/export/evaluation services in `rvc/train/process`, and execution in `rvc/infer` and `rvc/realtime`. Shared Gradio and Click adapters call those services. See the [integrated workflow](#workflow) for the complete file map.
+The implementation follows the existing repository structure: contracts and presets in `rvc/configs`, neural components in `rvc/lib/algorithm/v3`, extraction in `rvc/train/extract/features.py`, staged training in `rvc/train/v3`, checkpoint/export/evaluation services in `rvc/train/process`, and execution in `rvc/infer` and `rvc/realtime`. Shared Gradio and Click adapters call those services. See the [integrated workflow](#workflow) for the complete file map.
 
 <a id="design-implementation-stages-and-evidence"></a>
 
@@ -2291,6 +2293,33 @@ These sizing estimates preceded construction. The measured report above takes pr
 
 </details>
 
+
+### Fine-tuning and file conversion
+
+V3 training starts with **Fine-tune a pretrained model (LoRA)**. Select an exported acoustic voice model and a compatible universal vocoder in Model Settings, then use the familiar **Preprocess Dataset → Extract Features → Train Model** workflow. The selected acoustic model fixes the frontend and mel settings. Fine-tuning updates adapters and the new speaker embedding; it reuses the frozen vocoder. A matching vocoder is selected automatically when the choice is unambiguous, and an existing compatible choice is retained. The readiness message identifies a missing or incompatible pair before training. Scratch and individual-stage training remain explicit alternatives. Model menus omit mutable training checkpoints; advanced resume still accepts an explicit checkpoint path.
+
+Inference filters vocoders using the voice model's complete mel settings, including sample rate, FFT, mel bands and frequency bounds. Predictor-only models offer zero refinement steps. Few-step shortcuts require trained shortcut weights; ordinary flow is an advanced reference option. RMVPE checkpoint controls appear only for models that require RMVPE. BigVGAN supports file conversion; it does not provide a live streaming vocoder.
+
+V3 conversion rejects empty/nonfinite audio, invalid speakers, negative seeds and unsupported refinement settings before running the frontend. Exact digital silence produces silence of the same duration. Quiet speech and mixed speech/silence retain the normal model path. Outputs are written to a temporary WAV and published after conversion completes. Batch conversion preserves relative folders and rejects colliding output names, such as `voice.wav` and `voice.flac`, before writing any files. After loading models, inference retains package metadata and releases serialized weight/optimizer copies. Long-file memory use depends on the backend: native bounded causal models use retained streaming state, while BigVGAN file synthesis processes the complete mel sequence.
+
+### Fixed evaluation after training
+
+Prepare a repeatable plan from the completed audio manifest without loading models or changing training data:
+
+```console
+python core.py prepare-evaluation --audio-manifest logs/my_model/data/audio_manifest.json --output-path logs/evaluation_plans/my_model.json
+```
+
+The default selects two validation segments per speaker in the same round-robin order as the shared evaluator. The plan records original recording hashes, offsets, target speakers, seed, proposed budgets and the evaluator's limit. After extraction and training finish, use `core.py evaluate` with that limit and seed. Use only budgets supported by the exported acoustic model. Keep the same voice export and frozen vocoder throughout a refinement comparison; include the reference-mel vocoder diagnostic.
+
+```console
+python core.py evaluate --manifest logs/my_model/data/manifest.json --pth-path logs/my_model/my_model_acoustic.pth --vocoder-path logs/pretrained/vocoder.pth --output-dir logs/my_model/evaluation/fixed --budget 0 --limit 218 --seed 1234
+python core.py summarize-evaluation --report-path logs/my_model/evaluation/fixed/report.json --output-path logs/my_model/evaluation/fixed/paired_summary.json
+```
+
+Replace `218` with the limit printed for your dataset. Add repeated `--budget` options to compare refinements. Summaries require exactly matching cases across budgets and report improvements, regressions and speaker-level bootstrap intervals. The budget with the lowest waveform mel error is a reconstruction result, not a recommendation about perceptual quality. Timing retains the evaluator's original scope; it excludes the frontend and file I/O.
+
+Complete the protocol with unseen-source conversion, pitch shifts, speech/silence transitions, a 30-second file and blinded listening. Assess intelligibility against human transcripts where available; otherwise label ASR agreement as a diagnostic rather than reference WER. Compare target and source speaker similarity using independent target recordings. Check voiced pitch and voicing errors, and verify model/vocoder hashes before and after evaluation. These checks are separate from training and do not automatically start another experiment.
 
 ### Training dashboard and audio comparisons
 

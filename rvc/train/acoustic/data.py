@@ -19,8 +19,8 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from rvc.configs.v3 import MelConfig, fingerprint
-from rvc.train.extract.v3 import file_hash, read_audio
+from rvc.configs.neural import MelConfig, fingerprint
+from rvc.train.extract.features import file_hash, read_audio
 
 
 def atomic_json(path, value):
@@ -439,7 +439,7 @@ def extract_preprocessed(audio_manifest, extractor, progress=None):
     combined manifests remain readable by the dataset and training code.
     """
     import soundfile as sf
-    from rvc.configs.v3 import require_contract
+    from rvc.configs.neural import require_contract
 
     path = Path(audio_manifest)
     audio = json.loads(path.read_text(encoding="utf-8"))

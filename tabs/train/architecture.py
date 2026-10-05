@@ -65,12 +65,9 @@ def workflow_options():
             lambda mode: (
                 gr.update(visible=mode == "finetune"),
                 gr.update(visible=mode == "finetune"),
-                "Fine-tuning trains only LoRA adapters and the new speaker embedding."
-                if mode == "finetune"
-                else "",
             ),
             workflow,
-            [pretrained, refresh, status],
+            [pretrained, refresh],
         )
         refresh.click(
             lambda: (
@@ -80,34 +77,39 @@ def workflow_options():
             outputs=[base, vocoder],
         )
 
-        def compatible_vocoders(path):
-            from rvc.configs.architectures import inspect_model
+        def select_vocoders(path, current):
+            from rvc.configs.architectures import compatible_vocoders, preferred_vocoder
 
             if not path:
                 return gr.update(choices=pretrained_choices("vocoder"), value=None)
             try:
-                voice = inspect_model(path)
-                if voice.get("kind") != "acoustic":
-                    raise ValueError("Choose a V3 acoustic voice model")
-                choices = [
-                    (label, value)
-                    for label, value in pretrained_choices("vocoder")
-                    if inspect_model(value)["mel"] == voice["mel"]
-                ]
-                sibling = next(
-                    (
-                        value
-                        for _, value in choices
-                        if Path(value).parent == Path(path).parent
-                    ),
-                    None,
+                choices = compatible_vocoders(path, pretrained_choices("vocoder"))
+                return gr.update(
+                    choices=choices, value=preferred_vocoder(path, choices, current)
                 )
-                return gr.update(choices=choices, value=sibling)
-            except (ValueError, OSError) as error:
+            except (ValueError, OSError, KeyError) as error:
                 gr.Warning(str(error))
                 return gr.update(choices=[], value=None)
 
-        base.change(compatible_vocoders, base, vocoder)
+        def pair_status(mode, voice, wave):
+            if mode != "finetune":
+                return ""
+            if not voice:
+                return "Choose a pretrained V3 voice model to begin."
+            if not wave:
+                return "Choose a compatible universal vocoder. Only the voice model will be fine-tuned."
+            try:
+                from rvc.configs.architectures import compatible_vocoders
+
+                if not compatible_vocoders(voice, [("selected", wave)]):
+                    return "These models have different mel settings. Choose a compatible vocoder."
+            except (ValueError, OSError, KeyError) as error:
+                return str(error)
+            return "Ready: preprocess your recordings, extract features, then Train Model. Training fits LoRA adapters and your speaker embedding; the vocoder stays frozen."
+
+        base.change(select_vocoders, [base, vocoder], vocoder)
+        for control in (workflow, base, vocoder):
+            control.change(pair_status, [workflow, base, vocoder], status)
     return settings, [workflow, base, vocoder]
 
 
@@ -214,7 +216,7 @@ def prepare_dataset(mode, legacy_args, options, progress=None):
         raise ValueError(
             "Choose a pretrained voice model in Model Settings before preprocessing"
         )
-    path = core.run_v3_preprocess_script(
+    path = core.run_acoustic_preprocess_script(
         legacy_args[0],
         legacy_args[1],
         validation_fraction=float(fraction),
@@ -237,7 +239,7 @@ def extract_dataset(mode, legacy_args, options, progress=None):
         raise ValueError(
             "Choose a pretrained voice model in Model Settings before extracting features"
         )
-    path = core.run_v3_extract_script(
+    path = core.run_acoustic_extract_script(
         legacy_args[0],
         encoder,
         pitch,
@@ -430,10 +432,10 @@ def train_model(mode, legacy_args, options, session_hash, progress=None):
         parts = (4 if stage == "all_refiners" else 2) if pipeline else 1
         stopped = False
         trainer = (
-            core.run_v3_finetune_script
+            core.run_acoustic_finetune_script
             if stage == "finetune"
             else (
-                core.run_v3_train_all_script if pipeline else core.run_v3_train_script
+                core.run_acoustic_train_all_script if pipeline else core.run_acoustic_train_script
             )
         )
         arguments = (
@@ -583,7 +585,7 @@ def training_progress(name, stage="auto"):
     """Read existing job artifacts; watching never starts or interrupts training."""
     if not name:
         return "Select a training run to monitor.", ""
-    project = core.v3_project(name)
+    project = core.acoustic_project(name)
     files = list((project / "checkpoints").glob("*/metrics.jsonl"))
     if stage != "auto":
         files = [path for path in files if path.parent.name == stage]
@@ -751,11 +753,11 @@ def export_options(model_name):
         result = gr.File(label="Exported model", interactive=False)
 
         def export_callback(name, checkpoint, destination):
-            from rvc.train.process.v3_checkpoints import load_payload
+            from rvc.train.process.checkpoints import load_payload
 
             kind = load_payload(checkpoint)["kind"]
-            output = destination or str(core.v3_project(name) / f"{name}_{kind}.pth")
-            return core.run_v3_export_script(checkpoint, output)
+            output = destination or str(core.acoustic_project(name) / f"{name}_{kind}.pth")
+            return core.run_acoustic_export_script(checkpoint, output)
 
         export.click(
             export_callback,
@@ -778,8 +780,8 @@ def export_options(model_name):
             report = gr.Textbox(label="Evaluation report", lines=8)
 
             def evaluate_callback(name, acoustic, vocoder, budgets, limit, device):
-                project = core.v3_project(name)
-                result = core.run_v3_evaluate_script(
+                project = core.acoustic_project(name)
+                result = core.run_acoustic_evaluate_script(
                     str(project / "data/manifest.json"),
                     acoustic,
                     vocoder,

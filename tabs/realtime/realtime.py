@@ -551,7 +551,7 @@ def start_realtime(
         )
         return
 
-    print(f"Starting Realtime...")
+    print("Starting Realtime...")
     yield i18n("Starting Realtime..."), interactive_false, interactive_visible
 
     sid = int(sid) if sid is not None else 0
@@ -568,7 +568,7 @@ def start_realtime(
             output_devices[monitor_output_device] if use_monitor_device else None
         )
     except (ValueError, IndexError):
-        print(f"Error: incorrectly formatted audio device.")
+        print("Error: incorrectly formatted audio device.")
         yield (
             i18n("Incorrectly formatted audio device. Stopping."),
             interactive_true,
@@ -703,7 +703,7 @@ def start_realtime(
     #         last_report = elapsed
     #         print(f"Loading model... ({elapsed}s)")
 
-    print(f"Realtime is starting!")
+    print("Realtime is starting!")
     yield i18n("Realtime is starting!"), interactive_false, interactive_visible
 
     warmup_total = 0
@@ -832,7 +832,7 @@ def stop_realtime():
         audio_manager = callbacks = None
         time.sleep(0.1)
 
-        print(f"Realtime stopped.")
+        print("Realtime stopped.")
         return (
             i18n("Realtime stopped."),
             interactive_true,
@@ -954,7 +954,7 @@ def soundfile_record_audio(
     return "Start", None
 
 
-def v3_microphone(
+def acoustic_microphone(
     chunk, session, terms, model, vocoder, encoder, pitch_path,
     steps, seed, device, speaker, pitch,
 ):
@@ -966,8 +966,8 @@ def v3_microphone(
     if session is None:
         if not model or model_architecture(model) != "v3" or not vocoder:
             raise gr.Error("Choose a V3 voice model and matching universal vocoder.")
-        from rvc.infer.v3 import Converter
-        from rvc.realtime.v3_transport import BrowserSession
+        from rvc.infer.acoustic import Converter
+        from rvc.realtime.transport import BrowserSession
 
         try:
             converter = Converter(model, vocoder, encoder, pitch_path or None, device)
@@ -983,7 +983,7 @@ def v3_microphone(
         raise gr.Error(str(error)) from error
 
 
-def finish_v3_microphone(session):
+def finish_acoustic_microphone(session):
     """Flush the recording's resampler/model tail, then release session state."""
     if session is None:
         return None, None
@@ -1276,31 +1276,31 @@ def realtime_tab():
                     )
                 with gr.Accordion(
                     i18n("Advanced Settings"), open=False, visible=False
-                ) as v3_advanced:
-                    from tabs.inference.v3 import inference_options
+                ) as acoustic_advanced:
+                    from tabs.inference.architecture import inference_options
 
-                    v3_settings, v3_controls = inference_options()
+                    acoustic_settings, acoustic_controls = inference_options()
                     (
-                        v3_vocoder, v3_encoder, v3_pitch_path,
-                        v3_steps, v3_seed, v3_device, v3_ordinary,
-                    ) = v3_controls
-                    v3_settings.visible = True
-                    v3_ordinary.visible = False
-                    with v3_settings:
+                        acoustic_vocoder, acoustic_encoder, acoustic_pitch_path,
+                        acoustic_steps, acoustic_seed, acoustic_device, acoustic_ordinary,
+                    ) = acoustic_controls
+                    acoustic_settings.visible = True
+                    acoustic_ordinary.visible = False
+                    with acoustic_settings:
                         gr.Markdown(
                             "Record your microphone here for V3 conversion. Use headphones. "
                             "Stop recording before changing model settings. "
                             "Output plays through your browser."
                         )
-                        v3_input = gr.Audio(
+                        acoustic_input = gr.Audio(
                             sources=["microphone"], type="numpy", streaming=True,
                             label="Microphone",
                         )
-                        v3_output = gr.Audio(
+                        acoustic_output = gr.Audio(
                             streaming=True, autoplay=True, format="wav",
                             label="Converted microphone", interactive=False,
                         )
-                        v3_session = gr.State(None)
+                        acoustic_session = gr.State(None)
                 with gr.Column() as classic_settings:
                     gr.Markdown(value=i18n("## Advanced Settings"))
                     autotune = gr.Checkbox(
@@ -1796,28 +1796,28 @@ def realtime_tab():
                     interactive=True,
                 )
 
-        v3_input.stream(
-            v3_microphone,
+        acoustic_input.stream(
+            acoustic_microphone,
             inputs=[
-                v3_input, v3_session, terms_checkbox, model_file, v3_vocoder,
-                v3_encoder, v3_pitch_path, v3_steps, v3_seed, v3_device, sid, pitch,
+                acoustic_input, acoustic_session, terms_checkbox, model_file, acoustic_vocoder,
+                acoustic_encoder, acoustic_pitch_path, acoustic_steps, acoustic_seed, acoustic_device, sid, pitch,
             ],
-            outputs=[v3_output, v3_session],
+            outputs=[acoustic_output, acoustic_session],
             stream_every=0.5,
             time_limit=300,
             concurrency_limit=1,
             concurrency_id="v3-microphone",
         )
-        v3_input.stop_recording(
-            finish_v3_microphone,
-            inputs=[v3_session],
-            outputs=[v3_output, v3_session],
+        acoustic_input.stop_recording(
+            finish_acoustic_microphone,
+            inputs=[acoustic_session],
+            outputs=[acoustic_output, acoustic_session],
             concurrency_limit=1,
             concurrency_id="v3-microphone",
         )
         architecture_outputs = [
-            v3_advanced, classic_settings, start_button, stop_button,
-            index_file, v3_session, sid,
+            acoustic_advanced, classic_settings, start_button, stop_button,
+            index_file, acoustic_session, sid,
         ]
         model_file.change(
             realtime_model_settings, inputs=[model_file], outputs=architecture_outputs,

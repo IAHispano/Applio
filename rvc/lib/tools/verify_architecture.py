@@ -9,13 +9,13 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from rvc.configs.v3 import DEFAULT_BATCH_SIZE, AcousticConfig, VocoderConfig
-from rvc.infer.v3 import Converter, LiveConverter
-from rvc.realtime.v3_streaming import FeatureStream
-from rvc.train.extract.v3 import FeatureExtractor
-from rvc.train.process.v3_checkpoints import export_checkpoint
-from rvc.train.v3.data import atomic_json, prepare
-from rvc.train.v3.trainer import resolve_device, train
+from rvc.configs.neural import DEFAULT_BATCH_SIZE, AcousticConfig, VocoderConfig
+from rvc.infer.acoustic import Converter, LiveConverter
+from rvc.realtime.streaming import FeatureStream
+from rvc.train.extract.features import FeatureExtractor
+from rvc.train.process.checkpoints import export_checkpoint
+from rvc.train.acoustic.data import atomic_json, prepare
+from rvc.train.acoustic.trainer import resolve_device, train
 
 
 def verify(encoder, output="logs/v3-verification", device="auto", full_size=True):

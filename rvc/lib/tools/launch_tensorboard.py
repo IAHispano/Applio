@@ -65,7 +65,7 @@ def get_tb_url():
 
 
 def _follow_audio(project):
-    from rvc.train.process.v3_tensorboard import sync_evaluation_audio
+    from rvc.train.process.tensorboard import sync_evaluation_audio
 
     while True:
         # A partially written evaluation is retried after its report is complete.
@@ -85,7 +85,7 @@ def launch_tensorboard(run=None):
                 return "Error: No training events yet."
             project = project_path(runs[0])
             if project not in _servers:
-                from rvc.train.process.v3_tensorboard import sync_evaluation_audio
+                from rvc.train.process.tensorboard import sync_evaluation_audio
 
                 sync_evaluation_audio(project)
                 tb = program.TensorBoard()

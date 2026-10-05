@@ -11,9 +11,9 @@ from pathlib import Path
 import torch
 
 from rvc.configs.architectures import BACKEND, FORMAT_VERSION
-from rvc.configs.v3 import MelConfig
-from rvc.lib.algorithm.v3.bigvgan import AttrDict, BigVGAN, BigVGANVocoder
-from rvc.train.process.v3_checkpoints import atomic_save
+from rvc.configs.neural import MelConfig
+from rvc.lib.algorithm.acoustic.bigvgan import AttrDict, BigVGAN, BigVGANVocoder
+from rvc.train.process.checkpoints import atomic_save
 
 BIGVGAN_ID = "nvidia/bigvgan_v2_44khz_128band_512x"
 BIGVGAN_REVISION = "95a9d1dcb12906c03edd938d77b9333d6ded7dfb"
@@ -22,7 +22,7 @@ BIGVGAN_REVISION = "95a9d1dcb12906c03edd938d77b9333d6ded7dfb"
 def import_bigvgan(destination, checkpoint=None, configuration=None):
     """Import local official weights, or download the pinned compatible release."""
     from huggingface_hub import hf_hub_download
-    from rvc.train.extract.v3 import file_hash
+    from rvc.train.extract.features import file_hash
 
     if bool(checkpoint) != bool(configuration):
         raise ValueError("Provide both the generator checkpoint and its config.json")

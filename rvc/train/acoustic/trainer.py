@@ -21,22 +21,22 @@ import numpy as np
 import torch
 from torch import nn
 
-from rvc.configs.v3 import (
+from rvc.configs.neural import (
     DEFAULT_BATCH_SIZE,
     AcousticConfig,
     VocoderConfig,
     require_contract,
 )
-from rvc.lib.algorithm.v3.acoustic import EMA, AcousticModel, masked_mean
-from rvc.lib.algorithm.v3.adapters import install_adapters
-from rvc.lib.algorithm.v3.spectral import MelExtractor, spectral_loss
-from rvc.lib.algorithm.v3.vocoder import (
+from rvc.lib.algorithm.acoustic.model import EMA, AcousticModel, masked_mean
+from rvc.lib.algorithm.acoustic.adapters import install_adapters
+from rvc.lib.algorithm.acoustic.spectral import MelExtractor, spectral_loss
+from rvc.lib.algorithm.acoustic.vocoder import (
     SpectralVocoder,
     WaveformCritics,
     discriminator_loss,
     generator_loss,
 )
-from rvc.train.process.v3_checkpoints import (
+from rvc.train.process.checkpoints import (
     atomic_save,
     construct,
     header,
@@ -44,9 +44,9 @@ from rvc.train.process.v3_checkpoints import (
     restore_rng,
     rng_state,
 )
-from rvc.train.process.v3_tensorboard import log_training
-from rvc.train.v3.data import AcousticDataset, collate, condition_batch
-from rvc.train.v3.distributed import TrainingGroup
+from rvc.train.process.tensorboard import log_training
+from rvc.train.acoustic.data import AcousticDataset, collate, condition_batch
+from rvc.train.acoustic.distributed import TrainingGroup
 
 
 def to_device(batch, device):
@@ -200,7 +200,7 @@ def validate_vocoder(model, dataset, extractor, device, listening_output=None):
     previous_mode = model.training
     model.eval()
     losses = []
-    from rvc.realtime.v3_streaming import coordinate_noise
+    from rvc.realtime.streaming import coordinate_noise
 
     for i in range(len(dataset)):
         batch = to_device(collate([dataset[i]]), device)
