@@ -19,12 +19,16 @@ torchcrepe==0.0.24
 torchfcpe==0.0.4
 einops==0.8.2
 transformers==5.13.1
+huggingface-hub==1.16.1
 swift-f0==0.3.0
 onnxruntime-gpu==1.26.0
 
 matplotlib==3.11.0
 tensorboard==2.21.0
 gradio==6.20.0
+fastapi==0.142.2
+uvicorn==0.54.0
+websockets==16.1.1
 
 edge-tts==7.2.8
 pypresence==4.6.2

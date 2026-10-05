@@ -1,7 +1,0 @@
-# Shared application stack plus optional experimental transports.
-# Install the Torch build for your device before these requirements.
--r requirements.txt
-huggingface-hub==1.16.1
-fastapi==0.142.2
-uvicorn==0.54.0
-websockets==16.1.1
