@@ -40,7 +40,6 @@
     "finetune_time_stretch_scale": 0.2,
     "bucket_batches": true,
     "bucket_max_frames": 800,
-    "bucket_max_items": 64,
     "aux_mel_weight": 0.2,
     "shortcut_share": 0.125,
     "shortcut_ema_decay": 0.999,

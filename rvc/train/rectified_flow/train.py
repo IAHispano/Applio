@@ -370,7 +370,7 @@ def get_loaders(config, entries, holdout_entries, experiment_dir, rank, n_gpus):
             batch_sampler=BucketBatchSampler(
                 train_items.get_lengths(),
                 batch_size * segment_frames,
-                flow_config.get("bucket_max_items", 64),
+                batch_size,
                 flow_config["seed"],
                 rank,
                 n_gpus,
@@ -500,7 +500,7 @@ def run(
     if rank == 0 and isinstance(train_loader.batch_sampler, BucketBatchSampler):
         segment_frames = flow_config["segment_frames"]
         print(
-            f"Batches of whole clips, each up to {batch_size * segment_frames} mel frames (batch size {batch_size} x {segment_frames} frames): {len(train_loader.dataset)} items in {len(train_loader)} steps per epoch."
+            f"Batches of up to {batch_size} whole clips and {batch_size * segment_frames} mel frames: {len(train_loader.dataset)} items in {len(train_loader)} steps per epoch."
         )
 
     checkpoint = None
