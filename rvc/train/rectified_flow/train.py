@@ -497,6 +497,11 @@ def run(
     except Exception as e:
         print(f"Could not load model info file: {e}. Using defaults.")
     print(f"Dataset has {n_speakers} speakers.")
+    if rank == 0 and isinstance(train_loader.batch_sampler, BucketBatchSampler):
+        segment_frames = flow_config["segment_frames"]
+        print(
+            f"Batches of whole clips, each up to {batch_size * segment_frames} mel frames (batch size {batch_size} x {segment_frames} frames): {len(train_loader.dataset)} items in {len(train_loader)} steps per epoch."
+        )
 
     checkpoint = None
     checkpoint_path = latest_checkpoint_path(experiment_dir, "F_*.pth")
