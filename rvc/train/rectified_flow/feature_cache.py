@@ -237,6 +237,12 @@ class CachedFlowLoader(torch.utils.data.Dataset):
         frames = np.array([item[1] for item in self.items])
         return np.minimum(frames, self.max_frames)
 
+    def get_clips(self):
+        """
+        Get the clip each item was made from.
+        """
+        return np.array([item[0] for item in self.items])
+
     def __getitem__(self, number):
         clip, frames, key_shift, speed = self.items[number]
         length = min(frames, self.max_frames)
@@ -265,10 +271,12 @@ class BucketBatchSampler(torch.utils.data.Sampler):
     """
     Batch sampler of items of similar length, each batch within `max_frames`
     padded mel frames and `max_items` items. The batches are formed anew every
-    epoch, always the same number of them, and dealt between the GPUs.
+    epoch, always the same number of them, and dealt between the GPUs. An
+    epoch reads every clip once, as it is or as one of its augmented copies.
 
     Args:
         lengths (np.ndarray): Number of mel frames of each item.
+        clips (np.ndarray): The clip each item was made from.
         max_frames (int): Number of padded mel frames of a batch.
         max_items (int): Number of items of a batch.
         seed (int, optional): Seed of the draw. Defaults to 1234.
@@ -276,8 +284,11 @@ class BucketBatchSampler(torch.utils.data.Sampler):
         n_gpus (int, optional): Number of GPUs. Defaults to 1.
     """
 
-    def __init__(self, lengths, max_frames, max_items, seed=1234, rank=0, n_gpus=1):
+    def __init__(
+        self, lengths, clips, max_frames, max_items, seed=1234, rank=0, n_gpus=1
+    ):
         self.lengths = np.asarray(lengths)
+        self.clips = np.asarray(clips)
         self.max_frames = int(max_frames)
         self.max_items = int(max_items)
         self.seed = int(seed)
@@ -292,6 +303,9 @@ class BucketBatchSampler(torch.utils.data.Sampler):
 
     def form_batches(self, rng):
         order = rng.permutation(len(self.lengths))
+        # One item of each clip, the first of them in the shuffled order
+        order = order[np.unique(self.clips[order], return_index=True)[1]]
+        order = rng.permutation(order)
         grid = self.lengths[order] // LENGTH_GRID
         order = order[np.argsort(-grid, kind="stable")]
         batches, batch, longest = [], [], 0

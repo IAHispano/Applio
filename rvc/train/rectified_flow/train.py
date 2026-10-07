@@ -136,8 +136,10 @@ if "flow" not in config:
 if not feature_cache:
     config["flow"]["feature_cache"] = False
 
-# A fine-tune shifts and stretches less of the dataset than a pretrain
+# A fine-tune shifts and stretches less of the dataset than a pretrain, and
+# trains on all of it, with no clips held out
 if pretrain not in ("", "None"):
+    config["flow"]["holdout_clips"] = 0
     for key in finetune_augmentation:
         if "finetune_" + key in config["flow"]:
             config["flow"][key] = config["flow"]["finetune_" + key]
@@ -369,6 +371,7 @@ def get_loaders(config, entries, holdout_entries, experiment_dir, rank, n_gpus):
             train_items,
             batch_sampler=BucketBatchSampler(
                 train_items.get_lengths(),
+                train_items.get_clips(),
                 batch_size * segment_frames,
                 batch_size,
                 flow_config["seed"],
@@ -500,7 +503,7 @@ def run(
     if rank == 0 and isinstance(train_loader.batch_sampler, BucketBatchSampler):
         segment_frames = flow_config["segment_frames"]
         print(
-            f"Batches of up to {batch_size} whole clips and {batch_size * segment_frames} mel frames: {len(train_loader.dataset)} items in {len(train_loader)} steps per epoch."
+            f"Batches of up to {batch_size} whole clips and {batch_size * segment_frames} mel frames: {len(entries)} clips in {len(train_loader)} steps per epoch."
         )
 
     checkpoint = None
