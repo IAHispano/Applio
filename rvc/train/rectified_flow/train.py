@@ -222,6 +222,16 @@ def main():
     else:
         print("No wav file found.")
 
+    # A pretrain does not fine-tune to more than one speaker
+    if pretrain not in ("", "None"):
+        rows = [row for row in load_filepaths_and_text(training_files) if len(row) >= 5]
+        n_speakers = max(int(row[4]) for row in rows) + 1
+        if n_speakers > 1:
+            print(
+                f"Error: Rectified Flow can not fine-tune a pretrained model on {n_speakers} speakers. Use a dataset of one speaker, or train without a pretrained model."
+            )
+            os._exit(1)
+
     if torch.cuda.is_available():
         device = torch.device("cuda")
         gpus = [int(item) for item in gpus.split("-")]
