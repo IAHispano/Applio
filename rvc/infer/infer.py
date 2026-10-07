@@ -273,7 +273,16 @@ class VoiceConverter:
             self.net_g.set_vocoder(kwargs.get("flow_vocoder", ""))
             flow_options = {
                 name: kwargs[f"flow_{name}"]
-                for name in ("steps", "cfg_scale", "content_guidance")
+                for name in (
+                    "steps",
+                    "cfg_scale",
+                    "content_guidance",
+                    "sampler",
+                    "guidance_rescale",
+                    "guidance_until",
+                    "formant_shift",
+                    "tension_strength",
+                )
                 if f"flow_{name}" in kwargs
             }
             flow_sr = self.net_g.data["sample_rate"]

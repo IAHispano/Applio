@@ -574,7 +574,70 @@ def rectified_flow_settings():
                 value=0.1,
                 interactive=True,
             )
-    return [vocoder, steps, cfg_scale, content_guidance]
+        with gr.Row():
+            sampler = gr.Radio(
+                label=i18n("Sampler"),
+                info=i18n(
+                    "Euler takes one pass of the model per step. Heun takes two and is more accurate at the same cost from 8 steps on."
+                ),
+                choices=["euler", "heun"],
+                value="euler",
+                interactive=True,
+            )
+            guidance_rescale = gr.Slider(
+                minimum=0.0,
+                maximum=1.0,
+                step=0.05,
+                label=i18n("Guidance Rescale"),
+                info=i18n(
+                    "Pulls the loudness of the guided output back to the unguided one, against a harsh or saturated sound."
+                ),
+                value=0.7,
+                interactive=True,
+            )
+            guidance_until = gr.Slider(
+                minimum=0.1,
+                maximum=1.0,
+                step=0.05,
+                label=i18n("Guidance Until"),
+                info=i18n(
+                    "Share of the sampling the guidances apply to. Lower is faster, as the last steps then run without them."
+                ),
+                value=1.0,
+                interactive=True,
+            )
+        with gr.Row():
+            formant_shift = gr.Slider(
+                minimum=-5.0,
+                maximum=5.0,
+                step=0.1,
+                label=i18n("Formant Shift"),
+                info=i18n("Shift of the formants in semitones, apart from the pitch."),
+                value=0.0,
+                interactive=True,
+            )
+            tension_strength = gr.Slider(
+                minimum=0.0,
+                maximum=1.0,
+                step=0.05,
+                label=i18n("Tension"),
+                info=i18n(
+                    "How much of the tension of the input, pressed or soft, carries over. 0 leaves the voice at its own."
+                ),
+                value=1.0,
+                interactive=True,
+            )
+    return [
+        vocoder,
+        steps,
+        cfg_scale,
+        content_guidance,
+        sampler,
+        guidance_rescale,
+        guidance_until,
+        formant_shift,
+        tension_strength,
+    ]
 
 
 def inference_tab():

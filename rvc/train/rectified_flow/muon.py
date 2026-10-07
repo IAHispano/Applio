@@ -3,30 +3,56 @@ from torch import nn
 
 # Weights with fewer inputs per output than this stay on AdamW.
 MIN_FAN_IN = 16
+# Step at which the Gram iteration is rebuilt from the matrix.
+GRAM_RESTART = 2
 
 
-def orthogonalize(g: torch.Tensor, steps: int = 5):
+def orthogonalize(g: torch.Tensor, steps: int = 5, dtype=None):
     """
     Quintic Newton-Schulz iteration, which brings the singular values of each
-    matrix near 1.
+    matrix near 1. A rectangular matrix is iterated through its Gram matrix,
+    the small side squared, as DiffSinger's Muon does.
 
     Args:
         g (torch.Tensor): Matrices, shape (..., rows, cols).
         steps (int, optional): Number of iterations. Defaults to 5.
+        dtype (torch.dtype, optional): Precision of the iteration, half precision on CUDA when None.
     """
     a, b, c = 3.4445, -4.7750, 2.0315
     x = g.float()
     x = x / x.flatten(-2).norm(dim=-1).clamp_min(1e-7)[..., None, None]
-    if g.device.type == "cuda":
+    if dtype is not None:
+        x = x.to(dtype)
+    elif g.device.type == "cuda":
         # BF16 is emulated slowly before Ampere.
         ampere = torch.cuda.get_device_capability(g.device)[0] >= 8
         x = x.to(torch.bfloat16 if ampere else torch.float16)
     transposed = x.shape[-2] > x.shape[-1]
     if transposed:
         x = x.mT
-    for _ in range(steps):
-        gram = x @ x.mT
-        x = a * x + (b * gram + c * gram @ gram) @ x
+    if x.shape[-2] == x.shape[-1]:
+        for _ in range(steps):
+            gram = x @ x.mT
+            x = a * x + (b * gram + c * gram @ gram) @ x
+        return (x.mT if transposed else x).to(g.dtype)
+
+    # x_k = q @ x_0, with q and the Gram matrix advanced instead of x.
+    gram, q = x @ x.mT, None
+    for index in range(steps):
+        if index == GRAM_RESTART:
+            # From x again, so the rounding of the first steps does not compound.
+            x = q @ x
+            gram, q = x @ x.mT, None
+        z = b * gram + c * gram @ gram
+        if q is None:
+            q = z.clone()
+            q.diagonal(dim1=-2, dim2=-1).add_(a)
+        else:
+            q = a * q + q @ z
+        if index + 1 < steps and index + 1 != GRAM_RESTART:
+            rz = a * gram + gram @ z
+            gram = a * rz + z @ rz
+    x = q @ x
     return (x.mT if transposed else x).to(g.dtype)
 
 
@@ -109,10 +135,11 @@ class MuonAdamW(torch.optim.Optimizer):
 
     def _muon(self, group, params, lr):
         grads = [p.grad for p in params]
-        buffers = [
-            self.state[p].setdefault("momentum_buffer", torch.zeros_like(p))
-            for p in params
-        ]
+        for p in params:
+            # Not `setdefault`, which would build the zeros on every step.
+            if "momentum_buffer" not in self.state[p]:
+                self.state[p]["momentum_buffer"] = torch.zeros_like(p)
+        buffers = [self.state[p]["momentum_buffer"] for p in params]
         torch._foreach_lerp_(buffers, grads, 1.0 - group["momentum"])
         updates = torch._foreach_lerp(grads, buffers, group["momentum"])
         # One Newton-Schulz per matrix shape, each matrix wide side last.
@@ -124,9 +151,12 @@ class MuonAdamW(torch.optim.Optimizer):
                 (p, update.mT if tall else update, tall)
             )
         for shape, members in shapes.items():
-            orthogonal = orthogonalize(
-                torch.stack([update for _, update, _ in members])
-            ).unbind(0)
+            stacked = torch.stack([update for _, update, _ in members])
+            orthogonal = orthogonalize(stacked)
+            if not torch.isfinite(orthogonal).all():
+                # The half precision iteration overflowed.
+                orthogonal = orthogonalize(stacked, dtype=torch.float32)
+            orthogonal = orthogonal.unbind(0)
             # Scaled so the update RMS matches AdamW's at the same lr.
             torch._foreach_add_(
                 [p for p, _, _ in members],

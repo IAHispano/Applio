@@ -7,7 +7,7 @@ import torch
 import torch.utils.data
 
 from rvc.lib.algorithm.rectified_flow import Conditioning
-from rvc.lib.algorithm.rectified_flow_features import (
+from rvc.lib.algorithm.rectified_flow.features import (
     FEATURE_RATE,
     TENSION_SMOOTH_SECONDS,
     LogMel,

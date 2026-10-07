@@ -755,6 +755,15 @@ def train_tab():
                         interactive=True,
                         visible=False,
                     )
+                    flow_shortcut = gr.Checkbox(
+                        label=i18n("Shortcut Flow"),
+                        info=i18n(
+                            "Also teach the flow to sample in 1, 2, 4 or 8 steps, for low latency. Slower to train. Any pretrained flow model serves with it enabled or disabled."
+                        ),
+                        value=False,
+                        interactive=True,
+                        visible=False,
+                    )
                     checkpointing = gr.Checkbox(
                         label=i18n("Checkpointing"),
                         info=i18n(
@@ -1004,6 +1013,7 @@ def train_tab():
                     ),
                     gr.update(visible=not rectified_flow),
                     gr.update(visible=rectified_flow),
+                    gr.update(visible=rectified_flow),
                 )
 
             def update_slider_visibility(noise_reduction):
@@ -1027,6 +1037,7 @@ def train_tab():
                     g_pretrained_path,
                     d_pretrained_path,
                     flow_feature_cache,
+                    flow_shortcut,
                 ],
             )
             refresh.click(
@@ -1111,6 +1122,7 @@ def train_tab():
                     checkpointing,
                     shutdown_check,
                     flow_feature_cache,
+                    flow_shortcut,
                 ],
                 outputs=[train_output_info],
             )

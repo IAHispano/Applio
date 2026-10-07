@@ -19,6 +19,7 @@
     "betas": [0.9, 0.99],
     "weight_decay": 0.1,
     "warmup_steps": 2000,
+    "finetune_warmup_steps": 500,
     "segment_frames": 400,
     "grad_clip": 1.0,
     "ema_decay": 0.9999,
@@ -30,13 +31,19 @@
     "key_shift_prob": 0.43,
     "time_stretch_range": [0.5, 2.0],
     "time_stretch_prob": 0.43,
+    "finetune_key_shift_prob": 0.15,
+    "finetune_time_stretch_prob": 0.15,
     "feature_cache": true,
     "key_shift_scale": 0.75,
     "time_stretch_scale": 0.75,
+    "finetune_key_shift_scale": 0.2,
+    "finetune_time_stretch_scale": 0.2,
     "bucket_batches": true,
     "bucket_max_frames": 800,
     "bucket_max_items": 64,
     "aux_mel_weight": 0.2,
+    "shortcut_share": 0.125,
+    "shortcut_ema_decay": 0.999,
     "mel_bin_norm": true,
     "eval_interval": 1000,
     "holdout_clips": 32,
@@ -54,11 +61,11 @@
       "speed": true,
       "tension": true,
       "dual_timestep": true,
-      "backbone": "lynxnet2",
       "backbone_args": {"channels": 1024, "layers": 6, "expansion": 1, "kernel_size": 31, "adaln": true},
       "aux_decoder": {"channels": 512, "layers": 6, "dropout": 0.1, "speaker": true},
       "t_start": 0.4,
-      "aux_grad": 0.1
+      "aux_grad": 0.1,
+      "shortcut_steps": 128
     }
   }
 }

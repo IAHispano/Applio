@@ -8,7 +8,7 @@ import torch
 import torch.utils.data
 from tqdm import tqdm
 
-from rvc.lib.algorithm.rectified_flow_features import to_mel_rate
+from rvc.lib.algorithm.rectified_flow.features import to_mel_rate
 from rvc.train.rectified_flow.data_utils import FlowAudioLoader, FlowItem
 
 CACHE_VERSION = 1

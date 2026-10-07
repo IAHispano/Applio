@@ -10,7 +10,7 @@ sys.path.append(now_dir)
 
 from rvc.infer.pipeline import AudioProcessor, Pipeline
 from rvc.lib.algorithm.rectified_flow import Conditioning, build_flow, match_inputs
-from rvc.lib.algorithm.rectified_flow_features import (
+from rvc.lib.algorithm.rectified_flow.features import (
     TENSION_SMOOTH_SECONDS,
     aperiodicity,
     curve_to_mel_rate,
@@ -30,6 +30,7 @@ FLOW_SAMPLER = "euler"
 CFG_SCALE = 2.0
 CONTENT_GUIDANCE = 0.1
 GUIDANCE_RESCALE = 0.7
+GUIDANCE_UNTIL = 1.0
 
 # The embedder's receptive field and stride, in samples at 16 kHz
 EMBEDDER_FIELD = 400
@@ -199,7 +200,7 @@ class FlowPipeline(Pipeline):
         """
         data = net_g.data
         sample_rate, hop_length = data["sample_rate"], data["hop_length"]
-        source = torch.from_numpy(audio).view(1, -1).to(self.device)
+        source = torch.from_numpy(audio).float().view(1, -1).to(self.device)
 
         # extract features
         feats = self.get_content(model, source)
@@ -224,15 +225,15 @@ class FlowPipeline(Pipeline):
             proposed_pitch,
             proposed_pitch_threshold,
         )
-        source_pitchf = torch.from_numpy(source_pitchf).view(1, -1).to(self.device)
-        pitchf = torch.from_numpy(pitchf).view(1, -1).to(self.device)
+        source_pitchf = torch.from_numpy(source_pitchf).float().view(1, -1).to(self.device)
+        pitchf = torch.from_numpy(pitchf).float().view(1, -1).to(self.device)
 
         # The curves are measured as in training, which reads them from the
         # audio at the sampling rate of the model: at 16 kHz the loudness of a
         # sibilant has lost what it carries above 8 kHz
         curves, curves_sr = source, self.sample_rate
         if audio_full is not None:
-            curves = torch.from_numpy(audio_full).view(1, -1).to(self.device)
+            curves = torch.from_numpy(audio_full).float().view(1, -1).to(self.device)
             curves_sr = sample_rate
         energy = smooth_curve(frame_energy(curves, curves_sr, p_len))
         breathiness = smooth_curve(
@@ -270,7 +271,17 @@ class FlowPipeline(Pipeline):
             tension=strain,
         )
 
-    def sample_mel(self, flow, inputs, steps, cfg_scale, content_guidance):
+    def sample_mel(
+        self,
+        flow,
+        inputs,
+        steps,
+        cfg_scale,
+        content_guidance,
+        sampler=FLOW_SAMPLER,
+        guidance_rescale=GUIDANCE_RESCALE,
+        guidance_until=GUIDANCE_UNTIL,
+    ):
         """
         Samples the normalised mel spectrogram in overlapping passes, crossfaded.
 
@@ -280,6 +291,9 @@ class FlowPipeline(Pipeline):
             steps: Number of sampling steps.
             cfg_scale: Guidance scale towards the speaker.
             content_guidance: Guidance scale towards the content.
+            sampler: Sampling method, "euler" or "heun".
+            guidance_rescale: Pull of the guided output's level back to the unguided one's.
+            guidance_until: Flow time the guidances apply until, 1 for the whole sampling.
         """
         frames = inputs.content.shape[1]
         noise = torch.randn(1, flow.n_mels, frames, device=self.device)
@@ -291,10 +305,11 @@ class FlowPipeline(Pipeline):
             part = flow.sample(
                 inputs.crop(start, stop),
                 steps=steps,
-                method=FLOW_SAMPLER,
+                method=sampler,
                 cfg_scale=cfg_scale,
                 content_guidance=content_guidance,
-                guidance_rescale=GUIDANCE_RESCALE,
+                guidance_rescale=guidance_rescale,
+                guidance_interval=(0.0, guidance_until),
                 noise=noise[..., start:stop],
             )
             ramp = torch.ones(stop - start, device=self.device)
@@ -367,6 +382,11 @@ class FlowPipeline(Pipeline):
         steps=FLOW_STEPS,
         cfg_scale=CFG_SCALE,
         content_guidance=CONTENT_GUIDANCE,
+        sampler=FLOW_SAMPLER,
+        guidance_rescale=GUIDANCE_RESCALE,
+        guidance_until=GUIDANCE_UNTIL,
+        formant_shift=0.0,
+        tension_strength=1.0,
     ):
         """
         The main pipeline function for performing voice conversion.
@@ -392,6 +412,11 @@ class FlowPipeline(Pipeline):
             steps: Number of sampling steps.
             cfg_scale: Guidance scale towards the speaker.
             content_guidance: Guidance scale towards the content.
+            sampler: Sampling method, "euler" or "heun".
+            guidance_rescale: Pull of the guided output's level back to the unguided one's.
+            guidance_until: Flow time the guidances apply until, 1 for the whole sampling.
+            formant_shift: Shift of the formants in semitones, apart from the pitch.
+            tension_strength: Scale of the tension of the input, 0 leaves the voice at its own.
         """
         if file_index != "" and os.path.exists(file_index) and index_rate > 0:
             try:
@@ -429,8 +454,19 @@ class FlowPipeline(Pipeline):
                 proposed_pitch_threshold,
                 audio_full,
             )
+            key_shift = torch.full((1,), float(formant_shift), device=self.device)
+            inputs = inputs._replace(key_shift=key_shift)
+            if inputs.tension is not None:
+                inputs = inputs._replace(tension=inputs.tension * tension_strength)
             mel = self.sample_mel(
-                net_g.flow, inputs, int(steps), cfg_scale, content_guidance
+                net_g.flow,
+                inputs,
+                int(steps),
+                cfg_scale,
+                content_guidance,
+                sampler,
+                guidance_rescale,
+                guidance_until,
             )
             audio_opt = self.render(net_g.vocoder, mel, inputs.f0, hop_length)
 

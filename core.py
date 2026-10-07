@@ -116,6 +116,11 @@ def run_infer_script(
     flow_steps: int = 16,
     flow_cfg_scale: float = 2.0,
     flow_content_guidance: float = 0.1,
+    flow_sampler: str = "euler",
+    flow_guidance_rescale: float = 0.7,
+    flow_guidance_until: float = 1.0,
+    flow_formant_shift: float = 0.0,
+    flow_tension_strength: float = 1.0,
 ):
     kwargs = {
         "audio_input_path": input_path,
@@ -181,6 +186,11 @@ def run_infer_script(
         "flow_steps": flow_steps,
         "flow_cfg_scale": flow_cfg_scale,
         "flow_content_guidance": flow_content_guidance,
+        "flow_sampler": flow_sampler,
+        "flow_guidance_rescale": flow_guidance_rescale,
+        "flow_guidance_until": flow_guidance_until,
+        "flow_formant_shift": flow_formant_shift,
+        "flow_tension_strength": flow_tension_strength,
     }
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(**kwargs)
@@ -254,6 +264,11 @@ def run_batch_infer_script(
     flow_steps: int = 16,
     flow_cfg_scale: float = 2.0,
     flow_content_guidance: float = 0.1,
+    flow_sampler: str = "euler",
+    flow_guidance_rescale: float = 0.7,
+    flow_guidance_until: float = 1.0,
+    flow_formant_shift: float = 0.0,
+    flow_tension_strength: float = 1.0,
 ):
     kwargs = {
         "audio_input_paths": input_folder,
@@ -319,6 +334,11 @@ def run_batch_infer_script(
         "flow_steps": flow_steps,
         "flow_cfg_scale": flow_cfg_scale,
         "flow_content_guidance": flow_content_guidance,
+        "flow_sampler": flow_sampler,
+        "flow_guidance_rescale": flow_guidance_rescale,
+        "flow_guidance_until": flow_guidance_until,
+        "flow_formant_shift": flow_formant_shift,
+        "flow_tension_strength": flow_tension_strength,
     }
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio_batch(**kwargs)
@@ -571,6 +591,7 @@ def run_train_script(
     checkpointing: bool = False,
     shutdown_check: bool = False,
     flow_feature_cache: bool = True,
+    flow_shortcut: bool = False,
 ):
     if vocoder == "Rectified Flow":
         command = rectified_flow_train_command(
@@ -586,6 +607,7 @@ def run_train_script(
             custom_pretrained,
             g_pretrained_path,
             flow_feature_cache,
+            flow_shortcut,
         )
     else:
         if pretrained == True:
@@ -666,6 +688,7 @@ def rectified_flow_train_command(
     custom_pretrained: bool = False,
     flow_pretrained_path: str = None,
     feature_cache: bool = True,
+    shortcut: bool = False,
 ):
     from rvc.lib.tools.pretrained_selector import rectified_flow_selector
 
@@ -708,6 +731,7 @@ def rectified_flow_train_command(
                 save_every_weights,
                 cleanup,
                 feature_cache,
+                shortcut,
             ],
         ),
     ]
@@ -1322,6 +1346,11 @@ def extract(**kwargs):
     default=True,
     help="Rectified Flow: write the features and the augmented copies of the dataset to disk once and train from them.",
 )
+@click.option(
+    "--flow-shortcut/--no-flow-shortcut",
+    default=False,
+    help="Rectified Flow: also teach the flow to sample in 1, 2, 4 or 8 steps. Any pretrained flow model serves with it enabled or disabled.",
+)
 def train(**kwargs):
     """Train an RVC model."""
     result = run_train_script(
@@ -1343,6 +1372,7 @@ def train(**kwargs):
         vocoder=kwargs["vocoder"],
         checkpointing=kwargs["checkpointing"],
         flow_feature_cache=kwargs["flow_feature_cache"],
+        flow_shortcut=kwargs["flow_shortcut"],
     )
     click.echo(result)
 

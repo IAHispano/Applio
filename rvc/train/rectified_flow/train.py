@@ -1,13 +1,11 @@
+import copy
 import os
 import sys
 
 os.environ["USE_LIBUV"] = "0" if sys.platform == "win32" else "1"
-import datetime
 import glob
 import json
-import math
 from random import randint
-from time import time as ttime
 
 import torch
 import torch.distributed as dist
@@ -24,7 +22,7 @@ sys.path.append(os.path.join(now_dir))
 # Zluda hijack
 import rvc.lib.zluda
 from rvc.lib.algorithm.rectified_flow import build_flow, match_inputs, resize_speakers
-from rvc.lib.algorithm.rectified_flow_features import denormalize_mel, normalize_mel
+from rvc.lib.algorithm.rectified_flow.features import normalize_mel
 from rvc.lib.algorithm.vocoders import load_vocoder
 from rvc.train.rectified_flow.data_utils import (
     FlowAudioCollate,
@@ -39,11 +37,20 @@ from rvc.train.rectified_flow.feature_cache import (
     load_cache,
 )
 from rvc.train.rectified_flow.muon import MuonAdamW
+from rvc.train.rectified_flow.utils import (
+    EpochRecorder,
+    cosine_progress,
+    freeze_voice,
+    get_mel_stats,
+    learning_rate,
+    load_pretrain,
+    nonfinite_names,
+)
+from rvc.train.rectified_flow.validation import evaluate, generate_validation
 from rvc.train.utils import (
     latest_checkpoint_path,
     load_filepaths_and_text,
     load_wav_to_torch,
-    plot_spectrogram_to_numpy,
     summarize,
 )
 
@@ -65,20 +72,21 @@ save_only_latest = _strtobool(sys.argv[8])
 save_every_weights = _strtobool(sys.argv[9])
 cleanup = _strtobool(sys.argv[10])
 feature_cache = _strtobool(sys.argv[11])
+shortcut = _strtobool(sys.argv[12])
 
-# Sampling steps of the validation audio
-preview_steps = 16
-# Held out clips of different speakers rendered beside the reference clip
-preview_clips = 3
-# Where in the trained time range the validation loss is taken
-eval_fractions = (0.1, 0.3, 0.5, 0.7, 0.9)
 # FP16: the weight gradients overflow with the scale around 2^20, so the
 # GradScaler is not left to grow until a step is skipped
 max_grad_scale = 2.0**16
 # Steps skipped in a row over a non-finite gradient before the training stops
 max_skipped_in_a_row = 10
-# Batches the statistics of the mel bins are measured over
-mel_stats_batches = 200
+# How much of the dataset is shifted and stretched: drawn per item, or made
+# ahead for the feature cache. A fine-tune has its own, under `finetune_`
+finetune_augmentation = (
+    "key_shift_prob",
+    "time_stretch_prob",
+    "key_shift_scale",
+    "time_stretch_scale",
+)
 
 current_dir = os.getcwd()
 
@@ -128,6 +136,15 @@ if "flow" not in config:
 if not feature_cache:
     config["flow"]["feature_cache"] = False
 
+# A fine-tune shifts and stretches less of the dataset than a pretrain
+if pretrain not in ("", "None"):
+    for key in finetune_augmentation:
+        if "finetune_" + key in config["flow"]:
+            config["flow"][key] = config["flow"]["finetune_" + key]
+
+# Whether the flow is a shortcut model is decided by the training, not the config
+config["flow"]["model"]["shortcut"] = shortcut
+
 torch.backends.cudnn.deterministic = False
 if os.name == "nt":  # Windows
     torch.backends.cudnn.benchmark = True
@@ -148,144 +165,6 @@ logged_real_mel = False
 import logging
 
 logging.getLogger("torch").setLevel(logging.ERROR)
-
-
-class EpochRecorder:
-    """
-    Records the time elapsed per epoch.
-    """
-
-    def __init__(self):
-        self.last_time = ttime()
-
-    def record(self):
-        """
-        Records the elapsed time and returns a formatted string.
-        """
-        now_time = ttime()
-        elapsed_time = now_time - self.last_time
-        self.last_time = now_time
-        elapsed_time = round(elapsed_time, 1)
-        elapsed_time_str = str(datetime.timedelta(seconds=int(elapsed_time)))
-        current_time = datetime.datetime.now().strftime("%H:%M:%S")
-        return f"time={current_time} | training_speed={elapsed_time_str}"
-
-
-def learning_rate(base, step, warmup, total, final_ratio, anchor=(0, 0.0)):
-    """
-    Linear warmup, then cosine decay to `final_ratio` of the base learning rate.
-
-    Args:
-        base (float): The base learning rate.
-        step (int): The current step.
-        warmup (int): Number of warmup steps.
-        total (int): Number of steps of the whole training.
-        final_ratio (float): Share of the base learning rate reached at the end.
-        anchor (tuple, optional): Step and progress along the cosine a resumed training continues from, so a changed total stretches what is left of it.
-    """
-    if warmup and step < warmup:
-        return base * (step + 1) / warmup
-    start, done = max(anchor[0], warmup), anchor[1]
-    left = min(1.0, max(0.0, (step - start) / max(1, total - start)))
-    progress = done + (1.0 - done) * left
-    cosine = 0.5 * (1.0 + math.cos(math.pi * progress))
-    return base * (final_ratio + (1.0 - final_ratio) * cosine)
-
-
-def cosine_progress(scale, final_ratio):
-    """
-    Returns how far along the cosine decay a learning rate is, from 0 to 1.
-
-    Args:
-        scale (float): The learning rate as a share of the base learning rate.
-        final_ratio (float): Share of the base learning rate reached at the end.
-    """
-    if final_ratio >= 1.0:
-        return 0.0
-    height = (scale - final_ratio) / (1.0 - final_ratio)
-    return math.acos(min(1.0, max(-1.0, 2.0 * height - 1.0))) / math.pi
-
-
-@torch.no_grad()
-def get_mel_stats(train_loader, data_config, device, n_gpus):
-    """
-    Returns the mean and the spread of each bin of the normalised mel over the
-    first batches of every rank.
-
-    Args:
-        train_loader (DataLoader): Dataloader of the training set.
-        data_config (dict): The `data` section of the config.
-        device (torch.device): The device of the model.
-        n_gpus (int): The total number of GPUs available for training.
-    """
-    total = torch.zeros(data_config["n_mels"], device=device, dtype=torch.float64)
-    squares = torch.zeros_like(total)
-    frames = torch.zeros((), device=device, dtype=torch.float64)
-    for batch_idx, (mel, inputs) in enumerate(train_loader):
-        if batch_idx >= mel_stats_batches:
-            break
-        mask = inputs.mask.to(device).double()
-        mel = normalize_mel(mel.to(device), data_config).double() * mask
-        total += mel.sum((0, 2))
-        squares += mel.square().sum((0, 2))
-        frames += mask.sum()
-    if n_gpus > 1:
-        for value in (total, squares, frames):
-            dist.all_reduce(value)
-    mean = total / frames
-    std = (squares / frames - mean.square()).clamp_min(0.0).sqrt()
-    return mean.float(), std.float()
-
-
-def freeze_voice(net_flow):
-    """
-    Freezes what maps time and speaker into the network, so a single speaker
-    fine-tune keeps the speaker space of the pretrained model.
-
-    Args:
-        net_flow (RectifiedFlow): The flow model.
-    """
-    modules = [net_flow.backbone.time_mlp, *net_flow.speaker_layers()]
-    for module in filter(None, modules):
-        module.requires_grad_(False)
-
-
-def load_pretrain(pretrain, embedder_name):
-    """
-    Loads the weights of a pretrained flow model and the time scale it was
-    trained with, which is None when the file does not record its config.
-
-    Args:
-        pretrain (str): Path to the pre-trained flow model.
-        embedder_name (str): Name of the embedder the dataset was extracted with.
-    """
-    try:
-        pretrain_ckpt = torch.load(pretrain, map_location="cpu", weights_only=True)
-        pretrain_weights = (
-            pretrain_ckpt["ema"]["shadow"]
-            if pretrain_ckpt.get("ema")
-            else pretrain_ckpt["model"]
-        )
-    except Exception as e:
-        print(f"The pretrain model could not be loaded: {e}")
-        sys.exit(1)
-
-    pretrain_embedder = pretrain_ckpt.get("embedder_model")
-    if pretrain_embedder and pretrain_embedder.replace(
-        "-", "_"
-    ) != embedder_name.replace("-", "_"):
-        print(
-            f"The pretrain model was trained on {pretrain_embedder} features and this dataset was extracted with {embedder_name}."
-        )
-        sys.exit(1)
-
-    time_scale = None
-    pretrain_model = pretrain_ckpt.get("config", {}).get("flow", {}).get("model")
-    if pretrain_model is not None:
-        time_scale = float(
-            (pretrain_model.get("backbone_args") or {}).get("time_scale", 1000.0)
-        )
-    return pretrain_weights, time_scale
 
 
 def optimizer_step(loss, net_flow, optim, scaler, grad_clip):
@@ -321,25 +200,6 @@ def optimizer_step(loss, net_flow, optim, scaler, grad_clip):
     if not skipped and scaler.get_scale() > max_grad_scale:
         scaler.update(max_grad_scale)
     return grad_norm, skipped
-
-
-def nonfinite_names(mel, inputs, net_flow):
-    """
-    Names what holds a non-finite value among a batch and the model weights.
-
-    Args:
-        mel (torch.Tensor): Mel of the batch.
-        inputs (Conditioning): The inputs of the flow.
-        net_flow (RectifiedFlow): The flow model.
-    """
-    names = [
-        name
-        for name, value in (("mel", mel), *zip(inputs._fields, inputs))
-        if value is not None and not torch.isfinite(value).all()
-    ]
-    if any(not torch.isfinite(param).all() for param in net_flow.parameters()):
-        names.append("model weights")
-    return ", ".join(names) or "none, the loss or a gradient overflowed"
 
 
 def main():
@@ -455,63 +315,20 @@ def main():
     start()
 
 
-def run(
-    rank,
-    n_gpus,
-    experiment_dir,
-    pretrain,
-    vocoder_path,
-    custom_total_epoch,
-    custom_save_every_weights,
-    config,
-    device,
-    device_id,
-):
+def get_loaders(config, entries, holdout_entries, experiment_dir, rank, n_gpus):
     """
-    Runs the training loop on a specific GPU or CPU.
+    Returns the training dataset, its dataloader and the dataloader of the
+    held out clips, which is None without any or off the first rank.
 
     Args:
-        rank (int): The rank of the current process within the distributed training setup.
-        n_gpus (int): The total number of GPUs available for training.
-        experiment_dir (str): The directory where experiment logs and checkpoints will be saved.
-        pretrain (str): Path to the pre-trained flow model.
-        vocoder_path (str): Path to the vocoder that renders the validation audio.
-        custom_total_epoch (int): The total number of epochs for training.
-        custom_save_every_weights (int): Whether to save the model weights at every saved epoch.
         config (dict): The rectified flow config.
-        device (torch.device): The device to use for training (CPU or GPU).
-        device_id (int): The index of the GPU of the current process.
+        entries (list): Rows of the filelist of the training clips.
+        holdout_entries (list): Rows of the filelist of the held out clips.
+        experiment_dir (str): The directory of the experiment.
+        rank (int): The rank of the current process.
+        n_gpus (int): The total number of GPUs available for training.
     """
-    global global_step, skipped_steps
-
-    if rank == 0:
-        writer_eval = SummaryWriter(log_dir=os.path.join(experiment_dir, "eval"))
-    else:
-        writer_eval = None
-
-    if n_gpus > 1:
-        dist.init_process_group(
-            backend="gloo" if sys.platform == "win32" else "nccl",
-            init_method="env://",
-            world_size=n_gpus,
-            rank=rank,
-        )
-
     flow_config = config["flow"]
-    model_config = flow_config["model"]
-
-    # Every rank draws its own noise and augmentations
-    torch.manual_seed(flow_config["seed"] + rank)
-
-    if torch.cuda.is_available():
-        torch.cuda.set_device(device_id)
-        device = torch.device("cuda", device_id)
-
-    # Create datasets and dataloaders
-    entries = [row for row in load_filepaths_and_text(training_files) if len(row) >= 5]
-    n_speakers = max(int(row[4]) for row in entries) + 1
-    entries, holdout_entries = split_holdout(entries, flow_config["holdout_clips"])
-
     train_dataset = FlowAudioLoader(entries, config)
     segment_frames = flow_config["segment_frames"]
     collate_fn = FlowAudioCollate(segment_frames)
@@ -586,6 +403,69 @@ def run(
             collate_fn=collate_fn,
             persistent_workers=True,
         )
+    return train_dataset, train_loader, eval_loader
+
+
+def run(
+    rank,
+    n_gpus,
+    experiment_dir,
+    pretrain,
+    vocoder_path,
+    custom_total_epoch,
+    custom_save_every_weights,
+    config,
+    device,
+    device_id,
+):
+    """
+    Runs the training loop on a specific GPU or CPU.
+
+    Args:
+        rank (int): The rank of the current process within the distributed training setup.
+        n_gpus (int): The total number of GPUs available for training.
+        experiment_dir (str): The directory where experiment logs and checkpoints will be saved.
+        pretrain (str): Path to the pre-trained flow model.
+        vocoder_path (str): Path to the vocoder that renders the validation audio.
+        custom_total_epoch (int): The total number of epochs for training.
+        custom_save_every_weights (int): Whether to save the model weights at every saved epoch.
+        config (dict): The rectified flow config.
+        device (torch.device): The device to use for training (CPU or GPU).
+        device_id (int): The index of the GPU of the current process.
+    """
+    global global_step, skipped_steps
+
+    if rank == 0:
+        writer_eval = SummaryWriter(log_dir=os.path.join(experiment_dir, "eval"))
+    else:
+        writer_eval = None
+
+    if n_gpus > 1:
+        dist.init_process_group(
+            backend="gloo" if sys.platform == "win32" else "nccl",
+            init_method="env://",
+            world_size=n_gpus,
+            rank=rank,
+        )
+
+    flow_config = config["flow"]
+    model_config = flow_config["model"]
+
+    # Every rank draws its own noise and augmentations
+    torch.manual_seed(flow_config["seed"] + rank)
+
+    if torch.cuda.is_available():
+        torch.cuda.set_device(device_id)
+        device = torch.device("cuda", device_id)
+
+    # Create datasets and dataloaders
+    entries = [row for row in load_filepaths_and_text(training_files) if len(row) >= 5]
+    n_speakers = max(int(row[4]) for row in entries) + 1
+    entries, holdout_entries = split_holdout(entries, flow_config["holdout_clips"])
+
+    train_dataset, train_loader, eval_loader = get_loaders(
+        config, entries, holdout_entries, experiment_dir, rank, n_gpus
+    )
 
     # Validations
     if len(train_loader) < 1:
@@ -635,10 +515,13 @@ def run(
         freeze_voice(net_flow)
         speaker_dropout = 0.0
 
+    total_steps = custom_total_epoch * len(train_loader)
     if finetune:
         base_lr = flow_config["finetune_learning_rate"]
         ema_decay = flow_config["finetune_ema_decay"]
-        warmup = 0
+        # The optimizer starts cold on trained weights and the step of Muon
+        # does not shrink with the gradient; a short fine-tune is not all warmup
+        warmup = min(flow_config.get("finetune_warmup_steps", 0), total_steps // 4)
     else:
         base_lr = flow_config["learning_rate"]
         ema_decay = flow_config["ema_decay"]
@@ -714,6 +597,15 @@ def run(
             cosine_progress(scale, flow_config["lr_final_ratio"]),
         )
 
+    # A shortcut model learns its jumps from a copy of itself that lags it,
+    # which starts at the averaged weights
+    teacher = None
+    if net_flow.shortcut_levels:
+        with ema.applied(net_flow):
+            teacher = copy.deepcopy(net_flow).requires_grad_(False).eval()
+        if rank == 0:
+            print("Training a shortcut flow.")
+
     # Wrap model with DDP for multi-gpu processing
     net_flow_ddp = net_flow
     if n_gpus > 1 and device.type == "cuda":
@@ -735,9 +627,9 @@ def run(
         reference = train_dataset.get_reference(embedder_name)
         if reference is not None:
             references.append(("", *reference, False))
-        if eval_loader is not None:
-            holdout_clips = eval_loader.dataset.get_speaker_clips(preview_clips)
-            for index, clip in enumerate(holdout_clips):
+        elif eval_loader is not None:
+            # Without a reference clip, one held out clip is rendered instead
+            for index, clip in enumerate(eval_loader.dataset.get_speaker_clips(1)):
                 references.append((f"holdout_{index}_", *clip, True))
         references = [
             (name, ref_mel.to(device), ref_inputs.to(device), held_out)
@@ -748,12 +640,14 @@ def run(
         "config": config,
         "base_lr": base_lr,
         "warmup": warmup,
-        "total_steps": custom_total_epoch * len(train_loader),
+        "total_steps": total_steps,
         "final_ratio": flow_config["lr_final_ratio"],
         "lr_anchor": lr_anchor,
         "grad_clip": flow_config["grad_clip"],
         "speaker_dropout": speaker_dropout,
         "tension_dropout": tension_dropout,
+        "shortcut_share": flow_config.get("shortcut_share", 0.125),
+        "shortcut_ema_decay": flow_config.get("shortcut_ema_decay", 0.999),
         "aux_weight": flow_config["aux_mel_weight"],
         "eval_interval": flow_config["eval_interval"],
         "n_speakers": n_speakers,
@@ -766,7 +660,7 @@ def run(
             rank,
             epoch,
             hps,
-            [net_flow, net_flow_ddp, ema],
+            [net_flow, net_flow_ddp, ema, teacher],
             optim,
             [train_loader, eval_loader],
             writer_eval,
@@ -777,111 +671,6 @@ def run(
             vocoder,
             scaler,
         )
-
-
-def evaluate(hps, net_flow, ema, eval_loader, writer, device, use_amp):
-    """
-    Logs the flow loss of the held out clips through the averaged weights, from
-    the same noise and at the same times on every call.
-
-    Args:
-        hps (dict): Hyperparameters.
-        net_flow (RectifiedFlow): The flow model.
-        ema (WeightEMA): Average of the flow weights.
-        eval_loader (DataLoader): Dataloader of the held out clips.
-        writer (SummaryWriter): The TensorBoard writer.
-        device (torch.device): The device of the model.
-        use_amp (bool): Whether to use automatic mixed precision.
-    """
-    data_config = hps["config"]["data"]
-    totals = torch.zeros(len(eval_fractions), device=device)
-    aux_total = 0.0
-    items = 0
-    with ema.applied(net_flow):
-        net_flow.eval()
-        for batch_idx, (mel, inputs) in enumerate(eval_loader):
-            inputs = inputs.to(device)
-            mel = normalize_mel(mel.to(device), data_config) * inputs.mask
-            generator = torch.Generator(device=device).manual_seed(batch_idx)
-            noise = torch.randn(mel.shape, device=device, generator=generator)
-            with torch.amp.autocast(
-                device_type="cuda", enabled=use_amp, dtype=train_dtype
-            ):
-                losses, loss_aux = net_flow.validation_losses(
-                    mel, inputs, noise, eval_fractions
-                )
-            totals += losses.float() * mel.shape[0]
-            if loss_aux is not None:
-                aux_total += loss_aux.item() * mel.shape[0]
-            items += mel.shape[0]
-        net_flow.train()
-
-    totals /= max(1, items)
-    scalar_dict = {"loss/val/flow": totals.mean()}
-    for fraction, value in zip(eval_fractions, totals):
-        scalar_dict[f"loss/val/flow_t{fraction:g}"] = value
-    if net_flow.aux is not None:
-        scalar_dict["loss/val/aux_mel"] = aux_total / max(1, items)
-    summarize(writer=writer, global_step=global_step, scalars=scalar_dict)
-
-
-def generate_validation(hps, net_flow, ema, references, vocoder, writer, device):
-    """
-    Logs the mel and the audio of the validation clips sampled through the
-    averaged weights. Each clip is also rendered from the mel of the aux
-    decoder alone and, when it was held out, from the flow started at its real
-    mel on the same noise, which tells the error of the aux decoder from the
-    error of the flow. The real mel through the vocoder is logged once.
-
-    Args:
-        hps (dict): Hyperparameters.
-        net_flow (RectifiedFlow): The flow model.
-        ema (WeightEMA): Average of the flow weights.
-        references (list): Name, mel, flow inputs and whether it was held out, for each validation clip.
-        vocoder (torch.nn.Module): The vocoder that renders the validation audio.
-        writer (SummaryWriter): The TensorBoard writer.
-        device (torch.device): The device of the model.
-    """
-    global logged_real_mel
-
-    data_config = hps["config"]["data"]
-    image_dict = {}
-    audio_dict = {}
-    with ema.applied(net_flow), torch.no_grad():
-        net_flow.eval()
-        for name, ref_mel, inputs, held_out in references:
-            real_mel = normalize_mel(ref_mel, data_config)
-            noise = torch.randn_like(real_mel)
-            mels = {"": net_flow.sample(inputs, steps=preview_steps, noise=noise)}
-            if net_flow.aux is not None:
-                mels["_aux"] = net_flow.aux_mel(inputs)
-            if net_flow.starts_from_aux and held_out:
-                mels["_from_real_mel"] = net_flow.sample(
-                    inputs, steps=preview_steps, noise=noise, start_mel=real_mel
-                )
-            if not logged_real_mel:
-                mels["_real_mel"] = real_mel
-
-            image_dict[f"slice/{name}mel_org"] = plot_spectrogram_to_numpy(
-                ref_mel[0].data.cpu().numpy()
-            )
-            image_dict[f"slice/{name}mel_gen"] = plot_spectrogram_to_numpy(
-                denormalize_mel(mels[""], data_config)[0].float().data.cpu().numpy()
-            )
-            if vocoder is not None:
-                for kind, mel in mels.items():
-                    o = vocoder(mel.float(), inputs.f0)
-                    audio_dict[f"gen/{name}audio{kind}_{global_step:07d}"] = o[0, :, :]
-        net_flow.train()
-    logged_real_mel = True
-
-    summarize(
-        writer=writer,
-        global_step=global_step,
-        images=image_dict,
-        audios=audio_dict,
-        audio_sample_rate=data_config["sample_rate"],
-    )
 
 
 def save_model(path, hps, ema, epoch):
@@ -933,7 +722,7 @@ def train_and_evaluate(
         rank (int): Rank of the current process.
         epoch (int): Current epoch number.
         hps (dict): Hyperparameters.
-        nets (list): The flow model, its DDP wrapper and the average of its weights [net_flow, net_flow_ddp, ema].
+        nets (list): The flow model, its DDP wrapper, the average of its weights and the lagging copy of a shortcut model [net_flow, net_flow_ddp, ema, teacher].
         optim (torch.optim.Optimizer): The optimizer of the flow model.
         loaders (list): List of dataloaders [train_loader, eval_loader].
         writer (SummaryWriter): The TensorBoard writer.
@@ -944,9 +733,9 @@ def train_and_evaluate(
         vocoder (torch.nn.Module): The vocoder that renders the validation audio.
         scaler (torch.amp.GradScaler): The gradient scaler for FP16 training.
     """
-    global global_step, skipped_steps, skipped_in_a_row
+    global global_step, skipped_steps, skipped_in_a_row, logged_real_mel
 
-    net_flow, net_flow_ddp, ema = nets
+    net_flow, net_flow_ddp, ema, teacher = nets
     train_loader, eval_loader = loaders
     data_config = hps["config"]["data"]
 
@@ -988,6 +777,8 @@ def train_and_evaluate(
                     inputs,
                     speaker_dropout=hps["speaker_dropout"],
                     tension_dropout=hps["tension_dropout"],
+                    teacher=teacher,
+                    shortcut_share=hps["shortcut_share"],
                 )
                 loss_all = loss_flow
                 if loss_aux is not None:
@@ -1012,6 +803,13 @@ def train_and_evaluate(
             else:
                 skipped_in_a_row = 0
                 ema.update()
+                if teacher is not None:
+                    with torch.no_grad():
+                        torch._foreach_lerp_(
+                            list(teacher.parameters()),
+                            list(net_flow.parameters()),
+                            1.0 - hps["shortcut_ema_decay"],
+                        )
 
             global_step += 1
 
@@ -1038,7 +836,16 @@ def train_and_evaluate(
                 and hps["eval_interval"]
                 and global_step % hps["eval_interval"] == 0
             ):
-                evaluate(hps, net_flow, ema, eval_loader, writer, device, use_amp)
+                evaluate(
+                    hps,
+                    net_flow,
+                    ema,
+                    eval_loader,
+                    writer,
+                    device,
+                    global_step,
+                    train_dtype if use_amp else None,
+                )
 
             pbar.update(1)
         # end of batch train
@@ -1068,9 +875,18 @@ def train_and_evaluate(
         if epoch % save_every_epoch == 0:
             # Validation samples through the averaged weights
             if references:
+                # the real mel through the vocoder is logged once
                 generate_validation(
-                    hps, net_flow, ema, references, vocoder, writer, device
+                    hps,
+                    net_flow,
+                    ema,
+                    references,
+                    vocoder,
+                    writer,
+                    global_step,
+                    not logged_real_mel,
                 )
+                logged_real_mel = True
 
             # Save checkpoint
             checkpoint_suffix = f"{2333333 if save_only_latest else global_step}.pth"
