@@ -265,7 +265,7 @@ class BucketBatchSampler(torch.utils.data.Sampler):
     """
     Batch sampler of items of similar length, each batch within `max_frames`
     padded mel frames and `max_items` items. The batches are formed anew every
-    epoch and dealt between the GPUs.
+    epoch, always the same number of them, and dealt between the GPUs.
 
     Args:
         lengths (np.ndarray): Number of mel frames of each item.
@@ -285,15 +285,12 @@ class BucketBatchSampler(torch.utils.data.Sampler):
         self.n_gpus = int(n_gpus)
         self.epoch = 0
         self.formed = None
+        self.count = None
 
     def set_epoch(self, epoch):
         self.epoch = int(epoch)
 
-    def get_batches(self):
-        if self.formed is not None and self.formed[0] == self.epoch:
-            return self.formed[1]
-        # The same on every rank, which then takes its own share
-        rng = np.random.default_rng(self.seed + self.epoch)
+    def form_batches(self, rng):
         order = rng.permutation(len(self.lengths))
         grid = self.lengths[order] // LENGTH_GRID
         order = order[np.argsort(-grid, kind="stable")]
@@ -310,8 +307,22 @@ class BucketBatchSampler(torch.utils.data.Sampler):
             longest = max(longest, frames)
         if batch:
             batches.append(batch)
-        batches = [batches[index] for index in rng.permutation(len(batches)).tolist()]
-        each = len(batches) // self.n_gpus
+        return [batches[index] for index in rng.permutation(len(batches)).tolist()]
+
+    def get_batches(self):
+        if self.formed is not None and self.formed[0] == self.epoch:
+            return self.formed[1]
+        if self.count is None:
+            self.count = len(self.form_batches(np.random.default_rng(self.seed)))
+        # The same on every rank, which then takes its own share
+        rng = np.random.default_rng(self.seed + self.epoch)
+        batches = self.form_batches(rng)
+        # Every epoch has the same number of steps: the batches over it are
+        # left out and the ones missing are repeated
+        missing = max(self.count - len(batches), 0)
+        repeated = rng.choice(len(batches), missing, replace=False).tolist()
+        batches = (batches + [batches[index] for index in repeated])[: self.count]
+        each =len(batches) // self.n_gpus
         if each == 0:
             raise ValueError(
                 f"{len(batches)} batches is fewer than one for each of {self.n_gpus} GPUs."

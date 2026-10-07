@@ -301,9 +301,10 @@ def main():
 
     # The features are written once, before the training processes start
     if config["flow"].get("feature_cache", False):
-        entries = [
+        # Sorted, the filelist is shuffled anew by every extraction
+        entries = sorted(
             row for row in load_filepaths_and_text(training_files) if len(row) >= 5
-        ]
+        )
         entries, _ = split_holdout(entries, config["flow"]["holdout_clips"])
         build_cache(
             experiment_dir,
@@ -459,7 +460,9 @@ def run(
         device = torch.device("cuda", device_id)
 
     # Create datasets and dataloaders
-    entries = [row for row in load_filepaths_and_text(training_files) if len(row) >= 5]
+    entries = sorted(
+        row for row in load_filepaths_and_text(training_files) if len(row) >= 5
+    )
     n_speakers = max(int(row[4]) for row in entries) + 1
     entries, holdout_entries = split_holdout(entries, flow_config["holdout_clips"])
 
@@ -501,6 +504,8 @@ def run(
         # The time scale is not in the weights, the model has to be built with it
         if time_scale is not None:
             backbone_args["time_scale"] = time_scale
+    elif rank == 0 and checkpoint is None:
+        print("No pretrained (Flow), training from scratch.")
 
     # Initialize model and optimizer
     net_flow = build_flow(config, n_speakers).to(device)

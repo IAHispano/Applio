@@ -710,6 +710,10 @@ def rectified_flow_train_command(
                     "Please provide the path to the pretrained flow model."
                 )
             pf = flow_pretrained_path
+        elif not pf:
+            print(
+                f"Pretrained (Flow) for the '{embedder_model}' embedder not found in rvc/models/pretraineds/rectified-flow, training from scratch."
+            )
     else:
         pf = ""
 
