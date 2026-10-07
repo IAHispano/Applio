@@ -3,7 +3,7 @@ import json
 import torch
 
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor
-from swift_f0 import FRAME_PERIOD, SwiftF0
+from swift_f0 import SwiftF0
 from torchfcpe import spawn_infer_model_from_pt
 import torchcrepe
 import numpy as np
@@ -240,9 +240,7 @@ class Swift:
         if p_len <= 0:
             return np.zeros(0, dtype=np.float64)
         result = self.model.detect(x, 16000, fmin=f0_min, fmax=f0_max)
-        pitch, repaired = self._repair_subharmonics(
-            result.pitch_hz, result.confidence, FRAME_PERIOD
-        )
+        pitch, repaired = self._repair_subharmonics(result.pitch_hz, result.confidence)
         repaired &= (pitch >= f0_min) & (pitch <= f0_max)
         pitch = np.where(repaired, pitch, result.pitch_hz)
         confidence = np.where(
