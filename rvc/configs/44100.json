@@ -4,11 +4,11 @@
     "hop_length": 512,
     "n_fft": 2048,
     "win_length": 2048,
-    "n_mels": 128,
+    "n_mels": 140,
     "mel_fmin": 40.0,
-    "mel_fmax": 16000.0,
-    "mel_mean": -5.0,
-    "mel_std": 2.5,
+    "mel_fmax": 22050.0,
+    "mel_mean": -5.7,
+    "mel_std": 2.6,
     "content_interpolation": "linear"
   },
   "flow": {
