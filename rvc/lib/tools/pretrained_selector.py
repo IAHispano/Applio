@@ -11,3 +11,22 @@ def pretrained_selector(vocoder, sample_rate):
         return path_g, path_d
     else:
         return "", ""
+
+
+def rectified_flow_selector(embedder_model):
+    base_path = os.path.join("rvc", "models", "pretraineds", "rectified-flow")
+
+    embedder_name = str(embedder_model).replace("-", "_")
+    path_flow = os.path.join(base_path, f"pretrain_flow_{embedder_name}.pth")
+    if not os.path.exists(path_flow):
+        path_flow = ""
+
+    # OpenVPI NSF-HiFiGAN, renders the mel of the flow
+    path_vocoder = ""
+    if os.path.isdir(base_path):
+        for name in sorted(os.listdir(base_path)):
+            if name.endswith(".ckpt") or "_vocoder" in name:
+                path_vocoder = os.path.join(base_path, name)
+                break
+
+    return path_flow, path_vocoder

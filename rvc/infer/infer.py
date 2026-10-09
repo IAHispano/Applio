@@ -27,6 +27,7 @@ sys.path.append(now_dir)
 
 import rvc.lib.zluda  # sets MIOPEN_FIND_MODE on AMD; must land before the first conv
 from rvc.infer.pipeline import Pipeline as VC
+from rvc.infer.flow_pipeline import FlowPipeline, FlowSynthesizer
 from rvc.lib.utils import load_audio_infer, load_embedding
 from rvc.lib.tools.split_audio import process_audio, merge_audio
 from rvc.lib.algorithm.synthesizers import Synthesizer
@@ -263,15 +264,47 @@ class VoiceConverter:
         start_time = time.time()
         print(f"Converting audio '{audio_input_path}'...")
 
-        audio = load_audio_infer(
-            audio_input_path,
-            16000,
-            **kwargs,
-        )
+        # A Rectified Flow model measures the loudness, breathiness and tension
+        # of the input at its own sampling rate, as its training does: the audio
+        # is loaded at that rate and the 16 kHz copy is resampled from it
+        audio_full = None
+        flow_options = {}
+        if isinstance(self.vc, FlowPipeline):
+            self.net_g.set_vocoder(kwargs.get("flow_vocoder", ""))
+            flow_options = {
+                name: kwargs[f"flow_{name}"]
+                for name in (
+                    "steps",
+                    "cfg_scale",
+                    "content_guidance",
+                    "sampler",
+                    "guidance_rescale",
+                    "guidance_until",
+                    "formant_shift",
+                    "tension_strength",
+                )
+                if f"flow_{name}" in kwargs
+            }
+            flow_sr = self.net_g.data["sample_rate"]
+            audio_full = load_audio_infer(audio_input_path, flow_sr, **kwargs)
+            audio = librosa.resample(
+                audio_full, orig_sr=flow_sr, target_sr=16000, res_type="soxr_vhq"
+            )
+        else:
+            audio = load_audio_infer(
+                audio_input_path,
+                16000,
+                **kwargs,
+            )
         audio_max = np.abs(audio).max() / 0.95
 
-        if audio_max > 1:
+        # The loudness input of a Rectified Flow model is absolute, so a quiet
+        # input is brought up to the peak the training data has as well. The
+        # output stays at the level of the model, as that of an RVC model does
+        if audio_max > 1 or (audio_full is not None and audio_max > 0):
             audio /= audio_max
+            if audio_full is not None:
+                audio_full /= audio_max
 
         if not self.hubert_model or embedder_model != self.last_embedder_model:
             self.load_hubert(embedder_model, embedder_model_custom)
@@ -296,8 +329,21 @@ class VoiceConverter:
             chunks = []
             chunks.append(audio)
 
+        chunks_full = None
+        if audio_full is not None and split_audio:
+            scale = flow_sr / 16000
+            chunks_full = [
+                audio_full[int(start * scale) : int(end * scale)]
+                for start, end in intervals
+            ]
+        elif audio_full is not None:
+            chunks_full = [audio_full]
+
         converted_chunks = []
-        for c in chunks:
+        for i, c in enumerate(chunks):
+            flow_kwargs = dict(flow_options)
+            if chunks_full is not None:
+                flow_kwargs["audio_full"] = chunks_full[i]
             audio_opt = self.vc.pipeline(
                 model=self.hubert_model,
                 net_g=self.net_g,
@@ -315,6 +361,7 @@ class VoiceConverter:
                 f0_autotune_strength=f0_autotune_strength,
                 proposed_pitch=proposed_pitch,
                 proposed_pitch_threshold=proposed_pitch_threshold,
+                **flow_kwargs,
             )
             converted_chunks.append(audio_opt)
             if split_audio:
@@ -498,7 +545,15 @@ class VoiceConverter:
         """
         Sets up the network configuration based on the loaded checkpoint.
         """
-        if self.cpt is not None:
+        if self.cpt is not None and self.cpt.get("kind") == "rectified_flow":
+            self.tgt_sr = self.cpt["config"]["data"]["sample_rate"]
+            self.use_f0 = 1
+            self.version = "v2"
+            self.vocoder = "Rectified Flow"
+            self.net_g = FlowSynthesizer(self.cpt)
+            self.net_g = self.net_g.to(self.config.device).float()
+            self.net_g.eval()
+        elif self.cpt is not None:
             self.tgt_sr = self.cpt["config"][-1]
             self.cpt["config"][-3] = self.cpt["weight"]["emb_g.weight"].shape[0]
             self.use_f0 = self.cpt.get("f0", 1)
@@ -521,6 +576,9 @@ class VoiceConverter:
         """
         Sets up the voice conversion pipeline instance based on the target sampling rate and configuration.
         """
-        if self.cpt is not None:
+        if self.cpt is not None and self.cpt.get("kind") == "rectified_flow":
+            self.vc = FlowPipeline(self.tgt_sr, self.config)
+            self.n_spk = self.cpt["speaker_count"]
+        elif self.cpt is not None:
             self.vc = VC(self.tgt_sr, self.config)
             self.n_spk = self.cpt["config"][-3]

@@ -88,6 +88,9 @@ Applio is made possible thanks to these projects and their references:
 
 - [gradio-screen-recorder](https://huggingface.co/spaces/gstaff/gradio-screen-recorder) by gstaff
 - [rvc-cli](https://github.com/blaisewf/rvc-cli) by blaisewf
+- [ShiroRVC](https://github.com/ShiromiyaG/ShiroRVC) by ShiromiyaG
+- [DiffSinger](https://github.com/openvpi/DiffSinger) by openvpi
+- [SingingVocoders](https://github.com/openvpi/SingingVocoders) by openvpi
 
 ### Contributors
 
