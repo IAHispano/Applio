@@ -483,6 +483,21 @@ def run_acoustic_finetune_script(
     yield dict(status="exported", acoustic=str(destination), vocoder=str(vocoder_path))
 
 
+def run_acoustic_index_script(model_name, index_algorithm="Auto", manifest=None,
+                              speaker=None, output_path=None, max_vectors=50000, seed=1234):
+    import re
+
+    from rvc.lib.tools.retrieval import build_index
+
+    if index_algorithm not in {"Auto", "Faiss"}:
+        raise ValueError("Acoustic retrieval currently uses bounded FAISS FlatL2")
+    project = acoustic_project(model_name)
+    label = re.sub(r"[^a-zA-Z0-9_-]", "_", speaker or model_name)
+    return build_index(manifest or project / "data/manifest.json",
+                       output_path or project / f"{label}.acoustic.index",
+                       speaker, max_vectors, seed)
+
+
 def run_acoustic_infer_script(
     input_path,
     output_path,
@@ -497,13 +512,16 @@ def run_acoustic_infer_script(
     device="auto",
     ordinary_flow=False,
     batch=False,
+    index_path=None,
+    index_rate=0.0,
 ):
     from rvc.infer.acoustic import Converter
 
     if not vocoder_path:
         raise ValueError("Applio v3 requires a separate --vocoder-path")
     converter = Converter(
-        pth_path, vocoder_path, encoder_path, pitch_path or None, device
+        pth_path, vocoder_path, encoder_path, pitch_path or None, device,
+        index_path=index_path or None, index_rate=float(index_rate) if index_path else 0.0,
     )
     options = dict(
         speaker=int(sid),

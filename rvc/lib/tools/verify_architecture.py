@@ -305,11 +305,185 @@ def verify_contracts(output):
     return report
 
 
+def verify_retrieval(output):
+    """Synthetic CPU retrieval checks; no encoders or trained models are loaded."""
+    from types import SimpleNamespace
+
+    from rvc.configs.neural import FeatureConfig, MelConfig
+    from rvc.lib.tools.retrieval import ContentIndex, _sha, build_index
+
+    root = Path(output).resolve()
+    root.mkdir(parents=True, exist_ok=False)
+    features = asdict(FeatureConfig(encoder_id="synthetic", encoder_hash="synthetic",
+                                    content_dim=4, pitch_id="synthetic"))
+    train_content = np.array([[0, 0, 0, 0], [2, 0, 0, 0], [2, 0, 0, 0], [0, 2, 0, 0]], dtype=np.float32)
+    entries = []
+    for name, speaker, split, content in (
+        ("train", 0, "train", train_content),
+        ("heldout", 0, "validation", np.full((3, 4), 999, dtype=np.float32)),
+        ("other_voice", 1, "train", np.full((3, 4), 888, dtype=np.float32)),
+    ):
+        path = root / (name + ".npz")
+        np.savez(path, content=content)
+        entries.append(dict(speaker=speaker, split=split, source_hash=name,
+                            features=path.name, features_sha256=_sha(path)))
+    data = dict(contract=dict(features=features), speakers=["target", "other"],
+                segments=entries, dataset_id="synthetic-only")
+    manifest = root / "manifest.json"
+    manifest.write_text(json.dumps(data), encoding="utf-8")
+    first = build_index(manifest, root / "first.index", "target", max_vectors=3, seed=17)
+    second = build_index(manifest, root / "second.index", "target", max_vectors=3, seed=17)
+    assert _sha(first) == _sha(second)
+    bounded = ContentIndex(first, features)
+    assert bounded.index.ntotal == 3
+    assert np.max(bounded.index.reconstruct_n(0, 3)) <= 2
+    full = build_index(manifest, root / "full.index", "target", max_vectors=20)
+    index = ContentIndex(full, features)
+    query = np.array([[1, 0, 0, 0], [.8, .9, .1, .2]], dtype=np.float32)
+    voiced = np.array([1, 0], dtype=np.float32)
+    original = query.copy()
+    assert index.blend(query, voiced, 0, "target") is query
+    mixed = index.blend(query, voiced, 1, "target")
+    np.testing.assert_allclose(mixed[0], [1.25, .125, 0, 0], atol=1e-6)
+    exact = index.blend(train_content[1:2], np.ones(1), 1, "target")
+    np.testing.assert_array_equal(exact, train_content[1:2])
+    np.testing.assert_array_equal(mixed[1], query[1])
+    np.testing.assert_array_equal(query, original)
+
+    def rejects(call):
+        try:
+            call()
+        except ValueError:
+            return
+        raise AssertionError("Invalid retrieval input was accepted")
+
+    rejects(lambda: index.blend(query, voiced, .5, "other"))
+    rejects(lambda: index.blend(query, voiced, float("nan"), "target"))
+    rejects(lambda: ContentIndex(full, dict(features, encoder_hash="different")))
+    data["segments"][1]["source_hash"] = "train"
+    manifest.write_text(json.dumps(data), encoding="utf-8")
+    rejects(lambda: build_index(manifest, root / "leaked.index", "target"))
+
+    # Exercise the actual converter hook with synthetic stubs, not model weights.
+    captured = {}
+    cached = dict(content=query, voiced=voiced, f0=np.array([220, 0], dtype=np.float32),
+                  energy=np.array([.1, .2], dtype=np.float32), confidence=voiced,
+                  confidence_valid=np.ones(2, dtype=np.float32))
+
+    class Acoustic:
+        config = SimpleNamespace(causal=False, family="shallow-flow")
+        flow_trained = True
+        shortcut_trained = False
+
+        def condition(self, content, f0, voiced, energy, speaker, confidence, valid):
+            captured.update(content=content.cpu().numpy()[0], f0=f0.cpu().numpy()[0],
+                            voiced=voiced.cpu().numpy()[0], energy=energy.cpu().numpy()[0])
+            return content
+
+        def sample(self, condition, steps, noise, ordinary=False):
+            return torch.zeros(1, 16, 2)
+
+    converter = Converter.__new__(Converter)
+    converter.device = torch.device("cpu")
+    converter.acoustic_package = dict(speakers=["target"])
+    converter.acoustic = Acoustic()
+    converter.mel_config = MelConfig(n_fft=256, hop_length=64, n_mels=16)
+    converter.extractor = SimpleNamespace(config=SimpleNamespace(profile="offline"),
+                                         extract=lambda audio: cached)
+    converter.vocoder = lambda *args, **kwargs: torch.zeros(1, 128)
+    converter.content_index, converter.index_rate = index, .5
+    output_audio = converter.convert(np.ones(128, dtype=np.float32), steps=8, seed=17)
+    assert len(output_audio) == 128 and np.isfinite(output_audio).all()
+    np.testing.assert_allclose(captured["content"][0], [1.125, .0625, 0, 0], atol=1e-6)
+    for key in ("f0", "voiced", "energy"):
+        np.testing.assert_array_equal(captured[key], cached[key])
+    np.testing.assert_array_equal(cached["content"], original)
+    converter.content_index, converter.index_rate = None, 0
+    converter.convert(np.ones(128, dtype=np.float32), steps=8, seed=17)
+    np.testing.assert_array_equal(captured["content"], original)
+    with Path(full).open("ab") as stream:
+        stream.write(b"tampered")
+    rejects(lambda: ContentIndex(full, features))
+    report = dict(passed=True, deterministic_bounded_sampling=True,
+                  heldout_and_other_voices_excluded=True, frontend_and_target_checks=True,
+                  exact_neighbor_and_unvoiced_protection=True, zero_ratio_passthrough=True,
+                  converter_preserves_pitch_voicing_energy_and_source_features=True,
+                  index_tampering_rejected=True, models_loaded=False, device="cpu", quality_claim=False)
+    atomic_json(root / "report.json", report)
+    return report
+
+
+def verify_fidelity(output):
+    """Known signal interventions, independent of any trained model."""
+    from scipy.signal import butter, sosfilt
+    from rvc.lib.tools.fidelity import compare_files, compare_waveforms
+    import soundfile as sf
+
+    root = Path(output)
+    root.mkdir(parents=True, exist_ok=False)
+    rate = 44100
+    rng = np.random.default_rng(2048)
+    noise = rng.normal(0, .1, rate)
+    same = compare_waveforms(noise, noise.copy())
+    assert same["active_level_mae_db"] == 0
+    assert all(v["absolute_mae_db"] == 0 for v in same["envelope_proxies"].values())
+    gain = compare_waveforms(noise, noise * 2)
+    expected = 20 * np.log10(2)
+    assert abs(gain["active_level_mae_db"] - expected) < 1e-8
+    assert all(abs(v["absolute_mae_db"] - expected) < 1e-8 and
+               v["shape_mae_db"] < 1e-8 for v in gain["envelope_proxies"].values())
+    filtered = sosfilt(butter(6, 2000, fs=rate, output="sos"), noise)
+    loss = compare_waveforms(noise, filtered)
+    assert all(v["shape_mae_db"] > 5 for v in loss["envelope_proxies"].values())
+    source = np.zeros(rate)
+    source[rate // 4:rate // 2] = noise[rate // 4:rate // 2]
+    delayed = np.roll(source, rate // 10)
+    timing = compare_waveforms(source, delayed)
+    assert timing["source_active_output_inactive_fraction"] > .1
+    assert timing["source_inactive_output_active_fraction"] > .05
+    silence = compare_waveforms(np.zeros(rate), np.zeros(rate))
+    assert silence["active_source_frames"] == 0
+    assert silence["envelope_proxies"]["300.0"]["shape_mae_db"] is None
+    added_noise = compare_waveforms(np.zeros(rate), noise)
+    assert added_noise["source_inactive_output_active_fraction"] == 1
+    for bad in (np.full(rate, np.nan), np.zeros((rate, 2)), np.empty(0), noise[:-2]):
+        try:
+            compare_waveforms(noise, bad)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Invalid or unaligned signal accepted")
+    sf.write(root / "source.wav", noise, rate, subtype="FLOAT")
+    sf.write(root / "same.wav", noise, rate, subtype="FLOAT")
+    files = compare_files(root / "source.wav", root / "same.wav")
+    assert files["source"]["sha256"] == files["prediction"]["sha256"]
+    assert files["envelope_proxies"]["300.0"]["absolute_mae_db"] == 0
+    sf.write(root / "short.wav", noise[:-500], rate, subtype="FLOAT")
+    try:
+        compare_files(root / "source.wav", root / "short.wav")
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Duration mismatch was silently aligned")
+    report = dict(passed=True, identity_zero_error=True, gain_and_shape_separated=True,
+                  lost_high_frequency_envelope_detected=True, timing_not_warped=True,
+                  silence_and_added_noise_handled=True, invalid_signals_rejected=True,
+                  input_hashes_recorded=True, models_loaded=False, device="cpu",
+                  perceptual_quality_claim=False)
+    atomic_json(root / "report.json", report)
+    return report
+
+
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Synthetic CPU contract verification")
-    parser.add_argument("--contracts-only", action="store_true", required=True)
+    checks = parser.add_mutually_exclusive_group(required=True)
+    checks.add_argument("--contracts-only", action="store_true")
+    checks.add_argument("--retrieval-only", action="store_true")
+    checks.add_argument("--fidelity-only", action="store_true")
     parser.add_argument("--output", required=True, help="New directory for fixtures and report")
     arguments = parser.parse_args()
-    print(json.dumps(verify_contracts(arguments.output), indent=2))
+    verify_selected = (verify_fidelity if arguments.fidelity_only else
+                       verify_retrieval if arguments.retrieval_only else verify_contracts)
+    print(json.dumps(verify_selected(arguments.output), indent=2))

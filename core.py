@@ -19,6 +19,7 @@ from rvc.lib.tools.acoustic_workflows import (
     run_acoustic_train_all_script as run_acoustic_train_all_script,
     run_acoustic_finetune_script as run_acoustic_finetune_script,
     run_acoustic_infer_script as run_acoustic_infer_script,
+    run_acoustic_index_script as run_acoustic_index_script,
     run_acoustic_export_script as run_acoustic_export_script,
     run_acoustic_evaluate_script as run_acoustic_evaluate_script,
 )
@@ -829,14 +830,11 @@ def _dispatch_inference(kwargs, batch=False):
                 "sid",
                 "pitch",
                 "index_path",
+                "index_rate",
             }
             _reject_explicit_options(
                 set(click.get_current_context().params) - supported, "v3 inference"
             )
-            if kwargs.get("index_path"):
-                raise ValueError(
-                    "Retrieval indexes belong to classic models; leave --index-path empty for v3"
-                )
             return run_acoustic_infer_script(
                 kwargs["input_folder" if batch else "input_path"],
                 kwargs["output_folder" if batch else "output_path"],
@@ -844,6 +842,8 @@ def _dispatch_inference(kwargs, batch=False):
                 sid=kwargs.get("sid", 0),
                 pitch=kwargs["pitch"],
                 batch=batch,
+                index_path=kwargs.get("index_path") or None,
+                index_rate=kwargs["index_rate"],
                 **options,
             )
         _reject_explicit_options(names, "classic inference")
@@ -1672,9 +1672,22 @@ def train(**kwargs):
     default="Auto",
     help="Index file generation algorithm.",
 )
+@_architecture_options
+@click.option("--manifest", type=click.Path(exists=True, dir_okay=False))
+@click.option("--speaker", help="Target speaker name for an acoustic content index.")
+@click.option("--output-path", type=click.Path(dir_okay=False))
+@click.option("--max-vectors", default=50000, type=click.IntRange(1, 200000))
+@click.option("--seed", default=1234, type=click.IntRange(min=0))
 def index(**kwargs):
-    """Generate an index file for an RVC model."""
-    result = run_index_script(kwargs["model_name"], kwargs["index_algorithm"])
+    """Generate a classic RVC or target-speaker acoustic content index."""
+    if kwargs["architecture"] == "v3":
+        try:
+            result = run_acoustic_index_script(**{k: v for k, v in kwargs.items() if k != "architecture"})
+        except (ValueError, OSError, KeyError) as error:
+            raise click.ClickException(str(error)) from error
+    else:
+        _reject_explicit_options({"manifest", "speaker", "output_path", "max_vectors", "seed"}, "classic indexing")
+        result = run_index_script(kwargs["model_name"], kwargs["index_algorithm"])
     click.echo(result)
 
 

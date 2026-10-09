@@ -45,6 +45,8 @@ def inference_options(model_file=None):
         )
         seed = gr.Number(value=0, minimum=0, precision=0, label="Sampling seed")
         ordinary = gr.Checkbox(value=False, label="Ordinary flow reference sampler")
+        retrieval_rate = gr.Slider(0, 1, value=0, label="Search Feature Ratio",
+                                  info="Optional target content index. Start at 0 to preserve the original conversion; compare small ratios before increasing it.")
     if model_file is not None:
 
         def select_vocoders(path, current):
@@ -91,7 +93,7 @@ def inference_options(model_file=None):
         refresh.click(
             lambda: gr.update(choices=discover_models(kind="vocoder")), outputs=vocoder
         )
-    return settings, [vocoder, encoder, pitch_path, budget, seed, device, ordinary]
+    return settings, [vocoder, encoder, pitch_path, budget, seed, device, ordinary, retrieval_rate]
 
 
 def model_settings(path):
@@ -110,7 +112,7 @@ def model_settings(path):
         gr.update(visible=modern),
         gr.update(visible=not modern),
         gr.update(visible=modern),
-        gr.update(visible=not modern, **({"value": ""} if modern else {})),
+        gr.update(visible=True, **({"value": ""} if modern else {})),
         gr.update(choices=speakers, value=0),
         gr.update(choices=speakers, value=0),
     )
@@ -158,7 +160,7 @@ def route_conversion(legacy_args, options, batch=False):
     values = signature.bind(*legacy_args).arguments
     if model_architecture(values["pth_path"]) == "classic":
         return legacy(*legacy_args)
-    vocoder, encoder, pitch_path, budget, seed, device, ordinary = options
+    vocoder, encoder, pitch_path, budget, seed, device, ordinary, retrieval_rate = options
     source = values["input_folder" if batch else "input_path"]
     destination = values["output_folder" if batch else "output_path"]
     if not batch:
@@ -178,6 +180,8 @@ def route_conversion(legacy_args, options, batch=False):
             device=device,
             ordinary_flow=ordinary,
             batch=batch,
+            index_path=values.get("index_path") or None,
+            index_rate=float(retrieval_rate),
         )
     except (ValueError, OSError) as error:
         raise gr.Error(str(error)) from error

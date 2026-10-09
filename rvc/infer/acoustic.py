@@ -31,7 +31,8 @@ class Converter:
     """Validate package/frontend compatibility and own frozen inference models."""
 
     def __init__(
-        self, acoustic, vocoder, encoder, pitch_path=None, device="auto", extractor=None
+        self, acoustic, vocoder, encoder, pitch_path=None, device="auto", extractor=None,
+        index_path=None, index_rate=0.0,
     ):
         self.device = resolve_device(device)
         self.acoustic_package, self.vocoder_package = (
@@ -43,6 +44,16 @@ class Converter:
             raise ValueError(
                 "Choose an acoustic package and a separate universal vocoder package"
             )
+        if not np.isfinite(index_rate) or not 0 <= index_rate <= 1:
+            raise ValueError("Retrieval ratio must be finite and between zero and one")
+        self.index_rate = float(index_rate)
+        self.content_index = None
+        if self.index_rate:
+            if not index_path:
+                raise ValueError("Choose a target content index for a nonzero retrieval ratio")
+            from rvc.lib.tools.retrieval import ContentIndex
+
+            self.content_index = ContentIndex(index_path, a["features"])
         require_contract(v["mel"], a["mel"], "acoustic/vocoder mel")
         self.mel_config = MelConfig(**a["mel"])
         self.acoustic = construct(a, self.device).eval().requires_grad_(False)
@@ -101,6 +112,8 @@ class Converter:
             self.acoustic_package["speakers"]
         ):
             raise ValueError("Unknown target speaker; choose an integer speaker ID")
+        if self.content_index is not None:
+            self.content_index.require_speaker(self.acoustic_package["speakers"][speaker])
         if not np.isfinite(semitones) or not -48 <= semitones <= 48:
             raise ValueError("Pitch shift must be finite and within four octaves")
         if not isinstance(seed, Integral) or not 0 <= seed < 2**64:
@@ -151,6 +164,7 @@ class Converter:
             self.extractor.config.profile == "bounded"
             and self.acoustic.config.causal
             and self.vocoder.config.causal
+            and self.content_index is None
         ):
             live = LiveConverter(self, speaker, semitones, steps, seed, ordinary)
             pieces = []
@@ -163,6 +177,12 @@ class Converter:
             pieces.append(live.flush())
             return np.concatenate(pieces)
         features = self.extractor.extract(audio)
+        if self.content_index is not None:
+            features = dict(features)
+            features["content"] = self.content_index.blend(
+                features["content"], features["voiced"], self.index_rate,
+                self.acoustic_package["speakers"][speaker],
+            )
         x = self.controls(features, speaker, semitones)
         condition = self.acoustic.condition(
             x["content"],
@@ -249,6 +269,8 @@ class LiveConverter:
     def __init__(
         self, converter, speaker=0, semitones=0, steps=4, seed=0, ordinary=False
     ):
+        if converter.content_index is not None:
+            raise ValueError("Content retrieval is currently supported for file conversion only")
         if not converter.vocoder.config.causal:
             raise ValueError(
                 "This vocoder supports file conversion only; live conversion requires a streaming-compatible vocoder"

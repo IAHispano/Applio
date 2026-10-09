@@ -348,6 +348,7 @@ def train_tab():
         monitor_options,
         preparation_options,
         prepare_dataset,
+        retrieval_index_options,
         stage_options,
         stop_training,
         train_model,
@@ -930,6 +931,7 @@ def train_tab():
                 outputs=[train_output_info],
             )
 
+        retrieval_index_options(model_name, architecture, train_output_info)
         monitor_options()
 
     # Export Model section

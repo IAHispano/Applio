@@ -188,6 +188,36 @@ def extraction_options():
     return settings, [encoder, pitch, pitch_path, profile, device]
 
 
+def retrieval_index_options(model_name, architecture, output):
+    """Reuse the training project's cached content without loading any model."""
+    with gr.Column(visible=False) as settings:
+        target = gr.Dropdown([], value=None, allow_custom_value=True,
+                             label="Index target speaker",
+                             info="Choose one voice. Only its training content features enter the optional index.")
+        refresh = gr.Button("Load index targets")
+        build = gr.Button("Generate Index")
+
+    def targets(name):
+        try:
+            manifest = core.acoustic_project(name) / "data/manifest.json"
+            speakers = json.loads(manifest.read_text(encoding="utf-8"))["speakers"]
+            return gr.update(choices=speakers, value=speakers[0] if len(speakers) == 1 else None)
+        except (ValueError, OSError, KeyError) as error:
+            raise gr.Error("Run Preprocess and Extract before loading index targets") from error
+
+    def generate(name, speaker):
+        try:
+            return "Content index saved: " + core.run_acoustic_index_script(name, speaker=speaker)
+        except (ValueError, OSError, KeyError) as error:
+            raise gr.Error(str(error)) from error
+
+    refresh.click(targets, model_name, target)
+    model_name.change(lambda: gr.update(choices=[], value=None), outputs=target)
+    build.click(generate, [model_name, target], output)
+    architecture.change(lambda mode: gr.update(visible=mode == "v3"), architecture, settings)
+    return settings
+
+
 def _progress_callback(progress):
     if not progress:
         return None

@@ -1223,7 +1223,8 @@ def inference_tab():
                 return message, None
             try:
                 gr.Info(i18n("Converting audio..."))
-                result = route_conversion(args[:-7], args[-7:])
+                count = len(acoustic_single_options)
+                result = route_conversion(args[:-count], args[-count:])
                 gr.Info(result[0])
                 return result
             except (ValueError, OSError) as error:
@@ -1249,7 +1250,8 @@ def inference_tab():
                 gr.Info(message)
                 return message
             try:
-                return route_conversion(args[:-7], args[-7:], batch=True)
+                count = len(acoustic_batch_options)
+                return route_conversion(args[:-count], args[-count:], batch=True)
             except (ValueError, OSError) as error:
                 gr.Warning(str(error))
                 return str(error)
