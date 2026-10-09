@@ -91,6 +91,10 @@ def generate_validation(
                 mels["_from_real_mel"] = net_flow.sample(
                     inputs, steps=PREVIEW_STEPS, noise=noise, start_mel=real_mel
                 )
+            if net_flow.backbone.span_mlp is not None:
+                mels["_1_step"] = net_flow.sample(
+                    inputs, steps=1, method="mean", noise=noise
+                )
             if log_real_mel:
                 mels["_real_mel"] = real_mel
 

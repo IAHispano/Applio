@@ -1,4 +1,3 @@
-import copy
 import os
 import sys
 
@@ -72,7 +71,7 @@ save_only_latest = _strtobool(sys.argv[8])
 save_every_weights = _strtobool(sys.argv[9])
 cleanup = _strtobool(sys.argv[10])
 feature_cache = _strtobool(sys.argv[11])
-shortcut = _strtobool(sys.argv[12])
+mean_flow = _strtobool(sys.argv[12])
 
 # FP16: the weight gradients overflow with the scale around 2^20, so the
 # GradScaler is not left to grow until a step is skipped
@@ -143,9 +142,6 @@ if pretrain not in ("", "None"):
     for key in finetune_augmentation:
         if "finetune_" + key in config["flow"]:
             config["flow"][key] = config["flow"]["finetune_" + key]
-
-# Whether the flow is a shortcut model is decided by the training, not the config
-config["flow"]["model"]["shortcut"] = shortcut
 
 torch.backends.cudnn.deterministic = False
 if os.name == "nt":  # Windows
@@ -511,6 +507,17 @@ def run(
     if checkpoint_path:
         checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
 
+    # A resumed training keeps the Mean Flow choice it was started with
+    use_mean_flow = mean_flow
+    if checkpoint is not None:
+        use_mean_flow = any(
+            key.startswith("backbone.span_mlp.") for key in checkpoint["model"]
+        )
+        if use_mean_flow != mean_flow and rank == 0:
+            print(
+                f"This model was started {'with' if use_mean_flow else 'without'} Mean Flow and resumes that way. Enable Fresh Training to change it."
+            )
+    model_config["mean_flow"] = use_mean_flow
     backbone_args = model_config.setdefault("backbone_args", {})
 
     finetune = pretrain not in ("", "None")
@@ -522,8 +529,22 @@ def run(
         # The time scale is not in the weights, the model has to be built with it
         if time_scale is not None:
             backbone_args["time_scale"] = time_scale
-    elif rank == 0 and checkpoint is None:
-        print("No pretrained (Flow), training from scratch.")
+    else:
+        if rank == 0 and checkpoint is None:
+            print("No pretrained (Flow), training from scratch.")
+        # The Mean Flow target is the network's own derivative in time, which
+        # diverged through the time scale of 1000
+        if use_mean_flow and "time_scale" not in backbone_args:
+            backbone_args["time_scale"] = 1.0
+            if rank == 0:
+                print("Mean Flow from scratch, using a time scale of 1.")
+
+    if rank == 0 and use_mean_flow:
+        print("Training with Mean Flow.")
+        if backbone_args.get("time_scale", 1000.0) > 10:
+            print(
+                "Mean Flow with a time scale over 10 has diverged. A pretrained trained with a time scale of 1 avoids it."
+            )
 
     # Initialize model and optimizer
     net_flow = build_flow(config, n_speakers).to(device)
@@ -620,15 +641,6 @@ def run(
             cosine_progress(scale, flow_config["lr_final_ratio"]),
         )
 
-    # A shortcut model learns its jumps from a copy of itself that lags it,
-    # which starts at the averaged weights
-    teacher = None
-    if net_flow.shortcut_levels:
-        with ema.applied(net_flow):
-            teacher = copy.deepcopy(net_flow).requires_grad_(False).eval()
-        if rank == 0:
-            print("Training a shortcut flow.")
-
     # Wrap model with DDP for multi-gpu processing
     net_flow_ddp = net_flow
     if n_gpus > 1 and device.type == "cuda":
@@ -669,8 +681,12 @@ def run(
         "grad_clip": flow_config["grad_clip"],
         "speaker_dropout": speaker_dropout,
         "tension_dropout": tension_dropout,
-        "shortcut_share": flow_config.get("shortcut_share", 0.125),
-        "shortcut_ema_decay": flow_config.get("shortcut_ema_decay", 0.999),
+        "mean_ratio": (
+            flow_config.get("mean_flow_ratio", 0.25) if use_mean_flow else 0.0
+        ),
+        "mean_guidance": (
+            flow_config.get("mean_flow_guidance_max", 4.0) if use_mean_flow else 1.0
+        ),
         "aux_weight": flow_config["aux_mel_weight"],
         "eval_interval": flow_config["eval_interval"],
         "n_speakers": n_speakers,
@@ -683,7 +699,7 @@ def run(
             rank,
             epoch,
             hps,
-            [net_flow, net_flow_ddp, ema, teacher],
+            [net_flow, net_flow_ddp, ema],
             optim,
             [train_loader, eval_loader],
             writer_eval,
@@ -745,7 +761,7 @@ def train_and_evaluate(
         rank (int): Rank of the current process.
         epoch (int): Current epoch number.
         hps (dict): Hyperparameters.
-        nets (list): The flow model, its DDP wrapper, the average of its weights and the lagging copy of a shortcut model [net_flow, net_flow_ddp, ema, teacher].
+        nets (list): The flow model, its DDP wrapper and the average of its weights [net_flow, net_flow_ddp, ema].
         optim (torch.optim.Optimizer): The optimizer of the flow model.
         loaders (list): List of dataloaders [train_loader, eval_loader].
         writer (SummaryWriter): The TensorBoard writer.
@@ -758,7 +774,7 @@ def train_and_evaluate(
     """
     global global_step, skipped_steps, skipped_in_a_row, logged_real_mel
 
-    net_flow, net_flow_ddp, ema, teacher = nets
+    net_flow, net_flow_ddp, ema = nets
     train_loader, eval_loader = loaders
     data_config = hps["config"]["data"]
 
@@ -795,15 +811,21 @@ def train_and_evaluate(
                 device_type="cuda", enabled=use_amp, dtype=train_dtype
             ):
                 # Forward pass
-                loss_flow, loss_aux = net_flow_ddp(
+                loss_flow, loss_aux, loss_mean = net_flow_ddp(
                     mel,
                     inputs,
                     speaker_dropout=hps["speaker_dropout"],
                     tension_dropout=hps["tension_dropout"],
-                    teacher=teacher,
-                    shortcut_share=hps["shortcut_share"],
+                    mean_ratio=hps["mean_ratio"],
+                    mean_guidance=hps["mean_guidance"],
                 )
                 loss_all = loss_flow
+                if loss_mean is not None:
+                    loss_all = (1.0 - hps["mean_ratio"]) * loss_flow + hps[
+                        "mean_ratio"
+                    ] * loss_mean.objective
+                    # the flow loss without the Mean Flow weighting
+                    loss_flow = loss_mean.flow
                 if loss_aux is not None:
                     loss_all = loss_all + hps["aux_weight"] * loss_aux
 
@@ -826,13 +848,6 @@ def train_and_evaluate(
             else:
                 skipped_in_a_row = 0
                 ema.update()
-                if teacher is not None:
-                    with torch.no_grad():
-                        torch._foreach_lerp_(
-                            list(teacher.parameters()),
-                            list(net_flow.parameters()),
-                            1.0 - hps["shortcut_ema_decay"],
-                        )
 
             global_step += 1
 
@@ -848,6 +863,10 @@ def train_and_evaluate(
                     scalar_dict["amp/scale"] = scaler.get_scale()
                 if loss_aux is not None:
                     scalar_dict["loss/aux_mel"] = loss_aux
+                if loss_mean is not None:
+                    scalar_dict["loss/mean_flow"] = loss_mean.mean
+                    # over 1 the Mean Flow target is feeding on itself
+                    scalar_dict["loss/mean_flow_bootstrap"] = loss_mean.bootstrap_ratio
                 summarize(
                     writer=writer,
                     global_step=global_step,

@@ -578,9 +578,9 @@ def rectified_flow_settings():
             sampler = gr.Radio(
                 label=i18n("Sampler"),
                 info=i18n(
-                    "Euler takes one pass of the model per step. Heun takes two and is more accurate at the same cost from 8 steps on."
+                    "Euler takes one pass of the model per step. Heun takes two and is more accurate at the same cost from 8 steps on. Mean takes one or two steps and needs a model trained with Mean Flow."
                 ),
-                choices=["euler", "heun"],
+                choices=["euler", "heun", "mean"],
                 value="euler",
                 interactive=True,
             )

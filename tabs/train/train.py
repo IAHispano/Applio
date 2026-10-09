@@ -755,10 +755,10 @@ def train_tab():
                         interactive=True,
                         visible=False,
                     )
-                    flow_shortcut = gr.Checkbox(
-                        label=i18n("Shortcut Flow"),
+                    flow_mean_flow = gr.Checkbox(
+                        label=i18n("Mean Flow"),
                         info=i18n(
-                            "Also teach the flow to sample in 1, 2, 4 or 8 steps, for low latency. Slower to train. Any pretrained flow model serves with it enabled or disabled."
+                            "Also trains the Rectified Flow model to predict the mean velocity of a step, which allows sampling in one or two steps. It cannot be changed once the training has started."
                         ),
                         value=False,
                         interactive=True,
@@ -1037,7 +1037,7 @@ def train_tab():
                     g_pretrained_path,
                     d_pretrained_path,
                     flow_feature_cache,
-                    flow_shortcut,
+                    flow_mean_flow,
                 ],
             )
             refresh.click(
@@ -1122,7 +1122,7 @@ def train_tab():
                     checkpointing,
                     shutdown_check,
                     flow_feature_cache,
-                    flow_shortcut,
+                    flow_mean_flow,
                 ],
                 outputs=[train_output_info],
             )

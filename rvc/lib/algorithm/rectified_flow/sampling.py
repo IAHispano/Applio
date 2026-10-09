@@ -6,7 +6,8 @@ from torch.nn import functional as F
 
 from rvc.lib.algorithm.rectified_flow.conditioning import Conditioning
 
-SAMPLERS = ("euler", "heun")
+# "mean" needs a model trained with Mean Flow.
+SAMPLERS = ("euler", "heun", "mean")
 SCHEDULES = ("uniform", "sway", "logit-normal")
 RESCALE_MODES = ("global", "frame")
 

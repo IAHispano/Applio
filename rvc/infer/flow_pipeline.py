@@ -291,7 +291,7 @@ class FlowPipeline(Pipeline):
             steps: Number of sampling steps.
             cfg_scale: Guidance scale towards the speaker.
             content_guidance: Guidance scale towards the content.
-            sampler: Sampling method, "euler" or "heun".
+            sampler: Sampling method, "euler", "heun" or, for a model trained with Mean Flow, "mean".
             guidance_rescale: Pull of the guided output's level back to the unguided one's.
             guidance_until: Flow time the guidances apply until, 1 for the whole sampling.
         """
@@ -412,7 +412,7 @@ class FlowPipeline(Pipeline):
             steps: Number of sampling steps.
             cfg_scale: Guidance scale towards the speaker.
             content_guidance: Guidance scale towards the content.
-            sampler: Sampling method, "euler" or "heun".
+            sampler: Sampling method, "euler", "heun" or, for a model trained with Mean Flow, "mean".
             guidance_rescale: Pull of the guided output's level back to the unguided one's.
             guidance_until: Flow time the guidances apply until, 1 for the whole sampling.
             formant_shift: Shift of the formants in semitones, apart from the pitch.

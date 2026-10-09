@@ -591,7 +591,7 @@ def run_train_script(
     checkpointing: bool = False,
     shutdown_check: bool = False,
     flow_feature_cache: bool = True,
-    flow_shortcut: bool = False,
+    flow_mean_flow: bool = False,
 ):
     if vocoder == "Rectified Flow":
         command = rectified_flow_train_command(
@@ -607,7 +607,7 @@ def run_train_script(
             custom_pretrained,
             g_pretrained_path,
             flow_feature_cache,
-            flow_shortcut,
+            flow_mean_flow,
         )
     else:
         if pretrained == True:
@@ -688,7 +688,7 @@ def rectified_flow_train_command(
     custom_pretrained: bool = False,
     flow_pretrained_path: str = None,
     feature_cache: bool = True,
-    shortcut: bool = False,
+    mean_flow: bool = False,
 ):
     from rvc.lib.tools.pretrained_selector import rectified_flow_selector
 
@@ -735,7 +735,7 @@ def rectified_flow_train_command(
                 save_every_weights,
                 cleanup,
                 feature_cache,
-                shortcut,
+                mean_flow,
             ],
         ),
     ]
@@ -1351,9 +1351,9 @@ def extract(**kwargs):
     help="Rectified Flow: write the features and the augmented copies of the dataset to disk once and train from them.",
 )
 @click.option(
-    "--flow-shortcut/--no-flow-shortcut",
+    "--flow-mean-flow/--no-flow-mean-flow",
     default=False,
-    help="Rectified Flow: also teach the flow to sample in 1, 2, 4 or 8 steps. Any pretrained flow model serves with it enabled or disabled.",
+    help="Rectified Flow: also train the mean velocity of a step (Mean Flow), for sampling in one or two steps. It cannot be changed once the training has started.",
 )
 def train(**kwargs):
     """Train an RVC model."""
@@ -1376,7 +1376,7 @@ def train(**kwargs):
         vocoder=kwargs["vocoder"],
         checkpointing=kwargs["checkpointing"],
         flow_feature_cache=kwargs["flow_feature_cache"],
-        flow_shortcut=kwargs["flow_shortcut"],
+        flow_mean_flow=kwargs["flow_mean_flow"],
     )
     click.echo(result)
 

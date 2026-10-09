@@ -92,14 +92,15 @@ class _ATanGLU(torch.autograd.Function):
         return grad * atan_gate, grad * decay_out
 
 
-def atan_glu(x: torch.Tensor):
+def atan_glu(x: torch.Tensor, fused: bool = True):
     """
     ATanGLU activation.
 
     Args:
         x (torch.Tensor): Input, split in two along the last dimension.
+        fused (bool, optional): Use the memory-saving function, which has no forward-mode derivative. Defaults to True.
     """
     out, gate = x.chunk(2, dim=-1)
-    if torch.is_grad_enabled():
+    if fused and torch.is_grad_enabled():
         return _ATanGLU.apply(out, gate)
     return out * torch.atan(gate)

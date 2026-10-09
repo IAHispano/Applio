@@ -8,6 +8,9 @@ from rvc.lib.algorithm.rectified_flow.layers import (
     timestep_embedding,
 )
 
+# Multiplies the guidance scale, less 1, before its sinusoids.
+GUIDANCE_SCALE = 30.0
+
 
 class LYNXNet2Block(nn.Module):
     """
@@ -40,7 +43,7 @@ class LYNXNet2Block(nn.Module):
             nn.init.zeros_(self.modulation.weight)
             nn.init.zeros_(self.modulation.bias)
 
-    def forward(self, x, mask, embedding=None):
+    def forward(self, x, mask, embedding=None, fused=True):
         y = self.norm(x)
         gate = None
         if self.modulation is not None:
@@ -48,7 +51,7 @@ class LYNXNet2Block(nn.Module):
             # Not `1 + scale`: BF16 rounds small modulations to nothing.
             y = y + y * scale + shift
         y = self.depthwise((y * mask).transpose(1, 2)).transpose(1, 2)
-        y = self.down(atan_glu(self.mid(atan_glu(self.up(y)))))
+        y = self.down(atan_glu(self.mid(atan_glu(self.up(y), fused)), fused))
         if gate is not None:
             y = y + gate * y
         return (x + y) * mask
@@ -67,8 +70,8 @@ class LYNXNet2Backbone(nn.Module):
         expansion (float, optional): Expansion of the blocks. Defaults to 1.
         kernel_size (int, optional): Kernel size of the blocks. Defaults to 31.
         adaln (bool, optional): Modulate every block by time and speaker. Defaults to False.
-        time_scale (float, optional): Multiplier of the flow time before its sinusoids. Defaults to 1000.0.
-        step_levels (int, optional): Number of jump lengths of a shortcut model, 0 for a plain flow. Level k is a jump of 1 / 2**k of the trained time range, with its own embedding; the finest level has none and is the plain flow. Defaults to 0.
+        span (bool, optional): Add MeanFlow's second time input, the length of the step whose mean velocity is predicted, and the guidance scale that velocity is under. Defaults to False.
+        time_scale (float, optional): Multiplier of the flow time before its sinusoids; Mean Flow needs it near 1. Defaults to 1000.0.
     """
 
     def __init__(
@@ -80,8 +83,8 @@ class LYNXNet2Backbone(nn.Module):
         expansion=1,
         kernel_size=31,
         adaln=False,
+        span=False,
         time_scale=1000.0,
-        step_levels=0,
     ):
         super().__init__()
         self.channels = int(channels)
@@ -100,13 +103,19 @@ class LYNXNet2Backbone(nn.Module):
             ]
         )
         self.voice = nn.Linear(cond_channels, channels) if adaln else None
-        self.step = None
-        if step_levels > 0:
-            # From zero, so the model starts as the plain flow.
-            self.step = nn.Embedding(
-                step_levels + 1, channels, padding_idx=step_levels
+        self.span_mlp = self.guide_mlp = None
+        if span:
+            # No biases, so a zero span and a guidance scale of 1 add exactly nothing.
+            self.span_mlp, self.guide_mlp = (
+                nn.Sequential(
+                    nn.Linear(channels, channels * 4, bias=False),
+                    nn.GELU(),
+                    nn.Linear(channels * 4, channels, bias=False),
+                )
+                for _ in range(2)
             )
-            nn.init.zeros_(self.step.weight)
+            nn.init.zeros_(self.span_mlp[-1].weight)
+            nn.init.zeros_(self.guide_mlp[-1].weight)
         self.norm = nn.LayerNorm(channels)
         self.output = nn.Linear(channels, n_mels)
         self.output.use_adamw = True
@@ -115,7 +124,13 @@ class LYNXNet2Backbone(nn.Module):
         nn.init.zeros_(self.output.weight)
         nn.init.zeros_(self.output.bias)
 
-    def forward(self, x, t, cond, mask, voice=None, level=None):
+    def _vanishing(self, value, scale):
+        # Sinusoids of `value` that are all 0 at 0.
+        features = timestep_embedding(value.reshape(-1), self.channels, scale)
+        half = self.channels // 2
+        return torch.cat((features[:, :half], 1.0 - features[:, half:]), dim=-1)
+
+    def forward(self, x, t, cond, mask, voice=None, span=None, guidance=None):
         """
         Args:
             x (torch.Tensor): Noisy mel, shape (batch, n_mels, frames).
@@ -123,14 +138,23 @@ class LYNXNet2Backbone(nn.Module):
             cond (torch.Tensor): Conditioning, shape (batch, cond_channels, frames).
             mask (torch.Tensor): Frame mask, shape (batch, 1, frames).
             voice (torch.Tensor, optional): Speaker embedding, shape (batch, cond_channels).
-            level (torch.Tensor, optional): Jump length of each item, shape (batch,), the plain flow when None.
+            span (torch.Tensor, optional): Length of the step whose mean velocity is wanted, shape (batch,), the velocity at `t` when None.
+            guidance (torch.Tensor, optional): Speaker guidance scale the output is under, shape (batch,), unguided when None.
         """
         time = self.time_mlp(
             timestep_embedding(t.reshape(-1), self.channels, self.time_scale)
         )
         time = time.view(t.shape[0], -1, self.channels)
-        if level is not None:
-            time = time + self.step(level)[:, None, :]
+        if span is not None:
+            features = self._vanishing(span, self.time_scale)
+            time = time + self.span_mlp(features).view(
+                span.shape[0], -1, self.channels
+            )
+        if guidance is not None:
+            features = self._vanishing(guidance - 1.0, GUIDANCE_SCALE)
+            time = time + self.guide_mlp(features).view(
+                guidance.shape[0], -1, self.channels
+            )
         frame_mask = mask.transpose(1, 2)
         # Full precision in: at late t the leftover noise is under BF16's step.
         with torch.autocast(x.device.type, enabled=False):
@@ -141,7 +165,7 @@ class LYNXNet2Backbone(nn.Module):
         if self.voice is not None:
             embedding = time + self.voice(voice)[:, None, :]
         for layer in self.layers:
-            h = layer(h, frame_mask, embedding)
+            h = layer(h, frame_mask, embedding, fused=span is None)
         h = self.norm(h)
         return (self.output(h) * frame_mask).transpose(1, 2)
 
