@@ -92,7 +92,10 @@ def construct(payload, device="cpu", use_ema=True):
                 asdict(MelConfig(fmin=40., fmax=16000., magnitude_epsilon=0.)),
                 "NSF-HiFiGAN mel",
             )
-            model = NSFHiFiGANVocoder(payload["model_config"])
+            model = NSFHiFiGANVocoder(
+                payload["model_config"],
+                f0_policy=payload.get("f0_policy", "legacy-zero-unvoiced"),
+            )
         else:
             raise ValueError(f"Unsupported V3 vocoder backend: {backend}")
     weights = (

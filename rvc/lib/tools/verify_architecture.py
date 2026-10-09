@@ -173,3 +173,143 @@ def verify(encoder, output="logs/v3-verification", device="auto", full_size=True
     }
     atomic_json(root / "report.json", report)
     return report
+
+
+def verify_contracts(output):
+    """CPU-only synthetic regression checks, without encoders or released weights.
+
+    Uses a new output directory so existing reports and fixtures are preserved.
+    This checks contracts and exact continuation, not perceptual quality.
+    """
+    from unittest.mock import patch
+
+    import soundfile as sf
+    from torch import nn
+
+    from rvc.configs.architectures import BACKEND, FORMAT_VERSION, compatible_vocoders
+    from rvc.configs.neural import FeatureConfig, MelConfig
+    from rvc.lib.algorithm.acoustic.nsf_hifigan import NSFHiFiGANVocoder
+    from rvc.lib.algorithm.acoustic.spectral import MelExtractor
+    from rvc.lib.algorithm.acoustic.vocoder import SpectralVocoder
+    from rvc.train.acoustic.data import extract_preprocessed, preprocess_audio
+    from rvc.train.process.checkpoints import atomic_save, load_payload
+
+    root = Path(output)
+    root.mkdir(parents=True, exist_ok=False)
+    torch.set_num_threads(2)
+    mel = MelConfig(sample_rate=8192, n_fft=256, hop_length=64,
+                    n_mels=16, fmin=0, fmax=4096)
+
+    class SyntheticExtractor:
+        config = FeatureConfig(encoder_id="synthetic", encoder_hash="synthetic",
+                               content_dim=4, pitch_id="synthetic")
+        mel_config = mel
+
+        def extract(self, audio):
+            with torch.no_grad():
+                mels = MelExtractor(mel)(torch.from_numpy(audio)[None])[0].T.numpy()
+            frames = len(mels)
+            values = {key: np.zeros(frames, dtype=np.float32) for key in
+                      ("f0", "observed_f0", "voiced", "confidence",
+                       "confidence_valid", "energy")}
+            values.update(mel=mels, content=np.ones((frames, 4), dtype=np.float32))
+            return values
+
+    source = root / "source" / "speaker"
+    source.mkdir(parents=True)
+    for index in range(3):
+        t = np.arange(8192, dtype=np.float32) / 8192
+        sf.write(source / f"{index}.wav", .1 * np.sin(2 * np.pi * (180 + index * 20) * t),
+                 mel.sample_rate, subtype="FLOAT")
+    manifest_path = extract_preprocessed(
+        preprocess_audio(source.parent, root / "data", mel_config=mel, seed=11),
+        SyntheticExtractor(),
+    )
+    config = AcousticConfig(content_dim=4, mel_dim=16, speakers=1, condition_width=16,
+                            predictor_width=16, refiner_width=16, predictor_depth=2,
+                            refiner_depth=2, kernel_size=3, causal=False,
+                            prediction_centered=False, family="shallow-flow")
+    settings = dict(config=config, batch_size=2, crop_frames=64, device="cpu",
+                    precision="fp32", seed=17, checkpoint_every=1)
+    vocoder_config = VocoderConfig(sample_rate=8192, hop_length=64, mel_dim=16,
+                                   streams=2, n_fft=128, channels=4, depth=1)
+    torch.manual_seed(17)
+    vocoder = SpectralVocoder(vocoder_config)
+    renderer = root / "synthetic_vocoder.pth"
+    atomic_save(renderer, dict(backend=BACKEND, format_version=FORMAT_VERSION,
+                              kind="vocoder", vocoder_backend="spectral", mel=asdict(mel),
+                              model_config=asdict(vocoder_config), weights=vocoder.state_dict()))
+    checks = {}
+    for name, objectives in (
+        ("mel_adversarial", dict(mel_adversarial_weight=.01)),
+        ("waveform", dict(waveform_weight=.01, spectral_vocoder=str(renderer))),
+    ):
+        uninterrupted, resumed = root / name / "whole", root / name / "resumed"
+        list(train(manifest_path, uninterrupted, steps=2, **settings, **objectives))
+        list(train(manifest_path, resumed, steps=1, **settings, **objectives))
+        list(train(manifest_path, resumed, steps=1, resume=resumed / "last.pt",
+                   **settings, **objectives))
+        left, right = load_payload(uninterrupted / "last.pt"), load_payload(resumed / "last.pt")
+
+        def equal(a, b):
+            if isinstance(a, torch.Tensor):
+                return torch.equal(a, b)
+            if isinstance(a, dict):
+                return a.keys() == b.keys() and all(equal(a[k], b[k]) for k in a)
+            if isinstance(a, (list, tuple)):
+                return len(a) == len(b) and all(equal(x, y) for x, y in zip(a, b))
+            return a == b
+
+        for key in ("weights", "ema", "optimizer", "rank_rng", "critics", "critic_optimizer"):
+            if key in left and not equal(left[key], right[key]):
+                raise AssertionError(f"{name}: continuation differs in {key}")
+        changed = dict(objectives)
+        changed[f"{name}_weight"] = .02
+        try:
+            list(train(manifest_path, resumed, steps=1, resume=resumed / "last.pt",
+                       **settings, **changed))
+        except ValueError as error:
+            if "unchanged training settings" not in str(error):
+                raise
+        else:
+            raise AssertionError("Changed resume objective was accepted")
+        checks[name + "_exact_resume"] = True
+
+    # Exercise the wrapper boundary without allocating the full NSF generator.
+    class Capture(nn.Module):
+        def forward(self, mels, pitch):
+            self.pitch = pitch.clone()
+            return mels[:, :1]
+
+    wrapper = NSFHiFiGANVocoder.__new__(NSFHiFiGANVocoder)
+    nn.Module.__init__(wrapper)
+    wrapper.generator = Capture()
+    f0, voiced = torch.tensor([[220., 220., 220.]]), torch.tensor([[1., 0., 1.]])
+    for policy, expected in (("continuous", f0),
+                             ("legacy-zero-unvoiced", torch.tensor([[220., 0., 220.]]))):
+        wrapper.f0_policy = policy
+        wrapper(torch.zeros(1, 128, 3), f0, voiced)
+        if not torch.equal(wrapper.generator.pitch, expected):
+            raise AssertionError("NSF pitch policy mismatch")
+    checks["nsf_pitch_policies"] = True
+    metadata = dict(backend=BACKEND, kind="acoustic", mel=asdict(mel))
+    with patch("rvc.configs.architectures.inspect_model", side_effect=[
+        metadata, dict(kind="vocoder", mel=dict(asdict(mel), unknown_key=1)),
+        dict(kind="vocoder", mel=asdict(mel)),
+    ]):
+        if compatible_vocoders("voice", [("bad", "bad"), ("good", "good")]) != [("good", "good")]:
+            raise AssertionError("Unknown mel fields were accepted")
+    checks["unknown_mel_fields_rejected"] = True
+    report = dict(passed=True, checks=checks, device="cpu", quality_claim=False)
+    atomic_json(root / "report.json", report)
+    return report
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Synthetic CPU contract verification")
+    parser.add_argument("--contracts-only", action="store_true", required=True)
+    parser.add_argument("--output", required=True, help="New directory for fixtures and report")
+    arguments = parser.parse_args()
+    print(json.dumps(verify_contracts(arguments.output), indent=2))

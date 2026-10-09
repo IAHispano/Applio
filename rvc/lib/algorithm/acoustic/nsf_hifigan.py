@@ -97,9 +97,15 @@ class NSFHiFiGANVocoder(nn.Module):
         if config != expected:
             raise ValueError("Unsupported NSF-HiFiGAN graph; use the verified mini-NSF export")
 
-    def __init__(self, config):
+    def __init__(self, config, f0_policy="legacy-zero-unvoiced"):
         super().__init__()
         self.validate_config(config)
+        if f0_policy not in {"continuous", "legacy-zero-unvoiced"}:
+            raise ValueError("Unsupported NSF pitch policy")
+        # Old packages retain their measured behavior. Newly imported packages
+        # declare continuous F0 explicitly, matching upstream mini-NSF input.
+        # The shared frontend already interpolates unvoiced gaps in log Hz.
+        self.f0_policy = f0_policy
         self.config = SimpleNamespace(sample_rate=44100, hop_length=512,
                                       mel_dim=128, causal=False)
         self.generator = MiniNSFGenerator(config)
@@ -114,5 +120,6 @@ class NSFHiFiGANVocoder(nn.Module):
         if voiced is not None:
             if voiced.shape != f0.shape:
                 raise ValueError("Voicing and F0 shapes disagree")
-            f0 = torch.where(voiced >= .5, f0, torch.zeros_like(f0))
+            if self.f0_policy == "legacy-zero-unvoiced":
+                f0 = torch.where(voiced >= .5, f0, torch.zeros_like(f0))
         return self.generator(mel, f0)[:, 0]

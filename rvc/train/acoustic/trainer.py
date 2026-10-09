@@ -544,13 +544,18 @@ def train(
             else:
                 model.residual_scale.fill_(1)
         parameters = training_parameters(model, phase)
-        if (waveform_weight or waveform_adversarial_weight) and bool(
+        # Joint shallow flow marks its velocity trained after the first update.
+        # That flag does not turn a resumed joint predictor into residual-flow
+        # adaptation. The exact settings comparison below still rejects adding
+        # or changing objectives on resume.
+        resuming_joint = bool(resume) and model.config.family == "shallow-flow"
+        if not resuming_joint and (waveform_weight or waveform_adversarial_weight) and bool(
             model.flow_trained
         ):
             raise ValueError(
                 "Waveform supervision currently requires a predictor-only base; disable it for refiner adaptation"
             )
-        if mel_adversarial_weight and bool(model.flow_trained):
+        if not resuming_joint and mel_adversarial_weight and bool(model.flow_trained):
             raise ValueError(
                 "Mel adversarial supervision requires a predictor-only base"
             )

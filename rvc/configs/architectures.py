@@ -41,6 +41,7 @@ def _inspect(path, modified, size):
                 "capabilities",
                 "inference_only",
                 "vocoder_backend",
+                "f0_policy",
             )
             if k in payload
         }
@@ -81,7 +82,7 @@ def compatible_vocoders(voice, choices):
         ):
             try:
                 require_contract(candidate["mel"], metadata["mel"], "voice/vocoder mel")
-            except ValueError:
+            except (ValueError, TypeError, KeyError):
                 continue
             matches.append((label, path))
     return matches

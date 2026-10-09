@@ -409,13 +409,11 @@ def train_model(mode, legacy_args, options, session_hash, progress=None):
         adaptation,
         rank,
     ) = options[:11]
-    # Accept callbacks from the withdrawn experimental detail control. Keep its
-    # setting for exact resume, but do not offer it for new GUI training jobs.
-    detail = bool(options[11]) if len(options) in {12, 15} else False
-    workflow_start = 12 if len(options) in {12, 15} else 11
+    if len(options) not in {11, 14}:
+        raise ValueError("Training controls changed; reload the Training tab")
     workflow, pretrained, vocoder = (
-        options[workflow_start:]
-        if len(options) > workflow_start
+        options[11:]
+        if len(options) == 14
         else ("advanced", None, None)
     )
     if workflow == "scratch":
@@ -462,9 +460,6 @@ def train_model(mode, legacy_args, options, session_hash, progress=None):
             crop_frames=int(crop),
             accumulation_steps=int(accumulation),
             learning_rate=float(lr),
-            mel_detail_weight=0.5
-            if detail and stage in {"predictor", "adapt", "all", "all_refiners", "finetune"}
-            else 0.0,
             precision=precision,
             device=device,
             seed=int(seed),

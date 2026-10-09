@@ -81,6 +81,7 @@ def import_nsf_hifigan(destination, checkpoint):
     similarly named checkpoint from silently using release-default semantics.
     The upstream weight license is retained separately from the MIT source.
     """
+    from rvc.lib.algorithm.acoustic import nsf_hifigan
     from rvc.lib.algorithm.acoustic.nsf_hifigan import NSFHiFiGANVocoder
     from rvc.train.extract.features import file_hash
 
@@ -95,18 +96,19 @@ def import_nsf_hifigan(destination, checkpoint):
     if payload["config"]["data"] != expected_mel:
         raise ValueError("NSF-HiFiGAN release mel settings do not match the supported contract")
     config = payload["config"]["vocoder"]["model"]
-    model = NSFHiFiGANVocoder(config)
+    model = NSFHiFiGANVocoder(config, f0_policy="continuous")
     weights = {"generator." + key: value for key, value in payload["model"].items()}
     model.load_state_dict(weights, strict=True)
     mel = MelConfig(fmin=40., fmax=16000., magnitude_epsilon=0.)
     package = dict(
         backend=BACKEND, format_version=FORMAT_VERSION, kind="vocoder",
         vocoder_backend="nsf-hifigan", model_config=config, mel=mel.__dict__,
-        weights=weights, inference_only=True, adapters=None,
+        weights=weights, inference_only=True, adapters=None, f0_policy="continuous",
         capabilities={"streaming": False},
         provenance=dict(
             source=checkpoint.name, generator_sha256=file_hash(checkpoint),
-            implementation_commit="8c26404b09b19603c0bb4e1399097dfcc5ea101f",
+            implementation_sha256=file_hash(Path(nsf_hifigan.__file__)),
+            reference_revision="4d0889c4c180c75ad3000cc565864656344f8190",
             source_project="OpenVPI SingingVocoders",
             source_license="MIT; see nsf_hifigan.LICENSE",
             weight_license="CC-BY-NC-SA-4.0 per upstream OpenVPI release documentation",
