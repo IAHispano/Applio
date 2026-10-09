@@ -10,10 +10,11 @@ sys.path.append(now_dir)
 from rvc.realtime.core import VoiceChanger, AUDIO_SAMPLE_RATE
 
 
-def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt):
+def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt, ready_evt):
     """Entry point for the voice conversion worker process."""
 
     vc = VoiceChanger(**vc_kwargs)
+    ready_evt.set()
 
     while not stop_evt.is_set():
         # Apply pending config updates.
@@ -233,6 +234,7 @@ class VoiceChangerWorker:
         self._output_q = ctx.Queue(maxsize=2)
         self._config_q = ctx.Queue()
         self._stop = ctx.Event()
+        self._ready = ctx.Event()
         self._vc_kwargs = vc_kwargs
         self._process = None
         # Cached state for main-process reads (change_callbacks_config / UI).
@@ -246,6 +248,11 @@ class VoiceChangerWorker:
         self.sola_search_frame = AUDIO_SAMPLE_RATE // 100
         self.vc_model = _RealtimeState()
 
+    @property
+    def ready(self):
+        """True if the worker process has finished initializing the VoiceChanger model."""
+        return self._ready.is_set()
+
     def start(self):
         self._process = mp.get_context("spawn").Process(
             target=_worker_loop,
@@ -255,6 +262,7 @@ class VoiceChangerWorker:
                 self._output_q,
                 self._config_q,
                 self._stop,
+                self._ready,
             ),
             daemon=True,
         )
