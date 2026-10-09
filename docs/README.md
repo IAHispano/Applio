@@ -62,14 +62,30 @@ Use the CLI commands documented in [section 16](#current-training) and supply yo
 For a fresh corpus project, the following preflight records the current stage and sampling recipe. Replace the paths with your own corpus, compatible renderer and exported shallow-flow reference package. The reference supplies architecture and frontend settings; it does not initialize the new model's weights. Use a new project name for changed recipes:
 
 ```powershell
-python core.py train-corpus --model-name acoustic_pretrained --dataset-path DATASET_DIR --vocoder-path RENDERER.pth --architecture-from REFERENCE_VOICE.pth --predictor-steps 300000 --flow-steps 0 --shortcut-steps 0 --batch-size 4 --crop-frames 256 --precision bf16 --device cuda --checkpoint-every 5000 --seed 2048 --sampling-mode domain-speaker --validation-limit 480 --compact-cache --check-only
+python core.py research train-corpus --model-name acoustic_pretrained --dataset-path DATASET_DIR --vocoder-path RENDERER.pth --architecture-from REFERENCE_VOICE.pth --predictor-steps 300000 --flow-steps 0 --shortcut-steps 0 --batch-size 4 --crop-frames 256 --precision bf16 --device cuda --checkpoint-every 5000 --seed 2048 --sampling-mode domain-speaker --validation-limit 480 --compact-cache --check-only
 ```
 
 Preflight does not train. Review its representation, corpus and storage checks before running the same command without `--check-only`. Without a qualified `--compact-cache-audit` file, storage uses a conservative upper bound; the local mixed-corpus run instead uses its own corpus-bound qualification report. Audit reports are not interchangeable between corpora or storage implementations. Add `--validation-manifest` when earlier reserved recordings must remain held out, and preserve the manifest used by an existing campaign.
 
-Preprocess and Extract are separate steps. Training uses optimizer **steps**, not strict epochs, because balanced sampling can revisit recordings. Individual-stage `--steps` is an additional-update budget; `train-corpus` stage budgets are total campaign targets. Keep exact-resume dataset, frontend, objective, batch, crop and optimizer settings unchanged. `last.pt` preserves live weights, EMA, optimizer and random states; `best.pt` preserves the best validation checkpoint. Export EMA inference packages with `export-model` instead of distributing training checkpoints.
+Preprocess and Extract are separate steps. Training uses optimizer **steps**, not strict epochs, because balanced sampling can revisit recordings. Individual-stage `--steps` is an additional-update budget; `train-corpus` stage budgets are total campaign targets. Keep exact-resume dataset, frontend, objective, batch, crop and optimizer settings unchanged. `last.pt` preserves live weights, EMA, optimizer and random states; `best.pt` preserves the lowest validation mel-L1 checkpoint, not an established perceptual-quality winner. Export EMA inference packages with `export-model` instead of distributing training checkpoints.
 
 TensorBoard records training curves. Consult the campaign status and actual worker process together when diagnosing a run; stale status alone does not establish activity. Preparation, initial cache verification and fitting mel statistics can take substantial time on a full corpus before the first optimizer update. A `STOP` file in the corpus project requests a safe stop. The launcher can resume the same campaign without restarting completed preparation.
+
+### Everyday CLI and advanced research tools
+
+The top-level CLI retains the familiar `preprocess`, `extract`, `train`, `infer` and `batch-infer` workflow, alongside the classic utility commands. Select the acoustic architecture through those shared commands. Corpus campaigns, renderer imports, evaluation and experimental runtime tools are grouped under `research`:
+
+```powershell
+python core.py --help
+python core.py research --help
+python core.py research train-corpus --help
+python core.py research import-vocoder --help
+python core.py research evaluate --help
+```
+
+Existing direct invocations such as `core.py train-corpus` remain accepted as hidden compatibility aliases with identical options. The mixed-corpus launcher therefore keeps its existing invocation and resume settings. The research `serve` and `realtime` commands apply only to architectures with supported streaming capabilities; the current shallow-flow/NSF recipe remains file-only.
+
+`core.py` contains the everyday Click commands and classic workflow entry points. Shared acoustic operations live in `rvc/lib/tools/acoustic_workflows.py`; advanced command declarations live in `rvc/cli/research.py`. The existing GUI and campaign imports from `core` remain compatible. This refactor changes CLI organization without changing training objectives, package contracts or data/storage implementations.
 
 ### Public release boundaries
 
@@ -82,6 +98,28 @@ Source licensing and weight licensing are separate. The NSF implementation's ups
 ### Reading the historical sections
 
 Sections 5–15 retain dated experiments, unsuccessful recipes and source provenance. Their artifact paths identify local evidence, not files supplied with a fresh checkout. Section 16 records how the current design was selected and the remaining questions. Where an older prototype differs from this overview, its configuration and results apply to that historical experiment only.
+
+### Technical review and reproducible contract checks (9 October 2026)
+
+The source release remains experimental. Review found an NSF pitch-policy mismatch: the frontend interpolates continuous F0 through unvoiced gaps, but the wrapper gated it back to zero. Upstream mini-NSF passes F0 directly to its harmonic source; its augmentation training path requests interpolated unvoiced pitch. This supports correcting the wrapper, but does not establish a measured improvement with our particular pretrained weights. See the pinned [upstream generator](https://github.com/openvpi/SingingVocoders/blob/4d0889c4c180c75ad3000cc565864656344f8190/models/nsf_HiFigan/models.py) and [training task](https://github.com/openvpi/SingingVocoders/blob/4d0889c4c180c75ad3000cc565864656344f8190/training/nsf_HiFigan_task.py).
+
+New NSF imports declare `f0_policy=continuous`. Packages without this field retain `legacy-zero-unvoiced` behavior so prior baselines and the active campaign's renderer remain reproducible. Neither the renderer weights nor the active renderer package were changed. After training, compare both policies with identical acoustic weights, source files, seeds and budgets before choosing a release renderer. Zero pitch freezes harmonic-source phase; it does not by itself prove that final rendered audio contains DC or audible chirps. Import provenance now records the actual implementation file SHA-256 and a separately identified upstream reference revision, rather than a hardcoded local commit.
+
+Validation uses fixed crop selection and per-example seeds, making its eight-step flow sample repeatable. Lowest mel L1 remains only a provisional checkpoint criterion: it can reward smooth predictions and is insufficient for quality acceptance. Preserve and compare best and final checkpoints using matched heldouts, supported integration budgets, pitch/voicing and intelligibility diagnostics, artifact assessment and listening. The active run's selection criterion was not changed midway.
+
+The local Wavehax research backend normalizes across time as well as channels/frequency. Upstream's default residual blocks use framewise normalization across channels and frequency; this is not normalization separately per frequency bin. See [normalization](https://github.com/chomeyama/wavehax/blob/e084fc953499b76c79e4f2166fb2ac78f34c32e0/wavehax/modules/norm.py) and [residual blocks](https://github.com/chomeyama/wavehax/blob/e084fc953499b76c79e4f2166fb2ac78f34c32e0/wavehax/modules/resblock.py). Consequently crop/full-file behavior needs qualification. This backend is not a faithful upstream checkpoint loader and is not recommended for release. Do not silently change the normalization of existing checkpoints.
+
+Joint shallow-flow exact resume now permits the same optional mel-adversarial or waveform objective after `flow_trained` becomes true. The persisted settings comparison still rejects changing objectives or the frozen renderer on exact resume. The current full run uses neither optional objective. The withdrawn mel-detail GUI argument-count branch has been removed; the remaining research heads, critics and backend compatibility paths still need a deliberate release-scope reduction. Their presence is not a quality endorsement. One-step Euler is valid for joint shallow flow without shortcut training, but validity does not imply good audio quality.
+
+The named VCTK/EARS/M4Singer/Expresso adapters describe specific corpus layouts. Generic speaker-folder input and explicit `corpus.json` remain supported by corpus training. Compact qualification checks source implementation hashes deliberately to prevent applying an audit to different storage code; reports and paths from local campaigns are not public prerequisites. Portability issues remain: retargeting casts loaded features to float32, and hard-linking cached waveform files needs a cross-filesystem fallback. These data/storage changes are deferred until the active corpus completes and the compact path can be requalified; neither file was modified during this review.
+
+Run the included CPU contract checks without a downloaded encoder, released weights or a GPU:
+
+```powershell
+python -m rvc.lib.tools.verify_architecture --contracts-only --output logs/contracts-review
+```
+
+Use a new output directory for every run. The verifier creates synthetic audio, a tiny acoustic model and a tiny synthetic renderer. It compares two uninterrupted updates against one update plus exact resume for both optional objectives, including live/EMA weights, optimizer, critic and RNG state; it rejects changed objectives, checks both NSF pitch policies without allocating the full NSF graph, and rejects unknown mel-contract fields in renderer filtering. These are engineering regression checks, not pretrained audio-quality evidence. They replace reliance on private checks for these review fixes; they do not constitute complete coverage of every research feature.
 
 <a id="overview"></a>
 
@@ -310,10 +348,10 @@ BigVGAN is available as an optional frozen file-inference backend. The package l
 
 ```powershell
 # Download and package the pinned official pretrained release.
-python core.py import-vocoder --output-path logs/pretrained_bigvgan/bigvgan_vocoder.pth
+python core.py research import-vocoder --output-path logs/pretrained_bigvgan/bigvgan_vocoder.pth
 
 # Alternatively, import an already downloaded official generator and config.
-python core.py import-vocoder --checkpoint PATH_TO_GENERATOR.pt --config PATH_TO_CONFIG.json --output-path logs/pretrained_bigvgan/bigvgan_vocoder.pth
+python core.py research import-vocoder --checkpoint PATH_TO_GENERATOR.pt --config PATH_TO_CONFIG.json --output-path logs/pretrained_bigvgan/bigvgan_vocoder.pth
 ```
 
 Select the imported package in the existing V3 vocoder dropdown for file inference or voice fine-tuning. Its mel contract must match the acoustic package. Fine-tuning reuses these frozen weights; imported BigVGAN packages cannot initialize native spectral-vocoder training. Live conversion rejects this noncausal backend explicitly. GPU memory, latency across hardware, unfamiliar voices, pitch changes and singing need broader evaluation before changing defaults. The [official Wavehax repository](https://github.com/chomeyama/wavehax) currently describes pretrained releases as planned. The official [Vocos 24 kHz configuration](https://huggingface.co/charactr/vocos-mel-24khz/blob/main/config.yaml) uses a different audio contract and is less direct for the existing 44.1 kHz acoustic model.
@@ -373,7 +411,7 @@ python core.py extract --architecture v3 --model-name vctk_v3 --device cuda
 
 Omit speaker/cap options to prepare all supported recordings. Selection is deterministic under `--seed`; `--validation-fraction` defaults to 0.1 and `--segment-seconds` to 4. Preprocess runs on CPU and writes `data/audio_manifest.json` and resampled audio. Extract reads those saved segments, verifies their hashes and writes the train-ready `data/manifest.json`. Frontend settings such as `--encoder-path`, `--pitch-extractor`, `--profile` and `--device` belong to Extract. Matching feature caches are reused; changing the frontend does not require resampling again. Preparation output must stay outside the original dataset tree. Existing combined-preparation datasets and checkpoints remain supported; the internal `run_acoustic_prepare_script` service supports combined preparation when needed.
 
-The content encoder is local, pinned to official Applio resource revision `70ed563897504c756ec94067c12c902c4fd42025`. Default directory: `rvc/models/embedders/contentvec`. `core.py download-encoder` downloads the pinned configuration/weights without executing remote Python. Swift F0 is the default; RMVPE requires `--pitch-extractor rmvpe --pitch-path PATH`. `--profile bounded` matches the live frontend; `offline` is a separate contract and cannot be used for live streaming.
+The content encoder is local, pinned to official Applio resource revision `70ed563897504c756ec94067c12c902c4fd42025`. Default directory: `rvc/models/embedders/contentvec`. `core.py research download-encoder` downloads the pinned configuration/weights without executing remote Python. Swift F0 is the default; RMVPE requires `--pitch-extractor rmvpe --pitch-path PATH`. `--profile bounded` matches the live frontend; `offline` is a separate contract and cannot be used for live streaming.
 
 <a id="workflow-train-resume-and-export"></a>
 
@@ -390,8 +428,8 @@ python core.py train --architecture v3 --model-name vctk_v3 --stage predictor --
 python core.py train --architecture v3 --model-name vctk_v3 --stage vocoder --steps 2000 --device cuda
 python core.py train --architecture v3 --model-name vctk_v3 --stage flow --base-model logs/vctk_v3/checkpoints/predictor/best.pt --steps 500 --device cuda
 python core.py train --architecture v3 --model-name vctk_v3 --stage shortcut --base-model logs/vctk_v3/checkpoints/flow/best.pt --steps 500 --device cuda
-python core.py export-model --checkpoint logs/vctk_v3/checkpoints/shortcut/best.pt --output-path logs/vctk_v3/vctk_v3_acoustic.pth
-python core.py export-model --checkpoint logs/vctk_v3/checkpoints/vocoder/best.pt --output-path logs/vctk_v3/vctk_v3_vocoder.pth
+python core.py research export-model --checkpoint logs/vctk_v3/checkpoints/shortcut/best.pt --output-path logs/vctk_v3/vctk_v3_acoustic.pth
+python core.py research export-model --checkpoint logs/vctk_v3/checkpoints/vocoder/best.pt --output-path logs/vctk_v3/vctk_v3_vocoder.pth
 ```
 
 In **Model Settings**, choose **Fine-tune a pretrained model (LoRA)** for a new voice. Select an exported pretrained acoustic model and compatible universal vocoder, then preprocess your recordings, extract features and click **Start Training**. Preprocessing adopts the base model's mel settings; extraction adopts its full frontend contract and checks the encoder identity. Fine-tuning trains LoRA adapters and the new speaker embedding, reuses the frozen universal vocoder, resumes its own saved progress and exports a standalone acoustic package with merged adapters. Predictor-only bases are supported; flow/shortcut adapters are trained only when those capabilities exist in the base. The vocoder is referenced rather than copied or overwritten. No pretrained package is selected automatically: wait for a usable pretrained export or supply compatible weights.
@@ -415,18 +453,18 @@ For a new target, prepare its recordings under a separate model name with the sa
 ```powershell
 python core.py infer --architecture v3 --input-path INPUT.wav --output-path OUTPUT.wav --pth-path logs/vctk_v3/vctk_v3_acoustic.pth --vocoder-path logs/vctk_v3/vctk_v3_vocoder.pth --sid 0 --refinement-steps 0 --device cuda
 python core.py batch-infer --architecture v3 --input-folder INPUT_DIR --output-folder OUTPUT_DIR --pth-path logs/vctk_v3/vctk_v3_acoustic.pth --vocoder-path logs/vctk_v3/vctk_v3_vocoder.pth --refinement-steps 0 --device cuda
-python core.py evaluate --manifest logs/vctk_v3/data/manifest.json --pth-path logs/vctk_v3/vctk_v3_acoustic.pth --vocoder-path logs/vctk_v3/vctk_v3_vocoder.pth --output-dir logs/vctk_v3/evaluation --budget 0 --budget 2 --budget 4 --budget 8 --budget 16 --limit 8 --device cuda
+python core.py research evaluate --manifest logs/vctk_v3/data/manifest.json --pth-path logs/vctk_v3/vctk_v3_acoustic.pth --vocoder-path logs/vctk_v3/vctk_v3_vocoder.pth --output-dir logs/vctk_v3/evaluation --budget 0 --budget 2 --budget 4 --budget 8 --budget 16 --limit 8 --device cuda
 ```
 
 Speaker IDs follow the manifest/package speaker list. `core.py model-information --pth-path PATH` reports the mapping/contracts. Budget 0 uses the predictor; 8/16/32 work with ordinary-flow trained weights; 1/2/4 require shortcut training (1 is experimental). `--ordinary-flow` selects the ordinary reference sampler. Noise is seeded and pitch shift is in semitones. V3 does not consume classic retrieval indexes or classic post-processing options. Batch output must be outside the input tree.
 
 Held-out evaluation renders references, ground-truth-mel vocoder ceiling, and each selected budget. Metrics include mel L1, waveform mel L1, multiresolution spectral loss and synthesis RTF. These are reconstruction measurements; they do not establish cross-speaker identity, intelligibility, MOS, or preference over classic RVC. Timings exclude the cached frontend/condition encoder and file I/O.
 
-For the reproducible learning campaign used locally, prepare a fresh model name and run `core.py test-vctk --model-name NAME`. It creates initial one-update baselines, performs all four stages, exports packages, evaluates held-out budgets and renders same/cross-speaker conversions with the real frontend. Existing stage checkpoints are rejected to preserve their contents.
+For the reproducible learning campaign used locally, prepare a fresh model name and run `core.py research test-vctk --model-name NAME`. It creates initial one-update baselines, performs all four stages, exports packages, evaluates held-out budgets and renders same/cross-speaker conversions with the real frontend. Existing stage checkpoints are rejected to preserve their contents.
 
 #### Full-corpus acoustic campaign
 
-`train-full-vctk.bat` is a local one-click launcher for all speakers and recordings under `assets/datasets/vctk`. It calls the shared `core.py train-corpus` command, which runs **Preprocess → Extract → Predictor → Flow → Shortcut**, exports each acoustic stage and renders held-out listening samples. The pretrained BigVGAN remains frozen; no vocoder training is scheduled. The launcher references the earlier local acoustic export for architecture and frontend compatibility only: full-corpus acoustic weights start from scratch with the new speaker vocabulary. Replace its model paths when using a different installation.
+`train-full-vctk.bat` is a local one-click launcher for all speakers and recordings under `assets/datasets/vctk`. It calls the shared `core.py research train-corpus` command, which runs **Preprocess → Extract → Predictor → Flow → Shortcut**, exports each acoustic stage and renders held-out listening samples. The pretrained BigVGAN remains frozen; no vocoder training is scheduled. The launcher references the earlier local acoustic export for architecture and frontend compatibility only: full-corpus acoustic weights start from scratch with the new speaker vocabulary. Replace its model paths when using a different installation.
 
 The recipe uses 60,000 predictor updates, 15,000 flow updates and 15,000 shortcut updates, batch size 2, automatic precision and checkpoints every 1,000 updates. These are experiment budgets, not a quality guarantee or convergence criterion. Edit the variables at the top of the batch file before the first run; increase batch size if memory permits. There are no GPU-specific recipes. Expresso remains a separate expressive-speech study rather than changing this full-VCTK comparison.
 
@@ -587,7 +625,7 @@ This remains a research intervention until held-out conversion demonstrates a us
 Prepare a separate research manifest with the shared CLI, then pass that manifest to the existing V3 predictor-training command:
 
 ```bash
-python core.py prepare-pitch-views --manifest logs/example/data/manifest.json --output-manifest logs/example/data/pitch_views.json
+python core.py research prepare-pitch-views --manifest logs/example/data/manifest.json --output-manifest logs/example/data/pitch_views.json
 ```
 
 This adds no required stage to ordinary voice fine-tuning and introduces no inference dependency on WORLD.
@@ -2454,14 +2492,14 @@ V3 conversion rejects empty/nonfinite audio, invalid speakers, negative seeds an
 Prepare a repeatable plan from the completed audio manifest without loading models or changing training data:
 
 ```console
-python core.py prepare-evaluation --audio-manifest logs/my_model/data/audio_manifest.json --output-path logs/evaluation_plans/my_model.json
+python core.py research prepare-evaluation --audio-manifest logs/my_model/data/audio_manifest.json --output-path logs/evaluation_plans/my_model.json
 ```
 
-The default selects two validation segments per speaker in the same round-robin order as the shared evaluator. The plan records original recording hashes, offsets, target speakers, seed, proposed budgets and the evaluator's limit. After extraction and training finish, use `core.py evaluate` with that limit and seed. Use only budgets supported by the exported acoustic model. Keep the same voice export and frozen vocoder throughout a refinement comparison; include the reference-mel vocoder diagnostic.
+The default selects two validation segments per speaker in the same round-robin order as the shared evaluator. The plan records original recording hashes, offsets, target speakers, seed, proposed budgets and the evaluator's limit. After extraction and training finish, use `core.py research evaluate` with that limit and seed. Use only budgets supported by the exported acoustic model. Keep the same voice export and frozen vocoder throughout a refinement comparison; include the reference-mel vocoder diagnostic.
 
 ```console
-python core.py evaluate --manifest logs/my_model/data/manifest.json --pth-path logs/my_model/my_model_acoustic.pth --vocoder-path logs/pretrained/vocoder.pth --output-dir logs/my_model/evaluation/fixed --budget 0 --limit 218 --seed 1234
-python core.py summarize-evaluation --report-path logs/my_model/evaluation/fixed/report.json --output-path logs/my_model/evaluation/fixed/paired_summary.json
+python core.py research evaluate --manifest logs/my_model/data/manifest.json --pth-path logs/my_model/my_model_acoustic.pth --vocoder-path logs/pretrained/vocoder.pth --output-dir logs/my_model/evaluation/fixed --budget 0 --limit 218 --seed 1234
+python core.py research summarize-evaluation --report-path logs/my_model/evaluation/fixed/report.json --output-path logs/my_model/evaluation/fixed/paired_summary.json
 ```
 
 Replace `218` with the limit printed for your dataset. Add repeated `--budget` options to compare refinements. Summaries require exactly matching cases across budgets and report improvements, regressions and speaker-level bootstrap intervals. The budget with the lowest waveform mel error is a reconstruction result, not a recommendation about perceptual quality. Timing retains the evaluator's original scope; it excludes the frontend and file I/O.
@@ -2528,7 +2566,7 @@ The rejected compared utterances were finite, below full scale and rendered in o
 Run commands from the repository root using the installed environment. First inspect the relevant command help:
 
 ```powershell
-.\env\python.exe core.py train-corpus --help
+.\env\python.exe core.py research train-corpus --help
 .\env\python.exe core.py preprocess --help
 .\env\python.exe core.py extract --help
 .\env\python.exe core.py train --help
@@ -2541,7 +2579,7 @@ Before any new run, write its plan: hypothesis, dataset/split hashes, base and v
 The corresponding CLI structure is:
 
 ```powershell
-.\env\python.exe -u core.py train-corpus --model-name corpus_reproduction --dataset-path assets/datasets/vctk --vocoder-path logs/vctk_v3_large/pretrained_bigvgan_vocoder.pth --architecture-from logs/vctk_v3_large/vctk_v3_improved_acoustic.pth --batch-size 2 --predictor-steps 60000 --flow-steps 15000 --shortcut-steps 15000
+.\env\python.exe -u core.py research train-corpus --model-name corpus_reproduction --dataset-path assets/datasets/vctk --vocoder-path logs/vctk_v3_large/pretrained_bigvgan_vocoder.pth --architecture-from logs/vctk_v3_large/vctk_v3_improved_acoustic.pth --batch-size 2 --predictor-steps 60000 --flow-steps 15000 --shortcut-steps 15000
 ```
 
 This historical three-stage recipe is reproducible, but its duration and completed stage count do not establish quality. A repair pilot should start with predictor-only evaluation and justify refiners separately.
@@ -2658,7 +2696,7 @@ The newer pretrained OpenVPI pitch-controllable NSF-HiFiGAN renderer has passed 
 The shared loader supports the renderer through `rvc/lib/algorithm/acoustic/nsf_hifigan.py`; its graph and waveform outputs were checked against the upstream implementation. Existing model families retain their defaults. Import the exact supported local checkpoint with:
 
 ```powershell
-.\env\python.exe core.py import-vocoder --backend nsf-hifigan --checkpoint <local-checkpoint.pth> --output-path <new-vocoder-package.pth>
+.\env\python.exe core.py research import-vocoder --backend nsf-hifigan --checkpoint <local-checkpoint.pth> --output-path <new-vocoder-package.pth>
 ```
 
 The current package is `logs/pretrained_renderer/vocoder.pth`. Its mel contract is 44.1 kHz, FFT/window 2048, hop 512, 128 Slaney bands, **40–16,000 Hz**, log floor 1e-5 and magnitude epsilon zero. Old packages default to magnitude epsilon 1e-9. Matching sample rate, hop and band count alone is insufficient: frequency bounds and spectral semantics must match too. The importer validates the serialized graph and mel configuration; other checkpoint variants are rejected.
@@ -2724,7 +2762,7 @@ An explicit compact derived-cache option now exists in the shared `preprocess_au
 
 Private synthetic CPU checks passed for overshoot restoration, dtype restoration, unsupported-storage rejection, mel retargeting with scale preservation and bitwise-identical live/EMA weights after interrupted versus uninterrupted training. These checks are under `logs/campaign/compact_cache_checks.json`; they do not yet qualify compact storage for the full corpus. Actual frontend/model sensitivity, measured space with checkpoint/evaluation headroom and the full-campaign entry point still need validation before launch. Original source audio and the active pilot caches remain untouched.
 
-The existing `core.py train-corpus` entry point now accepts `--compact-cache`. Its default remains the standard cache. Without a corpus-specific audit, preflight uses an uncompressed PCM24/FP16 upper estimate with 12 GiB of checkpoint/evaluation headroom. `--compact-cache-audit` may use a measured estimate only from a passed qualification bound to the same corpus inventory, renderer mel and frontend contracts and unchanged storage implementation. The estimate includes a 15% measured-cache margin plus headroom; full preparation must still monitor actual free space. The owned CPU qualification under `logs/compact_qualification` is queued after the residual training/evaluation process exits. It checks fixed real waveform/frontends, identical-noise predicted mel and rendered waveform differences, and measures compact files across all pilot voices. Successful synthetic checks alone do not satisfy this gate.
+The existing `core.py research train-corpus` entry point now accepts `--compact-cache`. Its default remains the standard cache. Without a corpus-specific audit, preflight uses an uncompressed PCM24/FP16 upper estimate with 12 GiB of checkpoint/evaluation headroom. `--compact-cache-audit` may use a measured estimate only from a passed qualification bound to the same corpus inventory, renderer mel and frontend contracts and unchanged storage implementation. The estimate includes a 15% measured-cache margin plus headroom; full preparation must still monitor actual free space. The owned CPU qualification under `logs/compact_qualification` is queued after the residual training/evaluation process exits. It checks fixed real waveform/frontends, identical-noise predicted mel and rendered waveform differences, and measures compact files across all pilot voices. Successful synthetic checks alone do not satisfy this gate.
 
 For full mixed-corpus pretraining, `--sampling-mode domain-speaker` tempers domain weights by the square root of their training-audio duration, then draws a voice uniformly within the domain and a segment uniformly within the voice. This prevents the longest domain dominating every batch while avoiding equal total weight for a much smaller domain. The resulting domain probabilities and durations are saved in the stage's `sampling.json`. The original `segments` default preserves its draw and RNG consumption. A changed sampler rejects exact resume; the optional sampler/version is recorded in training settings, while unchanged default checkpoints retain their original settings. Private CPU checks passed deterministic draws, within-domain voice balance, expected domain probabilities, changed-sampler rejection and bitwise-identical compact-cache live/EMA resume. This establishes software behavior; full-corpus validation must establish whether the mixture improves generalization.
 
@@ -2800,8 +2838,8 @@ The configuration uses noncausal 7-tap blocks, shallow start 0.4 and auxiliary o
 **3. Export and evaluate the acoustic package.** Individual-stage training writes checkpoints; export its best checkpoint explicitly after the stage completes. The command below uses the default output directory from step 2 and exports EMA weights. Do not pass a mutable optimizer checkpoint as the public model. These budgets compare auxiliary-only and ordinary generative flow on identical cases:
 
 ```powershell
-.\env\python.exe core.py export-model --checkpoint logs/mixed_acoustic/checkpoints/predictor/best.pt --output-path logs/mixed_acoustic/mixed_acoustic.pth
-.\env\python.exe core.py evaluate --manifest logs/mixed_acoustic/data/manifest.json --pth-path logs/mixed_acoustic/mixed_acoustic.pth --vocoder-path logs/pretrained_renderer/vocoder.pth --output-dir logs/mixed_acoustic/evaluation/fixed --budget 0 --budget 8 --budget 16 --budget 32 --device cuda:0 --seed 2042 --limit 0
+.\env\python.exe core.py research export-model --checkpoint logs/mixed_acoustic/checkpoints/predictor/best.pt --output-path logs/mixed_acoustic/mixed_acoustic.pth
+.\env\python.exe core.py research evaluate --manifest logs/mixed_acoustic/data/manifest.json --pth-path logs/mixed_acoustic/mixed_acoustic.pth --vocoder-path logs/pretrained_renderer/vocoder.pth --output-dir logs/mixed_acoustic/evaluation/fixed --budget 0 --budget 8 --budget 16 --budget 32 --device cuda:0 --seed 2042 --limit 0
 ```
 
 Confirm the evaluator's case count and preserve the report. Reference-mel flow initialization is a separate diagnostic available through `evaluate --oracle-start`; it is not a usable unseen-conversion setting. Save it in a different output directory and assess predicted-start versus reference-start error before blaming the vocoder for every artifact.
@@ -2863,7 +2901,7 @@ The native acoustic/vocoder GAN path has a different explicit contract: **a list
 The consolidated corpus contains 93,980 recordings from 240 parsed speakers across VCTK, EARS, M4Singer and Expresso, approximately 185.06 hours. The full mixed-corpus recipe is recorded in the release overview and the provisional architecture decision above. The following command is an earlier preflight example retained for workflow reproduction; its 60,000-update budget and batch 2 do not describe the current full run:
 
 ```powershell
-.\env\python.exe core.py train-corpus --model-name combined_acoustic --dataset-path assets/datasets/combined --vocoder-path logs/pretrained_renderer/vocoder.pth --architecture-from logs/mixed_acoustic/mixed_acoustic.pth --predictor-steps 60000 --batch-size 2 --crop-frames 256 --precision bf16 --device cuda:0 --seed 2042 --check-only
+.\env\python.exe core.py research train-corpus --model-name combined_acoustic --dataset-path assets/datasets/combined --vocoder-path logs/pretrained_renderer/vocoder.pth --architecture-from logs/mixed_acoustic/mixed_acoustic.pth --predictor-steps 60000 --batch-size 2 --crop-frames 256 --precision bf16 --device cuda:0 --seed 2042 --check-only
 ```
 
 `--architecture-from` supplies architecture/frontend semantics, not pretrained initialization: this corpus command starts acoustic weights from scratch. The selected frozen renderer supplies the scratch mel contract. The joint shallow-flow family defaults to **one predictor stage, zero separate flow/shortcut updates and 256-frame crops**. Its predictor stage trains both networks jointly. Explicit separate residual stages are rejected. Residual-family defaults remain 15,000 flow updates, 15,000 shortcut updates and 128-frame crops. Automatic evaluation covers joint budgets 0/1/2/4/8/16/32 on identical cases. The predictor update budget above is a proposed bound, not a validated optimum.
