@@ -316,13 +316,14 @@ CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
 
 
 def save_realtime_settings(
-    input_device,
-    output_device,
-    monitor_device,
-    model_file,
-    index_file,
+    input_device=None,
+    output_device=None,
+    monitor_device=None,
+    model_file=None,
+    index_file=None,
     asio_enabled=None,
     audio_sample_rate=None,
+    **kwargs,
 ):
     """Save realtime settings to config.json"""
     try:
@@ -350,12 +351,16 @@ def save_realtime_settings(
             ] = (monitor_device or "")
         if model_file is not None:
             config["realtime"]["model_file"] = model_file or ""
-        if monitor_device is not None:
+        if index_file is not None:
             config["realtime"]["index_file"] = index_file or ""
         if asio_enabled is not None:
             config["realtime"]["asio_enabled"] = asio_enabled
         if audio_sample_rate is not None:
             config["realtime"]["audio_sample_rate"] = audio_sample_rate
+
+        for key, val in kwargs.items():
+            if val is not None:
+                config["realtime"][key] = val
 
         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
@@ -365,46 +370,45 @@ def save_realtime_settings(
 
 def load_realtime_settings():
     """Load realtime settings from config.json"""
-    try:
-        if os.path.exists(CONFIG_PATH):
-            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-                config = json.load(f)
-                realtime_config = config.get("realtime", {})
-                return {
-                    "input_device": realtime_config.get("input_device", ""),
-                    "output_device": realtime_config.get("output_device", ""),
-                    "monitor_device": realtime_config.get("monitor_device", ""),
-                    "client_input_device": realtime_config.get(
-                        "client_input_device", ""
-                    ),
-                    "client_output_device": realtime_config.get(
-                        "client_output_device", ""
-                    ),
-                    "client_monitor_device": realtime_config.get(
-                        "client_monitor_device", ""
-                    ),
-                    "model_file": realtime_config.get("model_file", ""),
-                    "index_file": realtime_config.get("index_file", ""),
-                    "asio_enabled": realtime_config.get("asio_enabled", False),
-                    "audio_sample_rate": realtime_config.get(
-                        "audio_sample_rate", 48000
-                    ),
-                }
-    except Exception as e:
-        print(f"Error loading realtime settings: {e}")
-
-    return {
+    defaults = {
         "input_device": "",
         "output_device": "",
         "monitor_device": "",
         "client_input_device": "",
         "client_output_device": "",
         "client_monitor_device": "",
+        "use_monitor_device": False,
         "model_file": "",
         "index_file": "",
         "asio_enabled": False,
         "audio_sample_rate": AUDIO_SAMPLE_RATE,
+        "input_audio_gain": 100,
+        "output_audio_gain": 100,
+        "monitor_audio_gain": 100,
+        "chunk_size": 250.0,
+        "extra_convert_size": 2.5,
+        "cross_fade_overlap_size": 0.05,
+        "silent_threshold": -60,
+        "vad_enabled": True,
+        "pitch": 0,
+        "index_rate": 0.0,
+        "volume_envelope": 1.0,
+        "protect": 0.33,
+        "terms_accepted": False,
     }
+    try:
+        if os.path.exists(CONFIG_PATH):
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                config = json.load(f)
+                realtime_config = config.get("realtime", {})
+                for k in defaults.keys():
+                    if k in realtime_config:
+                        defaults[k] = realtime_config[k]
+                return defaults
+    except Exception as e:
+        print(f"Error loading realtime settings: {e}")
+
+    return defaults
 
 
 def get_safe_dropdown_value(saved_value, choices, fallback_value=None):
@@ -552,6 +556,27 @@ def start_realtime(
     yield i18n("Starting Realtime..."), interactive_false, interactive_visible
 
     sid = int(sid) if sid is not None else 0
+
+    save_realtime_settings(
+        input_device=input_audio_device,
+        output_device=output_audio_device,
+        monitor_device=monitor_output_device,
+        model_file=pth_path,
+        index_file=index_path,
+        use_monitor_device=use_monitor_device,
+        input_audio_gain=int(input_audio_gain),
+        output_audio_gain=int(output_audio_gain),
+        monitor_audio_gain=int(monitor_audio_gain),
+        vad_enabled=vad_enabled,
+        chunk_size=chunk_size,
+        cross_fade_overlap_size=cross_fade_overlap_size,
+        extra_convert_size=extra_convert_size,
+        silent_threshold=silent_threshold,
+        pitch=pitch,
+        index_rate=index_rate,
+        volume_envelope=volume_envelope,
+        protect=protect,
+    )
 
     input_audio_gain /= 100.0
     output_audio_gain /= 100.0
@@ -988,7 +1013,7 @@ def realtime_tab():
             info=i18n(
                 "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your realtime."
             ),
-            value=False,
+            value=saved_settings.get("terms_accepted", False),
             interactive=True,
         )
 
@@ -1020,7 +1045,7 @@ def realtime_tab():
                             input_audio_gain = gr.Slider(
                                 minimum=0,
                                 maximum=200,
-                                value=100,
+                                value=saved_settings.get("input_audio_gain", 100),
                                 label=i18n("Input Gain (%)"),
                                 info=i18n(
                                     "Adjusts the input volume before processing. Prevents clipping or boosts a quiet mic."
@@ -1059,7 +1084,7 @@ def realtime_tab():
                             output_audio_gain = gr.Slider(
                                 minimum=0,
                                 maximum=200,
-                                value=100,
+                                value=saved_settings.get("output_audio_gain", 100),
                                 label=i18n("Output Gain (%)"),
                                 info=i18n(
                                     "Adjusts the final volume of the converted voice after processing."
@@ -1085,7 +1110,7 @@ def realtime_tab():
                     with gr.Column():
                         use_monitor_device = gr.Checkbox(
                             label=i18n("Use Monitor Device"),
-                            value=False,
+                            value=saved_settings.get("use_monitor_device", False),
                             interactive=True,
                         )
                         monitor_output_device = gr.Dropdown(
@@ -1109,7 +1134,7 @@ def realtime_tab():
                         monitor_audio_gain = gr.Slider(
                             minimum=0,
                             maximum=200,
-                            value=100,
+                            value=saved_settings.get("monitor_audio_gain", 100),
                             label=i18n("Monitor Gain (%)"),
                             info=i18n(
                                 "Adjusts the volume of the monitor feed, independent of the main output."
@@ -1164,7 +1189,7 @@ def realtime_tab():
                         info=i18n(
                             "Enables Voice Activity Detection to only process audio when you are speaking, saving CPU."
                         ),
-                        value=True,
+                        value=saved_settings.get("vad_enabled", True),
                         interactive=True,
                     )
 
@@ -1580,7 +1605,7 @@ def realtime_tab():
                         info=i18n(
                             "Set the pitch of the audio, the higher the value, the higher the pitch."
                         ),
-                        value=0,
+                        value=saved_settings.get("pitch", 0),
                         interactive=True,
                     )
                     index_rate = gr.Slider(
@@ -1590,13 +1615,13 @@ def realtime_tab():
                         info=i18n(
                             "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
                         ),
-                        value=0,  # The index is not always necessary, so disabling it can help improve latency.
+                        value=saved_settings.get("index_rate", 0),
                         interactive=True,
                     )
                     volume_envelope = gr.Slider(
                         minimum=0,
                         maximum=1,
-                        value=1,
+                        value=saved_settings.get("volume_envelope", 1),
                         label=i18n("Volume Envelope"),
                         info=i18n(
                             "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
@@ -1606,7 +1631,7 @@ def realtime_tab():
                     protect = gr.Slider(
                         minimum=0,
                         maximum=0.5,
-                        value=0.33,
+                        value=saved_settings.get("protect", 0.33),
                         label=i18n("Protect Voiceless Consonants"),
                         info=i18n(
                             "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
@@ -1671,7 +1696,7 @@ def realtime_tab():
                 chunk_size = gr.Slider(
                     minimum=2.7,
                     maximum=2730.7,
-                    value=250,
+                    value=saved_settings.get("chunk_size", 250),
                     step=1,
                     label=i18n("Chunk Size (ms)"),
                     info=i18n(
@@ -1682,7 +1707,7 @@ def realtime_tab():
                 cross_fade_overlap_size = gr.Slider(
                     minimum=0.05,
                     maximum=0.2,
-                    value=0.05,
+                    value=saved_settings.get("cross_fade_overlap_size", 0.05),
                     step=0.01,
                     label=i18n("Crossfade Overlap Size (s)"),
                     info=i18n(
@@ -1693,7 +1718,7 @@ def realtime_tab():
                 extra_convert_size = gr.Slider(
                     minimum=0.1,
                     maximum=5,
-                    value=2.5,
+                    value=saved_settings.get("extra_convert_size", 2.5),
                     step=0.1,
                     label=i18n("Extra Conversion Size (s)"),
                     info=i18n(
@@ -1704,7 +1729,7 @@ def realtime_tab():
                 silent_threshold = gr.Slider(
                     minimum=-90,
                     maximum=-60,
-                    value=-60,
+                    value=saved_settings.get("silent_threshold", -60),
                     step=1,
                     label=i18n("Silence Threshold (dB)"),
                     info=i18n(
@@ -2173,6 +2198,12 @@ def realtime_tab():
         )
 
         # Add event handlers to save settings
+        terms_checkbox.change(
+            fn=lambda val: save_realtime_settings(terms_accepted=val),
+            inputs=[terms_checkbox],
+            outputs=[],
+        )
+
         input_audio_device.change(
             fn=save_realtime_settings,
             inputs=[
