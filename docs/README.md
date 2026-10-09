@@ -2,10 +2,11 @@
 
 This is the single repository guide for classic RVC and experimental Applio V3. It covers the implemented signal path, shared interface, training stages, package contracts, measured experiments and the public research that informed the design. Commands assume execution from the repository root with Python 3.12.
 
-The research snapshot and initial experiments are dated 5 October 2026. The larger VCTK campaign was running when this guide was consolidated; its protocol is documented separately from completed measurements. Experimental source code is available, but usable production V3 base weights and improved perceptual quality have not been established.
+The current research recipe is joint shallow-flow acoustic training with a frozen pretrained NSF-HiFiGAN renderer. A full mixed-corpus run began on 8 October 2026. Architecture pilots are complete; full-model quality and external-speaker adaptation are still being evaluated. Start with the [release overview](#release-overview) below and the [current training instructions and decisions](#current-training). Earlier VCTK, BigVGAN and scratch-renderer experiments are retained as historical evidence, not as recommended production recipes.
 
 ## Contents
 
+- [Release overview and current workflow](#release-overview)
 - [1. Architecture overview](#overview)
 - [2. Code map and implementation reading order](#code-map)
 - [3. V3 signal path and representation contracts](#v3-architecture)
@@ -20,6 +21,67 @@ The research snapshot and initial experiments are dated 5 October 2026. The larg
 - [12. Related conversion, singing and synthesis systems](#related-systems)
 - [13. Frontend, sampling and upstream components](#components)
 - [14. Public source provenance and measurement records](#provenance)
+- [15. Training and quality-repair handoff](#quality-handoff)
+- [16. Current training instructions, findings and open decisions](#current-training)
+
+<a id="release-overview"></a>
+
+## Release overview and current workflow
+
+### What is implemented
+
+Classic RVC v1/v2 remains available in the existing Training and Inference tabs. The experimental architecture uses those same tabs and a separate checkpoint contract; filenames alone do not select the architecture. Version identifiers in metadata and CLI options remain stable for compatibility. Source files are organized by responsibility rather than version suffixes.
+
+The current pipeline extracts frozen content features, pitch, voicing, energy and pitch confidence, then applies a target-speaker-conditioned acoustic model. A coarse mel prediction supplies the starting point for shallow flow refinement. The frozen NSF-HiFiGAN renderer converts physical mel and pitch to a waveform. The `predictor` training stage updates both acoustic branches jointly for this family; separate residual-flow and shortcut stages are not required. More integration steps add model evaluations, so compare both listening quality and inference cost when choosing a budget.
+
+The renderer contract is 44.1 kHz audio, 128 mel bands, FFT/window 2048, hop 512, Slaney mel normalization, 40–16,000 Hz and log floor 1e-5. A renderer and acoustic model must agree on the complete representation contract. A vocoder with the same number of mel bands is not necessarily compatible.
+
+### Choose the workflow
+
+| Goal | Workflow | What is trained |
+|---|---|---|
+| Convert with classic weights | Load a v1/v2 voice in Inference | Nothing; existing classic controls apply |
+| Convert with an acoustic package | Load the exported voice and its compatible renderer | Nothing; refinement controls follow model capabilities |
+| Adapt a pretrained acoustic voice | Choose Fine-tune in Training, select the base and renderer, then Preprocess, Extract and Train | LoRA adapters and target speaker conditioning; renderer stays frozen |
+| Develop a new acoustic architecture | Use Advanced stage training or the corpus CLI with an explicit configuration | Family-specific objectives and stages |
+
+Fine-tuning requires a suitable pretrained acoustic package; completing a training run does not by itself qualify that package for release. Keep whole recordings separate for validation and use the base package's exact frontend. The current full-pretrained recipe includes Expresso, so an Expresso target cannot establish unseen-speaker adaptation for that pretrained model.
+
+### Current full-pretrained recipe
+
+This research run starts acoustic weights from scratch on VCTK, EARS, M4Singer and Expresso: 93,980 recordings, 240 parsed voices and approximately 185.06 hours. The selected architecture has condition/predictor width 384, predictor depth 6, refiner width 512, refiner depth 8, kernel 7, expansion 2, shallow start 0.4 and auxiliary objective weight 0.2. Pitch guidance and activation checkpointing are enabled. Both acoustic context and the imported renderer are noncausal.
+
+Training uses 300,000 joint optimizer updates, batch 4, 256-frame crops, BF16, learning rate 2e-4 and seed 2048. Domains are sampled with square-root duration weighting and voices uniformly within each domain. The fixed checkpoint-validation panel has 480 segments covering all 240 voices. Checkpoints and validation occur every 5,000 updates. This is a measured research configuration, not a minimum GPU requirement or a proven optimum.
+
+The compact cache stores scaled PCM24 FLAC waveforms and FP16 content features, restoring physical waveform scale and FP32 feature arithmetic on load. Other feature precision is retained. This reduces derived storage, but quantization is lossy relative to the float cache. Original recordings are preserved. Cache contracts, corpus identity and exact-resume settings distinguish compact and standard caches.
+
+### Reproduction and monitoring
+
+Use the CLI commands documented in [section 16](#current-training) and supply your own dataset and qualified model paths. Local research supervisors, audit files, listening artifacts and launchers under ignored directories are not part of the source distribution. The full-corpus research launcher requires those qualified local artifacts; it is not a downloadable pretrained model or a portable first-run installer.
+
+For a fresh corpus project, the following preflight records the current stage and sampling recipe. Replace the paths with your own corpus, compatible renderer and exported shallow-flow reference package. The reference supplies architecture and frontend settings; it does not initialize the new model's weights. Use a new project name for changed recipes:
+
+```powershell
+python core.py train-corpus --model-name acoustic_pretrained --dataset-path DATASET_DIR --vocoder-path RENDERER.pth --architecture-from REFERENCE_VOICE.pth --predictor-steps 300000 --flow-steps 0 --shortcut-steps 0 --batch-size 4 --crop-frames 256 --precision bf16 --device cuda --checkpoint-every 5000 --seed 2048 --sampling-mode domain-speaker --validation-limit 480 --compact-cache --check-only
+```
+
+Preflight does not train. Review its representation, corpus and storage checks before running the same command without `--check-only`. Without a qualified `--compact-cache-audit` file, storage uses a conservative upper bound; the local mixed-corpus run instead uses its own corpus-bound qualification report. Audit reports are not interchangeable between corpora or storage implementations. Add `--validation-manifest` when earlier reserved recordings must remain held out, and preserve the manifest used by an existing campaign.
+
+Preprocess and Extract are separate steps. Training uses optimizer **steps**, not strict epochs, because balanced sampling can revisit recordings. Individual-stage `--steps` is an additional-update budget; `train-corpus` stage budgets are total campaign targets. Keep exact-resume dataset, frontend, objective, batch, crop and optimizer settings unchanged. `last.pt` preserves live weights, EMA, optimizer and random states; `best.pt` preserves the best validation checkpoint. Export EMA inference packages with `export-model` instead of distributing training checkpoints.
+
+TensorBoard records training curves. Consult the campaign status and actual worker process together when diagnosing a run; stale status alone does not establish activity. Preparation, initial cache verification and fitting mel statistics can take substantial time on a full corpus before the first optimizer update. A `STOP` file in the corpus project requests a safe stop. The launcher can resume the same campaign without restarting completed preparation.
+
+### Public release boundaries
+
+The experimental source is intended for research. Full-pretrained listening acceptance, matched external-target adaptation and a fair classic comparison remain release gates. Falling mel error and automatic speech agreement do not prove natural timbre, singing quality or superiority over V2. Reference-mel rendering and reference-start flow are diagnostic controls unavailable in ordinary conversion.
+
+The current NSF renderer and shallow-flow model support **file conversion only**. Bounded frontend context alone does not enable live conversion. Realtime work requires retained state, future-context buffering, continuous excitation phase and measured end-to-end latency; file throughput below real time is insufficient evidence.
+
+Source licensing and weight licensing are separate. The NSF implementation's upstream MIT notice is preserved in `rvc/lib/algorithm/acoustic/nsf_hifigan.LICENSE`; the tested pretrained renderer weights are identified as CC BY-NC-SA 4.0. Do not present those weights as commercially unrestricted or include them in a source-only release. Review each dataset, encoder and model license before distributing trained artifacts. Original corpora, personal recordings, local logs, research reports and training checkpoints are excluded from the source release.
+
+### Reading the historical sections
+
+Sections 5–15 retain dated experiments, unsuccessful recipes and source provenance. Their artifact paths identify local evidence, not files supplied with a fresh checkout. Section 16 records how the current design was selected and the remaining questions. Where an older prototype differs from this overview, its configuration and results apply to that historical experiment only.
 
 <a id="overview"></a>
 
@@ -28,8 +90,8 @@ The research snapshot and initial experiments are dated 5 October 2026. The larg
 | Responsibility | Classic RVC (v1/v2) | Experimental V3 |
 |---|---|---|
 | Acoustic representation | Content-conditioned latent representation | Explicit 128-band log-mel |
-| Acoustic learning | Conditional variational generator and invertible latent flow | Deterministic predictor, residual flow matching and finite-step shortcuts |
-| Waveform synthesis | Decoder trained with the voice generator | Independently trained universal F0-conditioned spectral vocoder |
+| Acoustic learning | Conditional variational generator and invertible latent flow | Current: joint coarse prediction and shallow flow; staged residual flow is also implemented |
+| Waveform synthesis | Decoder trained with the voice generator | Current: frozen pretrained NSF-HiFiGAN; native spectral and other renderers are research alternatives |
 | Target identity | Speaker conditioning within the generator | Acoustic speaker embedding/adaptation; no vocoder speaker table |
 | Retrieval | Optional content-feature index | Not implemented in this V3 path |
 | User interface | Existing Training and Inference tabs | Same tabs, architecture-specific settings and stages |
@@ -63,6 +125,91 @@ Start with the contracts, then follow one recording through preparation, staged 
 | 12 | [`core.py`](../core.py), [`tabs/train/architecture.py`](../tabs/train/architecture.py), [`tabs/inference/architecture.py`](../tabs/inference/architecture.py) | CLI services and architecture-specific controls inside the existing UI |
 
 ### Tensor and objective conventions
+
+The acoustic predictor also supports an experimental spectral-detail constraint
+through `core.py train --architecture v3 --mel-detail-weight 0.5`. It compares
+differences between log-mel bands at spacings of 1, 2 and 4, plus differences
+between valid frames at spacings of 1 and 2. These terms constrain local spectral
+peaks, valleys and transitions that a smooth envelope can miss. They use physical
+log-mel values in FP32; padded frames are excluded. The default weight is zero,
+which preserves the existing objective. The selected weight is recorded in exact
+resume checkpoints and TensorBoard configuration. It affects training only:
+exported models retain the same inference graph, memory requirements and vocoder
+contract. It is a CLI research option, not a recommended quality repair. Initial
+listening rejected the experimental outputs for robotic timbre and noise despite
+small reconstruction improvements. More spectral contrast alone does not
+establish naturalness or correct pitch; the option is not offered in Gradio.
+
+Individual predictor/adaptation stages can also use `--spectral-vocoder PATH
+--waveform-weight 0.2` for experimental waveform spectral supervision. The
+compatible vocoder stays frozen and outside the optimizer, but gradients through
+its input reach the acoustic predictor. The multi-resolution STFT objective
+compares rendered audio against the recording while the mel objective remains
+an anchor. This adds training time and activation memory, not inference work.
+Exact resume verifies the objective weight and vocoder checksum. Use a
+predictor-only base; this objective is not enabled for flow/shortcut adaptation
+or the complete scratch pipeline.
+
+The initial waveform-supervised candidate also failed listening acceptance.
+A lower spectral objective, intelligible ASR output or stronger speaker embedding
+similarity must not be interpreted as natural audio. Compare original audio,
+reference-mel vocoder reconstruction and voice conversion by listening before
+promoting these objectives or recommending additional training.
+
+Predictor-only training also supports a separate research objective through
+`--mel-adversarial-weight`. Three small critics judge overlapping low, middle
+and high mel bands, conditioned on pitch, voicing and energy. They follow the
+sub-frequency acoustic adversarial idea in [HiFiSinger](https://arxiv.org/abs/2009.01776),
+with a local implementation rather than the paper's network. Reconstruction
+remains the anchor; least-squares adversarial and feature-matching losses ramp
+in over 200 updates. Valid recording lengths exclude padded tails from the
+critics. Their optimizer and spectral-normalization state are saved for exact
+resume and removed from inference exports. This adds training work without
+adding a conversion stage or altering the vocoder. The default weight remains
+zero, and the option is not offered in Gradio pending listening acceptance.
+
+Individual predictor/adaptation experiments can additionally use
+`--spectral-vocoder PATH --waveform-adversarial-weight 0.25`. Training renders
+the predicted mel through the frozen vocoder and applies five periodic waveform
+critics to its output. The critics judge periodic structure rather than only mel
+texture; no paired complex-STFT feature target requires the frozen vocoder to
+reproduce the recording's phase. Gradients reach the acoustic model through the
+vocoder input. The vocoder is excluded from all optimizers, and its checksum is
+part of exact-resume settings. Valid waveform lengths exclude padded tails.
+Critics and their optimizer are saved for resume and omitted from voice exports.
+This is an unaccepted research objective with additional training cost and no
+additional inference work. Its default is zero; it is not offered in Gradio.
+
+An optional acoustic configuration, `pitch_guidance`, supplies frame-local
+harmonic frequency features derived from F0 and voicing. Unlike a scalar pitch
+control, these features explicitly place harmonics on the package's FFT/mel
+frequency grid. A learned projection conditions the predictor; it starts at
+zero, preserving the old output when initializing the new configuration from
+merged predictor weights. It does not edit predicted mels or generated audio.
+Use `--pitch-guidance` only in a new predictor/adaptation experiment, not to
+change an exact-resume run. The configuration, feature buffers and projection
+weights are serialized; old packages default to disabled. This adds a small
+frame-local inference path and needs its own cost and listening checks. It does
+not change BigVGAN's file-only limitation or repair wrong input F0 automatically.
+
+The serialized `harmonic_detail` configuration enables a separate experimental
+detail head in `rvc/lib/algorithm/acoustic/detail.py`. It receives the backbone's
+predicted physical mel, explicit harmonic geometry from supplied F0/voicing,
+frequency coordinates and target-conditioned latent features. Shared kernels
+operate along frequency; the head adds a learned fine-structure correction in
+physical log-mel units. Gaussian envelope removal constrains this correction;
+it is not an exact formant/harmonic decomposition. No reference mel or source
+spectral detail is supplied during conversion.
+
+Its final projection starts at zero, preserving the original prediction when
+initializing from old weights. Old packages default to disabled. A frozen-backbone
+pilot trains only the detail head; that initialization must preserve all original
+weights and must not graft previously trained refiners onto a changed predictor.
+The branch is frame-local in time and is included in retained-state acoustic
+inference. It adds inference computation that needs measurement before release.
+It remains an unaccepted research architecture with no public training control;
+BigVGAN remains a file-only backend. Listening acceptance is required independently
+of mel error, ASR agreement and speaker-embedding diagnostics.
 
 `B` denotes batch size, `T` mel-frame count, `C` content width and `M` mel bands. Cached content is `[T,C]`; batched content is `[B,T,C]`. Acoustic convolutions and mel use `[B,channels,T]`, controls use `[B,T]`, and masks use `[B,1,T]`. The waveform has `T * hop_length` padded samples; the final conversion trims to the original recording length.
 
@@ -2332,3 +2479,422 @@ V3 vocoder training logs a fixed held-out reference/reconstruction pair at each 
 Use **Training → Live training progress** for current update counts, process status and raw logs. TensorBoard displays logged events and saved audio; a lack of new audio between validation checkpoints is expected.
 
 Training started from Gradio also displays a native progress bar. V3 fine-tuning shows its update count; scratch training shows overall progress across the selected stages and finishes after model export. Resuming includes already completed updates, and stopping saves a checkpoint. Preprocessing and extraction show recording progress. Classic training displays an activity indicator; use live logs for its detailed progress. The native bar belongs to the active browser request; background and CLI jobs remain visible through Live training progress.
+
+<a id="quality-handoff"></a>
+
+## 15. Training and quality-repair handoff
+
+Updated 6 October 2026. This section is the current handoff for the next developer or training experiment. Earlier sections include historical plans and intermediate results; use the acceptance status here when deciding whether to reuse a candidate. Repository-relative artifact paths below refer to local experiment outputs, which are not distributed with the source repository.
+
+### Current decision
+
+**No repaired conversion model has passed listening acceptance.** The latest learned pitch-aware detail head was rejected: “Second audio is great, first one is horrible.” The second section was the reference-detail correction. Earlier periodic-critic and explicit fine-loss candidates were also rejected as crackly. Do not promote, extend or advertise these models as a successful repair merely because some reconstruction metrics improve.
+
+The accepted reference correction is a diagnostic. It combines the model's broad mel envelope with the true fine spectral detail of a held-out target recording. That true target detail is unavailable during ordinary conversion. It is not a deployable model, an inference setting, or evidence that the target voice has been learned adequately.
+
+No further training is launched by this document. Preserve the completed models and reports as controls for the next experiment.
+
+### Completed training and evidence
+
+| Experiment | Configuration and ownership | Finding / decision |
+|---|---|---|
+| Full VCTK base | 109 speakers, 44,242 recordings; predictor 60,000, flow 15,000, shortcut 15,000 updates; batch 2; frozen pretrained BigVGAN | Completed. Refinement did not consistently improve held-out reconstruction; more stages are not automatically better. |
+| Predictor continuation | One separate 5,000-update continuation to 65,000, with exact optimizer/EMA/RNG resume | Small reconstruction improvement. Original exports preserved. Original refiners must not be grafted onto this changed predictor. |
+| Expresso target adaptation | One ex01 DEFAULT speaker, approximately 20 minutes training and three minutes recording-disjoint validation; 3,000 LoRA updates, rank 8, batch 2, BF16, LR 1e-4 | Demonstrated target adaptation mechanics, but listening still exposed robotic/noisy artifacts. This is neutral speech coverage, not singing coverage. |
+| Mel / waveform critic repairs | Bounded paired pilots with frozen BigVGAN; merged predictor repairs after initial LoRA | Some clearer speech and reduced noise, but metallic/robotic timbre remained. Not accepted. |
+| Training-context comparison | Paired 2,000-update control/history experiments, matched scored frames; 60 preceding frames for the actual causal backbone | Corrected a real context mismatch, but did not establish a meaningful perceptual repair. |
+| Explicit fine-loss repair | 2,000 updates; physical Gaussian fine-detail L1 added to the matched history branch | Reconstruction results did not predict naturalness. Listening rejected the model as crackly. |
+| Pitch-aware detail head | 3,000 updates; 35,617 trainable head parameters; original backbone/statistics/vocoder frozen | Fine L1 improved approximately 5% on four diagnostic examples, but contrast fell further below reference and listening rejected the candidate. |
+
+For the latest head, the 64-case live waveform-mel L1 changed from 0.511910 to 0.509343, while spectral loss worsened from 0.960546 to 1.001341. These are matched reconstruction measurements, not proof of better sound. Mean fine-detail amplitude on four examples fell from 0.2754 to 0.2318 against reference 0.3758. A lower fine L1 can reward smoothing instead of the detail listeners want.
+
+The three unseen user inputs were evaluation-only: High_Pitch, HRA_Sample and test_sample. Speech intelligibility proxies can look good despite unacceptable timbre. High-pitch and non-speech vocalizations remain difficult; ASR ratios on very short vocalization transcripts are misleading. No human-transcript WER or broad singing acceptance has been established.
+
+### What the reference correction tells us
+
+For physical log-mel P and reference R, the diagnostic uses a Gaussian smoother G across mel-band index, sigma 3:
+
+- Predicted broad envelope: G(P).
+- Predicted fine detail: P - G(P).
+- Reference fine detail: R - G(R).
+- Preferred listening diagnostic: G(P) + R - G(R).
+
+Both spectra use the same verified mel contract and frozen vocoder. The preferred output supports investigating missing or incorrect fine structure as a major cause of the audible problem. This index-space decomposition is not an exact physical separation of formants and harmonics. It does not prove that coarse prediction, pitch extraction or the vocoder is flawless.
+
+The rejected compared utterances were finite, below full scale and rendered in one pass. Stored-WAV clipping and file-conversion chunk joins therefore do not explain those particular comparisons. Sample-jump statistics are descriptive, not a calibrated crackle detector. The preferred correction had more high-frequency energy than some rejected versions, so indiscriminate low-pass filtering is not justified.
+
+### How to reproduce training safely
+
+Run commands from the repository root using the installed environment. First inspect the relevant command help:
+
+```powershell
+.\env\python.exe core.py train-corpus --help
+.\env\python.exe core.py preprocess --help
+.\env\python.exe core.py extract --help
+.\env\python.exe core.py train --help
+```
+
+Before any new run, write its plan: hypothesis, dataset/split hashes, base and vocoder hashes, frontend/mel contracts, trainable modules, objective weights, optimizer, seed, batch/crop/context, precision, maximum updates, evaluation cases and listening gate. Use a new output model name. Never overwrite completed campaign directories or place outputs inside original datasets.
+
+**Full-corpus reproduction, not the recommended next repair:** `train-full-vctk.bat` contains the completed shared recipe. It initializes acoustic weights from scratch and keeps BigVGAN frozen. Its architecture source supplies architecture/frontend semantics, not pretrained acoustic initialization. Change `MODEL_NAME` to a fresh experiment name before launching a new campaign; leave a completed run untouched. The existing batch default is 2. Increase it only after measuring available memory, and record the change rather than mixing it into an exact resume.
+
+The corresponding CLI structure is:
+
+```powershell
+.\env\python.exe -u core.py train-corpus --model-name corpus_reproduction --dataset-path assets/datasets/vctk --vocoder-path logs/vctk_v3_large/pretrained_bigvgan_vocoder.pth --architecture-from logs/vctk_v3_large/vctk_v3_improved_acoustic.pth --batch-size 2 --predictor-steps 60000 --flow-steps 15000 --shortcut-steps 15000
+```
+
+This historical three-stage recipe is reproducible, but its duration and completed stage count do not establish quality. A repair pilot should start with predictor-only evaluation and justify refiners separately.
+
+**Target adaptation:** use separate Preprocess and Extract steps, then adaptation. Reserve whole recordings before segmentation. Use the selected base model's exact sample rate, mel transform, encoder, pitch extractor and context profile; do not assume fresh extraction defaults match an old checkpoint. The existing verified Expresso manifest is `logs/expresso_ex01/data/manifest.json`; the selected original pilot base is `logs/vctk_v3_full/continuation/predictor/predictor.pth`.
+
+With those local artifacts present, the historical adaptation can be reproduced under a new name:
+
+```powershell
+.\env\python.exe -u core.py train --architecture v3 --model-name expresso_reproduction --stage adapt --manifest logs/expresso_ex01/data/manifest.json --base-model logs/vctk_v3_full/continuation/predictor/predictor.pth --vocoder-path logs/vctk_v3_large/pretrained_bigvgan_vocoder.pth --adaptation lora --adapter-rank 8 --steps 3000 --batch-size 2 --crop-frames 128 --learning-rate 0.0001 --precision bf16 --device cuda:0 --seed 1234 --checkpoint-every 500
+```
+
+This is a mechanical reproduction, not a recommended quality configuration. Do not use the three unseen inputs as adaptation data. Later repair pilots updated merged predictors or a new detail head; they must not be described as LoRA-only training.
+
+**Exact continuation:** use the original stage's training checkpoint and `--resume`, preserving dataset, stage, architecture, objective, batch, crop, precision, LR and seed. Standard individual-stage `--steps` specifies additional updates. `--base-model` initializes a new stage from model weights and is not exact optimizer/RNG continuation. An exported inference package cannot restore full training state. Reduced LR is a new experiment when the resume contract rejects changing it; do not silently bypass that check.
+
+The private detail-head trainer has its own exact state and is not resumable through the standard core trainer. Its reproducibility entry point is `logs/train_harmonic_detail.py`, with `plan.json` and `last.pt` under `logs/quality_repair/harmonic_detail`. Its completed-run guard intentionally prevents duplicate training. Do not remove that guard or extend this rejected pilot. Read the plan and implement a fresh, separately bounded experiment if the hypothesis changes.
+
+### Configuration decisions before another model
+
+1. **Representation and uncertainty.** Determine whether the deterministic mel head averages over harmonic structure that cannot be uniquely recovered from its conditioning. Compare a stronger deterministic prediction against a stochastic/residual generative approach under equal compute. Do not infer the answer from L1 alone.
+2. **Physical frequency structure.** Test whether fixed mel bands blur high-F0 harmonics and whether a pitch-relative carrier, frequency-domain representation or another explicit spectral target is appropriate. Verify feature alignment and voiced/unvoiced transitions before increasing model capacity.
+3. **Learning signal.** The new head reduced fine amplitude while lowering fine L1. Consider objectives that constrain harmonic placement, contrast and temporal stability. If adding adversarial supervision, isolate the changed component and measure noise, pitch and source-identity leakage; previous critics did not solve the issue.
+4. **Capacity and temporal context.** The small head was frame-local with a frozen backbone. It may be unable to recover missing information. A temporal head or broader predictor update is a hypothesis to test, not an established fix. Match training histories to inference and preserve padding masks.
+5. **Dataset coverage.** Neutral ex01 speech cannot validate high-pitch singing, breathy sounds or expressive vocalizations. Select permitted recordings covering the intended range, keep recording-disjoint validation, and retain unseen inputs for evaluation only.
+6. **Identity versus source detail.** Copying source fine spectrum may retain source voice or pitch. Any method that uses it must demonstrate target identity against independent target recordings; attractive oracle audio is insufficient.
+7. **Cost and deployment.** Measure frontend, acoustic model and vocoder separately, then the complete conversion path. Current BigVGAN is noncausal/file-only. Acoustic packet parity and RTF below 1 do not establish realtime support.
+
+Do not launch another full VCTK campaign until a bounded pilot clears listening acceptance and broader pitch/identity checks. Keep one change per controlled comparison and write a fixed stopping budget before starting.
+
+### Required evaluation and promotion gate
+
+Use identical held-out cases, target identity, seed, source preparation and supported budgets. Compare the preserved baseline, new trained output, reference recording and reference-mel vocoder output. Include the preferred fine-detail diagnostic for diagnosis, labeled clearly. It must not be scored as a deployable conversion candidate.
+
+Evaluate finite output, exact duration, pitch/octave and voicing errors, independent target/source speaker similarity, intelligibility, silence/transitions, high-pitch examples, pitch shifts and chunk boundaries. Use human transcripts when available; label automatic transcript agreement as a proxy. Run three unseen files and a 30-second conversion. A new model requires its own checks; previous baseline checks do not certify it.
+
+Present paired listening clips with shared gain, no denoising or other effects, and clearly recorded order. Prefer blind order for a formal comparison. If listeners reject crackle, noise, metallic or robotic voice, record a failed quality gate even if losses improve. Only then assess wider training, default configuration or public promotion.
+
+The latest head's warmed 19.5-second file conversion measured approximately 3.35 seconds, versus 3.39 seconds for the same previous backbone/vocoder, with approximately 1.72 GiB peak allocated GPU memory. Three repetitions overlap in variability; no speedup is established. Sequential loading measurements are not a controlled cold-start comparison. A classic generic pretrained voice exists as a limited baseline, but it is not a matched target-trained V2 voice; do not claim a fair target-quality comparison.
+
+### Where to find the evidence
+
+| Artifact | Purpose |
+|---|---|
+| `logs/vctk_v3_full/campaign_status.json` and `console.log` | Completed full-corpus campaign and exports |
+| `logs/vctk_v3_full/continuation/predictor/` | Preserved bounded continuation and matched evaluation |
+| `logs/expresso_ex01/selection.json`, `experiment_plan.json`, `data/manifest.json` | Target selection, split/feature contract and original adaptation |
+| `logs/quality_repair/CONCLUSIONS.md`, `acceptance_summary.json` | Chronological findings and current acceptance decision |
+| `logs/quality_repair/spectral_isolation/` | Reference-detail diagnostic, component swaps and preferred audio |
+| `logs/quality_repair/fine_structure/listening_feedback.json` | Earlier crackly candidate rejection |
+| `logs/quality_repair/harmonic_detail/plan.json`, `summary.json`, `comparison.json` | Last pilot configuration and matched measurements |
+| `logs/quality_repair/harmonic_detail/listening_feedback.json` | Explicit rejection of learned head, acceptance of diagnostic only |
+| `logs/quality_repair/harmonic_detail/software_checks.json`, `inference_benchmark.json` | Resume, parity, integrity, export and measured file cost |
+| `logs/quality_repair/harmonic_detail/listening_comparison.wav` | Rejected model first, preferred reference correction second |
+
+The optional implementation lives in `rvc/lib/algorithm/acoustic/detail.py`, with integration in `model.py`, `rvc/configs/neural.py` and `rvc/realtime/streaming.py`. `harmonic_detail` is disabled by default and has no public training control. Passing software checks confirms implementation mechanics; it does not overturn the listening rejection. Training and validation curves/audio are available through the shared TensorBoard viewer. Protect original inputs, model/checkpoint files, hashes and reports throughout the next experiment.
+
+### Renewed mixed-corpus campaign (8 October 2026)
+
+The previous local training/evaluation artifacts were removed to recover space. Historical results above remain findings, but their artifact paths must not be assumed available. New baselines, checkpoint hashes and paired listening results are required before claiming an improvement over classic V2.
+
+The four source datasets now live under `assets/datasets/combined/{vctk,m4singer,ears,expresso}`. They were moved on the same volume, not duplicated or resampled; MIDI, TextGrid and transcript metadata were preserved. The original individual root folders no longer exist. Moving avoids a second audio copy but does not itself free the original audio's occupied space.
+
+The initial inventory is 93,980 WAV recordings: VCTK 44,242, EARS 17,227, M4Singer 20,896 and Expresso 11,615. Identity parsing found 240 speakers: 109, 107, 20 and 4 respectively. Dataset-qualified speaker IDs distinguish similarly named people. M4Singer song folders map to singers; Expresso style folders map to actual speakers rather than new identities.
+
+Run `env/python.exe -m rvc.lib.tools.corpus --root assets/datasets/combined` to build header, duration and SHA-256 records. It preserves duplicate source files while selecting identical audio once, rejects conflicting duplicate identities, and publishes `corpus.json` only after the full index passes. Shared preprocessing reads this map and retains recording-disjoint validation. It refuses an unindexed four-dataset corpus to prevent accidental style/song speaker grouping. The index has completed; counts and durations are recorded below. Do not rebuild the index during a run that protects its hash.
+
+Research checkout provenance is retained under `logs/_research`. [ShiroRVC](https://github.com/ShiromiyaG/ShiroRVC) provides a shallow rectified-flow comparison with auxiliary mel prediction and separate pitch-conditioned vocoders. Its source distinguishes OpenVPI mel semantics (40–16,000 Hz) from this branch's previous BigVGAN contract (0–22,050 Hz); identical mel dimensions do not make weights interchangeable. [Wavehax](https://github.com/chomeyama/wavehax) estimates complex spectra using a harmonic prior and frequency/time convolutions. ShiroRVC's `wavehax-v2` is a configuration of its port; it must be distinguished from the official repository's own configurations. These are implementation candidates, not evidence of superiority on our held-out conversion task. Next: finish indexing, audit source/training contracts, choose a controlled acoustic/vocoder comparison and establish matched V2 listening baselines before wider training or release.
+
+### Verified corpus and first new synthesis pilot
+
+The combined index completed: 93,980 unique WAV files, 240 dataset-qualified speakers and approximately 185.06 hours. Header/duration and whole-file SHA-256 indexing reported zero failures; this is not a full signal-quality or licensing audit. Dataset durations are EARS 100.06 h, VCTK 44.04 h, M4Singer 29.70 h and Expresso 11.26 h. M4Singer split groups keep excerpts of each singer/song folder together; the same song performed by another singer is not proven disjoint. All source metadata remains beside its original recordings.
+
+A native full-band harmonic-prior backend now lives in `rvc/lib/algorithm/acoustic/wavehax.py`, selected by `rvc/configs/vocoders/wavehax.json`. It shares preparation, the vocoder trainer, TensorBoard, EMA export and strict package loading. It uses this branch's physical 128-band mel contract, full-band complex-spectrum prediction and overlap-add. It is a native experimental graph inspired by the [Wavehax paper](https://arxiv.org/html/2411.06807v2), not an official checkpoint loader or evidence that upstream quality/speed claims transfer. Global spectrogram normalization and symmetric kernels make this backend explicitly noncausal/file-only. Existing causal multistream and frozen BigVGAN backends remain distinct.
+
+Software verification includes finite short output/gradients, strict factory round-trip, rejection by the streaming API, exact Adam/RNG continuation, and real shared-trainer GAN updates, checkpoint resume and EMA export. Synthetic fixture outputs are not listening evidence. The 8.30-million-parameter graph's generator-only warmed 128-frame BF16 update on an RTX 3060 Ti took approximately 73 ms and peaked around 0.66 GiB allocated memory. This excludes critics, data loading, validation and whole-file inference; do not present it as a complete training/inference benchmark.
+
+The first real pilot is `logs/mixed_vocoder`: four speakers per dataset, 32 recordings per speaker, seed 2040, 4-second preparation segments. After verified feature extraction it selects equal segment counts per dataset separately for train/validation, preserving recording/song splits. Training uses batch 2, 128-frame crops, BF16, AdamW LR 2e-4 and a fixed 10,000-update budget with validation/audio checkpoints every 500 updates. The shared native GAN/feature-matching/spectral objectives are a baseline, not the official Wavehax training recipe. Exact run settings and corpus/config hashes live in `plan.json`. The owned preparation/training script is `logs/campaign/run_vocoder_pilot.py`; live status is `status.json`, console output is `logs/campaign/vocoder_pilot_console.log`. A `STOP` file inside the pilot directory requests a checkpointed stop during training. Completed-run and lock guards prevent duplicate launches.
+
+Gate: assess reference-mel reconstruction on reserved speech, expressive and singing recordings before training the new acoustic model. Good oracle reconstruction would qualify this vocoder for further experiments; it would not prove voice conversion superiority. The next acoustic comparison should test a genuine generative/shallow-flow path with adequate context and pitch coverage against a matched classic V2 voice. No checkpoint from the rejected detail-head pilots is promoted, and no release-quality claim has passed.
+
+### Joint shallow-flow acoustic path and current gates
+
+A separate serialized acoustic family, `shallow-flow`, is implemented in `rvc/lib/algorithm/acoustic/flow.py`. It shares native conditioning, statistics, speaker vocabulary, cached data, LoRA adaptation, the core trainer, EMA export and inference loading. `rvc/configs/acoustic/shallow.json` selects the research baseline. Old packages default to the residual family and retain their graph; no filename guessing or separate interface is introduced.
+
+The predictor/adaptation stage jointly optimizes a direct normalized-mel velocity field and a weighted auxiliary prediction objective. Training samples straight noise-to-data paths over t >= 0.4. Ordinary Euler inference starts at t=0.4 from 0.6 noise + 0.4 auxiliary mel and integrates to t=1. Budget zero is auxiliary-only. Optional reference-mel initialization is a diagnostic of auxiliary-start error, not a usable conversion setting. The starting distribution differs when auxiliary predictions are inaccurate, so oracle-start versus predicted-start comparison is an explicit experiment requirement. There is no shortcut/distillation claim. Independent flow/shortcut stages are rejected for this family.
+
+Each velocity block has time/condition modulation, symmetric depthwise temporal convolution and gated projections. Both family and physical coordinate semantics are serialized. The graph is noncausal/file-only. Its proposed pilot uses 256-frame crops with 7-tap kernels; preparation currently supplies up to approximately four-second segments. A single velocity evaluation needs approximately 30 frames of context on either side after conditioning; repeated ODE evaluations can propagate boundaries farther. Compare matched window/full-context and long-file behavior before claiming chunk transparency. Short or padded examples require separate diagnostics rather than assuming every scored frame has complete context.
+
+Software checks passed joint auxiliary/velocity gradients, masked-loss invariance, supported sampler budgets, strict family reload, rejection of unsupported shortcut training, zero-LoRA merge, unchanged legacy graph, and actual shared-trainer updates with bit-identical split-resume model/EMA states and inference export. These establish implementation mechanics, not sound quality. The running vocoder pilot was not interrupted for these CPU checks.
+
+When oracle-vocoder listening qualifies the renderer, the initial acoustic pilot can use the acoustic manifest that excludes Expresso ex01 from the base:
+
+```powershell
+.\env\python.exe -u core.py train --architecture v3 --model-name mixed_acoustic --stage predictor --manifest logs/mixed_acoustic/data/manifest.json --config rvc/configs/acoustic/shallow.json --steps 10000 --batch-size 2 --crop-frames 256 --learning-rate 0.0002 --precision bf16 --device cuda:0 --seed 2042 --checkpoint-every 500
+```
+
+This is a planned bounded research run, not an accepted production recipe. Compare auxiliary-only, predicted-start flow budgets, and oracle-start diagnostics on identical held-out examples. Subsequent conversion must use a matching frozen vocoder package and the same frontend contract. Establish a target-trained classic V2 comparison; generic pretrained V2 weights alone cannot prove target-voice superiority. Do not substitute small-pilot success for full-corpus validation or release readiness.
+
+The mixed-vocoder preparation completed, producing a domain-balanced 732-segment manifest with approximately 34.37 minutes of training and 3.57 minutes validation. A Windows manifest read failed on Chinese titles before training; explicit UTF-8 reads fixed it and completed caches were reused. No source audio changed. Training and queued evaluation are tracked in `logs/mixed_vocoder/status.json` and `evaluation/status.json`; the evaluator waits for the GPU-owning process to exit before rendering up to eight fixed validation cases per domain, with reference first and reconstruction second. Raw floating-point WAVs retain amplitude evidence; listening pairs use one common gain.
+
+Training cache F0 coverage is broader than the previous neutral-speaker pilot: the singing domain's 95th/99th percentiles are approximately 617/703 Hz, versus approximately 231/254 Hz for selected VCTK speech. These describe the pitch extractor's output, not independently verified pitch accuracy. Recording and singer/song-folder split checks passed; global song-title separation across singers has not been established. The original three unseen user files were restored from their original attachments with matching SHA-256 hashes and remain evaluation-only.
+
+The shared Inference advanced settings now recognize the shallow-flow family: loading it selects eight generative steps, labels zero as auxiliary-only, and hides the legacy ordinary/shortcut toggle. Classic and residual-family controls retain their behavior. Gradio component/event construction and family-aware inference validation passed. This is metadata-driven integration for the research graph, not publication of accepted weights. Synthetic verification artifacts were archived under `logs/_archive/backend_verification`, outside model discovery. No synthetic voice should be offered as a pretrained user model.
+
+<a id="current-training"></a>
+
+## 16. Current training instructions, findings and open decisions
+
+### Qualified renderer and current acoustic pilot
+
+The newer pretrained OpenVPI pitch-controllable NSF-HiFiGAN renderer has passed the listening gate. Reference-to-reconstruction clips were accepted for acoustic training. This acceptance applies to the pretrained renderer, not the scratch native Wavehax model and not a completed voice-conversion system. The scratch pilot remains a diagnostic control.
+
+The shared loader supports the renderer through `rvc/lib/algorithm/acoustic/nsf_hifigan.py`; its graph and waveform outputs were checked against the upstream implementation. Existing model families retain their defaults. Import the exact supported local checkpoint with:
+
+```powershell
+.\env\python.exe core.py import-vocoder --backend nsf-hifigan --checkpoint <local-checkpoint.pth> --output-path <new-vocoder-package.pth>
+```
+
+The current package is `logs/pretrained_renderer/vocoder.pth`. Its mel contract is 44.1 kHz, FFT/window 2048, hop 512, 128 Slaney bands, **40–16,000 Hz**, log floor 1e-5 and magnitude epsilon zero. Old packages default to magnitude epsilon 1e-9. Matching sample rate, hop and band count alone is insufficient: frequency bounds and spectral semantics must match too. The importer validates the serialized graph and mel configuration; other checkpoint variants are rejected.
+
+The tested raw resource is the [ShiroRVC-published pitch-controllable OpenVPI export](https://huggingface.co/shiromiya/ShiroRVC-Resources/resolve/main/vocoders/pc_nsf_hifigan_44.1k_hop512_128bin_vocoder.pth), 56,600,485 bytes, SHA-256 `4d7c843cb663137a28b94e8707503d540e5eec4b16e40867ae0d17f07440cc8d`. Download it under its upstream terms, verify its hash, and import it into a new Applio package before selecting it in Gradio. The raw export and imported package have different hashes and headers; changing the filename does not convert between them.
+
+The source port carries the upstream MIT notice in `nsf_hifigan.LICENSE`. The downloaded weights have separate upstream **CC BY-NC-SA 4.0** terms. Source licensing does not grant commercial use of those weights. Preserve provenance and review distribution terms before a public pretrained release; the current listening acceptance is not a redistribution approval.
+
+CPU reference-mel evaluation on the same 32 reserved examples produced finite outputs of the correct duration without modifying weights. Paired pitch-detector voicing disagreement was approximately 6.5% EARS, 2.9% Expresso, 1.1% M4Singer and 2.6% VCTK; median output/reference RMS differences were within about 0.6 dB. These are diagnostic agreements, not annotated pitch accuracy or proof of natural conversion. Reports and accepted comparison clips are under `logs/pretrained_renderer/evaluation`.
+
+Additional full-recording reference-mel controls completed on all three unseen user files under `evaluation/user_oracle`: High_Pitch (30.458 seconds), HRA (30 seconds) and test_sample (19.5 seconds). Inputs and renderer hashes were preserved; outputs are finite and have exactly the resampled reference length. Paired SwiftF0 voicing disagreement was approximately 0.9%, 1.3% and 4.9% respectively, with near-zero gross errors on jointly voiced frames. However, HRA reconstruction was **4.88 dB quieter** and its waveform mel error was higher (0.658 versus 0.290/0.332). This is a renderer/domain warning despite good pitch-detector agreement. The common-gain listening pairs retain the level difference. HRA timbre feedback is being requested; do not assume the representative listening acceptance covers every difficult source. These controls use reference mel and are not converted voices. Their two-thread CPU synthesis times are diagnostics, not a synchronized warmed GPU comparison or evidence of realtime support.
+
+A CPU level-sensitivity probe held HRA pitch/voicing fixed, increased waveform level before reference-mel extraction by 6/12/18 dB, then undid that gain on the generated output. All outputs stayed finite and exact length; the original recordings, renderer and baseline remained unchanged. Level differences remained -4.81/-5.18/-5.89 dB, and mel errors were 0.649/0.680/0.746 versus baseline 0.658. This does not support a simple input-level boost as the repair. Preserve the baseline and inspect timbre rather than concealing the limitation with automatic normalization. Evidence is under `evaluation/level_probe`; no inference behavior was changed.
+
+The acoustic targets are rebuilt in `logs/mixed_acoustic/data/manifest.json` from the 15-speaker cache that excludes Expresso ex01. `retarget_mel_manifest` recomputes only mel targets when sample rate/hop stay unchanged. Content, pitch, energy, segmentation and reserved recording assignments remain fixed. Waveforms use verified hardlinks inside the new cache directory, retaining path containment without duplicating audio bytes. These links are immutable inputs: editing one edits the shared underlying file. `retarget_checks.json` records verification. This is a new experiment, not an optimizer continuation of the old spectral contract.
+
+Distinct recordings may produce byte-identical audio segments, especially silence. Retargeting keeps distinct source hardlinks in that case rather than rejecting a content-hash filename collision. A CPU check verified the case using two separate, identical waveform files; the published pilot manifests were not rewritten.
+
+The completed small joint pilot used shallow-flow configuration, batch 2, 256-frame crops, LR 2e-4, BF16, seed 2042 and checkpoint/validation every 500 updates. Its renderer stayed frozen and hashed. Its private supervisor and reports are retained under `logs/mixed_acoustic` as research provenance; they do not launch the current full run.
+
+The real configured acoustic graph contains 28,005,632 parameters (`model_profile.json`). Its FP32 model/EMA/gradient/Adam tensor storage lower bound is recorded separately from GPU peak memory; activations, workspaces and allocator overhead are not included. GPU memory and speed still require measurement during the isolated run. Do not present this count as a benchmark or promise that a particular laptop can train the model at the same batch size.
+
+After training, the supervisor exports best EMA weights and evaluates identical held-out cases at budgets 0/1/2/4/8/16/32 plus the reference-mel ceiling. Budget zero is auxiliary-only. The single predictor stage trains both branches; there are no additional residual-flow or shortcut stages for this family. Evaluation completion does not promote a model. Listening, predicted-start versus oracle-start diagnostics, matched target adaptation and the trained V2 comparison remain required. Both this renderer and the current shallow-flow path are noncausal/file-only.
+
+`logs/campaign/diagnose_acoustic_pilot.py` waits for that supervisor to complete and exit, then runs the same held-out cases and seed with reference-mel initialization at budgets 8/16. This isolates the predicted-start distribution mismatch. The evaluator's `--oracle-start` flag explicitly labels these outputs as diagnostics using reference information unavailable during conversion and rejects legacy residual models. Ordinary sampling remains the default. Both evaluation paths reject nonfinite output or incorrect waveform dimensions. CPU checks exercised the real oracle-start branch and preserved the legacy shortcut guard.
+
+The exact Expresso target split is now also prepared at `logs/target_comparison/renderer_data/audio_manifest.json` using the new mel contract. All 412 recordings keep their original assignments, verified hashes and hardlinked audio; durations remain 1,201.789 seconds training and 181.341 seconds validation. The queued diagnostic worker subsequently extracts target features with the trained base package's exact encoder/pitch/profile contract. It does not automatically train or promote an adapter. A listening assessment of the acoustic pilot precedes the bounded LoRA comparison. The old `acoustic_data` manifest remains a control and must not be used with this renderer's spectral contract.
+
+CLI preparation now shares Gradio's pretrained contract handling. `preprocess --base-model` uses the acoustic package's mel settings; optionally providing `--vocoder-path` validates the pair before creating data. For a scratch acoustic model, `preprocess --vocoder-path` uses the selected frozen renderer's spectral contract. `extract --base-model` uses the base's exact content encoder identity, pitch method and observation profile. Without a base, extraction reads mel settings from the preprocessed audio manifest rather than silently reverting to default bands. Classic commands reject these architecture-specific options. The full-corpus runner likewise derives scratch mel settings from the selected renderer, while architecture references remain binding when supplied.
+
+For an ordinary fine-tuning dataset, the preparation commands are:
+
+```powershell
+.\env\python.exe core.py preprocess --architecture v3 --model-name my_voice --dataset-path assets/datasets/my_voice --base-model logs/mixed_acoustic/mixed_acoustic.pth --vocoder-path logs/pretrained_renderer/vocoder.pth
+.\env\python.exe core.py extract --architecture v3 --model-name my_voice --base-model logs/mixed_acoustic/mixed_acoustic.pth --encoder-path rvc/models/embedders/contentvec --device auto
+```
+
+These commands use the ordinary automatic recording split. The current matched Expresso experiment uses its separately verified exact split instead; do not rerun automatic preprocessing over that control. `logs/campaign/preparation_contract_checks.json` records CPU preparation, real cache loading with a fixture frontend, CLI dispatch and scratch-campaign preflight checks. Dummy frontend fixtures establish wiring and contract behavior only, not encoder quality or acoustic performance.
+
+The instructions below retain the scratch experiment's findings. **Current acoustic commands use the retargeted manifest and qualified pretrained renderer**, superseding the earlier full-band Wavehax proposal.
+
+Updated 8 October 2026. This section supersedes historical launch instructions. It separates completed experiments from proposed configurations. Paths are relative to the repository root and contain no machine-specific user information. Local caches, plans and weights under `logs` are not included with the source repository; preserve them separately if handing this work to another machine.
+
+### Status and the next decision
+
+**Latest direction:** choose the acoustic architecture first, then build a solid pretrained model on the combined four-domain corpus, and only afterward fine-tune on a separately sourced external dataset. The queued Expresso ex01 adaptation was cancelled before any target training or GPU work. Although ex01 was excluded from the small acoustic pilot, Expresso is part of the intended full pretrained corpus; it will not serve as the final unseen-target fine-tuning test. Historical/proposed ex01 adaptation commands below are comparison records, not the current launch sequence.
+
+Unattended decisions are authorized for this sequence. If listening replies are unavailable, record a provisional architecture choice from the controlled evidence and existing feedback, then proceed with a verified full-corpus configuration. Do not equate that choice with listener acceptance or superiority over classic V2. The desired 24–48 hour turnaround is a planning target; calculate estimates from actual preprocessing, extraction and training throughput. Storage fit, valid held-out splits, frozen-renderer integrity and exact-resume checks remain prerequisites. A later external-target pilot may proceed after the pretrained model is evaluated, using the three supplied recordings strictly for conversion testing.
+
+The joint pilot continuation is complete: 30,000 total updates, with best validation at 28,000. It restored the exact 10,000-update live checkpoint, optimizer, EMA and RNG using unchanged batch 2, crop 256, LR 2e-4, BF16 and seed 2042. Its best/final packages were evaluated on the same 68 held-out segments. Original artifacts and the renderer remained unchanged; this is evidence for architecture selection, not automatic quality acceptance.
+
+Architecture selection must consider clean speech and singing, expressive/nonverbal sounds, voicing/transitions, unseen-source generalization, inference cost and training stability. A staged residual-flow control should share the same manifest, qualified renderer, frontend, crops and held-out selection if used to attribute gains to architecture. Historical VCTK/BigVGAN versus current mixed-corpus/NSF results are confounded by data and renderer changes and cannot establish an architecture winner. Report total stage updates and measured wall time separately; equal updates do not imply equal compute. Select the larger mixed-corpus recipe only after the continuation and listening comparisons support it and storage preparation is solved.
+
+The matched staged-residual control is complete under `logs/residual_comparison`: 20,000 fresh predictor updates followed by 10,000 residual-flow updates. The flow initialized from the best predictor EMA export. It used the same manifest, renderer, frontend, context, batch 2, crop 256, BF16, LR 2e-4 and seed 2042 as the joint pilot. Budgets 0/8/16/32 were compared on the same 68 reserved segments. The comparison did not train residual shortcuts or graft a refiner onto a different predictor.
+
+This comparison changes the objective, residual coordinates and staging together; it tests the practical architecture recipe rather than isolating one equation. Parameter counts differ: joint shallow flow has 28,005,632 parameters and staged residual flow has 22,821,632. Thirty thousand updates therefore do not represent equal compute or identical per-parameter exposure. Record stage wall times, checkpoint steps and file-conversion cost, and inspect speech, singing and expressive clips before committing to full-corpus training. The private CPU stage-transition/resume checks passed; that is software evidence, not sound-quality evidence.
+
+Completed independent baseline diagnostics are aggregated in `logs/mixed_acoustic/evaluation/independent/summary.json`: 748 held-out scored renders and 54 unseen-source conversions. Pitch summaries include voiced coverage and use null when the error denominator is empty. Speech ASR measures automatic source-transcript agreement, not human ground-truth WER. EARS speaker identity relies on only one reserved reference, and speech speaker embeddings are not calibrated for singing. These diagnostics do not replace listening, and their derivative statistics do not establish absence of chunk-boundary artifacts.
+
+The joint continuation completed 30,000 total updates. Its best validation checkpoint is at 28,000, and both best and final exports have matched evaluation; baseline and renderer integrity passed. On the same 68 cases, best-checkpoint mean mel L1 fell from 0.71447 to 0.65671 at eight steps and from 0.72316 to 0.66449 at sixteen steps, about an 8.1% improvement in each. This is paired reconstruction evidence, not listener acceptance. The listening sequences under `logs/mixed_acoustic/continuation/listening` preserve the original domain/example selection and pair actual predictions from 10,000, best continued and final checkpoints at a common gain, without denoising. The staged residual comparison begins only after the completed continuation owner exits.
+
+An explicit compact derived-cache option now exists in the shared `preprocess_audio` API as `compact_cache=True`. It stores PCM24 FLAC waveforms with a power-of-two amplitude scale recorded per segment and restored before feature extraction or waveform training; positive full-scale values and small resampling overshoot are not clipped. Content features are stored in FP16 and loaded in FP32; other feature precision is retained. Storage semantics enter cache identities, and waveform scales enter exact-resume dataset identities. Standard FLOAT-WAV/FP32 cache behavior and existing manifest identities remain unchanged. The option quantizes derived data and must not be described as lossless relative to resampled FLOAT audio.
+
+Private synthetic CPU checks passed for overshoot restoration, dtype restoration, unsupported-storage rejection, mel retargeting with scale preservation and bitwise-identical live/EMA weights after interrupted versus uninterrupted training. These checks are under `logs/campaign/compact_cache_checks.json`; they do not yet qualify compact storage for the full corpus. Actual frontend/model sensitivity, measured space with checkpoint/evaluation headroom and the full-campaign entry point still need validation before launch. Original source audio and the active pilot caches remain untouched.
+
+The existing `core.py train-corpus` entry point now accepts `--compact-cache`. Its default remains the standard cache. Without a corpus-specific audit, preflight uses an uncompressed PCM24/FP16 upper estimate with 12 GiB of checkpoint/evaluation headroom. `--compact-cache-audit` may use a measured estimate only from a passed qualification bound to the same corpus inventory, renderer mel and frontend contracts and unchanged storage implementation. The estimate includes a 15% measured-cache margin plus headroom; full preparation must still monitor actual free space. The owned CPU qualification under `logs/compact_qualification` is queued after the residual training/evaluation process exits. It checks fixed real waveform/frontends, identical-noise predicted mel and rendered waveform differences, and measures compact files across all pilot voices. Successful synthetic checks alone do not satisfy this gate.
+
+For full mixed-corpus pretraining, `--sampling-mode domain-speaker` tempers domain weights by the square root of their training-audio duration, then draws a voice uniformly within the domain and a segment uniformly within the voice. This prevents the longest domain dominating every batch while avoiding equal total weight for a much smaller domain. The resulting domain probabilities and durations are saved in the stage's `sampling.json`. The original `segments` default preserves its draw and RNG consumption. A changed sampler rejects exact resume; the optional sampler/version is recorded in training settings, while unchanged default checkpoints retain their original settings. Private CPU checks passed deterministic draws, within-domain voice balance, expected domain probabilities, changed-sampler rejection and bitwise-identical compact-cache live/EMA resume. This establishes software behavior; full-corpus validation must establish whether the mixture improves generalization.
+
+### Provisional full-corpus architecture decision
+
+Joint shallow flow was selected for the larger run after the controlled comparison, with the listener's encouraging feedback for the 28,000-update sample. Across the same 68 held-out cases at 16 steps, mean mel error was 0.66449 for shallow flow and 0.71336 for residual flow; rendered-mel error was 0.67389 versus 0.70970. On the speech input at eight steps, the two shallow target conversions had zero source-transcript disagreements versus two for residual. These are repetitions of one utterance, not independent transcripts or annotated-ground-truth WER. The warmed 19.5-second file conversions took approximately 0.445 seconds for shallow eight-step generation and 0.460 seconds for residual; at sixteen steps both were approximately 0.51 seconds. Residual had slightly better aggregate voicing agreement and fewer parameters. The practical decision combines existing listening feedback, reconstruction and independent source checks, inference cost and native few-step support. It does not prove perceptual superiority over classic V2 or isolate every architectural factor.
+
+Compact qualification passed 12 fixed real examples across four domains. Maximum relative content difference was 0.000260, maximum mean predicted-mel difference was 0.000120, maximum rendered waveform relative L2 difference was 0.001890, no voicing frames changed and maximum mean F0 difference was 0.0000713 Hz. Measurements on 45 derived segments projected a 146.7 GiB cache; the disk gate adds 15% uncertainty plus 12 GiB for checkpoints and evaluation. This is a measured estimate, not a guarantee for every full-corpus file. Source audio, pilot models and frozen renderer remain unchanged.
+
+The full recipe under `logs/mixed_pretrained` starts fresh acoustic weights with the accepted frozen renderer and architecture/frontend semantics from the 28k package. It includes all 93,980 recordings and 240 parsed voices, with recording/song-folder-disjoint validation. The existing pilot's reserved recordings and their full indexed split groups are explicitly reserved via `--validation-manifest`; 363 source paths are reserved before automatic validation. The recipe uses 300,000 joint updates, batch 4, crop 256, BF16, LR 2e-4, seed 2048, checkpoints every 5,000 updates, compact cache and duration-tempered domain/voice sampling. A real batch-4 update with the same network widths/context/arithmetic passed on the unchanged pilot cache with approximately 0.67 GiB peak allocated CUDA memory; full speaker coverage and long-run behavior still require monitoring.
+
+Checkpoint validation uses a fixed 480-example panel covering all held-out voices, preferring distinct recordings before extra segments from a recording. It avoids replaying tens of thousands of reserved segments at every checkpoint. The selection/version and indices are saved and bound to exact-resume settings; zero retains full validation. Final matched evaluation has its own explicit coverage and must not be described as exhaustive if limited. CPU coverage and interrupted/uninterrupted live/EMA checks passed. `train-mixed-corpus.bat` runs or resumes this local research recipe; its referenced qualified artifacts must exist. Use `logs/mixed_pretrained/STOP` or one Ctrl+C to stop safely. Estimates should be updated from measured preprocessing/extraction/training rates rather than promising the desired 24–48 hour turnaround.
+
+The native Wavehax vocoder pilot completed 10,000 updates and 32 reserved reference-mel evaluations, eight per domain. It was not qualified for acoustic training; the newer pretrained NSF renderer passed the listening gate. The 200-epoch classic target control, 183 conversion cases and CPU intelligibility/speaker diagnostics are complete. The joint pilot, its bounded continuation, residual control and matched source diagnostics are also complete. The active research run is the full mixed-corpus campaign described above.
+
+The pretrained renderer passed the reference-mel listening gate. Joint shallow flow was provisionally selected after the completed architecture comparison, and full mixed-corpus pretraining is underway. External-speaker adaptation follows evaluation of that pretrained model. Neither completed training nor falling loss establishes superiority over V2.
+
+Subsequent CPU diagnostics found substantial renderer warning signs. Paired SwiftF0 voicing disagreement was approximately 47% on EARS, 56% on Expresso, 44% on M4Singer and 69% on VCTK. Median per-case output/reference RMS differences were approximately -3.0, -8.0, -10.2 and -6.0 dB respectively. These are detector agreement and signal measurements, not annotated pitch accuracy or listener judgments. They argue against treating the renderer as qualified from mel error alone. Read `logs/mixed_vocoder/evaluation/pitch_diagnostics.json`.
+
+A centered crop/full-context control on eight recordings matched excitation noise, oscillator phase and scored samples. Training-sized 128-frame context modestly improved mel error in the tested regions but did not remove the low-level/spectral discrepancy. This does not establish global-normalization or long-file transparency; it does show that simply rendering a shorter window is not a demonstrated repair. The control report and reference/full/crop listening clips are under `logs/mixed_vocoder/evaluation/context`.
+
+An independent signal diagnostic measured normalized autocorrelation at the cached reference pitch on eligible voiced windows. Median per-case reference/reconstruction correlations were EARS 0.789/0.359, Expresso 0.856/0.470, M4Singer 0.982/0.822 and VCTK 0.779/0.175. Only eligible windows were scored (8/5/8/7 recordings respectively); this is not an annotated pitch metric, and even a robotic pulse train can have high correlation. The result supports investigating weak/noisy periodic structure rather than attributing all SwiftF0 disagreement to the detector. See `periodicity_diagnostics.json` beside the pitch report. Acoustic training remains gated on renderer quality.
+
+### What we learned
+
+| Observation | Practical implication |
+|---|---|
+| Full VCTK training, extra predictor updates and neutral-speaker LoRA did not eliminate robotic timbre | More updates alone are not a demonstrated repair. |
+| Several fine-detail and adversarial repairs improved metrics but listeners rejected them | Keep listening as a required quality gate; avoid selecting by mel L1 alone. |
+| Replacing predicted fine spectral detail with true reference detail sounded good | Fine structure is a useful diagnostic target, but the accepted reference-assisted result cannot be deployed for unseen conversion. |
+| The previous neutral target dataset did not cover singing or extreme pitch | Evaluate speech, singing, expressive sounds and voiced/unvoiced transitions separately. |
+| The new synthesis pilot includes four domains and broader extracted F0 coverage | Coverage is improved; pitch accuracy and naturalness still need independent verification. |
+| Exact resume, export, masking and family routing checks pass for the new graph | These validate software behavior, not trained audio quality. |
+
+Current reference-mel reconstruction means are below. They measure the vocoder alone with true mel/F0 conditioning, not conversion or target identity:
+
+| Domain | Cases | Mean waveform mel L1 |
+|---|---:|---:|
+| EARS | 8 | 0.4922 |
+| Expresso | 8 | 0.5150 |
+| M4Singer | 8 | 0.4818 |
+| VCTK | 8 | 0.3992 |
+
+Read `logs/mixed_vocoder/evaluation/report.json` for case-level signal diagnostics and `summary.json` for aggregates. Listening files named `<domain>_<index>_comparison.wav` contain reference first, a short silence, then reconstruction, with one common gain. Raw reference and reconstructed WAVs retain amplitude evidence. Do not compare these numbers directly with historical runs using different examples or frontend settings.
+
+### Data and representation contract
+
+Use `assets/datasets/combined` as the source root. Its `corpus.json`, `inventory.json` and `recordings.jsonl` define identity, grouping, durations and hashes. Never infer speakers from style folders or song titles. Keep original recordings and MIDI/TextGrid/transcript metadata intact. Existing target comparison files are NTFS hard links to originals: editing a linked file also edits its source, so treat them as read-only.
+
+The current native pilot contract is 44,100 Hz, FFT 2,048, hop 512, 128 physical log-mel bands, frequency bounds 0–22,050 Hz, ContentVec and SwiftF0 with the offline extraction profile. Reuse the exact serialized mel/frontend contract for acoustic training, target adaptation and inference. Matching sample rate and mel count alone is insufficient. ShiroRVC/official Wavehax weights are not interchangeable with this native graph.
+
+Two manifests have different purposes:
+
+- `logs/mixed_vocoder/data/balanced_manifest.json`: 16 speakers, 732 segments, approximately 34.37 minutes training and 3.57 minutes validation; equal domain segment counts, not equal duration. Used for the completed universal vocoder pilot.
+- `logs/mixed_vocoder/data/acoustic_manifest.json`: 15 speakers, 699 segments; all Expresso ex01 examples removed, IDs remapped and dataset identity recomputed. Use this for the acoustic base so ex01 is a new acoustic target during adaptation. The universal vocoder has seen other ex01 recordings, so this is not a fully unseen-speaker synthesis experiment.
+
+Reserve whole recordings before segmenting. Current M4Singer groups are singer/song-folder disjoint, not guaranteed globally song-title disjoint across singers. Target comparison splits are recording-disjoint, not guaranteed transcript-disjoint. The three user-supplied files under `logs/evaluation_inputs/user_samples` are evaluation-only and must never be added to either training manifest.
+
+### Training sequence
+
+Run commands from the repository root. Inspect `core.py <command> --help` if source or environment changes. Queue GPU extraction, training and benchmarking sequentially; concurrent GPU work invalidates timing and can exhaust memory.
+
+**1. Preserve the completed renderer.** Keep its plan, dataset manifests, checkpoints, export and evaluation together. The private `logs/campaign/run_vocoder_pilot.py` and `evaluate_vocoder.py` have completed-run guards; do not delete those guards to repeat a finished experiment. A fresh renderer experiment needs a new output directory and a written hypothesis. The completed configuration was batch 2, crop 128 frames, BF16, AdamW LR 2e-4, seed 2040, checkpoint/validation every 500 updates. Its graph is selected by `rvc/configs/vocoders/wavehax.json`; training uses the shared native GAN, feature-matching and spectral objectives, not an exact upstream recipe.
+
+**2. Reproduce the completed acoustic pilot with the qualified renderer.** The command below records the small pilot, not the running full-corpus recipe. Use a fresh model name and matching manifest for a new experiment. This is one joint stage: `predictor` trains both auxiliary mel prediction and shallow-flow velocity. Do not add separate residual-flow or shortcut stages for this family.
+
+```powershell
+.\env\python.exe -u core.py train --architecture v3 --model-name mixed_acoustic --stage predictor --manifest logs/mixed_acoustic/data/manifest.json --config rvc/configs/acoustic/shallow.json --steps 10000 --batch-size 2 --crop-frames 256 --learning-rate 0.0002 --precision bf16 --device cuda:0 --seed 2042 --checkpoint-every 500
+```
+
+The configuration uses noncausal 7-tap blocks, shallow start 0.4 and auxiliary objective weight 0.2. Block checkpointing reduces activation memory by recomputing during backward; it is not a promise of faster updates. Batch 2 is a starting configuration, not a GPU-specific preset. Measure memory before increasing batch size. Record any change as a new run rather than altering an exact resume.
+
+**3. Export and evaluate the acoustic package.** Individual-stage training writes checkpoints; export its best checkpoint explicitly after the stage completes. The command below uses the default output directory from step 2 and exports EMA weights. Do not pass a mutable optimizer checkpoint as the public model. These budgets compare auxiliary-only and ordinary generative flow on identical cases:
+
+```powershell
+.\env\python.exe core.py export-model --checkpoint logs/mixed_acoustic/checkpoints/predictor/best.pt --output-path logs/mixed_acoustic/mixed_acoustic.pth
+.\env\python.exe core.py evaluate --manifest logs/mixed_acoustic/data/manifest.json --pth-path logs/mixed_acoustic/mixed_acoustic.pth --vocoder-path logs/pretrained_renderer/vocoder.pth --output-dir logs/mixed_acoustic/evaluation/fixed --budget 0 --budget 8 --budget 16 --budget 32 --device cuda:0 --seed 2042 --limit 0
+```
+
+Confirm the evaluator's case count and preserve the report. Reference-mel flow initialization is a separate diagnostic available through `evaluate --oracle-start`; it is not a usable unseen-conversion setting. Save it in a different output directory and assess predicted-start versus reference-start error before blaming the vocoder for every artifact.
+
+**4. Establish the matched target comparison.** `logs/target_comparison/selection.json` fixes Expresso ex01 DEFAULT recordings: 1,201.78 seconds training and 181.34 seconds validation, seed 2043. Both classic V2 and new target adaptation must use this same split. Classic preprocessing, extraction, 200-epoch training and evaluation are complete under model name `classic_comparison`. The following extraction command documents reproduction; do not rerun completed preparation:
+
+```powershell
+.\env\python.exe core.py extract --architecture classic --model-name classic_comparison --f0-method rmvpe --cpu-cores 2 --gpu 0 --sample-rate 40000 --embedder-model contentvec --include-mutes 2
+```
+
+The owned classic control is recorded in `logs/classic_comparison/comparison_plan.json`: 200 epochs, batch 2, seed 1234, LR 1e-4, saved inference models and G/D checkpoints every 25 epochs, no GPU data cache. It initializes from hashed local HiFi-GAN 40-kHz G/D pretrained weights. Its supervisor is `logs/campaign/train_classic_comparison.py`, with console output in `logs/campaign/classic_training_console.log`; do not launch another copy while it is active. Compare saved epochs on the reserved cases and assess index on/off. The built-in default TensorBoard audio is a training preview, not held-out validation. Generic G/D weights are not already a trained ex01 voice. This control now has target-trained exports and measured held-out diagnostics; listening acceptance remains open.
+
+The running control parsed an older Click flag definition that turned intermediate inference-weight saving off when the flag was supplied. The CLI definition is corrected and its default/explicit behavior verified for future calls. This run still saves all G/D checkpoints every 25 epochs; the queued evaluator exports the intermediate inference packages from them after training exits. No training restart is needed. `logs/campaign/evaluate_classic_comparison.py` waits for the owned training supervisor to complete and exit before using the GPU. It evaluates 12 fixed reserved recordings plus the three unseen files across saved epochs, then retrieval/pitch variants at prescribed epochs 25/100/200. Reports retain duration differences and label loading-inclusive timing as diagnostic, not a warmed benchmark. Classical automatic peak protection and PCM16 writing are recorded limitations. Its outputs are under `logs/classic_comparison/evaluation`.
+
+The target read-speech metadata provides reference transcripts for all 412 selected recordings. `intelligibility_reference.json` fixes the same 12 reserved cases as the classic evaluator and records canonical Whisper English text normalization. **15 of 59 validation recordings repeat normalized training text**; the split is recording-disjoint, not transcript-disjoint. The matched comparison is preserved rather than silently resplit, with repeated and unseen text reported separately. Vocalization inputs do not enter English word-error rates.
+
+Cached Whisper base.en and WavLM base-plus speaker-verification models were exercised on real held-out speech using two CPU threads, without downloads or GPU work. Two source controls totaling 47 normalized words had zero ASR word errors; their independent speaker cosine was 0.970. These controls establish working diagnostics, not acceptance thresholds or conversion quality. `logs/campaign/diagnose_classic_comparison.py` completed CPU scoring of all 183 outputs after classic evaluation exited. Read `logs/classic_comparison/evaluation/independent/report.json` for transcript WER and speaker diagnostics. Held-out target speaker scores use leave-one-out reserved-reference centroids; unseen sources use the reserved target centroid, with limited reliability on unusual vocalizations. Reports distinguish ground-truth English WER from subjective naturalness and do not promote a checkpoint automatically. Reusing the same utterances across saved epochs does not create independent statistical samples.
+
+For the new model, the same target split has been preprocessed under `logs/target_comparison/acoustic_data/audio_manifest.json`; its verified resampled durations are 1,201.789 seconds training and 181.341 seconds validation. The shared `preprocess_audio` API accepts an optional complete `recording_splits` map for this purpose, rejecting missing/invalid assignments and contradictory reservations. Default automatic splitting is unchanged. `logs/campaign/explicit_split_checks.json` records focused checks, and `split_verification.json` records the real target preparation. Target feature extraction still needs the base model's exact frontend; it has not run yet. Then use the shared adaptation stage/Gradio fine-tuning mode. A proposed first bound is 3,000 LoRA updates, rank 8, batch 2, LR 1e-4 with the vocoder frozen; this is a starting experiment, not a proven best setting. Verify the new-family adaptation loss, speaker initialization and export metadata before launching. Do not reuse old residual-family refiners with this acoustic base.
+
+Before real target adaptation, a private CPU check exercised three actual rank-8 LoRA optimizer updates on a tiny synthetic joint model with a remapped target vocabulary. Two updates plus one exact-resume update reproduced uninterrupted live and EMA tensors exactly. Frozen base tensors remained unchanged, adapter updates were nonzero, and merged EMA export matched auxiliary/generative output at all seven supported budgets. `logs/campaign/joint_adaptation_checks.json` records this pass. This validates training, freezing, resume and export wiring; it does not validate the pending acoustic model's sound or the proposed 3,000-update target budget.
+
+### Completed classic control and queued conversion checks
+
+The classic control completed 200 epochs and 183 finite conversion cases. Independent CPU diagnostics scored all outputs; English transcript WER is restricted to reserved read speech. On the same 12 reserved utterances (109 reference words), epoch 150 without retrieval had 1.83% micro WER and mean target-speaker cosine 0.919; epoch 200 without retrieval had 2.75% WER and cosine 0.934. On the ten utterances with unseen training text, the corresponding WERs were 0% and 1.10% across only 91 words. These are small diagnostic samples, not proof of naturalness or statistical superiority.
+
+At epoch 200, index rate 0.75 increased WER to 4.59% while mean speaker cosine changed to 0.935. Retrieval is therefore not selected automatically just because it is the classical default. The source ASR controls themselves made two errors over 109 words. Preserve epoch 150 and 200 listening alternatives and all intermediate checkpoints; do not select a winner from a single proxy. Summary measurements are in `logs/classic_comparison/evaluation/independent/summary.json` and `evaluation/listening/review.json`.
+
+Five full-length listening sequences include the two longest reserved utterances and all three user recordings. Their order is **original source/reference → epoch 150, index 0 → epoch 200, index 0 → epoch 200, index 0.75**, separated by half-second silence. Each sequence uses one common gain, with no additional denoising or individual loudness normalization. The normal classic pipeline's existing peak protection and PCM16 writing remain part of its outputs. Files are under `logs/classic_comparison/evaluation/listening`; input and rendered-file hashes were verified before and after packaging.
+
+After acoustic training/evaluation and the diagnostic supervisor exit, `logs/campaign/evaluate_acoustic_sources.py` runs 54 unseen-source cases: all three preserved files, targets EARS p001 and M4Singer Soprano-1, original pitch at budgets 0/1/2/4/8/16/32 and -12/+12 semitones at budget 8. It uses the normal file converter with fixed seed 2044 and no frontend-cache bypass. It checks finite values, exact resampled duration, rate, signal levels and immutable input/model hashes. These pilot voices differ from classic ex01, so this is a domain/pitch stress test, **not an identity-matched V2 quality comparison**. Independent pitch, intelligibility, boundary and listening checks remain necessary.
+
+The queued `logs/campaign/benchmark_conversion.py` waits for that evaluator to complete and exit. It runs classic and acoustic engines in separate fresh processes, sequentially, using the same three sources, two CPU threads and normal float inference. It measures initialization through the first usable speech output, then per-source/config warm-up and three synchronized file repetitions. Acoustic budgets are 0/1/4/8/16/32; classic uses epoch 200 with index 0 and 0.75. Reports retain each timing, median RTF, throughput and resident/peak allocated/reserved CUDA memory. File writing, frontend and resampling are included; target voices, pitch frontends, output rates and file subtypes differ and must remain explicit. Sequential operating-system caches are not a controlled cold-start test. Timing reports go under `logs/mixed_acoustic/evaluation/file_benchmark`; until execution completes, there is no new speed result.
+
+Even if file RTF is below one, the NSF renderer and shallow-flow model remain noncausal and file-only. Do not describe these measurements as microphone latency or realtime support. A realtime architecture/vocoder experiment requires its own quality and buffering evaluation.
+
+### Independent pitch and signal checks
+
+CPU paired SwiftF0 checks completed all 183 classic outputs. The detector uses 32.7–1,975.5 Hz, confidence 0.5 and a 75-ms edge exclusion. It matches nominal timestamps without dynamic time warping. Shifted reference F0 outside its range is counted separately; report jointly voiced coverage alongside gross errors. These are detector agreements, not annotated F0 accuracy or listener judgments.
+
+On the 12 reserved speech cases, epoch 150/index 0 had 0.36% gross error (>200 cents) on 1,404 jointly voiced frames and 2.60% voiced/unvoiced disagreement; epoch 200/index 0 had 0.36% gross error on 1,408 frames and 3.53% disagreement. In the original-pitch user conversions at epoch 200/index 0, gross error was 0% High_Pitch, **24.02% HRA** and 0.36% test_sample, while voicing disagreement was 1.32%, **17.00%** and 4.30%. HRA's score used only 458 jointly voiced frames and is a nonverbal stress diagnostic. Do not infer naturalness or a new-model advantage from these pitch numbers alone. Coverage-aware summaries are under `logs/classic_comparison/evaluation/pitch`.
+
+The shared private diagnostic helper passed real speech self-comparison (zero pitch/voicing disagreement) and an octave expectation control (unchanged audio correctly identified as one octave below the expected shift). `logs/campaign/paired_pitch_checks.json` records helper/input hashes and the pass. Waveform derivative-tail and RMS measurements are observations; naturally sharp consonants, target voice and higher F0 affect them. Derivative tails must not be described as measured chunk-boundary clicks.
+
+`logs/campaign/diagnose_acoustic_outputs.py` waits until the file benchmark and its process finish, then runs two-thread CPU pitch diagnostics on every held-out budget/renderer ceiling/reference-start result and all 54 unseen-source conversions. It adds cached English ASR source-transcript agreement only for test_sample, and WavLM target/source speaker similarities with reserved target references. Automatic source transcript agreement is not human ground-truth WER. Singing/nonverbal inputs are not scored as English speech. EARS p001 has only **one** unique reserved reference recording; its identity score is weak evidence. M4Singer Soprano-1 has two unique reserved recordings, and speech speaker verification is especially limited on singing. Reference coverage and hashes remain explicit; these checks do not automatically accept a voice or extend training.
+
+### Discriminator output and feature-matching contracts
+
+The supplied UnivNet-style combined discriminator returns the classic RVC interface: `(real_scores, generated_scores, real_feature_maps, generated_feature_maps)`. Scores are lists of tensors; feature maps must be **lists of discriminator branches, each containing a list of layer tensors**. Concatenate MPD/MRD branch lists while retaining that inner layer list. Flattening the final score tensor does not change mean-based least-squares GAN losses. Flattening the feature-map groups does change RVC's nested iteration: it treats tensor batch items as layers and inflates the feature loss by batch size. A batch-three CPU control reproduced 6 becoming 18.
+
+`rvc/train/losses.py::feature_loss` now rejects flat maps, unequal branch/layer counts and mismatched tensor shapes. Correctly nested inputs retain the existing formula exactly: twice the sum of mean absolute layer differences. The change does not normalize or rebalance the classical objective. Unused duplicate scaled-loss definitions were removed while retaining the effective implementations. A small real combined discriminator forward/backward passed the classic losses with finite waveform gradients; score flattening preserved discriminator/generator losses exactly. The private audit is `logs/campaign/univnet_contract_checks.json`.
+
+The uploaded module already preserves proper nesting. Its configurable period discriminator had a separate last-layer channel bug: `output_conv` consumed the prospective next channel count instead of the actual final layer output. Defaults reach the channel cap and hide it. A corrected research copy, retaining the supplied copyright/license header, is under `logs/_research/compatibility/univnet.py`; three custom channel configurations passed. The uploaded original was preserved and hashed. This copy is not selected as a production discriminator or substituted into any completed/active experiment.
+
+The native acoustic/vocoder GAN path has a different explicit contract: **a list of `(score_tensor, layer_feature_list)` pairs**. Its losses average across critics and feature layers, unlike the classical summed objective. A four-list tuple cannot be passed into that path directly; use an explicit adapter and record any objective/weight change as a new experiment. The current shallow-flow acoustic pilot uses joint mel objectives and a frozen renderer, with no discriminator loss. Neither its earlier robotic outputs nor the scratch vocoder's failures are proven to result from the uploaded module's interface; do not call this a demonstrated audio-quality repair without matched training and listening evidence.
+
+### Full-corpus orchestration and storage gate
+
+The consolidated corpus contains 93,980 recordings from 240 parsed speakers across VCTK, EARS, M4Singer and Expresso, approximately 185.06 hours. The full mixed-corpus recipe is recorded in the release overview and the provisional architecture decision above. The following command is an earlier preflight example retained for workflow reproduction; its 60,000-update budget and batch 2 do not describe the current full run:
+
+```powershell
+.\env\python.exe core.py train-corpus --model-name combined_acoustic --dataset-path assets/datasets/combined --vocoder-path logs/pretrained_renderer/vocoder.pth --architecture-from logs/mixed_acoustic/mixed_acoustic.pth --predictor-steps 60000 --batch-size 2 --crop-frames 256 --precision bf16 --device cuda:0 --seed 2042 --check-only
+```
+
+`--architecture-from` supplies architecture/frontend semantics, not pretrained initialization: this corpus command starts acoustic weights from scratch. The selected frozen renderer supplies the scratch mel contract. The joint shallow-flow family defaults to **one predictor stage, zero separate flow/shortcut updates and 256-frame crops**. Its predictor stage trains both networks jointly. Explicit separate residual stages are rejected. Residual-family defaults remain 15,000 flow updates, 15,000 shortcut updates and 128-frame crops. Automatic evaluation covers joint budgets 0/1/2/4/8/16/32 on identical cases. The predictor update budget above is a proposed bound, not a validated optimum.
+
+An end-to-end CPU verification exercised real preprocessing, fixture feature extraction, one joint optimizer update, export, all seven evaluation budgets and saved-plan resume preflight. It also checked preservation of residual defaults. `logs/campaign/corpus_workflow_checks.json` records the pass. Its tiny synthetic frontend verifies orchestration, not production quality or full-corpus throughput.
+
+The initial standard-cache storage preflight did not fit: approximately 286.7 GiB against 187.6 GiB free. Compact storage was subsequently integrated and qualified using scaled PCM24 FLAC waveforms and FP16 content, with mel, pitch, voicing and energy precision retained. Its measured projection is 146.7 GiB; the conservative gate adds 15% margin and 12 GiB for headroom. These are sample-based estimates, so monitor actual consumption rather than treating preflight as a storage guarantee.
+
+PCM24 quantizes resampled float waveforms and is not lossless relative to those floats. Compact qualification checked physical-scale restoration, feature precision, cache fingerprints, exact resume and same-checkpoint rendered sensitivity. The largest measured rendered waveform relative L2 change was 0.00189 across the fixed qualification cases; this is not proof of perceptual or training equivalence for every recording. Defaults and active standard caches are preserved. See the compact qualification discussion above.
+
+### Resume, monitoring and preservation
+
+Use the shared TensorBoard viewer for curves and saved listening previews, and inspect both campaign status and the actual process before diagnosing inactivity. The full run writes `logs/mixed_pretrained/campaign_status.json`; its predictor checkpoint directory contains `metrics.jsonl`, `sampling.json`, `validation_panel.json` and TensorBoard events. Local supervisor stdout/stderr files are research artifacts. Completed pilot status files should not be used to monitor the full run.
+
+The first acoustic launch stopped after update 1 because its supervisor lifecycle field and the trainer stage both used the name `phase`. No resumable checkpoint existed yet. The supervisor now records lifecycle `phase` separately from `training_phase`; a focused call verified that progress cannot trigger that collision. Only the unfinished acoustic pilot restarted with the same input hashes, configuration and seed. Classic training and its completed evaluations were preserved. Previous failure output remains in the console log for traceability.
+
+Exact continuation uses `--resume` with a full training checkpoint and identical dataset/config/objective/optimizer settings. Individual-stage `--steps` specifies additional updates. `--base-model` initializes weights for a new experiment and does not restore optimizer, EMA and RNG resume state. Keep original exports and reports; changed learning rate or objective is a separately documented experiment. Save failures and their diagnosis before rerunning only unfinished work.
+
+### What needs further thought
+
+1. **Generative detail:** does shallow flow recover natural fine structure, or merely replace smoothing with noise? Test auxiliary-only, predicted-start flow and reference-start diagnostics with fixed seeds and matched excerpts.
+2. **Context:** 256-frame crops are approximately three seconds; symmetric blocks and repeated Euler steps propagate boundary effects. Measure crop/full-file differences, long files and chunk joins before selecting deployment chunk sizes.
+3. **Pitch and alignment:** verify extracted F0, octave errors, voiced masks and mel alignment against listening and available singing annotations. Wider F0 percentiles alone do not validate correctness.
+4. **Target identity:** demonstrate that adaptation changes identity while retaining content and pitch, using independent ex01 reference recordings and unseen sources. Detect source-voice leakage.
+5. **Dataset scale and storage:** full 185-hour preparation may exceed free space once float audio and features are cached. Estimate actual bytes per hour, plan cache/storage formats and domain sampling, and verify lossless round trips before changing storage. Do not duplicate or delete originals to make room casually.
+6. **Fairness and capacity:** the acoustic pilot has only 15 base speakers and a small selected corpus. A positive pilot supports a larger controlled experiment, not universal performance claims. Use a globally song-disjoint singing test if making unseen-song claims.
+7. **Speed and realtime:** measure synchronized warmed end-to-end file throughput, load time, memory and frontend/acoustic/vocoder costs against the trained V2 target on the same hardware. Native Wavehax and shallow flow are currently noncausal/file-only. RTF below 1 does not establish live latency; realtime requires a separate causal/context/buffering design.
+8. **Public release:** audit dataset and upstream weight licenses, package/download integrity, clean installation, CLI/Gradio workflows and documentation defaults. Research checkouts and private experiment scripts are not public pretrained assets. Do not publish rejected models or automatically push changes.
+
+### Acceptance before scaling or release
+
+Run matched held-out reconstructions and unseen conversions, including all three preserved test files, original pitch and supported -12/+12 shifts, at least one 30-second file, silence/transitions and boundary diagnostics. Check finite output, exact duration, pitch/voicing, intelligibility and target/source speaker similarity. Use human transcripts when available; automatic transcript agreement is only a proxy, especially for vocalizations.
+
+Listen to paired V2/new outputs with one common gain and no denoising. Keep reference-assisted diagnostics clearly separate. Record listener decisions about robotic timbre, crackle, metallic sounds, noise and identity. Preserve model/vocoder/input hashes before and after checks. Scale only if the bounded candidate passes these gates; declare public readiness only after the broader software, performance, provenance and listening checks pass.

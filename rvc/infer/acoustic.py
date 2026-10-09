@@ -111,7 +111,12 @@ class Converter:
             raise ValueError(
                 "This model supports predictor conversion only; choose 0 steps"
             )
-        if 0 < steps < 8 and not ordinary and not bool(self.acoustic.shortcut_trained):
+        if (
+            0 < steps < 8
+            and not ordinary
+            and self.acoustic.config.family != "shallow-flow"
+            and not bool(self.acoustic.shortcut_trained)
+        ):
             raise ValueError(
                 "This model requires 8 or more flow steps; shortcuts were not trained"
             )

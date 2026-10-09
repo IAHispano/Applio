@@ -1,9 +1,12 @@
 """Staged V3 training on cached features, independent of the Gradio interface.
 
-Predictor trains conditioning and deterministic mel prediction. Flow/shortcut
-freeze those branches and train residual velocity; shortcut uses a detached EMA
-teacher. Adaptation remaps speaker vocabulary and trains adapters or the full
-acoustic model. Vocoder training has its own generator and waveform/STFT critics.
+For the residual family, predictor trains conditioning and deterministic mel
+prediction. Flow/shortcut freeze those branches and train residual velocity;
+shortcut uses a detached EMA teacher. The shallow-flow family instead trains
+auxiliary prediction and direct-mel velocity jointly in one predictor stage;
+it rejects separate flow/shortcut stages. Adaptation remaps speaker vocabulary
+and trains adapters or the full acoustic model using that family's objective.
+Vocoder training has its own generator and waveform/STFT critics.
 
 Each yielded progress record follows one accumulated update. Rank zero validates
 and writes atomic resumable checkpoints; all ranks synchronize. Stage changes
@@ -12,6 +15,7 @@ critics, scaler, random states and unchanged data/settings. See docs/README.md.
 """
 
 import json
+import math
 import os
 import random
 from dataclasses import replace
@@ -27,7 +31,7 @@ from rvc.configs.neural import (
     VocoderConfig,
     require_contract,
 )
-from rvc.lib.algorithm.acoustic.model import EMA, AcousticModel, masked_mean
+from rvc.lib.algorithm.acoustic.model import EMA, create_acoustic, masked_mean
 from rvc.lib.algorithm.acoustic.adapters import install_adapters
 from rvc.lib.algorithm.acoustic.spectral import MelExtractor, spectral_loss
 from rvc.lib.algorithm.acoustic.vocoder import (
@@ -45,7 +49,7 @@ from rvc.train.process.checkpoints import (
     rng_state,
 )
 from rvc.train.process.tensorboard import log_training
-from rvc.train.acoustic.data import AcousticDataset, collate, condition_batch
+from rvc.train.acoustic.data import AcousticDataset, atomic_json, collate, condition_batch
 from rvc.train.acoustic.distributed import TrainingGroup
 
 
@@ -91,9 +95,21 @@ def fit_statistics(model, dataset, device, residual=False):
 
 
 def training_parameters(model, phase):
-    """Select predictor/conditioning or refiner parameters without crossing stage boundaries."""
+    """Select the family's stage parameters while preserving adaptation freezing.
 
-    if phase in {"flow", "shortcut"}:
+    Joint predictor training updates both branches. Adaptation retains the
+    trainability selected by adapter installation or explicit full fine-tuning;
+    it must not silently unfreeze the base when collecting optimizer parameters.
+    """
+
+    if getattr(model.config, "family", "residual") == "shallow-flow":
+        if phase in {"flow", "shortcut"}:
+            raise ValueError(
+                "Shallow-flow trains auxiliary and velocity jointly; use predictor or adapt"
+            )
+        if phase == "predictor":
+            model.requires_grad_(True)
+    elif phase in {"flow", "shortcut"}:
         for name, parameter in model.named_parameters():
             parameter.requires_grad_(
                 name.startswith(("refiner_", "time_embedding", "step_embedding"))
@@ -259,6 +275,14 @@ def train(
     adaptation="lora",
     accumulation_steps=1,
     stop_requested=None,
+    mel_detail_weight=0.0,
+    spectral_vocoder=None,
+    waveform_weight=0.0,
+    mel_adversarial_weight=0.0,
+    pitch_guidance=None,
+    waveform_adversarial_weight=0.0,
+    sampling_mode="segments",
+    validation_limit=0,
 ):
     """Yield staged training progress and save exact-resume checkpoints.
 
@@ -281,6 +305,58 @@ def train(
     ):
         raise ValueError(
             "Training budget, batch/crop and checkpoint interval must be positive"
+        )
+    if not math.isfinite(mel_detail_weight) or not 0 <= mel_detail_weight <= 1:
+        raise ValueError("Mel detail weight must be finite and between zero and one")
+    if mel_detail_weight and (
+        kind != "acoustic" or phase not in {"predictor", "adapt"}
+    ):
+        raise ValueError(
+            "Mel detail supervision applies to acoustic predictor/adaptation stages"
+        )
+    if not math.isfinite(waveform_weight) or not 0 <= waveform_weight <= 1:
+        raise ValueError(
+            "Waveform objective weight must be finite and between zero and one"
+        )
+    if waveform_weight and (
+        not spectral_vocoder
+        or kind != "acoustic"
+        or phase not in {"predictor", "adapt"}
+    ):
+        raise ValueError(
+            "Waveform supervision requires an acoustic predictor/adaptation stage and a compatible frozen vocoder"
+        )
+    if (
+        not math.isfinite(mel_adversarial_weight)
+        or not 0 <= mel_adversarial_weight <= 1
+    ):
+        raise ValueError(
+            "Mel adversarial weight must be finite and between zero and one"
+        )
+    if mel_adversarial_weight and (
+        kind != "acoustic" or phase not in {"predictor", "adapt"}
+    ):
+        raise ValueError("Mel critics apply only to predictor/adaptation stages")
+    if (
+        not math.isfinite(waveform_adversarial_weight)
+        or not 0 <= waveform_adversarial_weight <= 1
+    ):
+        raise ValueError("Rendered waveform adversarial weight must be in [0, 1]")
+    if waveform_adversarial_weight and (
+        not spectral_vocoder
+        or kind != "acoustic"
+        or phase not in {"predictor", "adapt"}
+    ):
+        raise ValueError(
+            "Rendered waveform critics require a predictor/adaptation stage and frozen vocoder"
+        )
+    if pitch_guidance is not None and (
+        not isinstance(pitch_guidance, bool)
+        or kind != "acoustic"
+        or phase not in {"predictor", "adapt"}
+    ):
+        raise ValueError(
+            "Pitch guidance is a boolean acoustic predictor/adaptation option"
         )
     if kind not in {"acoustic", "vocoder"} or phase not in {
         "predictor",
@@ -310,14 +386,16 @@ def train(
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
-    load_waveform = kind == "vocoder"
+    load_waveform = kind == "vocoder" or bool(
+        waveform_weight or waveform_adversarial_weight
+    )
     training = AcousticDataset(
         manifest, "train", crop_frames, load_waveform=load_waveform
     )
     validation = AcousticDataset(
-        manifest, "validation", crop_frames, load_waveform=load_waveform
+        manifest, "validation", crop_frames, load_waveform=kind == "vocoder"
     )
-    whole_training = AcousticDataset(manifest, "train", 0, load_waveform=load_waveform)
+    whole_training = AcousticDataset(manifest, "train", 0, load_waveform=False)
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     initialization = (
@@ -325,10 +403,9 @@ def train(
     )
     adapters = initialization.get("adapters") if initialization else None
     if initialization:
-        if (
-            kind == "vocoder"
-            and initialization.get("vocoder_backend", "spectral") != "spectral"
-        ):
+        if kind == "vocoder" and initialization.get(
+            "vocoder_backend", "spectral"
+        ) not in {"spectral", "wavehax"}:
             raise ValueError(
                 "Imported pretrained vocoders are frozen inference backends; select them for acoustic fine-tuning rather than native vocoder training"
             )
@@ -352,6 +429,39 @@ def train(
                 "Exact resume requires the original dataset contract and phase"
             )
         model = construct(initialization, device, use_ema=not bool(resume))
+        if pitch_guidance is False and model.config.pitch_guidance:
+            raise ValueError("Cannot remove trained pitch guidance from this model")
+        if pitch_guidance and not model.config.pitch_guidance:
+            if (
+                resume
+                or phase not in {"predictor", "adapt"}
+                or bool(model.flow_trained)
+            ):
+                raise ValueError(
+                    "Initialize pitch guidance in a new predictor/adaptation run from a predictor-only base"
+                )
+            if initialization.get("adapters"):
+                raise ValueError(
+                    "Initialize pitch guidance from merged predictor weights"
+                )
+            # Canonical parameter order keeps optimizer state aligned on resume.
+            # Preserve every old tensor; only the zero projection and physical
+            # feature buffers are new.
+            upgraded = create_acoustic(
+                replace(model.config, pitch_guidance=True), training.config
+            ).to(device)
+            missing, unexpected = upgraded.load_state_dict(
+                model.state_dict(), strict=False
+            )
+            allowed = {
+                "pitch_projection.weight",
+                "pitch_features.basis",
+                "pitch_features.harmonics",
+                "pitch_features.offsets",
+            }
+            if set(missing) != allowed or unexpected:
+                raise ValueError("Pitch initialization changed unrelated model tensors")
+            model = upgraded
         if kind == "acoustic" and phase == "adapt" and not resume:
             if adapters:
                 raise ValueError(
@@ -390,14 +500,21 @@ def train(
         configuration = replace(
             configuration, speakers=len(training.manifest["speakers"])
         )
-        model = AcousticModel(configuration).to(device)
+        if pitch_guidance is not None:
+            configuration = replace(configuration, pitch_guidance=bool(pitch_guidance))
+        model = create_acoustic(configuration, training.config).to(device)
     else:
         configuration = config or VocoderConfig(
             sample_rate=training.config.sample_rate,
             hop_length=training.config.hop_length,
             mel_dim=training.config.n_mels,
         )
-        model = SpectralVocoder(configuration).to(device)
+        if configuration.backend == "wavehax":
+            from rvc.lib.algorithm.acoustic.wavehax import WavehaxVocoder
+
+            model = WavehaxVocoder(configuration).to(device)
+        else:
+            model = SpectralVocoder(configuration).to(device)
     if kind == "acoustic":
         if (model.config.content_dim, model.config.mel_dim, model.config.speakers) != (
             training.manifest["contract"]["features"]["content_dim"],
@@ -427,6 +544,16 @@ def train(
             else:
                 model.residual_scale.fill_(1)
         parameters = training_parameters(model, phase)
+        if (waveform_weight or waveform_adversarial_weight) and bool(
+            model.flow_trained
+        ):
+            raise ValueError(
+                "Waveform supervision currently requires a predictor-only base; disable it for refiner adaptation"
+            )
+        if mel_adversarial_weight and bool(model.flow_trained):
+            raise ValueError(
+                "Mel adversarial supervision requires a predictor-only base"
+            )
     else:
         if (
             model.config.sample_rate,
@@ -454,9 +581,66 @@ def train(
         "world_size": group.world_size,
         "torch_version": str(torch.__version__),
     }
+    # Preserve old checkpoint settings byte-for-byte for the default sampler.
+    # A changed data mixture must never silently exact-resume old optimizer/RNG.
+    from rvc.train.acoustic.sampling import CorpusSampler, validation_indices
+    corpus_sampler = CorpusSampler(training, sampling_mode)
+    if sampling_mode != "segments":
+        settings["sampling_mode"] = sampling_mode
+        settings["sampling_version"] = 1
+        if group.rank == 0:
+            atomic_json(Path(output) / "sampling.json", corpus_sampler.summary)
+    if validation_limit:
+        if kind != "acoustic":
+            raise ValueError("Bounded validation panels currently apply to acoustic training")
+        indices = validation_indices(validation, validation_limit)
+        settings["validation_limit"] = validation_limit
+        settings["validation_selection_version"] = 1
+        if group.rank == 0:
+            atomic_json(Path(output) / "validation_panel.json", dict(indices=indices,
+                examples=len(indices), full_validation_examples=len(validation),
+                speakers=sorted({validation.entries[i]["speaker"] for i in indices}),
+                selection="Round robin by voice and recording hash, distinct recordings before repeated segments"))
+        validation = torch.utils.data.Subset(validation, indices)
+    # Keep old checkpoints resumable without silently changing their objective.
+    # New nonzero settings are persisted and must match on exact resume.
+    if mel_detail_weight or (
+        resume and "mel_detail_weight" in initialization.get("training_settings", {})
+    ):
+        settings["mel_detail_weight"] = mel_detail_weight
+    frozen_vocoder = None
+    if mel_adversarial_weight:
+        settings.update(
+            mel_adversarial_weight=mel_adversarial_weight,
+            mel_critic_version=1,
+            mel_adversarial_warmup=200,
+        )
+    if waveform_adversarial_weight:
+        settings.update(
+            waveform_adversarial_weight=waveform_adversarial_weight,
+            rendered_critic_version=1,
+            rendered_adversarial_warmup=200,
+        )
+    if waveform_weight or waveform_adversarial_weight:
+        from rvc.train.extract.features import file_hash
+
+        package = load_payload(spectral_vocoder)
+        if package["kind"] != "vocoder":
+            raise ValueError("Waveform supervision requires a vocoder package")
+        require_contract(
+            package["mel"],
+            training.manifest["contract"]["mel"],
+            "frozen training vocoder",
+        )
+        frozen_vocoder = construct(package, device).eval().requires_grad_(False)
+        del package
+        settings.update(
+            waveform_weight=waveform_weight,
+            spectral_vocoder_hash=file_hash(Path(spectral_vocoder)),
+        )
     if resume and initialization.get("training_settings") != settings:
         raise ValueError(
-            "Exact resume requires unchanged batch/crop/precision/learning rate/seed"
+            "Exact resume requires unchanged training settings, including objectives and frozen vocoder"
         )
     ema = EMA(model)
     critics, critic_optimizer, extractor = None, None, None
@@ -466,6 +650,23 @@ def train(
             critics.parameters(), lr=learning_rate, betas=(0.8, 0.99)
         )
         extractor = MelExtractor(training.config).to(device)
+    elif mel_adversarial_weight or waveform_adversarial_weight:
+        from rvc.lib.algorithm.acoustic.discriminators import (
+            MelCritics,
+            RenderedAcousticCritics,
+        )
+
+        # Independent of additional acoustic module initialization, paired
+        # variants start from exactly the same discriminator weights.
+        torch.manual_seed(seed)
+        critics = (
+            RenderedAcousticCritics(include_mel=bool(mel_adversarial_weight))
+            if waveform_adversarial_weight
+            else MelCritics()
+        ).to(device)
+        critic_optimizer = torch.optim.AdamW(
+            critics.parameters(), lr=learning_rate * 2, betas=(0.8, 0.99)
+        )
     # Identical model/critic initialization; independent rank-local crop/noise RNG.
     torch.manual_seed(seed + group.rank)
     np.random.seed(seed + group.rank)
@@ -484,9 +685,7 @@ def train(
     for step in range(start, start + steps):
         local_size = batch_size * accumulation_steps
         sampler = torch.Generator().manual_seed(seed + step)
-        global_indices = torch.randint(
-            len(training), (local_size * group.world_size,), generator=sampler
-        )
+        global_indices = corpus_sampler.draw(local_size * group.world_size, sampler)
         indices = global_indices[
             group.rank * local_size : (group.rank + 1) * local_size
         ].tolist()
@@ -497,33 +696,75 @@ def train(
         ]
         optimizer.zero_grad(set_to_none=True)
         losses, d_losses, noises = [], [], []
+        waveform_losses = []
+        adversarial_losses, matching_losses = [], []
+        rendered_adversarial_losses, rendered_matching_losses = [], []
         bootstrap_seen = False
         if critics:
             critics.requires_grad_(True)
+            critics.train()
             critic_optimizer.zero_grad(set_to_none=True)
             for cpu_batch in batches:
                 batch = to_device(cpu_batch, device)
-                noise = torch.randn_like(batch["waveform"])
-                noises.append(noise.cpu())
+                if kind == "vocoder":
+                    noise = torch.randn_like(batch["waveform"])
+                    noises.append(noise.cpu())
                 with torch.autocast(
                     device_type=device.type, dtype=dtype, enabled=precision != "fp32"
                 ):
                     with torch.no_grad():
-                        fake = (
-                            model(
-                                batch["mel"], batch["f0"], batch["voiced"], noise=noise
+                        if kind == "acoustic":
+                            fake = model.predict(
+                                condition_batch(model, batch), batch["mask"]
                             )
-                            * batch["waveform_mask"]
+                        else:
+                            fake = (
+                                model(
+                                    batch["mel"],
+                                    batch["f0"],
+                                    batch["voiced"],
+                                    noise=noise,
+                                )
+                                * batch["waveform_mask"]
+                            )
+                    if kind == "acoustic":
+                        d_loss = fake.new_zeros((), dtype=torch.float32)
+                        if mel_adversarial_weight:
+                            mel_critics = (
+                                critics.mel if waveform_adversarial_weight else critics
+                            )
+                            d_loss = discriminator_loss(
+                                mel_critics(model.normalize(batch["mel"]), batch),
+                                mel_critics(fake, batch),
+                            )
+                        if waveform_adversarial_weight:
+                            with torch.no_grad():
+                                rendered = (
+                                    frozen_vocoder(
+                                        model.denormalize(fake),
+                                        batch["f0"],
+                                        batch["voiced"],
+                                    )
+                                    * batch["waveform_mask"]
+                                )
+                            d_loss = d_loss + discriminator_loss(
+                                critics.rendered(batch["waveform"], batch),
+                                critics.rendered(rendered, batch),
+                            )
+                    else:
+                        d_loss = discriminator_loss(
+                            critics(batch["waveform"]), critics(fake)
                         )
-                    d_loss = discriminator_loss(
-                        critics(batch["waveform"]), critics(fake)
-                    )
                 backward_loss(d_loss, scaler, accumulation_steps)
                 d_losses.append(float(d_loss.detach()))
             critic_norm = finish_update(
                 critic_optimizer, scaler, list(critics.parameters()), group, clip=10
             )
             critics.requires_grad_(False)
+            # Spectral-normalization power iteration is stateful. Freeze it for
+            # real/fake feature matching, then restore training mode next update.
+            if kind == "acoustic":
+                critics.eval()
         for micro, cpu_batch in enumerate(batches):
             batch = to_device(cpu_batch, device)
             with torch.autocast(
@@ -536,11 +777,78 @@ def train(
                     else:
                         condition = condition_batch(model, batch)
                     if phase == "predictor" or (
-                        phase == "adapt" and not bool(model.flow_trained)
-                    ):
-                        loss = model.predictor_loss(
-                            condition, batch["mel"], batch["mask"]
+                        phase == "adapt"
+                        and (
+                            model.config.family == "shallow-flow"
+                            or not bool(model.flow_trained)
                         )
+                    ):
+                        prediction = (
+                            model.predict(condition, batch["mask"])
+                            if frozen_vocoder is not None or mel_adversarial_weight
+                            else None
+                        )
+                        loss = model.predictor_loss(
+                            condition,
+                            batch["mel"],
+                            batch["mask"],
+                            mel_detail_weight,
+                            prediction=prediction,
+                        )
+                        if mel_adversarial_weight:
+                            mel_critics = (
+                                critics.mel if waveform_adversarial_weight else critics
+                            )
+                            with torch.no_grad():
+                                real_scores = mel_critics(
+                                    model.normalize(batch["mel"]), batch
+                                )
+                            adversarial, matching = generator_loss(
+                                real_scores, mel_critics(prediction, batch)
+                            )
+                            # Let the newly initialized critics learn before
+                            # applying their full gradient to the predictor.
+                            ramp = min((step + 1) / 200, 1.0)
+                            loss = loss + ramp * mel_adversarial_weight * (
+                                adversarial + 2 * matching
+                            )
+                            adversarial_losses.append(float(adversarial.detach()))
+                            matching_losses.append(float(matching.detach()))
+                        if frozen_vocoder is not None:
+                            # Freeze vocoder weights, not the input graph: waveform
+                            # spectral gradients must reach the acoustic predictor.
+                            rendered = (
+                                frozen_vocoder(
+                                    model.denormalize(prediction),
+                                    batch["f0"],
+                                    batch["voiced"],
+                                )
+                                * batch["waveform_mask"]
+                            )
+                            if waveform_weight:
+                                rendered_loss = spectral_loss(
+                                    rendered, batch["waveform"] * batch["waveform_mask"]
+                                )
+                                loss = loss + waveform_weight * rendered_loss
+                                waveform_losses.append(float(rendered_loss.detach()))
+                            if waveform_adversarial_weight:
+                                with torch.no_grad():
+                                    real_scores = critics.rendered(
+                                        batch["waveform"], batch
+                                    )
+                                adversarial, matching = generator_loss(
+                                    real_scores, critics.rendered(rendered, batch)
+                                )
+                                ramp = min((step + 1) / 200, 1.0)
+                                loss = loss + ramp * waveform_adversarial_weight * (
+                                    adversarial + 2 * matching
+                                )
+                                rendered_adversarial_losses.append(
+                                    float(adversarial.detach())
+                                )
+                                rendered_matching_losses.append(
+                                    float(matching.detach())
+                                )
                     else:
                         shortcut = phase == "shortcut" or (
                             phase == "adapt" and bool(model.shortcut_trained)
@@ -563,7 +871,10 @@ def train(
                         )
                         if phase == "adapt":
                             loss = loss + 0.2 * model.predictor_loss(
-                                condition, batch["mel"], batch["mask"]
+                                condition,
+                                batch["mel"],
+                                batch["mask"],
+                                mel_detail_weight,
                             )
                 else:
                     fake = (
@@ -595,6 +906,12 @@ def train(
         )
         bootstrap_seen = group.any(bootstrap_seen)
         if kind == "acoustic" and norm is not None:
+            if model.config.family == "shallow-flow" and phase in {
+                "predictor",
+                "adapt",
+            }:
+                model.predictor_trained.fill_(True)
+                model.flow_trained.fill_(True)
             if phase == "predictor":
                 model.predictor_trained.fill_(True)
             if phase == "flow":
@@ -618,6 +935,24 @@ def train(
             progress["critic_optimizer_updated"] = critic_norm is not None
             progress["critic_gradient_norm"] = critic_norm
             progress["discriminator_loss"] = group.mean(sum(d_losses) / len(d_losses))
+        if waveform_losses:
+            progress["waveform_spectral_loss"] = group.mean(
+                sum(waveform_losses) / len(waveform_losses)
+            )
+        if adversarial_losses:
+            progress["mel_adversarial_loss"] = group.mean(
+                sum(adversarial_losses) / len(adversarial_losses)
+            )
+            progress["mel_feature_matching_loss"] = group.mean(
+                sum(matching_losses) / len(matching_losses)
+            )
+        if rendered_adversarial_losses:
+            progress["rendered_adversarial_loss"] = group.mean(
+                sum(rendered_adversarial_losses) / len(rendered_adversarial_losses)
+            )
+            progress["rendered_feature_matching_loss"] = group.mean(
+                sum(rendered_matching_losses) / len(rendered_matching_losses)
+            )
         stopping = group.any(bool(stop_requested and stop_requested()))
         if stopping:
             progress["stopped"] = True
@@ -653,7 +988,7 @@ def train(
                 if (
                     not (output / "best.json").exists()
                     or progress["validation_mel_l1"]
-                    < json.loads((output / "best.json").read_text())[
+                    < json.loads((output / "best.json").read_text(encoding="utf-8"))[
                         "validation_mel_l1"
                     ]
                 ):

@@ -18,7 +18,12 @@ from rvc.lib.algorithm.acoustic.model import masked_mean
 from rvc.lib.algorithm.acoustic.spectral import MelExtractor, spectral_loss
 from rvc.realtime.streaming import coordinate_noise
 from rvc.train.process.checkpoints import construct, load_payload
-from rvc.train.acoustic.data import AcousticDataset, atomic_json, collate, condition_batch
+from rvc.train.acoustic.data import (
+    AcousticDataset,
+    atomic_json,
+    collate,
+    condition_batch,
+)
 from rvc.train.acoustic.trainer import resolve_device, to_device
 
 
@@ -32,6 +37,7 @@ def evaluate(
     device="auto",
     seed=1234,
     limit=0,
+    oracle_start=False,
 ):
     import soundfile as sf
 
@@ -53,6 +59,8 @@ def evaluate(
         construct(a, device).eval(),
         construct(v, device).eval(),
     )
+    if oracle_start and acoustic_model.config.family != "shallow-flow":
+        raise ValueError("Oracle-start diagnosis requires the shallow-flow family")
     c = vocoder_model.config
     if (c.sample_rate, c.hop_length, c.mel_dim) != (
         data.config.sample_rate,
@@ -67,7 +75,11 @@ def evaluate(
             raise ValueError(
                 "Evaluate a predictor checkpoint with --budgets 0; flow training is required for refinement"
             )
-        if 0 < budget < 8 and not bool(acoustic_model.shortcut_trained):
+        if (
+            0 < budget < 8
+            and acoustic_model.config.family != "shallow-flow"
+            and not bool(acoustic_model.shortcut_trained)
+        ):
             raise ValueError(
                 "Few-step evaluation requires a shortcut-trained checkpoint"
             )
@@ -106,12 +118,25 @@ def evaluate(
             mel = (
                 batch["mel"]
                 if budget == "ceiling"
-                else acoustic_model.sample(condition, int(budget), noise=noise)
+                else acoustic_model.sample(
+                    condition,
+                    int(budget),
+                    noise=noise,
+                    **({"start_mel": batch["mel"]} if oracle_start else {}),
+                )
             )
             waveform = (
                 vocoder_model(mel, batch["f0"], batch["voiced"], noise=prior_noise)
                 * batch["waveform_mask"]
             )
+            if (
+                waveform.shape != real.shape
+                or not torch.isfinite(waveform).all()
+                or not torch.isfinite(mel).all()
+            ):
+                raise ValueError(
+                    "Evaluation produced invalid waveform dimensions or nonfinite output"
+                )
             if device.type == "cuda":
                 torch.cuda.synchronize(device)
             elapsed = time.perf_counter() - before
@@ -159,7 +184,10 @@ def evaluate(
         "vocoder_backend": v.get("vocoder_backend", "spectral"),
         "acoustic_step": a.get("step", 0),
         "acoustic_phase": a.get("phase", "acoustic"),
-        "task": "held-out self-reconstruction",
+        "task": "oracle-start diagnostic using unavailable reference mel"
+        if oracle_start
+        else "held-out self-reconstruction",
+        "oracle_start": bool(oracle_start),
         "scope": "Not a cross-speaker identity or blinded quality evaluation",
         "dataset_id": data.manifest["dataset_id"],
         "seed": seed,

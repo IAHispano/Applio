@@ -6,14 +6,29 @@ def feature_loss(fmap_r, fmap_g):
     Compute the feature loss between reference and generated feature maps.
 
     Args:
-        fmap_r (list of torch.Tensor): List of reference feature maps.
-        fmap_g (list of torch.Tensor): List of generated feature maps.
+        fmap_r (list[list[torch.Tensor]]): Reference maps grouped by discriminator,
+            then layer. Preserve each tensor's batch dimension.
+        fmap_g (list[list[torch.Tensor]]): Generated maps with matching groups,
+            layer counts and tensor shapes.
+
+    RVC sums layer means and multiplies by two. Flattening the outer groups
+    would make the inner loop iterate over batch items instead of layers and
+    silently change the loss scale. Validate nesting before doing arithmetic;
+    score tensors may be flattened, but feature-map groups must stay nested.
     """
-    return 2 * sum(
-        torch.mean(torch.abs(rl - gl))
-        for dr, dg in zip(fmap_r, fmap_g)
-        for rl, gl in zip(dr, dg)
-    )
+    if not isinstance(fmap_r, (list, tuple)) or not isinstance(fmap_g, (list, tuple)):
+        raise TypeError("Feature maps must be grouped by discriminator and layer")
+    losses = []
+    for dr, dg in zip(fmap_r, fmap_g, strict=True):
+        if not isinstance(dr, (list, tuple)) or not isinstance(dg, (list, tuple)):
+            raise TypeError("Keep feature maps nested: [discriminator][layer], not a flat tensor list")
+        for rl, gl in zip(dr, dg, strict=True):
+            if not torch.is_tensor(rl) or not torch.is_tensor(gl):
+                raise TypeError("Each feature map must be a tensor")
+            if rl.shape != gl.shape:
+                raise ValueError("Real and generated feature-map shapes must match")
+            losses.append(torch.mean(torch.abs(rl - gl)))
+    return 2 * sum(losses)
 
 
 def discriminator_loss(disc_real_outputs, disc_generated_outputs):
@@ -53,25 +68,6 @@ def generator_loss(disc_outputs):
         loss += l
 
     return loss, gen_losses
-
-
-def discriminator_loss_scaled(disc_real, disc_fake, scale=1.0):
-    loss = 0
-    for i, (d_real, d_fake) in enumerate(zip(disc_real, disc_fake)):
-        real_loss = torch.mean((1 - d_real) ** 2)
-        fake_loss = torch.mean(d_fake**2)
-        _loss = real_loss + fake_loss
-        loss += _loss if i < len(disc_real) / 2 else scale * _loss
-    return loss, None, None
-
-
-def generator_loss_scaled(disc_outputs, scale=1.0):
-    loss = 0
-    for i, d_fake in enumerate(disc_outputs):
-        d_fake = d_fake.float()
-        _loss = torch.mean((1 - d_fake) ** 2)
-        loss += _loss if i < len(disc_outputs) / 2 else scale * _loss
-    return loss, None, None
 
 
 def discriminator_loss_scaled(disc_real, disc_fake, scale=1.0):

@@ -21,6 +21,9 @@ from torch.utils.data import Dataset
 
 from rvc.configs.neural import MelConfig, fingerprint
 from rvc.train.extract.features import file_hash, read_audio
+from rvc.train.acoustic.storage import (
+    read_segment, storage_contract, stored_features, validate_storage, waveform_scale,
+)
 
 
 def atomic_json(path, value):
@@ -70,7 +73,7 @@ def dataset_identity(manifest):
                         "features_sha256",
                         "waveform_sha256",
                     )
-                }
+                } | ({"waveform_scale": e["waveform_scale"]} if "waveform_scale" in e else {})
                 for e in manifest["segments"]
             ],
         }
@@ -103,9 +106,37 @@ def _select_recordings(
     if not files:
         raise ValueError("No supported audio recordings found")
     input_recordings = len(files)
+    corpus_path = root / "corpus.json"
+    corpus_speakers = None
+    corpus_groups = None
+    if corpus_path.exists():
+        corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
+        if corpus.get("version") != 1:
+            raise ValueError("Unsupported combined corpus index")
+        corpus_speakers = corpus["speakers"]
+        corpus_groups = corpus.get("groups")
+        if corpus_groups is not None and set(corpus_groups) != set(corpus_speakers):
+            raise ValueError("Corpus split groups disagree with recordings")
+        available = {p.relative_to(root).as_posix(): p for p in files}
+        missing = set(corpus_speakers) - available.keys()
+        if missing:
+            raise ValueError(f"Combined corpus recordings missing: {len(missing)}")
+        files = [available[name] for name in sorted(corpus_speakers)]
+    elif all(
+        (root / name).is_dir() for name in ("vctk", "ears", "m4singer", "expresso")
+    ):
+        raise ValueError(
+            "Index the combined corpus before preparation: python -m rvc.lib.tools.corpus --root DATASET"
+        )
+
+    def recording_speaker(path):
+        if corpus_speakers is not None:
+            return corpus_speakers[path.relative_to(root).as_posix()]
+        return str(path.relative_to(root).parent)
+
     groups = {}
     for path in files:
-        groups.setdefault(str(path.relative_to(root).parent), []).append(path)
+        groups.setdefault(recording_speaker(path), []).append(path)
     if speaker_names:
         missing = set(speaker_names) - groups.keys()
         if missing:
@@ -120,7 +151,7 @@ def _select_recordings(
             groups[name] = group[:recordings_per_speaker]
     files = sorted(path for group in groups.values() for path in group)
     # Content hashes group duplicate recordings, independently of filenames.
-    speakers = sorted({str(p.relative_to(root).parent) for p in files})
+    speakers = sorted({recording_speaker(p) for p in files})
     speaker_map = {name: i for i, name in enumerate(speakers)}
     records, seen = [], {}
     for index, path in enumerate(files):
@@ -135,15 +166,15 @@ def _select_recordings(
                 )
             )
         if digest in seen:
-            if seen[digest] != speaker_map[str(path.relative_to(root).parent)]:
+            if seen[digest] != speaker_map[recording_speaker(path)]:
                 raise ValueError("Identical recording assigned to different speakers")
             continue
-        seen[digest] = speaker_map[str(path.relative_to(root).parent)]
+        seen[digest] = speaker_map[recording_speaker(path)]
         records.append(
             {
                 "source": str(path.relative_to(root)),
                 "source_hash": digest,
-                "speaker": speaker_map[str(path.relative_to(root).parent)],
+                "speaker": speaker_map[recording_speaker(path)],
             }
         )
     # Group once without changing record order or RNG calls: the split remains
@@ -153,6 +184,23 @@ def _select_recordings(
         split_groups[record["speaker"]].append(record)
     rng = random.Random(seed)
     for group in split_groups.values():
+        if corpus_groups is not None:
+            units = {}
+            for record in group:
+                units.setdefault(
+                    corpus_groups[Path(record["source"]).as_posix()], []
+                ).append(record)
+            units = list(units.values())
+            rng.shuffle(units)
+            n_val = (
+                min(len(units) - 1, max(1, round(len(units) * validation_fraction)))
+                if len(units) > 1
+                else 0
+            )
+            for i, unit in enumerate(units):
+                for record in unit:
+                    record["split"] = "validation" if i < n_val else "train"
+            continue
         rng.shuffle(group)
         n_val = (
             min(len(group) - 1, max(1, round(len(group) * validation_fraction)))
@@ -308,12 +356,16 @@ def preprocess_audio(
     progress=None,
     normalize_overflow=False,
     validation_sources=(),
+    recording_splits=None,
+    compact_cache=False,
 ):
     """Save resampled audio and a recording-disjoint split without loading models.
 
     The audio manifest binds selection, offsets and waveform hashes. Extraction
     reads these immutable segments later; changing frontend settings never needs
-    to resample the originals again. Sources remain untouched.
+    to resample the originals again. Sources remain untouched. Research controls
+    can supply a complete relative-path recording_splits map to reuse an exact
+    external train/validation split instead of adding automatic validation.
     """
     import soundfile as sf
 
@@ -326,6 +378,24 @@ def preprocess_audio(
     speakers, records, input_recordings = _select_recordings(
         root, validation_fraction, seed, speaker_names, recordings_per_speaker, progress
     )
+    if recording_splits is not None:
+        explicit = {
+            Path(name).as_posix(): split for name, split in recording_splits.items()
+        }
+        selected = {Path(record["source"]).as_posix() for record in records}
+        if set(explicit) != selected or set(explicit.values()) - {
+            "train",
+            "validation",
+        }:
+            raise ValueError(
+                "Explicit recording splits must cover exactly the selected sources"
+            )
+        for record in records:
+            record["split"] = explicit[Path(record["source"]).as_posix()]
+        if not any(record["split"] == "validation" for record in records):
+            raise ValueError(
+                "Explicit recording splits must include validation recordings"
+            )
     reserved = set(validation_sources)
     reserved_hashes = set()
     for index, name in enumerate(sorted(reserved)):
@@ -344,6 +414,10 @@ def preprocess_audio(
             )
     for record in records:
         if record["source_hash"] in reserved_hashes:
+            if recording_splits is not None and record["split"] != "validation":
+                raise ValueError(
+                    "Reserved validation conflicts with the explicit recording split"
+                )
             record["split"] = "validation"
     if any(
         not any(r["speaker"] == i and r["split"] == "train" for r in records)
@@ -352,7 +426,9 @@ def preprocess_audio(
         raise ValueError(
             "Reserved validation leaves a speaker without training recordings"
         )
-    audio_cache = output / "audio" / fingerprint(asdict(mel))
+    storage = storage_contract(compact_cache)
+    audio_key = asdict(mel) if storage is None else dict(mel=asdict(mel), storage=storage)
+    audio_cache = output / "audio" / fingerprint(audio_key)
     audio_cache.mkdir(parents=True, exist_ok=True)
     segment_samples = max(mel.hop_length, int(segment_seconds * mel.sample_rate))
     segment_samples -= segment_samples % mel.hop_length
@@ -378,17 +454,22 @@ def preprocess_audio(
                     mel=asdict(mel),
                 )
             )
-            waveform = audio_cache / (key + ".wav")
+            if storage is not None:
+                key = fingerprint(dict(segment=key, storage=storage))
+            waveform = audio_cache / (key + (".flac" if storage is not None else ".wav"))
+            scale = waveform_scale(segment) if storage is not None else 1.0
             metadata = waveform.with_suffix(".json")
             valid = waveform.exists() and metadata.exists()
             waveform_hash = file_hash(waveform) if valid else None
             if valid:
                 valid = (
-                    json.loads(metadata.read_text())["waveform_sha256"] == waveform_hash
+                    json.loads(metadata.read_text(encoding="utf-8"))["waveform_sha256"]
+                    == waveform_hash
                 )
             if not valid:
-                temporary = waveform.with_suffix(".tmp.wav")
-                sf.write(str(temporary), segment, mel.sample_rate, subtype="FLOAT")
+                temporary = waveform.with_name(waveform.stem + ".tmp" + waveform.suffix)
+                sf.write(str(temporary), segment / scale if storage is not None else segment,
+                         mel.sample_rate, subtype="PCM_24" if storage is not None else "FLOAT")
                 temporary.replace(waveform)
                 waveform_hash = file_hash(waveform)
                 atomic_json(metadata, {"waveform_sha256": waveform_hash})
@@ -401,6 +482,8 @@ def preprocess_audio(
                     "waveform_sha256": waveform_hash,
                 }
             )
+            if storage is not None:
+                entries[-1]["waveform_scale"] = scale
         if progress:
             progress(
                 dict(
@@ -426,6 +509,10 @@ def preprocess_audio(
         recordings=records,
         segments=entries,
     )
+    if recording_splits is not None:
+        manifest["selection"]["recording_splits"] = explicit
+    if storage is not None:
+        manifest["storage"] = storage
     manifest["audio_id"] = fingerprint(manifest)
     atomic_json(output / "audio_manifest.json", manifest)
     return output / "audio_manifest.json"
@@ -438,7 +525,6 @@ def extract_preprocessed(audio_manifest, extractor, progress=None):
     use. Feature hashes bind cache reuse to the exact frontend contract. Legacy
     combined manifests remain readable by the dataset and training code.
     """
-    import soundfile as sf
     from rvc.configs.neural import require_contract
 
     path = Path(audio_manifest)
@@ -451,11 +537,17 @@ def extract_preprocessed(audio_manifest, extractor, progress=None):
     contract = dict(
         mel=audio["mel"], features=asdict(extractor.config), implementation=1
     )
+    storage = audio.get("storage")
+    validate_storage(storage)
+    if storage is not None:
+        contract["storage"] = storage
     cache_id = fingerprint(contract)
     cache = output / "cache" / cache_id
     cache.mkdir(parents=True, exist_ok=True)
     entries = []
     for index, entry in enumerate(audio["segments"]):
+        if ("waveform_scale" in entry) != (storage is not None):
+            raise ValueError("Waveform scale disagrees with cache storage contract")
         waveform = (output / entry["waveform"]).resolve()
         if (
             not waveform.is_relative_to(output)
@@ -477,24 +569,15 @@ def extract_preprocessed(audio_manifest, extractor, progress=None):
         valid = feature_file.exists() and metadata.exists()
         feature_hash = file_hash(feature_file) if valid else None
         if valid:
-            hashes = json.loads(metadata.read_text())
+            hashes = json.loads(metadata.read_text(encoding="utf-8"))
             valid = (
                 hashes.get("features_sha256") == feature_hash
                 and hashes.get("waveform_sha256") == entry["waveform_sha256"]
             )
         if not valid:
-            segment, rate = sf.read(str(waveform), dtype="float32")
-            if (
-                rate != extractor.mel_config.sample_rate
-                or segment.ndim != 1
-                or len(segment) != entry["samples"]
-                or not np.isfinite(segment).all()
-            ):
-                raise ValueError(
-                    "Preprocessed audio dimensions or sample rate are invalid"
-                )
+            segment = read_segment(waveform, entry, extractor.mel_config.sample_rate)
             temporary = feature_file.with_suffix(".tmp.npz")
-            np.savez_compressed(temporary, **extractor.extract(segment))
+            np.savez_compressed(temporary, **stored_features(extractor.extract(segment), storage))
             temporary.replace(feature_file)
             feature_hash = file_hash(feature_file)
             atomic_json(
@@ -542,6 +625,184 @@ def extract_preprocessed(audio_manifest, extractor, progress=None):
     return output / "manifest.json"
 
 
+def _link_cached_waveform(source, output, relative):
+    """Keep immutable shared audio storage inside the destination cache boundary."""
+    waveform = (source / relative).resolve()
+    if not waveform.is_relative_to(source.resolve()):
+        raise ValueError("Source waveform must remain inside its cache directory")
+    destination = output / "waveforms" / (file_hash(waveform) + waveform.suffix)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists() and not os.path.samefile(waveform, destination):
+        # Distinct recordings can yield byte-identical segments (for example
+        # silence). Preserve a hardlink to each immutable source rather than
+        # treating a content-hash name collision as a changed cache.
+        destination = destination.with_name(
+            destination.stem
+            + "_"
+            + fingerprint(Path(relative).as_posix())[:16]
+            + waveform.suffix
+        )
+    if destination.exists():
+        if not os.path.samefile(waveform, destination):
+            raise ValueError("Retargeted waveform must share immutable source storage")
+    else:
+        os.link(waveform, destination)
+    return str(destination.relative_to(output))
+
+
+def retarget_preprocessed_audio(source_manifest, output_dir, mel_config):
+    """Reuse a verified recording split for a different spectral contract.
+
+    This changes only mel semantics before feature extraction. Sample rate and
+    hop must remain fixed. Audio hardlinks preserve storage and are immutable;
+    no original recording is resampled again or reassigned to another split.
+    """
+    source, output = Path(source_manifest).resolve(), Path(output_dir).resolve()
+    if source.parent == output:
+        raise ValueError("Retargeted audio needs a separate output directory")
+    prepared = json.loads(source.read_text(encoding="utf-8"))
+    identity = {key: value for key, value in prepared.items() if key != "audio_id"}
+    if prepared.get("schema") != 1 or fingerprint(identity) != prepared.get("audio_id"):
+        raise ValueError("Source audio manifest identity is invalid")
+    old = MelConfig(**prepared["mel"])
+    if (old.sample_rate, old.hop_length) != (
+        mel_config.sample_rate,
+        mel_config.hop_length,
+    ):
+        raise ValueError("Retargeting requires unchanged sample rate and hop")
+    prepared["mel"] = asdict(mel_config)
+    for entry in prepared["segments"]:
+        waveform = (source.parent / entry["waveform"]).resolve()
+        if (
+            not waveform.is_relative_to(source.parent)
+            or file_hash(waveform) != entry["waveform_sha256"]
+        ):
+            raise ValueError("Source preprocessed waveform changed")
+        entry["waveform"] = _link_cached_waveform(
+            source.parent, output, entry["waveform"]
+        )
+    prepared.pop("audio_id")
+    prepared["audio_id"] = fingerprint(prepared)
+    path = output / "audio_manifest.json"
+    atomic_json(path, prepared)
+    return path
+
+
+def retarget_mel_manifest(source_manifest, output_dir, mel_config, progress=None):
+    """Recompute mel targets while reusing verified content, pitch and audio.
+
+    Sample rate/hop must stay unchanged, so the feature clock and segmentation
+    remain valid. A new immutable manifest/cache is published; originals are
+    untouched. Waveforms are hardlinked, not copied, to avoid duplicating a
+    corpus merely because a frozen renderer uses different spectral semantics.
+    This is an explicit new experiment, not compatible optimizer continuation.
+    """
+    import copy
+    from rvc.lib.algorithm.acoustic.spectral import MelExtractor
+
+    source, output = Path(source_manifest).resolve(), Path(output_dir).resolve()
+    if source.parent == output:
+        raise ValueError("Retargeted data must use a separate output directory")
+    original = json.loads(source.read_text(encoding="utf-8"))
+    # Shared dataset validation checks identity, split leakage and contracts.
+    AcousticDataset(source, "train", 0, load_waveform=False)
+    old = MelConfig(**original["contract"]["mel"])
+    if (old.sample_rate, old.hop_length) != (
+        mel_config.sample_rate,
+        mel_config.hop_length,
+    ):
+        raise ValueError(
+            "Retargeting requires unchanged sample rate and hop; extract again otherwise"
+        )
+    contract = copy.deepcopy(original["contract"])
+    contract["mel"] = asdict(mel_config)
+    cache_id = fingerprint(contract)
+    cache = output / "cache" / cache_id
+    cache.mkdir(parents=True, exist_ok=True)
+    extractor = MelExtractor(mel_config)
+
+    entries = []
+    for index, entry in enumerate(original["segments"]):
+        feature_source, waveform = (
+            source.parent / entry["features"],
+            source.parent / entry["waveform"],
+        )
+        if (
+            file_hash(feature_source) != entry["features_sha256"]
+            or file_hash(waveform) != entry["waveform_sha256"]
+        ):
+            raise ValueError("Source feature/waveform cache changed")
+        with np.load(feature_source, allow_pickle=False) as loaded:
+            features = {
+                key: np.asarray(loaded[key], dtype=np.float32) for key in loaded.files
+            }
+        audio = read_segment(waveform, entry, mel_config.sample_rate)
+        frames = mel_config.frames(len(audio))
+        if any(
+            len(value) != frames or not np.isfinite(value).all()
+            for value in features.values()
+        ):
+            raise ValueError("Source features are nonfinite or misaligned")
+        with torch.inference_mode():
+            features["mel"] = extractor(torch.from_numpy(audio)[None])[0].T.numpy()
+        key = fingerprint(
+            dict(source_features=entry["features_sha256"], contract=cache_id)
+        )
+        destination = cache / (key + ".npz")
+        temporary = destination.with_suffix(".tmp.npz")
+        np.savez_compressed(temporary, **stored_features(features, contract.get("storage")))
+        temporary.replace(destination)
+        entries.append(
+            dict(
+                entry,
+                waveform=_link_cached_waveform(
+                    source.parent, output, entry["waveform"]
+                ),
+                features=str(destination.relative_to(output)),
+                features_sha256=file_hash(destination),
+            )
+        )
+        if progress:
+            progress(
+                dict(
+                    recording=index + 1,
+                    total=len(original["segments"]),
+                    operation="retarget_mel",
+                )
+            )
+    manifest = copy.deepcopy(original)
+    manifest.update(contract=contract, cache_id=cache_id, segments=entries)
+    manifest["mel_retargeting"] = dict(
+        source_manifest_sha256=file_hash(source),
+        source_dataset_id=original["dataset_id"],
+        waveform_storage="Hardlinked immutable source cache",
+    )
+    audio_source = source.parent / "audio_manifest.json"
+    if audio_source.exists():
+        prepared = json.loads(audio_source.read_text(encoding="utf-8"))
+        audio_identity = {
+            key: value for key, value in prepared.items() if key != "audio_id"
+        }
+        if (
+            fingerprint(audio_identity) != prepared["audio_id"]
+            or original.get("preprocessing_id") != prepared["audio_id"]
+        ):
+            raise ValueError("Source audio manifest identity is invalid")
+        prepared["mel"] = asdict(mel_config)
+        for entry in prepared["segments"]:
+            entry["waveform"] = _link_cached_waveform(
+                source.parent, output, entry["waveform"]
+            )
+        prepared.pop("audio_id")
+        prepared["audio_id"] = fingerprint(prepared)
+        atomic_json(output / "audio_manifest.json", prepared)
+        manifest["preprocessing_id"] = prepared["audio_id"]
+    manifest["dataset_id"] = dataset_identity(manifest)
+    path = output / "manifest.json"
+    atomic_json(path, manifest)
+    return path
+
+
 class AcousticDataset(Dataset):
     """Serve verified cached segments or frame crops for acoustic and vocoder stages."""
 
@@ -558,6 +819,7 @@ class AcousticDataset(Dataset):
                     "Audio preprocessing changed; run Extract Features before training"
                 )
         self.config = MelConfig(**self.manifest["contract"]["mel"])
+        validate_storage(self.manifest["contract"].get("storage"))
         self.entries = [e for e in self.manifest["segments"] if e["split"] == split]
         if not self.entries:
             raise ValueError(f"Dataset has no {split} examples")
@@ -567,6 +829,8 @@ class AcousticDataset(Dataset):
             raise ValueError("Manifest recording/split identity is invalid")
         dataset_root = self.path.parent.resolve()
         for entry in self.manifest["segments"]:
+            if ("waveform_scale" in entry) != (self.manifest["contract"].get("storage") is not None):
+                raise ValueError("Waveform scale disagrees with cache storage contract")
             for key in ("features", "waveform"):
                 if (
                     not (self.path.parent / entry[key])
@@ -655,9 +919,7 @@ class AcousticDataset(Dataset):
         result["length"] = end - start
         if not self.load_waveform:
             return result
-        waveform = read_audio(
-            self.path.parent / entry["waveform"], self.config.sample_rate
-        )
+        waveform = read_segment(self.path.parent / entry["waveform"], entry, self.config.sample_rate)
         begin, count = (
             start * self.config.hop_length,
             (end - start) * self.config.hop_length,

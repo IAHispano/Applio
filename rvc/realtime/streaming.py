@@ -89,6 +89,10 @@ class AcousticStream:
                 m.predictor_blocks, m.predictor_in(condition), self.predictor_history
             )
         )
+        if m.config.harmonic_detail:
+            geometry = m.detail_pitch_features(f0, voiced)
+            correction = m.spectral_detail(m.denormalize(base), geometry, condition)
+            base = base + correction / m.mel_std
         if self.steps:
             if base.shape[0] != 1:
                 raise ValueError("A streaming state belongs to one voice stream")

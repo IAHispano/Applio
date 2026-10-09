@@ -54,7 +54,11 @@ class MelExtractor(nn.Module):
                 center=False,
                 return_complex=True,
             )
-            magnitude = (spec.real.square() + spec.imag.square() + 1e-9).sqrt()
+            magnitude = (
+                spec.abs()
+                if c.magnitude_epsilon == 0
+                else (spec.real.square() + spec.imag.square() + c.magnitude_epsilon).sqrt()
+            )
             return (self.basis.float() @ magnitude).clamp_min(c.log_floor).log()
 
 

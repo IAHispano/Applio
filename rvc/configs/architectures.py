@@ -71,13 +71,18 @@ def compatible_vocoders(voice, choices):
     metadata = inspect_model(voice)
     if metadata.get("backend") != BACKEND or metadata.get("kind") != "acoustic":
         raise ValueError("Choose an Applio V3 acoustic voice model")
+    from rvc.configs.neural import require_contract
+
     matches = []
     for label, path in choices:
         candidate = inspect_model(path)
         if (
             candidate.get("kind") == "vocoder"
-            and candidate.get("mel") == metadata["mel"]
         ):
+            try:
+                require_contract(candidate["mel"], metadata["mel"], "voice/vocoder mel")
+            except ValueError:
+                continue
             matches.append((label, path))
     return matches
 

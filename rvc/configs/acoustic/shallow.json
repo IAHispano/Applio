@@ -1,0 +1,16 @@
+{
+  "family": "shallow-flow",
+  "shallow_start": 0.4,
+  "auxiliary_weight": 0.2,
+  "condition_width": 384,
+  "predictor_width": 384,
+  "predictor_depth": 6,
+  "refiner_width": 512,
+  "refiner_depth": 8,
+  "kernel_size": 7,
+  "expansion": 2,
+  "causal": false,
+  "prediction_centered": false,
+  "pitch_guidance": true,
+  "checkpoint_blocks": true
+}

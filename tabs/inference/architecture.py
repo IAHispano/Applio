@@ -23,8 +23,8 @@ def inference_options(model_file=None):
             discover_models(kind="vocoder"),
             value=None,
             allow_custom_value=True,
-            label="Universal vocoder",
-            info="Choose a v3 vocoder matching the voice model's mel contract.",
+            label="Audio renderer (vocoder)",
+            info="Choose a renderer compatible with the selected acoustic voice model.",
         )
         refresh = gr.Button("Refresh vocoders")
         with gr.Row():
@@ -70,18 +70,23 @@ def inference_options(model_file=None):
                 ),
                 gr.update(
                     visible=metadata.get("capabilities", {}).get("ordinary_flow", False)
+                    and metadata.get("model_config", {}).get("family") != "shallow-flow"
                 ),
             )
 
         model_file.change(runtime_settings, model_file, [pitch_path, ordinary])
         # Loading a predictor-only voice clears unsupported settings left over
         # from another model without changing the shared interface's layout.
-        for trigger in (model_file.change, ordinary.change):
-            trigger(
-                refinement_settings,
-                inputs=[model_file, ordinary, budget],
-                outputs=budget,
-            )
+        model_file.change(
+            lambda path, ordinary, current: refinement_settings(
+                path, ordinary, current, loading=True
+            ),
+            inputs=[model_file, ordinary, budget],
+            outputs=budget,
+        )
+        ordinary.change(
+            refinement_settings, inputs=[model_file, ordinary, budget], outputs=budget
+        )
     else:
         refresh.click(
             lambda: gr.update(choices=discover_models(kind="vocoder")), outputs=vocoder
@@ -111,18 +116,40 @@ def model_settings(path):
     )
 
 
-def refinement_settings(path, ordinary=False, current=0):
-    """Offer only budgets supported by an exported acoustic model's capabilities."""
+def refinement_settings(path, ordinary=False, current=0, loading=False):
+    """Offer integration budgets supported by the exported model.
+
+    Joint shallow flow learns its velocity in the predictor stage and supports
+    few-step integration directly. Staged residual flow requires trained
+    shortcuts or an explicit ordinary-flow selection for small budgets.
+    """
     choices = [0, 1, 2, 4, 8, 16, 32]
     if path and model_architecture(path) == "v3":
-        capabilities = inspect_model(path).get("capabilities")
+        metadata = inspect_model(path)
+        capabilities = metadata.get("capabilities")
+        if metadata.get("model_config", {}).get("family") == "shallow-flow":
+            choices = (
+                choices if (capabilities or {}).get("ordinary_flow") else [0]
+            )
+            value = 8 if loading and 8 in choices else int(current or 0)
+            return gr.update(
+                choices=choices,
+                value=value if value in choices else choices[0],
+                label="Generative flow steps",
+                info="Start with 8 steps and compare quality and speed. Lower budgets need fewer model evaluations. 0 uses the coarse prediction without flow refinement.",
+            )
         if isinstance(capabilities, dict):
             if not capabilities.get("ordinary_flow"):
                 choices = [0]
             elif not capabilities.get("shortcuts") and not ordinary:
                 choices = [0, 8, 16, 32]
     value = int(current or 0)
-    return gr.update(choices=choices, value=value if value in choices else 0)
+    return gr.update(
+        choices=choices,
+        value=value if value in choices else 0,
+        label="Refinement steps",
+        info="0 uses the predictor. Evaluate trained refiners before choosing a higher budget.",
+    )
 
 
 def route_conversion(legacy_args, options, batch=False):

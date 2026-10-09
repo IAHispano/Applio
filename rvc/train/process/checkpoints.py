@@ -16,7 +16,7 @@ import torch
 
 from rvc.configs.architectures import BACKEND, FORMAT_VERSION
 from rvc.configs.neural import AcousticConfig, FeatureConfig, MelConfig, VocoderConfig
-from rvc.lib.algorithm.acoustic.model import AcousticModel
+from rvc.lib.algorithm.acoustic.model import create_acoustic
 from rvc.lib.algorithm.acoustic.adapters import install_adapters, merge_adapters
 from rvc.lib.algorithm.acoustic.vocoder import SpectralVocoder
 
@@ -66,7 +66,9 @@ def load_payload(path):
 
 def construct(payload, device="cpu", use_ema=True):
     if payload["kind"] == "acoustic":
-        model = AcousticModel(AcousticConfig(**payload["model_config"]))
+        model = create_acoustic(
+            AcousticConfig(**payload["model_config"]), MelConfig(**payload["mel"])
+        )
         if payload.get("adapters"):
             install_adapters(model, **payload["adapters"])
     else:
@@ -77,6 +79,20 @@ def construct(payload, device="cpu", use_ema=True):
             model = BigVGANVocoder(payload["model_config"])
         elif backend == "spectral":
             model = SpectralVocoder(VocoderConfig(**payload["model_config"]))
+        elif backend == "wavehax":
+            from rvc.lib.algorithm.acoustic.wavehax import WavehaxVocoder
+
+            model = WavehaxVocoder(VocoderConfig(**payload["model_config"]))
+        elif backend == "nsf-hifigan":
+            from rvc.lib.algorithm.acoustic.nsf_hifigan import NSFHiFiGANVocoder
+            from rvc.configs.neural import require_contract
+
+            require_contract(
+                payload["mel"],
+                asdict(MelConfig(fmin=40., fmax=16000., magnitude_epsilon=0.)),
+                "NSF-HiFiGAN mel",
+            )
+            model = NSFHiFiGANVocoder(payload["model_config"])
         else:
             raise ValueError(f"Unsupported V3 vocoder backend: {backend}")
     weights = (
@@ -103,6 +119,8 @@ def header(model, kind, manifest, adapters=None):
     }
     if kind == "acoustic" and manifest.get("augmentation"):
         payload["training_augmentation"] = manifest["augmentation"]
+    if kind == "vocoder":
+        payload["vocoder_backend"] = model.config.backend
     return payload
 
 

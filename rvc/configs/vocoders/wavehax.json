@@ -1,0 +1,15 @@
+{
+  "backend": "wavehax",
+  "sample_rate": 44100,
+  "hop_length": 512,
+  "mel_dim": 128,
+  "streams": 1,
+  "n_fft": 2048,
+  "channels": 16,
+  "depth": 8,
+  "kernel_size": 7,
+  "frequency_kernel": 13,
+  "expansion": 3,
+  "causal": false,
+  "checkpoint_blocks": false
+}

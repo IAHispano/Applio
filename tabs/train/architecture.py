@@ -40,7 +40,7 @@ def workflow_options():
             ],
             value="finetune",
             label="How would you like to train?",
-            info="Fine-tuning teaches an existing model your voice and reuses its universal vocoder.",
+            info="Fine-tuning learns your voice using a pretrained acoustic model and its frozen audio renderer.",
         )
         with gr.Row() as pretrained:
             base = gr.Dropdown(
@@ -53,7 +53,7 @@ def workflow_options():
             vocoder = gr.Dropdown(
                 pretrained_choices("vocoder"),
                 value=None,
-                label="Universal vocoder",
+                label="Audio renderer (vocoder)",
                 allow_custom_value=True,
                 info="Reused for inference; it will not be trained.",
             )
@@ -172,10 +172,10 @@ def extraction_options():
                 info="Folder containing the encoder weights and configuration. Use the same encoder for inference.",
             )
             profile = gr.Dropdown(
-                [("Realtime-compatible", "bounded"), ("Offline", "offline")],
+                [("Bounded context", "bounded"), ("Full context", "offline")],
                 value="bounded",
                 label="Feature profile",
-                info="Realtime-compatible uses bounded context and supports file and live conversion. Offline uses full context and supports file conversion only.",
+                info="Bounded context limits future audio used by feature extraction. Live conversion also requires a streaming acoustic model and renderer. Full context is for file conversion.",
             )
             pitch_path = gr.Textbox(
                 label="RMVPE checkpoint",
@@ -409,8 +409,14 @@ def train_model(mode, legacy_args, options, session_hash, progress=None):
         adaptation,
         rank,
     ) = options[:11]
+    # Accept callbacks from the withdrawn experimental detail control. Keep its
+    # setting for exact resume, but do not offer it for new GUI training jobs.
+    detail = bool(options[11]) if len(options) in {12, 15} else False
+    workflow_start = 12 if len(options) in {12, 15} else 11
     workflow, pretrained, vocoder = (
-        options[11:] if len(options) > 11 else ("advanced", None, None)
+        options[workflow_start:]
+        if len(options) > workflow_start
+        else ("advanced", None, None)
     )
     if workflow == "scratch":
         stage = "all"
@@ -456,6 +462,9 @@ def train_model(mode, legacy_args, options, session_hash, progress=None):
             crop_frames=int(crop),
             accumulation_steps=int(accumulation),
             learning_rate=float(lr),
+            mel_detail_weight=0.5
+            if detail and stage in {"predictor", "adapt", "all", "all_refiners", "finetune"}
+            else 0.0,
             precision=precision,
             device=device,
             seed=int(seed),

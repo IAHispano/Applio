@@ -20,12 +20,7 @@ from torch import nn
 from torch.utils.checkpoint import checkpoint
 
 from rvc.configs.neural import AcousticConfig
-
-
-def masked_mean(value, mask):
-    """Normalize by actual valid elements, including broadcast feature channels."""
-    mask = torch.broadcast_to(mask, value.shape).to(value.dtype)
-    return (value * mask).sum() / mask.sum().clamp_min(1)
+from rvc.lib.algorithm.acoustic.losses import masked_mean, mel_detail_loss
 
 
 class FrameNorm(nn.Module):
@@ -111,7 +106,7 @@ class AcousticModel(nn.Module):
     completed optimizer updates, not convergence or acceptable audio quality.
     """
 
-    def __init__(self, config: AcousticConfig):
+    def __init__(self, config: AcousticConfig, mel=None):
         super().__init__()
         self.config = config
         cw, pw, rw = (
@@ -122,6 +117,16 @@ class AcousticModel(nn.Module):
         self.content_norm = nn.LayerNorm(config.content_dim)
         self.content_projection = nn.Conv1d(config.content_dim, cw, 1)
         self.control_projection = nn.Conv1d(6, cw, 1)
+        if config.pitch_guidance:
+            if mel is None or mel.n_mels != config.mel_dim:
+                raise ValueError(
+                    "Pitch-guided acoustics require the physical mel contract"
+                )
+            from rvc.lib.algorithm.acoustic.pitch import HarmonicPitchFeatures
+
+            self.pitch_features = HarmonicPitchFeatures(mel)
+            self.pitch_projection = nn.Conv1d(config.mel_dim, cw, 1, bias=False)
+            nn.init.zeros_(self.pitch_projection.weight)
         self.speaker = nn.Embedding(config.speakers, cw)
         self.condition_blocks = nn.ModuleList(
             [
@@ -137,6 +142,14 @@ class AcousticModel(nn.Module):
             ]
         )
         self.predictor_out = nn.Conv1d(pw, config.mel_dim, 1)
+        if config.harmonic_detail:
+            if mel is None or mel.n_mels != config.mel_dim:
+                raise ValueError("Harmonic detail requires the physical mel contract")
+            from rvc.lib.algorithm.acoustic.detail import HarmonicDetailHead
+            from rvc.lib.algorithm.acoustic.pitch import HarmonicPitchFeatures
+
+            self.detail_pitch_features = HarmonicPitchFeatures(mel)
+            self.spectral_detail = HarmonicDetailHead(cw, config.mel_dim)
         self.refiner_in = nn.Conv1d(2 * config.mel_dim, rw, 1)
         self.refiner_condition = nn.Conv1d(cw, rw, 1)
         self.time_embedding, self.step_embedding = TimeEmbedding(rw), TimeEmbedding(rw)
@@ -205,6 +218,8 @@ class AcousticModel(nn.Module):
         )
         x = self.content_projection(self.content_norm(content).transpose(1, 2))
         x = x + self.control_projection(controls) + self.speaker(speaker)[:, :, None]
+        if self.config.pitch_guidance:
+            x = x + self.pitch_projection(self.pitch_features(f0, voiced))
         return x
 
     def condition(
@@ -218,19 +233,41 @@ class AcousticModel(nn.Module):
         confidence_valid=None,
         mask=None,
     ):
+        """Encode controls; detail models append their explicit harmonic geometry.
+
+        Legacy output is [B, condition_width, T]. With harmonic_detail enabled,
+        the output is [B, condition_width + mel_dim, T]: latent first, geometry
+        last. Carrying both in the returned value keeps concurrent calls isolated.
+        The predictor consumes both; the velocity network consumes the latent.
+        """
         x = self.condition_input(
             content, f0, voiced, energy, speaker, confidence, confidence_valid
         )
         if mask is not None:
             x = x * mask
-        return run_blocks(self.condition_blocks, x, mask, self.config.checkpoint_blocks)
+        encoded = run_blocks(
+            self.condition_blocks, x, mask, self.config.checkpoint_blocks
+        )
+        if self.config.harmonic_detail:
+            # Carry explicit geometry alongside the latent without mutable side
+            # channels. Old models retain exactly the original tensor contract.
+            geometry = self.detail_pitch_features(f0, voiced)
+            if mask is not None:
+                geometry = geometry * mask
+            return torch.cat((encoded, geometry), dim=1)
+        return encoded
 
     def predict(self, condition, mask=None):
         """Return normalized mel [B, mel_bands, T]; budget zero uses this path."""
 
-        x = self.predictor_in(condition)
+        encoded = condition[:, : self.config.condition_width].contiguous()
+        x = self.predictor_in(encoded)
         x = run_blocks(self.predictor_blocks, x, mask, self.config.checkpoint_blocks)
         out = self.predictor_out(x)
+        if self.config.harmonic_detail:
+            geometry = condition[:, self.config.condition_width :].contiguous()
+            correction = self.spectral_detail(self.denormalize(out), geometry, encoded)
+            out = out + correction / self.mel_std
         return out if mask is None else out * mask
 
     def refine(self, z, t, step, condition, base, mask=None):
@@ -242,7 +279,7 @@ class AcousticModel(nn.Module):
         """
 
         x = self.refiner_in(torch.cat([z, base], dim=1)) + self.refiner_condition(
-            condition
+            condition[:, : self.config.condition_width].contiguous()
         )
         x = x + (self.time_embedding(t) + self.step_embedding(step))[:, :, None]
         if mask is not None:
@@ -292,10 +329,16 @@ class AcousticModel(nn.Module):
             base + self.residual_scale * z if self.config.prediction_centered else z
         )
 
-    def predictor_loss(self, condition, mel, mask):
-        """Masked normalized-mel L1 plus 0.05 times adjacent-frame difference L1."""
+    def predictor_loss(self, condition, mel, mask, detail_weight=0.0, prediction=None):
+        """Legacy mel loss with an optional training-only detail constraint.
 
-        base, target = self.predict(condition, mask), self.normalize(mel)
+        Zero weight preserves existing training exactly. The extra objective
+        compares physical log-mel contrast; checkpoint/inference shapes stay
+        compatible and no post-processing is applied to synthesized audio.
+        """
+
+        base = self.predict(condition, mask) if prediction is None else prediction
+        target = self.normalize(mel)
         loss = masked_mean((base - target).abs(), mask)
         adjacent = mask[..., 1:] * mask[..., :-1]
         temporal = masked_mean(
@@ -304,7 +347,12 @@ class AcousticModel(nn.Module):
             ).abs(),
             adjacent,
         )
-        return loss + 0.05 * temporal
+        loss = loss + 0.05 * temporal
+        if detail_weight:
+            loss = loss + detail_weight * mel_detail_loss(
+                self.denormalize(base), mel, mask
+            )
+        return loss
 
     def flow_loss(
         self,
@@ -376,6 +424,15 @@ class AcousticModel(nn.Module):
                     velocity[select] = (first + second) / 2
         prediction = self.refine(z, t, step, condition, base, mask)
         return masked_mean((prediction.float() - velocity.float()).square(), mask)
+
+
+def create_acoustic(config, mel=None):
+    """Select the serialized graph without guessing from model filenames."""
+    if config.family == "shallow-flow":
+        from rvc.lib.algorithm.acoustic.flow import ShallowFlowModel
+
+        return ShallowFlowModel(config, mel)
+    return AcousticModel(config, mel)
 
 
 class EMA:

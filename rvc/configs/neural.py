@@ -35,6 +35,7 @@ class MelConfig:
     log_floor: float = 1e-5
     basis: str = "slaney"
     padding: str = "same-reflect"
+    magnitude_epsilon: float = 1e-9
 
     def __post_init__(self):
         if not (
@@ -53,6 +54,8 @@ class MelConfig:
             raise ValueError(
                 "Unsupported mel semantics; no implicit conversion is allowed"
             )
+        if not math.isfinite(self.magnitude_epsilon) or self.magnitude_epsilon < 0:
+            raise ValueError("Magnitude epsilon must be finite and nonnegative")
 
     def frames(self, samples: int) -> int:
         if samples <= 0:
@@ -120,8 +123,27 @@ class AcousticConfig:
     causal: bool = True
     checkpoint_blocks: bool = False
     prediction_centered: bool = True
+    pitch_guidance: bool = False
+    harmonic_detail: bool = False
+    family: str = "residual"
+    shallow_start: float = 0.4
+    auxiliary_weight: float = 0.2
 
     def __post_init__(self):
+        if self.family not in {"residual", "shallow-flow"}:
+            raise ValueError("Unknown acoustic family")
+        if (
+            not 0 < self.shallow_start < 1
+            or not math.isfinite(self.auxiliary_weight)
+            or self.auxiliary_weight <= 0
+        ):
+            raise ValueError("Invalid shallow-flow time or auxiliary weight")
+        if self.family == "shallow-flow" and (
+            self.causal or self.harmonic_detail or self.prediction_centered
+        ):
+            raise ValueError(
+                "Shallow-flow uses noncausal direct-mel coordinates without the rejected detail head"
+            )
         if any(
             v < 1
             for v in (
@@ -157,8 +179,23 @@ class VocoderConfig:
     filter_taps: int = 63
     causal: bool = True
     checkpoint_blocks: bool = False
+    backend: str = "spectral"
+    frequency_kernel: int = 13
+    expansion: int = 3
 
     def __post_init__(self):
+        if self.backend not in {"spectral", "wavehax"}:
+            raise ValueError("Unknown trainable vocoder backend")
+        if self.backend == "wavehax" and (self.streams != 1 or self.causal):
+            raise ValueError("Full-band Wavehax requires streams=1 and causal=False")
+        if (
+            self.frequency_kernel < 1
+            or self.frequency_kernel % 2 != 1
+            or self.expansion < 1
+        ):
+            raise ValueError(
+                "Frequency kernel must be positive/odd and expansion positive"
+            )
         if any(
             v < 1
             for v in (
@@ -185,6 +222,18 @@ class VocoderConfig:
 
 
 def require_contract(actual: dict, expected: dict, label: str):
+    # Earlier packages omit the magnitude epsilon and use the original 1e-9.
+    # Canonicalize mel defaults so adding explicit semantics does not invalidate
+    # old compatible packages; epsilon=0 remains a distinct imported contract.
+    mel_keys = {"sample_rate", "hop_length", "n_fft", "n_mels", "basis", "padding"}
+    if mel_keys <= actual.keys() and mel_keys <= expected.keys():
+        actual, expected = asdict(MelConfig(**actual)), asdict(MelConfig(**expected))
+        # JSON may serialize an equivalent physical bound as 40 or 40.0.
+        # Cache fingerprints remain strict; compatibility compares canonical
+        # floating-point spectral values rather than their JSON spelling.
+        for contract in (actual, expected):
+            for key in ("fmin", "fmax", "log_floor", "magnitude_epsilon"):
+                contract[key] = float(contract[key])
     if fingerprint(actual) != fingerprint(expected):
         different = [
             k

@@ -1,4 +1,4 @@
-"""Resumable full-corpus acoustic training with a frozen BigVGAN.
+"""Resumable full-corpus acoustic training with a frozen compatible vocoder.
 
 This orchestrates the existing preprocess, extractor, trainer and evaluator;
 it introduces no new architecture or GPU-specific training preset. Architecture
@@ -99,13 +99,19 @@ def run_corpus(
     batch_size=2,
     accumulation_steps=1,
     predictor_steps=60000,
-    flow_steps=15000,
-    shortcut_steps=15000,
+    flow_steps=None,
+    shortcut_steps=None,
     device="auto",
     precision="auto",
     checkpoint_every=1000,
     seed=1234,
     check_only=False,
+    crop_frames=None,
+    compact_cache=False,
+    compact_cache_audit=None,
+    sampling_mode="segments",
+    validation_limit=0,
+    validation_manifest=None,
 ):
     """Preflight now; train only when invoked without --check-only.
 
@@ -123,20 +129,34 @@ def run_corpus(
     vocoder_path = Path(vocoder_path).resolve()
     if not root.is_dir() or project.resolve().is_relative_to(root):
         raise ValueError("Dataset must exist and training output must be outside it")
-    if shortcut_steps and not flow_steps:
-        raise ValueError("Shortcut training requires a flow budget")
     files = sorted(p for p in root.rglob("*") if p.suffix.lower() in {".wav", ".flac"})
     if not files:
         raise ValueError("Dataset contains no WAV or FLAC recordings")
+    corpus_map = root / "corpus.json"
+    corpus_speakers = None
+    if corpus_map.exists():
+        corpus = json.loads(corpus_map.read_text(encoding="utf-8"))
+        if corpus.get("version") != 1:
+            raise ValueError("Unsupported combined corpus index")
+        corpus_speakers = corpus["speakers"]
+        available = {path.relative_to(root).as_posix(): path for path in files}
+        if set(corpus_speakers) - available.keys():
+            raise ValueError("Combined corpus files missing; reindex before training")
+        files = [available[name] for name in sorted(corpus_speakers)]
     groups = {}
     inventory = []
     for path in files:
         relative = path.relative_to(root)
-        groups.setdefault(str(relative.parent), []).append(path)
+        identity = (
+            corpus_speakers[relative.as_posix()]
+            if corpus_speakers is not None
+            else str(relative.parent)
+        )
+        groups.setdefault(identity, []).append(path)
         stat = path.stat()
         inventory.append((relative.as_posix(), stat.st_size, stat.st_mtime_ns))
     # One identity per directory. Nested style folders are not speaker identities.
-    if any(len(Path(name).parts) != 1 for name in groups):
+    if corpus_speakers is None and any(len(Path(name).parts) != 1 for name in groups):
         raise ValueError(
             "Use one direct dataset folder per speaker; do not pass nested style/channel trees"
         )
@@ -151,10 +171,26 @@ def run_corpus(
         AcousticConfig(**reference["model_config"]) if reference else AcousticConfig()
     )
     config = replace(config, speakers=len(groups))
-    mel = MelConfig(**reference["mel"]) if reference else MelConfig()
+    joint = config.family == "shallow-flow"
+    flow_steps = (0 if joint else 15000) if flow_steps is None else flow_steps
+    shortcut_steps = (
+        (0 if joint else 15000) if shortcut_steps is None else shortcut_steps
+    )
+    crop_frames = (256 if joint else 128) if crop_frames is None else crop_frames
+    if crop_frames < 1:
+        raise ValueError("Training crop must be positive")
+    if shortcut_steps and not flow_steps:
+        raise ValueError("Shortcut training requires a flow budget")
+    if config.family == "shallow-flow" and (flow_steps or shortcut_steps):
+        raise ValueError("Joint shallow-flow uses --flow-steps 0 --shortcut-steps 0")
     vocoder = load_payload(vocoder_path)
-    if vocoder.get("vocoder_backend") != "bigvgan-v2":
-        raise ValueError("This campaign requires the frozen pretrained BigVGAN package")
+    if vocoder["kind"] != "vocoder" or vocoder.get(
+        "vocoder_backend", "spectral"
+    ) not in {"spectral", "bigvgan-v2", "wavehax", "nsf-hifigan"}:
+        raise ValueError("This campaign requires a supported frozen vocoder package")
+    # Scratch acoustics learn physical targets for the selected frozen renderer.
+    # An architecture reference still binds its own trained spectral semantics.
+    mel = MelConfig(**(reference["mel"] if reference else vocoder["mel"]))
     require_contract(asdict(mel), vocoder["mel"], "campaign acoustic/vocoder mel")
     vocoder_hash = file_hash(vocoder_path)
     del vocoder
@@ -189,6 +225,33 @@ def run_corpus(
         )
         + 6 * 1024**3
     )
+    from rvc.train.acoustic.storage import storage_contract
+    storage = storage_contract(compact_cache)
+    if compact_cache_audit and not compact_cache:
+        raise ValueError("A compact storage audit requires --compact-cache")
+    if compact_cache:
+        # Raw PCM24/FP16 upper estimate, unless a validated, contract-matched
+        # corpus-specific compression audit supplies a measured margin.
+        estimate = int(seconds * (mel.sample_rate * 3 +
+            (config.content_dim * 2 + (mel.n_mels + 6) * 4) * mel.sample_rate / mel.hop_length)) + 12 * 1024**3
+        if compact_cache_audit:
+            audit_path = Path(compact_cache_audit).resolve()
+            audit = json.loads(audit_path.read_text(encoding="utf-8"))
+            integrity = json.loads((audit_path.parent / "integrity.json").read_text(encoding="utf-8"))
+            audited_corpus_path = root / "corpus.json"
+            if not audit.get("passed") or not integrity.get("passed") or not audited_corpus_path.is_file():
+                raise ValueError("Compact storage needs a passed corpus-specific qualification")
+            if audit["corpus_sha256"] != file_hash(audited_corpus_path) or audit["corpus_recordings"] != len(files) or audit["storage_contract"] != storage:
+                raise ValueError("Compact storage audit does not match this corpus/cache")
+            require_contract(audit["mel_contract"], asdict(mel), "compact audit mel")
+            if not reference:
+                raise ValueError("A measured compact audit requires a frontend/architecture reference")
+            require_contract(audit["feature_contract"], reference["features"], "compact audit frontend")
+            for name, digest in integrity["immutable_sha256"].items():
+                # Check the actual storage implementation used by qualification.
+                if name.replace("\\", "/").startswith("rvc/train/acoustic/") and file_hash(Path(core.current_script_directory) / name) != digest:
+                    raise ValueError("Compact cache implementation changed after qualification")
+            estimate = int(audit["conservative_required_bytes"])
     existing = sum(
         p.stat().st_size for p in (project / "data").rglob("*") if p.is_file()
     )
@@ -207,6 +270,21 @@ def run_corpus(
                 raise ValueError(
                     "Prior validation recordings are missing from this corpus"
                 )
+    if validation_manifest:
+        prior = json.loads(Path(validation_manifest).read_text(encoding="utf-8"))
+        for record in prior["recordings"]:
+            if record["split"] == "validation":
+                path = (root / record["source"]).resolve()
+                if not path.is_relative_to(root) or not path.is_file() or file_hash(path) != record["source_hash"]:
+                    raise ValueError("Reserved evaluation recording changed or is absent")
+                reserved.append(record["source"])
+    if reserved and corpus_map.exists() and corpus.get("groups"):
+        # A reserved singer utterance reserves its entire indexed song-folder
+        # group, retaining the corpus split semantics after overriding the seed.
+        split_groups = corpus["groups"]
+        units = {split_groups[Path(name).as_posix()] for name in reserved}
+        reserved.extend(name for name, unit in split_groups.items() if unit in units)
+    reserved = sorted(set(reserved))
     plan = dict(
         dataset_path=str(root),
         inventory_id=fingerprint(inventory),
@@ -224,7 +302,7 @@ def run_corpus(
         stages=dict(
             predictor=predictor_steps, flow=flow_steps, shortcut=shortcut_steps
         ),
-        crop_frames=128,
+        crop_frames=crop_frames,
         learning_rate=2e-4,
         checkpoint_every=checkpoint_every,
         seed=seed,
@@ -234,6 +312,21 @@ def run_corpus(
         normalize_overflow=True,
         initialization="scratch; architecture/frontend reference only",
     )
+    if storage is not None:
+        plan["storage"] = storage
+        plan["compact_cache_audit_sha256"] = file_hash(compact_cache_audit) if compact_cache_audit else None
+    if sampling_mode not in {"segments", "domain-speaker"}:
+        raise ValueError("Unknown corpus sampling mode")
+    if sampling_mode != "segments":
+        plan["sampling_mode"] = sampling_mode
+        plan["sampling_version"] = 1
+    if validation_limit < 0:
+        raise ValueError("Validation limit cannot be negative")
+    if validation_limit:
+        plan["validation_limit"] = validation_limit
+        plan["validation_selection_version"] = 1
+    if validation_manifest:
+        plan["validation_manifest_sha256"] = file_hash(validation_manifest)
     print(
         f"Full corpus: {len(groups)} speakers, {len(files):,} recordings; no recording cap.",
         flush=True,
@@ -247,7 +340,7 @@ def run_corpus(
         flush=True,
     )
     print(
-        f"Frozen BigVGAN; stages: {plan['stages']}; reserved prior holdouts: {len(reserved)}.",
+        f"Frozen vocoder; stages: {plan['stages']}; reserved prior holdouts: {len(reserved)}.",
         flush=True,
     )
     if free < needed:
@@ -268,6 +361,9 @@ def run_corpus(
             speakers=len(groups),
             recordings=len(files),
             estimated_additional_bytes=needed,
+            family=config.family,
+            stages=plan["stages"],
+            crop_frames=crop_frames,
         )
     with (
         campaign_lock(project),
@@ -347,6 +443,7 @@ def run_corpus(
                     normalize_overflow=True,
                     validation_sources=reserved,
                     progress=progress("preprocess"),
+                    compact_cache=compact_cache,
                 )
                 console.close()
                 status("extract")
@@ -398,10 +495,12 @@ def run_corpus(
                             precision=resolved_precision,
                             device=str(target_device),
                             seed=seed,
-                            crop_frames=128,
+                            crop_frames=crop_frames,
                             learning_rate=2e-4,
                             checkpoint_every=checkpoint_every,
                             stop_requested=stopped,
+                            sampling_mode=sampling_mode,
+                            validation_limit=validation_limit,
                         ):
                             now = time.monotonic()
                             # Console/TensorBoard still receive every update; the
@@ -428,7 +527,9 @@ def run_corpus(
                         str(export),
                         str(vocoder_path),
                         str(project / "evaluation" / stage / "matched"),
-                        budgets=[0]
+                        budgets=[0, 1, 2, 4, 8, 16, 32]
+                        if joint
+                        else [0]
                         if stage == "predictor"
                         else [0, 8]
                         if stage == "flow"
