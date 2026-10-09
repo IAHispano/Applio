@@ -154,6 +154,8 @@ class Realtime_Pipeline:
         return f0 + (nearest - f0) * f0_autotune_strength
 
     def setup_f0(self, f0_method: str = "fcpe"):
+        if not self.use_f0:
+            return None
         if f0_method == "rmvpe":
 
             def _infer_from_audio(self, audio, thred=0.03):
