@@ -8,7 +8,7 @@ UnivHD, SAN):
   transposed upsamplers, with the NSF sine excitation at every stage.
 - `nsf-hifigan`: OpenVPI SingingVocoders' NSF-HiFiGAN.
 
-Both render a log mel plus f0 to 44.1 kHz audio.
+Both render a log mel plus f0 to 32 kHz audio.
 
 ## Requirements
 
@@ -29,7 +29,7 @@ A filelist with one clip per row:
 path/to/clip.wav|path/to/clip.f0.npy
 ```
 
-- audio at the config's sample rate (44.1 kHz), any format `soundfile` reads;
+- audio at the config's sample rate (32 kHz), any format `soundfile` reads;
 - f0 in Hz as a `.npy` at 100 frames per second, 0 where unvoiced.
 
 An RVC `filelist.txt` (`audio|features|f0|f0_voiced|speaker`) works as it is:

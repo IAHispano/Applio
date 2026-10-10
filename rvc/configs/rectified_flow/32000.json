@@ -1,15 +1,15 @@
 {
   "data": {
-    "sample_rate": 44100,
-    "hop_length": 512,
-    "n_fft": 2048,
-    "win_length": 2048,
-    "n_mels": 140,
+    "sample_rate": 32000,
+    "hop_length": 320,
+    "n_fft": 1536,
+    "win_length": 1536,
+    "n_mels": 128,
     "mel_fmin": 40.0,
-    "mel_fmax": 22050.0,
+    "mel_fmax": 16000.0,
     "mel_mean": -5.7,
-    "mel_std": 2.6,
-    "content_interpolation": "linear"
+    "mel_std": 2.4,
+    "content_interpolation": "nearest"
   },
   "flow": {
     "seed": 1234,

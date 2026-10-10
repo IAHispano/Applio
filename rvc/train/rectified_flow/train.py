@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 
 os.environ["USE_LIBUV"] = "0" if sys.platform == "win32" else "1"
@@ -125,11 +126,25 @@ except FileNotFoundError:
     )
     sys.exit(1)
 
+# The experiment's config is RVC's, Rectified Flow keeps its own beside it
 if "flow" not in config:
-    print(
-        "This model was not extracted for Rectified Flow. Preprocess and extract it again with the 44100 sampling rate."
+    flow_config_path = os.path.join(
+        current_dir,
+        "rvc",
+        "configs",
+        "rectified_flow",
+        f"{config['data']['sample_rate']}.json",
     )
-    sys.exit(1)
+    flow_config_save_path = os.path.join(experiment_dir, "rectified_flow.json")
+    if not os.path.exists(flow_config_save_path):
+        if not os.path.exists(flow_config_path):
+            print(
+                "Rectified Flow does not support this sampling rate. Preprocess and extract the model again with the 32000 sampling rate."
+            )
+            sys.exit(1)
+        shutil.copyfile(flow_config_path, flow_config_save_path)
+    with open(flow_config_save_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
 
 # Without the feature cache the dataset is augmented as it is read
 if not feature_cache:

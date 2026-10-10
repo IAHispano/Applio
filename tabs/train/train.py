@@ -398,7 +398,7 @@ def train_tab():
                 vocoder = gr.Radio(
                     label=i18n("Vocoder"),
                     info=i18n(
-                        "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only.\n- **Rectified Flow**: Highest audio quality and fast training, 44100 Hz only."
+                        "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only.\n- **Rectified Flow**: Highest audio quality and fast training, 32000 Hz only."
                     ),
                     choices=[
                         "HiFi-GAN",
@@ -985,9 +985,9 @@ def train_tab():
                     }
                 elif rectified_flow:
                     sampling_rate_update = {
-                        "choices": ["44100"],
+                        "choices": ["32000"],
                         "__type__": "update",
-                        "value": "44100",
+                        "value": "32000",
                     }
                 else:
                     sampling_rate_update = {

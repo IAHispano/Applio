@@ -1,12 +1,12 @@
 {
     "data": {
-        "sample_rate": 44100,
-        "hop_length": 512,
-        "n_fft": 2048,
-        "win_length": 2048,
-        "n_mels": 140,
+        "sample_rate": 32000,
+        "hop_length": 320,
+        "n_fft": 1536,
+        "win_length": 1536,
+        "n_mels": 128,
         "mel_fmin": 40.0,
-        "mel_fmax": 22050.0
+        "mel_fmax": 16000.0
     },
     "vocoder": {
         "architecture": "nsf-hifigan",
@@ -21,7 +21,7 @@
         "warmup_steps": 0,
         "adv_warmup_steps": 0,
         "ema_decay": 0.999,
-        "segment_size": 10240,
+        "segment_size": 7680,
         "c_mel": 5.0,
         "c_fm": 2.0,
         "average_heads": true,
@@ -34,8 +34,8 @@
         "model": {
             "mini_nsf": false,
             "noise_sigma": 0.0,
-            "upsample_rates": [8, 8, 2, 2, 2],
-            "upsample_kernel_sizes": [16, 16, 4, 4, 4],
+            "upsample_rates": [10, 8, 2, 2],
+            "upsample_kernel_sizes": [20, 16, 4, 4],
             "upsample_initial_channel": 512,
             "resblock": "1",
             "resblock_kernel_sizes": [3, 7, 11],
@@ -52,7 +52,7 @@
             "d_r1_gamma": 0,
             "d_r1_interval": 16,
             "d_r1_batch_fraction": 0.5,
-            "d_r1_segment": 8704
+            "d_r1_segment": 6400
         }
     }
 }
