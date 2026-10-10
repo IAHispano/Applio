@@ -2,6 +2,7 @@ import os
 import shutil
 from random import shuffle
 from rvc.configs.config import Config
+from rvc.lib.user_config import get_logs_dir
 import json
 
 config = Config()
@@ -38,12 +39,31 @@ def generate_filelist(model_path: str, sample_rate: int, include_mutes: int = 2)
     except:
         embedder_name = "contentvec"
 
+    def find_mute_base(sub_dir: str) -> str:
+        candidates = [
+            os.path.join(get_logs_dir(), sub_dir),
+            os.path.join(
+                os.path.abspath(
+                    os.path.join(os.path.dirname(__file__), "..", "..", "..")
+                ),
+                "logs",
+                sub_dir,
+            ),
+        ]
+        code_root = os.environ.get("APPLIO_CODE_ROOT") or os.environ.get("APPLIO_ROOT")
+        if code_root:
+            candidates.insert(1, os.path.join(code_root, "logs", sub_dir))
+        for cand in candidates:
+            if os.path.exists(cand):
+                return cand
+        return candidates[0]
+
     if embedder_name == "spin":
-        mute_base_path = os.path.join(current_directory, "logs", "mute_spin")
+        mute_base_path = find_mute_base("mute_spin")
     elif embedder_name == "spin-v2":
-        mute_base_path = os.path.join(current_directory, "logs", "mute_spin-v2")
+        mute_base_path = find_mute_base("mute_spin-v2")
     else:
-        mute_base_path = os.path.join(current_directory, "logs", "mute")
+        mute_base_path = find_mute_base("mute")
 
     options = []
     sids = []
@@ -52,34 +72,43 @@ def generate_filelist(model_path: str, sample_rate: int, include_mutes: int = 2)
         if sid not in sids:
             sids.append(sid)
 
-        # Calculate relative pathing
-        rel_wav = os.path.relpath(f"{os.path.join(gt_wavs_dir, name)}.wav")
-        rel_feat = os.path.relpath(f"{os.path.join(feature_dir, name)}.npy")
-        rel_f0 = os.path.relpath(f"{os.path.join(f0_dir, name)}.wav.npy")
-        rel_f0nsf = os.path.relpath(f"{os.path.join(f0nsf_dir, name)}.wav.npy")
+        # Absolute paths support datasets and features on a different drive.
+        rel_wav = os.path.abspath(f"{os.path.join(gt_wavs_dir, name)}.wav")
+        rel_feat = os.path.abspath(f"{os.path.join(feature_dir, name)}.npy")
+        rel_f0 = os.path.abspath(f"{os.path.join(f0_dir, name)}.wav.npy")
+        rel_f0nsf = os.path.abspath(f"{os.path.join(f0nsf_dir, name)}.wav.npy")
 
         options.append(
             f"{rel_wav}|{rel_feat}|{rel_f0}|{rel_f0nsf}|{sid}".replace("\\", "/")
         )
 
     if include_mutes > 0:
-        mute_audio_path = os.path.relpath(
-            os.path.join(mute_base_path, "sliced_audios", f"mute{sample_rate}.wav")
+        mute_audio_raw = os.path.join(
+            mute_base_path, "sliced_audios", f"mute{sample_rate}.wav"
         )
-        mute_feature_path = os.path.relpath(
-            os.path.join(mute_base_path, f"extracted", "mute.npy")
-        )
-        mute_f0_path = os.path.relpath(
-            os.path.join(mute_base_path, "f0", "mute.wav.npy")
-        )
-        mute_f0nsf_path = os.path.relpath(
-            os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")
-        )
+        mute_feature_raw = os.path.join(mute_base_path, "extracted", "mute.npy")
+        mute_f0_raw = os.path.join(mute_base_path, "f0", "mute.wav.npy")
+        mute_f0nsf_raw = os.path.join(mute_base_path, "f0_voiced", "mute.wav.npy")
 
-        # adding x files per sid
-        for sid in sids * include_mutes:
-            options.append(
-                f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}"
+        if (
+            os.path.exists(mute_audio_raw)
+            and os.path.exists(mute_feature_raw)
+            and os.path.exists(mute_f0_raw)
+            and os.path.exists(mute_f0nsf_raw)
+        ):
+            mute_audio_path = os.path.abspath(mute_audio_raw).replace("\\", "/")
+            mute_feature_path = os.path.abspath(mute_feature_raw).replace("\\", "/")
+            mute_f0_path = os.path.abspath(mute_f0_raw).replace("\\", "/")
+            mute_f0nsf_path = os.path.abspath(mute_f0nsf_raw).replace("\\", "/")
+
+            # adding x files per sid
+            for sid in sids * include_mutes:
+                options.append(
+                    f"{mute_audio_path}|{mute_feature_path}|{mute_f0_path}|{mute_f0nsf_path}|{sid}"
+                )
+        else:
+            print(
+                f"Warning: Mute files missing in '{mute_base_path}', skipping mute inclusion."
             )
 
     file_path = os.path.join(model_path, "model_info.json")

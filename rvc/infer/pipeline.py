@@ -1,5 +1,9 @@
 import os
 import sys
+
+if sys.platform == "darwin":
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+
 import torch
 import torch.nn.functional as F
 import torchcrepe
@@ -12,7 +16,7 @@ from torch import Tensor
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE, Swift
+from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE, SWIFT
 
 import logging
 
@@ -195,6 +199,7 @@ class Pipeline:
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
         self.device = config.device
         self.autotune = Autotune()
+        self.f0_models = {}
 
     def get_f0(
         self,
@@ -213,13 +218,46 @@ class Pipeline:
         Args:
             x: The input audio signal as a NumPy array.
             p_len: Desired length of the F0 output.
-            pitch: Key to adjust the pitch of the F0 contour.
+            f0_up_key: Key to adjust the pitch of the F0 contour.
             f0_method: Method to use for F0 estimation (e.g., "crepe").
+            filter_radius: Filter radius for smoothing F0.
+            inp_f0: Input F0 contour if provided.
             f0_autotune: Whether to apply autotune to the F0 contour.
+            f0_autotune_strength: Strength of autotune.
             proposed_pitch: whether to apply proposed pitch adjustment
             proposed_pitch_threshold: target frequency, 155.0 for male, 255.0 for female
         """
-        if f0_method == "crepe":
+        global f0_mel_min, f0_mel_max
+        x = x.astype(np.float32)
+        x /= np.quantile(np.abs(x), 0.999)
+        if f0_method == "pm":
+            f0 = (
+                parselmouth.Sound(x, self.sample_rate)
+                .to_pitch_ac(
+                    time_step=self.time_step / 1000,
+                    voicing_threshold=0.6,
+                    pitch_floor=self.f0_min,
+                    pitch_ceiling=self.f0_max,
+                )
+                .selected_array["frequency"]
+            )
+            pad_size = (p_len - len(f0) + 1) // 2
+            if pad_size > 0 or p_len - len(f0) - pad_size > 0:
+                f0 = np.pad(
+                    f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
+                )
+        elif f0_method == "harvest":
+            f0, t = pyworld.harvest(
+                x.astype(np.double),
+                fs=self.sample_rate,
+                f0_ceil=self.f0_max,
+                f0_floor=self.f0_min,
+                frame_period=10,
+            )
+            f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sample_rate)
+            f0 = signal.medfilt(f0, 3)
+            f0 = f0[1:]
+        elif f0_method == "crepe":
             model = CREPE(
                 device=self.device, sample_rate=self.sample_rate, hop_size=self.window
             )
@@ -232,28 +270,40 @@ class Pipeline:
             f0 = model.get_f0(x, self.f0_min, self.f0_max, p_len, "tiny")
             del model
         elif f0_method == "rmvpe":
-            model = RMVPE(
-                device=self.device, sample_rate=self.sample_rate, hop_size=self.window
-            )
-            f0 = model.get_f0(x, filter_radius=0.03)
-            del model
+            if "rmvpe" not in self.f0_models:
+                self.f0_models["rmvpe"] = RMVPE(
+                    device=self.device,
+                    sample_rate=self.sample_rate,
+                    hop_size=self.window,
+                )
+            f0 = self.f0_models["rmvpe"].get_f0(x, filter_radius=0.03)
         elif f0_method == "fcpe":
-            model = FCPE(
-                device=self.device, sample_rate=self.sample_rate, hop_size=self.window
+            if "fcpe" not in self.f0_models:
+                self.f0_models["fcpe"] = FCPE(
+                    device=self.device,
+                    sample_rate=self.sample_rate,
+                    hop_size=self.window,
+                )
+            f0 = self.f0_models["fcpe"].get_f0(x, p_len, filter_radius=0.006)
+        elif f0_method in ("swift", "swiftf0", "swift-f0"):
+            if "swift" not in self.f0_models:
+                self.f0_models["swift"] = SWIFT(
+                    device=self.device,
+                    sample_rate=self.sample_rate,
+                    hop_size=self.window,
+                )
+            f0 = self.f0_models["swift"].get_f0(
+                x,
+                p_len=p_len,
+                f0_min=self.f0_min,
+                f0_max=self.f0_max,
+                filter_radius=0.5,
             )
-            f0 = model.get_f0(x, p_len, filter_radius=0.006)
-            del model
-        elif f0_method == "swift":
-            model = Swift(
-                device=self.device, sample_rate=self.sample_rate, hop_size=self.window
-            )
-            f0 = model.get_f0(x, p_len, self.f0_min, self.f0_max)
-            del model
 
         # f0 adjustments
         if f0_autotune is True:
             f0 = self.autotune.autotune_f0(f0, f0_autotune_strength)
-        elif proposed_pitch is True:
+        if proposed_pitch is True:
             limit = 12
             # calculate median f0 of the audio
             valid_f0 = np.where(f0 > 0)[0]
@@ -376,8 +426,6 @@ class Pipeline:
             )
             # clean up
             del feats, feats0, p_len
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
         return audio1
 
     def _retrieve_speaker_embeddings(self, feats, index, big_npy, index_rate):

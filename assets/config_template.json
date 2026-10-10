@@ -26,5 +26,6 @@
     "client_input_device": "",
     "client_output_device": "",
     "client_monitor_device": ""
-  }
+  },
+  "logs_dir": ""
 }

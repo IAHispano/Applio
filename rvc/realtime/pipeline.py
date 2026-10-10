@@ -11,11 +11,17 @@ import torchcrepe
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+
+class CudaGraphCaptureError(RuntimeError):
+    """The service must restart before it can safely use eager CUDA inference."""
+
+
 from rvc.realtime.utils.torch import circular_write, AudioProcessorTorch, IndexWrapper
+from rvc.realtime.utils.fcpe import RealtimeMel, local_decoder
 from rvc.configs.config import Config
 from rvc.infer.pipeline import Autotune
 from rvc.lib.algorithm.synthesizers import Synthesizer
-from rvc.lib.predictors.f0 import FCPE, RMVPE, Swift
+from rvc.lib.predictors.f0 import FCPE, RMVPE, SWIFT
 from rvc.lib.utils import load_embedding, HubertModelWithFinalProj
 
 
@@ -76,7 +82,6 @@ class RealtimeVoiceConverter:
             strip_parametrizations(self.net_g)
             self.net_g = self.net_g.to(self.config.device).to(self.dtype)
             self.net_g.eval()
-            # self.net_g.remove_weight_norm()
 
     def inference(
         self,
@@ -86,8 +91,11 @@ class RealtimeVoiceConverter:
         pitch: Tensor,
         pitchf: Tensor,
         rate: Tensor = None,
+        skip_head: int = None,
     ):
-        output = self.net_g.infer(feats, p_len, pitch, pitchf, sid, rate)[0][0, 0]
+        output = self.net_g.infer(feats, p_len, pitch, pitchf, sid, rate, skip_head)[0][
+            0, 0
+        ]
 
         return torch.clip(output, -1.0, 1.0, out=output)
 
@@ -122,8 +130,20 @@ class Realtime_Pipeline:
         self.f0_model = self.setup_f0(self.f0_method)
         self.dtype = vc.dtype
         # Reuse scalar tensors to avoid per-block allocations.
-        self._rate_tensor = torch.zeros(1, device=self.device, dtype=torch.float32)
         self._p_len_tensor = torch.zeros(1, device=self.device, dtype=torch.int64)
+        self._graph_cache = None
+        self._graph_failed = False
+        gpu_name = (vc.config.gpu_name or "").upper()
+        self._graph_supported = (
+            str(self.device).startswith("cuda")
+            and "NVIDIA" in gpu_name
+            and not getattr(torch.version, "hip", None)
+            and "ZLUDA" not in gpu_name
+            and os.environ.get("APPLIO_DISABLE_CUDA_GRAPHS") != "1"
+            # Opt in only for services whose supervisor can recover by
+            # replacing the process after an invalid CUDA capture.
+            and os.environ.get("APPLIO_ENABLE_CUDA_GRAPHS") == "1"
+        )
 
     def autotune_f0(self, f0, f0_autotune_strength):
         notes = torch.as_tensor(
@@ -185,8 +205,15 @@ class Realtime_Pipeline:
                 sample_rate=self.sample_rate,
                 hop_size=self.window,
             )
-        elif f0_method == "swift":
-            f0_model = Swift(
+            f0_model.model.wav2mel.mel_extractor = RealtimeMel(
+                f0_model.model.wav2mel.mel_extractor
+            )
+            f0_model.model.model.latent2cents_local_decoder = types.MethodType(
+                local_decoder, f0_model.model.model
+            )
+            strip_parametrizations(f0_model.model)
+        elif f0_method in ("swift", "swiftf0", "swift-f0"):
+            f0_model = SWIFT(
                 device=self.device,
                 sample_rate=self.sample_rate,
                 hop_size=self.window,
@@ -220,14 +247,16 @@ class Realtime_Pipeline:
                 decoder_mode="local_argmax",
                 threshold=0.006,
             ).squeeze()
-        elif self.f0_method == "swift":
-            f0 = (
-                torch.from_numpy(
-                    self.f0_model.get_f0(x, f0_min=self.f0_min, f0_max=self.f0_max)
-                )
-                .to(self.device)
-                .float()
+        elif self.f0_method in ("swift", "swiftf0", "swift-f0"):
+            p_len = x.shape[0] // self.window
+            f0 = self.f0_model.get_f0(
+                x,
+                p_len=p_len,
+                f0_min=self.f0_min,
+                f0_max=self.f0_max,
+                filter_radius=0.5,
             )
+            f0 = torch.from_numpy(f0).float().to(self.device)
         elif self.f0_method in ("crepe", "crepe-tiny"):
             f0, pd = torchcrepe.predict(
                 x.float().to(self.device).unsqueeze(dim=0),
@@ -307,7 +336,7 @@ class Realtime_Pipeline:
 
         return pitch.unsqueeze(0), pitchf.unsqueeze(0)
 
-    def voice_conversion(
+    def _voice_conversion(
         self,
         audio: Tensor,
         pitch: Tensor = None,
@@ -347,6 +376,11 @@ class Realtime_Pipeline:
                 )
                 if self.f0_method == "rmvpe":
                     f0_frame = 5120 * ((f0_frame - 1) // 5120 + 1) - 160
+                elif self.f0_method == "fcpe":
+                    # Chunk duration should control latency, not pitch quality.
+                    # Keep the default 250ms block's 300ms analysis history even
+                    # when streaming much smaller blocks; no lookahead is added.
+                    f0_frame = max(f0_frame, 4800)
                 f0_frame = min(f0_frame, audio.shape[0])
 
                 f0_coarse_new, f0_new = self.get_f0(
@@ -386,11 +420,11 @@ class Realtime_Pipeline:
 
             feats = torch.cat((feats, feats[:, -1:, :]), 1)
             # make a copy for pitch guidance and protection
-            feats0 = feats.detach().clone() if self.use_f0 else None
+            feats0 = feats.detach().clone() if self.use_f0 and protect < 0.5 else None
 
             try:
                 if (
-                    self.index and index_rate > 0
+                    self.index and self.big_tsr is not None and index_rate > 0
                 ):  # set by parent function, only true if index is available, loaded, and index rate > 0
                     feats = self._retrieve_speaker_embeddings(
                         skip_head, feats, self.index, self.big_tsr, index_rate
@@ -405,9 +439,10 @@ class Realtime_Pipeline:
             )[:, :p_len, :]
 
             if self.use_f0:
-                feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
-                    0, 2, 1
-                )[:, :p_len, :]
+                if feats0 is not None:
+                    feats0 = F.interpolate(
+                        feats0.permute(0, 2, 1), scale_factor=2
+                    ).permute(0, 2, 1)[:, :p_len, :]
                 pitch_p = pitch[-p_len:].unsqueeze(0)
                 pitchf_p = pitchf[-p_len:].unsqueeze(0) * (
                     formant_length / return_length
@@ -427,7 +462,11 @@ class Realtime_Pipeline:
 
             pitchf_p = pitchf_p.to(self.dtype) if self.use_f0 else None
             # Trim oldest context so model output covers only the current block.
-            self._rate_tensor.fill_(return_length / p_len)
+            # Match the legacy float32 rate rounding without a GPU .item()
+            # synchronization inside the synthesizer.
+            head = int(
+                feats.shape[1] * (1.0 - float(np.float32(return_length / p_len)))
+            )
             self._p_len_tensor.fill_(p_len)
             out_audio = self.vc.inference(
                 feats,
@@ -435,7 +474,8 @@ class Realtime_Pipeline:
                 self.torch_sid,
                 pitch_p,
                 pitchf_p,
-                self._rate_tensor,
+                None,
+                head,
             )
             # Match output RMS to the current block's input RMS.
             if volume_envelope < 1:
@@ -460,6 +500,66 @@ class Realtime_Pipeline:
 
         return out_audio.float()
 
+    def voice_conversion(self, audio, pitch=None, pitchf=None, *args, **kwargs):
+        # Graphs eliminate hundreds of host kernel submissions per block. Keep
+        # eager execution for CPU/AMD and effects that transfer audio to the CPU.
+        proposed = args[10] if len(args) > 10 else kwargs.get("proposed_pitch", False)
+        noise = args[12] if len(args) > 12 else kwargs.get("reduced_noise")
+        board = args[13] if len(args) > 13 else kwargs.get("board")
+        if (
+            not self._graph_supported
+            or self._graph_failed
+            or self.f0_method not in ("fcpe", "rmvpe")
+            or proposed
+            or noise is not None
+            or board is not None
+        ):
+            self._graph_cache = None
+            return self._voice_conversion(audio, pitch, pitchf, *args, **kwargs)
+        key = (
+            audio.data_ptr(),
+            pitch.data_ptr() if pitch is not None else None,
+            pitchf.data_ptr() if pitchf is not None else None,
+            tuple(args),
+            tuple(sorted(kwargs.items())),
+            id(self.vc.net_g),
+            id(self.hubert_model),
+            id(self.f0_model),
+            id(self.big_tsr),
+            id(self.torch_sid),
+        )
+        if self._graph_cache is None or self._graph_cache[0] != key:
+            self._graph_cache = None  # Release the previous graph's workspace.
+            saved_pitch = pitch.clone() if pitch is not None else None
+            saved_pitchf = pitchf.clone() if pitchf is not None else None
+            original_stream = torch.cuda.current_stream(self.device)
+            try:
+                for _ in range(3):
+                    self._voice_conversion(audio, pitch, pitchf, *args, **kwargs)
+                graph = torch.cuda.CUDAGraph()
+                with torch.cuda.graph(graph):
+                    output = self._voice_conversion(
+                        audio, pitch, pitchf, *args, **kwargs
+                    )
+                self._graph_cache = (key, graph, output)
+            except (RuntimeError, torch.OutOfMemoryError) as error:
+                self._graph_failed = True
+                raise CudaGraphCaptureError(
+                    "CUDA graph capture failed; restart with eager inference"
+                ) from error
+            finally:
+                # torch.cuda.graph's context can fail in capture_end before it
+                # restores its side stream. Eager fallback must use the caller's
+                # stream, even after a capture was invalidated.
+                torch.cuda.set_stream(original_stream)
+                if saved_pitch is not None and not self._graph_failed:
+                    pitch.copy_(saved_pitch)
+                    pitchf.copy_(saved_pitchf)
+        if self._graph_cache is None:
+            return self._voice_conversion(audio, pitch, pitchf, *args, **kwargs)
+        self._graph_cache[1].replay()
+        return self._graph_cache[2]
+
     def _retrieve_speaker_embeddings(
         self,
         skip_head,
@@ -468,20 +568,10 @@ class Realtime_Pipeline:
         big_tsr: torch.Tensor,
         index_rate: float,
     ):
-        # skip_offset = skip_head // 2
-        # npy = feats[0][skip_offset:].cpu().numpy()
-        # if self.dtype == torch.float16:
         #     npy = npy.astype(np.float32)
-        # score, ix = index.search(npy, k=8)
-        # weight = np.square(1 / score)
-        # weight /= weight.sum(axis=1, keepdims=True)
-        # npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
-        # if self.dtype == torch.float16:
         #     npy = npy.astype(np.float16)
-        # feats[0][skip_offset:] = (
         #     torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
         #     + (1 - index_rate) * feats[0][skip_offset:]
-        # )
         skip_offset = skip_head // 2
         tsr = feats[0][skip_offset:]
         score, ix = index.search(tsr, k=8)
@@ -517,10 +607,10 @@ def create_pipeline(
     #     .strip('"')
     #     .strip()
     #     .replace("trained", "added")
-    # )
 
     index = IndexWrapper(
-        index_path.strip()
+        (index_path or "")
+        .strip()
         .strip('"')
         .strip("\n")
         .strip('"')
@@ -532,6 +622,7 @@ def create_pipeline(
     big_tsr, _ = index.read_index_tensor()
 
     hubert_model = load_embedding(embedder_model, embedder_model_custom)
+    strip_parametrizations(hubert_model)
     hubert_model = hubert_model.to(vc.config.device).to(vc.dtype)
     hubert_model.eval()
 
@@ -552,9 +643,10 @@ def strip_parametrizations(module: torch.nn.Module):
     Remove all parametrizations (e.g., weight norm) from a module and log each removal.
     """
     for name, submodule in module.named_modules():
+        if hasattr(submodule, "weight_g") and hasattr(submodule, "weight_v"):
+            torch.nn.utils.remove_weight_norm(submodule)
         if hasattr(submodule, "parametrizations"):
             for pname, plist in list(submodule.parametrizations.items()):
-                # print(f"Removing parametrizations from {name}.{pname}: {[p.__class__.__name__ for p in plist]}")
                 torch.nn.utils.parametrize.remove_parametrizations(
                     submodule, pname, leave_parametrized=True
                 )

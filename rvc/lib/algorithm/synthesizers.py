@@ -211,6 +211,7 @@ class Synthesizer(torch.nn.Module):
         nsff0: Optional[torch.Tensor] = None,
         sid: torch.Tensor = None,
         rate: Optional[torch.Tensor] = None,
+        skip_head: Optional[int] = None,
     ):
         """
         Inference of the model.
@@ -227,8 +228,13 @@ class Synthesizer(torch.nn.Module):
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
         z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
 
-        if rate is not None:
+        if skip_head is not None:
+            head = skip_head
+        elif rate is not None:
             head = int(z_p.shape[2] * (1.0 - rate.item()))
+        else:
+            head = 0
+        if skip_head is not None or rate is not None:
             z_p, x_mask = z_p[:, :, head:], x_mask[:, :, head:]
             if self.use_f0 and nsff0 is not None:
                 nsff0 = nsff0[:, head:]

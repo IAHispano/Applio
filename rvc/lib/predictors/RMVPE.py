@@ -435,6 +435,19 @@ class RMVPE0Predictor:
         self.model = model
         self.resample_kernel = {}
         self.device = device
+        if (
+            torch.cuda.is_available()
+            and self.device is not None
+            and str(self.device).startswith("cuda")
+            and (
+                getattr(torch.version, "hip", None) is not None
+                or "AMD" in torch.cuda.get_device_name(self.device).upper()
+                or "RADEON" in torch.cuda.get_device_name(self.device).upper()
+                or torch.cuda.get_device_name(self.device).endswith("[ZLUDA]")
+            )
+        ):
+            torch.backends.cudnn.enabled = False
+            torch.backends.cudnn.benchmark = False
         self.mel_extractor = MelSpectrogram(
             N_MELS, 16000, 1024, 160, None, 30, 8000
         ).to(device)
@@ -451,34 +464,48 @@ class RMVPE0Predictor:
         """
         with torch.no_grad():
             n_frames = mel.shape[-1]
-            # print('n_frames', n_frames)
-            # print('mel shape before padding', mel.shape)
             mel = F.pad(
                 mel, (0, 32 * ((n_frames - 1) // 32 + 1) - n_frames), mode="reflect"
             )
-            # print('mel shape after padding', mel.shape)
 
             output_chunks = []
             pad_frames = mel.shape[-1]
+            fallback_cpu = False
             for start in range(0, pad_frames, chunk_size):
-                # print('chunk @', start)
                 end = min(start + chunk_size, pad_frames)
                 mel_chunk = mel[..., start:end]
                 assert (
                     mel_chunk.shape[-1] % 32 == 0
                 ), "chunk_size must be divisible by 32"
-                # print(' before padding', mel_chunk.shape)
-                # mel_chunk = F.pad(mel_chunk, (320, 320), mode="reflect")
-                # print(' after padding', mel_chunk.shape)
 
-                out_chunk = self.model(mel_chunk)
-                # print(' result chunk', out_chunk.shape)
-                # out_chunk = out_chunk[:, 320:-320, :]
-                # print(' trimmed chunk', out_chunk.shape)
-                output_chunks.append(out_chunk)
+                if fallback_cpu:
+                    out_chunk = self.model(mel_chunk.cpu())
+                    output_chunks.append(out_chunk.cpu())
+                    continue
+
+                try:
+                    out_chunk = self.model(mel_chunk)
+                    output_chunks.append(out_chunk)
+                except Exception as e:
+                    if str(self.device).startswith("cuda") and any(
+                        k in str(e).lower()
+                        for k in ("miopen", "hiprtc", "statusunknown")
+                    ):
+                        print(
+                            f"[!] Warning: MIOpen execution failed during RMVPE forward ({e}). "
+                            "Falling back to CPU for RMVPE. (On AMD Windows, install Visual Studio C++ Build Tools with 'Desktop development with C++' to enable GPU MIOpen kernels)."
+                        )
+                        fallback_cpu = True
+                        self.device = "cpu"
+                        self.model = self.model.to("cpu")
+                        self.mel_extractor = self.mel_extractor.to("cpu")
+                        output_chunks = [c.cpu() for c in output_chunks]
+                        out_chunk = self.model(mel_chunk.cpu())
+                        output_chunks.append(out_chunk.cpu())
+                    else:
+                        raise e
 
             hidden = torch.cat(output_chunks, dim=1)
-        # print('output', hidden[:, :n_frames].shape)
         return hidden[:, :n_frames]
 
     def decode(self, hidden, thred=0.03):
@@ -494,6 +521,7 @@ class RMVPE0Predictor:
         f0[f0 == 10] = 0
         return f0
 
+    @torch.inference_mode()
     def infer_from_audio(self, audio, thred=0.03):
         """
         Infers F0 from audio.
@@ -502,15 +530,33 @@ class RMVPE0Predictor:
             audio (np.ndarray): Audio signal.
             thred (float, optional): Threshold for salience. Defaults to 0.03.
         """
-        audio = torch.from_numpy(audio).float().to(self.device).unsqueeze(0)
-        mel = self.mel_extractor(audio, center=True)
-        del audio
-        with torch.no_grad():
-            torch.cuda.empty_cache()
-        hidden = self.mel2hidden(mel)
-        hidden = hidden.squeeze(0).cpu().numpy()
-        f0 = self.decode(hidden, thred=thred)
-        return f0
+        try:
+            audio_t = torch.from_numpy(audio).float().to(self.device).unsqueeze(0)
+            mel = self.mel_extractor(audio_t, center=True)
+            del audio_t
+            hidden = self.mel2hidden(mel)
+            hidden = hidden.squeeze(0).cpu().numpy()
+            f0 = self.decode(hidden, thred=thred)
+            return f0
+        except Exception as e:
+            if str(self.device).startswith("cuda") and any(
+                k in str(e).lower() for k in ("miopen", "hiprtc", "statusunknown")
+            ):
+                print(
+                    f"[!] Warning: RMVPE GPU inference failed on {self.device} ({e}). "
+                    "Falling back to CPU for RMVPE. (On AMD Windows, install Visual Studio C++ Build Tools with 'Desktop development with C++' to enable GPU MIOpen kernels)."
+                )
+                self.device = "cpu"
+                self.model = self.model.to("cpu")
+                self.mel_extractor = self.mel_extractor.to("cpu")
+                audio_t = torch.from_numpy(audio).float().to("cpu").unsqueeze(0)
+                mel = self.mel_extractor(audio_t, center=True)
+                del audio_t
+                hidden = self.mel2hidden(mel)
+                hidden = hidden.squeeze(0).cpu().numpy()
+                f0 = self.decode(hidden, thred=thred)
+                return f0
+            raise e
 
     def to_local_average_cents(self, salience, thred=0.05):
         """

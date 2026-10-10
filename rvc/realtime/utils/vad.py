@@ -22,7 +22,6 @@ class VADProcessor:
         self.vad = webrtcvad.Vad(sensitivity_mode)
         self.sample_rate = sample_rate
         self.frame_length = int(sample_rate * (frame_duration_ms / 1000.0))
-        # print(f"VAD Initialized: SR={sample_rate}, Frame Duration={frame_duration_ms}ms, Frame Length={self.frame_length} samples")
 
     def is_speech(self, audio_chunk_float32):
         """

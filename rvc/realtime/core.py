@@ -24,6 +24,7 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from rvc.realtime.utils.torch import circular_write
+from rvc.lib.user_config import resolve_logs_path
 from rvc.realtime.utils.vad import VADProcessor
 from rvc.realtime.pipeline import create_pipeline
 
@@ -125,6 +126,8 @@ class Realtime:
         self.input_sensitivity = 10 ** (silent_threshold / 20)
         self.window_size = self.sample_rate // 100
         self.kwargs = None
+        model_path = resolve_logs_path(model_path)
+        index_path = resolve_logs_path(index_path)
         self.model_path = model_path
         self.index_path = index_path
         self.embedder_model = embedder_model
@@ -266,8 +269,9 @@ class Realtime:
         self.silence_front = (
             extra_frame_16k - (self.window_size * 5) if self.silence_front else 0
         )
-        # Number of blocks to fill convert_buffer before enabling model output.
-        self.warmup_blocks = int(np.ceil(convert_size_16k / block_frame_16k)) + 1
+        # Extra context is zero-padded history, not an output delay. Converting
+        # the current block immediately avoids seconds of forced startup silence.
+        self.warmup_blocks = 0
         # Audio buffer to measure volume between chunks
         audio_buffer_size = block_frame_16k + crossfade_frame_16k
         self.audio_buffer = torch.zeros(
@@ -312,36 +316,6 @@ class Realtime:
 
         board = self.board
         reduced_noise = self.reduced_noise
-
-        # Fill convert_buffer with real audio, output zeros during warmup.
-        if self.warmup_blocks > 0:
-            self.warmup_blocks -= 1
-            circular_write(audio_input_16k, self.convert_buffer)
-            audio_model = self.pipeline.voice_conversion(
-                self.convert_buffer,
-                self.pitch_buffer,
-                self.pitchf_buffer,
-                f0_up_key,
-                index_rate,
-                self.convert_feature_size_16k,
-                self.silence_front,
-                self.skip_head,
-                self.return_length,
-                protect,
-                volume_envelope,
-                f0_autotune,
-                f0_autotune_strength,
-                proposed_pitch,
-                proposed_pitch_threshold,
-                reduced_noise,
-                board,
-                block_size_16k=self.block_frame_16k,
-            )
-            return (
-                torch.zeros(audio_model.shape, dtype=torch.float32, device=self.device),
-                vol,
-                True,
-            )
 
         if self.vad is not None:
             is_speech = self.vad.is_speech(audio_input_16k.cpu().numpy().copy())
@@ -434,7 +408,8 @@ class Realtime:
         return audio_out, vol, False
 
     def __del__(self):
-        del self.pipeline
+        if hasattr(self, "pipeline"):
+            del self.pipeline
 
 
 class VoiceChanger:
@@ -573,9 +548,6 @@ class VoiceChanger:
                 self.soundfile.write(silence_output)
             return silence_output, vol
 
-        # Detect silence-to-speech transition for onset-aware fade-in.
-        is_onset = not self.sola_buffer.any()
-
         conv_input = audio[
             None, None, : self.crossfade_frame + self.sola_search_frame
         ].float()
@@ -595,6 +567,8 @@ class VoiceChanger:
                 self.fade_in_window,
             )
         else:
+            # Only the time-domain crossfade needs this host-side decision.
+            is_onset = not self.sola_buffer.any()
             if is_onset:
                 # Find voice onset position and apply sin² fade-in, zeroing audio before onset.
                 hop = 160  # ~3.3 ms at 48 kHz
@@ -640,6 +614,34 @@ class VoiceChanger:
             self.soundfile.write(audio_output)
 
         return audio_output, vol
+
+    def warmup(self, **kwargs):
+        # Silence gating normally bypasses output resampling and SOLA. Warm
+        # those kernels too, so the first spoken block has no cold-start stall.
+        model = self.vc_model
+        vad, threshold = model.vad, model.input_sensitivity
+        model.vad, model.input_sensitivity = None, -1
+        completed = False
+        try:
+            timings = []
+            for _ in range(5):
+                _, _, perf = self.on_request(
+                    np.zeros(self.block_frame, dtype=np.float32), **kwargs
+                )
+                timings.append(perf[1])
+            completed = True
+            return max(timings[-3:])
+        finally:
+            model.vad, model.input_sensitivity = vad, threshold
+            if completed:
+                for buffer in (
+                    model.audio_buffer,
+                    model.convert_buffer,
+                    model.pitch_buffer,
+                    model.pitchf_buffer,
+                    self.sola_buffer,
+                ):
+                    buffer.zero_()
 
     @torch.no_grad()
     def on_request(

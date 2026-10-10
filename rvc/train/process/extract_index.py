@@ -73,3 +73,4 @@ else:
 
     faiss.write_index(index_added, index_filepath_added)
     print(f"Saved index file '{index_filepath_added}'")
+    print(f"Index file for {model_name} generated successfully.")

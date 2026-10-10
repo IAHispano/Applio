@@ -2,7 +2,9 @@ import logging
 import threading
 from tensorboard import program
 
-log_path = "logs"
+from rvc.lib.user_config import get_logs_dir
+
+log_path = get_logs_dir()
 _tb_url = None
 _tb_thread = None
 _tb_ready = threading.Event()

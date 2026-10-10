@@ -1,5 +1,6 @@
 import os
 import torch
+from rvc.lib.user_config import get_logs_dir
 
 
 def change_info(path, info, name):
@@ -10,7 +11,7 @@ def change_info(path, info, name):
         if not name:
             name = os.path.splitext(os.path.basename(path))[0]
 
-        target_dir = os.path.join("logs", name)
+        target_dir = os.path.join(get_logs_dir(), name)
         os.makedirs(target_dir, exist_ok=True)
 
         torch.save(ckpt, os.path.join(target_dir, f"{name}.pth"))

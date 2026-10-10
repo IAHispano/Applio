@@ -11,10 +11,11 @@ from tqdm import tqdm
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+from rvc.lib.user_config import get_logs_dir
 from rvc.lib.utils import format_title
 from rvc.lib.tools import gdown
 
-file_path = os.path.join(now_dir, "logs")
+file_path = get_logs_dir()
 zips_path = os.path.join(file_path, "zips")
 os.makedirs(zips_path, exist_ok=True)
 
@@ -94,9 +95,12 @@ def save_response_content(response):
     total_size = int(response.headers.get("Content-Length", 0))
     chunk_size = 1024
 
-    with open(os.path.join(zips_path, file_name), "wb") as file, tqdm(
-        total=total_size, unit="B", unit_scale=True, desc=file_name
-    ) as progress_bar:
+    with (
+        open(os.path.join(zips_path, file_name), "wb") as file,
+        tqdm(
+            total=total_size, unit="B", unit_scale=True, desc=file_name
+        ) as progress_bar,
+    ):
         for data in response.iter_content(chunk_size):
             file.write(data)
             progress_bar.update(len(data))
@@ -177,7 +181,9 @@ def handle_extraction_process():
         if filename.endswith(".zip"):
             zipfile_path = os.path.join(zips_path, filename)
             model_name = format_title(os.path.basename(zipfile_path).split(".zip")[0])
-            extract_folder_path = os.path.join("logs", os.path.normpath(model_name))
+            extract_folder_path = os.path.join(
+                get_logs_dir(), os.path.normpath(model_name)
+            )
             success = extract(zipfile_path, extract_folder_path)
             clean_extracted_files(extract_folder_path, model_name)
 
@@ -223,3 +229,32 @@ def clean_extracted_files(extract_folder_path, model_name):
         destination_path = os.path.join(extract_folder_path, new_file_name)
         if not os.path.exists(destination_path):
             os.rename(source_path, destination_path)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Applio Model Downloader")
+    parser.add_argument(
+        "model_link", nargs="?", default=None, help="URL to download the model from"
+    )
+    parser.add_argument(
+        "--model-link",
+        dest="opt_link",
+        default=None,
+        help="URL to download the model from",
+    )
+    args = parser.parse_args()
+
+    link = args.model_link or args.opt_link
+    if not link:
+        print("Error: No model link provided.")
+        sys.exit(1)
+
+    result = model_download_pipeline(link)
+    if result == "Error" or result is None:
+        print(
+            "An error occurred downloading the model. Please check the console logs for more details."
+        )
+        sys.exit(1)
+    print("Model downloaded successfully.")

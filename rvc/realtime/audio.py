@@ -4,13 +4,28 @@ import librosa
 import traceback
 import numpy as np
 import sounddevice as sd
-from queue import Queue
+from queue import Empty, Full, Queue
 from dataclasses import dataclass
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from rvc.realtime.core import AUDIO_SAMPLE_RATE
+
+
+def queue_latest(queue, audio):
+    """Keep each playback stream bounded without blocking the input callback."""
+    try:
+        queue.put_nowait(audio)
+    except Full:
+        try:
+            queue.get_nowait()
+        except Empty:
+            pass
+        try:
+            queue.put_nowait(audio)
+        except Full:
+            pass
 
 
 @dataclass
@@ -135,8 +150,8 @@ class Audio:
         monitor: bool = False,
     ):
         self.callbacks = callbacks
-        self.out_queue = Queue()
-        self.mon_queue = Queue()
+        self.out_queue = Queue(maxsize=2)
+        self.mon_queue = Queue(maxsize=2)
         self.stream = None
         self.input_stream = None
         self.output_stream = None
@@ -197,9 +212,9 @@ class Audio:
         try:
             out_wav = self.process_data_with_time(indata)
 
-            self.out_queue.put(out_wav)
+            queue_latest(self.out_queue, out_wav)
             if self.use_monitor:
-                self.mon_queue.put(out_wav)
+                queue_latest(self.mon_queue, out_wav)
         except Exception as error:
             print(f"An error occurred while running the audio stream: {error}")
             print(traceback.format_exc())
@@ -212,7 +227,7 @@ class Audio:
 
             output_channels = outdata.shape[1]
             if self.use_monitor:
-                self.mon_queue.put(out_wav)
+                queue_latest(self.mon_queue, out_wav)
 
             outdata[:] = (
                 np.repeat(out_wav, output_channels).reshape(-1, output_channels)
@@ -226,9 +241,13 @@ class Audio:
         try:
             try:
                 mon_wav = q.get_nowait()
-                while not q.empty():
-                    mon_wav = q.get_nowait()
-            except Exception:
+                while True:
+                    try:
+                        latest = q.get_nowait()
+                    except Empty:
+                        break
+                    mon_wav = latest
+            except Empty:
                 outdata.fill(0)
                 return
 

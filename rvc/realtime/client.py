@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import math
 from fastapi import FastAPI, WebSocketDisconnect, WebSocket, Request
 import numpy as np
 import torch
@@ -9,10 +10,13 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from .core import VoiceChanger, AUDIO_SAMPLE_RATE
+from .pipeline import CudaGraphCaptureError, strip_parametrizations
+from rvc.lib.user_config import resolve_logs_path
 
 app = FastAPI()
 vc_instance = None
 params = {}
+active_audio_ws = None
 
 
 @app.websocket("/change-config")
@@ -41,6 +45,8 @@ async def change_config(ws: WebSocket):
         vc_instance.crossfade_frame != crossfade_frame
         or vc_instance.extra_frame != extra_frame
     ):
+        vc_instance.crossfade_frame = crossfade_frame
+        vc_instance.extra_frame = extra_frame
         # Deleting these things is not a good idea; they should only be overwritten directly.
         # del (
         #     vc_instance.vc_model.audio_buffer,
@@ -111,7 +117,10 @@ async def change_config(ws: WebSocket):
         vc_instance.vc_model.board = new_board
         vc_instance.vc_model.kwargs = kwargs.copy()
 
-    model_pth = params.get("model_path", vc_instance.vc_model.model_path)
+    model_pth = resolve_logs_path(
+        params.get("model_path", vc_instance.vc_model.model_path)
+    )
+    params["model_path"] = model_pth
     if model_pth and vc_instance.vc_model.model_path != model_pth:
         import torch
         import torchaudio.transforms as tat
@@ -146,8 +155,10 @@ async def change_config(ws: WebSocket):
         vc_instance.vc_model.pipeline.torch_sid = torch.tensor(
             [sid], device=vc_instance.vc_model.pipeline.device, dtype=torch.int64
         )
+        vc_instance.vc_model.pipeline.sid = sid
 
-    index_path = params.get("index_path", None)
+    index_path = resolve_logs_path(params.get("index_path", None))
+    params["index_path"] = index_path
     if index_path:
         if vc_instance.vc_model.index_path != index_path:
             from rvc.realtime.utils.torch import IndexWrapper
@@ -201,6 +212,7 @@ async def change_config(ws: WebSocket):
         from rvc.lib.utils import load_embedding
 
         hubert_model = load_embedding(embedder_model, embedder_model_custom)
+        strip_parametrizations(hubert_model)
         hubert_model = hubert_model.to(vc_instance.device).float()
         hubert_model.eval()
 
@@ -258,14 +270,25 @@ async def record(request: Request):
 
 @app.websocket("/ws-audio")
 async def websocket_audio(ws: WebSocket):
-    global vc_instance, params
+    global vc_instance, params, active_audio_ws
     await ws.accept()
+    if active_audio_ws is not None:
+        await ws.send_text(
+            json.dumps(
+                {"type": "error", "message": "A realtime stream is already active."}
+            )
+        )
+        await ws.close(code=1013)
+        return
+    active_audio_ws = ws
 
     print("[WS] Connected!")
 
     try:
         text = await ws.receive_text()
         params = json.loads(text)
+        params["model_path"] = resolve_logs_path(params["model_path"])
+        params["index_path"] = resolve_logs_path(params.get("index_path")) or ""
 
         block_frame = params["block_frame"]
 
@@ -277,7 +300,7 @@ async def websocket_audio(ws: WebSocket):
                 cross_fade_overlap_size=params["cross_fade_overlap_size"],
                 extra_convert_size=params["extra_convert_size"],
                 model_path=params["model_path"],
-                index_path=str(params["index_path"]),
+                index_path=params["index_path"],
                 f0_method=params["f0_method"],
                 embedder_model=params["embedder_model"],
                 embedder_model_custom=params["embedder_model_custom"],
@@ -289,10 +312,45 @@ async def websocket_audio(ws: WebSocket):
                 clean_audio=params["clean_audio"],
                 clean_strength=params["clean_strength"],
                 post_process=params["post_process"],
-                **params["kwargs"]
+                **params["kwargs"],
             )
 
+        # Initialize model kernels before the browser starts capturing. Audio
+        # sent during model loading would otherwise remain queued and stale.
+        warmup_options = dict(
+            f0_up_key=params.get("f0_up_key", 0),
+            index_rate=params.get("index_rate", 0),
+            protect=params.get("protect", 0.5),
+            volume_envelope=params.get("volume_envelope", 1),
+            f0_autotune=params.get("autotune", False),
+            f0_autotune_strength=params.get("autotune_strength", 1),
+            proposed_pitch=params.get("proposed_pitch", False),
+            proposed_pitch_threshold=params.get("proposed_pitch_threshold", 155),
+        )
+        warmup_ms = vc_instance.warmup(**warmup_options)
+        if params.get("automatic_block_size", False):
+            # Retain headroom for device/OS jitter, and enlarge blocks on CPU,
+            # AMD, or expensive model configurations before capturing audio.
+            for _ in range(3):
+                needed = min(
+                    AUDIO_SAMPLE_RATE,
+                    math.ceil(warmup_ms * 1.25 / 10) * (AUDIO_SAMPLE_RATE // 100),
+                )
+                if needed <= block_frame:
+                    break
+                block_frame = needed
+                vc_instance.block_frame = block_frame
+                vc_instance.vc_model.realloc(
+                    block_frame,
+                    vc_instance.extra_frame,
+                    vc_instance.crossfade_frame,
+                    vc_instance.sola_search_frame,
+                )
+                vc_instance.generate_strength()
+                warmup_ms = vc_instance.warmup(**warmup_options)
+        params["block_frame"] = block_frame
         print("Realtime is ready!")
+        await ws.send_text(json.dumps({"type": "ready", "block_frame": block_frame}))
 
         while True:
             audio = await ws.receive_bytes()
@@ -325,9 +383,18 @@ async def websocket_audio(ws: WebSocket):
                 json.dumps({"type": "latency", "value": perf[1], "volume": vol})
             )
             await ws.send_bytes(audio_output.tobytes())
+    except CudaGraphCaptureError:
+        # PyTorch cannot reliably recover an invalid capture's allocator/RNG
+        # state in-process. The API restarts this service with graphs disabled.
+        try:
+            await ws.send_text(json.dumps({"type": "retry_eager"}))
+            await ws.close(code=1012)
+        finally:
+            os._exit(86)
     except WebSocketDisconnect:
         print("[WS] Disconnected!")
     finally:
+        active_audio_ws = None
         if vc_instance is not None:
             del vc_instance
             vc_instance = None

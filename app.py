@@ -10,6 +10,7 @@ sys.path.append(now_dir)
 # TODO: This path is regenerated all over the place in Applio
 # should probably be in a static module for everything to reference
 CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
+os.environ.setdefault("APPLIO_CONFIG_FILE", CONFIG_PATH)
 
 # The base config file to start from
 CONFIG_TEMPLATE_PATH = os.path.join(now_dir, "assets", "config_template.json")

@@ -12,7 +12,6 @@ import wget
 from torch import nn
 
 import logging
-from transformers import HubertModel
 import warnings
 
 # Remove this to see warnings about transformers models
@@ -26,14 +25,45 @@ logging.getLogger("torch").setLevel(logging.ERROR)
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
-base_path = os.path.join(now_dir, "rvc", "models", "formant", "stftpitchshift")
-stft = base_path + ".exe" if sys.platform == "win32" else base_path
+_HubertModelWithFinalProj = None
 
 
-class HubertModelWithFinalProj(HubertModel):
-    def __init__(self, config):
-        super().__init__(config)
-        self.final_proj = nn.Linear(config.hidden_size, config.classifier_proj_size)
+def get_hubert_model_class():
+    global _HubertModelWithFinalProj
+    if _HubertModelWithFinalProj is None:
+        from transformers import HubertModel
+
+        class _RealHubertModelWithFinalProj(HubertModel):
+            def __init__(self, config):
+                super().__init__(config)
+                self.final_proj = nn.Linear(
+                    config.hidden_size, config.classifier_proj_size
+                )
+
+        _HubertModelWithFinalProj = _RealHubertModelWithFinalProj
+    return _HubertModelWithFinalProj
+
+
+class _HubertModelMeta(type):
+    def __instancecheck__(cls, instance):
+        return isinstance(instance, get_hubert_model_class())
+
+    def __subclasscheck__(cls, subclass):
+        return issubclass(subclass, get_hubert_model_class())
+
+    def __getattr__(cls, name):
+        return getattr(get_hubert_model_class(), name)
+
+
+class HubertModelWithFinalProj(metaclass=_HubertModelMeta):
+    def __new__(cls, *args, **kwargs):
+        real_cls = get_hubert_model_class()
+        return real_cls(*args, **kwargs)
+
+    @classmethod
+    def from_pretrained(cls, *args, **kwargs):
+        real_cls = get_hubert_model_class()
+        return real_cls.from_pretrained(*args, **kwargs)
 
 
 def load_audio_16k(file):

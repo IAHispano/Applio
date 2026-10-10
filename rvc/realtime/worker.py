@@ -14,6 +14,7 @@ def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt, ready_evt):
     """Entry point for the voice conversion worker process."""
 
     vc = VoiceChanger(**vc_kwargs)
+    vc.warmup()
     ready_evt.set()
 
     while not stop_evt.is_set():

@@ -8,7 +8,6 @@ import torchcrepe
 import torchfcpe
 import os
 
-# from tools.anyf0.rmvpe import RMVPE
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 from rvc.configs.config import Config
 
@@ -82,6 +81,22 @@ class F0Extractor:
                 # hop_length=80
             )
             f0 = model_rmvpe.infer_from_audio(self.wav16k, thred=0.03)
+        elif method in ("swift", "swiftf0", "swift-f0"):
+            from rvc.lib.predictors.f0 import SWIFT
+
+            p_len = len(self.wav16k) // 160
+            f0_model = SWIFT(
+                device=config.device,
+                sample_rate=16000,
+                hop_size=160,
+            )
+            f0 = f0_model.get_f0(
+                self.wav16k,
+                p_len=p_len,
+                f0_min=self.f0_min,
+                f0_max=self.f0_max,
+                filter_radius=0.5,
+            )
 
         else:
             raise ValueError(f"Unknown method: {self.method}")
