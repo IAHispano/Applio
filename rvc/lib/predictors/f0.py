@@ -194,7 +194,11 @@ class Swift:
         self.model = SwiftF0()
         if "cuda" in str(device).lower():
             available = onnxruntime.get_available_providers()
-            providers = [p for p in ("CUDAExecutionProvider", "CPUExecutionProvider") if p in available]
+            providers = [
+                p
+                for p in ("CUDAExecutionProvider", "CPUExecutionProvider")
+                if p in available
+            ]
             self.model.session.set_providers(providers)
 
     @staticmethod

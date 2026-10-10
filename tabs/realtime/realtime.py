@@ -738,7 +738,11 @@ def start_realtime(
     last_report = 0
     while running and callbacks is not None:
         time.sleep(0.1)
-        if hasattr(callbacks.vc, "_process") and callbacks.vc._process is not None and not callbacks.vc._process.is_alive():
+        if (
+            hasattr(callbacks.vc, "_process")
+            and callbacks.vc._process is not None
+            and not callbacks.vc._process.is_alive()
+        ):
             print(f"Worker process died during model loading.")
             _cleanup_realtime()
             yield (
@@ -782,7 +786,11 @@ def start_realtime(
     warmup_total = 0
     while running and callbacks is not None and warmup_total == 0:
         time.sleep(0.05)
-        if hasattr(callbacks.vc, "_process") and callbacks.vc._process is not None and not callbacks.vc._process.is_alive():
+        if (
+            hasattr(callbacks.vc, "_process")
+            and callbacks.vc._process is not None
+            and not callbacks.vc._process.is_alive()
+        ):
             print(f"Worker process died during warmup.")
             _cleanup_realtime()
             yield (
@@ -795,7 +803,11 @@ def start_realtime(
 
     while running and callbacks is not None and audio_manager is not None:
         time.sleep(0.1)
-        if hasattr(callbacks.vc, "_process") and callbacks.vc._process is not None and not callbacks.vc._process.is_alive():
+        if (
+            hasattr(callbacks.vc, "_process")
+            and callbacks.vc._process is not None
+            and not callbacks.vc._process.is_alive()
+        ):
             print(f"Worker process died during realtime processing.")
             _cleanup_realtime()
             yield (
@@ -2065,6 +2077,7 @@ def realtime_tab():
         )
 
         if client_mode:
+
             def client_start_handler(
                 input_device,
                 input_gain,
@@ -2094,8 +2107,12 @@ def realtime_tab():
                     index_file=index,
                     use_monitor_device=use_monitor,
                     input_audio_gain=int(input_gain) if input_gain is not None else 100,
-                    output_audio_gain=int(output_gain) if output_gain is not None else 100,
-                    monitor_audio_gain=int(monitor_gain) if monitor_gain is not None else 100,
+                    output_audio_gain=(
+                        int(output_gain) if output_gain is not None else 100
+                    ),
+                    monitor_audio_gain=(
+                        int(monitor_gain) if monitor_gain is not None else 100
+                    ),
                     vad_enabled=vad,
                     chunk_size=chunk,
                     cross_fade_overlap_size=cross_fade,
