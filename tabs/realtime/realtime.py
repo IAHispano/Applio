@@ -449,6 +449,29 @@ def get_safe_index_value(saved_value, choices, fallback_value=None):
         return None
 
 
+def _cleanup_realtime():
+    global running, callbacks, audio_manager
+    running = False
+    if audio_manager is not None:
+        try:
+            audio_manager.stop()
+        except Exception:
+            pass
+        if hasattr(audio_manager, "latency"):
+            try:
+                del audio_manager.latency
+            except Exception:
+                pass
+    if callbacks is not None:
+        if hasattr(callbacks, "vc"):
+            try:
+                callbacks.vc.stop()
+            except Exception:
+                pass
+    audio_manager = None
+    callbacks = None
+
+
 def start_realtime(
     input_audio_device: str,
     input_audio_gain: int,
@@ -524,9 +547,9 @@ def start_realtime(
     export_format: str = "WAV",
 ):
     global running, callbacks, audio_manager, callbacks_kwargs
-    running = True
 
     if not input_audio_device or not output_audio_device:
+        _cleanup_realtime()
         yield (
             i18n("Please select valid input/output devices!"),
             interactive_true,
@@ -534,6 +557,7 @@ def start_realtime(
         )
         return
     if use_monitor_device and not monitor_output_device:
+        _cleanup_realtime()
         yield (
             i18n("Please select a valid monitor device!"),
             interactive_true,
@@ -541,12 +565,15 @@ def start_realtime(
         )
         return
     if not pth_path:
+        _cleanup_realtime()
         yield (
             i18n("Model path not provided. Aborting conversion."),
             interactive_true,
             interactive_false,
         )
         return
+
+    running = True
 
     print(f"Starting Realtime...")
     yield i18n("Starting Realtime..."), interactive_false, interactive_visible
@@ -565,6 +592,7 @@ def start_realtime(
             output_devices[monitor_output_device] if use_monitor_device else None
         )
     except (ValueError, IndexError):
+        _cleanup_realtime()
         print(f"Error: incorrectly formatted audio device.")
         yield (
             i18n("Incorrectly formatted audio device. Stopping."),
@@ -672,7 +700,7 @@ def start_realtime(
             asio_output_stereo=asio_output_stereo,
         )
     except Exception as error:
-        running = False
+        _cleanup_realtime()
         print(f"Realtime error: {error}")
         yield i18n("Error: {}").format(error), interactive_true, interactive_false
         return
@@ -687,6 +715,7 @@ def start_realtime(
         time.sleep(0.1)
         if hasattr(callbacks.vc, "_process") and callbacks.vc._process is not None and not callbacks.vc._process.is_alive():
             print(f"Worker process died during model loading.")
+            _cleanup_realtime()
             yield (
                 "Worker process crashed during model loading.",
                 interactive_true,
@@ -697,6 +726,7 @@ def start_realtime(
             break
         if time.time() - load_start > 300:
             print(f"Model loading timed out.")
+            _cleanup_realtime()
             yield (
                 "Model loading timed out.",
                 interactive_true,
@@ -713,16 +743,42 @@ def start_realtime(
                 interactive_visible,
             )
 
+    if not running or callbacks is None:
+        _cleanup_realtime()
+        return (
+            i18n("Realtime stopped."),
+            interactive_true,
+            interactive_false,
+        )
+
     print(f"Realtime is starting!")
     yield i18n("Realtime is starting!"), interactive_false, interactive_visible
 
     warmup_total = 0
     while running and callbacks is not None and warmup_total == 0:
         time.sleep(0.05)
+        if hasattr(callbacks.vc, "_process") and callbacks.vc._process is not None and not callbacks.vc._process.is_alive():
+            print(f"Worker process died during warmup.")
+            _cleanup_realtime()
+            yield (
+                "Worker process crashed during warmup.",
+                interactive_true,
+                interactive_false,
+            )
+            return
         warmup_total = callbacks.vc.vc_model.warmup_blocks
 
     while running and callbacks is not None and audio_manager is not None:
         time.sleep(0.1)
+        if hasattr(callbacks.vc, "_process") and callbacks.vc._process is not None and not callbacks.vc._process.is_alive():
+            print(f"Worker process died during realtime processing.")
+            _cleanup_realtime()
+            yield (
+                "Worker process crashed.",
+                interactive_true,
+                interactive_false,
+            )
+            return
         if hasattr(audio_manager, "latency") and hasattr(audio_manager, "volume"):
             warmup_remaining = callbacks.vc.vc_model.warmup_blocks
 
@@ -742,6 +798,7 @@ def start_realtime(
                     interactive_true,
                 )
 
+    _cleanup_realtime()
     return (
         i18n("Realtime stopped."),
         interactive_true,
@@ -834,13 +891,7 @@ def change_config(value, key, if_kwargs=False):
 def stop_realtime():
     global running, callbacks, audio_manager
     if running and audio_manager is not None and callbacks is not None:
-        audio_manager.stop()
-        callbacks.vc.stop()
-        running = False
-        if hasattr(audio_manager, "latency"):
-            del audio_manager.latency
-        del audio_manager, callbacks
-        audio_manager = callbacks = None
+        _cleanup_realtime()
         time.sleep(0.1)
 
         print(f"Realtime stopped.")
@@ -850,6 +901,7 @@ def stop_realtime():
             interactive_false,
         )
     else:
+        _cleanup_realtime()
         return i18n("Realtime pipeline not found!"), interactive_true, interactive_false
 
 
