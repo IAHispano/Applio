@@ -221,9 +221,13 @@ class Realtime_Pipeline:
                 threshold=0.006,
             ).squeeze()
         elif self.f0_method == "swift":
-            f0 = torch.from_numpy(
-                self.f0_model.get_f0(x, f0_min=self.f0_min, f0_max=self.f0_max)
-            ).to(self.device).float()
+            f0 = (
+                torch.from_numpy(
+                    self.f0_model.get_f0(x, f0_min=self.f0_min, f0_max=self.f0_max)
+                )
+                .to(self.device)
+                .float()
+            )
         elif self.f0_method in ("crepe", "crepe-tiny"):
             f0, pd = torchcrepe.predict(
                 x.float().to(self.device).unsqueeze(dim=0),
