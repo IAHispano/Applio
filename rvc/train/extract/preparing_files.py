@@ -10,7 +10,9 @@ current_directory = os.getcwd()
 
 
 def generate_config(sample_rate: int, model_path: str):
-    config_path = os.path.join("rvc", "configs", f"{sample_rate}.json")
+    config_path = os.path.join(
+        os.path.dirname(__file__), "..", "..", "configs", f"{sample_rate}.json"
+    )
     config_save_path = os.path.join(model_path, "config.json")
     if not os.path.exists(config_save_path):
         shutil.copyfile(config_path, config_save_path)

@@ -1,0 +1,45 @@
+click==8.1.8
+numpy==2.4.6
+requests==2.34.2
+tqdm==4.68.4
+wget==3.2
+
+faiss-cpu==1.14.3
+librosa==0.11.0
+scipy==1.17.1; python_version < "3.12"
+scipy==1.18.0; python_version >= "3.12"
+soundfile==0.14.0
+noisereduce==3.0.3
+pedalboard==0.9.24
+stftpitchshift==2.0
+soxr==1.1.0
+
+torch==2.11.0
+torchaudio==2.11.0
+torchcrepe==0.0.24
+torchfcpe==0.0.4
+swift-f0>=0.3.0
+einops==0.8.2
+transformers==5.13.1
+
+matplotlib==3.11.0
+tensorboard==2.21.0
+
+onnxruntime>=1.17.0
+
+edge-tts==7.2.8
+beautifulsoup4==4.15.0
+sounddevice==0.5.5
+webrtcvad-wheels==2.0.14
+psutil==7.2.2
+uvicorn>=0.30.0
+fastapi>=0.110.0
+websockets>=13.0
+
+# CUDA acceleration on Windows via onnxruntime-gpu (other platforms use the
+# CPU onnxruntime from the block above).
+onnxruntime-gpu==1.22.0; sys_platform == "win32"
+nvidia-cublas-cu12==12.9.2.10; sys_platform == "win32"
+nvidia-cuda-runtime-cu12==12.9.79; sys_platform == "win32"
+nvidia-cudnn-cu12==9.26.0.51; sys_platform == "win32"
+nvidia-cufft-cu12==11.4.1.4; sys_platform == "win32"
