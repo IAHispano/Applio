@@ -67,7 +67,7 @@ def alias_score(path: str, want_model: bool) -> int:
 def get_files(type="model"):
     assert type in ("model", "index"), "Invalid type for get_files (models or index)"
     is_model = type == "model"
-    exts = (".pth", ".onnx") if is_model else (".index",)
+    exts = (".pth",) if is_model else (".index",)
     exclude_prefixes = ("G_", "D_") if is_model else ()
     exclude_substr = None if is_model else "trained"
 
