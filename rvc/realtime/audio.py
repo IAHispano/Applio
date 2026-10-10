@@ -135,6 +135,7 @@ class Audio:
         monitor: bool = False,
     ):
         self.callbacks = callbacks
+        self.out_queue = Queue()
         self.mon_queue = Queue()
         self.stream = None
         self.input_stream = None
@@ -196,7 +197,9 @@ class Audio:
         try:
             out_wav = self.process_data_with_time(indata)
 
-            self.mon_queue.put(out_wav)
+            self.out_queue.put(out_wav)
+            if self.use_monitor:
+                self.mon_queue.put(out_wav)
         except Exception as error:
             print(f"An error occurred while running the audio stream: {error}")
             print(traceback.format_exc())
@@ -219,12 +222,15 @@ class Audio:
             print(f"An error occurred while running the audio stream: {error}")
             print(traceback.format_exc())
 
-    def audio_queue(self, outdata: np.ndarray, gain: float):
+    def audio_queue(self, q: Queue, outdata: np.ndarray, gain: float):
         try:
-            mon_wav = self.mon_queue.get()
-
-            while self.mon_queue.qsize() > 0:
-                self.mon_queue.get()
+            try:
+                mon_wav = q.get_nowait()
+                while not q.empty():
+                    mon_wav = q.get_nowait()
+            except Exception:
+                outdata.fill(0)
+                return
 
             output_channels = outdata.shape[1]
             outdata[:] = (
@@ -272,7 +278,7 @@ class Audio:
             )
             self.output_stream = sd.OutputStream(
                 callback=lambda outdata, frames, times, status: self.audio_queue(
-                    outdata, self.output_audio_gain
+                    self.out_queue, outdata, self.output_audio_gain
                 ),
                 latency="low",
                 dtype=np.float32,
@@ -300,7 +306,7 @@ class Audio:
         if self.use_monitor:
             self.monitor = sd.OutputStream(
                 callback=lambda outdata, frames, times, status: self.audio_queue(
-                    outdata, self.monitor_audio_gain
+                    self.mon_queue, outdata, self.monitor_audio_gain
                 ),
                 latency="low",
                 dtype=np.float32,
@@ -330,6 +336,17 @@ class Audio:
         if self.monitor is not None:
             self.monitor.close()
             self.monitor = None
+
+        while not self.out_queue.empty():
+            try:
+                self.out_queue.get_nowait()
+            except Exception:
+                break
+        while not self.mon_queue.empty():
+            try:
+                self.mon_queue.get_nowait()
+            except Exception:
+                break
 
     def start(
         self,
