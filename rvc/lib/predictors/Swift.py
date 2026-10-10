@@ -80,10 +80,10 @@ class SwiftPredictor:
             os.makedirs(os.path.dirname(target_path), exist_ok=True)
             url = "https://huggingface.co/IAHispano/Applio/resolve/main/Resources/predictors/swift.onnx"
             try:
-                import urllib.request
+                from rvc.lib.tools.http_download import download_http
 
                 print(f"Downloading SWIFT ONNX model from {url}...")
-                urllib.request.urlretrieve(url, target_path)
+                download_http(url, target_path)
                 model_path = target_path
             except Exception as e:
                 raise FileNotFoundError(

@@ -8,7 +8,7 @@ import soundfile as sf
 import numpy as np
 import re
 import unicodedata
-import wget
+from rvc.lib.tools.http_download import download_http
 from torch import nn
 
 import logging
@@ -200,11 +200,11 @@ def load_embedding(embedder_model, custom_embedder=None):
         if not os.path.exists(bin_file):
             url = online_embedders[embedder_model]
             print(f"Downloading {url} to {model_path}...")
-            wget.download(url, out=bin_file)
+            download_http(url, bin_file)
         if not os.path.exists(json_file):
             url = config_files[embedder_model]
             print(f"Downloading {url} to {model_path}...")
-            wget.download(url, out=json_file)
+            download_http(url, json_file)
 
     models = HubertModelWithFinalProj.from_pretrained(model_path)
     return models

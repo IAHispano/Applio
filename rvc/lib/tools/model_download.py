@@ -5,7 +5,9 @@ import shutil
 import zipfile
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
+from pathlib import Path
+from email.message import Message
 from tqdm import tqdm
 
 now_dir = os.getcwd()
@@ -14,6 +16,7 @@ sys.path.append(now_dir)
 from rvc.lib.user_config import get_logs_dir
 from rvc.lib.utils import format_title
 from rvc.lib.tools import gdown
+from rvc.lib.tools.http_download import download_http
 
 file_path = get_logs_dir()
 zips_path = os.path.join(file_path, "zips")
@@ -45,6 +48,7 @@ def download_from_url(url):
                     url=f"https://drive.google.com/uc?id={file_id}",
                     quiet=False,
                     fuzzy=True,
+                    resume=True,
                 )
         elif "/blob/" in url or "/resolve/" in url:
             download_blob_or_resolve(url)
@@ -73,41 +77,31 @@ def extract_google_drive_id(url):
 def download_blob_or_resolve(url):
     if "/blob/" in url:
         url = url.replace("/blob/", "/resolve/")
-    response = requests.get(url, stream=True)
-    if response.status_code == 200:
-        save_response_content(response)
-    else:
-        raise ValueError(
-            "Download failed with status code: " + str(response.status_code)
-        )
+    download_file(url)
 
 
-def save_response_content(response):
-    content_disposition = unquote(response.headers.get("Content-Disposition", ""))
-    file_name = (
-        re.search(r'filename="([^"]+)"', content_disposition)
-        .groups()[0]
-        .replace(os.path.sep, "_")
-        if content_disposition
-        else "downloaded_file"
+def save_response_content(response, url=None):
+    message = Message()
+    message["Content-Disposition"] = response.headers.get("Content-Disposition", "")
+    url = url or (
+        response.history[0].request.url if response.history else response.request.url
     )
+    file_name = message.get_filename() or unquote(os.path.basename(urlparse(url).path))
+    file_name = os.path.basename(file_name.replace("\\", "/")) or "downloaded_file.zip"
+    response.close()
+    with tqdm(unit="B", unit_scale=True, desc=file_name) as progress_bar:
 
-    total_size = int(response.headers.get("Content-Length", 0))
-    chunk_size = 1024
+        def progress(received, total):
+            progress_bar.total = total or None
+            progress_bar.n = received
+            progress_bar.refresh()
 
-    with (
-        open(os.path.join(zips_path, file_name), "wb") as file,
-        tqdm(
-            total=total_size, unit="B", unit_scale=True, desc=file_name
-        ) as progress_bar,
-    ):
-        for data in response.iter_content(chunk_size):
-            file.write(data)
-            progress_bar.update(len(data))
+        download_http(url, os.path.join(zips_path, file_name), progress=progress)
 
 
 def download_from_huggingface(url):
-    response = requests.get(url)
+    response = requests.get(url, timeout=(30, 60))
+    response.raise_for_status()
     soup = BeautifulSoup(response.content, "html.parser")
     temp_url = next(
         (
@@ -127,9 +121,11 @@ def download_from_huggingface(url):
 
 
 def download_file(url):
-    response = requests.get(url, stream=True)
+    response = requests.get(
+        url, stream=True, timeout=(30, 60), headers={"Accept-Encoding": "identity"}
+    )
     if response.status_code == 200:
-        save_response_content(response)
+        save_response_content(response, url)
     else:
         raise ValueError(
             "Download failed with status code: " + str(response.status_code)
@@ -147,6 +143,14 @@ def rename_downloaded_files():
 def extract(zipfile_path, unzips_path):
     try:
         with zipfile.ZipFile(zipfile_path, "r") as zip_ref:
+            root = Path(unzips_path).resolve()
+            for member in zip_ref.infolist():
+                target = (root / member.filename.replace("\\", "/")).resolve()
+                if os.path.commonpath([str(root), str(target)]) != str(root):
+                    raise ValueError("Model archive contains an unsafe file path")
+            damaged = zip_ref.testzip()
+            if damaged:
+                raise ValueError(f"Model archive checksum failed: {damaged}")
             zip_ref.extractall(unzips_path)
         os.remove(zipfile_path)
         return True
@@ -158,9 +162,8 @@ def extract(zipfile_path, unzips_path):
 def unzip_file(zip_path, zip_file_name):
     zip_file_path = os.path.join(zip_path, zip_file_name + ".zip")
     extract_path = os.path.join(file_path, zip_file_name)
-    with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
-        zip_ref.extractall(extract_path)
-    os.remove(zip_file_path)
+    if not extract(zip_file_path, extract_path):
+        raise ValueError("Model archive could not be extracted")
 
 
 def model_download_pipeline(url: str):

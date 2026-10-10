@@ -1,8 +1,8 @@
 import os
-import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 import requests
+from rvc.lib.tools.http_download import download_http
 
 url_base = "https://huggingface.co/IAHispano/Applio/resolve/main/Resources"
 
@@ -79,31 +79,14 @@ def download_file(url, destination_path, global_bar):
     updating the global progress bar as data is downloaded.
     """
 
-    dir_name = os.path.dirname(destination_path)
-    if dir_name:
-        os.makedirs(dir_name, exist_ok=True)
-    temporary_path = None
-    try:
-        with requests.get(url, stream=True, timeout=(30, 120)) as response:
-            response.raise_for_status()
-            expected = int(response.headers.get("content-length", 0))
-            downloaded = 0
-            with tempfile.NamedTemporaryFile(
-                dir=dir_name or ".", prefix=".applio-download-", delete=False
-            ) as file:
-                temporary_path = file.name
-                for data in response.iter_content(1024 * 1024):
-                    if data:
-                        file.write(data)
-                        downloaded += len(data)
-                        global_bar.update(len(data))
-            if not downloaded or (expected and downloaded != expected):
-                raise RuntimeError(f"Incomplete download: {url}")
-            # Only complete, successful responses become reusable model files.
-            os.replace(temporary_path, destination_path)
-    finally:
-        if temporary_path and os.path.exists(temporary_path):
-            os.unlink(temporary_path)
+    previous = 0
+
+    def progress(received, total):
+        nonlocal previous
+        global_bar.update(received - previous)
+        previous = received
+
+    download_http(url, destination_path, progress=progress)
 
 
 def download_mapping_files(file_mapping_list, global_bar):
