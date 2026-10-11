@@ -112,6 +112,8 @@ def get_gpu_info():
                 + 0.4
             )
             gpu_infos.append(f"{i}: {gpu_name} ({mem} GB)")
+    elif torch.backends.mps.is_available():
+        gpu_infos.append("0: Apple Silicon GPU (MPS)")
     if len(gpu_infos) > 0:
         gpu_info = "\n".join(gpu_infos)
     else:
@@ -123,5 +125,9 @@ def get_number_of_gpus():
     if torch.cuda.is_available():
         num_gpus = torch.cuda.device_count()
         return "-".join(map(str, range(num_gpus)))
+    elif torch.backends.mps.is_available():
+        # Apple Silicon GPU via Metal Performance Shaders. train.py selects the
+        # MPS device for any id other than "-", so report the single device id.
+        return "0"
     else:
         return "-"
