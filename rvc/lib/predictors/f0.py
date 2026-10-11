@@ -176,6 +176,11 @@ class FCPE:
             self.device,
             bundled_model=True,
         )
+        if str(device) == "mps":
+            from rvc.lib.tools.device import CPUSpectralTransform
+            self.model.wav2mel.mel_extractor = CPUSpectralTransform(
+                self.model.wav2mel.mel_extractor
+            )
 
     def get_f0(self, x, p_len=None, filter_radius=0.006):
         if p_len is None:

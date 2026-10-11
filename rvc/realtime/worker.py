@@ -13,8 +13,17 @@ from rvc.realtime.core import VoiceChanger, AUDIO_SAMPLE_RATE
 def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt, ready_evt):
     """Entry point for the voice conversion worker process."""
 
-    vc = VoiceChanger(**vc_kwargs)
-    vc.warmup()
+    try:
+        vc = VoiceChanger(**vc_kwargs)
+        vc.warmup()
+    except (RuntimeError, NotImplementedError, TypeError) as error:
+        from rvc.lib.tools.device import is_mps_error
+        from rvc.configs.config import Config
+        if Config().device != "mps" or not is_mps_error(error):
+            raise
+        print(f"[!] MPS realtime warmup failed ({error}); retrying on CPU.", flush=True)
+        vc = VoiceChanger(**dict(vc_kwargs, device="cpu"))
+        vc.warmup()
     ready_evt.set()
 
     while not stop_evt.is_set():
@@ -111,7 +120,13 @@ def _apply_config(vc: VoiceChanger, cfg):
                     vc.vc_model.pipeline.tgt_sr,
                     prop_decrease=strength,
                 ).to(vc.vc_model.device)
-            vc.vc_model.reduced_noise.prop_decrease = strength
+                if vc.vc_model.device == "mps":
+                    from rvc.lib.tools.device import CPUSpectralTransform
+                    vc.vc_model.reduced_noise = CPUSpectralTransform(vc.vc_model.reduced_noise)
+            gate = vc.vc_model.reduced_noise
+            if hasattr(gate, "transform"):
+                gate = gate.transform
+            gate.prop_decrease = strength
 
     # Post-processing pedalboard.
     if "post_process" in cfg:
@@ -149,6 +164,9 @@ def _apply_config(vc: VoiceChanger, cfg):
                 vc.vc_model.pipeline.tgt_sr,
                 prop_decrease=strength,
             ).to(vc.vc_model.device)
+            if vc.vc_model.device == "mps":
+                from rvc.lib.tools.device import CPUSpectralTransform
+                vc.vc_model.reduced_noise = CPUSpectralTransform(vc.vc_model.reduced_noise)
 
     # SID change.
     sid = cfg.get("sid")

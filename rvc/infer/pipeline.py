@@ -228,18 +228,20 @@ class Pipeline:
             proposed_pitch_threshold: target frequency, 155.0 for male, 255.0 for female
         """
         global f0_mel_min, f0_mel_max
+        # FCPE/RMVPE keep their FFT frontend on CPU and neural model on MPS.
+        pitch_device = "cpu" if self.device == "mps" and "crepe" in f0_method else self.device
         x = x.astype(np.float32)
         x /= np.quantile(np.abs(x), 0.999)
         if f0_method == "crepe":
             model = CREPE(
-                device=self.device, sample_rate=self.sample_rate, hop_size=self.window
+                device=pitch_device, sample_rate=self.sample_rate, hop_size=self.window
             )
             f0 = model.get_f0(x, self.f0_min, self.f0_max, p_len, "full")
             del model
         elif f0_method == "rmvpe":
             if "rmvpe" not in self.f0_models:
                 self.f0_models["rmvpe"] = RMVPE(
-                    device=self.device,
+                    device=pitch_device,
                     sample_rate=self.sample_rate,
                     hop_size=self.window,
                 )
@@ -247,7 +249,7 @@ class Pipeline:
         elif f0_method == "fcpe":
             if "fcpe" not in self.f0_models:
                 self.f0_models["fcpe"] = FCPE(
-                    device=self.device,
+                    device=pitch_device,
                     sample_rate=self.sample_rate,
                     hop_size=self.window,
                 )
@@ -255,7 +257,7 @@ class Pipeline:
         elif f0_method in ("swift", "swiftf0", "swift-f0"):
             if "swift" not in self.f0_models:
                 self.f0_models["swift"] = SWIFT(
-                    device=self.device,
+                    device=pitch_device,
                     sample_rate=self.sample_rate,
                     hop_size=self.window,
                 )
@@ -401,6 +403,10 @@ class Pipeline:
         weight = np.square(1 / score)
         weight /= weight.sum(axis=1, keepdims=True)
         npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
+        # FAISS scores/index data can promote this array to float64. Metal
+        # rejects doubles during transfer, before operator fallback can run.
+        if self.device == "mps":
+            npy = npy.astype(np.float32)
         feats = (
             torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
             + (1 - index_rate) * feats

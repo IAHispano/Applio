@@ -5,6 +5,7 @@ import sys
 
 if sys.platform == "darwin":
     os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 elif sys.platform == "win32":
     # Ensure virtualenv Scripts and torch DLL directories are accessible
     # for dynamic loading of ROCm and runtime libraries

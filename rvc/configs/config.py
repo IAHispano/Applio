@@ -1,6 +1,10 @@
+import os
+import sys
+if sys.platform == "darwin":
+    os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 import torch
 import json
-import os
+from copy import copy
 
 version_config_paths = [
     os.path.join("48000.json"),
@@ -24,11 +28,13 @@ def singleton(cls):
 @singleton
 class Config:
     def __init__(self):
-        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.device = "cuda:0" if torch.cuda.is_available() else (
+            "mps" if torch.backends.mps.is_available() else "cpu"
+        )
         self.gpu_name = (
             torch.cuda.get_device_name(int(self.device.split(":")[-1]))
             if self.device.startswith("cuda")
-            else None
+            else "Apple Silicon GPU (MPS)" if self.device == "mps" else None
         )
         self.json_config = self.load_config_json()
         self.gpu_mem = None
@@ -45,11 +51,14 @@ class Config:
     def device_config(self):
         if self.device.startswith("cuda"):
             self.set_cuda_config()
-        else:
+        elif self.device != "mps":
             self.device = "cpu"
 
         # Configuration for 6GB GPU memory
         x_pad, x_query, x_center, x_max = (1, 6, 38, 41)
+        if self.device == "mps":
+            # Metal shares system memory; bound long-file feature activations.
+            x_pad, x_query, x_center, x_max = (1, 5, 30, 32)
         if self.gpu_mem is not None and self.gpu_mem <= 4:
             # Configuration for 5GB GPU memory
             x_pad, x_query, x_center, x_max = (1, 5, 30, 32)
@@ -90,6 +99,15 @@ class Config:
                 )
         except Exception:
             pass
+
+
+def inference_config():
+    """Keep per-session fallback choices separate from the shared config."""
+    config = copy(Config())
+    if config.device == "cpu" and torch.backends.mps.is_available():
+        config.device = "mps"
+        config.gpu_name = "Apple Silicon GPU (MPS)"
+    return config
 
 
 def max_vram_gpu(gpu):

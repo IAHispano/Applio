@@ -3,6 +3,7 @@ import sys
 
 if sys.platform == "darwin":
     os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 import soxr
 import time
@@ -11,6 +12,7 @@ import librosa
 import logging
 import numpy as np
 import soundfile as sf
+from functools import wraps
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -20,7 +22,7 @@ from rvc.infer.pipeline import Pipeline as VC
 from rvc.lib.utils import load_audio_infer, load_embedding
 from rvc.lib.tools.split_audio import process_audio, merge_audio
 from rvc.lib.algorithm.synthesizers import Synthesizer
-from rvc.configs.config import Config
+from rvc.configs.config import inference_config
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
@@ -33,6 +35,33 @@ def _toast(message, warning=False):
     print(message)
 
 
+def _retry_mps_on_cpu(convert):
+    @wraps(convert)
+    def wrapped(self, *args, **kwargs):
+        try:
+            return convert(self, *args, **kwargs)
+        except (RuntimeError, NotImplementedError, TypeError) as error:
+            message = str(error).lower()
+            if self.config.device != "mps" or not any(
+                marker in message
+                for marker in (
+                    "mps", "metal", "placeholder storage has not been allocated"
+                )
+            ):
+                raise
+            print(f"[!] MPS inference failed ({error}); retrying conversion on CPU.")
+            self.config.device = "cpu"
+            self.config.gpu_name = None
+            for model in (self.hubert_model, self.net_g):
+                if model is not None:
+                    model.to("cpu")
+            # Discard cached pitch predictors and device-bound pipeline state.
+            self.setup_vc_instance()
+            return convert(self, *args, **kwargs)
+
+    return wrapped
+
+
 class VoiceConverter:
     """
     A class for performing voice conversion using the Retrieval-Based Voice Conversion (RVC) method.
@@ -42,7 +71,9 @@ class VoiceConverter:
         """
         Initializes the VoiceConverter with default configuration, and sets up models and parameters.
         """
-        self.config = Config()
+        self.config = inference_config()
+        if self.config.device == "mps":
+            print("Using Apple Silicon MPS for inference (FP32; CPU spectral frontends).")
         self.hubert_model = None
         self.last_embedder_model = None
         self.tgt_sr = None
@@ -199,6 +230,7 @@ class VoiceConverter:
             board.append(delay)
         return board(audio_input, sample_rate)
 
+    @_retry_mps_on_cpu
     def convert_audio(
         self,
         audio_input_path: str,

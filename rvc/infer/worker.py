@@ -3,6 +3,7 @@ import sys
 
 if sys.platform == "darwin":
     os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 import json
 import traceback

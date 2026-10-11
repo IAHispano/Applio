@@ -278,6 +278,6 @@ class IndexWrapper:
                 score, ix = self.index.search(npy, k)
 
                 return (
-                    torch.from_numpy(score).to(self.device).to(self.dtype),
+                    torch.from_numpy(score).to(dtype=self.dtype).to(self.device),
                     torch.from_numpy(ix).to(self.device).long(),
                 )

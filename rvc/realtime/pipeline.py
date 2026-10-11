@@ -18,7 +18,7 @@ class CudaGraphCaptureError(RuntimeError):
 
 from rvc.realtime.utils.torch import circular_write, AudioProcessorTorch, IndexWrapper
 from rvc.realtime.utils.fcpe import RealtimeMel, local_decoder
-from rvc.configs.config import Config
+from rvc.configs.config import inference_config
 from rvc.infer.pipeline import Autotune
 from rvc.lib.algorithm.synthesizers import Synthesizer
 from rvc.lib.predictors.f0 import FCPE, RMVPE, SWIFT
@@ -30,11 +30,13 @@ class RealtimeVoiceConverter:
     A class for performing realtime voice conversion using the Retrieval-Based Voice Conversion (RVC) method.
     """
 
-    def __init__(self, weight_root):
+    def __init__(self, weight_root, device=None):
         """
         Initializes the RealtimeVoiceConverter with default configuration, and sets up models and parameters.
         """
-        self.config = Config()  # Load configuration
+        self.config = inference_config()
+        if device is not None:
+            self.config.device = device
         self.tgt_sr = None  # Target sampling rate for the output audio
         self.net_g = None  # Generator network for voice conversion
         self.cpt = None  # Checkpoint for loading model weights
@@ -201,9 +203,9 @@ class Realtime_Pipeline:
                 high_register={"enabled": False},
             )
 
-            f0_model.model.cents_mapping = torch.from_numpy(
-                f0_model.model.cents_mapping
-            ).to(self.device)
+            f0_model.model.cents_mapping = (
+                torch.from_numpy(f0_model.model.cents_mapping).float().to(self.device)
+            )
             f0_model.model.infer_from_audio = types.MethodType(
                 _infer_from_audio, f0_model.model
             )
@@ -216,9 +218,10 @@ class Realtime_Pipeline:
                 sample_rate=self.sample_rate,
                 hop_size=self.window,
             )
-            f0_model.model.wav2mel.mel_extractor = RealtimeMel(
-                f0_model.model.wav2mel.mel_extractor
-            )
+            if self.device != "mps":
+                f0_model.model.wav2mel.mel_extractor = RealtimeMel(
+                    f0_model.model.wav2mel.mel_extractor
+                )
             f0_model.model.model.latent2cents_local_decoder = types.MethodType(
                 local_decoder, f0_model.model.model
             )
@@ -270,14 +273,16 @@ class Realtime_Pipeline:
             f0 = torch.from_numpy(f0).float().to(self.device)
         elif self.f0_method == "crepe":
             f0, pd = torchcrepe.predict(
-                x.float().to(self.device).unsqueeze(dim=0),
+                x.float()
+                .to("cpu" if self.device == "mps" else self.device)
+                .unsqueeze(dim=0),
                 self.sample_rate,
                 self.window,
                 self.f0_min,
                 self.f0_max,
                 model="full",
                 batch_size=512,
-                device=self.device,
+                device="cpu" if self.device == "mps" else self.device,
                 return_periodicity=True,
             )
             pd = torchcrepe.filter.median(pd, 3)
@@ -285,6 +290,7 @@ class Realtime_Pipeline:
             f0[pd < 0.1] = 0
             f0 = f0[0]
 
+        f0 = torch.as_tensor(f0, dtype=torch.float32, device=self.device)
         # f0 adjustments
         if f0_autotune is True:
             f0 = self.autotune_f0(f0, f0_autotune_strength)
@@ -606,12 +612,13 @@ def create_pipeline(
     embedder_model_custom: str = None,
     # device: str = "cuda",
     sid: int = 0,
+    device: str = None,
 ):
     """
     Initialize real-time voice conversion pipeline.
     """
 
-    vc = RealtimeVoiceConverter(model_path)
+    vc = RealtimeVoiceConverter(model_path, device=device)
     # index, big_npy = load_faiss_index(
     #     index_path.strip()
     #     .strip('"')

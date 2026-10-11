@@ -8,6 +8,7 @@ import torchaudio.transforms as tat
 
 from rvc.lib.user_config import resolve_logs_path
 from rvc.lib.utils import load_embedding
+from rvc.lib.tools.device import CPUSpectralTransform
 from .core import AUDIO_SAMPLE_RATE
 from .pipeline import RealtimeVoiceConverter, strip_parametrizations
 from .utils.chunks import automatic_block_frame
@@ -76,7 +77,11 @@ def apply_config_update(instance, current, message):
     # Prepare replacements first; a missing model/index/embedder must leave the
     # currently running voice and settings intact.
     replaced = model_path != model.model_path
-    voice = RealtimeVoiceConverter(model_path) if replaced else pipeline.vc
+    voice = (
+        RealtimeVoiceConverter(model_path, device=instance.device)
+        if replaced
+        else pipeline.vc
+    )
     method = candidate.get("f0_method", pipeline.f0_method)
     if method not in ("crepe", "rmvpe", "fcpe", "swift"):
         raise ValueError("Invalid f0_method")
@@ -126,6 +131,8 @@ def apply_config_update(instance, current, message):
         noise = TorchGate(
             voice.tgt_sr, prop_decrease=candidate.get("clean_strength", 0.5)
         ).to(instance.device)
+        if str(instance.device) == "mps":
+            noise = CPUSpectralTransform(noise)
     board = model.board
     kwargs = candidate["kwargs"]
     if not candidate.get("post_process", False):

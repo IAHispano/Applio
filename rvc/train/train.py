@@ -1,5 +1,7 @@
 import os
 import sys
+if sys.platform == "darwin":
+    os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 os.environ["USE_LIBUV"] = "0" if sys.platform == "win32" else "1"
 import datetime
@@ -212,6 +214,7 @@ def main():
         device = torch.device("mps")
         gpus = [0]
         n_gpus = 1
+        print("Training on Apple Silicon MPS (FP32; CPU spectral loss).")
     else:
         device = torch.device("cpu")
         gpus = [0]
@@ -383,13 +386,13 @@ def run(
 
     train_loader = DataLoader(
         train_dataset,
-        num_workers=4,
+        num_workers=2 if device.type == "mps" else 4,
         shuffle=False,
-        pin_memory=True,
+        pin_memory=device.type == "cuda",
         collate_fn=collate_fn,
         batch_sampler=train_sampler,
         persistent_workers=True,
-        prefetch_factor=8,
+        prefetch_factor=2 if device.type == "mps" else 8,
     )
 
     # Validations

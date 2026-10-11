@@ -17,6 +17,10 @@ def spectrogram_torch(y, n_fft, hop_size, win_size, center=False):
         win_size (int): Window size.
         center (bool, optional): Whether to center the window. Defaults to False.
     """
+    if y.device.type == "mps":
+        # The copy preserves autograd; complex FFT results never move to Metal.
+        return spectrogram_torch(y.cpu(), n_fft, hop_size, win_size, center).to(y.device)
+
     global hann_window
     dtype_device = str(y.dtype) + "_" + str(y.device)
     wnsize_dtype_device = str(win_size) + "_" + dtype_device
@@ -135,6 +139,8 @@ class MultiScaleMelSpectrogramLoss(torch.nn.Module):
         n_mels: int,
         window_length: int,
     ):
+        if wav.device.type == "mps":
+            return self.mel_spectrogram(wav.cpu(), n_mels, window_length).to(wav.device)
         # IDs for caching
         dtype_device = str(wav.dtype) + "_" + str(wav.device)
         win_dtype_device = str(window_length) + "_" + dtype_device

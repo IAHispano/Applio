@@ -451,6 +451,9 @@ class RMVPE0Predictor:
         self.mel_extractor = MelSpectrogram(
             N_MELS, 16000, 1024, 160, None, 30, 8000
         ).to(device)
+        if str(device) == "mps":
+            from rvc.lib.tools.device import CPUSpectralTransform
+            self.mel_extractor = CPUSpectralTransform(self.mel_extractor)
         self.model = self.model.to(device)
         cents_mapping = 20 * np.arange(N_CLASS) + 1997.3794084376191
         self.cents_mapping = np.pad(cents_mapping, (4, 4))

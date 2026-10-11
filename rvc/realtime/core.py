@@ -1,5 +1,8 @@
 import os
 import sys
+
+if sys.platform == "darwin":
+    os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 import time
 import torch
 import torch.nn.functional as F
@@ -49,6 +52,10 @@ def phase_vocoder(a, b, fade_out, fade_in):
     Returns:
         torch.Tensor: The crossfaded audio segment.
     """
+    if a.device.type == "mps":
+        return phase_vocoder(a.cpu(), b.cpu(), fade_out.cpu(), fade_in.cpu()).to(
+            a.device
+        )
 
     # Compute the analysis window as the geometric mean of fade curves
     window = (fade_out * fade_in).sqrt()
@@ -154,6 +161,7 @@ class Realtime:
             embedder_model_custom,
             # device,
             sid,
+            device=kwargs.get("device"),
         )
         self.device = self.pipeline.device
         self.dtype = self.pipeline.dtype
@@ -166,6 +174,10 @@ class Realtime:
             if clean_audio
             else None
         )
+        if self.device == "mps" and self.reduced_noise is not None:
+            from rvc.lib.tools.device import CPUSpectralTransform
+
+            self.reduced_noise = CPUSpectralTransform(self.reduced_noise)
         # Resampling of inputs and outputs.
         self.resample_in = tat.Resample(
             orig_freq=AUDIO_SAMPLE_RATE, new_freq=self.sample_rate, dtype=torch.float32
@@ -423,6 +435,7 @@ class VoiceChanger:
             # device
         )
         self.device = self.vc_model.device
+        print(f"Realtime computation device: {self.device} (FP32).", flush=True)
         self.vc_model.realloc(
             self.block_frame,
             self.extra_frame,
