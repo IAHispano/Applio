@@ -783,23 +783,7 @@ def start_realtime(
     print(f"Realtime is starting!")
     yield i18n("Realtime is starting!"), interactive_false, interactive_visible
 
-    warmup_total = 0
-    while running and callbacks is not None and warmup_total == 0:
-        time.sleep(0.05)
-        if (
-            hasattr(callbacks.vc, "_process")
-            and callbacks.vc._process is not None
-            and not callbacks.vc._process.is_alive()
-        ):
-            print(f"Worker process died during warmup.")
-            _cleanup_realtime()
-            yield (
-                "Worker process crashed during warmup.",
-                interactive_true,
-                interactive_false,
-            )
-            return
-        warmup_total = callbacks.vc.vc_model.warmup_blocks
+    warmup_total = getattr(callbacks.vc.vc_model, "warmup_blocks", 0)
 
     while running and callbacks is not None and audio_manager is not None:
         time.sleep(0.1)
