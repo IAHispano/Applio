@@ -581,7 +581,6 @@ def train_tab():
                 ),
                 choices=[
                     "crepe",
-                    "crepe-tiny",
                     "rmvpe",
                     # "fcpe"
                 ],

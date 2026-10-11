@@ -302,7 +302,6 @@ def tts_tab():
                 ),
                 choices=[
                     "crepe",
-                    "crepe-tiny",
                     "rmvpe",
                     "fcpe",
                 ],

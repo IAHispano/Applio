@@ -1141,7 +1141,6 @@ def inference_tab():
                     ),
                     choices=[
                         "crepe",
-                        "crepe-tiny",
                         "rmvpe",
                         "fcpe",
                         "swift",
@@ -1801,7 +1800,6 @@ def inference_tab():
                     ),
                     choices=[
                         "crepe",
-                        "crepe-tiny",
                         "rmvpe",
                         "fcpe",
                         "swift",

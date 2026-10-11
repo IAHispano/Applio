@@ -452,7 +452,7 @@
     "You can also use a custom path.": "ብጁ ዱካም መጠቀም ይችላሉ።",
     "You must agree to the Terms of Use to proceed.": "ለመቀጠል የአጠቃቀም ውልን መቀበል አለብዎት።",
     "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)",
-    "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch ትክክለኛውን pitch ይጽፋል፣ በ F0 ceiling ላይ ተገድቧል። fold የተሳሳቱ የኦክታቭ ፍሬሞችን world/harvest drive በመጠቀም ይጠግናል፤ የድምፅ ባህሪያቸውን ለመጠበቅ ያልታረሙ ሌብሎች ላይ በሰለጠኑ ሞዴሎች ላይ ይጠቀሙበት።",
+    "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch ትክክለኛውን pitch ይጽፋል፣ በ F0 ceiling ላይ ተገድቧል። fold የተሳሳቱ የኦክታቭ ፍሬሞችን ግማሽ-pitch መለኪያ በመጠቀም ይጠግናል፤ የድምፅ ባህሪያቸውን ለመጠበቅ ያልታረሙ ሌብሎች ላይ በሰለጠኑ ሞዴሎች ላይ ይጠቀሙበት።",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "{} plugin በ {} ተጭኗል! ለውጦቹን ለማስተር፣ Applio እንደገና እየተከፈተ ነው።",
     "{} saved in {}": "{} በ {} ተቀምጧል"
 }

@@ -78,7 +78,7 @@ def apply_config_update(instance, current, message):
     replaced = model_path != model.model_path
     voice = RealtimeVoiceConverter(model_path) if replaced else pipeline.vc
     method = candidate.get("f0_method", pipeline.f0_method)
-    if method not in ("crepe", "crepe-tiny", "rmvpe", "fcpe", "swift"):
+    if method not in ("crepe", "rmvpe", "fcpe", "swift"):
         raise ValueError("Invalid f0_method")
     pitch_model = (
         pipeline.setup_f0(method) if method != pipeline.f0_method else pipeline.f0_model

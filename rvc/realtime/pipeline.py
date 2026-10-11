@@ -229,7 +229,7 @@ class Realtime_Pipeline:
                 sample_rate=self.sample_rate,
                 hop_size=self.window,
             )
-        elif self.f0_method in ("crepe", "crepe-tiny"):
+        elif self.f0_method == "crepe":
             f0_model = None
 
         return f0_model
@@ -268,14 +268,14 @@ class Realtime_Pipeline:
                 filter_radius=0.5,
             )
             f0 = torch.from_numpy(f0).float().to(self.device)
-        elif self.f0_method in ("crepe", "crepe-tiny"):
+        elif self.f0_method == "crepe":
             f0, pd = torchcrepe.predict(
                 x.float().to(self.device).unsqueeze(dim=0),
                 self.sample_rate,
                 self.window,
                 self.f0_min,
                 self.f0_max,
-                model="tiny" if "-tiny" in self.f0_method else "full",
+                model="full",
                 batch_size=512,
                 device=self.device,
                 return_periodicity=True,

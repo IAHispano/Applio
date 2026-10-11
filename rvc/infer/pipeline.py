@@ -230,44 +230,11 @@ class Pipeline:
         global f0_mel_min, f0_mel_max
         x = x.astype(np.float32)
         x /= np.quantile(np.abs(x), 0.999)
-        if f0_method == "pm":
-            f0 = (
-                parselmouth.Sound(x, self.sample_rate)
-                .to_pitch_ac(
-                    time_step=self.time_step / 1000,
-                    voicing_threshold=0.6,
-                    pitch_floor=self.f0_min,
-                    pitch_ceiling=self.f0_max,
-                )
-                .selected_array["frequency"]
-            )
-            pad_size = (p_len - len(f0) + 1) // 2
-            if pad_size > 0 or p_len - len(f0) - pad_size > 0:
-                f0 = np.pad(
-                    f0, [[pad_size, p_len - len(f0) - pad_size]], mode="constant"
-                )
-        elif f0_method == "harvest":
-            f0, t = pyworld.harvest(
-                x.astype(np.double),
-                fs=self.sample_rate,
-                f0_ceil=self.f0_max,
-                f0_floor=self.f0_min,
-                frame_period=10,
-            )
-            f0 = pyworld.stonemask(x.astype(np.double), f0, t, self.sample_rate)
-            f0 = signal.medfilt(f0, 3)
-            f0 = f0[1:]
-        elif f0_method == "crepe":
+        if f0_method == "crepe":
             model = CREPE(
                 device=self.device, sample_rate=self.sample_rate, hop_size=self.window
             )
             f0 = model.get_f0(x, self.f0_min, self.f0_max, p_len, "full")
-            del model
-        elif f0_method == "crepe-tiny":
-            model = CREPE(
-                device=self.device, sample_rate=self.sample_rate, hop_size=self.window
-            )
-            f0 = model.get_f0(x, self.f0_min, self.f0_max, p_len, "tiny")
             del model
         elif f0_method == "rmvpe":
             if "rmvpe" not in self.f0_models:

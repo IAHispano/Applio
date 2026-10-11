@@ -49,7 +49,7 @@ class FeatureInput:
         ):
             torch.backends.cudnn.enabled = False
             torch.backends.cudnn.benchmark = False
-        if f0_method in ("crepe", "crepe-tiny"):
+        if f0_method == "crepe":
             self.model = CREPE(
                 device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
             )
@@ -79,8 +79,6 @@ class FeatureInput:
     def compute_f0(self, x, p_len=None):
         if self.f0_method == "crepe":
             f0 = self.model.get_f0(x, self.f0_min, self.f0_max, p_len, "full")
-        elif self.f0_method == "crepe-tiny":
-            f0 = self.model.get_f0(x, self.f0_min, self.f0_max, p_len, "tiny")
         elif self.f0_method == "rmvpe":
             f0 = self.model.get_f0(x, filter_radius=0.03)
         elif self.f0_method == "fcpe":

@@ -926,7 +926,6 @@ def _infer_opts(func):
             type=click.Choice(
                 [
                     "crepe",
-                    "crepe-tiny",
                     "rmvpe",
                     "fcpe",
                     "hybrid[crepe+rmvpe]",
@@ -1272,7 +1271,7 @@ def preprocess(**kwargs):
 @click.option("--model-name", required=True, help="Name of the model.")
 @click.option(
     "--f0-method",
-    type=click.Choice(["crepe", "crepe-tiny", "rmvpe", "fcpe"]),
+    type=click.Choice(["crepe", "rmvpe", "fcpe"]),
     default="rmvpe",
     help="Pitch extraction method.",
 )
