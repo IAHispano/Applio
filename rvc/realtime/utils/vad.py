@@ -3,7 +3,10 @@ import numpy as np
 
 
 class VADProcessor:
-    def __init__(self, sensitivity_mode=3, sample_rate=16000, frame_duration_ms=30):
+    def __init__(
+        self, sensitivity_mode=1, sample_rate=16000, frame_duration_ms=30,
+        hangover_ms=200,
+    ):
         """
         Initializes the VADProcessor.
 
@@ -22,6 +25,31 @@ class VADProcessor:
         self.vad = webrtcvad.Vad(sensitivity_mode)
         self.sample_rate = sample_rate
         self.frame_length = int(sample_rate * (frame_duration_ms / 1000.0))
+        self.hangover_samples = int(sample_rate * hangover_ms / 1000)
+        self.remaining_samples = 0
+        self.noise_rms = 0.0001
+        self.window = np.hanning(self.frame_length)
+        self.fft_size = 1 << (2 * self.frame_length - 1).bit_length()
+        frequencies = np.fft.rfftfreq(self.fft_size, 1 / sample_rate)
+        self.voice_band = (frequencies >= 70) & (frequencies <= 4000)
+        self.lags = np.arange(max(1, sample_rate // 1100), min(self.frame_length - 1, sample_rate // 70))
+
+    def _is_sustained_voice(self, frame):
+        """Keep periodic vowels/singing which conversational WebRTC VAD rejects."""
+        frame = frame.astype(np.float64) / 32767
+        frame -= frame.mean()
+        rms = np.sqrt(np.mean(frame ** 2))
+        if rms < max(0.001, self.noise_rms * 3):
+            return False
+        spectrum = np.abs(np.fft.rfft(frame * self.window, self.fft_size)) ** 2
+        if spectrum[self.voice_band].sum() < spectrum.sum() * 0.75:
+            return False  # Reject DC and low-frequency electrical/fan hum.
+        transformed = np.fft.rfft(frame, self.fft_size)
+        correlation = np.fft.irfft(np.abs(transformed) ** 2, self.fft_size)
+        energy = np.concatenate(([0.0], np.cumsum(frame ** 2)))
+        denominator = np.sqrt(energy[-self.lags - 1] * (energy[-1] - energy[self.lags]))
+        periodicity = correlation[self.lags] / np.maximum(denominator, 1e-12)
+        return bool(periodicity.max() >= 0.8)
 
     def is_speech(self, audio_chunk_float32):
         """
@@ -43,6 +71,9 @@ class VADProcessor:
             print("VAD Warning: Received stereo audio, averaging to mono.")
             audio_chunk_float32 = np.mean(audio_chunk_float32, axis=1)
 
+        if audio_chunk_float32.size == 0:
+            return False
+        chunk_samples = len(audio_chunk_float32)
         # Convert float32 audio to int16 PCM
         # WebRTC VAD expects 16-bit linear PCM audio.
         if np.max(np.abs(audio_chunk_float32)) > 1.0:
@@ -53,27 +84,27 @@ class VADProcessor:
 
         audio_chunk_int16 = (audio_chunk_float32 * 32767).astype(np.int16)
 
+        # Analyze the last partial frame as well, so word endings are retained.
+        padding_size = (-len(audio_chunk_int16)) % self.frame_length
+        if padding_size:
+            audio_chunk_int16 = np.pad(audio_chunk_int16, (0, padding_size))
         num_frames = len(audio_chunk_int16) // self.frame_length
-        if num_frames == 0 and len(audio_chunk_int16) > 0:
-            # If the chunk is smaller than one frame, pad it for VAD analysis
-            # This might not be ideal but handles small initial chunks
-            padding = np.zeros(
-                self.frame_length - len(audio_chunk_int16), dtype=np.int16
-            )
-            audio_chunk_int16 = np.concatenate((audio_chunk_int16, padding))
-            num_frames = 1
-        elif num_frames == 0 and len(audio_chunk_int16) == 0:
-            return False  # Empty chunk
-
         try:
             for i in range(num_frames):
                 start = i * self.frame_length
                 end = start + self.frame_length
                 frame = audio_chunk_int16[start:end]
                 # The VAD expects bytes, not a NumPy array.
-                if self.vad.is_speech(frame.tobytes(), self.sample_rate):
+                if (self.vad.is_speech(frame.tobytes(), self.sample_rate)
+                        or self._is_sustained_voice(frame)):
+                    self.remaining_samples = self.hangover_samples
                     return True  # Speech detected in at least one frame
-            return False  # No speech detected in any frame
+            keep_tail = self.remaining_samples > 0
+            self.remaining_samples = max(0, self.remaining_samples - chunk_samples)
+            if not keep_tail:
+                rms = float(np.sqrt(np.mean(audio_chunk_float32 ** 2)))
+                self.noise_rms = 0.95 * self.noise_rms + 0.05 * min(rms, 0.01)
+            return keep_tail
         except Exception as e:
             # webrtcvad can sometimes throw "Error talking to VAD" or similar
             # if frame length is not perfect.

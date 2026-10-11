@@ -106,7 +106,7 @@ class Realtime:
         embedder_model_custom: str = None,
         silent_threshold: int = 0,
         vad_enabled: bool = False,
-        vad_sensitivity: int = 3,
+        vad_sensitivity: int = 1,
         vad_frame_ms: int = 30,
         sid: int = 0,
         clean_audio: bool = False,
@@ -311,76 +311,22 @@ class Realtime:
         ).to(self.dtype)
         circular_write(audio_input_16k, self.audio_buffer)
 
-        vol_t = torch.sqrt(torch.square(self.audio_buffer).mean())
+        vol_t = torch.sqrt(torch.square(audio_input_16k).mean())
         vol = max(vol_t.item(), 0)
 
         board = self.board
         reduced_noise = self.reduced_noise
 
-        if self.vad is not None:
-            is_speech = self.vad.is_speech(audio_input_16k.cpu().numpy().copy())
-            if not is_speech:
-                # Busy wait to keep power manager happy and clocks stable. Running pipeline on-demand seems to lag when the delay between
-                # voice changer activation is too high.
-                # https://forums.developer.nvidia.com/t/why-kernel-calculate-speed-got-slower-after-waiting-for-a-while/221059/9
-                audio_model = self.pipeline.voice_conversion(
-                    self.convert_buffer,
-                    self.pitch_buffer,
-                    self.pitchf_buffer,
-                    f0_up_key,
-                    index_rate,
-                    self.convert_feature_size_16k,
-                    self.silence_front,
-                    self.skip_head,
-                    self.return_length,
-                    protect,
-                    volume_envelope,
-                    f0_autotune,
-                    f0_autotune_strength,
-                    proposed_pitch,
-                    proposed_pitch_threshold,
-                    reduced_noise,
-                    board,
-                    block_size_16k=self.block_frame_16k,
-                )
-
-                return (
-                    torch.zeros(
-                        audio_model.shape, dtype=torch.float32, device=self.device
-                    ),
-                    vol,
-                    True,
-                )
-
-        if vol < self.input_sensitivity:
-            audio_model = self.pipeline.voice_conversion(
-                self.convert_buffer,
-                self.pitch_buffer,
-                self.pitchf_buffer,
-                f0_up_key,
-                index_rate,
-                self.convert_feature_size_16k,
-                self.silence_front,
-                self.skip_head,
-                self.return_length,
-                protect,
-                volume_envelope,
-                f0_autotune,
-                f0_autotune_strength,
-                proposed_pitch,
-                proposed_pitch_threshold,
-                reduced_noise,
-                board,
-                block_size_16k=self.block_frame_16k,
-            )
-
-            return (
-                torch.zeros(audio_model.shape, dtype=torch.float32, device=self.device),
-                vol,
-                True,
-            )
-
+        # Advance context even while gated; stale speech must not be replayed.
         circular_write(audio_input_16k, self.convert_buffer)
+        is_silence = (
+            (
+                not self.vad.is_speech(audio_input_16k.cpu().numpy().copy())
+                or vol < self.input_sensitivity
+            )
+            if self.vad is not None
+            else vol < self.input_sensitivity
+        )
 
         audio_model = self.pipeline.voice_conversion(
             self.convert_buffer,
@@ -403,9 +349,12 @@ class Realtime:
             block_size_16k=self.block_frame_16k,
         )
 
-        # Scale output by the current input RMS to suppress residue during silence.
-        audio_out: torch.Tensor = self.resample_out(audio_model * vol_t)
-        return audio_out, vol, False
+        # RMS matching is already controlled by volume_envelope in the pipeline.
+        # Multiplying by input RMS again causes pumping and double attenuation.
+        audio_out: torch.Tensor = self.resample_out(audio_model)
+        if is_silence:
+            audio_out.zero_()
+        return audio_out, vol, is_silence
 
     def __del__(self):
         if hasattr(self, "pipeline"):
@@ -425,7 +374,7 @@ class VoiceChanger:
         embedder_model_custom: str = None,
         silent_threshold: int = 0,
         vad_enabled: bool = False,
-        vad_sensitivity: int = 3,
+        vad_sensitivity: int = 1,
         vad_frame_ms: int = 30,
         sid: int = 0,
         clean_audio: bool = False,
