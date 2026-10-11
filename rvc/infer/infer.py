@@ -340,9 +340,7 @@ class VoiceConverter:
             )
 
         sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
-        output_path_format = audio_output_path.replace(
-            ".wav", f".{export_format.lower()}"
-        )
+        output_path_format = os.path.splitext(audio_output_path)[0] + f".{export_format.lower()}"
         audio_output_path = self.convert_audio_format(
             audio_output_path, output_path_format, export_format
         )
