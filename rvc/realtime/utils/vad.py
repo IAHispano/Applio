@@ -4,7 +4,10 @@ import numpy as np
 
 class VADProcessor:
     def __init__(
-        self, sensitivity_mode=1, sample_rate=16000, frame_duration_ms=30,
+        self,
+        sensitivity_mode=1,
+        sample_rate=16000,
+        frame_duration_ms=30,
         hangover_ms=200,
     ):
         """
@@ -32,13 +35,15 @@ class VADProcessor:
         self.fft_size = 1 << (2 * self.frame_length - 1).bit_length()
         frequencies = np.fft.rfftfreq(self.fft_size, 1 / sample_rate)
         self.voice_band = (frequencies >= 70) & (frequencies <= 4000)
-        self.lags = np.arange(max(1, sample_rate // 1100), min(self.frame_length - 1, sample_rate // 70))
+        self.lags = np.arange(
+            max(1, sample_rate // 1100), min(self.frame_length - 1, sample_rate // 70)
+        )
 
     def _is_sustained_voice(self, frame):
         """Keep periodic vowels/singing which conversational WebRTC VAD rejects."""
         frame = frame.astype(np.float64) / 32767
         frame -= frame.mean()
-        rms = np.sqrt(np.mean(frame ** 2))
+        rms = np.sqrt(np.mean(frame**2))
         if rms < max(0.001, self.noise_rms * 3):
             return False
         spectrum = np.abs(np.fft.rfft(frame * self.window, self.fft_size)) ** 2
@@ -46,7 +51,7 @@ class VADProcessor:
             return False  # Reject DC and low-frequency electrical/fan hum.
         transformed = np.fft.rfft(frame, self.fft_size)
         correlation = np.fft.irfft(np.abs(transformed) ** 2, self.fft_size)
-        energy = np.concatenate(([0.0], np.cumsum(frame ** 2)))
+        energy = np.concatenate(([0.0], np.cumsum(frame**2)))
         denominator = np.sqrt(energy[-self.lags - 1] * (energy[-1] - energy[self.lags]))
         periodicity = correlation[self.lags] / np.maximum(denominator, 1e-12)
         return bool(periodicity.max() >= 0.8)
@@ -95,14 +100,15 @@ class VADProcessor:
                 end = start + self.frame_length
                 frame = audio_chunk_int16[start:end]
                 # The VAD expects bytes, not a NumPy array.
-                if (self.vad.is_speech(frame.tobytes(), self.sample_rate)
-                        or self._is_sustained_voice(frame)):
+                if self.vad.is_speech(
+                    frame.tobytes(), self.sample_rate
+                ) or self._is_sustained_voice(frame):
                     self.remaining_samples = self.hangover_samples
                     return True  # Speech detected in at least one frame
             keep_tail = self.remaining_samples > 0
             self.remaining_samples = max(0, self.remaining_samples - chunk_samples)
             if not keep_tail:
-                rms = float(np.sqrt(np.mean(audio_chunk_float32 ** 2)))
+                rms = float(np.sqrt(np.mean(audio_chunk_float32**2)))
                 self.noise_rms = 0.95 * self.noise_rms + 0.05 * min(rms, 0.01)
             return keep_tail
         except Exception as e:
