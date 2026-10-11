@@ -42,6 +42,7 @@ class RealtimeVoiceConverter:
         self.use_f0 = None  # Whether the model uses F0
         # Change this when you need to test FP16, and it may not be faster.
         self.dtype = torch.float32  # torch.float16 if config.is_half else torch.float32
+        self.decoder_fp16 = False
         # load weights and setup model network.
         self.load_model(weight_root)
         self.setup_network()
@@ -93,9 +94,10 @@ class RealtimeVoiceConverter:
         rate: Tensor = None,
         skip_head: int = None,
     ):
-        output = self.net_g.infer(feats, p_len, pitch, pitchf, sid, rate, skip_head)[0][
-            0, 0
-        ]
+        output = self.net_g.infer(
+            feats, p_len, pitch, pitchf, sid, rate, skip_head,
+            decoder_fp16=self.decoder_fp16,
+        )[0][0, 0]
 
         return torch.clip(output, -1.0, 1.0, out=output)
 
@@ -126,6 +128,9 @@ class Realtime_Pipeline:
         self.sid = sid
         self.torch_sid = torch.tensor([sid], device=self.device, dtype=torch.int64)
         self.autotune = Autotune()
+        self.autotune_notes = torch.tensor(
+            self.autotune.note_dict, dtype=vc.dtype, device=self.device
+        )
         self.resamplers = {}
         self.f0_model = self.setup_f0(self.f0_method)
         self.dtype = vc.dtype
@@ -146,12 +151,10 @@ class Realtime_Pipeline:
         )
 
     def autotune_f0(self, f0, f0_autotune_strength):
-        notes = torch.as_tensor(
-            self.autotune.note_dict, dtype=f0.dtype, device=f0.device
-        )
-        nearest = notes[torch.cdist(f0[:, None], notes[:, None]).argmin(dim=1)]
-
-        return f0 + (nearest - f0) * f0_autotune_strength
+        notes = self.autotune_notes
+        nearest = notes[(f0[:, None] - notes[None, :]).abs().argmin(dim=1)]
+        # Unvoiced frames must stay unvoiced, including inside a CUDA graph.
+        return torch.where(f0 > 0, f0 + (nearest - f0) * f0_autotune_strength, f0)
 
     def setup_f0(self, f0_method: str = "fcpe"):
         if f0_method == "rmvpe":
@@ -527,6 +530,7 @@ class Realtime_Pipeline:
             id(self.f0_model),
             id(self.big_tsr),
             id(self.torch_sid),
+            self.vc.decoder_fp16,
         )
         if self._graph_cache is None or self._graph_cache[0] != key:
             self._graph_cache = None  # Release the previous graph's workspace.

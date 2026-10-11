@@ -212,6 +212,7 @@ class Synthesizer(torch.nn.Module):
         sid: torch.Tensor = None,
         rate: Optional[torch.Tensor] = None,
         skip_head: Optional[int] = None,
+        decoder_fp16: bool = False,
     ):
         """
         Inference of the model.
@@ -240,10 +241,17 @@ class Synthesizer(torch.nn.Module):
                 nsff0 = nsff0[:, head:]
 
         z = self.flow(z_p, x_mask, g=g, reverse=True)
-        o = (
-            self.dec(z * x_mask, nsff0, g=g)
-            if self.use_f0
-            else self.dec(z * x_mask, g=g)
-        )
+        # Keep the encoder and flow in their original precision. Only the
+        # realtime HiFi-GAN decoder opts into mixed precision on CUDA.
+        with torch.autocast(
+            device_type=z.device.type,
+            dtype=torch.float16,
+            enabled=decoder_fp16 and z.device.type == "cuda",
+        ):
+            o = (
+                self.dec(z * x_mask, nsff0, g=g)
+                if self.use_f0
+                else self.dec(z * x_mask, g=g)
+            )
 
         return o, x_mask, (z, z_p, m_p, logs_p)
