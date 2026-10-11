@@ -1,7 +1,6 @@
 import os
 import sys
 import json
-import math
 from fastapi import FastAPI, WebSocketDisconnect, WebSocket, Request
 import numpy as np
 import torch
@@ -10,7 +9,9 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from .core import VoiceChanger, AUDIO_SAMPLE_RATE
-from .pipeline import CudaGraphCaptureError, strip_parametrizations
+from .pipeline import CudaGraphCaptureError
+from .utils.chunks import automatic_block_frame
+from .configuration import apply_config_update
 from rvc.lib.user_config import resolve_logs_path
 
 app = FastAPI()
@@ -19,206 +20,32 @@ params = {}
 active_audio_ws = None
 
 
+async def apply_message(ws, message):
+    global params
+    request_id = None
+    try:
+        if isinstance(message, str):
+            message = json.loads(message)
+        if not isinstance(message, dict):
+            raise ValueError("Settings must be an object")
+        request_id = message.get("id")
+        if vc_instance is None:
+            raise ValueError("Realtime pipeline not found")
+        params = apply_config_update(vc_instance, params, message)
+        await ws.send_text(json.dumps({"type": "config_applied", "id": request_id,
+                                       "block_frame": vc_instance.block_frame}))
+    except Exception as error:
+        await ws.send_text(json.dumps({"type": "config_error", "id": request_id, "message": str(error)}))
+
+
 @app.websocket("/change-config")
 async def change_config(ws: WebSocket):
-    global vc_instance, params
-
     await ws.accept()
-
-    if vc_instance is None:
-        return
-
-    text = await ws.receive_text()
-    jsons = json.loads(text)
-
-    if jsons["if_kwargs"] and jsons["value"] is not None:
-        params["kwargs"][jsons["key"]] = jsons["value"]
-    elif jsons["value"] is not None:
-        params[jsons["key"]] = jsons["value"]
-
-    crossfade_frame = int(
-        params.get("cross_fade_overlap_size", 0.1) * AUDIO_SAMPLE_RATE
-    )
-    extra_frame = int(params.get("extra_convert_size", 0.5) * AUDIO_SAMPLE_RATE)
-
-    if (
-        vc_instance.crossfade_frame != crossfade_frame
-        or vc_instance.extra_frame != extra_frame
-    ):
-        vc_instance.crossfade_frame = crossfade_frame
-        vc_instance.extra_frame = extra_frame
-        # Deleting these things is not a good idea; they should only be overwritten directly.
-        # del (
-        #     vc_instance.vc_model.audio_buffer,
-        #     vc_instance.vc_model.convert_buffer,
-        #     vc_instance.vc_model.pitch_buffer,
-        #     vc_instance.vc_model.pitchf_buffer,
-        # )
-        del (
-            vc_instance.fade_in_window,
-            vc_instance.fade_out_window,
-            vc_instance.sola_buffer,
-        )
-
-        vc_instance.vc_model.realloc(
-            vc_instance.block_frame,
-            vc_instance.extra_frame,
-            vc_instance.crossfade_frame,
-            vc_instance.sola_search_frame,
-        )
-        vc_instance.generate_strength()
-
-    vc_instance.vc_model.input_sensitivity = 10 ** (
-        params.get("silent_threshold", -90) / 20
-    )
-
-    vad_enabled = params.get("vad_enabled", True)
-    if vad_enabled is False:
-        vc_instance.vc_model.vad = None
-    elif vad_enabled and vc_instance.vc_model.vad is None:
-        from rvc.realtime.utils.vad import VADProcessor
-
-        vc_instance.vc_model.vad = VADProcessor(
-            sensitivity_mode=3,
-            sample_rate=vc_instance.vc_model.sample_rate,
-            frame_duration_ms=30,
-        )
-
-    # The VAD parameters have been assigned by default.
-    # if vc_instance.vc_model.vad is not None:
-    #     vc_instance.vc_model.vad.vad.set_mode(vad_sensitivity)
-    #     vc_instance.vc_model.vad.frame_length = int(vc_instance.vc_model.sample_rate * (vad_frame_ms / 1000.0))
-
-    clean_audio = params.get("clean_audio", False)
-    clean_strength = params.get("clean_strength", 0.5)
-
-    if clean_audio is False:
-        vc_instance.vc_model.reduced_noise = None
-    elif clean_audio and vc_instance.vc_model.reduced_noise is None:
-        from noisereduce.torchgate import TorchGate
-
-        vc_instance.vc_model.reduced_noise = TorchGate(
-            vc_instance.vc_model.pipeline.tgt_sr,
-            prop_decrease=clean_strength,
-        ).to(vc_instance.vc_model.device)
-
-    if vc_instance.vc_model.reduced_noise is not None:
-        vc_instance.vc_model.reduced_noise.prop_decrease = clean_strength
-
-    post_process = params.get("post_process", False)
-    kwargs = params.get("kwargs", {})
-
-    if post_process is False:
-        vc_instance.vc_model.board = None
-        vc_instance.vc_model.kwargs = None
-    elif post_process and vc_instance.vc_model.kwargs != kwargs:
-        # Post-process requires creating a new pendalboard.
-        new_board = vc_instance.vc_model.setup_pedalboard(**kwargs)
-        vc_instance.vc_model.board = new_board
-        vc_instance.vc_model.kwargs = kwargs.copy()
-
-    model_pth = resolve_logs_path(
-        params.get("model_path", vc_instance.vc_model.model_path)
-    )
-    params["model_path"] = model_pth
-    if model_pth and vc_instance.vc_model.model_path != model_pth:
-        import torch
-        import torchaudio.transforms as tat
-
-        vc_instance.vc_model.model_path = model_pth
-        vc_instance.vc_model.pipeline.vc.load_model(model_pth)
-        vc_instance.vc_model.pipeline.vc.setup_network()
-        # Set a new version, otherwise it will crash.
-        vc_instance.vc_model.pipeline.version = vc_instance.vc_model.pipeline.vc.version
-        vc_instance.vc_model.pipeline.use_f0 = vc_instance.vc_model.pipeline.vc.use_f0
-        vc_instance.vc_model.pipeline.tgt_sr = vc_instance.vc_model.pipeline.vc.tgt_sr
-
-        vc_instance.vc_model.resample_out = tat.Resample(
-            orig_freq=vc_instance.vc_model.pipeline.tgt_sr,
-            new_freq=AUDIO_SAMPLE_RATE,
-            dtype=torch.float32,
-        ).to(vc_instance.vc_model.device)
-
-        if clean_audio:
-            from noisereduce.torchgate import TorchGate
-
-            vc_instance.vc_model.reduced_noise = TorchGate(
-                vc_instance.vc_model.pipeline.tgt_sr,
-                prop_decrease=clean_strength,
-            ).to(vc_instance.vc_model.device)
-
-    sid = params.get("sid", vc_instance.vc_model.pipeline.sid)
-    if vc_instance.vc_model.pipeline.sid != sid:
-        import torch
-
-        # This is for multi-SID models.
-        vc_instance.vc_model.pipeline.torch_sid = torch.tensor(
-            [sid], device=vc_instance.vc_model.pipeline.device, dtype=torch.int64
-        )
-        vc_instance.vc_model.pipeline.sid = sid
-
-    index_path = resolve_logs_path(params.get("index_path", None))
-    params["index_path"] = index_path
-    if index_path:
-        if vc_instance.vc_model.index_path != index_path:
-            from rvc.realtime.utils.torch import IndexWrapper
-
-            index = IndexWrapper(
-                index_path.strip()
-                .strip('"')
-                .strip("\n")
-                .strip('"')
-                .strip()
-                .replace("trained", "added"),
-                device=vc_instance.device,
-                dtype=vc_instance.vc_model.dtype,
-            )
-            big_tsr, _ = index.read_index_tensor()
-
-            # index, big_npy = load_faiss_index(
-            #     index_path.strip()
-            #     .strip('"')
-            #     .strip("\n")
-            #     .strip('"')
-            #     .strip()
-            #     .replace("trained", "added")
-            # )
-            vc_instance.vc_model.pipeline.index = index
-            vc_instance.vc_model.pipeline.big_tsr = big_tsr
-            vc_instance.vc_model.index_path = index_path
-    else:
-        vc_instance.vc_model.pipeline.index = None
-        vc_instance.vc_model.pipeline.big_tsr = None
-        vc_instance.vc_model.index_path = None
-
-    f0_method = params.get("f0_method", vc_instance.vc_model.pipeline.f0_method)
-    if vc_instance.vc_model.pipeline.f0_method != f0_method:
-        f0_model = vc_instance.vc_model.pipeline.setup_f0(f0_method)
-        vc_instance.vc_model.pipeline.f0_model = f0_model
-        vc_instance.vc_model.pipeline.f0_method = f0_method
-
-    embedder_model = params.get("embedder_model", vc_instance.vc_model.embedder_model)
-    embedder_model_custom = params.get(
-        "embedder_model_custom", vc_instance.vc_model.embedder_model_custom
-    )
-
-    if (
-        vc_instance.vc_model.embedder_model != embedder_model
-        or vc_instance.vc_model.embedder_model_custom != embedder_model_custom
-    ):
-        old_hubert_model = vc_instance.vc_model.pipeline.hubert_model
-        del old_hubert_model
-
-        from rvc.lib.utils import load_embedding
-
-        hubert_model = load_embedding(embedder_model, embedder_model_custom)
-        strip_parametrizations(hubert_model)
-        hubert_model = hubert_model.to(vc_instance.device).float()
-        hubert_model.eval()
-
-        vc_instance.vc_model.pipeline.hubert_model = hubert_model
-        vc_instance.vc_model.embedder_model = embedder_model
-        vc_instance.vc_model.embedder_model_custom = embedder_model_custom
+    try:
+        while True:
+            await apply_message(ws, await ws.receive_text())
+    except WebSocketDisconnect:
+        pass
 
 
 @app.post("/record")
@@ -306,7 +133,7 @@ async def websocket_audio(ws: WebSocket):
                 embedder_model_custom=params["embedder_model_custom"],
                 silent_threshold=params["silent_threshold"],
                 vad_enabled=params["vad_enabled"],
-                vad_sensitivity=3,
+                vad_sensitivity=params.get("vad_sensitivity", 1),
                 vad_frame_ms=30,
                 sid=params["sid"],
                 clean_audio=params["clean_audio"],
@@ -315,6 +142,10 @@ async def websocket_audio(ws: WebSocket):
                 **params["kwargs"],
             )
 
+        vc_instance.vc_model.pipeline.vc.decoder_fp16 = (
+            params.get("decoder_fp16", False)
+            and vc_instance.vc_model.pipeline.vc.vocoder in ("HiFi-GAN", "MRF HiFi-GAN")
+        )
         # Initialize model kernels before the browser starts capturing. Audio
         # sent during model loading would otherwise remain queued and stale.
         warmup_options = dict(
@@ -332,10 +163,7 @@ async def websocket_audio(ws: WebSocket):
             # Retain headroom for device/OS jitter, and enlarge blocks on CPU,
             # AMD, or expensive model configurations before capturing audio.
             for _ in range(3):
-                needed = min(
-                    AUDIO_SAMPLE_RATE,
-                    math.ceil(warmup_ms * 1.25 / 10) * (AUDIO_SAMPLE_RATE // 100),
-                )
+                needed = automatic_block_frame(warmup_ms, AUDIO_SAMPLE_RATE)
                 if needed <= block_frame:
                     break
                 block_frame = needed
@@ -348,12 +176,26 @@ async def websocket_audio(ws: WebSocket):
                 )
                 vc_instance.generate_strength()
                 warmup_ms = vc_instance.warmup(**warmup_options)
+        vc_instance.last_processing_ms = warmup_ms
         params["block_frame"] = block_frame
         print("Realtime is ready!")
         await ws.send_text(json.dumps({"type": "ready", "block_frame": block_frame}))
 
         while True:
-            audio = await ws.receive_bytes()
+            message = await ws.receive()
+            if message["type"] == "websocket.disconnect":
+                break
+            if message.get("text") is not None:
+                await apply_message(ws, message["text"])
+                block_frame = vc_instance.block_frame
+                continue
+            audio = message.get("bytes")
+            if audio is None:
+                continue
+            if vc_instance is None:
+                return
+            # The separate configuration endpoint can also resize the pipeline.
+            block_frame = vc_instance.block_frame
             arr = np.frombuffer(audio, dtype=np.float32)
 
             if arr.size != block_frame:
@@ -379,6 +221,7 @@ async def websocket_audio(ws: WebSocket):
                 proposed_pitch_threshold=params["proposed_pitch_threshold"],
             )
 
+            vc_instance.last_processing_ms = perf[1]
             await ws.send_text(
                 json.dumps({"type": "latency", "value": perf[1], "volume": vol})
             )
