@@ -79,7 +79,9 @@ def phase_vocoder(a, b, fade_out, fade_in):
             * (
                 (
                     # Base frequency grid for each bin
-                    2 * torch.pi * torch.arange(n // 2 + 1, device=a.device, dtype=a.dtype)
+                    2
+                    * torch.pi
+                    * torch.arange(n // 2 + 1, device=a.device, dtype=a.dtype)
                     +
                     # Phase unwrapping (wrapping delta phase to the [-pi, pi] range)
                     (
@@ -459,16 +461,24 @@ class VoiceChanger:
     def _phase_aligned_output(self, audio, block_size):
         """SOLA and phase crossfade with the alignment offset kept on-device."""
         needed = block_size + self.crossfade_frame
-        padded = F.pad(audio, (0, max(0, needed + self.sola_search_frame - audio.shape[0])))
-        conv_input = padded[None, None, :self.crossfade_frame + self.sola_search_frame].float()
+        padded = F.pad(
+            audio, (0, max(0, needed + self.sola_search_frame - audio.shape[0]))
+        )
+        conv_input = padded[
+            None, None, : self.crossfade_frame + self.sola_search_frame
+        ].float()
         numerator = F.conv1d(conv_input, self.sola_buffer[None, None, :])
-        denominator = torch.sqrt(F.conv1d(conv_input ** 2, self.sola_denominator_kernel) + 1e-8)
+        denominator = torch.sqrt(
+            F.conv1d(conv_input**2, self.sola_denominator_kernel) + 1e-8
+        )
         offset = torch.argmax(numerator[0, 0] / denominator[0, 0])
         positions = torch.arange(needed, device=audio.device) + offset
         aligned = padded.index_select(0, positions)
-        aligned[:self.crossfade_frame] = phase_vocoder(
-            self.sola_buffer, aligned[:self.crossfade_frame],
-            self.fade_out_window, self.fade_in_window,
+        aligned[: self.crossfade_frame] = phase_vocoder(
+            self.sola_buffer,
+            aligned[: self.crossfade_frame],
+            self.fade_out_window,
+            self.fade_in_window,
         )
         self.sola_buffer.copy_(aligned[block_size:needed])
         return aligned[:block_size]
@@ -557,8 +567,13 @@ class VoiceChanger:
                 self.soundfile.write(silence_output)
             return silence_output, vol
 
-        if use_phase_vocoder and getattr(self.vc_model.pipeline, "_graph_cache", None) is not None:
-            audio_output = self._graph_phase_output(audio, block_size).detach().cpu().numpy()
+        if (
+            use_phase_vocoder
+            and getattr(self.vc_model.pipeline, "_graph_cache", None) is not None
+        ):
+            audio_output = (
+                self._graph_phase_output(audio, block_size).detach().cpu().numpy()
+            )
             if self.record_audio and self.soundfile is not None:
                 self.soundfile.write(audio_output)
             return audio_output, vol

@@ -95,7 +95,13 @@ class RealtimeVoiceConverter:
         skip_head: int = None,
     ):
         output = self.net_g.infer(
-            feats, p_len, pitch, pitchf, sid, rate, skip_head,
+            feats,
+            p_len,
+            pitch,
+            pitchf,
+            sid,
+            rate,
+            skip_head,
             decoder_fp16=self.decoder_fp16,
         )[0][0, 0]
 

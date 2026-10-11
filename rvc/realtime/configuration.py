@@ -1,4 +1,5 @@
 """Apply realtime settings at an audio block boundary, without reconnecting."""
+
 import math
 import os
 
@@ -30,18 +31,31 @@ def apply_config_update(instance, current, message):
         raise ValueError("Settings must be objects")
     if any(key not in current and key != "vad_sensitivity" for key in changes):
         raise ValueError("Unknown realtime setting")
-    candidate = {**current, **changes, "kwargs": {**current.get("kwargs", {}), **effects}}
+    candidate = {
+        **current,
+        **changes,
+        "kwargs": {**current.get("kwargs", {}), **effects},
+    }
     ranges = {
-        "f0_up_key": (-24, 24), "index_rate": (0, 1), "protect": (0, 0.5),
-        "volume_envelope": (0, 1), "autotune_strength": (0, 1),
-        "clean_strength": (0, 1), "input_audio_gain": (0, 200),
-        "silent_threshold": (-90, 0), "cross_fade_overlap_size": (0.01, 0.5),
-        "extra_convert_size": (0, 10), "vad_sensitivity": (0, 3),
+        "f0_up_key": (-24, 24),
+        "index_rate": (0, 1),
+        "protect": (0, 0.5),
+        "volume_envelope": (0, 1),
+        "autotune_strength": (0, 1),
+        "clean_strength": (0, 1),
+        "input_audio_gain": (0, 200),
+        "silent_threshold": (-90, 0),
+        "cross_fade_overlap_size": (0.01, 0.5),
+        "extra_convert_size": (0, 10),
+        "vad_sensitivity": (0, 3),
     }
     for key, (low, high) in ranges.items():
         value = candidate.get(key, 1 if key == "vad_sensitivity" else current.get(key))
-        if (key in candidate or value is not None) and (not isinstance(value, (int, float)) or not math.isfinite(value)
-                                  or not low <= value <= high):
+        if (key in candidate or value is not None) and (
+            not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or not low <= value <= high
+        ):
             raise ValueError(f"Invalid {key}")
     block = candidate.get("block_frame", instance.block_frame)
     if candidate.get("automatic_block_size") and (
@@ -66,7 +80,9 @@ def apply_config_update(instance, current, message):
     method = candidate.get("f0_method", pipeline.f0_method)
     if method not in ("crepe", "crepe-tiny", "rmvpe", "fcpe", "swift"):
         raise ValueError("Invalid f0_method")
-    pitch_model = pipeline.setup_f0(method) if method != pipeline.f0_method else pipeline.f0_model
+    pitch_model = (
+        pipeline.setup_f0(method) if method != pipeline.f0_method else pipeline.f0_model
+    )
     embedder = candidate.get("embedder_model", model.embedder_model)
     custom = candidate.get("embedder_model_custom", model.embedder_model_custom)
     if embedder == "custom" and (not custom or not os.path.exists(custom)):
@@ -86,7 +102,11 @@ def apply_config_update(instance, current, message):
     sid = candidate.get("sid", pipeline.sid)
     if not isinstance(sid, int) or not 0 <= sid < voice.net_g.emb_g.num_embeddings:
         raise ValueError("Invalid speaker ID")
-    speaker = torch.tensor([sid], device=pipeline.device, dtype=torch.int64) if sid != pipeline.sid else pipeline.torch_sid
+    speaker = (
+        torch.tensor([sid], device=pipeline.device, dtype=torch.int64)
+        if sid != pipeline.sid
+        else pipeline.torch_sid
+    )
     sensitivity = int(candidate.get("vad_sensitivity", 1))
     vad = model.vad
     if not candidate.get("vad_enabled", True):
@@ -96,23 +116,47 @@ def apply_config_update(instance, current, message):
     noise = model.reduced_noise
     if not candidate.get("clean_audio", False):
         noise = None
-    elif noise is None or replaced or candidate.get("clean_strength") != current.get("clean_strength"):
+    elif (
+        noise is None
+        or replaced
+        or candidate.get("clean_strength") != current.get("clean_strength")
+    ):
         from noisereduce.torchgate import TorchGate
-        noise = TorchGate(voice.tgt_sr, prop_decrease=candidate.get("clean_strength", 0.5)).to(instance.device)
+
+        noise = TorchGate(
+            voice.tgt_sr, prop_decrease=candidate.get("clean_strength", 0.5)
+        ).to(instance.device)
     board = model.board
     kwargs = candidate["kwargs"]
     if not candidate.get("post_process", False):
         board = None
     elif board is None or kwargs != model.kwargs:
         board = model.setup_pedalboard(**kwargs)
-    resample = tat.Resample(voice.tgt_sr, AUDIO_SAMPLE_RATE, dtype=torch.float32).to(instance.device) if replaced else model.resample_out
+    resample = (
+        tat.Resample(voice.tgt_sr, AUDIO_SAMPLE_RATE, dtype=torch.float32).to(
+            instance.device
+        )
+        if replaced
+        else model.resample_out
+    )
 
-    if (voice is not pipeline.vc or pitch_model is not pipeline.f0_model
-            or hubert is not pipeline.hubert_model or index is not pipeline.index
-            or speaker is not pipeline.torch_sid):
+    if (
+        voice is not pipeline.vc
+        or pitch_model is not pipeline.f0_model
+        or hubert is not pipeline.hubert_model
+        or index is not pipeline.index
+        or speaker is not pipeline.torch_sid
+    ):
         pipeline._graph_cache = None
-    pipeline.vc, pipeline.version, pipeline.use_f0, pipeline.tgt_sr = voice, voice.version, voice.use_f0, voice.tgt_sr
-    voice.decoder_fp16 = bool(candidate.get("decoder_fp16", False)) and voice.vocoder in ("HiFi-GAN", "MRF HiFi-GAN")
+    pipeline.vc, pipeline.version, pipeline.use_f0, pipeline.tgt_sr = (
+        voice,
+        voice.version,
+        voice.use_f0,
+        voice.tgt_sr,
+    )
+    voice.decoder_fp16 = bool(
+        candidate.get("decoder_fp16", False)
+    ) and voice.vocoder in ("HiFi-GAN", "MRF HiFi-GAN")
     pipeline.f0_model, pipeline.f0_method = pitch_model, method
     pipeline.hubert_model, pipeline.index, pipeline.big_tsr = hubert, index, data
     pipeline.sid, pipeline.torch_sid = sid, speaker
@@ -124,8 +168,16 @@ def apply_config_update(instance, current, message):
     model.input_sensitivity = 10 ** (candidate.get("silent_threshold", -90) / 20)
     crossfade = round(candidate.get("cross_fade_overlap_size", 0.1) * AUDIO_SAMPLE_RATE)
     extra = round(candidate.get("extra_convert_size", 0.5) * AUDIO_SAMPLE_RATE)
-    if (block, crossfade, extra) != (instance.block_frame, instance.crossfade_frame, instance.extra_frame):
-        instance.block_frame, instance.crossfade_frame, instance.extra_frame = block, crossfade, extra
+    if (block, crossfade, extra) != (
+        instance.block_frame,
+        instance.crossfade_frame,
+        instance.extra_frame,
+    ):
+        instance.block_frame, instance.crossfade_frame, instance.extra_frame = (
+            block,
+            crossfade,
+            extra,
+        )
         model.realloc(block, extra, crossfade, instance.sola_search_frame)
         instance.generate_strength()
     return candidate

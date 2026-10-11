@@ -32,10 +32,21 @@ async def apply_message(ws, message):
         if vc_instance is None:
             raise ValueError("Realtime pipeline not found")
         params = apply_config_update(vc_instance, params, message)
-        await ws.send_text(json.dumps({"type": "config_applied", "id": request_id,
-                                       "block_frame": vc_instance.block_frame}))
+        await ws.send_text(
+            json.dumps(
+                {
+                    "type": "config_applied",
+                    "id": request_id,
+                    "block_frame": vc_instance.block_frame,
+                }
+            )
+        )
     except Exception as error:
-        await ws.send_text(json.dumps({"type": "config_error", "id": request_id, "message": str(error)}))
+        await ws.send_text(
+            json.dumps(
+                {"type": "config_error", "id": request_id, "message": str(error)}
+            )
+        )
 
 
 @app.websocket("/change-config")
@@ -142,10 +153,9 @@ async def websocket_audio(ws: WebSocket):
                 **params["kwargs"],
             )
 
-        vc_instance.vc_model.pipeline.vc.decoder_fp16 = (
-            params.get("decoder_fp16", False)
-            and vc_instance.vc_model.pipeline.vc.vocoder in ("HiFi-GAN", "MRF HiFi-GAN")
-        )
+        vc_instance.vc_model.pipeline.vc.decoder_fp16 = params.get(
+            "decoder_fp16", False
+        ) and vc_instance.vc_model.pipeline.vc.vocoder in ("HiFi-GAN", "MRF HiFi-GAN")
         # Initialize model kernels before the browser starts capturing. Audio
         # sent during model loading would otherwise remain queued and stale.
         warmup_options = dict(
