@@ -470,6 +470,7 @@ class VoiceChanger:
             self.crossfade_frame, device=self.device, dtype=torch.float32
         )
         self._sola_graph_cache = None
+        self._tail_remaining = 0
 
     def _phase_aligned_output(self, audio, block_size):
         """SOLA and phase crossfade with the alignment offset kept on-device."""
@@ -573,17 +574,35 @@ class VoiceChanger:
         )
 
         if is_silence:
-            # Clear sola_buffer and return zeros for silent input.
-            self.sola_buffer.zero_()
             silence_output = np.zeros(block_size, dtype=np.float32)
+            # Finish already generated audio instead of cutting it at the
+            # microphone gate. A finite fade drains the overlap exactly once.
+            remaining = getattr(self, "_tail_remaining", 0)
+            if remaining:
+                count = min(block_size, remaining)
+                start = self.crossfade_frame - remaining
+                tail = (
+                    self.sola_buffer[start : start + count]
+                    * self.fade_out_window[start : start + count]
+                )
+                silence_output[:count] = tail.detach().cpu().numpy()
+                self._tail_remaining = remaining - count
+            if not getattr(self, "_tail_remaining", 0):
+                self.sola_buffer.zero_()
             if self.record_audio and self.soundfile is not None:
                 self.soundfile.write(silence_output)
             return silence_output, vol
+
+        # A new utterance must not replay overlap already drained by the gate.
+        remaining = getattr(self, "_tail_remaining", 0)
+        if 0 < remaining < self.crossfade_frame:
+            self.sola_buffer.zero_()
 
         if (
             use_phase_vocoder
             and getattr(self.vc_model.pipeline, "_graph_cache", None) is not None
         ):
+            self._tail_remaining = self.crossfade_frame
             audio_output = (
                 self._graph_phase_output(audio, block_size).detach().cpu().numpy()
             )
@@ -651,6 +670,7 @@ class VoiceChanger:
             )
             audio = torch.cat([audio, pad])
         self.sola_buffer[:] = audio[block_size : block_size + self.crossfade_frame]
+        self._tail_remaining = self.crossfade_frame
         audio_output = audio[:block_size].detach().cpu().numpy()
 
         if self.record_audio and self.soundfile is not None:
