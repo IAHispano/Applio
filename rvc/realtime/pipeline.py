@@ -23,6 +23,7 @@ from rvc.infer.pipeline import Autotune
 from rvc.lib.algorithm.synthesizers import Synthesizer
 from rvc.lib.predictors.f0 import FCPE, RMVPE, SWIFT
 from rvc.lib.utils import load_embedding, HubertModelWithFinalProj
+from rvc.realtime.precision import enable_experimental_tf32
 
 
 class RealtimeVoiceConverter:
@@ -37,6 +38,7 @@ class RealtimeVoiceConverter:
         self.config = inference_config()
         if device is not None:
             self.config.device = device
+        enable_experimental_tf32(self.config.device, self.config.gpu_name)
         self.tgt_sr = None  # Target sampling rate for the output audio
         self.net_g = None  # Generator network for voice conversion
         self.cpt = None  # Checkpoint for loading model weights
@@ -147,6 +149,16 @@ class Realtime_Pipeline:
         self._graph_cache = None
         self._graph_failed = False
         gpu_name = (vc.config.gpu_name or "").upper()
+        # Local opt-in experiment: preserve FP32 retrieval/synthesis features
+        # while autocasting the large HuBERT network on NVIDIA CUDA.
+        self.embedder_fp16 = (
+            os.environ.get("APPLIO_EXPERIMENTAL_HUBERT_FP16") == "1"
+            and str(self.device).startswith("cuda")
+            and "NVIDIA" in gpu_name
+            and getattr(torch.version, "hip", None) is None
+        )
+        if self.embedder_fp16:
+            print("[Experimental] HuBERT FP16 autocast enabled for realtime.")
         self._graph_supported = (
             str(self.device).startswith("cuda")
             and "NVIDIA" in gpu_name
@@ -428,7 +440,11 @@ class Realtime_Pipeline:
                 pitch, pitchf = None, None
 
             # extract features
-            feats = self.hubert_model(feats)["last_hidden_state"]
+            with torch.autocast(
+                "cuda", dtype=torch.float16, enabled=self.embedder_fp16
+            ):
+                feats = self.hubert_model(feats)["last_hidden_state"]
+            feats = feats.to(self.dtype)
             feats = (
                 self.hubert_model.final_proj(feats[0]).unsqueeze(0)
                 if self.version == "v1"
@@ -545,6 +561,8 @@ class Realtime_Pipeline:
             id(self.big_tsr),
             id(self.torch_sid),
             self.vc.decoder_fp16,
+            self.embedder_fp16,
+            torch.backends.cuda.matmul.allow_tf32,
         )
         if self._graph_cache is None or self._graph_cache[0] != key:
             self._graph_cache = None  # Release the previous graph's workspace.
