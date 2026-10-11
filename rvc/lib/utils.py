@@ -31,6 +31,27 @@ _HubertModelWithFinalProj = None
 def get_hubert_model_class():
     global _HubertModelWithFinalProj
     if _HubertModelWithFinalProj is None:
+        # HuBERT is audio-only, but Transformers also probes optional vision
+        # packages. Some ROCm wheels leave torchvision installed without its
+        # native operators; do not let that unrelated dependency block audio.
+        from transformers import utils as transformers_utils
+        from transformers.utils import import_utils
+
+        if import_utils.is_torchvision_available():
+            try:
+                import torchvision
+            except (ImportError, OSError, RuntimeError) as error:
+                logging.getLogger(__name__).warning(
+                    "Ignoring unavailable optional torchvision for HuBERT: %s", error
+                )
+                import_utils._torchvision_available = False
+                import_utils.is_torchvision_available = lambda: False
+                import_utils.is_torchvision_v2_available = lambda: False
+                # Transformers re-exports these checks from utils, and image
+                # modules may import that alias rather than import_utils.
+                transformers_utils.is_torchvision_available = lambda: False
+                transformers_utils.is_torchvision_v2_available = lambda: False
+
         from transformers import HubertModel
 
         class _RealHubertModelWithFinalProj(HubertModel):
