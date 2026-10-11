@@ -47,6 +47,7 @@ class RealtimeVoiceConverter:
         # Change this when you need to test FP16, and it may not be faster.
         self.dtype = torch.float32  # torch.float16 if config.is_half else torch.float32
         self.decoder_fp16 = False
+        self.onnx_decoder = False
         # load weights and setup model network.
         self.load_model(weight_root)
         self.setup_network()
@@ -58,6 +59,7 @@ class RealtimeVoiceConverter:
         Args:
             weight_root (str): Path to the model weights.
         """
+        self.model_path = weight_root
         self.cpt = (
             torch.load(weight_root, map_location="cpu", weights_only=True)
             if os.path.isfile(weight_root)
@@ -87,6 +89,14 @@ class RealtimeVoiceConverter:
             strip_parametrizations(self.net_g)
             self.net_g = self.net_g.to(self.config.device).to(self.dtype)
             self.net_g.eval()
+            onnx_path = os.environ.get("APPLIO_EXPERIMENTAL_ONNX_DECODER")
+            self.onnx_decoder = bool(onnx_path)
+            if onnx_path:
+                from rvc.realtime.onnx_decoder import OnnxDecoder
+
+                self.net_g.dec = OnnxDecoder(
+                    self.net_g.dec, self.model_path, onnx_path, self.config.device
+                )
 
     def inference(
         self,
@@ -160,7 +170,11 @@ class Realtime_Pipeline:
         if self.embedder_fp16:
             print("[Experimental] HuBERT FP16 autocast enabled for realtime.")
         self._graph_supported = (
-            str(self.device).startswith("cuda")
+            (
+                not getattr(vc, "onnx_decoder", False)
+                or getattr(vc.net_g.dec, "cuda_device", None) is not None
+            )
+            and str(self.device).startswith("cuda")
             and "NVIDIA" in gpu_name
             and not getattr(torch.version, "hip", None)
             and "ZLUDA" not in gpu_name
@@ -385,6 +399,7 @@ class Realtime_Pipeline:
         reduced_noise=None,
         board=None,
         block_size_16k: int = None,
+        return_decoder_inputs: bool = False,
     ):
         """
         Performs realtime voice conversion on a given audio segment.
@@ -501,6 +516,23 @@ class Realtime_Pipeline:
                 feats.shape[1] * (1.0 - float(np.float32(return_length / p_len)))
             )
             self._p_len_tensor.fill_(p_len)
+            if return_decoder_inputs:
+                latent, f0, speaker = self.vc.net_g.infer_latent(
+                    feats,
+                    self._p_len_tensor,
+                    pitch_p,
+                    pitchf_p,
+                    self.torch_sid,
+                    None,
+                    head,
+                )[:3]
+                decoder = self.vc.net_g.dec
+                # Preserve the regular decoder's excitation precision policy.
+                with torch.autocast(
+                    "cuda", dtype=torch.float16, enabled=self.vc.decoder_fp16
+                ):
+                    source = decoder.source(f0, decoder.upp)[0].transpose(1, 2)
+                return latent, source, speaker
             out_audio = self.vc.inference(
                 feats,
                 self._p_len_tensor,
@@ -510,6 +542,14 @@ class Realtime_Pipeline:
                 None,
                 head,
             )
+            return self._finish_audio(
+                out_audio, audio, return_length, volume_envelope, reduced_noise, board
+            )
+
+    def _finish_audio(
+        self, out_audio, audio, return_length, volume_envelope, reduced_noise, board
+    ):
+        with torch.no_grad():
             # Match output RMS to the current block's input RMS.
             if volume_envelope < 1:
                 rms_src = audio[-(return_length * self.window) :]
@@ -571,11 +611,23 @@ class Realtime_Pipeline:
             original_stream = torch.cuda.current_stream(self.device)
             try:
                 for _ in range(3):
-                    self._voice_conversion(audio, pitch, pitchf, *args, **kwargs)
+                    self._voice_conversion(
+                        audio,
+                        pitch,
+                        pitchf,
+                        *args,
+                        **kwargs,
+                        return_decoder_inputs=getattr(self.vc, "onnx_decoder", False),
+                    )
                 graph = torch.cuda.CUDAGraph()
                 with torch.cuda.graph(graph):
                     output = self._voice_conversion(
-                        audio, pitch, pitchf, *args, **kwargs
+                        audio,
+                        pitch,
+                        pitchf,
+                        *args,
+                        **kwargs,
+                        return_decoder_inputs=getattr(self.vc, "onnx_decoder", False),
                     )
                 self._graph_cache = (key, graph, output)
             except (RuntimeError, torch.OutOfMemoryError) as error:
@@ -594,7 +646,14 @@ class Realtime_Pipeline:
         if self._graph_cache is None:
             return self._voice_conversion(audio, pitch, pitchf, *args, **kwargs)
         self._graph_cache[1].replay()
-        return self._graph_cache[2]
+        output = self._graph_cache[2]
+        if getattr(self.vc, "onnx_decoder", False):
+            output = self.vc.net_g.dec.run_decoder(*output)[0, 0]
+            output = torch.clip(output, -1.0, 1.0)
+            return_length = args[5] if len(args) > 5 else kwargs["return_length"]
+            volume = args[7] if len(args) > 7 else kwargs.get("volume_envelope", 1)
+            return self._finish_audio(output, audio, return_length, volume, None, None)
+        return output
 
     def _retrieve_speaker_embeddings(
         self,

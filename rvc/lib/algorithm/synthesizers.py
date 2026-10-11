@@ -225,6 +225,28 @@ class Synthesizer(torch.nn.Module):
             sid (torch.Tensor): Speaker embedding.
             rate (torch.Tensor, optional): Rate for time-stretching.
         """
+        latent, nsff0, g, x_mask, z, z_p, m_p, logs_p = self.infer_latent(
+            phone, phone_lengths, pitch, nsff0, sid, rate, skip_head
+        )
+        with torch.autocast(
+            device_type=z.device.type,
+            dtype=torch.float16,
+            enabled=decoder_fp16 and z.device.type == "cuda",
+        ):
+            o = self.dec(latent, nsff0, g=g) if self.use_f0 else self.dec(latent, g=g)
+        return o, x_mask, (z, z_p, m_p, logs_p)
+
+    def infer_latent(
+        self,
+        phone: torch.Tensor,
+        phone_lengths: torch.Tensor,
+        pitch: Optional[torch.Tensor] = None,
+        nsff0: Optional[torch.Tensor] = None,
+        sid: torch.Tensor = None,
+        rate: Optional[torch.Tensor] = None,
+        skip_head: Optional[int] = None,
+    ):
+        """Prepare decoder inputs separately for hybrid Torch/ONNX inference."""
         g = self.emb_g(sid).unsqueeze(-1)
         m_p, logs_p, x_mask = self.enc_p(phone, pitch, phone_lengths)
         z_p = (m_p + torch.exp(logs_p) * torch.randn_like(m_p) * 0.66666) * x_mask
@@ -241,17 +263,4 @@ class Synthesizer(torch.nn.Module):
                 nsff0 = nsff0[:, head:]
 
         z = self.flow(z_p, x_mask, g=g, reverse=True)
-        # Keep the encoder and flow in their original precision. Only the
-        # realtime HiFi-GAN decoder opts into mixed precision on CUDA.
-        with torch.autocast(
-            device_type=z.device.type,
-            dtype=torch.float16,
-            enabled=decoder_fp16 and z.device.type == "cuda",
-        ):
-            o = (
-                self.dec(z * x_mask, nsff0, g=g)
-                if self.use_f0
-                else self.dec(z * x_mask, g=g)
-            )
-
-        return o, x_mask, (z, z_p, m_p, logs_p)
+        return z * x_mask, nsff0, g, x_mask, z, z_p, m_p, logs_p
