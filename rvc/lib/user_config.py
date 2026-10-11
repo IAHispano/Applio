@@ -1,4 +1,4 @@
-"""Per-user settings shared with the API, without importing ML dependencies."""
+"""Per-user settings without importing ML dependencies."""
 
 import copy
 import json
@@ -9,7 +9,7 @@ import tempfile
 
 
 def config_path():
-    """Match app/api/src/config.ts, including headless/portable overrides."""
+    """Resolve settings storage, including headless and portable overrides."""
     file_override = os.environ.get("APPLIO_CONFIG_FILE")
     if file_override:
         return Path(file_override).resolve()
@@ -32,12 +32,12 @@ def config_path():
 
 
 def get_logs_dir():
-    """Model/training storage, pinned by the API for its child processes."""
+    """Resolve model and training storage, with an optional caller override."""
     override = os.environ.get("APPLIO_LOGS_DIR")
     if override:
         return str(Path(override).resolve())
     config = load_config()
-    # A saved move is applied by the API at its next startup. Standalone Python
+    # A saved move is applied by the host at its next startup. Standalone Python
     # and currently running sessions keep using the source until that commits.
     configured = config.get("logs_move_from") or config.get("logs_dir")
     root = Path(os.environ.get("APPLIO_ROOT") or Path(__file__).resolve().parents[2])
