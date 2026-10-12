@@ -209,6 +209,8 @@ class Audio:
     def audio_stream_no_output_callback(
         self, indata: np.ndarray, frames, times, status
     ):
+        if not self.running:
+            return
         try:
             out_wav = self.process_data_with_time(indata)
 
@@ -222,6 +224,9 @@ class Audio:
     def audio_stream_callback(
         self, indata: np.ndarray, outdata: np.ndarray, frames, times, status
     ):
+        if not self.running:
+            outdata.fill(0)
+            return
         try:
             out_wav = self.process_data_with_time(indata)
 
@@ -238,6 +243,9 @@ class Audio:
             print(traceback.format_exc())
 
     def audio_queue(self, q: Queue, outdata: np.ndarray, gain: float):
+        if not self.running:
+            outdata.fill(0)
+            return
         try:
             try:
                 mon_wav = q.get_nowait()
@@ -340,21 +348,22 @@ class Audio:
     def stop(self):
         self.running = False
 
-        if self.stream is not None:
-            self.stream.close()
-            self.stream = None
+        streams = [self.stream, self.input_stream, self.output_stream, self.monitor]
+        self.stream = None
+        self.input_stream = None
+        self.output_stream = None
+        self.monitor = None
 
-        if self.input_stream is not None:
-            self.input_stream.close()
-            self.input_stream = None
-
-        if self.output_stream is not None:
-            self.output_stream.close()
-            self.output_stream = None
-
-        if self.monitor is not None:
-            self.monitor.close()
-            self.monitor = None
+        for s in streams:
+            if s is not None:
+                try:
+                    s.abort()
+                except Exception:
+                    pass
+                try:
+                    s.close()
+                except Exception:
+                    pass
 
         while not self.out_queue.empty():
             try:

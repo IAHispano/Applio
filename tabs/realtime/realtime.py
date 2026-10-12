@@ -461,11 +461,6 @@ def _cleanup_realtime():
             audio_manager.stop()
         except Exception:
             pass
-        if hasattr(audio_manager, "latency"):
-            try:
-                del audio_manager.latency
-            except Exception:
-                pass
     if callbacks is not None:
         if hasattr(callbacks, "vc"):
             try:
@@ -787,10 +782,17 @@ def start_realtime(
 
     while running and callbacks is not None and audio_manager is not None:
         time.sleep(0.1)
+        # Snapshot global callbacks and audio_manager into local variables to prevent
+        # race conditions where stop_realtime() concurrently clears them to None.
+        cb = callbacks
+        am = audio_manager
+        if not running or cb is None or am is None:
+            break
         if (
-            hasattr(callbacks.vc, "_process")
-            and callbacks.vc._process is not None
-            and not callbacks.vc._process.is_alive()
+            hasattr(cb, "vc")
+            and hasattr(cb.vc, "_process")
+            and cb.vc._process is not None
+            and not cb.vc._process.is_alive()
         ):
             print(f"Worker process died during realtime processing.")
             _cleanup_realtime()
@@ -800,8 +802,12 @@ def start_realtime(
                 interactive_false,
             )
             return
-        if hasattr(audio_manager, "latency") and hasattr(audio_manager, "volume"):
-            warmup_remaining = callbacks.vc.vc_model.warmup_blocks
+        if hasattr(am, "latency") and hasattr(am, "volume"):
+            warmup_remaining = (
+                getattr(cb.vc.vc_model, "warmup_blocks", 0)
+                if hasattr(cb, "vc") and hasattr(cb.vc, "vc_model")
+                else 0
+            )
 
             if warmup_remaining > 0:
                 bar = progress_str(warmup_remaining, warmup_total)
@@ -813,14 +819,14 @@ def start_realtime(
             else:
                 yield (
                     i18n("Latency: {:.2f} ms | Volume: {:.2f} dB").format(
-                        audio_manager.latency, audio_manager.volume
+                        am.latency, am.volume
                     ),
                     interactive_false,
                     interactive_true,
                 )
 
     _cleanup_realtime()
-    return (
+    yield (
         i18n("Realtime stopped."),
         interactive_true,
         interactive_false,
