@@ -45,7 +45,9 @@ def _retry_mps_on_cpu(convert):
             if self.config.device != "mps" or not any(
                 marker in message
                 for marker in (
-                    "mps", "metal", "placeholder storage has not been allocated"
+                    "mps",
+                    "metal",
+                    "placeholder storage has not been allocated",
                 )
             ):
                 raise
@@ -73,7 +75,9 @@ class VoiceConverter:
         """
         self.config = inference_config()
         if self.config.device == "mps":
-            print("Using Apple Silicon MPS for inference (FP32; CPU spectral frontends).")
+            print(
+                "Using Apple Silicon MPS for inference (FP32; CPU spectral frontends)."
+            )
         self.hubert_model = None
         self.last_embedder_model = None
         self.tgt_sr = None

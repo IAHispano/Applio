@@ -178,6 +178,7 @@ class FCPE:
         )
         if str(device) == "mps":
             from rvc.lib.tools.device import CPUSpectralTransform
+
             self.model.wav2mel.mel_extractor = CPUSpectralTransform(
                 self.model.wav2mel.mel_extractor
             )

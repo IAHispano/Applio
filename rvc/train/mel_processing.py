@@ -19,7 +19,9 @@ def spectrogram_torch(y, n_fft, hop_size, win_size, center=False):
     """
     if y.device.type == "mps":
         # The copy preserves autograd; complex FFT results never move to Metal.
-        return spectrogram_torch(y.cpu(), n_fft, hop_size, win_size, center).to(y.device)
+        return spectrogram_torch(y.cpu(), n_fft, hop_size, win_size, center).to(
+            y.device
+        )
 
     global hann_window
     dtype_device = str(y.dtype) + "_" + str(y.device)

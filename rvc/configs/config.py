@@ -1,5 +1,6 @@
 import os
 import sys
+
 if sys.platform == "darwin":
     os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 import torch
@@ -28,8 +29,10 @@ def singleton(cls):
 @singleton
 class Config:
     def __init__(self):
-        self.device = "cuda:0" if torch.cuda.is_available() else (
-            "mps" if torch.backends.mps.is_available() else "cpu"
+        self.device = (
+            "cuda:0"
+            if torch.cuda.is_available()
+            else ("mps" if torch.backends.mps.is_available() else "cpu")
         )
         self.gpu_name = (
             torch.cuda.get_device_name(int(self.device.split(":")[-1]))

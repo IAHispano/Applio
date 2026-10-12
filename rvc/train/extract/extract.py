@@ -4,6 +4,7 @@ import json
 import multiprocessing as mp
 import os
 import sys
+
 if sys.platform == "darwin":
     os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 import time
@@ -151,6 +152,7 @@ def process_files(files, f0_method, device, threads):
         fe = FeatureInput(f0_method=f0_method, device=device)
     except (RuntimeError, NotImplementedError, TypeError) as error:
         from rvc.lib.tools.device import is_mps_error
+
         if str(device) != "mps" or not is_mps_error(error):
             raise
         print(f"[!] MPS pitch setup failed ({error}); continuing on CPU.")
@@ -222,6 +224,7 @@ def process_file_embedding(
         model = model.to(device)
     except (RuntimeError, NotImplementedError, TypeError) as error:
         from rvc.lib.tools.device import is_mps_error
+
         if str(device) != "mps" or not is_mps_error(error):
             raise
         print(f"[!] MPS embedding setup failed ({error}); continuing on CPU.")
@@ -246,9 +249,12 @@ def process_file_embedding(
                 result = model(feats)["last_hidden_state"]
             except (RuntimeError, NotImplementedError, TypeError) as error:
                 from rvc.lib.tools.device import is_mps_error
+
                 if str(device) != "mps" or not is_mps_error(error):
                     raise
-                print(f"[!] MPS embedding extraction failed ({error}); continuing on CPU.")
+                print(
+                    f"[!] MPS embedding extraction failed ({error}); continuing on CPU."
+                )
                 device = "cpu"
                 model.to(device)
                 result = model(feats.to(device))["last_hidden_state"]

@@ -229,7 +229,9 @@ class Pipeline:
         """
         global f0_mel_min, f0_mel_max
         # FCPE/RMVPE keep their FFT frontend on CPU and neural model on MPS.
-        pitch_device = "cpu" if self.device == "mps" and "crepe" in f0_method else self.device
+        pitch_device = (
+            "cpu" if self.device == "mps" and "crepe" in f0_method else self.device
+        )
         x = x.astype(np.float32)
         x /= np.quantile(np.abs(x), 0.999)
         if f0_method == "crepe":

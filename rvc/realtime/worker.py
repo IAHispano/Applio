@@ -19,6 +19,7 @@ def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt, ready_evt):
     except (RuntimeError, NotImplementedError, TypeError) as error:
         from rvc.lib.tools.device import is_mps_error
         from rvc.configs.config import Config
+
         if Config().device != "mps" or not is_mps_error(error):
             raise
         print(f"[!] MPS realtime warmup failed ({error}); retrying on CPU.", flush=True)
@@ -122,7 +123,10 @@ def _apply_config(vc: VoiceChanger, cfg):
                 ).to(vc.vc_model.device)
                 if vc.vc_model.device == "mps":
                     from rvc.lib.tools.device import CPUSpectralTransform
-                    vc.vc_model.reduced_noise = CPUSpectralTransform(vc.vc_model.reduced_noise)
+
+                    vc.vc_model.reduced_noise = CPUSpectralTransform(
+                        vc.vc_model.reduced_noise
+                    )
             gate = vc.vc_model.reduced_noise
             if hasattr(gate, "transform"):
                 gate = gate.transform
@@ -166,7 +170,10 @@ def _apply_config(vc: VoiceChanger, cfg):
             ).to(vc.vc_model.device)
             if vc.vc_model.device == "mps":
                 from rvc.lib.tools.device import CPUSpectralTransform
-                vc.vc_model.reduced_noise = CPUSpectralTransform(vc.vc_model.reduced_noise)
+
+                vc.vc_model.reduced_noise = CPUSpectralTransform(
+                    vc.vc_model.reduced_noise
+                )
 
     # SID change.
     sid = cfg.get("sid")
