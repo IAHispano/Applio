@@ -4,6 +4,34 @@ import sys
 import argparse
 import edge_tts
 
+# Fix edge-tts 403 (rany2/edge-tts#490): redirect synthesis to
+# api.msedgeservices.com. Must run before any Communicate().save().
+try:
+    from rvc.lib.tools.edge_tts_patch import apply_edge_tts_fix
+
+    apply_edge_tts_fix()
+except ImportError:
+    try:
+        # Same-directory fallback when run as a standalone script
+        # (script dir is sys.path[0], so top-level import works).
+        from edge_tts_patch import apply_edge_tts_fix as _apply_fix
+
+        _apply_fix()
+    except ImportError:
+        # Last-resort inline patch if the helper module is unreachable.
+        try:
+            import edge_tts.communicate as _comm
+            import edge_tts.constants as _const
+
+            _new_wss = (
+                "wss://api.msedgeservices.com/tts/cognitiveservices/websocket/v1"
+                f"?Ocp-Apim-Subscription-Key={_const.TRUSTED_CLIENT_TOKEN}"
+            )
+            _const.WSS_URL = _new_wss
+            _comm.WSS_URL = _new_wss
+        except Exception:
+            pass
+
 
 async def generate_tts(text: str, voice: str, rate: int, output_file: str):
     rates = f"+{rate}%" if rate >= 0 else f"{rate}%"
