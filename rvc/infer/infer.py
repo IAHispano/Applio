@@ -771,6 +771,10 @@ if __name__ == "__main__":
     vc = VoiceConverter()
 
     infer_kwargs = vars(args)
+    infer_kwargs["reverb_wet_level"] = infer_kwargs.pop("reverb_wet_gain", 0.33)
+    infer_kwargs["reverb_dry_level"] = infer_kwargs.pop("reverb_dry_gain", 0.4)
+    infer_kwargs["limiter_release"] = infer_kwargs.pop("limiter_release_time", 0.05)
+    infer_kwargs["chorus_delay"] = infer_kwargs.pop("chorus_center_delay", 7.0)
     input_folder = infer_kwargs.pop("input_folder")
     output_folder = infer_kwargs.pop("output_folder")
     input_path = infer_kwargs.pop("input_path")
