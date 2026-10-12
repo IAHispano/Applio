@@ -461,11 +461,6 @@ def _cleanup_realtime():
             audio_manager.stop()
         except Exception:
             pass
-        if hasattr(audio_manager, "latency"):
-            try:
-                del audio_manager.latency
-            except Exception:
-                pass
     if callbacks is not None:
         if hasattr(callbacks, "vc"):
             try:
@@ -816,8 +811,17 @@ def start_realtime(
                 interactive_false,
             )
             return
-        if hasattr(audio_manager, "latency") and hasattr(audio_manager, "volume"):
-            warmup_remaining = callbacks.vc.vc_model.warmup_blocks
+        # Snapshot global audio_manager into a local variable to prevent race
+        # conditions where stop_realtime() concurrently clears audio_manager to None.
+        am = audio_manager
+        if am is not None and hasattr(am, "latency") and hasattr(am, "volume"):
+            warmup_remaining = (
+                getattr(callbacks.vc.vc_model, "warmup_blocks", 0)
+                if callbacks is not None
+                and hasattr(callbacks, "vc")
+                and hasattr(callbacks.vc, "vc_model")
+                else 0
+            )
 
             if warmup_remaining > 0:
                 bar = progress_str(warmup_remaining, warmup_total)
@@ -829,14 +833,14 @@ def start_realtime(
             else:
                 yield (
                     i18n("Latency: {:.2f} ms | Volume: {:.2f} dB").format(
-                        audio_manager.latency, audio_manager.volume
+                        am.latency, am.volume
                     ),
                     interactive_false,
                     interactive_true,
                 )
 
     _cleanup_realtime()
-    return (
+    yield (
         i18n("Realtime stopped."),
         interactive_true,
         interactive_false,
