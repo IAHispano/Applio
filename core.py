@@ -163,6 +163,8 @@ def _base_infer_kwargs(
     delay_feedback=0.0,
     delay_mix=0.5,
     sid=0,
+    inference_engine=None,
+    onnx_precision="auto",
 ):
     return {
         "model_path": pth_path,
@@ -222,6 +224,8 @@ def _base_infer_kwargs(
         "delay_feedback": delay_feedback,
         "delay_mix": delay_mix,
         "sid": sid,
+        "inference_engine": inference_engine,
+        "onnx_precision": onnx_precision,
     }
 
 
@@ -285,6 +289,8 @@ def run_infer_script(
     delay_feedback: float = 0.0,
     delay_mix: float = 0.5,
     sid: int = 0,
+    inference_engine: str = None,
+    onnx_precision: str = "auto",
 ):
     kwargs = _base_infer_kwargs(
         pitch=pitch,
@@ -344,6 +350,8 @@ def run_infer_script(
         delay_feedback=delay_feedback,
         delay_mix=delay_mix,
         sid=sid,
+        inference_engine=inference_engine,
+        onnx_precision=onnx_precision,
     )
     kwargs["audio_input_path"] = input_path
     kwargs["audio_output_path"] = output_path
@@ -414,6 +422,8 @@ def run_batch_infer_script(
     delay_feedback: float = 0.0,
     delay_mix: float = 0.5,
     sid: int = 0,
+    inference_engine: str = None,
+    onnx_precision: str = "auto",
 ):
     kwargs = _base_infer_kwargs(
         pitch=pitch,
@@ -473,6 +483,8 @@ def run_batch_infer_script(
         delay_feedback=delay_feedback,
         delay_mix=delay_mix,
         sid=sid,
+        inference_engine=inference_engine,
+        onnx_precision=onnx_precision,
     )
     kwargs["audio_input_paths"] = input_folder
     kwargs["audio_output_path"] = output_folder

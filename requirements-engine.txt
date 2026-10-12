@@ -17,14 +17,14 @@ torch==2.11.0
 torchaudio==2.11.0
 torchcrepe==0.0.24
 torchfcpe==0.0.4
-swift-f0>=0.3.0
 einops==0.8.2
 transformers==5.13.1
 
 matplotlib==3.11.0
 tensorboard==2.21.0
 
-onnxruntime>=1.17.0
+onnx==1.23.1
+onnxruntime>=1.17.0; sys_platform != "win32"
 
 edge-tts==7.2.8
 beautifulsoup4==4.15.0
@@ -35,8 +35,6 @@ uvicorn>=0.30.0
 fastapi>=0.110.0
 websockets>=13.0
 
-# CUDA acceleration on Windows via onnxruntime-gpu (other platforms use the
-# CPU onnxruntime from the block above).
 onnxruntime-gpu==1.22.0; sys_platform == "win32"
 nvidia-cublas-cu12==12.9.2.10; sys_platform == "win32"
 nvidia-cuda-runtime-cu12==12.9.79; sys_platform == "win32"

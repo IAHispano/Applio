@@ -60,11 +60,23 @@ class RealtimeVoiceConverter:
             weight_root (str): Path to the model weights.
         """
         self.model_path = weight_root
+        self.model_checksum = None
+        if os.environ.get("APPLIO_EXPERIMENTAL_ONNX_DECODER") and os.path.isfile(
+            weight_root
+        ):
+            from rvc.realtime.onnx_decoder import checkpoint_hash
+
+            self.model_checksum = checkpoint_hash(weight_root)
         self.cpt = (
             torch.load(weight_root, map_location="cpu", weights_only=True)
             if os.path.isfile(weight_root)
             else None
         )
+        if (
+            self.model_checksum is not None
+            and checkpoint_hash(weight_root) != self.model_checksum
+        ):
+            raise ValueError("Voice checkpoint changed while loading; retry")
 
     def setup_network(self):
         """
@@ -89,13 +101,27 @@ class RealtimeVoiceConverter:
             strip_parametrizations(self.net_g)
             self.net_g = self.net_g.to(self.config.device).to(self.dtype)
             self.net_g.eval()
+            # The network owns its weights now; retaining the CPU checkpoint
+            # duplicates the model even when inference runs on an accelerator.
+            self.cpt = None
             onnx_path = os.environ.get("APPLIO_EXPERIMENTAL_ONNX_DECODER")
             self.onnx_decoder = bool(onnx_path)
             if onnx_path:
-                from rvc.realtime.onnx_decoder import OnnxDecoder
+                from rvc.realtime.onnx_decoder import OnnxDecoder, resolve_decoder_path
 
+                onnx_path = resolve_decoder_path(
+                    self.net_g.dec,
+                    self.model_path,
+                    onnx_path,
+                    self.config.device,
+                    expected_checkpoint_hash=self.model_checksum,
+                )
                 self.net_g.dec = OnnxDecoder(
-                    self.net_g.dec, self.model_path, onnx_path, self.config.device
+                    self.net_g.dec,
+                    self.model_path,
+                    onnx_path,
+                    self.config.device,
+                    expected_checkpoint_hash=self.model_checksum,
                 )
 
     def inference(
@@ -573,7 +599,23 @@ class Realtime_Pipeline:
 
         return out_audio.float()
 
+    def prepare_index(self, index_rate):
+        """Load retrieval data only while it is used, outside CUDA capture."""
+        if self.index is None:
+            return
+        if index_rate <= 0:
+            if self.index.load_attempted or self.big_tsr is not None:
+                # Captured graphs can retain the retrieval tensors as well.
+                self._graph_cache = None
+                self.big_tsr = None
+                self.index.unload()
+        elif not self.index.load_attempted:
+            self._graph_cache = None
+            self.big_tsr, _ = self.index.read_index_tensor()
+
     def voice_conversion(self, audio, pitch=None, pitchf=None, *args, **kwargs):
+        index_rate = args[1] if len(args) > 1 else kwargs.get("index_rate", 0.5)
+        self.prepare_index(index_rate)
         # Graphs eliminate hundreds of host kernel submissions per block. Keep
         # eager execution for CPU/AMD and effects that transfer audio to the CPU.
         proposed = args[10] if len(args) > 10 else kwargs.get("proposed_pitch", False)
@@ -603,6 +645,8 @@ class Realtime_Pipeline:
             self.vc.decoder_fp16,
             self.embedder_fp16,
             torch.backends.cuda.matmul.allow_tf32,
+            torch.backends.cudnn.allow_tf32,
+            torch.backends.cudnn.benchmark,
         )
         if self._graph_cache is None or self._graph_cache[0] != key:
             self._graph_cache = None  # Release the previous graph's workspace.
@@ -696,14 +740,6 @@ def create_pipeline(
     """
 
     vc = RealtimeVoiceConverter(model_path, device=device)
-    # index, big_npy = load_faiss_index(
-    #     index_path.strip()
-    #     .strip('"')
-    #     .strip("\n")
-    #     .strip('"')
-    #     .strip()
-    #     .replace("trained", "added")
-
     index = IndexWrapper(
         (index_path or "")
         .strip()
@@ -715,7 +751,8 @@ def create_pipeline(
         device=vc.config.device,
         dtype=vc.dtype,
     )
-    big_tsr, _ = index.read_index_tensor()
+    # Keep only the path until a positive retrieval strength is used.
+    big_tsr = None
 
     hubert_model = load_embedding(embedder_model, embedder_model_custom)
     strip_parametrizations(hubert_model)

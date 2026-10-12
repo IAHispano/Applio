@@ -15,7 +15,7 @@ def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt, ready_evt):
 
     try:
         vc = VoiceChanger(**vc_kwargs)
-        vc.warmup()
+        vc.warmup(index_rate=vc_kwargs.get("index_rate", 0))
     except (RuntimeError, NotImplementedError, TypeError) as error:
         from rvc.lib.tools.device import is_mps_error
         from rvc.configs.config import Config
@@ -23,7 +23,7 @@ def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt, ready_evt):
             raise
         print(f"[!] MPS realtime warmup failed ({error}); retrying on CPU.", flush=True)
         vc = VoiceChanger(**dict(vc_kwargs, device="cpu"))
-        vc.warmup()
+        vc.warmup(index_rate=vc_kwargs.get("index_rate", 0))
     ready_evt.set()
 
     while not stop_evt.is_set():
@@ -177,39 +177,26 @@ def _apply_config(vc: VoiceChanger, cfg):
             [sid], device=vc.vc_model.pipeline.device, dtype=torch.int64
         )
 
-    # Index change.
+    # Keep path selection independent of retrieval strength. The audio-block
+    # parameters activate a lazy index when the strength becomes positive.
     index_path = cfg.get("index_path")
-    if index_path is not None:
-        if index_path and vc.vc_model.index_path != index_path:
-            from rvc.realtime.utils.torch import IndexWrapper
+    if index_path is not None and (index_path or "") != (vc.vc_model.index_path or ""):
+        from rvc.realtime.utils.torch import IndexWrapper
 
-            index = IndexWrapper(
-                index_path.strip()
-                .strip('"')
-                .strip("\n")
-                .strip('"')
-                .strip()
-                .replace("trained", "added"),
+        vc.vc_model.pipeline._graph_cache = None
+        vc.vc_model.pipeline.big_tsr = None
+        vc.vc_model.pipeline.index = (
+            IndexWrapper(
+                index_path.strip().strip('"').strip().replace("trained", "added"),
                 device=vc.device,
                 dtype=vc.vc_model.dtype,
             )
-            big_tsr, _ = index.read_index_tensor()
-
-            # index, big_npy = load_faiss_index(
-            #     index_path.strip()
-            #     .strip('"')
-            #     .strip("\n")
-            #     .strip('"')
-            #     .strip()
-            #     .replace("trained", "added")
-            # )
-            vc.vc_model.pipeline.index = index
-            vc.vc_model.pipeline.big_tsr = big_tsr
-            vc.vc_model.index_path = index_path
-        elif not index_path:
-            vc.vc_model.pipeline.index = None
-            vc.vc_model.pipeline.big_tsr = None
-            vc.vc_model.index_path = None
+            if index_path
+            else None
+        )
+        vc.vc_model.index_path = index_path or None
+    if "index_rate" in cfg:
+        vc.vc_model.pipeline.prepare_index(cfg["index_rate"])
 
     # F0 method change.
     f0_method = cfg.get("f0_method")

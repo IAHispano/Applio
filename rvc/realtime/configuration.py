@@ -98,12 +98,19 @@ def apply_config_update(instance, current, message):
         strip_parametrizations(hubert)
         hubert = hubert.to(instance.device).float().eval()
     index, data = pipeline.index, pipeline.big_tsr
-    if index_path != (model.index_path or ""):
-        if index_path:
-            index = IndexWrapper(index_path, device=instance.device, dtype=model.dtype)
-            data, _ = index.read_index_tensor()
-        else:
-            index, data = None, None
+    retrieval_enabled = candidate.get("index_rate", 0) > 0
+    if not index_path:
+        index, data = None, None
+    elif (
+        index_path != (model.index_path or "")
+        or index is None
+        or (retrieval_enabled and data is None)
+        or (not retrieval_enabled and index.index is not None)
+    ):
+        index = IndexWrapper(index_path, device=instance.device, dtype=model.dtype)
+        data = index.read_index_tensor()[0] if retrieval_enabled else None
+        if retrieval_enabled and data is None:
+            raise ValueError("Could not load index file")
     sid = candidate.get("sid", pipeline.sid)
     if not isinstance(sid, int) or not 0 <= sid < voice.net_g.emb_g.num_embeddings:
         raise ValueError("Invalid speaker ID")

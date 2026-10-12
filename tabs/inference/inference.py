@@ -95,7 +95,13 @@ def get_files(type="model"):
     best = {}
     order = 0
 
-    for root, _, files in os.walk(model_root_relative, followlinks=True):
+    for root, directories, files in os.walk(model_root_relative, followlinks=True):
+        directories[:] = [
+            name
+            for name in directories
+            if name.lower() != ".onnx-cache"
+            and not name.lower().startswith(".onnx-export-")
+        ]
         for file in files:
             if not file.endswith(exts):
                 continue

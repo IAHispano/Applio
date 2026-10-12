@@ -191,6 +191,16 @@ class IndexWrapper:
         self.big_npy = None
         self.b_norms = None
         self.big_tensor = None
+        self.load_attempted = False
+
+    def unload(self):
+        """Release retrieval data while keeping the selected path for reuse."""
+        self.index = None
+        self.big_npy = None
+        self.big_tensor = None
+        self.b_norms = None
+        self.faiss_cpu = False
+        self.load_attempted = False
 
     def read_index(self):
         """
@@ -207,7 +217,7 @@ class IndexWrapper:
         else:
             index = big_npy = None
 
-        if index is not None:
+        if index is not None and hasattr(index, "nprobe"):
             index.nprobe = self.nprobe
         self.index = index
         self.big_npy = big_npy
@@ -219,6 +229,8 @@ class IndexWrapper:
         Load the FAISS index and convert reconstructed vectors into contiguous PyTorch tensors. Also precomputes squared norms for efficient L2 distance search.
         """
 
+        self.unload()
+        self.load_attempted = True
         self.read_index()
 
         if self.index is None or self.big_npy is None:
@@ -232,6 +244,10 @@ class IndexWrapper:
             )
             # Precompute ||b||² for distance calculation
             self.b_norms = (self.big_tensor**2).sum(dim=-1, keepdim=True).T.contiguous()
+            # Accelerator tensors own their storage; the reconstructed CPU
+            # array is redundant. On CPU, the tensor retains its shared storage.
+            # FAISS fallback uses self.index and retrieves vectors from big_tensor.
+            self.big_npy = None
 
         return self.big_tensor, self.b_norms
 

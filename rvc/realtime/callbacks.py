@@ -73,6 +73,7 @@ class AudioCallbacks:
             record_audio_path=record_audio_path,
             export_format=export_format,
             audio_sample_rate=audio_sample_rate,
+            index_rate=index_rate,
             **kwargs,
         )
         self.vc = VoiceChangerWorker(vc_kwargs)

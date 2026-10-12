@@ -319,6 +319,9 @@ class Realtime:
         if self.pipeline is None:
             raise RuntimeError("Pipeline is not initialized.")
 
+        if index_rate <= 0:
+            self.pipeline.prepare_index(index_rate)
+
         # Input audio is always float32
         audio_input_16k = self.resample_in(
             torch.as_tensor(audio_input, dtype=torch.float32, device=self.device)

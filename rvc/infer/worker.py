@@ -82,6 +82,8 @@ def map_params(params: dict, input_path: str, output_path: str) -> dict:
         "volume_envelope": float(params.get("volumeEnvelope", 1.0)),
         "protect": float(params.get("protect", 0.5)),
         "f0_method": str(params.get("f0Method", "rmvpe")),
+        "inference_engine": params.get("inferenceEngine", "torch"),
+        "onnx_precision": params.get("onnxPrecision", "auto"),
         "input_path": input_path,
         "output_path": output_path,
         "pth_path": params.get("pthPath", ""),

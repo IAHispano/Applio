@@ -45,7 +45,10 @@ def _retry_mps_on_cpu(convert):
             if self.config.device != "mps" or not any(
                 marker in message
                 for marker in (
-                    "mps", "metal", "placeholder storage has not been allocated"
+                    "mps",
+                    "metal",
+                    "coreml",
+                    "placeholder storage has not been allocated",
                 )
             ):
                 raise
@@ -67,13 +70,15 @@ class VoiceConverter:
     A class for performing voice conversion using the Retrieval-Based Voice Conversion (RVC) method.
     """
 
-    def __init__(self):
+    def __init__(self, config=None):
         """
         Initializes the VoiceConverter with default configuration, and sets up models and parameters.
         """
-        self.config = inference_config()
+        self.config = config if config is not None else inference_config()
         if self.config.device == "mps":
-            print("Using Apple Silicon MPS for inference (FP32; CPU spectral frontends).")
+            print(
+                "Using Apple Silicon MPS for inference (FP32; CPU spectral frontends)."
+            )
         self.hubert_model = None
         self.last_embedder_model = None
         self.tgt_sr = None
@@ -84,6 +89,12 @@ class VoiceConverter:
         self.n_spk = None
         self.use_f0 = None
         self.loaded_model = None
+        self.loaded_model_key = None
+        self.model_path = None
+        self.model_checksum = None
+        self.onnx_decoder = False
+        self._onnx_request = None
+        self._onnx_precision = None
 
     def load_hubert(self, embedder_model: str, embedder_model_custom: str = None):
         """
@@ -256,6 +267,8 @@ class VoiceConverter:
         sid: int = 0,
         proposed_pitch: bool = False,
         proposed_pitch_threshold: float = 155.0,
+        inference_engine: str = None,
+        onnx_precision: str = "auto",
         **kwargs,
     ):
         """
@@ -288,7 +301,7 @@ class VoiceConverter:
             print("No model path provided. Aborting conversion.")
             return
 
-        self.get_vc(model_path, sid)
+        self.get_vc(model_path, sid, inference_engine, onnx_precision)
 
         start_time = time.time()
         print(f"Converting audio '{audio_input_path}'...")
@@ -478,7 +491,7 @@ class VoiceConverter:
                 except Exception:
                     pass
 
-    def get_vc(self, weight_root, sid):
+    def get_vc(self, weight_root, sid, inference_engine=None, onnx_precision="auto"):
         """
         Loads the voice conversion model and sets up the pipeline.
 
@@ -490,31 +503,79 @@ class VoiceConverter:
             self.cleanup_model()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
+            if not weight_root:
+                return
 
-        if not self.loaded_model or self.loaded_model != weight_root:
-            self.load_model(weight_root)
-            if self.cpt is not None:
-                self.setup_network()
-                self.setup_vc_instance()
-                self.loaded_model = weight_root
-            else:
-                self.vc = None
-                self.loaded_model = None
+        if inference_engine not in (None, "torch", "onnx"):
+            raise ValueError("Inference engine must be torch or onnx")
+        if onnx_precision not in ("auto", "float32", "float16"):
+            raise ValueError("ONNX precision must be auto, float32 or float16")
+        requested = (
+            os.environ.get("APPLIO_EXPERIMENTAL_ONNX_INFERENCE") or None
+            if inference_engine is None
+            else "auto" if inference_engine == "onnx" else None
+        )
+        precision = (
+            (
+                os.environ.get("APPLIO_ONNX_PRECISION") or None
+                if onnx_precision == "auto"
+                else onnx_precision
+            )
+            if requested
+            else None
+        )
+        checkpoint = os.path.normcase(os.path.abspath(weight_root))
+        stat = os.stat(checkpoint)
+        key = (
+            checkpoint,
+            stat.st_mtime_ns,
+            stat.st_size,
+            str(self.config.device),
+            requested,
+            precision,
+            os.environ.get("APPLIO_ONNX_CACHE_DIR") if requested else None,
+        )
+        if self.loaded_model_key != key:
+            # Prepare an entire replacement first. A failed export/model swap
+            # must not leave a persistent worker with the wrong active voice.
+            replacement = VoiceConverter(config=self.config)
+            replacement._onnx_request, replacement._onnx_precision = (
+                requested,
+                precision,
+            )
+            replacement.load_model(checkpoint)
+            replacement.setup_network()
+            replacement.setup_vc_instance()
+            for name in (
+                "net_g",
+                "cpt",
+                "tgt_sr",
+                "vc",
+                "n_spk",
+                "version",
+                "use_f0",
+                "vocoder",
+                "text_enc_hidden_dim",
+                "model_path",
+                "model_checksum",
+                "onnx_decoder",
+            ):
+                setattr(self, name, getattr(replacement, name))
+            self.loaded_model, self.loaded_model_key = weight_root, key
+            self._onnx_request, self._onnx_precision = requested, precision
 
     def cleanup_model(self):
         """
         Cleans up the model and releases resources.
         """
-        if self.hubert_model is not None:
-            del self.net_g, self.n_spk, self.vc, self.hubert_model, self.tgt_sr
-            self.hubert_model = self.net_g = self.n_spk = self.vc = self.tgt_sr = None
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-
-        del self.net_g, self.cpt
+        self.hubert_model = self.net_g = self.n_spk = self.vc = None
+        self.tgt_sr = self.cpt = None
+        self.loaded_model = self.loaded_model_key = self.last_embedder_model = None
+        self.onnx_decoder = False
+        self.model_path = self.model_checksum = None
+        self._onnx_request = self._onnx_precision = None
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-        self.cpt = None
 
     def load_model(self, weight_root):
         """
@@ -523,11 +584,22 @@ class VoiceConverter:
         Args:
             weight_root (str): Path to the model weights.
         """
+        self.model_path = weight_root
+        self.model_checksum = None
+        if self._onnx_request:
+            from rvc.realtime.onnx_decoder import checkpoint_hash
+
+            self.model_checksum = checkpoint_hash(weight_root)
         self.cpt = (
             torch.load(weight_root, map_location="cpu", weights_only=True)
             if os.path.isfile(weight_root)
             else None
         )
+        if (
+            self.model_checksum is not None
+            and checkpoint_hash(weight_root) != self.model_checksum
+        ):
+            raise ValueError("Voice checkpoint changed while loading; retry")
 
     def setup_network(self):
         """
@@ -549,8 +621,46 @@ class VoiceConverter:
             )
             del self.net_g.enc_q
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)
+            if self._onnx_request:
+                # Match the realtime export's materialized CPU weights so the
+                # same checkpoint/precision cache works in either workflow.
+                for module in self.net_g.dec.modules():
+                    if hasattr(module, "weight_g") and hasattr(module, "weight_v"):
+                        torch.nn.utils.remove_weight_norm(module)
+                    if hasattr(module, "parametrizations"):
+                        for name in list(module.parametrizations):
+                            torch.nn.utils.parametrize.remove_parametrizations(
+                                module, name, leave_parametrized=True
+                            )
             self.net_g = self.net_g.to(self.config.device).float()
             self.net_g.eval()
+            if self._onnx_request:
+                from rvc.realtime.onnx_decoder import OnnxDecoder, resolve_decoder_path
+
+                path = resolve_decoder_path(
+                    self.net_g.dec,
+                    self.model_path,
+                    self._onnx_request,
+                    self.config.device,
+                    expected_checkpoint_hash=self.model_checksum,
+                    precision=self._onnx_precision,
+                )
+                self.net_g.dec = OnnxDecoder(
+                    self.net_g.dec,
+                    self.model_path,
+                    path,
+                    self.config.device,
+                    expected_checkpoint_hash=self.model_checksum,
+                    capture=False,
+                )
+                if (
+                    self._onnx_precision is not None
+                    and self.net_g.dec.precision != self._onnx_precision
+                ):
+                    raise ValueError(
+                        "ONNX export precision does not match the requested precision"
+                    )
+                self.onnx_decoder = True
 
     def setup_vc_instance(self):
         """
@@ -578,6 +688,10 @@ if __name__ == "__main__":
     parser.add_argument("--output-folder", dest="output_folder", default=None)
     parser.add_argument("--pth-path", "--model-path", dest="model_path", required=True)
     parser.add_argument("--index-path", default="")
+    parser.add_argument("--inference-engine", choices=("torch", "onnx"), default=None)
+    parser.add_argument(
+        "--onnx-precision", choices=("auto", "float32", "float16"), default="auto"
+    )
 
     # Pitch and F0
     parser.add_argument("--pitch", type=int, default=0)
