@@ -1,5 +1,6 @@
 import os
 import sys
+
 if sys.platform == "darwin":
     os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
