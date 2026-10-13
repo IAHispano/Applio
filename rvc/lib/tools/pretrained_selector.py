@@ -13,6 +13,10 @@ def pretrained_selector(vocoder, sample_rate):
         return "", ""
 
 
+# Vocoder of Rectified Flow when none is picked
+rectified_flow_vocoder = "nsf_pupu_small_44.1k_hop512_128bin_vocoder.pth"
+
+
 def rectified_flow_selector(embedder_model):
     base_path = os.path.join("rvc", "models", "pretraineds", "rectified-flow")
 
@@ -21,12 +25,13 @@ def rectified_flow_selector(embedder_model):
     if not os.path.exists(path_flow):
         path_flow = ""
 
-    # OpenVPI NSF-HiFiGAN, renders the mel of the flow
+    # Pupu-Vocoder, renders the mel of the flow: the default one, else the first
     path_vocoder = ""
     if os.path.isdir(base_path):
-        for name in sorted(os.listdir(base_path)):
-            if name.endswith(".ckpt") or "_vocoder" in name:
-                path_vocoder = os.path.join(base_path, name)
-                break
+        names = sorted(name for name in os.listdir(base_path) if "_vocoder" in name)
+        if rectified_flow_vocoder in names:
+            path_vocoder = os.path.join(base_path, rectified_flow_vocoder)
+        elif names:
+            path_vocoder = os.path.join(base_path, names[0])
 
     return path_flow, path_vocoder

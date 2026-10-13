@@ -29,6 +29,22 @@ pretraineds_refinegan_list = [
         ],
     ),
 ]
+# Rectified Flow: the pretrained flow and the Pupu-Vocoder that renders its mel
+rectified_flow_base = (
+    "https://huggingface.co/shiromiya/ShiroRVC-Resources/resolve/main"
+)
+rectified_flow_url = f"{rectified_flow_base}/rectified_flow_pretrains/"
+rectified_flow_vocoder_url = f"{rectified_flow_base}/vocoders/"
+rectified_flow_list = [
+    (rectified_flow_url, ["pretrain_flow_contentvec.pth"]),
+    (
+        rectified_flow_vocoder_url,
+        [
+            "nsf_pupu_small_44.1k_hop512_128bin_vocoder.pth",
+            "nsf_pupu_large_ft_44.1k_hop512_128bin_vocoder.pth",
+        ],
+    ),
+]
 models_list = [("predictors/", ["rmvpe.pt", "fcpe.pt"])]
 embedders_list = [("embedders/contentvec/", ["pytorch_model.bin", "config.json"])]
 executables_list = [
@@ -41,7 +57,19 @@ folder_mapping_list = {
     "embedders/contentvec/": "rvc/models/embedders/contentvec/",
     "predictors/": "rvc/models/predictors/",
     "formant/": "rvc/models/formant/",
+    rectified_flow_url: "rvc/models/pretraineds/rectified-flow/",
+    rectified_flow_vocoder_url: "rvc/models/pretraineds/rectified-flow/",
 }
+
+
+def get_file_url(remote_folder, file):
+    """
+    Get the URL of a file: under the resources of Applio, or under the remote
+    folder itself when it is already a full URL.
+    """
+    if remote_folder.startswith("http"):
+        return f"{remote_folder}{file}"
+    return f"{url_base}/{remote_folder}{file}"
 
 
 def get_file_size_if_missing(file_list):
@@ -54,8 +82,8 @@ def get_file_size_if_missing(file_list):
         for file in files:
             destination_path = os.path.join(local_folder, file)
             if not os.path.exists(destination_path):
-                url = f"{url_base}/{remote_folder}{file}"
-                response = requests.head(url)
+                url = get_file_url(remote_folder, file)
+                response = requests.head(url, allow_redirects=True)
                 total_size += int(response.headers.get("content-length", 0))
     return total_size
 
@@ -89,7 +117,7 @@ def download_mapping_files(file_mapping_list, global_bar):
             for file in file_list:
                 destination_path = os.path.join(local_folder, file)
                 if not os.path.exists(destination_path):
-                    url = f"{url_base}/{remote_folder}{file}"
+                    url = get_file_url(remote_folder, file)
                     futures.append(
                         executor.submit(
                             download_file, url, destination_path, global_bar
@@ -131,6 +159,7 @@ def calculate_total_size(
         total_size += get_file_size_if_missing(executables_list)
     total_size += get_file_size_if_missing(pretraineds_hifigan)
     total_size += get_file_size_if_missing(pretraineds_refinegan_list)
+    total_size += get_file_size_if_missing(rectified_flow_list)
     return total_size
 
 
@@ -163,5 +192,6 @@ def prequisites_download_pipeline(
             if pretraineds_hifigan:
                 download_mapping_files(pretraineds_hifigan_list, global_bar)
                 download_mapping_files(pretraineds_refinegan_list, global_bar)
+                download_mapping_files(rectified_flow_list, global_bar)
     else:
         pass

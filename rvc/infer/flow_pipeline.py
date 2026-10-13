@@ -27,7 +27,7 @@ from rvc.lib.algorithm.vocoders import find_vocoder, load_vocoder
 # Sampling settings
 FLOW_STEPS = 16
 FLOW_SAMPLER = "euler"
-CFG_SCALE = 2.0
+CFG_SCALE = 1.0
 CONTENT_GUIDANCE = 0.1
 GUIDANCE_RESCALE = 0.7
 GUIDANCE_UNTIL = 1.0
@@ -44,6 +44,7 @@ FLOW_OVERLAP = 100
 # Mel frames per vocoder pass, the context rendered on each side and the
 # crossfade at each join
 VOCODER_CHUNK = 6000
+VOCODER_MIN_CHUNK = 375
 VOCODER_CONTEXT = 50
 VOCODER_CROSSFADE = 4
 
@@ -330,7 +331,8 @@ class FlowPipeline(Pipeline):
     def render(self, vocoder, mel, pitchf, hop_length):
         """
         Renders the waveform of a mel spectrogram in passes. Every pass starts
-        its excitation at phase zero, so the joins are crossfaded.
+        its excitation at phase zero, so the joins are crossfaded. The passes
+        halve when one does not fit in memory.
 
         Args:
             vocoder: The vocoder model.
@@ -340,25 +342,57 @@ class FlowPipeline(Pipeline):
         """
         frames = mel.shape[-1]
         half = VOCODER_CROSSFADE * hop_length // 2
-        output = torch.zeros(frames * hop_length, device=self.device)
-        for start in range(0, frames, VOCODER_CHUNK):
-            stop = min(frames, start + VOCODER_CHUNK)
-            left = max(0, start - VOCODER_CONTEXT)
-            right = min(frames, stop + VOCODER_CONTEXT)
-            audio = vocoder(mel[..., left:right], pitchf[:, left:right])[0, 0].float()
-            offset = left * hop_length
-            position = torch.arange(
-                offset, offset + audio.shape[0], device=self.device
-            )
-            weight = torch.ones_like(audio)
-            if start > 0:
-                fade_in = (position - (start * hop_length - half)) / (2 * half)
-                weight = weight * fade_in.clamp(0, 1)
-            if stop < frames:
-                fade_out = ((stop * hop_length + half) - position) / (2 * half)
-                weight = weight * fade_out.clamp(0, 1)
-            output[offset : offset + audio.shape[0]] += audio * weight
-        return output.cpu().numpy()
+        # The size that fitted is kept on the vocoder for its next renders
+        chunk = getattr(vocoder, "render_chunk", VOCODER_CHUNK)
+        while True:
+            output = torch.zeros(frames * hop_length, device=self.device)
+            try:
+                for start in range(0, frames, chunk):
+                    self.render_pass(
+                        vocoder, mel, pitchf, hop_length, output, start, half, chunk
+                    )
+                vocoder.render_chunk = chunk
+                return output.cpu().numpy()
+            except torch.OutOfMemoryError:
+                if chunk <= VOCODER_MIN_CHUNK:
+                    raise
+            # Outside the handler, whose traceback holds the pass's tensors
+            del output
+            torch.cuda.empty_cache()
+            chunk = max(VOCODER_MIN_CHUNK, chunk // 2)
+            print(f"Vocoder out of memory, rendering {chunk} frames per pass.")
+
+    def render_pass(
+        self, vocoder, mel, pitchf, hop_length, output, start, half, chunk
+    ):
+        """
+        Renders one pass and adds it into the output, faded at its joins.
+
+        Args:
+            vocoder: The vocoder model.
+            mel: Normalised mel spectrogram.
+            pitchf: F0 contour at the mel frame rate.
+            hop_length: Hop length of the mel spectrogram.
+            output: Waveform the pass is added into.
+            start: First mel frame of the pass.
+            half: Half the crossfade length in samples.
+            chunk: Mel frames per pass.
+        """
+        frames = mel.shape[-1]
+        stop = min(frames, start + chunk)
+        left = max(0, start - VOCODER_CONTEXT)
+        right = min(frames, stop + VOCODER_CONTEXT)
+        audio = vocoder(mel[..., left:right], pitchf[:, left:right])[0, 0].float()
+        offset = left * hop_length
+        position = torch.arange(offset, offset + audio.shape[0], device=self.device)
+        weight = torch.ones_like(audio)
+        if start > 0:
+            fade_in = (position - (start * hop_length - half)) / (2 * half)
+            weight = weight * fade_in.clamp(0, 1)
+        if stop < frames:
+            fade_out = ((stop * hop_length + half) - position) / (2 * half)
+            weight = weight * fade_out.clamp(0, 1)
+        output[offset : offset + audio.shape[0]] += audio * weight
 
     def pipeline(
         self,

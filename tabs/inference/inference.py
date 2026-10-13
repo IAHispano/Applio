@@ -11,6 +11,7 @@ import torch
 
 from assets.i18n.i18n import I18nAuto
 from core import run_batch_infer_script, run_infer_script
+from rvc.lib.tools.pretrained_selector import rectified_flow_selector
 from rvc.lib.utils import format_title
 from tabs.settings.sections.filter import get_filter_trigger, load_config_filter
 from tabs.settings.sections.restart import stop_infer
@@ -531,7 +532,7 @@ def rectified_flow_settings():
         sorted(
             os.path.join(flow_vocoder_root, name)
             for name in os.listdir(flow_vocoder_root)
-            if name.endswith(".ckpt") or "_vocoder" in name
+            if "_vocoder" in name
         )
         if os.path.isdir(flow_vocoder_root)
         else []
@@ -543,7 +544,7 @@ def rectified_flow_settings():
                 "Vocoder that renders the audio of a Rectified Flow model."
             ),
             choices=[(os.path.basename(path), path) for path in vocoders],
-            value=vocoders[0] if vocoders else None,
+            value=rectified_flow_selector("")[1] or None,
             interactive=True,
         )
         with gr.Row():
@@ -562,7 +563,7 @@ def rectified_flow_settings():
                 step=0.1,
                 label=i18n("Speaker Guidance"),
                 info=i18n("How strongly the output follows the voice model."),
-                value=2.0,
+                value=1.0,
                 interactive=True,
             )
             content_guidance = gr.Slider(
