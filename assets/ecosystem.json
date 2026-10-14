@@ -13,6 +13,7 @@
     "models": "https://applio.org/search",
     "discord": "https://discord.gg/wY7gmqTyEV",
     "support": "https://ko-fi.com/iahispano",
+    "patreon": "https://www.patreon.com/iahispano",
     "desktopReleases": "https://github.com/IAHispano/Applio-App/releases/latest",
     "gradioReleases": "https://github.com/IAHispano/Applio/releases",
     "gradioCompiled": "https://huggingface.co/IAHispano/Applio/tree/main/Compiled/Windows"

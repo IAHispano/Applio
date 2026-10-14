@@ -27,6 +27,8 @@ def resource_markdown(translate=lambda text: text):
         ("Support us", links["support"]),
         ("Source code", ECOSYSTEM["projects"]["gradio"]["repository"]),
     ]
+    if links.get("patreon"):
+        destinations.insert(5, ("Patreon", links["patreon"]))
     return " · ".join(f"[{translate(label)}]({url})" for label, url in destinations)
 
 
