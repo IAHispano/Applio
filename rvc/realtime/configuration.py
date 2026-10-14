@@ -8,7 +8,6 @@ import torchaudio.transforms as tat
 
 from rvc.lib.user_config import resolve_logs_path
 from rvc.lib.utils import load_embedding
-from rvc.lib.tools.device import CPUSpectralTransform
 from .core import AUDIO_SAMPLE_RATE
 from .pipeline import RealtimeVoiceConverter, strip_parametrizations
 from .utils.chunks import automatic_block_frame
@@ -30,6 +29,13 @@ def apply_config_update(instance, current, message):
             changes = target
     if not isinstance(changes, dict) or not isinstance(effects, dict):
         raise ValueError("Settings must be objects")
+    # Clean audio was removed (Voice Focus covers denoising); drop legacy keys.
+    for legacy in ("clean_audio", "clean_strength"):
+        changes.pop(legacy, None)
+    # Post-processing (pedalboard) was removed; drop legacy keys.
+    for legacy in ("post_process", "pedalboard_kwargs"):
+        changes.pop(legacy, None)
+    effects.clear()
     if any(key not in current and key != "vad_sensitivity" for key in changes):
         raise ValueError("Unknown realtime setting")
     candidate = {
@@ -37,13 +43,18 @@ def apply_config_update(instance, current, message):
         **changes,
         "kwargs": {**current.get("kwargs", {}), **effects},
     }
+    candidate.pop("clean_audio", None)
+    candidate.pop("clean_strength", None)
+    candidate.pop("post_process", None)
+    candidate["kwargs"] = {}
     ranges = {
         "f0_up_key": (-24, 24),
         "index_rate": (0, 1),
         "protect": (0, 0.5),
         "volume_envelope": (0, 1),
         "autotune_strength": (0, 1),
-        "clean_strength": (0, 1),
+        "formant_qfrency": (0, 32),
+        "formant_timbre": (0, 32),
         "input_audio_gain": (0, 200),
         "silent_threshold": (-90, 0),
         "cross_fade_overlap_size": (0.01, 0.5),
@@ -125,27 +136,12 @@ def apply_config_update(instance, current, message):
         vad = None
     elif vad is None or sensitivity != current.get("vad_sensitivity", 1):
         vad = VADProcessor(sensitivity_mode=sensitivity, sample_rate=model.sample_rate)
-    noise = model.reduced_noise
-    if not candidate.get("clean_audio", False):
-        noise = None
-    elif (
-        noise is None
-        or replaced
-        or candidate.get("clean_strength") != current.get("clean_strength")
-    ):
-        from noisereduce.torchgate import TorchGate
-
-        noise = TorchGate(
-            voice.tgt_sr, prop_decrease=candidate.get("clean_strength", 0.5)
-        ).to(instance.device)
-        if str(instance.device) == "mps":
-            noise = CPUSpectralTransform(noise)
-    board = model.board
-    kwargs = candidate["kwargs"]
-    if not candidate.get("post_process", False):
-        board = None
-    elif board is None or kwargs != model.kwargs:
-        board = model.setup_pedalboard(**kwargs)
+    # Clean-audio noise reduction was removed (Voice Focus covers denoising).
+    noise = None
+    model.reduced_noise = None
+    # Post-processing (pedalboard) was removed; drop legacy effect keys.
+    kwargs = {}
+    model.kwargs = None
     resample = (
         tat.Resample(voice.tgt_sr, AUDIO_SAMPLE_RATE, dtype=torch.float32).to(
             instance.device
@@ -176,10 +172,19 @@ def apply_config_update(instance, current, message):
     pipeline.sid, pipeline.torch_sid = sid, speaker
     model.model_path, model.index_path = model_path, index_path
     model.embedder_model, model.embedder_model_custom = embedder, custom
-    model.vad, model.reduced_noise, model.board = vad, noise, board
-    model.kwargs = kwargs.copy() if board is not None else None
+    model.vad, model.reduced_noise = vad, noise
+    model.kwargs = None
     model.resample_out = resample
     model.input_sensitivity = 10 ** (candidate.get("silent_threshold", -90) / 20)
+    model.formant_shifting = bool(candidate.get("formant_shifting", False))
+    try:
+        model.formant_qfrency = float(candidate.get("formant_qfrency", 1.0))
+    except (TypeError, ValueError):
+        raise ValueError("Invalid formant_qfrency")
+    try:
+        model.formant_timbre = float(candidate.get("formant_timbre", 1.0))
+    except (TypeError, ValueError):
+        raise ValueError("Invalid formant_timbre")
     crossfade = round(candidate.get("cross_fade_overlap_size", 0.1) * AUDIO_SAMPLE_RATE)
     extra = round(candidate.get("extra_convert_size", 0.5) * AUDIO_SAMPLE_RATE)
     if (block, crossfade, extra) != (

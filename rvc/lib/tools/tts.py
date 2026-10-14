@@ -84,8 +84,6 @@ def run_tts_cli():
     parser.add_argument("--f0-autotune-strength", type=float, default=1.0)
     parser.add_argument("--proposed-pitch", action="store_true", default=False)
     parser.add_argument("--proposed-pitch-threshold", type=float, default=155.0)
-    parser.add_argument("--clean-audio", action="store_true", default=False)
-    parser.add_argument("--clean-strength", type=float, default=0.5)
 
     args = parser.parse_args()
 
@@ -135,8 +133,6 @@ def run_tts_cli():
             f0_autotune_strength=args.f0_autotune_strength,
             proposed_pitch=args.proposed_pitch,
             proposed_pitch_threshold=args.proposed_pitch_threshold,
-            clean_audio=args.clean_audio,
-            clean_strength=args.clean_strength,
         )
         print(f"RVC conversion completed at '{args.output_rvc_path}'")
 

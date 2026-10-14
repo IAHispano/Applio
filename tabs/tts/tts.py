@@ -234,24 +234,33 @@ def tts_tab():
                 value=155.0,
                 interactive=True,
             )
-            clean_audio = gr.Checkbox(
-                label=i18n("Clean Audio"),
+            formant_shifting = gr.Checkbox(
+                label=i18n("Formant Shifting"),
                 info=i18n(
-                    "Clean your audio output using noise detection algorithms, recommended for speaking audios."
+                    "Enable formant shifting. Used for male to female and vice-versa convertions."
                 ),
                 visible=True,
                 value=False,
                 interactive=True,
             )
-            clean_strength = gr.Slider(
+            formant_qfrency = gr.Slider(
                 minimum=0,
-                maximum=1,
-                label=i18n("Clean Strength"),
-                info=i18n(
-                    "Set the clean-up level to the audio you want, the more you increase it the more it will clean up, but it is possible that the audio will be more compressed."
-                ),
-                visible=True,
-                value=0.5,
+                maximum=16,
+                step=0.1,
+                label=i18n("Quefrency for formant shifting"),
+                info=i18n("Modifies formants width and spectral envelope."),
+                visible=False,
+                value=1.0,
+                interactive=True,
+            )
+            formant_timbre = gr.Slider(
+                minimum=0,
+                maximum=16,
+                step=0.1,
+                label=i18n("Timbre for formant shifting"),
+                info=i18n("Adjusts vocal tract length / timbre brightness."),
+                visible=False,
+                value=1.0,
                 interactive=True,
             )
             pitch = gr.Slider(
@@ -403,6 +412,12 @@ def tts_tab():
     def toggle_visible(checkbox):
         return {"visible": checkbox, "__type__": "update"}
 
+    def toggle_visible_formant(checkbox):
+        return [
+            {"visible": checkbox, "__type__": "update"},
+            {"visible": checkbox, "__type__": "update"},
+        ]
+
     def toggle_visible_embedder_custom(embedder_model):
         if embedder_model == "custom":
             return {"visible": True, "__type__": "update"}
@@ -418,10 +433,10 @@ def tts_tab():
         inputs=[proposed_pitch],
         outputs=[proposed_pitch_threshold],
     )
-    clean_audio.change(
-        fn=toggle_visible,
-        inputs=[clean_audio],
-        outputs=[clean_strength],
+    formant_shifting.change(
+        fn=toggle_visible_formant,
+        inputs=[formant_shifting],
+        outputs=[formant_qfrency, formant_timbre],
     )
     refresh_button.click(
         fn=change_choices,
@@ -474,12 +489,13 @@ def tts_tab():
             autotune_strength,
             proposed_pitch,
             proposed_pitch_threshold,
-            clean_audio,
-            clean_strength,
             export_format,
             embedder_model,
             embedder_model_custom,
             sid,
+            formant_shifting,
+            formant_qfrency,
+            formant_timbre,
         ],
         outputs=[vc_output1, vc_output2],
     )

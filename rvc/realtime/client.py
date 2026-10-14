@@ -147,10 +147,9 @@ async def websocket_audio(ws: WebSocket):
                 vad_sensitivity=params.get("vad_sensitivity", 1),
                 vad_frame_ms=30,
                 sid=params["sid"],
-                clean_audio=params["clean_audio"],
-                clean_strength=params["clean_strength"],
-                post_process=params["post_process"],
-                **params["kwargs"],
+                formant_shifting=params.get("formant_shifting", False),
+                formant_qfrency=params.get("formant_qfrency", 1.0),
+                formant_timbre=params.get("formant_timbre", 1.0),
             )
 
         vc_instance.vc_model.pipeline.vc.decoder_fp16 = params.get(

@@ -423,7 +423,6 @@ class Realtime_Pipeline:
         proposed_pitch: bool = False,
         proposed_pitch_threshold: float = 155.0,
         reduced_noise=None,
-        board=None,
         block_size_16k: int = None,
         return_decoder_inputs: bool = False,
     ):
@@ -569,11 +568,11 @@ class Realtime_Pipeline:
                 head,
             )
             return self._finish_audio(
-                out_audio, audio, return_length, volume_envelope, reduced_noise, board
+                out_audio, audio, return_length, volume_envelope, reduced_noise
             )
 
     def _finish_audio(
-        self, out_audio, audio, return_length, volume_envelope, reduced_noise, board
+        self, out_audio, audio, return_length, volume_envelope, reduced_noise
     ):
         with torch.no_grad():
             # Match output RMS to the current block's input RMS.
@@ -591,11 +590,6 @@ class Realtime_Pipeline:
 
             if reduced_noise is not None:
                 out_audio = reduced_noise(out_audio.unsqueeze(0)).squeeze(0)
-            if board is not None:
-                out_audio = torch.as_tensor(
-                    board(out_audio.cpu().numpy(), self.tgt_sr),
-                    device=self.device,
-                )
 
         return out_audio.float()
 
@@ -617,17 +611,16 @@ class Realtime_Pipeline:
         index_rate = args[1] if len(args) > 1 else kwargs.get("index_rate", 0.5)
         self.prepare_index(index_rate)
         # Graphs eliminate hundreds of host kernel submissions per block. Keep
-        # eager execution for CPU/AMD and effects that transfer audio to the CPU.
+        # eager execution for CPU/AMD and noise effects that transfer audio
+        # to the CPU.
         proposed = args[10] if len(args) > 10 else kwargs.get("proposed_pitch", False)
         noise = args[12] if len(args) > 12 else kwargs.get("reduced_noise")
-        board = args[13] if len(args) > 13 else kwargs.get("board")
         if (
             not self._graph_supported
             or self._graph_failed
             or self.f0_method not in ("fcpe", "rmvpe")
             or proposed
             or noise is not None
-            or board is not None
         ):
             self._graph_cache = None
             return self._voice_conversion(audio, pitch, pitchf, *args, **kwargs)

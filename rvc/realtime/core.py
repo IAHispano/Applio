@@ -8,20 +8,6 @@ import torch
 import torch.nn.functional as F
 import torchaudio.transforms as tat
 import numpy as np
-from noisereduce.torchgate import TorchGate
-from pedalboard import (
-    Pedalboard,
-    Chorus,
-    Distortion,
-    Reverb,
-    PitchShift,
-    Limiter,
-    Gain,
-    Bitcrush,
-    Clipping,
-    Compressor,
-    Delay,
-)
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -118,9 +104,9 @@ class Realtime:
         vad_sensitivity: int = 1,
         vad_frame_ms: int = 30,
         sid: int = 0,
-        clean_audio: bool = False,
-        clean_strength: float = 0.5,
-        post_process: bool = False,
+        formant_shifting: bool = False,
+        formant_qfrency: float = 1.0,
+        formant_timbre: float = 1.0,
         **kwargs,
         # device: str = "cuda",
     ):
@@ -151,7 +137,12 @@ class Realtime:
             if vad_enabled
             else None
         )
-        self.board = self.setup_pedalboard(**kwargs) if post_process else None
+        # Formant shifting (same STFT method as offline inference).
+        self.formant_shifting = bool(formant_shifting)
+        self.formant_qfrency = float(formant_qfrency)
+        self.formant_timbre = float(formant_timbre)
+        self._formant_shifter = None
+        self.kwargs = None
         # Create conversion pipelines
         self.pipeline = create_pipeline(
             model_path,
@@ -165,19 +156,9 @@ class Realtime:
         )
         self.device = self.pipeline.device
         self.dtype = self.pipeline.dtype
-        # noise reduce
-        self.reduced_noise = (
-            TorchGate(
-                self.pipeline.tgt_sr,
-                prop_decrease=clean_strength,
-            ).to(self.device)
-            if clean_audio
-            else None
-        )
-        if self.device == "mps" and self.reduced_noise is not None:
-            from rvc.lib.tools.device import CPUSpectralTransform
-
-            self.reduced_noise = CPUSpectralTransform(self.reduced_noise)
+        # Clean-audio noise reduction was removed (Voice Focus covers input
+        # denoising, and TorchGate is too demanding for realtime).
+        self.reduced_noise = None
         # Resampling of inputs and outputs.
         self.resample_in = tat.Resample(
             orig_freq=AUDIO_SAMPLE_RATE, new_freq=self.sample_rate, dtype=torch.float32
@@ -187,66 +168,6 @@ class Realtime:
             new_freq=AUDIO_SAMPLE_RATE,
             dtype=torch.float32,
         ).to(self.device)
-
-    def setup_pedalboard(self, **kwargs):
-        board = Pedalboard()
-        if kwargs.get("reverb", False):
-            reverb = Reverb(
-                room_size=kwargs.get("reverb_room_size", 0.5),
-                damping=kwargs.get("reverb_damping", 0.5),
-                wet_level=kwargs.get("reverb_wet_level", 0.33),
-                dry_level=kwargs.get("reverb_dry_level", 0.4),
-                width=kwargs.get("reverb_width", 1.0),
-                freeze_mode=kwargs.get("reverb_freeze_mode", 0),
-            )
-            board.append(reverb)
-        if kwargs.get("pitch_shift", False):
-            pitch_shift = PitchShift(semitones=kwargs.get("pitch_shift_semitones", 0))
-            board.append(pitch_shift)
-        if kwargs.get("limiter", False):
-            limiter = Limiter(
-                threshold_db=kwargs.get("limiter_threshold", -6),
-                release_ms=kwargs.get("limiter_release", 0.05),
-            )
-            board.append(limiter)
-        if kwargs.get("gain", False):
-            gain = Gain(gain_db=kwargs.get("gain_db", 0))
-            board.append(gain)
-        if kwargs.get("distortion", False):
-            distortion = Distortion(drive_db=kwargs.get("distortion_gain", 25))
-            board.append(distortion)
-        if kwargs.get("chorus", False):
-            chorus = Chorus(
-                rate_hz=kwargs.get("chorus_rate", 1.0),
-                depth=kwargs.get("chorus_depth", 0.25),
-                centre_delay_ms=kwargs.get("chorus_delay", 7),
-                feedback=kwargs.get("chorus_feedback", 0.0),
-                mix=kwargs.get("chorus_mix", 0.5),
-            )
-            board.append(chorus)
-        if kwargs.get("bitcrush", False):
-            bitcrush = Bitcrush(bit_depth=kwargs.get("bitcrush_bit_depth", 8))
-            board.append(bitcrush)
-        if kwargs.get("clipping", False):
-            clipping = Clipping(threshold_db=kwargs.get("clipping_threshold", 0))
-            board.append(clipping)
-        if kwargs.get("compressor", False):
-            compressor = Compressor(
-                threshold_db=kwargs.get("compressor_threshold", 0),
-                ratio=kwargs.get("compressor_ratio", 1),
-                attack_ms=kwargs.get("compressor_attack", 1.0),
-                release_ms=kwargs.get("compressor_release", 100),
-            )
-            board.append(compressor)
-        if kwargs.get("delay", False):
-            delay = Delay(
-                delay_seconds=kwargs.get("delay_seconds", 0.5),
-                feedback=kwargs.get("delay_feedback", 0.0),
-                mix=kwargs.get("delay_mix", 0.5),
-            )
-            board.append(delay)
-
-        return board
 
     def realloc(
         self,
@@ -304,6 +225,27 @@ class Realtime:
             self.convert_feature_size_16k + 1, dtype=self.dtype, device=self.device
         )
 
+    def _apply_formant_shift(self, audio_16k):
+        """Apply offline-style formant shifting to a 16 kHz block (no-op when disabled)."""
+        if not self.formant_shifting:
+            return audio_16k
+        try:
+            from stftpitchshift import StftPitchShift
+
+            if self._formant_shifter is None:
+                self._formant_shifter = StftPitchShift(1024, 32, self.sample_rate)
+            audio_np = audio_16k.detach().to("cpu").float().numpy()
+            shifted = self._formant_shifter.shiftpitch(
+                audio_np,
+                factors=1,
+                quefrency=float(self.formant_qfrency) * 1e-3,
+                distortion=float(self.formant_timbre),
+            )
+            return torch.as_tensor(shifted, device=audio_16k.device).to(audio_16k.dtype)
+        except Exception as error:
+            print(f"Formant shifting failed, bypassing: {error}")
+            return audio_16k
+
     def inference(
         self,
         audio_input: np.ndarray,
@@ -326,13 +268,16 @@ class Realtime:
         audio_input_16k = self.resample_in(
             torch.as_tensor(audio_input, dtype=torch.float32, device=self.device)
         ).to(self.dtype)
+        audio_input_16k = self._apply_formant_shift(audio_input_16k)
         circular_write(audio_input_16k, self.audio_buffer)
 
         vol_t = torch.sqrt(torch.square(audio_input_16k).mean())
         vol = max(vol_t.item(), 0)
 
-        board = self.board
-        reduced_noise = self.reduced_noise
+        # Post-processing (pedalboard) and clean-audio noise reduction were
+        # removed; Voice Focus handles input denoising.
+        board = None
+        reduced_noise = None
 
         # Advance context even while gated; stale speech must not be replayed.
         circular_write(audio_input_16k, self.convert_buffer)
@@ -370,7 +315,6 @@ class Realtime:
             proposed_pitch,
             proposed_pitch_threshold,
             reduced_noise,
-            board,
             block_size_16k=self.block_frame_16k,
         )
 
@@ -402,9 +346,9 @@ class VoiceChanger:
         vad_sensitivity: int = 1,
         vad_frame_ms: int = 30,
         sid: int = 0,
-        clean_audio: bool = False,
-        clean_strength: float = 0.5,
-        post_process: bool = False,
+        formant_shifting: bool = False,
+        formant_qfrency: float = 1.0,
+        formant_timbre: float = 1.0,
         record_audio: bool = False,
         record_audio_path: str = None,
         export_format: str = "WAV",
@@ -431,9 +375,9 @@ class VoiceChanger:
             vad_sensitivity,
             vad_frame_ms,
             sid,
-            clean_audio,
-            clean_strength,
-            post_process,
+            formant_shifting,
+            formant_qfrency,
+            formant_timbre,
             **kwargs,
             # device
         )

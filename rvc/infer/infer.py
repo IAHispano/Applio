@@ -109,27 +109,6 @@ class VoiceConverter:
         self.hubert_model.eval()
 
     @staticmethod
-    def remove_audio_noise(data, sr, reduction_strength=0.7):
-        """
-        Removes noise from an audio file using the NoiseReduce library.
-
-        Args:
-            data (numpy.ndarray): The audio data as a NumPy array.
-            sr (int): The sample rate of the audio data.
-            reduction_strength (float): Strength of the noise reduction. Default is 0.7.
-        """
-        try:
-            import noisereduce as nr
-
-            reduced_noise = nr.reduce_noise(
-                y=data, sr=sr, prop_decrease=reduction_strength
-            )
-            return reduced_noise
-        except Exception as error:
-            print(f"An error occurred removing audio noise: {error}")
-            return None
-
-    @staticmethod
     def convert_audio_format(input_path, output_path, output_format):
         """
         Converts an audio file to a specified output format.
@@ -163,84 +142,6 @@ class VoiceConverter:
         except Exception as error:
             print(f"An error occurred converting the audio format: {error}")
 
-    @staticmethod
-    def post_process_audio(
-        audio_input,
-        sample_rate,
-        **kwargs,
-    ):
-        from pedalboard import (
-            Pedalboard,
-            Chorus,
-            Distortion,
-            Reverb,
-            PitchShift,
-            Limiter,
-            Gain,
-            Bitcrush,
-            Clipping,
-            Compressor,
-            Delay,
-        )
-
-        board = Pedalboard()
-        if kwargs.get("reverb", False):
-            reverb = Reverb(
-                room_size=kwargs.get("reverb_room_size", 0.5),
-                damping=kwargs.get("reverb_damping", 0.5),
-                wet_level=kwargs.get("reverb_wet_level", 0.33),
-                dry_level=kwargs.get("reverb_dry_level", 0.4),
-                width=kwargs.get("reverb_width", 1.0),
-                freeze_mode=kwargs.get("reverb_freeze_mode", 0),
-            )
-            board.append(reverb)
-        if kwargs.get("pitch_shift", False):
-            pitch_shift = PitchShift(semitones=kwargs.get("pitch_shift_semitones", 0))
-            board.append(pitch_shift)
-        if kwargs.get("limiter", False):
-            limiter = Limiter(
-                threshold_db=kwargs.get("limiter_threshold", -6),
-                release_ms=kwargs.get("limiter_release", 0.05),
-            )
-            board.append(limiter)
-        if kwargs.get("gain", False):
-            gain = Gain(gain_db=kwargs.get("gain_db", 0))
-            board.append(gain)
-        if kwargs.get("distortion", False):
-            distortion = Distortion(drive_db=kwargs.get("distortion_gain", 25))
-            board.append(distortion)
-        if kwargs.get("chorus", False):
-            chorus = Chorus(
-                rate_hz=kwargs.get("chorus_rate", 1.0),
-                depth=kwargs.get("chorus_depth", 0.25),
-                centre_delay_ms=kwargs.get("chorus_delay", 7),
-                feedback=kwargs.get("chorus_feedback", 0.0),
-                mix=kwargs.get("chorus_mix", 0.5),
-            )
-            board.append(chorus)
-        if kwargs.get("bitcrush", False):
-            bitcrush = Bitcrush(bit_depth=kwargs.get("bitcrush_bit_depth", 8))
-            board.append(bitcrush)
-        if kwargs.get("clipping", False):
-            clipping = Clipping(threshold_db=kwargs.get("clipping_threshold", 0))
-            board.append(clipping)
-        if kwargs.get("compressor", False):
-            compressor = Compressor(
-                threshold_db=kwargs.get("compressor_threshold", 0),
-                ratio=kwargs.get("compressor_ratio", 1),
-                attack_ms=kwargs.get("compressor_attack", 1.0),
-                release_ms=kwargs.get("compressor_release", 100),
-            )
-            board.append(compressor)
-        if kwargs.get("delay", False):
-            delay = Delay(
-                delay_seconds=kwargs.get("delay_seconds", 0.5),
-                feedback=kwargs.get("delay_feedback", 0.0),
-                mix=kwargs.get("delay_mix", 0.5),
-            )
-            board.append(delay)
-        return board(audio_input, sample_rate)
-
     @_retry_mps_on_cpu
     def convert_audio(
         self,
@@ -259,10 +160,7 @@ class VoiceConverter:
         f0_autotune_strength: float = 1,
         embedder_model: str = "contentvec",
         embedder_model_custom: str = None,
-        clean_audio: bool = False,
-        clean_strength: float = 0.5,
         export_format: str = "WAV",
-        post_process: bool = False,
         resample_sr: int = 0,
         sid: int = 0,
         proposed_pitch: bool = False,
@@ -287,8 +185,6 @@ class VoiceConverter:
             index_path (str): Path to the index file.
             split_audio (bool): Whether to split the audio for processing.
             f0_autotune (bool): Whether to use F0 autotune.
-            clean_audio (bool): Whether to clean the audio.
-            clean_strength (float): Strength of the audio cleaning.
             export_format (str): Format for exporting the audio.
             f0_file (str): Path to the F0 file.
             embedder_model (str): Path to the embedder model.
@@ -369,20 +265,6 @@ class VoiceConverter:
             )
         else:
             audio_opt = converted_chunks[0]
-
-        if clean_audio:
-            cleaned_audio = self.remove_audio_noise(
-                audio_opt, self.tgt_sr, clean_strength
-            )
-            if cleaned_audio is not None:
-                audio_opt = cleaned_audio
-
-        if post_process:
-            audio_opt = self.post_process_audio(
-                audio_input=audio_opt,
-                sample_rate=self.tgt_sr,
-                **kwargs,
-            )
 
         sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
         output_path_format = (
@@ -706,11 +588,9 @@ if __name__ == "__main__":
     parser.add_argument("--proposed-pitch", action="store_true", default=False)
     parser.add_argument("--proposed-pitch-threshold", type=float, default=155.0)
 
-    # Embedder and cleaning
+    # Embedder
     parser.add_argument("--embedder-model", default="contentvec")
     parser.add_argument("--embedder-model-custom", default=None)
-    parser.add_argument("--clean-audio", action="store_true", default=False)
-    parser.add_argument("--clean-strength", type=float, default=0.5)
     parser.add_argument("--export-format", default="WAV")
     parser.add_argument("--resample-sr", type=int, default=0)
     parser.add_argument("--sid", type=int, default=0)
@@ -720,61 +600,7 @@ if __name__ == "__main__":
     parser.add_argument("--formant-qfrency", type=float, default=1.0)
     parser.add_argument("--formant-timbre", type=float, default=1.0)
 
-    # Effects & post-process
-    parser.add_argument("--post-process", action="store_true", default=False)
-    parser.add_argument("--reverb", action="store_true", default=False)
-    parser.add_argument("--reverb-room-size", type=float, default=0.5)
-    parser.add_argument("--reverb-damping", type=float, default=0.5)
-    parser.add_argument("--reverb-wet-gain", type=float, default=0.33)
-    parser.add_argument("--reverb-dry-gain", type=float, default=0.4)
-    parser.add_argument("--reverb-width", type=float, default=1.0)
-    parser.add_argument("--reverb-freeze-mode", type=float, default=0.0)
-
-    parser.add_argument("--pitch-shift", action="store_true", default=False)
-    parser.add_argument("--pitch-shift-semitones", type=float, default=0.0)
-
-    parser.add_argument("--limiter", action="store_true", default=False)
-    parser.add_argument("--limiter-threshold", type=float, default=-6.0)
-    parser.add_argument("--limiter-release-time", type=float, default=0.05)
-
-    parser.add_argument("--gain", action="store_true", default=False)
-    parser.add_argument("--gain-db", type=float, default=0.0)
-
-    parser.add_argument("--distortion", action="store_true", default=False)
-    parser.add_argument("--distortion-gain", type=float, default=25.0)
-
-    parser.add_argument("--chorus", action="store_true", default=False)
-    parser.add_argument("--chorus-rate", type=float, default=1.0)
-    parser.add_argument("--chorus-depth", type=float, default=0.25)
-    parser.add_argument("--chorus-center-delay", type=float, default=7.0)
-    parser.add_argument("--chorus-feedback", type=float, default=0.0)
-    parser.add_argument("--chorus-mix", type=float, default=0.5)
-
-    parser.add_argument("--bitcrush", action="store_true", default=False)
-    parser.add_argument("--bitcrush-bit-depth", type=int, default=8)
-
-    parser.add_argument("--clipping", action="store_true", default=False)
-    parser.add_argument("--clipping-threshold", type=float, default=-6.0)
-
-    parser.add_argument("--compressor", action="store_true", default=False)
-    parser.add_argument("--compressor-threshold", type=float, default=0.0)
-    parser.add_argument("--compressor-ratio", type=float, default=1.0)
-    parser.add_argument("--compressor-attack", type=float, default=1.0)
-    parser.add_argument("--compressor-release", type=float, default=100.0)
-
-    parser.add_argument("--delay", action="store_true", default=False)
-    parser.add_argument("--delay-seconds", type=float, default=0.5)
-    parser.add_argument("--delay-feedback", type=float, default=0.0)
-    parser.add_argument("--delay-mix", type=float, default=0.5)
-
-    args = parser.parse_args()
-    vc = VoiceConverter()
-
     infer_kwargs = vars(args)
-    infer_kwargs["reverb_wet_level"] = infer_kwargs.pop("reverb_wet_gain", 0.33)
-    infer_kwargs["reverb_dry_level"] = infer_kwargs.pop("reverb_dry_gain", 0.4)
-    infer_kwargs["limiter_release"] = infer_kwargs.pop("limiter_release_time", 0.05)
-    infer_kwargs["chorus_delay"] = infer_kwargs.pop("chorus_center_delay", 7.0)
     input_folder = infer_kwargs.pop("input_folder")
     output_folder = infer_kwargs.pop("output_folder")
     input_path = infer_kwargs.pop("input_path")

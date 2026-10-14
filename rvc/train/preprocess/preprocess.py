@@ -12,7 +12,6 @@ def strtobool(val):
 
 
 import librosa
-import noisereduce as nr
 import numpy as np
 import soxr
 from scipy import signal
@@ -118,8 +117,6 @@ class PreProcess:
         sid: int,
         cut_preprocess: str,
         process_effects: bool,
-        noise_reduction: bool,
-        reduction_strength: float,
         chunk_len: float,
         overlap_len: float,
         normalization_mode: str,
@@ -133,10 +130,6 @@ class PreProcess:
                 audio = signal.lfilter(self.b_high, self.a_high, audio)
             if normalization_mode == "pre":
                 audio = self._normalize_audio(audio)
-            if noise_reduction:
-                audio = nr.reduce_noise(
-                    y=audio, sr=self.sr, prop_decrease=reduction_strength
-                )
             if cut_preprocess == "Skip":
                 # no cutting
                 self.process_audio_segment(
@@ -227,8 +220,6 @@ def process_audio_wrapper(args):
         file,
         cut_preprocess,
         process_effects,
-        noise_reduction,
-        reduction_strength,
         chunk_len,
         overlap_len,
         normalization_mode,
@@ -240,8 +231,6 @@ def process_audio_wrapper(args):
         sid,
         cut_preprocess,
         process_effects,
-        noise_reduction,
-        reduction_strength,
         chunk_len,
         overlap_len,
         normalization_mode,
@@ -255,8 +244,6 @@ def preprocess_training_set(
     exp_dir: str,
     cut_preprocess: str,
     process_effects: bool,
-    noise_reduction: bool,
-    reduction_strength: float,
     chunk_len: float,
     overlap_len: float,
     normalization_mode: str,
@@ -305,8 +292,6 @@ def preprocess_training_set(
                         file,
                         cut_preprocess,
                         process_effects,
-                        noise_reduction,
-                        reduction_strength,
                         chunk_len,
                         overlap_len,
                         normalization_mode,
@@ -340,11 +325,9 @@ if __name__ == "__main__":
         num_processes = int(num_processes)
     cut_preprocess = str(sys.argv[5])
     process_effects = strtobool(sys.argv[6])
-    noise_reduction = strtobool(sys.argv[7])
-    reduction_strength = float(sys.argv[8])
-    chunk_len = float(sys.argv[9])
-    overlap_len = float(sys.argv[10])
-    normalization_mode = str(sys.argv[11])
+    chunk_len = float(sys.argv[7])
+    overlap_len = float(sys.argv[8])
+    normalization_mode = str(sys.argv[9])
     preprocess_training_set(
         input_root,
         sample_rate,
@@ -352,8 +335,6 @@ if __name__ == "__main__":
         experiment_directory,
         cut_preprocess,
         process_effects,
-        noise_reduction,
-        reduction_strength,
         chunk_len,
         overlap_len,
         normalization_mode,
