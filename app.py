@@ -99,6 +99,7 @@ GRADIO_6 = int(gr.__version__.split(".")[0]) >= 6
 import rvc.lib.zluda
 
 # Import Tabs
+from assets.app_links import ECOSYSTEM, brand_header, guide_markdown, resource_markdown
 from tabs.inference.inference import inference_tab
 from tabs.train.train import train_tab
 from tabs.extra.extra import extra_tab
@@ -166,48 +167,55 @@ with gr.Blocks(
         else {}
     ),
 ) as Applio:
-    gr.Markdown("# Applio")
+    gr.HTML(brand_header())
     gr.Markdown(
         i18n(
-            "A simple, high-quality voice conversion tool focused on ease of use and performance."
+            ECOSYSTEM["brand"]["description"]
         )
     )
-    gr.Markdown(
-        i18n(
-            "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)"
-        )
-    )
+    gr.Markdown(resource_markdown(i18n))
     with gr.Tab(i18n("Inference")):
+        gr.Markdown(guide_markdown("inference", i18n))
         inference_tab()
 
     with gr.Tab(i18n("Training")):
+        gr.Markdown(guide_markdown("training", i18n))
         train_tab()
 
     with gr.Tab(i18n("TTS")):
+        gr.Markdown(guide_markdown("tts", i18n))
         tts_tab()
 
     with gr.Tab(i18n("Voice Blender")):
+        gr.Markdown(guide_markdown("blender", i18n))
         voice_blender_tab()
 
     with gr.Tab(i18n("Realtime")):
+        gr.Markdown(guide_markdown("realtime", i18n))
         realtime_tab()
 
     with gr.Tab(i18n("Plugins")):
+        gr.Markdown(guide_markdown("plugins", i18n))
         plugins_tab()
 
     with gr.Tab(i18n("Download")):
+        gr.Markdown(guide_markdown("models", i18n))
         download_tab()
 
     with gr.Tab(i18n("Report a Bug")):
+        gr.Markdown(guide_markdown("report", i18n))
         report_tab()
 
     with gr.Tab(i18n("Extra")):
+        gr.Markdown(guide_markdown("audio", i18n))
         extra_tab()
 
     with gr.Tab(i18n("Settings")):
+        gr.Markdown(guide_markdown("storage", i18n))
         settings_tab()
 
     with gr.Tab(i18n("TensorBoard")):
+        gr.Markdown(guide_markdown("tensorboard", i18n))
         tensorboard_tab()
 
     gr.Markdown("""
