@@ -29,7 +29,8 @@ pretraineds_refinegan_list = [
         ],
     ),
 ]
-# Rectified Flow: the pretrained flow and the Pupu-Vocoder that renders its mel
+# Rectified Flow: the pretrained flow and the vocoders that render its mel,
+# Pupu-Vocoder and BigVGAN v2
 rectified_flow_base = (
     "https://huggingface.co/shiromiya/ShiroRVC-Resources/resolve/main"
 )
@@ -42,6 +43,7 @@ rectified_flow_list = [
         [
             "nsf_pupu_small_44.1k_hop512_128bin_vocoder.pth",
             "nsf_pupu_large_ft_44.1k_hop512_128bin_vocoder.pth",
+            "nsf_bigvgan_v2_44.1k_hop512_128bin_vocoder.pth",
         ],
     ),
 ]

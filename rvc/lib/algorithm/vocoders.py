@@ -3,7 +3,7 @@ import os
 import torch
 from torch import nn
 
-from rvc.lib.algorithm.generators.pupu_vocoder import ARCHITECTURE, PupuVocoder
+from rvc.lib.algorithm.generators import bigvgan_v2, pupu_vocoder
 from rvc.lib.tools.pretrained_selector import rectified_flow_selector
 
 # Mel settings a vocoder must share with the flow to render its output.
@@ -16,6 +16,11 @@ MEL_KEYS = (
     "mel_fmin",
     "mel_fmax",
 )
+# Generator of each vocoder export, by its architecture
+GENERATORS = {
+    pupu_vocoder.ARCHITECTURE: pupu_vocoder.PupuVocoder,
+    bigvgan_v2.ARCHITECTURE: bigvgan_v2.BigVGANv2,
+}
 
 
 class RawMelVocoder(nn.Module):
@@ -59,8 +64,8 @@ def find_vocoder(reference):
 
 def load_vocoder(path, data):
     """
-    Load a Pupu-Vocoder export as a module that takes the flow's normalised
-    mel and f0.
+    Load a Pupu-Vocoder or BigVGAN v2 export as a module that takes the flow's
+    normalised mel and f0.
 
     Args:
         path (str): Path to the vocoder.
@@ -68,14 +73,18 @@ def load_vocoder(path, data):
     """
     checkpoint = torch.load(path, map_location="cpu", weights_only=True)
     is_export = checkpoint.get("kind") == "rectified_vocoder"
-    if not is_export or checkpoint.get("architecture") != ARCHITECTURE:
-        raise ValueError(f"{path} is not a Pupu-Vocoder export, the only one supported.")
+    if not is_export or checkpoint.get("architecture") not in GENERATORS:
+        raise ValueError(
+            f"{path} is not a Pupu-Vocoder or BigVGAN v2 export, the ones supported."
+        )
     vocoder_data = checkpoint["config"]["data"]
     for key in MEL_KEYS:
         if key in vocoder_data and float(vocoder_data[key]) != float(data[key]):
             raise ValueError(
                 f"{path} renders another mel than the flow's: {key} ({vocoder_data[key]} vs {data[key]})."
             )
-    generator = PupuVocoder(**checkpoint["config"]["vocoder"]["model"])
+    generator = GENERATORS[checkpoint["architecture"]](
+        **checkpoint["config"]["vocoder"]["model"]
+    )
     generator.load_state_dict(checkpoint["model"])
     return RawMelVocoder(generator, data).eval()

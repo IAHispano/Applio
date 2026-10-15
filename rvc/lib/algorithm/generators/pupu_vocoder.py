@@ -96,16 +96,17 @@ class ADAASnakeBeta(torch.nn.Module):
 
 class Activation1d(torch.nn.Module):
     """
-    ADAASnakeBeta applied at twice the rate, between two lowpass filters, so
+    An activation applied at twice the rate, between two lowpass filters, so
     the overtones it creates do not fold back into the band.
 
     Args:
         channels (int): Number of channels.
+        activation (type, optional): Class of the activation. Defaults to ADAASnakeBeta.
     """
 
-    def __init__(self, channels: int):
+    def __init__(self, channels: int, activation: type = ADAASnakeBeta):
         super().__init__()
-        self.act = ADAASnakeBeta(channels)
+        self.act = activation(channels)
         kernel = kaiser_sinc_filter(ALIAS_CUTOFF, ALIAS_HALF_WIDTH, ALIAS_KERNEL)
         self.register_buffer("filter", kernel, persistent=False)
 
@@ -132,9 +133,16 @@ class ResBlock(torch.nn.Module):
         channels (int): Number of channels.
         kernel_size (int, optional): Kernel size of the convolutions. Defaults to 3.
         dilation (tuple, optional): Dilation of each first convolution. Defaults to (1, 3, 5).
+        activation (type, optional): Class of the activations. Defaults to ADAASnakeBeta.
     """
 
-    def __init__(self, channels: int, kernel_size: int = 3, dilation: tuple = (1, 3, 5)):
+    def __init__(
+        self,
+        channels: int,
+        kernel_size: int = 3,
+        dilation: tuple = (1, 3, 5),
+        activation: type = ADAASnakeBeta,
+    ):
         super().__init__()
         self.convs1 = torch.nn.ModuleList(
             [
@@ -157,7 +165,7 @@ class ResBlock(torch.nn.Module):
             ]
         )
         self.activations = torch.nn.ModuleList(
-            [Activation1d(channels) for _ in range(2 * len(dilation))]
+            [Activation1d(channels, activation) for _ in range(2 * len(dilation))]
         )
 
     def forward(self, x: torch.Tensor):
