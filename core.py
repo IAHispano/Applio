@@ -58,7 +58,12 @@ python = sys.executable
 
 def run_quiet(command, **kwargs):
     if os.name == "nt":
-        kwargs.setdefault("creationflags", getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        # Keep the parent's console so spawned training/extraction workers can
+        # write to it too. CREATE_NO_WINDOW detaches the process from it.
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+        kwargs.setdefault("startupinfo", startupinfo)
     return subprocess.run(command, **kwargs)
 
 

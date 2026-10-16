@@ -5,6 +5,11 @@ import multiprocessing as mp
 import os
 import sys
 
+sys.path.append(os.getcwd())
+from rvc.lib.terminal import capture_worker_output
+
+capture_worker_output()
+
 if sys.platform == "darwin":
     os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 import time

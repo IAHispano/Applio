@@ -7,6 +7,10 @@ import sys
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+from rvc.lib.terminal import start_capture
+
+start_capture()
+
 # TODO: This path is regenerated all over the place in Applio
 # should probably be in a static module for everything to reference
 CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
@@ -111,6 +115,7 @@ from tabs.plugins.plugins import plugins_tab
 from tabs.settings.settings import settings_tab
 from tabs.realtime.realtime import realtime_tab
 from tabs.tensorboard.tensorboard import tensorboard_tab
+from tabs.terminal.terminal import TERMINAL_CSS, terminal_tab
 
 # Run prerequisites
 from core import run_prerequisites_script
@@ -150,7 +155,7 @@ with gr.Blocks(
     **(
         {
             "theme": my_applio,
-            "css": "footer{display:none !important}",
+            "css": "footer{display:none !important}" + TERMINAL_CSS,
             "js": (
                 (
                     "() => {\n"
@@ -218,6 +223,9 @@ with gr.Blocks(
         gr.Markdown(guide_markdown("tensorboard", i18n))
         tensorboard_tab()
 
+    with gr.Tab("Terminal"):
+        terminal_tab()
+
     gr.Markdown("""
     <div style="text-align: center; font-size: 0.9em; text-color: a3a3a3;">
     By using Applio, you agree to comply with ethical and legal standards, respect intellectual property and privacy rights, avoid harmful or prohibited uses, and accept full responsibility for any outcomes, while Applio disclaims liability and reserves the right to amend these terms.
@@ -237,7 +245,7 @@ def launch_gradio(server_name: str, server_port: int) -> None:
         **(
             {
                 "theme": my_applio,
-                "css": "footer{display:none !important}",
+                "css": "footer{display:none !important}" + TERMINAL_CSS,
                 "js": (
                     pathlib.Path(
                         os.path.join(now_dir, "tabs", "realtime", "main.js")

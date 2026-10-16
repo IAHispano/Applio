@@ -5,6 +5,11 @@ import os
 import sys
 import time
 
+sys.path.append(os.getcwd())
+from rvc.lib.terminal import capture_worker_output
+
+capture_worker_output()
+
 
 def strtobool(val):
     """Convert a string representation of truth to a bool."""
