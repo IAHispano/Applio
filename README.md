@@ -73,6 +73,11 @@ Start Applio using:
 
 This launches the Gradio interface in your default browser.
 
+For compiled Windows releases, close Applio and run `run-updater.bat` to install
+the latest release while preserving models, logs, audio, presets and settings.
+Older builds can add the updater once by extracting `ApplioUpdater.zip` from
+the GitHub release assets into their existing folder.
+
 ### 3. Optional: TensorBoard Monitoring
 
 To monitor training or visualize data:

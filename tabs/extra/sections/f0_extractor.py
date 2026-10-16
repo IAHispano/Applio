@@ -52,9 +52,11 @@ def f0_extractor_tab():
     )
     button = gr.Button(i18n("Extract F0 Curve"))
 
-    with gr.Row():
-        txt_output = gr.File(label=i18n("F0 Curve"), type="filepath")
-        image_output = gr.Image(type="filepath", interactive=False)
+    with gr.Row(equal_height=True, elem_classes="applio-f0-results"):
+        txt_output = gr.File(label=i18n("F0 Curve"), type="filepath", height=280)
+        image_output = gr.Image(
+            label=i18n("F0 Plot"), type="filepath", interactive=False, height=280
+        )
 
     button.click(
         fn=extract_f0_curve,

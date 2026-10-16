@@ -37,9 +37,9 @@ class I18nAuto:
             with open(file_path, "r", encoding="utf-8") as file:
                 return json.load(file)
         except FileNotFoundError:
-            raise FileNotFoundError(
-                f"Failed to load language file for {self.language}. Check if the correct .json file exists."
-            )
+            fallback = Path(self.LANGUAGE_PATH) / "en_US.json"
+            with open(fallback, "r", encoding="utf-8") as file:
+                return json.load(file)
 
     def _get_available_languages(self):
         language_files = [path.stem for path in Path(self.LANGUAGE_PATH).glob("*.json")]

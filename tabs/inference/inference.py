@@ -10,6 +10,7 @@ import regex as re
 import torch
 
 from assets.i18n.i18n import I18nAuto
+from assets.app_shell import step_header
 from core import run_batch_infer_script, run_infer_script
 from rvc.lib.utils import format_title
 from tabs.settings.sections.filter import get_filter_trigger, load_config_filter
@@ -532,232 +533,109 @@ def update_filter_visibility(_):
 # Inference tab
 def inference_tab():
     trigger = get_filter_trigger()
-    with gr.Column():
-        gr.Markdown(value=i18n("## Model Selection"))
-        with gr.Row():
-            model_file = gr.Dropdown(
-                label=i18n("Voice Model"),
-                info=i18n("Select the voice model to use for the conversion."),
-                choices=path_choices(
-                    sorted(get_files("model"), key=extract_model_and_epoch)
-                ),
-                value=default_weight,
-                interactive=True,
-                allow_custom_value=True,
-            )
+    with gr.Column(scale=0, min_width=0, elem_id="applio-conversion-top"):
+        with gr.Column(scale=0, min_width=0, elem_classes="applio-card", elem_id="applio-voice-model"):
+            step_header(1, "Voice Model", i18n, description="Select the voice model and index file used for conversion.")
+            with gr.Row(elem_id="applio-model-selectors"):
+                with gr.Column(scale=1, min_width=240):
+                    model_file = gr.Dropdown(
+                        label=i18n("Voice Model"),
+                        info=i18n("Select the voice model to use for the conversion."),
+                        choices=path_choices(
+                            sorted(get_files("model"), key=extract_model_and_epoch)
+                        ),
+                        value=default_weight,
+                        interactive=True,
+                        allow_custom_value=True,
+                    )
+                with gr.Column(scale=1, min_width=240):
+                    index_file = gr.Dropdown(
+                        label=i18n("Index File"),
+                        info=i18n("Select the index file to use for the conversion."),
+                        choices=path_choices(sorted(get_files("index"))),
+                        value=match_index(default_weight),
+                        interactive=True,
+                        allow_custom_value=True,
+                    )
             filter_box_inf = gr.Textbox(
                 label=i18n("Filter"),
                 info=i18n("Path must contain:"),
                 placeholder=i18n("Type to filter..."),
                 interactive=True,
-                scale=0.1,
+                scale=0,
                 visible=load_config_filter(),
             )
-            index_file = gr.Dropdown(
-                label=i18n("Index File"),
-                info=i18n("Select the index file to use for the conversion."),
-                choices=path_choices(sorted(get_files("index"))),
-                value=match_index(default_weight),
-                interactive=True,
-                allow_custom_value=True,
-            )
-        filter_box_inf.blur(
-            fn=filter_dropdowns,
-            inputs=[filter_box_inf],
-            outputs=[model_file, index_file],
-        )
-        trigger.change(
-            fn=update_filter_visibility,
-            inputs=[trigger],
-            outputs=[filter_box_inf, model_file, index_file],
-            show_progress=False,
-        )
-        with gr.Row():
-            unload_button = gr.Button(i18n("Unload Voice"))
-            refresh_button = gr.Button(i18n("Refresh models and indexes"))
-
-            unload_button.click(
-                fn=lambda: (
-                    {"value": "", "__type__": "update"},
-                    {"value": "", "__type__": "update"},
-                ),
-                inputs=[],
+            filter_box_inf.blur(
+                fn=filter_dropdowns,
+                inputs=[filter_box_inf],
                 outputs=[model_file, index_file],
             )
-            model_file.select(
-                fn=lambda model_file_value: match_index(model_file_value),
-                inputs=[model_file],
-                outputs=[index_file],
+            trigger.change(
+                fn=update_filter_visibility,
+                inputs=[trigger],
+                outputs=[filter_box_inf, model_file, index_file],
+                show_progress=False,
             )
-
-    # Single inference tab
-    with gr.Tab(i18n("Single")):
-        with gr.Column():
-            upload_audio = gr.Audio(
-                label=i18n("Upload Audio"), type="filepath", editable=False
-            )
-            with gr.Row():
-                audio = gr.Dropdown(
-                    label=i18n("Select Audio"),
-                    info=i18n("Select the audio to convert."),
-                    choices=path_choices(sorted(audio_paths)),
-                    value=audio_paths[0] if audio_paths else "",
-                    interactive=True,
-                    allow_custom_value=True,
+            with gr.Row(elem_id="applio-model-actions"):
+                unload_button = gr.Button(i18n("Unload Voice"), size="sm", min_width=100)
+                refresh_button = gr.Button(
+                    i18n("Refresh models and indexes"), size="sm", min_width=100
                 )
 
-        with gr.Accordion(i18n("Advanced Settings"), open=False):
-            with gr.Column():
-                clear_outputs_infer = gr.Button(
-                    i18n("Clear Outputs (Deletes all audios in assets/audios)")
-                )
-                output_path = gr.Textbox(
-                    label=i18n("Output Path"),
-                    placeholder=i18n("Enter output path"),
-                    info=i18n(
-                        "The path where the output audio will be saved, by default in assets/audios/output.wav"
+                unload_button.click(
+                    fn=lambda: (
+                        {"value": "", "__type__": "update"},
+                        {"value": "", "__type__": "update"},
                     ),
-                    value=(
-                        output_path_fn(audio_paths[0])
-                        if audio_paths
-                        else os.path.join(now_dir, "assets", "audios", "output.wav")
-                    ),
-                    interactive=True,
+                    inputs=[],
+                    outputs=[model_file, index_file],
                 )
-                export_format = gr.Radio(
-                    label=i18n("Export Format"),
-                    info=i18n("Select the format to export the audio."),
-                    choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
-                    value="WAV",
-                    interactive=True,
+                model_file.select(
+                    fn=lambda model_file_value: match_index(model_file_value),
+                    inputs=[model_file],
+                    outputs=[index_file],
                 )
-                sid = gr.Dropdown(
-                    label=i18n("Speaker ID"),
-                    info=i18n("Select the speaker ID to use for the conversion."),
-                    choices=get_speakers_id(model_file.value),
-                    value=0,
-                    interactive=True,
-                )
-                split_audio = gr.Checkbox(
-                    label=i18n("Split Audio"),
-                    info=i18n(
-                        "Split the audio into chunks for inference to obtain better results in some cases."
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
-                autotune = gr.Checkbox(
-                    label=i18n("Autotune"),
-                    info=i18n(
-                        "Apply a soft autotune to your inferences, recommended for singing conversions."
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
-                autotune_strength = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Autotune Strength"),
-                    info=i18n(
-                        "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
-                    ),
-                    visible=False,
-                    value=1,
-                    interactive=True,
-                )
-                proposed_pitch = gr.Checkbox(
-                    label=i18n("Proposed Pitch"),
-                    info=i18n(
-                        "Adjust the input audio pitch to match the voice model range."
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
-                proposed_pitch_threshold = gr.Slider(
-                    minimum=50.0,
-                    maximum=1200.0,
-                    label=i18n("Proposed Pitch Threshold"),
-                    info=i18n(
-                        "Male voice models typically use 155.0 and female voice models typically use 255.0."
-                    ),
-                    visible=False,
-                    value=155.0,
-                    interactive=True,
-                )
-                formant_shifting = gr.Checkbox(
-                    label=i18n("Formant Shifting"),
-                    info=i18n(
-                        "Enable formant shifting. Used for male to female and vice-versa convertions."
-                    ),
-                    value=False,
-                    visible=True,
-                    interactive=True,
-                )
-                with gr.Row(visible=False) as formant_row:
-                    formant_preset = gr.Dropdown(
-                        label=i18n("Browse presets for formanting"),
-                        info=i18n(
-                            "Presets are located in /assets/formant_shift folder"
-                        ),
-                        choices=list_json_files(FORMANTSHIFT_DIR),
-                        visible=False,
-                        interactive=True,
-                    )
-                    formant_refresh_button = gr.Button(
-                        value=i18n("Refresh formant presets"),
-                        visible=False,
-                    )
-                formant_qfrency = gr.Slider(
-                    value=1.0,
-                    info=i18n("Default value is 1.0"),
-                    label=i18n("Quefrency for formant shifting"),
-                    minimum=0.0,
-                    maximum=16.0,
-                    step=0.1,
-                    visible=False,
-                    interactive=True,
-                )
-                formant_timbre = gr.Slider(
-                    value=1.0,
-                    info=i18n("Default value is 1.0"),
-                    label=i18n("Timbre for formant shifting"),
-                    minimum=0.0,
-                    maximum=16.0,
-                    step=0.1,
-                    visible=False,
-                    interactive=True,
-                )
-                with gr.Accordion(i18n("Preset Settings"), open=False):
-                    with gr.Row():
-                        preset_dropdown = gr.Dropdown(
-                            label=i18n("Select Custom Preset"),
-                            choices=list_json_files(PRESETS_DIR),
-                            interactive=True,
+        with gr.Column(scale=0, min_width=0, elem_classes="applio-card"):
+            step_header(2, "Audio Source", i18n, description="Upload a single file or point to a folder for batch conversion.")
+            with gr.Tabs(selected="single"):
+                with gr.Tab(i18n("Single"), id="single") as single_source:
+                    with gr.Column():
+                        upload_audio = gr.Audio(
+                            label=i18n("Upload Audio"), type="filepath", editable=False
                         )
-                        presets_refresh_button = gr.Button(i18n("Refresh Presets"))
-                    import_file = gr.File(
-                        label=i18n("Select file to import"),
-                        file_count="single",
-                        type="filepath",
-                        interactive=True,
-                    )
-                    import_file.change(
-                        import_presets_button,
-                        inputs=import_file,
-                        outputs=[preset_dropdown],
-                    )
-                    presets_refresh_button.click(
-                        refresh_presets, outputs=preset_dropdown
-                    )
+                        with gr.Row():
+                            audio = gr.Dropdown(
+                                label=i18n("Select Audio"),
+                                info=i18n("Select the audio to convert."),
+                                choices=path_choices(sorted(audio_paths)),
+                                value=audio_paths[0] if audio_paths else "",
+                                interactive=True,
+                                allow_custom_value=True,
+                            )
+                with gr.Tab(i18n("Batch"), id="batch") as batch_source:
                     with gr.Row():
-                        preset_name_input = gr.Textbox(
-                            label=i18n("Preset Name"),
-                            placeholder=i18n("Enter preset name"),
-                        )
-                        export_button = gr.Button(i18n("Export Preset"))
+                        with gr.Column():
+                            input_folder_batch = gr.Textbox(
+                                label=i18n("Input Folder"),
+                                info=i18n("Select the folder containing the audios to convert."),
+                                placeholder=i18n("Enter input path"),
+                                value=os.path.join(now_dir, "assets", "audios"),
+                                interactive=True,
+                            )
+                            output_folder_batch = gr.Textbox(
+                                label=i18n("Output Folder"),
+                                info=i18n(
+                                    "Select the folder where the output audios will be saved."
+                                ),
+                                placeholder=i18n("Enter output path"),
+                                value=os.path.join(now_dir, "assets", "audios"),
+                                interactive=True,
+                            )
+
+    with gr.Column(scale=0, min_width=0, elem_classes="applio-card", elem_id="applio-parameters-card"):
+        step_header(3, "Conversion Parameters", i18n, description="Tune pitch, voice matching, algorithms and output settings.")
+        with gr.Tabs(selected="single", elem_id="applio-conversion-parameters") as parameters:
+            with gr.Tab(i18n("Single"), id="single"):
                 pitch = gr.Slider(
                     minimum=-24,
                     maximum=24,
@@ -769,36 +647,250 @@ def inference_tab():
                     value=0,
                     interactive=True,
                 )
-                index_rate = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Search Feature Ratio"),
-                    info=i18n(
-                        "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
-                    ),
-                    value=0.75,
-                    interactive=True,
-                )
-                rms_mix_rate = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Volume Envelope"),
-                    info=i18n(
-                        "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
-                    ),
-                    value=1,
-                    interactive=True,
-                )
-                protect = gr.Slider(
-                    minimum=0,
-                    maximum=0.5,
-                    label=i18n("Protect Voiceless Consonants"),
-                    info=i18n(
-                        "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
-                    ),
-                    value=0.5,
-                    interactive=True,
-                )
+                with gr.Accordion(i18n("Advanced Settings"), open=False):
+                    with gr.Accordion(i18n("Voice Matching"), open=True):
+                        index_rate = gr.Slider(
+                            minimum=0,
+                            maximum=1,
+                            label=i18n("Search Feature Ratio"),
+                            info=i18n(
+                                "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
+                            ),
+                            value=0.75,
+                            interactive=True,
+                        )
+                        rms_mix_rate = gr.Slider(
+                            minimum=0,
+                            maximum=1,
+                            label=i18n("Volume Envelope"),
+                            info=i18n(
+                                "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
+                            ),
+                            value=1,
+                            interactive=True,
+                        )
+                        protect = gr.Slider(
+                            minimum=0,
+                            maximum=0.5,
+                            label=i18n("Protect Voiceless Consonants"),
+                            info=i18n(
+                                "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
+                            ),
+                            value=0.5,
+                            interactive=True,
+                        )
+                    with gr.Accordion(i18n("Models & Algorithms"), open=False):
+                        sid = gr.Dropdown(
+                            label=i18n("Speaker ID"),
+                            info=i18n("Select the speaker ID to use for the conversion."),
+                            choices=get_speakers_id(model_file.value),
+                            value=0,
+                            interactive=True,
+                        )
+                        f0_method = gr.Radio(
+                            label=i18n("Pitch extraction algorithm"),
+                            info=i18n(
+                                "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
+                            ),
+                            choices=[
+                                "crepe",
+                                "rmvpe",
+                                "fcpe",
+                                "swift",
+                            ],
+                            value="rmvpe",
+                            interactive=True,
+                        )
+                        embedder_model = gr.Radio(
+                            label=i18n("Embedder Model"),
+                            info=i18n("Model used for learning speaker embedding."),
+                            choices=[
+                                "contentvec",
+                                "spin",
+                                "spin-v2",
+                                "chinese-hubert-base",
+                                "japanese-hubert-base",
+                                "korean-hubert-base",
+                                "custom",
+                            ],
+                            value="contentvec",
+                            interactive=True,
+                        )
+                        with gr.Column(visible=False) as embedder_custom:
+                            with gr.Accordion(i18n("Custom Embedder"), open=True):
+                                with gr.Row():
+                                    embedder_model_custom = gr.Dropdown(
+                                        label=i18n("Select Custom Embedder"),
+                                        choices=path_choices(refresh_embedders_folders()),
+                                        interactive=True,
+                                        allow_custom_value=True,
+                                    )
+                                    refresh_embedders_button = gr.Button(
+                                        i18n("Refresh embedders")
+                                    )
+                                folder_name_input = gr.Textbox(
+                                    label=i18n("Folder Name"), interactive=True
+                                )
+                                with gr.Row():
+                                    bin_file_upload = gr.File(
+                                        label=i18n("Upload .bin"),
+                                        type="filepath",
+                                        interactive=True,
+                                    )
+                                    config_file_upload = gr.File(
+                                        label=i18n("Upload .json"),
+                                        type="filepath",
+                                        interactive=True,
+                                    )
+                                move_files_button = gr.Button(
+                                    i18n("Move files to custom embedder folder")
+                                )
+                    with gr.Accordion(i18n("Advanced Pitch & Tuning"), open=False):
+                        split_audio = gr.Checkbox(
+                            label=i18n("Split Audio"),
+                            info=i18n(
+                                "Split the audio into chunks for inference to obtain better results in some cases."
+                            ),
+                            visible=True,
+                            value=False,
+                            interactive=True,
+                        )
+                        autotune = gr.Checkbox(
+                            label=i18n("Autotune"),
+                            info=i18n(
+                                "Apply a soft autotune to your inferences, recommended for singing conversions."
+                            ),
+                            visible=True,
+                            value=False,
+                            interactive=True,
+                        )
+                        autotune_strength = gr.Slider(
+                            minimum=0,
+                            maximum=1,
+                            label=i18n("Autotune Strength"),
+                            info=i18n(
+                                "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
+                            ),
+                            visible=False,
+                            value=1,
+                            interactive=True,
+                        )
+                        proposed_pitch = gr.Checkbox(
+                            label=i18n("Proposed Pitch"),
+                            info=i18n(
+                                "Adjust the input audio pitch to match the voice model range."
+                            ),
+                            visible=True,
+                            value=False,
+                            interactive=True,
+                        )
+                        proposed_pitch_threshold = gr.Slider(
+                            minimum=50.0,
+                            maximum=1200.0,
+                            label=i18n("Proposed Pitch Threshold"),
+                            info=i18n(
+                                "Male voice models typically use 155.0 and female voice models typically use 255.0."
+                            ),
+                            visible=False,
+                            value=155.0,
+                            interactive=True,
+                        )
+                    with gr.Accordion(i18n("Formant Shifting"), open=False):
+                        formant_shifting = gr.Checkbox(
+                            label=i18n("Formant Shifting"),
+                            info=i18n(
+                                "Enable formant shifting. Used for male to female and vice-versa convertions."
+                            ),
+                            value=False,
+                            visible=True,
+                            interactive=True,
+                        )
+                        with gr.Row(visible=False) as formant_row:
+                            formant_preset = gr.Dropdown(
+                                label=i18n("Browse presets for formanting"),
+                                info=i18n(
+                                    "Presets are located in /assets/formant_shift folder"
+                                ),
+                                choices=list_json_files(FORMANTSHIFT_DIR),
+                                visible=False,
+                                interactive=True,
+                            )
+                            formant_refresh_button = gr.Button(
+                                value=i18n("Refresh formant presets"),
+                                visible=False,
+                            )
+                        formant_qfrency = gr.Slider(
+                            value=1.0,
+                            info=i18n("Default value is 1.0"),
+                            label=i18n("Quefrency for formant shifting"),
+                            minimum=0.0,
+                            maximum=16.0,
+                            step=0.1,
+                            visible=False,
+                            interactive=True,
+                        )
+                        formant_timbre = gr.Slider(
+                            value=1.0,
+                            info=i18n("Default value is 1.0"),
+                            label=i18n("Timbre for formant shifting"),
+                            minimum=0.0,
+                            maximum=16.0,
+                            step=0.1,
+                            visible=False,
+                            interactive=True,
+                        )
+                    with gr.Accordion(i18n("Preset Settings"), open=False):
+                        with gr.Row():
+                            preset_dropdown = gr.Dropdown(
+                                label=i18n("Select Custom Preset"),
+                                choices=list_json_files(PRESETS_DIR),
+                                interactive=True,
+                            )
+                            presets_refresh_button = gr.Button(i18n("Refresh Presets"))
+                        import_file = gr.File(
+                            label=i18n("Select file to import"),
+                            file_count="single",
+                            type="filepath",
+                            interactive=True,
+                        )
+                        import_file.change(
+                            import_presets_button,
+                            inputs=import_file,
+                            outputs=[preset_dropdown],
+                        )
+                        presets_refresh_button.click(
+                            refresh_presets, outputs=preset_dropdown
+                        )
+                        with gr.Row():
+                            preset_name_input = gr.Textbox(
+                                label=i18n("Preset Name"),
+                                placeholder=i18n("Enter preset name"),
+                            )
+                            export_button = gr.Button(i18n("Export Preset"))
+                    with gr.Accordion(i18n("Output Settings"), open=False):
+                        output_path = gr.Textbox(
+                            label=i18n("Output Path"),
+                            placeholder=i18n("Enter output path"),
+                            info=i18n(
+                                "The path where the output audio will be saved, by default in assets/audios/output.wav"
+                            ),
+                            value=(
+                                output_path_fn(audio_paths[0])
+                                if audio_paths
+                                else os.path.join(now_dir, "assets", "audios", "output.wav")
+                            ),
+                            interactive=True,
+                        )
+                        export_format = gr.Radio(
+                            label=i18n("Export Format"),
+                            info=i18n("Select the format to export the audio."),
+                            choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+                            value="WAV",
+                            interactive=True,
+                        )
+                        clear_outputs_infer = gr.Button(
+                            i18n("Clear Outputs (Deletes all audios in assets/audios)")
+                        )
                 preset_dropdown.change(
                     update_sliders,
                     inputs=preset_dropdown,
@@ -819,282 +911,67 @@ def inference_tab():
                         protect,
                     ],
                 )
-                f0_method = gr.Radio(
-                    label=i18n("Pitch extraction algorithm"),
-                    info=i18n(
-                        "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
-                    ),
-                    choices=[
-                        "crepe",
-                        "rmvpe",
-                        "fcpe",
-                        "swift",
-                    ],
-                    value="rmvpe",
-                    interactive=True,
-                )
-                embedder_model = gr.Radio(
-                    label=i18n("Embedder Model"),
-                    info=i18n("Model used for learning speaker embedding."),
-                    choices=[
-                        "contentvec",
-                        "spin",
-                        "spin-v2",
-                        "chinese-hubert-base",
-                        "japanese-hubert-base",
-                        "korean-hubert-base",
-                        "custom",
-                    ],
-                    value="contentvec",
-                    interactive=True,
-                )
-                with gr.Column(visible=False) as embedder_custom:
-                    with gr.Accordion(i18n("Custom Embedder"), open=True):
-                        with gr.Row():
-                            embedder_model_custom = gr.Dropdown(
-                                label=i18n("Select Custom Embedder"),
-                                choices=path_choices(refresh_embedders_folders()),
-                                interactive=True,
-                                allow_custom_value=True,
+
+                def enforce_terms(terms_accepted, *args):
+                    if not terms_accepted:
+                        message = i18n("You must agree to the Terms of Use to proceed.")
+                        gr.Info(message)
+                        return message, None
+                    try:
+                        gr.Info(i18n("Converting audio..."))
+                        result = run_infer_script(*args)
+                        gr.Info(result[0])
+                        return result
+                    except Exception:
+                        traceback.print_exc()
+                        gr.Warning(
+                            i18n(
+                                "An error occurred during audio conversion. Please check the console logs for more details."
                             )
-                            refresh_embedders_button = gr.Button(
-                                i18n("Refresh embedders")
-                            )
-                        folder_name_input = gr.Textbox(
-                            label=i18n("Folder Name"), interactive=True
                         )
-                        with gr.Row():
-                            bin_file_upload = gr.File(
-                                label=i18n("Upload .bin"),
-                                type="filepath",
-                                interactive=True,
-                            )
-                            config_file_upload = gr.File(
-                                label=i18n("Upload .json"),
-                                type="filepath",
-                                interactive=True,
-                            )
-                        move_files_button = gr.Button(
-                            i18n("Move files to custom embedder folder")
+                        return (
+                            i18n(
+                                "An error occurred during audio conversion. Please check the console logs for more details."
+                            ),
+                            None,
                         )
 
-        def enforce_terms(terms_accepted, *args):
-            if not terms_accepted:
-                message = i18n("You must agree to the Terms of Use to proceed.")
-                gr.Info(message)
-                return message, None
-            try:
-                gr.Info(i18n("Converting audio..."))
-                result = run_infer_script(*args)
-                gr.Info(result[0])
-                return result
-            except Exception:
-                traceback.print_exc()
-                gr.Warning(
-                    i18n(
-                        "An error occurred during audio conversion. Please check the console logs for more details."
-                    )
-                )
-                return (
-                    i18n(
-                        "An error occurred during audio conversion. Please check the console logs for more details."
-                    ),
-                    None,
-                )
+                def enforce_terms_batch(terms_accepted, *args):
+                    if not terms_accepted:
+                        message = i18n("You must agree to the Terms of Use to proceed.")
+                        gr.Info(message)
+                        return message
+                    try:
+                        return run_batch_infer_script(*args)
+                    except Exception:
+                        traceback.print_exc()
+                        return i18n(
+                            "An error occurred during audio batch conversion. Please check the console logs for more details."
+                        )
 
-        def enforce_terms_batch(terms_accepted, *args):
-            if not terms_accepted:
-                message = i18n("You must agree to the Terms of Use to proceed.")
-                gr.Info(message)
-                return message
-            try:
-                return run_batch_infer_script(*args)
-            except Exception:
-                traceback.print_exc()
-                return i18n(
-                    "An error occurred during audio batch conversion. Please check the console logs for more details."
-                )
+                gr.Markdown(value=i18n("## Conversion"))
 
-        gr.Markdown(value=i18n("## Conversion"))
-
-        terms_checkbox = gr.Checkbox(
-            label=i18n("I agree to the terms of use"),
-            info=i18n(
-                "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your inference."
-            ),
-            value=False,
-            interactive=True,
-        )
-
-        convert_button1 = gr.Button(i18n("Convert"))
-
-        with gr.Row():
-            vc_output1 = gr.Textbox(
-                label=i18n("Conversion output"),
-                info=i18n("The output information will be displayed here."),
-            )
-            vc_output2 = gr.Audio(label=i18n("Export Audio"))
-
-    # Batch inference tab
-    with gr.Tab(i18n("Batch")):
-        with gr.Row():
-            with gr.Column():
-                input_folder_batch = gr.Textbox(
-                    label=i18n("Input Folder"),
-                    info=i18n("Select the folder containing the audios to convert."),
-                    placeholder=i18n("Enter input path"),
-                    value=os.path.join(now_dir, "assets", "audios"),
-                    interactive=True,
-                )
-                output_folder_batch = gr.Textbox(
-                    label=i18n("Output Folder"),
+                terms_checkbox = gr.Checkbox(
+                    label=i18n("I agree to the terms of use"),
                     info=i18n(
-                        "Select the folder where the output audios will be saved."
+                        "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your inference."
                     ),
-                    placeholder=i18n("Enter output path"),
-                    value=os.path.join(now_dir, "assets", "audios"),
-                    interactive=True,
-                )
-        with gr.Accordion(i18n("Advanced Settings"), open=False):
-            with gr.Column():
-                clear_outputs_batch = gr.Button(
-                    i18n("Clear Outputs (Deletes all audios in assets/audios)")
-                )
-                export_format_batch = gr.Radio(
-                    label=i18n("Export Format"),
-                    info=i18n("Select the format to export the audio."),
-                    choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
-                    value="WAV",
-                    interactive=True,
-                )
-                sid_batch = gr.Dropdown(
-                    label=i18n("Speaker ID"),
-                    info=i18n("Select the speaker ID to use for the conversion."),
-                    choices=get_speakers_id(model_file.value),
-                    value=0,
-                    interactive=True,
-                )
-                split_audio_batch = gr.Checkbox(
-                    label=i18n("Split Audio"),
-                    info=i18n(
-                        "Split the audio into chunks for inference to obtain better results in some cases."
-                    ),
-                    visible=True,
                     value=False,
                     interactive=True,
                 )
-                autotune_batch = gr.Checkbox(
-                    label=i18n("Autotune"),
-                    info=i18n(
-                        "Apply a soft autotune to your inferences, recommended for singing conversions."
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
-                autotune_strength_batch = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Autotune Strength"),
-                    info=i18n(
-                        "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
-                    ),
-                    visible=False,
-                    value=1,
-                    interactive=True,
-                )
-                proposed_pitch_batch = gr.Checkbox(
-                    label=i18n("Proposed Pitch"),
-                    info=i18n(
-                        "Adjust the input audio pitch to match the voice model range."
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
-                proposed_pitch_threshold_batch = gr.Slider(
-                    minimum=50.0,
-                    maximum=1200.0,
-                    label=i18n("Proposed Pitch Threshold"),
-                    info=i18n(
-                        "Male voice models typically use 155.0 and female voice models typically use 255.0."
-                    ),
-                    visible=False,
-                    value=155.0,
-                    interactive=True,
-                )
-                formant_shifting_batch = gr.Checkbox(
-                    label=i18n("Formant Shifting"),
-                    info=i18n(
-                        "Enable formant shifting. Used for male to female and vice-versa convertions."
-                    ),
-                    value=False,
-                    visible=True,
-                    interactive=True,
-                )
-                with gr.Row(visible=False) as formant_row_batch:
-                    formant_preset_batch = gr.Dropdown(
-                        label=i18n("Browse presets for formanting"),
-                        info=i18n(
-                            "Presets are located in /assets/formant_shift folder"
-                        ),
-                        choices=list_json_files(FORMANTSHIFT_DIR),
-                        visible=False,
-                        interactive=True,
+
+                convert_button1 = gr.Button(i18n("Convert"), variant="primary")
+
+                with gr.Row(equal_height=True, elem_classes="applio-output-row"):
+                    vc_output1 = gr.Textbox(
+                        label=i18n("Conversion output"),
+                        info=i18n("The output information will be displayed here."),
+                        lines=3,
                     )
-                    formant_refresh_button_batch = gr.Button(
-                        value=i18n("Refresh formant presets"),
-                        visible=False,
-                    )
-                formant_qfrency_batch = gr.Slider(
-                    value=1.0,
-                    info=i18n("Default value is 1.0"),
-                    label=i18n("Quefrency for formant shifting"),
-                    minimum=0.0,
-                    maximum=16.0,
-                    step=0.1,
-                    visible=False,
-                    interactive=True,
-                )
-                formant_timbre_batch = gr.Slider(
-                    value=1.0,
-                    info=i18n("Default value is 1.0"),
-                    label=i18n("Timbre for formant shifting"),
-                    minimum=0.0,
-                    maximum=16.0,
-                    step=0.1,
-                    visible=False,
-                    interactive=True,
-                )
-                with gr.Accordion(i18n("Preset Settings"), open=False):
-                    with gr.Row():
-                        preset_dropdown = gr.Dropdown(
-                            label=i18n("Select Custom Preset"),
-                            interactive=True,
-                        )
-                        presets_batch_refresh_button = gr.Button(
-                            i18n("Refresh Presets")
-                        )
-                    import_file = gr.File(
-                        label=i18n("Select file to import"),
-                        file_count="single",
-                        type="filepath",
-                        interactive=True,
-                    )
-                    import_file.change(
-                        import_presets_button,
-                        inputs=import_file,
-                        outputs=[preset_dropdown],
-                    )
-                    presets_batch_refresh_button.click(
-                        refresh_presets, outputs=preset_dropdown
-                    )
-                    with gr.Row():
-                        preset_name_input = gr.Textbox(
-                            label=i18n("Preset Name"),
-                            placeholder=i18n("Enter preset name"),
-                        )
-                        export_button = gr.Button(i18n("Export Preset"))
+                    vc_output2 = gr.Audio(label=i18n("Export Audio"))
+
+            # Batch inference tab
+            with gr.Tab(i18n("Batch"), id="batch"):
                 pitch_batch = gr.Slider(
                     minimum=-24,
                     maximum=24,
@@ -1106,36 +983,238 @@ def inference_tab():
                     value=0,
                     interactive=True,
                 )
-                index_rate_batch = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Search Feature Ratio"),
-                    info=i18n(
-                        "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
-                    ),
-                    value=0.75,
-                    interactive=True,
-                )
-                rms_mix_rate_batch = gr.Slider(
-                    minimum=0,
-                    maximum=1,
-                    label=i18n("Volume Envelope"),
-                    info=i18n(
-                        "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
-                    ),
-                    value=1,
-                    interactive=True,
-                )
-                protect_batch = gr.Slider(
-                    minimum=0,
-                    maximum=0.5,
-                    label=i18n("Protect Voiceless Consonants"),
-                    info=i18n(
-                        "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
-                    ),
-                    value=0.5,
-                    interactive=True,
-                )
+                with gr.Accordion(i18n("Advanced Settings"), open=False):
+                    with gr.Accordion(i18n("Voice Matching"), open=True):
+                        index_rate_batch = gr.Slider(
+                            minimum=0,
+                            maximum=1,
+                            label=i18n("Search Feature Ratio"),
+                            info=i18n(
+                                "Influence exerted by the index file; a higher value corresponds to greater influence. However, opting for lower values can help mitigate artifacts present in the audio."
+                            ),
+                            value=0.75,
+                            interactive=True,
+                        )
+                        rms_mix_rate_batch = gr.Slider(
+                            minimum=0,
+                            maximum=1,
+                            label=i18n("Volume Envelope"),
+                            info=i18n(
+                                "Substitute or blend with the volume envelope of the output. The closer the ratio is to 1, the more the output envelope is employed."
+                            ),
+                            value=1,
+                            interactive=True,
+                        )
+                        protect_batch = gr.Slider(
+                            minimum=0,
+                            maximum=0.5,
+                            label=i18n("Protect Voiceless Consonants"),
+                            info=i18n(
+                                "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
+                            ),
+                            value=0.5,
+                            interactive=True,
+                        )
+                    with gr.Accordion(i18n("Models & Algorithms"), open=False):
+                        sid_batch = gr.Dropdown(
+                            label=i18n("Speaker ID"),
+                            info=i18n("Select the speaker ID to use for the conversion."),
+                            choices=get_speakers_id(model_file.value),
+                            value=0,
+                            interactive=True,
+                        )
+                        f0_method_batch = gr.Radio(
+                            label=i18n("Pitch extraction algorithm"),
+                            info=i18n(
+                                "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
+                            ),
+                            choices=[
+                                "crepe",
+                                "rmvpe",
+                                "fcpe",
+                                "swift",
+                            ],
+                            value="rmvpe",
+                            interactive=True,
+                        )
+                        embedder_model_batch = gr.Radio(
+                            label=i18n("Embedder Model"),
+                            info=i18n("Model used for learning speaker embedding."),
+                            choices=[
+                                "contentvec",
+                                "spin",
+                                "spin-v2",
+                                "chinese-hubert-base",
+                                "japanese-hubert-base",
+                                "korean-hubert-base",
+                                "custom",
+                            ],
+                            value="contentvec",
+                            interactive=True,
+                        )
+                        with gr.Column(visible=False) as embedder_custom_batch:
+                            with gr.Accordion(i18n("Custom Embedder"), open=True):
+                                with gr.Row():
+                                    embedder_model_custom_batch = gr.Dropdown(
+                                        label=i18n("Select Custom Embedder"),
+                                        choices=path_choices(refresh_embedders_folders()),
+                                        interactive=True,
+                                        allow_custom_value=True,
+                                    )
+                                    refresh_embedders_button_batch = gr.Button(
+                                        i18n("Refresh embedders")
+                                    )
+                                folder_name_input_batch = gr.Textbox(
+                                    label=i18n("Folder Name"), interactive=True
+                                )
+                                with gr.Row():
+                                    bin_file_upload_batch = gr.File(
+                                        label=i18n("Upload .bin"),
+                                        type="filepath",
+                                        interactive=True,
+                                    )
+                                    config_file_upload_batch = gr.File(
+                                        label=i18n("Upload .json"),
+                                        type="filepath",
+                                        interactive=True,
+                                    )
+                                move_files_button_batch = gr.Button(
+                                    i18n("Move files to custom embedder folder")
+                                )
+                    with gr.Accordion(i18n("Advanced Pitch & Tuning"), open=False):
+                        split_audio_batch = gr.Checkbox(
+                            label=i18n("Split Audio"),
+                            info=i18n(
+                                "Split the audio into chunks for inference to obtain better results in some cases."
+                            ),
+                            visible=True,
+                            value=False,
+                            interactive=True,
+                        )
+                        autotune_batch = gr.Checkbox(
+                            label=i18n("Autotune"),
+                            info=i18n(
+                                "Apply a soft autotune to your inferences, recommended for singing conversions."
+                            ),
+                            visible=True,
+                            value=False,
+                            interactive=True,
+                        )
+                        autotune_strength_batch = gr.Slider(
+                            minimum=0,
+                            maximum=1,
+                            label=i18n("Autotune Strength"),
+                            info=i18n(
+                                "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
+                            ),
+                            visible=False,
+                            value=1,
+                            interactive=True,
+                        )
+                        proposed_pitch_batch = gr.Checkbox(
+                            label=i18n("Proposed Pitch"),
+                            info=i18n(
+                                "Adjust the input audio pitch to match the voice model range."
+                            ),
+                            visible=True,
+                            value=False,
+                            interactive=True,
+                        )
+                        proposed_pitch_threshold_batch = gr.Slider(
+                            minimum=50.0,
+                            maximum=1200.0,
+                            label=i18n("Proposed Pitch Threshold"),
+                            info=i18n(
+                                "Male voice models typically use 155.0 and female voice models typically use 255.0."
+                            ),
+                            visible=False,
+                            value=155.0,
+                            interactive=True,
+                        )
+                    with gr.Accordion(i18n("Formant Shifting"), open=False):
+                        formant_shifting_batch = gr.Checkbox(
+                            label=i18n("Formant Shifting"),
+                            info=i18n(
+                                "Enable formant shifting. Used for male to female and vice-versa convertions."
+                            ),
+                            value=False,
+                            visible=True,
+                            interactive=True,
+                        )
+                        with gr.Row(visible=False) as formant_row_batch:
+                            formant_preset_batch = gr.Dropdown(
+                                label=i18n("Browse presets for formanting"),
+                                info=i18n(
+                                    "Presets are located in /assets/formant_shift folder"
+                                ),
+                                choices=list_json_files(FORMANTSHIFT_DIR),
+                                visible=False,
+                                interactive=True,
+                            )
+                            formant_refresh_button_batch = gr.Button(
+                                value=i18n("Refresh formant presets"),
+                                visible=False,
+                            )
+                        formant_qfrency_batch = gr.Slider(
+                            value=1.0,
+                            info=i18n("Default value is 1.0"),
+                            label=i18n("Quefrency for formant shifting"),
+                            minimum=0.0,
+                            maximum=16.0,
+                            step=0.1,
+                            visible=False,
+                            interactive=True,
+                        )
+                        formant_timbre_batch = gr.Slider(
+                            value=1.0,
+                            info=i18n("Default value is 1.0"),
+                            label=i18n("Timbre for formant shifting"),
+                            minimum=0.0,
+                            maximum=16.0,
+                            step=0.1,
+                            visible=False,
+                            interactive=True,
+                        )
+                    with gr.Accordion(i18n("Preset Settings"), open=False):
+                        with gr.Row():
+                            preset_dropdown = gr.Dropdown(
+                                label=i18n("Select Custom Preset"),
+                                interactive=True,
+                            )
+                            presets_batch_refresh_button = gr.Button(
+                                i18n("Refresh Presets")
+                            )
+                        import_file = gr.File(
+                            label=i18n("Select file to import"),
+                            file_count="single",
+                            type="filepath",
+                            interactive=True,
+                        )
+                        import_file.change(
+                            import_presets_button,
+                            inputs=import_file,
+                            outputs=[preset_dropdown],
+                        )
+                        presets_batch_refresh_button.click(
+                            refresh_presets, outputs=preset_dropdown
+                        )
+                        with gr.Row():
+                            preset_name_input = gr.Textbox(
+                                label=i18n("Preset Name"),
+                                placeholder=i18n("Enter preset name"),
+                            )
+                            export_button = gr.Button(i18n("Export Preset"))
+                    with gr.Accordion(i18n("Output Settings"), open=False):
+                        export_format_batch = gr.Radio(
+                            label=i18n("Export Format"),
+                            info=i18n("Select the format to export the audio."),
+                            choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+                            value="WAV",
+                            interactive=True,
+                        )
+                        clear_outputs_batch = gr.Button(
+                            i18n("Clear Outputs (Deletes all audios in assets/audios)")
+                        )
                 preset_dropdown.change(
                     update_sliders,
                     inputs=preset_dropdown,
@@ -1157,84 +1236,29 @@ def inference_tab():
                     ],
                     outputs=[],
                 )
-                f0_method_batch = gr.Radio(
-                    label=i18n("Pitch extraction algorithm"),
+
+                gr.Markdown(value=i18n("## Conversion"))
+
+                terms_checkbox_batch = gr.Checkbox(
+                    label=i18n("I agree to the terms of use"),
                     info=i18n(
-                        "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
+                        "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your inference."
                     ),
-                    choices=[
-                        "crepe",
-                        "rmvpe",
-                        "fcpe",
-                        "swift",
-                    ],
-                    value="rmvpe",
+                    value=False,
                     interactive=True,
                 )
-                embedder_model_batch = gr.Radio(
-                    label=i18n("Embedder Model"),
-                    info=i18n("Model used for learning speaker embedding."),
-                    choices=[
-                        "contentvec",
-                        "spin",
-                        "spin-v2",
-                        "chinese-hubert-base",
-                        "japanese-hubert-base",
-                        "korean-hubert-base",
-                        "custom",
-                    ],
-                    value="contentvec",
-                    interactive=True,
-                )
-                with gr.Column(visible=False) as embedder_custom_batch:
-                    with gr.Accordion(i18n("Custom Embedder"), open=True):
-                        with gr.Row():
-                            embedder_model_custom_batch = gr.Dropdown(
-                                label=i18n("Select Custom Embedder"),
-                                choices=path_choices(refresh_embedders_folders()),
-                                interactive=True,
-                                allow_custom_value=True,
-                            )
-                            refresh_embedders_button_batch = gr.Button(
-                                i18n("Refresh embedders")
-                            )
-                        folder_name_input_batch = gr.Textbox(
-                            label=i18n("Folder Name"), interactive=True
-                        )
-                        with gr.Row():
-                            bin_file_upload_batch = gr.File(
-                                label=i18n("Upload .bin"),
-                                type="filepath",
-                                interactive=True,
-                            )
-                            config_file_upload_batch = gr.File(
-                                label=i18n("Upload .json"),
-                                type="filepath",
-                                interactive=True,
-                            )
-                        move_files_button_batch = gr.Button(
-                            i18n("Move files to custom embedder folder")
-                        )
+                convert_button_batch = gr.Button(i18n("Convert"), variant="primary")
+                stop_button = gr.Button(i18n("Stop convert"), visible=False)
+                stop_button.click(fn=stop_infer, inputs=[], outputs=[])
 
-        gr.Markdown(value=i18n("## Conversion"))
+                with gr.Row():
+                    vc_output3 = gr.Textbox(
+                        label=i18n("Batch conversion output"),
+                        info=i18n("The output information will be displayed here."),
+                    )
 
-        terms_checkbox_batch = gr.Checkbox(
-            label=i18n("I agree to the terms of use"),
-            info=i18n(
-                "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your inference."
-            ),
-            value=False,
-            interactive=True,
-        )
-        convert_button_batch = gr.Button(i18n("Convert"))
-        stop_button = gr.Button(i18n("Stop convert"), visible=False)
-        stop_button.click(fn=stop_infer, inputs=[], outputs=[])
-
-        with gr.Row():
-            vc_output3 = gr.Textbox(
-                label=i18n("Batch conversion output"),
-                info=i18n("The output information will be displayed here."),
-            )
+    single_source.select(lambda: gr.Tabs(selected="single"), outputs=parameters, queue=False)
+    batch_source.select(lambda: gr.Tabs(selected="batch"), outputs=parameters, queue=False)
 
     def toggle_visible(checkbox):
         return {"visible": checkbox, "__type__": "update"}

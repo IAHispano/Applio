@@ -2,6 +2,11 @@ name: Pre-Compiled and Upload
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Stable release tag to compile
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,6 +21,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -24,9 +31,15 @@ jobs:
         run: |
           .\run-install.bat
           .\env\python.exe core.py prerequisites --pretraineds-hifigan --models --exe
+      - name: Seed update inventory
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          .\env\python.exe -c "import json,os; v=json.load(open('assets/config_template.json'))['version']; assert os.environ['RELEASE_TAG'].removeprefix('v') == v, 'Tag/config version mismatch'"
+          .\env\python.exe assets/build_update.py --seed-install --output "$env:RUNNER_TEMP\applio-update-package"
       - name: Clean up unnecessary files
         run: |
-          Remove-Item -Path 'LICENSE', 'run-tensorboard.sh', 'run-install.sh', 'run-applio.sh', 'run-install.bat', 'requirements.txt', '.gitignore', '.github', '.git' -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path 'LICENSE', 'run-tensorboard.sh', 'run-install.sh', 'run-applio.sh', 'run-install.bat', '.gitignore', '.github', '.git' -Recurse -Force -ErrorAction SilentlyContinue
           Get-ChildItem -Path . -Include __pycache__ -Recurse -Directory | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
       - name: Read version from config_template.json
         id: get-version

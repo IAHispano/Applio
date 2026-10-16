@@ -17,6 +17,7 @@ from core import run_download_script
 from rvc.lib.utils import format_title
 
 from assets.i18n.i18n import I18nAuto
+from assets.app_shell import step_card
 
 i18n = I18nAuto()
 
@@ -195,8 +196,7 @@ def download_tab():
                 gr.Info(result)
         return result
 
-    with gr.Column():
-        gr.Markdown(value=i18n("## Download Model"))
+    with step_card(1, "Download Model", i18n, description="Paste a model link to download it into your library."):
         model_link = gr.Textbox(
             label=i18n("Model Link"),
             placeholder=i18n("Introduce the model link"),
@@ -209,13 +209,13 @@ def download_tab():
             max_lines=8,
             interactive=False,
         )
-        model_download_button = gr.Button(i18n("Download Model"))
+        model_download_button = gr.Button(i18n("Download Model"), variant="primary")
         model_download_button.click(
             fn=_download_with_toast,
             inputs=[model_link],
             outputs=[model_download_output_info],
         )
-        gr.Markdown(value=i18n("## Drop files"))
+    with step_card(2, "Drop Files", i18n, description="Drop .pth and .index files to import them manually."):
         dropbox = gr.File(
             label=i18n(
                 "Drop your .pth and .index files here or use the browse button. Drop one and then the other."
@@ -228,10 +228,9 @@ def download_tab():
             inputs=[dropbox],
             outputs=[dropbox],
         )
-        gr.Markdown(value=i18n("## Download Pretrained Models"))
-
-        with gr.Group():
-            with gr.Group(visible=True) as default:
+    with step_card(3, "Download Pretrained Models", i18n, description="Download base pretrained models or use custom URLs."):
+        with gr.Column():
+            with gr.Column(visible=True) as default:
                 pretrained_model = gr.Dropdown(
                     label=i18n("Pretrained"),
                     info=i18n("Select the pretrained model you want to download."),
@@ -248,7 +247,7 @@ def download_tab():
                     allow_custom_value=True,
                 )
 
-            with gr.Group(visible=False) as custom:
+            with gr.Column(visible=False) as custom:
                 url_g = gr.Textbox(label=i18n("Pretrained G"), interactive=True)
                 url_d = gr.Textbox(label=i18n("Pretrained D"), interactive=True)
 
@@ -258,7 +257,7 @@ def download_tab():
                 interactive=True,
             )
 
-        download_pretrained = gr.Button(i18n("Download"))
+        download_pretrained = gr.Button(i18n("Download"), variant="primary")
 
         pretrained_model.change(
             update_sample_rate_dropdown,

@@ -12,69 +12,42 @@ config_file = os.path.join(now_dir, "assets", "config.json")
 
 AUTO_LANGUAGE = "Language automatically detected in the system"
 
-# Native names of the locales shipped in assets/i18n/languages, so the
-# dropdown can show something friendlier than the raw code. Unknown codes
-# (e.g. a newly added language file) fall back to the code itself.
+# Locales officially supported in the language dropdown.
+SUPPORTED_LANGUAGES = [
+    "ar_AR",
+    "de_DE",
+    "en_US",
+    "es_ES",
+    "fr_FR",
+    "hi_IN",
+    "id_ID",
+    "it_IT",
+    "ja_JA",
+    "ko_KO",
+    "pt_BR",
+    "ru_RU",
+    "tr_TR",
+    "vi_VI",
+    "zh_CN",
+]
+
+# Native names of the supported locales, so the
+# dropdown can show something friendlier than the raw code.
 LANGUAGE_DISPLAY_NAMES = {
-    "af_AF": "Afrikaans",
-    "am_AM": "አማርኛ",
     "ar_AR": "العربية",
-    "az_AZ": "Azərbaycan",
-    "ba_BA": "Башҡортса",
-    "be_BE": "Беларуская",
-    "bn_BN": "বাংলা",
-    "bs_BS": "Bosanski",
-    "ca_CA": "Català",
-    "ceb_CEB": "Cebuano",
-    "cs_CS": "Čeština",
     "de_DE": "Deutsch",
-    "el_EL": "Ελληνικά",
     "en_US": "English",
     "es_ES": "Español",
-    "eu_EU": "Euskara",
-    "fa_FA": "فارسی",
-    "fj_FJ": "Na Vosa Vakaviti",
     "fr_FR": "Français",
-    "ga_GA": "Gaeilge",
-    "gu_GU": "ગુજરાતી",
-    "he_HE": "עברית",
     "hi_IN": "हिन्दी",
-    "hr_HR": "Hrvatski",
-    "ht_HT": "Kreyòl Ayisyen",
-    "hu_HU": "Magyar",
     "id_ID": "Bahasa Indonesia",
     "it_IT": "Italiano",
     "ja_JA": "日本語",
-    "jv_JV": "Basa Jawa",
     "ko_KO": "한국어",
-    "lt_LT": "Lietuvių",
-    "lv_LV": "Latviešu",
-    "mg_MG": "Malagasy",
-    "ml_IN": "മലയാളം",
-    "mr_MR": "मराठी",
-    "ms_MS": "Bahasa Melayu",
-    "mt_MT": "Malti",
-    "nl_NL": "Nederlands",
-    "otq_OTQ": "Hñähñu",
-    "pa_PA": "ਪੰਜਾਬੀ",
-    "pl_PL": "Polski",
     "pt_BR": "Português (Brasil)",
-    "pt_PT": "Português (Portugal)",
-    "ro_RO": "Română",
     "ru_RU": "Русский",
-    "sk_SK": "Slovenčina",
-    "sm_SM": "Gagana Sāmoa",
-    "sr_RS": "Српски",
-    "sw_SW": "Kiswahili",
-    "ta_IN": "தமிழ்",
-    "te_TE": "తెలుగు",
-    "th_TH": "ไทย",
-    "to_TO": "Lea faka-Tonga",
     "tr_TR": "Türkçe",
-    "uk_UK": "Українська",
-    "ur_UR": "اردو",
     "vi_VI": "Tiếng Việt",
-    "wu_WU": "吴语",
     "zh_CN": "简体中文",
 }
 
@@ -82,10 +55,13 @@ LANGUAGE_DISPLAY_NAMES = {
 def get_language_choices():
     # Each entry is a (label, value) pair: the label is what the user sees,
     # the value is what gets saved and must stay the raw code so
-    # I18nAuto can load "<code>.json".
+    # I18nAuto can load "<code>.json". Only officially supported
+    # languages are listed, even if extra files exist on disk.
+    available = set(i18n._get_available_languages())
     named = [
         (f"{LANGUAGE_DISPLAY_NAMES.get(code, code)} ({code})", code)
-        for code in i18n._get_available_languages()
+        for code in SUPPORTED_LANGUAGES
+        if code in available
     ]
     named.sort(key=lambda choice: choice[0].lower())
     return [(i18n(AUTO_LANGUAGE), AUTO_LANGUAGE)] + named
