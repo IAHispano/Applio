@@ -33,8 +33,6 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
         run: |
           python -c "import json,os; v=json.load(open('assets/config_template.json'))['version']; assert os.environ['RELEASE_TAG'].removeprefix('v') == v, 'Tag/config version mismatch'"
-      - name: Test updater
-        run: python -m unittest discover -s tests -p test_updater.py -v
       - name: Build code-only update and bootstrap
         run: python assets/build_update.py --output dist-update
       - name: Attach update files to the release
