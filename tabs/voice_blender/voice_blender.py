@@ -89,11 +89,12 @@ def voice_blender_tab():
         )
     with step_card(3, "Blend & Export", i18n, description="Fuse the models and download the result."):
         model_fusion_button = gr.Button(i18n("Fusion"), variant="primary")
-        with gr.Row(elem_classes="applio-output-row"):
+        with gr.Row(equal_height=True, elem_classes="applio-output-row"):
             model_fusion_output_info = gr.Textbox(
                 label=i18n("Blend output"),
                 info=i18n("The output information will be displayed here."),
                 value="",
+                lines=3,
             )
             model_fusion_pth_output = gr.File(
                 label=i18n("Download Model"), type="filepath", interactive=False

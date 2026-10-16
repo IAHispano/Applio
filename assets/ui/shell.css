@@ -1,4 +1,3 @@
-/* Adapted from the app's globals.css and components/layout/Sidebar.tsx. */
 body, .gradio-container {
   --app-bg: #09090b;
   --app-surface: #151517;
@@ -140,8 +139,12 @@ footer:not(.applio-footer) { display: none !important; }
 .applio-page .info, .applio-page .prose p, .applio-page-heading p { font-weight: 400; }
 .applio-page .label-wrap > span { font-weight: 600; }
 .applio-page input, .applio-page textarea { color: var(--app-text); }
-.applio-page .form { background: transparent; border: 0; border-radius: 0; gap: 12px; }
+.applio-page .form { background: transparent; border: 0; border-radius: 0; gap: 12px; overflow: visible !important; }
 .applio-page .form > .block { border: 1px solid var(--app-border); border-radius: 10px !important; }
+/* Match checkbox components themselves, not accordions whose content mounts
+   checkboxes on expansion: changing ancestor padding makes headers resize. */
+.applio-page .block:has(> label.checkbox-container) { overflow: visible !important; }
+.applio-page label.checkbox-container { overflow: visible !important; }
 .applio-page .tabitem { border: 0; padding: 16px 0 0; }
 .applio-page .tab-nav { gap: 4px; border-bottom: 1px solid var(--app-border); }
 .applio-page .tab-nav button { color: var(--app-muted); padding: 9px 14px; font-size: 12px; border-radius: 7px 7px 0 0; }
@@ -151,8 +154,9 @@ footer:not(.applio-footer) { display: none !important; }
 .applio-page .tab-container[role="tablist"] button { color: var(--app-muted); padding: 8px 14px; font-size: 12px; border: 0; border-radius: 7px 7px 0 0; }
 .applio-page .tab-container[role="tablist"] button.selected { color: var(--app-heading); border-bottom: 2px solid white; background: rgba(255,255,255,.05); }
 .applio-card { background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 12px; padding: 20px !important; gap: 16px; }
-.applio-card .form { border: 0; }
+.applio-card .form { border: 0; overflow: visible !important; }
 .applio-card .form > .block { padding: 0 !important; border: 0 !important; background: transparent; }
+.applio-card .block:has(> label.checkbox-container) { padding: 1px 2px !important; overflow: visible !important; }
 .applio-card > .block.hide-container, .applio-card > .row, .applio-card > .column { flex: 0 0 auto; }
 #applio-conversion-top { gap: 16px; }
 #applio-voice-model { justify-content: flex-start; }
@@ -161,6 +165,7 @@ footer:not(.applio-footer) { display: none !important; }
 #applio-voice-model > .column, #applio-voice-model > .row, #applio-voice-model .form { flex: 0 0 auto !important; }
 #applio-voice-model .form { gap: 12px; }
 #applio-voice-model .form > .block { padding: 0 !important; }
+#applio-voice-model .block:has(> label.checkbox-container) { padding: 1px 2px !important; overflow: visible !important; }
 .applio-card h2, .applio-card h3 { margin-top: 0; }
 .applio-card-head { display: flex; flex-direction: column; gap: 4px; margin: 0 0 4px; }
 .applio-card-desc { margin: 0; color: var(--app-muted); font-size: 13px; line-height: 1.5; font-weight: 400; }
@@ -183,7 +188,6 @@ footer:not(.applio-footer) { display: none !important; }
 .applio-footer a { color: inherit; text-decoration: none; }
 .applio-page button { transition: background-color .15s, border-color .15s; }
 .applio-page .label-wrap { background: transparent !important; }
-/* Media labels live in the normal flow rather than on the dropzone border. */
 .applio-page .block:has(> label[data-testid="block-label"]) { padding: 16px !important; }
 .applio-page .block > label[data-testid="block-label"] {
   position: static !important; display: flex; align-items: center; gap: 7px;
@@ -245,28 +249,78 @@ footer:not(.applio-footer) { display: none !important; }
   background: radial-gradient(circle, #09090b 0 3px, #f5f5f5 3.5px) !important;
 }
 .applio-page input[type="radio"]:focus-visible { outline: 2px solid #a1a1aa; outline-offset: 3px; }
+@keyframes applio-spin { to { transform: rotate(360deg); } }
+/* Gradio's startup screen lives outside .applio-page. Replace its animated
+   logo everywhere, including component status overlays, with the same ring. */
+[data-testid="status-tracker"] div:has(> svg[viewBox="-1200 -1200 3000 3000"]) {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+[data-testid="status-tracker"] svg[viewBox="-1200 -1200 3000 3000"] {
+  display: none !important;
+}
+[data-testid="status-tracker"] div:has(> svg[viewBox="-1200 -1200 3000 3000"])::before {
+  content: "";
+  display: block;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(255,255,255,.16);
+  border-top-color: #f5f5f5;
+  border-radius: 50%;
+  animation: applio-spin .8s linear infinite;
+
+  /* Keep this nested: Gradio scopes top-level media rules to loaded pages. */
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+.applio-page .wrap:has(.progress-bar) { background: rgba(9,9,11,.78) !important; backdrop-filter: blur(2px); border: 0 !important; }
+.applio-page .wrap:has(.progress-bar).generating { animation: none !important; border: 0 !important; background: rgba(9,9,11,.78) !important; }
+.applio-page .eta-bar { display: none !important; }
+.applio-page .progress-bar-wrap { width: min(220px, 60%) !important; height: 3px !important; border: 0 !important; background: rgba(255,255,255,.12) !important; border-radius: 999px !important; overflow: hidden; }
+.applio-page .progress-bar { background: #f5f5f5 !important; border-radius: 999px !important; }
+.applio-page p.loading, .applio-page .progress-level-inner { color: var(--app-muted) !important; font-size: 12px !important; }
+.applio-page .progress-level::before { content: ""; width: 20px; height: 20px; margin-bottom: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,.16); border-top-color: #f5f5f5; animation: applio-spin .8s linear infinite; }
+.applio-page .loading-spinner, .applio-page span.spinner { width: 16px !important; height: 16px !important; border: 2px solid rgba(255,255,255,.16) !important; border-top-color: #f5f5f5 !important; border-radius: 50% !important; background: none !important; box-shadow: none !important; animation: applio-spin .8s linear infinite !important; }
+.applio-page .loading-overlay { background: rgba(9,9,11,.72) !important; backdrop-filter: blur(2px); }
+.applio-page .loading-overlay .loading-text { color: var(--app-muted) !important; font-size: 12px !important; }
+.applio-page .loader { width: 18px !important; height: 18px !important; margin: 12px !important; padding: 0 !important; border-radius: 50% !important; background: none !important; box-shadow: none !important; scale: 1 !important; border: 2px solid rgba(255,255,255,.16) !important; border-top-color: #f5f5f5 !important; animation: applio-spin .8s linear infinite !important; }
 .applio-output-row, .applio-f0-results { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
 .applio-output-row > .block, .applio-output-row > .form { min-width: 0 !important; min-height: 152px; align-self: stretch; }
 .applio-output-row > .form { background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 12px; }
 .applio-output-row > .form > .block { border: 0; padding: 10px 12px !important; }
 .applio-output-row .audio-container { min-height: 94px; }
-.applio-output-row textarea { min-height: 76px; }
+.applio-output-row .block:has(textarea) { display: flex !important; flex-direction: column; }
+.applio-output-row .block:has(textarea) > label { display: flex !important; flex-direction: column; flex: 1 1 auto !important; min-height: 0; }
+.applio-output-row .block:has(textarea) textarea { flex: 1 1 auto !important; height: auto !important; min-height: 120px; }
 .applio-f0-results > .block { flex: 1 1 0 !important; min-width: 0 !important; display: flex; flex-direction: column; height: 280px; min-height: 280px; box-sizing: border-box; }
 .applio-f0-results > .block > .empty { flex: 1; height: auto !important; min-height: 0 !important; }
 .applio-f0-results > .block > .image-container { flex: 1; min-height: 0; }
 .applio-pretrained { padding: 16px !important; background: var(--app-surface) !important; border: 1px solid var(--app-border) !important; border-radius: 12px; }
-/* Gradio repeats elem_classes on its inner group wrapper. */
 .applio-pretrained .applio-pretrained { padding: 0 !important; border: 0 !important; border-radius: 0; background: transparent !important; }
 .applio-pretrained .form, .applio-pretrained .styler, .applio-pretrained .group, .applio-pretrained .gr-group { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }
 .applio-pretrained .block { background: transparent; border: 0 !important; }
-/* Nested default/custom groups inside the pretrained card must not show a gray box. */
 .applio-pretrained > .form > div, .applio-pretrained > div { background: transparent !important; border: 0 !important; box-shadow: none !important; }
 .applio-card .group, .applio-card .gr-group { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }
 .applio-page > .column { gap: 16px; }
 .applio-page > .column > .tabs { flex: 0 0 auto; }
 #applio-conversion-parameters > .tabitem { padding-top: 0 !important; }
+/* ---- Stable accordions: open/close must not shift sibling sizes. The page
+   grows past the viewport when accordions open, and a newly appearing
+   scrollbar would otherwise reflow every full-width row. The header and
+   chevron geometry is pinned so labels never reflow, and accordion content
+   is kept inside its container. */
+html { scrollbar-gutter: stable; }
+.applio-page .block:has(> .gr-accordion) { min-width: 0; }
+.applio-page .gr-accordion { min-width: 0; }
+.applio-page .gr-accordion > .form,
+.applio-page .gr-accordion > .column,
+.applio-page .gr-accordion > .row { min-width: 0; }
+.applio-page .label-wrap { gap: 12px; }
+.applio-page .label-wrap > .icon { flex: 0 0 16px !important; width: 16px; height: 16px; display: inline-flex !important; align-items: center; justify-content: center; }
 * { scrollbar-width: thin; scrollbar-color: #343438 transparent; }
-/* Match the desktop app's Toaster while retaining Gradio's notification controls. */
 .toast-wrap {
   top: auto !important; bottom: calc(16px + env(safe-area-inset-bottom)) !important;
   right: 16px !important; left: auto !important; width: 384px !important;
@@ -314,7 +368,7 @@ footer:not(.applio-footer) { display: none !important; }
   .applio-page-heading a { font-size: 10px; }
   .applio-card { padding: 16px !important; }
 }
-@media (prefers-reduced-motion: reduce) { .applio-page button { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .applio-page button { transition: none; } .applio-page .progress-level::before, .applio-page .loading-spinner, .applio-page span.spinner, .applio-page .loader { animation: none !important; } }
 @media (max-width: 680px) {
   .applio-output-row, .applio-f0-results { grid-template-columns: minmax(0, 1fr); }
 }
