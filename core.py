@@ -127,6 +127,8 @@ def _base_infer_kwargs(
     sid=0,
     inference_engine=None,
     onnx_precision="auto",
+    cleanup_mode="off",
+    cleanup_strength=12,
 ):
     return {
         "model_path": pth_path,
@@ -150,6 +152,8 @@ def _base_infer_kwargs(
         "sid": sid,
         "inference_engine": inference_engine,
         "onnx_precision": onnx_precision,
+        "cleanup_mode": cleanup_mode,
+        "cleanup_strength": cleanup_strength,
     }
 
 
@@ -177,6 +181,8 @@ def run_infer_script(
     sid: int = 0,
     inference_engine: str = None,
     onnx_precision: str = "auto",
+    cleanup_mode: str = "off",
+    cleanup_strength: float = 12,
 ):
     kwargs = _base_infer_kwargs(
         pitch=pitch,
@@ -200,6 +206,8 @@ def run_infer_script(
         sid=sid,
         inference_engine=inference_engine,
         onnx_precision=onnx_precision,
+        cleanup_mode=cleanup_mode,
+        cleanup_strength=cleanup_strength,
     )
     kwargs["audio_input_path"] = input_path
     kwargs["audio_output_path"] = output_path
@@ -234,6 +242,8 @@ def run_batch_infer_script(
     sid: int = 0,
     inference_engine: str = None,
     onnx_precision: str = "auto",
+    cleanup_mode: str = "off",
+    cleanup_strength: float = 12,
 ):
     kwargs = _base_infer_kwargs(
         pitch=pitch,
@@ -257,6 +267,8 @@ def run_batch_infer_script(
         sid=sid,
         inference_engine=inference_engine,
         onnx_precision=onnx_precision,
+        cleanup_mode=cleanup_mode,
+        cleanup_strength=cleanup_strength,
     )
     kwargs["audio_input_paths"] = input_folder
     kwargs["audio_output_path"] = output_folder
@@ -291,6 +303,8 @@ def run_tts_script(
     formant_shifting: bool = False,
     formant_qfrency: float = 1.0,
     formant_timbre: float = 1.0,
+    cleanup_mode: str = "off",
+    cleanup_strength: float = 12,
 ):
     tts_script_path = os.path.join(
         current_script_directory, "rvc", "lib", "tools", "tts.py"
@@ -349,6 +363,9 @@ def run_tts_script(
             formant_shifting=formant_shifting,
             formant_qfrency=formant_qfrency,
             formant_timbre=formant_timbre,
+            cleanup_mode=cleanup_mode,
+            cleanup_strength=cleanup_strength,
+            cleanup_stage="output",
             export_format=export_format,
             embedder_model=embedder_model,
             embedder_model_custom=embedder_model_custom,
@@ -358,6 +375,10 @@ def run_tts_script(
             ".wav", f".{export_format.lower()}"
         )
 
+    if cleanup_mode != "off":
+        from rvc.lib.tools.audio_cleanup import cleanup_file
+
+        cleanup_file(output_tts_path, cleanup_mode, cleanup_strength)
     return f"Text synthesized successfully.", output_tts_path
 
 
@@ -680,6 +701,18 @@ VERSION = _get_version()
 def _infer_opts(func):
     """Core inference options shared by infer, batch_infer and tts."""
     opts = [
+        click.option(
+            "--cleanup-mode",
+            type=click.Choice(["off", "light", "speech"]),
+            default="off",
+            help="Optional file noise reduction. Speech may remove singing.",
+        ),
+        click.option(
+            "--cleanup-strength",
+            type=click.FloatRange(1, 30),
+            default=12,
+            help="Noise reduction limit in dB.",
+        ),
         click.option(
             "--pitch",
             type=click.IntRange(-24, 24),

@@ -197,6 +197,7 @@ class Realtime:
         ) != 0:  # Compensate for truncation due to hop size in model output.
             convert_size_16k = convert_size_16k + (self.window_size - modulo)
         self.convert_feature_size_16k = convert_size_16k // self.window_size
+        self._formant_shifter = None
 
         self.block_frame_16k = block_frame_16k
         self.skip_head = extra_frame_16k // self.window_size
@@ -226,23 +227,30 @@ class Realtime:
         )
 
     def _apply_formant_shift(self, audio_16k):
-        """Apply offline-style formant shifting to a 16 kHz block (no-op when disabled)."""
-        if not self.formant_shifting:
+        """Process formants with continuous analysis and overlap-add state."""
+        if (
+            not self.formant_shifting
+            or self.formant_timbre == 1.0
+            or self.formant_qfrency == 0.0
+        ):
+            self._formant_shifter = None
             return audio_16k
         try:
-            from stftpitchshift import StftPitchShift
+            from rvc.lib.tools.formant import FormantShifter
 
             if self._formant_shifter is None:
-                self._formant_shifter = StftPitchShift(1024, 32, self.sample_rate)
+                self._formant_shifter = FormantShifter(self.sample_rate)
             audio_np = audio_16k.detach().to("cpu").float().numpy()
-            shifted = self._formant_shifter.shiftpitch(
+            shifted = self._formant_shifter.process(
                 audio_np,
-                factors=1,
-                quefrency=float(self.formant_qfrency) * 1e-3,
-                distortion=float(self.formant_timbre),
+                quefrency=self.formant_qfrency,
+                timbre=self.formant_timbre,
             )
+            if shifted is audio_np:
+                return audio_16k
             return torch.as_tensor(shifted, device=audio_16k.device).to(audio_16k.dtype)
         except Exception as error:
+            self._formant_shifter = None
             print(f"Formant shifting failed, bypassing: {error}")
             return audio_16k
 
@@ -644,6 +652,7 @@ class VoiceChanger:
         finally:
             model.vad, model.input_sensitivity = vad, threshold
             if completed:
+                model._formant_shifter = None
                 for buffer in (
                     model.audio_buffer,
                     model.convert_buffer,

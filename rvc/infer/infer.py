@@ -266,6 +266,18 @@ class VoiceConverter:
         else:
             audio_opt = converted_chunks[0]
 
+        if (
+            kwargs.get("cleanup_mode", "off") != "off"
+            and kwargs.get("cleanup_stage", "input") == "output"
+        ):
+            from rvc.lib.tools.audio_cleanup import cleanup_audio
+
+            audio_opt = cleanup_audio(
+                audio_opt,
+                self.tgt_sr,
+                kwargs["cleanup_mode"],
+                kwargs.get("cleanup_strength", 12),
+            )
         sf.write(audio_output_path, audio_opt, self.tgt_sr, format="WAV")
         output_path_format = (
             os.path.splitext(audio_output_path)[0] + f".{export_format.lower()}"
@@ -600,6 +612,13 @@ if __name__ == "__main__":
     parser.add_argument("--formant-qfrency", type=float, default=1.0)
     parser.add_argument("--formant-timbre", type=float, default=1.0)
 
+    parser.add_argument(
+        "--cleanup-mode", choices=("off", "light", "speech"), default="off"
+    )
+    parser.add_argument("--cleanup-strength", type=float, default=12)
+    parser.add_argument("--cleanup-stage", choices=("input", "output"), default="input")
+
+    args = parser.parse_args()
     infer_kwargs = vars(args)
     input_folder = infer_kwargs.pop("input_folder")
     output_folder = infer_kwargs.pop("output_folder")
@@ -607,6 +626,7 @@ if __name__ == "__main__":
     output_path = infer_kwargs.pop("output_path")
 
     if input_folder and output_folder:
+        vc = VoiceConverter()
         vc.convert_audio_batch(
             audio_input_paths=input_folder,
             audio_output_path=output_folder,
@@ -614,6 +634,7 @@ if __name__ == "__main__":
         )
         print(f"Files from {input_folder} inferred successfully.")
     elif input_path and output_path:
+        vc = VoiceConverter()
         vc.convert_audio(
             audio_input_path=input_path,
             audio_output_path=output_path,

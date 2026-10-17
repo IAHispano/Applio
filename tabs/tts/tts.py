@@ -234,6 +234,27 @@ def tts_tab():
                 value=155.0,
                 interactive=True,
             )
+            cleanup_mode = gr.Dropdown(
+                label=i18n("Audio cleanup"),
+                choices=[
+                    (i18n("Off"), "off"),
+                    (i18n("Light cleanup (FFmpeg)"), "light"),
+                    (i18n("Speech enhancement (DeepFilterNet3)"), "speech"),
+                ],
+                value="off",
+                interactive=True,
+                info=i18n(
+                    "Cleans converted speech before export. Leave Off for clean TTS. Speech mode downloads about 35 MB on first use; processing stays local."
+                ),
+            )
+            cleanup_strength = gr.Slider(
+                minimum=1,
+                maximum=30,
+                step=1,
+                value=12,
+                label=i18n("Noise reduction limit (dB)"),
+                interactive=True,
+            )
             formant_shifting = gr.Checkbox(
                 label=i18n("Formant Shifting"),
                 info=i18n(
@@ -496,6 +517,8 @@ def tts_tab():
             formant_shifting,
             formant_qfrency,
             formant_timbre,
+            cleanup_mode,
+            cleanup_strength,
         ],
         outputs=[vc_output1, vc_output2],
     )

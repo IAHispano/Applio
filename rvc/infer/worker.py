@@ -84,9 +84,9 @@ def map_params(params: dict, input_path: str, output_path: str) -> dict:
         "f0_method": str(params.get("f0Method", "rmvpe")),
         "inference_engine": params.get("inferenceEngine", "torch"),
         "onnx_precision": params.get("onnxPrecision", "auto"),
-        "input_path": input_path,
-        "output_path": output_path,
-        "pth_path": params.get("pthPath", ""),
+        "audio_input_path": input_path,
+        "audio_output_path": output_path,
+        "model_path": params.get("pthPath", ""),
         "index_path": params.get("indexPath", "") or "",
         "split_audio": to_bool(params.get("splitAudio", False)),
         "f0_autotune": to_bool(params.get("f0Autotune", False)),
@@ -100,6 +100,8 @@ def map_params(params: dict, input_path: str, output_path: str) -> dict:
         "formant_qfrency": float(params.get("formantQfrency", 1.0)),
         "formant_timbre": float(params.get("formantTimbre", 1.0)),
         "sid": int(params.get("sid", 0)),
+        "cleanup_mode": params.get("cleanupMode", "off"),
+        "cleanup_strength": float(params.get("cleanupStrength", 12)),
     }
 
 
@@ -198,10 +200,6 @@ def run_worker():
                 kwargs = map_params(params, input_path, output_path)
 
                 export_format = kwargs.get("export_format", "WAV")
-                kwargs["audio_input_path"] = kwargs.pop("input_path", input_path)
-                kwargs["audio_output_path"] = kwargs.pop("output_path", output_path)
-                kwargs["model_path"] = kwargs.pop("pth_path", "")
-
                 vc.convert_audio(**kwargs)
                 final_out = (
                     os.path.splitext(output_path)[0] + f".{export_format.lower()}"
@@ -222,9 +220,8 @@ def run_worker():
                 input_folder = req.get("inputFolder")
                 output_folder = req.get("outputFolder")
                 kwargs = map_params(params, "", "")
-                kwargs.pop("input_path", None)
-                kwargs.pop("output_path", None)
-                kwargs["model_path"] = kwargs.pop("pth_path", "")
+                kwargs.pop("audio_input_path")
+                kwargs.pop("audio_output_path")
 
                 vc.convert_audio_batch(
                     audio_input_paths=input_folder,
@@ -302,9 +299,7 @@ def run_worker():
                         os.path.dirname(os.path.abspath(output_rvc_path)), exist_ok=True
                     )
                     kwargs = map_params(params, output_tts_path, output_rvc_path)
-                    kwargs["audio_input_path"] = output_tts_path
-                    kwargs["audio_output_path"] = output_rvc_path
-                    kwargs["model_path"] = kwargs.pop("pth_path", "")
+                    kwargs["cleanup_stage"] = "output"
                     vc.convert_audio(**kwargs)
                     export_format = kwargs.get("export_format", "WAV")
                     final_out = (
@@ -312,6 +307,14 @@ def run_worker():
                         + f".{export_format.lower()}"
                     )
                     print(f"TTS RVC conversion completed at '{final_out}'")
+                elif params.get("cleanupMode", "off") != "off":
+                    from rvc.lib.tools.audio_cleanup import cleanup_file
+
+                    cleanup_file(
+                        output_tts_path,
+                        params["cleanupMode"],
+                        params.get("cleanupStrength", 12),
+                    )
 
                 sys.stdout.flush()
                 send_ipc(
