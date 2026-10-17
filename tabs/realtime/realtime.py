@@ -995,7 +995,12 @@ def realtime_tab():
     # Load saved settings
 
     with gr.Blocks() as ui:
-        with step_card(1, "Audio Devices", i18n, description="Choose input, output and optional monitor devices for live voice."):
+        with step_card(
+            1,
+            "Audio Devices",
+            i18n,
+            description="Choose input, output and optional monitor devices for live voice.",
+        ):
             with gr.Row():
                 refresh_devices_button = gr.Button(i18n("Refresh Audio Devices"))
             with gr.Row():
@@ -1135,9 +1140,7 @@ def realtime_tab():
                         info=i18n(
                             "The path where the output audio will be saved, by default in assets/audios/output.wav"
                         ),
-                        value=os.path.join(
-                            now_dir, "assets", "audios", "output.wav"
-                        ),
+                        value=os.path.join(now_dir, "assets", "audios", "output.wav"),
                         interactive=True,
                     )
                 export_format = gr.Radio(
@@ -1169,7 +1172,12 @@ def realtime_tab():
                     value=saved_settings.get("vad_enabled", True),
                     interactive=True,
                 )
-        with step_card(2, "Voice Model", i18n, description="Select the voice model and index used for realtime conversion."):
+        with step_card(
+            2,
+            "Voice Model",
+            i18n,
+            description="Select the voice model and index used for realtime conversion.",
+        ):
             with gr.Row():
                 model_choices = (
                     sorted(names, key=extract_model_and_epoch) if names else []
@@ -1198,7 +1206,12 @@ def realtime_tab():
             with gr.Row():
                 unload_button = gr.Button(i18n("Unload Voice"))
                 refresh_button = gr.Button(i18n("Refresh models and indexes"))
-        with step_card(3, "Conversion Parameters", i18n, description="Tune pitch, voice matching and pitch algorithms."):
+        with step_card(
+            3,
+            "Conversion Parameters",
+            i18n,
+            description="Tune pitch, voice matching and pitch algorithms.",
+        ):
             pitch = gr.Slider(
                 minimum=-24,
                 maximum=24,
@@ -1375,7 +1388,12 @@ def realtime_tab():
                         value=1.0,
                         interactive=True,
                     )
-        with step_card(4, "Performance Settings", i18n, description="Balance latency, CPU usage and silence detection."):
+        with step_card(
+            4,
+            "Performance Settings",
+            i18n,
+            description="Balance latency, CPU usage and silence detection.",
+        ):
             with gr.Accordion(i18n("Advanced Settings"), open=False):
                 with gr.Accordion(i18n("Buffer & Latency"), open=True):
                     chunk_size = gr.Slider(
@@ -1423,7 +1441,12 @@ def realtime_tab():
                         ),
                         interactive=True,
                     )
-        with step_card(5, "Start Realtime", i18n, description="Agree to the terms and start or stop the live session."):
+        with step_card(
+            5,
+            "Start Realtime",
+            i18n,
+            description="Agree to the terms and start or stop the live session.",
+        ):
             terms_checkbox = gr.Checkbox(
                 label=i18n("I agree to the terms of use"),
                 info=i18n(
@@ -1591,7 +1614,6 @@ def realtime_tab():
         def update_visibility(checkbox, count):
             return [gr.update(visible=checkbox) for _ in range(count)]
 
-
         def formant_visible(checkbox):
             return update_visibility(checkbox, 2)
 
@@ -1600,7 +1622,6 @@ def realtime_tab():
             inputs=[formant_shifting],
             outputs=[formant_qfrency, formant_timbre],
         )
-
 
         if client_mode:
 
@@ -2247,4 +2268,3 @@ def realtime_tab():
             inputs=[formant_timbre],
             outputs=[],
         )
-

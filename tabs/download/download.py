@@ -196,7 +196,12 @@ def download_tab():
                 gr.Info(result)
         return result
 
-    with step_card(1, "Download Model", i18n, description="Paste a model link to download it into your library."):
+    with step_card(
+        1,
+        "Download Model",
+        i18n,
+        description="Paste a model link to download it into your library.",
+    ):
         model_link = gr.Textbox(
             label=i18n("Model Link"),
             placeholder=i18n("Introduce the model link"),
@@ -215,7 +220,12 @@ def download_tab():
             inputs=[model_link],
             outputs=[model_download_output_info],
         )
-    with step_card(2, "Drop Files", i18n, description="Drop .pth and .index files to import them manually."):
+    with step_card(
+        2,
+        "Drop Files",
+        i18n,
+        description="Drop .pth and .index files to import them manually.",
+    ):
         dropbox = gr.File(
             label=i18n(
                 "Drop your .pth and .index files here or use the browse button. Drop one and then the other."
@@ -228,7 +238,12 @@ def download_tab():
             inputs=[dropbox],
             outputs=[dropbox],
         )
-    with step_card(3, "Download Pretrained Models", i18n, description="Download base pretrained models or use custom URLs."):
+    with step_card(
+        3,
+        "Download Pretrained Models",
+        i18n,
+        description="Download base pretrained models or use custom URLs.",
+    ):
         with gr.Column():
             with gr.Column(visible=True) as default:
                 pretrained_model = gr.Dropdown(
