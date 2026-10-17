@@ -600,6 +600,9 @@ if __name__ == "__main__":
     parser.add_argument("--formant-qfrency", type=float, default=1.0)
     parser.add_argument("--formant-timbre", type=float, default=1.0)
 
+    args = parser.parse_args()
+    vc = VoiceConverter()
+
     infer_kwargs = vars(args)
     input_folder = infer_kwargs.pop("input_folder")
     output_folder = infer_kwargs.pop("output_folder")
