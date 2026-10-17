@@ -54,7 +54,7 @@ def apply_config_update(instance, current, message):
         "volume_envelope": (0, 1),
         "autotune_strength": (0, 1),
         "formant_qfrency": (0, 32),
-        "formant_timbre": (0, 32),
+        "formant_timbre": (0.1, 32),
         "input_audio_gain": (0, 200),
         "silent_threshold": (-90, 0),
         "cross_fade_overlap_size": (0.01, 0.5),

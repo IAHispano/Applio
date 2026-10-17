@@ -148,22 +148,29 @@ def load_audio_infer(
         audio, sr = sf.read(file)
         if len(audio.shape) > 1:
             audio = librosa.to_mono(audio.T)
+        if (
+            kwargs.get("cleanup_mode", "off") != "off"
+            and kwargs.get("cleanup_stage", "input") == "input"
+        ):
+            from rvc.lib.tools.audio_cleanup import cleanup_audio
+
+            audio = cleanup_audio(
+                audio, sr, kwargs["cleanup_mode"], kwargs.get("cleanup_strength", 12)
+            )
         if sr != sample_rate:
             audio = librosa.resample(
                 audio, orig_sr=sr, target_sr=sample_rate, res_type="soxr_vhq"
             )
         if formant_shifting:
-            formant_qfrency = kwargs.get("formant_qfrency", 0.8)
-            formant_timbre = kwargs.get("formant_timbre", 0.8)
+            formant_qfrency = kwargs.get("formant_qfrency", 1.0)
+            formant_timbre = kwargs.get("formant_timbre", 1.0)
 
-            from stftpitchshift import StftPitchShift
+            from rvc.lib.tools.formant import FormantShifter
 
-            pitchshifter = StftPitchShift(1024, 32, sample_rate)
-            audio = pitchshifter.shiftpitch(
+            audio = FormantShifter(sample_rate).process_file(
                 audio,
-                factors=1,
-                quefrency=formant_qfrency * 1e-3,
-                distortion=formant_timbre,
+                quefrency=formant_qfrency,
+                timbre=formant_timbre,
             )
     except Exception as error:
         raise RuntimeError(f"An error occurred loading the audio: {error}")

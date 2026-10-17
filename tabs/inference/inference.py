@@ -181,6 +181,8 @@ def update_sliders(preset):
         values["index_rate"],
         values["rms_mix_rate"],
         values["protect"],
+        values.get("cleanup_mode", "off"),
+        values.get("cleanup_strength", 12),
     )
 
 
@@ -206,19 +208,33 @@ def import_presets(file_path):
     return presets
 
 
-def get_presets_data(pitch, index_rate, rms_mix_rate, protect):
+def get_presets_data(
+    pitch, index_rate, rms_mix_rate, protect, cleanup_mode="off", cleanup_strength=12
+):
     return {
         "pitch": pitch,
         "index_rate": index_rate,
         "rms_mix_rate": rms_mix_rate,
         "protect": protect,
+        "cleanup_mode": cleanup_mode,
+        "cleanup_strength": cleanup_strength,
     }
 
 
-def export_presets_button(preset_name, pitch, index_rate, rms_mix_rate, protect):
+def export_presets_button(
+    preset_name,
+    pitch,
+    index_rate,
+    rms_mix_rate,
+    protect,
+    cleanup_mode="off",
+    cleanup_strength=12,
+):
     if preset_name:
         file_path = os.path.join(PRESETS_DIR, f"{preset_name}.json")
-        presets_data = get_presets_data(pitch, index_rate, rms_mix_rate, protect)
+        presets_data = get_presets_data(
+            pitch, index_rate, rms_mix_rate, protect, cleanup_mode, cleanup_strength
+        )
         with open(file_path, "w", encoding="utf-8") as json_file:
             json.dump(presets_data, json_file, ensure_ascii=False, indent=4)
         return "Export successful"
@@ -795,6 +811,31 @@ def inference_tab():
                             value=155.0,
                             interactive=True,
                         )
+                    with gr.Accordion(i18n("Audio cleanup"), open=False):
+                        cleanup_mode = gr.Dropdown(
+                            label=i18n("Audio cleanup"),
+                            choices=[
+                                (i18n("Off"), "off"),
+                                (i18n("Light cleanup (FFmpeg)"), "light"),
+                                (i18n("Speech enhancement (DeepFilterNet3)"), "speech"),
+                            ],
+                            value="off",
+                            interactive=True,
+                            info=i18n(
+                                "Cleans input before conversion. Speech mode downloads about 35 MB on first use and may suppress singing. Processing stays local."
+                            ),
+                        )
+                        cleanup_strength = gr.Slider(
+                            minimum=1,
+                            maximum=30,
+                            step=1,
+                            value=12,
+                            label=i18n("Noise reduction limit (dB)"),
+                            interactive=True,
+                            info=i18n(
+                                "Higher values remove more noise and can change the voice."
+                            ),
+                        )
                     with gr.Accordion(i18n("Formant Shifting"), open=False):
                         formant_shifting = gr.Checkbox(
                             label=i18n("Formant Shifting"),
@@ -899,6 +940,8 @@ def inference_tab():
                         index_rate,
                         rms_mix_rate,
                         protect,
+                        cleanup_mode,
+                        cleanup_strength,
                     ],
                 )
                 export_button.click(
@@ -909,6 +952,8 @@ def inference_tab():
                         index_rate,
                         rms_mix_rate,
                         protect,
+                        cleanup_mode,
+                        cleanup_strength,
                     ],
                 )
 
@@ -919,7 +964,9 @@ def inference_tab():
                         return message, None
                     try:
                         gr.Info(i18n("Converting audio..."))
-                        result = run_infer_script(*args)
+                        result = run_infer_script(
+                            *args[:-2], cleanup_mode=args[-2], cleanup_strength=args[-1]
+                        )
                         gr.Info(result[0])
                         return result
                     except Exception:
@@ -942,7 +989,9 @@ def inference_tab():
                         gr.Info(message)
                         return message
                     try:
-                        return run_batch_infer_script(*args)
+                        return run_batch_infer_script(
+                            *args[:-2], cleanup_mode=args[-2], cleanup_strength=args[-1]
+                        )
                     except Exception:
                         traceback.print_exc()
                         return i18n(
@@ -1131,6 +1180,31 @@ def inference_tab():
                             value=155.0,
                             interactive=True,
                         )
+                    with gr.Accordion(i18n("Audio cleanup"), open=False):
+                        cleanup_mode_batch = gr.Dropdown(
+                            label=i18n("Audio cleanup"),
+                            choices=[
+                                (i18n("Off"), "off"),
+                                (i18n("Light cleanup (FFmpeg)"), "light"),
+                                (i18n("Speech enhancement (DeepFilterNet3)"), "speech"),
+                            ],
+                            value="off",
+                            interactive=True,
+                            info=i18n(
+                                "Cleans input before conversion. Speech mode downloads about 35 MB on first use and may suppress singing. Processing stays local."
+                            ),
+                        )
+                        cleanup_strength_batch = gr.Slider(
+                            minimum=1,
+                            maximum=30,
+                            step=1,
+                            value=12,
+                            label=i18n("Noise reduction limit (dB)"),
+                            interactive=True,
+                            info=i18n(
+                                "Higher values remove more noise and can change the voice."
+                            ),
+                        )
                     with gr.Accordion(i18n("Formant Shifting"), open=False):
                         formant_shifting_batch = gr.Checkbox(
                             label=i18n("Formant Shifting"),
@@ -1223,16 +1297,20 @@ def inference_tab():
                         index_rate_batch,
                         rms_mix_rate_batch,
                         protect_batch,
+                        cleanup_mode_batch,
+                        cleanup_strength_batch,
                     ],
                 )
                 export_button.click(
                     export_presets_button,
                     inputs=[
                         preset_name_input,
-                        pitch,
-                        index_rate,
+                        pitch_batch,
+                        index_rate_batch,
                         rms_mix_rate_batch,
-                        protect,
+                        protect_batch,
+                        cleanup_mode_batch,
+                        cleanup_strength_batch,
                     ],
                     outputs=[],
                 )
@@ -1460,6 +1538,8 @@ def inference_tab():
             formant_qfrency,
             formant_timbre,
             sid,
+            cleanup_mode,
+            cleanup_strength,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -1492,6 +1572,8 @@ def inference_tab():
             formant_qfrency_batch,
             formant_timbre_batch,
             sid_batch,
+            cleanup_mode_batch,
+            cleanup_strength_batch,
         ],
         outputs=[vc_output3],
     ).then(

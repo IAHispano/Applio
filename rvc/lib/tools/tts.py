@@ -85,6 +85,10 @@ def run_tts_cli():
     parser.add_argument("--proposed-pitch", action="store_true", default=False)
     parser.add_argument("--proposed-pitch-threshold", type=float, default=155.0)
 
+    parser.add_argument(
+        "--cleanup-mode", choices=("off", "light", "speech"), default="off"
+    )
+    parser.add_argument("--cleanup-strength", type=float, default=12)
     args = parser.parse_args()
 
     text = args.tts_text
@@ -133,8 +137,15 @@ def run_tts_cli():
             f0_autotune_strength=args.f0_autotune_strength,
             proposed_pitch=args.proposed_pitch,
             proposed_pitch_threshold=args.proposed_pitch_threshold,
+            cleanup_mode=args.cleanup_mode,
+            cleanup_strength=args.cleanup_strength,
+            cleanup_stage="output",
         )
         print(f"RVC conversion completed at '{args.output_rvc_path}'")
+    elif args.cleanup_mode != "off":
+        from rvc.lib.tools.audio_cleanup import cleanup_file
+
+        cleanup_file(args.output_tts_path, args.cleanup_mode, args.cleanup_strength)
 
 
 if __name__ == "__main__":
