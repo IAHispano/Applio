@@ -16,14 +16,15 @@ from rvc.realtime.audio import list_audio_device, resolve_sample_rate
 from rvc.realtime.core import AUDIO_SAMPLE_RATE
 
 from assets.i18n.i18n import I18nAuto
+from assets.app_shell import step_card
 
 i18n = I18nAuto()
 
 
 def progress_str(remaining, total):
     pct = max(0, min(100, int((total - remaining) / total * 100))) if total > 0 else 0
-    filled = "█" * (pct // 10)
-    empty = "░" * (10 - pct // 10)
+    filled = "â–ˆ" * (pct // 10)
+    empty = "â–‘" * (10 - pct // 10)
     return f"[{filled}{empty}] {pct}%"
 
 
@@ -994,320 +995,223 @@ def realtime_tab():
     # Load saved settings
 
     with gr.Blocks() as ui:
-        with gr.Row():
-            start_button = gr.Button(i18n("Start"), variant="primary")
-            stop_button = gr.Button(i18n("Stop"), interactive=False, visible=False)
-        latency_info = gr.Label(
-            label=i18n("Status"),
-            value=i18n("Realtime not started."),
-            elem_id="realtime-status-info",
-        )
-        terms_checkbox = gr.Checkbox(
-            label=i18n("I agree to the terms of use"),
-            info=i18n(
-                "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your realtime."
-            ),
-            value=saved_settings.get("terms_accepted", False),
-            interactive=True,
-        )
-
-        with gr.Tabs():
-            with gr.TabItem(i18n("Audio Settings")):
-                with gr.Row():
-                    refresh_devices_button = gr.Button(i18n("Refresh Audio Devices"))
-                with gr.Row():
-                    with gr.Accordion(i18n("Input Device"), open=True):
-                        with gr.Column():
-                            input_audio_device = gr.Dropdown(
-                                label=i18n("Input Device"),
-                                info=i18n(
-                                    "Select the microphone or audio interface you will be speaking into."
-                                ),
-                                choices=input_devices,
-                                value=get_safe_dropdown_value(
-                                    saved_settings[
-                                        (
-                                            "client_input_device"
-                                            if client_mode
-                                            else "input_device"
-                                        )
-                                    ],
-                                    input_devices,
-                                ),
-                                interactive=True,
-                            )
-                            input_audio_gain = gr.Slider(
-                                minimum=0,
-                                maximum=200,
-                                value=saved_settings.get("input_audio_gain", 100),
-                                label=i18n("Input Gain (%)"),
-                                info=i18n(
-                                    "Adjusts the input volume before processing. Prevents clipping or boosts a quiet mic."
-                                ),
-                                interactive=True,
-                            )
-                            input_asio_channels = gr.Slider(
-                                minimum=0,
-                                maximum=16,
-                                value=0,
-                                step=1,
-                                label=i18n("Input ASIO Channel"),
-                                interactive=True,
-                                visible=saved_settings["asio_enabled"],
-                            )
-                    with gr.Accordion("Output Device", open=True):
-                        with gr.Column():
-                            output_audio_device = gr.Dropdown(
-                                label=i18n("Output Device"),
-                                info=i18n(
-                                    "Select the device where the final converted voice will be sent (e.g., a virtual cable)."
-                                ),
-                                choices=output_devices,
-                                value=get_safe_dropdown_value(
-                                    saved_settings[
-                                        (
-                                            "client_output_device"
-                                            if client_mode
-                                            else "output_device"
-                                        )
-                                    ],
-                                    output_devices,
-                                ),
-                                interactive=True,
-                            )
-                            output_audio_gain = gr.Slider(
-                                minimum=0,
-                                maximum=200,
-                                value=saved_settings.get("output_audio_gain", 100),
-                                label=i18n("Output Gain (%)"),
-                                info=i18n(
-                                    "Adjusts the final volume of the converted voice after processing."
-                                ),
-                                interactive=True,
-                            )
-                            output_asio_channels = gr.Slider(
-                                minimum=0,
-                                maximum=16,
-                                value=0,
-                                step=1,
-                                label=i18n("Output ASIO Channel"),
-                                interactive=True,
-                                visible=saved_settings["asio_enabled"],
-                            )
-                            asio_output_stereo = gr.Checkbox(
-                                label=i18n("Stereo"),
-                                value=True,
-                                interactive=True,
-                                visible=saved_settings["asio_enabled"],
-                            )
-                with gr.Accordion(i18n("Monitor Device (Optional)"), open=False):
+        with step_card(1, "Audio Devices", i18n, description="Choose input, output and optional monitor devices for live voice."):
+            with gr.Row():
+                refresh_devices_button = gr.Button(i18n("Refresh Audio Devices"))
+            with gr.Row():
+                with gr.Accordion(i18n("Input Device"), open=True):
                     with gr.Column():
-                        use_monitor_device = gr.Checkbox(
-                            label=i18n("Use Monitor Device"),
-                            value=saved_settings.get("use_monitor_device", False),
+                        input_audio_device = gr.Dropdown(
+                            label=i18n("Input Device"),
+                            info=i18n(
+                                "Select the microphone or audio interface you will be speaking into."
+                            ),
+                            choices=input_devices,
+                            value=get_safe_dropdown_value(
+                                saved_settings[
+                                    (
+                                        "client_input_device"
+                                        if client_mode
+                                        else "input_device"
+                                    )
+                                ],
+                                input_devices,
+                            ),
                             interactive=True,
                         )
-                        monitor_output_device = gr.Dropdown(
-                            label=i18n("Monitor Device"),
+                        input_audio_gain = gr.Slider(
+                            minimum=0,
+                            maximum=200,
+                            value=saved_settings.get("input_audio_gain", 100),
+                            label=i18n("Input Gain (%)"),
                             info=i18n(
-                                "Select the device for monitoring your voice (e.g., your headphones)."
+                                "Adjusts the input volume before processing. Prevents clipping or boosts a quiet mic."
+                            ),
+                            interactive=True,
+                        )
+                        input_asio_channels = gr.Slider(
+                            minimum=0,
+                            maximum=16,
+                            value=0,
+                            step=1,
+                            label=i18n("Input ASIO Channel"),
+                            interactive=True,
+                            visible=saved_settings["asio_enabled"],
+                        )
+                with gr.Accordion("Output Device", open=True):
+                    with gr.Column():
+                        output_audio_device = gr.Dropdown(
+                            label=i18n("Output Device"),
+                            info=i18n(
+                                "Select the device where the final converted voice will be sent (e.g., a virtual cable)."
                             ),
                             choices=output_devices,
                             value=get_safe_dropdown_value(
                                 saved_settings[
                                     (
-                                        "client_monitor_device"
+                                        "client_output_device"
                                         if client_mode
-                                        else "monitor_device"
+                                        else "output_device"
                                     )
                                 ],
                                 output_devices,
                             ),
                             interactive=True,
                         )
-                        monitor_audio_gain = gr.Slider(
+                        output_audio_gain = gr.Slider(
                             minimum=0,
                             maximum=200,
-                            value=saved_settings.get("monitor_audio_gain", 100),
-                            label=i18n("Monitor Gain (%)"),
+                            value=saved_settings.get("output_audio_gain", 100),
+                            label=i18n("Output Gain (%)"),
                             info=i18n(
-                                "Adjusts the volume of the monitor feed, independent of the main output."
+                                "Adjusts the final volume of the converted voice after processing."
                             ),
                             interactive=True,
                         )
-                        monitor_asio_channels = gr.Slider(
+                        output_asio_channels = gr.Slider(
                             minimum=0,
                             maximum=16,
                             value=0,
                             step=1,
-                            label=i18n("Monitor ASIO Channel"),
+                            label=i18n("Output ASIO Channel"),
                             interactive=True,
                             visible=saved_settings["asio_enabled"],
                         )
-                with gr.Accordion(i18n("Record Audio (Optional)"), open=False):
-                    with gr.Column():
-                        record_audio_path = gr.Textbox(
-                            label=i18n("Output Path"),
-                            placeholder=i18n("Enter output path"),
-                            info=i18n(
-                                "The path where the output audio will be saved, by default in assets/audios/output.wav"
-                            ),
-                            value=os.path.join(
-                                now_dir, "assets", "audios", "output.wav"
-                            ),
+                        asio_output_stereo = gr.Checkbox(
+                            label=i18n("Stereo"),
+                            value=True,
                             interactive=True,
+                            visible=saved_settings["asio_enabled"],
                         )
-                    export_format = gr.Radio(
-                        label=i18n("Export Format"),
-                        info=i18n("Select the format to export the audio."),
-                        choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
-                        value="WAV",
-                        interactive=True,
-                    )
-                    record_audio = gr.Button(i18n("Start"))
-                    record_output = gr.Audio(label=i18n("Export Audio"))
-                with gr.Row():
-                    exclusive_mode = gr.Checkbox(
-                        label=i18n("Exclusive Mode"),
-                        info=i18n(
-                            "For WASAPI (Windows), gives the app exclusive control for potentially lower latency."
-                            if not client_mode
-                            else "Gives the app exclusive control for potentially lower latency."
-                        ),
-                        value=False,
-                        interactive=True,
-                        visible=client_mode,  # This is quite bad because it's prone to errors when used locally.
-                    )
-                    vad_enabled = gr.Checkbox(
-                        label=i18n("Enable VAD"),
-                        info=i18n(
-                            "Enables Voice Activity Detection to only process audio when you are speaking, saving CPU."
-                        ),
-                        value=saved_settings.get("vad_enabled", True),
-                        interactive=True,
-                    )
-
-            with gr.TabItem(i18n("Model Settings")):
-                gr.Markdown(value=i18n("## Model Selection"))
-                with gr.Row():
-                    model_choices = (
-                        sorted(names, key=extract_model_and_epoch) if names else []
-                    )
-                    model_file = gr.Dropdown(
-                        label=i18n("Voice Model"),
-                        choices=path_choices(model_choices),
-                        interactive=True,
-                        value=get_safe_dropdown_value(
-                            saved_settings["model_file"], model_choices, default_weight
-                        ),
-                        allow_custom_value=True,
-                    )
-                    index_choices = sorted(get_files("index"))
-                    index_file = gr.Dropdown(
-                        label=i18n("Index File"),
-                        choices=path_choices(index_choices),
-                        value=get_safe_index_value(
-                            saved_settings["index_file"],
-                            index_choices,
-                            match_index(default_weight) if default_weight else None,
-                        ),
-                        interactive=True,
-                        allow_custom_value=True,
-                    )
-
-                with gr.Row():
-                    unload_button = gr.Button(i18n("Unload Voice"))
-                    refresh_button = gr.Button(i18n("Refresh models and indexes"))
+            with gr.Accordion(i18n("Monitor Device (Optional)"), open=False):
                 with gr.Column():
-                    gr.Markdown(value=i18n("## Advanced Settings"))
-                    autotune = gr.Checkbox(
-                        label=i18n("Autotune"),
-                        info=i18n(
-                            "Apply a soft autotune to your inferences, recommended for singing conversions."
-                        ),
-                        visible=True,
-                        value=False,
+                    use_monitor_device = gr.Checkbox(
+                        label=i18n("Use Monitor Device"),
+                        value=saved_settings.get("use_monitor_device", False),
                         interactive=True,
                     )
-                    autotune_strength = gr.Slider(
+                    monitor_output_device = gr.Dropdown(
+                        label=i18n("Monitor Device"),
+                        info=i18n(
+                            "Select the device for monitoring your voice (e.g., your headphones)."
+                        ),
+                        choices=output_devices,
+                        value=get_safe_dropdown_value(
+                            saved_settings[
+                                (
+                                    "client_monitor_device"
+                                    if client_mode
+                                    else "monitor_device"
+                                )
+                            ],
+                            output_devices,
+                        ),
+                        interactive=True,
+                    )
+                    monitor_audio_gain = gr.Slider(
                         minimum=0,
-                        maximum=1,
-                        label=i18n("Autotune Strength"),
+                        maximum=200,
+                        value=saved_settings.get("monitor_audio_gain", 100),
+                        label=i18n("Monitor Gain (%)"),
                         info=i18n(
-                            "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
+                            "Adjusts the volume of the monitor feed, independent of the main output."
                         ),
-                        visible=False,
-                        value=1,
                         interactive=True,
                     )
-                    proposed_pitch = gr.Checkbox(
-                        label=i18n("Proposed Pitch"),
-                        info=i18n(
-                            "Adjust the input audio pitch to match the voice model range."
-                        ),
-                        visible=True,
-                        value=False,
-                        interactive=True,
-                    )
-                    proposed_pitch_threshold = gr.Slider(
-                        minimum=50.0,
-                        maximum=1200.0,
-                        label=i18n("Proposed Pitch Threshold"),
-                        info=i18n(
-                            "Male voice models typically use 155.0 and female voice models typically use 255.0."
-                        ),
-                        visible=False,
-                        value=155.0,
-                        interactive=True,
-                    )
-                    formant_shifting = gr.Checkbox(
-                        label=i18n("Formant Shifting"),
-                        info=i18n(
-                            "Enable formant shifting. Used for male to female and vice-versa convertions."
-                        ),
-                        visible=True,
-                        value=False,
-                        interactive=True,
-                    )
-                    formant_qfrency = gr.Slider(
+                    monitor_asio_channels = gr.Slider(
                         minimum=0,
                         maximum=16,
-                        step=0.1,
-                        label=i18n("Quefrency for formant shifting"),
-                        info=i18n("Modifies formants width and spectral envelope."),
-                        visible=False,
-                        value=1.0,
-                        interactive=True,
-                    )
-                    formant_timbre = gr.Slider(
-                        minimum=0,
-                        maximum=16,
-                        step=0.1,
-                        label=i18n("Timbre for formant shifting"),
-                        info=i18n("Adjusts vocal tract length / timbre brightness."),
-                        visible=False,
-                        value=1.0,
-                        interactive=True,
-                    )
-                    sid = gr.Dropdown(
-                        label=i18n("Speaker ID"),
-                        choices=(
-                            get_speakers_id(default_weight) if default_weight else [0]
-                        ),
                         value=0,
-                        interactive=True,
-                    )
-                    pitch = gr.Slider(
-                        minimum=-24,
-                        maximum=24,
                         step=1,
-                        label=i18n("Pitch"),
+                        label=i18n("Monitor ASIO Channel"),
+                        interactive=True,
+                        visible=saved_settings["asio_enabled"],
+                    )
+            with gr.Accordion(i18n("Record Audio (Optional)"), open=False):
+                with gr.Column():
+                    record_audio_path = gr.Textbox(
+                        label=i18n("Output Path"),
+                        placeholder=i18n("Enter output path"),
                         info=i18n(
-                            "Set the pitch of the audio, the higher the value, the higher the pitch."
+                            "The path where the output audio will be saved, by default in assets/audios/output.wav"
                         ),
-                        value=saved_settings.get("pitch", 0),
+                        value=os.path.join(
+                            now_dir, "assets", "audios", "output.wav"
+                        ),
                         interactive=True,
                     )
+                export_format = gr.Radio(
+                    label=i18n("Export Format"),
+                    info=i18n("Select the format to export the audio."),
+                    choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
+                    value="WAV",
+                    interactive=True,
+                )
+                record_audio = gr.Button(i18n("Start"))
+                record_output = gr.Audio(label=i18n("Export Audio"))
+            with gr.Row():
+                exclusive_mode = gr.Checkbox(
+                    label=i18n("Exclusive Mode"),
+                    info=i18n(
+                        "For WASAPI (Windows), gives the app exclusive control for potentially lower latency."
+                        if not client_mode
+                        else "Gives the app exclusive control for potentially lower latency."
+                    ),
+                    value=False,
+                    interactive=True,
+                    visible=client_mode,  # This is quite bad because it's prone to errors when used locally.
+                )
+                vad_enabled = gr.Checkbox(
+                    label=i18n("Enable VAD"),
+                    info=i18n(
+                        "Enables Voice Activity Detection to only process audio when you are speaking, saving CPU."
+                    ),
+                    value=saved_settings.get("vad_enabled", True),
+                    interactive=True,
+                )
+        with step_card(2, "Voice Model", i18n, description="Select the voice model and index used for realtime conversion."):
+            with gr.Row():
+                model_choices = (
+                    sorted(names, key=extract_model_and_epoch) if names else []
+                )
+                model_file = gr.Dropdown(
+                    label=i18n("Voice Model"),
+                    choices=path_choices(model_choices),
+                    interactive=True,
+                    value=get_safe_dropdown_value(
+                        saved_settings["model_file"], model_choices, default_weight
+                    ),
+                    allow_custom_value=True,
+                )
+                index_choices = sorted(get_files("index"))
+                index_file = gr.Dropdown(
+                    label=i18n("Index File"),
+                    choices=path_choices(index_choices),
+                    value=get_safe_index_value(
+                        saved_settings["index_file"],
+                        index_choices,
+                        match_index(default_weight) if default_weight else None,
+                    ),
+                    interactive=True,
+                    allow_custom_value=True,
+                )
+            with gr.Row():
+                unload_button = gr.Button(i18n("Unload Voice"))
+                refresh_button = gr.Button(i18n("Refresh models and indexes"))
+        with step_card(3, "Conversion Parameters", i18n, description="Tune pitch, voice matching and pitch algorithms."):
+            pitch = gr.Slider(
+                minimum=-24,
+                maximum=24,
+                step=1,
+                label=i18n("Pitch"),
+                info=i18n(
+                    "Set the pitch of the audio, the higher the value, the higher the pitch."
+                ),
+                value=saved_settings.get("pitch", 0),
+                interactive=True,
+            )
+            with gr.Accordion(i18n("Advanced Settings"), open=False):
+                with gr.Accordion(i18n("Voice Matching"), open=True):
                     index_rate = gr.Slider(
                         minimum=0,
                         maximum=1,
@@ -1336,6 +1240,15 @@ def realtime_tab():
                         info=i18n(
                             "Safeguard distinct consonants and breathing sounds to prevent electro-acoustic tearing and other artifacts. Pulling the parameter to its maximum value of 0.5 offers comprehensive protection. However, reducing this value might decrease the extent of protection while potentially mitigating the indexing effect."
                         ),
+                        interactive=True,
+                    )
+                with gr.Accordion(i18n("Models & Algorithms"), open=False):
+                    sid = gr.Dropdown(
+                        label=i18n("Speaker ID"),
+                        choices=(
+                            get_speakers_id(default_weight) if default_weight else [0]
+                        ),
+                        value=0,
                         interactive=True,
                     )
                     f0_method = gr.Radio(
@@ -1391,52 +1304,142 @@ def realtime_tab():
                             move_files_button = gr.Button(
                                 i18n("Move files to custom embedder folder")
                             )
-
-            with gr.TabItem(i18n("Performance Settings")):
-                chunk_size = gr.Slider(
-                    minimum=2.7,
-                    maximum=2730.7,
-                    value=saved_settings.get("chunk_size", 250),
-                    step=1,
-                    label=i18n("Chunk Size (ms)"),
-                    info=i18n(
-                        "Audio buffer size in milliseconds. Lower values may reduce latency but increase CPU load."
-                    ),
-                    interactive=True,
-                )
-                cross_fade_overlap_size = gr.Slider(
-                    minimum=0.05,
-                    maximum=0.2,
-                    value=saved_settings.get("cross_fade_overlap_size", 0.05),
-                    step=0.01,
-                    label=i18n("Crossfade Overlap Size (s)"),
-                    info=i18n(
-                        "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency."
-                    ),
-                    interactive=True,
-                )
-                extra_convert_size = gr.Slider(
-                    minimum=0.1,
-                    maximum=5,
-                    value=saved_settings.get("extra_convert_size", 2.5),
-                    step=0.1,
-                    label=i18n("Extra Conversion Size (s)"),
-                    info=i18n(
-                        "Amount of extra audio processed to provide context to the model. Improves conversion quality at the cost of higher CPU usage."
-                    ),
-                    interactive=True,
-                )
-                silent_threshold = gr.Slider(
-                    minimum=-90,
-                    maximum=-60,
-                    value=saved_settings.get("silent_threshold", -60),
-                    step=1,
-                    label=i18n("Silence Threshold (dB)"),
-                    info=i18n(
-                        "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise."
-                    ),
-                    interactive=True,
-                )
+                with gr.Accordion(i18n("Advanced Pitch & Tuning"), open=False):
+                    autotune = gr.Checkbox(
+                        label=i18n("Autotune"),
+                        info=i18n(
+                            "Apply a soft autotune to your inferences, recommended for singing conversions."
+                        ),
+                        visible=True,
+                        value=False,
+                        interactive=True,
+                    )
+                    autotune_strength = gr.Slider(
+                        minimum=0,
+                        maximum=1,
+                        label=i18n("Autotune Strength"),
+                        info=i18n(
+                            "Set the autotune strength - the more you increase it the more it will snap to the chromatic grid."
+                        ),
+                        visible=False,
+                        value=1,
+                        interactive=True,
+                    )
+                    proposed_pitch = gr.Checkbox(
+                        label=i18n("Proposed Pitch"),
+                        info=i18n(
+                            "Adjust the input audio pitch to match the voice model range."
+                        ),
+                        visible=True,
+                        value=False,
+                        interactive=True,
+                    )
+                    proposed_pitch_threshold = gr.Slider(
+                        minimum=50.0,
+                        maximum=1200.0,
+                        label=i18n("Proposed Pitch Threshold"),
+                        info=i18n(
+                            "Male voice models typically use 155.0 and female voice models typically use 255.0."
+                        ),
+                        visible=False,
+                        value=155.0,
+                        interactive=True,
+                    )
+                with gr.Accordion(i18n("Formant Shifting"), open=False):
+                    formant_shifting = gr.Checkbox(
+                        label=i18n("Formant Shifting"),
+                        info=i18n(
+                            "Enable formant shifting. Used for male to female and vice-versa convertions."
+                        ),
+                        visible=True,
+                        value=False,
+                        interactive=True,
+                    )
+                    formant_qfrency = gr.Slider(
+                        minimum=0,
+                        maximum=16,
+                        step=0.1,
+                        label=i18n("Quefrency for formant shifting"),
+                        info=i18n("Modifies formants width and spectral envelope."),
+                        visible=False,
+                        value=1.0,
+                        interactive=True,
+                    )
+                    formant_timbre = gr.Slider(
+                        minimum=0,
+                        maximum=16,
+                        step=0.1,
+                        label=i18n("Timbre for formant shifting"),
+                        info=i18n("Adjusts vocal tract length / timbre brightness."),
+                        visible=False,
+                        value=1.0,
+                        interactive=True,
+                    )
+        with step_card(4, "Performance Settings", i18n, description="Balance latency, CPU usage and silence detection."):
+            with gr.Accordion(i18n("Advanced Settings"), open=False):
+                with gr.Accordion(i18n("Buffer & Latency"), open=True):
+                    chunk_size = gr.Slider(
+                        minimum=2.7,
+                        maximum=2730.7,
+                        value=saved_settings.get("chunk_size", 250),
+                        step=1,
+                        label=i18n("Chunk Size (ms)"),
+                        info=i18n(
+                            "Audio buffer size in milliseconds. Lower values may reduce latency but increase CPU load."
+                        ),
+                        interactive=True,
+                    )
+                    cross_fade_overlap_size = gr.Slider(
+                        minimum=0.05,
+                        maximum=0.2,
+                        value=saved_settings.get("cross_fade_overlap_size", 0.05),
+                        step=0.01,
+                        label=i18n("Crossfade Overlap Size (s)"),
+                        info=i18n(
+                            "Duration of the fade between audio chunks to prevent clicks. Higher values create smoother transitions but may increase latency."
+                        ),
+                        interactive=True,
+                    )
+                with gr.Accordion(i18n("Context & Detection"), open=False):
+                    extra_convert_size = gr.Slider(
+                        minimum=0.1,
+                        maximum=5,
+                        value=saved_settings.get("extra_convert_size", 2.5),
+                        step=0.1,
+                        label=i18n("Extra Conversion Size (s)"),
+                        info=i18n(
+                            "Amount of extra audio processed to provide context to the model. Improves conversion quality at the cost of higher CPU usage."
+                        ),
+                        interactive=True,
+                    )
+                    silent_threshold = gr.Slider(
+                        minimum=-90,
+                        maximum=-60,
+                        value=saved_settings.get("silent_threshold", -60),
+                        step=1,
+                        label=i18n("Silence Threshold (dB)"),
+                        info=i18n(
+                            "Volume level below which audio is treated as silence and not processed. Helps to save CPU resources and reduce background noise."
+                        ),
+                        interactive=True,
+                    )
+        with step_card(5, "Start Realtime", i18n, description="Agree to the terms and start or stop the live session."):
+            terms_checkbox = gr.Checkbox(
+                label=i18n("I agree to the terms of use"),
+                info=i18n(
+                    "Please ensure compliance with the terms and conditions detailed in [this document](https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md) before proceeding with your realtime."
+                ),
+                value=saved_settings.get("terms_accepted", False),
+                interactive=True,
+            )
+            with gr.Row():
+                start_button = gr.Button(i18n("Start"), variant="primary")
+                stop_button = gr.Button(i18n("Stop"), interactive=False, visible=False)
+            latency_info = gr.Label(
+                label=i18n("Status"),
+                value=i18n("Realtime not started."),
+                elem_id="realtime-status-info",
+            )
 
         json_audio_hidden = gr.JSON(visible=False)
         json_button_hidden = gr.JSON(visible=False)

@@ -7,6 +7,7 @@ from multiprocessing import cpu_count
 import gradio as gr
 
 from assets.i18n.i18n import I18nAuto
+from assets.app_shell import step_card
 from core import (
     run_extract_script,
     run_index_script,
@@ -365,7 +366,7 @@ def train_tab():
         return result
 
     # Model settings section
-    with gr.Accordion(i18n("Model Settings")):
+    with step_card(1, "Model Settings", i18n, description="Name your model and choose sample rate, architecture and hardware."):
         with gr.Row():
             with gr.Column():
                 model_name = gr.Dropdown(
@@ -428,7 +429,7 @@ def train_tab():
                         info=i18n(
                             "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-)."
                         ),
-                        placeholder=i18n("0 to ∞ separated by -"),
+                        placeholder=i18n("0 to âˆž separated by -"),
                         value=str(get_number_of_gpus()),
                         interactive=True,
                     )
@@ -439,7 +440,7 @@ def train_tab():
                         interactive=False,
                     )
     # Preprocess section
-    with gr.Accordion(i18n("Preprocess")):
+    with step_card(2, "Prepare Dataset", i18n, description="Point to your dataset, clean it and preprocess audio slices."):
         dataset_path = gr.Dropdown(
             label=i18n("Dataset Path"),
             info=i18n("Path to the dataset folder."),
@@ -532,7 +533,7 @@ def train_tab():
         )
 
         with gr.Row():
-            preprocess_button = gr.Button(i18n("Preprocess Dataset"))
+            preprocess_button = gr.Button(i18n("Preprocess Dataset"), variant="primary")
             preprocess_button.click(
                 fn=_preprocess_with_toast,
                 inputs=[
@@ -550,7 +551,7 @@ def train_tab():
             )
 
     # Extract section
-    with gr.Accordion(i18n("Extract")):
+    with step_card(3, "Extract Features", i18n, description="Extract pitch and embeddings used for training."):
         with gr.Row():
             f0_method = gr.Radio(
                 label=i18n("Pitch extraction algorithm"),
@@ -624,7 +625,7 @@ def train_tab():
             max_lines=8,
             interactive=False,
         )
-        extract_button = gr.Button(i18n("Extract Features"))
+        extract_button = gr.Button(i18n("Extract Features"), variant="primary")
         extract_button.click(
             fn=_extract_with_toast,
             inputs=[
@@ -641,7 +642,7 @@ def train_tab():
         )
 
     # Training section
-    with gr.Accordion(i18n("Training")):
+    with step_card(4, "Train Model", i18n, description="Configure epochs and batch size, then start training."):
         with gr.Row():
             batch_size = gr.Slider(
                 1,
@@ -808,7 +809,7 @@ def train_tab():
         )
 
         with gr.Row():
-            train_button = gr.Button(i18n("Start Training"))
+            train_button = gr.Button(i18n("Start Training"), variant="primary")
 
             stop_train_button = gr.Button(i18n("Stop Training"), visible=False)
             stop_train_button.click(
@@ -825,7 +826,7 @@ def train_tab():
             )
 
     # Export Model section
-    with gr.Accordion(i18n("Export Model"), open=False):
+    with step_card(5, "Export Model", i18n, description="Select trained files to export or upload."):
         if os.getenv("COLAB_RELEASE_TAG"):
             gr.Markdown(
                 i18n(

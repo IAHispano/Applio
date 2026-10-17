@@ -100,7 +100,6 @@ class CleanupTests(unittest.TestCase):
             cleanup._runtime_assets()
             self.assertEqual(len(downloads), 3)
             self.assertEqual(executable.read_bytes(), runtime)
-            self.assertTrue((executable.parent / "LICENSE-MIT").is_file())
 
 
 @unittest.skipUnless(

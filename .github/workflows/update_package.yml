@@ -1,0 +1,42 @@
+name: Publish Windows Update Package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing stable GitHub release tag
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: windows-update-${{ inputs.tag || github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.event.release.tag_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify tag matches package version
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: |
+          python -c "import json,os; v=json.load(open('assets/config_template.json'))['version']; assert os.environ['RELEASE_TAG'].removeprefix('v') == v, 'Tag/config version mismatch'"
+      - name: Build code-only update and bootstrap
+        run: python assets/build_update.py --output dist-update
+      - name: Attach update files to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" dist-update/* --clobber

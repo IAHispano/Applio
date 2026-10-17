@@ -2,7 +2,7 @@
 
 DeepFilterNet runs as a pinned native CPU executable, keeping its NumPy <2
 Python dependency out of the engine environment. Assets are cached on first
-use; no speech is uploaded. See audio-cleanup.md for provenance and limits.
+use; no speech is uploaded.
 """
 
 from contextlib import contextmanager

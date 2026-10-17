@@ -9,7 +9,7 @@
     "override": false,
     "selected_lang": "en_US"
   },
-  "version": "3.6.6",
+  "version": "3.7.0",
   "model_author": "None",
   "precision": "fp16",
   "rmvpe_high_register": {

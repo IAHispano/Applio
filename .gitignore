@@ -24,4 +24,5 @@ rvc/models
 env
 venv
 .venv
+.applio-update/
 

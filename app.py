@@ -7,6 +7,14 @@ import sys
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+from assets.updater import ensure_not_updating
+
+ensure_not_updating(now_dir)
+
+from rvc.lib.terminal import start_capture
+
+start_capture()
+
 # TODO: This path is regenerated all over the place in Applio
 # should probably be in a static module for everything to reference
 CONFIG_PATH = os.path.join(now_dir, "assets", "config.json")
@@ -99,7 +107,7 @@ GRADIO_6 = int(gr.__version__.split(".")[0]) >= 6
 import rvc.lib.zluda
 
 # Import Tabs
-from assets.app_links import ECOSYSTEM, brand_header, guide_markdown, resource_markdown
+from assets.app_shell import build_workspace, create_theme, stylesheet
 from tabs.inference.inference import inference_tab
 from tabs.train.train import train_tab
 from tabs.extra.extra import extra_tab
@@ -111,6 +119,7 @@ from tabs.plugins.plugins import plugins_tab
 from tabs.settings.settings import settings_tab
 from tabs.realtime.realtime import realtime_tab
 from tabs.tensorboard.tensorboard import tensorboard_tab
+from tabs.terminal.terminal import TERMINAL_CSS, terminal_tab
 
 # Run prerequisites
 from core import run_prerequisites_script
@@ -142,7 +151,12 @@ installation_checker.check_installation()
 # Load theme
 import assets.themes.loadThemes as loadThemes
 
-my_applio = loadThemes.load_theme() or "ParityError/Interstellar"
+my_applio = (
+    create_theme()
+    if loadThemes.read_current_theme() in ("Applio", "ParityError/Interstellar")
+    else loadThemes.load_theme() or create_theme()
+)
+app_css = stylesheet() + TERMINAL_CSS
 
 # Define Gradio interface
 with gr.Blocks(
@@ -150,7 +164,7 @@ with gr.Blocks(
     **(
         {
             "theme": my_applio,
-            "css": "footer{display:none !important}",
+            "css": app_css,
             "js": (
                 (
                     "() => {\n"
@@ -167,62 +181,23 @@ with gr.Blocks(
         else {}
     ),
 ) as Applio:
-    gr.HTML(brand_header())
-    gr.Markdown(
-        i18n(
-            ECOSYSTEM["brand"]["description"]
-        )
+    build_workspace(
+        {
+            "inference": inference_tab,
+            "realtime": realtime_tab,
+            "tts": tts_tab,
+            "models": download_tab,
+            "training": train_tab,
+            "blender": voice_blender_tab,
+            "audio": extra_tab,
+            "plugins": plugins_tab,
+            "settings": settings_tab,
+            "report": report_tab,
+            "tensorboard": tensorboard_tab,
+            "terminal": terminal_tab,
+        },
+        i18n,
     )
-    gr.Markdown(resource_markdown(i18n))
-    with gr.Tab(i18n("Inference")):
-        gr.Markdown(guide_markdown("inference", i18n))
-        inference_tab()
-
-    with gr.Tab(i18n("Training")):
-        gr.Markdown(guide_markdown("training", i18n))
-        train_tab()
-
-    with gr.Tab(i18n("TTS")):
-        gr.Markdown(guide_markdown("tts", i18n))
-        tts_tab()
-
-    with gr.Tab(i18n("Voice Blender")):
-        gr.Markdown(guide_markdown("blender", i18n))
-        voice_blender_tab()
-
-    with gr.Tab(i18n("Realtime")):
-        gr.Markdown(guide_markdown("realtime", i18n))
-        realtime_tab()
-
-    with gr.Tab(i18n("Plugins")):
-        gr.Markdown(guide_markdown("plugins", i18n))
-        plugins_tab()
-
-    with gr.Tab(i18n("Download")):
-        gr.Markdown(guide_markdown("models", i18n))
-        download_tab()
-
-    with gr.Tab(i18n("Report a Bug")):
-        gr.Markdown(guide_markdown("report", i18n))
-        report_tab()
-
-    with gr.Tab(i18n("Extra")):
-        gr.Markdown(guide_markdown("audio", i18n))
-        extra_tab()
-
-    with gr.Tab(i18n("Settings")):
-        gr.Markdown(guide_markdown("storage", i18n))
-        settings_tab()
-
-    with gr.Tab(i18n("TensorBoard")):
-        gr.Markdown(guide_markdown("tensorboard", i18n))
-        tensorboard_tab()
-
-    gr.Markdown("""
-    <div style="text-align: center; font-size: 0.9em; text-color: a3a3a3;">
-    By using Applio, you agree to comply with ethical and legal standards, respect intellectual property and privacy rights, avoid harmful or prohibited uses, and accept full responsibility for any outcomes, while Applio disclaims liability and reserves the right to amend these terms.
-    </div>
-    """)
 
 
 def launch_gradio(server_name: str, server_port: int) -> None:
@@ -237,7 +212,7 @@ def launch_gradio(server_name: str, server_port: int) -> None:
         **(
             {
                 "theme": my_applio,
-                "css": "footer{display:none !important}",
+                "css": app_css,
                 "js": (
                     pathlib.Path(
                         os.path.join(now_dir, "tabs", "realtime", "main.js")
