@@ -93,6 +93,9 @@ def cache_folder(experiment_dir, config, entries):
         "seed": flow_config["seed"],
         "clips": hashlib.sha256(clips.encode()).hexdigest(),
     }
+    # Only when set, so caches from before it keep their folder
+    if flow_config["model"].get("contrast_band_edges"):
+        recipe["contrast"] = flow_config["model"]["contrast_band_edges"]
     fingerprint = hashlib.sha256(json.dumps(recipe, sort_keys=True).encode())
     return os.path.join(experiment_dir, "flow_cache", fingerprint.hexdigest()[:16])
 

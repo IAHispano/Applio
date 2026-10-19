@@ -29,23 +29,16 @@ pretraineds_refinegan_list = [
         ],
     ),
 ]
-# Rectified Flow: the pretrained flow and the vocoders that render its mel,
-# Pupu-Vocoder and BigVGAN v2
+# Rectified Flow: the pretrained flow and its ChouwaGAN vocoder, both in the
+# same folder
 rectified_flow_base = (
     "https://huggingface.co/shiromiya/ShiroRVC-Resources/resolve/main"
 )
 rectified_flow_url = f"{rectified_flow_base}/rectified_flow_pretrains/"
-rectified_flow_vocoder_url = f"{rectified_flow_base}/vocoders/"
+rectified_vocoder_url = f"{rectified_flow_base}/vocoders/"
 rectified_flow_list = [
     (rectified_flow_url, ["pretrain_flow_contentvec.pth"]),
-    (
-        rectified_flow_vocoder_url,
-        [
-            "nsf_pupu_small_44.1k_hop512_128bin_vocoder.pth",
-            "nsf_pupu_large_ft_44.1k_hop512_128bin_vocoder.pth",
-            "nsf_bigvgan_v2_44.1k_hop512_128bin_vocoder.pth",
-        ],
-    ),
+    (rectified_vocoder_url, ["chouwagan_44.1k_hop512_128bin_vocoder.pth"]),
 ]
 models_list = [("predictors/", ["rmvpe.pt", "fcpe.pt"])]
 embedders_list = [("embedders/contentvec/", ["pytorch_model.bin", "config.json"])]
@@ -60,7 +53,7 @@ folder_mapping_list = {
     "predictors/": "rvc/models/predictors/",
     "formant/": "rvc/models/formant/",
     rectified_flow_url: "rvc/models/pretraineds/rectified-flow/",
-    rectified_flow_vocoder_url: "rvc/models/pretraineds/rectified-flow/",
+    rectified_vocoder_url: "rvc/models/pretraineds/rectified-flow/",
 }
 
 

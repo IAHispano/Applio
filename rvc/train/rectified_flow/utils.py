@@ -33,7 +33,22 @@ class EpochRecorder:
         return f"time={current_time} | training_speed={elapsed_time_str}"
 
 
-def learning_rate(base, step, warmup, total, final_ratio, anchor=(0, 0.0)):
+def schedule_progress(step, warmup, total, anchor=(0, 0.0)):
+    """
+    Returns how far the step is along the schedule after the warmup, from 0 to 1.
+
+    Args:
+        step (int): The current step.
+        warmup (int): Number of warmup steps.
+        total (int): Number of steps of the whole training.
+        anchor (tuple, optional): Step and progress a resumed training continues from, so a changed total stretches what is left of it.
+    """
+    start, done = max(anchor[0], warmup), anchor[1]
+    left = min(1.0, max(0.0, (step - start) / max(1, total - start)))
+    return done + (1.0 - done) * left
+
+
+def learning_rate(base, step, warmup, progress, final_ratio):
     """
     Linear warmup, then cosine decay to `final_ratio` of the base learning rate.
 
@@ -41,17 +56,29 @@ def learning_rate(base, step, warmup, total, final_ratio, anchor=(0, 0.0)):
         base (float): The base learning rate.
         step (int): The current step.
         warmup (int): Number of warmup steps.
-        total (int): Number of steps of the whole training.
+        progress (float): Progress along the schedule, from `schedule_progress`.
         final_ratio (float): Share of the base learning rate reached at the end.
-        anchor (tuple, optional): Step and progress along the cosine a resumed training continues from, so a changed total stretches what is left of it.
     """
     if warmup and step < warmup:
         return base * (step + 1) / warmup
-    start, done = max(anchor[0], warmup), anchor[1]
-    left = min(1.0, max(0.0, (step - start) / max(1, total - start)))
-    progress = done + (1.0 - done) * left
     cosine = 0.5 * (1.0 + math.cos(math.pi * progress))
     return base * (final_ratio + (1.0 - final_ratio) * cosine)
+
+
+def mean_flow_alpha(progress, share, alpha_min):
+    """
+    The curriculum of α-Flow: 1, the flow matching target, eased down to
+    `alpha_min` by `share` of the schedule, `alpha_min` throughout for 0.
+
+    Args:
+        progress (float): Progress along the schedule, from `schedule_progress`.
+        share (float): Share of the schedule the curriculum takes.
+        alpha_min (float): The alpha the curriculum ends at.
+    """
+    if share <= 0:
+        return alpha_min
+    eased = min(1.0, progress / share)
+    return alpha_min + (1.0 - alpha_min) * 0.5 * (1.0 + math.cos(math.pi * eased))
 
 
 def cosine_progress(scale, final_ratio):
@@ -112,7 +139,7 @@ def freeze_voice(net_flow):
         module.requires_grad_(False)
 
 
-def load_pretrain(pretrain, embedder_name):
+def load_pretrain(pretrain, embedder_name, sample_rate):
     """
     Loads the weights of a pretrained flow model and the time scale it was
     trained with, which is None when the file does not record its config.
@@ -120,6 +147,7 @@ def load_pretrain(pretrain, embedder_name):
     Args:
         pretrain (str): Path to the pre-trained flow model.
         embedder_name (str): Name of the embedder the dataset was extracted with.
+        sample_rate (int): Sampling rate of the dataset.
     """
     try:
         pretrain_ckpt = torch.load(pretrain, map_location="cpu", weights_only=True)
@@ -138,6 +166,15 @@ def load_pretrain(pretrain, embedder_name):
     ) != embedder_name.replace("-", "_"):
         print(
             f"The pretrain model was trained on {pretrain_embedder} features and this dataset was extracted with {embedder_name}."
+        )
+        sys.exit(1)
+
+    pretrain_sample_rate = (
+        pretrain_ckpt.get("config", {}).get("data", {}).get("sample_rate")
+    )
+    if pretrain_sample_rate and int(pretrain_sample_rate) != int(sample_rate):
+        print(
+            f"The pretrain model was trained at {pretrain_sample_rate} Hz and this dataset is at {sample_rate} Hz."
         )
         sys.exit(1)
 

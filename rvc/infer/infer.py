@@ -31,6 +31,7 @@ from rvc.infer.flow_pipeline import FlowPipeline, FlowSynthesizer
 from rvc.lib.utils import load_audio_infer, load_embedding
 from rvc.lib.tools.split_audio import process_audio, merge_audio
 from rvc.lib.algorithm.synthesizers import Synthesizer
+from rvc.lib.algorithm.loudness import integrated_loudness, limit_peaks, loudness_gain
 from rvc.configs.config import Config
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -296,6 +297,9 @@ class VoiceConverter:
                 16000,
                 **kwargs,
             )
+        input_loudness = None
+        if audio_full is not None:
+            input_loudness = integrated_loudness(audio_full, flow_sr)
         audio_max = np.abs(audio).max() / 0.95
 
         # The loudness input of a Rectified Flow model is absolute, so a quiet
@@ -373,6 +377,18 @@ class VoiceConverter:
             )
         else:
             audio_opt = converted_chunks[0]
+
+        # A Rectified Flow model follows the dynamics of the input, so its
+        # output can sit far under that of an RVC model: it is brought to the
+        # loudness of the input, never under the minimum, and its peaks limited
+        if input_loudness is not None:
+            if kwargs.get("flow_normalize_loudness", False):
+                target = max(input_loudness, kwargs.get("flow_min_loudness", -18.0))
+                audio_opt = audio_opt * loudness_gain(audio_opt, self.tgt_sr, target)
+            if kwargs.get("flow_peak_limiter", False):
+                audio_opt = limit_peaks(audio_opt.astype(np.float32), self.tgt_sr)
+            else:
+                audio_opt = audio_opt / max(1.0, float(np.abs(audio_opt).max()) / 0.99)
 
         if clean_audio:
             cleaned_audio = self.remove_audio_noise(

@@ -40,9 +40,11 @@
     "finetune_time_stretch_scale": 0.2,
     "bucket_batches": true,
     "bucket_max_frames": 800,
-    "aux_mel_weight": 0.2,
     "mean_flow_ratio": 0.25,
     "mean_flow_guidance_max": 4.0,
+    "mean_flow_alpha_min": 0.05,
+    "mean_flow_alpha_share": 0.5,
+    "finetune_mean_flow_alpha_share": 0.0,
     "mel_bin_norm": true,
     "eval_interval": 1000,
     "holdout_clips": 32,
@@ -59,11 +61,9 @@
       "key_shift": true,
       "speed": true,
       "tension": true,
+      "contrast_band_edges": [2000, 4000, 6000, 8000, 10000, 12000, 14000, 17000],
       "dual_timestep": true,
-      "backbone_args": {"channels": 1024, "layers": 6, "expansion": 1, "kernel_size": 31, "adaln": true},
-      "aux_decoder": {"channels": 512, "layers": 6, "dropout": 0.1, "speaker": true},
-      "t_start": 0.4,
-      "aux_grad": 0.1
+      "backbone_args": {"channels": 1024, "layers": 6, "expansion": 1, "kernel_size": 31, "adaln": true}
     }
   }
 }

@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 
 os.environ["USE_LIBUV"] = "0" if sys.platform == "win32" else "1"
@@ -43,7 +44,9 @@ from rvc.train.rectified_flow.utils import (
     get_mel_stats,
     learning_rate,
     load_pretrain,
+    mean_flow_alpha,
     nonfinite_names,
+    schedule_progress,
 )
 from rvc.train.rectified_flow.validation import evaluate, generate_validation
 from rvc.train.utils import (
@@ -125,11 +128,29 @@ except FileNotFoundError:
     )
     sys.exit(1)
 
+# At 44100 Hz, which only Rectified Flow trains at, the config of the experiment
+# is the flow's. At the other sampling rates it is RVC's, and Rectified Flow
+# keeps its own beside it
 if "flow" not in config:
-    print(
-        "This model was not extracted for Rectified Flow. Preprocess and extract it again with the 44100 sampling rate."
+    sample_rate = int(config["data"]["sample_rate"])
+    flow_config_path = os.path.join(
+        current_dir, "rvc", "configs", "rectified_flow", f"{sample_rate}.json"
     )
-    sys.exit(1)
+    flow_config_save_path = os.path.join(experiment_dir, "rectified_flow.json")
+    if not os.path.exists(flow_config_save_path):
+        if not os.path.exists(flow_config_path):
+            print(
+                f"Rectified Flow does not support the {sample_rate} sampling rate. Preprocess and extract the model again with 32000, 40000, 44100 or 48000."
+            )
+            sys.exit(1)
+        shutil.copyfile(flow_config_path, flow_config_save_path)
+    with open(flow_config_save_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+    if int(config["data"]["sample_rate"]) != sample_rate:
+        print(
+            f"{flow_config_save_path} is for {config['data']['sample_rate']} Hz, but the model was extracted at {sample_rate} Hz. Delete it to train at {sample_rate} Hz."
+        )
+        sys.exit(1)
 
 # Without the feature cache the dataset is augmented as it is read
 if not feature_cache:
@@ -525,15 +546,17 @@ def run(
     if finetune:
         if rank == 0:
             print(f"Loaded pretrained (Flow) '{pretrain}'")
-        pretrain_weights, time_scale = load_pretrain(pretrain, embedder_name)
+        pretrain_weights, time_scale = load_pretrain(
+            pretrain, embedder_name, config["data"]["sample_rate"]
+        )
         # The time scale is not in the weights, the model has to be built with it
         if time_scale is not None:
             backbone_args["time_scale"] = time_scale
     else:
         if rank == 0 and checkpoint is None:
             print("No pretrained (Flow), training from scratch.")
-        # The Mean Flow target is the network's own derivative in time, which
-        # diverged through the time scale of 1000
+        # The Mean Flow target is the network a short step on in time, which
+        # the time scale of 1000 makes rough; with the derivative it diverged
         if use_mean_flow and "time_scale" not in backbone_args:
             backbone_args["time_scale"] = 1.0
             if rank == 0:
@@ -548,6 +571,9 @@ def run(
 
     # Initialize model and optimizer
     net_flow = build_flow(config, n_speakers).to(device)
+    if net_flow.contrast_band_edges and not flow_config.get("mel_bin_norm", False):
+        # Under the single normalisation of the mel the contrast rows barely move
+        raise ValueError("A flow with contrast_band_edges needs mel_bin_norm.")
 
     speaker_dropout = flow_config["speaker_dropout"]
     tension_dropout = 0.0
@@ -592,6 +618,7 @@ def run(
     # Load checkpoint if available
     epoch_str = 1
     global_step = 0
+    saved_progress = None
     resumed = checkpoint is not None
     if checkpoint is not None:
         print("Starting training...")
@@ -603,6 +630,7 @@ def run(
         epoch_str = checkpoint["iteration"] + 1
         global_step = checkpoint["step"]
         skipped_steps = checkpoint.get("skipped_steps", 0)
+        saved_progress = checkpoint.get("progress")
         print(
             f"Loaded checkpoint '{checkpoint_path}' (epoch {checkpoint['iteration']})"
         )
@@ -632,14 +660,15 @@ def run(
         )
         ema.reseed(net_flow)
 
-    # A resumed training continues the cosine from where its learning rate was
+    # A resumed training continues the schedule from where it was saved, or
+    # for a checkpoint from before that from where its learning rate was,
+    # which a flat learning rate or another base no longer tells
     lr_anchor = (0, 0.0)
     if resumed and global_step >= warmup:
-        scale = optim.param_groups[0]["lr"] / base_lr
-        lr_anchor = (
-            global_step,
-            cosine_progress(scale, flow_config["lr_final_ratio"]),
-        )
+        if saved_progress is None:
+            scale = optim.param_groups[0]["lr"] / base_lr
+            saved_progress = cosine_progress(scale, flow_config["lr_final_ratio"])
+        lr_anchor = (global_step, float(saved_progress))
 
     # Wrap model with DDP for multi-gpu processing
     net_flow_ddp = net_flow
@@ -687,7 +716,14 @@ def run(
         "mean_guidance": (
             flow_config.get("mean_flow_guidance_max", 4.0) if use_mean_flow else 1.0
         ),
-        "aux_weight": flow_config["aux_mel_weight"],
+        "alpha_min": flow_config.get("mean_flow_alpha_min", 0.05),
+        # The pretrain of a fine-tune has been through the curriculum already
+        "alpha_share": (
+            flow_config.get("finetune_mean_flow_alpha_share", 0.0)
+            if finetune
+            else flow_config.get("mean_flow_alpha_share", 0.0)
+        ),
+        "aux_weight": flow_config.get("aux_mel_weight", 0.0),
         "eval_interval": flow_config["eval_interval"],
         "n_speakers": n_speakers,
         "embedder_name": embedder_name,
@@ -796,16 +832,19 @@ def train_and_evaluate(
             mel = mel.to(device, non_blocking=True)
             mel = normalize_mel(mel, data_config) * inputs.mask
 
+            progress = schedule_progress(
+                global_step, hps["warmup"], hps["total_steps"], hps["lr_anchor"]
+            )
             lr = learning_rate(
                 hps["base_lr"],
                 global_step,
                 hps["warmup"],
-                hps["total_steps"],
+                progress,
                 hps["final_ratio"],
-                hps["lr_anchor"],
             )
             for param_group in optim.param_groups:
                 param_group["lr"] = lr
+            alpha = mean_flow_alpha(progress, hps["alpha_share"], hps["alpha_min"])
 
             with torch.amp.autocast(
                 device_type="cuda", enabled=use_amp, dtype=train_dtype
@@ -818,6 +857,7 @@ def train_and_evaluate(
                     tension_dropout=hps["tension_dropout"],
                     mean_ratio=hps["mean_ratio"],
                     mean_guidance=hps["mean_guidance"],
+                    alpha=alpha,
                 )
                 loss_all = loss_flow
                 if loss_mean is not None:
@@ -865,8 +905,7 @@ def train_and_evaluate(
                     scalar_dict["loss/aux_mel"] = loss_aux
                 if loss_mean is not None:
                     scalar_dict["loss/mean_flow"] = loss_mean.mean
-                    # over 1 the Mean Flow target is feeding on itself
-                    scalar_dict["loss/mean_flow_bootstrap"] = loss_mean.bootstrap_ratio
+                    scalar_dict["mean_flow/alpha"] = alpha
                 summarize(
                     writer=writer,
                     global_step=global_step,
@@ -940,6 +979,12 @@ def train_and_evaluate(
                     "iteration": epoch,
                     "step": global_step,
                     "skipped_steps": skipped_steps,
+                    "progress": schedule_progress(
+                        global_step,
+                        hps["warmup"],
+                        hps["total_steps"],
+                        hps["lr_anchor"],
+                    ),
                     "optimizer": optim.state_dict(),
                     "scaler": scaler.state_dict(),
                 },
@@ -961,7 +1006,9 @@ def train_and_evaluate(
             )
             # Final model
             model_add.append(
-                os.path.join(experiment_dir, f"{model_name}_{epoch}e_{global_step}s.pth")
+                os.path.join(
+                    experiment_dir, f"{model_name}_{epoch}e_{global_step}s.pth"
+                )
             )
 
         for m in model_add:

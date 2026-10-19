@@ -63,7 +63,9 @@ class FlowSynthesizer(torch.nn.Module):
         self.flow = build_flow(cpt["config"], cpt["speaker_count"])
         self.flow.load_state_dict(match_inputs(cpt["model"], self.flow))
 
-        self.default_vocoder = find_vocoder(cpt.get("vocoder", ""))
+        self.default_vocoder = find_vocoder(
+            cpt.get("vocoder", ""), self.data["sample_rate"]
+        )
         if not self.default_vocoder:
             raise FileNotFoundError(
                 "No vocoder found for the Rectified Flow model. Place one in rvc/models/pretraineds/rectified-flow."
@@ -297,7 +299,7 @@ class FlowPipeline(Pipeline):
             guidance_until: Flow time the guidances apply until, 1 for the whole sampling.
         """
         frames = inputs.content.shape[1]
-        noise = torch.randn(1, flow.n_mels, frames, device=self.device)
+        noise = torch.randn(1, flow.channels, frames, device=self.device)
         mel = torch.zeros_like(noise)
         weight = torch.zeros(1, 1, frames, device=self.device)
         start = 0
@@ -517,7 +519,5 @@ class FlowPipeline(Pipeline):
                 self.tgt_sr,
                 volume_envelope,
             )
-        audio_max = np.abs(audio_opt).max() / 0.99
-        if audio_max > 1:
-            audio_opt /= audio_max
+        # The peaks are limited on the whole output, after the chunks are merged
         return audio_opt

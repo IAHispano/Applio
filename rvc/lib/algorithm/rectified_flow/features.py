@@ -27,8 +27,7 @@ APERIODICITY_FLOOR_DB = -30.0
 
 class LogMel(nn.Module):
     """
-    Log mel spectrogram at one frame per hop, the same mel as Pupu-Vocoder
-    takes.
+    Log mel spectrogram at one frame per hop, the mel ChouwaGAN renders.
 
     Args:
         sample_rate (int): Sampling rate of the audio.

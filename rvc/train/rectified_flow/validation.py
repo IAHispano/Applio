@@ -98,11 +98,16 @@ def generate_validation(
             if log_real_mel:
                 mels["_real_mel"] = real_mel
 
+            # The bins of the mel only, without the band contrast after them
+            bins = int(data_config["n_mels"])
             image_dict[f"slice/{name}mel_org"] = plot_spectrogram_to_numpy(
-                ref_mel[0].data.cpu().numpy()
+                ref_mel[0, :bins].data.cpu().numpy()
             )
             image_dict[f"slice/{name}mel_gen"] = plot_spectrogram_to_numpy(
-                denormalize_mel(mels[""], data_config)[0].float().data.cpu().numpy()
+                denormalize_mel(mels[""][:, :bins], data_config)[0]
+                .float()
+                .data.cpu()
+                .numpy()
             )
             if vocoder is not None:
                 for kind, mel in mels.items():

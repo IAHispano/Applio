@@ -10,6 +10,12 @@ current_directory = os.getcwd()
 
 def generate_config(sample_rate: int, model_path: str):
     config_path = os.path.join("rvc", "configs", f"{sample_rate}.json")
+    # 44100 Hz, which only Rectified Flow trains at, has no config of RVC's,
+    # so the flow's is the config of the experiment
+    if not os.path.exists(config_path):
+        config_path = os.path.join(
+            "rvc", "configs", "rectified_flow", f"{sample_rate}.json"
+        )
     config_save_path = os.path.join(model_path, "config.json")
     if not os.path.exists(config_save_path):
         shutil.copyfile(config_path, config_save_path)

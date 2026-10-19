@@ -11,7 +11,6 @@ import torch
 
 from assets.i18n.i18n import I18nAuto
 from core import run_batch_infer_script, run_infer_script
-from rvc.lib.tools.pretrained_selector import rectified_flow_selector
 from rvc.lib.utils import format_title
 from tabs.settings.sections.filter import get_filter_trigger, load_config_filter
 from tabs.settings.sections.restart import stop_infer
@@ -541,10 +540,10 @@ def rectified_flow_settings():
         vocoder = gr.Dropdown(
             label=i18n("Vocoder"),
             info=i18n(
-                "Vocoder that renders the audio of a Rectified Flow model."
+                "Vocoder that renders the audio of a Rectified Flow model. Empty uses the one the model was trained with, else the default one of its sampling rate."
             ),
             choices=[(os.path.basename(path), path) for path in vocoders],
-            value=rectified_flow_selector("")[1] or None,
+            value=None,
             interactive=True,
         )
         with gr.Row():
@@ -579,7 +578,7 @@ def rectified_flow_settings():
             sampler = gr.Radio(
                 label=i18n("Sampler"),
                 info=i18n(
-                    "Euler takes one pass of the model per step. Heun takes two and is more accurate at the same cost from 8 steps on. Mean takes one or two steps and needs a model trained with Mean Flow."
+                    "Euler takes one pass of the model per step. Heun takes two and is more accurate at the same cost from 8 steps on. Mean takes any number of steps, 1 or 2 being where it pays, and needs a model trained with Mean Flow."
                 ),
                 choices=["euler", "heun", "mean"],
                 value="euler",
@@ -628,6 +627,32 @@ def rectified_flow_settings():
                 value=1.0,
                 interactive=True,
             )
+        with gr.Row():
+            normalize_loudness = gr.Checkbox(
+                label=i18n("Normalize Loudness"),
+                info=i18n(
+                    "Bring the output to the loudness of the input, or to the minimum when the input is quieter. The model follows the dynamics of the input, so without this it can come out much quieter than an RVC model."
+                ),
+                value=False,
+                interactive=True,
+            )
+            min_loudness = gr.Slider(
+                minimum=-40,
+                maximum=-6,
+                step=1,
+                label=i18n("Minimum Loudness"),
+                info=i18n("The quietest the output is brought to, in LUFS."),
+                value=-18,
+                interactive=True,
+            )
+            peak_limiter = gr.Checkbox(
+                label=i18n("Peak Limiter"),
+                info=i18n(
+                    "Limit the peaks of the output under -1 dBFS. Off, the whole output is only turned down when it would clip."
+                ),
+                value=False,
+                interactive=True,
+            )
     return [
         vocoder,
         steps,
@@ -638,6 +663,9 @@ def rectified_flow_settings():
         guidance_until,
         formant_shift,
         tension_strength,
+        normalize_loudness,
+        min_loudness,
+        peak_limiter,
     ]
 
 

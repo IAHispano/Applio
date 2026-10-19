@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import torch.utils.data
 
+from rvc.lib.algorithm.generators.chouwagan import CONTRAST_SCALE, BandContrast
 from rvc.lib.algorithm.rectified_flow import Conditioning
 from rvc.lib.algorithm.rectified_flow.features import (
     FEATURE_RATE,
@@ -93,7 +94,7 @@ class FlowItem(NamedTuple):
     One training crop, without the batch dimension.
 
     Args:
-        mel (torch.Tensor): Mel spectrogram, shape (n_mels, frames).
+        mel (torch.Tensor): Mel spectrogram, with the band contrast after it for a flow that has it, shape (channels, frames).
         content (torch.Tensor): Content features, shape (frames, channels).
         f0 (torch.Tensor): Pitch in Hz, shape (frames,).
         energy (torch.Tensor): Loudness curve, shape (frames,).
@@ -135,6 +136,10 @@ class FlowAudioLoader(torch.utils.data.Dataset):
         flow = config["flow"]
         self.segment_frames = int(flow["segment_frames"])
         self.use_tension = bool(flow["model"].get("tension", False))
+        edges = flow["model"].get("contrast_band_edges")
+        self.contrast = (
+            BandContrast(self.sample_rate, self.hop_length, edges) if edges else None
+        )
         self.key_shift_range = float(flow.get("key_shift_range", 0.0))
         self.key_shift_prob = float(flow.get("key_shift_prob", 0.0))
         self.stretch_range = tuple(flow.get("time_stretch_range", (1.0, 1.0)))
@@ -184,6 +189,22 @@ class FlowAudioLoader(torch.utils.data.Dataset):
             curves.append(torch.zeros(frames))
         return curves
 
+    def add_contrast(self, mel, audio, f0, hop, scale=1.0):
+        """
+        Append the band contrast the flow learns to the mel, for a flow that has it.
+
+        Args:
+            mel (torch.Tensor): Mel spectrogram, shape (n_mels, frames).
+            audio (torch.Tensor): Audio, shape (samples,).
+            f0 (torch.Tensor): Pitch of the audio itself at the mel frames, shape (frames,).
+            hop (int): Hop size the clip is read with.
+            scale (float, optional): Factor the mel was shifted by. Defaults to 1.0.
+        """
+        if self.contrast is None:
+            return mel
+        contrast = self.contrast(audio.unsqueeze(0), f0.unsqueeze(0), hop, scale)
+        return torch.cat((mel, contrast[0] / CONTRAST_SCALE), dim=0)
+
     def get_source(self, index):
         """
         Get what `get_features` takes of a clip: its audio, its pitch and
@@ -218,10 +239,11 @@ class FlowAudioLoader(torch.utils.data.Dataset):
         )
         audio = audio[: frames * hop]
         content = to_mel_rate(content, frames, self.sample_rate, hop)
-        f0 = f0_to_mel_rate(pitchf, frames, self.sample_rate, hop)
-        f0 = f0 * 2.0 ** (key_shift / 12.0)
+        own_f0 = f0_to_mel_rate(pitchf, frames, self.sample_rate, hop)
+        f0 = own_f0 * 2.0 ** (key_shift / 12.0)
         with torch.no_grad():
             mel = self.mel(audio.unsqueeze(0), key_shift, hop)[0, :, :frames]
+        mel = self.add_contrast(mel, audio, own_f0, hop, 2.0 ** (key_shift / 12.0))
         energy, breathiness, strain = self.get_curves(audio, pitchf, frames, hop)
         return FlowItem(
             mel=mel,
@@ -357,6 +379,7 @@ class FlowAudioLoader(torch.utils.data.Dataset):
         f0 = f0_to_mel_rate(pitchf, frames, self.sample_rate, self.hop_length)
         with torch.no_grad():
             mel = self.mel(audio.unsqueeze(0))[:, :, :frames]
+        mel = self.add_contrast(mel[0], audio, f0, self.hop_length).unsqueeze(0)
         energy, breathiness, strain = self.get_curves(
             audio, pitchf, frames, self.hop_length
         )

@@ -43,7 +43,7 @@ class LYNXNet2Block(nn.Module):
             nn.init.zeros_(self.modulation.weight)
             nn.init.zeros_(self.modulation.bias)
 
-    def forward(self, x, mask, embedding=None, fused=True):
+    def forward(self, x, mask, embedding=None):
         y = self.norm(x)
         gate = None
         if self.modulation is not None:
@@ -51,7 +51,7 @@ class LYNXNet2Block(nn.Module):
             # Not `1 + scale`: BF16 rounds small modulations to nothing.
             y = y + y * scale + shift
         y = self.depthwise((y * mask).transpose(1, 2)).transpose(1, 2)
-        y = self.down(atan_glu(self.mid(atan_glu(self.up(y), fused)), fused))
+        y = self.down(atan_glu(self.mid(atan_glu(self.up(y)))))
         if gate is not None:
             y = y + gate * y
         return (x + y) * mask
@@ -165,9 +165,12 @@ class LYNXNet2Backbone(nn.Module):
         if self.voice is not None:
             embedding = time + self.voice(voice)[:, None, :]
         for layer in self.layers:
-            h = layer(h, frame_mask, embedding, fused=span is None)
-        h = self.norm(h)
-        return (self.output(h) * frame_mask).transpose(1, 2)
+            h = layer(h, frame_mask, embedding)
+        # Full precision out as well: the Mean Flow target weighs the network
+        # against itself a short step on, a difference near BF16's resolution.
+        with torch.autocast(x.device.type, enabled=False):
+            out = self.output(self.norm(h).to(self.output.weight.dtype))
+        return (out * frame_mask).transpose(1, 2)
 
 
 class AuxDecoder(nn.Module):

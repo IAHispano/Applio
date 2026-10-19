@@ -398,7 +398,7 @@ def train_tab():
                 vocoder = gr.Radio(
                     label=i18n("Vocoder"),
                     info=i18n(
-                        "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only.\n- **Rectified Flow**: Highest audio quality and fast training, 44100 Hz only."
+                        "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only.\n- **Rectified Flow**: Highest audio quality and fast training, at 32000, 40000, 44100 or 48000 Hz."
                     ),
                     choices=[
                         "HiFi-GAN",
@@ -758,9 +758,9 @@ def train_tab():
                     flow_mean_flow = gr.Checkbox(
                         label=i18n("Mean Flow"),
                         info=i18n(
-                            "Also trains the Rectified Flow model to predict the mean velocity of a step, which allows sampling in one or two steps. It cannot be changed once the training has started."
+                            "Also trains the Rectified Flow model to predict the mean velocity of a step, which allows sampling in any number of steps, one included. It cannot be changed once the training has started."
                         ),
-                        value=False,
+                        value=True,
                         interactive=True,
                         visible=False,
                     )
@@ -985,7 +985,7 @@ def train_tab():
                     }
                 elif rectified_flow:
                     sampling_rate_update = {
-                        "choices": ["44100"],
+                        "choices": ["32000", "40000", "44100", "48000"],
                         "__type__": "update",
                         "value": "44100",
                     }

@@ -121,6 +121,9 @@ def run_infer_script(
     flow_guidance_until: float = 1.0,
     flow_formant_shift: float = 0.0,
     flow_tension_strength: float = 1.0,
+    flow_normalize_loudness: bool = False,
+    flow_min_loudness: float = -18.0,
+    flow_peak_limiter: bool = False,
 ):
     kwargs = {
         "audio_input_path": input_path,
@@ -191,6 +194,9 @@ def run_infer_script(
         "flow_guidance_until": flow_guidance_until,
         "flow_formant_shift": flow_formant_shift,
         "flow_tension_strength": flow_tension_strength,
+        "flow_normalize_loudness": flow_normalize_loudness,
+        "flow_min_loudness": flow_min_loudness,
+        "flow_peak_limiter": flow_peak_limiter,
     }
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(**kwargs)
@@ -269,6 +275,9 @@ def run_batch_infer_script(
     flow_guidance_until: float = 1.0,
     flow_formant_shift: float = 0.0,
     flow_tension_strength: float = 1.0,
+    flow_normalize_loudness: bool = False,
+    flow_min_loudness: float = -18.0,
+    flow_peak_limiter: bool = False,
 ):
     kwargs = {
         "audio_input_paths": input_folder,
@@ -339,6 +348,9 @@ def run_batch_infer_script(
         "flow_guidance_until": flow_guidance_until,
         "flow_formant_shift": flow_formant_shift,
         "flow_tension_strength": flow_tension_strength,
+        "flow_normalize_loudness": flow_normalize_loudness,
+        "flow_min_loudness": flow_min_loudness,
+        "flow_peak_limiter": flow_peak_limiter,
     }
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio_batch(**kwargs)
@@ -591,7 +603,7 @@ def run_train_script(
     checkpointing: bool = False,
     shutdown_check: bool = False,
     flow_feature_cache: bool = True,
-    flow_mean_flow: bool = False,
+    flow_mean_flow: bool = True,
 ):
     if vocoder == "Rectified Flow":
         command = rectified_flow_train_command(
@@ -688,7 +700,7 @@ def rectified_flow_train_command(
     custom_pretrained: bool = False,
     flow_pretrained_path: str = None,
     feature_cache: bool = True,
-    mean_flow: bool = False,
+    mean_flow: bool = True,
 ):
     from rvc.lib.tools.pretrained_selector import rectified_flow_selector
 
@@ -701,8 +713,18 @@ def rectified_flow_train_command(
             embedder_model = json.load(f)["embedder_model"]
     except (FileNotFoundError, json.JSONDecodeError, KeyError):
         embedder_model = "contentvec"
+    # The sampling rate the model was extracted at
+    try:
+        with open(
+            os.path.join(logs_path, model_name, "config.json"),
+            "r",
+            encoding="utf-8",
+        ) as f:
+            sample_rate = int(json.load(f)["data"]["sample_rate"])
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        sample_rate = 44100
 
-    pf, vocoder_path = rectified_flow_selector(embedder_model)
+    pf, vocoder_path = rectified_flow_selector(embedder_model, sample_rate)
     if pretrained == True:
         if custom_pretrained == True:
             if not flow_pretrained_path:
@@ -712,7 +734,7 @@ def rectified_flow_train_command(
             pf = flow_pretrained_path
         elif not pf:
             print(
-                f"Pretrained (Flow) for the '{embedder_model}' embedder not found in rvc/models/pretraineds/rectified-flow, training from scratch."
+                f"Pretrained (Flow) for the '{embedder_model}' embedder at {sample_rate} Hz not found in rvc/models/pretraineds/rectified-flow, training from scratch."
             )
     else:
         pf = ""
@@ -1352,8 +1374,8 @@ def extract(**kwargs):
 )
 @click.option(
     "--flow-mean-flow/--no-flow-mean-flow",
-    default=False,
-    help="Rectified Flow: also train the mean velocity of a step (Mean Flow), for sampling in one or two steps. It cannot be changed once the training has started.",
+    default=True,
+    help="Rectified Flow: also train the mean velocity of a step (Mean Flow), for sampling in any number of steps, one included. It cannot be changed once the training has started.",
 )
 def train(**kwargs):
     """Train an RVC model."""
