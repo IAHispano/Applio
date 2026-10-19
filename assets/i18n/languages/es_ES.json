@@ -402,8 +402,6 @@
     "Speaker ID": "ID del Hablante",
     "Specifies the overall quantity of epochs for the model training process.": "Especifica la cantidad total de épocas para el proceso de entrenamiento del modelo.",
     "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-).": "Especifica el número de GPUs que deseas utilizar para la extracción introduciéndolas separadas por guiones (-).",
-    "Split Audio": "Dividir Audio",
-    "Split the audio into chunks for inference to obtain better results in some cases.": "Divide el audio en trozos para la inferencia para obtener mejores resultados en algunos casos.",
     "Start": "Iniciar",
     "Start Training": "Iniciar Entrenamiento",
     "Start recording...": "Empezando a grabar...",

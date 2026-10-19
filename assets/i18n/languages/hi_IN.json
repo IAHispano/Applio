@@ -396,8 +396,6 @@
     "Speaker ID": "स्पीकर आईडी",
     "Specifies the overall quantity of epochs for the model training process.": "मॉडल प्रशिक्षण प्रक्रिया के लिए एपॉक की कुल मात्रा निर्दिष्ट करता है।",
     "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-).": "निकालने के लिए आप जितने GPU का उपयोग करना चाहते हैं, उनकी संख्या हाइफ़न (-) से अलग करके दर्ज करें।",
-    "Split Audio": "ऑडियो विभाजित करें",
-    "Split the audio into chunks for inference to obtain better results in some cases.": "कुछ मामलों में बेहतर परिणाम प्राप्त करने के लिए इन्फेरेंस के लिए ऑडियो को चंक्स में विभाजित करें।",
     "Start": "शुरू करें",
     "Start Training": "प्रशिक्षण शुरू करें",
     "Start recording...": "रिकॉर्डिंग शुरू करें...",

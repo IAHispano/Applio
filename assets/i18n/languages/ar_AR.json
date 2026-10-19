@@ -396,8 +396,6 @@
     "Speaker ID": "معرف المتحدث",
     "Specifies the overall quantity of epochs for the model training process.": "يحدد الكمية الإجمالية للحقب لعملية تدريب النموذج.",
     "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-).": "حدد عدد وحدات معالجة الرسومات التي ترغب في استخدامها للاستخراج عن طريق إدخالها مفصولة بشرطات (-).",
-    "Split Audio": "تقسيم الصوت",
-    "Split the audio into chunks for inference to obtain better results in some cases.": "قسم الصوت إلى أجزاء للاستدلال للحصول على نتائج أفضل في بعض الحالات.",
     "Start": "ابدأ",
     "Start Training": "بدء التدريب",
     "Start recording...": "بدء التسجيل...",

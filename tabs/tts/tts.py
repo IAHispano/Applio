@@ -258,15 +258,6 @@ def tts_tab():
                             i18n("Move files to custom embedder folder")
                         )
             with gr.Accordion(i18n("Advanced Pitch & Tuning"), open=False):
-                split_audio = gr.Checkbox(
-                    label=i18n("Split Audio"),
-                    info=i18n(
-                        "Split the audio into chunks for inference to obtain better results in some cases."
-                    ),
-                    visible=True,
-                    value=False,
-                    interactive=True,
-                )
                 autotune = gr.Checkbox(
                     label=i18n("Autotune"),
                     info=i18n(
@@ -502,7 +493,6 @@ def tts_tab():
             output_rvc_path,
             model_file,
             index_file,
-            split_audio,
             autotune,
             autotune_strength,
             proposed_pitch,

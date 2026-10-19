@@ -396,8 +396,6 @@
     "Speaker ID": "ID Speaker",
     "Specifies the overall quantity of epochs for the model training process.": "Specifica la quantità totale di epoche per il processo di addestramento del modello.",
     "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-).": "Specifica il numero di GPU che desideri utilizzare per l'estrazione inserendole separate da trattini (-).",
-    "Split Audio": "Dividi Audio",
-    "Split the audio into chunks for inference to obtain better results in some cases.": "Dividi l'audio in blocchi (chunk) per l'inferenza al fine di ottenere risultati migliori in alcuni casi.",
     "Start": "Avvia",
     "Start Training": "Avvia Addestramento",
     "Start recording...": "Inizio registrazione...",

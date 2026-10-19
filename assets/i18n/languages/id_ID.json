@@ -396,8 +396,6 @@
     "Speaker ID": "ID Pembicara",
     "Specifies the overall quantity of epochs for the model training process.": "Menentukan jumlah total epoch untuk proses pelatihan model.",
     "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-).": "Tentukan jumlah GPU yang ingin Anda gunakan untuk ekstraksi dengan memasukkannya dipisahkan oleh tanda hubung (-).",
-    "Split Audio": "Pisahkan Audio",
-    "Split the audio into chunks for inference to obtain better results in some cases.": "Pisahkan audio menjadi beberapa potongan untuk inferensi guna mendapatkan hasil yang lebih baik dalam beberapa kasus.",
     "Start": "Mulai",
     "Start Training": "Mulai Pelatihan",
     "Start recording...": "Mulai merekam...",

@@ -79,7 +79,6 @@ def run_tts_cli():
     parser.add_argument("--embedder-model", default="contentvec")
     parser.add_argument("--embedder-model-custom", default=None)
     parser.add_argument("--sid", type=int, default=0)
-    parser.add_argument("--split-audio", action="store_true", default=False)
     parser.add_argument("--f0-autotune", action="store_true", default=False)
     parser.add_argument("--f0-autotune-strength", type=float, default=1.0)
     parser.add_argument("--proposed-pitch", action="store_true", default=False)
@@ -132,7 +131,6 @@ def run_tts_cli():
             embedder_model=args.embedder_model,
             embedder_model_custom=args.embedder_model_custom,
             sid=args.sid,
-            split_audio=args.split_audio,
             f0_autotune=args.f0_autotune,
             f0_autotune_strength=args.f0_autotune_strength,
             proposed_pitch=args.proposed_pitch,

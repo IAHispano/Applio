@@ -396,8 +396,6 @@
     "Speaker ID": "화자 ID",
     "Specifies the overall quantity of epochs for the model training process.": "모델 학습 과정의 총 에포크 양을 지정합니다.",
     "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-).": "추출에 사용할 GPU 수를 하이픈(-)으로 구분하여 입력하세요.",
-    "Split Audio": "오디오 분할",
-    "Split the audio into chunks for inference to obtain better results in some cases.": "추론 시 오디오를 청크로 분할하여 경우에 따라 더 나은 결과를 얻습니다.",
     "Start": "시작",
     "Start Training": "학습 시작",
     "Start recording...": "녹음 시작...",

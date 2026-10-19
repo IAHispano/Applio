@@ -396,8 +396,6 @@
     "Speaker ID": "说话人 ID",
     "Specifies the overall quantity of epochs for the model training process.": "指定模型训练过程的总 epoch 数量。",
     "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-).": "输入您希望用于提取的 GPU 编号，用连字符（-）分隔。",
-    "Split Audio": "分割音频",
-    "Split the audio into chunks for inference to obtain better results in some cases.": "将音频分割成块进行推理，以在某些情况下获得更好的结果。",
     "Start": "开始",
     "Start Training": "开始训练",
     "Start recording...": "开始录制...",

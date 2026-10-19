@@ -88,7 +88,6 @@ def map_params(params: dict, input_path: str, output_path: str) -> dict:
         "audio_output_path": output_path,
         "model_path": params.get("pthPath", ""),
         "index_path": params.get("indexPath", "") or "",
-        "split_audio": to_bool(params.get("splitAudio", False)),
         "f0_autotune": to_bool(params.get("f0Autotune", False)),
         "f0_autotune_strength": float(params.get("f0AutotuneStrength", 1.0)),
         "proposed_pitch": to_bool(params.get("proposedPitch", False)),

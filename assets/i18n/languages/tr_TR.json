@@ -396,8 +396,6 @@
     "Speaker ID": "Konuşmacı Kimliği",
     "Specifies the overall quantity of epochs for the model training process.": "Model eğitim süreci için toplam epok miktarını belirtir.",
     "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-).": "Çıkarma işlemi için kullanmak istediğiniz GPU sayısını aralarına tire (-) koyarak belirtin.",
-    "Split Audio": "Sesi Böl",
-    "Split the audio into chunks for inference to obtain better results in some cases.": "Bazı durumlarda daha iyi sonuçlar elde etmek için çıkarım işlemi için sesi parçalara ayırın.",
     "Start": "Başlat",
     "Start Training": "Eğitimi Başlat",
     "Start recording...": "Kayda başla...",

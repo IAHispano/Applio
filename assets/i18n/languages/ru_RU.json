@@ -396,8 +396,6 @@
     "Speaker ID": "ID диктора",
     "Specifies the overall quantity of epochs for the model training process.": "Определяет общее количество эпох для процесса обучения модели.",
     "Specify the number of GPUs you wish to utilize for extracting by entering them separated by hyphens (-).": "Укажите номера GPU, которые вы хотите использовать для извлечения, разделив их дефисами (-).",
-    "Split Audio": "Разделить аудио",
-    "Split the audio into chunks for inference to obtain better results in some cases.": "Разделение аудио на фрагменты для инференса может улучшить результаты в некоторых случаях.",
     "Start": "Старт",
     "Start Training": "Начать обучение",
     "Start recording...": "Начало записи...",

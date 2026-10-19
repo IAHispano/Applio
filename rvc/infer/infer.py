@@ -20,7 +20,6 @@ sys.path.append(now_dir)
 import rvc.lib.zluda  # sets MIOPEN_FIND_MODE on AMD; must land before the first conv
 from rvc.infer.pipeline import Pipeline as VC
 from rvc.lib.utils import load_audio_infer, load_embedding
-from rvc.lib.tools.split_audio import process_audio, merge_audio
 from rvc.lib.algorithm.synthesizers import Synthesizer
 from rvc.configs.config import inference_config
 
@@ -155,7 +154,6 @@ class VoiceConverter:
         volume_envelope: float = 1.0,
         protect: float = 0.5,
         hop_length: int = 128,
-        split_audio: bool = False,
         f0_autotune: bool = False,
         f0_autotune_strength: float = 1,
         embedder_model: str = "contentvec",
@@ -183,7 +181,6 @@ class VoiceConverter:
             audio_output_path (str): Path to the output audio file.
             model_path (str): Path to the voice conversion model.
             index_path (str): Path to the index file.
-            split_audio (bool): Whether to split the audio for processing.
             f0_autotune (bool): Whether to use F0 autotune.
             export_format (str): Format for exporting the audio.
             f0_file (str): Path to the F0 file.
@@ -228,43 +225,24 @@ class VoiceConverter:
         if self.tgt_sr != resample_sr >= 16000:
             self.tgt_sr = resample_sr
 
-        if split_audio:
-            chunks, intervals = process_audio(audio, 16000)
-            print(f"Audio split into {len(chunks)} chunks for processing.")
-        else:
-            chunks = []
-            chunks.append(audio)
-
-        converted_chunks = []
-        for c in chunks:
-            audio_opt = self.vc.pipeline(
-                model=self.hubert_model,
-                net_g=self.net_g,
-                sid=sid,
-                audio=c,
-                pitch=pitch,
-                f0_method=f0_method,
-                file_index=file_index,
-                index_rate=index_rate,
-                pitch_guidance=self.use_f0,
-                volume_envelope=volume_envelope,
-                version=self.version,
-                protect=protect,
-                f0_autotune=f0_autotune,
-                f0_autotune_strength=f0_autotune_strength,
-                proposed_pitch=proposed_pitch,
-                proposed_pitch_threshold=proposed_pitch_threshold,
-            )
-            converted_chunks.append(audio_opt)
-            if split_audio:
-                print(f"Converted audio chunk {len(converted_chunks)}")
-
-        if split_audio:
-            audio_opt = merge_audio(
-                chunks, converted_chunks, intervals, 16000, self.tgt_sr
-            )
-        else:
-            audio_opt = converted_chunks[0]
+        audio_opt = self.vc.pipeline(
+            model=self.hubert_model,
+            net_g=self.net_g,
+            sid=sid,
+            audio=audio,
+            pitch=pitch,
+            f0_method=f0_method,
+            file_index=file_index,
+            index_rate=index_rate,
+            pitch_guidance=self.use_f0,
+            volume_envelope=volume_envelope,
+            version=self.version,
+            protect=protect,
+            f0_autotune=f0_autotune,
+            f0_autotune_strength=f0_autotune_strength,
+            proposed_pitch=proposed_pitch,
+            proposed_pitch_threshold=proposed_pitch_threshold,
+        )
 
         if (
             kwargs.get("cleanup_mode", "off") != "off"
@@ -594,7 +572,6 @@ if __name__ == "__main__":
     parser.add_argument("--volume-envelope", type=float, default=1.0)
     parser.add_argument("--protect", type=float, default=0.5)
     parser.add_argument("--hop-length", type=int, default=128)
-    parser.add_argument("--split-audio", action="store_true", default=False)
     parser.add_argument("--f0-autotune", action="store_true", default=False)
     parser.add_argument("--f0-autotune-strength", type=float, default=1.0)
     parser.add_argument("--proposed-pitch", action="store_true", default=False)

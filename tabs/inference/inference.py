@@ -762,15 +762,6 @@ def inference_tab():
                                     i18n("Move files to custom embedder folder")
                                 )
                     with gr.Accordion(i18n("Advanced Pitch & Tuning"), open=False):
-                        split_audio = gr.Checkbox(
-                            label=i18n("Split Audio"),
-                            info=i18n(
-                                "Split the audio into chunks for inference to obtain better results in some cases."
-                            ),
-                            visible=True,
-                            value=False,
-                            interactive=True,
-                        )
                         autotune = gr.Checkbox(
                             label=i18n("Autotune"),
                             info=i18n(
@@ -1131,15 +1122,6 @@ def inference_tab():
                                     i18n("Move files to custom embedder folder")
                                 )
                     with gr.Accordion(i18n("Advanced Pitch & Tuning"), open=False):
-                        split_audio_batch = gr.Checkbox(
-                            label=i18n("Split Audio"),
-                            info=i18n(
-                                "Split the audio into chunks for inference to obtain better results in some cases."
-                            ),
-                            visible=True,
-                            value=False,
-                            interactive=True,
-                        )
                         autotune_batch = gr.Checkbox(
                             label=i18n("Autotune"),
                             info=i18n(
@@ -1526,7 +1508,6 @@ def inference_tab():
             output_path,
             model_file,
             index_file,
-            split_audio,
             autotune,
             autotune_strength,
             proposed_pitch,
@@ -1560,7 +1541,6 @@ def inference_tab():
             output_folder_batch,
             model_file,
             index_file,
-            split_audio_batch,
             autotune_batch,
             autotune_strength_batch,
             proposed_pitch_batch,
