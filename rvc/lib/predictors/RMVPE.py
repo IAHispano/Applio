@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+from rvc.lib.predictors.chunking import extract_pitch
 from librosa.filters import mel
 from typing import List
 
@@ -525,8 +526,12 @@ class RMVPE0Predictor:
         f0[f0 == 10] = 0
         return f0
 
-    @torch.inference_mode()
     def infer_from_audio(self, audio, thred=0.03):
+        """Extract bounded windows before allocating spectrograms or GPU tensors."""
+        return extract_pitch(audio, lambda window: self._infer_window(window, thred))
+
+    @torch.inference_mode()
+    def _infer_window(self, audio, thred=0.03):
         """
         Infers F0 from audio.
 

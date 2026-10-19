@@ -233,7 +233,9 @@ class Pipeline:
             "cpu" if self.device == "mps" and "crepe" in f0_method else self.device
         )
         x = x.astype(np.float32)
-        x /= np.quantile(np.abs(x), 0.999)
+        scale = np.quantile(np.abs(x), 0.999)
+        if scale > 0:
+            x /= scale
         if f0_method == "crepe":
             model = CREPE(
                 device=pitch_device, sample_rate=self.sample_rate, hop_size=self.window

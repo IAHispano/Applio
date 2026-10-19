@@ -16,6 +16,7 @@ SILENCE_PEAK = 1e-3
 
 
 def _to_mono(audio) -> np.ndarray:
+    """Convert to mono float audio, sharing already compatible input storage."""
     if torch.is_tensor(audio):
         audio = audio.detach().cpu().numpy()
     array = np.asarray(audio)
@@ -39,7 +40,7 @@ def _to_mono(audio) -> np.ndarray:
         full_scale = 2.0 ** (np.iinfo(dtype).bits - 1)
         offset = 0.0 if np.issubdtype(dtype, np.signedinteger) else full_scale
         array = (array - offset) / full_scale
-    signal = np.array(array, dtype=np.float32)
+    signal = np.asarray(array, dtype=np.float32)
     return signal
 
 

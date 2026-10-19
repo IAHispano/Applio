@@ -20,10 +20,11 @@ def extract_f0_curve(
     image_path: str = None,
     txt_path: str = None,
 ):
+    """Export a pitch plot and curve without decoding the input twice."""
     print("Extracting F0 Curve...")
     image_path = image_path or os.path.join(get_logs_dir(), "f0_plot.png")
     txt_path = txt_path or os.path.join(get_logs_dir(), "f0_curve.txt")
-    y, sr = librosa.load(audio_path, sr=None)
+    sr = librosa.get_samplerate(audio_path)
     hop_length = 160
 
     librosa.note_to_hz("C1")

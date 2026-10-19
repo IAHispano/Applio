@@ -2,6 +2,7 @@ import os
 import json
 import torch
 
+from rvc.lib.predictors.chunking import extract_pitch
 from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 from rvc.lib.predictors.Swift import SwiftPredictor
 import numpy as np
@@ -108,6 +109,17 @@ class RMVPE:
         return out
 
     def _half_speed_guide(self, x, n_target, thred):
+        """Assemble a bounded octave-down guide on the normal pitch frame clock."""
+        return extract_pitch(
+            x,
+            lambda window: self._half_speed_window(window, thred),
+            self.sample_rate,
+            self.hop_size,
+        )[:n_target]
+
+    def _half_speed_window(self, x, thred):
+        """Build the octave guide locally so resampling cannot double a full track."""
+        n_target = len(x) // self.hop_size + 1
         y = np.asarray(x, dtype=np.float32)
         y2 = librosa.resample(
             y,
@@ -135,10 +147,18 @@ class CREPE:
         self.hop_size = hop_size
 
     def get_f0(self, x, f0_min=50, f0_max=1100, p_len=None, model="full"):
-        import torchcrepe
+        """Extract CREPE with bounded audio and decoder memory, including on CPU."""
+        return extract_pitch(
+            x,
+            lambda window: self._infer_window(window, f0_min, f0_max, model),
+            self.sample_rate,
+            self.hop_size,
+        )
 
-        if p_len is None:
-            p_len = x.shape[0] // self.hop_size
+    @torch.inference_mode()
+    def _infer_window(self, x, f0_min, f0_max, model):
+        """Predict and smooth a contextual CREPE window without gradient tracking."""
+        import torchcrepe
 
         if not torch.is_tensor(x):
             x = torch.from_numpy(x)
@@ -184,9 +204,17 @@ class FCPE:
             )
 
     def get_f0(self, x, p_len=None, filter_radius=0.006):
-        if p_len is None:
-            p_len = x.shape[0] // self.hop_size
+        """Keep FCPE spectral features and attention bounded for long recordings."""
+        return extract_pitch(
+            x,
+            lambda window: self._infer_window(window, filter_radius),
+            self.sample_rate,
+            self.hop_size,
+        )
 
+    @torch.inference_mode()
+    def _infer_window(self, x, filter_radius):
+        """Infer one window and immediately move its contour back to CPU."""
         if not torch.is_tensor(x):
             x = torch.from_numpy(x)
 
