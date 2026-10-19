@@ -1,0 +1,374 @@
+body, .gradio-container {
+  --app-bg: #09090b;
+  --app-surface: #151517;
+  --app-panel: #121214;
+  --app-border: rgba(255, 255, 255, .09);
+  --app-text: #e7e5e4;
+  --app-muted: #a3a3a3;
+  --app-heading: #f5f5f5;
+  --body-background-fill: var(--app-bg);
+  --body-background-fill-dark: var(--app-bg);
+  --body-text-color: var(--app-text);
+  --body-text-color-subdued: var(--app-muted);
+  --background-fill-primary: var(--app-panel);
+  --background-fill-secondary: var(--app-surface);
+  --border-color-primary: var(--app-border);
+  --border-color-accent: rgba(255,255,255,.22);
+  --block-background-fill: var(--app-surface);
+  --block-border-color: var(--app-border);
+  --block-border-width: 1px;
+  --block-radius: 12px;
+  --block-label-background-fill: transparent;
+  --block-label-text-color: var(--app-text);
+  --block-label-border-width: 0px;
+  --block-label-radius: 0px;
+  --block-label-padding: 0px;
+  --block-info-text-color: var(--app-muted);
+  --block-title-text-color: var(--app-heading);
+  --block-title-background-fill: transparent;
+  --block-title-border-width: 0px;
+  --block-title-padding: 0px;
+  --block-title-radius: 0px;
+  --input-background-fill: #101012;
+  --input-background-fill-focus: #101012;
+  --input-border-color: var(--app-border);
+  --input-border-color-focus: rgba(255,255,255,.3);
+  --input-radius: 8px;
+  --input-placeholder-color: #77777e;
+  --input-text-size: 14px;
+  --body-text-size: 15px;
+  --block-label-text-size: 13px;
+  --block-info-text-size: 12px;
+  --button-large-text-size: 14px;
+  --button-small-text-size: 13px;
+  --form-gap-width: 12px;
+  --button-primary-background-fill: #f5f5f5;
+  --button-primary-background-fill-hover: #d4d4d8;
+  --button-primary-text-color: #09090b;
+  --button-primary-border-color: transparent;
+  --button-secondary-background-fill: rgba(255,255,255,.06);
+  --button-secondary-background-fill-hover: rgba(255,255,255,.1);
+  --button-secondary-text-color: #d4d4d4;
+  --button-secondary-border-color: rgba(255,255,255,.1);
+  --button-large-radius: 8px;
+  --button-small-radius: 8px;
+  --checkbox-background-color: #101012;
+  --checkbox-background-color-selected: #f5f5f5;
+  --checkbox-border-color: rgba(255,255,255,.2);
+  --checkbox-border-color-selected: #f5f5f5;
+  --checkbox-label-background-fill: #101012;
+  --checkbox-label-background-fill-selected: rgba(255,255,255,.1);
+  --checkbox-label-text-color-selected: #f5f5f5;
+  --slider-color: #f5f5f5;
+  --color-accent: #f5f5f5;
+  --link-text-color: #d4d4d8;
+  --link-text-color-hover: white;
+  --panel-background-fill: var(--app-panel);
+  --panel-border-color: var(--app-border);
+  --font: "Applio Syne", "Segoe UI", sans-serif;
+  background: var(--app-bg) !important;
+  color: var(--app-text);
+  color-scheme: dark;
+  font-family: var(--font);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.gradio-container { max-width: none !important; padding: 0 !important; }
+.gradio-container > .main { padding: 0 !important; }
+footer:not(.applio-footer) { display: none !important; }
+#applio-shell { gap: 0; min-height: 100dvh; }
+#applio-sidebar {
+  position: fixed; inset: 16px auto 16px 12px; width: 260px;
+  min-width: 260px !important; max-width: 260px;
+  background: var(--app-panel); border: 1px solid var(--app-border);
+  border-radius: 12px; padding: 12px;
+  gap: 0; z-index: 30; overflow: hidden; flex-wrap: nowrap !important;
+}
+#applio-sidebar > .block { flex: 0 0 auto; padding: 0 !important; }
+#applio-sidebar .html-container { padding: 0 !important; }
+.applio-brand { display: flex; align-items: center; gap: 10px; padding: 4px 12px 10px; margin-bottom: 4px; color: var(--app-heading); }
+.applio-brand > svg { width: 20px; height: 24px; flex: none; }
+.applio-brand > span { font-size: 20px; font-weight: 700; letter-spacing: -.4px; color: var(--app-heading); }
+.applio-brand small { color: var(--app-muted); background: rgba(255,255,255,.12); border: 1px solid var(--app-border); padding: 2px 6px; border-radius: 4px; font-size: 10px; line-height: 1.4; font-weight: 500; white-space: nowrap; }
+#applio-menu-toggle { display: none !important; }
+#applio-navigation { gap: 8px; flex: 1 1 0; min-height: 0 !important; overflow-y: auto; overflow-x: hidden; padding-right: 4px; }
+#applio-navigation .applio-nav-group { flex: 0 0 auto !important; gap: 2px; min-height: auto; }
+#applio-sidebar .applio-nav-heading { padding: 0 !important; margin: 0; flex: 0 0 auto; min-height: 0; border: 0; background: transparent; }
+.applio-nav-heading h2 { padding: 4px 12px; margin: 0 !important; font-family: var(--font); font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--app-muted); }
+#applio-sidebar button.applio-nav-item {
+  position: relative; display: flex; align-items: center; justify-content: flex-start;
+  gap: 10px; min-height: 32px; padding: 6px 12px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--app-muted); font-size: 13px; font-weight: 400;
+  box-shadow: none; text-align: left; line-height: 1.3;
+  flex-shrink: 0;
+}
+#applio-sidebar button.applio-nav-item:hover { background: var(--app-surface); color: var(--app-heading); }
+#applio-sidebar button.applio-nav-item.primary { background: rgba(255,255,255,.12); color: #fff; font-weight: 600; }
+.applio-nav-item::before { content: ""; width: 16px; height: 16px; flex: none; background: currentColor; mask-size: contain; mask-repeat: no-repeat; }
+.applio-nav-item.primary::after { content: ""; position: absolute; left: 4px; width: 4px; height: 14px; border-radius: 8px; background: white; }
+#applio-sidebar button:focus-visible { outline: 2px solid #a1a1aa; outline-offset: 2px; }
+.applio-sidebar-footer { display: flex; flex-direction: column; padding: 0 12px; margin-top: 8px; }
+.applio-sidebar-footer a { display: inline-flex; align-items: center; gap: 8px; padding: 8px 0; line-height: 16px; border-radius: 8px; text-decoration: none; color: var(--app-muted); font-size: 12px; }
+.applio-sidebar-footer a:hover { color: white; }
+.applio-sidebar-resources { display: flex; align-items: center; gap: 16px; border-top: 1px solid var(--app-border); padding-top: 8px; }
+.applio-sidebar-resources a { gap: 6px; }
+.applio-footer-link::before { content: ""; width: 14px; height: 14px; flex: none; background: currentColor; mask-size: contain; mask-repeat: no-repeat; }
+.applio-sidebar-support { display: flex; align-items: center; gap: 8px; color: var(--app-muted); font-size: 12px; }
+.applio-sidebar-footer a:focus-visible { outline: 2px solid #a1a1aa; outline-offset: 3px; }
+#applio-content { margin-left: 284px; padding: 24px 28px 16px; gap: 16px; min-width: 0 !important; flex-wrap: nowrap; }
+#applio-pages { width: 100%; max-width: 1440px; margin: 0 auto; border: 0; }
+#applio-pages > .tab-nav, #applio-pages > [role="tablist"] { display: none !important; }
+#applio-pages > .tab-wrapper { display: none !important; }
+.applio-page { padding: 0 !important; border: 0 !important; background: transparent !important; }
+.applio-page-header .html-container { padding: 0 !important; }
+.applio-step-header .html-container { padding: 0 !important; }
+.applio-page-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin: 0 0 20px; }
+.applio-page-heading h1 { margin: 0 0 6px; color: var(--app-heading); font-size: 28px; line-height: 1.2; font-weight: 700; letter-spacing: -.025em; }
+.applio-page-heading p { margin: 0; color: var(--app-muted); font-size: 14px; line-height: 1.5; }
+.applio-page-heading a { white-space: nowrap; color: var(--app-muted); font-size: 11px; padding-top: 7px; text-decoration: none; }
+.applio-page h2, .applio-page h3 { font-weight: 700; color: var(--app-heading); letter-spacing: -.3px; }
+.applio-page h2 { font-size: 19px; }
+.applio-page h3 { font-size: 16px; }
+.applio-page .prose p { color: var(--app-muted); font-size: 13px; }
+.applio-page .block { box-shadow: none; }
+.applio-page .block.hide-container { padding: 0 !important; border: 0; background: transparent; flex: 0 0 auto !important; }
+.applio-page .block > .wrap > label, .applio-page .block-label { background: transparent; color: var(--app-text); }
+.applio-page label > span, .applio-page label > .label { font-size: 13px; font-weight: 600; }
+.applio-page .block-label { font-weight: 600; }
+.applio-page .info, .applio-page .prose p, .applio-page-heading p { font-weight: 400; }
+.applio-page .label-wrap > span { font-weight: 600; }
+.applio-page input, .applio-page textarea { color: var(--app-text); }
+.applio-page .form { background: transparent; border: 0; border-radius: 0; gap: 12px; overflow: visible !important; }
+.applio-page .form > .block { border: 1px solid var(--app-border); border-radius: 10px !important; }
+/* Match checkbox components themselves, not accordions whose content mounts
+   checkboxes on expansion: changing ancestor padding makes headers resize. */
+.applio-page .block:has(> label.checkbox-container) { overflow: visible !important; }
+.applio-page label.checkbox-container { overflow: visible !important; }
+.applio-page .tabitem { border: 0; padding: 16px 0 0; }
+.applio-page .tab-nav { gap: 4px; border-bottom: 1px solid var(--app-border); }
+.applio-page .tab-nav button { color: var(--app-muted); padding: 9px 14px; font-size: 12px; border-radius: 7px 7px 0 0; }
+.applio-page .tab-nav button.selected { color: var(--app-heading); border-bottom: 2px solid white; background: rgba(255,255,255,.05); }
+.applio-page .tab-wrapper { border: 0; }
+.applio-page .tab-container[role="tablist"] { border-bottom: 1px solid var(--app-border); }
+.applio-page .tab-container[role="tablist"] button { color: var(--app-muted); padding: 8px 14px; font-size: 12px; border: 0; border-radius: 7px 7px 0 0; }
+.applio-page .tab-container[role="tablist"] button.selected { color: var(--app-heading); border-bottom: 2px solid white; background: rgba(255,255,255,.05); }
+.applio-card { background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 12px; padding: 20px !important; gap: 16px; }
+.applio-card .form { border: 0; overflow: visible !important; }
+.applio-card .form > .block { padding: 0 !important; border: 0 !important; background: transparent; }
+.applio-card .block:has(> label.checkbox-container) { padding: 1px 2px !important; overflow: visible !important; }
+.applio-card > .block.hide-container, .applio-card > .row, .applio-card > .column { flex: 0 0 auto; }
+#applio-conversion-top { gap: 16px; }
+#applio-voice-model { justify-content: flex-start; }
+#applio-model-selectors { gap: 20px; }
+#applio-model-actions { max-width: 460px; }
+#applio-voice-model > .column, #applio-voice-model > .row, #applio-voice-model .form { flex: 0 0 auto !important; }
+#applio-voice-model .form { gap: 12px; }
+#applio-voice-model .form > .block { padding: 0 !important; }
+#applio-voice-model .block:has(> label.checkbox-container) { padding: 1px 2px !important; overflow: visible !important; }
+.applio-card h2, .applio-card h3 { margin-top: 0; }
+.applio-card-head { display: flex; flex-direction: column; gap: 4px; margin: 0 0 4px; }
+.applio-card-desc { margin: 0; color: var(--app-muted); font-size: 13px; line-height: 1.5; font-weight: 400; }
+.applio-page .applio-card-heading { display: flex; align-items: center; margin: 0 !important; line-height: 1.3; font-size: 19px; font-weight: 700; }
+#applio-conversion-parameters { border: 0; }
+#applio-conversion-parameters > .tab-nav, #applio-conversion-parameters > [role="tablist"] { display: none; }
+#applio-conversion-parameters > .tab-wrapper { display: none; }
+.applio-card .tab-nav { display: flex; gap: 3px; padding: 4px; width: fit-content; background: #101012; border: 1px solid var(--app-border); border-radius: 9px; }
+.applio-card .tab-nav button { padding: 6px 18px; border: 0; border-radius: 6px; }
+.applio-card .tab-nav button.selected { background: #f5f5f5; color: #09090b; border: 0; }
+.applio-card .tab-container[role="tablist"] { display: flex; align-items: stretch; gap: 4px; padding: 4px; width: 100%; max-width: 240px; background: #101012; border: 1px solid var(--app-border); border-radius: 9px; box-sizing: border-box; }
+.applio-card .tab-container[role="tablist"] button { flex: 1; justify-content: center; min-height: 32px; padding: 7px 14px; margin: 0 !important; line-height: 1.2; font-size: 13px; border: 0; border-radius: 6px; }
+.applio-card .tab-container[role="tablist"] button.selected { background: #f5f5f5; color: #09090b; border: 0; }
+.applio-card .tab-container[role="tablist"] button::after { display: none !important; }
+.applio-card .applio-input-mode .tab-container[role="tablist"] { max-width: 360px; }
+.applio-card .tab-wrapper { height: auto !important; min-height: 42px; padding: 0 !important; }
+.applio-card .tab-container[role="tablist"] { height: 42px !important; min-height: 42px; }
+.applio-step { display: inline-grid; place-items: center; width: 24px; height: 24px; font-size: 11px; font-weight: 600; border-radius: 7px; color: #d4d4d8; background: rgba(255,255,255,.1); margin-right: 8px; }
+.applio-footer { padding: 18px 0 0; text-align: center; font-size: 10px; color: #71717a; }
+.applio-footer a { color: inherit; text-decoration: none; }
+.applio-page button { transition: background-color .15s, border-color .15s; }
+.applio-page .label-wrap { background: transparent !important; }
+.applio-page .block:has(> label[data-testid="block-label"]) { padding: 16px !important; }
+.applio-page .block > label[data-testid="block-label"] {
+  position: static !important; display: flex; align-items: center; gap: 7px;
+  padding: 0 0 12px !important; margin: 0; line-height: 1.4;
+  background: transparent !important; border: 0 !important; border-radius: 0;
+  max-width: 100%; color: var(--app-text);
+}
+.applio-page .block > label[data-testid="block-label"] svg { width: 15px; height: 15px; flex: none; }
+.applio-page .audio-container > .boundedheight { height: 180px; }
+.applio-page input[type="checkbox"] {
+  appearance: none !important; -webkit-appearance: none !important;
+  width: 18px !important; height: 18px !important;
+  min-width: 18px !important; min-height: 18px !important;
+  flex: 0 0 18px !important; flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  margin: 0 !important; padding: 0 !important;
+  position: relative !important;
+  background-color: #101012 !important;
+  background-image: none !important;
+  border: 1px solid #a1a1aa !important;
+  border-radius: 5px !important;
+  border-top-left-radius: 5px !important;
+  border-top-right-radius: 5px !important;
+  border-bottom-right-radius: 5px !important;
+  border-bottom-left-radius: 5px !important;
+  border-start-start-radius: 5px !important;
+  border-start-end-radius: 5px !important;
+  border-end-start-radius: 5px !important;
+  border-end-end-radius: 5px !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: pointer;
+}
+.applio-page input[type="checkbox"]::before, .applio-page input[type="checkbox"]::after { display: none !important; content: none !important; }
+.applio-page input[type="checkbox"]:checked {
+  background-color: #f5f5f5 !important;
+  border-color: #f5f5f5 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='m2 6.2 2.6 2.6 5.4-5.6' fill='none' stroke='%2309090b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-size: 12px 12px !important; background-position: center !important;
+  background-repeat: no-repeat !important;
+  border-radius: 5px !important;
+  border-top-left-radius: 5px !important;
+  border-top-right-radius: 5px !important;
+  border-bottom-right-radius: 5px !important;
+  border-bottom-left-radius: 5px !important;
+  border-start-start-radius: 5px !important;
+  border-start-end-radius: 5px !important;
+  border-end-start-radius: 5px !important;
+  border-end-end-radius: 5px !important;
+}
+.applio-page input[type="checkbox"]:focus-visible { outline: 2px solid #a1a1aa !important; outline-offset: 2px; }
+.applio-page input[type="radio"] {
+  appearance: none !important; width: 16px !important; height: 16px !important;
+  flex: 0 0 16px; border: 1px solid #71717a !important; border-radius: 50%;
+  background: #101012 !important; box-shadow: none;
+}
+.applio-page input[type="radio"]:checked {
+  border-color: #f5f5f5 !important;
+  background: radial-gradient(circle, #09090b 0 3px, #f5f5f5 3.5px) !important;
+}
+.applio-page input[type="radio"]:focus-visible { outline: 2px solid #a1a1aa; outline-offset: 3px; }
+@keyframes applio-spin { to { transform: rotate(360deg); } }
+/* Gradio's startup screen lives outside .applio-page. Replace its animated
+   logo everywhere, including component status overlays, with the same ring. */
+[data-testid="status-tracker"] div:has(> svg[viewBox="-1200 -1200 3000 3000"]) {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+[data-testid="status-tracker"] svg[viewBox="-1200 -1200 3000 3000"] {
+  display: none !important;
+}
+[data-testid="status-tracker"] div:has(> svg[viewBox="-1200 -1200 3000 3000"])::before {
+  content: "";
+  display: block;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(255,255,255,.16);
+  border-top-color: #f5f5f5;
+  border-radius: 50%;
+  animation: applio-spin .8s linear infinite;
+
+  /* Keep this nested: Gradio scopes top-level media rules to loaded pages. */
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+.applio-page .wrap:has(.progress-bar) { background: rgba(9,9,11,.78) !important; backdrop-filter: blur(2px); border: 0 !important; }
+.applio-page .wrap:has(.progress-bar).generating { animation: none !important; border: 0 !important; background: rgba(9,9,11,.78) !important; }
+.applio-page .eta-bar { display: none !important; }
+.applio-page .progress-bar-wrap { width: min(220px, 60%) !important; height: 3px !important; border: 0 !important; background: rgba(255,255,255,.12) !important; border-radius: 999px !important; overflow: hidden; }
+.applio-page .progress-bar { background: #f5f5f5 !important; border-radius: 999px !important; }
+.applio-page p.loading, .applio-page .progress-level-inner { color: var(--app-muted) !important; font-size: 12px !important; }
+.applio-page .progress-level::before { content: ""; width: 20px; height: 20px; margin-bottom: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,.16); border-top-color: #f5f5f5; animation: applio-spin .8s linear infinite; }
+.applio-page .loading-spinner, .applio-page span.spinner { width: 16px !important; height: 16px !important; border: 2px solid rgba(255,255,255,.16) !important; border-top-color: #f5f5f5 !important; border-radius: 50% !important; background: none !important; box-shadow: none !important; animation: applio-spin .8s linear infinite !important; }
+.applio-page .loading-overlay { background: rgba(9,9,11,.72) !important; backdrop-filter: blur(2px); }
+.applio-page .loading-overlay .loading-text { color: var(--app-muted) !important; font-size: 12px !important; }
+.applio-page .loader { width: 18px !important; height: 18px !important; margin: 12px !important; padding: 0 !important; border-radius: 50% !important; background: none !important; box-shadow: none !important; scale: 1 !important; border: 2px solid rgba(255,255,255,.16) !important; border-top-color: #f5f5f5 !important; animation: applio-spin .8s linear infinite !important; }
+.applio-output-row, .applio-f0-results { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+.applio-output-row > .block, .applio-output-row > .form { min-width: 0 !important; min-height: 152px; align-self: stretch; }
+.applio-output-row > .form { background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 12px; }
+.applio-output-row > .form > .block { border: 0; padding: 10px 12px !important; }
+.applio-output-row .audio-container { min-height: 94px; }
+.applio-output-row .block:has(textarea) { display: flex !important; flex-direction: column; }
+.applio-output-row .block:has(textarea) > label { display: flex !important; flex-direction: column; flex: 1 1 auto !important; min-height: 0; }
+.applio-output-row .block:has(textarea) textarea { flex: 1 1 auto !important; height: auto !important; min-height: 120px; }
+.applio-f0-results > .block { flex: 1 1 0 !important; min-width: 0 !important; display: flex; flex-direction: column; height: 280px; min-height: 280px; box-sizing: border-box; }
+.applio-f0-results > .block > .empty { flex: 1; height: auto !important; min-height: 0 !important; }
+.applio-f0-results > .block > .image-container { flex: 1; min-height: 0; }
+.applio-pretrained { padding: 16px !important; background: var(--app-surface) !important; border: 1px solid var(--app-border) !important; border-radius: 12px; }
+.applio-pretrained .applio-pretrained { padding: 0 !important; border: 0 !important; border-radius: 0; background: transparent !important; }
+.applio-pretrained .form, .applio-pretrained .styler, .applio-pretrained .group, .applio-pretrained .gr-group { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+.applio-pretrained .block { background: transparent; border: 0 !important; }
+.applio-pretrained > .form > div, .applio-pretrained > div { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+.applio-card .group, .applio-card .gr-group { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; }
+.applio-page > .column { gap: 16px; }
+.applio-page > .column > .tabs { flex: 0 0 auto; }
+#applio-conversion-parameters > .tabitem { padding-top: 0 !important; }
+/* ---- Stable accordions: open/close must not shift sibling sizes. The page
+   grows past the viewport when accordions open, and a newly appearing
+   scrollbar would otherwise reflow every full-width row. The header and
+   chevron geometry is pinned so labels never reflow, and accordion content
+   is kept inside its container. */
+html { scrollbar-gutter: stable; }
+.applio-page .block:has(> .gr-accordion) { min-width: 0; }
+.applio-page .gr-accordion { min-width: 0; }
+.applio-page .gr-accordion > .form,
+.applio-page .gr-accordion > .column,
+.applio-page .gr-accordion > .row { min-width: 0; }
+.applio-page .label-wrap { gap: 12px; }
+.applio-page .label-wrap > .icon { flex: 0 0 16px !important; width: 16px; height: 16px; display: inline-flex !important; align-items: center; justify-content: center; }
+* { scrollbar-width: thin; scrollbar-color: #343438 transparent; }
+.toast-wrap {
+  top: auto !important; bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+  right: 16px !important; left: auto !important; width: 384px !important;
+  max-width: calc(100% - 32px) !important; gap: 8px !important;
+  pointer-events: none; font-family: var(--font);
+}
+.toast-wrap .toast-body {
+  background: var(--app-panel) !important; color: var(--app-text);
+  border: 1px solid var(--app-border) !important; border-radius: 12px !important;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / .25), 0 8px 10px -6px rgb(0 0 0 / .25) !important;
+  --toast-color: var(--app-text);
+}
+.toast-wrap .toast-body.error { border-color: rgb(239 68 68 / .5) !important; --toast-color: #fca5a5; color: #fca5a5; }
+.toast-wrap .toast-body.warning { --toast-color: #fbbf24; }
+.toast-wrap .toast-body.success { --toast-color: #34d399; }
+.toast-wrap .toast-header { padding: 16px 16px 8px !important; align-items: flex-start; gap: 12px; }
+.toast-wrap .toast-title-row { min-width: 0; }
+.toast-wrap .toast-title { font-size: 14px !important; line-height: 1.6; font-weight: 600; color: inherit; }
+.toast-wrap .toast-icon { width: 17px; height: 17px; padding: 0; margin: 3px 0 0; border-radius: 0; }
+.toast-wrap .toast-icon svg { width: 17px; height: 17px; }
+.toast-wrap .toast-close { width: 28px; height: 28px; padding: 7px; margin: -4px -4px 0 0; border-radius: 6px; color: var(--app-muted); opacity: 1; }
+.toast-wrap .toast-close:hover { background: var(--app-surface); color: var(--app-heading); transform: none; }
+.toast-wrap .toast-close svg { width: 14px; height: 14px; }
+.toast-wrap .toast-close:focus-visible { outline: 2px solid #a1a1aa; outline-offset: 2px; }
+.toast-wrap .toast-messages { padding: 0 16px 16px 45px !important; gap: 8px; }
+.toast-wrap .toast-message-item { padding: 0 !important; }
+.toast-wrap .toast-message-text { font-size: 14px !important; line-height: 1.65; font-weight: 400; color: inherit; white-space: pre-line; max-height: 128px; overflow-y: auto; }
+.toast-wrap .toast-separator { background: var(--app-border); }
+.toast-wrap .timer { display: none; }
+@media (max-width: 800px) {
+  #applio-shell { flex-direction: column; }
+  #applio-sidebar { position: relative; inset: auto; width: calc(100% - 24px) !important; min-width: 0 !important; max-width: none; margin: 12px 12px 0; padding: 12px; overflow: visible; box-sizing: border-box; }
+  .applio-brand { justify-content: center; min-height: 36px; padding: 0 40px; margin-bottom: 0; }
+  #applio-menu-toggle { display: flex !important; align-items: center; justify-content: center; position: absolute; top: 12px; left: 12px; right: auto; min-width: 0 !important; width: 36px; height: 36px; min-height: 36px; padding: 8px; font-size: 0; border: 0; background: transparent; }
+  #applio-menu-toggle::before { content: ""; display: block; width: 20px; height: 20px; background: currentColor; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M4 6h16M4 12h16M4 18h16'/%3E%3C/svg%3E") center / contain no-repeat; }
+  #applio-sidebar.mobile-open #applio-navigation { margin-top: 12px; }
+  #applio-navigation { display: none; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; flex: none; overflow: visible; }
+  #applio-sidebar.mobile-open #applio-navigation { display: grid; }
+  #applio-navigation .applio-nav-group { display: contents; }
+  .applio-nav-heading, .applio-sidebar-footer { display: none; }
+  #applio-sidebar button.applio-nav-item { min-width: 0; min-height: 42px; font-size: 11px; padding: 8px; gap: 6px; }
+  #applio-content { margin-left: 0; padding: 24px 16px 16px; }
+  .applio-page-heading { gap: 10px; }
+  .applio-page-heading h1 { font-size: 24px; }
+  .applio-page-heading a { font-size: 10px; }
+  .applio-card { padding: 16px !important; }
+}
+@media (prefers-reduced-motion: reduce) { .applio-page button { transition: none; } .applio-page .progress-level::before, .applio-page .loading-spinner, .applio-page span.spinner, .applio-page .loader { animation: none !important; } }
+@media (max-width: 680px) {
+  .applio-output-row, .applio-f0-results { grid-template-columns: minmax(0, 1fr); }
+}

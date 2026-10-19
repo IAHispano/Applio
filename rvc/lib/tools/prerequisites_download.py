@@ -2,6 +2,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 import requests
+from rvc.lib.tools.http_download import download_http
 
 url_base = "https://huggingface.co/IAHispano/Applio/resolve/main/Resources"
 
@@ -40,7 +41,7 @@ rectified_flow_list = [
     (rectified_flow_url, ["pretrain_flow_contentvec.pth"]),
     (rectified_vocoder_url, ["chouwagan_44.1k_hop512_128bin_vocoder.pth"]),
 ]
-models_list = [("predictors/", ["rmvpe.pt", "fcpe.pt"])]
+models_list = [("predictors/", ["rmvpe.pt", "fcpe.pt", "swift.onnx"])]
 embedders_list = [("embedders/contentvec/", ["pytorch_model.bin", "config.json"])]
 executables_list = [
     ("", ["ffmpeg.exe", "ffprobe.exe"]),
@@ -55,6 +56,10 @@ folder_mapping_list = {
     rectified_flow_url: "rvc/models/pretraineds/rectified-flow/",
     rectified_vocoder_url: "rvc/models/pretraineds/rectified-flow/",
 }
+
+
+def is_downloaded(file):
+    return os.path.isfile(file) and os.path.getsize(file) > 0
 
 
 def get_file_url(remote_folder, file):
@@ -76,10 +81,18 @@ def get_file_size_if_missing(file_list):
         local_folder = folder_mapping_list.get(remote_folder, "")
         for file in files:
             destination_path = os.path.join(local_folder, file)
-            if not os.path.exists(destination_path):
+            if not is_downloaded(destination_path):
                 url = get_file_url(remote_folder, file)
-                response = requests.head(url, allow_redirects=True)
-                total_size += int(response.headers.get("content-length", 0))
+                # Size discovery only controls progress; it must never prevent
+                # downloading when HEAD is unsupported or has no Content-Length.
+                try:
+                    with requests.head(
+                        url, allow_redirects=True, timeout=30
+                    ) as response:
+                        response.raise_for_status()
+                        total_size += int(response.headers.get("content-length", 0))
+                except (requests.RequestException, ValueError):
+                    pass
     return total_size
 
 
@@ -89,15 +102,14 @@ def download_file(url, destination_path, global_bar):
     updating the global progress bar as data is downloaded.
     """
 
-    dir_name = os.path.dirname(destination_path)
-    if dir_name:
-        os.makedirs(dir_name, exist_ok=True)
-    response = requests.get(url, stream=True)
-    block_size = 1024
-    with open(destination_path, "wb") as file:
-        for data in response.iter_content(block_size):
-            file.write(data)
-            global_bar.update(len(data))
+    previous = 0
+
+    def progress(received, total):
+        nonlocal previous
+        global_bar.update(received - previous)
+        previous = received
+
+    download_http(url, destination_path, progress=progress)
 
 
 def download_mapping_files(file_mapping_list, global_bar):
@@ -111,7 +123,7 @@ def download_mapping_files(file_mapping_list, global_bar):
             local_folder = folder_mapping_list.get(remote_folder, "")
             for file in file_list:
                 destination_path = os.path.join(local_folder, file)
-                if not os.path.exists(destination_path):
+                if not is_downloaded(destination_path):
                     url = get_file_url(remote_folder, file)
                     futures.append(
                         executor.submit(
@@ -153,8 +165,9 @@ def calculate_total_size(
     if exe and os.name == "nt":
         total_size += get_file_size_if_missing(executables_list)
     total_size += get_file_size_if_missing(pretraineds_hifigan)
-    total_size += get_file_size_if_missing(pretraineds_refinegan_list)
-    total_size += get_file_size_if_missing(rectified_flow_list)
+    if pretraineds_hifigan:
+        total_size += get_file_size_if_missing(pretraineds_refinegan_list)
+        total_size += get_file_size_if_missing(rectified_flow_list)
     return total_size
 
 
@@ -172,21 +185,66 @@ def prequisites_download_pipeline(
         exe,
     )
 
-    if total_size > 0:
+    with tqdm(
+        total=total_size or None,
+        unit="iB",
+        unit_scale=True,
+        desc="Downloading all files",
+    ) as global_bar:
+        if models:
+            download_mapping_files(models_list, global_bar)
+            download_mapping_files(embedders_list, global_bar)
+        if exe:
+            if os.name == "nt":
+                download_mapping_files(executables_list, global_bar)
+            else:
+                print("No executables needed")
+        if pretraineds_hifigan:
+            download_mapping_files(pretraineds_hifigan_list, global_bar)
+            download_mapping_files(pretraineds_refinegan_list, global_bar)
+            download_mapping_files(rectified_flow_list, global_bar)
+
+
+def ensure_pretrained(vocoder, sample_rate):
+    """Download only the default G/D pair needed for this training run."""
+    rates = {"HiFi-GAN": (32000, 40000, 48000), "RefineGAN": (24000, 32000)}
+    if vocoder not in rates or int(sample_rate) not in rates[vocoder]:
+        raise ValueError(f"Unsupported pretrained: {vocoder} at {sample_rate} Hz")
+    remote = "pretrained_v2/" if vocoder == "HiFi-GAN" else "refinegan/"
+    files = [f"f0{kind}{int(sample_rate) // 1000}k.pth" for kind in ("G", "D")]
+    mapping = [(remote, files)]
+    paths = [
+        os.path.abspath(os.path.join(folder_mapping_list[remote], file))
+        for file in files
+    ]
+    if not all(is_downloaded(file) for file in paths):
+        print(
+            f"Downloading default {vocoder} pretrains ({sample_rate} Hz)...", flush=True
+        )
         with tqdm(
-            total=total_size, unit="iB", unit_scale=True, desc="Downloading all files"
-        ) as global_bar:
-            if models:
-                download_mapping_files(models_list, global_bar)
-                download_mapping_files(embedders_list, global_bar)
-            if exe:
-                if os.name == "nt":
-                    download_mapping_files(executables_list, global_bar)
-                else:
-                    print("No executables needed")
-            if pretraineds_hifigan:
-                download_mapping_files(pretraineds_hifigan_list, global_bar)
-                download_mapping_files(pretraineds_refinegan_list, global_bar)
-                download_mapping_files(rectified_flow_list, global_bar)
+            total=None, unit="iB", unit_scale=True, desc="Downloading pretrains"
+        ) as bar:
+            download_mapping_files(mapping, bar)
+    if not all(is_downloaded(file) for file in paths):
+        raise RuntimeError("Default pretrains are missing; training cannot start.")
+    return tuple(paths)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Applio Prerequisites Downloader")
+    parser.add_argument("--pretraineds-hifigan", action="store_true", default=False)
+    parser.add_argument("--models", action="store_true", default=False)
+    parser.add_argument("--exe", action="store_true", default=False)
+    parser.add_argument("--vocoder", choices=["HiFi-GAN", "RefineGAN"])
+    parser.add_argument("--sample-rate", type=int)
+    args = parser.parse_args()
+
+    if args.vocoder:
+        if not args.sample_rate:
+            parser.error("--sample-rate is required with --vocoder")
+        ensure_pretrained(args.vocoder, args.sample_rate)
     else:
-        pass
+        prequisites_download_pipeline(args.pretraineds_hifigan, args.models, args.exe)
+    print("Prerequisites installed successfully.")

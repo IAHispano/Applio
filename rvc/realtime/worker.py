@@ -10,10 +10,22 @@ sys.path.append(now_dir)
 from rvc.realtime.core import VoiceChanger, AUDIO_SAMPLE_RATE
 
 
-def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt):
+def _worker_loop(vc_kwargs, input_q, output_q, config_q, stop_evt, ready_evt):
     """Entry point for the voice conversion worker process."""
 
-    vc = VoiceChanger(**vc_kwargs)
+    try:
+        vc = VoiceChanger(**vc_kwargs)
+        vc.warmup(index_rate=vc_kwargs.get("index_rate", 0))
+    except (RuntimeError, NotImplementedError, TypeError) as error:
+        from rvc.lib.tools.device import is_mps_error
+        from rvc.configs.config import Config
+
+        if Config().device != "mps" or not is_mps_error(error):
+            raise
+        print(f"[!] MPS realtime warmup failed ({error}); retrying on CPU.", flush=True)
+        vc = VoiceChanger(**dict(vc_kwargs, device="cpu"))
+        vc.warmup(index_rate=vc_kwargs.get("index_rate", 0))
+    ready_evt.set()
 
     while not stop_evt.is_set():
         # Apply pending config updates.
@@ -96,30 +108,25 @@ def _apply_config(vc: VoiceChanger, cfg):
                 frame_duration_ms=cfg.get("vad_frame_ms", 30),
             )
 
-    # Noise reduction.
-    if "clean_audio" in cfg:
-        if not cfg["clean_audio"]:
-            vc.vc_model.reduced_noise = None
-        else:
-            strength = cfg.get("clean_strength", 0.5)
-            if vc.vc_model.reduced_noise is None:
-                from noisereduce.torchgate import TorchGate
+    # Clean-audio noise reduction was removed (Voice Focus covers denoising).
+    if "clean_audio" in cfg or "clean_strength" in cfg:
+        vc.vc_model.reduced_noise = None
 
-                vc.vc_model.reduced_noise = TorchGate(
-                    vc.vc_model.pipeline.tgt_sr,
-                    prop_decrease=strength,
-                ).to(vc.vc_model.device)
-            vc.vc_model.reduced_noise.prop_decrease = strength
+    # Formant shifting (offline-style STFT, applied to the 16 kHz input block).
+    if "formant_shifting" in cfg:
+        vc.vc_model.formant_shifting = bool(cfg["formant_shifting"])
+    if "formant_qfrency" in cfg:
+        try:
+            vc.vc_model.formant_qfrency = float(cfg["formant_qfrency"])
+        except (TypeError, ValueError):
+            pass
+    if "formant_timbre" in cfg:
+        try:
+            vc.vc_model.formant_timbre = float(cfg["formant_timbre"])
+        except (TypeError, ValueError):
+            pass
 
-    # Post-processing pedalboard.
-    if "post_process" in cfg:
-        kwargs = cfg.get("pedalboard_kwargs", {})
-        if not cfg["post_process"]:
-            vc.vc_model.board = None
-            vc.vc_model.kwargs = None
-        elif vc.vc_model.kwargs != kwargs:
-            vc.vc_model.board = vc.vc_model.setup_pedalboard(**kwargs)
-            vc.vc_model.kwargs = dict(kwargs)
+    # Post-processing (pedalboard) was removed; ignore legacy keys.
 
     # Model hot-swap.
     model_path = cfg.get("model_path")
@@ -138,15 +145,7 @@ def _apply_config(vc: VoiceChanger, cfg):
             new_freq=AUDIO_SAMPLE_RATE,
             dtype=torch.float32,
         ).to(vc.vc_model.device)
-        if cfg["clean_audio"]:
-            from noisereduce.torchgate import TorchGate
-
-            strength = cfg.get("clean_strength", 0.5)
-
-            vc.vc_model.reduced_noise = TorchGate(
-                vc.vc_model.pipeline.tgt_sr,
-                prop_decrease=strength,
-            ).to(vc.vc_model.device)
+        vc.vc_model.reduced_noise = None
 
     # SID change.
     sid = cfg.get("sid")
@@ -157,39 +156,26 @@ def _apply_config(vc: VoiceChanger, cfg):
             [sid], device=vc.vc_model.pipeline.device, dtype=torch.int64
         )
 
-    # Index change.
+    # Keep path selection independent of retrieval strength. The audio-block
+    # parameters activate a lazy index when the strength becomes positive.
     index_path = cfg.get("index_path")
-    if index_path is not None:
-        if index_path and vc.vc_model.index_path != index_path:
-            from rvc.realtime.utils.torch import IndexWrapper
+    if index_path is not None and (index_path or "") != (vc.vc_model.index_path or ""):
+        from rvc.realtime.utils.torch import IndexWrapper
 
-            index = IndexWrapper(
-                index_path.strip()
-                .strip('"')
-                .strip("\n")
-                .strip('"')
-                .strip()
-                .replace("trained", "added"),
+        vc.vc_model.pipeline._graph_cache = None
+        vc.vc_model.pipeline.big_tsr = None
+        vc.vc_model.pipeline.index = (
+            IndexWrapper(
+                index_path.strip().strip('"').strip().replace("trained", "added"),
                 device=vc.device,
                 dtype=vc.vc_model.dtype,
             )
-            big_tsr, _ = index.read_index_tensor()
-
-            # index, big_npy = load_faiss_index(
-            #     index_path.strip()
-            #     .strip('"')
-            #     .strip("\n")
-            #     .strip('"')
-            #     .strip()
-            #     .replace("trained", "added")
-            # )
-            vc.vc_model.pipeline.index = index
-            vc.vc_model.pipeline.big_tsr = big_tsr
-            vc.vc_model.index_path = index_path
-        elif not index_path:
-            vc.vc_model.pipeline.index = None
-            vc.vc_model.pipeline.big_tsr = None
-            vc.vc_model.index_path = None
+            if index_path
+            else None
+        )
+        vc.vc_model.index_path = index_path or None
+    if "index_rate" in cfg:
+        vc.vc_model.pipeline.prepare_index(cfg["index_rate"])
 
     # F0 method change.
     f0_method = cfg.get("f0_method")
@@ -233,6 +219,7 @@ class VoiceChangerWorker:
         self._output_q = ctx.Queue(maxsize=2)
         self._config_q = ctx.Queue()
         self._stop = ctx.Event()
+        self._ready = ctx.Event()
         self._vc_kwargs = vc_kwargs
         self._process = None
         # Cached state for main-process reads (change_callbacks_config / UI).
@@ -246,6 +233,11 @@ class VoiceChangerWorker:
         self.sola_search_frame = AUDIO_SAMPLE_RATE // 100
         self.vc_model = _RealtimeState()
 
+    @property
+    def ready(self):
+        """True if the worker process has finished initializing the VoiceChanger model."""
+        return self._ready.is_set()
+
     def start(self):
         self._process = mp.get_context("spawn").Process(
             target=_worker_loop,
@@ -255,6 +247,7 @@ class VoiceChangerWorker:
                 self._output_q,
                 self._config_q,
                 self._stop,
+                self._ready,
             ),
             daemon=True,
         )

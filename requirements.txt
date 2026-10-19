@@ -1,34 +1,5 @@
-click==8.1.8
-numpy==2.4.6
-requests==2.34.2
-tqdm==4.68.4
-wget==3.2
+-r requirements-engine.txt
 
-faiss-cpu==1.14.3
-librosa==0.11.0
-scipy==1.18.0
-soundfile==0.14.0
-noisereduce==3.0.3
-pedalboard==0.9.24
-stftpitchshift==2.0
-soxr==1.1.0
-
-torch==2.11.0
-torchaudio==2.11.0
-torchcrepe==0.0.24
-torchfcpe==0.0.4
-einops==0.8.2
-transformers==5.13.1
-swift-f0==0.3.0
-onnxruntime-gpu==1.26.0
-
-matplotlib==3.11.0
-tensorboard==2.21.0
+# Gradio interface dependencies
 gradio==6.20.0
-
-edge-tts==7.2.8
 pypresence==4.6.2
-beautifulsoup4==4.15.0
-sounddevice==0.5.5
-webrtcvad-wheels==2.0.14
-psutil==7.2.2

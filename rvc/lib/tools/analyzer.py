@@ -1,3 +1,5 @@
+import os
+from rvc.lib.user_config import get_logs_dir
 import numpy as np
 import matplotlib.pyplot as plt
 import librosa.display
@@ -50,7 +52,10 @@ def plot_features(times, cent, bw, rolloff, duration):
     plt.legend()
 
 
-def analyze_audio(audio_file, save_plot_path="logs/audio_analysis.png"):
+def analyze_audio(audio_file, save_plot_path=None):
+    save_plot_path = save_plot_path or os.path.join(
+        get_logs_dir(), "audio_analysis.png"
+    )
     y, sr = librosa.load(audio_file)
     stft, duration, cent, bw, rolloff = calculate_features(y, sr)
 

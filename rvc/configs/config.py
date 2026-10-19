@@ -1,6 +1,11 @@
+import os
+import sys
+
+if sys.platform == "darwin":
+    os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 import torch
 import json
-import os
+from copy import copy
 
 version_config_paths = [
     os.path.join("48000.json"),
@@ -24,11 +29,15 @@ def singleton(cls):
 @singleton
 class Config:
     def __init__(self):
-        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.device = (
+            "cuda:0"
+            if torch.cuda.is_available()
+            else ("mps" if torch.backends.mps.is_available() else "cpu")
+        )
         self.gpu_name = (
             torch.cuda.get_device_name(int(self.device.split(":")[-1]))
             if self.device.startswith("cuda")
-            else None
+            else "Apple Silicon GPU (MPS)" if self.device == "mps" else None
         )
         self.json_config = self.load_config_json()
         self.gpu_mem = None
@@ -37,7 +46,7 @@ class Config:
     def load_config_json(self):
         configs = {}
         for config_file in version_config_paths:
-            config_path = os.path.join("rvc", "configs", config_file)
+            config_path = os.path.join(os.path.dirname(__file__), config_file)
             with open(config_path, "r", encoding="utf-8") as f:
                 configs[config_file] = json.load(f)
         return configs
@@ -45,11 +54,14 @@ class Config:
     def device_config(self):
         if self.device.startswith("cuda"):
             self.set_cuda_config()
-        else:
+        elif self.device != "mps":
             self.device = "cpu"
 
         # Configuration for 6GB GPU memory
         x_pad, x_query, x_center, x_max = (1, 6, 38, 41)
+        if self.device == "mps":
+            # Metal shares system memory; bound long-file feature activations.
+            x_pad, x_query, x_center, x_max = (1, 5, 30, 32)
         if self.gpu_mem is not None and self.gpu_mem <= 4:
             # Configuration for 5GB GPU memory
             x_pad, x_query, x_center, x_max = (1, 5, 30, 32)
@@ -62,6 +74,43 @@ class Config:
         self.gpu_mem = torch.cuda.get_device_properties(i_device).total_memory // (
             1024**3
         )
+        if (
+            getattr(torch.version, "hip", None) is not None
+            or "AMD" in self.gpu_name.upper()
+            or "RADEON" in self.gpu_name.upper()
+            or self.gpu_name.endswith("[ZLUDA]")
+        ):
+            torch.backends.cudnn.enabled = False
+            torch.backends.cudnn.benchmark = False
+            try:
+                torch.backends.cuda.enable_flash_sdp(False)
+                torch.backends.cuda.enable_math_sdp(True)
+                torch.backends.cuda.enable_mem_efficient_sdp(False)
+            except Exception:
+                pass
+        try:
+            from rvc.lib.tools.gpu_checker import check_torch_compatibility
+
+            compat, msg, legacy = check_torch_compatibility()
+            if legacy and not compat:
+                print(
+                    f"\n[!] WARNING: Incompatible PyTorch version for {self.gpu_name}."
+                )
+                print(f"[!] {msg}")
+                print(
+                    "[!] Run 'applio downgrade-torch' or 'python core.py downgrade-torch' to install PyTorch 2.7.1 (cu126) for older GPU support.\n"
+                )
+        except Exception:
+            pass
+
+
+def inference_config():
+    """Keep per-session fallback choices separate from the shared config."""
+    config = copy(Config())
+    if config.device == "cpu" and torch.backends.mps.is_available():
+        config.device = "mps"
+        config.gpu_name = "Apple Silicon GPU (MPS)"
+    return config
 
 
 def max_vram_gpu(gpu):
@@ -84,6 +133,8 @@ def get_gpu_info():
                 + 0.4
             )
             gpu_infos.append(f"{i}: {gpu_name} ({mem} GB)")
+    elif torch.backends.mps.is_available():
+        gpu_infos.append("0: Apple Silicon GPU (MPS)")
     if len(gpu_infos) > 0:
         gpu_info = "\n".join(gpu_infos)
     else:
@@ -95,5 +146,9 @@ def get_number_of_gpus():
     if torch.cuda.is_available():
         num_gpus = torch.cuda.device_count()
         return "-".join(map(str, range(num_gpus)))
+    elif torch.backends.mps.is_available():
+        # Apple Silicon GPU via Metal Performance Shaders. train.py selects the
+        # MPS device for any id other than "-", so report the single device id.
+        return "0"
     else:
         return "-"

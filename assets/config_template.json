@@ -9,7 +9,7 @@
     "override": false,
     "selected_lang": "en_US"
   },
-  "version": "3.6.5",
+  "version": "3.7.0",
   "model_author": "None",
   "precision": "fp16",
   "rmvpe_high_register": {
@@ -26,5 +26,6 @@
     "client_input_device": "",
     "client_output_device": "",
     "client_monitor_device": ""
-  }
+  },
+  "logs_dir": ""
 }

@@ -1,7 +1,7 @@
 import os
 import sys
-import json
 import platform
+from rvc.lib.user_config import load_config
 
 
 def platform_config():
@@ -11,9 +11,7 @@ def platform_config():
 
     if sys.platform == "win32":
         try:
-            config_path = os.path.join(os.getcwd(), "assets", "config.json")
-            with open(config_path, "r", encoding="utf-8") as f:
-                config = json.load(f)
+            config = load_config()
             if config.get("realtime", {}).get("asio_enabled", False):
                 os.environ["SD_ENABLE_ASIO"] = "1"
         except Exception:

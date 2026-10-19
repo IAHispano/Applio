@@ -4,6 +4,14 @@ import json
 import multiprocessing as mp
 import os
 import sys
+
+sys.path.append(os.getcwd())
+from rvc.lib.terminal import capture_worker_output
+
+capture_worker_output()
+
+if sys.platform == "darwin":
+    os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 import time
 
 import numpy as np
@@ -16,7 +24,7 @@ sys.path.append(os.path.join(now_dir))
 # Zluda hijack
 import rvc.lib.zluda
 from rvc.configs.config import Config
-from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE, load_high_register_settings
+from rvc.lib.predictors.f0 import CREPE, FCPE, RMVPE, SWIFT, load_high_register_settings
 from rvc.lib.utils import load_audio, load_embedding
 from rvc.train.extract.preparing_files import generate_config, generate_filelist
 
@@ -37,7 +45,19 @@ class FeatureInput:
         self.f0_mel_min = 1127 * np.log(1 + self.f0_min / 700)
         self.f0_mel_max = 1127 * np.log(1 + self.f0_max / 700)
         self.device = device
-        if f0_method in ("crepe", "crepe-tiny"):
+        if (
+            torch.cuda.is_available()
+            and str(self.device).startswith("cuda")
+            and (
+                getattr(torch.version, "hip", None) is not None
+                or "AMD" in torch.cuda.get_device_name(self.device).upper()
+                or "RADEON" in torch.cuda.get_device_name(self.device).upper()
+                or torch.cuda.get_device_name(self.device).endswith("[ZLUDA]")
+            )
+        ):
+            torch.backends.cudnn.enabled = False
+            torch.backends.cudnn.benchmark = False
+        if f0_method == "crepe":
             self.model = CREPE(
                 device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
             )
@@ -45,7 +65,7 @@ class FeatureInput:
             # Training labels must be the TRUE pitch, never fold-mode values
             # (fold is an inference-side trick for models trained on stock
             # octave-folded labels). Only relevant when the corrector is
-            # enabled in assets/config.json.
+            # enabled in the per-user config.json.
             high_register = load_high_register_settings()
             high_register["mode"] = "true_pitch"
             self.model = RMVPE(
@@ -58,17 +78,27 @@ class FeatureInput:
             self.model = FCPE(
                 device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
             )
+        elif f0_method in ("swift", "swiftf0", "swift-f0"):
+            self.model = SWIFT(
+                device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
+            )
         self.f0_method = f0_method
 
     def compute_f0(self, x, p_len=None):
         if self.f0_method == "crepe":
             f0 = self.model.get_f0(x, self.f0_min, self.f0_max, p_len, "full")
-        elif self.f0_method == "crepe-tiny":
-            f0 = self.model.get_f0(x, self.f0_min, self.f0_max, p_len, "tiny")
         elif self.f0_method == "rmvpe":
             f0 = self.model.get_f0(x, filter_radius=0.03)
         elif self.f0_method == "fcpe":
             f0 = self.model.get_f0(x, p_len, filter_radius=0.006)
+        elif self.f0_method in ("swift", "swiftf0", "swift-f0"):
+            f0 = self.model.get_f0(
+                x,
+                p_len=p_len,
+                f0_min=self.f0_min,
+                f0_max=self.f0_max,
+                filter_radius=0.5,
+            )
         return f0
 
     def coarse_f0(self, f0):
@@ -90,7 +120,17 @@ class FeatureInput:
 
         try:
             np_arr = load_audio(inp_path, SAMPLE_RATE_16K)
-            feature_pit = self.compute_f0(np_arr)
+            try:
+                feature_pit = self.compute_f0(np_arr)
+            except Exception as gpu_err:
+                if str(self.device).startswith("cuda") or str(self.device) == "mps":
+                    print(
+                        f"[!] GPU pitch extraction failed for {inp_path} on {self.device} ({gpu_err}). Falling back to CPU..."
+                    )
+                    cpu_fe = FeatureInput(f0_method=self.f0_method, device="cpu")
+                    feature_pit = cpu_fe.compute_f0(np_arr)
+                else:
+                    raise gpu_err
             np.save(opt_path_full, feature_pit, allow_pickle=False)
             coarse_pit = self.coarse_f0(feature_pit)
             np.save(opt_path_coarse, coarse_pit, allow_pickle=False)
@@ -101,7 +141,27 @@ class FeatureInput:
 
 
 def process_files(files, f0_method, device, threads):
-    fe = FeatureInput(f0_method=f0_method, device=device)
+    if (
+        torch.cuda.is_available()
+        and str(device).startswith("cuda")
+        and (
+            getattr(torch.version, "hip", None) is not None
+            or "AMD" in torch.cuda.get_device_name(device).upper()
+            or "RADEON" in torch.cuda.get_device_name(device).upper()
+            or torch.cuda.get_device_name(device).endswith("[ZLUDA]")
+        )
+    ):
+        torch.backends.cudnn.enabled = False
+        torch.backends.cudnn.benchmark = False
+    try:
+        fe = FeatureInput(f0_method=f0_method, device=device)
+    except (RuntimeError, NotImplementedError, TypeError) as error:
+        from rvc.lib.tools.device import is_mps_error
+
+        if str(device) != "mps" or not is_mps_error(error):
+            raise
+        print(f"[!] MPS pitch setup failed ({error}); continuing on CPU.")
+        fe = FeatureInput(f0_method=f0_method, device="cpu")
     with tqdm.tqdm(total=len(files), leave=True) as pbar:
         for file_info in files:
             fe.process_file(file_info)
@@ -124,19 +184,62 @@ def run_pitch_extraction(files, devices, f0_method, threads):
             )
             for i in range(len(devices))
         ]
-        concurrent.futures.wait(tasks)
+        for task in concurrent.futures.as_completed(tasks):
+            try:
+                task.result()
+            except Exception as task_err:
+                print(
+                    f"[!] Warning: Pitch extraction task encountered error: {task_err}"
+                )
 
-    print(f"Pitch extraction completed in {time.time() - start_time:.2f} seconds.")
+    successful_count = sum(
+        1 for f in files if os.path.exists(f[1]) and os.path.exists(f[2])
+    )
+    if successful_count == 0:
+        raise RuntimeError(
+            f"Pitch extraction failed for all {len(files)} files. No valid pitch data generated."
+        )
+    elif successful_count < len(files):
+        print(
+            f"Warning: {len(files) - successful_count}/{len(files)} files failed pitch extraction."
+        )
+
+    print(
+        f"Pitch extraction completed in {time.time() - start_time:.2f} seconds ({successful_count}/{len(files)} files successful)."
+    )
 
 
 def process_file_embedding(
     files, embedder_model, embedder_model_custom, device_num, device, n_threads
 ):
-    model = load_embedding(embedder_model, embedder_model_custom).to(device).float()
+    if (
+        torch.cuda.is_available()
+        and str(device).startswith("cuda")
+        and (
+            getattr(torch.version, "hip", None) is not None
+            or "AMD" in torch.cuda.get_device_name(device).upper()
+            or "RADEON" in torch.cuda.get_device_name(device).upper()
+            or torch.cuda.get_device_name(device).endswith("[ZLUDA]")
+        )
+    ):
+        torch.backends.cudnn.enabled = False
+        torch.backends.cudnn.benchmark = False
+    model = load_embedding(embedder_model, embedder_model_custom).float()
+    try:
+        model = model.to(device)
+    except (RuntimeError, NotImplementedError, TypeError) as error:
+        from rvc.lib.tools.device import is_mps_error
+
+        if str(device) != "mps" or not is_mps_error(error):
+            raise
+        print(f"[!] MPS embedding setup failed ({error}); continuing on CPU.")
+        device = "cpu"
+        model = model.to(device)
     model.eval()
-    n_threads = max(1, n_threads)
+    n_threads = 1 if str(device) == "mps" else max(1, n_threads)
 
     def worker(file_info):
+        nonlocal device
         wav_file_path, _, _, out_file_path = file_info
         if os.path.exists(out_file_path):
             return
@@ -147,7 +250,19 @@ def process_file_embedding(
         )
         feats = feats.view(1, -1)
         with torch.no_grad():
-            result = model(feats)["last_hidden_state"]
+            try:
+                result = model(feats)["last_hidden_state"]
+            except (RuntimeError, NotImplementedError, TypeError) as error:
+                from rvc.lib.tools.device import is_mps_error
+
+                if str(device) != "mps" or not is_mps_error(error):
+                    raise
+                print(
+                    f"[!] MPS embedding extraction failed ({error}); continuing on CPU."
+                )
+                device = "cpu"
+                model.to(device)
+                result = model(feats.to(device))["last_hidden_state"]
         feats_out = result.squeeze(0).float().cpu().numpy()
         if not np.isnan(feats_out).any():
             np.save(out_file_path, feats_out, allow_pickle=False)
@@ -157,7 +272,8 @@ def process_file_embedding(
     with tqdm.tqdm(total=len(files), leave=True, position=device_num) as pbar:
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures = [executor.submit(worker, f) for f in files]
-            for _ in concurrent.futures.as_completed(futures):
+            for result in concurrent.futures.as_completed(futures):
+                result.result()
                 pbar.update(1)
 
 
@@ -182,7 +298,13 @@ def run_embedding_extraction(
             )
             for i in range(len(devices))
         ]
-        concurrent.futures.wait(tasks)
+        for task in concurrent.futures.as_completed(tasks):
+            try:
+                task.result()
+            except Exception as task_err:
+                print(
+                    f"[!] Warning: Embedding extraction task encountered error: {task_err}"
+                )
 
     print(f"Embedding extraction completed in {time.time() - start_time:.2f} seconds.")
 
@@ -239,13 +361,25 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
-    devices = ["cpu"] if gpus == "-" else [f"cuda:{idx}" for idx in gpus.split("-")]
+    if gpus == "-":
+        devices = ["cpu"]
+    elif torch.cuda.is_available():
+        devices = [f"cuda:{idx}" for idx in gpus.split("-")]
+    elif torch.backends.mps.is_available():
+        devices = ["mps"]
+    else:
+        devices = ["cpu"]
 
-    run_pitch_extraction(files, devices, f0_method, num_processes)
+    try:
+        run_pitch_extraction(files, devices, f0_method, num_processes)
 
-    run_embedding_extraction(
-        files, devices, embedder_model, embedder_model_custom, num_processes
-    )
+        run_embedding_extraction(
+            files, devices, embedder_model, embedder_model_custom, num_processes
+        )
 
-    generate_config(sample_rate, exp_dir)
-    generate_filelist(exp_dir, sample_rate, include_mutes)
+        generate_config(sample_rate, exp_dir)
+        generate_filelist(exp_dir, sample_rate, include_mutes)
+        print(f"Model {os.path.basename(exp_dir)} extracted successfully.")
+    except Exception as e:
+        print(f"ERROR: Feature extraction failed: {e}", file=sys.stderr)
+        sys.exit(1)

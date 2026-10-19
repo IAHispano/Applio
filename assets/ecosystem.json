@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "brand": {
+    "name": "Applio",
+    "description": "Voice conversion, realtime voice changing, speech synthesis, and model training."
+  },
+  "links": {
+    "website": "https://applio.org/",
+    "ecosystem": "https://applio.org/ecosystem",
+    "download": "https://applio.org/download",
+    "docs": "https://docs.applio.org/",
+    "community": "https://applio.org/community",
+    "models": "https://applio.org/search",
+    "discord": "https://discord.gg/wY7gmqTyEV",
+    "support": "https://ko-fi.com/iahispano",
+    "patreon": "https://www.patreon.com/iahispano",
+    "desktopReleases": "https://github.com/IAHispano/Applio-App/releases/latest",
+    "gradioReleases": "https://github.com/IAHispano/Applio/releases",
+    "gradioCompiled": "https://huggingface.co/IAHispano/Applio/tree/main/Compiled/Windows"
+  },
+  "projects": {
+    "desktop": {
+      "name": "Applio Desktop",
+      "repository": "https://github.com/IAHispano/Applio-App",
+      "issues": "https://github.com/IAHispano/Applio-App/issues",
+      "guide": "/getting-started/desktop/"
+    },
+    "gradio": {
+      "name": "Applio with Gradio",
+      "repository": "https://github.com/IAHispano/Applio",
+      "issues": "https://github.com/IAHispano/Applio/issues",
+      "guide": "/getting-started/installation/#python-application-with-gradio"
+    },
+    "website": {
+      "name": "Applio Website",
+      "repository": "https://github.com/IAHispano/Applio-Website",
+      "issues": "https://github.com/IAHispano/Applio-Website/issues"
+    },
+    "docs": {
+      "name": "Applio Docs",
+      "repository": "https://github.com/IAHispano/Applio-Website",
+      "issues": "https://github.com/IAHispano/Applio-Website/issues"
+    }
+  },
+  "guides": {
+    "desktop": "/getting-started/desktop/",
+    "installation": "/getting-started/installation/",
+    "inference": "/getting-started/inference/",
+    "training": "/getting-started/training/",
+    "tts": "/getting-started/tts/",
+    "blender": "/getting-started/voice-blender/",
+    "realtime": "/getting-started/realtime/",
+    "models": "/getting-started/installing-inference-models/",
+    "plugins": "/getting-started/plugins/",
+    "report": "/getting-started/report-error/",
+    "audio": "/getting-started/audio-analyzer/",
+    "separation": "/guides/uvr/",
+    "storage": "/guides/moving-to-desktop/",
+    "tensorboard": "/getting-started/tensorboard/",
+    "jobs": "/getting-started/desktop/#follow-a-job"
+  }
+}

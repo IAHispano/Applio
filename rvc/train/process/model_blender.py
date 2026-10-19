@@ -1,5 +1,6 @@
 import os
 import torch
+from rvc.lib.user_config import get_logs_dir
 from collections import OrderedDict
 
 
@@ -68,9 +69,9 @@ def model_blender(name, path1, path2, ratio):
         opt["info"] = message
         opt["vocoder"] = vocoder
 
-        torch.save(opt, os.path.join("logs", f"{name}.pth"))
+        torch.save(opt, os.path.join(get_logs_dir(), f"{name}.pth"))
         print(message)
-        return message, os.path.join("logs", f"{name}.pth")
+        return message, os.path.join(get_logs_dir(), f"{name}.pth")
     except Exception as error:
         print(f"An error occurred blending the models: {error}")
         return error

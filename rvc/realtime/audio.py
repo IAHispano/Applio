@@ -4,13 +4,28 @@ import librosa
 import traceback
 import numpy as np
 import sounddevice as sd
-from queue import Queue
+from queue import Empty, Full, Queue
 from dataclasses import dataclass
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from rvc.realtime.core import AUDIO_SAMPLE_RATE
+
+
+def queue_latest(queue, audio):
+    """Keep each playback stream bounded without blocking the input callback."""
+    try:
+        queue.put_nowait(audio)
+    except Full:
+        try:
+            queue.get_nowait()
+        except Empty:
+            pass
+        try:
+            queue.put_nowait(audio)
+        except Full:
+            pass
 
 
 @dataclass
@@ -135,7 +150,8 @@ class Audio:
         monitor: bool = False,
     ):
         self.callbacks = callbacks
-        self.mon_queue = Queue()
+        self.out_queue = Queue(maxsize=2)
+        self.mon_queue = Queue(maxsize=2)
         self.stream = None
         self.input_stream = None
         self.output_stream = None
@@ -193,10 +209,14 @@ class Audio:
     def audio_stream_no_output_callback(
         self, indata: np.ndarray, frames, times, status
     ):
+        if not self.running:
+            return
         try:
             out_wav = self.process_data_with_time(indata)
 
-            self.mon_queue.put(out_wav)
+            queue_latest(self.out_queue, out_wav)
+            if self.use_monitor:
+                queue_latest(self.mon_queue, out_wav)
         except Exception as error:
             print(f"An error occurred while running the audio stream: {error}")
             print(traceback.format_exc())
@@ -204,12 +224,15 @@ class Audio:
     def audio_stream_callback(
         self, indata: np.ndarray, outdata: np.ndarray, frames, times, status
     ):
+        if not self.running:
+            outdata.fill(0)
+            return
         try:
             out_wav = self.process_data_with_time(indata)
 
             output_channels = outdata.shape[1]
             if self.use_monitor:
-                self.mon_queue.put(out_wav)
+                queue_latest(self.mon_queue, out_wav)
 
             outdata[:] = (
                 np.repeat(out_wav, output_channels).reshape(-1, output_channels)
@@ -219,12 +242,22 @@ class Audio:
             print(f"An error occurred while running the audio stream: {error}")
             print(traceback.format_exc())
 
-    def audio_queue(self, outdata: np.ndarray, gain: float):
+    def audio_queue(self, q: Queue, outdata: np.ndarray, gain: float):
+        if not self.running:
+            outdata.fill(0)
+            return
         try:
-            mon_wav = self.mon_queue.get()
-
-            while self.mon_queue.qsize() > 0:
-                self.mon_queue.get()
+            try:
+                mon_wav = q.get_nowait()
+                while True:
+                    try:
+                        latest = q.get_nowait()
+                    except Empty:
+                        break
+                    mon_wav = latest
+            except Empty:
+                outdata.fill(0)
+                return
 
             output_channels = outdata.shape[1]
             outdata[:] = (
@@ -272,7 +305,7 @@ class Audio:
             )
             self.output_stream = sd.OutputStream(
                 callback=lambda outdata, frames, times, status: self.audio_queue(
-                    outdata, self.output_audio_gain
+                    self.out_queue, outdata, self.output_audio_gain
                 ),
                 latency="low",
                 dtype=np.float32,
@@ -300,7 +333,7 @@ class Audio:
         if self.use_monitor:
             self.monitor = sd.OutputStream(
                 callback=lambda outdata, frames, times, status: self.audio_queue(
-                    outdata, self.monitor_audio_gain
+                    self.mon_queue, outdata, self.monitor_audio_gain
                 ),
                 latency="low",
                 dtype=np.float32,
@@ -315,21 +348,33 @@ class Audio:
     def stop(self):
         self.running = False
 
-        if self.stream is not None:
-            self.stream.close()
-            self.stream = None
+        streams = [self.stream, self.input_stream, self.output_stream, self.monitor]
+        self.stream = None
+        self.input_stream = None
+        self.output_stream = None
+        self.monitor = None
 
-        if self.input_stream is not None:
-            self.input_stream.close()
-            self.input_stream = None
+        for s in streams:
+            if s is not None:
+                try:
+                    s.abort()
+                except Exception:
+                    pass
+                try:
+                    s.close()
+                except Exception:
+                    pass
 
-        if self.output_stream is not None:
-            self.output_stream.close()
-            self.output_stream = None
-
-        if self.monitor is not None:
-            self.monitor.close()
-            self.monitor = None
+        while not self.out_queue.empty():
+            try:
+                self.out_queue.get_nowait()
+            except Exception:
+                break
+        while not self.mon_queue.empty():
+            try:
+                self.mon_queue.get_nowait()
+            except Exception:
+                break
 
     def start(
         self,

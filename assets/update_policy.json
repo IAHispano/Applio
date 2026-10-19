@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "python": [3, 12],
+  "requirements": ["requirements.txt", "requirements-engine.txt"],
+  "migrations": []
+}

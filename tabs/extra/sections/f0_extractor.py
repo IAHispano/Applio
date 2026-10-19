@@ -6,15 +6,17 @@ from matplotlib import pyplot as plt
 from rvc.lib.predictors.F0Extractor import F0Extractor
 
 from assets.i18n.i18n import I18nAuto
+from assets.app_shell import step_card
 
 i18n = I18nAuto()
 
 
 def extract_f0_curve(audio_path: str, method: str):
+    """Export a pitch plot and curve without decoding the input twice."""
     print("Extracting F0 Curve...")
     image_path = os.path.join("logs", "f0_plot.png")
     txt_path = os.path.join("logs", "f0_curve.txt")
-    y, sr = librosa.load(audio_path, sr=None)
+    sr = librosa.get_samplerate(audio_path)
     hop_length = 160
 
     librosa.note_to_hz("C1")
@@ -41,20 +43,24 @@ def extract_f0_curve(audio_path: str, method: str):
 
 
 def f0_extractor_tab():
-    audio = gr.Audio(label=i18n("Upload Audio"), type="filepath")
-    f0_method = gr.Radio(
-        label=i18n("Pitch extraction algorithm"),
-        info=i18n(
-            "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
-        ),
-        choices=["crepe", "fcpe", "rmvpe"],
-        value="rmvpe",
-    )
-    button = gr.Button(i18n("Extract F0 Curve"))
+    with step_card(1, "Audio Source", i18n, description="Upload audio and pick the pitch algorithm."):
+        audio = gr.Audio(label=i18n("Upload Audio"), type="filepath")
+        f0_method = gr.Radio(
+            label=i18n("Pitch extraction algorithm"),
+            info=i18n(
+                "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
+            ),
+            choices=["crepe", "fcpe", "rmvpe"],
+            value="rmvpe",
+        )
+    with step_card(2, "Extract & Results", i18n, description="Run the extraction and inspect the curve."):
+        button = gr.Button(i18n("Extract F0 Curve"))
 
-    with gr.Row():
-        txt_output = gr.File(label=i18n("F0 Curve"), type="filepath")
-        image_output = gr.Image(type="filepath", interactive=False)
+        with gr.Row(equal_height=True, elem_classes="applio-f0-results"):
+            txt_output = gr.File(label=i18n("F0 Curve"), type="filepath", height=280)
+            image_output = gr.Image(
+                label=i18n("F0 Plot"), type="filepath", interactive=False, height=280
+            )
 
     button.click(
         fn=extract_f0_curve,

@@ -9,6 +9,10 @@ on:
       - 'assets/config_template.json'
       - '.github/workflows/release.yml'
 
+permissions:
+  contents: write
+  actions: write
+
 jobs:
   release:
     name: Release
@@ -133,6 +137,7 @@ jobs:
             ### Installation Steps
             - **Download Compiled Version**: Get the zip from [this link](https://huggingface.co/IAHispano/Applio/resolve/main/Compiled/Windows/ApplioV${{ steps.check-version.outputs.tag }}.zip).
             - **Run Applio**: Extract the \`.zip\` file, then open the \`run-applio.bat\` file.
+            - **Update an existing installation**: Close Applio and run \`run-updater.bat\`. Older builds can add it by extracting [ApplioUpdater.zip](https://github.com/IAHispano/Applio/releases/download/${tag_name}/ApplioUpdater.zip) into their existing Applio folder. Update assets appear after packaging finishes.
           ## What's New in This Release
             ${changelog}
 
@@ -154,6 +159,14 @@ jobs:
             repo: context.repo.repo,
             workflow_id: 'pre_compiled.yml',
             ref: context.ref,
+            inputs: { tag: '${{ steps.check-version.outputs.tag }}' },
+            });
+            await github.rest.actions.createWorkflowDispatch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'update_package.yml',
+            ref: context.ref,
+            inputs: { tag: '${{ steps.check-version.outputs.tag }}' },
             });
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

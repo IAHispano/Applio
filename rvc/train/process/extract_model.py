@@ -10,6 +10,8 @@ import torch
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 
+from rvc.lib.user_config import load_config
+
 
 def replace_keys_in_dict(d, old_key_part, new_key_part):
     if isinstance(d, OrderedDict):
@@ -51,11 +53,7 @@ def extract_model(
         else:
             dataset_length = None
 
-        with open(
-            os.path.join(now_dir, "assets", "config.json"), "r", encoding="utf-8"
-        ) as f:
-            data = json.load(f)
-            model_author = data.get("model_author", None)
+        model_author = load_config().get("model_author", None)
 
         opt = OrderedDict(
             weight={
