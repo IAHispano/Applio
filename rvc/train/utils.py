@@ -1,5 +1,6 @@
 import os
 import glob
+import secrets
 import torch
 import numpy as np
 import soundfile as sf
@@ -83,6 +84,32 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, load_opt=1):
     )
 
 
+def atomic_torch_save(value, filename):
+    """Publish a complete checkpoint without overwriting a valid prior copy."""
+    # Match ordinary file writes through model-folder and checkpoint symlinks.
+    # Replace the target atomically rather than replacing the symlink itself.
+    filename = os.path.realpath(filename)
+    temporary = None
+    try:
+        candidate = os.path.join(
+            os.path.dirname(filename), f".checkpoint-{secrets.token_hex(16)}.tmp"
+        )
+        # Exclusive creation keeps ordinary file permissions (including umask).
+        # Record ownership only after creation succeeds, so cleanup is safe.
+        with open(candidate, "xb") as stream:
+            temporary = candidate
+            torch.save(value, stream)
+            stream.flush()
+            os.fsync(stream.fileno())
+        # Close the file before replacing it, including on Windows.
+        if os.name != "nt" and os.path.exists(filename):
+            os.chmod(temporary, os.stat(filename).st_mode & 0o777)
+        os.replace(temporary, filename)
+    finally:
+        if temporary is not None and os.path.exists(temporary):
+            os.unlink(temporary)
+
+
 def save_checkpoint(
     model, optimizer, learning_rate, iteration, checkpoint_path, scaler
 ):
@@ -108,7 +135,7 @@ def save_checkpoint(
     }
 
     # Create a backwards-compatible checkpoint
-    torch.save(
+    atomic_torch_save(
         replace_keys_in_dict(
             replace_keys_in_dict(
                 checkpoint_data, ".parametrizations.weight.original1", ".weight_v"
