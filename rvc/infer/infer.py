@@ -13,6 +13,7 @@ import logging
 import numpy as np
 import soundfile as sf
 from functools import wraps
+from scipy import signal
 
 now_dir = os.getcwd()
 sys.path.append(now_dir)
@@ -29,6 +30,10 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("faiss").setLevel(logging.WARNING)
 logging.getLogger("faiss.loader").setLevel(logging.WARNING)
+
+# High-pass on the input of a Rectified Flow model: a sub-bass pop would set
+# the peak the input is normalised to and read as a loud frame of its energy
+FLOW_INPUT_HIGHPASS_HZ = 40.0
 
 
 def _toast(message, warning=False):
@@ -224,6 +229,10 @@ class VoiceConverter:
             }
             flow_sr = self.net_g.data["sample_rate"]
             audio_full = load_audio_infer(audio_input_path, flow_sr, **kwargs)
+            highpass = signal.butter(
+                4, FLOW_INPUT_HIGHPASS_HZ, "highpass", fs=flow_sr, output="sos"
+            )
+            audio_full = signal.sosfiltfilt(highpass, audio_full).astype(np.float32)
             audio = librosa.resample(
                 audio_full, orig_sr=flow_sr, target_sr=16000, res_type="soxr_vhq"
             )
