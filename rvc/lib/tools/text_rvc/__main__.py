@@ -114,6 +114,22 @@ def _load(path):
     return model, payload
 
 
+def validate_initial_frontend(path, hidden, layers, feature_dim):
+    if not path:
+        return
+    from rvc.lib.tools.text_rvc.model import DurationFrontend
+
+    model, payload = _load(path)
+    if not isinstance(model, DurationFrontend) or model.feature_dim != feature_dim:
+        raise ValueError(
+            "The pretrained text frontend has an incompatible acoustic architecture"
+        )
+    if model.hidden != hidden or payload["config"]["layers"] != layers:
+        raise ValueError(
+            "Initialization checkpoint hidden size and layers must match the training settings"
+        )
+
+
 def _validation(model, records, root, mean, scale):
     import torch
     from rvc.lib.tools.text_rvc.model import batch, loss
@@ -129,7 +145,10 @@ def _validation(model, records, root, mean, scale):
             args = tuple(value.to(device) for value in args)
             total, metrics = loss(model, *args)
             values.append({"loss": float(total), **metrics})
-    return {key: sum(row[key] for row in values) / len(values) for key in values[0]}
+    metrics = {key: sum(row[key] for row in values) / len(values) for key in values[0]}
+    if not all(math.isfinite(value) for value in metrics.values()):
+        raise ValueError("Validation produced non-finite metrics")
+    return metrics
 
 
 def train(args):
@@ -139,6 +158,7 @@ def train(args):
         DurationFrontend,
         batch,
         loss,
+        transfer_frontend,
     )
 
     manifest, data = _manifest(args.manifest)
@@ -178,9 +198,18 @@ def train(args):
         if aligned
         else TextFrontend(dimensions, hidden=args.hidden, layers=args.layers)
     )
+    source = {}
+    shared_phonemes = 0
     if args.initialize_from:
         initialization_hash = digest(args.initialize_from)
         source_model, source = _load(args.initialize_from)
+        if (
+            source_model.hidden != args.hidden
+            or source["config"]["layers"] != args.layers
+        ):
+            raise ValueError(
+                "Initialization checkpoint hidden size and layers must match the training settings"
+            )
         if digest(args.initialize_from) != initialization_hash:
             raise ValueError("Initialization checkpoint changed while loading")
         if (
@@ -188,25 +217,25 @@ def train(args):
             or isinstance(source_model, DurationFrontend) != aligned
         ):
             raise ValueError("Initialization feature space or architecture differs")
-        if getattr(source_model, "phoneme_vocabulary", None) != vocabulary or getattr(
-            source_model, "language", "en"
-        ) != getattr(model, "language", "en"):
-            if not args.reset_tokenizer:
-                raise ValueError(
-                    "Initialization text tokenizer differs; use --reset-tokenizer for acoustic transfer"
-                )
-            transferred = {
-                key: value
-                for key, value in source["weights"].items()
-                if not key.startswith(("embedding.", "phonetic_head."))
-            }
-            missing, unexpected = model.load_state_dict(transferred, strict=False)
-            if missing != ["embedding.weight"] or unexpected:
-                raise ValueError("Acoustic transfer architecture differs")
+        if (
+            getattr(source_model, "phoneme_vocabulary", None) != vocabulary
+            or getattr(source_model, "language", "en")
+            != getattr(model, "language", "en")
+            or args.reset_tokenizer
+        ):
+            shared_phonemes = transfer_frontend(
+                model, source_model, args.reset_tokenizer
+            )
         else:
             model = source_model
-        if set(source["train_ids"]) & {row["id"] for row in validation}:
+        if set(source.get("seen_ids", source["train_ids"])) & {
+            row["id"] for row in validation
+        }:
             raise ValueError("Initialization checkpoint has seen validation utterances")
+        if set(source.get("seen_audio_sha256", [])) & {
+            row["audio_sha256"] for row in validation
+        }:
+            raise ValueError("Initialization checkpoint has seen validation recordings")
         mean, scale = source["mean"], source["scale"]
     if args.phonetic_loss:
         from rvc.lib.tools.text_rvc.model import fit_phonetic_head
@@ -226,6 +255,41 @@ def train(args):
     best = float("inf")
     train_ids = [row["id"] for row in train_rows]
     validation_ids = [row["id"] for row in validation]
+
+    def snapshot(step, metrics):
+        return {
+            "format": "applio-text-rvc-frontend-v1",
+            "config": model.config,
+            "weights": model.state_dict(),
+            "mean": mean,
+            "scale": scale,
+            "feature_space": data["feature_space"],
+            "train_ids": train_ids,
+            "seen_ids": sorted(
+                set(source.get("seen_ids", source.get("train_ids", [])))
+                | set(train_ids)
+            ),
+            "seen_audio_sha256": sorted(
+                set(source.get("seen_audio_sha256", []))
+                | {row["audio_sha256"] for row in train_rows}
+            ),
+            "manifest_sha256": digest(manifest),
+            "shared_phonemes": shared_phonemes,
+            "validation_ids": validation_ids,
+            "seed": args.seed,
+            "step": step,
+            "validation": metrics,
+            "duration_scale": model.duration_scale,
+            "initialized_from_sha256": (
+                initialization_hash if args.initialize_from else None
+            ),
+            "reset_tokenizer": args.reset_tokenizer,
+        }
+
+    if args.initialize_from:
+        best = baseline["loss"]
+        _torch_save(output / "best.pt", snapshot(0, baseline))
+
     for step in range(1, args.steps + 1):
         model.train()
         rows = rng.sample(train_rows, min(args.batch_size, len(train_rows)))
@@ -249,24 +313,7 @@ def train(args):
         if step % args.validate_every == 0 or step == args.steps:
             metrics = _validation(model, validation, manifest.parent, mean, scale)
             history.append({"step": step, "validation": metrics})
-            payload = {
-                "format": "applio-text-rvc-frontend-v1",
-                "config": model.config,
-                "weights": model.state_dict(),
-                "mean": mean,
-                "scale": scale,
-                "feature_space": data["feature_space"],
-                "train_ids": train_ids,
-                "validation_ids": validation_ids,
-                "seed": args.seed,
-                "step": step,
-                "validation": metrics,
-                "duration_scale": model.duration_scale,
-                "initialized_from_sha256": (
-                    initialization_hash if args.initialize_from else None
-                ),
-                "reset_tokenizer": args.reset_tokenizer,
-            }
+            payload = snapshot(step, metrics)
             _torch_save(output / "last.pt", payload)
             if metrics["loss"] < best:
                 best = metrics["loss"]
@@ -411,6 +458,9 @@ def fit(args):
             "ContentVec and RMVPE assets are required; run Install / Repair first"
         )
     recognizer = Path(args.recognizer).resolve()
+    validate_initial_frontend(
+        args.initialize_from, args.hidden, args.layers, 768 if version == "v2" else 256
+    )
     multilingual = args.language != "en"
     if multilingual:
         recognizer = recognizer.with_name("phonemes-multilingual")
@@ -436,6 +486,7 @@ def fit(args):
         speaker=args.speaker,
         version=version,
         language=args.language,
+        device=args.device,
     )
     manifest = root / "prepared" / "phonemes.json"
     align(
@@ -444,6 +495,7 @@ def fit(args):
         recognizer,
         phonemes=True,
         language=args.language,
+        device=args.device,
     )
     training = argparse.Namespace(
         **{**vars(args), "manifest": str(manifest), "output": str(root / "training")}
@@ -634,6 +686,10 @@ def main():
     validation.add_argument("--dataset", required=True)
     validation.add_argument("--speaker", default="p225")
     validation.add_argument("--language", choices=LANGUAGES, default="en")
+    validation.add_argument("--initialize-from", default="")
+    validation.add_argument("--hidden", type=int, default=256)
+    validation.add_argument("--layers", type=int, default=4)
+    validation.add_argument("--feature-dim", type=int, choices=(256, 768), default=768)
     download = commands.add_parser("download-vctk")
     download.add_argument("--output", required=True)
     download.add_argument("--speaker", default="p225")
@@ -694,6 +750,16 @@ def main():
     assessment.add_argument("--output", required=True)
     assessment.add_argument("--sid", type=int, default=0)
     assessment.add_argument("--limit", type=int, default=8)
+    assessment.add_argument(
+        "--oracle-durations",
+        action="store_true",
+        help="Diagnostic only: use reference timing instead of predicting it from text",
+    )
+    assessment.add_argument(
+        "--external-validation",
+        action="store_true",
+        help="Assess a separate held-out corpus instead of the checkpoint validation IDs",
+    )
     for command in ("predict", "synthesize"):
         item = commands.add_parser(command)
         item.add_argument("--frontend", required=True)
@@ -731,6 +797,9 @@ def main():
         from rvc.lib.tools.text_rvc.data import validate_speech
 
         validate_speech(args.dataset, args.speaker, args.language)
+        validate_initial_frontend(
+            args.initialize_from, args.hidden, args.layers, args.feature_dim
+        )
         return
     import torch
 

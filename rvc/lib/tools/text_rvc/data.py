@@ -15,6 +15,9 @@ MIRROR = "sanchit-gandhi/vctk"
 
 
 def normalize_text(text, language="en"):
+    # Read-speech corpora and pasted prose commonly mark emphasis with Markdown.
+    # Keep unpaired stars and arithmetic such as 2*3 as literal text.
+    text = re.sub(r"(?<!\w)(\*{1,2})(?=\S)(.+?)(?<=\S)\1(?!\w)", r"\2", text)
     if language == "tr":
         text = text.replace("I", "ı").replace("İ", "i")
     text = " ".join(unicodedata.normalize("NFKC", text).lower().split())
@@ -288,6 +291,7 @@ def prepare(
     version="v2",
     max_seconds=12,
     language="en",
+    device="cpu",
 ):
     import numpy as np
     import soundfile as sf
@@ -314,13 +318,13 @@ def prepare(
         HubertModelWithFinalProj.from_pretrained(
             str(Path(embedder).resolve()), local_files_only=True
         )
-        .cpu()
+        .to(device)
         .float()
         .eval()
     )
     model.requires_grad_(False)
     predictor = RMVPE(
-        device="cpu",
+        device=device,
         model_name=str(Path(rmvpe).resolve()),
         high_register={"enabled": False},
     )
@@ -341,7 +345,9 @@ def prepare(
         if peak > 0.95:
             audio *= 0.95 / peak
         with torch.inference_mode():
-            features = model(torch.from_numpy(audio).unsqueeze(0))["last_hidden_state"]
+            features = model(torch.from_numpy(audio).unsqueeze(0).to(device))[
+                "last_hidden_state"
+            ]
             if version == "v1":
                 features = model.final_proj(features)
             features = functional.interpolate(
@@ -354,7 +360,7 @@ def prepare(
         path = output / "features" / f"{row['id']}.pt"
         torch.save(
             {
-                "features": features[:frames].contiguous(),
+                "features": features[:frames].cpu().contiguous(),
                 "f0": torch.tensor(f0[:frames], dtype=torch.float32),
             },
             path,
@@ -375,7 +381,9 @@ def prepare(
         {
             "format": "applio-text-rvc-data-v1",
             "corpus": CORPUS if (Path(root) / "txt" / speaker).is_dir() else "user",
-            "speaker": speaker,
+            "speaker": (
+                speaker if (Path(root) / "txt" / speaker).is_dir() else Path(root).name
+            ),
             "microphone": mic,
             "feature_space": feature_space,
             "records": partition(rows),

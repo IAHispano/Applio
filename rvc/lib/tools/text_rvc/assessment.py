@@ -40,6 +40,13 @@ def assess(args):
     model, payload = _load(args.frontend)
     torch.manual_seed(7)
     manifest, data = _manifest(args.manifest)
+    if not args.external_validation and payload.get("manifest_sha256") not in (
+        None,
+        digest(manifest),
+    ):
+        raise ValueError(
+            "Checkpoint validation requires its original manifest; use external-validation for a separate corpus"
+        )
     if payload["feature_space"] != data["feature_space"]:
         raise ValueError("Incompatible evaluation feature space")
     output = Path(args.output).resolve()
@@ -65,16 +72,40 @@ def assess(args):
             ).logits
         return processor.batch_decode(logits.argmax(-1))[0]
 
-    selected = set(payload["validation_ids"])
-    if selected & set(payload["train_ids"]):
+    if getattr(model, "language", "en") != "en":
+        raise ValueError(
+            "This word-error assessor requires an English frontend and references"
+        )
+    selected = (
+        {row["id"] for row in data["records"] if row["split"] == "validation"}
+        if args.external_validation
+        else set(payload["validation_ids"])
+    )
+    if selected & set(payload.get("seen_ids", payload["train_ids"])):
         raise ValueError("Validation leakage detected")
     rows = [row for row in data["records"] if row["id"] in selected][: args.limit]
     if not rows:
         raise ValueError("No held-out utterances are available")
+    seen_audio = set(payload.get("seen_audio_sha256", []))
+    if seen_audio & {row["audio_sha256"] for row in rows}:
+        raise ValueError("Validation recordings were used during training")
     results = []
     for row in rows:
         truth = _example(manifest.parent, row, model.feature_dim)
-        values = model.generate(torch.tensor([model.tokenize(row["text"])]))
+        if args.oracle_durations:
+            if "durations" not in row or "tokens" not in row:
+                raise ValueError(
+                    "Oracle-duration diagnostics require an aligned phoneme manifest"
+                )
+            with torch.inference_mode():
+                values, _ = model(
+                    torch.tensor([row["tokens"]]),
+                    durations=torch.tensor([row["durations"]]),
+                )
+                values = values[0].clone()
+                values[:, -1] = values[:, -1].sigmoid()
+        else:
+            values = model.generate(torch.tensor([model.tokenize(row["text"])]))
         features, f0, coarse = denormalize(values, payload["mean"], payload["scale"])
         acoustic = dict(
             features=features,
@@ -129,6 +160,8 @@ def assess(args):
             output / "assessment.json",
             {
                 "frontend_sha256": digest(args.frontend),
+                "external_validation": args.external_validation,
+                "uses_reference_timing": args.oracle_durations,
                 "rvc_sha256": digest(args.rvc),
                 "recognizer_sha256": digest(
                     Path(args.recognizer) / "pytorch_model.bin"

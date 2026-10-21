@@ -22,7 +22,7 @@ def phoneme_labels(text, vocabulary, language="en"):
         from piper.phonemize_espeak import EspeakPhonemizer
 
         _phonemizer = EspeakPhonemizer()
-    spoken = "".join(
+    spoken = " ".join(
         "".join(sentence)
         for sentence in _phonemizer.phonemize(language, normalize_text(text, language))
     )
@@ -95,7 +95,7 @@ def ctc_durations(log_probs, labels, frames, blank=0):
     return torch.bincount(torch.tensor(path)[indices], minlength=len(labels))
 
 
-def align(manifest, output, recognizer, phonemes=False, language="en"):
+def align(manifest, output, recognizer, phonemes=False, language="en", device="cpu"):
     if language not in LANGUAGES or not phonemes and language != "en":
         raise ValueError("This speech language requires multilingual phoneme alignment")
     import numpy as np
@@ -118,7 +118,9 @@ def align(manifest, output, recognizer, phonemes=False, language="en"):
         Wav2Vec2FeatureExtractor if phonemes else Wav2Vec2Processor
     ).from_pretrained(recognizer, local_files_only=True)
     model = (
-        Wav2Vec2ForCTC.from_pretrained(recognizer, local_files_only=True).cpu().eval()
+        Wav2Vec2ForCTC.from_pretrained(recognizer, local_files_only=True)
+        .to(device)
+        .eval()
     )
     model.requires_grad_(False)
     vocab = (
@@ -172,7 +174,7 @@ def align(manifest, output, recognizer, phonemes=False, language="en"):
         )
         inputs = processor(audio, sampling_rate=16000, return_tensors="pt")
         with torch.inference_mode():
-            logits = model(inputs.input_values).logits[0]
+            logits = model(inputs.input_values.to(device)).logits[0].cpu()
             durations = ctc_durations(
                 logits.log_softmax(-1), labels, row["frames"], model.config.pad_token_id
             )

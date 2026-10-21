@@ -222,6 +222,7 @@ class DurationFrontend(nn.Module):
                 .round()
                 .long()
             )
+            durations = durations.clamp_min(1)
             durations = durations.masked_fill((tokens == 0) | (tokens == self.eos), 0)
         lengths = durations.sum(1)
         if int(lengths.max()) < 1 or int(lengths.max()) > 3000:
@@ -271,6 +272,39 @@ class DurationFrontend(nn.Module):
         result = prediction[0].clone()
         result[:, -1] = result[:, -1].sigmoid()
         return result
+
+
+def transfer_frontend(target, source, reset_tokenizer=False):
+    """Retain acoustic layers and remap shared phonemes by symbol, never token ID."""
+    weights = {
+        key: value
+        for key, value in source.state_dict().items()
+        if not key.startswith(("embedding.", "phonetic_head."))
+    }
+    missing, unexpected = target.load_state_dict(weights, strict=False)
+    if missing != ["embedding.weight"] or unexpected:
+        raise ValueError("Acoustic transfer architecture differs")
+    shared = 0
+    if not reset_tokenizer:
+        with torch.no_grad():
+            old = getattr(source, "phoneme_vocabulary", None)
+            new = getattr(target, "phoneme_vocabulary", None)
+            if old and new:
+                for phone in old.keys() & new.keys():
+                    target.embedding.weight[new[phone] + 1].copy_(
+                        source.embedding.weight[old[phone] + 1]
+                    )
+                    shared += not phone.startswith("<")
+            elif (
+                old == new
+                and source.embedding.weight.shape == target.embedding.weight.shape
+            ):
+                target.embedding.weight.copy_(source.embedding.weight)
+            target.embedding.weight[0].copy_(source.embedding.weight[0])
+            target.embedding.weight[target.eos].copy_(
+                source.embedding.weight[source.eos]
+            )
+    return shared
 
 
 def phonetic_head(dimensions, vocabulary_size=258):
