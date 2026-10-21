@@ -763,6 +763,12 @@ def main():
     assessment.add_argument("--manifest", required=True)
     assessment.add_argument("--rvc", required=True)
     assessment.add_argument("--recognizer", required=True)
+    assessment.add_argument(
+        "--recognizer-language",
+        choices=LANGUAGES,
+        default="en",
+        help="Language of the independent word recognizer; must match the TTS model",
+    )
     assessment.add_argument("--output", required=True)
     assessment.add_argument("--sid", type=int, default=0)
     assessment.add_argument("--limit", type=int, default=8)

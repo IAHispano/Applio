@@ -1,16 +1,24 @@
-"""Held-out intelligibility checks with an independent frozen English recognizer."""
+"""Held-out intelligibility checks with an independent frozen recognizer."""
 
 import math
 from pathlib import Path
-import re
+import unicodedata
 
 from rvc.lib.tools.text_rvc.data import digest, save_json
 
 
 def error_rate(reference, hypothesis):
     """Word edit distance; insertions can legitimately produce rates above one."""
-    reference = re.findall(r"[a-z']+", reference.lower())
-    hypothesis = re.findall(r"[a-z']+", hypothesis.lower())
+
+    def words(text):
+        text = unicodedata.normalize("NFC", text).casefold().replace("’", "'")
+        return "".join(
+            char if unicodedata.category(char)[0] in ("L", "M") or char == "'" else " "
+            for char in text
+        ).split()
+
+    reference = words(reference)
+    hypothesis = words(hypothesis)
     if not reference:
         raise ValueError("A nonempty reference transcript is required")
     previous = list(range(len(hypothesis) + 1))
@@ -38,6 +46,10 @@ def assess(args):
     from rvc.lib.tools.text_rvc.model import denormalize
 
     model, payload = _load(args.frontend)
+    language = getattr(model, "language", "en")
+    recognizer_language = getattr(args, "recognizer_language", "en")
+    if language.split("-")[0] != recognizer_language.split("-")[0]:
+        raise ValueError("The independent recognizer language must match the TTS model")
     torch.manual_seed(7)
     manifest, data = _manifest(args.manifest)
     if not args.external_validation and payload.get("manifest_sha256") not in (
@@ -72,10 +84,6 @@ def assess(args):
             ).logits
         return processor.batch_decode(logits.argmax(-1))[0]
 
-    if getattr(model, "language", "en") not in ("en", "en-us"):
-        raise ValueError(
-            "This word-error assessor requires an English frontend and references"
-        )
     selected = (
         {row["id"] for row in data["records"] if row["split"] == "validation"}
         if args.external_validation
@@ -160,6 +168,8 @@ def assess(args):
             output / "assessment.json",
             {
                 "frontend_sha256": digest(args.frontend),
+                "language": language,
+                "recognizer_language": recognizer_language,
                 "external_validation": args.external_validation,
                 "uses_reference_timing": args.oracle_durations,
                 "rvc_sha256": digest(args.rvc),
