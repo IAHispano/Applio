@@ -85,6 +85,19 @@ To monitor training or visualize data:
 - **Windows:** Run `run-tensorboard.bat`.
 - **Linux/macOS:** Run `run-tensorboard.sh`.
 
+### Development Setup
+
+Dependencies are managed with [uv](https://docs.astral.sh/uv/) via `pyproject.toml` and `uv.lock`:
+
+```bash
+uv sync               # create .venv with the locked dependencies (CUDA PyTorch on Windows/Linux)
+uv run app.py --open  # launch the interface
+uv run core.py --help # use the CLI
+```
+
+After changing dependencies (`uv add` / `uv lock`), run `make requirements` to regenerate
+`requirements.txt` and `requirements-engine.txt`, which the Windows compiled build and updater still install from.
+
 For more detailed instructions, visit the [documentation](https://docs.applio.org).
 
 ## References

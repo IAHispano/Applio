@@ -1,0 +1,70 @@
+[project]
+name = "applio"
+version = "3.7.0"
+description = "A simple, high-quality voice conversion tool focused on ease of use and performance."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "click==8.1.8",
+    "numpy==2.4.6",
+    "requests==2.34.2",
+    "tqdm==4.68.4",
+    "faiss-cpu==1.14.3",
+    "librosa==0.11.0",
+    "scipy==1.17.1; python_version < '3.12'",
+    "scipy==1.18.0; python_version >= '3.12'",
+    "soundfile==0.14.0",
+    "stftpitchshift==2.0",
+    "soxr==1.1.0",
+    "torch==2.11.0",
+    "torchaudio==2.11.0",
+    "torchcrepe==0.0.24",
+    "torchfcpe==0.0.4",
+    "einops==0.8.2",
+    "transformers==5.13.1",
+    "matplotlib==3.11.0",
+    "tensorboard==2.21.0",
+    "onnx==1.23.1",
+    "onnxruntime>=1.17.0; sys_platform != 'win32'",
+    "edge-tts==7.2.8",
+    "beautifulsoup4==4.15.0",
+    "sounddevice==0.5.5",
+    "webrtcvad-wheels==2.0.14",
+    "psutil==7.2.2",
+    "uvicorn>=0.30.0",
+    "fastapi>=0.110.0",
+    "websockets>=13.0",
+    "onnxruntime-gpu==1.22.0; sys_platform == 'win32'",
+    "nvidia-cublas-cu12==12.9.2.10; sys_platform == 'win32'",
+    "nvidia-cuda-runtime-cu12==12.9.79; sys_platform == 'win32'",
+    "nvidia-cudnn-cu12==9.26.0.51; sys_platform == 'win32'",
+    "nvidia-cufft-cu12==11.4.1.4; sys_platform == 'win32'",
+]
+
+[dependency-groups]
+# Gradio interface; requirements-engine.txt is exported without it.
+ui = [
+    "gradio==6.20.0",
+    "pypresence==4.6.2",
+]
+
+[tool.uv]
+# Applio runs from the source tree (app.py / core.py); it is not an installable package.
+package = false
+default-groups = ["ui"]
+# Resolve each OS separately: Windows pins its own CUDA runtime wheels for onnxruntime-gpu.
+environments = [
+    "sys_platform == 'win32'",
+    "sys_platform == 'linux'",
+    "sys_platform == 'darwin'",
+]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu128", marker = "sys_platform != 'darwin'" }]
+torchaudio = [{ index = "pytorch-cu128", marker = "sys_platform != 'darwin'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

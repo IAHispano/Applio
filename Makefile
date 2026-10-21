@@ -7,16 +7,19 @@ help:
 
 # Install dependencies
 run-install:
-	apt-get -y install build-essential python3-dev ffmpeg
-	pip install --upgrade setuptools wheel
-	pip install pip==24.1
-	pip install -r requirements.txt
 	apt-get update
+	apt-get -y install build-essential python3-dev ffmpeg
+	uv sync --locked
 
 # Run Applio
 run-applio:
-	python app.py --share
+	uv run app.py --share
 
 # Run Tensorboard
 run-tensorboard:
-	python core.py tensorboard
+	uv run core.py tensorboard
+
+# Regenerate requirements*.txt from uv.lock (used by the Windows updater and plugins)
+requirements:
+	uv export --frozen --no-hashes --no-emit-project -o requirements.txt
+	uv export --frozen --no-default-groups --no-hashes --no-emit-project -o requirements-engine.txt

@@ -2,12 +2,14 @@
 setlocal
 title Tensorboard
 
-if not exist env (
-    echo Please run 'run-install.bat' first to set up the environment.
+set "python=env\python.exe"
+if not exist env if exist .venv\Scripts\python.exe set "python=.venv\Scripts\python.exe"
+if not exist "%python%" (
+    echo Please run 'run-install.bat' ^(or 'uv sync' for a development checkout^) first to set up the environment.
     pause
     exit /b 1
 )
 
-env\python.exe core.py tensorboard
+"%python%" core.py tensorboard
 echo.
 pause

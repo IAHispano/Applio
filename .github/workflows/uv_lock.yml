@@ -1,0 +1,31 @@
+name: Check uv Lock
+
+on:
+  push:
+    paths:
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'requirements*.txt'
+      - '.github/workflows/uv_lock.yml'
+  pull_request:
+    paths:
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'requirements*.txt'
+      - '.github/workflows/uv_lock.yml'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Verify uv.lock matches pyproject.toml
+        run: uv lock --check
+      - name: Verify exported requirements match uv.lock
+        run: |
+          make requirements
+          git diff --exit-code -- requirements.txt requirements-engine.txt || {
+            echo "::error::requirements*.txt are out of date. Run 'make requirements' and commit the result."
+            exit 1
+          }

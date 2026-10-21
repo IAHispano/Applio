@@ -93,7 +93,7 @@ def import_voice_converter():
         return VoiceConverter()
     except ImportError as e:
         raise RuntimeError(
-            f"Missing dependency: {e}. Please install requirements via 'pip install -r requirements.txt'"
+            f"Missing dependency: {e}. Please install requirements via 'uv sync'"
         )
 
 
@@ -337,7 +337,7 @@ def run_tts_script(
         if "No module named" in err_msg:
             pkg = err_msg.split("No module named")[-1].strip().strip("'\"")
             raise RuntimeError(
-                f"Missing Python package '{pkg}'. Please run: pip install -r requirements.txt"
+                f"Missing Python package '{pkg}'. Please run: uv sync"
             )
         raise RuntimeError(err_msg or f"TTS failed with code {result.returncode}")
 
@@ -611,7 +611,7 @@ def run_model_information_script(pth_path: str):
         return info
     except ImportError as e:
         raise RuntimeError(
-            f"Missing dependency: {e}. Please install requirements: pip install -r requirements.txt"
+            f"Missing dependency: {e}. Please install requirements: uv sync"
         )
 
 
@@ -640,7 +640,7 @@ def run_download_script(model_link: str):
         return "Model downloaded successfully."
     except ImportError as e:
         raise RuntimeError(
-            f"Missing dependency: {e}. Please install requirements: pip install -r requirements.txt"
+            f"Missing dependency: {e}. Please install requirements: uv sync"
         )
 
 
@@ -654,7 +654,7 @@ def run_prerequisites_script(
         return "Prerequisites downloaded and installed successfully."
     except ImportError as e:
         raise RuntimeError(
-            f"Missing dependency: {e}. Please install requirements: pip install -r requirements.txt"
+            f"Missing dependency: {e}. Please install requirements: uv sync"
         )
 
 
@@ -674,7 +674,7 @@ def run_audio_analyzer_script(
         return audio_info, plot_path
     except ImportError as e:
         raise RuntimeError(
-            f"Missing dependency: {e}. Please install requirements: pip install -r requirements.txt"
+            f"Missing dependency: {e}. Please install requirements: uv sync"
         )
 
 

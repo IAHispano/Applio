@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 FROM python:3.12-trixie
 
+COPY --from=ghcr.io/astral-sh/uv:0.13.3 /uv /uvx /bin/
+
 # Expose the required port
 EXPOSE 6969
 
@@ -13,16 +15,18 @@ RUN apt update && \
     apt install -y -qq libportaudio2 && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
+# Use the image's Python and keep installed files independent of the uv cache
+ENV UV_PYTHON_DOWNLOADS=never \
+    UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1
+
+# Install locked dependencies first so code changes don't invalidate this layer
+COPY pyproject.toml uv.lock .python-version ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
+
 # Copy application files into the container
 COPY . .
-
-# Create a virtual environment in the app directory and install dependencies
-RUN python3 -m venv /app/.venv && \
-    . /app/.venv/bin/activate && \
-    pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir python-ffmpeg && \
-    pip install --no-cache-dir torch==2.7.1 torchvision torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu128 && \
-    if [ -f "requirements.txt" ]; then pip install --no-cache-dir -r requirements.txt; fi
 
 # Define volumes for persistent storage
 VOLUME ["/app/logs/"]

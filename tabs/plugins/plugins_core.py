@@ -37,6 +37,20 @@ def save_existing_folders(existing_folders):
         json.dump(config, file, indent=2, ensure_ascii=False)
 
 
+def install_plugin_requirements(plugin_path):
+    requirements = os.path.join(plugin_path, "requirements.txt")
+    if not os.path.exists(requirements):
+        print("No requirements.txt file found in the plugin folder.")
+        return
+    # uv-managed environments don't ship pip, so prefer uv when it is available.
+    uv = shutil.which("uv")
+    if uv:
+        command = [uv, "pip", "install", "--python", sys.executable]
+    else:
+        command = [sys.executable, "-m", "pip", "install"]
+    subprocess.run(command + ["-r", requirements])
+
+
 def save_plugin_dropbox(dropbox):
     if "zip" not in dropbox:
         raise gr.Error(
@@ -60,31 +74,7 @@ def save_plugin_dropbox(dropbox):
             zip_ref.extractall(plugins_path)
         os.remove(zip_file_path)
 
-        if os.path.exists(os.path.join(folder_path, "requirements.txt")):
-            if os.name == "nt":
-                subprocess.run(
-                    [
-                        os.path.join("env", "python.exe"),
-                        "-m",
-                        "pip",
-                        "install",
-                        "-r",
-                        os.path.join(folder_path, "requirements.txt"),
-                    ]
-                )
-            else:
-                subprocess.run(
-                    [
-                        "python",
-                        "-m",
-                        "pip",
-                        "install",
-                        "-r",
-                        os.path.join(folder_path, "requirements.txt"),
-                    ]
-                )
-        else:
-            print("No requirements.txt file found in the plugin folder.")
+        install_plugin_requirements(folder_path)
 
         save_existing_folders(get_existing_folders() + [folder_name])
 
@@ -109,30 +99,6 @@ def check_new_folders():
             complete_path = os.path.join(plugins_path, new_folder)
             print(f"New plugin {new_folder} found, installing it...")
 
-            if os.path.exists(os.path.join(complete_path, "requirements.txt")):
-                if os.name == "nt":
-                    subprocess.run(
-                        [
-                            os.path.join("env", "python.exe"),
-                            "-m",
-                            "pip",
-                            "install",
-                            "-r",
-                            os.path.join(complete_path, "requirements.txt"),
-                        ]
-                    )
-                else:
-                    subprocess.run(
-                        [
-                            "python",
-                            "-m",
-                            "pip",
-                            "install",
-                            "-r",
-                            os.path.join(complete_path, "requirements.txt"),
-                        ]
-                    )
-            else:
-                print("No requirements.txt file found in the plugin folder.")
+            install_plugin_requirements(complete_path)
         print("Plugins checked and installed! Restarting applio to apply the changes.")
         restart_applio()

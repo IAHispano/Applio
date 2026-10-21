@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -166,13 +167,21 @@ def downgrade_torch(python_exe=None, cuda_tag="cu126"):
     if os.name == "nt":
         kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
+    # uv-managed environments don't ship pip, so prefer uv when it is available.
+    # Note: a later `uv sync` restores the locked PyTorch version.
+    uv = shutil.which("uv")
+    if uv:
+        uninstall = [uv, "pip", "uninstall", "--python", python_exe]
+        install = [uv, "pip", "install", "--python", python_exe, "--no-cache"]
+        install_extra = ["--index-strategy", "unsafe-best-match"]
+    else:
+        uninstall = [python_exe, "-m", "pip", "uninstall", "-y"]
+        install = [python_exe, "-m", "pip", "install", "--no-cache-dir"]
+        install_extra = []
+
     # 1. Uninstall torch torchvision torchaudio
     uninstall_cmd = [
-        python_exe,
-        "-m",
-        "pip",
-        "uninstall",
-        "-y",
+        *uninstall,
         "torch",
         "torchvision",
         "torchaudio",
@@ -184,16 +193,13 @@ def downgrade_torch(python_exe=None, cuda_tag="cu126"):
 
     # 2. Install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1
     install_cmd = [
-        python_exe,
-        "-m",
-        "pip",
-        "install",
-        "--no-cache-dir",
+        *install,
         "torch==2.7.1",
         "torchvision==0.22.1",
         "torchaudio==2.7.1",
         "--extra-index-url",
         index_url,
+        *install_extra,
     ]
     print(f"$ {' '.join(install_cmd)}")
     inst = subprocess.run(install_cmd, **kwargs)
