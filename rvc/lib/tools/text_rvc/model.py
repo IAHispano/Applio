@@ -314,19 +314,23 @@ def phonetic_head(dimensions, vocabulary_size=258):
 
 
 def fit_phonetic_head(model, examples, mean, scale, steps=300):
-    """Fit a frozen content discriminator using training-only character alignments."""
+    """Fit a frozen phoneme discriminator with a bounded training-only frame pool."""
+    from itertools import islice
     from rvc.lib.tools.text_rvc.data import tokenize
 
-    features = torch.cat([(row["features"] - mean) / scale for row in examples])
-    labels = torch.cat(
-        [
-            torch.repeat_interleave(
-                torch.tensor(row.get("tokens") or tokenize(row["text"])),
-                torch.tensor(row["durations"]),
-            )
-            for row in examples
-        ]
-    )
+    features, labels = [], []
+    # Loading every frame at once makes ordinary multi-hour datasets exhaust RAM.
+    for row in islice(examples, 1024):
+        timing = torch.repeat_interleave(
+            torch.tensor(row.get("tokens") or tokenize(row["text"])),
+            torch.tensor(row["durations"]),
+        )
+        if len(timing) != len(row["features"]):
+            raise ValueError("Phoneme durations must cover the acoustic frames")
+        selected = torch.randperm(len(timing))[:128]
+        features.append((row["features"][selected] - mean) / scale)
+        labels.append(timing[selected])
+    features, labels = torch.cat(features), torch.cat(labels)
     head = phonetic_head(model.feature_dim, model.vocab_size)
     optimizer = torch.optim.AdamW(head.parameters(), lr=0.001)
     for _ in range(steps):

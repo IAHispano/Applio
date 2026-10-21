@@ -244,7 +244,10 @@ def train(args):
             raise ValueError("Phonetic supervision requires aligned training data")
         fit_phonetic_head(
             model,
-            [_example(manifest.parent, row, dimensions) for row in train_rows],
+            (
+                _example(manifest.parent, row, dimensions)
+                for row in random.Random(args.seed).sample(train_rows, len(train_rows))
+            ),
             mean,
             scale,
         )
@@ -556,7 +559,7 @@ def calibrate(args):
     )
 
 
-def decode_rvc(acoustic, checkpoint, sid=0, device="cpu"):
+def load_rvc(checkpoint, sid=0, device="cpu"):
     import torch
     from rvc.lib.algorithm.synthesizers import Synthesizer
 
@@ -568,11 +571,6 @@ def decode_rvc(acoustic, checkpoint, sid=0, device="cpu"):
     weights = voice["weight"]
     config = list(voice["config"])
     dimensions = 768 if voice.get("version", "v1") == "v2" else 256
-    if (
-        dimensions != acoustic["features"].shape[-1]
-        or acoustic["feature_space"]["frame_hz"] != 100
-    ):
-        raise ValueError("RVC checkpoint and frontend feature spaces are incompatible")
     if voice.get("embedder_model", "contentvec") != "contentvec":
         raise ValueError(
             "Direct text synthesis supports ContentVec RVC checkpoints only"
@@ -590,6 +588,21 @@ def decode_rvc(acoustic, checkpoint, sid=0, device="cpu"):
     del model.enc_q
     model.load_state_dict(weights, strict=True)
     model.to(device).float().eval().requires_grad_(False)
+    return model, int(config[-1]), dimensions, sid
+
+
+def decode_rvc(acoustic, checkpoint, sid=0, device="cpu", loaded=None):
+    import torch
+
+    model, sample_rate, dimensions, speaker = loaded or load_rvc(
+        checkpoint, sid, device
+    )
+    if speaker != sid or (
+        dimensions != acoustic["features"].shape[-1]
+        or acoustic["feature_space"]["frame_hz"] != 100
+    ):
+        raise ValueError("RVC checkpoint and frontend feature spaces are incompatible")
+    device = next(model.parameters()).device
     features = acoustic["features"].unsqueeze(0).to(device)
     pitch = acoustic["coarse_f0"].unsqueeze(0).to(device) if model.use_f0 else None
     f0 = acoustic["f0"].unsqueeze(0).to(device) if model.use_f0 else None
@@ -608,7 +621,7 @@ def decode_rvc(acoustic, checkpoint, sid=0, device="cpu"):
     if not torch.isfinite(output).all() or not len(output):
         raise ValueError("RVC decoding produced invalid audio")
     output = output * min(1.0, 0.95 / max(float(output.abs().max()), 1e-8))
-    return output.numpy(), int(config[-1])
+    return output.numpy(), sample_rate
 
 
 def synthesize(args):
@@ -618,15 +631,16 @@ def synthesize(args):
 
     destination = Path(args.output).resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
+    loaded = _load(args.frontend)
     with tempfile.NamedTemporaryFile(
         dir=destination.parent, suffix=".wav", delete=False
     ) as handle:
         temporary = Path(handle.name)
     stream = None
     frames = 0
-    loaded = _load(args.frontend)
     speed = 1 + args.rate / 100 if args.rate >= 0 else 1 / (1 - args.rate / 100)
     try:
+        decoder = load_rvc(args.rvc, args.sid, args.device)
         for text in text_chunks(
             args.text, max_bytes=max(32, min(120, int(120 * speed)))
         ):
@@ -634,7 +648,7 @@ def synthesize(args):
                 args.frontend, text, args.max_frames, args.rate, loaded=loaded
             )
             audio, sample_rate = decode_rvc(
-                acoustic, args.rvc, args.sid, device=args.device
+                acoustic, args.rvc, args.sid, device=args.device, loaded=decoder
             )
             if stream is None:
                 stream = sf.SoundFile(
