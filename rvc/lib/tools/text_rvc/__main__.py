@@ -633,7 +633,9 @@ def synthesize(args):
     destination.parent.mkdir(parents=True, exist_ok=True)
     loaded = _load(args.frontend)
     with tempfile.NamedTemporaryFile(
-        dir=destination.parent, suffix=".wav", delete=False
+        dir=getattr(args, "temporary_directory", None) or destination.parent,
+        suffix=".wav",
+        delete=False,
     ) as handle:
         temporary = Path(handle.name)
     stream = None
@@ -788,6 +790,7 @@ def main():
         if command == "synthesize":
             item.add_argument("--rvc", required=True)
             item.add_argument("--sid", type=int, default=0)
+            item.add_argument("--temporary-directory")
     args = parser.parse_args()
     if getattr(args, "text_file", None):
         args.text = Path(args.text_file).read_text(encoding="utf-8-sig")
