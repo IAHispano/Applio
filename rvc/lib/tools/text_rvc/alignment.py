@@ -40,6 +40,8 @@ def phoneme_labels(text, vocabulary, language="en"):
         "".join(sentence)
         for sentence in _phonemizer.phonemize(language, normalize_text(text, language))
     )
+    # eSpeak emits word-joining markers in French (for example "des accents").
+    spoken = spoken.replace("-", " ")
     spoken = re.sub(r"[ˈˌ.,!?;:͡]", "", spoken)
     phones = sorted(
         (phone for phone in vocabulary if not phone.startswith("<")),
