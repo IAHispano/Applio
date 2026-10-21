@@ -476,8 +476,9 @@
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch 会写入真实的音高，并以 F0 上限为准。fold 仅使用半音驱动来修复错误的八度音帧；建议将其与使用未修正标签训练的模型配合使用，以保持其音色。",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "{} 插件已安装在 {} 中！正在重启 Applio 以应用更改。",
     "{} saved in {}": "{} 已保存至 {}",
-  "TTS engine": "语音合成引擎",
-  "Online speech synthesis. Your text is sent to {provider}.": "在线语音合成。你的文本将发送至 {provider}。",
-  "Runs locally. Downloads Piper and the selected voice on first use; later synthesis works offline.": "在本地运行。首次使用时下载 Piper 和所选声音，此后可离线合成语音。",
-  "Voice license": "声音许可证"
+    "TTS engine": "语音合成引擎",
+    "Online speech synthesis. Your text is sent to {provider}.": "在线语音合成。你的文本将发送至 {provider}。",
+    "Applio TTS": "Applio TTS",
+    "Text frontend": "文本模型",
+    "Synthesizes locally with your RVC model and a trained text frontend.": "使用您的RVC模型和训练好的文本模型在本地合成语音。"
 }

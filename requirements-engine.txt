@@ -25,7 +25,6 @@ onnx==1.23.1
 onnxruntime>=1.17.0; sys_platform != "win32"
 
 edge-tts==7.3.1
-gTTS==2.5.4
 beautifulsoup4==4.15.0
 sounddevice==0.5.5
 webrtcvad-wheels==2.0.14

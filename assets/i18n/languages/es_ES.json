@@ -485,8 +485,9 @@
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch escribe el tono real, limitado por el techo de F0. fold solo repara fotogramas de octava incorrecta usando half-pitch drives; úsalo con modelos entrenados con etiquetas no corregidas para mantener su timbre.",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "¡Plugin {} instalado en {}! Reiniciando Applio para aplicar los cambios.",
     "{} saved in {}": "{} guardado en {}",
-  "TTS engine": "Motor de texto a voz",
-  "Online speech synthesis. Your text is sent to {provider}.": "Síntesis de voz en línea. Tu texto se envía a {provider}.",
-  "Runs locally. Downloads Piper and the selected voice on first use; later synthesis works offline.": "Se ejecuta localmente. Descarga Piper y la voz seleccionada la primera vez; después funciona sin conexión.",
-  "Voice license": "Licencia de la voz"
+    "TTS engine": "Motor de texto a voz",
+    "Online speech synthesis. Your text is sent to {provider}.": "Síntesis de voz en línea. Tu texto se envía a {provider}.",
+    "Applio TTS": "Applio TTS",
+    "Text frontend": "Modelo de texto",
+    "Synthesizes locally with your RVC model and a trained text frontend.": "Sintetiza localmente con tu modelo RVC y un modelo de texto entrenado."
 }

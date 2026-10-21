@@ -51,31 +51,41 @@ def process_input(file_path):
 
 
 def provider_info(provider):
-    if provider == "piper":
-        return i18n("Runs locally. Downloads Piper and the selected voice on first use; later synthesis works offline.")
-    return i18n("Online speech synthesis. Your text is sent to {provider}.").format(provider="Microsoft" if provider == "edge" else "Google")
-
-
-def voice_license(provider, voice):
-    entry = next((v for v in provider_voices(provider) if v["shortName"] == voice), {})
-    url = entry.get("licenseUrl")
-    return gr.update(value=f"[{i18n('Voice license')}]({url})" if url else "", visible=bool(url))
+    if provider == "rvc":
+        return i18n(
+            "Synthesizes locally with your RVC model and a trained text frontend."
+        )
+    return i18n("Online speech synthesis. Your text is sent to {provider}.").format(
+        provider="Microsoft"
+    )
 
 
 def change_provider(provider):
-    entries = provider_voices(provider)
-    selected = "en" if provider == "gtts" else entries[0]["shortName"]
+    direct = provider == "rvc"
+    entries = provider_voices("edge")
     return (
-        gr.update(choices=[(v["friendlyName"], v["shortName"]) for v in entries], value=selected),
+        gr.update(
+            choices=[(v["friendlyName"], v["shortName"]) for v in entries],
+            value=entries[0]["shortName"],
+            visible=not direct,
+        ),
         provider_info(provider),
-        voice_license(provider, selected),
+        gr.update(visible=direct),
+        gr.update(value="", visible=not direct),
+        gr.update(visible=not direct),
+        gr.update(value="WAV", interactive=not direct),
     )
 
 
 # TTS tab
 def tts_tab():
     trigger = get_filter_trigger()
-    with step_card(1, "Voice Model", i18n, description="Select the voice model and index file used for conversion."):
+    with step_card(
+        1,
+        "Voice Model",
+        i18n,
+        description="Select the voice model and index file used for conversion.",
+    ):
         with gr.Row():
             with gr.Column(scale=1, min_width=240):
                 model_file = gr.Dropdown(
@@ -135,11 +145,17 @@ def tts_tab():
                 inputs=[model_file],
                 outputs=[index_file],
             )
-    with step_card(2, "Speech Input", i18n, description="Pick a TTS voice, speed and enter text or upload a file."):
+    with step_card(
+        2,
+        "Speech Input",
+        i18n,
+        description="Pick a TTS voice, speed and enter text or upload a file.",
+    ):
         tts_provider = gr.Dropdown(
             label=i18n("TTS engine"),
-            choices=[("Edge TTS", "edge"), ("gTTS", "gtts"), ("Piper", "piper")],
-            value="edge", interactive=True,
+            choices=[("Edge TTS", "edge"), (i18n("Applio TTS"), "rvc")],
+            value="edge",
+            interactive=True,
         )
         provider_description = gr.Markdown(provider_info("edge"))
         tts_voice = gr.Dropdown(
@@ -149,13 +165,8 @@ def tts_tab():
             interactive=True,
             value=random.choice(short_names),
         )
-        voice_license_link = gr.Markdown(visible=False)
-        tts_provider.change(
-            fn=change_provider, inputs=[tts_provider],
-            outputs=[tts_voice, provider_description, voice_license_link],
-        )
-        tts_voice.change(
-            fn=voice_license, inputs=[tts_provider, tts_voice], outputs=[voice_license_link],
+        tts_frontend = gr.Textbox(
+            label=i18n("Text frontend"), visible=False, interactive=True
         )
         tts_rate = gr.Slider(
             minimum=-100,
@@ -187,7 +198,12 @@ def tts_tab():
                     value="",
                     interactive=True,
                 )
-    with step_card(3, "Conversion Parameters", i18n, description="Tune pitch, voice matching, algorithms and output settings."):
+    with step_card(
+        3,
+        "Conversion Parameters",
+        i18n,
+        description="Tune pitch, voice matching, algorithms and output settings.",
+    ) as conversion_controls:
         pitch = gr.Slider(
             minimum=-24,
             maximum=24,
@@ -276,7 +292,9 @@ def tts_tab():
                                 interactive=True,
                                 allow_custom_value=True,
                             )
-                            refresh_embedders_button = gr.Button(i18n("Refresh embedders"))
+                            refresh_embedders_button = gr.Button(
+                                i18n("Refresh embedders")
+                            )
                         folder_name_input = gr.Textbox(
                             label=i18n("Folder Name"), interactive=True
                         )
@@ -403,7 +421,9 @@ def tts_tab():
                 output_rvc_path = gr.Textbox(
                     label=i18n("Output Path for RVC Audio"),
                     placeholder=i18n("Enter output path"),
-                    value=os.path.join(now_dir, "assets", "audios", "tts_rvc_output.wav"),
+                    value=os.path.join(
+                        now_dir, "assets", "audios", "tts_rvc_output.wav"
+                    ),
                     interactive=True,
                 )
                 export_format = gr.Radio(
@@ -438,7 +458,12 @@ def tts_tab():
                 None,
             )
 
-    with step_card(4, "Generate Speech", i18n, description="Agree to the terms and generate speech with your voice model."):
+    with step_card(
+        4,
+        "Generate Speech",
+        i18n,
+        description="Agree to the terms and generate speech with your voice model.",
+    ):
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
             info=i18n(
@@ -469,6 +494,18 @@ def tts_tab():
             return {"visible": True, "__type__": "update"}
         return {"visible": False, "__type__": "update"}
 
+    tts_provider.change(
+        fn=change_provider,
+        inputs=[tts_provider],
+        outputs=[
+            tts_voice,
+            provider_description,
+            tts_frontend,
+            index_file,
+            conversion_controls,
+            export_format,
+        ],
+    )
     autotune.change(
         fn=toggle_visible,
         inputs=[autotune],
@@ -544,6 +581,7 @@ def tts_tab():
             cleanup_mode,
             cleanup_strength,
             tts_provider,
+            tts_frontend,
         ],
         outputs=[vc_output1, vc_output2],
     )

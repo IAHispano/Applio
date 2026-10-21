@@ -476,8 +476,9 @@
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch ghi lại cao độ thực, giới hạn ở mức trần F0. fold chỉ sửa các khung sai quãng tám bằng cách sử dụng half-pitch drives; hãy sử dụng nó với các model được huấn luyện trên nhãn chưa hiệu chỉnh để giữ nguyên âm sắc của chúng.",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "Đã cài đặt plugin {} vào {}! Đang khởi động lại Applio để áp dụng các thay đổi.",
     "{} saved in {}": "{} đã được lưu vào {}",
-  "TTS engine": "Công cụ chuyển văn bản thành giọng nói",
-  "Online speech synthesis. Your text is sent to {provider}.": "Tổng hợp giọng nói trực tuyến. Văn bản của bạn được gửi đến {provider}.",
-  "Runs locally. Downloads Piper and the selected voice on first use; later synthesis works offline.": "Chạy cục bộ. Tải Piper và giọng đã chọn trong lần dùng đầu tiên; sau đó tổng hợp giọng nói hoạt động ngoại tuyến.",
-  "Voice license": "Giấy phép giọng nói"
+    "TTS engine": "Công cụ chuyển văn bản thành giọng nói",
+    "Online speech synthesis. Your text is sent to {provider}.": "Tổng hợp giọng nói trực tuyến. Văn bản của bạn được gửi đến {provider}.",
+    "Applio TTS": "Applio TTS",
+    "Text frontend": "Mô hình văn bản",
+    "Synthesizes locally with your RVC model and a trained text frontend.": "Tổng hợp cục bộ bằng mô hình RVC của bạn và mô hình văn bản đã huấn luyện."
 }
