@@ -479,6 +479,6 @@
     "TTS engine": "टेक्स्ट से वाणी इंजन",
     "Online speech synthesis. Your text is sent to {provider}.": "ऑनलाइन वाणी संश्लेषण। आपका टेक्स्ट {provider} को भेजा जाता है।",
     "Applio TTS": "Applio TTS",
-    "Text frontend": "टेक्स्ट मॉडल",
-    "Synthesizes locally with your RVC model and a trained text frontend.": "आपके RVC मॉडल और प्रशिक्षित टेक्स्ट मॉडल से स्थानीय रूप से आवाज़ बनाता है।"
+    "TTS model": "टेक्स्ट से वाणी मॉडल",
+    "Generate speech locally using your voice model and trained TTS model.": "आपके आवाज़ मॉडल और प्रशिक्षित टेक्स्ट से वाणी मॉडल से स्थानीय रूप से वाणी बनाता है।"
 }

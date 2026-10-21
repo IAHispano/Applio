@@ -479,6 +479,6 @@
     "TTS engine": "محرك تحويل النص إلى كلام",
     "Online speech synthesis. Your text is sent to {provider}.": "توليد الكلام عبر الإنترنت. يُرسل نصك إلى {provider}.",
     "Applio TTS": "Applio TTS",
-    "Text frontend": "نموذج النص",
-    "Synthesizes locally with your RVC model and a trained text frontend.": "يُولّد الكلام محليًا باستخدام نموذج RVC ونموذج نص مُدرَّب."
+    "TTS model": "نموذج تحويل النص إلى كلام",
+    "Generate speech locally using your voice model and trained TTS model.": "يُولّد الكلام محليًا باستخدام نموذج صوتك ونموذج مُدرَّب لتحويل النص إلى كلام."
 }

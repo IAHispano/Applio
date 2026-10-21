@@ -479,6 +479,6 @@
     "TTS engine": "Motor de síntese de voz",
     "Online speech synthesis. Your text is sent to {provider}.": "Síntese de voz online. Seu texto é enviado ao {provider}.",
     "Applio TTS": "Applio TTS",
-    "Text frontend": "Modelo de texto",
-    "Synthesizes locally with your RVC model and a trained text frontend.": "Sintetiza localmente com seu modelo RVC e um modelo de texto treinado."
+    "TTS model": "Modelo de síntese de voz",
+    "Generate speech locally using your voice model and trained TTS model.": "Gera fala localmente com seu modelo de voz e um modelo de síntese de voz treinado."
 }

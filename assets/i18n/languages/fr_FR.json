@@ -488,6 +488,6 @@
     "TTS engine": "Moteur de synthèse vocale",
     "Online speech synthesis. Your text is sent to {provider}.": "Synthèse vocale en ligne. Votre texte est envoyé à {provider}.",
     "Applio TTS": "Applio TTS",
-    "Text frontend": "Modèle de texte",
-    "Synthesizes locally with your RVC model and a trained text frontend.": "Synthétise localement avec votre modèle RVC et un modèle de texte entraîné."
+    "TTS model": "Modèle de synthèse vocale",
+    "Generate speech locally using your voice model and trained TTS model.": "Génère la parole localement avec votre modèle de voix et un modèle de synthèse vocale entraîné."
 }

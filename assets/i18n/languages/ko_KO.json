@@ -479,6 +479,6 @@
     "TTS engine": "음성 합성 엔진",
     "Online speech synthesis. Your text is sent to {provider}.": "온라인 음성 합성입니다. 텍스트가 {provider}(으)로 전송됩니다.",
     "Applio TTS": "Applio TTS",
-    "Text frontend": "텍스트 모델",
-    "Synthesizes locally with your RVC model and a trained text frontend.": "RVC 모델과 학습된 텍스트 모델을 사용하여 로컬에서 음성을 합성합니다."
+    "TTS model": "음성 합성 모델",
+    "Generate speech locally using your voice model and trained TTS model.": "목소리 모델과 학습된 음성 합성 모델로 로컬에서 음성을 생성합니다."
 }

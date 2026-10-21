@@ -479,6 +479,6 @@
     "TTS engine": "Công cụ chuyển văn bản thành giọng nói",
     "Online speech synthesis. Your text is sent to {provider}.": "Tổng hợp giọng nói trực tuyến. Văn bản của bạn được gửi đến {provider}.",
     "Applio TTS": "Applio TTS",
-    "Text frontend": "Mô hình văn bản",
-    "Synthesizes locally with your RVC model and a trained text frontend.": "Tổng hợp cục bộ bằng mô hình RVC của bạn và mô hình văn bản đã huấn luyện."
+    "TTS model": "Mô hình chuyển văn bản thành giọng nói",
+    "Generate speech locally using your voice model and trained TTS model.": "Tạo lời nói cục bộ bằng mô hình giọng nói của bạn và mô hình chuyển văn bản thành giọng nói đã huấn luyện."
 }

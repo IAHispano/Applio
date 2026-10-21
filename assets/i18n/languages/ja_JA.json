@@ -479,6 +479,6 @@
     "TTS engine": "音声合成エンジン",
     "Online speech synthesis. Your text is sent to {provider}.": "オンライン音声合成です。テキストは{provider}に送信されます。",
     "Applio TTS": "Applio TTS",
-    "Text frontend": "テキストモデル",
-    "Synthesizes locally with your RVC model and a trained text frontend.": "RVCモデルと学習済みテキストモデルを使い、ローカルで音声を合成します。"
+    "TTS model": "音声合成モデル",
+    "Generate speech locally using your voice model and trained TTS model.": "声のモデルと学習済みの音声合成モデルを使って、ローカルで音声を生成します。"
 }

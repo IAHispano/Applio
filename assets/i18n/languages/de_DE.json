@@ -479,6 +479,6 @@
     "TTS engine": "TTS-Engine",
     "Online speech synthesis. Your text is sent to {provider}.": "Online-Sprachausgabe. Dein Text wird an {provider} gesendet.",
     "Applio TTS": "Applio TTS",
-    "Text frontend": "Textmodell",
-    "Synthesizes locally with your RVC model and a trained text frontend.": "Erzeugt Sprache lokal mit deinem RVC-Modell und einem trainierten Textmodell."
+    "TTS model": "Sprachsynthesemodell",
+    "Generate speech locally using your voice model and trained TTS model.": "Erzeugt Sprache lokal mit deinem Stimmmodell und einem trainierten Sprachsynthesemodell."
 }

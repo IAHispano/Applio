@@ -53,7 +53,7 @@ def process_input(file_path):
 def provider_info(provider):
     if provider == "rvc":
         return i18n(
-            "Synthesizes locally with your RVC model and a trained text frontend."
+            "Generate speech locally using your voice model and trained TTS model."
         )
     return i18n("Online speech synthesis. Your text is sent to {provider}.").format(
         provider="Microsoft"
@@ -166,7 +166,7 @@ def tts_tab():
             value=random.choice(short_names),
         )
         tts_frontend = gr.Textbox(
-            label=i18n("Text frontend"), visible=False, interactive=True
+            label=i18n("TTS model"), visible=False, interactive=True
         )
         tts_rate = gr.Slider(
             minimum=-100,

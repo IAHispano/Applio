@@ -479,6 +479,6 @@
     "TTS engine": "Mesin teks ke suara",
     "Online speech synthesis. Your text is sent to {provider}.": "Sintesis suara daring. Teks Anda dikirim ke {provider}.",
     "Applio TTS": "Applio TTS",
-    "Text frontend": "Model teks",
-    "Synthesizes locally with your RVC model and a trained text frontend.": "Menyintesis secara lokal dengan model RVC Anda dan model teks terlatih."
+    "TTS model": "Model teks ke suara",
+    "Generate speech locally using your voice model and trained TTS model.": "Menghasilkan ucapan secara lokal dengan model suara Anda dan model teks ke suara yang terlatih."
 }

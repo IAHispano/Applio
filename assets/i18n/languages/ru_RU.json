@@ -479,6 +479,6 @@
     "TTS engine": "Движок синтеза речи",
     "Online speech synthesis. Your text is sent to {provider}.": "Онлайн-синтез речи. Ваш текст отправляется в {provider}.",
     "Applio TTS": "Applio TTS",
-    "Text frontend": "Текстовая модель",
-    "Synthesizes locally with your RVC model and a trained text frontend.": "Синтезирует речь локально с помощью вашей модели RVC и обученной текстовой модели."
+    "TTS model": "Модель синтеза речи",
+    "Generate speech locally using your voice model and trained TTS model.": "Создаёт речь локально с помощью вашей модели голоса и обученной модели синтеза речи."
 }

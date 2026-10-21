@@ -479,6 +479,6 @@
     "TTS engine": "语音合成引擎",
     "Online speech synthesis. Your text is sent to {provider}.": "在线语音合成。你的文本将发送至 {provider}。",
     "Applio TTS": "Applio TTS",
-    "Text frontend": "文本模型",
-    "Synthesizes locally with your RVC model and a trained text frontend.": "使用您的RVC模型和训练好的文本模型在本地合成语音。"
+    "TTS model": "语音合成模型",
+    "Generate speech locally using your voice model and trained TTS model.": "使用你的声音模型和训练好的语音合成模型在本地生成语音。"
 }

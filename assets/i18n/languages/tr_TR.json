@@ -479,6 +479,6 @@
     "TTS engine": "Metinden konuşmaya motoru",
     "Online speech synthesis. Your text is sent to {provider}.": "Çevrimiçi konuşma sentezi. Metniniz {provider} hizmetine gönderilir.",
     "Applio TTS": "Applio TTS",
-    "Text frontend": "Metin modeli",
-    "Synthesizes locally with your RVC model and a trained text frontend.": "RVC modeliniz ve eğitilmiş bir metin modeli ile yerel olarak konuşma üretir."
+    "TTS model": "Metinden konuşma modeli",
+    "Generate speech locally using your voice model and trained TTS model.": "Ses modeliniz ve eğitilmiş metinden konuşma modeliyle yerel olarak konuşma üretir."
 }
