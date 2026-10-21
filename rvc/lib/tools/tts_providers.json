@@ -1,0 +1,565 @@
+{
+  "piperRevision": "5041a7a49ae5b3a0f30e6837769eb03fdbb231bd",
+  "gtts": [
+    {
+      "shortName": "af",
+      "friendlyName": "Afrikaans",
+      "locale": "af",
+      "gender": ""
+    },
+    {
+      "shortName": "am",
+      "friendlyName": "Amharic",
+      "locale": "am",
+      "gender": ""
+    },
+    {
+      "shortName": "ar",
+      "friendlyName": "Arabic",
+      "locale": "ar",
+      "gender": ""
+    },
+    {
+      "shortName": "bg",
+      "friendlyName": "Bulgarian",
+      "locale": "bg",
+      "gender": ""
+    },
+    {
+      "shortName": "bn",
+      "friendlyName": "Bengali",
+      "locale": "bn",
+      "gender": ""
+    },
+    {
+      "shortName": "bs",
+      "friendlyName": "Bosnian",
+      "locale": "bs",
+      "gender": ""
+    },
+    {
+      "shortName": "ca",
+      "friendlyName": "Catalan",
+      "locale": "ca",
+      "gender": ""
+    },
+    {
+      "shortName": "cs",
+      "friendlyName": "Czech",
+      "locale": "cs",
+      "gender": ""
+    },
+    {
+      "shortName": "cy",
+      "friendlyName": "Welsh",
+      "locale": "cy",
+      "gender": ""
+    },
+    {
+      "shortName": "da",
+      "friendlyName": "Danish",
+      "locale": "da",
+      "gender": ""
+    },
+    {
+      "shortName": "de",
+      "friendlyName": "German",
+      "locale": "de",
+      "gender": ""
+    },
+    {
+      "shortName": "el",
+      "friendlyName": "Greek",
+      "locale": "el",
+      "gender": ""
+    },
+    {
+      "shortName": "en",
+      "friendlyName": "English",
+      "locale": "en",
+      "gender": ""
+    },
+    {
+      "shortName": "es",
+      "friendlyName": "Spanish",
+      "locale": "es",
+      "gender": ""
+    },
+    {
+      "shortName": "et",
+      "friendlyName": "Estonian",
+      "locale": "et",
+      "gender": ""
+    },
+    {
+      "shortName": "eu",
+      "friendlyName": "Basque",
+      "locale": "eu",
+      "gender": ""
+    },
+    {
+      "shortName": "fi",
+      "friendlyName": "Finnish",
+      "locale": "fi",
+      "gender": ""
+    },
+    {
+      "shortName": "fr",
+      "friendlyName": "French",
+      "locale": "fr",
+      "gender": ""
+    },
+    {
+      "shortName": "fr-CA",
+      "friendlyName": "French (Canada)",
+      "locale": "fr-CA",
+      "gender": ""
+    },
+    {
+      "shortName": "gl",
+      "friendlyName": "Galician",
+      "locale": "gl",
+      "gender": ""
+    },
+    {
+      "shortName": "gu",
+      "friendlyName": "Gujarati",
+      "locale": "gu",
+      "gender": ""
+    },
+    {
+      "shortName": "ha",
+      "friendlyName": "Hausa",
+      "locale": "ha",
+      "gender": ""
+    },
+    {
+      "shortName": "hi",
+      "friendlyName": "Hindi",
+      "locale": "hi",
+      "gender": ""
+    },
+    {
+      "shortName": "hr",
+      "friendlyName": "Croatian",
+      "locale": "hr",
+      "gender": ""
+    },
+    {
+      "shortName": "hu",
+      "friendlyName": "Hungarian",
+      "locale": "hu",
+      "gender": ""
+    },
+    {
+      "shortName": "id",
+      "friendlyName": "Indonesian",
+      "locale": "id",
+      "gender": ""
+    },
+    {
+      "shortName": "is",
+      "friendlyName": "Icelandic",
+      "locale": "is",
+      "gender": ""
+    },
+    {
+      "shortName": "it",
+      "friendlyName": "Italian",
+      "locale": "it",
+      "gender": ""
+    },
+    {
+      "shortName": "iw",
+      "friendlyName": "Hebrew",
+      "locale": "iw",
+      "gender": ""
+    },
+    {
+      "shortName": "ja",
+      "friendlyName": "Japanese",
+      "locale": "ja",
+      "gender": ""
+    },
+    {
+      "shortName": "jw",
+      "friendlyName": "Javanese",
+      "locale": "jw",
+      "gender": ""
+    },
+    {
+      "shortName": "km",
+      "friendlyName": "Khmer",
+      "locale": "km",
+      "gender": ""
+    },
+    {
+      "shortName": "kn",
+      "friendlyName": "Kannada",
+      "locale": "kn",
+      "gender": ""
+    },
+    {
+      "shortName": "ko",
+      "friendlyName": "Korean",
+      "locale": "ko",
+      "gender": ""
+    },
+    {
+      "shortName": "la",
+      "friendlyName": "Latin",
+      "locale": "la",
+      "gender": ""
+    },
+    {
+      "shortName": "lt",
+      "friendlyName": "Lithuanian",
+      "locale": "lt",
+      "gender": ""
+    },
+    {
+      "shortName": "lv",
+      "friendlyName": "Latvian",
+      "locale": "lv",
+      "gender": ""
+    },
+    {
+      "shortName": "ml",
+      "friendlyName": "Malayalam",
+      "locale": "ml",
+      "gender": ""
+    },
+    {
+      "shortName": "mr",
+      "friendlyName": "Marathi",
+      "locale": "mr",
+      "gender": ""
+    },
+    {
+      "shortName": "ms",
+      "friendlyName": "Malay",
+      "locale": "ms",
+      "gender": ""
+    },
+    {
+      "shortName": "my",
+      "friendlyName": "Myanmar (Burmese)",
+      "locale": "my",
+      "gender": ""
+    },
+    {
+      "shortName": "ne",
+      "friendlyName": "Nepali",
+      "locale": "ne",
+      "gender": ""
+    },
+    {
+      "shortName": "nl",
+      "friendlyName": "Dutch",
+      "locale": "nl",
+      "gender": ""
+    },
+    {
+      "shortName": "no",
+      "friendlyName": "Norwegian",
+      "locale": "no",
+      "gender": ""
+    },
+    {
+      "shortName": "pa",
+      "friendlyName": "Punjabi (Gurmukhi)",
+      "locale": "pa",
+      "gender": ""
+    },
+    {
+      "shortName": "pl",
+      "friendlyName": "Polish",
+      "locale": "pl",
+      "gender": ""
+    },
+    {
+      "shortName": "pt",
+      "friendlyName": "Portuguese (Brazil)",
+      "locale": "pt",
+      "gender": ""
+    },
+    {
+      "shortName": "pt-PT",
+      "friendlyName": "Portuguese (Portugal)",
+      "locale": "pt-PT",
+      "gender": ""
+    },
+    {
+      "shortName": "ro",
+      "friendlyName": "Romanian",
+      "locale": "ro",
+      "gender": ""
+    },
+    {
+      "shortName": "ru",
+      "friendlyName": "Russian",
+      "locale": "ru",
+      "gender": ""
+    },
+    {
+      "shortName": "si",
+      "friendlyName": "Sinhala",
+      "locale": "si",
+      "gender": ""
+    },
+    {
+      "shortName": "sk",
+      "friendlyName": "Slovak",
+      "locale": "sk",
+      "gender": ""
+    },
+    {
+      "shortName": "sq",
+      "friendlyName": "Albanian",
+      "locale": "sq",
+      "gender": ""
+    },
+    {
+      "shortName": "sr",
+      "friendlyName": "Serbian",
+      "locale": "sr",
+      "gender": ""
+    },
+    {
+      "shortName": "su",
+      "friendlyName": "Sundanese",
+      "locale": "su",
+      "gender": ""
+    },
+    {
+      "shortName": "sv",
+      "friendlyName": "Swedish",
+      "locale": "sv",
+      "gender": ""
+    },
+    {
+      "shortName": "sw",
+      "friendlyName": "Swahili",
+      "locale": "sw",
+      "gender": ""
+    },
+    {
+      "shortName": "ta",
+      "friendlyName": "Tamil",
+      "locale": "ta",
+      "gender": ""
+    },
+    {
+      "shortName": "te",
+      "friendlyName": "Telugu",
+      "locale": "te",
+      "gender": ""
+    },
+    {
+      "shortName": "th",
+      "friendlyName": "Thai",
+      "locale": "th",
+      "gender": ""
+    },
+    {
+      "shortName": "tl",
+      "friendlyName": "Filipino",
+      "locale": "tl",
+      "gender": ""
+    },
+    {
+      "shortName": "tr",
+      "friendlyName": "Turkish",
+      "locale": "tr",
+      "gender": ""
+    },
+    {
+      "shortName": "uk",
+      "friendlyName": "Ukrainian",
+      "locale": "uk",
+      "gender": ""
+    },
+    {
+      "shortName": "ur",
+      "friendlyName": "Urdu",
+      "locale": "ur",
+      "gender": ""
+    },
+    {
+      "shortName": "vi",
+      "friendlyName": "Vietnamese",
+      "locale": "vi",
+      "gender": ""
+    },
+    {
+      "shortName": "yue",
+      "friendlyName": "Cantonese",
+      "locale": "yue",
+      "gender": ""
+    },
+    {
+      "shortName": "zh",
+      "friendlyName": "Chinese (Mandarin)",
+      "locale": "zh",
+      "gender": ""
+    },
+    {
+      "shortName": "zh-CN",
+      "friendlyName": "Chinese (Simplified)",
+      "locale": "zh-CN",
+      "gender": ""
+    },
+    {
+      "shortName": "zh-TW",
+      "friendlyName": "Chinese (Mandarin/Taiwan)",
+      "locale": "zh-TW",
+      "gender": ""
+    }
+  ],
+  "piper": [
+    {
+      "shortName": "en_US-lessac-medium",
+      "friendlyName": "English (US) — lessac",
+      "locale": "en_US",
+      "gender": "",
+      "files": [
+        {
+          "path": "en/en_US/lessac/medium/en_US-lessac-medium.onnx",
+          "sha256": "5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eeaaf019f",
+          "name": "en_US-lessac-medium.onnx"
+        },
+        {
+          "path": "en/en_US/lessac/medium/en_US-lessac-medium.onnx.json",
+          "sha256": "efe19c417bed055f2d69908248c6ba650fa135bc868b0e6abb3da181dab690a0",
+          "name": "en_US-lessac-medium.onnx.json"
+        },
+        {
+          "path": "en/en_US/lessac/medium/MODEL_CARD",
+          "sha256": "ce49eb457742208166d399a40cdec2c7fa9db77960930031564ab56f12882645",
+          "name": "MODEL_CARD"
+        }
+      ],
+      "licenseUrl": "https://huggingface.co/rhasspy/piper-voices/blob/5041a7a49ae5b3a0f30e6837769eb03fdbb231bd/en/en_US/lessac/medium/MODEL_CARD"
+    },
+    {
+      "shortName": "es_ES-davefx-medium",
+      "friendlyName": "Español — davefx",
+      "locale": "es_ES",
+      "gender": "",
+      "files": [
+        {
+          "path": "es/es_ES/davefx/medium/es_ES-davefx-medium.onnx",
+          "sha256": "6658b03b1a6c316ee4c265a9896abc1393353c2d9e1bca7d66c2c442e222a917",
+          "name": "es_ES-davefx-medium.onnx"
+        },
+        {
+          "path": "es/es_ES/davefx/medium/es_ES-davefx-medium.onnx.json",
+          "sha256": "0e0dda87c732f6f38771ff274a6380d9252f327dca77aa2963d5fbdf9ec54842",
+          "name": "es_ES-davefx-medium.onnx.json"
+        },
+        {
+          "path": "es/es_ES/davefx/medium/MODEL_CARD",
+          "sha256": "420703b5d8ea239b729f13d83f31eea9bae5fcb89447de23ebc94aa8a4768f95",
+          "name": "MODEL_CARD"
+        }
+      ],
+      "licenseUrl": "https://huggingface.co/rhasspy/piper-voices/blob/5041a7a49ae5b3a0f30e6837769eb03fdbb231bd/es/es_ES/davefx/medium/MODEL_CARD"
+    },
+    {
+      "shortName": "fr_FR-siwis-medium",
+      "friendlyName": "Français — siwis",
+      "locale": "fr_FR",
+      "gender": "",
+      "files": [
+        {
+          "path": "fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx",
+          "sha256": "641d1ab097da2b81128c076810edb052b385decc8be3381814802a64a73baf99",
+          "name": "fr_FR-siwis-medium.onnx"
+        },
+        {
+          "path": "fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx.json",
+          "sha256": "39479916c2db192b5ac9764daddd0c744d83e023ad890c6976c0633ae4df8959",
+          "name": "fr_FR-siwis-medium.onnx.json"
+        },
+        {
+          "path": "fr/fr_FR/siwis/medium/MODEL_CARD",
+          "sha256": "bd8b8d079d4d3d2c4cc20345889bbcd586d72f021a132f93357a763eb5232cce",
+          "name": "MODEL_CARD"
+        }
+      ],
+      "licenseUrl": "https://huggingface.co/rhasspy/piper-voices/blob/5041a7a49ae5b3a0f30e6837769eb03fdbb231bd/fr/fr_FR/siwis/medium/MODEL_CARD"
+    },
+    {
+      "shortName": "de_DE-thorsten-medium",
+      "friendlyName": "Deutsch — thorsten",
+      "locale": "de_DE",
+      "gender": "",
+      "files": [
+        {
+          "path": "de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx",
+          "sha256": "7e64762d8e5118bb578f2eea6207e1a35a8e0c30595010b666f983fc87bb7819",
+          "name": "de_DE-thorsten-medium.onnx"
+        },
+        {
+          "path": "de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx.json",
+          "sha256": "974adee790533adb273a1ac88f49027d2a1b8f0f2cf4905954a4791e79264e85",
+          "name": "de_DE-thorsten-medium.onnx.json"
+        },
+        {
+          "path": "de/de_DE/thorsten/medium/MODEL_CARD",
+          "sha256": "5196b5ab0794e6056263a1f37c18bec407b61ac187529bee29d1c366871e5c9e",
+          "name": "MODEL_CARD"
+        }
+      ],
+      "licenseUrl": "https://huggingface.co/rhasspy/piper-voices/blob/5041a7a49ae5b3a0f30e6837769eb03fdbb231bd/de/de_DE/thorsten/medium/MODEL_CARD"
+    },
+    {
+      "shortName": "it_IT-paola-medium",
+      "friendlyName": "Italiano — paola",
+      "locale": "it_IT",
+      "gender": "",
+      "files": [
+        {
+          "path": "it/it_IT/paola/medium/it_IT-paola-medium.onnx",
+          "sha256": "6fc918b5a0ea6137382833dddfa567bffbe6a5060c02043c87192ee59c04210c",
+          "name": "it_IT-paola-medium.onnx"
+        },
+        {
+          "path": "it/it_IT/paola/medium/it_IT-paola-medium.onnx.json",
+          "sha256": "aea19c0a7fce29fbc359b93f10e7902854401e4c95ae2ea328ae516b15d296cf",
+          "name": "it_IT-paola-medium.onnx.json"
+        },
+        {
+          "path": "it/it_IT/paola/medium/MODEL_CARD",
+          "sha256": "c53fd0070dc93b438edbce06728eb83759ba030fff0cce523209ee4a0a6363c0",
+          "name": "MODEL_CARD"
+        }
+      ],
+      "licenseUrl": "https://huggingface.co/rhasspy/piper-voices/blob/5041a7a49ae5b3a0f30e6837769eb03fdbb231bd/it/it_IT/paola/medium/MODEL_CARD"
+    },
+    {
+      "shortName": "pt_BR-faber-medium",
+      "friendlyName": "Português (Brasil) — faber",
+      "locale": "pt_BR",
+      "gender": "",
+      "files": [
+        {
+          "path": "pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx",
+          "sha256": "858555e3a064209c57088fe6bd70c4c3dc54d03eaa00c45d5ecaf43a33f95aa7",
+          "name": "pt_BR-faber-medium.onnx"
+        },
+        {
+          "path": "pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx.json",
+          "sha256": "7e694de195ae3fc36dd732c445eb04fb49b649854893cb5506b978f0d50a1d6f",
+          "name": "pt_BR-faber-medium.onnx.json"
+        },
+        {
+          "path": "pt/pt_BR/faber/medium/MODEL_CARD",
+          "sha256": "01f1a5bcfd0538782726059ae407eae9c2dd1b5b35f7298fd53a68de91afe563",
+          "name": "MODEL_CARD"
+        }
+      ],
+      "licenseUrl": "https://huggingface.co/rhasspy/piper-voices/blob/5041a7a49ae5b3a0f30e6837769eb03fdbb231bd/pt/pt_BR/faber/medium/MODEL_CARD"
+    }
+  ]
+}

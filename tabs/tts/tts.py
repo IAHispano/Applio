@@ -12,6 +12,7 @@ sys.path.append(now_dir)
 from assets.i18n.i18n import I18nAuto
 from assets.app_shell import step_card
 from core import run_tts_script
+from rvc.lib.tools.tts_providers import voices as provider_voices
 from tabs.inference.inference import (
     change_choices,
     create_folder_and_move_files,
@@ -47,6 +48,28 @@ def process_input(file_path):
     except UnicodeDecodeError:
         gr.Info(i18n("The file has to be in UTF-8 encoding."))
         return None, None
+
+
+def provider_info(provider):
+    if provider == "piper":
+        return i18n("Runs locally. Downloads Piper and the selected voice on first use; later synthesis works offline.")
+    return i18n("Online speech synthesis. Your text is sent to {provider}.").format(provider="Microsoft" if provider == "edge" else "Google")
+
+
+def voice_license(provider, voice):
+    entry = next((v for v in provider_voices(provider) if v["shortName"] == voice), {})
+    url = entry.get("licenseUrl")
+    return gr.update(value=f"[{i18n('Voice license')}]({url})" if url else "", visible=bool(url))
+
+
+def change_provider(provider):
+    entries = provider_voices(provider)
+    selected = "en" if provider == "gtts" else entries[0]["shortName"]
+    return (
+        gr.update(choices=[(v["friendlyName"], v["shortName"]) for v in entries], value=selected),
+        provider_info(provider),
+        voice_license(provider, selected),
+    )
 
 
 # TTS tab
@@ -113,12 +136,26 @@ def tts_tab():
                 outputs=[index_file],
             )
     with step_card(2, "Speech Input", i18n, description="Pick a TTS voice, speed and enter text or upload a file."):
+        tts_provider = gr.Dropdown(
+            label=i18n("TTS engine"),
+            choices=[("Edge TTS", "edge"), ("gTTS", "gtts"), ("Piper", "piper")],
+            value="edge", interactive=True,
+        )
+        provider_description = gr.Markdown(provider_info("edge"))
         tts_voice = gr.Dropdown(
             label=i18n("TTS Voices"),
             info=i18n("Select the TTS voice to use for the conversion."),
             choices=short_names,
             interactive=True,
             value=random.choice(short_names),
+        )
+        voice_license_link = gr.Markdown(visible=False)
+        tts_provider.change(
+            fn=change_provider, inputs=[tts_provider],
+            outputs=[tts_voice, provider_description, voice_license_link],
+        )
+        tts_voice.change(
+            fn=voice_license, inputs=[tts_provider, tts_voice], outputs=[voice_license_link],
         )
         tts_rate = gr.Slider(
             minimum=-100,
@@ -506,6 +543,7 @@ def tts_tab():
             formant_timbre,
             cleanup_mode,
             cleanup_strength,
+            tts_provider,
         ],
         outputs=[vc_output1, vc_output2],
     )

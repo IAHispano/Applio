@@ -475,5 +475,9 @@
     "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)",
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch scrive l'intonazione reale, limitata al soffitto F0. fold ripara solo i frame con ottava errata usando driver a metà pitch; usalo con modelli addestrati su label non corrette per mantenerne il timbro.",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "Plugin {} installato in {}! Riavvio di Applio per applicare le modifiche.",
-    "{} saved in {}": "{} salvato in {}"
+    "{} saved in {}": "{} salvato in {}",
+  "TTS engine": "Motore di sintesi vocale",
+  "Online speech synthesis. Your text is sent to {provider}.": "Sintesi vocale online. Il testo viene inviato a {provider}.",
+  "Runs locally. Downloads Piper and the selected voice on first use; later synthesis works offline.": "Funziona localmente. Scarica Piper e la voce scelta al primo utilizzo; in seguito la sintesi funziona offline.",
+  "Voice license": "Licenza della voce"
 }

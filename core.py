@@ -303,6 +303,7 @@ def run_tts_script(
     formant_timbre: float = 1.0,
     cleanup_mode: str = "off",
     cleanup_strength: float = 12,
+    tts_provider: str = "edge",
 ):
     tts_script_path = os.path.join(
         current_script_directory, "rvc", "lib", "tools", "tts.py"
@@ -319,10 +320,12 @@ def run_tts_script(
     cmd = [
         python,
         tts_script_path,
+        "--tts-provider",
+        tts_provider,
         "--tts-text",
         tts_text or "",
         "--tts-voice",
-        tts_voice or "en-US-AnaNeural",
+        tts_voice or "",
         "--tts-rate",
         str(tts_rate),
         "--output-tts-path",
@@ -887,12 +890,13 @@ def batch_infer(**kwargs):
 
 
 @cli.command()
+@click.option("--tts-provider", type=click.Choice(["edge", "gtts", "piper"]), default="edge")
 @click.option("--tts-file", required=True, help="File with text to be synthesized.")
 @click.option("--tts-text", required=True, help="Text to be synthesized.")
 @click.option(
     "--tts-voice",
     required=True,
-    type=click.Choice(locales, case_sensitive=False),
+    type=str,
     help="Voice to use for TTS synthesis.",
 )
 @click.option(
