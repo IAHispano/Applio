@@ -49,9 +49,8 @@ def _speed(rate):
     return 1 + rate / 100 if rate >= 0 else 1 / (1 - rate / 100)
 
 
-def _piper(text, voice, rate, output):
+def ensure_piper_runtime():
     from rvc.lib.tools.audio_cleanup import _asset_lock
-    from rvc.lib.tools.http_download import download_http
     from rvc.lib.user_config import config_path
 
     root = Path(
@@ -74,6 +73,15 @@ def _piper(text, voice, rate, output):
             # Letting pip resolve Piper's dependencies would also install CPU ORT
             # over Windows GPU/ROCm installations.
             _run([sys.executable, "-m", "pip", "install", "--no-deps", *missing])
+    return root
+
+
+def _piper(text, voice, rate, output):
+    from rvc.lib.tools.audio_cleanup import _asset_lock
+    from rvc.lib.tools.http_download import download_http
+
+    root = ensure_piper_runtime()
+    with _asset_lock(root):
         data = catalog()
         entry = next(v for v in data["piper"] if v["shortName"] == voice)
         directory = root / voice
