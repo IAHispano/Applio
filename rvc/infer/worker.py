@@ -240,28 +240,6 @@ def run_worker():
                 import asyncio
                 import edge_tts
 
-                # Fix edge-tts 403 (rany2/edge-tts#490): redirect synthesis
-                # to api.msedgeservices.com before connecting.
-                try:
-                    from rvc.lib.tools.edge_tts_patch import apply_edge_tts_fix
-
-                    apply_edge_tts_fix()
-                except ImportError:
-                    # Last-resort inline patch if the helper is unreachable.
-                    try:
-                        import edge_tts.communicate as _comm
-                        import edge_tts.constants as _const
-
-                        _new_wss = (
-                            "wss://api.msedgeservices.com/tts/cognitiveservices"
-                            "/websocket/v1"
-                            f"?Ocp-Apim-Subscription-Key={_const.TRUSTED_CLIENT_TOKEN}"
-                        )
-                        _const.WSS_URL = _new_wss
-                        _comm.WSS_URL = _new_wss
-                    except Exception:
-                        pass
-
                 tts_text = req.get("ttsText", "")
                 tts_file = req.get("ttsFile", "")
                 tts_voice = req.get("ttsVoice", "en-US-AnaNeural")
