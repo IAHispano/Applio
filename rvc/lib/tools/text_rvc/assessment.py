@@ -72,7 +72,7 @@ def assess(args):
             ).logits
         return processor.batch_decode(logits.argmax(-1))[0]
 
-    if getattr(model, "language", "en") != "en":
+    if getattr(model, "language", "en") not in ("en", "en-us"):
         raise ValueError(
             "This word-error assessor requires an English frontend and references"
         )

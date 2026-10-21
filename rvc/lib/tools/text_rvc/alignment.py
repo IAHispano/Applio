@@ -8,7 +8,21 @@ import re
 from rvc.lib.tools.text_rvc.data import digest, normalize_text, save_json, tokenize
 
 _phonemizer = None
-LANGUAGES = ("en", "es", "fr", "de", "it", "pt", "nl", "pl", "ru", "tr", "hi", "ar")
+LANGUAGES = (
+    "en",
+    "en-us",
+    "es",
+    "fr",
+    "de",
+    "it",
+    "pt",
+    "nl",
+    "pl",
+    "ru",
+    "tr",
+    "hi",
+    "ar",
+)
 
 
 def phoneme_labels(text, vocabulary, language="en"):
@@ -156,7 +170,11 @@ def align(manifest, output, recognizer, phonemes=False, language="en", device="c
             if digest(row["audio"]) != row["audio_sha256"]:
                 raise ValueError("Previously aligned reference audio changed")
             continue
-        text = normalize_text(row["text"]) if phonemes else alignment_text(row["text"])
+        text = (
+            normalize_text(row["text"], language)
+            if phonemes
+            else alignment_text(row["text"])
+        )
         labels = (
             phoneme_labels(text, vocab, language)
             if phonemes

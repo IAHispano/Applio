@@ -461,7 +461,7 @@ def fit(args):
     validate_initial_frontend(
         args.initialize_from, args.hidden, args.layers, 768 if version == "v2" else 256
     )
-    multilingual = args.language != "en"
+    multilingual = args.language not in ("en", "en-us")
     if multilingual:
         recognizer = recognizer.with_name("phonemes-multilingual")
     snapshot_download(
