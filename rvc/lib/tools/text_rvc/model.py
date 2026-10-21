@@ -326,7 +326,7 @@ def fit_phonetic_head(model, examples, mean, scale, steps=300):
             torch.tensor(row["durations"]),
         )
         if len(timing) != len(row["features"]):
-            raise ValueError("Phoneme durations must cover the acoustic frames")
+            raise ValueError("Token durations must cover the acoustic frames")
         selected = torch.randperm(len(timing))[:128]
         features.append((row["features"][selected] - mean) / scale)
         labels.append(timing[selected])
