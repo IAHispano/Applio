@@ -114,7 +114,7 @@ def _load(path):
     return model, payload
 
 
-def validate_initial_frontend(path, hidden, layers, feature_dim):
+def validate_initial_frontend(path, hidden, layers, feature_dim, language=None):
     if not path:
         return
     from rvc.lib.tools.text_rvc.model import DurationFrontend
@@ -124,6 +124,8 @@ def validate_initial_frontend(path, hidden, layers, feature_dim):
         raise ValueError(
             "The pretrained text frontend has an incompatible acoustic architecture"
         )
+    if language and model.language != language:
+        raise ValueError("Prepared transcript language differs from the training language")
     if model.hidden != hidden or payload["config"]["layers"] != layers:
         raise ValueError(
             "Initialization checkpoint hidden size and layers must match the training settings"
@@ -299,6 +301,8 @@ def train(args):
     if args.initialize_from:
         best = baseline["loss"]
         _torch_save(output / "best.pt", snapshot(0, baseline))
+        if getattr(args, "live_export", None):
+            _torch_save(args.live_export, snapshot(0, baseline))
 
     for step in range(1, args.steps + 1):
         model.train()
@@ -328,6 +332,9 @@ def train(args):
             if metrics["loss"] < best:
                 best = metrics["loss"]
                 _torch_save(output / "best.pt", payload)
+                if getattr(args, "live_export", None):
+                    _torch_save(args.live_export, payload)
+                    print(json.dumps({"tts_checkpoint_step": step}), flush=True)
             save_json(
                 output / "training.json",
                 {
@@ -437,6 +444,21 @@ def predict(frontend, text, max_frames=2000, rate=0, loaded=None):
     }
 
 
+def rvc_feature_version(path):
+    import torch
+
+    voice = torch.load(path, map_location="cpu", weights_only=True)
+    if (
+        "weight" not in voice
+        or voice.get("embedder_model", "contentvec") != "contentvec"
+    ):
+        raise ValueError("An exported ContentVec RVC voice model is required")
+    version = voice.get("version", "v1")
+    if version not in ("v1", "v2"):
+        raise ValueError("Unsupported RVC feature version")
+    return version
+
+
 def fit(args):
     from huggingface_hub import snapshot_download
     from rvc.lib.tools.text_rvc.data import prepare, validate_speech
@@ -445,6 +467,7 @@ def fit(args):
 
     root = Path(args.output).resolve()
     aligned_manifest = getattr(args, "aligned_manifest", None)
+    live_export = getattr(args, "live_export", False)
     if root.exists() and any(root.iterdir()) and not aligned_manifest:
         raise FileExistsError("Use a new training output directory")
     if aligned_manifest and (
@@ -456,17 +479,7 @@ def fit(args):
     recordings = validate_speech(args.vctk_root, args.speaker, args.language)
     version = "v2"
     if args.rvc:
-        import torch
-
-        voice = torch.load(args.rvc, map_location="cpu", weights_only=True)
-        if (
-            "weight" not in voice
-            or voice.get("embedder_model", "contentvec") != "contentvec"
-        ):
-            raise ValueError("An exported ContentVec RVC voice model is required")
-        version = voice.get("version", "v1")
-        if version not in ("v1", "v2"):
-            raise ValueError("Unsupported RVC feature version")
+        version = rvc_feature_version(args.rvc)
     if (
         not (Path(args.embedder) / "pytorch_model.bin").is_file()
         or not Path(args.rmvpe).is_file()
@@ -541,16 +554,23 @@ def fit(args):
             device=args.device,
         )
     training = argparse.Namespace(
-        **{**vars(args), "manifest": str(manifest), "output": str(root / "training")}
+        **{
+            **vars(args),
+            "manifest": str(manifest),
+            "output": str(root / "training"),
+            "live_export": root / "frontend.pt" if live_export else None,
+        }
     )
     train(training)
     calibrate(
         argparse.Namespace(
             frontend=root / "training" / "best.pt",
             manifest=manifest,
-            output=root / "frontend.pt",
+            output=root / "calibrated.pt" if live_export else root / "frontend.pt",
         )
     )
+    if live_export:
+        (root / "calibrated.pt").replace(root / "frontend.pt")
 
 
 def calibrate(args):
@@ -755,6 +775,10 @@ def main():
     validation.add_argument("--hidden", type=int, default=256)
     validation.add_argument("--layers", type=int, default=4)
     validation.add_argument("--feature-dim", type=int, choices=(256, 768), default=768)
+    validation.add_argument("--require-initial-language", action="store_true")
+    pairing = commands.add_parser("validate-pair")
+    pairing.add_argument("--frontend", required=True)
+    pairing.add_argument("--rvc", required=True)
     download = commands.add_parser("download-vctk")
     download.add_argument("--output", required=True)
     download.add_argument("--speaker", default="p225")
@@ -798,6 +822,7 @@ def main():
     fitting.add_argument("--embedder", required=True)
     fitting.add_argument("--rmvpe", required=True)
     fitting.add_argument("--recognizer", required=True)
+    fitting.add_argument("--live-export", action="store_true")
     prepared_input = fitting.add_mutually_exclusive_group()
     prepared_input.add_argument("--prepare-only", action="store_true")
     prepared_input.add_argument("--aligned-manifest")
@@ -873,8 +898,21 @@ def main():
 
         validate_speech(args.dataset, args.speaker, args.language)
         validate_initial_frontend(
-            args.initialize_from, args.hidden, args.layers, args.feature_dim
+            args.initialize_from,
+            args.hidden,
+            args.layers,
+            args.feature_dim,
+            args.language if args.require_initial_language else None,
         )
+        return
+    if args.command == "validate-pair":
+        import torch
+
+        torch.set_num_threads(args.threads)
+        model, _ = _load(args.frontend)
+        dimensions = 768 if rvc_feature_version(args.rvc) == "v2" else 256
+        if model.feature_dim != dimensions:
+            raise ValueError("RVC checkpoint and frontend feature spaces are incompatible")
         return
     import torch
 
@@ -910,6 +948,8 @@ def main():
             parser.error("training counts must be positive")
         if args.reset_tokenizer and not args.initialize_from:
             parser.error("reset-tokenizer requires initialize-from")
+        if getattr(args, "live_export", False) and not args.initialize_from:
+            parser.error("live-export requires initialize-from")
         (fit if args.command == "fit" else train)(args)
     elif args.command == "evaluate":
         if args.limit < 1:
