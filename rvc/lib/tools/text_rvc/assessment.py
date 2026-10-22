@@ -7,6 +7,17 @@ import unicodedata
 from rvc.lib.tools.text_rvc.data import digest, save_json
 
 
+def decode_seeded(acoustic, checkpoint, sid):
+    import torch
+    from rvc.lib.tools.text_rvc.__main__ import decode_rvc
+
+    # Decoder noise must not depend on a previous candidate's predicted length.
+    # Keep paired reference audio identical across assessments of different models.
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(7)
+        return decode_rvc(acoustic, checkpoint, sid)
+
+
 def error_rate(reference, hypothesis):
     """Word edit distance; insertions can legitimately produce rates above one."""
 
@@ -42,7 +53,7 @@ def assess(args):
     from scipy.signal import resample_poly
     import torch
     from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
-    from rvc.lib.tools.text_rvc.__main__ import _example, _load, _manifest, decode_rvc
+    from rvc.lib.tools.text_rvc.__main__ import _example, _load, _manifest
     from rvc.lib.tools.text_rvc.model import denormalize
 
     model, payload = _load(args.frontend)
@@ -121,7 +132,7 @@ def assess(args):
             coarse_f0=coarse,
             feature_space=data["feature_space"],
         )
-        audio, sr = decode_rvc(acoustic, args.rvc, args.sid)
+        audio, sr = decode_seeded(acoustic, args.rvc, args.sid)
         sf.write(output / f"{row['id']}-generated.wav", audio, sr, subtype="PCM_16")
         generated_transcript = transcribe(audio, sr)
         # Decode reference features through the same voice to isolate frontend errors.
@@ -135,7 +146,7 @@ def assess(args):
             -1,
         )
         features, f0, coarse = denormalize(target, payload["mean"], payload["scale"])
-        audio, sr = decode_rvc(
+        audio, sr = decode_seeded(
             dict(
                 features=features,
                 f0=f0,
@@ -171,6 +182,8 @@ def assess(args):
                 "language": language,
                 "recognizer_language": recognizer_language,
                 "external_validation": args.external_validation,
+                "decoder_rng": "isolated-per-decode-v1",
+                "decoder_seed": 7,
                 "uses_reference_timing": args.oracle_durations,
                 "rvc_sha256": digest(args.rvc),
                 "recognizer_sha256": digest(
