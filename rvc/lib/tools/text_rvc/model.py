@@ -387,6 +387,46 @@ def batch(examples, mean, scale, reduction):
     return result
 
 
+def prosody_loss(prediction, truth, voiced, duration, tokens, durations):
+    # Match contour changes at 10, 40 and 160 ms instead of penalizing all
+    # movement: legitimate vibrato and intonation remain supervised by speech.
+    contour = prediction[..., -2].sum() * 0
+    scales = 0
+    for distance in (1, 4, 16):
+        if prediction.size(1) <= distance:
+            continue
+        continuous = voiced.unfold(1, distance + 1, 1).all(-1)
+        if continuous.any():
+            predicted = prediction[:, distance:, -2] - prediction[:, :-distance, -2]
+            reference = truth[:, distance:, -2] - truth[:, :-distance, -2]
+            contour = contour + functional.smooth_l1_loss(
+                predicted[continuous], reference[continuous]
+            )
+            scales += 1
+    contour = contour / max(1, scales)
+    timing = duration.sum() * 0
+    if durations is not None:
+        active = (tokens != 0) & (durations > 0)
+        predicted = duration.clamp(0, math.log(301)).expm1() * active
+        reference = durations.float()
+        # Local groups constrain rhythm; whole-utterance supervision constrains
+        # rate without relying on a single corpus-wide calibration factor.
+        for width in (4, 16, tokens.size(1)):
+            width = min(width, tokens.size(1))
+            expected = reference.unfold(1, width, 1).sum(-1)
+            actual = predicted.unfold(1, width, 1).sum(-1)
+            selected = active.unfold(1, width, 1).any(-1)
+            if selected.any():
+                timing = (
+                    timing
+                    + functional.smooth_l1_loss(
+                        actual[selected].log1p(), expected[selected].log1p()
+                    )
+                    / 3
+                )
+    return contour, timing
+
+
 def loss(model, tokens, targets, valid, lengths, durations=None):
     prediction, duration = (
         model(tokens, targets, durations)
@@ -413,12 +453,24 @@ def loss(model, tokens, targets, valid, lengths, durations=None):
         if durations is not None
         else functional.smooth_l1_loss(duration, steps.log())
     )
-    total = features + 0.2 * pitch + 0.2 * voicing + 0.2 * duration_loss
+    contour, rhythm = prosody_loss(
+        prediction, truth, voiced, duration, tokens, durations
+    )
+    total = (
+        features
+        + 0.2 * pitch
+        + 0.2 * voicing
+        + 0.2 * duration_loss
+        + 0.1 * contour
+        + 0.1 * rhythm
+    )
     metrics = {
         "feature_mse": float(features.detach()),
         "pitch_loss": float(pitch.detach()),
         "voicing_loss": float(voicing.detach()),
         "duration_loss": float(duration_loss.detach()),
+        "pitch_contour_loss": float(contour.detach()),
+        "rhythm_loss": float(rhythm.detach()),
     }
     if durations is not None and model.phonetic_head is not None:
         labels = nn.utils.rnn.pad_sequence(

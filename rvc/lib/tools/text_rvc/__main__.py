@@ -262,6 +262,7 @@ def train(args):
     def snapshot(step, metrics):
         return {
             "format": "applio-text-rvc-frontend-v1",
+            "training_objective": "acoustic-prosody-v2",
             "config": model.config,
             "weights": model.state_dict(),
             "mean": mean,
@@ -627,7 +628,7 @@ def decode_rvc(acoustic, checkpoint, sid=0, device="cpu", loaded=None):
 def synthesize(args):
     import numpy as np
     import soundfile as sf
-    from rvc.lib.tools.text_rvc.data import text_chunks
+    from rvc.lib.tools.text_rvc.data import boundary_pause, text_chunks
 
     destination = Path(args.output).resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -640,6 +641,7 @@ def synthesize(args):
         temporary = Path(handle.name)
     stream = None
     frames = 0
+    previous_text = ""
     speed = 1 + args.rate / 100 if args.rate >= 0 else 1 / (1 - args.rate / 100)
     try:
         decoder = load_rvc(args.rvc, args.sid, args.device)
@@ -664,8 +666,14 @@ def synthesize(args):
             else:
                 if stream.samplerate != sample_rate:
                     raise ValueError("Voice sample rate changed during synthesis")
-                stream.write(np.zeros(round(sample_rate * 0.08), dtype=np.float32))
+                stream.write(
+                    np.zeros(
+                        round(sample_rate * boundary_pause(previous_text, speed)),
+                        dtype=np.float32,
+                    )
+                )
             stream.write(audio)
+            previous_text = text
             frames += len(acoustic["features"])
         stream.close()
         temporary.replace(destination)

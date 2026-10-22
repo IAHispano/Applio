@@ -12,6 +12,8 @@ from urllib.request import urlopen
 
 CORPUS = "https://doi.org/10.7488/ds/2645"
 MIRROR = "sanchit-gandhi/vctk"
+SENTENCE_ENDINGS = (".", "!", "?", "。", "！", "？", "؟", "।", "॥")
+CLOSING_MARKS = "\"'”’»)]}"
 
 
 def normalize_text(text, language="en"):
@@ -43,11 +45,25 @@ def text_chunks(text, max_bytes=120):
             yield " ".join(current)
             current = []
         current.append(word)
-        if word.endswith((".", "!", "?")):
+        if word.rstrip(CLOSING_MARKS).endswith(SENTENCE_ENDINGS):
             yield " ".join(current)
             current = []
     if current:
         yield " ".join(current)
+
+
+def boundary_pause(text, speed=1.0):
+    ending = text.rstrip().rstrip(CLOSING_MARKS)
+    if ending.endswith(SENTENCE_ENDINGS):
+        seconds = 0.22
+    elif ending.endswith((";", ":", "؛")):
+        seconds = 0.12
+    elif ending.endswith((",", "،", "，")):
+        seconds = 0.08
+    else:
+        # Length limits can split a sentence mid-phrase; avoid adding a full pause.
+        seconds = 0.015
+    return seconds / speed
 
 
 def digest(path):
