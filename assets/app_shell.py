@@ -20,10 +20,32 @@ _ROOT = Path(__file__).resolve().parent / "ui"
 
 # Navigation follows the app, exposing the tools available in the Gradio engine.
 SECTIONS = (
-    ("Voice", (("inference", "Convert Audio"), ("realtime", "Realtime"), ("tts", "Text to Speech"))),
-    ("Models & Training", (("models", "Models"), ("training", "Training"), ("blender", "Voice Blender"), ("tensorboard", "TensorBoard"))),
+    (
+        "Voice",
+        (
+            ("inference", "Convert Audio"),
+            ("realtime", "Realtime"),
+            ("tts", "Text to Speech"),
+        ),
+    ),
+    (
+        "Models & Training",
+        (
+            ("models", "Models"),
+            ("training", "Training"),
+            ("blender", "Voice Blender"),
+            ("tensorboard", "TensorBoard"),
+        ),
+    ),
     ("Tools & Extras", (("audio", "Audio Tools"), ("plugins", "Plugins"))),
-    ("System", (("terminal", "Terminal"), ("settings", "Settings"), ("report", "Report a Bug"))),
+    (
+        "System",
+        (
+            ("terminal", "Terminal"),
+            ("settings", "Settings"),
+            ("report", "Report a Bug"),
+        ),
+    ),
 )
 
 DESCRIPTIONS = {
@@ -52,7 +74,11 @@ def stylesheet():
     font = _ROOT / "Syne-Variable.ttf"
     if font.is_file():
         data = base64.b64encode(font.read_bytes()).decode("ascii")
-        css += '\n@font-face{font-family:"Applio Syne";font-style:normal;font-weight:400 800;font-display:swap;src:url(data:font/ttf;base64,' + data + ') format("truetype");}'
+        css += (
+            '\n@font-face{font-family:"Applio Syne";font-style:normal;font-weight:400 800;font-display:swap;src:url(data:font/ttf;base64,'
+            + data
+            + ') format("truetype");}'
+        )
     for key, svg in _ICONS.items():
         css += f'\n.applio-nav-{key}::before,.applio-link-{key}::before{{mask-image:url("data:image/svg+xml,{quote(svg)}");}}'
     return css
@@ -63,7 +89,9 @@ def create_theme():
         primary_hue="neutral",
         secondary_hue="neutral",
         neutral_hue="neutral",
-        font=[gr.themes.Font(name) for name in ("Applio Syne", "Segoe UI", "sans-serif")],
+        font=[
+            gr.themes.Font(name) for name in ("Applio Syne", "Segoe UI", "sans-serif")
+        ],
         font_mono=[gr.themes.Font(name) for name in ("Consolas", "monospace")],
     )
 
@@ -78,8 +106,8 @@ def page_header(key, title, translate):
     help_link = _link(translate("User guide") + " ↗", guide_url(key)) if guide else ""
     gr.HTML(
         '<header class="applio-page-heading">'
-        f'<div><h1>{html.escape(translate(title))}</h1>'
-        f'<p>{html.escape(translate(DESCRIPTIONS[key]))}</p></div>{help_link}</header>',
+        f"<div><h1>{html.escape(translate(title))}</h1>"
+        f"<p>{html.escape(translate(DESCRIPTIONS[key]))}</p></div>{help_link}</header>",
         elem_classes="applio-page-header",
     )
 
@@ -137,16 +165,20 @@ def build_workspace(builders, translate=lambda text: text):
             )
             with gr.Column(elem_id="applio-navigation"):
                 for section, items in SECTIONS:
-                    with gr.Column(scale=0, min_width=0, elem_classes="applio-nav-group"):
+                    with gr.Column(
+                        scale=0, min_width=0, elem_classes="applio-nav-group"
+                    ):
                         if section:
                             gr.HTML(
-                                f'<h2>{html.escape(translate(section))}</h2>',
+                                f"<h2>{html.escape(translate(section))}</h2>",
                                 elem_classes="applio-nav-heading",
                             )
                         for key, label in items:
                             nav[key] = gr.Button(
                                 translate(label),
-                                variant="primary" if key == "inference" else "secondary",
+                                variant=(
+                                    "primary" if key == "inference" else "secondary"
+                                ),
                                 elem_classes=["applio-nav-item", f"applio-nav-{key}"],
                             )
             links = ECOSYSTEM["links"]
@@ -155,26 +187,34 @@ def build_workspace(builders, translate=lambda text: text):
                 + '<div class="applio-sidebar-resources">'
                 + _link(translate("Website"), links["website"], "website")
                 + _link(translate("Documentation"), links["docs"], "docs")
-                + '</div>'
+                + "</div>"
                 + _link(translate("Discord support"), links["discord"], "community")
                 + '<div class="applio-sidebar-support">'
                 + _link(translate("Support us"), links["support"], "support")
                 + '<span aria-hidden="true">·</span>'
                 + _link(translate("Patreon"), links["patreon"])
-                + '</div>'
-                + '</div>'
+                + "</div>"
+                + "</div>"
             )
 
         with gr.Column(elem_id="applio-content", min_width=0):
             with gr.Tabs(selected="inference", elem_id="applio-pages") as pages:
                 for key, title in entries:
-                    with gr.Tab(title, id=key, elem_id=f"applio-page-{key}", elem_classes="applio-page"):
+                    with gr.Tab(
+                        title,
+                        id=key,
+                        elem_id=f"applio-page-{key}",
+                        elem_classes="applio-page",
+                    ):
                         page_header(key, title, translate)
                         builders[key]()
             gr.HTML(
                 '<footer class="applio-footer">'
-                + _link(translate("Terms of use"), "https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md")
-                + '</footer>'
+                + _link(
+                    translate("Terms of use"),
+                    "https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md",
+                )
+                + "</footer>"
             )
 
     def navigate(key):
@@ -184,8 +224,10 @@ def build_workspace(builders, translate=lambda text: text):
 
     def bind_navigation(button, key):
         event = button.click(
-            partial(navigate, key), outputs=[pages, *nav.values()],
-            queue=False, show_progress="hidden",
+            partial(navigate, key),
+            outputs=[pages, *nav.values()],
+            queue=False,
+            show_progress="hidden",
         )
         event.then(
             fn=None,

@@ -82,8 +82,7 @@ else:
                 init="random",
             )
             .fit(big_npy)
-            .cluster_centers_
-            .astype(np.float32)
+            .cluster_centers_.astype(np.float32)
         )
         n_vectors = int(big_npy.shape[0])
 
@@ -97,9 +96,7 @@ else:
         index_added = faiss.IndexFlatL2(768)
         index_added.add(big_npy)
     else:
-        n_ivf = max(
-            1, min(int(16 * np.sqrt(n_vectors)), n_vectors // 39)
-        )
+        n_ivf = max(1, min(int(16 * np.sqrt(n_vectors)), n_vectors // 39))
 
         # index_added
         index_added = faiss.index_factory(768, f"IVF{n_ivf},Flat")

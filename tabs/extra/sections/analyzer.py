@@ -12,9 +12,16 @@ i18n = I18nAuto()
 
 
 def analyzer_tab():
-    with step_card(1, "Audio Source", i18n, description="Upload the audio you want to analyze."):
+    with step_card(
+        1, "Audio Source", i18n, description="Upload the audio you want to analyze."
+    ):
         audio_input = gr.Audio(type="filepath")
-    with step_card(2, "Analysis Results", i18n, description="Run the analysis and inspect the output."):
+    with step_card(
+        2,
+        "Analysis Results",
+        i18n,
+        description="Run the analysis and inspect the output.",
+    ):
         get_info_button = gr.Button(value=i18n("Get information about the audio"))
         output_info = gr.Textbox(
             label=i18n("Audio analysis output"),
