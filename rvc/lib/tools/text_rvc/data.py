@@ -377,8 +377,14 @@ def prepare(
         high_register={"enabled": False},
     )
     (output / "features").mkdir(parents=True, exist_ok=True)
+    recordings = speech_records(root, speaker, mic, language)
+    source_recordings = [
+        {"id": row["id"], "text": row["text"], "audio_sha256": digest(row["audio"])}
+        for row in recordings
+    ]
+    source_hashes = {row["id"]: row["audio_sha256"] for row in source_recordings}
     rows = []
-    for row in speech_records(root, speaker, mic, language):
+    for row in recordings:
         audio, sample_rate = sf.read(row["audio"], dtype="float32", always_2d=True)
         audio = audio.mean(axis=1)
         if not 0.25 <= len(audio) / sample_rate <= max_seconds:
@@ -413,12 +419,14 @@ def prepare(
             },
             path,
         )
+        if digest(row["audio"]) != source_hashes[row["id"]]:
+            raise ValueError("TTS recordings or transcripts changed after preparation")
         rows.append(
             {
                 **row,
                 "features": str(path.relative_to(output)),
                 "frames": frames,
-                "audio_sha256": digest(row["audio"]),
+                "audio_sha256": source_hashes[row["id"]],
             }
         )
         print(f"Prepared {row['id']}: {frames} frames", flush=True)
@@ -434,6 +442,7 @@ def prepare(
             ),
             "microphone": mic,
             "feature_space": feature_space,
+            "source_recordings": source_recordings,
             "records": partition(rows),
         },
     )

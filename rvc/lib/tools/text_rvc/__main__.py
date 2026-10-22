@@ -491,7 +491,10 @@ def fit(args):
                 "Prepared transcript language differs from the training language"
             )
         current = {row["id"]: row for row in recordings}
-        for row in prepared["records"]:
+        sources = prepared.get("source_recordings", prepared["records"])
+        if set(current) != {row["id"] for row in sources}:
+            raise ValueError("TTS recordings or transcripts changed after preparation")
+        for row in sources:
             recording = current.get(row["id"])
             if (
                 recording is None
