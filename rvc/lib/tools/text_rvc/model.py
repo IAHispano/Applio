@@ -214,6 +214,15 @@ class DurationFrontend(nn.Module):
         )
         return memory, self.duration(memory).squeeze(-1)
 
+    def acoustic_mask(self, tokens):
+        from rvc.lib.tools.text_rvc.alignment import PROSODY_MARKERS
+
+        active = (tokens != 0) & (tokens != self.eos)
+        for name in PROSODY_MARKERS:
+            if self.phoneme_vocabulary and name in self.phoneme_vocabulary:
+                active = active & (tokens != self.phoneme_vocabulary[name] + 1)
+        return active
+
     def forward(self, tokens, groups=None, durations=None):
         memory, log_duration = self.encode(tokens)
         if durations is None:
@@ -223,7 +232,7 @@ class DurationFrontend(nn.Module):
                 .long()
             )
             durations = durations.clamp_min(1)
-            durations = durations.masked_fill((tokens == 0) | (tokens == self.eos), 0)
+            durations = durations.masked_fill(~self.acoustic_mask(tokens), 0)
         lengths = durations.sum(1)
         if int(lengths.max()) < 1 or int(lengths.max()) > 3000:
             raise ValueError("Predicted speech has an invalid duration")

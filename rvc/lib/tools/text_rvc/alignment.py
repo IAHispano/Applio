@@ -8,6 +8,13 @@ import re
 from rvc.lib.tools.text_rvc.data import digest, normalize_text, save_json, tokenize
 
 _phonemizer = None
+PROSODY_MARKERS = {
+    "<word>": " ",
+    "<stress>": "ˈ",
+    "<secondary-stress>": "ˌ",
+    "<clause>": ",;:،؛",
+    "<sentence>": ".!?。！？؟।॥",
+}
 LANGUAGES = (
     "en",
     "en-us",
@@ -23,6 +30,17 @@ LANGUAGES = (
     "hi",
     "ar",
 )
+
+
+def prosody_vocabulary(vocabulary):
+    vocabulary = dict(vocabulary)
+    available = iter(
+        index for index in range(509, -1, -1) if index not in vocabulary.values()
+    )
+    for name in PROSODY_MARKERS:
+        if name not in vocabulary:
+            vocabulary[name] = next(available)
+    return vocabulary
 
 
 def phoneme_labels(text, vocabulary, language="en"):
@@ -42,13 +60,63 @@ def phoneme_labels(text, vocabulary, language="en"):
     )
     # eSpeak emits word-joining markers in French (for example "des accents").
     spoken = spoken.replace("-", " ")
-    spoken = re.sub(r"[ˈˌ.,!?;:͡]", "", spoken)
+    annotated = all(marker in vocabulary for marker in PROSODY_MARKERS)
+    spoken = re.sub(r"[͡]" if annotated else r"[ˈˌ.,!?;:͡]", "", spoken)
     phones = sorted(
         (phone for phone in vocabulary if not phone.startswith("<")),
         key=len,
         reverse=True,
     )
     labels = []
+    if annotated:
+        markers = {
+            character: vocabulary[name]
+            for name, characters in PROSODY_MARKERS.items()
+            for character in characters
+        }
+        cleaned, annotations = [], []
+        for character in spoken:
+            if character.isspace():
+                annotations.append((len(cleaned), markers[" "]))
+                cleaned.append(" ")
+            elif character in markers:
+                annotations.append((len(cleaned), markers[character]))
+            else:
+                cleaned.append(character)
+        spoken = "".join(cleaned)
+        position, annotation = 0, 0
+
+        def emit_markers(end):
+            nonlocal annotation
+            while annotation < len(annotations) and annotations[annotation][0] < end:
+                marker = annotations[annotation][1]
+                if marker != markers[" "] or labels and labels[-1] != marker:
+                    labels.append(marker)
+                annotation += 1
+
+        while position < len(spoken):
+            if spoken[position].isspace():
+                position += 1
+                continue
+            phone = next(
+                (phone for phone in phones if spoken.startswith(phone, position)), None
+            )
+            if phone is None:
+                if spoken[position] == "ː":
+                    position += 1
+                    continue
+                raise ValueError(
+                    f"The phoneme recognizer does not support {spoken[position]!r}"
+                )
+            # Stress inside a compound phone (jˈu, for example) annotates the
+            # whole phone; it must not split the CTC recognizer's acoustic unit.
+            position += len(phone)
+            emit_markers(position)
+            labels.append(vocabulary[phone])
+        emit_markers(len(spoken) + 1)
+        if not labels or len(labels) > 510:
+            raise ValueError("Invalid phoneme sequence length")
+        return labels
     for word in spoken.split():
         while word:
             phone = next((phone for phone in phones if word.startswith(phone)), None)
@@ -63,6 +131,19 @@ def phoneme_labels(text, vocabulary, language="en"):
     if not labels or len(labels) > 512:
         raise ValueError("Invalid phoneme sequence length")
     return labels
+
+
+def annotate_durations(text, vocabulary, durations, language="en"):
+    augmented = prosody_vocabulary(vocabulary)
+    original = phoneme_labels(text, vocabulary, language)
+    annotated = phoneme_labels(text, augmented, language)
+    markers = {augmented[name] for name in PROSODY_MARKERS}
+    if [label for label in annotated if label not in markers] != original:
+        raise ValueError("Prosody annotations changed the aligned phonemes")
+    if len(original) != len(durations):
+        raise ValueError("Prosody annotations require matching phoneme durations")
+    timing = iter(durations)
+    return annotated, [0 if label in markers else next(timing) for label in annotated]
 
 
 def alignment_text(text):
@@ -150,11 +231,11 @@ def align(manifest, output, recognizer, phonemes=False, language="en", device="c
         raise ValueError("Unsupported phoneme vocabulary")
     provenance = {
         "method": (
-            "wav2vec2-phoneme-viterbi-v1"
+            "wav2vec2-phoneme-prosody-viterbi-v2"
             if phonemes
             else "english-wav2vec2-ctc-viterbi-v1"
         ),
-        "phoneme_vocabulary": vocab if phonemes else None,
+        "phoneme_vocabulary": prosody_vocabulary(vocab) if phonemes else None,
         "language": language,
         "recognizer_sha256": digest(Path(recognizer) / "pytorch_model.bin"),
         "source_manifest_sha256": digest(manifest),
@@ -199,7 +280,10 @@ def align(manifest, output, recognizer, phonemes=False, language="en", device="c
                 logits.log_softmax(-1), labels, row["frames"], model.config.pad_token_id
             )
         # EOS has no acoustic duration; boundary characters include edge silence.
-        durations = durations.tolist() + [0]
+        durations = durations.tolist()
+        if phonemes:
+            labels, durations = annotate_durations(text, vocab, durations, language)
+        durations += [0]
         tokens = [label + 1 for label in labels] + [511] if phonemes else tokenize(text)
         if len(durations) != len(tokens) or sum(durations) != row["frames"]:
             raise ValueError("Alignment does not cover all acoustic frames")

@@ -252,7 +252,12 @@ def train(args):
             scale,
         )
     model.to(args.device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
+    learning_rate = args.learning_rate
+    if learning_rate is None:
+        learning_rate = 0.00005 if args.initialize_from else 0.0003
+    if not math.isfinite(learning_rate) or not 0 <= learning_rate <= 0.01:
+        raise ValueError("Invalid learning rate")
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     baseline = _validation(model, validation, manifest.parent, mean, scale)
     history = [{"step": 0, "validation": baseline}]
     best = float("inf")
@@ -263,6 +268,7 @@ def train(args):
         return {
             "format": "applio-text-rvc-frontend-v1",
             "training_objective": "acoustic-prosody-v2",
+            "learning_rate": learning_rate,
             "config": model.config,
             "weights": model.state_dict(),
             "mean": mean,
@@ -539,7 +545,9 @@ def calibrate(args):
             tokens = torch.tensor([model.tokenize(row["text"])])
             _, durations = model.encode(tokens)
             predicted += float(
-                durations.clamp(0, math.log(301)).expm1()[tokens != model.eos].sum()
+                durations.clamp(0, math.log(301))
+                .expm1()[model.acoustic_mask(tokens)]
+                .sum()
             )
             actual += row["frames"]
     ratio = actual / max(predicted, 1e-8)
@@ -744,7 +752,7 @@ def main():
         command.add_argument("--batch-size", type=int, default=4)
         command.add_argument("--hidden", type=int, default=128)
         command.add_argument("--layers", type=int, default=2)
-        command.add_argument("--learning-rate", type=float, default=0.0003)
+        command.add_argument("--learning-rate", type=float)
         command.add_argument("--validate-every", type=int, default=50)
         command.add_argument("--seed", type=int, default=7)
         command.add_argument("--initialize-from")
