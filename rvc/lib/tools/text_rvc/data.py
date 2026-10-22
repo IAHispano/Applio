@@ -14,6 +14,38 @@ CORPUS = "https://doi.org/10.7488/ds/2645"
 MIRROR = "sanchit-gandhi/vctk"
 SENTENCE_ENDINGS = (".", "!", "?", "。", "！", "？", "؟", "।", "॥")
 CLOSING_MARKS = "\"'”’»)]}"
+NONTERMINAL_ABBREVIATIONS = frozenset(
+    (
+        "mr.",
+        "mrs.",
+        "ms.",
+        "dr.",
+        "dra.",
+        "prof.",
+        "sr.",
+        "sra.",
+        "srta.",
+        "jr.",
+        "hr.",
+        "fr.",
+        "nr.",
+        "e.g.",
+        "i.e.",
+        "vs.",
+    )
+)
+
+
+def sentence_ending(text):
+    ending = text.rstrip().rstrip(CLOSING_MARKS)
+    if not ending.endswith(SENTENCE_ENDINGS):
+        return False
+    word = ending.split()[-1]
+    # Keep titles, initials and dotted acronyms with the phrase that follows.
+    return not (
+        word.casefold() in NONTERMINAL_ABBREVIATIONS
+        or re.fullmatch(r"(?:[^\W\d_]\.)+", word)
+    )
 
 
 def normalize_text(text, language="en"):
@@ -45,7 +77,7 @@ def text_chunks(text, max_bytes=120):
             yield " ".join(current)
             current = []
         current.append(word)
-        if word.rstrip(CLOSING_MARKS).endswith(SENTENCE_ENDINGS):
+        if sentence_ending(word):
             yield " ".join(current)
             current = []
     if current:
@@ -54,7 +86,7 @@ def text_chunks(text, max_bytes=120):
 
 def boundary_pause(text, speed=1.0):
     ending = text.rstrip().rstrip(CLOSING_MARKS)
-    if ending.endswith(SENTENCE_ENDINGS):
+    if sentence_ending(text):
         seconds = 0.22
     elif ending.endswith((";", ":", "؛")):
         seconds = 0.12
