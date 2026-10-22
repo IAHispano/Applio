@@ -32,8 +32,11 @@ class _TerminalWriter:
             mode = ctypes.c_ulong()
             if kernel.GetConsoleMode(handle, ctypes.byref(mode)):
                 kernel.WriteConsoleW.argtypes = [
-                    ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong,
-                    ctypes.c_void_p, ctypes.c_void_p,
+                    ctypes.c_void_p,
+                    ctypes.c_void_p,
+                    ctypes.c_ulong,
+                    ctypes.c_void_p,
+                    ctypes.c_void_p,
                 ]
                 self.console = (kernel, handle)
                 self.decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
@@ -56,8 +59,11 @@ class _TerminalWriter:
             written = ctypes.c_ulong()
             count = min((len(encoded) - position) // 2, 16000)
             if not kernel.WriteConsoleW(
-                handle, ctypes.byref(buffer, position), count,
-                ctypes.byref(written), None,
+                handle,
+                ctypes.byref(buffer, position),
+                count,
+                ctypes.byref(written),
+                None,
             ):
                 raise ctypes.WinError(ctypes.get_last_error())
             if not written.value:
@@ -190,7 +196,9 @@ class TerminalCapture:
         text = "\n".join(
             line.split("\r")[-1] for line in text.replace("\r\n", "\n").split("\n")
         )
-        prefix = "[Earlier output omitted from this view]\n" if offset > int(start) else ""
+        prefix = (
+            "[Earlier output omitted from this view]\n" if offset > int(start) else ""
+        )
         return prefix + text
 
     def position(self):

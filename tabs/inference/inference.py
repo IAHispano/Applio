@@ -550,8 +550,18 @@ def update_filter_visibility(_):
 def inference_tab():
     trigger = get_filter_trigger()
     with gr.Column(scale=0, min_width=0, elem_id="applio-conversion-top"):
-        with gr.Column(scale=0, min_width=0, elem_classes="applio-card", elem_id="applio-voice-model"):
-            step_header(1, "Voice Model", i18n, description="Select the voice model and index file used for conversion.")
+        with gr.Column(
+            scale=0,
+            min_width=0,
+            elem_classes="applio-card",
+            elem_id="applio-voice-model",
+        ):
+            step_header(
+                1,
+                "Voice Model",
+                i18n,
+                description="Select the voice model and index file used for conversion.",
+            )
             with gr.Row(elem_id="applio-model-selectors"):
                 with gr.Column(scale=1, min_width=240):
                     model_file = gr.Dropdown(
@@ -593,7 +603,9 @@ def inference_tab():
                 show_progress=False,
             )
             with gr.Row(elem_id="applio-model-actions"):
-                unload_button = gr.Button(i18n("Unload Voice"), size="sm", min_width=100)
+                unload_button = gr.Button(
+                    i18n("Unload Voice"), size="sm", min_width=100
+                )
                 refresh_button = gr.Button(
                     i18n("Refresh models and indexes"), size="sm", min_width=100
                 )
@@ -612,7 +624,12 @@ def inference_tab():
                     outputs=[index_file],
                 )
         with gr.Column(scale=0, min_width=0, elem_classes="applio-card"):
-            step_header(2, "Audio Source", i18n, description="Upload a single file or point to a folder for batch conversion.")
+            step_header(
+                2,
+                "Audio Source",
+                i18n,
+                description="Upload a single file or point to a folder for batch conversion.",
+            )
             with gr.Tabs(selected="single"):
                 with gr.Tab(i18n("Single"), id="single") as single_source:
                     with gr.Column():
@@ -633,7 +650,9 @@ def inference_tab():
                         with gr.Column():
                             input_folder_batch = gr.Textbox(
                                 label=i18n("Input Folder"),
-                                info=i18n("Select the folder containing the audios to convert."),
+                                info=i18n(
+                                    "Select the folder containing the audios to convert."
+                                ),
                                 placeholder=i18n("Enter input path"),
                                 value=os.path.join(now_dir, "assets", "audios"),
                                 interactive=True,
@@ -648,9 +667,21 @@ def inference_tab():
                                 interactive=True,
                             )
 
-    with gr.Column(scale=0, min_width=0, elem_classes="applio-card", elem_id="applio-parameters-card"):
-        step_header(3, "Conversion Parameters", i18n, description="Tune pitch, voice matching, algorithms and output settings.")
-        with gr.Tabs(selected="single", elem_id="applio-conversion-parameters") as parameters:
+    with gr.Column(
+        scale=0,
+        min_width=0,
+        elem_classes="applio-card",
+        elem_id="applio-parameters-card",
+    ):
+        step_header(
+            3,
+            "Conversion Parameters",
+            i18n,
+            description="Tune pitch, voice matching, algorithms and output settings.",
+        )
+        with gr.Tabs(
+            selected="single", elem_id="applio-conversion-parameters"
+        ) as parameters:
             with gr.Tab(i18n("Single"), id="single"):
                 pitch = gr.Slider(
                     minimum=-24,
@@ -698,7 +729,9 @@ def inference_tab():
                     with gr.Accordion(i18n("Models & Algorithms"), open=False):
                         sid = gr.Dropdown(
                             label=i18n("Speaker ID"),
-                            info=i18n("Select the speaker ID to use for the conversion."),
+                            info=i18n(
+                                "Select the speaker ID to use for the conversion."
+                            ),
                             choices=get_speakers_id(model_file.value),
                             value=0,
                             interactive=True,
@@ -737,7 +770,9 @@ def inference_tab():
                                 with gr.Row():
                                     embedder_model_custom = gr.Dropdown(
                                         label=i18n("Select Custom Embedder"),
-                                        choices=path_choices(refresh_embedders_folders()),
+                                        choices=path_choices(
+                                            refresh_embedders_folders()
+                                        ),
                                         interactive=True,
                                         allow_custom_value=True,
                                     )
@@ -909,7 +944,9 @@ def inference_tab():
                             value=(
                                 output_path_fn(audio_paths[0])
                                 if audio_paths
-                                else os.path.join(now_dir, "assets", "audios", "output.wav")
+                                else os.path.join(
+                                    now_dir, "assets", "audios", "output.wav"
+                                )
                             ),
                             interactive=True,
                         )
@@ -1058,7 +1095,9 @@ def inference_tab():
                     with gr.Accordion(i18n("Models & Algorithms"), open=False):
                         sid_batch = gr.Dropdown(
                             label=i18n("Speaker ID"),
-                            info=i18n("Select the speaker ID to use for the conversion."),
+                            info=i18n(
+                                "Select the speaker ID to use for the conversion."
+                            ),
                             choices=get_speakers_id(model_file.value),
                             value=0,
                             interactive=True,
@@ -1097,7 +1136,9 @@ def inference_tab():
                                 with gr.Row():
                                     embedder_model_custom_batch = gr.Dropdown(
                                         label=i18n("Select Custom Embedder"),
-                                        choices=path_choices(refresh_embedders_folders()),
+                                        choices=path_choices(
+                                            refresh_embedders_folders()
+                                        ),
                                         interactive=True,
                                         allow_custom_value=True,
                                     )
@@ -1317,8 +1358,12 @@ def inference_tab():
                         info=i18n("The output information will be displayed here."),
                     )
 
-    single_source.select(lambda: gr.Tabs(selected="single"), outputs=parameters, queue=False)
-    batch_source.select(lambda: gr.Tabs(selected="batch"), outputs=parameters, queue=False)
+    single_source.select(
+        lambda: gr.Tabs(selected="single"), outputs=parameters, queue=False
+    )
+    batch_source.select(
+        lambda: gr.Tabs(selected="batch"), outputs=parameters, queue=False
+    )
 
     def toggle_visible(checkbox):
         return {"visible": checkbox, "__type__": "update"}
@@ -1362,7 +1407,6 @@ def inference_tab():
                 gr.update(visible=False),
                 gr.update(visible=False),
             )
-
 
     autotune.change(
         fn=toggle_visible,
