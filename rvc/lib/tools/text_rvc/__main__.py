@@ -444,9 +444,16 @@ def fit(args):
     import argparse
 
     root = Path(args.output).resolve()
-    if root.exists() and any(root.iterdir()):
+    aligned_manifest = getattr(args, "aligned_manifest", None)
+    if root.exists() and any(root.iterdir()) and not aligned_manifest:
         raise FileExistsError("Use a new training output directory")
-    validate_speech(args.vctk_root, args.speaker, args.language)
+    if aligned_manifest and (
+        Path(aligned_manifest).resolve() != root / "prepared" / "phonemes.json"
+        or (root / "training").exists()
+        or (root / "frontend.pt").exists()
+    ):
+        raise ValueError("Use this job's aligned manifest and an unfinished TTS output")
+    recordings = validate_speech(args.vctk_root, args.speaker, args.language)
     version = "v2"
     if args.rvc:
         import torch
@@ -467,46 +474,69 @@ def fit(args):
         raise FileNotFoundError(
             "ContentVec and RMVPE assets are required; run Install / Repair first"
         )
-    recognizer = Path(args.recognizer).resolve()
+    recognizer = Path(args.recognizer)
     validate_initial_frontend(
         args.initialize_from, args.hidden, args.layers, 768 if version == "v2" else 256
     )
     multilingual = args.language not in ("en", "en-us")
     if multilingual:
         recognizer = recognizer.with_name("phonemes-multilingual")
-    snapshot_download(
-        (
-            "facebook/wav2vec2-xlsr-53-espeak-cv-ft"
-            if multilingual
-            else "facebook/wav2vec2-lv-60-espeak-cv-ft"
-        ),
-        revision=(
-            "2c733782da5604684829819a5eb744c193fe9398"
-            if multilingual
-            else "ae45363bf3413b374fecd9dc8bc1df0e24c3b7f4"
-        ),
-        local_dir=str(recognizer),
-        allow_patterns=["*.json", "pytorch_model.bin", "README.md", "LICENSE*"],
-    )
-    prepare(
-        args.vctk_root,
-        root / "prepared",
-        args.embedder,
-        args.rmvpe,
-        speaker=args.speaker,
-        version=version,
-        language=args.language,
-        device=args.device,
-    )
-    manifest = root / "prepared" / "phonemes.json"
-    align(
-        root / "prepared" / "manifest.json",
-        manifest,
-        recognizer,
-        phonemes=True,
-        language=args.language,
-        device=args.device,
-    )
+    recognizer = recognizer.resolve()
+    if aligned_manifest:
+        manifest, prepared = _manifest(aligned_manifest)
+        if prepared["feature_space"]["version"] != version:
+            raise ValueError("RVC checkpoint and prepared feature versions differ")
+        if prepared.get("alignment", {}).get("language") != args.language:
+            raise ValueError(
+                "Prepared transcript language differs from the training language"
+            )
+        current = {row["id"]: row for row in recordings}
+        for row in prepared["records"]:
+            recording = current.get(row["id"])
+            if (
+                recording is None
+                or recording["text"] != row["text"]
+                or digest(recording["audio"]) != row["audio_sha256"]
+            ):
+                raise ValueError(
+                    "TTS recordings or transcripts changed after preparation"
+                )
+    else:
+        snapshot_download(
+            (
+                "facebook/wav2vec2-xlsr-53-espeak-cv-ft"
+                if multilingual
+                else "facebook/wav2vec2-lv-60-espeak-cv-ft"
+            ),
+            revision=(
+                "2c733782da5604684829819a5eb744c193fe9398"
+                if multilingual
+                else "ae45363bf3413b374fecd9dc8bc1df0e24c3b7f4"
+            ),
+            local_dir=str(recognizer),
+            allow_patterns=["*.json", "pytorch_model.bin", "README.md", "LICENSE*"],
+        )
+        prepare(
+            args.vctk_root,
+            root / "prepared",
+            args.embedder,
+            args.rmvpe,
+            speaker=args.speaker,
+            version=version,
+            language=args.language,
+            device=args.device,
+        )
+        if getattr(args, "prepare_only", False):
+            return
+        manifest = root / "prepared" / "phonemes.json"
+        align(
+            root / "prepared" / "manifest.json",
+            manifest,
+            recognizer,
+            phonemes=True,
+            language=args.language,
+            device=args.device,
+        )
     training = argparse.Namespace(
         **{**vars(args), "manifest": str(manifest), "output": str(root / "training")}
     )
@@ -765,6 +795,9 @@ def main():
     fitting.add_argument("--embedder", required=True)
     fitting.add_argument("--rmvpe", required=True)
     fitting.add_argument("--recognizer", required=True)
+    prepared_input = fitting.add_mutually_exclusive_group()
+    prepared_input.add_argument("--prepare-only", action="store_true")
+    prepared_input.add_argument("--aligned-manifest")
     evaluation = commands.add_parser("evaluate")
     evaluation.add_argument("--frontend", required=True)
     evaluation.add_argument("--manifest", required=True)
