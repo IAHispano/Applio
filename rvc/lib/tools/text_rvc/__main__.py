@@ -805,6 +805,9 @@ def main():
     pairing = commands.add_parser("validate-pair")
     pairing.add_argument("--frontend", required=True)
     pairing.add_argument("--rvc", required=True)
+    pairing.add_argument("--language", choices=LANGUAGES)
+    pairing.add_argument("--hidden", type=int)
+    pairing.add_argument("--layers", type=int)
     download = commands.add_parser("download-vctk")
     download.add_argument("--output", required=True)
     download.add_argument("--speaker", default="p225")
@@ -940,7 +943,15 @@ def main():
 
         torch.set_num_threads(args.threads)
         model, _ = _load(args.frontend)
+        if args.language and getattr(model, "language", "en") != args.language:
+            raise ValueError("Initialization language differs from the speech language")
         dimensions = 768 if rvc_feature_version(args.rvc) == "v2" else 256
+        if args.hidden is not None or args.layers is not None:
+            if args.hidden is None or args.layers is None:
+                parser.error("hidden and layers must be provided together")
+            validate_initial_frontend(
+                args.frontend, args.hidden, args.layers, dimensions, args.language
+            )
         if model.feature_dim != dimensions:
             raise ValueError(
                 "RVC checkpoint and frontend feature spaces are incompatible"
