@@ -34,6 +34,7 @@ os.makedirs(custom_embedder_root, exist_ok=True)
 
 custom_embedder_root_relative = os.path.relpath(custom_embedder_root, now_dir)
 model_root_relative = os.path.relpath(model_root, now_dir)
+flow_vocoder_root = os.path.join("rvc", "models", "pretraineds", "rectified-flow")
 audio_root_relative = os.path.relpath(audio_root, now_dir)
 
 sup_audioext = {
@@ -90,7 +91,7 @@ def get_files(type="model"):
     assert type in ("model", "index"), "Invalid type for get_files (models or index)"
     is_model = type == "model"
     exts = (".pth", ".onnx") if is_model else (".index",)
-    exclude_prefixes = ("G_", "D_") if is_model else ()
+    exclude_prefixes = ("G_", "D_", "F_") if is_model else ()
     exclude_substr = None if is_model else "trained"
 
     best = {}
@@ -547,6 +548,152 @@ def update_filter_visibility(_):
 
 
 # Inference tab
+# Keywords of the infer scripts the Rectified Flow settings fill, in order
+flow_setting_names = (
+    "flow_vocoder",
+    "flow_steps",
+    "flow_cfg_scale",
+    "flow_content_guidance",
+    "flow_sampler",
+    "flow_guidance_rescale",
+    "flow_guidance_until",
+    "flow_formant_shift",
+    "flow_tension_strength",
+    "flow_peak_limiter",
+)
+
+
+def split_flow_settings(args):
+    """Split the Rectified Flow settings off the end of the inputs, as keywords."""
+    count = len(flow_setting_names)
+    return args[:-count], dict(zip(flow_setting_names, args[-count:]))
+
+
+def rectified_flow_settings():
+    """Vocoder and sampling settings of the Rectified Flow models, in the order the infer scripts take them."""
+    vocoders = (
+        sorted(
+            os.path.join(flow_vocoder_root, name)
+            for name in os.listdir(flow_vocoder_root)
+            if "_vocoder" in name
+        )
+        if os.path.isdir(flow_vocoder_root)
+        else []
+    )
+    with gr.Accordion(i18n("Rectified Flow"), open=False):
+        vocoder = gr.Dropdown(
+            label=i18n("Vocoder"),
+            info=i18n(
+                "Vocoder that renders the audio of a Rectified Flow model. Empty uses the one the model was trained with, else the default one of its sampling rate."
+            ),
+            choices=[(os.path.basename(path), path) for path in vocoders],
+            value=None,
+            interactive=True,
+        )
+        with gr.Row():
+            steps = gr.Slider(
+                minimum=1,
+                maximum=64,
+                step=1,
+                label=i18n("Steps"),
+                info=i18n("Sampling steps. More is slower and more detailed."),
+                value=16,
+                interactive=True,
+            )
+            cfg_scale = gr.Slider(
+                minimum=1.0,
+                maximum=4.0,
+                step=0.1,
+                label=i18n("Speaker Guidance"),
+                info=i18n("How strongly the output follows the voice model."),
+                value=1.0,
+                interactive=True,
+            )
+            content_guidance = gr.Slider(
+                minimum=0.0,
+                maximum=1.0,
+                step=0.05,
+                label=i18n("Content Guidance"),
+                info=i18n("How strongly the output follows the input articulation."),
+                value=0.1,
+                interactive=True,
+            )
+        with gr.Row():
+            sampler = gr.Radio(
+                label=i18n("Sampler"),
+                info=i18n(
+                    "Euler takes one pass of the model per step. Heun takes two and is more accurate at the same cost from 8 steps on. Mean takes any number of steps, 1 or 2 being where it pays, and needs a model trained with Mean Flow."
+                ),
+                choices=["euler", "heun", "mean"],
+                value="euler",
+                interactive=True,
+            )
+            guidance_rescale = gr.Slider(
+                minimum=0.0,
+                maximum=1.0,
+                step=0.05,
+                label=i18n("Guidance Rescale"),
+                info=i18n(
+                    "Pulls the loudness of the guided output back to the unguided one, against a harsh or saturated sound."
+                ),
+                value=0.7,
+                interactive=True,
+            )
+            guidance_until = gr.Slider(
+                minimum=0.1,
+                maximum=1.0,
+                step=0.05,
+                label=i18n("Guidance Until"),
+                info=i18n(
+                    "Share of the sampling the guidances apply to. Lower is faster, as the last steps then run without them."
+                ),
+                value=1.0,
+                interactive=True,
+            )
+        with gr.Row():
+            formant_shift = gr.Slider(
+                minimum=-5.0,
+                maximum=5.0,
+                step=0.1,
+                label=i18n("Formant Shift"),
+                info=i18n("Shift of the formants in semitones, apart from the pitch."),
+                value=0.0,
+                interactive=True,
+            )
+            tension_strength = gr.Slider(
+                minimum=0.0,
+                maximum=1.0,
+                step=0.05,
+                label=i18n("Tension"),
+                info=i18n(
+                    "How much of the tension of the input, pressed or soft, carries over. 0 leaves the voice at its own."
+                ),
+                value=1.0,
+                interactive=True,
+            )
+        with gr.Row():
+            peak_limiter = gr.Checkbox(
+                label=i18n("Peak Limiter"),
+                info=i18n(
+                    "Limit the peaks of the output under -1 dBFS. Off, the whole output is only turned down when it would clip."
+                ),
+                value=False,
+                interactive=True,
+            )
+    return [
+        vocoder,
+        steps,
+        cfg_scale,
+        content_guidance,
+        sampler,
+        guidance_rescale,
+        guidance_until,
+        formant_shift,
+        tension_strength,
+        peak_limiter,
+    ]
+
+
 def inference_tab():
     trigger = get_filter_trigger()
     with gr.Column(scale=0, min_width=0, elem_id="applio-conversion-top"):
@@ -761,6 +908,7 @@ def inference_tab():
                                 move_files_button = gr.Button(
                                     i18n("Move files to custom embedder folder")
                                 )
+                    flow_settings = rectified_flow_settings()
                     with gr.Accordion(i18n("Advanced Pitch & Tuning"), open=False):
                         autotune = gr.Checkbox(
                             label=i18n("Autotune"),
@@ -955,8 +1103,12 @@ def inference_tab():
                         return message, None
                     try:
                         gr.Info(i18n("Converting audio..."))
+                        args, flow = split_flow_settings(args)
                         result = run_infer_script(
-                            *args[:-2], cleanup_mode=args[-2], cleanup_strength=args[-1]
+                            *args[:-2],
+                            cleanup_mode=args[-2],
+                            cleanup_strength=args[-1],
+                            **flow,
                         )
                         gr.Info(result[0])
                         return result
@@ -980,8 +1132,12 @@ def inference_tab():
                         gr.Info(message)
                         return message
                     try:
+                        args, flow = split_flow_settings(args)
                         return run_batch_infer_script(
-                            *args[:-2], cleanup_mode=args[-2], cleanup_strength=args[-1]
+                            *args[:-2],
+                            cleanup_mode=args[-2],
+                            cleanup_strength=args[-1],
+                            **flow,
                         )
                     except Exception:
                         traceback.print_exc()
@@ -1121,6 +1277,7 @@ def inference_tab():
                                 move_files_button_batch = gr.Button(
                                     i18n("Move files to custom embedder folder")
                                 )
+                    flow_settings_batch = rectified_flow_settings()
                     with gr.Accordion(i18n("Advanced Pitch & Tuning"), open=False):
                         autotune_batch = gr.Checkbox(
                             label=i18n("Autotune"),
@@ -1521,6 +1678,7 @@ def inference_tab():
             sid,
             cleanup_mode,
             cleanup_strength,
+            *flow_settings,
         ],
         outputs=[vc_output1, vc_output2],
     )
@@ -1554,6 +1712,7 @@ def inference_tab():
             sid_batch,
             cleanup_mode_batch,
             cleanup_strength_batch,
+            *flow_settings_batch,
         ],
         outputs=[vc_output3],
     ).then(
