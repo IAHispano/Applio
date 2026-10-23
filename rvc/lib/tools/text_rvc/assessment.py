@@ -7,13 +7,29 @@ import unicodedata
 from rvc.lib.tools.text_rvc.data import digest, save_json
 
 
-def decode_seeded(acoustic, checkpoint, sid):
+def load_seeded_decoder(checkpoint, sid):
+    import torch
+    from rvc.lib.tools.text_rvc.__main__ import load_rvc
+
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(7)
+        decoder = load_rvc(checkpoint, sid)
+        return decoder, torch.random.get_rng_state()
+
+
+def decode_seeded(acoustic, checkpoint, sid, loaded=None):
     import torch
     from rvc.lib.tools.text_rvc.__main__ import decode_rvc
 
     # Decoder noise must not depend on a previous candidate's predicted length.
     # Keep paired reference audio identical across assessments of different models.
     with torch.random.fork_rng(devices=[]):
+        if loaded is not None:
+            decoder, state = loaded
+            # Model construction also consumes noise. Reuse its post-load RNG
+            # state so cached and fresh decoders produce identical waveforms.
+            torch.random.set_rng_state(state)
+            return decode_rvc(acoustic, checkpoint, sid, loaded=decoder)
         torch.manual_seed(7)
         return decode_rvc(acoustic, checkpoint, sid)
 
@@ -112,6 +128,7 @@ def assess(args):
     seen_audio = set(payload.get("seen_audio_sha256", []))
     if seen_audio & {row["audio_sha256"] for row in rows}:
         raise ValueError("Validation recordings were used during training")
+    decoder = load_seeded_decoder(args.rvc, args.sid)
     results = []
     for row in rows:
         truth = _example(manifest.parent, row, model.feature_dim)
@@ -136,7 +153,7 @@ def assess(args):
             coarse_f0=coarse,
             feature_space=data["feature_space"],
         )
-        audio, sr = decode_seeded(acoustic, args.rvc, args.sid)
+        audio, sr = decode_seeded(acoustic, args.rvc, args.sid, loaded=decoder)
         sf.write(output / f"{row['id']}-generated.wav", audio, sr, subtype="PCM_16")
         generated_transcript = transcribe(audio, sr)
         # Decode reference features through the same voice to isolate frontend errors.
@@ -159,6 +176,7 @@ def assess(args):
             ),
             args.rvc,
             args.sid,
+            loaded=decoder,
         )
         sf.write(
             output / f"{row['id']}-reference-decoded.wav", audio, sr, subtype="PCM_16"
