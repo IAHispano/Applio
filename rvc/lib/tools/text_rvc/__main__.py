@@ -125,7 +125,9 @@ def validate_initial_frontend(path, hidden, layers, feature_dim, language=None):
             "The pretrained text frontend has an incompatible acoustic architecture"
         )
     if language and model.language != language:
-        raise ValueError("Prepared transcript language differs from the training language")
+        raise ValueError(
+            "Prepared transcript language differs from the training language"
+        )
     if model.hidden != hidden or payload["config"]["layers"] != layers:
         raise ValueError(
             "Initialization checkpoint hidden size and layers must match the training settings"
@@ -238,6 +240,11 @@ def train(args):
             row["audio_sha256"] for row in validation
         }:
             raise ValueError("Initialization checkpoint has seen validation recordings")
+        if (
+            set(source.get("seen_source_audio_sha256", []))
+            | set(source.get("seen_audio_sha256", []))
+        ) & {row.get("source_audio_sha256", row["audio_sha256"]) for row in validation}:
+            raise ValueError("Initialization checkpoint has seen validation recordings")
         mean, scale = source["mean"], source["scale"]
     if args.phonetic_loss:
         from rvc.lib.tools.text_rvc.model import fit_phonetic_head
@@ -284,6 +291,13 @@ def train(args):
             "seen_audio_sha256": sorted(
                 set(source.get("seen_audio_sha256", []))
                 | {row["audio_sha256"] for row in train_rows}
+            ),
+            "seen_source_audio_sha256": sorted(
+                set(source.get("seen_source_audio_sha256", []))
+                | {
+                    row.get("source_audio_sha256", row["audio_sha256"])
+                    for row in train_rows
+                }
             ),
             "manifest_sha256": digest(manifest),
             "shared_phonemes": shared_phonemes,
@@ -461,7 +475,11 @@ def rvc_feature_version(path):
 
 def fit(args):
     from huggingface_hub import snapshot_download
-    from rvc.lib.tools.text_rvc.data import prepare, validate_speech
+    from rvc.lib.tools.text_rvc.data import (
+        automatic_transcripts,
+        prepare,
+        validate_speech,
+    )
     from rvc.lib.tools.text_rvc.alignment import align
     import argparse
 
@@ -476,7 +494,7 @@ def fit(args):
         or (root / "frontend.pt").exists()
     ):
         raise ValueError("Use this job's aligned manifest and an unfinished TTS output")
-    recordings = validate_speech(args.vctk_root, args.speaker, args.language)
+    dataset_root = Path(args.vctk_root)
     version = "v2"
     if args.rvc:
         version = rvc_feature_version(args.rvc)
@@ -491,6 +509,18 @@ def fit(args):
     validate_initial_frontend(
         args.initialize_from, args.hidden, args.layers, 768 if version == "v2" else 256
     )
+    if getattr(args, "auto_transcribe", False):
+        transcriber = getattr(args, "transcriber", None) or (
+            Path(args.recognizer).parent.parent / "transcribers" / "whisper-base"
+        )
+        dataset_root = automatic_transcripts(
+            dataset_root,
+            root / "transcribed",
+            transcriber,
+            args.speaker,
+            args.language,
+        )
+    recordings = validate_speech(dataset_root, args.speaker, args.language)
     multilingual = args.language not in ("en", "en-us")
     if multilingual:
         recognizer = recognizer.with_name("phonemes-multilingual")
@@ -533,7 +563,7 @@ def fit(args):
             allow_patterns=["*.json", "pytorch_model.bin", "README.md", "LICENSE*"],
         )
         prepare(
-            args.vctk_root,
+            dataset_root,
             root / "prepared",
             args.embedder,
             args.rmvpe,
@@ -776,6 +806,7 @@ def main():
     validation.add_argument("--layers", type=int, default=4)
     validation.add_argument("--feature-dim", type=int, choices=(256, 768), default=768)
     validation.add_argument("--require-initial-language", action="store_true")
+    validation.add_argument("--auto-transcribe", action="store_true")
     pairing = commands.add_parser("validate-pair")
     pairing.add_argument("--frontend", required=True)
     pairing.add_argument("--rvc", required=True)
@@ -823,6 +854,8 @@ def main():
     fitting.add_argument("--rmvpe", required=True)
     fitting.add_argument("--recognizer", required=True)
     fitting.add_argument("--live-export", action="store_true")
+    fitting.add_argument("--auto-transcribe", action="store_true")
+    fitting.add_argument("--transcriber")
     prepared_input = fitting.add_mutually_exclusive_group()
     prepared_input.add_argument("--prepare-only", action="store_true")
     prepared_input.add_argument("--aligned-manifest")
@@ -894,9 +927,11 @@ def main():
         download_vctk(args.output, args.speaker, args.limit)
         return
     if args.command == "validate-data":
-        from rvc.lib.tools.text_rvc.data import validate_speech
+        from rvc.lib.tools.text_rvc.data import audio_sources, validate_speech
 
-        validate_speech(args.dataset, args.speaker, args.language)
+        (audio_sources if args.auto_transcribe else validate_speech)(
+            args.dataset, args.speaker, args.language
+        )
         validate_initial_frontend(
             args.initialize_from,
             args.hidden,
@@ -912,7 +947,9 @@ def main():
         model, _ = _load(args.frontend)
         dimensions = 768 if rvc_feature_version(args.rvc) == "v2" else 256
         if model.feature_dim != dimensions:
-            raise ValueError("RVC checkpoint and frontend feature spaces are incompatible")
+            raise ValueError(
+                "RVC checkpoint and frontend feature spaces are incompatible"
+            )
         return
     import torch
 

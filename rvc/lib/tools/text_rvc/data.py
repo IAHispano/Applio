@@ -1,5 +1,6 @@
 """Transcribed speech preparation with holdouts and explicit feature provenance."""
 
+from collections import Counter
 import hashlib
 import json
 import math
@@ -12,6 +13,9 @@ from urllib.request import urlopen
 
 CORPUS = "https://doi.org/10.7488/ds/2645"
 MIRROR = "sanchit-gandhi/vctk"
+TRANSCRIBER = "openai/whisper-base"
+TRANSCRIBER_REVISION = "e37978b90ca9030d5170a5c07aadb050351a65bb"
+AUDIO_EXTENSIONS = frozenset((".wav", ".mp3", ".flac", ".ogg", ".aif", ".aiff"))
 SENTENCE_ENDINGS = (".", "!", "?", "。", "！", "？", "؟", "।", "॥")
 CLOSING_MARKS = "\"'”’»)]}"
 NONTERMINAL_ABBREVIATIONS = frozenset(
@@ -161,6 +165,33 @@ def speech_records(root, speaker="p225", mic="mic1", language="en"):
     root = Path(root).resolve()
     if (root / "txt" / speaker).is_dir():
         return vctk_records(root, speaker, mic)
+    origins = {}
+    provenance = root / "source.json"
+    if provenance.is_file():
+        source = json.loads(provenance.read_text(encoding="utf-8"))
+        if (
+            source.get("transcriber_revision")
+            and "sources" in source
+            and "clips" in source
+        ):
+            originals = {row["relative"]: row for row in source["sources"]}
+            counts = Counter(row["source"] for row in source["clips"])
+            for clip in source["clips"]:
+                original = originals[clip["source"]]
+                # Keep a whole recording's identity across resampling/encoding.
+                # Long-recording chunks need distinct identities for their splits.
+                identity = original["audio_sha256"]
+                whole = (
+                    counts[clip["source"]] == 1
+                    and clip["start_sample"] == 0
+                    and clip["source_samples"]
+                    == clip.get("source_total_samples", clip["source_samples"])
+                )
+                if not whole:
+                    identity = hashlib.sha256(
+                        f"{identity}:{clip['start_sample']}:{clip['source_samples']}:{clip['source_sample_rate']}".encode()
+                    ).hexdigest()
+                origins[clip["audio"]] = identity
     records = []
     for audio in sorted(root.rglob("*")):
         if not audio.is_file() or audio.suffix.lower() not in (
@@ -184,6 +215,11 @@ def speech_records(root, speaker="p225", mic="mic1", language="en"):
                 "text": normalize_text(
                     transcript.read_text(encoding="utf-8-sig"), language
                 ),
+                **(
+                    {"source_audio_sha256": origins[relative]}
+                    if relative in origins
+                    else {}
+                ),
             }
         )
     if len(records) < 4:
@@ -205,6 +241,221 @@ def validate_speech(root, speaker="p225", language="en"):
             )
     partition(records)
     return records
+
+
+def audio_sources(root, speaker="p225", language="en"):
+    """Inventory originals without requiring transcripts or modifying user files."""
+    import soundfile as sf
+
+    root = Path(root).resolve()
+    if (root / "txt" / speaker).is_dir():
+        records = vctk_records(root, speaker)
+    else:
+        records = []
+        for audio in sorted(root.rglob("*")):
+            if not audio.is_file() or audio.suffix.lower() not in AUDIO_EXTENSIONS:
+                continue
+            transcript = audio.with_suffix(".txt")
+            records.append(
+                {
+                    "audio": str(audio),
+                    "text": (
+                        transcript.read_text(encoding="utf-8-sig").strip()
+                        if transcript.is_file()
+                        else ""
+                    ),
+                }
+            )
+    if not records:
+        raise ValueError("No supported audio files found")
+    sources = []
+    for row in records:
+        info = sf.info(row["audio"])
+        if not math.isfinite(info.duration) or info.duration < 0.25:
+            continue
+        sources.append(
+            {
+                "audio": row["audio"],
+                "relative": Path(row["audio"]).relative_to(root).as_posix(),
+                "audio_sha256": digest(row["audio"]),
+                "text": row["text"],
+            }
+        )
+    if not sources:
+        raise ValueError("No supported audio files found")
+    return sources
+
+
+def _transcriber(path, language):
+    import torch
+    from huggingface_hub import snapshot_download
+    from transformers import WhisperForConditionalGeneration, WhisperProcessor
+
+    path = Path(path)
+    snapshot_download(
+        TRANSCRIBER,
+        revision=TRANSCRIBER_REVISION,
+        local_dir=str(path),
+        allow_patterns=[
+            "*.json",
+            "*.safetensors",
+            "merges.txt",
+            "README.md",
+            "LICENSE*",
+        ],
+    )
+    processor = WhisperProcessor.from_pretrained(str(path), local_files_only=True)
+    model = (
+        WhisperForConditionalGeneration.from_pretrained(
+            str(path), local_files_only=True, use_safetensors=True
+        )
+        .cpu()
+        .float()
+        .eval()
+        .requires_grad_(False)
+    )
+    language = "en" if language == "en-us" else language
+    no_speech = processor.tokenizer.convert_tokens_to_ids("<|nospeech|>")
+
+    def transcribe(audio):
+        inputs = processor(
+            audio, sampling_rate=16000, return_tensors="pt", return_attention_mask=True
+        )
+        with torch.inference_mode():
+            encoded = model.get_encoder()(inputs.input_features, return_dict=True)
+            start = torch.tensor([[model.config.decoder_start_token_id]])
+            logits = model(encoder_outputs=encoded, decoder_input_ids=start).logits
+            if float(logits[0, 0].softmax(-1)[no_speech]) >= 0.6:
+                return ""
+            tokens = model.generate(
+                inputs.input_features,
+                attention_mask=inputs.attention_mask,
+                encoder_outputs=encoded,
+                language=language,
+                task="transcribe",
+                return_timestamps=False,
+                do_sample=False,
+                num_beams=1,
+                max_new_tokens=256,
+            )
+        return processor.batch_decode(tokens, skip_special_tokens=True)[0].strip()
+
+    return transcribe
+
+
+def automatic_transcripts(root, output, transcriber, speaker="p225", language="en"):
+    """Create short paired clips in job storage; retain supplied short-clip text."""
+    import numpy as np
+    import soundfile as sf
+    from scipy.signal import resample_poly
+
+    root, output = Path(root).resolve(), Path(output).resolve()
+    if output.is_relative_to(root):
+        raise ValueError("Use a new training output directory")
+    sources = audio_sources(root, speaker, language)
+    provenance = output / "source.json"
+    if provenance.exists():
+        cached = json.loads(provenance.read_text(encoding="utf-8"))
+        if (
+            cached["sources"] != sources
+            or cached["language"] != language
+            or cached["transcriber_revision"] != TRANSCRIBER_REVISION
+        ):
+            raise ValueError("TTS recordings or transcripts changed after preparation")
+        for clip in cached["clips"]:
+            for key in ("audio", "transcript"):
+                path = (output / clip[key]).resolve()
+                if (
+                    not path.is_relative_to(output)
+                    or digest(path) != clip[key + "_sha256"]
+                ):
+                    raise ValueError(
+                        "TTS recordings or transcripts changed after preparation"
+                    )
+        return output
+    if output.exists() and any(output.iterdir()):
+        raise FileExistsError("Use a new training output directory")
+    output.mkdir(parents=True, exist_ok=True)
+    recognize, clips = None, []
+    for source in sources:
+        with sf.SoundFile(source["audio"]) as stream:
+            rate, total = stream.samplerate, len(stream)
+            start = 0
+            while start < total:
+                stream.seek(start)
+                audio = stream.read(
+                    min(total - start, 12 * rate), dtype="float32", always_2d=True
+                ).mean(axis=1)
+                if total - start > 12 * rate:
+                    # Prefer a quiet boundary rather than cutting a word at a fixed timestamp.
+                    hop = max(1, rate // 50)
+                    choices = range(6 * rate, 10 * rate, hop)
+                    end = min(
+                        choices,
+                        key=lambda i: float(np.square(audio[i : i + hop]).mean()),
+                    )
+                    audio = audio[: end + hop // 2]
+                length = len(audio)
+                if not np.isfinite(audio).all():
+                    raise ValueError("Invalid transcribed speech record contract")
+                divisor = math.gcd(rate, 16000)
+                samples = resample_poly(
+                    audio, 16000 // divisor, rate // divisor
+                ).astype(np.float32)
+                text, origin = source["text"], "provided"
+                if not text or total > 12 * rate:
+                    origin = "automatic"
+                    if float(np.square(samples).mean()) < 1e-8:
+                        start += length
+                        continue
+                    if recognize is None:
+                        recognize = _transcriber(transcriber, language)
+                    text = recognize(samples)
+                text = normalize_text(text, language) if text.strip() else ""
+                if text:
+                    identity = hashlib.sha256(source["relative"].encode()).hexdigest()[
+                        :24
+                    ]
+                    name = f"{identity}-{start:012d}"
+                    audio_path, text_path = (
+                        output / f"{name}.wav",
+                        output / f"{name}.txt",
+                    )
+                    sf.write(audio_path, samples, 16000, subtype="PCM_16")
+                    text_path.write_text(text + "\n", encoding="utf-8")
+                    clips.append(
+                        {
+                            "audio": audio_path.name,
+                            "transcript": text_path.name,
+                            "audio_sha256": digest(audio_path),
+                            "transcript_sha256": digest(text_path),
+                            "source": source["relative"],
+                            "start_sample": start,
+                            "source_sample_rate": rate,
+                            "source_samples": length,
+                            "source_total_samples": total,
+                            "transcript_origin": origin,
+                        }
+                    )
+                    print(
+                        json.dumps({"tts_transcribed_clip": name, "origin": origin}),
+                        flush=True,
+                    )
+                start += length
+    if audio_sources(root, speaker, language) != sources:
+        raise ValueError("TTS recordings or transcripts changed after preparation")
+    save_json(
+        provenance,
+        {
+            "sources": sources,
+            "clips": clips,
+            "language": language,
+            "transcriber": TRANSCRIBER,
+            "transcriber_revision": TRANSCRIBER_REVISION,
+        },
+    )
+    validate_speech(output, language=language)
+    return output
 
 
 def partition(records, validation_fraction=0.2):
