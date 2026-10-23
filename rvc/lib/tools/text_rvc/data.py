@@ -1,5 +1,6 @@
 """Transcribed speech preparation with holdouts and explicit feature provenance."""
 
+from collections import Counter
 import hashlib
 import json
 import math
@@ -164,6 +165,33 @@ def speech_records(root, speaker="p225", mic="mic1", language="en"):
     root = Path(root).resolve()
     if (root / "txt" / speaker).is_dir():
         return vctk_records(root, speaker, mic)
+    origins = {}
+    provenance = root / "source.json"
+    if provenance.is_file():
+        source = json.loads(provenance.read_text(encoding="utf-8"))
+        if (
+            source.get("transcriber_revision")
+            and "sources" in source
+            and "clips" in source
+        ):
+            originals = {row["relative"]: row for row in source["sources"]}
+            counts = Counter(row["source"] for row in source["clips"])
+            for clip in source["clips"]:
+                original = originals[clip["source"]]
+                # Keep a whole recording's identity across resampling/encoding.
+                # Long-recording chunks need distinct identities for their splits.
+                identity = original["audio_sha256"]
+                whole = (
+                    counts[clip["source"]] == 1
+                    and clip["start_sample"] == 0
+                    and clip["source_samples"]
+                    == clip.get("source_total_samples", clip["source_samples"])
+                )
+                if not whole:
+                    identity = hashlib.sha256(
+                        f"{identity}:{clip['start_sample']}:{clip['source_samples']}:{clip['source_sample_rate']}".encode()
+                    ).hexdigest()
+                origins[clip["audio"]] = identity
     records = []
     for audio in sorted(root.rglob("*")):
         if not audio.is_file() or audio.suffix.lower() not in (
@@ -186,6 +214,11 @@ def speech_records(root, speaker="p225", mic="mic1", language="en"):
                 "audio": str(audio),
                 "text": normalize_text(
                     transcript.read_text(encoding="utf-8-sig"), language
+                ),
+                **(
+                    {"source_audio_sha256": origins[relative]}
+                    if relative in origins
+                    else {}
                 ),
             }
         )
@@ -400,6 +433,7 @@ def automatic_transcripts(root, output, transcriber, speaker="p225", language="e
                             "start_sample": start,
                             "source_sample_rate": rate,
                             "source_samples": length,
+                            "source_total_samples": total,
                             "transcript_origin": origin,
                         }
                     )

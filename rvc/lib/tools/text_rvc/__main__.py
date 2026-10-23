@@ -240,6 +240,11 @@ def train(args):
             row["audio_sha256"] for row in validation
         }:
             raise ValueError("Initialization checkpoint has seen validation recordings")
+        if (
+            set(source.get("seen_source_audio_sha256", []))
+            | set(source.get("seen_audio_sha256", []))
+        ) & {row.get("source_audio_sha256", row["audio_sha256"]) for row in validation}:
+            raise ValueError("Initialization checkpoint has seen validation recordings")
         mean, scale = source["mean"], source["scale"]
     if args.phonetic_loss:
         from rvc.lib.tools.text_rvc.model import fit_phonetic_head
@@ -286,6 +291,13 @@ def train(args):
             "seen_audio_sha256": sorted(
                 set(source.get("seen_audio_sha256", []))
                 | {row["audio_sha256"] for row in train_rows}
+            ),
+            "seen_source_audio_sha256": sorted(
+                set(source.get("seen_source_audio_sha256", []))
+                | {
+                    row.get("source_audio_sha256", row["audio_sha256"])
+                    for row in train_rows
+                }
             ),
             "manifest_sha256": digest(manifest),
             "shared_phonemes": shared_phonemes,
