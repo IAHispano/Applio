@@ -233,24 +233,28 @@ class DurationFrontend(nn.Module):
             )
             durations = durations.clamp_min(1)
             durations = durations.masked_fill(~self.acoustic_mask(tokens), 0)
-        lengths = durations.sum(1)
-        if int(lengths.max()) < 1 or int(lengths.max()) > 3000:
+        if durations.shape != tokens.shape or durations.dtype not in (
+            torch.int32, torch.int64
+        ):
             raise ValueError("Predicted speech has an invalid duration")
-        expanded = []
-        for encoded, timing in zip(memory, durations):
-            counts = timing.detach().cpu().tolist()
-            sequence = torch.repeat_interleave(
-                encoded, timing, dim=0, output_size=sum(counts)
-            )
-            phases = torch.cat(
-                [torch.arange(count) / max(1, count) for count in counts]
-            ).to(tokens.device)
-            sequence = sequence + self.phase(torch.stack((phases, 1 - phases), -1))
-            expanded.append(sequence)
-        values = nn.utils.rnn.pad_sequence(expanded, batch_first=True)
-        valid = (
-            torch.arange(values.size(1), device=tokens.device)[None] < lengths[:, None]
-        )
+        lengths = durations.sum(1)
+        frames, shortest = torch.stack((lengths.max(), durations.min())).tolist()
+        if frames < 1 or frames > 3000 or shortest < 0:
+            raise ValueError("Predicted speech has an invalid duration")
+        # Map frames to tokens without copying per-token timing to the CPU or
+        # launching an arange for every phoneme. right=True skips zero durations.
+        frame = torch.arange(frames, device=tokens.device)[None]
+        ends = durations.cumsum(1)
+        indices = torch.searchsorted(
+            ends.contiguous(), frame.expand(tokens.size(0), -1).contiguous(), right=True
+        ).clamp_max(tokens.size(1) - 1)
+        starts = (ends - durations).gather(1, indices)
+        counts = durations.gather(1, indices).clamp_min(1)
+        phases = (frame - starts).float() / counts
+        valid = frame < lengths[:, None]
+        values = memory.gather(1, indices.unsqueeze(-1).expand(-1, -1, self.hidden))
+        values = values + self.phase(torch.stack((phases, 1 - phases), -1))
+        values = values * valid.unsqueeze(-1)
         for convolution, norm in zip(self.convolutions, self.norms):
             values = norm(
                 values

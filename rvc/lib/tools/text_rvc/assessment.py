@@ -18,13 +18,17 @@ def decode_seeded(acoustic, checkpoint, sid):
         return decode_rvc(acoustic, checkpoint, sid)
 
 
-def error_rate(reference, hypothesis):
+def error_rate(reference, hypothesis, language="en"):
     """Word edit distance; insertions can legitimately produce rates above one."""
 
     def words(text):
+        if language == "tr":
+            text = text.replace("I", "ı").replace("İ", "i")
         text = unicodedata.normalize("NFC", text).casefold().replace("’", "'")
         return "".join(
-            char if unicodedata.category(char)[0] in ("L", "M") or char == "'" else " "
+            char
+            if unicodedata.category(char)[0] in ("L", "M", "N") or char == "'"
+            else " "
             for char in text
         ).split()
 
@@ -170,7 +174,7 @@ def assess(args):
             "original": original_transcript,
         }
         for key in ("generated", "reference_decoded", "original"):
-            errors, words = error_rate(row["text"], result[key])
+            errors, words = error_rate(row["text"], result[key], language)
             result[key + "_errors"] = errors
             result[key + "_wer"] = errors / words
         result["words"] = words
@@ -181,6 +185,7 @@ def assess(args):
                 "frontend_sha256": digest(args.frontend),
                 "language": language,
                 "recognizer_language": recognizer_language,
+                "scoring": "unicode-words-numbers-v2",
                 "external_validation": args.external_validation,
                 "decoder_rng": "isolated-per-decode-v1",
                 "decoder_seed": 7,
