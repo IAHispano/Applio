@@ -14,7 +14,7 @@ import re
 import sys
 import tempfile
 
-from rvc.lib.tools.text_rvc.data import digest, save_json
+from rvc.lib.tools.text_rvc.data import digest, has_seen_recordings, save_json
 
 
 def _torch_save(path, payload):
@@ -236,14 +236,7 @@ def train(args):
             row["id"] for row in validation
         }:
             raise ValueError("Initialization checkpoint has seen validation utterances")
-        if set(source.get("seen_audio_sha256", [])) & {
-            row["audio_sha256"] for row in validation
-        }:
-            raise ValueError("Initialization checkpoint has seen validation recordings")
-        if (
-            set(source.get("seen_source_audio_sha256", []))
-            | set(source.get("seen_audio_sha256", []))
-        ) & {row.get("source_audio_sha256", row["audio_sha256"]) for row in validation}:
+        if has_seen_recordings(source, validation):
             raise ValueError("Initialization checkpoint has seen validation recordings")
         mean, scale = source["mean"], source["scale"]
     if args.phonetic_loss:
@@ -370,8 +363,10 @@ def evaluate(args):
         raise ValueError("Feature space differs from the frontend training contract")
     rows_by_id = {row["id"]: row for row in data["records"]}
     rows = [rows_by_id[identity] for identity in payload["validation_ids"]]
-    if set(payload["train_ids"]) & {row["id"] for row in rows}:
+    if set(payload.get("seen_ids", payload["train_ids"])) & {row["id"] for row in rows}:
         raise ValueError("Validation leakage detected")
+    if has_seen_recordings(payload, rows):
+        raise ValueError("Validation recordings were used during training")
     mean, scale = payload["mean"], payload["scale"]
     results = []
     with torch.inference_mode():

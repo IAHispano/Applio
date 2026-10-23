@@ -102,6 +102,17 @@ def boundary_pause(text, speed=1.0):
     return seconds / speed
 
 
+def has_seen_recordings(payload, rows):
+    """Match both prepared audio and its identity before conversion."""
+    seen = set(payload.get("seen_audio_sha256", [])) | set(
+        payload.get("seen_source_audio_sha256", [])
+    )
+    return any(
+        row["audio_sha256"] in seen or row.get("source_audio_sha256") in seen
+        for row in rows
+    )
+
+
 def digest(path):
     with Path(path).open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()

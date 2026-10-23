@@ -4,7 +4,7 @@ import math
 from pathlib import Path
 import unicodedata
 
-from rvc.lib.tools.text_rvc.data import digest, save_json
+from rvc.lib.tools.text_rvc.data import digest, has_seen_recordings, save_json
 
 
 def load_seeded_decoder(checkpoint, sid):
@@ -92,6 +92,18 @@ def assess(args):
         )
     if payload["feature_space"] != data["feature_space"]:
         raise ValueError("Incompatible evaluation feature space")
+    selected = (
+        {row["id"] for row in data["records"] if row["split"] == "validation"}
+        if args.external_validation
+        else set(payload["validation_ids"])
+    )
+    if selected & set(payload.get("seen_ids", payload["train_ids"])):
+        raise ValueError("Validation leakage detected")
+    rows = [row for row in data["records"] if row["id"] in selected][: args.limit]
+    if not rows:
+        raise ValueError("No held-out utterances are available")
+    if has_seen_recordings(payload, rows):
+        raise ValueError("Validation recordings were used during training")
     output = Path(args.output).resolve()
     if output.exists() and any(output.iterdir()):
         raise FileExistsError("Use a new assessment output directory")
@@ -115,19 +127,6 @@ def assess(args):
             ).logits
         return processor.batch_decode(logits.argmax(-1))[0]
 
-    selected = (
-        {row["id"] for row in data["records"] if row["split"] == "validation"}
-        if args.external_validation
-        else set(payload["validation_ids"])
-    )
-    if selected & set(payload.get("seen_ids", payload["train_ids"])):
-        raise ValueError("Validation leakage detected")
-    rows = [row for row in data["records"] if row["id"] in selected][: args.limit]
-    if not rows:
-        raise ValueError("No held-out utterances are available")
-    seen_audio = set(payload.get("seen_audio_sha256", []))
-    if seen_audio & {row["audio_sha256"] for row in rows}:
-        raise ValueError("Validation recordings were used during training")
     decoder = load_seeded_decoder(args.rvc, args.sid)
     results = []
     for row in rows:
