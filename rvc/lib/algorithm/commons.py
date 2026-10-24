@@ -51,20 +51,14 @@ def slice_segments(
         segment_size (int, optional): The size of each segment. Defaults to 4.
         dim (int, optional): The dimension to slice across (2D or 3D tensors). Defaults to 2.
     """
-    if dim == 2:
-        ret = torch.zeros_like(x[:, :segment_size])
-    elif dim == 3:
-        ret = torch.zeros_like(x[:, :, :segment_size])
-
-    for i in range(x.size(0)):
-        idx_str = ids_str[i].item()
-        idx_end = idx_str + segment_size
-        if dim == 2:
-            ret[i] = x[i, idx_str:idx_end]
-        else:
-            ret[i] = x[i, :, idx_str:idx_end]
-
-    return ret
+    # Keep crop indices on the accelerator: item() synchronizes once per
+    # example. expand() broadcasts across channels without copying indices.
+    size = min(segment_size, x.size(dim - 1))
+    indices = ids_str.to(device=x.device, dtype=torch.long).reshape(-1, 1)
+    indices = indices + torch.arange(size, device=x.device)
+    if dim == 3:
+        indices = indices.unsqueeze(1).expand(-1, x.size(1), -1)
+    return torch.gather(x, dim - 1, indices)
 
 
 def rand_slice_segments(x, x_lengths=None, segment_size=4):
@@ -117,13 +111,14 @@ def sequence_mask(length: torch.Tensor, max_length: Optional[int] = None):
     return x.unsqueeze(0) < length.unsqueeze(1)
 
 
-def grad_norm(parameters, norm_type: float = 2.0):
+def grad_norm(parameters, norm_type: float = 2.0, return_tensor: bool = False):
     """
     Calculates norm of parameter gradients
 
     Args:
-        parameters: The list of parameters to clip.
-        norm_type: The type of norm to use for clipping.
+        parameters: Parameters whose gradients should be measured.
+        norm_type: Vector norm order.
+        return_tensor: Keep diagnostic norms on device until logging needs them.
     """
     if isinstance(parameters, torch.Tensor):
         parameters = [parameters]
@@ -131,8 +126,17 @@ def grad_norm(parameters, norm_type: float = 2.0):
     parameters = [p for p in parameters if p.grad is not None]
 
     if not parameters:
-        return 0.0
+        return torch.tensor(0.0) if return_tensor else 0.0
 
-    return torch.linalg.vector_norm(
-        torch.stack([p.grad.norm(norm_type) for p in parameters]), ord=norm_type
-    ).item()
+    # PyTorch batches same-device norms with foreach where supported, and
+    # retains its portable fallback for other accelerators and tensor types.
+    gradients = [p.grad for p in parameters]
+    get_total_norm = getattr(torch.nn.utils, "get_total_norm", None)
+    if get_total_norm is None:
+        norm = torch.linalg.vector_norm(
+            torch.stack([gradient.norm(norm_type) for gradient in gradients]),
+            ord=norm_type,
+        )
+    else:
+        norm = get_total_norm(gradients, norm_type=norm_type)
+    return norm.detach() if return_tensor else norm.item()

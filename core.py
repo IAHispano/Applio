@@ -303,7 +303,65 @@ def run_tts_script(
     formant_timbre: float = 1.0,
     cleanup_mode: str = "off",
     cleanup_strength: float = 12,
+    tts_provider: str = "edge",
+    tts_frontend: str = "",
 ):
+    if tts_provider == "rvc":
+        from pathlib import Path
+        import tempfile
+
+        if not tts_frontend or not os.path.isfile(tts_frontend):
+            raise ValueError("Select a text frontend.")
+        if not pth_path or not os.path.isfile(pth_path):
+            raise ValueError(
+                "An exported RVC voice checkpoint is required, not training weights"
+            )
+        if export_format != "WAV":
+            raise ValueError("Applio TTS exports WAV audio.")
+        text = Path(tts_file).read_text(encoding="utf-8-sig") if tts_file else tts_text
+        with tempfile.TemporaryDirectory(prefix="applio-tts-") as directory:
+            source = Path(directory) / "text.txt"
+            source.write_text(text or "", encoding="utf-8")
+            result = run_quiet(
+                [
+                    python,
+                    "-m",
+                    "rvc.lib.tools.text_rvc",
+                    "synthesize",
+                    "--frontend",
+                    tts_frontend,
+                    "--rvc",
+                    pth_path,
+                    "--text-file",
+                    str(source),
+                    "--sid",
+                    str(sid),
+                    "--rate",
+                    str(tts_rate),
+                    "--cleanup-mode",
+                    cleanup_mode,
+                    "--cleanup-strength",
+                    str(cleanup_strength),
+                    "--output",
+                    output_rvc_path,
+                ],
+                cwd=current_script_directory,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+        if result.returncode != 0:
+            raise RuntimeError(
+                result.stderr.strip() or f"TTS failed with code {result.returncode}"
+            )
+        if (
+            not os.path.isfile(output_rvc_path)
+            or os.path.getsize(output_rvc_path) <= 44
+        ):
+            raise RuntimeError("RVC decoding produced invalid audio")
+        return "Text synthesized successfully.", output_rvc_path
+    if tts_provider != "edge":
+        raise ValueError("Invalid params")
     tts_script_path = os.path.join(
         current_script_directory, "rvc", "lib", "tools", "tts.py"
     )
@@ -319,10 +377,12 @@ def run_tts_script(
     cmd = [
         python,
         tts_script_path,
+        "--tts-provider",
+        tts_provider,
         "--tts-text",
         tts_text or "",
         "--tts-voice",
-        tts_voice or "en-US-AnaNeural",
+        tts_voice or "",
         "--tts-rate",
         str(tts_rate),
         "--output-tts-path",
@@ -887,12 +947,16 @@ def batch_infer(**kwargs):
 
 
 @cli.command()
-@click.option("--tts-file", required=True, help="File with text to be synthesized.")
-@click.option("--tts-text", required=True, help="Text to be synthesized.")
+@click.option("--tts-provider", type=click.Choice(["edge", "rvc"]), default="edge")
+@click.option(
+    "--tts-frontend", default="", help="Trained Applio TTS frontend checkpoint."
+)
+@click.option("--tts-file", default="", help="File with text to be synthesized.")
+@click.option("--tts-text", default="", help="Text to be synthesized.")
 @click.option(
     "--tts-voice",
-    required=True,
-    type=click.Choice(locales, case_sensitive=False),
+    default="",
+    type=str,
     help="Voice to use for TTS synthesis.",
 )
 @click.option(
@@ -902,7 +966,7 @@ def batch_infer(**kwargs):
     help="Speaking rate (-100 slower .. 100 faster).",
 )
 @click.option(
-    "--output-tts-path", required=True, help="Path to save the synthesized TTS audio."
+    "--output-tts-path", default="", help="Path to save the synthesized TTS audio."
 )
 @click.option(
     "--output-rvc-path", required=True, help="Path to save the voice-converted audio."

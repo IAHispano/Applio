@@ -475,5 +475,10 @@
     "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)",
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch записывает реальный pitch, ограниченный потолком F0. fold только исправляет кадры с неправильной октавой, используя half-pitch драйверы; используйте его с моделями, обученными на некорректированных метках, чтобы сохранить их тембр.",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "Плагин {} установлен в {}! Перезапуск Applio для применения изменений.",
-    "{} saved in {}": "{} сохранено в {}"
+    "{} saved in {}": "{} сохранено в {}",
+    "TTS engine": "Движок синтеза речи",
+    "Online speech synthesis. Your text is sent to {provider}.": "Онлайн-синтез речи. Ваш текст отправляется в {provider}.",
+    "Applio TTS": "Applio TTS",
+    "TTS model": "Модель синтеза речи",
+    "Generate speech locally using your voice model and trained TTS model.": "Создаёт речь локально с помощью вашей модели голоса и обученной модели синтеза речи."
 }

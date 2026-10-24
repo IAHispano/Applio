@@ -12,6 +12,7 @@ sys.path.append(now_dir)
 from assets.i18n.i18n import I18nAuto
 from assets.app_shell import step_card
 from core import run_tts_script
+from rvc.lib.tools.tts_providers import voices as provider_voices
 from tabs.inference.inference import (
     change_choices,
     create_folder_and_move_files,
@@ -49,10 +50,42 @@ def process_input(file_path):
         return None, None
 
 
+def provider_info(provider):
+    if provider == "rvc":
+        return i18n(
+            "Generate speech locally using your voice model and trained TTS model."
+        )
+    return i18n("Online speech synthesis. Your text is sent to {provider}.").format(
+        provider="Microsoft"
+    )
+
+
+def change_provider(provider):
+    direct = provider == "rvc"
+    entries = provider_voices("edge")
+    return (
+        gr.update(
+            choices=[(v["friendlyName"], v["shortName"]) for v in entries],
+            value=entries[0]["shortName"],
+            visible=not direct,
+        ),
+        provider_info(provider),
+        gr.update(visible=direct),
+        gr.update(value="", visible=not direct),
+        gr.update(visible=not direct),
+        gr.update(value="WAV", interactive=not direct),
+    )
+
+
 # TTS tab
 def tts_tab():
     trigger = get_filter_trigger()
-    with step_card(1, "Voice Model", i18n, description="Select the voice model and index file used for conversion."):
+    with step_card(
+        1,
+        "Voice Model",
+        i18n,
+        description="Select the voice model and index file used for conversion.",
+    ):
         with gr.Row():
             with gr.Column(scale=1, min_width=240):
                 model_file = gr.Dropdown(
@@ -112,13 +145,28 @@ def tts_tab():
                 inputs=[model_file],
                 outputs=[index_file],
             )
-    with step_card(2, "Speech Input", i18n, description="Pick a TTS voice, speed and enter text or upload a file."):
+    with step_card(
+        2,
+        "Speech Input",
+        i18n,
+        description="Pick a TTS voice, speed and enter text or upload a file.",
+    ):
+        tts_provider = gr.Dropdown(
+            label=i18n("TTS engine"),
+            choices=[("Edge TTS", "edge"), (i18n("Applio TTS"), "rvc")],
+            value="edge",
+            interactive=True,
+        )
+        provider_description = gr.Markdown(provider_info("edge"))
         tts_voice = gr.Dropdown(
             label=i18n("TTS Voices"),
             info=i18n("Select the TTS voice to use for the conversion."),
             choices=short_names,
             interactive=True,
             value=random.choice(short_names),
+        )
+        tts_frontend = gr.Textbox(
+            label=i18n("TTS model"), visible=False, interactive=True
         )
         tts_rate = gr.Slider(
             minimum=-100,
@@ -150,7 +198,34 @@ def tts_tab():
                     value="",
                     interactive=True,
                 )
-    with step_card(3, "Conversion Parameters", i18n, description="Tune pitch, voice matching, algorithms and output settings."):
+        with gr.Accordion(i18n("Audio cleanup"), open=False):
+            cleanup_mode = gr.Dropdown(
+                label=i18n("Audio cleanup"),
+                choices=[
+                    (i18n("Off"), "off"),
+                    (i18n("Light cleanup (FFmpeg)"), "light"),
+                    (i18n("Speech enhancement (DeepFilterNet3)"), "speech"),
+                ],
+                value="off",
+                interactive=True,
+                info=i18n(
+                    "Cleans converted speech before export. Leave Off for clean TTS. Speech mode downloads about 35 MB on first use; processing stays local."
+                ),
+            )
+            cleanup_strength = gr.Slider(
+                minimum=1,
+                maximum=30,
+                step=1,
+                value=12,
+                label=i18n("Noise reduction limit (dB)"),
+                interactive=True,
+            )
+    with step_card(
+        3,
+        "Conversion Parameters",
+        i18n,
+        description="Tune pitch, voice matching, algorithms and output settings.",
+    ) as conversion_controls:
         pitch = gr.Slider(
             minimum=-24,
             maximum=24,
@@ -239,7 +314,9 @@ def tts_tab():
                                 interactive=True,
                                 allow_custom_value=True,
                             )
-                            refresh_embedders_button = gr.Button(i18n("Refresh embedders"))
+                            refresh_embedders_button = gr.Button(
+                                i18n("Refresh embedders")
+                            )
                         folder_name_input = gr.Textbox(
                             label=i18n("Folder Name"), interactive=True
                         )
@@ -304,28 +381,6 @@ def tts_tab():
                     ),
                     visible=True,
                 )
-            with gr.Accordion(i18n("Audio cleanup"), open=False):
-                cleanup_mode = gr.Dropdown(
-                    label=i18n("Audio cleanup"),
-                    choices=[
-                        (i18n("Off"), "off"),
-                        (i18n("Light cleanup (FFmpeg)"), "light"),
-                        (i18n("Speech enhancement (DeepFilterNet3)"), "speech"),
-                    ],
-                    value="off",
-                    interactive=True,
-                    info=i18n(
-                        "Cleans converted speech before export. Leave Off for clean TTS. Speech mode downloads about 35 MB on first use; processing stays local."
-                    ),
-                )
-                cleanup_strength = gr.Slider(
-                    minimum=1,
-                    maximum=30,
-                    step=1,
-                    value=12,
-                    label=i18n("Noise reduction limit (dB)"),
-                    interactive=True,
-                )
             with gr.Accordion(i18n("Formant Shifting"), open=False):
                 formant_shifting = gr.Checkbox(
                     label=i18n("Formant Shifting"),
@@ -366,7 +421,9 @@ def tts_tab():
                 output_rvc_path = gr.Textbox(
                     label=i18n("Output Path for RVC Audio"),
                     placeholder=i18n("Enter output path"),
-                    value=os.path.join(now_dir, "assets", "audios", "tts_rvc_output.wav"),
+                    value=os.path.join(
+                        now_dir, "assets", "audios", "tts_rvc_output.wav"
+                    ),
                     interactive=True,
                 )
                 export_format = gr.Radio(
@@ -401,7 +458,12 @@ def tts_tab():
                 None,
             )
 
-    with step_card(4, "Generate Speech", i18n, description="Agree to the terms and generate speech with your voice model."):
+    with step_card(
+        4,
+        "Generate Speech",
+        i18n,
+        description="Agree to the terms and generate speech with your voice model.",
+    ):
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
             info=i18n(
@@ -432,6 +494,18 @@ def tts_tab():
             return {"visible": True, "__type__": "update"}
         return {"visible": False, "__type__": "update"}
 
+    tts_provider.change(
+        fn=change_provider,
+        inputs=[tts_provider],
+        outputs=[
+            tts_voice,
+            provider_description,
+            tts_frontend,
+            index_file,
+            conversion_controls,
+            export_format,
+        ],
+    )
     autotune.change(
         fn=toggle_visible,
         inputs=[autotune],
@@ -506,6 +580,8 @@ def tts_tab():
             formant_timbre,
             cleanup_mode,
             cleanup_strength,
+            tts_provider,
+            tts_frontend,
         ],
         outputs=[vc_output1, vc_output2],
     )

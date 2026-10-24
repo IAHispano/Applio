@@ -475,5 +475,10 @@
     "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)",
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch는 F0 상한선 내에서 실제 피치를 기록합니다. fold는 half-pitch 드라이브를 사용하여 잘못된 옥타브 프레임만 수정합니다. 음색을 유지하려면 교정되지 않은 라벨로 학습된 모델과 함께 사용하세요.",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "{}에 {} 플러그인이 설치되었습니다! 변경 사항을 적용하기 위해 Applio를 재시작합니다.",
-    "{} saved in {}": "{}이(가) {}에 저장되었습니다."
+    "{} saved in {}": "{}이(가) {}에 저장되었습니다.",
+    "TTS engine": "음성 합성 엔진",
+    "Online speech synthesis. Your text is sent to {provider}.": "온라인 음성 합성입니다. 텍스트가 {provider}(으)로 전송됩니다.",
+    "Applio TTS": "Applio TTS",
+    "TTS model": "음성 합성 모델",
+    "Generate speech locally using your voice model and trained TTS model.": "목소리 모델과 학습된 음성 합성 모델로 로컬에서 음성을 생성합니다."
 }
