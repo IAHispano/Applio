@@ -4,7 +4,12 @@ import math
 from pathlib import Path
 import unicodedata
 
-from rvc.lib.tools.text_rvc.data import digest, has_seen_recordings, save_json
+from rvc.lib.tools.text_rvc.data import (
+    digest,
+    has_seen_recordings,
+    quiet_phrase_edges,
+    save_json,
+)
 
 
 def load_seeded_decoder(checkpoint, sid):
@@ -79,6 +84,8 @@ def assess(args):
     model, payload = _load(args.frontend)
     language = getattr(model, "language", "en")
     recognizer_language = getattr(args, "recognizer_language", "en")
+    cleanup_mode = getattr(args, "cleanup_mode", "off")
+    cleanup_strength = getattr(args, "cleanup_strength", 12)
     if language.split("-")[0] != recognizer_language.split("-")[0]:
         raise ValueError("The independent recognizer language must match the TTS model")
     torch.manual_seed(7)
@@ -153,6 +160,11 @@ def assess(args):
             feature_space=data["feature_space"],
         )
         audio, sr = decode_seeded(acoustic, args.rvc, args.sid, loaded=decoder)
+        if cleanup_mode != "off":
+            from rvc.lib.tools.audio_cleanup import cleanup_audio
+
+            audio = quiet_phrase_edges(audio, sr)
+            audio = cleanup_audio(audio, sr, cleanup_mode, cleanup_strength)
         sf.write(output / f"{row['id']}-generated.wav", audio, sr, subtype="PCM_16")
         generated_transcript = transcribe(audio, sr)
         # Decode reference features through the same voice to isolate frontend errors.
@@ -206,6 +218,11 @@ def assess(args):
                 "external_validation": args.external_validation,
                 "decoder_rng": "isolated-per-decode-v1",
                 "decoder_seed": 7,
+                "audio_processing": (
+                    "quiet-phrase-edges-v2" if cleanup_mode != "off" else "none"
+                ),
+                "cleanup_mode": cleanup_mode,
+                "cleanup_strength": cleanup_strength,
                 "uses_reference_timing": args.oracle_durations,
                 "rvc_sha256": digest(args.rvc),
                 "recognizer_sha256": digest(

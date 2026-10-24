@@ -102,6 +102,44 @@ def boundary_pause(text, speed=1.0):
     return seconds / speed
 
 
+def quiet_phrase_edges(audio, sample_rate, speed=1.0):
+    """Suppress low-level phrase-edge noise while preserving phrase timing."""
+    import numpy as np
+
+    hop = max(1, round(sample_rate * 0.02))
+    if len(audio) < hop:
+        return audio
+    energy = np.array(
+        [np.sqrt(np.mean(audio[i : i + hop] ** 2)) for i in range(0, len(audio), hop)]
+    )
+    # A relative ceiling protects quiet voices. Only sustained, low-energy
+    # phrase edges qualify. Retain context around speech and leave internal gaps alone.
+    threshold = min(10 ** (-45 / 20), float(energy.max()) * 10 ** (-35 / 20))
+    active = np.flatnonzero(energy > threshold)
+    if not len(active):
+        return audio
+    first = int(active[0]) * hop
+    last = min(len(audio), (int(active[-1]) + 1) * hop)
+    minimum = round(sample_rate * 0.12 / speed)
+    retain = round(sample_rate * 0.05 / speed)
+    attack = max(1, round(sample_rate * 0.02 / speed))
+    release = max(1, round(sample_rate * 0.08 / speed))
+    result = audio.copy()
+    if first >= minimum:
+        end = max(0, first - retain)
+        start = max(0, end - attack)
+        result[:start] = 0
+        phase = np.linspace(0, np.pi, end - start, dtype=np.float32)
+        result[start:end] *= (1 - np.cos(phase)) * 0.5
+    if len(audio) - last >= minimum:
+        start = min(len(audio), last + retain)
+        end = min(len(audio), start + release)
+        phase = np.linspace(0, np.pi, end - start, dtype=np.float32)
+        result[start:end] *= (1 + np.cos(phase)) * 0.5
+        result[end:] = 0
+    return result
+
+
 def has_seen_recordings(payload, rows):
     """Match both prepared audio and its identity before conversion."""
     seen = set(payload.get("seen_audio_sha256", [])) | set(

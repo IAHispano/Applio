@@ -714,7 +714,11 @@ def decode_rvc(acoustic, checkpoint, sid=0, device="cpu", loaded=None):
 def synthesize(args):
     import numpy as np
     import soundfile as sf
-    from rvc.lib.tools.text_rvc.data import boundary_pause, text_chunks
+    from rvc.lib.tools.text_rvc.data import (
+        boundary_pause,
+        quiet_phrase_edges,
+        text_chunks,
+    )
 
     destination = Path(args.output).resolve()
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -728,6 +732,8 @@ def synthesize(args):
     stream = None
     frames = 0
     previous_text = ""
+    cleanup_mode = getattr(args, "cleanup_mode", "off")
+    cleanup_strength = getattr(args, "cleanup_strength", 12)
     speed = 1 + args.rate / 100 if args.rate >= 0 else 1 / (1 - args.rate / 100)
     try:
         decoder = load_rvc(args.rvc, args.sid, args.device)
@@ -740,6 +746,8 @@ def synthesize(args):
             audio, sample_rate = decode_rvc(
                 acoustic, args.rvc, args.sid, device=args.device, loaded=decoder
             )
+            if cleanup_mode != "off":
+                audio = quiet_phrase_edges(audio, sample_rate, speed)
             if stream is None:
                 stream = sf.SoundFile(
                     temporary,
@@ -762,6 +770,15 @@ def synthesize(args):
             previous_text = text
             frames += len(acoustic["features"])
         stream.close()
+        if cleanup_mode != "off":
+            from rvc.lib.tools.audio_cleanup import cleanup_file
+
+            cleanup_file(
+                temporary,
+                cleanup_mode,
+                cleanup_strength,
+                temporary_directory=temporary.parent,
+            )
         temporary.replace(destination)
     finally:
         if stream is not None:
@@ -776,6 +793,11 @@ def synthesize(args):
             "sid": args.sid,
             "frames": frames,
             "sample_rate": sample_rate,
+            "audio_processing": (
+                "quiet-phrase-edges-v2" if cleanup_mode != "off" else "none"
+            ),
+            "cleanup_mode": cleanup_mode,
+            "cleanup_strength": cleanup_strength,
         },
     )
 
@@ -881,6 +903,10 @@ def main():
     assessment.add_argument("--sid", type=int, default=0)
     assessment.add_argument("--limit", type=int, default=8)
     assessment.add_argument(
+        "--cleanup-mode", choices=("off", "light", "speech"), default="off"
+    )
+    assessment.add_argument("--cleanup-strength", type=float, default=12)
+    assessment.add_argument(
         "--oracle-durations",
         action="store_true",
         help="Diagnostic only: use reference timing instead of predicting it from text",
@@ -905,7 +931,15 @@ def main():
             item.add_argument("--rvc", required=True)
             item.add_argument("--sid", type=int, default=0)
             item.add_argument("--temporary-directory")
+            item.add_argument(
+                "--cleanup-mode", choices=("off", "light", "speech"), default="off"
+            )
+            item.add_argument("--cleanup-strength", type=float, default=12)
     args = parser.parse_args()
+    if hasattr(args, "cleanup_strength") and (
+        not math.isfinite(args.cleanup_strength) or not 1 <= args.cleanup_strength <= 30
+    ):
+        parser.error("Cleanup strength must be between 1 and 30 dB")
     if getattr(args, "text_file", None):
         args.text = Path(args.text_file).read_text(encoding="utf-8-sig")
     if not 1 <= args.threads <= 16:
