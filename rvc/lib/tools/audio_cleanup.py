@@ -210,7 +210,8 @@ def cleanup_audio(audio, sample_rate, mode="off", strength=12, *, temporary_dire
         source, target = folder / "input.wav", folder / "output.wav"
         if mode == "light":
             sf.write(source, work, rate, subtype="FLOAT")
-            filters = f"apad=pad_dur=0.05,afftdn=nr={strength:g}:nf=-50:tn=1,atrim=start_sample=1200:end_sample={length + 1200},asetpts=PTS-STARTPTS"
+            # Flush the filter's final block without shifting the speech timeline.
+            filters = f"apad=pad_dur=0.05,afftdn=nr={strength:g}:nf=-50:tn=1,atrim=end_sample={length},asetpts=PTS-STARTPTS"
             _run(
                 [
                     _ffmpeg(),
