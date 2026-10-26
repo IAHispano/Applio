@@ -109,6 +109,7 @@ def step_card(number, title, translate=lambda text: text, description=None):
 def build_workspace(builders, translate=lambda text: text):
     """Build persistent Gradio workspaces with app-style sidebar navigation."""
     nav = {}
+    terminal_controls = None
     entries = [item for _, items in SECTIONS for item in items]
     with gr.Row(elem_id="applio-shell", equal_height=False):
         with gr.Column(scale=0, min_width=220, elem_id="applio-sidebar"):
@@ -170,21 +171,30 @@ def build_workspace(builders, translate=lambda text: text):
                 for key, title in entries:
                     with gr.Tab(title, id=key, elem_id=f"applio-page-{key}", elem_classes="applio-page"):
                         page_header(key, title, translate)
-                        builders[key]()
+                        controls = builders[key]()
+                        if key == "terminal":
+                            terminal_controls = controls
             gr.HTML(
                 '<footer class="applio-footer">'
                 + _link(translate("Terms of use"), "https://github.com/IAHispano/Applio/blob/main/TERMS_OF_USE.md")
                 + '</footer>'
             )
 
-    def navigate(key):
-        return [gr.Tabs(selected=key)] + [
+    terminal_timer, terminal_live = terminal_controls or (None, None)
+
+    def navigate(key, live_updates=True):
+        updates = [gr.Tabs(selected=key)] + [
             gr.Button(variant="primary" if item == key else "secondary") for item in nav
         ]
+        if terminal_timer is not None:
+            updates.append(gr.Timer(active=key == "terminal" and live_updates))
+        return updates
 
     def bind_navigation(button, key):
         event = button.click(
-            partial(navigate, key), outputs=[pages, *nav.values()],
+            partial(navigate, key),
+            inputs=[terminal_live] if terminal_live is not None else None,
+            outputs=[pages, *nav.values(), *([terminal_timer] if terminal_timer is not None else [])],
             queue=False, show_progress="hidden",
         )
         event.then(

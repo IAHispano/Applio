@@ -57,7 +57,8 @@ def rmvpe_high_register_tab():
             value=settings["enabled"],
             interactive=True,
         )
-        mode = gr.Radio(
+        mode = gr.Dropdown(
+            filterable=False,
             label=i18n("Correction mode"),
             info=i18n(
                 "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre."

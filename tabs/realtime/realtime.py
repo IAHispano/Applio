@@ -1140,7 +1140,8 @@ def realtime_tab():
                         ),
                         interactive=True,
                     )
-                export_format = gr.Radio(
+                export_format = gr.Dropdown(
+                    filterable=False,
                     label=i18n("Export Format"),
                     info=i18n("Select the format to export the audio."),
                     choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
@@ -1251,7 +1252,8 @@ def realtime_tab():
                         value=0,
                         interactive=True,
                     )
-                    f0_method = gr.Radio(
+                    f0_method = gr.Dropdown(
+                        filterable=False,
                         choices=["rmvpe", "fcpe", "crepe", "swift"],
                         value="fcpe",
                         label=i18n("Pitch extraction algorithm"),
@@ -1260,7 +1262,8 @@ def realtime_tab():
                         ),
                         interactive=True,
                     )
-                    embedder_model = gr.Radio(
+                    embedder_model = gr.Dropdown(
+                        filterable=False,
                         choices=[
                             "contentvec",
                             "spin",

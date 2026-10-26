@@ -38,7 +38,8 @@ def get_precision():
 
 
 def precision_tab():
-    precision = gr.Radio(
+    precision = gr.Dropdown(
+        filterable=False,
         label=i18n("Precision"),
         info=i18n("Select the precision you want to use for training and inference."),
         value=get_precision(),

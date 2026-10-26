@@ -32,7 +32,8 @@ def terminal_tab():
         autoscroll=True,
         elem_id="applio-terminal",
     )
-    timer = gr.Timer(0.5)
+    # The sidebar keeps workspaces mounted. Poll only while Terminal is visible.
+    timer = gr.Timer(0.5, active=False)
 
     def refresh(cursor, previous):
         position = capture.position()
@@ -55,3 +56,4 @@ def terminal_tab():
         lambda active: gr.Timer(active=active), inputs=live, outputs=timer, queue=False
     )
     clear.click(clear_view, outputs=[start, last_position, output], queue=False)
+    return timer, live

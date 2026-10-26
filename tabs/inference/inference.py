@@ -703,7 +703,9 @@ def inference_tab():
                             value=0,
                             interactive=True,
                         )
-                        f0_method = gr.Radio(
+                        # Bypass the reported Gradio 6 radio bind:group loop in Firefox.
+                        f0_method = gr.Dropdown(
+                            filterable=False,
                             label=i18n("Pitch extraction algorithm"),
                             info=i18n(
                                 "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
@@ -717,7 +719,8 @@ def inference_tab():
                             value="rmvpe",
                             interactive=True,
                         )
-                        embedder_model = gr.Radio(
+                        embedder_model = gr.Dropdown(
+                            filterable=False,
                             label=i18n("Embedder Model"),
                             info=i18n("Model used for learning speaker embedding."),
                             choices=[
@@ -913,7 +916,8 @@ def inference_tab():
                             ),
                             interactive=True,
                         )
-                        export_format = gr.Radio(
+                        export_format = gr.Dropdown(
+                            filterable=False,
                             label=i18n("Export Format"),
                             info=i18n("Select the format to export the audio."),
                             choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],
@@ -1063,7 +1067,8 @@ def inference_tab():
                             value=0,
                             interactive=True,
                         )
-                        f0_method_batch = gr.Radio(
+                        f0_method_batch = gr.Dropdown(
+                            filterable=False,
                             label=i18n("Pitch extraction algorithm"),
                             info=i18n(
                                 "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
@@ -1077,7 +1082,8 @@ def inference_tab():
                             value="rmvpe",
                             interactive=True,
                         )
-                        embedder_model_batch = gr.Radio(
+                        embedder_model_batch = gr.Dropdown(
+                            filterable=False,
                             label=i18n("Embedder Model"),
                             info=i18n("Model used for learning speaker embedding."),
                             choices=[
@@ -1261,7 +1267,8 @@ def inference_tab():
                             )
                             export_button = gr.Button(i18n("Export Preset"))
                     with gr.Accordion(i18n("Output Settings"), open=False):
-                        export_format_batch = gr.Radio(
+                        export_format_batch = gr.Dropdown(
+                            filterable=False,
                             label=i18n("Export Format"),
                             info=i18n("Select the format to export the audio."),
                             choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],

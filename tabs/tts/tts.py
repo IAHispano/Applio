@@ -202,7 +202,8 @@ def tts_tab():
                     value=0,
                     interactive=True,
                 )
-                f0_method = gr.Radio(
+                f0_method = gr.Dropdown(
+                    filterable=False,
                     label=i18n("Pitch extraction algorithm"),
                     info=i18n(
                         "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
@@ -215,7 +216,8 @@ def tts_tab():
                     value="rmvpe",
                     interactive=True,
                 )
-                embedder_model = gr.Radio(
+                embedder_model = gr.Dropdown(
+                    filterable=False,
                     label=i18n("Embedder Model"),
                     info=i18n("Model used for learning speaker embedding."),
                     choices=[
@@ -369,7 +371,8 @@ def tts_tab():
                     value=os.path.join(now_dir, "assets", "audios", "tts_rvc_output.wav"),
                     interactive=True,
                 )
-                export_format = gr.Radio(
+                export_format = gr.Dropdown(
+                    filterable=False,
                     label=i18n("Export Format"),
                     info=i18n("Select the format to export the audio."),
                     choices=["WAV", "MP3", "FLAC", "OGG", "M4A"],

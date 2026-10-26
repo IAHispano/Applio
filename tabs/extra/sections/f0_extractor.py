@@ -45,7 +45,8 @@ def extract_f0_curve(audio_path: str, method: str):
 def f0_extractor_tab():
     with step_card(1, "Audio Source", i18n, description="Upload audio and pick the pitch algorithm."):
         audio = gr.Audio(label=i18n("Upload Audio"), type="filepath")
-        f0_method = gr.Radio(
+        f0_method = gr.Dropdown(
+            filterable=False,
             label=i18n("Pitch extraction algorithm"),
             info=i18n(
                 "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
