@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal DisableDelayedExpansion
 title Applio Updater
 cd /d "%~dp0"
 if not exist "env\python.exe" (
@@ -7,8 +7,12 @@ if not exist "env\python.exe" (
     pause
     exit /b 1
 )
-"%~dp0env\python.exe" -u "%~dp0assets\updater.py" %*
-set "update_result=%errorlevel%"
-echo.
-pause
-exit /b %update_result%
+rem Read the whole tail before Python replaces this running batch file.
+rem CALL expands the exit code at execution time, after Python finishes.
+(
+    "%~dp0env\python.exe" -u "%~dp0assets\updater.py" %*
+    call set "update_result=%%errorlevel%%"
+    echo.
+    pause
+    call exit /b %%update_result%%
+)
