@@ -196,7 +196,7 @@ def _apply_config(vc: VoiceChanger, cfg):
         old = vc.vc_model.pipeline.hubert_model
         del old
         hubert_model = load_embedding(emb, emb_custom)
-        hubert_model = hubert_model.to(vc.vc_model.device).float()
+        hubert_model = hubert_model.float().to(vc.vc_model.device)
         hubert_model.eval()
         vc.vc_model.pipeline.hubert_model = hubert_model
         vc.vc_model.embedder_model = emb

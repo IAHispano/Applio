@@ -749,7 +749,7 @@ class FCPEInfer:
             f0_min=self.args.model.f0_min,
             confidence=self.args.model.confidence,
         )
-        model.to(self.device).to(self.dtype)
+        model.to(self.dtype).to(self.device)
         model.load_state_dict(ckpt["model"])
         model.eval()
         self.model = model

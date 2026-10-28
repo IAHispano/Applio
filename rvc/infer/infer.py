@@ -104,7 +104,7 @@ class VoiceConverter:
             embedder_model_custom (str): Path to the custom HuBERT model.
         """
         self.hubert_model = load_embedding(embedder_model, embedder_model_custom)
-        self.hubert_model = self.hubert_model.to(self.config.device).float()
+        self.hubert_model = self.hubert_model.float().to(self.config.device)
         self.hubert_model.eval()
 
     @staticmethod
@@ -504,7 +504,7 @@ class VoiceConverter:
                             torch.nn.utils.parametrize.remove_parametrizations(
                                 module, name, leave_parametrized=True
                             )
-            self.net_g = self.net_g.to(self.config.device).float()
+            self.net_g = self.net_g.float().to(self.config.device)
             self.net_g.eval()
             if self._onnx_request:
                 from rvc.realtime.onnx_decoder import OnnxDecoder, resolve_decoder_path

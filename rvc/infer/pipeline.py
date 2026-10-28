@@ -409,7 +409,7 @@ class Pipeline:
         npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
         # FAISS scores/index data can promote this array to float64. Metal
         # rejects doubles during transfer, before operator fallback can run.
-        if self.device == "mps":
+        if str(self.device).startswith("mps"):
             npy = npy.astype(np.float32)
         feats = (
             torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
@@ -501,10 +501,10 @@ class Pipeline:
             )
             pitch = pitch[:p_len]
             pitchf = pitchf[:p_len]
-            if self.device == "mps":
-                pitchf = pitchf.astype(np.float32)
             pitch = torch.tensor(pitch, device=self.device).unsqueeze(0).long()
-            pitchf = torch.tensor(pitchf, device=self.device).unsqueeze(0).float()
+            pitchf = torch.tensor(
+                pitchf, dtype=torch.float32, device=self.device
+            ).unsqueeze(0)
         for t in opt_ts:
             t = t // self.window * self.window
             if pitch_guidance:

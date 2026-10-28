@@ -107,7 +107,7 @@ def apply_config_update(instance, current, message):
     if embedder != model.embedder_model or custom != model.embedder_model_custom:
         hubert = load_embedding(embedder, custom)
         strip_parametrizations(hubert)
-        hubert = hubert.to(instance.device).float().eval()
+        hubert = hubert.float().to(instance.device).eval()
     index, data = pipeline.index, pipeline.big_tsr
     retrieval_enabled = candidate.get("index_rate", 0) > 0
     if not index_path:

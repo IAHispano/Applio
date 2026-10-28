@@ -99,7 +99,7 @@ class RealtimeVoiceConverter:
 
             self.net_g.load_state_dict(self.cpt["weight"], strict=False)
             strip_parametrizations(self.net_g)
-            self.net_g = self.net_g.to(self.config.device).to(self.dtype)
+            self.net_g = self.net_g.to(self.dtype).to(self.config.device)
             self.net_g.eval()
             # The network owns its weights now; retaining the CPU checkpoint
             # duplicates the model even when inference runs on an accelerator.
@@ -749,7 +749,7 @@ def create_pipeline(
 
     hubert_model = load_embedding(embedder_model, embedder_model_custom)
     strip_parametrizations(hubert_model)
-    hubert_model = hubert_model.to(vc.config.device).to(vc.dtype)
+    hubert_model = hubert_model.to(vc.dtype).to(vc.config.device)
     hubert_model.eval()
 
     pipeline = Realtime_Pipeline(

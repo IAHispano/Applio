@@ -248,7 +248,9 @@ class Realtime:
             )
             if shifted is audio_np:
                 return audio_16k
-            return torch.as_tensor(shifted, device=audio_16k.device).to(audio_16k.dtype)
+            return torch.as_tensor(
+                shifted, dtype=audio_16k.dtype, device=audio_16k.device
+            )
         except Exception as error:
             self._formant_shifter = None
             print(f"Formant shifting failed, bypassing: {error}")
