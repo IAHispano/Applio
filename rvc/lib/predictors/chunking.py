@@ -27,6 +27,8 @@ def extract_pitch(audio, infer, sample_rate=16000, hop_size=160, chunk_seconds=1
         values = np.asarray(infer(audio[left * hop_size : right])).reshape(-1)
         offset = start - left
         if len(values) < offset + end - start:
-            raise ValueError("Pitch extractor returned fewer frames than its audio window")
+            raise ValueError(
+                "Pitch extractor returned fewer frames than its audio window"
+            )
         result[start:end] = values[offset : offset + end - start]
     return result
