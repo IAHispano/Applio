@@ -18,7 +18,9 @@ def processing_tab():
         gr.Info(i18n("Model information loaded."))
         return result
 
-    with step_card(1, "Select Model", i18n, description="Point to the model you want to inspect."):
+    with step_card(
+        1, "Select Model", i18n, description="Point to the model you want to inspect."
+    ):
         model_view_model_path = gr.Textbox(
             label=i18n("Path to Model"),
             info=i18n("Introduce the model pth path"),
@@ -27,7 +29,12 @@ def processing_tab():
             placeholder=i18n("Enter path to model"),
         )
 
-    with step_card(2, "Model Information", i18n, description="Load the metadata and training details."):
+    with step_card(
+        2,
+        "Model Information",
+        i18n,
+        description="Load the metadata and training details.",
+    ):
         model_view_output_info = gr.Textbox(
             label=i18n("Model information output"),
             info=i18n("The output information will be displayed here."),
