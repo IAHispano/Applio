@@ -245,8 +245,9 @@ def process_file_embedding(
             return
         feats = (
             torch.from_numpy(load_audio(wav_file_path, SAMPLE_RATE_16K))
-            .to(device)
+            # SoundFile returns float64; MPS cannot receive it before this cast.
             .float()
+            .to(device)
         )
         feats = feats.view(1, -1)
         with torch.no_grad():
@@ -305,6 +306,7 @@ def run_embedding_extraction(
                 print(
                     f"[!] Warning: Embedding extraction task encountered error: {task_err}"
                 )
+                raise
 
     print(f"Embedding extraction completed in {time.time() - start_time:.2f} seconds.")
 
