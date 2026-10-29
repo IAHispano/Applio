@@ -1,4 +1,4 @@
-<h1 align="center">
+x <h1 align="center">
   <a href="https://applio.org" target="_blank"><img src="https://github.com/IAHispano/Applio/assets/133521603/78e975d8-b07f-47ba-ab23-5a31592f322a" alt="Applio"></a>
 </h1>
 
