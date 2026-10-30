@@ -700,19 +700,31 @@ class Realtime_Pipeline:
         big_tsr: torch.Tensor,
         index_rate: float,
     ):
-        #     npy = npy.astype(np.float32)
-        #     npy = npy.astype(np.float16)
-        #     torch.from_numpy(npy).unsqueeze(0).to(self.device) * index_rate
-        #     + (1 - index_rate) * feats[0][skip_offset:]
+        if big_tsr.size(0) == 0:
+            return feats
         skip_offset = skip_head // 2
         tsr = feats[0][skip_offset:]
         score, ix = index.search(tsr, k=8)
-        weight = (1 / score).square()
-        weight /= weight.sum(dim=1, keepdim=True)
-        query = (big_tsr[ix] * weight.unsqueeze(2)).sum(dim=1)
+        valid = (ix >= 0) & (ix < big_tsr.size(0)) & torch.isfinite(score) & (score >= 0)
+        distances = score.float().masked_fill(~valid, float("inf"))
+        closest = distances.amin(dim=1, keepdim=True)
+        # Preserve ordinary inverse-square weighting. Scale only tiny distances
+        # to avoid overflow; exact matches share the weight equally. FAISS can
+        # return -1 for missing neighbors, which must never select the last row.
+        tiny = (1 / torch.finfo(distances.dtype).max) ** 0.5
+        scale = torch.where(closest < tiny, closest, 1.0)
+        weight = (scale / distances).square()
+        weight = torch.where(valid & (distances == 0), 1.0, weight)
+        totals = weight.sum(dim=1, keepdim=True)
+        has_neighbors = totals > 0
+        weight = weight / torch.where(has_neighbors, totals, 1.0)
+        neighbors = big_tsr[ix.clamp(0, big_tsr.size(0) - 1)]
+        neighbors = neighbors.masked_fill(~valid.unsqueeze(2), 0)
+        query = (neighbors * weight.unsqueeze(2)).sum(dim=1)
+        query = torch.where(has_neighbors, query, tsr)
 
         feats[0][skip_offset:] = (
-            query.unsqueeze(0) * index_rate
+            query * index_rate
             + (1.0 - index_rate) * feats[0][skip_offset:]
         )
         return feats

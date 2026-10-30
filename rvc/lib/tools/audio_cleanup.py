@@ -168,7 +168,7 @@ def _run(arguments, duration):
         )
 
 
-def cleanup_audio(audio, sample_rate, mode="off", strength=12):
+def cleanup_audio(audio, sample_rate, mode="off", strength=12, *, temporary_directory=None):
     """Return normalized float audio with the original rate, channels and length.
 
     Off is an exact bypass. Light uses FFmpeg spectral reduction; Speech uses
@@ -203,12 +203,15 @@ def cleanup_audio(audio, sample_rate, mode="off", strength=12):
         else data
     )
     length = len(work)
-    with tempfile.TemporaryDirectory(prefix="applio-cleanup-") as directory:
+    with tempfile.TemporaryDirectory(
+        prefix="applio-cleanup-", dir=temporary_directory
+    ) as directory:
         folder = Path(directory)
         source, target = folder / "input.wav", folder / "output.wav"
         if mode == "light":
             sf.write(source, work, rate, subtype="FLOAT")
-            filters = f"apad=pad_dur=0.05,afftdn=nr={strength:g}:nf=-50:tn=1:gs=8,atrim=start_sample=1200:end_sample={length + 1200},asetpts=PTS-STARTPTS"
+            # Flush the filter's final block without shifting the speech timeline.
+            filters = f"apad=pad_dur=0.05,afftdn=nr={strength:g}:nf=-50:tn=1,atrim=end_sample={length},asetpts=PTS-STARTPTS"
             _run(
                 [
                     _ffmpeg(),
@@ -275,12 +278,14 @@ def cleanup_audio(audio, sample_rate, mode="off", strength=12):
     return cleaned
 
 
-def cleanup_file(path, mode="off", strength=12):
-    """Clean a synthesized WAV atomically when no voice model is selected."""
+def cleanup_file(path, mode="off", strength=12, *, temporary_directory=None):
+    """Clean a synthesized WAV atomically, retaining its original rate and length."""
     if mode == "off":
         return
     audio, rate = sf.read(path, dtype="float32")
-    cleaned = cleanup_audio(audio, rate, mode, strength)
+    cleaned = cleanup_audio(
+        audio, rate, mode, strength, temporary_directory=temporary_directory
+    )
     descriptor, temporary = tempfile.mkstemp(
         suffix=".wav", dir=Path(path).resolve().parent
     )

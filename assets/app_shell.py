@@ -101,9 +101,9 @@ def step_header(number, title, translate=lambda text: text, description=None):
 
 @contextmanager
 def step_card(number, title, translate=lambda text: text, description=None):
-    with gr.Column(scale=0, min_width=0, elem_classes="applio-card"):
+    with gr.Column(scale=0, min_width=0, elem_classes="applio-card") as column:
         step_header(number, title, translate, description)
-        yield
+        yield column
 
 
 def build_workspace(builders, translate=lambda text: text):

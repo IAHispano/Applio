@@ -2,12 +2,17 @@ import asyncio
 import os
 import sys
 import argparse
-import edge_tts
+from pathlib import Path
+
+# Standalone execution must find the pinned package without a working-directory assumption.
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from rvc.lib.tools.tts_providers import PROVIDERS, synthesize
 
 
-async def generate_tts(text: str, voice: str, rate: int, output_file: str):
-    rates = f"+{rate}%" if rate >= 0 else f"{rate}%"
-    await edge_tts.Communicate(text, voice, rate=rates).save(output_file)
+async def generate_tts(
+    text: str, voice: str, rate: int, output_file: str, provider="edge"
+):
+    await synthesize(text, voice, rate, output_file, provider)
 
 
 def run_tts_cli():
@@ -33,7 +38,8 @@ def run_tts_cli():
     parser = argparse.ArgumentParser(description="Applio TTS Generator and Converter")
     parser.add_argument("--tts-file", default="")
     parser.add_argument("--tts-text", default="")
-    parser.add_argument("--tts-voice", default="en-US-AnaNeural")
+    parser.add_argument("--tts-provider", choices=PROVIDERS, default="edge")
+    parser.add_argument("--tts-voice", default="")
     parser.add_argument("--tts-rate", type=int, default=0)
     parser.add_argument(
         "--output-tts-path", "--output-file", dest="output_tts_path", required=True
@@ -76,7 +82,11 @@ def run_tts_cli():
         sys.exit(1)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.output_tts_path)), exist_ok=True)
-    asyncio.run(generate_tts(text, args.tts_voice, args.tts_rate, args.output_tts_path))
+    asyncio.run(
+        generate_tts(
+            text, args.tts_voice, args.tts_rate, args.output_tts_path, args.tts_provider
+        )
+    )
     print(f"TTS audio generated at '{args.output_tts_path}'")
 
     if args.output_rvc_path and args.model_path:

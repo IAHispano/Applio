@@ -242,8 +242,22 @@ class IndexWrapper:
                 .to(device=self.device, dtype=self.dtype)
                 .contiguous()
             )
-            # Precompute ||b||² for distance calculation
-            self.b_norms = (self.big_tensor**2).sum(dim=-1, keepdim=True).T.contiguous()
+            # Precompute ||b||² without a second corpus-sized GPU allocation.
+            # Each row keeps the same squared-sum arithmetic as the search.
+            count = self.big_tensor.size(0)
+            self.b_norms = self.big_tensor.new_empty((1, count))
+            # Small indexes need no padding or additional kernel launches.
+            block_size = count if 0 < count <= 8192 else 4096
+            for start in range(0, count, block_size):
+                end = min(start + block_size, count)
+                chunk = self.big_tensor[start:end]
+                # CUDA chooses a different reduction for a tiny last block.
+                # Pad that block so its row sums retain the original rounding.
+                if start > 0 and end - start < block_size:
+                    chunk = F.pad(chunk, (0, 0, 0, block_size - (end - start)))
+                self.b_norms[:, start:end] = (
+                    chunk.square().sum(dim=-1)[: end - start].unsqueeze(0)
+                )
             # Accelerator tensors own their storage; the reconstructed CPU
             # array is redundant. On CPU, the tensor retains its shared storage.
             # FAISS fallback uses self.index and retrieves vectors from big_tensor.
@@ -266,19 +280,23 @@ class IndexWrapper:
                     # Compute ||a||^2 for query vectors
                     q_norm = (query**2).sum(dim=-1, keepdim=True)
                     # Compute squared L2 distances
-                    distances = (
-                        torch.addmm(
-                            self.b_norms, query, self.big_tensor.T, alpha=-2.0, beta=1.0
-                        )
-                        + q_norm
+                    distances = torch.addmm(
+                        self.b_norms, query, self.big_tensor.T, alpha=-2.0, beta=1.0
                     )
                     # Prevent negative values caused by floating-point precision
-                    distances = distances.clamp(min=self.clamp)
+                    distances.add_(q_norm).clamp_(min=self.clamp)
 
-                    # Retrieve smallest distances
-                    scores, indices = torch.topk(-distances, k=k, dim=-1)
+                    # Avoid another query-by-corpus matrix just to negate it.
+                    # Small indexes still return the FAISS-compatible k columns.
+                    available = min(k, self.big_tensor.size(0))
+                    scores, indices = torch.topk(
+                        distances, k=available, dim=-1, largest=False
+                    )
+                    if available < k:
+                        scores = F.pad(scores, (0, k - available), value=float("inf"))
+                        indices = F.pad(indices, (0, k - available), value=-1)
 
-                    return -scores, indices
+                    return scores, indices
                 except (torch.OutOfMemoryError, RuntimeError):
                     print(
                         "[Warning]: An error occurred when using Faiss with the GPU. Fallback to the CPU."
