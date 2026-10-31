@@ -185,6 +185,16 @@ def run_infer_script(
     onnx_precision: str = "auto",
     cleanup_mode: str = "off",
     cleanup_strength: float = 12,
+    flow_vocoder: str = "",
+    flow_steps: int = 16,
+    flow_cfg_scale: float = 1.0,
+    flow_content_guidance: float = 0.1,
+    flow_sampler: str = "euler",
+    flow_guidance_rescale: float = 0.7,
+    flow_guidance_until: float = 1.0,
+    flow_formant_shift: float = 0.0,
+    flow_tension_strength: float = 1.0,
+    flow_peak_limiter: bool = False,
 ):
     kwargs = _base_infer_kwargs(
         pitch=pitch,
@@ -212,6 +222,20 @@ def run_infer_script(
     )
     kwargs["audio_input_path"] = input_path
     kwargs["audio_output_path"] = output_path
+    kwargs.update(
+        {
+            "flow_vocoder": flow_vocoder,
+            "flow_steps": flow_steps,
+            "flow_cfg_scale": flow_cfg_scale,
+            "flow_content_guidance": flow_content_guidance,
+            "flow_sampler": flow_sampler,
+            "flow_guidance_rescale": flow_guidance_rescale,
+            "flow_guidance_until": flow_guidance_until,
+            "flow_formant_shift": flow_formant_shift,
+            "flow_tension_strength": flow_tension_strength,
+            "flow_peak_limiter": flow_peak_limiter,
+        }
+    )
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio(**kwargs)
     return f"File {input_path} inferred successfully.", output_path.replace(
@@ -244,6 +268,16 @@ def run_batch_infer_script(
     onnx_precision: str = "auto",
     cleanup_mode: str = "off",
     cleanup_strength: float = 12,
+    flow_vocoder: str = "",
+    flow_steps: int = 16,
+    flow_cfg_scale: float = 1.0,
+    flow_content_guidance: float = 0.1,
+    flow_sampler: str = "euler",
+    flow_guidance_rescale: float = 0.7,
+    flow_guidance_until: float = 1.0,
+    flow_formant_shift: float = 0.0,
+    flow_tension_strength: float = 1.0,
+    flow_peak_limiter: bool = False,
 ):
     kwargs = _base_infer_kwargs(
         pitch=pitch,
@@ -271,6 +305,20 @@ def run_batch_infer_script(
     )
     kwargs["audio_input_paths"] = input_folder
     kwargs["audio_output_path"] = output_folder
+    kwargs.update(
+        {
+            "flow_vocoder": flow_vocoder,
+            "flow_steps": flow_steps,
+            "flow_cfg_scale": flow_cfg_scale,
+            "flow_content_guidance": flow_content_guidance,
+            "flow_sampler": flow_sampler,
+            "flow_guidance_rescale": flow_guidance_rescale,
+            "flow_guidance_until": flow_guidance_until,
+            "flow_formant_shift": flow_formant_shift,
+            "flow_tension_strength": flow_tension_strength,
+            "flow_peak_limiter": flow_peak_limiter,
+        }
+    )
     infer_pipeline = import_voice_converter()
     infer_pipeline.convert_audio_batch(**kwargs)
     return f"Files from {input_folder} inferred successfully."
@@ -513,52 +561,71 @@ def run_train_script(
     vocoder: str = "HiFi-GAN",
     checkpointing: bool = False,
     shutdown_check: bool = False,
+    flow_feature_cache: bool = True,
+    flow_mean_flow: bool = True,
 ):
-    if pretrained:
-        if not custom_pretrained:
-            pg, pd = pretrained_selector(str(vocoder), int(sample_rate))
-        else:
-            if g_pretrained_path is None or d_pretrained_path is None:
-                raise ValueError(
-                    "Please provide the path to the pretrained G and D models."
-                )
-            pg, pd = g_pretrained_path, d_pretrained_path
-            if not all(
-                path and os.path.isfile(path) and os.path.getsize(path) > 0
-                for path in (pg, pd)
-            ):
-                raise ValueError(
-                    "Custom pretrained G and D files must exist and be non-empty."
-                )
+    if vocoder == "Rectified Flow":
+        command = rectified_flow_train_command(
+            model_name,
+            save_every_epoch,
+            save_only_latest,
+            save_every_weights,
+            total_epoch,
+            batch_size,
+            gpu,
+            pretrained,
+            cleanup,
+            custom_pretrained,
+            g_pretrained_path,
+            flow_feature_cache,
+            flow_mean_flow,
+        )
     else:
-        pg, pd = "", ""
+        if pretrained:
+            if not custom_pretrained:
+                pg, pd = pretrained_selector(str(vocoder), int(sample_rate))
+            else:
+                if g_pretrained_path is None or d_pretrained_path is None:
+                    raise ValueError(
+                        "Please provide the path to the pretrained G and D models."
+                    )
+                pg, pd = g_pretrained_path, d_pretrained_path
+                if not all(
+                    path and os.path.isfile(path) and os.path.getsize(path) > 0
+                    for path in (pg, pd)
+                ):
+                    raise ValueError(
+                        "Custom pretrained G and D files must exist and be non-empty."
+                    )
+        else:
+            pg, pd = "", ""
 
-    train_script_path = os.path.join(
-        current_script_directory, "rvc", "train", "train.py"
-    )
-    command = [
-        python,
-        train_script_path,
-        *map(
-            str,
-            [
-                model_name,
-                save_every_epoch,
-                total_epoch,
-                pg,
-                pd,
-                gpu,
-                batch_size,
-                sample_rate,
-                save_only_latest,
-                save_every_weights,
-                cache_data_in_gpu,
-                cleanup,
-                vocoder,
-                checkpointing,
-            ],
-        ),
-    ]
+        train_script_path = os.path.join(
+            current_script_directory, "rvc", "train", "train.py"
+        )
+        command = [
+            python,
+            train_script_path,
+            *map(
+                str,
+                [
+                    model_name,
+                    save_every_epoch,
+                    total_epoch,
+                    pg,
+                    pd,
+                    gpu,
+                    batch_size,
+                    sample_rate,
+                    save_only_latest,
+                    save_every_weights,
+                    cache_data_in_gpu,
+                    cleanup,
+                    vocoder,
+                    checkpointing,
+                ],
+            ),
+        ]
     result = run_quiet(command)
     if result.returncode != 0:
         return f"Training failed for model {model_name}. Please check the console logs for more details."
@@ -582,6 +649,84 @@ def run_train_script(
         return f"Model {model_name} trained successfully. Shutdown scheduled at {shutdown_datetime}"
 
     return f"Model {model_name} trained successfully."
+
+
+def rectified_flow_train_command(
+    model_name: str,
+    save_every_epoch: int,
+    save_only_latest: bool,
+    save_every_weights: bool,
+    total_epoch: int,
+    batch_size: int,
+    gpu: int,
+    pretrained: bool,
+    cleanup: bool,
+    custom_pretrained: bool = False,
+    flow_pretrained_path: str = None,
+    feature_cache: bool = True,
+    mean_flow: bool = True,
+):
+    from rvc.lib.tools.pretrained_selector import rectified_flow_selector
+
+    try:
+        with open(
+            os.path.join(logs_path, model_name, "model_info.json"),
+            "r",
+            encoding="utf-8",
+        ) as f:
+            embedder_model = json.load(f)["embedder_model"]
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        embedder_model = "contentvec"
+    # The sampling rate the model was extracted at
+    try:
+        with open(
+            os.path.join(logs_path, model_name, "config.json"),
+            "r",
+            encoding="utf-8",
+        ) as f:
+            sample_rate = int(json.load(f)["data"]["sample_rate"])
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        sample_rate = 44100
+
+    pf, vocoder_path = rectified_flow_selector(embedder_model, sample_rate)
+    if pretrained == True:
+        if custom_pretrained == True:
+            if not flow_pretrained_path:
+                raise ValueError(
+                    "Please provide the path to the pretrained flow model."
+                )
+            pf = flow_pretrained_path
+        elif not pf:
+            print(
+                f"Pretrained (Flow) for the '{embedder_model}' embedder at {sample_rate} Hz not found in rvc/models/pretraineds/rectified-flow, training from scratch."
+            )
+    else:
+        pf = ""
+
+    train_script_path = os.path.join(
+        current_script_directory, "rvc", "train", "rectified_flow", "train.py"
+    )
+    return [
+        python,
+        train_script_path,
+        *map(
+            str,
+            [
+                model_name,
+                save_every_epoch,
+                total_epoch,
+                pf,
+                vocoder_path,
+                gpu,
+                batch_size,
+                save_only_latest,
+                save_every_weights,
+                cleanup,
+                feature_cache,
+                mean_flow,
+            ],
+        ),
+    ]
 
 
 def run_index_script(model_name: str, index_algorithm: str):
@@ -1052,7 +1197,7 @@ def extract(**kwargs):
 @click.option("--model-name", required=True, help="Name of the model to train.")
 @click.option(
     "--vocoder",
-    type=click.Choice(["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"]),
+    type=click.Choice(["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN", "Rectified Flow"]),
     default="HiFi-GAN",
     help="Vocoder to use.",
 )
@@ -1089,7 +1234,7 @@ def extract(**kwargs):
 @click.option(
     "--sample-rate",
     required=True,
-    type=click.Choice(["32000", "40000", "48000"]),
+    type=click.Choice(["32000", "40000", "44100", "48000"]),
     help="Training sampling rate.",
 )
 @click.option(
@@ -1131,6 +1276,16 @@ def extract(**kwargs):
     default="Auto",
     help="Index file generation algorithm.",
 )
+@click.option(
+    "--flow-feature-cache/--no-flow-feature-cache",
+    default=True,
+    help="Rectified Flow: write the features and the augmented copies of the dataset to disk once and train from them.",
+)
+@click.option(
+    "--flow-mean-flow/--no-flow-mean-flow",
+    default=True,
+    help="Rectified Flow: also train the mean velocity of a step (Mean Flow), for sampling in any number of steps, one included. It cannot be changed once the training has started.",
+)
 def train(**kwargs):
     """Train an RVC model."""
     result = run_train_script(
@@ -1151,6 +1306,8 @@ def train(**kwargs):
         d_pretrained_path=kwargs.get("d_pretrained_path"),
         vocoder=kwargs["vocoder"],
         checkpointing=kwargs["checkpointing"],
+        flow_feature_cache=kwargs["flow_feature_cache"],
+        flow_mean_flow=kwargs["flow_mean_flow"],
     )
     click.echo(result)
 

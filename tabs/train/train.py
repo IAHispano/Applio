@@ -69,10 +69,11 @@ pretraineds_list_d = get_pretrained_list("D")
 pretraineds_list_g = get_pretrained_list("G")
 
 
-def refresh_custom_pretraineds():
+def refresh_custom_pretraineds(vocoder="HiFi-GAN"):
+    suffix_g = "flow" if vocoder == "Rectified Flow" else "G"
     return (
         {
-            "choices": path_choices(sorted(get_pretrained_list("G"))),
+            "choices": path_choices(sorted(get_pretrained_list(suffix_g))),
             "__type__": "update",
         },
         {
@@ -401,9 +402,13 @@ def train_tab():
                     filterable=False,
                     label=i18n("Vocoder"),
                     info=i18n(
-                        "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only."
+                        "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only.\n- **Rectified Flow**: Highest audio quality and fast training, at 32000, 40000, 44100 or 48000 Hz."
                     ),
-                    choices=["HiFi-GAN", "RefineGAN"],  # "MRF HiFi-GAN", ],
+                    choices=[
+                        "HiFi-GAN",
+                        "RefineGAN",
+                        "Rectified Flow",
+                    ],  # "MRF HiFi-GAN", ],
                     value="HiFi-GAN",
                     interactive=True,
                     visible=True,
@@ -726,6 +731,24 @@ def train_tab():
                         value=False,
                         interactive=True,
                     )
+                    flow_feature_cache = gr.Checkbox(
+                        label=i18n("Feature Cache"),
+                        info=i18n(
+                            "Write the features and the augmented copies of the dataset to disk once and train from them, in batches of whole clips. Disabled, the dataset is augmented as it is read, in fixed segments, and nothing is written."
+                        ),
+                        value=True,
+                        interactive=True,
+                        visible=False,
+                    )
+                    flow_mean_flow = gr.Checkbox(
+                        label=i18n("Mean Flow"),
+                        info=i18n(
+                            "Also trains the Rectified Flow model to predict the mean velocity of a step, which allows sampling in any number of steps, one included. It cannot be changed once the training has started."
+                        ),
+                        value=True,
+                        interactive=True,
+                        visible=False,
+                    )
                     checkpointing = gr.Checkbox(
                         label=i18n("Checkpointing"),
                         info=i18n(
@@ -939,18 +962,45 @@ def train_tab():
                     }, {"interactive": False, "__type__": "update", "value": "HiFi-GAN"}
 
             def toggle_vocoder(vocoder):
+                rectified_flow = vocoder == "Rectified Flow"
                 if vocoder == "HiFi-GAN":
-                    return {
+                    sampling_rate_update = {
                         "choices": ["32000", "40000", "48000"],
                         "__type__": "update",
                         "value": "40000",
                     }
+                elif rectified_flow:
+                    sampling_rate_update = {
+                        "choices": ["32000", "40000", "44100", "48000"],
+                        "__type__": "update",
+                        "value": "44100",
+                    }
                 else:
-                    return {
+                    sampling_rate_update = {
                         "choices": ["24000", "32000"],
                         "__type__": "update",
                         "value": "32000",
                     }
+                # Rectified Flow takes a single pretrained, the flow model
+                return (
+                    sampling_rate_update,
+                    gr.update(
+                        label=(
+                            i18n("Custom Pretrained Flow")
+                            if rectified_flow
+                            else i18n("Custom Pretrained G")
+                        ),
+                        choices=path_choices(
+                            sorted(
+                                get_pretrained_list("flow" if rectified_flow else "G")
+                            )
+                        ),
+                        value=None,
+                    ),
+                    gr.update(visible=not rectified_flow),
+                    gr.update(visible=rectified_flow),
+                    gr.update(visible=rectified_flow),
+                )
 
             architecture.change(
                 fn=toggle_architecture,
@@ -960,7 +1010,13 @@ def train_tab():
             vocoder.change(
                 fn=toggle_vocoder,
                 inputs=[vocoder],
-                outputs=[sampling_rate],
+                outputs=[
+                    sampling_rate,
+                    g_pretrained_path,
+                    d_pretrained_path,
+                    flow_feature_cache,
+                    flow_mean_flow,
+                ],
             )
             refresh.click(
                 fn=refresh_models_and_datasets,
@@ -1009,7 +1065,7 @@ def train_tab():
             )
             refresh_custom_pretaineds_button.click(
                 fn=refresh_custom_pretraineds,
-                inputs=[],
+                inputs=[vocoder],
                 outputs=[g_pretrained_path, d_pretrained_path],
             )
             upload_pretrained.upload(
@@ -1043,6 +1099,8 @@ def train_tab():
                     vocoder,
                     checkpointing,
                     shutdown_check,
+                    flow_feature_cache,
+                    flow_mean_flow,
                 ],
                 outputs=[train_output_info],
             )
