@@ -22,6 +22,7 @@ from rvc.infer.pipeline import Pipeline as VC
 from rvc.lib.utils import load_audio_infer, load_embedding
 from rvc.lib.algorithm.synthesizers import Synthesizer
 from rvc.configs.config import inference_config
+from rvc.infer.wrapper import ONNXRVC
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
@@ -268,6 +269,7 @@ class VoiceConverter:
         print(
             f"Conversion completed at '{audio_output_path}' in {elapsed_time:.2f} seconds."
         )
+        self.cleanup_model()
 
     def convert_audio_batch(
         self,
@@ -356,6 +358,7 @@ class VoiceConverter:
             _toast(f"Batch conversion failed: {e}", warning=True)
             raise
         finally:
+            self.cleanup_model()
             pid_path = os.path.join(now_dir, "assets", "infer_pid.txt")
             if os.path.exists(pid_path):
                 try:
@@ -440,6 +443,8 @@ class VoiceConverter:
         """
         Cleans up the model and releases resources.
         """
+        if hasattr(self.cpt, "net_g"):
+            del self.cpt.net_g
         self.hubert_model = self.net_g = self.n_spk = self.vc = None
         self.tgt_sr = self.cpt = None
         self.loaded_model = self.loaded_model_key = self.last_embedder_model = None
@@ -464,6 +469,8 @@ class VoiceConverter:
             self.model_checksum = checkpoint_hash(weight_root)
         self.cpt = (
             torch.load(weight_root, map_location="cpu", weights_only=True)
+            if weight_root.endswith(".pth")
+            else ONNXRVC(weight_root, device=self.config.device, capture=False)
             if os.path.isfile(weight_root)
             else None
         )
@@ -478,6 +485,15 @@ class VoiceConverter:
         Sets up the network configuration based on the loaded checkpoint.
         """
         if self.cpt is not None:
+            if isinstance(self.cpt, ONNXRVC):
+                self.net_g = self.cpt
+                self.tgt_sr = self.cpt.tgt_sr
+                self.use_f0 = self.cpt.use_f0
+                self.version = self.cpt.version
+                self.vocoder = self.cpt.vocoder
+                self.text_enc_hidden_dim = 768 if self.version == "v2" else 256
+                return
+
             self.tgt_sr = self.cpt["config"][-1]
             self.cpt["config"][-3] = self.cpt["weight"]["emb_g.weight"].shape[0]
             self.use_f0 = self.cpt.get("f0", 1)
@@ -540,7 +556,7 @@ class VoiceConverter:
         """
         if self.cpt is not None:
             self.vc = VC(self.tgt_sr, self.config)
-            self.n_spk = self.cpt["config"][-3]
+            # self.n_spk = self.cpt["config"][-3]
 
 
 if __name__ == "__main__":
