@@ -24,6 +24,7 @@ from rvc.lib.algorithm.synthesizers import Synthesizer
 from rvc.lib.predictors.f0 import FCPE, RMVPE, SWIFT
 from rvc.lib.utils import load_embedding, HubertModelWithFinalProj
 from rvc.realtime.precision import enable_experimental_tf32
+from rvc.infer.wrapper import ONNXRVC
 
 
 class RealtimeVoiceConverter:
@@ -69,6 +70,8 @@ class RealtimeVoiceConverter:
             self.model_checksum = checkpoint_hash(weight_root)
         self.cpt = (
             torch.load(weight_root, map_location="cpu", weights_only=True)
+            if weight_root.endswith(".pth")
+            else ONNXRVC(weight_root, device=self.config.device, capture=False)
             if os.path.isfile(weight_root)
             else None
         )
@@ -83,6 +86,15 @@ class RealtimeVoiceConverter:
         Sets up the network configuration based on the loaded checkpoint.
         """
         if self.cpt is not None:
+            if isinstance(self.cpt, ONNXRVC):
+                self.net_g = self.cpt
+                self.tgt_sr = self.cpt.tgt_sr
+                self.use_f0 = self.cpt.use_f0
+                self.version = self.cpt.version
+                self.vocoder = self.cpt.vocoder
+                self.text_enc_hidden_dim = 768 if self.version == "v2" else 256
+                return
+
             self.tgt_sr = self.cpt["config"][-1]
             self.cpt["config"][-3] = self.cpt["weight"]["emb_g.weight"].shape[0]
             self.use_f0 = self.cpt.get("f0", 1)

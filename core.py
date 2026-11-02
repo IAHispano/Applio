@@ -615,6 +615,23 @@ def run_model_information_script(pth_path: str):
         )
 
 
+def run_model_onnx_export_script(pth_path: str, output_path: str, is_half: bool = False, device: str = "cpu"):
+    if not os.path.exists(pth_path):
+        raise FileNotFoundError(f"Model file not found: '{pth_path}'")
+    if not output_path:
+        output_path = pth_path.replace(".pth", ".onnx")
+    try:
+        from rvc.lib.tools.onnx_export import onnx_exporter
+
+        info = onnx_exporter(pth_path, output_path, is_half=is_half, device=device)
+        print(info)
+        return info
+    except ImportError as e:
+        raise RuntimeError(
+            f"Missing dependency: {e}. Please install requirements: pip install -r requirements.txt"
+        )
+
+
 def run_model_blender_script(
     model_name: str, pth_path_1: str, pth_path_2: str, ratio: float
 ):
@@ -1175,6 +1192,15 @@ def model_information(**kwargs):
     """Display information about a trained model."""
     run_model_information_script(kwargs["pth_path"])
 
+
+@cli.command()
+@click.option("--pth-path", required=True, help="Path to the .pth model file.")
+@click.option("--output-path", help="Path to the .onnx model output file.")
+@click.option("--is-half", default=False, help="Save the model at half the size.")
+@click.option("--device", default="cpu", help="path to the .onnx model output file.")
+def model_onnx_export(**kwargs):
+    """Converting a .pth model to .onnx format"""
+    run_model_onnx_export_script(kwargs["pth_path"], kwargs["output_path"], kwargs["is_half"], kwargs["device"])
 
 @cli.command()
 @click.option("--model-name", required=True, help="Name of the new fused model.")
