@@ -11,6 +11,7 @@ now_dir = os.getcwd()
 sys.path.append(now_dir)
 
 from rvc.lib.user_config import load_config
+from rvc.train.utils import atomic_torch_save
 
 
 def replace_keys_in_dict(d, old_key_part, new_key_part):
@@ -42,6 +43,8 @@ def extract_model(
         model_dir = os.path.dirname(model_path)
         os.makedirs(model_dir, exist_ok=True)
 
+        dataset_length, embedder_model = None, None
+        speakers_id = int(ckpt["emb_g.weight"].shape[0])
         if os.path.exists(os.path.join(model_dir, "model_info.json")):
             with open(
                 os.path.join(model_dir, "model_info.json"), "r", encoding="utf-8"
@@ -49,9 +52,7 @@ def extract_model(
                 data = json.load(f)
                 dataset_length = data.get("total_dataset_duration", None)
                 embedder_model = data.get("embedder_model", None)
-                speakers_id = data.get("speakers_id", 1)
-        else:
-            dataset_length = None
+                speakers_id = data.get("speakers_id", speakers_id)
 
         model_author = load_config().get("model_author", None)
 
@@ -97,7 +98,7 @@ def extract_model(
         opt["speakers_id"] = speakers_id
         opt["vocoder"] = vocoder
 
-        torch.save(
+        atomic_torch_save(
             replace_keys_in_dict(
                 replace_keys_in_dict(
                     opt, ".parametrizations.weight.original1", ".weight_v"

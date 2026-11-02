@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import soundfile as sf
 import torch
 import torch.utils.data
 
@@ -58,7 +59,11 @@ class TextAudioLoaderMultiNSFsid(torch.utils.data.Dataset):
                         )
                         continue
                 audiopaths_and_text_new.append([audiopath, text, pitch, pitchf, dv])
-                lengths.append(os.path.getsize(audiopath) // (3 * self.hop_length))
+                # Preprocessed WAVs are float32; file bytes also include a
+                # variable header. Bucket by frames, capped like get_labels(),
+                # so valid long clips are not dropped by the 900-frame limit.
+                frames = sf.info(audiopath).frames
+                lengths.append(min(frames // self.hop_length, 900))
         self.audiopaths_and_text = audiopaths_and_text_new
         self.lengths = lengths
 

@@ -238,7 +238,7 @@ def run_worker():
                 )
             elif cmd == "tts":
                 import asyncio
-                import edge_tts
+                from rvc.lib.tools.tts_providers import synthesize
 
                 tts_text = req.get("ttsText", "")
                 tts_file = req.get("ttsFile", "")
@@ -262,10 +262,10 @@ def run_worker():
                 os.makedirs(
                     os.path.dirname(os.path.abspath(output_tts_path)), exist_ok=True
                 )
-                rate_str = f"+{tts_rate}%" if tts_rate >= 0 else f"{tts_rate}%"
                 asyncio.run(
-                    edge_tts.Communicate(tts_text, tts_voice, rate=rate_str).save(
-                        output_tts_path
+                    synthesize(
+                        tts_text, tts_voice, tts_rate, output_tts_path,
+                        params.get("ttsProvider", "edge"),
                     )
                 )
                 print(f"TTS audio generated at '{output_tts_path}'")

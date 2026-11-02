@@ -402,11 +402,39 @@ class Pipeline:
         return audio1
 
     def _retrieve_speaker_embeddings(self, feats, index, big_npy, index_rate):
-        npy = feats[0].cpu().numpy()
-        score, ix = index.search(npy, k=8)
-        weight = np.square(1 / score)
-        weight /= weight.sum(axis=1, keepdims=True)
-        npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
+        if len(big_npy) == 0:
+            return feats
+        queries = feats[0].cpu().numpy()
+        scores, neighbors = index.search(queries, k=8)
+        npy = np.empty_like(queries)
+        # Bound the [frames, neighbors, dimensions] gather for long inputs.
+        # Preserve FAISS's complete query batch and its distance rounding.
+        for start in range(0, len(queries), 256):
+            query = queries[start : start + 256]
+            score = scores[start : start + 256]
+            ix = neighbors[start : start + 256]
+            valid = (
+                (ix >= 0) & (ix < len(big_npy)) & np.isfinite(score) & (score >= 0)
+            )
+            distances = np.where(valid, score, np.inf)
+            closest = distances.min(axis=1, keepdims=True)
+            weight = np.zeros_like(distances)
+            tiny = np.sqrt(1 / np.finfo(distances.dtype).max)
+            ordinary = (closest >= tiny) & np.isfinite(closest)
+            np.divide(1, distances, out=weight, where=valid & ordinary)
+            np.divide(
+                closest, distances, out=weight,
+                where=valid & (closest > 0) & (closest < tiny),
+            )
+            np.square(weight, out=weight)
+            # Share exact matches equally; never let FAISS's -1 select a row.
+            weight[valid & (distances == 0)] = 1
+            totals = weight.sum(axis=1, keepdims=True)
+            np.divide(weight, totals, out=weight, where=totals > 0)
+            gathered = big_npy[np.clip(ix, 0, len(big_npy) - 1)]
+            gathered[~valid] = 0
+            retrieved = np.einsum("bkd,bk->bd", gathered, weight)
+            npy[start : start + len(query)] = np.where(totals > 0, retrieved, query)
         # FAISS scores/index data can promote this array to float64. Metal
         # rejects doubles during transfer, before operator fallback can run.
         if str(self.device).startswith("mps"):

@@ -63,9 +63,13 @@ class PreProcess:
         os.makedirs(self.gt_wavs_dir, exist_ok=True)
 
     def _normalize_audio(self, audio: np.ndarray):
+        if not audio.size or not np.isfinite(audio).all():
+            return None
         tmp_max = np.abs(audio).max()
         if tmp_max > 2.5:
             return None
+        if tmp_max == 0:
+            return audio.copy()
         return (audio / tmp_max * (MAX_AMPLITUDE * ALPHA)) + (1 - ALPHA) * audio
 
     def process_audio_segment(
@@ -81,6 +85,9 @@ class PreProcess:
             return
         if normalization_mode == "post":
             normalized_audio = self._normalize_audio(normalized_audio)
+            if normalized_audio is None:
+                print(f"{sid}-{idx0}-{idx1}-filtered")
+                return
         wavfile.write(
             os.path.join(self.gt_wavs_dir, f"{sid}_{idx0}_{idx1}.wav"),
             self.sr,
@@ -101,9 +108,13 @@ class PreProcess:
         i = 0
         while i < len(audio):
             chunk = audio[i : i + chunk_length]
-            if normalization_mode == "post":
-                chunk = self._normalize_audio(chunk)
             if len(chunk) == chunk_length:
+                if normalization_mode == "post":
+                    chunk = self._normalize_audio(chunk)
+                    if chunk is None:
+                        print(f"{sid}-{idx0}-{i}-filtered")
+                        i += chunk_length - overlap_length
+                        continue
                 # full SR for training
                 wavfile.write(
                     os.path.join(
@@ -135,6 +146,9 @@ class PreProcess:
                 audio = signal.lfilter(self.b_high, self.a_high, audio)
             if normalization_mode == "pre":
                 audio = self._normalize_audio(audio)
+                if audio is None:
+                    print(f"{sid}-{idx0}-0-filtered")
+                    return audio_length
             if cut_preprocess == "Skip":
                 # no cutting
                 self.process_audio_segment(

@@ -139,7 +139,10 @@ if is_amd:
         pass
 else:
     torch.backends.cudnn.deterministic = False
-    torch.backends.cudnn.benchmark = os.name == "nt"
+    # Batches are padded to their own maximum length, so bucketing still
+    # produces many different convolution shapes. Autotuning each new shape
+    # causes long stalls on Windows; use cuDNN's heuristics for training.
+    torch.backends.cudnn.benchmark = False
     # TF32 settings, should improve performance in some cases
     try:
         torch.set_float32_matmul_precision("high")
@@ -188,6 +191,19 @@ class EpochRecorder:
         elapsed_time_str = str(datetime.timedelta(seconds=int(elapsed_time)))
         current_time = datetime.datetime.now().strftime("%H:%M:%S")
         return f"time={current_time} | training_speed={elapsed_time_str}"
+
+
+def _update_lowest_loss(pending, lowest, epoch):
+    if not pending:
+        return lowest
+    # Transfer diagnostics together; retaining detached scalars does not retain
+    # any training graphs. Strict comparison keeps the first step on ties.
+    values = torch.stack([loss for _, loss in pending]).detach().cpu().tolist()
+    for (step, _), value in zip(pending, values):
+        if value < lowest["value"]:
+            lowest = {"step": step, "value": value, "epoch": epoch}
+    pending.clear()
+    return lowest
 
 
 def main():
@@ -332,7 +348,7 @@ def run(
         config (object): Configuration object containing training parameters.
         device (torch.device): The device to use for training (CPU or GPU).
     """
-    global global_step
+    global global_step, train_dtype
 
     if rank == 0:
         writer_eval = SummaryWriter(log_dir=os.path.join(experiment_dir, "eval"))
@@ -361,7 +377,10 @@ def run(
 
     torch.manual_seed(config.train.seed)
 
-    if torch.cuda.is_available():
+    if device.type != "cuda":
+        train_dtype = torch.float32
+
+    if device.type == "cuda":
         torch.cuda.set_device(device_id)
         if (
             getattr(torch.version, "hip", None) is not None
@@ -459,7 +478,7 @@ def run(
         version=disc_version,
     )
 
-    if torch.cuda.is_available():
+    if device.type == "cuda":
         net_g = net_g.cuda(device_id)
         net_d = net_d.cuda(device_id)
     else:
@@ -704,6 +723,7 @@ def train_and_evaluate(
         data_iterator = enumerate(train_loader)
 
     epoch_recorder = EpochRecorder()
+    pending_lowest = []
     num_batches = max(1, len(train_loader))
     # Heartbeat for the web console (~10x/epoch): end-of-epoch prints alone
     # leave progress stalled during long epochs. Parsed by the API/UI for a
@@ -765,11 +785,15 @@ def train_and_evaluate(
                 if train_dtype == torch.float16:
                     scaler.scale(loss_disc).backward()
                     scaler.unscale_(optim_d)
-                    grad_norm_d = commons.grad_norm(net_d.parameters())
+                    grad_norm_d = commons.grad_norm(
+                        net_d.parameters(), return_tensor=True
+                    )
                     scaler.step(optim_d)
                 else:
                     loss_disc.backward()
-                    grad_norm_d = commons.grad_norm(net_d.parameters())
+                    grad_norm_d = commons.grad_norm(
+                        net_d.parameters(), return_tensor=True
+                    )
                     optim_d.step()
 
             net_d.requires_grad_(False)
@@ -809,23 +833,24 @@ def train_and_evaluate(
             loss_gen, _ = generator_loss(y_d_hat_g)
             loss_gen_all = loss_gen + loss_fm + loss_mel + loss_kl
 
-            if loss_gen_all.item() < lowest_value["value"]:
-                lowest_value = {
-                    "step": global_step,
-                    "value": loss_gen_all.item(),
-                    "epoch": epoch,
-                }
             optim_g.zero_grad()
             if train_dtype == torch.float16:
                 scaler.scale(loss_gen_all).backward()
                 scaler.unscale_(optim_g)
-                grad_norm_g = commons.grad_norm(net_g.parameters())
+                grad_norm_g = commons.grad_norm(
+                    net_g.parameters(), return_tensor=True
+                )
                 scaler.step(optim_g)
                 scaler.update()
             else:
                 loss_gen_all.backward()
-                grad_norm_g = commons.grad_norm(net_g.parameters())
+                grad_norm_g = commons.grad_norm(
+                    net_g.parameters(), return_tensor=True
+                )
                 optim_g.step()
+
+            if rank == 0:
+                pending_lowest.append((global_step, loss_gen_all.detach()))
 
             net_d.requires_grad_(True)
 
@@ -842,12 +867,15 @@ def train_and_evaluate(
             avg_losses["gen_loss_50"].append(loss_gen_all.detach())
 
             if rank == 0 and global_step % 50 == 0:
+                lowest_value = _update_lowest_loss(pending_lowest, lowest_value, epoch)
                 # logging rolling averages
                 scalar_dict = {
-                    "grad_avg_50/norm_d": sum(avg_losses["grad_d_50"])
-                    / len(avg_losses["grad_d_50"]),
-                    "grad_avg_50/norm_g": sum(avg_losses["grad_g_50"])
-                    / len(avg_losses["grad_g_50"]),
+                    "grad_avg_50/norm_d": torch.mean(
+                        torch.stack(list(avg_losses["grad_d_50"]))
+                    ),
+                    "grad_avg_50/norm_g": torch.mean(
+                        torch.stack(list(avg_losses["grad_g_50"]))
+                    ),
                     "loss_avg_50/d/adv": torch.mean(
                         torch.stack(list(avg_losses["disc_loss_50"]))
                     ),
@@ -881,6 +909,8 @@ def train_and_evaluate(
                 )
         # end of batch train
     # end of tqdm
+    if rank == 0:
+        lowest_value = _update_lowest_loss(pending_lowest, lowest_value, epoch)
     with torch.no_grad():
         torch.cuda.empty_cache()
 

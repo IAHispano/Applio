@@ -10,7 +10,7 @@ def feature_loss(fmap_r, fmap_g):
         fmap_g (list of torch.Tensor): List of generated feature maps.
     """
     return 2 * sum(
-        torch.mean(torch.abs(rl - gl))
+        torch.mean(torch.abs(rl.float() - gl.float()))
         for dr, dg in zip(fmap_r, fmap_g)
         for rl, gl in zip(dr, dg)
     )
@@ -53,25 +53,6 @@ def generator_loss(disc_outputs):
 
 
 def discriminator_loss_scaled(disc_real, disc_fake, scale=1.0):
-    loss = 0
-    for i, (d_real, d_fake) in enumerate(zip(disc_real, disc_fake)):
-        real_loss = torch.mean((1 - d_real) ** 2)
-        fake_loss = torch.mean(d_fake**2)
-        _loss = real_loss + fake_loss
-        loss += _loss if i < len(disc_real) / 2 else scale * _loss
-    return loss, None, None
-
-
-def generator_loss_scaled(disc_outputs, scale=1.0):
-    loss = 0
-    for i, d_fake in enumerate(disc_outputs):
-        d_fake = d_fake.float()
-        _loss = torch.mean((1 - d_fake) ** 2)
-        loss += _loss if i < len(disc_outputs) / 2 else scale * _loss
-    return loss, None, None
-
-
-def discriminator_loss_scaled(disc_real, disc_fake, scale=1.0):
     """
     Compute the scaled discriminator loss for real and generated outputs.
 
@@ -83,8 +64,8 @@ def discriminator_loss_scaled(disc_real, disc_fake, scale=1.0):
     midpoint = len(disc_real) // 2
     losses = []
     for i, (d_real, d_fake) in enumerate(zip(disc_real, disc_fake)):
-        real_loss = (1 - d_real).pow(2).mean()
-        fake_loss = d_fake.pow(2).mean()
+        real_loss = (1 - d_real.float()).pow(2).mean()
+        fake_loss = d_fake.float().pow(2).mean()
         total_loss = real_loss + fake_loss
         if i >= midpoint:
             total_loss *= scale
@@ -104,7 +85,7 @@ def generator_loss_scaled(disc_outputs, scale=1.0):
     midpoint = len(disc_outputs) // 2
     losses = []
     for i, d_fake in enumerate(disc_outputs):
-        loss_value = (1 - d_fake).pow(2).mean()
+        loss_value = (1 - d_fake.float()).pow(2).mean()
         if i >= midpoint:
             loss_value *= scale
         losses.append(loss_value)
@@ -123,6 +104,11 @@ def kl_loss(z_p, logs_q, m_p, logs_p, z_mask):
         logs_p (torch.Tensor): Log variance of p [b, h, t_t].
         z_mask (torch.Tensor): Mask for the latent variables [b, h, t_t].
     """
+    # These tensors come from an autocast forward pass. Cast before the
+    # exponential and reductions to avoid fp16 overflow and bf16 cancellation.
+    z_p, logs_q, m_p, logs_p, z_mask = (
+        tensor.float() for tensor in (z_p, logs_q, m_p, logs_p, z_mask)
+    )
     kl = logs_p - logs_q - 0.5 + 0.5 * ((z_p - m_p) ** 2) * torch.exp(-2 * logs_p)
     kl = (kl * z_mask).sum()
     loss = kl / z_mask.sum()

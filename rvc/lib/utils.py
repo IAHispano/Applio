@@ -1,5 +1,6 @@
 import os
 import sys
+from functools import lru_cache
 import soxr
 import torch
 import torchaudio
@@ -113,6 +114,17 @@ def load_audio(file, sample_rate):
     return audio.flatten()
 
 
+@lru_cache(maxsize=8)
+def _audio_resampler(source_rate, target_rate):
+    # Preprocessing repeatedly visits the same rate pair. Keep the immutable
+    # CPU kernel bounded per worker rather than constructing it for every clip.
+    return torchaudio.transforms.Resample(
+        orig_freq=source_rate,
+        new_freq=target_rate,
+        lowpass_filter_width=128,
+    )
+
+
 def load_audio_ta(file, sample_rate):
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
@@ -121,11 +133,7 @@ def load_audio_ta(file, sample_rate):
         if len(audio.shape) > 1:
             audio = librosa.to_mono(audio.T)
         if sr != sample_rate:
-            transform = torchaudio.transforms.Resample(
-                orig_freq=sr,
-                new_freq=sample_rate,
-                lowpass_filter_width=128,
-            )
+            transform = _audio_resampler(sr, sample_rate)
             audio = torch.from_numpy(audio).unsqueeze(0)
             audio = transform(audio).squeeze(0).contiguous().numpy()
 
