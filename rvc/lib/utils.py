@@ -1,15 +1,7 @@
 import os
 import sys
-import soxr
-import torch
-import torchaudio
-import librosa
-import soundfile as sf
-import numpy as np
 import re
 import unicodedata
-from rvc.lib.tools.http_download import download_http
-from torch import nn
 
 import logging
 import warnings
@@ -31,6 +23,8 @@ _HubertModelWithFinalProj = None
 def get_hubert_model_class():
     global _HubertModelWithFinalProj
     if _HubertModelWithFinalProj is None:
+        from torch import nn
+
         # HuBERT is audio-only, but Transformers also probes optional vision
         # packages. Some ROCm wheels leave torchvision installed without its
         # native operators; do not let that unrelated dependency block audio.
@@ -88,6 +82,8 @@ class HubertModelWithFinalProj(metaclass=_HubertModelMeta):
 
 
 def load_audio_16k(file):
+    import librosa
+
     # this is used by f0 and feature extractions that load preprocessed 16k files, so there's no need to resample
     try:
         audio, sr = librosa.load(file, sr=16000)
@@ -98,12 +94,18 @@ def load_audio_16k(file):
 
 
 def load_audio(file, sample_rate):
+    import soundfile as sf
+
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
         audio, sr = sf.read(file)
         if len(audio.shape) > 1:
+            import librosa
+
             audio = librosa.to_mono(audio.T)
         if sr != sample_rate:
+            import librosa
+
             audio = librosa.resample(
                 audio, orig_sr=sr, target_sr=sample_rate, res_type="soxr_vhq"
             )
@@ -114,13 +116,21 @@ def load_audio(file, sample_rate):
 
 
 def load_audio_ta(file, sample_rate):
+    import numpy as np
+    import soundfile as sf
+
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
         audio, sr = sf.read(file)
         audio = np.asarray(audio, dtype=np.float32)
         if len(audio.shape) > 1:
+            import librosa
+
             audio = librosa.to_mono(audio.T)
         if sr != sample_rate:
+            import torch
+            import torchaudio
+
             transform = torchaudio.transforms.Resample(
                 orig_freq=sr,
                 new_freq=sample_rate,
@@ -140,6 +150,9 @@ def load_audio_infer(
     sample_rate,
     **kwargs,
 ):
+    import numpy as np
+    import soundfile as sf
+
     formant_shifting = kwargs.get("formant_shifting", False)
     try:
         file = file.strip(" ").strip('"').strip("\n").strip('"').strip(" ")
@@ -147,6 +160,8 @@ def load_audio_infer(
             raise FileNotFoundError(f"File not found: {file}")
         audio, sr = sf.read(file)
         if len(audio.shape) > 1:
+            import librosa
+
             audio = librosa.to_mono(audio.T)
         if (
             kwargs.get("cleanup_mode", "off") != "off"
@@ -158,6 +173,8 @@ def load_audio_infer(
                 audio, sr, kwargs["cleanup_mode"], kwargs.get("cleanup_strength", 12)
             )
         if sr != sample_rate:
+            import librosa
+
             audio = librosa.resample(
                 audio, orig_sr=sr, target_sr=sample_rate, res_type="soxr_vhq"
             )
@@ -186,6 +203,8 @@ def format_title(title):
 
 
 def load_embedding(embedder_model, custom_embedder=None):
+    from rvc.lib.tools.http_download import download_http
+
     embedder_root = os.path.join(now_dir, "rvc", "models", "embedders")
     embedding_list = {
         "contentvec": os.path.join(embedder_root, "contentvec"),

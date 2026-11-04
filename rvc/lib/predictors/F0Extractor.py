@@ -2,16 +2,11 @@ import dataclasses
 import pathlib
 import librosa
 import numpy as np
-import resampy
 import torch
-import torchfcpe
-import torchcrepe
 
 from rvc.lib.predictors.chunking import extract_pitch
 from rvc.lib.predictors.f0 import RMVPE, SWIFT
 from rvc.configs.config import Config
-
-config = Config()
 
 
 @dataclasses.dataclass
@@ -25,6 +20,7 @@ class F0Extractor:
     x: np.ndarray = dataclasses.field(init=False)
 
     def __post_init__(self):
+        self.config = Config()
         self.x, self.sample_rate = librosa.load(self.wav_path, sr=self.sample_rate)
 
     @property
@@ -33,6 +29,8 @@ class F0Extractor:
 
     @property
     def wav16k(self):
+        import resampy
+
         return resampy.resample(self.x, self.sample_rate, 16000)
 
     def extract_f0(self):
@@ -40,12 +38,14 @@ class F0Extractor:
         f0 = None
         method = self.method
         if method == "crepe":
-            device = "cpu" if str(config.device) == "mps" else config.device
+            device = "cpu" if str(self.config.device) == "mps" else self.config.device
             f0 = extract_pitch(
                 self.wav16k, lambda window: self._crepe_window(window, device)
             )
         elif method == "fcpe":
-            model = torchfcpe.spawn_bundled_infer_model(device=config.device)
+            import torchfcpe
+
+            model = torchfcpe.spawn_bundled_infer_model(device=self.config.device)
             f0 = extract_pitch(
                 self.x,
                 lambda window: self._fcpe_window(model, window),
@@ -53,10 +53,10 @@ class F0Extractor:
                 self.hop_length,
             )
         elif method == "rmvpe":
-            predictor = RMVPE(device=config.device, high_register={"enabled": False})
+            predictor = RMVPE(device=self.config.device, high_register={"enabled": False})
             f0 = predictor.get_f0(self.wav16k)
         elif method in ("swift", "swiftf0", "swift-f0"):
-            predictor = SWIFT(device=config.device)
+            predictor = SWIFT(device=self.config.device)
             f0 = predictor.get_f0(
                 self.wav16k, f0_min=self.f0_min, f0_max=self.f0_max
             )
@@ -68,6 +68,8 @@ class F0Extractor:
     @torch.inference_mode()
     def _crepe_window(self, audio, device):
         """Retain the curve utility's unsmoothed CREPE output in bounded windows."""
+        import torchcrepe
+
         return torchcrepe.predict(
             torch.from_numpy(audio).float().unsqueeze(0).to(device),
             sample_rate=16000,
@@ -83,7 +85,7 @@ class F0Extractor:
         """Preserve FCPE curve limits and output hop while bounding model input."""
         audio = torch.from_numpy(audio).float().unsqueeze(0).unsqueeze(-1)
         return model.infer(
-            audio.to(config.device),
+            audio.to(self.config.device),
             sr=self.sample_rate,
             decoder_mode="local_argmax",
             threshold=0.006,
