@@ -43,7 +43,12 @@ def extract_f0_curve(audio_path: str, method: str):
 
 
 def f0_extractor_tab():
-    with step_card(1, "Audio Source", i18n, description="Upload audio and pick the pitch algorithm."):
+    with step_card(
+        1,
+        "Audio Source",
+        i18n,
+        description="Upload audio and pick the pitch algorithm.",
+    ):
         audio = gr.Audio(label=i18n("Upload Audio"), type="filepath")
         f0_method = gr.Dropdown(
             filterable=False,
@@ -54,7 +59,12 @@ def f0_extractor_tab():
             choices=["crepe", "fcpe", "rmvpe"],
             value="rmvpe",
         )
-    with step_card(2, "Extract & Results", i18n, description="Run the extraction and inspect the curve."):
+    with step_card(
+        2,
+        "Extract & Results",
+        i18n,
+        description="Run the extraction and inspect the curve.",
+    ):
         button = gr.Button(i18n("Extract F0 Curve"))
 
         with gr.Row(equal_height=True, elem_classes="applio-f0-results"):

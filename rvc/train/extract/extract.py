@@ -246,8 +246,7 @@ def process_file_embedding(
         feats = (
             torch.from_numpy(load_audio(wav_file_path, SAMPLE_RATE_16K))
             # SoundFile returns float64; MPS cannot receive it before this cast.
-            .float()
-            .to(device)
+            .float().to(device)
         )
         feats = feats.view(1, -1)
         with torch.no_grad():

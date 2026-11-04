@@ -49,15 +49,15 @@ class FormantShifter:
         self._input = np.concatenate((self._input, audio))
         emitted = [self._output]
         bins = np.arange(self.frame_size // 2 + 1)
-        window_power = self._window ** 2
+        window_power = self._window**2
         while self._input.size >= self.frame_size:
-            spectrum = np.fft.rfft(self._input[:self.frame_size] * self._window)
+            spectrum = np.fft.rfft(self._input[: self.frame_size] * self._window)
             magnitude = np.abs(spectrum)
             # The envelope calculation must remain finite for silence and
             # empty spectral bins; filtering must never create signal there.
             cepstrum = np.fft.irfft(np.log(np.maximum(magnitude, 1e-12)))
             cepstrum[1:cutoff] *= 2
-            cepstrum[cutoff + 1:] = 0
+            cepstrum[cutoff + 1 :] = 0
             envelope = np.exp(np.fft.rfft(cepstrum).real)
             warped = np.interp(bins / timbre, bins, envelope, right=0)
             gain = warped / np.maximum(envelope, 1e-12)
@@ -65,18 +65,18 @@ class FormantShifter:
             self._overlap += frame * self._window
             self._weights += window_power
             emitted.append(
-                self._overlap[:self.hop_size]
-                / np.maximum(self._weights[:self.hop_size], 1e-12)
+                self._overlap[: self.hop_size]
+                / np.maximum(self._weights[: self.hop_size], 1e-12)
             )
-            self._overlap[:-self.hop_size] = self._overlap[self.hop_size:]
-            self._overlap[-self.hop_size:] = 0
-            self._weights[:-self.hop_size] = self._weights[self.hop_size:]
-            self._weights[-self.hop_size:] = 0
-            self._input = self._input[self.hop_size:]
+            self._overlap[: -self.hop_size] = self._overlap[self.hop_size :]
+            self._overlap[-self.hop_size :] = 0
+            self._weights[: -self.hop_size] = self._weights[self.hop_size :]
+            self._weights[-self.hop_size :] = 0
+            self._input = self._input[self.hop_size :]
 
         output = np.concatenate(emitted)
-        self._output = output[audio.size:].copy()
-        result = output[:audio.size].astype(audio.dtype)
+        self._output = output[audio.size :].copy()
+        result = output[: audio.size].astype(audio.dtype)
         if not np.isfinite(result).all():
             raise ValueError("Formant processing produced non-finite audio")
         return result
@@ -86,5 +86,9 @@ class FormantShifter:
         shifted = self.process(audio, quefrency, timbre)
         if shifted is audio or not len(audio):
             return shifted
-        tail = self.process(np.zeros(self.frame_size, dtype=audio.dtype), quefrency, timbre)
-        return np.concatenate((shifted, tail))[self.frame_size:self.frame_size + len(audio)]
+        tail = self.process(
+            np.zeros(self.frame_size, dtype=audio.dtype), quefrency, timbre
+        )
+        return np.concatenate((shifted, tail))[
+            self.frame_size : self.frame_size + len(audio)
+        ]

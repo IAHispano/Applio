@@ -15,7 +15,9 @@ def tensorboard_tab():
             return (url, iframe)
         return url or "Failed to start", "<p>Failed to launch TensorBoard</p>"
 
-    with step_card(1, "Controls", i18n, description="Launch TensorBoard and copy its URL."):
+    with step_card(
+        1, "Controls", i18n, description="Launch TensorBoard and copy its URL."
+    ):
         launch_btn = gr.Button(i18n("Launch TensorBoard"), variant="primary")
         tb_url = gr.Textbox(
             label=i18n("TensorBoard URL"),
@@ -23,7 +25,9 @@ def tensorboard_tab():
             interactive=False,
             visible=False,
         )
-    with step_card(2, "Dashboard", i18n, description="View live training loss and metrics."):
+    with step_card(
+        2, "Dashboard", i18n, description="View live training loss and metrics."
+    ):
         tb_iframe = gr.HTML(
             value="<p style='color: gray; text-align: center; padding: 40px;'>Click 'Launch TensorBoard' to start monitoring.</p>"
         )

@@ -19,7 +19,9 @@ def update_model_fusion(dropbox):
 def voice_blender_tab():
     def _blend_with_toast(*args):
         if not all(str(model).lower().endswith(".pth") for model in args[1:3]):
-            message = i18n("Blending requires .pth voice models; ONNX files are not supported.")
+            message = i18n(
+                "Blending requires .pth voice models; ONNX files are not supported."
+            )
             gr.Warning(message)
             return message, None
         gr.Info(i18n("Blending models..."))
@@ -40,7 +42,12 @@ def voice_blender_tab():
                 gr.Info(message)
         return result
 
-    with step_card(1, "Source Models", i18n, description="Drop files or paste paths for the two models to blend."):
+    with step_card(
+        1,
+        "Source Models",
+        i18n,
+        description="Drop files or paste paths for the two models to blend.",
+    ):
         with gr.Row():
             with gr.Column():
                 model_fusion_a_dropbox = gr.File(
@@ -68,7 +75,12 @@ def voice_blender_tab():
                     placeholder=i18n("Enter path to model"),
                     info=i18n("You can also use a custom path."),
                 )
-    with step_card(2, "Blend Settings", i18n, description="Name the output and set the blend ratio between models."):
+    with step_card(
+        2,
+        "Blend Settings",
+        i18n,
+        description="Name the output and set the blend ratio between models.",
+    ):
         model_fusion_name = gr.Textbox(
             label=i18n("Model Name"),
             info=i18n("Name of the new model."),
@@ -87,7 +99,12 @@ def voice_blender_tab():
                 "Mix model weights: 0 uses only the second model, 1 uses only the first model. Both models must be compatible."
             ),
         )
-    with step_card(3, "Blend & Export", i18n, description="Fuse the models and download the result."):
+    with step_card(
+        3,
+        "Blend & Export",
+        i18n,
+        description="Fuse the models and download the result.",
+    ):
         model_fusion_button = gr.Button(i18n("Fusion"), variant="primary")
         with gr.Row(equal_height=True, elem_classes="applio-output-row"):
             model_fusion_output_info = gr.Textbox(

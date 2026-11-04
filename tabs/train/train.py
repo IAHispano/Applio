@@ -366,7 +366,12 @@ def train_tab():
         return result
 
     # Model settings section
-    with step_card(1, "Model Settings", i18n, description="Name your model and choose sample rate, architecture and hardware."):
+    with step_card(
+        1,
+        "Model Settings",
+        i18n,
+        description="Name your model and choose sample rate, architecture and hardware.",
+    ):
         with gr.Row():
             with gr.Column():
                 model_name = gr.Dropdown(
@@ -443,7 +448,12 @@ def train_tab():
                         interactive=False,
                     )
     # Preprocess section
-    with step_card(2, "Prepare Dataset", i18n, description="Point to your dataset, clean it and preprocess audio slices."):
+    with step_card(
+        2,
+        "Prepare Dataset",
+        i18n,
+        description="Point to your dataset, clean it and preprocess audio slices.",
+    ):
         dataset_path = gr.Dropdown(
             label=i18n("Dataset Path"),
             info=i18n("Path to the dataset folder."),
@@ -556,7 +566,12 @@ def train_tab():
             )
 
     # Extract section
-    with step_card(3, "Extract Features", i18n, description="Extract pitch and embeddings used for training."):
+    with step_card(
+        3,
+        "Extract Features",
+        i18n,
+        description="Extract pitch and embeddings used for training.",
+    ):
         with gr.Row():
             f0_method = gr.Dropdown(
                 filterable=False,
@@ -649,7 +664,12 @@ def train_tab():
         )
 
     # Training section
-    with step_card(4, "Train Model", i18n, description="Configure epochs and batch size, then start training."):
+    with step_card(
+        4,
+        "Train Model",
+        i18n,
+        description="Configure epochs and batch size, then start training.",
+    ):
         with gr.Row():
             batch_size = gr.Slider(
                 1,
@@ -834,7 +854,9 @@ def train_tab():
             )
 
     # Export Model section
-    with step_card(5, "Export Model", i18n, description="Select trained files to export or upload."):
+    with step_card(
+        5, "Export Model", i18n, description="Select trained files to export or upload."
+    ):
         if os.getenv("COLAB_RELEASE_TAG"):
             gr.Markdown(
                 i18n(
