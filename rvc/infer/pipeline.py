@@ -6,7 +6,6 @@ if sys.platform == "darwin":
 
 import torch
 import torch.nn.functional as F
-import torchcrepe
 import faiss
 import librosa
 import numpy as np

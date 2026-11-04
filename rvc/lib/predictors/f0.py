@@ -3,8 +3,6 @@ import json
 import torch
 
 from rvc.lib.predictors.chunking import extract_pitch
-from rvc.lib.predictors.RMVPE import RMVPE0Predictor
-from rvc.lib.predictors.Swift import SwiftPredictor
 import numpy as np
 import librosa
 from rvc.lib.user_config import load_config
@@ -58,6 +56,8 @@ class RMVPE:
         ):
             torch.backends.cudnn.enabled = False
             torch.backends.cudnn.benchmark = False
+        from rvc.lib.predictors.RMVPE import RMVPE0Predictor
+
         self.model = RMVPE0Predictor(
             os.path.join("rvc", "models", "predictors", model_name),
             device=self.device,
@@ -245,6 +245,8 @@ class SWIFT:
         self.sample_rate = sample_rate
         self.hop_size = hop_size
         model_path = os.path.join("rvc", "models", "predictors", model_name)
+        from rvc.lib.predictors.Swift import SwiftPredictor
+
         self.model = SwiftPredictor(
             model_path=model_path,
             device=self.device,
