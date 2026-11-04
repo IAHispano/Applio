@@ -5,6 +5,7 @@ import onnx
 import json
 import types
 import torch
+
 try:
     import onnxslim
 except:
@@ -25,6 +26,7 @@ warnings.filterwarnings("ignore")
 
 FEATS_LENGTH = 200
 
+
 def autocast(model):
     """
     This function is designed to allow a model—after being converted to the ONNX format—to accept Float-type inputs even when the model is in Half-precision.
@@ -42,10 +44,21 @@ def autocast(model):
         # Fetch the model's internal data type (e.g., float16 or float32)
         dtype = next(model.parameters()).dtype
         # Cast floating-point tensors dynamically, keeping integer or non-tensor inputs untouched
-        return orig_forward(*[a.to(dtype) if isinstance(a, torch.Tensor) and a.dtype.is_floating_point else a for a in args], **kwargs)
+        return orig_forward(
+            *[
+                (
+                    a.to(dtype)
+                    if isinstance(a, torch.Tensor) and a.dtype.is_floating_point
+                    else a
+                )
+                for a in args
+            ],
+            **kwargs,
+        )
 
     model.forward = _forward
     return model
+
 
 def prettify_date(date_str):
     if date_str is None:
@@ -61,14 +74,15 @@ def prettify_date(date_str):
         except Exception:
             return "None"
 
+
 def onnx_infer(
-    self: Synthesizer, 
-    phone: torch.Tensor, 
-    phone_lengths: torch.Tensor, 
-    sid: torch.Tensor = None, 
-    rate: Optional[torch.Tensor] = None, 
-    pitch: Optional[torch.Tensor] = None, 
-    nsff0: Optional[torch.Tensor] = None
+    self: Synthesizer,
+    phone: torch.Tensor,
+    phone_lengths: torch.Tensor,
+    sid: torch.Tensor = None,
+    rate: Optional[torch.Tensor] = None,
+    pitch: Optional[torch.Tensor] = None,
+    nsff0: Optional[torch.Tensor] = None,
 ):
     """Alternative target inference route utilizing ONNX-exportable tracing steps."""
 
@@ -81,11 +95,13 @@ def onnx_infer(
     # Floor and casting are explicitly typed for static tensor indexing compliance in ONNX runtimes
     head = torch.floor(z_p.size(2) * (1.0 - rate)).long()
     z_p, x_mask = z_p[:, :, head:], x_mask[:, :, head:]
-    if self.use_f0: nsff0 = nsff0[:, head:]
+    if self.use_f0:
+        nsff0 = nsff0[:, head:]
 
     # Pass priors through Inverse Flow to reconstruct converted target latents
     z = self.flow(z_p, x_mask, g=g, reverse=True)
     return self.dec(z * x_mask, nsff0, g=g)
+
 
 def strip_parametrizations(module: torch.nn.Module):
     """
@@ -100,9 +116,10 @@ def strip_parametrizations(module: torch.nn.Module):
                     submodule, pname, leave_parametrized=True
                 )
 
+
 def onnx_exporter(input_path, output_path, is_half=False, device="cpu"):
     """
-    Exports a trained RVC synthesizer 
+    Exports a trained RVC synthesizer
     checkpoint to an optimized ONNX model structure, attaching custom metadata.
 
     Args:
@@ -111,9 +128,13 @@ def onnx_exporter(input_path, output_path, is_half=False, device="cpu"):
         is_half (bool, optional): If True, converts the model weights to Float16. Defaults to False.
         device (str, optional): Computation device ('cpu' or 'cuda'). Defaults to "cpu".
     """
-    
+
     # Load checkpoint safely avoiding arbitrary code execution hazards
-    cpt = (torch.load(input_path, map_location="cpu", weights_only=True) if os.path.isfile(input_path) else None)
+    cpt = (
+        torch.load(input_path, map_location="cpu", weights_only=True)
+        if os.path.isfile(input_path)
+        else None
+    )
     # Adjust dynamic speaker/embedding layer configuration from the loaded weight matrix
     cpt["config"][-3] = cpt["weight"]["emb_g.weight"].shape[0]
 
@@ -137,24 +158,22 @@ def onnx_exporter(input_path, output_path, is_half=False, device="cpu"):
 
     # Instantiate the correct Model Architecture depending on the model specification
     net_g = Synthesizer(
-        *cpt["config"], 
-        use_f0=f0, 
-        text_enc_hidden_dim=text_enc_hidden_dim, 
-        vocoder=vocoder, 
+        *cpt["config"],
+        use_f0=f0,
+        text_enc_hidden_dim=text_enc_hidden_dim,
+        vocoder=vocoder,
     )
     net_g.enc_p.encoder = Encoder(
-        net_g.enc_p.encoder.hidden_channels, 
-        768, 
-        2, 
-        net_g.enc_p.encoder.n_layers, 
-        3, 
-        net_g.enc_p.encoder.drop.p
+        net_g.enc_p.encoder.hidden_channels,
+        768,
+        2,
+        net_g.enc_p.encoder.n_layers,
+        3,
+        net_g.enc_p.encoder.drop.p,
     )
 
     # Re-route the forward pass to the dedicated ONNX inference method
-    net_g.forward = types.MethodType(
-        onnx_infer, net_g
-    )
+    net_g.forward = types.MethodType(onnx_infer, net_g)
     net_g.load_state_dict(cpt["weight"], strict=False)
     # Switch model to evaluation state, transfer to target device, and assign float precision
     net_g.eval().to(device).to(torch.float16 if is_half else torch.float32)
@@ -162,7 +181,8 @@ def onnx_exporter(input_path, output_path, is_half=False, device="cpu"):
     strip_parametrizations(net_g)
     del net_g.enc_q
     # Apply global dynamic casting wrapper if working with float16 targets
-    if is_half: net_g = autocast(net_g)
+    if is_half:
+        net_g = autocast(net_g)
 
     # Initialize mock structural dummy input variables for PyTorch's tracing engine
     phone = torch.rand(1, FEATS_LENGTH, text_enc_hidden_dim).to(device)
@@ -178,34 +198,38 @@ def onnx_exporter(input_path, output_path, is_half=False, device="cpu"):
         "phone": {0: "B", 1: "T"},
         "phone_lengths": {0: "B"},
         "sid": {0: "B"},
-        "rate": {0: "B"}
+        "rate": {0: "B"},
     }
 
-    if f0: # Append pitch-related parameters if the model variant relies on F0 fundamental frequency
+    if (
+        f0
+    ):  # Append pitch-related parameters if the model variant relies on F0 fundamental frequency
         pitch = torch.randint(size=(1, FEATS_LENGTH), low=5, high=255).to(device)
         nsff0 = torch.rand(1, FEATS_LENGTH).to(device)
 
         args += [pitch, nsff0]
         input_names += ["pitch", "nsff0"]
-        dynamic_axes.update({
-            "pitch": {0: "B", 1: "T"},
-            "nsff0": {0: "B", 1: "T"},
-        })
+        dynamic_axes.update(
+            {
+                "pitch": {0: "B", 1: "T"},
+                "nsff0": {0: "B", 1: "T"},
+            }
+        )
 
     try:
         # Export model graph via byte stream pipeline to perform memory-contained optimization
         with io.BytesIO() as model:
             torch.onnx.export(
-                net_g, 
-                tuple(args), 
-                model, 
-                do_constant_folding=True, # Pre-calculate constant nodes at compile time
-                opset_version=17, 
-                verbose=False, 
-                input_names=input_names, 
-                output_names=["audio"], 
+                net_g,
+                tuple(args),
+                model,
+                do_constant_folding=True,  # Pre-calculate constant nodes at compile time
+                opset_version=17,
+                verbose=False,
+                input_names=input_names,
+                output_names=["audio"],
                 dynamic_axes=dynamic_axes,
-                dynamo=False # Use classic tracing engine
+                dynamo=False,  # Use classic tracing engine
             )
 
             # Prune unused node structures, fuse blocks and squeeze overhead via onnxslim
@@ -215,24 +239,24 @@ def onnx_exporter(input_path, output_path, is_half=False, device="cpu"):
             # Embed structured architecture details back directly into the ONNX model metadata block
             model.metadata_props.append(
                 onnx.StringStringEntryProto(
-                    key="model_info", 
+                    key="model_info",
                     value=json.dumps(
                         {
-                            "model_name": model_name, 
-                            "epoch": epochs, 
-                            "step": steps, 
-                            "version": version, 
-                            "sr": tgt_sr, 
-                            "f0": f0, 
+                            "model_name": model_name,
+                            "epoch": epochs,
+                            "step": steps,
+                            "version": version,
+                            "sr": tgt_sr,
+                            "f0": f0,
                             "dataset_length": dataset_length,
-                            "vocoder": vocoder, 
-                            "creation_date": creation_date, 
-                            "model_hash": model_hash, 
+                            "vocoder": vocoder,
+                            "creation_date": creation_date,
+                            "model_hash": model_hash,
                             "author": model_author,
                             "embedder_model": embedder_model,
                             "speakers_id": speakers_id,
                         }
-                    )
+                    ),
                 )
             )
 

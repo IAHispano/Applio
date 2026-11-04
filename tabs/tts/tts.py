@@ -52,7 +52,12 @@ def process_input(file_path):
 # TTS tab
 def tts_tab():
     trigger = get_filter_trigger()
-    with step_card(1, "Voice Model", i18n, description="Select the voice model and index file used for conversion."):
+    with step_card(
+        1,
+        "Voice Model",
+        i18n,
+        description="Select the voice model and index file used for conversion.",
+    ):
         with gr.Row():
             with gr.Column(scale=1, min_width=240):
                 model_file = gr.Dropdown(
@@ -112,7 +117,12 @@ def tts_tab():
                 inputs=[model_file],
                 outputs=[index_file],
             )
-    with step_card(2, "Speech Input", i18n, description="Pick a TTS voice, speed and enter text or upload a file."):
+    with step_card(
+        2,
+        "Speech Input",
+        i18n,
+        description="Pick a TTS voice, speed and enter text or upload a file.",
+    ):
         tts_voice = gr.Dropdown(
             label=i18n("TTS Voices"),
             info=i18n("Select the TTS voice to use for the conversion."),
@@ -150,7 +160,12 @@ def tts_tab():
                     value="",
                     interactive=True,
                 )
-    with step_card(3, "Conversion Parameters", i18n, description="Tune pitch, voice matching, algorithms and output settings."):
+    with step_card(
+        3,
+        "Conversion Parameters",
+        i18n,
+        description="Tune pitch, voice matching, algorithms and output settings.",
+    ):
         pitch = gr.Slider(
             minimum=-24,
             maximum=24,
@@ -241,7 +256,9 @@ def tts_tab():
                                 interactive=True,
                                 allow_custom_value=True,
                             )
-                            refresh_embedders_button = gr.Button(i18n("Refresh embedders"))
+                            refresh_embedders_button = gr.Button(
+                                i18n("Refresh embedders")
+                            )
                         folder_name_input = gr.Textbox(
                             label=i18n("Folder Name"), interactive=True
                         )
@@ -368,7 +385,9 @@ def tts_tab():
                 output_rvc_path = gr.Textbox(
                     label=i18n("Output Path for RVC Audio"),
                     placeholder=i18n("Enter output path"),
-                    value=os.path.join(now_dir, "assets", "audios", "tts_rvc_output.wav"),
+                    value=os.path.join(
+                        now_dir, "assets", "audios", "tts_rvc_output.wav"
+                    ),
                     interactive=True,
                 )
                 export_format = gr.Dropdown(
@@ -404,7 +423,12 @@ def tts_tab():
                 None,
             )
 
-    with step_card(4, "Generate Speech", i18n, description="Agree to the terms and generate speech with your voice model."):
+    with step_card(
+        4,
+        "Generate Speech",
+        i18n,
+        description="Agree to the terms and generate speech with your voice model.",
+    ):
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
             info=i18n(
