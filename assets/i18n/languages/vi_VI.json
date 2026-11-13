@@ -475,5 +475,11 @@
     "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)",
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch ghi lại cao độ thực, giới hạn ở mức trần F0. fold chỉ sửa các khung sai quãng tám bằng cách sử dụng half-pitch drives; hãy sử dụng nó với các model được huấn luyện trên nhãn chưa hiệu chỉnh để giữ nguyên âm sắc của chúng.",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "Đã cài đặt plugin {} vào {}! Đang khởi động lại Applio để áp dụng các thay đổi.",
-    "{} saved in {}": "{} đã được lưu vào {}"
+    "{} saved in {}": "{} đã được lưu vào {}",
+    "model_dataset_required": "Vui lòng đặt tên mô hình và đường dẫn tập dữ liệu trước.",
+    "step_preprocessing": "Bước 1/3: Đang tiền xử lý tập dữ liệu...",
+    "step_extracting": "Bước 2/3: Đang trích xuất đặc trưng...",
+    "step_training": "Bước 3/3: Đã bắt đầu huấn luyện...",
+    "one_click_train": "Huấn luyện một chạm",
+    "pipeline_description": "Chạy tất cả các bước tuần tự từ đầu đến khi có một mô hình được huấn luyện hoàn chỉnh. Chuẩn bị tập dữ liệu -> Trích xuất đặc trưng -> Huấn luyện mô hình."
 }

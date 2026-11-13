@@ -364,6 +364,57 @@ def train_tab():
             else:
                 gr.Info(result)
         return result
+    
+    def one_click_train(
+        terms_accepted,
+        model_name, dataset_path, sampling_rate, cpu_cores,
+        cut_preprocess, process_effects, chunk_len, overlap_len, normalization_mode,
+        f0_method, gpu, embedder_model, embedder_model_custom, include_mutes,
+        save_every_epoch, save_only_latest, save_every_weights, total_epoch,
+        batch_size, pretrained, cleanup, index_algorithm, cache_dataset_in_gpu,
+        custom_pretrained, g_pretrained_path, d_pretrained_path,
+        vocoder, checkpointing, shutdown_check,
+    ):
+        def failed(result):
+            return isinstance(result, str) and (
+                "error" in result.lower() or "failed" in result.lower()
+            )
+
+        if not terms_accepted:
+            message = i18n("You must agree to the Terms of Use to proceed.")
+            gr.Info(message)
+            return message
+        if not model_name or not dataset_path:
+            message = i18n("Please set a model name and dataset path first.")
+            gr.Warning(message)
+            return message
+
+        gr.Info(i18n("Step 1/3: Preprocessing dataset..."))
+        result = run_preprocess_script(
+            model_name, dataset_path, sampling_rate, cpu_cores, cut_preprocess,
+            process_effects, chunk_len, overlap_len, normalization_mode,
+        )
+        if failed(result):
+            gr.Warning(result)
+            return result
+
+        gr.Info(i18n("Step 2/3: Extracting features..."))
+        result = run_extract_script(
+            model_name, f0_method, cpu_cores, gpu, sampling_rate,
+            embedder_model, embedder_model_custom, include_mutes,
+        )
+        if failed(result):
+            gr.Warning(result)
+            return result
+
+        gr.Info(i18n("Step 3/3: Training started..."))
+        return run_train_script(
+            model_name, save_every_epoch, save_only_latest, save_every_weights,
+            total_epoch, sampling_rate, batch_size, gpu, pretrained, cleanup,
+            index_algorithm, cache_dataset_in_gpu, custom_pretrained,
+            g_pretrained_path, d_pretrained_path, vocoder, checkpointing,
+            shutdown_check,
+        )
 
     # Model settings section
     with step_card(1, "Model Settings", i18n, description="Name your model and choose sample rate, architecture and hardware."):
@@ -780,7 +831,7 @@ def train_tab():
                             interactive=True,
                             allow_custom_value=True,
                         )
-
+                        
             index_algorithm = gr.Dropdown(
                 filterable=False,
                 label=i18n("Index Algorithm"),
@@ -832,6 +883,15 @@ def train_tab():
                 inputs=[model_name, index_algorithm],
                 outputs=[train_output_info],
             )
+        
+        with gr.Row():
+            with gr.Column():
+                one_click_train_button = gr.Button(
+                    i18n("One Click Train"),
+                )
+                gr.Markdown(
+                    i18n("Run all steps sequentially from scratch to a fully trained model. Prepare Dataset -> Extract Features -> Train Model.")
+                )
 
     # Export Model section
     with step_card(5, "Export Model", i18n, description="Select trained files to export or upload."):
@@ -1043,6 +1103,25 @@ def train_tab():
                     vocoder,
                     checkpointing,
                     shutdown_check,
+                ],
+                outputs=[train_output_info],
+            )
+            
+            one_click_train_button.click(
+                fn=enable_stop_train_button,
+                inputs=[terms_checkbox],
+                outputs=[train_button, stop_train_button],
+            ).then(
+                fn=one_click_train,
+                inputs=[
+                    terms_checkbox,
+                    model_name, dataset_path, sampling_rate, cpu_cores,
+                    cut_preprocess, process_effects, chunk_len, overlap_len, normalization_mode,
+                    f0_method, gpu, embedder_model, embedder_model_custom, include_mutes,
+                    save_every_epoch, save_only_latest, save_every_weights, total_epoch,
+                    batch_size, pretrained, cleanup, index_algorithm, cache_dataset_in_gpu,
+                    custom_pretrained, g_pretrained_path, d_pretrained_path,
+                    vocoder, checkpointing, shutdown_check,
                 ],
                 outputs=[train_output_info],
             )
