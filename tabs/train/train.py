@@ -429,6 +429,7 @@ def train_tab():
                     allow_custom_value=True,
                 )
                 architecture = gr.Radio(
+                    filterable=False,
                     label=i18n("Architecture"),
                     info=i18n(
                         "Choose the model architecture:\n- **RVC (V2)**: Default option, compatible with all clients.\n- **Applio**: Advanced quality with improved vocoders and higher sample rates, Applio-only."
@@ -439,14 +440,16 @@ def train_tab():
                     visible=False,
                 )
             with gr.Column():
-                sampling_rate = gr.Radio(
+                sampling_rate = gr.Dropdown(
+                    filterable=False,
                     label=i18n("Sampling Rate"),
                     info=i18n("The sampling rate of the audio files."),
                     choices=["32000", "40000", "48000"],
                     value="40000",
                     interactive=True,
                 )
-                vocoder = gr.Radio(
+                vocoder = gr.Dropdown(
+                    filterable=False,
                     label=i18n("Vocoder"),
                     info=i18n(
                         "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only."
@@ -522,7 +525,8 @@ def train_tab():
         refresh = gr.Button(i18n("Refresh models and datasets"))
 
         with gr.Accordion(i18n("Advanced Settings"), open=False):
-            cut_preprocess = gr.Radio(
+            cut_preprocess = gr.Dropdown(
+                filterable=False,
                 label=i18n("Audio cutting"),
                 info=i18n(
                     "Audio file slicing method: Select 'Skip' if the files are already pre-sliced, 'Simple' if excessive silence has already been removed from the files, or 'Automatic' for automatic silence detection and slicing around it."
@@ -564,7 +568,8 @@ def train_tab():
                     visible=True,
                 )
 
-                normalization_mode = gr.Radio(
+                normalization_mode = gr.Dropdown(
+                    filterable=False,
                     label=i18n("Normalization mode"),
                     info=i18n(
                         "Audio normalization: Select 'none' if the files are already normalized, 'pre' to normalize the entire input file at once, or 'post' to normalize each slice individually."
@@ -604,7 +609,8 @@ def train_tab():
     # Extract section
     with step_card(3, "Extract Features", i18n, description="Extract pitch and embeddings used for training."):
         with gr.Row():
-            f0_method = gr.Radio(
+            f0_method = gr.Dropdown(
+                filterable=False,
                 label=i18n("Pitch extraction algorithm"),
                 info=i18n(
                     "Pitch extraction algorithm to use for the audio conversion. The default algorithm is rmvpe, which is recommended for most cases."
@@ -618,7 +624,8 @@ def train_tab():
                 interactive=True,
             )
 
-            embedder_model = gr.Radio(
+            embedder_model = gr.Dropdown(
+                filterable=False,
                 label=i18n("Embedder Model"),
                 info=i18n("Model used for learning speaker embedding."),
                 choices=[
@@ -824,8 +831,8 @@ def train_tab():
                             interactive=True,
                             allow_custom_value=True,
                         )
-
-            index_algorithm = gr.Radio(
+            index_algorithm = gr.Dropdown(
+                filterable=False,
                 label=i18n("Index Algorithm"),
                 info=i18n(
                     "KMeans is a clustering algorithm that divides the dataset into K clusters. This setting is particularly useful for large datasets."
