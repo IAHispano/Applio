@@ -428,7 +428,7 @@ def train_tab():
                     interactive=True,
                     allow_custom_value=True,
                 )
-                architecture = gr.Radio(
+                architecture = gr.Dropdown(
                     filterable=False,
                     label=i18n("Architecture"),
                     info=i18n(
@@ -831,6 +831,7 @@ def train_tab():
                             interactive=True,
                             allow_custom_value=True,
                         )
+                        
             index_algorithm = gr.Dropdown(
                 filterable=False,
                 label=i18n("Index Algorithm"),
