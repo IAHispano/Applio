@@ -475,5 +475,11 @@
     "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)",
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch는 F0 상한선 내에서 실제 피치를 기록합니다. fold는 half-pitch 드라이브를 사용하여 잘못된 옥타브 프레임만 수정합니다. 음색을 유지하려면 교정되지 않은 라벨로 학습된 모델과 함께 사용하세요.",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "{}에 {} 플러그인이 설치되었습니다! 변경 사항을 적용하기 위해 Applio를 재시작합니다.",
-    "{} saved in {}": "{}이(가) {}에 저장되었습니다."
+    "{} saved in {}": "{}이(가) {}에 저장되었습니다.",
+    "model_dataset_required": "먼저 모델 이름과 데이터셋 경로를 설정해주세요.",
+    "step_preprocessing": "1/3단계: 데이터셋 전처리 중...",
+    "step_extracting": "2/3단계: 특징 추출 중...",
+    "step_training": "3/3단계: 학습이 시작되었습니다...",
+    "one_click_train": "원클릭 학습",
+    "pipeline_description": "처음부터 완전히 학습된 모델까지 모든 단계를 순차적으로 실행합니다. 데이터셋 준비 -> 특징 추출 -> 모델 학습."
 }

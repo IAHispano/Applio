@@ -475,5 +475,11 @@
     "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)",
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch menulis pitch asli, dibatasi pada batas atas F0. fold hanya memperbaiki frame oktaf yang salah menggunakan half-pitch drives; gunakan ini dengan model yang dilatih pada label yang tidak dikoreksi untuk menjaga timbre mereka.",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "Plugin {} terinstal di {}! Memulai ulang Applio untuk menerapkan perubahan.",
-    "{} saved in {}": "{} disimpan di {}"
+    "{} saved in {}": "{} disimpan di {}",
+    "model_dataset_required": "Harap tentukan nama model dan jalur dataset terlebih dahulu.",
+    "step_preprocessing": "Langkah 1/3: Memproses dataset...",
+    "step_extracting": "Langkah 2/3: Mengekstrak fitur...",
+    "step_training": "Langkah 3/3: Pelatihan dimulai...",
+    "one_click_train": "Pelatihan Sekali Klik",
+    "pipeline_description": "Jalankan semua langkah secara berurutan dari awal hingga model terlatih penuh. Siapkan Dataset -> Ekstrak Fitur -> Latih Model."
 }

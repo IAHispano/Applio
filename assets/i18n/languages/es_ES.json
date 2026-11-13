@@ -484,5 +484,11 @@
     "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)": "[Soporte](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)",
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch escribe el tono real, limitado por el techo de F0. fold solo repara fotogramas de octava incorrecta usando half-pitch drives; úsalo con modelos entrenados con etiquetas no corregidas para mantener su timbre.",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "¡Plugin {} instalado en {}! Reiniciando Applio para aplicar los cambios.",
-    "{} saved in {}": "{} guardado en {}"
+    "{} saved in {}": "{} guardado en {}",
+    "model_dataset_required": "Por favor, establece primero un nombre de modelo y una ruta de conjunto de datos.",
+    "step_preprocessing": "Paso 1/3: Preprocesando dataset...",
+    "step_extracting": "Paso 2/3: Extrayendo características...",
+    "step_training": "Paso 3/3: Entrenamiento iniciado...",
+    "one_click_train": "Entrenamiento en un clic",
+    "pipeline_description": "Ejecutar todos los pasos secuencialmente desde cero hasta obtener un modelo completamente entrenado. Preparar conjunto de datos -> Extraer características -> Entrenar modelo."
 }

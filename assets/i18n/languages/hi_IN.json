@@ -475,5 +475,11 @@
     "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)",
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch वास्तविक pitch लिखता है, जिसे F0 ceiling पर सीमित किया जाता है। fold केवल half-pitch drives का उपयोग करके गलत-octave frames को ठीक करता है; उनके timbre को बनाए रखने के लिए इसे uncorrected labels पर प्रशिक्षित मॉडलों के साथ उपयोग करें।",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "{} plugin {} में इंस्टॉल हो गया है! परिवर्तनों को लागू करने के लिए Applio को रीस्टार्ट किया जा रहा है।",
-    "{} saved in {}": "{} को {} में सेव किया गया"
+    "{} saved in {}": "{} को {} में सेव किया गया",
+    "model_dataset_required": "कृपया पहले एक मॉडल का नाम और डेटासेट पथ सेट करें।",
+    "step_preprocessing": "चरण 1/3: डेटासेट प्रीप्रोसेसिंग...",
+    "step_extracting": "चरण 2/3: फ़ीचर्स निकाले जा रहे हैं...",
+    "step_training": "चरण 3/3: ट्रेनिंग शुरू हो गई है...",
+    "one_click_train": "वन क्लिक ट्रेन",
+    "pipeline_description": "पूर्ण रूप से प्रशिक्षित मॉडल तक खरोंच से सभी चरणों को क्रमिक रूप से चलाएं। डेटासेट तैयार करें -> फ़ीचर्स निकालें -> मॉडल को प्रशिक्षित करें।"
 }

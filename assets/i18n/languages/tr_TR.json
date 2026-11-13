@@ -475,5 +475,11 @@
     "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)",
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch, F0 tavanıyla sınırlandırılmış gerçek perdeyi (pitch) yazar. fold ise yalnızca yarım perde sürüşlerini kullanarak yanlış oktav karelerini onarır; tınıyı korumak için düzeltilmemiş etiketlerle eğitilmiş modellerle birlikte kullanın.",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "{} eklentisi {} içine yüklendi! Değişiklikleri uygulamak için Applio yeniden başlatılıyor.",
-    "{} saved in {}": "{} şuraya kaydedildi: {}"
+    "{} saved in {}": "{} şuraya kaydedildi: {}",
+    "model_dataset_required": "Lütfen önce bir model adı ve veri seti yolu belirleyin.",
+    "step_preprocessing": "Adım 1/3: Veri seti ön işleniyor...",
+    "step_extracting": "Adım 2/3: Öznitelikler çıkarılıyor...",
+    "step_training": "Adım 3/3: Eğitim başladı...",
+    "one_click_train": "Tek Tıkla Eğitim",
+    "pipeline_description": "Sıfırdan tam olarak eğitilmiş bir modele kadar tüm adımları sırayla çalıştırın. Veri Setini Hazırla -> Öznitelikleri Çıkar -> Modeli Eğit."
 }
