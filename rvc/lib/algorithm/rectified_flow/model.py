@@ -64,7 +64,7 @@ class RectifiedFlow(nn.Module):
     (t = 1), conditioned per frame. Inside, each mel bin is normalised again
     by the statistics of `set_mel_stats`. With `contrast_band_edges` the mel
     carries, after its `n_mels` bins, the harmonic contrast of those bands that
-    the ChouwaGAN vocoder reads, which the mel cannot show: `channels` rows in all.
+    the Nagi vocoder reads, which the mel cannot show: `channels` rows in all.
 
     Args:
         n_mels (int): Number of mel bins.

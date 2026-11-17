@@ -30,8 +30,8 @@ pretraineds_refinegan_list = [
         ],
     ),
 ]
-# Rectified Flow: the pretrained flow and its ChouwaGAN vocoder, both in the
-# same folder
+# Rectified Flow: the pretrained flow and its Nagi vocoder, both in the same
+# folder
 rectified_flow_base = (
     "https://huggingface.co/shiromiya/ShiroRVC-Resources/resolve/main"
 )
@@ -39,7 +39,7 @@ rectified_flow_url = f"{rectified_flow_base}/rectified_flow_pretrains/"
 rectified_vocoder_url = f"{rectified_flow_base}/vocoders/"
 rectified_flow_list = [
     (rectified_flow_url, ["pretrain_flow_contentvec.pth"]),
-    (rectified_vocoder_url, ["chouwagan_44.1k_hop512_128bin_vocoder.pth"]),
+    (rectified_vocoder_url, ["nagi_44.1k_hop512_128bin_vocoder.pth"]),
 ]
 models_list = [("predictors/", ["rmvpe.pt", "fcpe.pt", "swift.onnx"])]
 embedders_list = [("embedders/contentvec/", ["pytorch_model.bin", "config.json"])]

@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import torch.utils.data
 
-from rvc.lib.algorithm.generators.chouwagan import CONTRAST_SCALE, BandContrast
+from rvc.lib.algorithm.generators.nagi import CONTRAST_SCALE, BandContrast
 from rvc.lib.algorithm.rectified_flow import Conditioning
 from rvc.lib.algorithm.rectified_flow.features import (
     FEATURE_RATE,

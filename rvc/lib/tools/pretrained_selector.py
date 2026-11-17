@@ -11,10 +11,10 @@ def pretrained_selector(vocoder, sample_rate):
 
 # Vocoder of Rectified Flow at each sampling rate when none is picked
 rectified_flow_vocoders = {
-    32000: "chouwagan_32k_hop320_128bin_vocoder.pth",
-    40000: "chouwagan_40k_hop400_128bin_vocoder.pth",
-    44100: "chouwagan_44.1k_hop512_128bin_vocoder.pth",
-    48000: "chouwagan_48k_hop480_128bin_vocoder.pth",
+    32000: "nagi_32k_hop320_128bin_vocoder.pth",
+    40000: "nagi_40k_hop400_128bin_vocoder.pth",
+    44100: "nagi_44.1k_hop512_128bin_vocoder.pth",
+    48000: "nagi_48k_hop480_128bin_vocoder.pth",
 }
 
 
@@ -29,7 +29,7 @@ def rectified_flow_selector(embedder_model, sample_rate=44100):
     if not os.path.exists(path_flow):
         path_flow = ""
 
-    # ChouwaGAN, renders the mel of the flow: the default one of the sampling
+    # Nagi, renders the mel of the flow: the default one of the sampling
     # rate, else the first named for that rate, else the first
     default_vocoder = rectified_flow_vocoders.get(sample_rate, "")
     rate_name = "_44.1k_" if sample_rate == 44100 else f"_{str(sample_rate)[:2]}k_"
