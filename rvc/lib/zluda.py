@@ -108,12 +108,12 @@ def is_amd_device() -> bool:
 if is_amd_device():
     # Setup MSVC paths if present on Windows to prevent hiprtc compilation errors
     setup_windows_msvc_env()
-    # Disabling MIOpen (cuDNN) forces PyTorch to use its native ATen precompiled
-    # C++/HIP kernels for BatchNorm and Convolutions, completely avoiding
-    # MIOpen JIT compilation failures (e.g. fatal error: 'type_traits' file not found
-    # in hiprtc during MIOpenBatchNormFwdInferSpatial) on Windows and unstable MIOpen solvers.
-    torch.backends.cudnn.enabled = False
-    torch.backends.cudnn.benchmark = False
+    # PyTorch's cuDNN switch also controls MIOpen on native ROCm. Keep it
+    # enabled there; missing JIT compiler headers must be fixed in the toolchain.
+    # CUDA builds running through ZLUDA still need the convolution workaround.
+    if getattr(torch.version, "hip", None) is None:
+        torch.backends.cudnn.enabled = False
+        torch.backends.cudnn.benchmark = False
     try:
         torch.backends.cuda.enable_flash_sdp(False)
         torch.backends.cuda.enable_math_sdp(True)
