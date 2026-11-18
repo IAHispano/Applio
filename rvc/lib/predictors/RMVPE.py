@@ -447,8 +447,9 @@ class RMVPE0Predictor:
                 or torch.cuda.get_device_name(self.device).endswith("[ZLUDA]")
             )
         ):
-            torch.backends.cudnn.enabled = False
-            torch.backends.cudnn.benchmark = False
+            if getattr(torch.version, "hip", None) is None:
+                torch.backends.cudnn.enabled = False
+                torch.backends.cudnn.benchmark = False
         self.mel_extractor = MelSpectrogram(
             N_MELS, 16000, 1024, 160, None, 30, 8000
         ).to(device)

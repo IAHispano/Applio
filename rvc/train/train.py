@@ -129,8 +129,9 @@ is_amd = getattr(torch.version, "hip", None) is not None or (
 )
 
 if is_amd:
-    torch.backends.cudnn.enabled = False
-    torch.backends.cudnn.benchmark = False
+    if getattr(torch.version, "hip", None) is None:
+        torch.backends.cudnn.enabled = False
+        torch.backends.cudnn.benchmark = False
     try:
         torch.backends.cuda.enable_flash_sdp(False)
         torch.backends.cuda.enable_math_sdp(True)
@@ -369,8 +370,9 @@ def run(
             or "RADEON" in torch.cuda.get_device_name(device_id).upper()
             or torch.cuda.get_device_name(device_id).endswith("[ZLUDA]")
         ):
-            torch.backends.cudnn.enabled = False
-            torch.backends.cudnn.benchmark = False
+            if getattr(torch.version, "hip", None) is None:
+                torch.backends.cudnn.enabled = False
+                torch.backends.cudnn.benchmark = False
 
     # Create datasets and dataloaders
     from data_utils import (

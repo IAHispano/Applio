@@ -54,8 +54,9 @@ class RMVPE:
                 or torch.cuda.get_device_name(self.device).endswith("[ZLUDA]")
             )
         ):
-            torch.backends.cudnn.enabled = False
-            torch.backends.cudnn.benchmark = False
+            if getattr(torch.version, "hip", None) is None:
+                torch.backends.cudnn.enabled = False
+                torch.backends.cudnn.benchmark = False
         from rvc.lib.predictors.RMVPE import RMVPE0Predictor
 
         self.model = RMVPE0Predictor(

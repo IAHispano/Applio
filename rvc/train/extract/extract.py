@@ -55,8 +55,9 @@ class FeatureInput:
                 or torch.cuda.get_device_name(self.device).endswith("[ZLUDA]")
             )
         ):
-            torch.backends.cudnn.enabled = False
-            torch.backends.cudnn.benchmark = False
+            if getattr(torch.version, "hip", None) is None:
+                torch.backends.cudnn.enabled = False
+                torch.backends.cudnn.benchmark = False
         if f0_method == "crepe":
             self.model = CREPE(
                 device=self.device, sample_rate=self.sample_rate, hop_size=self.hop_size
@@ -151,8 +152,9 @@ def process_files(files, f0_method, device, threads):
             or torch.cuda.get_device_name(device).endswith("[ZLUDA]")
         )
     ):
-        torch.backends.cudnn.enabled = False
-        torch.backends.cudnn.benchmark = False
+        if getattr(torch.version, "hip", None) is None:
+            torch.backends.cudnn.enabled = False
+            torch.backends.cudnn.benchmark = False
     try:
         fe = FeatureInput(f0_method=f0_method, device=device)
     except (RuntimeError, NotImplementedError, TypeError) as error:
@@ -222,8 +224,9 @@ def process_file_embedding(
             or torch.cuda.get_device_name(device).endswith("[ZLUDA]")
         )
     ):
-        torch.backends.cudnn.enabled = False
-        torch.backends.cudnn.benchmark = False
+        if getattr(torch.version, "hip", None) is None:
+            torch.backends.cudnn.enabled = False
+            torch.backends.cudnn.benchmark = False
     model = load_embedding(embedder_model, embedder_model_custom).float()
     try:
         model = model.to(device)
