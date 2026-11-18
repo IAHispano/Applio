@@ -1,6 +1,7 @@
 import math
 import torch
 
+
 class MultiHeadAttention(torch.nn.Module):
     """
     Multi-head attention module with optional relative positional encoding and proximal bias.
@@ -147,27 +148,29 @@ class MultiHeadAttention(torch.nn.Module):
         end = start + 2 * length - 1
 
         # Padding via concatenation to workaround ONNX padding limitations
-        x = torch.cat([
-            torch.zeros(
-                embeddings.size(0), 
-                pad_length, 
-                embeddings.size(2), 
-                device=embeddings.device, 
-                dtype=embeddings.dtype
-            ), 
-            embeddings
-        ], dim=1)
+        x = torch.cat(
+            [
+                torch.zeros(
+                    embeddings.size(0),
+                    pad_length,
+                    embeddings.size(2),
+                    device=embeddings.device,
+                    dtype=embeddings.dtype,
+                ),
+                embeddings,
+            ],
+            dim=1,
+        )
 
-        embeddings = torch.cat([
-            x, 
-            torch.zeros(
-                x.size(0), 
-                pad_length, 
-                x.size(2), 
-                device=x.device, 
-                dtype=x.dtype
-            )
-        ], dim=1)
+        embeddings = torch.cat(
+            [
+                x,
+                torch.zeros(
+                    x.size(0), pad_length, x.size(2), device=x.device, dtype=x.dtype
+                ),
+            ],
+            dim=1,
+        )
 
         return embeddings[:, start:end]
 
@@ -181,7 +184,6 @@ class MultiHeadAttention(torch.nn.Module):
         return x_flat.view([batch, heads, length + 1, 2 * length - 1])[
             :, :, :length, length - 1 :
         ]
-
 
     def _absolute_position_to_relative_position(self, x):
         batch, heads, length, _ = x.size()
@@ -203,10 +205,15 @@ class MultiHeadAttention(torch.nn.Module):
         shape = list(x.shape[:-1])
 
         # Concatenate zeros to the edges of the last dimension
-        x = torch.cat([torch.zeros(*shape, left, device=x.device, dtype=x.dtype), x], dim=-1)
-        x = torch.cat([x, torch.zeros(*shape, right, device=x.device, dtype=x.dtype)], dim=-1)
+        x = torch.cat(
+            [torch.zeros(*shape, left, device=x.device, dtype=x.dtype), x], dim=-1
+        )
+        x = torch.cat(
+            [x, torch.zeros(*shape, right, device=x.device, dtype=x.dtype)], dim=-1
+        )
 
         return x
+
 
 class FFN(torch.nn.Module):
     """
@@ -255,16 +262,14 @@ class FFN(torch.nn.Module):
         return torch.relu(x)
 
     def _causal_padding(self, x):
-        return torch.nn.functional.pad(
-            x, 
-            [self.kernel_size, 0, 0, 0, 0, 0]
-        )
+        return torch.nn.functional.pad(x, [self.kernel_size, 0, 0, 0, 0, 0])
 
     def _same_padding(self, x):
         return torch.nn.functional.pad(
             x,
             [(self.kernel_size - 1) // 2, self.kernel_size // 2, 0, 0, 0, 0],
         )
+
 
 class LayerNorm(torch.nn.Module):
     """
@@ -290,6 +295,7 @@ class LayerNorm(torch.nn.Module):
         )
         # Transpose back to (batch_size, channels, time_steps)
         return x.transpose(1, -1)
+
 
 class Encoder(torch.nn.Module):
     """
