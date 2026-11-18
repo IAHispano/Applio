@@ -707,17 +707,17 @@ def train_and_evaluate(
 
     epoch_recorder = EpochRecorder()
     num_batches = max(1, len(train_loader))
-    # Heartbeat for the web console (~10x/epoch): end-of-epoch prints alone
-    # leave progress stalled during long epochs. Parsed by the API/UI for a
-    # determinate bar; no time=/training_speed= so it never spams the epoch
-    # timeline. max(1, ...) keeps tiny datasets reporting too.
-    print_every = max(1, num_batches // 10)
+    # Keep machine-readable counters in the live bar so both terminal capture
+    # and the desktop job stream can track batches without separate log rows.
     with tqdm(
         total=num_batches,
+        desc=f"epoch={epoch} | step={global_step}",
+        bar_format="{desc} | {percentage:3.0f}%|{bar}| batch={n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]",
         leave=False,
-        mininterval=2.0,
+        mininterval=0.5,
         maxinterval=10.0,
         dynamic_ncols=True,
+        disable=rank != 0,
     ) as pbar:
         for batch_idx, info in data_iterator:
             if device.type == "cuda" and not cache_data_in_gpu:
@@ -875,13 +875,13 @@ def train_and_evaluate(
                     scalars=scalar_dict,
                 )
 
+            pbar.set_description_str(
+                f"epoch={epoch} | step={global_step}",
+                refresh=False,
+            )
             pbar.update(1)
-            if rank == 0 and (batch_idx + 1) % print_every == 0:
-                print(
-                    f"{model_name} | epoch={epoch} | step={global_step} | batch={batch_idx + 1}/{num_batches}",
-                    flush=True,
-                )
-        # end of batch train
+        # Show the final batch even when an epoch finishes before mininterval.
+        pbar.refresh()
     # end of tqdm
     with torch.no_grad():
         torch.cuda.empty_cache()
