@@ -5,6 +5,7 @@ import codecs
 import os
 from pathlib import Path
 import re
+import shutil
 import sys
 import tempfile
 import threading
@@ -126,12 +127,41 @@ def _redirect(path):
     )
 
 
+def _use_terminal_dimensions(path):
+    """Let tqdm measure the mirrored terminal instead of its redirected log file."""
+    import tqdm.std
+
+    previous = tqdm.std._screen_shape_wrapper
+    size_path = Path(path).with_suffix(".size")
+
+    def screen_shape_wrapper():
+        native = previous()
+
+        def dimensions(stream):
+            size = native(stream) if native else (None, None)
+            if all(size):
+                return size
+            try:
+                columns, lines = map(int, size_path.read_text().split())
+                if columns > 1 and lines > 1:
+                    return columns - 1, lines - 1
+            except (OSError, ValueError):
+                pass
+            return size
+
+        return dimensions
+
+    tqdm.std._screen_shape_wrapper = screen_shape_wrapper
+    return tqdm.std, previous, screen_shape_wrapper
+
+
 def capture_worker_output():
     """Opt spawned workers into an existing UI session; CLI runs stay unchanged."""
     global _worker_pid
     path = os.environ.get(_ENV)
     if path and _worker_pid != os.getpid():
         _redirect(path)
+        _use_terminal_dimensions(path)
         _worker_pid = os.getpid()
 
 
@@ -144,6 +174,8 @@ class TerminalCapture:
         self.path.touch()
         self.original_streams = (sys.stdout, sys.stderr)
         self.original_fds = (os.dup(1), os.dup(2))
+        self.dimensions = None
+        self._update_dimensions()
         self.previous_env = {
             key: os.environ.get(key)
             for key in (_ENV, "PYTHONUNBUFFERED", "PYTHONIOENCODING")
@@ -154,16 +186,39 @@ class TerminalCapture:
         os.environ["PYTHONUNBUFFERED"] = "1"
         os.environ["PYTHONIOENCODING"] = "utf-8"
         _redirect(self.path)
+        self.progress_dimensions = _use_terminal_dimensions(self.path)
         self.thread = threading.Thread(
             target=self._echo, name="terminal-mirror", daemon=True
         )
         self.thread.start()
         atexit.register(self.close)
 
+    def _update_dimensions(self):
+        size = None
+        for descriptor in self.original_fds:
+            try:
+                size = os.get_terminal_size(descriptor)
+                if size.columns > 1 and size.lines > 1:
+                    break
+            except OSError:
+                pass
+        if size is None or size.columns <= 1 or size.lines <= 1:
+            size = shutil.get_terminal_size(fallback=(100, 24))
+        if size != self.dimensions:
+            size_path = self.path.with_suffix(".size")
+            pending = size_path.with_suffix(".size.tmp")
+            pending.write_text(f"{size.columns} {size.lines}", encoding="ascii")
+            pending.replace(size_path)
+            self.dimensions = size
+
     def _echo(self):
         writer = _TerminalWriter(self.original_fds[0])
         with self.path.open("rb", buffering=0) as stream:
             while True:
+                try:
+                    self._update_dimensions()
+                except OSError:
+                    pass  # A temporarily locked size file must not stop terminal mirroring.
                 chunk = stream.read(64 * 1024)
                 if chunk:
                     try:
@@ -223,6 +278,9 @@ class TerminalCapture:
                 os.environ.pop(key, None)
             else:
                 os.environ[key] = value
+        module, previous, installed = self.progress_dimensions
+        if module._screen_shape_wrapper is installed:
+            module._screen_shape_wrapper = previous
         self.stop.set()
         self.thread.join(timeout=2)
         if not self.thread.is_alive():
