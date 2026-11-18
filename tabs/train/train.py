@@ -343,27 +343,54 @@ def auto_enable_checkpointing():
         return False
 
 
+def _run_training_step(queue_state, stage, operation, args):
+    """Block dependent work after a failed step; retrying that step unblocks it."""
+    model = str(args[0] or "")
+    failed_stage = queue_state.get(model)
+    if failed_stage is not None and failed_stage < stage:
+        message = i18n("Skipped because a previous step failed.")
+        gr.Warning(message)
+        return message
+    queue_state.pop(model, None)
+    try:
+        result = operation(*args)
+    except Exception:
+        queue_state[model] = stage
+        raise
+    if isinstance(result, str):
+        if result.startswith(
+            ("Preprocessing failed", "Feature extraction failed", "Training failed", "Index generation failed")
+        ):
+            queue_state[model] = stage
+            gr.Warning(result)
+        else:
+            gr.Info(result)
+    return result
+
+
 # Train Tab
 def train_tab():
-    def _preprocess_with_toast(*args):
-        gr.Info(i18n("Preprocessing dataset..."))
-        result = run_preprocess_script(*args)
-        if isinstance(result, str):
-            if "error" in result.lower() or "failed" in result.lower():
-                gr.Warning(result)
-            else:
-                gr.Info(result)
-        return result
+    # Each session keeps its failure state; all sessions share one FIFO resource
+    # queue so preprocessing, extraction and training never overlap.
+    queue_state = gr.State({})
+    queue_options = {"concurrency_id": "training-workflow", "concurrency_limit": 1}
 
-    def _extract_with_toast(*args):
-        gr.Info(i18n("Extracting features..."))
-        result = run_extract_script(*args)
-        if isinstance(result, str):
-            if "error" in result.lower() or "failed" in result.lower():
-                gr.Warning(result)
-            else:
-                gr.Info(result)
-        return result
+    def _preprocess_with_toast(state, *args):
+        def preprocess(*params):
+            gr.Info(i18n("Preprocessing dataset..."))
+            return run_preprocess_script(*params)
+
+        return _run_training_step(state, 1, preprocess, args)
+
+    def _extract_with_toast(state, *args):
+        def extract(*params):
+            gr.Info(i18n("Extracting features..."))
+            return run_extract_script(*params)
+
+        return _run_training_step(state, 2, extract, args)
+
+    def _index_in_queue(state, *args):
+        return _run_training_step(state, 4, run_index_script, args)
 
     # Model settings section
     with step_card(1, "Model Settings", i18n, description="Name your model and choose sample rate, architecture and hardware."):
@@ -542,6 +569,7 @@ def train_tab():
             preprocess_button.click(
                 fn=_preprocess_with_toast,
                 inputs=[
+                    queue_state,
                     model_name,
                     dataset_path,
                     sampling_rate,
@@ -553,6 +581,7 @@ def train_tab():
                     normalization_mode,
                 ],
                 outputs=[preprocess_output_info],
+                **queue_options,
             )
 
     # Extract section
@@ -636,6 +665,7 @@ def train_tab():
         extract_button.click(
             fn=_extract_with_toast,
             inputs=[
+                queue_state,
                 model_name,
                 f0_method,
                 cpu_cores,
@@ -646,6 +676,7 @@ def train_tab():
                 include_mutes,
             ],
             outputs=[extract_output_info],
+            **queue_options,
         )
 
     # Training section
@@ -792,13 +823,27 @@ def train_tab():
                 interactive=True,
             )
 
-        def enforce_terms(terms_accepted, *args):
+        def enforce_terms(state, terms_accepted, *args):
+            reset_buttons = (gr.update(visible=True), gr.update(visible=False))
             if not terms_accepted:
                 message = i18n("You must agree to the Terms of Use to proceed.")
                 gr.Info(message)
-                return message
-            gr.Info(i18n("Training started..."))
-            return run_train_script(*args)
+                yield message, *reset_buttons
+                return
+
+            def train(*params):
+                gr.Info(i18n("Training started..."))
+                return run_train_script(*params)
+
+            # This runs only when the queued training request actually starts.
+            # A single callback also snapshots all settings at the original click.
+            yield gr.skip(), gr.update(visible=False), gr.update(visible=True)
+            try:
+                result = _run_training_step(state, 3, train, args)
+            except Exception:
+                yield gr.skip(), *reset_buttons
+                raise
+            yield result, *reset_buttons
 
         terms_checkbox = gr.Checkbox(
             label=i18n("I agree to the terms of use"),
@@ -824,13 +869,15 @@ def train_tab():
                 fn=stop_train,
                 inputs=[model_name],
                 outputs=[],
+                queue=False,
             )
 
             index_button = gr.Button(i18n("Generate Index"))
             index_button.click(
-                fn=run_index_script,
-                inputs=[model_name, index_algorithm],
+                fn=_index_in_queue,
+                inputs=[queue_state, model_name, index_algorithm],
                 outputs=[train_output_info],
+                **queue_options,
             )
 
     # Export Model section
@@ -891,14 +938,6 @@ def train_tab():
                     return gr.update(visible=pretrained), gr.update(visible=False)
                 else:
                     return gr.update(visible=pretrained), gr.update(visible=pretrained)
-
-            def enable_stop_train_button(terms_accepted):
-                if not terms_accepted:
-                    return gr.update(visible=True), gr.update(visible=False)
-                return gr.update(visible=False), gr.update(visible=True)
-
-            def disable_stop_train_button():
-                return gr.update(visible=True), gr.update(visible=False)
 
             def download_prerequisites():
                 gr.Info(
@@ -1018,12 +1057,9 @@ def train_tab():
                 outputs=[upload_pretrained],
             )
             train_button.click(
-                fn=enable_stop_train_button,
-                inputs=[terms_checkbox],
-                outputs=[train_button, stop_train_button],
-            ).then(
                 fn=enforce_terms,
                 inputs=[
+                    queue_state,
                     terms_checkbox,
                     model_name,
                     save_every_epoch,
@@ -1044,14 +1080,10 @@ def train_tab():
                     checkpointing,
                     shutdown_check,
                 ],
-                outputs=[train_output_info],
+                outputs=[train_output_info, train_button, stop_train_button],
+                **queue_options,
             )
 
-            train_output_info.change(
-                fn=disable_stop_train_button,
-                inputs=[],
-                outputs=[train_button, stop_train_button],
-            )
             pth_dropdown_export.change(
                 fn=export_pth,
                 inputs=[pth_dropdown_export],

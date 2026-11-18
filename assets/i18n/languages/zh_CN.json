@@ -475,5 +475,6 @@
     "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)": "[Support](https://discord.gg/wY7gmqTyEV) — [GitHub](https://github.com/IAHispano/Applio)",
     "true_pitch writes the real pitch, capped at the F0 ceiling. fold only repairs wrong-octave frames using half-pitch drives; use it with models trained on uncorrected labels to keep their timbre.": "true_pitch 会写入真实的音高，并以 F0 上限为准。fold 仅使用半音驱动来修复错误的八度音帧；建议将其与使用未修正标签训练的模型配合使用，以保持其音色。",
     "{} plugin installed in {}! Restarting applio to apply the changes.": "{} 插件已安装在 {} 中！正在重启 Applio 以应用更改。",
-    "{} saved in {}": "{} 已保存至 {}"
+    "{} saved in {}": "{} 已保存至 {}",
+    "Skipped because a previous step failed.": "由于上一步失败，已跳过此步骤。"
 }
