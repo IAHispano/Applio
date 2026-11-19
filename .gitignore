@@ -21,8 +21,9 @@ assets/config.json
 
 logs
 rvc/models
-env
-venv
-.venv
+env*/
+.env*/
+venv*/
+.venv*/
 .applio-update/
 
