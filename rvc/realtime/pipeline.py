@@ -71,9 +71,11 @@ class RealtimeVoiceConverter:
         self.cpt = (
             torch.load(weight_root, map_location="cpu", weights_only=True)
             if weight_root.endswith(".pth")
-            else ONNXRVC(weight_root, device=self.config.device, capture=False)
-            if os.path.isfile(weight_root)
-            else None
+            else (
+                ONNXRVC(weight_root, device=self.config.device, capture=False)
+                if os.path.isfile(weight_root)
+                else None
+            )
         )
         if (
             self.model_checksum is not None

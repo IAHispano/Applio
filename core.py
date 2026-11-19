@@ -615,7 +615,9 @@ def run_model_information_script(pth_path: str):
         )
 
 
-def run_model_onnx_export_script(pth_path: str, output_path: str, is_half: bool = False, device: str = "cpu"):
+def run_model_onnx_export_script(
+    pth_path: str, output_path: str, is_half: bool = False, device: str = "cpu"
+):
     if not os.path.exists(pth_path):
         raise FileNotFoundError(f"Model file not found: '{pth_path}'")
     if not output_path:
@@ -1200,7 +1202,10 @@ def model_information(**kwargs):
 @click.option("--device", default="cpu", help="path to the .onnx model output file.")
 def model_onnx_export(**kwargs):
     """Converting a .pth model to .onnx format"""
-    run_model_onnx_export_script(kwargs["pth_path"], kwargs["output_path"], kwargs["is_half"], kwargs["device"])
+    run_model_onnx_export_script(
+        kwargs["pth_path"], kwargs["output_path"], kwargs["is_half"], kwargs["device"]
+    )
+
 
 @cli.command()
 @click.option("--model-name", required=True, help="Name of the new fused model.")
