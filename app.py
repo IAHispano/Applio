@@ -1,3 +1,7 @@
+# Let the user know Applio is loading, since the launcher clears the terminal
+# and the first start can sit on a blank screen for a while.
+print("Applio is starting, please wait...", flush=True)
+
 # Make sure the config file exists
 import os
 import shutil
