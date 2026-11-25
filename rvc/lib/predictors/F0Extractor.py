@@ -53,13 +53,13 @@ class F0Extractor:
                 self.hop_length,
             )
         elif method == "rmvpe":
-            predictor = RMVPE(device=self.config.device, high_register={"enabled": False})
+            predictor = RMVPE(
+                device=self.config.device, high_register={"enabled": False}
+            )
             f0 = predictor.get_f0(self.wav16k)
         elif method in ("swift", "swiftf0", "swift-f0"):
             predictor = SWIFT(device=self.config.device)
-            f0 = predictor.get_f0(
-                self.wav16k, f0_min=self.f0_min, f0_max=self.f0_max
-            )
+            f0 = predictor.get_f0(self.wav16k, f0_min=self.f0_min, f0_max=self.f0_max)
 
         else:
             raise ValueError(f"Unknown method: {self.method}")
@@ -70,30 +70,39 @@ class F0Extractor:
         """Retain the curve utility's unsmoothed CREPE output in bounded windows."""
         import torchcrepe
 
-        return torchcrepe.predict(
-            torch.from_numpy(audio).float().unsqueeze(0).to(device),
-            sample_rate=16000,
-            hop_length=160,
-            batch_size=512,
-            fmin=self.f0_min,
-            fmax=self.f0_max,
-            device=device,
-        )[0].cpu().numpy()
+        return (
+            torchcrepe.predict(
+                torch.from_numpy(audio).float().unsqueeze(0).to(device),
+                sample_rate=16000,
+                hop_length=160,
+                batch_size=512,
+                fmin=self.f0_min,
+                fmax=self.f0_max,
+                device=device,
+            )[0]
+            .cpu()
+            .numpy()
+        )
 
     @torch.inference_mode()
     def _fcpe_window(self, model, audio):
         """Preserve FCPE curve limits and output hop while bounding model input."""
         audio = torch.from_numpy(audio).float().unsqueeze(0).unsqueeze(-1)
-        return model.infer(
-            audio.to(self.config.device),
-            sr=self.sample_rate,
-            decoder_mode="local_argmax",
-            threshold=0.006,
-            f0_min=self.f0_min,
-            f0_max=self.f0_max,
-            interp_uv=False,
-            output_interp_target_length=len(audio[0]) // self.hop_length + 1,
-        ).reshape(-1).cpu().numpy()
+        return (
+            model.infer(
+                audio.to(self.config.device),
+                sr=self.sample_rate,
+                decoder_mode="local_argmax",
+                threshold=0.006,
+                f0_min=self.f0_min,
+                f0_max=self.f0_max,
+                interp_uv=False,
+                output_interp_target_length=len(audio[0]) // self.hop_length + 1,
+            )
+            .reshape(-1)
+            .cpu()
+            .numpy()
+        )
 
     def plot_f0(self, f0):
         from matplotlib import pyplot as plt
