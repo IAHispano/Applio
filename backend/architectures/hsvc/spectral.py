@@ -1,7 +1,7 @@
 """Spectral basis, bounded-lookahead ConvNeXt-FiLM, FreqCoord 2D blocks, and Neural Timbre Bank for HSVC."""
 
 import math
-from typing import Tuple
+from typing import Optional, Tuple
 
 import librosa
 import numpy as np
@@ -222,13 +222,21 @@ class NeuralTimbreBank(nn.Module):
         nn.init.zeros_(self.out_proj.weight)
         nn.init.zeros_(self.out_proj.bias)
 
-    def forward(self, query_feat: torch.Tensor, sid: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self,
+        query_feat: torch.Tensor,
+        sid: torch.Tensor,
+        ref_timbre: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Retrieve global speaker embedding and frame-aligned local timbre features.
 
         Args:
             query_feat (torch.Tensor): Content + prosody query sequence, shape [B, T, query_dim].
             sid (torch.Tensor): Target speaker IDs, shape [B].
+            ref_timbre (Optional[Tuple[torch.Tensor, torch.Tensor]]): Optional one-shot override
+                ``(global_emb [B, spk_dim], proto_values [B, num_protos, spk_dim])`` from
+                ``HSVCReferenceEncoder``. When None, looks up ``sid`` in the learned tables.
 
         Returns:
             Tuple[torch.Tensor, torch.Tensor]:
@@ -236,10 +244,20 @@ class NeuralTimbreBank(nn.Module):
                 - local_timbre: Frame-level prototype timbre residual [B, T, query_dim].
         """
         B, T, _ = query_feat.shape
-        g_spk = self.global_emb(sid)
+        if ref_timbre is not None:
+            g_spk, p_vals = ref_timbre
+            g_spk = g_spk.to(dtype=query_feat.dtype, device=query_feat.device)
+            p_vals = p_vals.to(dtype=query_feat.dtype, device=query_feat.device)
+            if g_spk.shape[0] == 1 and B > 1:
+                g_spk = g_spk.expand(B, -1)
+            if p_vals.shape[0] == 1 and B > 1:
+                p_vals = p_vals.expand(B, -1, -1)
+            v = p_vals.reshape(B, self.num_protos, self.n_heads, self.head_dim).transpose(1, 2)
+        else:
+            g_spk = self.global_emb(sid)
+            v = self.proto_values(sid).view(B, self.num_protos, self.n_heads, self.head_dim).transpose(1, 2)
         q = self.q_proj(query_feat).view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
         k = self.proto_keys.view(1, self.num_protos, self.n_heads, self.head_dim).transpose(1, 2)
-        v = self.proto_values(sid).view(B, self.num_protos, self.n_heads, self.head_dim).transpose(1, 2)
         attn = F.softmax(torch.matmul(q, k.transpose(-2, -1)) * (self.head_dim ** -0.5), dim=-1)
         out = torch.matmul(attn, v).transpose(1, 2).contiguous().view(B, T, self.spk_dim)
         return g_spk, self.out_proj(out)

@@ -17,6 +17,7 @@ import torch
 import torch.nn.functional as F
 
 from backend.architectures.hsvc.model import HSVCGenerator
+from backend.architectures.hsvc.speaker_encoder import HSVCReferenceEncoder
 from backend.architectures.hsvc.streaming import HSVCStreamer
 from backend.lib.predictors.RMVPE import RMVPE0Predictor
 from backend.lib.utils import load_embedding
@@ -76,6 +77,7 @@ class HSVCPipeline:
         rmvpe_path: str = "models/predictors/rmvpe.pt",
         index_path: Optional[str] = None,
         target_sr: Optional[int] = None,
+        ref_encoder_path: Optional[str] = None,
     ):
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.model, self.speaker_map = HSVCGenerator.from_package(
@@ -87,10 +89,33 @@ class HSVCPipeline:
         self.rmvpe = RMVPE0Predictor(rmvpe_path, device=self.device)
         self.contentvec = load_embedding(embedder_name).to(self.device).eval()
 
+        self.ref_encoder: Optional[HSVCReferenceEncoder] = None
+        if ref_encoder_path and os.path.isfile(ref_encoder_path):
+            self.load_reference_encoder(ref_encoder_path)
+
         self.faiss_index = None
         self.faiss_feats = None
         if index_path and os.path.isfile(index_path):
             self.load_index(index_path)
+
+    def load_reference_encoder(self, ref_encoder_path: str):
+        """Load an optional one-shot ``HSVCReferenceEncoder`` sidecar checkpoint."""
+        self.ref_encoder = HSVCReferenceEncoder.from_package(ref_encoder_path, device=self.device)
+
+    @torch.inference_mode()
+    def extract_reference_timbre(
+        self, ref_audio: Union[str, Tuple[np.ndarray, int]]
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Extract one-shot ``(global_emb, proto_values)`` from a reference audio file or (array, sr) tuple."""
+        if self.ref_encoder is None:
+            raise RuntimeError(
+                "One-shot conversion requires a loaded HSVCReferenceEncoder (pass ref_encoder_path / --ref-encoder)."
+            )
+        if isinstance(ref_audio, str):
+            wav, sr = sf.read(ref_audio, dtype="float32")
+        else:
+            wav, sr = ref_audio
+        return self.ref_encoder.encode_audio(wav, sr)
 
     def load_index(self, index_path: str):
         """Load a FAISS ``.index`` file and cache its feature vectors for retrieval."""
@@ -185,6 +210,7 @@ class HSVCPipeline:
         noise_scale: float = 1.0,
         streaming: bool = False,
         chunk_frames: int = 8,
+        ref_audio: Optional[Union[str, Tuple[np.ndarray, int]]] = None,
     ) -> np.ndarray:
         """
         Convert an in-memory waveform to the target speaker at 48 kHz.
@@ -192,17 +218,19 @@ class HSVCPipeline:
         Args:
             audio (np.ndarray): Input mono or stereo audio array.
             orig_sr (int): Sampling rate of ``audio`` in Hz.
-            speaker_id (Union[int, str]): Target speaker ID or speaker name.
+            speaker_id (Union[int, str]): Target speaker ID or speaker name (ignored when ``ref_audio`` is given).
             pitch_shift (float): Pitch transposition in semitones.
             index_rate (float): FAISS index retrieval blend ratio in [0, 1].
             noise_scale (float): Aperiodic/breath noise multiplier (default: 1.0).
             streaming (bool): If True, run bounded-context phase-continuous streaming.
             chunk_frames (int): Streaming chunk size in 10 ms frames (default: 8 = 80 ms).
+            ref_audio (Optional[Union[str, Tuple[np.ndarray, int]]]): Optional one-shot reference clip.
 
         Returns:
-            np.ndarray: Clipped 48 kHz mono output waveform.
+            np.ndarray: Clipped mono output waveform at ``self.sr``.
         """
-        sid = self.resolve_speaker(speaker_id)
+        ref_timbre = self.extract_reference_timbre(ref_audio) if ref_audio is not None else None
+        sid = 0 if ref_timbre is not None else self.resolve_speaker(speaker_id)
         content, f0, vuv_conf, energy_db, hf_energy_db = self.extract_features(
             audio, orig_sr, index_rate=index_rate
         )
@@ -219,6 +247,7 @@ class HSVCPipeline:
                 sid,
                 chunk_frames=chunk_frames,
                 noise_scale=noise_scale,
+                ref_timbre=ref_timbre,
             )
 
         c_t = torch.from_numpy(content).unsqueeze(0).to(self.device)
@@ -227,7 +256,9 @@ class HSVCPipeline:
         e_t = torch.from_numpy(energy_db).unsqueeze(0).to(self.device)
         hf_t = torch.from_numpy(hf_energy_db).unsqueeze(0).to(self.device)
         sid_t = torch.tensor([sid], dtype=torch.long, device=self.device)
-        out = self.model(c_t, f0_t, vc_t, e_t, hf_t, sid_t, noise_scale=noise_scale)[0, 0].cpu().float().numpy()
+        out = self.model(
+            c_t, f0_t, vc_t, e_t, hf_t, sid_t, noise_scale=noise_scale, ref_timbre=ref_timbre
+        )[0, 0].cpu().float().numpy()
         return np.clip(out, -1.0, 1.0)
 
     def convert_file(
@@ -240,6 +271,7 @@ class HSVCPipeline:
         noise_scale: float = 1.0,
         streaming: bool = False,
         chunk_frames: int = 8,
+        ref_audio: Optional[str] = None,
     ) -> str:
         wav, sr = sf.read(input_path, dtype="float32")
         out = self.convert_array(
@@ -251,6 +283,7 @@ class HSVCPipeline:
             noise_scale=noise_scale,
             streaming=streaming,
             chunk_frames=chunk_frames,
+            ref_audio=ref_audio,
         )
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
         sf.write(output_path, out, self.sr, subtype="PCM_16")
@@ -263,6 +296,8 @@ def main():
     p.add_argument("--input", required=True, help="Input WAV/FLAC path")
     p.add_argument("--output", required=True, help="Output 48 kHz WAV path")
     p.add_argument("--speaker", default="0", help="Target speaker ID or speaker name from model's speaker_map")
+    p.add_argument("--ref-audio", default="", help="Optional one-shot target voice reference WAV/FLAC")
+    p.add_argument("--ref-encoder", default="", help="Path to HSVCReferenceEncoder .pth sidecar (required with --ref-audio)")
     p.add_argument("--pitch", type=float, default=0.0, help="Pitch shift in semitones")
     p.add_argument("--index", default="", help="Optional FAISS .index path")
     p.add_argument("--index-rate", type=float, default=0.0, help="FAISS retrieval blend ratio [0..1]")
@@ -274,7 +309,13 @@ def main():
     p.add_argument("--list-speakers", action="store_true", help="Print speaker_map and exit")
     args = p.parse_args()
 
-    pipe = HSVCPipeline(args.model, device=args.device, index_path=args.index or None, target_sr=args.target_sr)
+    pipe = HSVCPipeline(
+        args.model,
+        device=args.device,
+        index_path=args.index or None,
+        target_sr=args.target_sr,
+        ref_encoder_path=args.ref_encoder or None,
+    )
     if args.list_speakers:
         print(f"Speakers ({len(pipe.speaker_map)}):", sorted(pipe.speaker_map.items(), key=lambda kv: kv[1])[:40])
         return
@@ -287,6 +328,7 @@ def main():
         noise_scale=args.noise_scale,
         streaming=args.streaming,
         chunk_frames=args.chunk_frames,
+        ref_audio=args.ref_audio or None,
     )
     print(f"Converted -> {out}")
 

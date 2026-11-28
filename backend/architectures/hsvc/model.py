@@ -322,6 +322,7 @@ class HSVCGenerator(nn.Module):
         sid: torch.Tensor,
         init_turns: Optional[torch.Tensor] = None,
         noise_scale: float = 1.0,
+        ref_timbre: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Synthesize 48 kHz waveform from bottleneck content, prosody controls, and speaker ID.
@@ -335,6 +336,8 @@ class HSVCGenerator(nn.Module):
             sid (torch.Tensor): Target speaker IDs, shape [B].
             init_turns (Optional[torch.Tensor]): Initial harmonic phase [B, 1] for streaming.
             noise_scale (float): Scalar multiplier for the aperiodic noise branch (default: 1.0).
+            ref_timbre (Optional[Tuple[torch.Tensor, torch.Tensor]]): Optional one-shot timbre
+                override ``(global_emb [B, spk_dim], proto_values [B, num_protos, spk_dim])``.
 
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: (audio [B, 1, T * hop_in], end_turns [B, 1]).
@@ -346,7 +349,7 @@ class HSVCGenerator(nn.Module):
         # Fuse content, prosody, and frame-aware speaker timbre prototypes
         prosody, g_sil = self.build_prosody_features(f0_100hz, vuv_conf, energy_db, hf_energy_db)
         base_feat = self.in_norm(self.content_up(z_content) + self.prosody_proj(prosody))
-        spk, local_timbre = self.timbre_bank(base_feat, sid)
+        spk, local_timbre = self.timbre_bank(base_feat, sid, ref_timbre=ref_timbre)
         if self.training:
             local_timbre = F.dropout(local_timbre, p=0.10, training=True)
         h = (base_feat + local_timbre).transpose(1, 2)
@@ -435,6 +438,7 @@ class HSVCGenerator(nn.Module):
         init_turns: Optional[torch.Tensor] = None,
         return_bottleneck: bool = False,
         noise_scale: float = 1.0,
+        ref_timbre: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
     ):
         """
         Full forward pass from 100 Hz ContentVec and prosody controls to 48 kHz audio.
@@ -449,6 +453,8 @@ class HSVCGenerator(nn.Module):
             init_turns (Optional[torch.Tensor]): Optional initial streaming phase [B, 1].
             return_bottleneck (bool): If True, also return (z_content, end_turns).
             noise_scale (float): Aperiodic noise branch scaling factor (default: 1.0).
+            ref_timbre (Optional[Tuple[torch.Tensor, torch.Tensor]]): Optional one-shot timbre
+                override ``(global_emb [B, spk_dim], proto_values [B, num_protos, spk_dim])``.
 
         Returns:
             torch.Tensor or Tuple: Generated waveform [B, 1, T * hop_in] (plus bottleneck & phase if requested).
@@ -463,10 +469,33 @@ class HSVCGenerator(nn.Module):
             sid,
             init_turns=init_turns,
             noise_scale=noise_scale,
+            ref_timbre=ref_timbre,
         )
         if return_bottleneck:
             return audio, z_content, end_turns
         return audio
+
+    @torch.no_grad()
+    def inject_reference_timbre(
+        self, global_emb: torch.Tensor, proto_values: torch.Tensor, sid: int = 0
+    ) -> "HSVCGenerator":
+        """
+        Write a one-shot ``(global_emb, proto_values)`` pair into speaker slot ``sid``.
+
+        Enables zero-overhead real-time streaming (no encoder needed at runtime) and
+        instant warm-starting for rapid single-speaker fine-tuning.
+        """
+        g = global_emb.detach().reshape(-1).to(
+            device=self.timbre_bank.global_emb.weight.device,
+            dtype=self.timbre_bank.global_emb.weight.dtype,
+        )
+        p = proto_values.detach().reshape(-1).to(
+            device=self.timbre_bank.proto_values.weight.device,
+            dtype=self.timbre_bank.proto_values.weight.dtype,
+        )
+        self.timbre_bank.global_emb.weight[sid].copy_(g)
+        self.timbre_bank.proto_values.weight[sid].copy_(p)
+        return self
 
     def adapt_sample_rate(self, target_sr: int) -> "HSVCGenerator":
         """

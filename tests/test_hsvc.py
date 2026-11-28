@@ -19,6 +19,8 @@ from backend.architectures.hsvc import (
     HSVCConfig,
     HSVCGenerator,
     HSVCLoss,
+    HSVCReferenceEncoder,
+    HSVCReferenceEncoderConfig,
     HSVCStreamer,
     UtteranceSpeakerAdversary,
     is_hsvc_checkpoint,
@@ -172,10 +174,66 @@ def test_multi_sample_rate_adaptation():
     print("  [OK] Universal 48k -> 44.1k / 40k / 32k / 24k adaptation + export/reload")
 
 
+def test_oneshot_reference_encoder():
+    with open("backend/architectures/hsvc/configs/48000_base.json") as f:
+        cfg = HSVCConfig.from_dict(json.load(f)["model"])
+    G = HSVCGenerator(cfg).eval()
+    enc = HSVCReferenceEncoder(
+        HSVCReferenceEncoderConfig(spk_dim=cfg.spk_dim, num_protos=cfg.num_protos)
+    ).eval()
+    params_m = sum(p.numel() for p in enc.parameters()) / 1e6
+
+    # 1. Exact zero-diff parity when passing NeuralTimbreBank's own (global_emb, proto_values)
+    B, T = 1, 32
+    c = torch.randn(B, T, 768)
+    f0 = torch.full((B, T), 220.0)
+    vc = torch.ones(B, T)
+    e = torch.full((B, T), -20.0)
+    hf = torch.full((B, T), -30.0)
+    sid = torch.tensor([3])
+    with torch.no_grad():
+        y_sid = G(c, f0, vc, e, hf, sid, noise_scale=0.0)
+        g_true = G.timbre_bank.global_emb(sid)
+        p_true = G.timbre_bank.proto_values(sid).view(B, cfg.num_protos, cfg.spk_dim)
+        y_ref_exact = G(c, f0, vc, e, hf, torch.tensor([0]), noise_scale=0.0, ref_timbre=(g_true, p_true))
+        assert torch.max(torch.abs(y_sid - y_ref_exact)).item() < 1e-6
+
+    # 2. End-to-end encode_audio -> forward + streaming + inject_reference_timbre + FP16 package reload
+    ref_wav = (0.2 * np.sin(2.0 * np.pi * 180.0 * np.arange(48000 * 2) / 48000.0)).astype(np.float32)
+    g_pred, p_pred = enc.encode_audio(ref_wav, 48000)
+    assert g_pred.shape == (1, cfg.spk_dim) and p_pred.shape == (1, cfg.num_protos, cfg.spk_dim)
+    assert torch.isfinite(g_pred).all() and torch.isfinite(p_pred).all()
+    with torch.no_grad():
+        y_oneshot = G(c, f0, vc, e, hf, torch.tensor([0]), ref_timbre=(g_pred, p_pred))
+        assert y_oneshot.shape == (1, 1, T * cfg.hop_in) and torch.isfinite(y_oneshot).all()
+    streamer = HSVCStreamer(G, device="cpu")
+    y_st = streamer.stream_full_features(
+        c[0].numpy(), f0[0].numpy(), vc[0].numpy(), e[0].numpy(), hf[0].numpy(),
+        sid=0, chunk_frames=8, ref_timbre=(g_pred, p_pred),
+    )
+    assert y_st.shape == (T * cfg.hop_in,) and np.isfinite(y_st).all()
+
+    G.inject_reference_timbre(g_pred, p_pred, sid=0)
+    with torch.no_grad():
+        y_inj = G(c, f0, vc, e, hf, torch.tensor([0]), noise_scale=0.0)
+        y_direct = G(c, f0, vc, e, hf, torch.tensor([1]), noise_scale=0.0, ref_timbre=(g_pred, p_pred))
+        assert torch.max(torch.abs(y_inj - y_direct)).item() < 1e-6
+
+    with tempfile.TemporaryDirectory() as td:
+        p16 = os.path.join(td, "ref_enc_fp16.pth")
+        enc.export_package(p16, fp16=True)
+        enc_re = HSVCReferenceEncoder.from_package(p16, device="cpu")
+        g2, p2 = enc_re.encode_audio(ref_wav, 48000)
+        assert torch.max(torch.abs(g_pred - g2)).item() < 2e-3
+        sz_mb = os.path.getsize(p16) / (1024 * 1024)
+    print(f"  [OK] One-shot HSVCReferenceEncoder ({params_m:.2f}M, {sz_mb:.1f} MB FP16) + parity + streaming + inject")
+
+
 if __name__ == "__main__":
     test_shapes_and_configs()
     test_silence_gate_and_zero_200hz_comb()
     test_streaming_and_fp16_package_autodetect()
     test_training_modules_and_torch_energy()
     test_multi_sample_rate_adaptation()
+    test_oneshot_reference_encoder()
     print("ALL HSVC VERIFICATION TESTS PASSED!")

@@ -14,6 +14,10 @@ from backend.architectures.hsvc.spectral import (
     StreamingConvNeXtFiLMBlock,
     build_erb_interpolation_matrix,
 )
+from backend.architectures.hsvc.speaker_encoder import (
+    HSVCReferenceEncoder,
+    HSVCReferenceEncoderConfig,
+)
 from backend.architectures.hsvc.streaming import HSVCStreamer
 
 __all__ = [
@@ -24,6 +28,8 @@ __all__ = [
     "HSVCConfig",
     "HSVCGenerator",
     "HSVCLoss",
+    "HSVCReferenceEncoder",
+    "HSVCReferenceEncoderConfig",
     "HSVCStreamer",
     "NeuralTimbreBank",
     "StreamingConvNeXtFiLMBlock",

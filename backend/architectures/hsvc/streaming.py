@@ -1,6 +1,6 @@
 """Real-time low-latency phase-continuous streaming engine for HSVC."""
 
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 import torch
@@ -62,6 +62,7 @@ class HSVCStreamer:
         sid: int,
         chunk_frames: int = 8,
         noise_scale: float = 1.0,
+        ref_timbre: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
     ) -> np.ndarray:
         """
         Process a full 100 Hz feature sequence chunk-by-chunk with phase-continuous OLA.
@@ -118,6 +119,7 @@ class HSVCStreamer:
                 sid_t,
                 init_turns=init_turns,
                 noise_scale=noise_scale,
+                ref_timbre=ref_timbre,
             )[0, 0].cpu().float().numpy()
 
             local_start = (pos - win_start) * self.hop_in
