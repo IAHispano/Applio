@@ -76,4 +76,8 @@ F0 + VUV Conf + 10 ms Energy + HF Energy ──► Prosody Frontend (19-d Fourie
   ```bash
   python -m rvc.infer.hsvc_pipeline --model rvc/models/pretraineds/hsvc/hsvc_base_48k.pth --input in.wav --output out_32k.wav --speaker exp_ex01 --target-sr 32000
   ```
+- **Convert Checkpoint to Another Sample Rate / FP16:**
+  ```bash
+  python -m rvc.lib.tools.hsvc_convert_sr --input rvc/models/pretraineds/hsvc/hsvc_base_48k.pth --out-dir ./converted --rates 32000 40000 44100 48000 --fp16
+  ```
 - **Inference & Realtime:** Select any `.pth` model (HSVC at 32k/40k/44.1k/48k or classic RVC v2); Applio automatically detects the architecture and target sample rate.
