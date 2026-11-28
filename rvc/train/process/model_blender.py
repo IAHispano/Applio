@@ -21,6 +21,13 @@ def model_blender(name, path1, path2, ratio):
         ckpt1 = torch.load(path1, map_location="cpu", weights_only=True)
         ckpt2 = torch.load(path2, map_location="cpu", weights_only=True)
 
+        arch1 = str(ckpt1.get("architecture", "rvc")).lower()
+        arch2 = str(ckpt2.get("architecture", "rvc")).lower()
+        is_hsvc1 = arch1 in ("hsvc", "harmonix")
+        is_hsvc2 = arch2 in ("hsvc", "harmonix")
+        if is_hsvc1 != is_hsvc2:
+            return "Fail to merge the models. Cannot blend RVC and HSVC models."
+
         sr1 = str(ckpt1["sr"]).lower().replace("k", "000")
         sr2 = str(ckpt2["sr"]).lower().replace("k", "000")
 
@@ -33,8 +40,9 @@ def model_blender(name, path1, path2, ratio):
         cfg = ckpt1["config"]
         cfg_f0 = ckpt1["f0"]
         cfg_version = ckpt1["version"]
-        cfg_sr = sr1
-        vocoder = ckpt1.get("vocoder", "HiFi-GAN")
+        cfg_sr = ckpt1["sr"] if is_hsvc1 else sr1
+        vocoder = "HSVC" if is_hsvc1 else ckpt1.get("vocoder", "HiFi-GAN")
+        speaker_map = ckpt1.get("speaker_map", {}) if is_hsvc1 else None
 
         if "model" in ckpt1:
             ckpt1 = extract(ckpt1)
@@ -68,6 +76,11 @@ def model_blender(name, path1, path2, ratio):
         opt["version"] = cfg_version
         opt["info"] = message
         opt["vocoder"] = vocoder
+        if is_hsvc1:
+            opt["architecture"] = "hsvc"
+            opt["speaker_map"] = speaker_map or {}
+            opt["embedder_model"] = ckpt1.get("embedder_model", "contentvec")
+            opt["speakers_id"] = ckpt1.get("speakers_id", 1)
 
         torch.save(opt, os.path.join(get_logs_dir(), f"{name}.pth"))
         print(message)

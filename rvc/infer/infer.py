@@ -496,6 +496,22 @@ class VoiceConverter:
                 self.text_enc_hidden_dim = 768 if self.version == "v2" else 256
                 return
 
+            from rvc.lib.algorithm.hsvc import HSVCGenerator, is_hsvc_checkpoint
+
+            if is_hsvc_checkpoint(self.cpt):
+                self.net_g, self.speaker_map = HSVCGenerator.from_checkpoint_dict(
+                    self.cpt, device=self.config.device
+                )
+                self.tgt_sr = self.net_g.config.sample_rate
+                self.use_f0 = 1
+                self.version = "v2"
+                self.vocoder = "HSVC"
+                self.text_enc_hidden_dim = 768
+                print(
+                    f"[Auto-Detect] Loaded HSVC ({self.tgt_sr} Hz) model with {len(self.speaker_map)} speaker(s)."
+                )
+                return
+
             self.tgt_sr = self.cpt["config"][-1]
             self.cpt["config"][-3] = self.cpt["weight"]["emb_g.weight"].shape[0]
             self.use_f0 = self.cpt.get("f0", 1)

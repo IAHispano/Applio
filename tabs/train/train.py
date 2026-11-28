@@ -57,12 +57,19 @@ os.makedirs(pretraineds_custom_path_relative, exist_ok=True)
 
 
 def get_pretrained_list(suffix):
-    return [
-        os.path.join(dirpath, filename)
-        for dirpath, _, filenames in os.walk(pretraineds_custom_path_relative)
-        for filename in filenames
-        if filename.endswith(".pth") and suffix in filename
-    ]
+    results = []
+    for dirpath, _, filenames in os.walk(pretraineds_custom_path_relative):
+        for filename in filenames:
+            if not filename.endswith(".pth"):
+                continue
+            low = filename.lower()
+            is_hsvc_disc = low.endswith("_d.pth")
+            is_hsvc_gen = ("hsvc" in low) and not is_hsvc_disc
+            if (suffix == "G" and ("G" in filename or is_hsvc_gen)) or (
+                suffix == "D" and ("D" in filename or is_hsvc_disc)
+            ):
+                results.append(os.path.join(dirpath, filename))
+    return results
 
 
 pretraineds_list_d = get_pretrained_list("D")
@@ -418,12 +425,12 @@ def train_tab():
                     filterable=False,
                     label=i18n("Architecture"),
                     info=i18n(
-                        "Choose the model architecture:\n- **RVC (V2)**: Default option, compatible with all clients.\n- **Applio**: Advanced quality with improved vocoders and higher sample rates, Applio-only."
+                        "Choose the model architecture:\n- **RVC**: Classic RVC v2 (HiFi-GAN / RefineGAN), compatible with legacy clients.\n- **HSVC**: Next-gen 48 kHz Harmonic-Spectral Voice Conversion (higher fidelity, zero silence noise, faster & real-time)."
                     ),
-                    choices=["RVC", "Applio"],
+                    choices=["RVC", "HSVC"],
                     value="RVC",
                     interactive=True,
-                    visible=False,
+                    visible=True,
                 )
             with gr.Column():
                 sampling_rate = gr.Dropdown(
@@ -438,12 +445,13 @@ def train_tab():
                     filterable=False,
                     label=i18n("Vocoder"),
                     info=i18n(
-                        "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default option, compatible with all clients.\n- **MRF HiFi-GAN**: Higher fidelity, Applio-only.\n- **RefineGAN**: Superior audio quality, Applio-only."
+                        "Choose the vocoder for audio synthesis:\n- **HiFi-GAN**: Default RVC option, compatible with all clients.\n- **RefineGAN**: Higher fidelity RVC vocoder, Applio-only.\n- **HSVC**: Automatically selected when Architecture is set to HSVC."
                     ),
-                    choices=["HiFi-GAN", "RefineGAN"],  # "MRF HiFi-GAN", ],
+                    choices=["HiFi-GAN", "RefineGAN", "HSVC"],
                     value="HiFi-GAN",
                     interactive=True,
                     visible=True,
+                    allow_custom_value=True,
                 )
         with gr.Accordion(
             i18n("Advanced Settings"),
@@ -989,23 +997,37 @@ def train_tab():
                 return {"visible": False, "__type__": "update"}
 
             def toggle_architecture(architecture):
-                if architecture == "Applio":
+                if architecture == "HSVC":
                     return {
-                        "choices": ["32000", "40000", "48000"],
+                        "choices": ["48000"],
+                        "value": "48000",
                         "__type__": "update",
                     }, {
-                        "interactive": True,
+                        "choices": ["HSVC"],
+                        "value": "HSVC",
+                        "interactive": False,
                         "__type__": "update",
                     }
                 else:
                     return {
                         "choices": ["32000", "40000", "48000"],
-                        "__type__": "update",
                         "value": "40000",
-                    }, {"interactive": False, "__type__": "update", "value": "HiFi-GAN"}
+                        "__type__": "update",
+                    }, {
+                        "choices": ["HiFi-GAN", "RefineGAN"],
+                        "value": "HiFi-GAN",
+                        "interactive": True,
+                        "__type__": "update",
+                    }
 
             def toggle_vocoder(vocoder):
-                if vocoder == "HiFi-GAN":
+                if vocoder == "HSVC":
+                    return {
+                        "choices": ["48000"],
+                        "__type__": "update",
+                        "value": "48000",
+                    }
+                elif vocoder == "HiFi-GAN":
                     return {
                         "choices": ["32000", "40000", "48000"],
                         "__type__": "update",
@@ -1106,6 +1128,7 @@ def train_tab():
                     vocoder,
                     checkpointing,
                     shutdown_check,
+                    architecture,
                 ],
                 outputs=[train_output_info, train_button, stop_train_button],
                 **queue_options,

@@ -135,6 +135,11 @@ def onnx_exporter(input_path, output_path, is_half=False, device="cpu"):
         if os.path.isfile(input_path)
         else None
     )
+    if isinstance(cpt, dict) and str(cpt.get("architecture", "")).lower() in ("hsvc", "harmonix"):
+        raise ValueError(
+            "ONNX export currently supports RVC (HiFi-GAN / RefineGAN) checkpoints only. "
+            "HSVC models already run natively in PyTorch at 16.7 ms real-time latency and 39 MB FP16."
+        )
     # Adjust dynamic speaker/embedding layer configuration from the loaded weight matrix
     cpt["config"][-3] = cpt["weight"]["emb_g.weight"].shape[0]
 

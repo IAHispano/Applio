@@ -100,8 +100,15 @@ def inspect_checkpoint(path: str) -> dict:
         if m:
             step = m.group(1)
 
+    # Detect HSVC / HarmoniX checkpoints cleanly
+    is_hsvc = str(d.get("architecture", "")).lower() in ("hsvc", "harmonix")
+
     # Extract sample rate
     sr = _g("sr")
+    if is_hsvc and sr == "None" and isinstance(d.get("config"), dict):
+        sr_val = d["config"].get("sample_rate", 48000)
+        if isinstance(sr_val, (int, float)):
+            sr = f"{int(sr_val)//1000}k"
     if (
         sr == "None"
         and "config" in d
@@ -145,9 +152,9 @@ def inspect_checkpoint(path: str) -> dict:
         "epochs": epochs,
         "step": step,
         "sr": sr,
-        "f0": _g("f0"),
-        "version": _g("version", "v2"),
-        "vocoder": _g("vocoder", "HiFi-GAN"),
+        "f0": "1" if is_hsvc else _g("f0"),
+        "version": _g("version", "hsvc" if is_hsvc else "v2"),
+        "vocoder": "HSVC" if is_hsvc else _g("vocoder", "HiFi-GAN"),
         "embedder_model": embedder,
         "creation_date": (
             _g("creation_date")
@@ -160,7 +167,11 @@ def inspect_checkpoint(path: str) -> dict:
             if _g("dataset_length") != "None"
             else str(sidecar.get("dataset_length", "None"))
         ),
-        "speakers_id": _g("speakers_id", "0"),
-        "architecture": "RVC",
+        "speakers_id": (
+            str(len(d["speaker_map"]))
+            if is_hsvc and isinstance(d.get("speaker_map"), dict) and len(d["speaker_map"]) > 0
+            else _g("speakers_id", "0")
+        ),
+        "architecture": "HSVC" if is_hsvc else "RVC",
     }
     return meta

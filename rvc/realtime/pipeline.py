@@ -49,6 +49,7 @@ class RealtimeVoiceConverter:
         self.dtype = torch.float32  # torch.float16 if config.is_half else torch.float32
         self.decoder_fp16 = False
         self.onnx_decoder = False
+        self.architecture = "rvc"
         # load weights and setup model network.
         self.load_model(weight_root)
         self.setup_network()
@@ -95,6 +96,25 @@ class RealtimeVoiceConverter:
                 self.version = self.cpt.version
                 self.vocoder = self.cpt.vocoder
                 self.text_enc_hidden_dim = 768 if self.version == "v2" else 256
+                return
+
+            from rvc.lib.algorithm.hsvc import HSVCGenerator, is_hsvc_checkpoint
+
+            if is_hsvc_checkpoint(self.cpt):
+                self.net_g, self.speaker_map = HSVCGenerator.from_checkpoint_dict(
+                    self.cpt, device=self.config.device
+                )
+                self.net_g = self.net_g.to(self.dtype).to(self.config.device).eval()
+                self.tgt_sr = self.net_g.config.sample_rate
+                self.use_f0 = 1
+                self.version = "v2"
+                self.vocoder = "HSVC"
+                self.architecture = "hsvc"
+                self.text_enc_hidden_dim = 768
+                self.cpt = None
+                print(
+                    f"[Realtime Auto-Detect] Loaded HSVC ({self.tgt_sr} Hz) model."
+                )
                 return
 
             self.tgt_sr = self.cpt["config"][-1]
@@ -210,7 +230,8 @@ class Realtime_Pipeline:
         if self.embedder_fp16:
             print("[Experimental] HuBERT FP16 autocast enabled for realtime.")
         self._graph_supported = (
-            (
+            getattr(vc, "architecture", "rvc") != "hsvc"
+            and (
                 not getattr(vc, "onnx_decoder", False)
                 or getattr(vc.net_g.dec, "cuda_device", None) is not None
             )
@@ -520,16 +541,28 @@ class Realtime_Pipeline:
                 print("The index file structure is incompatible with the model.")
                 self.index = self.big_tsr = None
 
-            # feature upsampling
-            feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(
-                0, 2, 1
-            )[:, :p_len, :]
+            is_hsvc = getattr(self.vc, "architecture", "rvc") == "hsvc"
+
+            # feature upsampling (HSVC uses linear interpolation to avoid 20ms staircase artifacts)
+            if is_hsvc:
+                feats = F.interpolate(
+                    feats.permute(0, 2, 1), scale_factor=2, mode="linear", align_corners=False
+                ).permute(0, 2, 1)[:, :p_len, :]
+            else:
+                feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(
+                    0, 2, 1
+                )[:, :p_len, :]
 
             if self.use_f0:
                 if feats0 is not None:
-                    feats0 = F.interpolate(
-                        feats0.permute(0, 2, 1), scale_factor=2
-                    ).permute(0, 2, 1)[:, :p_len, :]
+                    if is_hsvc:
+                        feats0 = F.interpolate(
+                            feats0.permute(0, 2, 1), scale_factor=2, mode="linear", align_corners=False
+                        ).permute(0, 2, 1)[:, :p_len, :]
+                    else:
+                        feats0 = F.interpolate(
+                            feats0.permute(0, 2, 1), scale_factor=2
+                        ).permute(0, 2, 1)[:, :p_len, :]
                 pitch_p = pitch[-p_len:].unsqueeze(0)
                 pitchf_p = pitchf[-p_len:].unsqueeze(0) * (
                     formant_length / return_length
@@ -554,6 +587,27 @@ class Realtime_Pipeline:
             head = int(
                 feats.shape[1] * (1.0 - float(np.float32(return_length / p_len)))
             )
+            if is_hsvc:
+                from rvc.infer.hsvc_pipeline import compute_energy_100hz_torch
+
+                energy_db, hf_energy_db = compute_energy_100hz_torch(audio, self.sample_rate, p_len)
+                f0_in = pitchf_p if pitchf_p is not None else torch.zeros((1, p_len), device=self.device, dtype=self.dtype)
+                vuv_conf = (f0_in > 1.0).to(self.dtype)
+                y_full = self.vc.net_g(
+                    feats.float(),
+                    f0_in.float(),
+                    vuv_conf.float(),
+                    energy_db,
+                    hf_energy_db,
+                    self.torch_sid,
+                )[0, 0]
+                hop_out = self.vc.net_g.config.hop_in
+                start_s = head * hop_out
+                end_s = min(y_full.shape[0], start_s + return_length * hop_out)
+                out_audio = torch.clip(y_full[start_s:end_s], -1.0, 1.0)
+                return self._finish_audio(
+                    out_audio, audio, return_length, volume_envelope, reduced_noise
+                )
             self._p_len_tensor.fill_(p_len)
             if return_decoder_inputs:
                 latent, f0, speaker = self.vc.net_g.infer_latent(

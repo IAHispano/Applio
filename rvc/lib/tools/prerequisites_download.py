@@ -30,6 +30,15 @@ pretraineds_refinegan_list = [
         ],
     ),
 ]
+pretraineds_hsvc_list = [
+    (
+        "hsvc/",
+        [
+            "hsvc_base_48k.pth",
+            "hsvc_base_48k_d.pth",
+        ],
+    ),
+]
 models_list = [("predictors/", ["rmvpe.pt", "fcpe.pt", "swift.onnx"])]
 embedders_list = [("embedders/contentvec/", ["pytorch_model.bin", "config.json"])]
 executables_list = [
@@ -39,6 +48,7 @@ executables_list = [
 folder_mapping_list = {
     "pretrained_v2/": "rvc/models/pretraineds/hifi-gan/",
     "refinegan/": "rvc/models/pretraineds/refinegan/",
+    "hsvc/": "rvc/models/pretraineds/hsvc/",
     "embedders/contentvec/": "rvc/models/embedders/contentvec/",
     "predictors/": "rvc/models/predictors/",
     "formant/": "rvc/models/formant/",
@@ -182,6 +192,42 @@ def prequisites_download_pipeline(
 
 def ensure_pretrained(vocoder, sample_rate):
     """Download only the default G/D pair needed for this training run."""
+    if str(vocoder).upper() == "HSVC":
+        if int(sample_rate) != 48000:
+            raise ValueError(
+                f"HSVC pretrained currently supports 48000 Hz (got {sample_rate} Hz)"
+            )
+        remote = "hsvc/"
+        files = ["hsvc_base_48k.pth", "hsvc_base_48k_d.pth"]
+        local_dir = os.path.abspath(folder_mapping_list[remote])
+        os.makedirs(local_dir, exist_ok=True)
+        paths = [os.path.join(local_dir, f) for f in files]
+        if not all(is_downloaded(file) for file in paths):
+            hsvc_base_url = os.environ.get(
+                "APPLIO_HSVC_PRETRAIN_URL", f"{url_base}/hsvc"
+            ).rstrip("/")
+            print(
+                f"Downloading default HSVC pretrains (48000 Hz) from {hsvc_base_url}...",
+                flush=True,
+            )
+            with tqdm(
+                total=None, unit="iB", unit_scale=True, desc="Downloading HSVC pretrains"
+            ) as bar:
+                for fname, dst in zip(files, paths):
+                    if not is_downloaded(dst):
+                        try:
+                            download_file(f"{hsvc_base_url}/{fname}", dst, bar)
+                        except Exception as e:
+                            raise RuntimeError(
+                                f"Failed to download HSVC pretrained '{fname}' from {hsvc_base_url}/{fname}: {e}\n"
+                                f"Place hsvc_base_48k.pth and hsvc_base_48k_d.pth in '{local_dir}' "
+                                f"(or set APPLIO_HSVC_PRETRAIN_URL)."
+                            ) from e
+        if not all(is_downloaded(file) for file in paths):
+            raise RuntimeError(
+                f"Default HSVC pretrains are missing in '{local_dir}'; training cannot start."
+            )
+        return tuple(paths)
     rates = {"HiFi-GAN": (32000, 40000, 48000), "RefineGAN": (24000, 32000)}
     if vocoder not in rates or int(sample_rate) not in rates[vocoder]:
         raise ValueError(f"Unsupported pretrained: {vocoder} at {sample_rate} Hz")
@@ -212,7 +258,7 @@ if __name__ == "__main__":
     parser.add_argument("--pretraineds-hifigan", action="store_true", default=False)
     parser.add_argument("--models", action="store_true", default=False)
     parser.add_argument("--exe", action="store_true", default=False)
-    parser.add_argument("--vocoder", choices=["HiFi-GAN", "RefineGAN"])
+    parser.add_argument("--vocoder", choices=["HiFi-GAN", "RefineGAN", "HSVC"])
     parser.add_argument("--sample-rate", type=int)
     args = parser.parse_args()
 

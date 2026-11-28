@@ -367,16 +367,29 @@ class Pipeline:
                 feats = self._retrieve_speaker_embeddings(
                     feats, index, big_npy, index_rate
                 )
-            # feature upsampling
-            feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(
-                0, 2, 1
-            )
+            # feature upsampling (HSVC uses linear interpolation to avoid 20ms staircase artifacts)
+            from rvc.lib.algorithm.hsvc import HSVCGenerator
+
+            is_hsvc = isinstance(net_g, HSVCGenerator)
+            if is_hsvc:
+                feats = F.interpolate(
+                    feats.permute(0, 2, 1), scale_factor=2, mode="linear", align_corners=False
+                ).permute(0, 2, 1)
+            else:
+                feats = F.interpolate(feats.permute(0, 2, 1), scale_factor=2).permute(
+                    0, 2, 1
+                )
             # adjust the length if the audio is short
             p_len = min(audio0.shape[0] // self.window, feats.shape[1])
             if pitch_guidance:
-                feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
-                    0, 2, 1
-                )
+                if is_hsvc:
+                    feats0 = F.interpolate(
+                        feats0.permute(0, 2, 1), scale_factor=2, mode="linear", align_corners=False
+                    ).permute(0, 2, 1)
+                else:
+                    feats0 = F.interpolate(feats0.permute(0, 2, 1), scale_factor=2).permute(
+                        0, 2, 1
+                    )
                 pitch, pitchf = pitch[:, :p_len], pitchf[:, :p_len].float()
                 # Pitch protection blending
                 if protect < 0.5:
@@ -389,13 +402,28 @@ class Pipeline:
                     feats = feats.to(feats0.dtype)
             else:
                 pitch, pitchf = None, None
-            p_len = torch.tensor([p_len], device=self.device).long()
-            audio1 = (
-                (net_g.infer(feats.float(), p_len, pitch, pitchf, sid)[0][0, 0])
-                .data.cpu()
-                .float()
-                .numpy()
-            )
+            if is_hsvc:
+                from rvc.infer.hsvc_pipeline import compute_energy_100hz_torch
+
+                wav_16k_t = torch.from_numpy(audio0).float().to(self.device).unsqueeze(0)
+                energy_db, hf_energy_db = compute_energy_100hz_torch(wav_16k_t, self.sample_rate, p_len)
+                f0_in = pitchf[:, :p_len] if pitchf is not None else torch.zeros((1, p_len), device=self.device)
+                vuv_conf = (f0_in > 1.0).float()
+                audio1 = (
+                    net_g(feats[:, :p_len].float(), f0_in.float(), vuv_conf, energy_db, hf_energy_db, sid)[0, 0]
+                    .clamp(-1.0, 1.0)
+                    .cpu()
+                    .float()
+                    .numpy()
+                )
+            else:
+                p_len = torch.tensor([p_len], device=self.device).long()
+                audio1 = (
+                    (net_g.infer(feats.float(), p_len, pitch, pitchf, sid)[0][0, 0])
+                    .data.cpu()
+                    .float()
+                    .numpy()
+                )
             # clean up
             del feats, feats0, p_len
         return audio1

@@ -513,7 +513,73 @@ def run_train_script(
     vocoder: str = "HiFi-GAN",
     checkpointing: bool = False,
     shutdown_check: bool = False,
+    architecture: str = "RVC",
 ):
+    if str(architecture).upper() == "HSVC" or str(vocoder).upper() == "HSVC":
+        if int(sample_rate) != 48000:
+            raise ValueError(
+                f"HSVC training requires 48000 Hz sample rate (got {sample_rate} Hz)."
+            )
+        if pretrained:
+            if custom_pretrained:
+                pg = g_pretrained_path or ""
+                pd = d_pretrained_path or ""
+                if not (pg and os.path.isfile(pg) and os.path.getsize(pg) > 0):
+                    raise ValueError(
+                        "Custom pretrained HSVC generator file must exist and be non-empty."
+                    )
+                if pd and not (os.path.isfile(pd) and os.path.getsize(pd) > 0):
+                    raise ValueError(
+                        "Custom pretrained HSVC discriminator file must exist and be non-empty."
+                    )
+            else:
+                pg, pd = pretrained_selector("HSVC", 48000)
+        else:
+            pg, pd = "", ""
+
+        hsvc_train_path = os.path.join(
+            current_script_directory, "rvc", "train", "hsvc", "train.py"
+        )
+        exp_dir = os.path.join(logs_path, model_name)
+        command = [
+            python,
+            hsvc_train_path,
+            "--exp-dir", exp_dir,
+            "--model-name", str(model_name),
+            "--epochs", str(total_epoch),
+            "--save-every-epoch", str(save_every_epoch),
+            "--batch-size", str(batch_size),
+            "--base-package", str(pg),
+            "--base-discriminator", str(pd),
+            "--gpu", str(gpu),
+        ]
+        if save_only_latest:
+            command.append("--save-only-latest")
+        if save_every_weights:
+            command.append("--save-every-weights")
+        if cleanup:
+            command.append("--cleanup")
+        if cache_data_in_gpu:
+            command.append("--cache-data-in-gpu")
+
+        result = run_quiet(command)
+        if result.returncode != 0:
+            return f"HSVC training failed for model {model_name}. Please check the console logs for more details."
+        run_index_script(model_name, index_algorithm)
+        if shutdown_check:
+            os_name, shutdown_datetime = shutdown_after_training()
+            append_data_shutdown_log(
+                model_name=model_name,
+                total_epoch=total_epoch,
+                batch_size=batch_size,
+                sample_rate=sample_rate,
+                gpu=gpu,
+                shutdown_time=shutdown_datetime,
+                os_name=os_name,
+            )
+            return f"HSVC model {model_name} trained successfully. Shutdown scheduled at {shutdown_datetime}"
+        return f"HSVC model {model_name} trained successfully."
+
     if pretrained:
         if not custom_pretrained:
             pg, pd = pretrained_selector(str(vocoder), int(sample_rate))
@@ -1070,10 +1136,16 @@ def extract(**kwargs):
 @cli.command()
 @click.option("--model-name", required=True, help="Name of the model to train.")
 @click.option(
+    "--architecture",
+    type=click.Choice(["RVC", "HSVC"], case_sensitive=False),
+    default="RVC",
+    help="Model architecture to train (RVC or HSVC).",
+)
+@click.option(
     "--vocoder",
-    type=click.Choice(["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN"]),
+    type=click.Choice(["HiFi-GAN", "MRF HiFi-GAN", "RefineGAN", "HSVC"]),
     default="HiFi-GAN",
-    help="Vocoder to use.",
+    help="Vocoder to use (automatically set to HSVC when --architecture HSVC).",
 )
 @click.option(
     "--checkpointing",
@@ -1151,7 +1223,9 @@ def extract(**kwargs):
     help="Index file generation algorithm.",
 )
 def train(**kwargs):
-    """Train an RVC model."""
+    """Train an RVC or HSVC model."""
+    arch = kwargs["architecture"].upper()
+    voc = "HSVC" if arch == "HSVC" else kwargs["vocoder"]
     result = run_train_script(
         model_name=kwargs["model_name"],
         save_every_epoch=kwargs["save_every_epoch"],
@@ -1168,8 +1242,9 @@ def train(**kwargs):
         custom_pretrained=kwargs["custom_pretrained"],
         g_pretrained_path=kwargs.get("g_pretrained_path"),
         d_pretrained_path=kwargs.get("d_pretrained_path"),
-        vocoder=kwargs["vocoder"],
+        vocoder=voc,
         checkpointing=kwargs["checkpointing"],
+        architecture=arch,
     )
     click.echo(result)
 

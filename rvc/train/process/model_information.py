@@ -79,24 +79,33 @@ def model_information(path):
 
     print(f"Loaded model from {path}")
 
+    is_hsvc = str(model_data.get("architecture", "")).lower() in ("hsvc", "harmonix")
+    architecture = "HSVC" if is_hsvc else "RVC"
     model_name = model_data.get("model_name", "None")
     epochs = model_data.get("epoch", "None")
     steps = model_data.get("step", "None")
     sr = model_data.get("sr", "None")
-    f0 = model_data.get("f0", "None")
+    if is_hsvc and sr == "None" and isinstance(model_data.get("config"), dict):
+        sr = f"{int(model_data['config'].get('sample_rate', 48000)) // 1000}k"
+    f0 = model_data.get("f0", 1 if is_hsvc else "None")
     dataset_length = model_data.get("dataset_length", "None")
-    vocoder = model_data.get("vocoder", "None")
+    vocoder = "HSVC" if is_hsvc else model_data.get("vocoder", "None")
     creation_date = model_data.get("creation_date", "None")
     model_hash = model_data.get("model_hash", None)
     model_author = model_data.get("author", "None")
-    embedder_model = model_data.get("embedder_model", "None")
-    speakers_id = model_data.get("speakers_id", 0)
+    embedder_model = model_data.get("embedder_model", "contentvec" if is_hsvc else "None")
+    speakers_id = (
+        len(model_data["speaker_map"])
+        if is_hsvc and isinstance(model_data.get("speaker_map"), dict) and model_data["speaker_map"]
+        else model_data.get("speakers_id", 0)
+    )
 
     creation_date_str = prettify_date(creation_date) if creation_date else "None"
 
     return (
         f"Model Name: {model_name}\n"
         f"Model Creator: {model_author}\n"
+        f"Architecture: {architecture}\n"
         f"Epochs: {epochs}\n"
         f"Steps: {steps}\n"
         f"Vocoder: {vocoder}\n"
@@ -104,7 +113,7 @@ def model_information(path):
         f"Dataset Length: {dataset_length}\n"
         f"Creation Date: {creation_date_str}\n"
         f"Embedder Model: {embedder_model}\n"
-        f"Max Speakers ID: {speakers_id}"
+        f"Max Speakers ID: {speakers_id}\n"
         f"Hash: {model_hash}\n"
     )
 
