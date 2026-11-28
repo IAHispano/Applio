@@ -19,6 +19,7 @@ if not exist env (
     exit /b 1
 )
 
+set "PYTHONNOUSERSITE=1"
 env\python.exe app.py --open
 echo.
 pause

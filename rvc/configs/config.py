@@ -9,6 +9,7 @@ from copy import copy
 
 version_config_paths = [
     os.path.join("48000.json"),
+    os.path.join("44100.json"),
     os.path.join("40000.json"),
     os.path.join("32000.json"),
     os.path.join("24000.json"),

@@ -6,6 +6,7 @@ echo Welcome to the Applio Installer!
 echo.
 
 set "INSTALL_DIR=%cd%"
+set "PYTHONNOUSERSITE=1"
 set "MINICONDA_DIR=%UserProfile%\Miniconda3"
 set "ENV_DIR=%INSTALL_DIR%\env"
 set "MINICONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-py312_25.11.1-1-Windows-x86_64.exe"
