@@ -45,10 +45,10 @@ class HSVCLoss(nn.Module):
         self.sr = sr
         self.hop_in = hop_in
         self.stft_cfgs = [
-            (512, 128, 512, 48),
-            (1024, 256, 1024, 80),
-            (2048, 480, 2048, 128),
-            (4096, 960, 4096, 128),
+            (512, max(64, hop_in // 4), 512, 48),
+            (1024, max(128, hop_in // 2), 1024, 80),
+            (2048, hop_in, 2048, 128),
+            (4096, hop_in * 2, 4096, 128),
         ]
         for i, (n_fft, hop, win, n_mels) in enumerate(self.stft_cfgs):
             self.register_buffer(f"win_{i}", torch.hann_window(win), persistent=False)

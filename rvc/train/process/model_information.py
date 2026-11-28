@@ -86,7 +86,8 @@ def model_information(path):
     steps = model_data.get("step", "None")
     sr = model_data.get("sr", "None")
     if is_hsvc and sr == "None" and isinstance(model_data.get("config"), dict):
-        sr = f"{int(model_data['config'].get('sample_rate', 48000)) // 1000}k"
+        sr_val = int(model_data["config"].get("sample_rate", 48000))
+        sr = "44.1k" if sr_val == 44100 else f"{sr_val // 1000}k"
     f0 = model_data.get("f0", 1 if is_hsvc else "None")
     dataset_length = model_data.get("dataset_length", "None")
     vocoder = "HSVC" if is_hsvc else model_data.get("vocoder", "None")

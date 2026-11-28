@@ -141,9 +141,38 @@ def test_training_modules_and_torch_energy():
     print("  [OK] DualDomainDiscriminator, HSVCLoss, Adversary, Critic & torch energy extractor")
 
 
+def test_multi_sample_rate_adaptation():
+    with open("rvc/configs/hsvc/48000_base.json") as f:
+        cfg = HSVCConfig.from_dict(json.load(f)["model"])
+    G = HSVCGenerator(cfg).eval()
+    B, T = 1, 40
+    c = torch.randn(B, T, 768)
+    f0 = torch.full((B, T), 260.0)
+    vc = torch.ones(B, T)
+    e = torch.full((B, T), -20.0)
+    hf = torch.full((B, T), -30.0)
+    sid = torch.tensor([0])
+    with tempfile.TemporaryDirectory() as td:
+        for sr in (44100, 40000, 32000, 24000, 48000):
+            G.adapt_sample_rate(sr)
+            with torch.no_grad():
+                y = G(c, f0, vc, e, hf, sid)
+            expected_len = T * G.config.hop_in
+            assert y.shape == (B, 1, expected_len) and torch.isfinite(y).all()
+            loss_fn = HSVCLoss(sr=sr, hop_in=G.config.hop_in)
+            ls = loss_fn(y, y, e)
+            assert all(torch.isfinite(v) for v in ls.values())
+            p = os.path.join(td, f"hsvc_{sr}.pth")
+            G.export_package(p, speaker_map={"demo": 0})
+            G_re, _ = HSVCGenerator.from_package(p, device="cpu")
+            assert G_re.config.sample_rate == sr and G_re.config.hop_in == G.config.hop_in
+    print("  [OK] Universal 48k -> 44.1k / 40k / 32k / 24k adaptation + export/reload")
+
+
 if __name__ == "__main__":
     test_shapes_and_configs()
     test_silence_gate_and_zero_200hz_comb()
     test_streaming_and_fp16_package_autodetect()
     test_training_modules_and_torch_energy()
+    test_multi_sample_rate_adaptation()
     print("ALL HSVC VERIFICATION TESTS PASSED!")

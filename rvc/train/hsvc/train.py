@@ -308,6 +308,7 @@ def train_hsvc(
     cleanup: bool = False,
     cache_data_in_gpu: bool = False,
     fp16_export: bool = False,
+    sample_rate: int = 0,
     batch_size: int = 6,
     device: str = "cuda",
 ):
@@ -342,6 +343,13 @@ def train_hsvc(
         finetune_mode = bool(base_package and os.path.isfile(base_package))
         if finetune_mode:
             net_g, spk_map = HSVCGenerator.from_package(base_package, device=device)
+            if sample_rate and int(sample_rate) != net_g.config.sample_rate:
+                net_g.adapt_sample_rate(int(sample_rate))
+                print(
+                    f"[HSVC] Adapted universal pretrained ({net_g.config.ref_sample_rate} Hz) -> "
+                    f"{net_g.config.sample_rate} Hz (hop={net_g.config.hop_in}/{net_g.config.hop_dec}, fft={net_g.config.n_fft_dec})",
+                    flush=True,
+                )
             mcfg = net_g.config
             net_g.train()
             n_trained = max(1, len(spk_map))
@@ -355,8 +363,11 @@ def train_hsvc(
                     p.requires_grad_(False)
             print(f"[HSVC] Fine-tuning from base package: {base_package}", flush=True)
         else:
+            if sample_rate and int(sample_rate) != mcfg.sample_rate:
+                for k, v in HSVCConfig.stft_params_for_sr(int(sample_rate), ref_sr=mcfg.ref_sample_rate).items():
+                    setattr(mcfg, k, v)
             net_g = HSVCGenerator(mcfg).to(device)
-            print(f"[HSVC] Training from scratch ({config_path})", flush=True)
+            print(f"[HSVC] Training from scratch ({config_path}, sr={mcfg.sample_rate} Hz)", flush=True)
 
         ema_g = copy.deepcopy(net_g).eval()
         for p in ema_g.parameters():
@@ -603,13 +614,14 @@ def train_hsvc(
         final_meta = _make_meta(epoch_idx, step)
         ema_g.export_package(pkg_path, speaker_map=speaker_map, fp16=fp16_export, metadata=final_meta)
         try:
+            sr_label = "44.1k" if mcfg.sample_rate == 44100 else f"{mcfg.sample_rate // 1000}k"
             with open(os.path.join(output_dir, "model_info.json"), "w", encoding="utf-8") as mf:
                 json.dump(
                     {
                         **final_meta,
                         "architecture": "HSVC",
                         "vocoder": "HSVC",
-                        "sr": f"{mcfg.sample_rate // 1000}k",
+                        "sr": sr_label,
                         "embedder_model": "contentvec",
                     },
                     mf,
@@ -643,6 +655,7 @@ if __name__ == "__main__":
     p.add_argument("--cleanup", action="store_true", default=False)
     p.add_argument("--cache-data-in-gpu", action="store_true", default=False)
     p.add_argument("--fp16-export", action="store_true", default=False)
+    p.add_argument("--sample-rate", type=int, default=0, help="Target sample rate (24000/32000/40000/44100/48000); 0 keeps base SR")
     p.add_argument("--batch-size", type=int, default=6)
     p.add_argument("--gpu", default="", help="Applio GPU specifier (e.g. '0', '0-1', or '-' for CPU)")
     p.add_argument("--device", default="cuda")
@@ -666,6 +679,7 @@ if __name__ == "__main__":
         cleanup=args.cleanup,
         cache_data_in_gpu=args.cache_data_in_gpu,
         fp16_export=args.fp16_export,
+        sample_rate=args.sample_rate,
         batch_size=args.batch_size,
         device=resolved_dev,
     )

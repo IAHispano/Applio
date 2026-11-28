@@ -193,9 +193,10 @@ def prequisites_download_pipeline(
 def ensure_pretrained(vocoder, sample_rate):
     """Download only the default G/D pair needed for this training run."""
     if str(vocoder).upper() == "HSVC":
-        if int(sample_rate) != 48000:
+        sr_int = int(sample_rate)
+        if sr_int < 16000 or sr_int > 48000:
             raise ValueError(
-                f"HSVC pretrained currently supports 48000 Hz (got {sample_rate} Hz)"
+                f"HSVC universal pretrained supports 16000-48000 Hz (got {sample_rate} Hz)"
             )
         remote = "hsvc/"
         files = ["hsvc_base_48k.pth", "hsvc_base_48k_d.pth"]
@@ -207,7 +208,7 @@ def ensure_pretrained(vocoder, sample_rate):
                 "APPLIO_HSVC_PRETRAIN_URL", f"{url_base}/hsvc"
             ).rstrip("/")
             print(
-                f"Downloading default HSVC pretrains (48000 Hz) from {hsvc_base_url}...",
+                f"Downloading universal HSVC pretrained (48 kHz -> adapts to {sr_int} Hz) from {hsvc_base_url}...",
                 flush=True,
             )
             with tqdm(

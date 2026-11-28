@@ -42,6 +42,7 @@ F0 + VUV Conf + 10 ms Energy + HF Energy ──► Prosody Frontend (19-d Fourie
 - [`streaming.py`](streaming.py) — `HSVCStreamer`: bounded-context, phase-continuous overlap-add streaming wrapper.
 
 ### Key Design Choices
+- **Single Universal Pretrained Across Sample Rates (`24k / 32k / 40k / 44.1k / 48k`)**: Unlike HiFi-GAN's fixed-stride transposed convolutions, HSVC operates at constant `100 Hz / 200 Hz` frame rates and constant `23.4375 Hz` FFT bin spacing (`n_fft_dec = 2 * round(2048 * sr / 48000 / 2)`), slicing the 48 kHz physical-Hz ERB & minimum-phase filter basis and applying `sqrt(sr / 48000)` source density normalization. One `hsvc_base_48k.pth` adapts zero-shot (within `±0.07 dB` RMS) and fine-tunes natively at **32 kHz, 40 kHz, 44.1 kHz, or 48 kHz** via `model.adapt_sample_rate(target_sr)` — no separate per-sample-rate pretrains required.
 - **Zero transposed convolutions & zero unmodulated STFT residuals (`use_spec_res=False`)**: eliminates HiFi-GAN checkerboard aliasing and prevents stationary `200 Hz` (`sr / hop_dec`) STFT comb lines.
 - **Strict energy-gated excitation**: silence frames drop cleanly below `-108` to `-120 dBFS` in live realtime streaming without needing aggressive noise gates.
 - **Frozen GRL-purified bottleneck on fine-tuning**: keeps cross-speaker disentanglement intact during single-speaker fine-tuning while adapting timbre in ~1.9–2.0× less time and ~1.4 GB less VRAM than RVC v2.
@@ -66,9 +67,13 @@ F0 + VUV Conf + 10 ms Energy + HF Energy ──► Prosody Frontend (19-d Fourie
 - `hsvc_base_48k_d.pth` (Disc, 44.0 MB): `5acb06cb9ec33c4354502ec0b65adfbf22610da2b28906794abd99e63e69058b`
 
 ### Quick Usage
-- **WebUI Train:** Select `Architecture → HSVC` in the Train tab (`48000 Hz` and `HSVC` vocoder are selected automatically).
+- **WebUI Train:** Select `Architecture → HSVC` in the Train tab and pick any target sampling rate (`32000`, `40000`, `44100`, or `48000 Hz`). The single `hsvc_base_48k.pth` pretrained automatically adapts to your chosen rate.
 - **CLI Train:**
   ```bash
-  python core.py train --model-name my_voice --architecture HSVC --sample-rate 48000 --total-epoch 50 --save-every-epoch 10 --batch-size 6
+  python core.py train --model-name my_voice --architecture HSVC --sample-rate 40000 --total-epoch 50 --save-every-epoch 10 --batch-size 6
   ```
-- **Inference & Realtime:** Select any `.pth` model (HSVC or classic RVC v2); Applio automatically detects the architecture.
+- **Zero-Shot Multi-SR Inference CLI:**
+  ```bash
+  python -m rvc.infer.hsvc_pipeline --model rvc/models/pretraineds/hsvc/hsvc_base_48k.pth --input in.wav --output out_32k.wav --speaker exp_ex01 --target-sr 32000
+  ```
+- **Inference & Realtime:** Select any `.pth` model (HSVC at 32k/40k/44.1k/48k or classic RVC v2); Applio automatically detects the architecture and target sample rate.

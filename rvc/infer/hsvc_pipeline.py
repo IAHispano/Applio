@@ -75,9 +75,12 @@ class HSVCPipeline:
         embedder_name: str = "contentvec",
         rmvpe_path: str = "rvc/models/predictors/rmvpe.pt",
         index_path: Optional[str] = None,
+        target_sr: Optional[int] = None,
     ):
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        self.model, self.speaker_map = HSVCGenerator.from_package(model_path, device=self.device)
+        self.model, self.speaker_map = HSVCGenerator.from_package(
+            model_path, device=self.device, target_sr=target_sr
+        )
         self.sr = self.model.config.sample_rate
         self.hop = self.model.config.hop_in
         self.streamer = HSVCStreamer(self.model, device=self.device)
@@ -266,11 +269,12 @@ def main():
     p.add_argument("--noise-scale", type=float, default=1.0, help="Aperiodic/breath noise scale [0..1.5]")
     p.add_argument("--streaming", action="store_true", help="Use bounded-context phase-continuous streaming")
     p.add_argument("--chunk-frames", type=int, default=8, help="Streaming chunk size in 10ms frames (8 = 80ms)")
+    p.add_argument("--target-sr", type=int, default=None, help="Optional zero-shot target sample rate (24000/32000/40000/44100/48000)")
     p.add_argument("--device", default=None, help="cuda or cpu")
     p.add_argument("--list-speakers", action="store_true", help="Print speaker_map and exit")
     args = p.parse_args()
 
-    pipe = HSVCPipeline(args.model, device=args.device, index_path=args.index or None)
+    pipe = HSVCPipeline(args.model, device=args.device, index_path=args.index or None, target_sr=args.target_sr)
     if args.list_speakers:
         print(f"Speakers ({len(pipe.speaker_map)}):", sorted(pipe.speaker_map.items(), key=lambda kv: kv[1])[:40])
         return

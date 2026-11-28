@@ -108,7 +108,7 @@ def inspect_checkpoint(path: str) -> dict:
     if is_hsvc and sr == "None" and isinstance(d.get("config"), dict):
         sr_val = d["config"].get("sample_rate", 48000)
         if isinstance(sr_val, (int, float)):
-            sr = f"{int(sr_val)//1000}k"
+            sr = "44.1k" if int(sr_val) == 44100 else f"{int(sr_val)//1000}k"
     if (
         sr == "None"
         and "config" in d

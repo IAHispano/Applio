@@ -62,6 +62,7 @@ class HSVCConfig:
     """
 
     sample_rate: int = 48000
+    ref_sample_rate: int = 48000
     hop_in: int = 480
     hop_dec: int = 240
     win_dec: int = 960
@@ -82,6 +83,30 @@ class HSVCConfig:
     silence_slope_db: float = 3.0
     nyquist_ratio: float = 0.99
     use_spec_res: bool = False
+
+    @staticmethod
+    def stft_params_for_sr(target_sr: int, ref_sr: int = 48000) -> dict:
+        """
+        Compute constant-Hz-spacing STFT parameters for any target sample rate <= ``ref_sr``.
+
+        Keeps FFT bin spacing (``ref_sr / 2048 = 23.4375 Hz``) and temporal window duration
+        (20 ms Hann, 5 ms hop, 10 ms frontend) invariant so a single 48 kHz pretrained model
+        adapts zero-shot or fine-tunes natively at 24k, 32k, 40k, 44.1k, or 48k.
+        """
+        target_sr = int(target_sr)
+        if target_sr < 16000 or target_sr > ref_sr:
+            raise ValueError(f"HSVC target_sr must be in [16000, {ref_sr}] Hz (got {target_sr} Hz).")
+        hop_in = int(round(target_sr / 100.0))
+        hop_dec = int(round(target_sr / 200.0))
+        win_dec = hop_dec * 4
+        n_fft_dec = int(round(2048.0 * target_sr / float(ref_sr) / 2.0)) * 2
+        return {
+            "sample_rate": target_sr,
+            "hop_in": hop_in,
+            "hop_dec": hop_dec,
+            "win_dec": win_dec,
+            "n_fft_dec": n_fft_dec,
+        }
 
     def to_dict(self) -> dict:
         """Serialize configuration fields to a plain dictionary."""
@@ -155,22 +180,28 @@ class HSVCGenerator(nn.Module):
             ]
         )
 
-        # 6. Alias-free bandlimited source + zero-padded 2048-pt STFT/iSTFT basis
-        self.source_gen = BandlimitedSourceGenerator(c.sample_rate, c.hop_in, nyquist_ratio=c.nyquist_ratio)
+        # 6. Alias-free bandlimited source + constant-Hz-spacing STFT/iSTFT basis
+        self.source_gen = BandlimitedSourceGenerator(
+            c.sample_rate,
+            c.hop_in,
+            nyquist_ratio=c.nyquist_ratio,
+            ref_sample_rate=c.ref_sample_rate,
+        )
         self.register_buffer("stft_window", torch.hann_window(c.win_dec), persistent=False)
 
-        W_erb, W_phase = build_erb_interpolation_matrix(
-            c.n_erb_bands, c.n_fft_dec, c.win_dec, c.sample_rate
+        ref_win = int(round(c.ref_sample_rate / 200.0)) * 4
+        W_erb_ref, W_phase_ref = build_erb_interpolation_matrix(
+            c.n_erb_bands, 2048, ref_win, c.ref_sample_rate
         )
-        self.register_buffer("W_erb", W_erb, persistent=False)
-        self.register_buffer("W_minphase", W_phase, persistent=False)
+        self.register_buffer("W_erb", W_erb_ref[:, : self.n_bins_dec].contiguous(), persistent=False)
+        self.register_buffer("W_minphase", W_phase_ref[:, : self.n_bins_dec].contiguous(), persistent=False)
 
-        # 7. Frequency-coordinate-aware 2D spectral refinement backbone
-        erb_hz = librosa.mel_frequencies(n_mels=c.erb_2d_bins, fmin=0.0, fmax=c.sample_rate / 2.0).astype(
+        # 7. Frequency-coordinate-aware 2D spectral refinement backbone (calibrated to ref_sample_rate)
+        erb_hz = librosa.mel_frequencies(n_mels=c.erb_2d_bins, fmin=0.0, fmax=c.ref_sample_rate / 2.0).astype(
             np.float32
         )
-        f_lin = (erb_hz / (c.sample_rate / 2.0)) * 2.0 - 1.0
-        f_log = (np.log1p(erb_hz / 200.0) / np.log1p((c.sample_rate / 2.0) / 200.0)) * 2.0 - 1.0
+        f_lin = (erb_hz / (c.ref_sample_rate / 2.0)) * 2.0 - 1.0
+        f_log = (np.log1p(erb_hz / 200.0) / np.log1p((c.ref_sample_rate / 2.0) / 200.0)) * 2.0 - 1.0
         freq_coords = torch.from_numpy(np.stack([f_lin, f_log], axis=0)).view(1, 2, c.erb_2d_bins, 1)
         self.register_buffer("freq_coords", freq_coords, persistent=False)
 
@@ -437,6 +468,48 @@ class HSVCGenerator(nn.Module):
             return audio, z_content, end_turns
         return audio
 
+    def adapt_sample_rate(self, target_sr: int) -> "HSVCGenerator":
+        """
+        Adapt this HSVCGenerator in-place to a new output sampling rate (e.g. 24k, 32k, 40k, 44.1k, 48k).
+
+        All learned weights remain 100% intact; only the non-learnable DSP synthesis buffers
+        (source generator, Hann window, and prefix-sliced physical-Hz ERB / minimum-phase bases)
+        are updated to match ``target_sr`` with exact constant-Hz bin spacing.
+
+        Args:
+            target_sr (int): Desired sampling rate in Hz (16000 <= target_sr <= ref_sample_rate).
+
+        Returns:
+            HSVCGenerator: ``self``, adapted in-place on its current device.
+        """
+        target_sr = int(target_sr)
+        if target_sr == self.config.sample_rate:
+            return self
+        device = next(self.parameters()).device
+        params = HSVCConfig.stft_params_for_sr(target_sr, ref_sr=self.config.ref_sample_rate)
+        self.config.sample_rate = params["sample_rate"]
+        self.config.hop_in = params["hop_in"]
+        self.config.hop_dec = params["hop_dec"]
+        self.config.win_dec = params["win_dec"]
+        self.config.n_fft_dec = params["n_fft_dec"]
+        self.n_bins_dec = params["n_fft_dec"] // 2 + 1
+
+        self.source_gen = BandlimitedSourceGenerator(
+            self.config.sample_rate,
+            self.config.hop_in,
+            nyquist_ratio=self.config.nyquist_ratio,
+            ref_sample_rate=self.config.ref_sample_rate,
+        ).to(device)
+        self.stft_window = torch.hann_window(self.config.win_dec, device=device)
+
+        ref_win = int(round(self.config.ref_sample_rate / 200.0)) * 4
+        W_erb_ref, W_phase_ref = build_erb_interpolation_matrix(
+            self.config.n_erb_bands, 2048, ref_win, self.config.ref_sample_rate
+        )
+        self.W_erb = W_erb_ref[:, : self.n_bins_dec].contiguous().to(device)
+        self.W_minphase = W_phase_ref[:, : self.n_bins_dec].contiguous().to(device)
+        return self
+
     def export_package(
         self,
         path: str,
@@ -459,11 +532,12 @@ class HSVCGenerator(nn.Module):
             if fp16 and t.is_floating_point():
                 t = t.half()
             weights[k] = t
+        sr_label = "44.1k" if self.config.sample_rate == 44100 else f"{self.config.sample_rate // 1000}k"
         pkg = {
             "architecture": "hsvc",
             "version": "v1",
             "f0": 1,
-            "sr": f"{self.config.sample_rate // 1000}k",
+            "sr": sr_label,
             "vocoder": "HSVC",
             "embedder_model": "contentvec",
             "speakers_id": len(speaker_map) if speaker_map else self.config.num_speakers,
@@ -478,13 +552,16 @@ class HSVCGenerator(nn.Module):
         torch.save(pkg, path)
 
     @classmethod
-    def from_checkpoint_dict(cls, pkg: dict, device: str = "cpu") -> Tuple["HSVCGenerator", dict]:
+    def from_checkpoint_dict(
+        cls, pkg: dict, device: str = "cpu", target_sr: Optional[int] = None
+    ) -> Tuple["HSVCGenerator", dict]:
         """
         Instantiate an eval-mode HSVCGenerator directly from an in-memory checkpoint dict.
 
         Args:
             pkg (dict): Checkpoint dictionary containing ``config`` and ``weight``.
             device (str): Target PyTorch device (e.g. ``"cpu"`` or ``"cuda"``).
+            target_sr (Optional[int]): Optional target sampling rate to adapt the model to on load.
 
         Returns:
             Tuple[HSVCGenerator, dict]: Loaded model in eval mode and its ``speaker_map``.
@@ -493,19 +570,25 @@ class HSVCGenerator(nn.Module):
         model = cls(cfg)
         state = {k: v.float() if v.is_floating_point() else v for k, v in pkg["weight"].items()}
         model.load_state_dict(state, strict=True)
-        return model.to(device).eval(), pkg.get("speaker_map", {})
+        model = model.to(device).eval()
+        if target_sr is not None and int(target_sr) != model.config.sample_rate:
+            model.adapt_sample_rate(int(target_sr))
+        return model, pkg.get("speaker_map", {})
 
     @classmethod
-    def from_package(cls, path: str, device: str = "cpu") -> Tuple["HSVCGenerator", dict]:
+    def from_package(
+        cls, path: str, device: str = "cpu", target_sr: Optional[int] = None
+    ) -> Tuple["HSVCGenerator", dict]:
         """
         Load an HSVCGenerator from a saved ``.pth`` package file on disk.
 
         Args:
             path (str): Path to the HSVC ``.pth`` file.
             device (str): Target PyTorch device.
+            target_sr (Optional[int]): Optional target sampling rate to adapt the model to on load.
 
         Returns:
             Tuple[HSVCGenerator, dict]: Loaded model in eval mode and its ``speaker_map``.
         """
         pkg = torch.load(path, map_location="cpu", weights_only=True)
-        return cls.from_checkpoint_dict(pkg, device=device)
+        return cls.from_checkpoint_dict(pkg, device=device, target_sr=target_sr)

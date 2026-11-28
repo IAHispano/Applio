@@ -100,13 +100,24 @@ class BandlimitedSourceGenerator(nn.Module):
         sample_rate (int): Audio sampling rate in Hz (default: 48000).
         hop_in (int): Input frontend hop size in samples per 100 Hz frame (default: 480).
         nyquist_ratio (float): Fraction of Nyquist used as the harmonic ceiling (default: 0.99).
+        ref_sample_rate (int): Reference calibration sampling rate of pretrained weights (default: 48000).
+            Applying ``sqrt(sample_rate / ref_sample_rate)`` keeps per-harmonic amplitude and noise
+            power spectral density invariant across 24k, 32k, 40k, 44.1k, and 48k.
     """
 
-    def __init__(self, sample_rate: int = 48000, hop_in: int = 480, nyquist_ratio: float = 0.99):
+    def __init__(
+        self,
+        sample_rate: int = 48000,
+        hop_in: int = 480,
+        nyquist_ratio: float = 0.99,
+        ref_sample_rate: int = 48000,
+    ):
         super().__init__()
         self.sample_rate = sample_rate
+        self.ref_sample_rate = ref_sample_rate
         self.hop_in = hop_in
         self.top_hz = nyquist_ratio * (sample_rate / 2.0)
+        self.sr_gain = math.sqrt(float(sample_rate) / float(ref_sample_rate))
         self.register_buffer("aligned_phases", torch.zeros(1), persistent=False)
         # Golden-ratio phase offsets reduce waveform crest factor for smoother vocal timbre
         scatter = torch.tensor(
@@ -168,10 +179,10 @@ class BandlimitedSourceGenerator(nn.Module):
 
         p_aligned = bandlimited_pulse(turns, f0_sr, self.aligned_phases, self.top_hz) * v_gate_sr
         p_scatter = bandlimited_pulse(turns, f0_sr, self.scatter_phases, self.top_hz) * v_gate_sr
-        harm_wav = torch.stack([p_aligned, p_scatter], dim=1)
+        harm_wav = torch.stack([p_aligned, p_scatter], dim=1) * self.sr_gain
 
         # Strictly energy-gated noise guarantees zero noise injection during digital silence
-        white = torch.randn(B, samples, device=device, dtype=torch.float32) * 0.25 * sil_sr
+        white = torch.randn(B, samples, device=device, dtype=torch.float32) * (0.25 * self.sr_gain) * sil_sr
         theta = (2.0 * math.pi * turns).float()
         n_cos = white * torch.cos(theta) * v_gate_sr
         n_sin = white * torch.sin(theta) * v_gate_sr

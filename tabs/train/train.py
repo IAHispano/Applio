@@ -437,7 +437,7 @@ def train_tab():
                     filterable=False,
                     label=i18n("Sampling Rate"),
                     info=i18n("The sampling rate of the audio files."),
-                    choices=["32000", "40000", "48000"],
+                    choices=["32000", "40000", "44100", "48000"],
                     value="40000",
                     interactive=True,
                 )
@@ -999,7 +999,7 @@ def train_tab():
             def toggle_architecture(architecture):
                 if architecture == "HSVC":
                     return {
-                        "choices": ["48000"],
+                        "choices": ["32000", "40000", "44100", "48000"],
                         "value": "48000",
                         "__type__": "update",
                     }, {
@@ -1023,7 +1023,7 @@ def train_tab():
             def toggle_vocoder(vocoder):
                 if vocoder == "HSVC":
                     return {
-                        "choices": ["48000"],
+                        "choices": ["32000", "40000", "44100", "48000"],
                         "__type__": "update",
                         "value": "48000",
                     }

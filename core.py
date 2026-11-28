@@ -516,9 +516,10 @@ def run_train_script(
     architecture: str = "RVC",
 ):
     if str(architecture).upper() == "HSVC" or str(vocoder).upper() == "HSVC":
-        if int(sample_rate) != 48000:
+        sr_int = int(sample_rate)
+        if sr_int < 16000 or sr_int > 48000:
             raise ValueError(
-                f"HSVC training requires 48000 Hz sample rate (got {sample_rate} Hz)."
+                f"HSVC supports sample rates in 16000–48000 Hz (got {sample_rate} Hz)."
             )
         if pretrained:
             if custom_pretrained:
@@ -533,7 +534,7 @@ def run_train_script(
                         "Custom pretrained HSVC discriminator file must exist and be non-empty."
                     )
             else:
-                pg, pd = pretrained_selector("HSVC", 48000)
+                pg, pd = pretrained_selector("HSVC", sr_int)
         else:
             pg, pd = "", ""
 
@@ -546,6 +547,7 @@ def run_train_script(
             hsvc_train_path,
             "--exp-dir", exp_dir,
             "--model-name", str(model_name),
+            "--sample-rate", str(sr_int),
             "--epochs", str(total_epoch),
             "--save-every-epoch", str(save_every_epoch),
             "--batch-size", str(batch_size),
@@ -1011,7 +1013,7 @@ def tts(**kwargs):
 @click.option(
     "--sample-rate",
     required=True,
-    type=click.Choice(["32000", "40000", "48000"]),
+    type=click.Choice(["32000", "40000", "44100", "48000"]),
     help="Target sampling rate.",
 )
 @click.option(
@@ -1180,7 +1182,7 @@ def extract(**kwargs):
 @click.option(
     "--sample-rate",
     required=True,
-    type=click.Choice(["32000", "40000", "48000"]),
+    type=click.Choice(["32000", "40000", "44100", "48000"]),
     help="Training sampling rate.",
 )
 @click.option(
