@@ -50,7 +50,7 @@ current_script_directory = os.path.dirname(os.path.realpath(__file__))
 if current_script_directory not in sys.path:
     sys.path.append(current_script_directory)
 
-from rvc.lib.user_config import get_logs_dir
+from backend.lib.user_config import get_logs_dir
 
 logs_path = get_logs_dir()
 python = sys.executable
@@ -70,7 +70,7 @@ def run_quiet(command, **kwargs):
 @lru_cache(maxsize=1)
 def load_voices_data():
     tts_path = os.path.join(
-        current_script_directory, "rvc", "lib", "tools", "tts_voices.json"
+        current_script_directory, "backend", "lib", "tools", "tts_voices.json"
     )
     if os.path.exists(tts_path):
         try:
@@ -88,7 +88,7 @@ locales = list({voice["ShortName"] for voice in voices_data}) or ["en-US-AnaNeur
 @lru_cache(maxsize=None)
 def import_voice_converter():
     try:
-        from rvc.infer.infer import VoiceConverter
+        from backend.infer.infer import VoiceConverter
 
         return VoiceConverter()
     except ImportError as e:
@@ -99,13 +99,13 @@ def import_voice_converter():
 
 @lru_cache(maxsize=1)
 def get_config():
-    from rvc.configs.config import Config
+    from backend.configs.config import Config
 
     return Config()
 
 
 def pretrained_selector(vocoder: str, sample_rate: int):
-    from rvc.lib.tools.prerequisites_download import ensure_pretrained
+    from backend.lib.tools.prerequisites_download import ensure_pretrained
 
     return ensure_pretrained(vocoder, sample_rate)
 
@@ -305,7 +305,7 @@ def run_tts_script(
     cleanup_strength: float = 12,
 ):
     tts_script_path = os.path.join(
-        current_script_directory, "rvc", "lib", "tools", "tts.py"
+        current_script_directory, "backend", "lib", "tools", "tts.py"
     )
 
     if os.path.exists(output_tts_path) and os.path.abspath(output_tts_path).startswith(
@@ -373,7 +373,7 @@ def run_tts_script(
         )
 
     if cleanup_mode != "off":
-        from rvc.lib.tools.audio_cleanup import cleanup_file
+        from backend.lib.tools.audio_cleanup import cleanup_file
 
         cleanup_file(output_tts_path, cleanup_mode, cleanup_strength)
     return f"Text synthesized successfully.", output_tts_path
@@ -391,7 +391,7 @@ def run_preprocess_script(
     normalization_mode: str = "none",
 ):
     preprocess_script_path = os.path.join(
-        current_script_directory, "rvc", "train", "preprocess", "preprocess.py"
+        current_script_directory, "backend", "train", "preprocess", "preprocess.py"
     )
     command = [
         python,
@@ -429,7 +429,7 @@ def run_extract_script(
 ):
     model_path = os.path.join(logs_path, model_name)
     extract = os.path.join(
-        current_script_directory, "rvc", "train", "extract", "extract.py"
+        current_script_directory, "backend", "train", "extract", "extract.py"
     )
 
     command_1 = [
@@ -539,7 +539,7 @@ def run_train_script(
             pg, pd = "", ""
 
         hsvc_train_path = os.path.join(
-            current_script_directory, "rvc", "train", "hsvc", "train.py"
+            current_script_directory, "backend", "architectures", "hsvc", "train.py"
         )
         exp_dir = os.path.join(logs_path, model_name)
         command = [
@@ -602,7 +602,7 @@ def run_train_script(
         pg, pd = "", ""
 
     train_script_path = os.path.join(
-        current_script_directory, "rvc", "train", "train.py"
+        current_script_directory, "backend", "architectures", "rvc", "train.py"
     )
     command = [
         python,
@@ -654,7 +654,7 @@ def run_train_script(
 
 def run_index_script(model_name: str, index_algorithm: str):
     index_script_path = os.path.join(
-        current_script_directory, "rvc", "train", "process", "extract_index.py"
+        current_script_directory, "backend", "train", "process", "extract_index.py"
     )
     command = [
         python,
@@ -672,7 +672,7 @@ def run_model_information_script(pth_path: str):
     if not os.path.exists(pth_path):
         raise FileNotFoundError(f"Model file not found: '{pth_path}'")
     try:
-        from rvc.train.process.model_information import model_information as model_info
+        from backend.train.process.model_information import model_information as model_info
 
         info = model_info(pth_path)
         print(info)
@@ -691,7 +691,7 @@ def run_model_onnx_export_script(
     if not output_path:
         output_path = pth_path.replace(".pth", ".onnx")
     try:
-        from rvc.lib.tools.onnx_export import onnx_exporter
+        from backend.lib.tools.onnx_export import onnx_exporter
 
         info = onnx_exporter(pth_path, output_path, is_half=is_half, device=device)
         print(info)
@@ -705,21 +705,21 @@ def run_model_onnx_export_script(
 def run_model_blender_script(
     model_name: str, pth_path_1: str, pth_path_2: str, ratio: float
 ):
-    from rvc.train.process.model_blender import model_blender as blender
+    from backend.train.process.model_blender import model_blender as blender
 
     message, model_blended = blender(model_name, pth_path_1, pth_path_2, ratio)
     return message, model_blended
 
 
 def run_tensorboard_script():
-    from rvc.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
+    from backend.lib.tools.launch_tensorboard import launch_tensorboard_pipeline
 
     launch_tensorboard_pipeline()
 
 
 def run_download_script(model_link: str):
     try:
-        from rvc.lib.tools.model_download import model_download_pipeline
+        from backend.lib.tools.model_download import model_download_pipeline
 
         result = model_download_pipeline(model_link)
         if result == "Error" or result is None:
@@ -735,7 +735,7 @@ def run_prerequisites_script(
     pretraineds_hifigan: bool = True, models: bool = True, exe: bool = True
 ):
     try:
-        from rvc.lib.tools.prerequisites_download import prequisites_download_pipeline
+        from backend.lib.tools.prerequisites_download import prequisites_download_pipeline
 
         prequisites_download_pipeline(pretraineds_hifigan, models, exe)
         return "Prerequisites downloaded and installed successfully."
@@ -751,7 +751,7 @@ def run_audio_analyzer_script(
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"Audio file not found: '{input_path}'")
     try:
-        from rvc.lib.tools.analyzer import analyze_audio
+        from backend.lib.tools.analyzer import analyze_audio
 
         audio_info, plot_path = analyze_audio(input_path, save_plot_path)
         print(

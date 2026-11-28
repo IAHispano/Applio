@@ -2,15 +2,18 @@
 
 import json
 import os
+import sys
 import tempfile
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import librosa
 import numpy as np
 import torch
 from scipy.ndimage import uniform_filter1d
 
-from rvc.infer.hsvc_pipeline import compute_energy_100hz_torch
-from rvc.lib.algorithm.hsvc import (
+from backend.architectures.hsvc.pipeline import compute_energy_100hz_torch
+from backend.architectures.hsvc import (
     DualDomainDiscriminator,
     HardenedSpectralSpeakerCritic,
     HSVCConfig,
@@ -38,7 +41,7 @@ def measure_stationary_comb_db(wav: np.ndarray, sr: int = 48000, comb_hz: float 
 
 
 def test_shapes_and_configs():
-    for cfg_path in ("rvc/configs/hsvc/48000.json", "rvc/configs/hsvc/48000_base.json"):
+    for cfg_path in ("backend/architectures/hsvc/configs/48000.json", "backend/architectures/hsvc/configs/48000_base.json"):
         with open(cfg_path) as f:
             cfg = HSVCConfig.from_dict(json.load(f)["model"])
         assert cfg.use_spec_res is False, f"{cfg_path} must disable unmodulated spec_res!"
@@ -60,7 +63,7 @@ def test_shapes_and_configs():
 
 def test_silence_gate_and_zero_200hz_comb():
     torch.manual_seed(42)
-    with open("rvc/configs/hsvc/48000_base.json") as f:
+    with open("backend/architectures/hsvc/configs/48000_base.json") as f:
         cfg = HSVCConfig.from_dict(json.load(f)["model"])
     G = HSVCGenerator(cfg).eval()
     T = 300
@@ -89,7 +92,7 @@ def test_silence_gate_and_zero_200hz_comb():
 
 
 def test_streaming_and_fp16_package_autodetect():
-    with open("rvc/configs/hsvc/48000_base.json") as f:
+    with open("backend/architectures/hsvc/configs/48000_base.json") as f:
         cfg = HSVCConfig.from_dict(json.load(f)["model"])
     G = HSVCGenerator(cfg).eval()
     T = 80
@@ -142,7 +145,7 @@ def test_training_modules_and_torch_energy():
 
 
 def test_multi_sample_rate_adaptation():
-    with open("rvc/configs/hsvc/48000_base.json") as f:
+    with open("backend/architectures/hsvc/configs/48000_base.json") as f:
         cfg = HSVCConfig.from_dict(json.load(f)["model"])
     G = HSVCGenerator(cfg).eval()
     B, T = 1, 40

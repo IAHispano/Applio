@@ -20,7 +20,7 @@ assets/datasets
 assets/config.json
 
 logs
-rvc/models
+models
 env*/
 .env*/
 venv*/

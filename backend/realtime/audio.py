@@ -1,0 +1,477 @@
+import os
+import sys
+import librosa
+import traceback
+import numpy as np
+import sounddevice as sd
+from queue import Empty, Full, Queue
+from dataclasses import dataclass
+
+now_dir = os.getcwd()
+sys.path.append(now_dir)
+
+from backend.realtime.core import AUDIO_SAMPLE_RATE
+
+
+def queue_latest(queue, audio):
+    """Keep each playback stream bounded without blocking the input callback."""
+    try:
+        queue.put_nowait(audio)
+    except Full:
+        try:
+            queue.get_nowait()
+        except Empty:
+            pass
+        try:
+            queue.put_nowait(audio)
+        except Full:
+            pass
+
+
+@dataclass
+class ServerAudioDevice:
+    index: int = 0
+    name: str = ""
+    host_api: str = ""
+    max_input_channels: int = 0
+    max_output_channels: int = 0
+    default_samplerate: int = 0
+
+
+def check_the_device(device, type: str = "input"):
+    if sys.platform == "linux" and "hw:" not in device["name"]:
+        return False
+
+    if type == "input":
+        return device["max_input_channels"] > 0
+    else:
+        return device["max_output_channels"] > 0
+
+
+def list_audio_device():
+    """
+    Function to query audio devices and host api.
+    """
+    try:
+        audio_device_list = sd.query_devices()
+    except Exception as e:
+        print("An error occurred while querying the audio device:", e)
+        audio_device_list = []
+    except OSError as e:
+        # This error can occur when the libportaudio2 library is missing.
+        print("An error occurred while querying the audio device:", e)
+        audio_device_list = []
+
+    input_audio_device_list = [
+        d
+        for d in audio_device_list
+        if d["max_input_channels"] > 0 and check_the_device(d, "input")
+    ]
+    output_audio_device_list = [
+        d
+        for d in audio_device_list
+        if d["max_output_channels"] > 0 and check_the_device(d, "output")
+    ]
+
+    try:
+        hostapis = sd.query_hostapis()
+    except Exception as e:
+        print("An error occurred while querying the host api:", e)
+        hostapis = []
+    except OSError as e:
+        # This error can occur when the libportaudio2 library is missing.
+        print("An error occurred while querying the host api:", e)
+        hostapis = []
+
+    audio_input_device = []
+    audio_output_device = []
+
+    for d in input_audio_device_list:
+        input_audio_device = ServerAudioDevice(
+            index=d["index"],
+            name=d["name"],
+            host_api=hostapis[d["hostapi"]]["name"],
+            max_input_channels=d["max_input_channels"],
+            max_output_channels=d["max_output_channels"],
+            default_samplerate=d["default_samplerate"],
+        )
+        audio_input_device.append(input_audio_device)
+
+    for d in output_audio_device_list:
+        output_audio_device = ServerAudioDevice(
+            index=d["index"],
+            name=d["name"],
+            host_api=hostapis[d["hostapi"]]["name"],
+            max_input_channels=d["max_input_channels"],
+            max_output_channels=d["max_output_channels"],
+            default_samplerate=d["default_samplerate"],
+        )
+        audio_output_device.append(output_audio_device)
+
+    return audio_input_device, audio_output_device
+
+
+def resolve_sample_rate(
+    input_device_id: int,
+    asio_enabled: bool,
+    audio_sample_rate: int,
+) -> int:
+    """Return the sample rate to use for audio streaming.
+
+    For ASIO the user-selected rate is used as-is because ASIO drivers
+    do not expose a reliable default_samplerate via PortAudio.
+    For all other host APIs the input device's default_samplerate is used
+    so that the stream matches the rate the OS/driver actually operates at.
+    """
+    if asio_enabled:
+        return audio_sample_rate
+    try:
+        device = sd.query_devices(input_device_id)
+        return int(device["default_samplerate"])
+    except Exception:
+        return audio_sample_rate
+
+
+class Audio:
+    def __init__(
+        self,
+        callbacks,
+        f0_up_key: int = 0,
+        index_rate: float = 0.5,
+        protect: float = 0.5,
+        volume_envelope: float = 1,
+        f0_autotune: bool = False,
+        f0_autotune_strength: float = 1,
+        proposed_pitch: bool = False,
+        proposed_pitch_threshold: float = 155.0,
+        input_audio_gain: float = 1.0,
+        output_audio_gain: float = 1.0,
+        monitor_audio_gain: float = 1.0,
+        monitor: bool = False,
+    ):
+        self.callbacks = callbacks
+        self.out_queue = Queue(maxsize=2)
+        self.mon_queue = Queue(maxsize=2)
+        self.stream = None
+        self.input_stream = None
+        self.output_stream = None
+        self.monitor = None
+        self.running = False
+        self.input_audio_gain = input_audio_gain
+        self.output_audio_gain = output_audio_gain
+        self.monitor_audio_gain = monitor_audio_gain
+        self.use_monitor = monitor
+        self.f0_up_key = f0_up_key
+        self.index_rate = index_rate
+        self.protect = protect
+        self.volume_envelope = volume_envelope
+        self.f0_autotune = f0_autotune
+        self.f0_autotune_strength = f0_autotune_strength
+        self.proposed_pitch = proposed_pitch
+        self.proposed_pitch_threshold = proposed_pitch_threshold
+
+    def get_input_audio_device(self, index: int):
+        audioinput, _ = list_audio_device()
+        serverAudioDevice = [x for x in audioinput if x.index == index]
+
+        return serverAudioDevice[0] if len(serverAudioDevice) > 0 else None
+
+    def get_output_audio_device(self, index: int):
+        _, audiooutput = list_audio_device()
+        serverAudioDevice = [x for x in audiooutput if x.index == index]
+
+        return serverAudioDevice[0] if len(serverAudioDevice) > 0 else None
+
+    def process_data(self, indata: np.ndarray):
+        indata = indata * self.input_audio_gain
+        unpacked_data = librosa.to_mono(indata.T)
+
+        return self.callbacks.change_voice(
+            unpacked_data,
+            self.f0_up_key,
+            self.index_rate,
+            self.protect,
+            self.volume_envelope,
+            self.f0_autotune,
+            self.f0_autotune_strength,
+            self.proposed_pitch,
+            self.proposed_pitch_threshold,
+        )
+
+    def process_data_with_time(self, indata: np.ndarray):
+        out_wav, vol, performance_ms = self.process_data(indata)
+        # print(f"real-time voice conversion performance: {performance_ms:.2f} ms")
+        self.latency = performance_ms  # latency to display on the application interface
+        self.volume = vol
+
+        return out_wav
+
+    def audio_stream_no_output_callback(
+        self, indata: np.ndarray, frames, times, status
+    ):
+        if not self.running:
+            return
+        try:
+            out_wav = self.process_data_with_time(indata)
+
+            queue_latest(self.out_queue, out_wav)
+            if self.use_monitor:
+                queue_latest(self.mon_queue, out_wav)
+        except Exception as error:
+            print(f"An error occurred while running the audio stream: {error}")
+            print(traceback.format_exc())
+
+    def audio_stream_callback(
+        self, indata: np.ndarray, outdata: np.ndarray, frames, times, status
+    ):
+        if not self.running:
+            outdata.fill(0)
+            return
+        try:
+            out_wav = self.process_data_with_time(indata)
+
+            output_channels = outdata.shape[1]
+            if self.use_monitor:
+                queue_latest(self.mon_queue, out_wav)
+
+            outdata[:] = (
+                np.repeat(out_wav, output_channels).reshape(-1, output_channels)
+                * self.output_audio_gain
+            )
+        except Exception as error:
+            print(f"An error occurred while running the audio stream: {error}")
+            print(traceback.format_exc())
+
+    def audio_queue(self, q: Queue, outdata: np.ndarray, gain: float):
+        if not self.running:
+            outdata.fill(0)
+            return
+        try:
+            try:
+                mon_wav = q.get_nowait()
+                while True:
+                    try:
+                        latest = q.get_nowait()
+                    except Empty:
+                        break
+                    mon_wav = latest
+            except Empty:
+                outdata.fill(0)
+                return
+
+            output_channels = outdata.shape[1]
+            outdata[:] = (
+                np.repeat(mon_wav, output_channels).reshape(-1, output_channels) * gain
+            )
+        except Exception as error:
+            print(f"An error occurred while running the audio queue: {error}")
+            print(traceback.format_exc())
+
+    def run_audio_stream(
+        self,
+        block_frame: int,
+        input_device_id: int,
+        output_device_id: int,
+        output_monitor_id: int,
+        input_max_channel: int,
+        output_max_channel: int,
+        output_monitor_max_channel: int,
+        input_extra_setting,
+        output_extra_setting,
+        output_monitor_extra_setting,
+        audio_sample_rate: int,
+    ):
+        use_asio = isinstance(input_extra_setting, sd.AsioSettings) or isinstance(
+            output_extra_setting, sd.AsioSettings
+        )
+        if use_asio:
+            # Re-initialize PortAudio to ensure a clean ASIO driver state.
+            try:
+                sd._terminate()
+                sd._initialize()
+            except Exception:
+                pass
+        if input_device_id != output_device_id:
+            # Only use in cases involving different backends devices.
+            self.input_stream = sd.InputStream(
+                callback=self.audio_stream_no_output_callback,
+                latency="low",
+                dtype=np.float32,
+                device=input_device_id,
+                blocksize=block_frame,
+                samplerate=audio_sample_rate,
+                channels=input_max_channel,
+                extra_settings=input_extra_setting,
+            )
+            self.output_stream = sd.OutputStream(
+                callback=lambda outdata, frames, times, status: self.audio_queue(
+                    self.out_queue, outdata, self.output_audio_gain
+                ),
+                latency="low",
+                dtype=np.float32,
+                device=output_device_id,
+                blocksize=block_frame,
+                samplerate=audio_sample_rate,
+                channels=output_max_channel,
+                extra_settings=output_extra_setting,
+            )
+            self.input_stream.start()
+            self.output_stream.start()
+        else:
+            self.stream = sd.Stream(
+                callback=self.audio_stream_callback,
+                latency="low",
+                dtype=np.float32,
+                device=(input_device_id, output_device_id),
+                blocksize=block_frame,
+                samplerate=audio_sample_rate,
+                channels=(input_max_channel, output_max_channel),
+                extra_settings=(input_extra_setting, output_extra_setting),
+            )
+            self.stream.start()
+
+        if self.use_monitor:
+            self.monitor = sd.OutputStream(
+                callback=lambda outdata, frames, times, status: self.audio_queue(
+                    self.mon_queue, outdata, self.monitor_audio_gain
+                ),
+                latency="low",
+                dtype=np.float32,
+                device=output_monitor_id,
+                blocksize=block_frame,
+                samplerate=audio_sample_rate,
+                channels=output_monitor_max_channel,
+                extra_settings=output_monitor_extra_setting,
+            )
+            self.monitor.start()
+
+    def stop(self):
+        self.running = False
+
+        streams = [self.stream, self.input_stream, self.output_stream, self.monitor]
+        self.stream = None
+        self.input_stream = None
+        self.output_stream = None
+        self.monitor = None
+
+        for s in streams:
+            if s is not None:
+                try:
+                    s.abort()
+                except Exception:
+                    pass
+                try:
+                    s.close()
+                except Exception:
+                    pass
+
+        while not self.out_queue.empty():
+            try:
+                self.out_queue.get_nowait()
+            except Exception:
+                break
+        while not self.mon_queue.empty():
+            try:
+                self.mon_queue.get_nowait()
+            except Exception:
+                break
+
+    def start(
+        self,
+        input_device_id: int,
+        output_device_id: int,
+        output_monitor_id: int = None,
+        exclusive_mode: bool = False,
+        asio_input_channel: int = 0,
+        asio_output_channel: int = 0,
+        asio_output_monitor_channel: int = 0,
+        block_frame: int = 24576,
+        audio_sample_rate: int = AUDIO_SAMPLE_RATE,
+        asio_output_stereo: bool = True,
+    ):
+        self.stop()
+
+        input_audio_device, output_audio_device = self.get_input_audio_device(
+            input_device_id
+        ), self.get_output_audio_device(output_device_id)
+        input_channels, output_channels = (
+            input_audio_device.max_input_channels,
+            output_audio_device.max_output_channels,
+        )
+
+        (
+            input_extra_setting,
+            output_extra_setting,
+            output_monitor_extra_setting,
+            monitor_channels,
+        ) = (None, None, None, None)
+
+        if input_audio_device and "WASAPI" in input_audio_device.host_api:
+            input_extra_setting = sd.WasapiSettings(
+                exclusive=exclusive_mode, auto_convert=not exclusive_mode
+            )
+        elif (
+            input_audio_device
+            and "ASIO" in input_audio_device.host_api
+            and asio_input_channel != -1
+        ):
+            input_extra_setting = sd.AsioSettings(
+                channel_selectors=[asio_input_channel]
+            )
+            input_channels = 1
+
+        if output_audio_device and "WASAPI" in output_audio_device.host_api:
+            output_extra_setting = sd.WasapiSettings(
+                exclusive=exclusive_mode, auto_convert=not exclusive_mode
+            )
+        elif (
+            output_audio_device
+            and "ASIO" in output_audio_device.host_api
+            and asio_output_channel != -1
+        ):
+            output_selectors = (
+                [asio_output_channel, asio_output_channel + 1]
+                if asio_output_stereo
+                else [asio_output_channel]
+            )
+            output_extra_setting = sd.AsioSettings(channel_selectors=output_selectors)
+            output_channels = len(output_selectors)
+
+        if self.use_monitor:
+            output_monitor_device = self.get_output_audio_device(output_monitor_id)
+            monitor_channels = output_monitor_device.max_output_channels
+
+            if output_monitor_device and "WASAPI" in output_monitor_device.host_api:
+                output_monitor_extra_setting = sd.WasapiSettings(
+                    exclusive=exclusive_mode,
+                    auto_convert=not exclusive_mode,
+                )
+            elif (
+                output_monitor_device
+                and "ASIO" in output_monitor_device.host_api
+                and asio_output_monitor_channel != -1
+            ):
+                output_monitor_extra_setting = sd.AsioSettings(
+                    channel_selectors=[asio_output_monitor_channel]
+                )
+                monitor_channels = 1
+
+        try:
+            self.run_audio_stream(
+                block_frame,
+                input_device_id,
+                output_device_id,
+                output_monitor_id,
+                input_channels,
+                output_channels,
+                monitor_channels,
+                input_extra_setting,
+                output_extra_setting,
+                output_monitor_extra_setting,
+                audio_sample_rate,
+            )
+            self.running = True
+        except Exception as error:
+            print(f"An error occurred while streaming audio: {error}")
+            print(traceback.format_exc())
+            raise

@@ -77,16 +77,20 @@ def file_mode(name):
     """Only shipped code is replaceable; user-owned folders are never pruned."""
     parts = safe_name(name).parts
     lower = tuple(p.lower() for p in parts)
-    if lower[0] in DATA_ROOTS or "__pycache__" in lower:
+    if lower[0] in DATA_ROOTS or lower[0] == "models" or "__pycache__" in lower:
         return None
-    if lower[:3] == ("tabs", "plugins", "installed"):
+    if lower[:4] == ("frontend", "tabs", "plugins", "installed") or lower[:3] == (
+        "tabs",
+        "plugins",
+        "installed",
+    ):
         return None
     if lower[0] == "assets":
         if len(parts) < 2:
             return None
         if lower[1] in {"presets", "formant_shift"}:
             return "seed" if Path(name).suffix.lower() == ".json" else None
-        if lower[1] in {"ui", "i18n", "themes", "zluda"}:
+        if lower[1] in {"zluda"}:
             # Never accept model weights or audio through an update payload.
             allowed = {
                 ".py",
@@ -108,13 +112,11 @@ def file_mode(name):
         )
     if lower[0] == "docs":
         return "replace" if Path(name).suffix.lower() == ".md" else None
-    if lower[0] in {"rvc", "tabs"}:
-        if lower[:2] == ("rvc", "models"):
-            return None
+    if lower[0] in {"backend", "frontend"}:
         return (
             "replace"
             if Path(name).suffix.lower()
-            in {".py", ".json", ".css", ".js", ".html", ".svg"}
+            in {".py", ".json", ".css", ".js", ".html", ".svg", ".ttf", ".woff2", ".md"}
             else None
         )
     if len(parts) == 1:
@@ -246,7 +248,7 @@ def validate_manifest(manifest):
 
 def user_data_path(name):
     parts = tuple(p.lower() for p in safe_name(name).parts)
-    return parts[0] in {"logs", "audios", "datasets", "outputs"} or (
+    return parts[0] in {"logs", "audios", "datasets", "outputs", "models"} or (
         len(parts) > 1
         and parts[:2]
         in {
@@ -254,7 +256,7 @@ def user_data_path(name):
             ("assets", "datasets"),
             ("assets", "presets"),
             ("assets", "formant_shift"),
-            ("rvc", "models"),
+            ("models"),
         }
     )
 

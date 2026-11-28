@@ -1,0 +1,614 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
+
+from backend.lib.predictors.chunking import extract_pitch
+from librosa.filters import mel
+from typing import List
+
+N_MELS = 128
+N_CLASS = 360
+
+
+class ConvBlockRes(nn.Module):
+    """
+    A convolutional block with residual connection.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        momentum (float): Momentum for batch normalization.
+    """
+
+    def __init__(self, in_channels, out_channels, momentum=0.01):
+        super(ConvBlockRes, self).__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=(3, 3),
+                stride=(1, 1),
+                padding=(1, 1),
+                bias=False,
+            ),
+            nn.BatchNorm2d(out_channels, momentum=momentum),
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=out_channels,
+                out_channels=out_channels,
+                kernel_size=(3, 3),
+                stride=(1, 1),
+                padding=(1, 1),
+                bias=False,
+            ),
+            nn.BatchNorm2d(out_channels, momentum=momentum),
+            nn.ReLU(),
+        )
+        if in_channels != out_channels:
+            self.shortcut = nn.Conv2d(in_channels, out_channels, (1, 1))
+            self.is_shortcut = True
+        else:
+            self.is_shortcut = False
+
+    def forward(self, x):
+        if self.is_shortcut:
+            return self.conv(x) + self.shortcut(x)
+        else:
+            return self.conv(x) + x
+
+
+class ResEncoderBlock(nn.Module):
+    """
+    A residual encoder block.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        kernel_size (tuple): Size of the average pooling kernel.
+        n_blocks (int): Number of convolutional blocks in the block.
+        momentum (float): Momentum for batch normalization.
+    """
+
+    def __init__(
+        self, in_channels, out_channels, kernel_size, n_blocks=1, momentum=0.01
+    ):
+        super(ResEncoderBlock, self).__init__()
+        self.n_blocks = n_blocks
+        self.conv = nn.ModuleList()
+        self.conv.append(ConvBlockRes(in_channels, out_channels, momentum))
+        for _ in range(n_blocks - 1):
+            self.conv.append(ConvBlockRes(out_channels, out_channels, momentum))
+        self.kernel_size = kernel_size
+        if self.kernel_size is not None:
+            self.pool = nn.AvgPool2d(kernel_size=kernel_size)
+
+    def forward(self, x):
+        for i in range(self.n_blocks):
+            x = self.conv[i](x)
+        if self.kernel_size is not None:
+            return x, self.pool(x)
+        else:
+            return x
+
+
+class Encoder(nn.Module):
+    """
+    The encoder part of the DeepUnet.
+
+    Args:
+        in_channels (int): Number of input channels.
+        in_size (int): Size of the input tensor.
+        n_encoders (int): Number of encoder blocks.
+        kernel_size (tuple): Size of the average pooling kernel.
+        n_blocks (int): Number of convolutional blocks in each encoder block.
+        out_channels (int): Number of output channels for the first encoder block.
+        momentum (float): Momentum for batch normalization.
+    """
+
+    def __init__(
+        self,
+        in_channels,
+        in_size,
+        n_encoders,
+        kernel_size,
+        n_blocks,
+        out_channels=16,
+        momentum=0.01,
+    ):
+        super(Encoder, self).__init__()
+        self.n_encoders = n_encoders
+        self.bn = nn.BatchNorm2d(in_channels, momentum=momentum)
+        self.layers = nn.ModuleList()
+        self.latent_channels = []
+        for i in range(self.n_encoders):
+            self.layers.append(
+                ResEncoderBlock(
+                    in_channels, out_channels, kernel_size, n_blocks, momentum=momentum
+                )
+            )
+            self.latent_channels.append([out_channels, in_size])
+            in_channels = out_channels
+            out_channels *= 2
+            in_size //= 2
+        self.out_size = in_size
+        self.out_channel = out_channels
+
+    def forward(self, x: torch.Tensor):
+        concat_tensors: List[torch.Tensor] = []
+        x = self.bn(x)
+        for i in range(self.n_encoders):
+            t, x = self.layers[i](x)
+            concat_tensors.append(t)
+        return x, concat_tensors
+
+
+class Intermediate(nn.Module):
+    """
+    The intermediate layer of the DeepUnet.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        n_inters (int): Number of convolutional blocks in the intermediate layer.
+        n_blocks (int): Number of convolutional blocks in each intermediate block.
+        momentum (float): Momentum for batch normalization.
+    """
+
+    def __init__(self, in_channels, out_channels, n_inters, n_blocks, momentum=0.01):
+        super(Intermediate, self).__init__()
+        self.n_inters = n_inters
+        self.layers = nn.ModuleList()
+        self.layers.append(
+            ResEncoderBlock(in_channels, out_channels, None, n_blocks, momentum)
+        )
+        for _ in range(self.n_inters - 1):
+            self.layers.append(
+                ResEncoderBlock(out_channels, out_channels, None, n_blocks, momentum)
+            )
+
+    def forward(self, x):
+        for i in range(self.n_inters):
+            x = self.layers[i](x)
+        return x
+
+
+class ResDecoderBlock(nn.Module):
+    """
+    A residual decoder block.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        stride (tuple): Stride for transposed convolution.
+        n_blocks (int): Number of convolutional blocks in the block.
+        momentum (float): Momentum for batch normalization.
+    """
+
+    def __init__(self, in_channels, out_channels, stride, n_blocks=1, momentum=0.01):
+        super(ResDecoderBlock, self).__init__()
+        out_padding = (0, 1) if stride == (1, 2) else (1, 1)
+        self.n_blocks = n_blocks
+        self.conv1 = nn.Sequential(
+            nn.ConvTranspose2d(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=(3, 3),
+                stride=stride,
+                padding=(1, 1),
+                output_padding=out_padding,
+                bias=False,
+            ),
+            nn.BatchNorm2d(out_channels, momentum=momentum),
+            nn.ReLU(),
+        )
+        self.conv2 = nn.ModuleList()
+        self.conv2.append(ConvBlockRes(out_channels * 2, out_channels, momentum))
+        for _ in range(n_blocks - 1):
+            self.conv2.append(ConvBlockRes(out_channels, out_channels, momentum))
+
+    def forward(self, x, concat_tensor):
+        x = self.conv1(x)
+        x = torch.cat((x, concat_tensor), dim=1)
+        for i in range(self.n_blocks):
+            x = self.conv2[i](x)
+        return x
+
+
+class Decoder(nn.Module):
+    """
+    The decoder part of the DeepUnet.
+
+    Args:
+        in_channels (int): Number of input channels.
+        n_decoders (int): Number of decoder blocks.
+        stride (tuple): Stride for transposed convolution.
+        n_blocks (int): Number of convolutional blocks in each decoder block.
+        momentum (float): Momentum for batch normalization.
+    """
+
+    def __init__(self, in_channels, n_decoders, stride, n_blocks, momentum=0.01):
+        super(Decoder, self).__init__()
+        self.layers = nn.ModuleList()
+        self.n_decoders = n_decoders
+        for _ in range(self.n_decoders):
+            out_channels = in_channels // 2
+            self.layers.append(
+                ResDecoderBlock(in_channels, out_channels, stride, n_blocks, momentum)
+            )
+            in_channels = out_channels
+
+    def forward(self, x, concat_tensors):
+        for i in range(self.n_decoders):
+            x = self.layers[i](x, concat_tensors[-1 - i])
+        return x
+
+
+class DeepUnet(nn.Module):
+    """
+    The DeepUnet architecture.
+
+    Args:
+        kernel_size (tuple): Size of the average pooling kernel.
+        n_blocks (int): Number of convolutional blocks in each encoder/decoder block.
+        en_de_layers (int): Number of encoder/decoder layers.
+        inter_layers (int): Number of convolutional blocks in the intermediate layer.
+        in_channels (int): Number of input channels.
+        en_out_channels (int): Number of output channels for the first encoder block.
+    """
+
+    def __init__(
+        self,
+        kernel_size,
+        n_blocks,
+        en_de_layers=5,
+        inter_layers=4,
+        in_channels=1,
+        en_out_channels=16,
+    ):
+        super(DeepUnet, self).__init__()
+        self.encoder = Encoder(
+            in_channels, 128, en_de_layers, kernel_size, n_blocks, en_out_channels
+        )
+        self.intermediate = Intermediate(
+            self.encoder.out_channel // 2,
+            self.encoder.out_channel,
+            inter_layers,
+            n_blocks,
+        )
+        self.decoder = Decoder(
+            self.encoder.out_channel, en_de_layers, kernel_size, n_blocks
+        )
+
+    def forward(self, x):
+        x, concat_tensors = self.encoder(x)
+        x = self.intermediate(x)
+        x = self.decoder(x, concat_tensors)
+        return x
+
+
+class E2E(nn.Module):
+    """
+    The end-to-end model.
+
+    Args:
+        n_blocks (int): Number of convolutional blocks in each encoder/decoder block.
+        n_gru (int): Number of GRU layers.
+        kernel_size (tuple): Size of the average pooling kernel.
+        en_de_layers (int): Number of encoder/decoder layers.
+        inter_layers (int): Number of convolutional blocks in the intermediate layer.
+        in_channels (int): Number of input channels.
+        en_out_channels (int): Number of output channels for the first encoder block.
+    """
+
+    def __init__(
+        self,
+        n_blocks,
+        n_gru,
+        kernel_size,
+        en_de_layers=5,
+        inter_layers=4,
+        in_channels=1,
+        en_out_channels=16,
+    ):
+        super(E2E, self).__init__()
+        self.unet = DeepUnet(
+            kernel_size,
+            n_blocks,
+            en_de_layers,
+            inter_layers,
+            in_channels,
+            en_out_channels,
+        )
+        self.cnn = nn.Conv2d(en_out_channels, 3, (3, 3), padding=(1, 1))
+        if n_gru:
+            self.fc = nn.Sequential(
+                BiGRU(3 * 128, 256, n_gru),
+                nn.Linear(512, N_CLASS),
+                nn.Dropout(0.25),
+                nn.Sigmoid(),
+            )
+        else:
+            self.fc = nn.Sequential(
+                nn.Linear(3 * N_MELS, N_CLASS), nn.Dropout(0.25), nn.Sigmoid()
+            )
+
+    def forward(self, mel):
+        mel = mel.transpose(-1, -2).unsqueeze(1)
+        x = self.cnn(self.unet(mel)).transpose(1, 2).flatten(-2)
+        x = self.fc(x)
+        return x
+
+
+class MelSpectrogram(torch.nn.Module):
+    """
+    Extracts Mel-spectrogram features from audio.
+
+    Args:
+        n_mel_channels (int): Number of Mel-frequency bands.
+        sample_rate (int): Sampling rate of the audio.
+        win_length (int): Length of the window function in samples.
+        hop_length (int): Hop size between frames in samples.
+        n_fft (int, optional): Length of the FFT window. Defaults to None, which uses win_length.
+        mel_fmin (int, optional): Minimum frequency for the Mel filter bank. Defaults to 0.
+        mel_fmax (int, optional): Maximum frequency for the Mel filter bank. Defaults to None.
+        clamp (float, optional): Minimum value for clamping the Mel-spectrogram. Defaults to 1e-5.
+    """
+
+    def __init__(
+        self,
+        n_mel_channels,
+        sample_rate,
+        win_length,
+        hop_length,
+        n_fft=None,
+        mel_fmin=0,
+        mel_fmax=None,
+        clamp=1e-5,
+    ):
+        super().__init__()
+        n_fft = win_length if n_fft is None else n_fft
+        self.hann_window = {}
+        mel_basis = mel(
+            sr=sample_rate,
+            n_fft=n_fft,
+            n_mels=n_mel_channels,
+            fmin=mel_fmin,
+            fmax=mel_fmax,
+            htk=True,
+        )
+        mel_basis = torch.from_numpy(mel_basis).float()
+        self.register_buffer("mel_basis", mel_basis)
+        self.n_fft = win_length if n_fft is None else n_fft
+        self.hop_length = hop_length
+        self.win_length = win_length
+        self.sample_rate = sample_rate
+        self.n_mel_channels = n_mel_channels
+        self.clamp = clamp
+
+    def forward(self, audio, keyshift=0, speed=1, center=True):
+        factor = 2 ** (keyshift / 12)
+        n_fft_new = int(np.round(self.n_fft * factor))
+        win_length_new = int(np.round(self.win_length * factor))
+        hop_length_new = int(np.round(self.hop_length * speed))
+        keyshift_key = str(keyshift) + "_" + str(audio.device)
+        if keyshift_key not in self.hann_window:
+            self.hann_window[keyshift_key] = torch.hann_window(win_length_new).to(
+                audio.device
+            )
+        fft = torch.stft(
+            audio,
+            n_fft=n_fft_new,
+            hop_length=hop_length_new,
+            win_length=win_length_new,
+            window=self.hann_window[keyshift_key],
+            center=center,
+            return_complex=True,
+        )
+
+        magnitude = torch.sqrt(fft.real.pow(2) + fft.imag.pow(2))
+        if keyshift != 0:
+            size = self.n_fft // 2 + 1
+            resize = magnitude.size(1)
+            if resize < size:
+                magnitude = F.pad(magnitude, (0, 0, 0, size - resize))
+            magnitude = magnitude[:, :size, :] * self.win_length / win_length_new
+        mel_output = torch.matmul(self.mel_basis, magnitude)
+        log_mel_spec = torch.log(torch.clamp(mel_output, min=self.clamp))
+        return log_mel_spec
+
+
+class RMVPE0Predictor:
+    """
+    A predictor for fundamental frequency (F0) based on the RMVPE0 model.
+
+    Args:
+        model_path (str): Path to the RMVPE0 model file.
+        device (str, optional): Device to use for computation. Defaults to None, which uses CUDA if available.
+    """
+
+    def __init__(self, model_path, device=None):
+        self.resample_kernel = {}
+        model = E2E(4, 1, (2, 2))
+        ckpt = torch.load(model_path, map_location="cpu", weights_only=True)
+        model.load_state_dict(ckpt)
+        model.eval()
+        self.model = model
+        self.resample_kernel = {}
+        self.device = device
+        if (
+            torch.cuda.is_available()
+            and self.device is not None
+            and str(self.device).startswith("cuda")
+            and (
+                getattr(torch.version, "hip", None) is not None
+                or "AMD" in torch.cuda.get_device_name(self.device).upper()
+                or "RADEON" in torch.cuda.get_device_name(self.device).upper()
+                or torch.cuda.get_device_name(self.device).endswith("[ZLUDA]")
+            )
+        ):
+            if getattr(torch.version, "hip", None) is None:
+                torch.backends.cudnn.enabled = False
+                torch.backends.cudnn.benchmark = False
+        self.mel_extractor = MelSpectrogram(
+            N_MELS, 16000, 1024, 160, None, 30, 8000
+        ).to(device)
+        if str(device) == "mps":
+            from backend.lib.tools.device import CPUSpectralTransform
+
+            self.mel_extractor = CPUSpectralTransform(self.mel_extractor)
+        self.model = self.model.to(device)
+        cents_mapping = 20 * np.arange(N_CLASS) + 1997.3794084376191
+        self.cents_mapping = np.pad(cents_mapping, (4, 4))
+
+    def mel2hidden(self, mel, chunk_size=32000):
+        """
+        Converts Mel-spectrogram features to hidden representation.
+
+        Args:
+            mel (torch.Tensor): Mel-spectrogram features.
+        """
+        with torch.no_grad():
+            n_frames = mel.shape[-1]
+            mel = F.pad(
+                mel, (0, 32 * ((n_frames - 1) // 32 + 1) - n_frames), mode="reflect"
+            )
+
+            output_chunks = []
+            pad_frames = mel.shape[-1]
+            fallback_cpu = False
+            for start in range(0, pad_frames, chunk_size):
+                end = min(start + chunk_size, pad_frames)
+                mel_chunk = mel[..., start:end]
+                assert (
+                    mel_chunk.shape[-1] % 32 == 0
+                ), "chunk_size must be divisible by 32"
+
+                if fallback_cpu:
+                    out_chunk = self.model(mel_chunk.cpu())
+                    output_chunks.append(out_chunk.cpu())
+                    continue
+
+                try:
+                    out_chunk = self.model(mel_chunk)
+                    output_chunks.append(out_chunk)
+                except Exception as e:
+                    if str(self.device).startswith("cuda") and any(
+                        k in str(e).lower()
+                        for k in ("miopen", "hiprtc", "statusunknown")
+                    ):
+                        print(
+                            f"[!] Warning: MIOpen execution failed during RMVPE forward ({e}). "
+                            "Falling back to CPU for RMVPE. (On AMD Windows, install Visual Studio C++ Build Tools with 'Desktop development with C++' to enable GPU MIOpen kernels)."
+                        )
+                        fallback_cpu = True
+                        self.device = "cpu"
+                        self.model = self.model.to("cpu")
+                        self.mel_extractor = self.mel_extractor.to("cpu")
+                        output_chunks = [c.cpu() for c in output_chunks]
+                        out_chunk = self.model(mel_chunk.cpu())
+                        output_chunks.append(out_chunk.cpu())
+                    else:
+                        raise e
+
+            hidden = torch.cat(output_chunks, dim=1)
+        return hidden[:, :n_frames]
+
+    def decode(self, hidden, thred=0.03):
+        """
+        Decodes hidden representation to F0.
+
+        Args:
+            hidden (np.ndarray): Hidden representation.
+            thred (float, optional): Threshold for salience. Defaults to 0.03.
+        """
+        cents_pred = self.to_local_average_cents(hidden, thred=thred)
+        f0 = 10 * (2 ** (cents_pred / 1200))
+        f0[f0 == 10] = 0
+        return f0
+
+    def infer_from_audio(self, audio, thred=0.03):
+        """Extract bounded windows before allocating spectrograms or GPU tensors."""
+        return extract_pitch(audio, lambda window: self._infer_window(window, thred))
+
+    @torch.inference_mode()
+    def _infer_window(self, audio, thred=0.03):
+        """
+        Infers F0 from audio.
+
+        Args:
+            audio (np.ndarray): Audio signal.
+            thred (float, optional): Threshold for salience. Defaults to 0.03.
+        """
+        try:
+            audio_t = torch.from_numpy(audio).float().to(self.device).unsqueeze(0)
+            mel = self.mel_extractor(audio_t, center=True)
+            del audio_t
+            hidden = self.mel2hidden(mel)
+            hidden = hidden.squeeze(0).cpu().numpy()
+            f0 = self.decode(hidden, thred=thred)
+            return f0
+        except Exception as e:
+            if str(self.device).startswith("cuda") and any(
+                k in str(e).lower() for k in ("miopen", "hiprtc", "statusunknown")
+            ):
+                print(
+                    f"[!] Warning: RMVPE GPU inference failed on {self.device} ({e}). "
+                    "Falling back to CPU for RMVPE. (On AMD Windows, install Visual Studio C++ Build Tools with 'Desktop development with C++' to enable GPU MIOpen kernels)."
+                )
+                self.device = "cpu"
+                self.model = self.model.to("cpu")
+                self.mel_extractor = self.mel_extractor.to("cpu")
+                audio_t = torch.from_numpy(audio).float().to("cpu").unsqueeze(0)
+                mel = self.mel_extractor(audio_t, center=True)
+                del audio_t
+                hidden = self.mel2hidden(mel)
+                hidden = hidden.squeeze(0).cpu().numpy()
+                f0 = self.decode(hidden, thred=thred)
+                return f0
+            raise e
+
+    def to_local_average_cents(self, salience, thred=0.05):
+        """
+        Converts salience to local average cents.
+
+        Args:
+            salience (np.ndarray): Salience values.
+            thred (float, optional): Threshold for salience. Defaults to 0.05.
+        """
+        center = np.argmax(salience, axis=1)
+        salience = np.pad(salience, ((0, 0), (4, 4)))
+        center += 4
+        offsets = np.arange(-4, 5)
+        idx = center[:, None] + offsets[None, :]
+        local_salience = salience[np.arange(salience.shape[0])[:, None], idx]
+        product_sum = np.sum(local_salience * self.cents_mapping[idx], axis=1)
+        weight_sum = np.sum(local_salience, axis=1)
+        devided = product_sum / weight_sum
+        maxx = np.max(salience, axis=1)
+        devided[maxx <= thred] = 0
+        return devided
+
+
+class BiGRU(nn.Module):
+    """
+    A bidirectional GRU layer.
+
+    Args:
+        input_features (int): Number of input features.
+        hidden_features (int): Number of hidden features.
+        num_layers (int): Number of GRU layers.
+    """
+
+    def __init__(self, input_features, hidden_features, num_layers):
+        super(BiGRU, self).__init__()
+        self.gru = nn.GRU(
+            input_features,
+            hidden_features,
+            num_layers=num_layers,
+            batch_first=True,
+            bidirectional=True,
+        )
+
+    def forward(self, x):
+        return self.gru(x)[0]
